@@ -4,15 +4,18 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "bool-operator-by-ref-unknown",
-    breaks: "a `bool`'s `&`, `|` or `^` of `&bool`s, std's forwarding impl, is refused (#319)",
+    breaks:
+      "a `bool`'s `&`, `|` or `^` of `&bool`s, std's forwarding impl, is refused (#319)",
     file: "src/lower/recognition/calls.rs",
     find: "        if Num::of(ty.peel_refs()).is_some() || ty.peel_refs().is_bool() {\n            if let Some(Ok(op)) = value_operator(tcx, trait_) {\n",
-    replace: "        if Num::of(ty.peel_refs()).is_some() {\n            if let Some(Ok(op)) = value_operator(tcx, trait_) {\n",
+    replace:
+      "        if Num::of(ty.peel_refs()).is_some() {\n            if let Some(Ok(op)) = value_operator(tcx, trait_) {\n",
     tests: ["test/corpus.test.ts", "-t", "^bool_ops_by_ref.rs$"],
   },
   {
     name: "blanket-to-owned-shared",
-    breaks: "`to_owned()` of a `T: Clone`, std's blanket impl, is the value it's given, not its `clone()`: a change to the copy changes the original (#316)",
+    breaks:
+      "`to_owned()` of a `T: Clone`, std's blanket impl, is the value it's given, not its `clone()`: a change to the copy changes the original (#316)",
     file: "src/lower/recognition/calls.rs",
     find: "        _ => Std::ToOwnedClone,\n",
     replace: "        _ => Std::Same,\n",
@@ -20,43 +23,51 @@ export const mutations: Mutation[] = [
   },
   {
     name: "ptr-eq-unrecognized",
-    breaks: "`std::ptr::eq` of JS objects is rejected as a call rust-js doesn't support",
+    breaks:
+      "`std::ptr::eq` of JS objects is rejected as a call rust-js doesn't support",
     file: "src/lower/recognition/calls.rs",
     find: '        if diagnostic("ptr_eq") {',
     replace: "        if false {",
-    tests: ["test/lowering-bindings.test.ts", "-t", "ptr::eq of JS objects is whether they're one"],
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "-t",
+      "ptr::eq of JS objects is whether they're one",
+    ],
   },
   {
     name: "iter-source-unknown",
     breaks: "`std::iter::once(x)` and std's other iterator sources are refused",
     file: "src/lower/recognition/calls.rs",
     find: "        if tcx.crate_name(def_id.krate) == sym::core && tcx.def_kind(def_id) == DefKind::Fn {",
-    replace: "        if false && tcx.crate_name(def_id.krate) == sym::core && tcx.def_kind(def_id) == DefKind::Fn {",
-    tests: ["test/corpus.test.ts","-t","iterator_sources"],
+    replace:
+      "        if false && tcx.crate_name(def_id.krate) == sym::core && tcx.def_kind(def_id) == DefKind::Fn {",
+    tests: ["test/corpus.test.ts", "-t", "iterator_sources"],
   },
   {
     name: "range-inclusive-new-unknown",
     breaks: "`1..=6` as a value is refused",
     file: "src/lower/recognition/calls.rs",
     find: "        if tcx.is_lang_item(def_id, LangItem::RangeInclusiveNew) {",
-    replace: "        if false && tcx.is_lang_item(def_id, LangItem::RangeInclusiveNew) {",
-    tests: ["test/corpus.test.ts","-t","range_values"],
+    replace:
+      "        if false && tcx.is_lang_item(def_id, LangItem::RangeInclusiveNew) {",
+    tests: ["test/corpus.test.ts", "-t", "range_values"],
   },
   {
     name: "box-from-unknown",
     breaks: "`22.into()` to a `Box` is refused",
     file: "src/lower/recognition/calls.rs",
     find: "            if let ty::Adt(_, boxed) = to_ty.kind()\n                && to_ty.is_box()",
-    replace: "            if let ty::Adt(_, boxed) = to_ty.kind()\n                && false",
-    tests: ["test/corpus.test.ts","-t","std_odds"],
+    replace:
+      "            if let ty::Adt(_, boxed) = to_ty.kind()\n                && false",
+    tests: ["test/corpus.test.ts", "-t", "std_odds"],
   },
   {
     name: "stream-write-unknown",
     breaks: "`writeln!(out, ..)` to standard output is refused",
     file: "src/lower/recognition/calls.rs",
-    find: "                \"write_fmt\" => Some(Std::Stream(StreamOp::Write { error })),",
-    replace: "                \"write_fmt\" => None,",
-    tests: ["test/corpus.test.ts","-t","std_odds"],
+    find: '                "write_fmt" => Some(Std::Stream(StreamOp::Write { error })),',
+    replace: '                "write_fmt" => None,',
+    tests: ["test/corpus.test.ts", "-t", "std_odds"],
   },
   {
     name: "write-to-string-unrecognized",
@@ -72,19 +83,22 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/calls.rs",
     find: "                || self.is_vec_like(ty.peel_refs())\n                || self.is_given_iterable(ty.peel_refs()))",
     replace: "                || self.is_vec_like(ty.peel_refs()))",
-    tests: ["test/corpus.test.ts","-t","hrtb_into_iter"],
+    tests: ["test/corpus.test.ts", "-t", "hrtb_into_iter"],
   },
   {
     name: "user-write-char-unrouted",
-    breaks: "`w.write_char(c)` of a writer that keeps std's is an error, not its `write_str`",
+    breaks:
+      "`w.write_char(c)` of a writer that keeps std's is an error, not its `write_str`",
     file: "src/lower/recognition/calls.rs",
-    find: "            && matches!(tcx.item_name(def_id).as_str(), \"write_fmt\" | \"write_char\")",
-    replace: "            && matches!(tcx.item_name(def_id).as_str(), \"write_fmt\")",
+    find: '            && matches!(tcx.item_name(def_id).as_str(), "write_fmt" | "write_char")',
+    replace:
+      '            && matches!(tcx.item_name(def_id).as_str(), "write_fmt")',
     tests: ["test/corpus.test.ts", "-t", "user_fmt_write"],
   },
   {
     name: "user-size-hint-unknown",
-    breaks: "`size_hint()` of an iterator of the crate's that keeps std's is an error",
+    breaks:
+      "`size_hint()` of an iterator of the crate's that keeps std's is an error",
     file: "src/lower/recognition/calls.rs",
     find: "            return Some(Std::SizeHint(false));",
     replace: "            return None;",
@@ -94,15 +108,15 @@ export const mutations: Mutation[] = [
     name: "char-from-code-unknown",
     breaks: "`char::from_u32_unchecked(n)` is an error",
     file: "src/lower/recognition/calls.rs",
-    find: "        if char_fn(\"from_u32_unchecked\") {",
-    replace: "        if char_fn(\"from_u32_unchecked\") && false {",
+    find: '        if char_fn("from_u32_unchecked") {',
+    replace: '        if char_fn("from_u32_unchecked") && false {',
     tests: ["test/corpus.test.ts", "-t", "char_from_code"],
   },
   {
     name: "from-utf8-unknown",
     breaks: "`str::from_utf8(bytes)` is an error",
     file: "src/lower/recognition/calls.rs",
-    find: "            \"std::str::from_utf8\" | \"std::str::<impl str>::from_utf8\" => Some(TextOp::FromUtf8 { owned: false }),",
+    find: '            "std::str::from_utf8" | "std::str::<impl str>::from_utf8" => Some(TextOp::FromUtf8 { owned: false }),',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "utf8_decoding"],
   },
@@ -110,16 +124,17 @@ export const mutations: Mutation[] = [
     name: "cow-str-deref-unknown",
     breaks: "a `Cow<str>`'s text, `text.len()`, is an error",
     file: "src/lower/recognition/calls.rs",
-    find: "            if diagnostic(\"deref_method\") && self.is_cow(ty) {",
-    replace: "            if diagnostic(\"deref_method\") && self.is_cow(ty) && false {",
+    find: '            if diagnostic("deref_method") && self.is_cow(ty) {',
+    replace:
+      '            if diagnostic("deref_method") && self.is_cow(ty) && false {',
     tests: ["test/corpus.test.ts", "-t", "utf8_decoding"],
   },
   {
     name: "path-display-unknown",
     breaks: "`p.display()` of a path is an error",
     file: "src/lower/recognition/calls.rs",
-    find: "            \"std::path::Path::display\"\n            | \"std::path::Path::to_str\"\n",
-    replace: "            \"std::path::Path::to_str\"\n",
+    find: '            "std::path::Path::display"\n            | "std::path::Path::to_str"\n',
+    replace: '            "std::path::Path::to_str"\n',
     tests: ["test/corpus.test.ts", "-t", "path_text"],
   },
   {
@@ -127,14 +142,15 @@ export const mutations: Mutation[] = [
     breaks: "`PathBuf::from(text)` is an error",
     file: "src/lower/recognition/calls.rs",
     find: "            if (self.is_lang_adt(to_ty, LangItem::String) || self.is_path_like(to_ty) || boxed_str)",
-    replace: "            if (self.is_lang_adt(to_ty, LangItem::String) || boxed_str)",
+    replace:
+      "            if (self.is_lang_adt(to_ty, LangItem::String) || boxed_str)",
     tests: ["test/corpus.test.ts", "-t", "path_text"],
   },
   {
     name: "parse-error-kind-unknown",
     breaks: "`ParseIntError::kind()` is an error",
     file: "src/lower/recognition/calls.rs",
-    find: "            \"std::num::ParseIntError::kind\" => Some(TextOp::ParseErrorKind),\n",
+    find: '            "std::num::ParseIntError::kind" => Some(TextOp::ParseErrorKind),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "int_error_kind"],
   },
@@ -143,7 +159,8 @@ export const mutations: Mutation[] = [
     breaks: "`a * b` of `std::num::Wrapping`s is an error",
     file: "src/lower/recognition/calls.rs",
     find: "            if let Some(op) = value_operator(tcx, trait_) {\n                return Some(Std::WrappingOp(op, false));",
-    replace: "            if let Some(op) = value_operator(tcx, trait_).filter(|_| false) {\n                return Some(Std::WrappingOp(op, false));",
+    replace:
+      "            if let Some(op) = value_operator(tcx, trait_).filter(|_| false) {\n                return Some(Std::WrappingOp(op, false));",
     tests: ["test/corpus.test.ts", "-t", "wrapping_type"],
   },
   {
@@ -156,11 +173,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "panic-display-unknown",
-    breaks: "`panic!(\"{}\", x)`, std's `panic_display`, is an error",
+    breaks: '`panic!("{}", x)`, std\'s `panic_display`, is an error',
     file: "src/lower/recognition/calls.rs",
     find: "        if tcx.is_lang_item(def_id, LangItem::PanicDisplay) {",
-    replace: "        if false && tcx.is_lang_item(def_id, LangItem::PanicDisplay) {",
-    tests: ["test/corpus.test.ts","-t","panic_display"],
+    replace:
+      "        if false && tcx.is_lang_item(def_id, LangItem::PanicDisplay) {",
+    tests: ["test/corpus.test.ts", "-t", "panic_display"],
   },
   {
     name: "boxed-str-unconverted",
@@ -175,8 +193,9 @@ export const mutations: Mutation[] = [
     breaks: "`into_iter()` of 1.99's `Box<[T; N]>` is refused",
     file: "src/lower/recognition/calls.rs",
     find: "            && self.is_boxed_items(ty.peel_refs())\n        {\n            return Some(Std::Pointee);\n",
-    replace: "            && false\n        {\n            return Some(Std::Pointee);\n",
-    tests: ["test/corpus.test.ts", "-t", "boxed_array_iter"]
+    replace:
+      "            && false\n        {\n            return Some(Std::Pointee);\n",
+    tests: ["test/corpus.test.ts", "-t", "boxed_array_iter"],
   },
   {
     name: "pin-deref-same",
@@ -201,7 +220,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/calls.rs",
     find: "            return Some(Std::Text(TextOp::StrPart { bounds: false }));\n",
     replace: "            return None;\n",
-    tests: ["test/corpus.test.ts","-t","str_mut"],
+    tests: ["test/corpus.test.ts", "-t", "str_mut"],
   },
   {
     name: "index-mut-range-unknown",
@@ -209,27 +228,29 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/calls.rs",
     find: "            return Some(Std::Slice(SliceOp::View { checked: false }));\n",
     replace: "            return None;\n",
-    tests: ["test/corpus.test.ts","-t","slice_views"],
+    tests: ["test/corpus.test.ts", "-t", "slice_views"],
   },
   {
     name: "utf8-chunk-valid-unknown",
     breaks: "a `Utf8Chunk`'s `valid()` is an error",
     file: "src/lower/recognition/calls.rs",
-    find: "            \"std::str::Utf8Chunk::<'a>::valid\" => Some(TextOp::Utf8Part(\"valid\")),\n",
+    find: '            "std::str::Utf8Chunk::<\'a>::valid" => Some(TextOp::Utf8Part("valid")),\n',
     replace: "",
-    tests: ["test/corpus.test.ts","-t","slice_bytes_text"],
+    tests: ["test/corpus.test.ts", "-t", "slice_bytes_text"],
   },
   {
     name: "number-from-bool-unrecognized",
     breaks: "`usize::from(flag)` and `u32::from(c)` are refused, which std has",
     file: "src/lower/recognition/calls.rs",
     find: "            if (from_ty.is_bool() || from_ty.is_char()) && Num::of(to_ty).is_some() {",
-    replace: "            if false && (from_ty.is_bool() || from_ty.is_char()) && Num::of(to_ty).is_some() {",
+    replace:
+      "            if false && (from_ty.is_bool() || from_ty.is_char()) && Num::of(to_ty).is_some() {",
     tests: ["test/lowering-numbers.test.ts", "-t", "from a bool or a char"],
   },
   {
     name: "number-into-as-from",
-    breaks: "`flag.into()` takes its target for its source, a `bool` for the `u64`",
+    breaks:
+      "`flag.into()` takes its target for its source, a `bool` for the `u64`",
     file: "src/lower/recognition/calls.rs",
     find: "                return Some(Std::Cast { into });\n",
     replace: "                return Some(Std::Cast { into: false });\n",
@@ -237,7 +258,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "conversion-to-itself-unknown",
-    breaks: "`From::from(e)` of an error to its own type, and `.into()` of an `impl Into<T>` that is a `T`, are refused",
+    breaks:
+      "`From::from(e)` of an error to its own type, and `.into()` of an `impl Into<T>` that is a `T`, are refused",
     file: "src/lower/recognition/calls.rs",
     find: "        if tcx.erase_and_anonymize_regions(self.reveal(from_ty)) == tcx.erase_and_anonymize_regions(self.reveal(to_ty))\n",
     replace: "        if false\n",
@@ -245,26 +267,29 @@ export const mutations: Mutation[] = [
   },
   {
     name: "yield-now-unknown",
-    breaks: "`thread::yield_now()`, of the one thread there is, is refused, not nothing",
+    breaks:
+      "`thread::yield_now()`, of the one thread there is, is refused, not nothing",
     file: "src/lower/recognition/calls.rs",
-    find: "        if std_path(tcx, def_id) == \"std::thread::yield_now\" {\n",
+    find: '        if std_path(tcx, def_id) == "std::thread::yield_now" {\n',
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_yield.rs$"],
   },
   {
     name: "vec-write-text-refused",
-    breaks: "`write!(v, ..)` of a known `Vec<u8>` is refused, not its bytes added",
+    breaks:
+      "`write!(v, ..)` of a known `Vec<u8>` is refused, not its bytes added",
     file: "src/lower/recognition/calls.rs",
-    find: "            \"write_fmt\" => Some(Std::WriteText),\n",
+    find: '            "write_fmt" => Some(Std::WriteText),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^io_writers.rs$"],
   },
   {
     name: "discriminant-unknown",
-    breaks: "`mem::discriminant(&e)` is refused, not `e`'s variant's discriminant",
+    breaks:
+      "`mem::discriminant(&e)` is refused, not `e`'s variant's discriminant",
     file: "src/lower/recognition/calls.rs",
-    find: "            \"std::mem::discriminant\" | \"std::intrinsics::discriminant_value\"\n",
-    replace: "            \"std::intrinsics::discriminant_value\"\n",
+    find: '            "std::mem::discriminant" | "std::intrinsics::discriminant_value"\n',
+    replace: '            "std::intrinsics::discriminant_value"\n',
     tests: ["test/corpus.test.ts", "-t", "^enum_discriminant.rs$"],
   },
   {
@@ -285,9 +310,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unreachable-hint-unknown",
-    breaks: "`hint::unreachable_unchecked()` is refused, where it's unreachable code's throw",
+    breaks:
+      "`hint::unreachable_unchecked()` is refused, where it's unreachable code's throw",
     file: "src/lower/recognition/calls.rs",
-    find: "        if krate == sym::core && std_path(tcx, def_id) == \"std::hint::unreachable_unchecked\" {\n",
+    find: '        if krate == sym::core && std_path(tcx, def_id) == "std::hint::unreachable_unchecked" {\n',
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^unreachable_hint.rs$"],
   },
@@ -295,7 +321,7 @@ export const mutations: Mutation[] = [
     name: "path-parent-unknown",
     breaks: "a path's `parent()` is refused",
     file: "src/lower/recognition/calls.rs",
-    find: "            \"std::path::Path::parent\" => return Some(Some(Std::Path(PathOp::Parent))),\n",
+    find: '            "std::path::Path::parent" => return Some(Some(Std::Path(PathOp::Parent))),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
   },
@@ -303,8 +329,8 @@ export const mutations: Mutation[] = [
     name: "manually-drop-new-unknown",
     breaks: "`ManuallyDrop::new(x)` is refused, where it's `x`",
     file: "src/lower/recognition/calls.rs",
-    find: "            \"std::mem::ManuallyDrop::<T>::new\" | \"std::mem::ManuallyDrop::<T>::into_inner\" => {\n",
-    replace: "            \"std::mem::ManuallyDrop::<T>::into_inner\" => {\n",
+    find: '            "std::mem::ManuallyDrop::<T>::new" | "std::mem::ManuallyDrop::<T>::into_inner" => {\n',
+    replace: '            "std::mem::ManuallyDrop::<T>::into_inner" => {\n',
     tests: ["test/corpus.test.ts", "-t", "^unions.rs$"],
   },
   {
@@ -327,21 +353,22 @@ export const mutations: Mutation[] = [
     name: "transmute-unrecognised",
     breaks: "`mem::transmute` of plain data is refused as addressable memory",
     file: "src/lower/recognition/calls.rs",
-    find: "            \"std::intrinsics::transmute\" | \"std::intrinsics::transmute_unchecked\" => {\n",
-    replace: "            \"std::intrinsics::transmute_unchecked\" => {\n",
+    find: '            "std::intrinsics::transmute" | "std::intrinsics::transmute_unchecked" => {\n',
+    replace: '            "std::intrinsics::transmute_unchecked" => {\n',
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
   },
   {
     name: "mem-zeroed-unrecognised",
     breaks: "`mem::zeroed()` is refused as addressable memory",
     file: "src/lower/recognition/calls.rs",
-    find: "            \"std::mem::zeroed\" => return Some(Some(Std::Uninit(UninitOp::Zeroed))),\n",
+    find: '            "std::mem::zeroed" => return Some(Some(Std::Uninit(UninitOp::Zeroed))),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
   },
   {
     name: "user-io-write-unrecognized",
-    breaks: "`write!` to a writer of bytes of the crate's, of known type, isn't its dictionary's, and is refused",
+    breaks:
+      "`write!` to a writer of bytes of the crate's, of known type, isn't its dictionary's, and is refused",
     file: "src/lower/recognition/calls.rs",
     find: "            return Some(Std::UserIoWrite);\n",
     replace: "            return None;\n",
@@ -349,7 +376,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "generic-index-unrecognized",
-    breaks: "`v[i]` of an `I: SliceIndex<[T]>` isn't its dictionary's, and is refused",
+    breaks:
+      "`v[i]` of an `I: SliceIndex<[T]>` isn't its dictionary's, and is refused",
     file: "src/lower/recognition/calls.rs",
     find: "            && args.types().nth(1).is_some_and(|index| self.is_unknown(index))\n",
     replace: "            && false\n",
@@ -359,7 +387,7 @@ export const mutations: Mutation[] = [
     name: "capacity-unrecognized",
     breaks: "`v.capacity()` isn't a `Vec`'s capacity, and is refused",
     file: "src/lower/recognition/calls.rs",
-    find: "        \"capacity\" => CapacityOp::Of,\n",
+    find: '        "capacity" => CapacityOp::Of,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity.rs$"],
   },
@@ -367,23 +395,23 @@ export const mutations: Mutation[] = [
     name: "truncate-keeps-no-capacity",
     breaks: "`truncate` shortens a `Vec` without keeping its capacity",
     file: "src/lower/recognition/calls.rs",
-    find: "        \"clear\" | \"truncate\" | \"set_len\" | \"pop\"",
-    replace: "        \"clear\" | \"set_len\" | \"pop\"",
+    find: '        "clear" | "truncate" | "set_len" | "pop"',
+    replace: '        "clear" | "set_len" | "pop"',
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity.rs$"],
   },
   {
     name: "set-len-loses-capacity",
     breaks: "`set_len` shortens a `Vec` without keeping its capacity",
     file: "src/lower/recognition/calls.rs",
-    find: "        \"clear\" | \"truncate\" | \"set_len\" | \"pop\"",
-    replace: "        \"clear\" | \"truncate\" | \"pop\"",
+    find: '        "clear" | "truncate" | "set_len" | "pop"',
+    replace: '        "clear" | "truncate" | "pop"',
     tests: ["test/corpus.test.ts", "-t", "^vec_set_len.rs$"],
   },
   {
     name: "array-from-fn-unrecognized",
     breaks: "`array::from_fn(f)` isn't known, and is refused",
     file: "src/lower/recognition/calls.rs",
-    find: "            \"std::array::from_fn\" => return Some(Some(Std::Slice(SliceOp::FromFn))),\n",
+    find: '            "std::array::from_fn" => return Some(Some(Std::Slice(SliceOp::FromFn))),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^array_from_fn.rs$"],
   },
@@ -391,7 +419,7 @@ export const mutations: Mutation[] = [
     name: "cycle-unknown",
     breaks: "`cycle()` of std's iterator over an array is an error",
     file: "src/lower/recognition/calls.rs",
-    find: "        \"cycle\" => Some(StepOp::Cycle),\n",
+    find: '        "cycle" => Some(StepOp::Cycle),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
   },
@@ -399,31 +427,33 @@ export const mutations: Mutation[] = [
     name: "identity-unknown",
     breaks: "`convert::identity(x)` is an error, where it's `x`",
     file: "src/lower/recognition/calls.rs",
-    find: "        if diagnostic(\"box_new\") || diagnostic(\"convert_identity\") {\n",
-    replace: "        if diagnostic(\"box_new\") {\n",
+    find: '        if diagnostic("box_new") || diagnostic("convert_identity") {\n',
+    replace: '        if diagnostic("box_new") {\n',
     tests: ["test/corpus.test.ts", "-t", "^convert_identity.rs$"],
   },
   {
     name: "heap-capacity-unknown",
     breaks: "a `BinaryHeap`'s `capacity()` is an error, where it's its array's",
     file: "src/lower/recognition/calls.rs",
-    find: "    \"std::collections::BinaryHeap::<T, A>::\",\n];\n",
-    replace: "    \"std::collections::BinaryHeap::<T, A>::never\",\n];\n",
+    find: '    "std::collections::BinaryHeap::<T, A>::",\n];\n',
+    replace: '    "std::collections::BinaryHeap::<T, A>::never",\n];\n',
     tests: ["test/corpus.test.ts", "-t", "^collection_capacity.rs$"],
   },
   {
     name: "heap-shortened-capacity-lost",
-    breaks: "a `BinaryHeap` cleared or popped has the capacity of its length, not what it had",
+    breaks:
+      "a `BinaryHeap` cleared or popped has the capacity of its length, not what it had",
     file: "src/lower/recognition/calls.rs",
-    find: "        \"clear\" | \"truncate\" | \"set_len\" | \"pop\" | \"pop_if\"",
-    replace: "        \"never\" | \"truncate\" | \"set_len\" | \"pop\" | \"pop_if\"",
+    find: '        "clear" | "truncate" | "set_len" | "pop" | "pop_if"',
+    replace: '        "never" | "truncate" | "set_len" | "pop" | "pop_if"',
     tests: ["test/corpus.test.ts", "-t", "^collection_capacity.rs$"],
   },
   {
     name: "next-arg-unknown",
-    breaks: "`next_arg()` of a `VaList` is an error, where it's the first of what's left",
+    breaks:
+      "`next_arg()` of a `VaList` is an error, where it's the first of what's left",
     file: "src/lower/recognition/calls.rs",
-    find: "        if std_path(tcx, def_id) == \"std::ffi::VaList::<'f>::next_arg\" {\n",
+    find: '        if std_path(tcx, def_id) == "std::ffi::VaList::<\'f>::next_arg" {\n',
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^c_variadic.rs$"],
   },
@@ -440,7 +470,8 @@ export const mutations: Mutation[] = [
     breaks: "`Vec::from([..])` and `[..].into()` of one are refused",
     file: "src/lower/recognition/calls.rs",
     find: "            from_ty.is_array() || from_ty.peel_refs().is_slice() || self.is_std_type(from_ty, StdItem::VecDeque);\n",
-    replace: "            from_ty.peel_refs().is_slice() || self.is_std_type(from_ty, StdItem::VecDeque);\n",
+    replace:
+      "            from_ty.peel_refs().is_slice() || self.is_std_type(from_ty, StdItem::VecDeque);\n",
     tests: ["test/corpus.test.ts", "-t", "^std_conversions.rs$"],
   },
   {
@@ -448,12 +479,14 @@ export const mutations: Mutation[] = [
     breaks: "`Rc::from(x)` and `x.into()` of one are refused",
     file: "src/lower/recognition/calls.rs",
     find: "        if rc_made_of(tcx, from_ty, to_ty).is_some() {\n",
-    replace: "        if false && rc_made_of(tcx, from_ty, to_ty).is_some() {\n",
+    replace:
+      "        if false && rc_made_of(tcx, from_ty, to_ty).is_some() {\n",
     tests: ["test/corpus.test.ts", "-t", "^std_conversions.rs$"],
   },
   {
     name: "try-from-as-from",
-    breaks: "`try_from` between integers is taken for `from`, the value itself, unchecked",
+    breaks:
+      "`try_from` between integers is taken for `from`, the value itself, unchecked",
     file: "src/lower/recognition/calls.rs",
     find: "        if !into && !tcx.is_diagnostic_item(sym::From, trait_) {\n            return None;\n        }\n",
     replace: "",
@@ -471,7 +504,7 @@ export const mutations: Mutation[] = [
     name: "cell-items-unknown",
     breaks: "`as_slice_of_cells()` and `as_array_of_cells()` are refused",
     file: "src/lower/recognition/calls.rs",
-    find: "        \"as_slice_of_cells\" | \"as_array_of_cells\" => Std::CellItems,\n",
+    find: '        "as_slice_of_cells" | "as_array_of_cells" => Std::CellItems,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cell_from_mut.rs$"],
   },
@@ -479,8 +512,9 @@ export const mutations: Mutation[] = [
     name: "clock-checked-since-unchecked",
     breaks: "`checked_duration_since` saturates, `Some(0ns)` where it's `None`",
     file: "src/lower/recognition/calls.rs",
-    find: "(_, \"checked_duration_since\") => ClockOp::Since { checked: true },",
-    replace: "(_, \"checked_duration_since\") => ClockOp::Since { checked: false },",
+    find: '(_, "checked_duration_since") => ClockOp::Since { checked: true },',
+    replace:
+      '(_, "checked_duration_since") => ClockOp::Since { checked: false },',
     tests: ["test/corpus.test.ts", "-t", "^clock.rs$"],
   },
   {
@@ -493,31 +527,38 @@ export const mutations: Mutation[] = [
   },
   {
     name: "slice-to-owned-unknown",
-    breaks: "a slice's `to_owned()` is taken for a `T: Clone`'s, whose clone of a `[T]` is the array it's given: a change to the copy changes the original",
+    breaks:
+      "a slice's `to_owned()` is taken for a `T: Clone`'s, whose clone of a `[T]` is the array it's given: a change to the copy changes the original",
     file: "src/lower/recognition/calls.rs",
     find: "        _ if ty.is_slice() => Std::ToVec,\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(slice_to_owned|to_owned_is_clone).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(slice_to_owned|to_owned_is_clone).rs$",
+    ],
   },
   {
     name: "assert-unchecked-unknown",
     breaks: "`hint::assert_unchecked(c)` isn't known, and is refused",
     file: "src/lower/recognition/calls.rs",
-    find: "        if std_path(tcx, def_id) == \"std::hint::assert_unchecked\" {\n",
+    find: '        if std_path(tcx, def_id) == "std::hint::assert_unchecked" {\n',
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^assert_unchecked.rs$"],
   },
   {
     name: "unreachable-display-refused",
-    breaks: "an edition 2018 `unreachable!(x)`, `unreachable_display(&x)`, is refused",
+    breaks:
+      "an edition 2018 `unreachable!(x)`, `unreachable_display(&x)`, is refused",
     file: "src/lower/recognition/calls.rs",
-    find: "        if krate == sym::core && name.as_str() == \"unreachable_display\" && std_path(tcx, def_id).contains(\"panicking\") {\n",
+    find: '        if krate == sym::core && name.as_str() == "unreachable_display" && std_path(tcx, def_id).contains("panicking") {\n',
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^unreachable_display.rs$"],
   },
   {
     name: "held-formatter-write-refused",
-    breaks: "a write to a `Formatter` kept in a struct, `self.f.write_str(s)`, is refused",
+    breaks:
+      "a write to a `Formatter` kept in a struct, `self.f.write_str(s)`, is refused",
     file: "src/lower/recognition/calls.rs",
     find: "        if self.formatter_write(def_id, args) {\n            return Some(Some(Std::PushStr));\n        }\n",
     replace: "",
@@ -533,18 +574,20 @@ export const mutations: Mutation[] = [
   },
   {
     name: "left-to-std-of-own",
-    breaks: "a crate's hasher's own `write_u64` is taken for std's, and std's provided ones for its own",
+    breaks:
+      "a crate's hasher's own `write_u64` is taken for std's, and std's provided ones for its own",
     file: "src/lower/recognition/calls.rs",
     find: "                    if !tcx.impl_item_implementor_ids(imp.impl_def_id).contains_key(&def_id)\n",
-    replace: "                    if tcx.impl_item_implementor_ids(imp.impl_def_id).contains_key(&def_id)\n",
+    replace:
+      "                    if tcx.impl_item_implementor_ids(imp.impl_def_id).contains_key(&def_id)\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_hashers.rs$"],
   },
   {
     name: "select-nth-unrecognized",
     breaks: "a generic `select_nth_unstable` is given no `TSort`, and refused",
     file: "src/lower/recognition/calls.rs",
-    find: "        \"sort_unstable\" | \"select_nth_unstable\" => SortWith::Order,\n",
-    replace: "        \"sort_unstable\" => SortWith::Order,\n",
+    find: '        "sort_unstable" | "select_nth_unstable" => SortWith::Order,\n',
+    replace: '        "sort_unstable" => SortWith::Order,\n',
     tests: ["test/corpus.test.ts", "-t", "^generic_unstable_sorts.rs$"],
   },
   {
@@ -559,7 +602,7 @@ export const mutations: Mutation[] = [
     name: "byte-escape-free-fn-refused",
     breaks: "`ascii::escape_default(b)` is refused",
     file: "src/lower/recognition/calls.rs",
-    find: "            \"std::ascii::escape_default\" | ",
+    find: '            "std::ascii::escape_default" | ',
     replace: "            ",
     tests: ["test/corpus.test.ts", "-t", "^byte_escape.rs$"],
   },
@@ -567,21 +610,23 @@ export const mutations: Mutation[] = [
     name: "byte-escape-method-refused",
     breaks: "a byte's `escape_ascii()` is refused",
     file: "src/lower/recognition/calls.rs",
-    find: " | \"std::num::<impl u8>::escape_ascii\" => Some(TextOp::EscapeByte),",
+    find: ' | "std::num::<impl u8>::escape_ascii" => Some(TextOp::EscapeByte),',
     replace: " => Some(TextOp::EscapeByte),",
     tests: ["test/corpus.test.ts", "-t", "^byte_escape.rs$"],
   },
   {
     name: "arguments-as-str-refused",
-    breaks: "`fmt::Arguments::as_str()` is refused, where the arguments are their text already",
+    breaks:
+      "`fmt::Arguments::as_str()` is refused, where the arguments are their text already",
     file: "src/lower/recognition/calls.rs",
-    find: "        (\"as_str\", true) => Std::Same,\n",
+    find: '        ("as_str", true) => Std::Same,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fmt_arguments_as_str.rs$"],
   },
   {
     name: "fmt-to-held-formatter-refused",
-    breaks: "`Display::fmt(&x, self.0)` on a `Formatter` held in a struct is refused",
+    breaks:
+      "`Display::fmt(&x, self.0)` on a `Formatter` held in a struct is refused",
     file: "src/lower/recognition/calls.rs",
     find: "        if let Some(operation) = self.formatter_fmt_to(def_id) {\n            return Some(Some(Std::FmtTo(operation)));\n        }\n",
     replace: "",
@@ -597,7 +642,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "result-into-iter-unrecognized",
-    breaks: "`Result::into_iter`, and `for x in &result`, are refused as a call of `IntoIterator::into_iter`",
+    breaks:
+      "`Result::into_iter`, and `for x in &result`, are refused as a call of `IntoIterator::into_iter`",
     file: "src/lower/recognition/calls.rs",
     find: "        if self.is_std_type(ty.peel_refs(), StdItem::Result) {\n",
     replace: "        if false {\n",
@@ -605,7 +651,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "result-into-iter-mut-of-values",
-    breaks: "`for x in &mut result` steps a copy of its number, so `*x += 1` changes nothing",
+    breaks:
+      "`for x in &mut result` steps a copy of its number, so `*x += 1` changes nothing",
     file: "src/lower/recognition/calls.rs",
     find: "if by_mut { Comb::ResultIterMut } else { Comb::ResultIter }",
     replace: "Comb::ResultIter",
@@ -613,10 +660,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "string-from-anything-same",
-    breaks: "a `String` from the crate's own type, by its `From<W> for String`, is the value itself, `[object Object]`",
+    breaks:
+      "a `String` from the crate's own type, by its `From<W> for String`, is the value itself, `[object Object]`",
     file: "src/lower/recognition/calls.rs",
     find: "            if (self.is_lang_adt(to_ty, LangItem::String) || self.is_path_like(to_ty) || boxed_str)\n                && self.is_string_like(from_ty)\n",
-    replace: "            if (self.is_lang_adt(to_ty, LangItem::String) || self.is_path_like(to_ty) || boxed_str)\n",
+    replace:
+      "            if (self.is_lang_adt(to_ty, LangItem::String) || self.is_path_like(to_ty) || boxed_str)\n",
     tests: ["test/corpus.test.ts", "-t", "^string_from_own.rs$"],
   },
   {
@@ -647,8 +696,8 @@ export const mutations: Mutation[] = [
     name: "set-operator-swapped",
     breaks: "`&a | &b` of sets is their intersection",
     file: "src/lower/recognition/calls.rs",
-    find: "        BinOp::BitOr => \"union\",\n",
-    replace: "        BinOp::BitOr => \"intersection\",\n",
+    find: '        BinOp::BitOr => "union",\n',
+    replace: '        BinOp::BitOr => "intersection",\n',
     tests: ["test/corpus.test.ts", "-t", "^set_operators.rs$"],
   },
   {
@@ -664,7 +713,8 @@ export const mutations: Mutation[] = [
     breaks: "`Vec::from(&v[..])` is refused, a slice not taken for items",
     file: "src/lower/recognition/calls.rs",
     find: "            from_ty.is_array() || from_ty.peel_refs().is_slice() || self.is_std_type(from_ty, StdItem::VecDeque);\n",
-    replace: "            from_ty.is_array() || self.is_std_type(from_ty, StdItem::VecDeque);\n",
+    replace:
+      "            from_ty.is_array() || self.is_std_type(from_ty, StdItem::VecDeque);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_from_items.rs$"],
   },
   {
@@ -672,15 +722,17 @@ export const mutations: Mutation[] = [
     breaks: "`Vec::<u8>::from(s)` of text is refused",
     file: "src/lower/recognition/calls.rs",
     find: "        if vec && (from_ty.peel_refs().is_str() || self.is_lang_adt(from_ty, LangItem::String)) {\n",
-    replace: "        if false && vec && (from_ty.peel_refs().is_str() || self.is_lang_adt(from_ty, LangItem::String)) {\n",
+    replace:
+      "        if false && vec && (from_ty.peel_refs().is_str() || self.is_lang_adt(from_ty, LangItem::String)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_from_items.rs$"],
   },
   {
     name: "catch-unwind-resumes",
     breaks: "`catch_unwind(f)` is `resume_unwind(f)`",
     file: "src/lower/recognition/calls.rs",
-    find: "                \"std::panic::catch_unwind\" => return Some(Some(Std::Unwind(UnwindOp::Catch))),\n",
-    replace: "                \"std::panic::catch_unwind\" => return Some(Some(Std::Unwind(UnwindOp::Resume))),\n",
+    find: '                "std::panic::catch_unwind" => return Some(Some(Std::Unwind(UnwindOp::Catch))),\n',
+    replace:
+      '                "std::panic::catch_unwind" => return Some(Some(Std::Unwind(UnwindOp::Resume))),\n',
     tests: ["test/lowering-unwinds.test.ts", "-t", "getIODescription"],
   },
   {
@@ -693,10 +745,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "ptr-hash-unrecognized",
-    breaks: "`ptr::hash` is refused as addressing memory, and with it a type whose `Hash` it is (ADR 0864)",
+    breaks:
+      "`ptr::hash` is refused as addressing memory, and with it a type whose `Hash` it is (ADR 0864)",
     file: "src/lower/recognition/calls.rs",
-    find: "        if std_path(tcx, def_id) == \"std::ptr::hash\" {\n",
-    replace: "        if false && std_path(tcx, def_id) == \"std::ptr::hash\" {\n",
+    find: '        if std_path(tcx, def_id) == "std::ptr::hash" {\n',
+    replace:
+      '        if false && std_path(tcx, def_id) == "std::ptr::hash" {\n',
     tests: ["test/corpus.test.ts", "-t", "^identity_keys.rs$"],
   },
 ];

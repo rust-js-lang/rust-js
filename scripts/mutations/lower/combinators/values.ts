@@ -4,11 +4,17 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "vec-repeat-rows-shared",
-    breaks: "`vec![vec![0; n]; n]` is one row `n` times, `new Array(n).fill(row)`, so a write to one row is a write to all",
+    breaks:
+      "`vec![vec![0; n]; n]` is one row `n` times, `new Array(n).fill(row)`, so a write to one row is a write to all",
     file: "src/lower/combinators/values.rs",
     find: "        let fills = !self.needs_clone(item_ty) && drop.is_none();\n",
-    replace: "        let fills = true || !self.needs_clone(item_ty) && drop.is_none();\n",
-    tests: ["test/compiler.test.ts", "-t", "numbers are Math's, operators call their impl, and vec!\\[x; n\\] fills"],
+    replace:
+      "        let fills = true || !self.needs_clone(item_ty) && drop.is_none();\n",
+    tests: [
+      "test/compiler.test.ts",
+      "-t",
+      "numbers are Math's, operators call their impl, and vec!\\[x; n\\] fills",
+    ],
   },
   {
     name: "option-xor-both",
@@ -32,7 +38,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators/values.rs",
     find: "            return Ok(self.counted_pointee(value, pointee));",
     replace: "            return Ok(value);",
-    tests: ["test/corpus.test.ts","-t","as_deref_counted"],
+    tests: ["test/corpus.test.ts", "-t", "as_deref_counted"],
   },
   {
     name: "as-deref-own-skipped",
@@ -40,14 +46,15 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators/values.rs",
     find: "        if self.has_user_impl(deref, ty) {",
     replace: "        if false {",
-    tests: ["test/corpus.test.ts","-t","^as_deref\\.rs"],
+    tests: ["test/corpus.test.ts", "-t", "^as_deref\\.rs"],
   },
   {
     name: "result-or-err-undropped",
     breaks: "`Err(e).or(r)` of a `Result` leaves `e` undropped",
     file: "src/lower/combinators/values.rs",
     find: "        if self.drops(given_up.1) == Drops::Nothing {\n            return Ok(Expr::cond(test, kept, otherwise));\n",
-    replace: "        if true {\n            return Ok(Expr::cond(test, kept, otherwise));\n",
+    replace:
+      "        if true {\n            return Ok(Expr::cond(test, kept, otherwise));\n",
     tests: ["test/corpus.test.ts", "-t", "^unused_value_drops.rs$"],
   },
   {
@@ -76,7 +83,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "xor-cleanup-skipped-on-panic",
-    breaks: "where `xor`'s first dropped value's destructor panics, the second is never dropped",
+    breaks:
+      "where `xor`'s first dropped value's destructor panics, the second is never dropped",
     file: "src/lower/combinators/values.rs",
     find: "                false => vec![StmtKind::Try(dropped_a, dropped_b).at(js_span)],\n",
     replace: "                false => [dropped_a, dropped_b].concat(),\n",
@@ -84,15 +92,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "or-dropped-before-otherwise",
-    breaks: "the variant a call gives up is dropped before what it gives otherwise is made, a `Default`'s",
+    breaks:
+      "the variant a call gives up is dropped before what it gives otherwise is made, a `Default`'s",
     file: "src/lower/combinators/values.rs",
     find: "        let mut dropped = vec![StmtKind::Assign(Expr::var(&name), otherwise).at(js_span)];\n        self.drop_value(given_up.0, given_up.1, span, &mut dropped)?;\n",
-    replace: "        let mut dropped = Vec::new();\n        self.drop_value(given_up.0, given_up.1, span, &mut dropped)?;\n        dropped.push(StmtKind::Assign(Expr::var(&name), otherwise).at(js_span));\n",
+    replace:
+      "        let mut dropped = Vec::new();\n        self.drop_value(given_up.0, given_up.1, span, &mut dropped)?;\n        dropped.push(StmtKind::Assign(Expr::var(&name), otherwise).at(js_span));\n",
     tests: ["test/corpus.test.ts", "-t", "^default_and_pop_if_drops.rs$"],
   },
   {
     name: "repeat-drop-shared",
-    breaks: "`vec![x; n]` of a value with a destructor fills one value into each slot, dropped once each",
+    breaks:
+      "`vec![x; n]` of a value with a destructor fills one value into each slot, dropped once each",
     file: "src/lower/combinators/values.rs",
     find: "        let fills = !self.needs_clone(item_ty) && drop.is_none();\n",
     replace: "        let fills = !self.needs_clone(item_ty);\n",
@@ -100,10 +111,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "from-elem-item-made-after-room",
-    breaks: "`vec![made(); n]` checks the room before `made()` runs, which a panic then skips",
+    breaks:
+      "`vec![made(); n]` checks the room before `made()` runs, which a panic then skips",
     file: "src/lower/combinators/values.rs",
-    find: "            if !item.reads_same() {\n                item = self.spill(\"item\", item, out);\n            }\n            if !n.reads_same() {",
-    replace: "            if false {\n                item = self.spill(\"item\", item, out);\n            }\n            if !n.reads_same() {",
+    find: '            if !item.reads_same() {\n                item = self.spill("item", item, out);\n            }\n            if !n.reads_same() {',
+    replace:
+      '            if false {\n                item = self.spill("item", item, out);\n            }\n            if !n.reads_same() {',
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
   },
   {
@@ -116,15 +129,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "repeat-dropping-of-no-size",
-    breaks: "`vec![x; n]` of items with a destructor checks their room by their count alone",
+    breaks:
+      "`vec![x; n]` of items with a destructor checks their room by their count alone",
     file: "src/lower/combinators/values.rs",
     find: "            let mut list = vec![item, n, size, Expr::arrow(vec![name.into()], body)];\n",
-    replace: "            let mut list = vec![item, n, Expr::int(0), Expr::arrow(vec![name.into()], body)];\n",
+    replace:
+      "            let mut list = vec![item, n, Expr::int(0), Expr::arrow(vec![name.into()], body)];\n",
     tests: ["test/runtime-package.test.ts", "-t", "room past"],
   },
   {
     name: "as-deref-of-a-guard-refused",
-    breaks: "`as_deref()` of an `Option<Ref<u32>>`, which clippy's `option_as_ref_deref` asks for, is refused",
+    breaks:
+      "`as_deref()` of an `Option<Ref<u32>>`, which clippy's `option_as_ref_deref` asks for, is refused",
     file: "src/lower/combinators/values.rs",
     find: "        if crate::lower::recognition::is_cell_guard(self.tcx, ty) {\n            return Ok(self.guard_value(value, ty, false));\n        }\n",
     replace: "",

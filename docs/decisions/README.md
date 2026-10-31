@@ -727,7 +727,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0940 `collect()` into a `Vec` asks the room its iterator's hint says, as std's `SpecFromIter` does](0940-collect-asks-room-of-its-hint.md)
 - [0941 A `Box<[T; N]>`'s `into_iter()`, 1.99's `BoxedArrayIntoIter`, steps the array's items it owns](0941-a-boxed-array-s-into-iter-is-its-items.md)
 - [0942 Whether a global is a function is `js::is_function`'s, `typeof X === "function"`; a path through ECMAScript's first edition's globals asks nothing of them](0942-whether-a-global-is-a-function-is-is-function.md) *(amended: a chain of its tests reads as written, a comment before it kept; amended: of a value of a function's type, it asks the value; amended: of a path, it asks the last part alone; amended: a path may start from a value; amended: whether it's a number is `js::is_number`; amended: a step may be a method cast to a `fn` pointer)*
-- [0943 A `#[rust_js::object]` is an object literal of its methods, each reading `this`](0943-an-object-of-methods-reading-this.md)
+- [0943 A `#[rust_js::object]` is an object literal of its methods, each reading `this`](0943-an-object-of-methods-reading-this.md) *(extended by 1037: a module's namespace)*
 - [0944 A label the program wrote labels the `switch` an inner `switch` leaves, `getTag: switch`, camelCase](0944-a-label-the-program-wrote-labels-the-switch.md)
 - [0945 A sort by UTF-16 units is JS's `sort()`](0945-utf16-order-is-js-sort.md)
 - [0946 An `if` of `&&`, `||` and `!` mixed is its one test, not `if`s that leave a block MIR made](0946-an-if-of-mixed-logicals-is-its-one-test.md) *(amended: only the chain's tests are asked whether they call)*
@@ -802,7 +802,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1015 What holds an object `===` compares is never `$eq` of it](1015-what-holds-an-identity-is-never-eq-of-its-contents.md) *(amended: a key that holds one finds it by itself too)*
 - [1016 A webapi object is equal only to itself](1016-a-webapi-object-is-equal-only-to-itself.md)
 - [1017 An `Option` of an `Option` held where it's made is its payload](1017-an-option-of-an-option-held-where-its-made-is-its-payload.md) *(the user's representation; amended: `Some(None)` is `=== null`)*
-- [1018 A function called through its module is read through its namespace](1018-a-function-called-through-its-module-is-read-through-its-namespace.md) *(the user's decision; amended: one a module re-exports, through that module, rd137)*
+- [1018 A function called through its module is read through its namespace](1018-a-function-called-through-its-module-is-read-through-its-namespace.md) *(the user's decision; amended: one a module re-exports, through that module, rd137; extended by 1037: a unit struct's value)*
 - [1019 A loop over an array's `&mut` items is over its indices](1019-a-loop-over-an-arrays-mut-items-is-over-its-indices.md)
 - [1020 A timer is the js crate's global, which takes a function as it is](1020-a-timer-is-the-js-crates-global.md) *(the user's decision, rd10; amended: a closure the timer calls once drops what it took)*
 - [1021 A listener is a closure or one JS gave, each as it is](1021-a-listener-is-a-closure-or-one-js-gave.md) *(the user's decision, rd185; amended: a handler's setter takes a union too, rd192; amended: listener(..) takes a function of `&'static` events, rd209; amended: a shared listener is `&'static dyn Fn(&E)` again, removal takes any kept function of the event, a with_this function is a listener as it is)*
@@ -818,6 +818,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1034 A field's function called after statements keeps its object](1034-a-fields-function-called-after-statements-keeps-its-object.md) *(rd285, the user's decision)*
 - [1035 A trait of classes is each class's prototype's](1035-a-trait-of-classes-is-each-classs-prototypes.md) *(rd283)*
 - [1036 An untagged enum's struct is told apart by a member it declares](1036-an-untagged-enums-struct-is-told-by-a-member-it-declares.md) *(rd291)*
+- [1037 A module's namespace is a unit struct of its functions](1037-a-module-namespace-is-a-unit-struct-of-its-functions.md) *(rd292)*
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md) *(amended: a closure's handle on itself is its own name)*
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

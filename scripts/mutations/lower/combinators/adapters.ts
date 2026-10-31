@@ -4,7 +4,8 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "zip-by-index-unasked",
-    breaks: "a zip of two `TrustedRandomAccess` sides is the general `$lazyZip`: `v.iter().map(f).zip(w.iter())` runs `f` once more than std, which stops at the shorter (ADR 0973)",
+    breaks:
+      "a zip of two `TrustedRandomAccess` sides is the general `$lazyZip`: `v.iter().map(f).zip(w.iter())` runs `f` once more than std, which stops at the shorter (ADR 0973)",
     file: "src/lower/combinators/adapters.rs",
     find: "        if crate::lower::recognition::zips_by_index(self.tcx, self.typing_env, a_ty, b_ty) {\n",
     replace: "        if false {\n",
@@ -12,7 +13,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "step-by-past-a-skip-filtered",
-    breaks: "a `step_by` whose first step is a `skip`'s `nth` of a reversed `Vec` is a `filter`, whose fold reaches `Skip::fold`, dropping back to front (#294)",
+    breaks:
+      "a `step_by` whose first step is a `skip`'s `nth` of a reversed `Vec` is a `filter`, whose fold reaches `Skip::fold`, dropping back to front (#294)",
     file: "src/lower/combinators/adapters.rs",
     find: "                    || self.recognition().steps_past_a_slice(receiver_ty)\n",
     replace: "",
@@ -23,12 +25,14 @@ export const mutations: Mutation[] = [
     breaks: "`inspect(f)` doesn't call `f`",
     file: "src/lower/combinators/adapters.rs",
     find: "                let mut inspected = StmtKind::Expr(Expr::call(f, vec![item.clone()])).at(js::Span::NONE);\n",
-    replace: "                let mut inspected = StmtKind::Expr(f).at(js::Span::NONE);\n",
-    tests: ["test/corpus.test.ts","-t","std_methods"],
+    replace:
+      "                let mut inspected = StmtKind::Expr(f).at(js::Span::NONE);\n",
+    tests: ["test/corpus.test.ts", "-t", "std_methods"],
   },
   {
     name: "flatten-of-option-refs-flat",
-    breaks: "`parts.iter().flatten()` of `&[Option<&str>]` is `parts.flat()`, which keeps the `None`s: `\"a  b \"`",
+    breaks:
+      '`parts.iter().flatten()` of `&[Option<&str>]` is `parts.flat()`, which keeps the `None`s: `"a  b "`',
     file: "src/lower/combinators/adapters.rs",
     find: "Some(item) if let Some(payload) = self.option_of(item.peel_refs()) =>",
     replace: "Some(item) if let Some(payload) = self.option_of(item) =>",
@@ -36,42 +40,56 @@ export const mutations: Mutation[] = [
   },
   {
     name: "items-never-cells",
-    breaks: "a closure taking `&mut` text or numbers is given them, not cells: `a.value` is `undefined`",
+    breaks:
+      "a closure taking `&mut` text or numbers is given them, not cells: `a.value` is `undefined`",
     file: "src/lower/combinators/adapters.rs",
     find: "        match self.slice_item(items).is_some_and(|item| self.is_object(item)) {\n",
-    replace: "        match self.slice_item(items).is_some_and(|item| true || self.is_object(item)) {\n",
-    tests: ["test/corpus.test.ts","-t","vec_edits"],
+    replace:
+      "        match self.slice_item(items).is_some_and(|item| true || self.is_object(item)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "vec_edits"],
   },
   {
     name: "resize-shares-copies",
-    breaks: "`resize(n, vec![1])` fills with one array, so a change to one is every one's",
+    breaks:
+      "`resize(n, vec![1])` fills with one array, so a change to one is every one's",
     file: "src/lower/combinators/adapters.rs",
-    find: "        let clone = match self.needs_clone(item) {\n            true => Some(self.clone_fn(\"item\", item, span)?),\n",
-    replace: "        let clone = match self.needs_clone(item) {\n            true => None,\n",
-    tests: ["test/corpus.test.ts","-t","vec_edits"],
+    find: '        let clone = match self.needs_clone(item) {\n            true => Some(self.clone_fn("item", item, span)?),\n',
+    replace:
+      "        let clone = match self.needs_clone(item) {\n            true => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "vec_edits"],
   },
   {
-    "name": "flatten-arrays-lazy",
-    "breaks": "arrays of arrays flattened stay a lazy `flatMap`, never `flat()`",
-    "file": "src/lower/combinators/adapters.rs",
-    "find": "                    item.is_array() || item.is_slice() || self.is_vec_like(item)\n",
-    "replace": "                    false\n",
-    "tests": ["test/lowering-collections.test.ts", "-t", "arrays of arrays flattened"]
+    name: "flatten-arrays-lazy",
+    breaks: "arrays of arrays flattened stay a lazy `flatMap`, never `flat()`",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                    item.is_array() || item.is_slice() || self.is_vec_like(item)\n",
+    replace: "                    false\n",
+    tests: [
+      "test/lowering-collections.test.ts",
+      "-t",
+      "arrays of arrays flattened",
+    ],
   },
   {
-    "name": "insert-front-helper",
-    "breaks": "`anchors.insert(0, x)` is `anchors.splice(0, 0, x)` where the ranges show it in bounds, `$insertAt(anchors, 0, x)` where not, not `anchors.unshift(x)`",
-    "file": "src/lower/combinators/adapters.rs",
-    "find": "        Some(0) => Expr::call(Expr::member(subject, \"unshift\"), vec![value]),\n",
-    "replace": "",
-    "tests": ["test/lowering-collections.test.ts", "-t", "an insert at the front is unshift"]
+    name: "insert-front-helper",
+    breaks:
+      "`anchors.insert(0, x)` is `anchors.splice(0, 0, x)` where the ranges show it in bounds, `$insertAt(anchors, 0, x)` where not, not `anchors.unshift(x)`",
+    file: "src/lower/combinators/adapters.rs",
+    find: '        Some(0) => Expr::call(Expr::member(subject, "unshift"), vec![value]),\n',
+    replace: "",
+    tests: [
+      "test/lowering-collections.test.ts",
+      "-t",
+      "an insert at the front is unshift",
+    ],
   },
   {
     name: "max-by-drops-none",
     breaks: "`max_by` of items with a destructor drops none it passes over",
     file: "src/lower/combinators/adapters.rs",
     find: "                        self.extreme_by(helper, vec![items, f], item, span)?\n",
-    replace: "                        Expr::call(Expr::helper(helper), vec![items, f])\n",
+    replace:
+      "                        Expr::call(Expr::helper(helper), vec![items, f])\n",
     tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
   },
   {
@@ -79,15 +97,17 @@ export const mutations: Mutation[] = [
     breaks: "what `step_by` steps over isn't dropped",
     file: "src/lower/combinators/adapters.rs",
     find: "                        .at(js::Span::NONE),\n                        StmtKind::Expr(dropped).at(js::Span::NONE),\n                        StmtKind::Return(Some(Expr::bool(false))).at(js::Span::NONE),\n",
-    replace: "                        .at(js::Span::NONE),\n                        StmtKind::Return(Some(Expr::bool(false))).at(js::Span::NONE),\n",
+    replace:
+      "                        .at(js::Span::NONE),\n                        StmtKind::Return(Some(Expr::bool(false))).at(js::Span::NONE),\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
   },
   {
     name: "dedup-by-identity",
     breaks: "`dedup` of structs compares them by `===`",
     file: "src/lower/combinators/adapters.rs",
-    find: "            None if self.eq_is_identity(item) => Expr::call(Expr::helper(\"$dedup\"), vec![items]),\n",
-    replace: "            None => Expr::call(Expr::helper(\"$dedup\"), vec![items]),\n",
+    find: '            None if self.eq_is_identity(item) => Expr::call(Expr::helper("$dedup"), vec![items]),\n',
+    replace:
+      '            None => Expr::call(Expr::helper("$dedup"), vec![items]),\n',
     tests: ["test/corpus.test.ts", "-t", "^slice_edit_drops.rs$"],
   },
   {
@@ -111,15 +131,18 @@ export const mutations: Mutation[] = [
     breaks: "`flat_map`'s inner iterators drop none of what they haven't given",
     file: "src/lower/combinators/adapters.rs",
     find: "        let Some(drop) = self.closing_drop(inner, span)? else {\n            return Ok(None);\n",
-    replace: "        let Some(drop) = None::<Expr> else {\n            return Ok(None);\n",
+    replace:
+      "        let Some(drop) = None::<Expr> else {\n            return Ok(None);\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_drops.rs$"],
   },
   {
     name: "flat-map-js-close-order",
-    breaks: "`flat_map` of a source and inner iterators that both drop closes the inner one first",
+    breaks:
+      "`flat_map` of a source and inner iterators that both drop closes the inner one first",
     file: "src/lower/combinators/adapters.rs",
-    find: "            Some(_) => Expr::call_helper(\"$flatMap\", vec![items, each]),\n",
-    replace: "            Some(_) => Expr::call(Expr::member(items, \"flatMap\"), vec![each]),\n",
+    find: '            Some(_) => Expr::call_helper("$flatMap", vec![items, each]),\n',
+    replace:
+      '            Some(_) => Expr::call(Expr::member(items, "flatMap"), vec![each]),\n',
     tests: ["test/corpus.test.ts", "-t", "^flat_map_drops.rs$"],
   },
   {
@@ -127,12 +150,14 @@ export const mutations: Mutation[] = [
     breaks: "`flatten` of `Vec`s drops none of an inner one's it hasn't given",
     file: "src/lower/combinators/adapters.rs",
     find: "                Some(item) if let Some(each) = self.closed_inner(None, item, span)? => {\n",
-    replace: "                Some(item) if false && let Some(each) = self.closed_inner(None, item, span)? => {\n",
+    replace:
+      "                Some(item) if false && let Some(each) = self.closed_inner(None, item, span)? => {\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_drops.rs$"],
   },
   {
     name: "flat-map-of-options-js",
-    breaks: "`flat_map` of a function that gives an `Option` is JS's `flatMap`, which throws of a number",
+    breaks:
+      "`flat_map` of a function that gives an `Option` is JS's `flatMap`, which throws of a number",
     file: "src/lower/combinators/adapters.rs",
     find: "                if let Some(payload) = self.option_of(returned) {\n",
     replace: "                if let Some(payload) = None::<Ty<'tcx>> {\n",
@@ -140,9 +165,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "kept-options-boxed",
-    breaks: "what `filter_map` and `map_while` keep that looks like `None` stays in its box",
+    breaks:
+      "what `filter_map` and `map_while` keep that looks like `None` stays in its box",
     file: "src/lower/combinators/adapters.rs",
-    find: "            true => method(items, \"map\", vec![Expr::helper(\"$someValue\")]),\n",
+    find: '            true => method(items, "map", vec![Expr::helper("$someValue")]),\n',
     replace: "            true => items,\n",
     tests: ["test/corpus.test.ts", "-t", "^map_while_drops.rs$"],
   },
@@ -156,47 +182,55 @@ export const mutations: Mutation[] = [
   },
   {
     name: "scan-eager",
-    breaks: "`scan` of a lazy chain lists it first, its closures run past where `scan` ends",
+    breaks:
+      "`scan` of a lazy chain lists it first, its closures run past where `scan` ends",
     file: "src/lower/combinators/adapters.rs",
     find: "                let mut args = vec![items, init, f];\n",
-    replace: "                let mut args = vec![method(items, \"toArray\", Vec::new()), init, f];\n",
+    replace:
+      '                let mut args = vec![method(items, "toArray", Vec::new()), init, f];\n',
     tests: ["test/corpus.test.ts", "-t", "^scan_lazy_drops.rs$"],
   },
   {
     name: "scan-kept-boxed",
     breaks: "what `scan` keeps that looks like `None` stays in its box",
     file: "src/lower/combinators/adapters.rs",
-    find: "                unboxed(Expr::call(Expr::helper(\"$lazyScan\"), args), generic_args.types().nth(2))\n",
-    replace: "                unboxed(Expr::call(Expr::helper(\"$lazyScan\"), args), None)\n",
+    find: '                unboxed(Expr::call(Expr::helper("$lazyScan"), args), generic_args.types().nth(2))\n',
+    replace:
+      '                unboxed(Expr::call(Expr::helper("$lazyScan"), args), None)\n',
     tests: ["test/corpus.test.ts", "-t", "^scan_lazy_drops.rs$"],
   },
   {
     name: "filter-map-ends-native",
-    breaks: "a `filter_map` of what knows its back is a JS helper, which doesn't",
+    breaks:
+      "a `filter_map` of what knows its back is a JS helper, which doesn't",
     file: "src/lower/combinators/adapters.rs",
     find: "            IterComb::FilterMap if self.knows_its_back(receiver_ty) => {\n",
-    replace: "            IterComb::FilterMap if false && self.knows_its_back(receiver_ty) => {\n",
+    replace:
+      "            IterComb::FilterMap if false && self.knows_its_back(receiver_ty) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
   },
   {
     name: "filter-map-ends-boxed",
-    breaks: "a `filter_map` from either end gives each `Some` that looks like `None` boxed",
+    breaks:
+      "a `filter_map` from either end gives each `Some` that looks like `None` boxed",
     file: "src/lower/combinators/adapters.rs",
-    find: "                    true => Expr::call_helper(\"$mapEnds\", vec![some, Expr::helper(\"$someValue\")]),\n",
+    find: '                    true => Expr::call_helper("$mapEnds", vec![some, Expr::helper("$someValue")]),\n',
     replace: "                    true => some,\n",
     tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
   },
   {
     name: "step-by-zero-unchecked",
-    breaks: "`step_by(0)` of a step known only at run time doesn't panic, as std asserts it doesn't, and reads no item, `i % 0` being NaN",
+    breaks:
+      "`step_by(0)` of a step known only at run time doesn't panic, as std asserts it doesn't, and reads no item, `i % 0` being NaN",
     file: "src/lower/combinators/adapters.rs",
-    find: "                    _ => self.spill(\"step\", Expr::call(Expr::helper(\"$step\"), vec![n]), out),\n",
-    replace: "                    _ => self.spill(\"step\", n, out),\n",
+    find: '                    _ => self.spill("step", Expr::call(Expr::helper("$step"), vec![n]), out),\n',
+    replace: '                    _ => self.spill("step", n, out),\n',
     tests: ["test/corpus.test.ts", "-t", "^step_by_zero.rs$"],
   },
   {
     name: "partition-copies-shared",
-    breaks: "`partition` of `&T`s into collections of `T` holds the same `Copy` structs, so changing one changes the original",
+    breaks:
+      "`partition` of `&T`s into collections of `T` holds the same `Copy` structs, so changing one changes the original",
     file: "src/lower/combinators/adapters.rs",
     find: "                    Some(from) => self.copied_into(items, from, into, span)?,",
     replace: "                    Some(_) => items,",
@@ -204,7 +238,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "flat-map-iterator-as-iterable",
-    breaks: "`flat_map` of a range or the crate's iterator gives `.flatMap` the value, whose fields it steps, or which isn't iterable, where its items are what's stepped",
+    breaks:
+      "`flat_map` of a range or the crate's iterator gives `.flatMap` the value, whose fields it steps, or which isn't iterable, where its items are what's stepped",
     file: "src/lower/combinators/adapters.rs",
     find: "        if self.range_kind(inner).is_some() || self.is_user_iterator(inner) {\n",
     replace: "        if false {\n",
@@ -212,7 +247,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "flatten-result-as-iterable",
-    breaks: "`flatten` of `Result`s gives `.flatMap` each `{ TAG, _0 }`, which isn't iterable, where its `Ok` value is its one item",
+    breaks:
+      "`flatten` of `Result`s gives `.flatMap` each `{ TAG, _0 }`, which isn't iterable, where its `Ok` value is its one item",
     file: "src/lower/combinators/adapters.rs",
     find: "        if self.is_std_type(inner, crate::lower::recognition::StdItem::Result) {\n",
     replace: "        if false {\n",
@@ -220,42 +256,54 @@ export const mutations: Mutation[] = [
   },
   {
     name: "scan-object-state-boxed",
-    breaks: "`scan` of a struct's or a tuple's state gives its closure a box of it, which it reads as the state, `acc.sum` of the box",
+    breaks:
+      "`scan` of a struct's or a tuple's state gives its closure a box of it, which it reads as the state, `acc.sum` of the box",
     file: "src/lower/combinators/adapters.rs",
     find: "                    .is_some_and(|state| !self.handles_mut(state))\n",
-    replace: "                    .is_some_and(|state| false && !self.handles_mut(state))\n",
+    replace:
+      "                    .is_some_and(|state| false && !self.handles_mut(state))\n",
     tests: ["test/corpus.test.ts", "-t", "^scan_object_state.rs$"],
   },
   {
     name: "flatten-some-boxed",
-    breaks: "`flatten` of `Option<Option<T>>` items keeps each `Some(None)` boxed, `Some([object Object])`",
+    breaks:
+      "`flatten` of `Option<Option<T>>` items keeps each `Some(None)` boxed, `Some([object Object])`",
     file: "src/lower/combinators/adapters.rs",
-    find: "                    unboxed(method(items, \"filter\", vec![present()]), Some(payload))\n",
-    replace: "                    unboxed(method(items, \"filter\", vec![present()]), None.filter(|_: &Ty<'tcx>| payload == payload))\n",
+    find: '                    unboxed(method(items, "filter", vec![present()]), Some(payload))\n',
+    replace:
+      '                    unboxed(method(items, "filter", vec![present()]), None.filter(|_: &Ty<\'tcx>| payload == payload))\n',
     tests: ["test/corpus.test.ts", "-t", "^flatten_boxed_options.rs$"],
   },
   {
     name: "nth-some-unboxed",
-    breaks: "`nth` of items that may look like `None` gives a `None` item as `None` itself, where it's `Some(None)`",
+    breaks:
+      "`nth` of items that may look like `None` gives a `None` item as `None` itself, where it's `Some(None)`",
     file: "src/lower/combinators/adapters.rs",
-    find: "                    first = method(first, \"map\", vec![Expr::helper(\"$some\")]);\n",
+    find: '                    first = method(first, "map", vec![Expr::helper("$some")]);\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_results.rs$"],
   },
   {
     name: "flatten-btree-unordered",
-    breaks: "`flatten` of `BTreeSet`s steps each in its JS set's order, where a JS caller's `Set` may not be in its keys' (ADR 0404, amended)",
+    breaks:
+      "`flatten` of `BTreeSet`s steps each in its JS set's order, where a JS caller's `Set` may not be in its keys' (ADR 0404, amended)",
     file: "src/lower/combinators/adapters.rs",
     find: "        if self.is_sorted(inner) {\n            return self.in_order_of(value, inner, span).map(Some);\n        }\n",
     replace: "",
-    tests: ["test/lowering-collections.test.ts", "-t", "arrays of arrays flattened are flat"],
+    tests: [
+      "test/lowering-collections.test.ts",
+      "-t",
+      "arrays of arrays flattened are flat",
+    ],
   },
   {
     name: "map-while-fused",
-    breaks: "`map_while` is a map then a `take_while`, which stays ended after a `None`, where Rust's `MapWhile` steps on",
+    breaks:
+      "`map_while` is a map then a `take_while`, which stays ended after a `None`, where Rust's `MapWhile` steps on",
     file: "src/lower/combinators/adapters.rs",
-    find: "Expr::call(Expr::helper(\"$lazyMapWhile\"), vec![items, next(), present()])",
-    replace: "Expr::call(Expr::helper(\"$lazyTakeWhile\"), vec![method(items, \"map\", vec![next()]), present()])",
+    find: 'Expr::call(Expr::helper("$lazyMapWhile"), vec![items, next(), present()])',
+    replace:
+      'Expr::call(Expr::helper("$lazyTakeWhile"), vec![method(items, "map", vec![next()]), present()])',
     tests: ["test/corpus.test.ts", "-t", "^scan_map_while_unfused.rs$"],
   },
   {
@@ -263,12 +311,14 @@ export const mutations: Mutation[] = [
     breaks: "`unzip` into a map or a set is refused",
     file: "src/lower/combinators/adapters.rs",
     find: "                if !sides.iter().all(|&side| self.is_vec_like(side) || self.is_map(side)) {\n",
-    replace: "                if !sides.iter().all(|&side| self.is_vec_like(side)) {\n",
+    replace:
+      "                if !sides.iter().all(|&side| self.is_vec_like(side)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^unzip_into_maps.rs$"],
   },
   {
     name: "step-by-unfused-filtered",
-    breaks: "`step_by` of an iterator that gives `None` then more counts on past it, a filter of each `n`th, not std's `nth`",
+    breaks:
+      "`step_by` of an iterator that gives `None` then more counts on past it, a filter of each `n`th, not std's `nth`",
     file: "src/lower/combinators/adapters.rs",
     find: "                if !self.recognition().is_fused_iterator(receiver_ty.peel_refs())\n",
     replace: "                if false\n",
@@ -279,7 +329,8 @@ export const mutations: Mutation[] = [
     breaks: "`max_by_key` lists every item before its key is made of the first",
     file: "src/lower/combinators/adapters.rs",
     find: "                // Its items as they come, which the helper steps (#179).\n                let f = next();\n",
-    replace: "                let items = method(items, \"toArray\", Vec::new());\n                let f = next();\n",
+    replace:
+      '                let items = method(items, "toArray", Vec::new());\n                let f = next();\n',
     tests: ["test/corpus.test.ts", "-t", "^consumers_step_each.rs$"],
   },
   {
@@ -294,13 +345,14 @@ export const mutations: Mutation[] = [
     name: "nth-own-unboxed",
     breaks: "nth's Some(None) is boxed",
     file: "src/lower/combinators/adapters.rs",
-    find: "Expr::call_helper(if boxed { \"$nthSome\" } else { \"$nth\" }, vec![items, next()])",
-    replace: "Expr::call_helper(\"$nth\", vec![items, next()])",
+    find: 'Expr::call_helper(if boxed { "$nthSome" } else { "$nth" }, vec![items, next()])',
+    replace: 'Expr::call_helper("$nth", vec![items, next()])',
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
   {
     name: "step-by-own-nth-filtered",
-    breaks: "`step_by` of a fused source whose `nth` reaches the crate's own is a filter of indices, which asks it none, where std's asks `nth` (#214)",
+    breaks:
+      "`step_by` of a fused source whose `nth` reaches the crate's own is a filter of indices, which asks it none, where std's asks `nth` (#214)",
     file: "src/lower/combinators/adapters.rs",
     find: "                    || self.recognition().nths_its_own(receiver_ty)\n",
     replace: "                    || false\n",
@@ -308,7 +360,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "step-by-range-filtered",
-    breaks: "a `step_by` of a held range is a filter of every `n`th, which steps each number and doesn't finish (#231)",
+    breaks:
+      "a `step_by` of a held range is a filter of every `n`th, which steps each number and doesn't finish (#231)",
     file: "src/lower/combinators/adapters.rs",
     find: "                    || self.steps_a_range(receiver_ty.peel_refs())\n",
     replace: "",
@@ -318,16 +371,18 @@ export const mutations: Mutation[] = [
     name: "resize-room-unasked",
     breaks: "`resize(n)` past `isize::MAX` bytes is no panic",
     file: "src/lower/combinators/adapters.rs",
-    find: "        let size = self.room_size_of(&list[1], item);\n        Ok(Expr::call(\n            Expr::helper(\"$resize\"),\n",
-    replace: "        let size = self.room_size_of(&list[1], item).filter(|_| false);\n        Ok(Expr::call(\n            Expr::helper(\"$resize\"),\n",
+    find: '        let size = self.room_size_of(&list[1], item);\n        Ok(Expr::call(\n            Expr::helper("$resize"),\n',
+    replace:
+      '        let size = self.room_size_of(&list[1], item).filter(|_| false);\n        Ok(Expr::call(\n            Expr::helper("$resize"),\n',
     tests: ["test/corpus.test.ts", "-t", "^asked_length_overflow.rs$"],
   },
   {
     name: "resize-with-room-unasked",
     breaks: "`resize_with(n, f)` past `isize::MAX` bytes is no panic",
     file: "src/lower/combinators/adapters.rs",
-    find: "        let size = self.room_size_of(&list[1], item);\n        let drop = self.items_drop(ty, span)?;\n        Ok(Expr::call(\n            Expr::helper(\"$resizeWith\"),\n",
-    replace: "        let size = self.room_size_of(&list[1], item).filter(|_| false);\n        let drop = self.items_drop(ty, span)?;\n        Ok(Expr::call(\n            Expr::helper(\"$resizeWith\"),\n",
+    find: '        let size = self.room_size_of(&list[1], item);\n        let drop = self.items_drop(ty, span)?;\n        Ok(Expr::call(\n            Expr::helper("$resizeWith"),\n',
+    replace:
+      '        let size = self.room_size_of(&list[1], item).filter(|_| false);\n        let drop = self.items_drop(ty, span)?;\n        Ok(Expr::call(\n            Expr::helper("$resizeWith"),\n',
     tests: ["test/corpus.test.ts", "-t", "^asked_length_overflow.rs$"],
   },
   {
@@ -335,12 +390,14 @@ export const mutations: Mutation[] = [
     breaks: "`resize_with` of items with a destructor is given no drop",
     file: "src/lower/combinators/adapters.rs",
     find: "        let size = self.room_size_of(&list[1], item);\n        let drop = self.items_drop(ty, span)?;\n",
-    replace: "        let size = self.room_size_of(&list[1], item);\n        let drop: Option<Expr> = None;\n",
+    replace:
+      "        let size = self.room_size_of(&list[1], item);\n        let drop: Option<Expr> = None;\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
   },
   {
     name: "step-by-of-slice-filtered",
-    breaks: "`rev().step_by(n)` of a `Vec` is a filter dropping each it steps over from the back, not `$stepBy` asking its `nth`'s slice (#234)",
+    breaks:
+      "`rev().step_by(n)` of a `Vec` is a filter dropping each it steps over from the back, not `$stepBy` asking its `nth`'s slice (#234)",
     file: "src/lower/combinators/adapters.rs",
     find: "                    || self.recognition().nths_a_slice(receiver_ty)\n",
     replace: "",
@@ -348,27 +405,27 @@ export const mutations: Mutation[] = [
   },
   {
     name: "flatten-items-not-converted",
-    breaks: "`flatten()` in generic code of `I::Item: IntoIterator` steps each item as a JS iterator, which an `Option`'s isn't",
+    breaks:
+      "`flatten()` in generic code of `I::Item: IntoIterator` steps each item as a JS iterator, which an `Option`'s isn't",
     file: "src/lower/combinators/adapters.rs",
     find: "        if let Some(items) = self.items_by_dictionary(value.clone(), inner, span)? {\n            return Ok(Some(items));\n        }\n",
     replace: "",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^into_iter_of_items.rs$"
-    ]
+    tests: ["test/corpus.test.ts", "-t", "^into_iter_of_items.rs$"],
   },
   {
     name: "inspect-throw-keeps-item",
-    breaks: "an `inspect` whose closure panics leaves the item it was given undropped (#423)",
+    breaks:
+      "an `inspect` whose closure panics leaves the item it was given undropped (#423)",
     file: "src/lower/combinators/adapters.rs",
     find: "                if throws && let Some(dropped) = self.item_drop_call(receiver_ty, item.clone(), span)? {",
-    replace: "                if false && let Some(dropped) = self.item_drop_call(receiver_ty, item.clone(), span)? {",
+    replace:
+      "                if false && let Some(dropped) = self.item_drop_call(receiver_ty, item.clone(), span)? {",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
   {
     name: "partition-given-no-drop",
-    breaks: "a `partition` whose predicate panics drops none of what it held, given no drop (#423)",
+    breaks:
+      "a `partition` whose predicate panics drops none of what it held, given no drop (#423)",
     file: "src/lower/combinators/adapters.rs",
     find: "                let mut args = vec![items, next()];\n                args.extend(self.item_drop_of(receiver_ty, span)?);\n",
     replace: "                let args = vec![items, next()];\n",

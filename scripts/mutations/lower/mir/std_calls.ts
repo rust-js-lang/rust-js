@@ -4,15 +4,18 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "wrapping-op-assign-written-through",
-    breaks: "a `Wrapping`'s `op=` of a call's operand, through MIR's own `&mut b0`, is `$assign(b0, ..)`, written into the array its copies share: `17 (17, 17)` where Rust gives `1 (1, 17)` (#396)",
+    breaks:
+      "a `Wrapping`'s `op=` of a call's operand, through MIR's own `&mut b0`, is `$assign(b0, ..)`, written into the array its copies share: `17 (17, 17)` where Rust gives `1 (1, 17)` (#396)",
     file: "src/lower/mir/std_calls.rs",
     find: "                            if let Some(of) = own.map(|of| Expr::var(&state.locals.names[of])) {\n",
-    replace: "                            if let Some(of) = own.filter(|_| false).map(|of| Expr::var(&state.locals.names[of])) {\n",
+    replace:
+      "                            if let Some(of) = own.filter(|_| false).map(|of| Expr::var(&state.locals.names[of])) {\n",
     tests: ["test/corpus.test.ts", "-t", "^wrapping_assign_of_a_copy.rs$"],
   },
   {
     name: "inspect-back-stepped-unmade",
-    breaks: "an `inspect(f)` the crate steps from its back, held in a variable, isn't made knowing it where it's made: `TypeError: it.back is not a function`",
+    breaks:
+      "an `inspect(f)` the crate steps from its back, held in a variable, isn't made knowing it where it's made: `TypeError: it.back is not a function`",
     file: "src/lower/mir/std_calls.rs",
     find: "IterComb::Flatten | IterComb::FlatMap | IterComb::Inspect)",
     replace: "IterComb::Flatten | IterComb::FlatMap)",
@@ -20,7 +23,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "combinator-function-undropped",
-    breaks: "what an `inspect()`'s, a `skip_while()`'s or a `flat_map()`'s function holds with a destructor is never dropped, where Rust drops it with the adapter (ADR 0991)",
+    breaks:
+      "what an `inspect()`'s, a `skip_while()`'s or a `flat_map()`'s function holds with a destructor is never dropped, where Rust drops it with the adapter (ADR 0991)",
     file: "src/lower/mir/std_calls.rs",
     find: "                        Some(held) => this.closing_function(made, held, span)?,\n",
     replace: "                        Some(_) => made,\n",
@@ -28,19 +32,26 @@ export const mutations: Mutation[] = [
   },
   {
     name: "wrapping-assigned-to-its-ref",
-    breaks: "a `Wrapping`'s `op=` through a `&mut` a variable holds assigns the variable, not what it points at: a caller's never changes, and MIR's borrow is a `const` assigned (#309)",
+    breaks:
+      "a `Wrapping`'s `op=` through a `&mut` a variable holds assigns the variable, not what it points at: a caller's never changes, and MIR's borrow is a `const` assigned (#309)",
     file: "src/lower/mir/std_calls.rs",
     find: "                            (place, reference)\n",
     replace: "                            (place, false)\n",
-    tests: ["test/corpus.test.ts", "-t", "^wrapping_assigned_through_a_ref.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^wrapping_assigned_through_a_ref.rs$",
+    ],
   },
   {
     name: "mir-radix-argument-unseen",
-    breaks: "a `{:x}` argument from MIR isn't one `format_args!` shows by its spec",
+    breaks:
+      "a `{:x}` argument from MIR isn't one `format_args!` shows by its spec",
     file: "src/lower/mir/std_calls.rs",
     find: "            Std::FmtDisplay | Std::FmtDebug | Std::FmtRadix(_) | Std::FmtExp(_) | Std::FmtPointer | Std::FmtUsize => {\n",
-    replace: "            Std::FmtDisplay | Std::FmtDebug | Std::FmtExp(_) | Std::FmtPointer | Std::FmtUsize => {\n",
-    tests: ["test/corpus.test.ts","-t","radix_negative"],
+    replace:
+      "            Std::FmtDisplay | Std::FmtDebug | Std::FmtExp(_) | Std::FmtPointer | Std::FmtUsize => {\n",
+    tests: ["test/corpus.test.ts", "-t", "radix_negative"],
   },
   {
     name: "mir-sort-unsorted",
@@ -48,23 +59,24 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls.rs",
     find: "                this.sort_values(key, items, arg_tys[0], generic_args, span, out)?\n",
     replace: "                items\n",
-    tests: ["test/corpus.test.ts","-t","generic_borrow"],
+    tests: ["test/corpus.test.ts", "-t", "generic_borrow"],
   },
   {
     name: "mir-view-whole",
     breaks: "`&mut v[a..b]` from MIR is all of `v`, not a view of those items",
     file: "src/lower/mir/std_calls.rs",
-    find: "                    this.view_call(if checked { \"$viewGet\" } else { \"$view\" }, list)\n",
+    find: '                    this.view_call(if checked { "$viewGet" } else { "$view" }, list)\n',
     replace: "                    list.remove(0)\n",
-    tests: ["test/corpus.test.ts","-t","mut_ref_loop_bounds"],
+    tests: ["test/corpus.test.ts", "-t", "mut_ref_loop_bounds"],
   },
   {
     name: "mir-rc-call-refused",
     breaks: "an `Rc`'s function from MIR is refused",
     file: "src/lower/mir/std_calls.rs",
     find: "                this.rc_values(op, (exprs, arg_tys, output), span, out)?\n",
-    replace: "                return Err(this.unsupported(span, \"an Rc's\"));\n",
-    tests: ["test/corpus.test.ts","-t","as_deref_counted"],
+    replace:
+      '                return Err(this.unsupported(span, "an Rc\'s"));\n',
+    tests: ["test/corpus.test.ts", "-t", "as_deref_counted"],
   },
   {
     name: "mir-format-width-dropped",
@@ -72,7 +84,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls.rs",
     find: "                        None => spec.width.map(|w| Expr::int(w.into())),\n",
     replace: "                        None => None,\n",
-    tests: ["test/corpus.test.ts","-t","debug_options"],
+    tests: ["test/corpus.test.ts", "-t", "debug_options"],
   },
   {
     name: "mir-format-precision-dropped",
@@ -80,39 +92,42 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls.rs",
     find: "                        None => spec.precision.map(|p| Expr::int(p.into())),\n",
     replace: "                        None => None,\n",
-    tests: ["test/corpus.test.ts","-t","debug_options"],
+    tests: ["test/corpus.test.ts", "-t", "debug_options"],
   },
   {
     name: "mir-format-width-argument-dropped",
     breaks: "`{:>w$}` from MIR pads nothing",
     file: "src/lower/mir/std_calls.rs",
     find: "                    let width = match spec.width_from {\n                        Some(from) => Some(item(from).ok_or_else(bad)?.2),\n",
-    replace: "                    let width = match spec.width_from {\n                        Some(_) => None,\n",
-    tests: ["test/corpus.test.ts","-t","format_width_arguments"],
+    replace:
+      "                    let width = match spec.width_from {\n                        Some(_) => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "format_width_arguments"],
   },
   {
     name: "mir-to-int-unchecked-uncast",
-    breaks: "`x.to_int_unchecked()` under MIR reaches `number_call`, which has none",
+    breaks:
+      "`x.to_int_unchecked()` under MIR reaches `number_call`, which has none",
     file: "src/lower/mir/std_calls.rs",
     find: "            Std::Number(NumOp::ToIntUnchecked) => lower(move |this, _, values, _| {\n",
-    replace: "            Std::Number(NumOp::ToIntUnchecked) if false => lower(move |this, _, values, _| {\n",
-    tests: ["test/corpus.test.ts","-t","integers_128"],
+    replace:
+      "            Std::Number(NumOp::ToIntUnchecked) if false => lower(move |this, _, values, _| {\n",
+    tests: ["test/corpus.test.ts", "-t", "integers_128"],
   },
   {
     name: "mir-peek-steps",
     breaks: "`p.peek()` of a `Peekable` steps it",
     file: "src/lower/mir/std_calls.rs",
-    find: "StepOp::Peek => Expr::call_helper(\"$peek\", vec![it]),",
-    replace: "StepOp::Peek => Expr::call_helper(\"$next\", vec![it]),",
-    tests: ["test/corpus.test.ts","-t","iterator_back_ends"],
+    find: 'StepOp::Peek => Expr::call_helper("$peek", vec![it]),',
+    replace: 'StepOp::Peek => Expr::call_helper("$next", vec![it]),',
+    tests: ["test/corpus.test.ts", "-t", "iterator_back_ends"],
   },
   {
     name: "mir-next-if-eq-unequal",
     breaks: "`p.next_if_eq(&x)` takes what isn't `x`",
     file: "src/lower/mir/std_calls.rs",
-    find: "Expr::bin(Op::Eq, Expr::var(\"item\"), x)",
-    replace: "Expr::bin(Op::Ne, Expr::var(\"item\"), x)",
-    tests: ["test/corpus.test.ts","-t","iterator_back_ends"],
+    find: 'Expr::bin(Op::Eq, Expr::var("item"), x)',
+    replace: 'Expr::bin(Op::Ne, Expr::var("item"), x)',
+    tests: ["test/corpus.test.ts", "-t", "iterator_back_ends"],
   },
   {
     name: "mir-default-size-hint-one",
@@ -120,291 +135,291 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls.rs",
     find: "Expr::array(vec![Expr::int(0), Expr::undefined()])",
     replace: "Expr::array(vec![Expr::int(1), Expr::undefined()])",
-    tests: ["test/corpus.test.ts","-t","size_hint"],
+    tests: ["test/corpus.test.ts", "-t", "size_hint"],
   },
   {
     name: "mir-copies-shared",
     breaks: "`vec![p; 3]` of a struct is three names for one object",
     file: "src/lower/mir/std_calls.rs",
     find: "this.copies_values((item, arg_tys[0]), (n, known), span, out)?",
-    replace: "this.copies_values((item, tcx.types.unit), (n, known), span, out)?",
-    tests: ["test/corpus.test.ts","-t","copy_mutation"],
+    replace:
+      "this.copies_values((item, tcx.types.unit), (n, known), span, out)?",
+    tests: ["test/corpus.test.ts", "-t", "copy_mutation"],
   },
   {
     name: "mir-non-zero-new-refused",
     breaks: "`NonZero::new(n)` is refused",
     file: "src/lower/mir/std_calls.rs",
     find: "            Std::NonZeroNew => lower(move |this, _, values, out| {\n",
-    replace: "            Std::NonZeroNew if false => lower(move |this, _, values, out| {\n",
-    tests: ["test/corpus.test.ts","-t","nonzero"],
+    replace:
+      "            Std::NonZeroNew if false => lower(move |this, _, values, out| {\n",
+    tests: ["test/corpus.test.ts", "-t", "nonzero"],
   },
   {
     name: "mir-string-edit-refused",
     breaks: "`s.insert(i, c)` and the rest of a string's edits are refused",
     file: "src/lower/mir/std_calls.rs",
     find: "            Std::StringEdit(edit) => lower(move |this, state, values, out| {\n",
-    replace: "            Std::StringEdit(edit) if false => lower(move |this, state, values, out| {\n",
-    tests: ["test/corpus.test.ts","-t","text_edits|string_editing"],
+    replace:
+      "            Std::StringEdit(edit) if false => lower(move |this, state, values, out| {\n",
+    tests: ["test/corpus.test.ts", "-t", "text_edits|string_editing"],
   },
   {
     name: "mir-string-range-swapped",
     breaks: "`s.replace_range(a..b, t)` takes its range's end for its start",
     file: "src/lower/mir/std_calls.rs",
     find: "                    given.splice(0..0, [start, end.unwrap_or_else(Expr::undefined)]);\n",
-    replace: "                    given.splice(0..0, [end.unwrap_or_else(Expr::undefined), start]);\n",
-    tests: ["test/corpus.test.ts","-t","text_edits|string_editing|replace_range_panic|string_drain_from_past_len"],
+    replace:
+      "                    given.splice(0..0, [end.unwrap_or_else(Expr::undefined), start]);\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "text_edits|string_editing|replace_range_panic|string_drain_from_past_len",
+    ],
   },
   {
     name: "mir-with-capacity-refused",
     breaks: "`String::with_capacity(n)` is refused",
     file: "src/lower/mir/std_calls.rs",
     find: "            Std::StringWithCapacity => lower(move |this, state, values, out| {\n",
-    replace: "            Std::StringWithCapacity if false => lower(move |this, state, values, out| {\n",
-    tests: ["test/corpus.test.ts","-t","text_edits|string_editing|text_aliases|string_insert_boundary"],
+    replace:
+      "            Std::StringWithCapacity if false => lower(move |this, state, values, out| {\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "text_edits|string_editing|text_aliases|string_insert_boundary",
+    ],
   },
   {
     name: "mir-make-mut-refused",
     breaks: "`Rc::make_mut(&mut rc)` of a local `Rc` is refused",
     file: "src/lower/mir/std_calls.rs",
     find: "            Std::Rc(RcOp::MakeMut) => lower(move |this, state, values, out| {\n",
-    replace: "            Std::Rc(RcOp::MakeMut) if false => lower(move |this, state, values, out| {\n",
-    tests: ["test/corpus.test.ts","-t","rc_clone_sees_owners|rc_make_mut_clone_panics"],
+    replace:
+      "            Std::Rc(RcOp::MakeMut) if false => lower(move |this, state, values, out| {\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "rc_clone_sees_owners|rc_make_mut_clone_panics",
+    ],
   },
   {
     name: "mir-type-name-refused",
     breaks: "`type_name::<T>()` is refused",
     file: "src/lower/mir/std_calls.rs",
     find: "            Std::TypeName { .. } => lower(move |this, state, values, out| {\n",
-    replace: "            Std::TypeName { .. } if false => lower(move |this, state, values, out| {\n",
-    tests: ["test/corpus.test.ts","-t","type_facts"],
+    replace:
+      "            Std::TypeName { .. } if false => lower(move |this, state, values, out| {\n",
+    tests: ["test/corpus.test.ts", "-t", "type_facts"],
   },
   {
     name: "mir-format-pieces-unwritten",
-    breaks: "a format string's pieces, `concat!`'s, are each formatted, but only the first is written",
+    breaks:
+      "a format string's pieces, `concat!`'s, are each formatted, but only the first is written",
     file: "src/lower/mir/std_calls.rs",
     find: "            .map(|(template, lines)| Ok((self.formatted_parts(items, template, &mut arguments, span)?, *lines)))\n",
-    replace: "            .take(1)\n            .map(|(template, lines)| Ok((self.formatted_parts(items, template, &mut arguments, span)?, *lines)))\n",
-    tests: ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
-  },
-  {
-    "name": "mir-chars-as-str-refused",
-    "breaks": "`c.as_str()` of a string's `chars()` from MIR is refused",
-    "file": "src/lower/mir/std_calls.rs",
-    "find": "                if matches!(op, StepOp::AsStr | StepOp::Offset)\n",
-    "replace": "                if false\n",
-    "tests": ["test/lowering-strings.test.ts", "-t", "the rest of a string's chars from MIR"]
-  },
-  {
-    "name": "mir-tree-range-refused",
-    "breaks": "a B-tree's `range` from MIR is refused",
-    "file": "src/lower/mir/std_calls.rs",
-    "find": "            Std::Map(MapOp::TreeRange { mutable }) => lower(",
-    "replace": "            Std::Map(MapOp::TreeRange { mutable }) if mutable => lower(",
-    "tests": ["test/lowering-collections.test.ts", "-t", "a B-tree's range from MIR"]
-  },
-  {
-    "name": "mir-copy-within-refused",
-    "breaks": "`v.copy_within(a..b, at)` from MIR is refused",
-    "file": "src/lower/mir/std_calls.rs",
-    "find": "            Std::Slice(SliceOp::CopyWithin) => lower(",
-    "replace": "            Std::Slice(SliceOp::CopyWithin) if false => lower(",
-    "tests": [
-      "test/corpus.test.ts",
+    replace:
+      "            .take(1)\n            .map(|(template, lines)| Ok((self.formatted_parts(items, template, &mut arguments, span)?, *lines)))\n",
+    tests: [
+      "test/lowering-strings.test.ts",
       "-t",
-      "slice_methods"
-    ]
+      "a format string of a concat! is its pieces joined by",
+    ],
   },
   {
-    "name": "mir-vec-extract-if-refused",
-    "breaks": "`v.extract_if(.., f)` from MIR is refused",
-    "file": "src/lower/mir/std_calls.rs",
-    "find": "            Std::Slice(SliceOp::ExtractIf { range }) => lower(",
-    "replace": "            Std::Slice(SliceOp::ExtractIf { range }) if false => lower(",
-    "tests": [
-      "test/corpus.test.ts",
+    name: "mir-chars-as-str-refused",
+    breaks: "`c.as_str()` of a string's `chars()` from MIR is refused",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                if matches!(op, StepOp::AsStr | StepOp::Offset)\n",
+    replace: "                if false\n",
+    tests: [
+      "test/lowering-strings.test.ts",
       "-t",
-      "extract_if"
-    ]
+      "the rest of a string's chars from MIR",
+    ],
   },
   {
-    "name": "mir-map-extract-if-refused",
-    "breaks": "a map's `extract_if(f)` from MIR is refused",
-    "file": "src/lower/mir/std_calls.rs",
-    "find": "            Std::Map(MapOp::ExtractIf) => lower(",
-    "replace": "            Std::Map(MapOp::ExtractIf) if false => lower(",
-    "tests": [
-      "test/corpus.test.ts",
+    name: "mir-tree-range-refused",
+    breaks: "a B-tree's `range` from MIR is refused",
+    file: "src/lower/mir/std_calls.rs",
+    find: "            Std::Map(MapOp::TreeRange { mutable }) => lower(",
+    replace:
+      "            Std::Map(MapOp::TreeRange { mutable }) if mutable => lower(",
+    tests: [
+      "test/lowering-collections.test.ts",
       "-t",
-      "extract_if"
-    ]
+      "a B-tree's range from MIR",
+    ],
   },
   {
-    "name": "mir-remainder-made-stepped",
-    "breaks": "a chunks' `remainder()` of one made there from MIR is `$iter(..).items.remainder`, not the array's",
-    "file": "src/lower/mir/std_calls.rs",
-    "find": "                if let Some(items) = made {\n                    exprs[0] = items;\n                }\n",
-    "replace": "",
-    "tests": ["test/lowering-collections.test.ts", "-t", "a chunks' remainder from MIR"]
+    name: "mir-copy-within-refused",
+    breaks: "`v.copy_within(a..b, at)` from MIR is refused",
+    file: "src/lower/mir/std_calls.rs",
+    find: "            Std::Slice(SliceOp::CopyWithin) => lower(",
+    replace: "            Std::Slice(SliceOp::CopyWithin) if false => lower(",
+    tests: ["test/corpus.test.ts", "-t", "slice_methods"],
   },
   {
-    "name": "mir-remainder-stepped-plain",
-    "breaks": "a stepped chunks' `remainder()` from MIR reads `.remainder` of its `$iter`, which has none",
-    "file": "src/lower/mir/std_calls.rs",
-    "find": "                let stepping = made.is_none();\n",
-    "replace": "                let stepping = false;\n",
-    "tests": ["test/lowering-collections.test.ts", "-t", "a chunks' remainder from MIR"]
+    name: "mir-vec-extract-if-refused",
+    breaks: "`v.extract_if(.., f)` from MIR is refused",
+    file: "src/lower/mir/std_calls.rs",
+    find: "            Std::Slice(SliceOp::ExtractIf { range }) => lower(",
+    replace:
+      "            Std::Slice(SliceOp::ExtractIf { range }) if false => lower(",
+    tests: ["test/corpus.test.ts", "-t", "extract_if"],
   },
   {
-    "name": "mir-slice-views-refused",
-    "breaks": "a slice op giving a `&mut` view of items from MIR, `split_at_mut`, is refused",
-    "file": "src/lower/mir/std_calls.rs",
-    "find": "if !inner.is_slice() && !inner.is_array())",
-    "replace": ")",
-    "tests": [
-      "test/corpus.test.ts",
+    name: "mir-map-extract-if-refused",
+    breaks: "a map's `extract_if(f)` from MIR is refused",
+    file: "src/lower/mir/std_calls.rs",
+    find: "            Std::Map(MapOp::ExtractIf) => lower(",
+    replace: "            Std::Map(MapOp::ExtractIf) if false => lower(",
+    tests: ["test/corpus.test.ts", "-t", "extract_if"],
+  },
+  {
+    name: "mir-remainder-made-stepped",
+    breaks:
+      "a chunks' `remainder()` of one made there from MIR is `$iter(..).items.remainder`, not the array's",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                if let Some(items) = made {\n                    exprs[0] = items;\n                }\n",
+    replace: "",
+    tests: [
+      "test/lowering-collections.test.ts",
       "-t",
-      "split_at_mut_past_len"
-    ]
+      "a chunks' remainder from MIR",
+    ],
   },
   {
-    "name": "mir-cell-giving-slice-refused",
-    "breaks": "`get_disjoint_mut` from MIR, which makes its items' boxes itself, is refused",
-    "file": "src/lower/mir/std_calls.rs",
-    "find": "                ) && (known.gives_its_cell() || !output.walk().any(|arg| {\n",
-    "replace": "                ) && (false || !output.walk().any(|arg| {\n",
-    "tests": [
-      "test/corpus.test.ts",
+    name: "mir-remainder-stepped-plain",
+    breaks:
+      "a stepped chunks' `remainder()` from MIR reads `.remainder` of its `$iter`, which has none",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                let stepping = made.is_none();\n",
+    replace: "                let stepping = false;\n",
+    tests: [
+      "test/lowering-collections.test.ts",
       "-t",
-      "slice_disjoint"
-    ]
+      "a chunks' remainder from MIR",
+    ],
   },
   {
-    "name": "mir-push-str-place-made-twice",
-    "breaks": "`v.push_mut(s).push('b')` from MIR reads and writes `$pushMut(v, s, true).value`, pushing twice",
-    "file": "src/lower/mir/std_calls.rs",
-    "find": "                    js::ExprKind::Member(object, field) if !object.reads_same() => {\n",
-    "replace": "                    js::ExprKind::Member(object, field) if false && !object.reads_same() => {\n",
-    "tests": [
-      "test/corpus.test.ts",
+    name: "mir-slice-views-refused",
+    breaks:
+      "a slice op giving a `&mut` view of items from MIR, `split_at_mut`, is refused",
+    file: "src/lower/mir/std_calls.rs",
+    find: "if !inner.is_slice() && !inner.is_array())",
+    replace: ")",
+    tests: ["test/corpus.test.ts", "-t", "split_at_mut_past_len"],
+  },
+  {
+    name: "mir-cell-giving-slice-refused",
+    breaks:
+      "`get_disjoint_mut` from MIR, which makes its items' boxes itself, is refused",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                ) && (known.gives_its_cell() || !output.walk().any(|arg| {\n",
+    replace: "                ) && (false || !output.walk().any(|arg| {\n",
+    tests: ["test/corpus.test.ts", "-t", "slice_disjoint"],
+  },
+  {
+    name: "mir-push-str-place-made-twice",
+    breaks:
+      "`v.push_mut(s).push('b')` from MIR reads and writes `$pushMut(v, s, true).value`, pushing twice",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                    js::ExprKind::Member(object, field) if !object.reads_same() => {\n",
+    replace:
+      "                    js::ExprKind::Member(object, field) if false && !object.reads_same() => {\n",
+    tests: ["test/corpus.test.ts", "-t", "vec_push_mut"],
+  },
+  {
+    name: "mir-deque-range-mut-refused",
+    breaks: "a deque's `range_mut(a..b)` from MIR is refused",
+    file: "src/lower/mir/std_calls.rs",
+    find: "            Std::Slice(SliceOp::DequeRangeMut) => lower(",
+    replace:
+      "            Std::Slice(SliceOp::DequeRangeMut) if false => lower(",
+    tests: ["test/corpus.test.ts", "-t", "deque_range_mut"],
+  },
+  {
+    name: "mir-deque-range-mut-unboxed",
+    breaks:
+      "a deque's `range_mut` of numbers from MIR gives the numbers, not boxes on them, so writing one changes nothing",
+    file: "src/lower/mir/std_calls.rs",
+    find: '                match this.is_boxable(generic_args.type_at(0)) {\n                    true => Expr::call_helper("$mutItems", vec![view]),\n',
+    replace:
+      '                match false {\n                    true => Expr::call_helper("$mutItems", vec![view]),\n',
+    tests: ["test/corpus.test.ts", "-t", "deque_range_mut"],
+  },
+  {
+    name: "mir-tree-range-mut-refused",
+    breaks: "a B-tree's `range_mut` from MIR is refused",
+    file: "src/lower/mir/std_calls.rs",
+    find: "            Std::Map(MapOp::TreeRange { mutable }) => lower(",
+    replace:
+      "            Std::Map(MapOp::TreeRange { mutable }) if !mutable => lower(",
+    tests: ["test/corpus.test.ts", "-t", "btree_range_mut"],
+  },
+  {
+    name: "mir-range-edit-refused",
+    breaks:
+      "`v.extend_from_within(a..b)` and `v.splice(a..b, items)` from MIR are refused",
+    file: "src/lower/mir/std_calls.rs",
+    find: "            Std::Text(op @ (TextOp::Splice | TextOp::ExtendFromWithin)) => lower(",
+    replace:
+      "            Std::Text(op @ (TextOp::Splice | TextOp::ExtendFromWithin)) if false => lower(",
+    tests: [
+      "test/lowering-collections.test.ts",
       "-t",
-      "vec_push_mut"
-    ]
+      "a vec's range pushed again or replaced",
+    ],
   },
   {
-    "name": "mir-deque-range-mut-refused",
-    "breaks": "a deque's `range_mut(a..b)` from MIR is refused",
-    "file": "src/lower/mir/std_calls.rs",
-    "find": "            Std::Slice(SliceOp::DequeRangeMut) => lower(",
-    "replace": "            Std::Slice(SliceOp::DequeRangeMut) if false => lower(",
-    "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "deque_range_mut"
-    ]
+    name: "mir-option-place-refused",
+    breaks: "`o.get_or_insert(x)` from MIR is refused",
+    file: "src/lower/mir/std_calls.rs",
+    find: "            Std::OptionPlace(op) => lower(",
+    replace: "            Std::OptionPlace(op) if false => lower(",
+    tests: ["test/corpus.test.ts", "-t", "option_result_methods"],
   },
   {
-    "name": "mir-deque-range-mut-unboxed",
-    "breaks": "a deque's `range_mut` of numbers from MIR gives the numbers, not boxes on them, so writing one changes nothing",
-    "file": "src/lower/mir/std_calls.rs",
-    "find": "                match this.is_boxable(generic_args.type_at(0)) {\n                    true => Expr::call_helper(\"$mutItems\", vec![view]),\n",
-    "replace": "                match false {\n                    true => Expr::call_helper(\"$mutItems\", vec![view]),\n",
-    "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "deque_range_mut"
-    ]
+    name: "mir-cow-refused",
+    breaks: "a `Cow`'s `into_owned()` or `to_mut()` from MIR is refused",
+    file: "src/lower/mir/std_calls.rs",
+    find: "            Std::Cow(op) => lower(",
+    replace: "            Std::Cow(op) if false => lower(",
+    tests: ["test/corpus.test.ts", "-t", "cows"],
   },
   {
-    "name": "mir-tree-range-mut-refused",
-    "breaks": "a B-tree's `range_mut` from MIR is refused",
-    "file": "src/lower/mir/std_calls.rs",
-    "find": "            Std::Map(MapOp::TreeRange { mutable }) => lower(",
-    "replace": "            Std::Map(MapOp::TreeRange { mutable }) if !mutable => lower(",
-    "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "btree_range_mut"
-    ]
+    name: "mir-heap-refused",
+    breaks: "a `BinaryHeap`'s `append` or `peek_mut` from MIR is refused",
+    file: "src/lower/mir/std_calls.rs",
+    find: "            Std::Heap(op) => lower(",
+    replace: "            Std::Heap(op) if false => lower(",
+    tests: ["test/corpus.test.ts", "-t", "heap_methods|heap_peek_mut"],
   },
   {
-    "name": "mir-range-edit-refused",
-    "breaks": "`v.extend_from_within(a..b)` and `v.splice(a..b, items)` from MIR are refused",
-    "file": "src/lower/mir/std_calls.rs",
-    "find": "            Std::Text(op @ (TextOp::Splice | TextOp::ExtendFromWithin)) => lower(",
-    "replace": "            Std::Text(op @ (TextOp::Splice | TextOp::ExtendFromWithin)) if false => lower(",
-    "tests": ["test/lowering-collections.test.ts", "-t", "a vec's range pushed again or replaced"]
+    name: "mir-wrapping-op-refused",
+    breaks: "`a * Wrapping(2)` from MIR is refused",
+    file: "src/lower/mir/std_calls.rs",
+    find: "            Std::WrappingOp(op, assign) => lower(",
+    replace: "            Std::WrappingOp(op, assign) if false => lower(",
+    tests: ["test/corpus.test.ts", "-t", "wrapping_type"],
   },
   {
-    "name": "mir-option-place-refused",
-    "breaks": "`o.get_or_insert(x)` from MIR is refused",
-    "file": "src/lower/mir/std_calls.rs",
-    "find": "            Std::OptionPlace(op) => lower(",
-    "replace": "            Std::OptionPlace(op) if false => lower(",
-    "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "option_result_methods"
-    ]
+    name: "mir-stream-refused",
+    breaks: "`writeln!(io::stderr(), ..)` from MIR is refused",
+    file: "src/lower/mir/std_calls.rs",
+    find: "            Std::Stream(op) => lower(",
+    replace: "            Std::Stream(op) if false => lower(",
+    tests: ["test/corpus.test.ts", "-t", "std_odds"],
   },
   {
-    "name": "mir-cow-refused",
-    "breaks": "a `Cow`'s `into_owned()` or `to_mut()` from MIR is refused",
-    "file": "src/lower/mir/std_calls.rs",
-    "find": "            Std::Cow(op) => lower(",
-    "replace": "            Std::Cow(op) if false => lower(",
-    "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "cows"
-    ]
-  },
-  {
-    "name": "mir-heap-refused",
-    "breaks": "a `BinaryHeap`'s `append` or `peek_mut` from MIR is refused",
-    "file": "src/lower/mir/std_calls.rs",
-    "find": "            Std::Heap(op) => lower(",
-    "replace": "            Std::Heap(op) if false => lower(",
-    "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "heap_methods|heap_peek_mut"
-    ]
-  },
-  {
-    "name": "mir-wrapping-op-refused",
-    "breaks": "`a * Wrapping(2)` from MIR is refused",
-    "file": "src/lower/mir/std_calls.rs",
-    "find": "            Std::WrappingOp(op, assign) => lower(",
-    "replace": "            Std::WrappingOp(op, assign) if false => lower(",
-    "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "wrapping_type"
-    ]
-  },
-  {
-    "name": "mir-stream-refused",
-    "breaks": "`writeln!(io::stderr(), ..)` from MIR is refused",
-    "file": "src/lower/mir/std_calls.rs",
-    "find": "            Std::Stream(op) => lower(",
-    "replace": "            Std::Stream(op) if false => lower(",
-    "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "std_odds"
-    ]
-  },
-  {
-    "name": "mir-user-write-refused",
-    "breaks": "`writeln!(out, ..)` to a writer of the crate's own from MIR is refused",
-    "file": "src/lower/mir/std_calls.rs",
-    "find": "            Std::UserWrite => lower(",
-    "replace": "            Std::UserWrite if false => lower(",
-    "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "user_fmt_write"
-    ]
+    name: "mir-user-write-refused",
+    breaks:
+      "`writeln!(out, ..)` to a writer of the crate's own from MIR is refused",
+    file: "src/lower/mir/std_calls.rs",
+    find: "            Std::UserWrite => lower(",
+    replace: "            Std::UserWrite if false => lower(",
+    tests: ["test/corpus.test.ts", "-t", "user_fmt_write"],
   },
   {
     name: "mir-split-off-unwritten",
@@ -416,10 +431,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-split-off-held",
-    breaks: "MIR's `r.split_off_mut(..n)`, `r` a `&mut` to `rest`, gives `r` what's left",
+    breaks:
+      "MIR's `r.split_off_mut(..n)`, `r` a `&mut` to `rest`, gives `r` what's left",
     file: "src/lower/mir/std_calls.rs",
     find: "                        if matches!(place.kind, js::ExprKind::Var(_)) && this.borrows_variable(def_id, span, 0) =>\n",
-    replace: "                        if matches!(place.kind, js::ExprKind::Var(_)) =>\n",
+    replace:
+      "                        if matches!(place.kind, js::ExprKind::Var(_)) =>\n",
     tests: ["test/lowering.test.ts", "-t", "split_off through a held"],
   },
   {
@@ -435,12 +452,14 @@ export const mutations: Mutation[] = [
     breaks: "MIR's `write_clone_of_slice` copies, not clones",
     file: "src/lower/mir/std_calls.rs",
     find: "                this.uninit_write_values(clone, values, generic_args.type_at(0), span, out)?\n",
-    replace: "                this.uninit_write_values(false, values, generic_args.type_at(0), span, out)?\n",
+    replace:
+      "                this.uninit_write_values(false, values, generic_args.type_at(0), span, out)?\n",
     tests: ["test/corpus.test.ts", "-t", "slice_uninit"],
   },
   {
     name: "mir-str-part-range-unread",
-    breaks: "MIR's `&mut s[a..b]` gives `$strPart` the range itself, not its bounds",
+    breaks:
+      "MIR's `&mut s[a..b]` gives `$strPart` the range itself, not its bounds",
     file: "src/lower/mir/std_calls.rs",
     find: "                if matches!(op, TextOp::StrPart { bounds: false } | TextOp::StrGetMut) {\n",
     replace: "                if matches!(op, TextOp::StrGetMut) {\n",
@@ -448,18 +467,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-str-part-case-handle",
-    breaks: "MIR's `s[a..b].make_ascii_uppercase()` changes a handle on the part, not `s`",
+    breaks:
+      "MIR's `s[a..b].make_ascii_uppercase()` changes a handle on the part, not `s`",
     file: "src/lower/mir/std_calls.rs",
     find: "                            && let Some((whole, mut bounds)) = str_part_of(place) =>\n",
-    replace: "                            && let Some((whole, mut bounds)) = str_part_of(place).filter(|_| false) =>\n",
+    replace:
+      "                            && let Some((whole, mut bounds)) = str_part_of(place).filter(|_| false) =>\n",
     tests: ["test/lowering-strings.test.ts", "-t", "part changed in place"],
   },
   {
     name: "mir-str-edit-part-refused",
-    breaks: "MIR's string edit of a part a call gives, `tail(&mut s).make_ascii_uppercase()`, is refused",
+    breaks:
+      "MIR's string edit of a part a call gives, `tail(&mut s).make_ascii_uppercase()`, is refused",
     file: "src/lower/mir/std_calls.rs",
-    find: "                            let cell = this.spill(\"part\", (**cell).clone(), out);\n                            Expr::held(cell)\n",
-    replace: "                            return Err(this.unsupported(span, \"changing this string, from its MIR\"));\n",
+    find: '                            let cell = this.spill("part", (**cell).clone(), out);\n                            Expr::held(cell)\n',
+    replace:
+      '                            return Err(this.unsupported(span, "changing this string, from its MIR"));\n',
     tests: ["test/corpus.test.ts", "-t", "str_mut"],
   },
   {
@@ -467,12 +490,14 @@ export const mutations: Mutation[] = [
     breaks: "MIR's `Rc::make_mut(&mut copy.pages)`, of a field, is refused",
     file: "src/lower/mir/std_calls.rs",
     find: "                        Some(name) if fixed_place(&place) => {\n",
-    replace: "                        Some(name) if matches!(place.kind, js::ExprKind::Var(_)) => {\n",
+    replace:
+      "                        Some(name) if matches!(place.kind, js::ExprKind::Var(_)) => {\n",
     tests: ["test/corpus.test.ts", "-t", "rc_counted_uses"],
   },
   {
     name: "mir-failing-write-whole",
-    breaks: "MIR's `write!` of what may fail writes it whole, what came before the error lost",
+    breaks:
+      "MIR's `write!` of what may fail writes it whole, what came before the error lost",
     file: "src/lower/mir/std_calls.rs",
     find: "                if matches!(given, Value::Fmt(Std::FmtNew, ..)) && fixed_place(&place) {\n",
     replace: "                if false && fixed_place(&place) {\n",
@@ -480,10 +505,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-skip-while-skipped-undropped",
-    breaks: "MIR's `skip_while` of items with a destructor leaves those it skips undropped",
+    breaks:
+      "MIR's `skip_while` of items with a destructor leaves those it skips undropped",
     file: "src/lower/mir/std_calls.rs",
     find: "                    exprs.insert(0, this.dropping_discarded(test, item, discard_when, span, out)?);\n",
-    replace: "                    let _ = (item, discard_when);\n                    exprs.insert(0, test);\n",
+    replace:
+      "                    let _ = (item, discard_when);\n                    exprs.insert(0, test);\n",
     tests: ["test/corpus.test.ts", "-t", "drop_skipped_items"],
   },
   {
@@ -506,8 +533,9 @@ export const mutations: Mutation[] = [
     name: "mir-deque-remove-refused",
     breaks: "MIR's `VecDeque::remove` is refused",
     file: "src/lower/mir/std_calls.rs",
-    find: "                Expr::call_helper(\"$removeOpt\", exprs)\n",
-    replace: "                return Err(this.unsupported(span, &format!(\"`remove` of {}, from its MIR\", exprs.len())));\n",
+    find: '                Expr::call_helper("$removeOpt", exprs)\n',
+    replace:
+      '                return Err(this.unsupported(span, &format!("`remove` of {}, from its MIR", exprs.len())));\n',
     tests: ["test/lowering-collections.test.ts", "-t", "a deque's remove"],
   },
   {
@@ -520,31 +548,37 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-format-failing-unmarked",
-    breaks: "`format!` of a `Display` that fails throws a `fmt::Error`, not std's panic",
+    breaks:
+      "`format!` of a `Display` that fails throws a `fmt::Error`, not std's panic",
     file: "src/lower/mir/std_calls.rs",
     find: "                    if fails {\n                        return Ok(Value::Fmt(Std::FmtNew, output, joined));\n",
-    replace: "                    if false && fails {\n                        return Ok(Value::Fmt(Std::FmtNew, output, joined));\n",
-    tests: ["test/corpus.test.ts","-t","fmt_error_format"],
+    replace:
+      "                    if false && fails {\n                        return Ok(Value::Fmt(Std::FmtNew, output, joined));\n",
+    tests: ["test/corpus.test.ts", "-t", "fmt_error_format"],
   },
   {
     name: "mir-ptr-eq-refused",
     breaks: "MIR's `ptr::eq` of JS objects is refused",
     file: "src/lower/mir/std_calls.rs",
     find: "                    _ => Expr::bin(Op::Eq, a, b),\n",
-    replace: "                    _ => return Err(this.unsupported(span, if a.reads_same() && b.reads_same() { \"ptr::eq\" } else { \"ptr::eq of these\" })),\n",
+    replace:
+      '                    _ => return Err(this.unsupported(span, if a.reads_same() && b.reads_same() { "ptr::eq" } else { "ptr::eq of these" })),\n',
     tests: ["test/lowering-bindings.test.ts", "-t", "ptr::eq of JS objects"],
   },
   {
     name: "format-arguments-in-place",
-    breaks: "a format string's argument that does something is evaluated where the template formats it, after a `Debug` of an earlier one that prints",
+    breaks:
+      "a format string's argument that does something is evaluated where the template formats it, after a `Debug` of an earlier one that prints",
     file: "src/lower/mir/std_calls.rs",
     find: "                if this.formats_out_of_order(&items, &template, span)? {\n",
-    replace: "                if false && this.formats_out_of_order(&items, &template, span)? {\n",
+    replace:
+      "                if false && this.formats_out_of_order(&items, &template, span)? {\n",
     tests: ["test/corpus.test.ts", "-t", "^format_arguments_first.rs$"],
   },
   {
     name: "formatting-runs-nothing",
-    breaks: "a `Debug` of the crate's isn't taken to run code, so an argument after it is made after it runs",
+    breaks:
+      "a `Debug` of the crate's isn't taken to run code, so an argument after it is made after it runs",
     file: "src/lower/mir/std_calls.rs",
     find: "            formatted |= part.runs_program_code();\n",
     replace: "",
@@ -552,15 +586,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cycle-owned-items-shared",
-    breaks: "`cycle()` of an iterator that owns its items gives the same one each time round, where Rust's clones them",
+    breaks:
+      "`cycle()` of an iterator that owns its items gives the same one each time round, where Rust's clones them",
     file: "src/lower/mir/std_calls.rs",
-    find: "                                if owns && this.needs_clone(item) {\n                                    args.push(this.clone_fn(\"item\", item, span)?);\n",
-    replace: "                                if false && owns && this.needs_clone(item) {\n                                    args.push(this.clone_fn(\"item\", item, span)?);\n",
+    find: '                                if owns && this.needs_clone(item) {\n                                    args.push(this.clone_fn("item", item, span)?);\n',
+    replace:
+      '                                if false && owns && this.needs_clone(item) {\n                                    args.push(this.clone_fn("item", item, span)?);\n',
     tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
   },
   {
     name: "string-extend-unjoined",
-    breaks: "`s.extend(chars)` adds their array, `s += [\"y\", \"z\"]`, not their text",
+    breaks:
+      '`s.extend(chars)` adds their array, `s += ["y", "z"]`, not their text',
     file: "src/lower/mir/std_calls.rs",
     find: "                    true => this.joined_text(value, Some(arg_tys[1]), span, out)?,\n",
     replace: "                    true => value,\n",
@@ -568,7 +605,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "partition-dropping-refused",
-    breaks: "`partition` and `filter_map` of items with a destructor are refused, though they move each on",
+    breaks:
+      "`partition` and `filter_map` of items with a destructor are refused, though they move each on",
     file: "src/lower/mir/std_calls.rs",
     find: "if dropping.is_some() && !comb.leaves_none() && !comb.holds_its_sources() {",
     replace: "if dropping.is_some() && !comb.holds_its_sources() {",
@@ -576,7 +614,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "clone-from-old-undropped",
-    breaks: "`clone_from` doesn't drop what was there, as `*dest = source.clone()` does",
+    breaks:
+      "`clone_from` doesn't drop what was there, as `*dest = source.clone()` does",
     file: "src/lower/mir/std_calls.rs",
     find: "                    this.drop_value(old, ty, span, out)?;\n",
     replace: "                    let _ = old;\n",
@@ -584,15 +623,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "clone-from-shared",
-    breaks: "`clone_from` writes the source itself, not a clone, so a change to one is seen in the other",
+    breaks:
+      "`clone_from` writes the source itself, not a clone, so a change to one is seen in the other",
     file: "src/lower/mir/std_calls.rs",
     find: "                    let clone = this.clone_value(source, ty, span, out)?;\n                    let given = vec![dest, Value::Expr(clone)];\n",
-    replace: "                    let given = vec![dest, Value::Expr(source)];\n",
+    replace:
+      "                    let given = vec![dest, Value::Expr(source)];\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from.rs$"],
   },
   {
     name: "own-write-all-unwrapped",
-    breaks: "std's `write_all` of the crate's writer that fails throws out of where its result is a value",
+    breaks:
+      "std's `write_all` of the crate's writer that fails throws out of where its result is a value",
     file: "src/lower/mir/std_calls.rs",
     find: "                    true => this.fmt_try(vec![StmtKind::Return(Some(call)).at(js::Span::NONE)]),\n",
     replace: "                    true => call,\n",
@@ -600,7 +642,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "zip-other-not-closing",
-    breaks: "`zip`'s other side that owns items with a destructor isn't closed to drop them",
+    breaks:
+      "`zip`'s other side that owns items with a destructor isn't closed to drop them",
     file: "src/lower/mir/std_calls.rs",
     find: "                        Ok(match this.closing_drop(ty, span)? {\n",
     replace: "                        Ok(match None::<Expr> {\n",
@@ -616,17 +659,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cycle-of-other-refused",
-    breaks: "`cycle()` of a range, the crate's iterator or a type parameter's is refused",
+    breaks:
+      "`cycle()` of a range, the crate's iterator or a type parameter's is refused",
     file: "src/lower/mir/std_calls.rs",
     find: "                this.cycled(it, arg_tys[0].peel_refs(), span)?\n",
-    replace: "                return Err(this.unsupported(span, \"cycle\"));\n",
+    replace: '                return Err(this.unsupported(span, "cycle"));\n',
     tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
   },
   {
     name: "cycle-array-drops-allowed",
-    breaks: "`cycle()` of an array's items with a destructor is allowed, and leaks what it holds",
+    breaks:
+      "`cycle()` of an array's items with a destructor is allowed, and leaks what it holds",
     file: "src/lower/mir/std_calls.rs",
-    find: "                                    return Err(\n                                        this.unsupported(span, \"`cycle()` of an array's items with a destructor\")\n                                    );\n",
+    find: '                                    return Err(\n                                        this.unsupported(span, "`cycle()` of an array\'s items with a destructor")\n                                    );\n',
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "cycling an array's items"],
   },
@@ -635,23 +680,28 @@ export const mutations: Mutation[] = [
     breaks: "`extend_from_within` pushes the same objects again, not clones",
     file: "src/lower/mir/std_calls.rs",
     find: "                    Some(item) if op == TextOp::ExtendFromWithin && this.needs_clone(item) => {\n",
-    replace: "                    Some(item) if false && this.needs_clone(item) => {\n",
+    replace:
+      "                    Some(item) if false && this.needs_clone(item) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_edit_drops.rs$"],
   },
   {
     name: "peek-mut-of-numbers-unhandled",
-    breaks: "`peek_mut` of numbers gives the number, which a write changes nowhere",
+    breaks:
+      "`peek_mut` of numbers gives the number, which a write changes nowhere",
     file: "src/lower/mir/std_calls.rs",
-    find: "                        Some(item) if this.is_boxable(item) => Expr::call_helper(\"$peekCell\", vec![it]),\n",
-    replace: "                        Some(item) if false && this.is_boxable(item) => Expr::call_helper(\"$peekCell\", vec![it]),\n",
+    find: '                        Some(item) if this.is_boxable(item) => Expr::call_helper("$peekCell", vec![it]),\n',
+    replace:
+      '                        Some(item) if false && this.is_boxable(item) => Expr::call_helper("$peekCell", vec![it]),\n',
     tests: ["test/corpus.test.ts", "-t", "^repeat_n_and_peek_mut.rs$"],
   },
   {
     name: "make-mut-of-borrow-boxed",
-    breaks: "`Rc::make_mut(&mut rc)` of a variable is given a box for it, and refused",
+    breaks:
+      "`Rc::make_mut(&mut rc)` of a variable is given a box for it, and refused",
     file: "src/lower/mir/std_calls.rs",
     find: "                        Value::Ref(place) => place,\n                        value => this.value_expr(value, span)?,\n",
-    replace: "                        value => this.value_expr(value, span)?,\n",
+    replace:
+      "                        value => this.value_expr(value, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_clone_sees_owners.rs$"],
   },
   {
@@ -659,12 +709,14 @@ export const mutations: Mutation[] = [
     breaks: "`Rc::make_mut` of an `Rc` a `&mut` argument reaches is refused",
     file: "src/lower/mir/std_calls.rs",
     find: "                if !boxed && (state.body.local_kind(local) == LocalKind::Arg || local_ty.is_ref()) {\n",
-    replace: "                if state.body.local_kind(local) == LocalKind::Arg || local_ty.is_ref() {\n",
+    replace:
+      "                if state.body.local_kind(local) == LocalKind::Arg || local_ty.is_ref() {\n",
     tests: ["test/crates.test.ts", "-t", "three crates: rc_generic"],
   },
   {
     name: "chained-into-iter-raw",
-    breaks: "what `chain` or `zip` is given is passed as it is, a range's object or an `Option`",
+    breaks:
+      "what `chain` or `zip` is given is passed as it is, a range's object or an `Option`",
     file: "src/lower/mir/std_calls.rs",
     find: "                        let e = this.iterable_items(e, ty, span, out)?;\n",
     replace: "",
@@ -672,7 +724,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "held-cycle-of-array-generated",
-    breaks: "a held `Cycle` of an array's iterator is a generator, which keeps neither it cycles",
+    breaks:
+      "a held `Cycle` of an array's iterator is a generator, which keeps neither it cycles",
     file: "src/lower/mir/std_calls.rs",
     find: "                if this.explicit_adapter(output)\n                    || !arg_tys\n",
     replace: "                if !arg_tys\n",
@@ -680,15 +733,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fmt-to-held-formatter-pretty",
-    breaks: "what a `fmt` trait's method writes to a held `Formatter` is written pretty, where the handle keeps no options",
+    breaks:
+      "what a `fmt` trait's method writes to a held `Formatter` is written pretty, where the handle keeps no options",
     file: "src/lower/mir/std_calls.rs",
     find: "                let pretty = crate::lower::display::Pretty::Plain;\n",
-    replace: "                let pretty = crate::lower::display::Pretty::Always;\n",
+    replace:
+      "                let pretty = crate::lower::display::Pretty::Always;\n",
     tests: ["test/corpus.test.ts", "-t", "^fmt_to_held_formatter.rs$"],
   },
   {
     name: "fmt-arg-through-refs",
-    breaks: "a `&mut` shown is a handle on its place, held and read through its getter",
+    breaks:
+      "a `&mut` shown is a handle on its place, held and read through its getter",
     file: "src/lower/mir/std_calls.rs",
     find: "                    _ => this.shown_through(value, ty),\n",
     replace: "                    _ => (value, ty),\n",
@@ -697,42 +753,51 @@ export const mutations: Mutation[] = [
   },
   {
     name: "ptr-eq-of-handles-identity",
-    breaks: "`ptr::eq` of two pointers to Rust's values compares their handles by `===`, so the same item reached through another array's reference isn't equal",
+    breaks:
+      "`ptr::eq` of two pointers to Rust's values compares their handles by `===`, so the same item reached through another array's reference isn't equal",
     file: "src/lower/mir/std_calls.rs",
     find: "                    Some((pointee, _)) if this.compared_by_address(arg_tys[0]) => {",
-    replace: "                    Some((pointee, _)) if false && this.compared_by_address(arg_tys[0]) => {",
+    replace:
+      "                    Some((pointee, _)) if false && this.compared_by_address(arg_tys[0]) => {",
     tests: ["test/corpus.test.ts", "-t", "^ptr_eq_through_refs.rs$"],
   },
   {
     name: "next-if-some-unboxed",
-    breaks: "`next_if` of items that may look like `None` gives a `None` item as `None` itself, where it's `Some(None)`",
+    breaks:
+      "`next_if` of items that may look like `None` gives a `None` item as `None` itself, where it's `Some(None)`",
     file: "src/lower/mir/std_calls.rs",
-    find: "if boxed { \"$nextIfSome\" } else { \"$nextIf\" }",
-    replace: "\"$nextIf\"",
+    find: 'if boxed { "$nextIfSome" } else { "$nextIf" }',
+    replace: '"$nextIf"',
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_results.rs$"],
   },
   {
     name: "found-and-then-none-undefined",
-    breaks: "`and_then` of a place found gives `undefined` where it's `None`, which isn't `-1`, so it's taken for a place",
+    breaks:
+      "`and_then` of a place found gives `undefined` where it's `None`, which isn't `-1`, so it's taken for a place",
     file: "src/lower/mir/std_calls.rs",
     find: "                let none = if mapped { Expr::undefined() } else { Expr::int(-1) };",
-    replace: "                let none = if mapped { Expr::undefined() } else { Expr::undefined() };",
+    replace:
+      "                let none = if mapped { Expr::undefined() } else { Expr::undefined() };",
     tests: ["test/lowering-string-places.test.ts", "-t", "owner stack"],
   },
   {
     name: "cut-string-reread-after-change",
-    breaks: "a strip's string is read again where it's tested and cut, after its variable is given another",
+    breaks:
+      "a strip's string is read again where it's tested and cut, after its variable is given another",
     file: "src/lower/mir/std_calls.rs",
     find: "                            if holders.iter().any(|&held| state.locals.names[held] == *name));",
-    replace: "                            if holders.len() < usize::MAX || name.is_empty());",
+    replace:
+      "                            if holders.len() < usize::MAX || name.is_empty());",
     tests: ["test/lowering-string-places.test.ts", "-t", "string changes"],
   },
   {
     name: "places-sliced-in-bytes",
-    breaks: "a slice at places in units is `$strSlice`, which counts them as bytes",
+    breaks:
+      "a slice at places in units is `$strSlice`, which counts them as bytes",
     file: "src/lower/mir/std_calls.rs",
     find: "                    true => this.sliced_in_units(items, (range, arg_tys[1]), span, out)?,",
-    replace: "                    true => this.slice_range_values((op, false), items, (range, arg_tys[1]), span, out)?,",
+    replace:
+      "                    true => this.slice_range_values((op, false), items, (range, arg_tys[1]), span, out)?,",
     tests: ["test/lowering-string-places.test.ts", "-t", "stepped past"],
   },
   {
@@ -756,7 +821,8 @@ export const mutations: Mutation[] = [
     breaks: "`String::with_capacity(usize::MAX)` is no panic",
     file: "src/lower/mir/std_calls.rs",
     find: "                this.room_for((None, n), Expr::int(1), span, out);\n",
-    replace: "                this.room_for((None, n), Expr::int(0), span, out);\n",
+    replace:
+      "                this.room_for((None, n), Expr::int(0), span, out);\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
   },
   {
@@ -764,61 +830,72 @@ export const mutations: Mutation[] = [
     breaks: "`s.reserve(n)` reads the room of its `&mut`'s cell, not its text",
     file: "src/lower/mir/std_calls.rs",
     find: "                        Value::Ref(place) => place,\n                        cell => Expr::held(this.value_expr(cell, span)?),\n",
-    replace: "                        Value::Ref(place) => Expr::held(place),\n                        cell => Expr::held(this.value_expr(cell, span)?),\n",
+    replace:
+      "                        Value::Ref(place) => Expr::held(place),\n                        cell => Expr::held(this.value_expr(cell, span)?),\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
   },
   {
     name: "once-set-never-known-empty",
-    breaks: "a `OnceCell`'s `set` is never of a cell known empty, so React's `payload._ioInfo = ioInfo` is `if (payload._ioInfo === undefined) ..`",
+    breaks:
+      "a `OnceCell`'s `set` is never of a cell known empty, so React's `payload._ioInfo = ioInfo` is `if (payload._ioInfo === undefined) ..`",
     file: "src/lower/mir/std_calls.rs",
     find: "                    (self.thir_call(def_id, span)).is_some_and(|(fun, _)| self.frame.facts.set_empty.contains(&fun));\n",
-    replace: "                    (self.thir_call(def_id, span)).is_some_and(|(fun, _)| self.frame.facts.set_empty.contains(&fun) && false);\n",
+    replace:
+      "                    (self.thir_call(def_id, span)).is_some_and(|(fun, _)| self.frame.facts.set_empty.contains(&fun) && false);\n",
     tests: ["test/corpus.test.ts", "-t", "^once_cell_fields.rs$"],
     snapshots: true,
   },
   {
     name: "once-set-result-always-read",
-    breaks: "a `set`'s `Result` nothing reads is made, `const unset = .. ; if (unset) ..`, where it's `if (node.cache === undefined) ..`",
+    breaks:
+      "a `set`'s `Result` nothing reads is made, `const unset = .. ; if (unset) ..`, where it's `if (node.cache === undefined) ..`",
     file: "src/lower/mir/std_calls.rs",
     find: "                let read = !matches!(&state.body[state.at].terminator().kind,\n",
-    replace: "                let read = true || !matches!(&state.body[state.at].terminator().kind,\n",
+    replace:
+      "                let read = true || !matches!(&state.body[state.at].terminator().kind,\n",
     tests: ["test/corpus.test.ts", "-t", "^once_cell_known_empty.rs$"],
     snapshots: true,
   },
   {
     name: "format-argument-unplaced",
-    breaks: "a format argument written across lines isn't told so, so its value is on the template's line however long (ADR 0641, amended)",
+    breaks:
+      "a format argument written across lines isn't told so, so its value is on the template's line however long (ADR 0641, amended)",
     file: "src/lower/mir/std_calls.rs",
     find: "                    (value, code.is_some_and(|code| code.contains('\\n')))\n",
     replace: "                    (value, code.is_some_and(|_| false))\n",
-    tests: ["test/lowering-strings.test.ts", "-t", "a format argument written across lines"],
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "a format argument written across lines",
+    ],
   },
   {
     name: "chain-array-argument-unstepped",
-    breaks: "an array given to `chain` is `Iterator.from(xs)`, not a `$iter`, so its `nth` isn't a `Vec`'s and the chain's `skip` steps each (#250)",
+    breaks:
+      "an array given to `chain` is `Iterator.from(xs)`, not a `$iter`, so its `nth` isn't a `Vec`'s and the chain's `skip` steps each (#250)",
     file: "src/lower/mir/std_calls.rs",
     find: "                                    if this.slice_item(ty.peel_refs()).is_some()\n",
-    replace: "                                    if false && this.slice_item(ty.peel_refs()).is_some()\n",
+    replace:
+      "                                    if false && this.slice_item(ty.peel_refs()).is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },
   {
     name: "in-place-flatten-unmarked",
-    breaks: "a flatten made in place and stepped from its back is taken for std's struct, given its compiled `next_back`, which the recognizers' `flatMap` isn't",
+    breaks:
+      "a flatten made in place and stepped from its back is taken for std's struct, given its compiled `next_back`, which the recognizers' `flatMap` isn't",
     file: "src/lower/mir/std_calls.rs",
     find: "                        true => made.in_place(),\n",
     replace: "                        true => made,\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^flatten_of_iterators_from_back.rs$"
-    ]
+    tests: ["test/corpus.test.ts", "-t", "^flatten_of_iterators_from_back.rs$"],
   },
   {
     name: "leaves-none-source-unclosed",
-    breaks: "an owning iterator given whole to `partition`, `max_by` or `max_by_key` isn't closed, so what's left when its callback panics is never dropped (#423)",
+    breaks:
+      "an owning iterator given whole to `partition`, `max_by` or `max_by_key` isn't closed, so what's left when its callback panics is never dropped (#423)",
     file: "src/lower/mir/std_calls.rs",
     find: "                        false if comb.holds_its_sources() || comb.leaves_none() => this.closing(it, iter_ty, span)?,\n",
-    replace: "                        false if comb.holds_its_sources() => this.closing(it, iter_ty, span)?,\n",
+    replace:
+      "                        false if comb.holds_its_sources() => this.closing(it, iter_ty, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
 ];

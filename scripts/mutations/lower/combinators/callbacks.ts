@@ -4,7 +4,8 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "unrun-function-undropped",
-    breaks: "a function an `Option`'s or a `Result`'s method leaves unrun, `map`'s of a `None`, holds what it's never dropped",
+    breaks:
+      "a function an `Option`'s or a `Result`'s method leaves unrun, `map`'s of a `None`, holds what it's never dropped",
     file: "src/lower/combinators/callbacks.rs",
     find: "            out.push(StmtKind::If(test, dropped, None).at(js_span));\n",
     replace: "",
@@ -12,15 +13,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unrun-none-as-some",
-    breaks: "a function `map` leaves unrun of a `None` is dropped where it ran, of a `Some`, twice",
+    breaks:
+      "a function `map` leaves unrun of a `None` is dropped where it ran, of a `Some`, twice",
     file: "src/lower/combinators/callbacks.rs",
     find: "                Unused::None => Expr::bin(Op::LooseEq, subject, Expr::null()),\n",
-    replace: "                Unused::None => Expr::bin(Op::LooseNe, subject, Expr::null()),\n",
+    replace:
+      "                Unused::None => Expr::bin(Op::LooseNe, subject, Expr::null()),\n",
     tests: ["test/corpus.test.ts", "-t", "^unrun_function_drops.rs$"],
   },
   {
     name: "unrun-ok-as-err",
-    breaks: "a function `map_err` leaves unrun of an `Ok` is dropped where it ran, of an `Err`",
+    breaks:
+      "a function `map_err` leaves unrun of an `Ok` is dropped where it ran, of an `Err`",
     file: "src/lower/combinators/callbacks.rs",
     find: "                Unused::Ok => result::is(subject, true),\n",
     replace: "                Unused::Ok => result::is(subject, false),\n",
@@ -28,10 +32,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unrun-param-ungiven",
-    breaks: "a generic function's `F` it gives `unwrap_or_else` is taken as given no drop, so what it holds is never dropped",
+    breaks:
+      "a generic function's `F` it gives `unwrap_or_else` is taken as given no drop, so what it holds is never dropped",
     file: "src/lower/combinators/callbacks.rs",
     find: "        if self.drop_query().drops_but_params(ty) == Drops::Nothing\n            && self.given_drop(ty).is_none()\n",
-    replace: "        if self.drop_query().drops_but_params(ty) == Drops::Nothing\n",
+    replace:
+      "        if self.drop_query().drops_but_params(ty) == Drops::Nothing\n",
     tests: ["test/corpus.test.ts", "-t", "^unused_value_drops.rs$"],
   },
   {
@@ -44,7 +50,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "given-function-undropped",
-    breaks: "a closure `all`, `fold` or `sort_by` is given by value, called by `&mut`, is never dropped, nor what it holds",
+    breaks:
+      "a closure `all`, `fold` or `sort_by` is given by value, called by `&mut`, is never dropped, nor what it holds",
     file: "src/lower/combinators/callbacks.rs",
     find: "                out.extend(dropped);\n",
     replace: "",
@@ -52,31 +59,41 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fn-mut-as-unrun",
-    breaks: "a function called by `&mut` given to std is taken for one its body drops, and left undropped",
+    breaks:
+      "a function called by `&mut` given to std is taken for one its body drops, and left undropped",
     file: "src/lower/combinators/callbacks.rs",
     find: "            ty::ClosureKind::Fn | ty::ClosureKind::FnMut => Some(None),\n",
-    replace: "            ty::ClosureKind::Fn | ty::ClosureKind::FnMut => None,\n",
+    replace:
+      "            ty::ClosureKind::Fn | ty::ClosureKind::FnMut => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^given_function_drops.rs$"],
   },
   {
     name: "held-function-dropped",
-    breaks: "a function a lazy adapter holds, `map(f)`'s, is dropped as `map` returns, before it's run",
+    breaks:
+      "a function a lazy adapter holds, `map(f)`'s, is dropped as `map` returns, before it's run",
     file: "src/lower/combinators/callbacks.rs",
     find: "            if when.is_none() && kept {\n",
     replace: "            if false && when.is_none() && kept {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a function with a destructor a lazy scan holds"],
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "a function with a destructor a lazy scan holds",
+    ],
   },
   {
     name: "held-function-kept-refused",
-    breaks: "a function a lazy adapter keeps, `map(f)`'s, is refused where it's given",
+    breaks:
+      "a function a lazy adapter keeps, `map(f)`'s, is refused where it's given",
     file: "src/lower/combinators/callbacks.rs",
     find: "            if when.is_none() && self.recognition().held_function(output) == Some(ty) {\n",
-    replace: "            if false && when.is_none() && self.recognition().held_function(output) == Some(ty) {\n",
+    replace:
+      "            if false && when.is_none() && self.recognition().held_function(output) == Some(ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^held_function_drops.rs$"],
   },
   {
     name: "closure-of-given-params-ungiven",
-    breaks: "a closure that took a type parameter's value, given its drop, is taken for one its callers give none",
+    breaks:
+      "a closure that took a type parameter's value, given its drop, is taken for one its callers give none",
     file: "src/lower/combinators/callbacks.rs",
     find: "            && !self.holds_given_drops(ty)\n",
     replace: "",
@@ -84,7 +101,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unused-value-unhandled",
-    breaks: "a value std leaves unused, `unwrap_or`'s default, isn't dropped where it's left, and is refused",
+    breaks:
+      "a value std leaves unused, `unwrap_or`'s default, isn't dropped where it's left, and is refused",
     file: "src/lower/combinators/callbacks.rs",
     find: "            return unused().filter(|_| self.drops_function(ty));\n",
     replace: "            return None;\n",
@@ -92,31 +110,41 @@ export const mutations: Mutation[] = [
   },
   {
     name: "given-value-drops-unseen",
-    breaks: "an `Option<U>` a std call leaves unused, of a `U` whose drop is given, is refused",
+    breaks:
+      "an `Option<U>` a std call leaves unused, of a `U` whose drop is given, is refused",
     file: "src/lower/combinators/callbacks.rs",
     find: "            && !self.holds_given_drops(ty)\n",
-    replace: "            && !(matches!(ty.kind(), ty::Closure(..)) && self.holds_given_drops(ty))\n",
+    replace:
+      "            && !(matches!(ty.kind(), ty::Closure(..)) && self.holds_given_drops(ty))\n",
     tests: ["test/corpus.test.ts", "-t", "^and_value_drops.rs$"],
   },
   {
     name: "kept-dropped-anywhere-refused",
-    breaks: "`Box::new(f)` of a function that drops wherever it's dropped is refused",
+    breaks:
+      "`Box::new(f)` of a function that drops wherever it's dropped is refused",
     file: "src/lower/combinators/callbacks.rs",
     find: "            if when.is_none() && kept && dropped_anywhere {\n",
-    replace: "            if when.is_none() && kept && false && dropped_anywhere {\n",
+    replace:
+      "            if when.is_none() && kept && false && dropped_anywhere {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_drops.rs$"],
   },
   {
     name: "called-once-unchecked",
-    breaks: "an `F: Fn` given on to a function that calls it once by `FnOnce` is never dropped",
+    breaks:
+      "an `F: Fn` given on to a function that calls it once by `FnOnce` is never dropped",
     file: "src/lower/combinators/callbacks.rs",
     find: "                && crate::lower::recognition::function_kind(self.tcx, callee, input) == Some(ty::ClosureKind::FnOnce)\n",
     replace: "                && false\n",
-    tests: ["test/diagnostics.test.ts", "-t", "an Fn given on where it's called once"],
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "an Fn given on where it's called once",
+    ],
   },
   {
     name: "dropped-function-dropped-again",
-    breaks: "`drop(f)` of a function that holds a value with a destructor drops it twice",
+    breaks:
+      "`drop(f)` of a function that holds a value with a destructor drops it twice",
     file: "src/lower/combinators/callbacks.rs",
     find: "            Some(crate::lower::recognition::Std::Drop | crate::lower::recognition::Std::Forget)\n",
     replace: "            Some(crate::lower::recognition::Std::Forget)\n",
@@ -124,26 +152,35 @@ export const mutations: Mutation[] = [
   },
   {
     name: "boxed-for-js-refused",
-    breaks: "`Box::new` of a closure handed to JS, which carries no drop, is refused as a function kept by what it's given to (ADR 0873)",
+    breaks:
+      "`Box::new` of a closure handed to JS, which carries no drop, is refused as a function kept by what it's given to (ADR 0873)",
     file: "src/lower/combinators/callbacks.rs",
     find: "                ty::Closure(id, _) => facts.carries_its_drop(self.tcx, *id) || facts.handed_to_js(*id),\n",
-    replace: "                ty::Closure(id, _) => facts.carries_its_drop(self.tcx, *id),\n",
+    replace:
+      "                ty::Closure(id, _) => facts.carries_its_drop(self.tcx, *id),\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_to_js.rs$"],
   },
   {
     name: "made-closure-undropped",
-    breaks: "a closure a function gives, `impl FnMut`, folded, is never dropped, nor what it took (#259)",
+    breaks:
+      "a closure a function gives, `impl FnMut`, folded, is never dropped, nor what it took (#259)",
     file: "src/lower/combinators/callbacks.rs",
     find: "            let ty = self.reveal(ty);\n            let Some(when) = self.handled_argument(known, at, ty) else {\n",
-    replace: "            let Some(when) = self.handled_argument(known, at, ty) else {\n",
+    replace:
+      "            let Some(when) = self.handled_argument(known, at, ty) else {\n",
     tests: ["test/corpus.test.ts", "-t", "^(closures_made_and_folded).rs$"],
   },
   {
     name: "called-once-closure-refused-in-mir",
-    breaks: "a closure rustc infers `Fn` that holds a value with a destructor, given where it's made to a binding that calls it once, is refused where its MIR call is lowered (ADR 1020)",
+    breaks:
+      "a closure rustc infers `Fn` that holds a value with a destructor, given where it's made to a binding that calls it once, is refused where its MIR call is lowered (ADR 1020)",
     file: "src/lower/combinators/callbacks.rs",
     find: "                && !matches!(*ty.kind(), ty::Closure(id, _) if self.krate.closure_facts.called_once(id))\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^called_once_closure_drops_after.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^called_once_closure_drops_after.rs$",
+    ],
   },
 ];

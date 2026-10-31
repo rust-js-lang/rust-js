@@ -4,18 +4,25 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "values-comb-subject-dropped",
-    breaks: "an `Option`'s combinator is given its argument where its subject goes",
+    breaks:
+      "an `Option`'s combinator is given its argument where its subject goes",
     file: "src/lower/std_types/values.rs",
     find: "                return self.comb_values(comb, (values, tys), made, generic_args, call.span, out);\n",
-    replace: "                return self.comb_values(comb, (values[1..].to_vec(), &tys[1..]), made, generic_args, call.span, out);\n",
-    tests: ["test/corpus.test.ts", "-t", "option_as_deref|combinators_owned_drops"],
+    replace:
+      "                return self.comb_values(comb, (values[1..].to_vec(), &tys[1..]), made, generic_args, call.span, out);\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "option_as_deref|combinators_owned_drops",
+    ],
   },
   {
     name: "values-map-call-refused",
     breaks: "a map's method is refused",
     file: "src/lower/std_types/values.rs",
     find: "            Std::Map(op) => return self.map_values(op, (values.collect(), tys), generic_args, call.span, out),\n",
-    replace: "            Std::Map(_) => return Err(self.unsupported(call.span, \"a map's method\")),\n",
+    replace:
+      '            Std::Map(_) => return Err(self.unsupported(call.span, "a map\'s method")),\n',
     tests: ["test/corpus.test.ts", "-t", "map_index_missing"],
   },
   {
@@ -23,40 +30,46 @@ export const mutations: Mutation[] = [
     breaks: "a range's method, `r.contains(&x)`, is refused",
     file: "src/lower/std_types/values.rs",
     find: "            Std::Range(op) => return self.range_call(op, values.collect(), tys, call.span, out),\n",
-    replace: "            Std::Range(_) => return Err(self.unsupported(call.span, \"a range's method\")),\n",
+    replace:
+      '            Std::Range(_) => return Err(self.unsupported(call.span, "a range\'s method")),\n',
     tests: ["test/corpus.test.ts", "-t", "^range_values.rs$"],
   },
   {
     name: "ok-or-else-refused",
-    breaks: "`ok_or_else` of a value with a destructor, bitflags' parser's, is an error",
+    breaks:
+      "`ok_or_else` of a value with a destructor, bitflags' parser's, is an error",
     file: "src/lower/std_types/values.rs",
     find: "                            | Comb::Err\n                            | Comb::OkOrElse\n",
     replace: "                            | Comb::Err\n",
-    tests: ["test/corpus.test.ts","-t","option_combinator_drops"],
+    tests: ["test/corpus.test.ts", "-t", "option_combinator_drops"],
   },
   {
     name: "boxed-as-ref-refused",
-    breaks: "`as_ref()` of an `Option` of an `Option` is an error, where it's the same value",
+    breaks:
+      "`as_ref()` of an `Option` of an `Option` is an error, where it's the same value",
     file: "src/lower/std_types/values.rs",
     find: "            // `as_ref()`: the same value, box and all.\n            | Std::Pointee\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","nested_options"],
+    tests: ["test/corpus.test.ts", "-t", "nested_options"],
   },
   {
     name: "boxed-filter-refused",
-    breaks: "`filter` of an `Option` of an `Option` is an error, where it keeps its own box",
+    breaks:
+      "`filter` of an `Option` of an `Option` is an error, where it keeps its own box",
     file: "src/lower/std_types/values.rs",
     find: "            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen | Comb::And | Comb::Xor)\n",
-    replace: "            | Std::Comb(Comb::Or | Comb::OrElse | Comb::AndThen | Comb::And | Comb::Xor)\n",
-    tests: ["test/corpus.test.ts","-t","nested_options"],
+    replace:
+      "            | Std::Comb(Comb::Or | Comb::OrElse | Comb::AndThen | Comb::And | Comb::Xor)\n",
+    tests: ["test/corpus.test.ts", "-t", "nested_options"],
   },
   {
     name: "option-map-drops-refused",
     breaks: "`map` of an `Option` whose value has a destructor is an error",
     file: "src/lower/std_types/values.rs",
     find: "                    // function it leaves unrun is dropped there (ADR 0469).\n                    | Std::OptionMap\n",
-    replace: "                    // function it leaves unrun is dropped there (ADR 0469).\n",
-    tests: ["test/corpus.test.ts","-t","option_map_drops"],
+    replace:
+      "                    // function it leaves unrun is dropped there (ADR 0469).\n",
+    tests: ["test/corpus.test.ts", "-t", "option_map_drops"],
   },
   {
     name: "result-map-drops-refused",
@@ -64,15 +77,20 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/values.rs",
     find: "                        Comb::ResultMap\n                            | Comb::Filter\n",
     replace: "                        Comb::Filter\n",
-    tests: ["test/corpus.test.ts","-t","option_map_drops"],
+    tests: ["test/corpus.test.ts", "-t", "option_map_drops"],
   },
   {
     name: "unwrap-unchecked-keeps-drops",
-    breaks: "`unwrap_unchecked()` can't take a value with a destructor, so `Some(Guard(5)).unwrap_unchecked()` is refused",
+    breaks:
+      "`unwrap_unchecked()` can't take a value with a destructor, so `Some(Guard(5)).unwrap_unchecked()` is refused",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::UnwrapErr\n                    | Std::UnwrapUnchecked\n",
     replace: "                    | Std::UnwrapErr\n",
-    tests: ["test/lowering-options.test.ts", "-t", "unwrap_unchecked is the value"],
+    tests: [
+      "test/lowering-options.test.ts",
+      "-t",
+      "unwrap_unchecked is the value",
+    ],
   },
   {
     name: "once-boxed-get-refused",
@@ -80,7 +98,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/values.rs",
     find: "            | Std::Once(OnceOp::Get | OnceOp::Take)\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","once_cells"],
+    tests: ["test/corpus.test.ts", "-t", "once_cells"],
   },
   {
     name: "map-remove-refused",
@@ -88,7 +106,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/values.rs",
     find: "                            | MapOp::Remove\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","map_drops"],
+    tests: ["test/corpus.test.ts", "-t", "map_drops"],
   },
   {
     name: "guard-value-takes-drops",
@@ -96,7 +114,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/values.rs",
     find: "                    // What a guard guards, through its `&mut` (ADR 0328).\n                    | Std::GuardValue { .. }\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","^locks"],
+    tests: ["test/corpus.test.ts", "-t", "^locks"],
   },
   {
     name: "is-some-and-of-drops-refused",
@@ -104,7 +122,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/values.rs",
     find: "                            | Comb::IsSomeAnd\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","combinators_owned_drops"],
+    tests: ["test/corpus.test.ts", "-t", "combinators_owned_drops"],
   },
   {
     name: "unwrap-err-of-guard-refused",
@@ -112,7 +130,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::UnwrapErr\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","try_lock"],
+    tests: ["test/corpus.test.ts", "-t", "try_lock"],
   },
   {
     name: "option-iter-takes-drops-refused",
@@ -132,7 +150,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "option-as-mut-same",
-    breaks: "`list.next.as_mut()` of a handle on `list.next` is the handle, not the `Option`",
+    breaks:
+      "`list.next.as_mut()` of a handle on `list.next` is the handle, not the `Option`",
     file: "src/lower/std_types/values.rs",
     find: "            Std::Pointee => self.through_refs(arg(), tys[0]).0,\n",
     replace: "            Std::Pointee => arg(),\n",
@@ -140,7 +159,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "map-option-refused",
-    breaks: "a map's `get`, `insert` or `remove` of a value that could look like `None` is refused",
+    breaks:
+      "a map's `get`, `insert` or `remove` of a value that could look like `None` is refused",
     file: "src/lower/std_types/values.rs",
     find: "            | Std::Map(MapOp::Get | MapOp::Insert | MapOp::Remove)\n",
     replace: "",
@@ -156,7 +176,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "pointer-ops-would-drop",
-    breaks: "a raw pointer's `write` is taken as dropping what it's given, so a generic `push` given a type with a destructor is refused",
+    breaks:
+      "a raw pointer's `write` is taken as dropping what it's given, so a generic `push` given a type with a destructor is refused",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::Pointer(_)\n",
     replace: "",
@@ -164,7 +185,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "user-io-write-of-a-droppable",
-    breaks: "a write to a writer of bytes of the crate's with a destructor, arrayvec's `ArrayVec<u8, CAP>`, is refused as though the write dropped it",
+    breaks:
+      "a write to a writer of bytes of the crate's with a destructor, arrayvec's `ArrayVec<u8, CAP>`, is refused as though the write dropped it",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::UserIoWrite\n",
     replace: "",
@@ -172,15 +194,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "repeat-value-refused",
-    breaks: "`repeat` and `repeat_n` of a value with a destructor are refused, as std calls that may drop it",
+    breaks:
+      "`repeat` and `repeat_n` of a value with a destructor are refused, as std calls that may drop it",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::IterSource(IterSource::Repeat | IterSource::RepeatN)\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(repeat_drops|repeat_n_and_peek_mut).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(repeat_drops|repeat_n_and_peek_mut).rs$",
+    ],
   },
   {
     name: "extend-moving-all-refused",
-    breaks: "`v.extend(items)` of items with a destructor is refused, though it moves each",
+    breaks:
+      "`v.extend(items)` of items with a destructor is refused, though it moves each",
     file: "src/lower/std_types/values.rs",
     find: "            && !moves_all\n",
     replace: "",
@@ -220,7 +248,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "swap-takes-drops",
-    breaks: "a generic `swap` of items with a destructor takes none of its callers'",
+    breaks:
+      "a generic `swap` of items with a destructor takes none of its callers'",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::Comb(Comb::Swap | Comb::ExtendFromSlice)\n",
     replace: "                    | Std::Comb(Comb::ExtendFromSlice)\n",
@@ -228,7 +257,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "extend-from-slice-takes-drops",
-    breaks: "a generic `extend_from_slice` of items with a destructor takes none of its callers'",
+    breaks:
+      "a generic `extend_from_slice` of items with a destructor takes none of its callers'",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::Comb(Comb::Swap | Comb::ExtendFromSlice)\n",
     replace: "                    | Std::Comb(Comb::Swap)\n",
@@ -236,7 +266,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "slice-get-takes-drops",
-    breaks: "a generic `get_mut` of items with a destructor takes none of its callers'",
+    breaks:
+      "a generic `get_mut` of items with a destructor takes none of its callers'",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::SliceGet\n",
     replace: "",
@@ -244,7 +275,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "generic-index-mut-takes-drops",
-    breaks: "a generic index's `index_mut` of items with a destructor takes none of its callers'",
+    breaks:
+      "a generic index's `index_mut` of items with a destructor takes none of its callers'",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::Slice(SliceOp::GenericIndex { mutable: true })\n",
     replace: "",
@@ -252,7 +284,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "set-len-takes-drops",
-    breaks: "a generic `set_len` of items with a destructor takes none of its callers'",
+    breaks:
+      "a generic `set_len` of items with a destructor takes none of its callers'",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::Alloc(_)\n",
     replace: "",
@@ -260,7 +293,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "send-of-dropper-refused",
-    breaks: "a send of a value with a destructor is an error, though the channel's queue owns it",
+    breaks:
+      "a send of a value with a destructor is an error, though the channel's queue owns it",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::Channel(ChannelOp::Send)\n",
     replace: "",
@@ -268,7 +302,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "vec-moves-refused",
-    breaks: "`insert`, `remove`, `swap_remove`, `split_off` and `rotate` of a vector of values with destructors are refused",
+    breaks:
+      "`insert`, `remove`, `swap_remove`, `split_off` and `rotate` of a vector of values with destructors are refused",
     file: "src/lower/std_types/values.rs",
     find: "                        Comb::Insert | Comb::Remove | Comb::SwapRemove | Comb::SplitOff | Comb::Rotate { .. }\n",
     replace: "                        Comb::Then\n",
@@ -292,7 +327,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "vec-drops-refused",
-    breaks: "`truncate`, `retain` and `clear` of a vector of values with destructors are refused",
+    breaks:
+      "`truncate`, `retain` and `clear` of a vector of values with destructors are refused",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::Clear\n                    | Std::Retain\n",
     replace: "",
@@ -324,15 +360,17 @@ export const mutations: Mutation[] = [
   },
   {
     name: "deque-front-of-destructors-refused",
-    breaks: "`push_front` and `pop_front` of a `VecDeque` of values with destructors are refused",
+    breaks:
+      "`push_front` and `pop_front` of a `VecDeque` of values with destructors are refused",
     file: "src/lower/std_types/values.rs",
-    find: "                    | Std::Method(\"unshift\" | \"shift\")\n",
+    find: '                    | Std::Method("unshift" | "shift")\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
   },
   {
     name: "option-insert-of-destructors-refused",
-    breaks: "`insert` and `get_or_insert` of an `Option` of a value with a destructor are refused",
+    breaks:
+      "`insert` and `get_or_insert` of an `Option` of a value with a destructor are refused",
     file: "src/lower/std_types/values.rs",
     find: "                        OptionPlaceOp::Insert\n",
     replace: "                        OptionPlaceOp::TakeIf\n",
@@ -340,7 +378,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "map-drops-refused",
-    breaks: "`retain`, `extend`, `clear` and `or_insert` of a map of values with destructors are refused",
+    breaks:
+      "`retain`, `extend`, `clear` and `or_insert` of a map of values with destructors are refused",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::Map(MapOp::Retain | MapOp::Extend | MapOp::Clear | MapOp::OrInsert | MapOp::DrainAll)\n",
     replace: "",
@@ -364,7 +403,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "partition-moves-unseen",
-    breaks: "`partition` of items with a destructor is refused, as if it dropped some",
+    breaks:
+      "`partition` of items with a destructor is refused, as if it dropped some",
     file: "src/lower/std_types/values.rs",
     find: "            || (matches!(known, Std::IterComb(comb) if comb.leaves_none())\n",
     replace: "            || (false\n",
@@ -372,7 +412,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "poison-guard-dropped",
-    breaks: "`into_inner()` of a lock's guard is refused, as if it dropped the guard it gives back",
+    breaks:
+      "`into_inner()` of a lock's guard is refused, as if it dropped the guard it gives back",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::PoisonData\n",
     replace: "",
@@ -380,7 +421,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "find-map-lent-refused",
-    breaks: "`find_map` through a `&mut` of items with a destructor is refused, as if it took the iterator whole",
+    breaks:
+      "`find_map` through a `&mut` of items with a destructor is refused, as if it took the iterator whole",
     file: "src/lower/std_types/values.rs",
     find: "                && (tys[0].is_ref() || self.ends_holding_nothing(tys[0])))\n",
     replace: "                && self.ends_holding_nothing(tys[0]))\n",
@@ -388,15 +430,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "find-map-boxed-refused",
-    breaks: "`find_map` of a function giving an `Option` of what could look like `None` is refused",
+    breaks:
+      "`find_map` of a function giving an `Option` of what could look like `None` is refused",
     file: "src/lower/std_types/values.rs",
     find: "            | Std::IterComb(crate::lower::combinators::IterComb::FindMap | crate::lower::combinators::IterComb::Nth)\n",
-    replace: "            | Std::IterComb(crate::lower::combinators::IterComb::Nth)\n",
+    replace:
+      "            | Std::IterComb(crate::lower::combinators::IterComb::Nth)\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
   },
   {
     name: "boxed-unwrap-refused",
-    breaks: "`unwrap_or_else` of an `Option` of an `Option` of a type parameter is refused, where it gives the inner one as it's held",
+    breaks:
+      "`unwrap_or_else` of an `Option` of an `Option` of a type parameter is refused, where it gives the inner one as it's held",
     file: "src/lower/std_types/values.rs",
     find: "            | Std::Comb(\n                Comb::UnwrapOrElse | Comb::UnwrapOrDefault | Comb::ResultUnwrapOrElse | Comb::ResultUnwrapOrDefault\n            )\n",
     replace: "",
@@ -404,7 +449,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "boxed-max-by-refused",
-    breaks: "`min_by` of a type parameter's items is refused, where `$minBy` boxes its pick",
+    breaks:
+      "`min_by` of a type parameter's items is refused, where `$minBy` boxes its pick",
     file: "src/lower/std_types/values.rs",
     find: "            | Std::IterComb(crate::lower::combinators::IterComb::MaxBy(_) | crate::lower::combinators::IterComb::MaxByKey(_))\n",
     replace: "",
@@ -420,7 +466,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unused-value-calls-refused",
-    breaks: "`unwrap_or`, `ok_or`, `or` and `then_some` of a value with a destructor are refused",
+    breaks:
+      "`unwrap_or`, `ok_or`, `or` and `then_some` of a value with a destructor are refused",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::Comb(Comb::OkOr | Comb::Or | Comb::ResultOr | Comb::ThenSome | Comb::And | Comb::ResultAnd | Comb::Xor | Comb::Zip)\n",
     replace: "",
@@ -428,7 +475,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cycle-takes-drops-refused",
-    breaks: "`cycle()` of an iterator with a destructor is refused as taking a value it might drop",
+    breaks:
+      "`cycle()` of an iterator with a destructor is refused as taking a value it might drop",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::Step(StepOp::Cycle)\n",
     replace: "",
@@ -436,18 +484,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "boxed-pop-front-refused",
-    breaks: "`pop_front` of a type parameter's items is refused, its `Some` unboxed",
+    breaks:
+      "`pop_front` of a type parameter's items is refused, its `Some` unboxed",
     file: "src/lower/std_types/values.rs",
-    find: "            | Std::Method(\"pop\" | \"shift\")\n",
-    replace: "            | Std::Method(\"pop\")\n",
+    find: '            | Std::Method("pop" | "shift")\n',
+    replace: '            | Std::Method("pop")\n',
     tests: ["test/corpus.test.ts", "-t", "^generic_rc_drops.rs$"],
   },
   {
     name: "boxed-and-refused",
-    breaks: "`and` of a type parameter's `Option` is refused, its box taken for none",
+    breaks:
+      "`and` of a type parameter's `Option` is refused, its box taken for none",
     file: "src/lower/std_types/values.rs",
     find: "            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen | Comb::And | Comb::Xor)\n",
-    replace: "            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen | Comb::Xor)\n",
+    replace:
+      "            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen | Comb::Xor)\n",
     tests: ["test/corpus.test.ts", "-t", "^and_of_a_generic_option.rs$"],
   },
   {
@@ -484,7 +535,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "inspect-refused",
-    breaks: "`inspect` of an `Option` or a `Result` of a value with a destructor is refused",
+    breaks:
+      "`inspect` of an `Option` or a `Result` of a value with a destructor is refused",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::Comb(Comb::Inspect | Comb::ResultInspect { .. })\n",
     replace: "",
@@ -492,7 +544,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "extract-if-refused",
-    breaks: "`extract_if` of a vector's or a list's values with a destructor is refused",
+    breaks:
+      "`extract_if` of a vector's or a list's values with a destructor is refused",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::Slice(SliceOp::ExtractIf { .. })\n",
     replace: "",
@@ -516,7 +569,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "lending-slice-ops-refused",
-    breaks: "`split_at_mut` and the rest of a slice's lending ops are refused of values with a destructor",
+    breaks:
+      "`split_at_mut` and the rest of a slice's lending ops are refused of values with a destructor",
     file: "src/lower/std_types/values.rs",
     find: "            || matches!(known, Std::Slice(op) if op.lends());\n",
     replace: ";\n",
@@ -556,7 +610,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "capacity-of-destructors-refused",
-    breaks: "`shrink_to_fit` and `reserve` of values with a destructor are refused",
+    breaks:
+      "`shrink_to_fit` and `reserve` of values with a destructor are refused",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::Capacity(_)\n",
     replace: "",
@@ -564,7 +619,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "pop-if-and-defaults-refused",
-    breaks: "`pop_if` and `unwrap_or_default` of values with a destructor are refused",
+    breaks:
+      "`pop_if` and `unwrap_or_default` of values with a destructor are refused",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::Comb(Comb::PopIf | Comb::UnwrapOrDefault | Comb::ResultUnwrapOrDefault)\n",
     replace: "",
@@ -574,7 +630,7 @@ export const mutations: Mutation[] = [
     name: "array-map-of-destructors-refused",
     breaks: "an array's `map` of values with a destructor is refused",
     file: "src/lower/std_types/values.rs",
-    find: "                    | Std::Method(\"map\")\n",
+    find: '                    | Std::Method("map")\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^default_and_pop_if_drops.rs$"],
   },
@@ -596,7 +652,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "peekable-methods-refused",
-    breaks: "a `Peekable`'s `peek` and `next_if` of items with a destructor are refused",
+    breaks:
+      "a `Peekable`'s `peek` and `next_if` of items with a destructor are refused",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::Step(StepOp::Peek | StepOp::PeekMut | StepOp::NextIf | StepOp::NextIfEq)\n",
     replace: "",
@@ -604,7 +661,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "once-cell-ops-refused",
-    breaks: "a `OnceCell`'s `set` and `take` of a value with a destructor are refused",
+    breaks:
+      "a `OnceCell`'s `set` and `take` of a value with a destructor are refused",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::Once(_)\n",
     replace: "",
@@ -620,26 +678,32 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cell-take-of-boxed-option-refused",
-    breaks: "a `Cell`'s `take()` of an `Option` of what could look like `None` is refused",
+    breaks:
+      "a `Cell`'s `take()` of an `Option` of what could look like `None` is refused",
     file: "src/lower/std_types/values.rs",
     find: "            | Std::CellTake\n            | Std::CellReplace\n            | Std::CellGet\n            | Std::OptionTake",
-    replace: "            | Std::CellReplace\n            | Std::CellGet\n            | Std::OptionTake",
+    replace:
+      "            | Std::CellReplace\n            | Std::CellGet\n            | Std::OptionTake",
     tests: ["test/corpus.test.ts", "-t", "^cell_of_a_boxed_option.rs$"],
   },
   {
     name: "cell-replace-of-boxed-option-refused",
-    breaks: "a `Cell`'s `replace()` of an `Option` of what could look like `None` is refused",
+    breaks:
+      "a `Cell`'s `replace()` of an `Option` of what could look like `None` is refused",
     file: "src/lower/std_types/values.rs",
     find: "            | Std::CellTake\n            | Std::CellReplace\n            | Std::CellGet\n            | Std::OptionTake",
-    replace: "            | Std::CellTake\n            | Std::CellGet\n            | Std::OptionTake",
+    replace:
+      "            | Std::CellTake\n            | Std::CellGet\n            | Std::OptionTake",
     tests: ["test/corpus.test.ts", "-t", "^cell_of_a_boxed_option.rs$"],
   },
   {
     name: "cell-get-of-boxed-option-refused",
-    breaks: "a `Cell`'s `get()` of an `Option` of what could look like `None` is refused",
+    breaks:
+      "a `Cell`'s `get()` of an `Option` of what could look like `None` is refused",
     file: "src/lower/std_types/values.rs",
     find: "            | Std::CellTake\n            | Std::CellReplace\n            | Std::CellGet\n            | Std::OptionTake",
-    replace: "            | Std::CellTake\n            | Std::CellReplace\n            | Std::OptionTake",
+    replace:
+      "            | Std::CellTake\n            | Std::CellReplace\n            | Std::OptionTake",
     tests: ["test/corpus.test.ts", "-t", "^cell_of_a_boxed_option.rs$"],
   },
   {
@@ -660,7 +724,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "swap-with-slice-takes-drops-refused",
-    breaks: "`swap_with_slice` of items with a destructor is refused, where it drops none",
+    breaks:
+      "`swap_with_slice` of items with a destructor is refused, where it drops none",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::Slice(SliceOp::SwapWithSlice)\n",
     replace: "",
@@ -668,7 +733,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mem-take-boxed-option-refused",
-    breaks: "`mem::take` and `mem::replace` of an `Option<Option<i32>>` are refused, though each gives the old value as it's kept, boxed already",
+    breaks:
+      "`mem::take` and `mem::replace` of an `Option<Option<i32>>` are refused, though each gives the old value as it's kept, boxed already",
     file: "src/lower/std_types/values.rs",
     find: "            | Std::MemTake\n            | Std::Replace\n",
     replace: "",
@@ -676,7 +742,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unwind-of-a-destructor",
-    breaks: "`catch_unwind` of a closure that holds a value with a destructor, and `resume_unwind` of one, are refused",
+    breaks:
+      "`catch_unwind` of a closure that holds a value with a destructor, and `resume_unwind` of one, are refused",
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::Unwind(_)\n",
     replace: "",
@@ -700,7 +767,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "component-text-twice",
-    breaks: "a component's `as_os_str()` is given its text, and reads it as a component again",
+    breaks:
+      "a component's `as_os_str()` is given its text, and reads it as a component again",
     file: "src/lower/std_types/values.rs",
     find: "            Std::Path(op) if op != super::path::PathOp::ComponentText => (values.into_iter().zip(tys))",
     replace: "            Std::Path(_) => (values.into_iter().zip(tys))",
@@ -708,7 +776,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "get-mut-drop-refused",
-    breaks: "a `RefCell`'s `get_mut` of a value with a destructor is refused, though it drops nothing (ADR 0863)",
+    breaks:
+      "a `RefCell`'s `get_mut` of a value with a destructor is refused, though it drops nothing (ADR 0863)",
     file: "src/lower/std_types/values.rs",
     find: "                    // A cell's `get_mut`, a `&mut` to what it holds, which a\n                    // write through drops as it's written (ADR 0863).\n                    | Std::CellGetMut\n",
     replace: "",
@@ -716,7 +785,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "local-borrow-nested-option-refused",
-    breaks: "a thread-local's `with_borrow` whose closure gives an `Option` of an `Option`, React's SimpleEventPlugin's `names.get(dom).cloned()`, is refused, though it's the closure's own, boxed as it makes it (rd111)",
+    breaks:
+      "a thread-local's `with_borrow` whose closure gives an `Option` of an `Option`, React's SimpleEventPlugin's `names.get(dom).cloned()`, is refused, though it's the closure's own, boxed as it makes it (rd111)",
     file: "src/lower/std_types/values.rs",
     find: "            // A thread-local's closure's, as it gives it (rd111).\n            | Std::LocalWith\n            | Std::LocalBorrow { .. }\n",
     replace: "",

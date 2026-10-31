@@ -14,13 +14,14 @@ export const mutations: Mutation[] = [
     name: "path-iter-as-ancestors",
     breaks: "a path's `iter()` gives its ancestors, not its components",
     file: "src/lower/std_types/path.rs",
-    find: "            PathOp::Iter => \"$pathParts\",\n",
-    replace: "            PathOp::Iter => \"$pathAncestors\",\n",
+    find: '            PathOp::Iter => "$pathParts",\n',
+    replace: '            PathOp::Iter => "$pathAncestors",\n',
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
   },
   {
     name: "path-given-component-raw",
-    breaks: "a `Component` given as a path is its object, which `$pathJoin` throws on",
+    breaks:
+      "a `Component` given as a path is its object, which `$pathJoin` throws on",
     file: "src/lower/std_types/path.rs",
     find: "match self.recognition().is_path_component(ty) {",
     replace: "match false {",

@@ -4,57 +4,72 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "index-reader-array-first",
-    breaks: "a compiled `copied()` of a slice is read by index as the array's `$iter` its recognizers make, not by std's compiled reader: `$getUnchecked` reads `start` of the struct, `NaN` (ADR 0975)",
+    breaks:
+      "a compiled `copied()` of a slice is read by index as the array's `$iter` its recognizers make, not by std's compiled reader: `$getUnchecked` reads `start` of the struct, `NaN` (ADR 0975)",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "        if crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) {\n            return Ok(match self.compiled_step(ty, iterator, \"__iterator_get_unchecked\") {\n",
-    replace: "        if !(self.range_kind(ty).is_some() || self.steps_an_array(ty))\n            && crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)\n        {\n            return Ok(match self.compiled_step(ty, iterator, \"__iterator_get_unchecked\") {\n",
+    find: '        if crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) {\n            return Ok(match self.compiled_step(ty, iterator, "__iterator_get_unchecked") {\n',
+    replace:
+      '        if !(self.range_kind(ty).is_some() || self.steps_an_array(ty))\n            && crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)\n        {\n            return Ok(match self.compiled_step(ty, iterator, "__iterator_get_unchecked") {\n',
     tests: ["test/iterator-forms.test.ts", "-t", "^lazy_chains with"],
   },
   {
     name: "dictionary-try-rfold-ungiven",
-    breaks: "std's struct's `DoubleEndedIterator` dictionary has no `try_rfold`, so std's `Skip::try_rfold` steps its `Take` by `next_back`: `nth_back(4)`, `nth_back(0)` where Rust asks `nth_back(3)` (ADR 0930)",
+    breaks:
+      "std's struct's `DoubleEndedIterator` dictionary has no `try_rfold`, so std's `Skip::try_rfold` steps its `Take` by `next_back`: `nth_back(4)`, `nth_back(0)` where Rust asks `nth_back(3)` (ADR 0930)",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "            let try_rfold = self.compiled_try_fold(ty, (trait_id, \"try_rfold\"), span)?;\n",
-    replace: "            let try_rfold = self.compiled_try_fold(ty, (trait_id, \"try_rfold\"), span)?.filter(|_| false);\n",
-    tests: ["test/iterator-forms.test.ts", "-t", "^held_back_folds_by_try_rfold with"],
+    find: '            let try_rfold = self.compiled_try_fold(ty, (trait_id, "try_rfold"), span)?;\n',
+    replace:
+      '            let try_rfold = self.compiled_try_fold(ty, (trait_id, "try_rfold"), span)?.filter(|_| false);\n',
+    tests: [
+      "test/iterator-forms.test.ts",
+      "-t",
+      "^held_back_folds_by_try_rfold with",
+    ],
   },
   {
     name: "lent-rfold-passed",
-    breaks: "a `&mut I`'s `DoubleEndedIterator` dictionary passes on `I`'s own `rfold`, which std's `&mut I` folds by `I`'s `try_rfold`: `(&mut it).rev().sum()` calls the crate's `rfold` where Rust doesn't (ADR 0928)",
+    breaks:
+      "a `&mut I`'s `DoubleEndedIterator` dictionary passes on `I`'s own `rfold`, which std's `&mut I` folds by `I`'s `try_rfold`: `(&mut it).rev().sum()` calls the crate's `rfold` where Rust doesn't (ADR 0928)",
     file: "src/lower/iterators/dictionaries.rs",
     find: "        let passed_rfold = |rfold: Option<Expr>| rfold.filter(|_| !lent);\n",
-    replace: "        let passed_rfold = |rfold: Option<Expr>| rfold.filter(|_| lent || !lent);\n",
+    replace:
+      "        let passed_rfold = |rfold: Option<Expr>| rfold.filter(|_| lent || !lent);\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^rev_own_back_methods with"],
   },
   {
     name: "iterator-dictionary-range-as-js",
-    breaks: "a range's `Iterator` dictionary steps it as a JS iterator, `$next`",
+    breaks:
+      "a range's `Iterator` dictionary steps it as a JS iterator, `$next`",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "                Some(step) => step,\n                None => return Err(self.unsupported(span, &format!(\"the `Iterator` of a `{ty}`\"))),\n",
-    replace: "                Some(_) => Expr::helper(\"$next\"),\n                None => return Err(self.unsupported(span, &format!(\"the `Iterator` of a `{ty}`\"))),\n",
+    find: '                Some(step) => step,\n                None => return Err(self.unsupported(span, &format!("the `Iterator` of a `{ty}`"))),\n',
+    replace:
+      '                Some(_) => Expr::helper("$next"),\n                None => return Err(self.unsupported(span, &format!("the `Iterator` of a `{ty}`"))),\n',
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
   {
     name: "iterator-dictionary-unboxed-items",
-    breaks: "a JS iterator's `Iterator` dictionary of items that may look like `None` doesn't box them",
+    breaks:
+      "a JS iterator's `Iterator` dictionary of items that may look like `None` doesn't box them",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "                Some(item) if !self.boxed_payload(item) => Expr::helper(\"$next\"),\n",
-    replace: "                Some(_) => Expr::helper(\"$next\"),\n",
+    find: '                Some(item) if !self.boxed_payload(item) => Expr::helper("$next"),\n',
+    replace: '                Some(_) => Expr::helper("$next"),\n',
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
   {
     name: "given-js-iterator-backless",
-    breaks: "an `I` given as it is, made a JS iterator for `last<K: DoubleEndedIterator>`, has no back",
+    breaks:
+      "an `I` given as it is, made a JS iterator for `last<K: DoubleEndedIterator>`, has no back",
     file: "src/lower/iterators/dictionaries.rs",
     find: "            if crate::lower::recognition::is_double_ended(self.tcx, trait_id) {\n                return Some(Some(dictionary));\n            }\n",
-    replace: "            if crate::lower::recognition::is_double_ended(self.tcx, trait_id) {\n                return Some(None);\n            }\n",
+    replace:
+      "            if crate::lower::recognition::is_double_ended(self.tcx, trait_id) {\n                return Some(None);\n            }\n",
     tests: ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$"],
   },
   {
     name: "extension-range-len-refused",
     breaks: "a range's `ExactSizeIterator` dictionary is refused",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "            (false, Some(RangeKind::Exclusive)) => Some(Expr::helper(\"$rangeLen\")),\n",
+    find: '            (false, Some(RangeKind::Exclusive)) => Some(Expr::helper("$rangeLen")),\n',
     replace: "            (false, Some(RangeKind::Exclusive)) => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$"],
   },
@@ -71,7 +86,8 @@ export const mutations: Mutation[] = [
     breaks: "a `$iter`'s `ExactSizeIterator` dictionary is refused",
     file: "src/lower/iterators/dictionaries.rs",
     find: "            (false, None) if self.steps_an_array(ty) || self.knows_its_length(ty) => Some(returned(Expr::call(\n",
-    replace: "            (false, None) if false => Some(returned(Expr::call(\n",
+    replace:
+      "            (false, None) if false => Some(returned(Expr::call(\n",
     tests: ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$"],
   },
   {
@@ -84,7 +100,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "given-iterator-unboxed",
-    breaks: "an adapter's `I` of a generic item, made a JS iterator, keeps its `Some` boxed",
+    breaks:
+      "an adapter's `I` of a generic item, made a JS iterator, keeps its `Some` boxed",
     file: "src/lower/iterators/dictionaries.rs",
     find: "        let boxed = self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));\n        // Each given,",
     replace: "        let boxed = false;\n        // Each given,",
@@ -92,15 +109,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cycle-iterator-undropped",
-    breaks: "`cycle()` of an iterator with a destructor drops neither the one it replaces nor those it holds",
+    breaks:
+      "`cycle()` of an iterator with a destructor drops neither the one it replaces nor those it holds",
     file: "src/lower/iterators/dictionaries.rs",
     find: "        let drop = self.drop_function(ty, span)?;\n        let mut args = vec![it, clone, next];\n",
-    replace: "        let drop: Option<Expr> = None;\n        let mut args = vec![it, clone, next];\n",
+    replace:
+      "        let drop: Option<Expr> = None;\n        let mut args = vec![it, clone, next];\n",
     tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
   },
   {
     name: "cycle-clone-wrapped",
-    breaks: "`cycle()`'s clone of a type parameter given as it is is `(iterator) => IClone.clone(iterator)`",
+    breaks:
+      "`cycle()`'s clone of a type parameter given as it is is `(iterator) => IClone.clone(iterator)`",
     file: "src/lower/iterators/dictionaries.rs",
     find: "        let clone = passed_on(&clone, Taker::Made, &[]).unwrap_or(clone);\n",
     replace: "",
@@ -112,12 +132,14 @@ export const mutations: Mutation[] = [
     breaks: "`cycled()` of an array's iterator a struct holds is refused",
     file: "src/lower/iterators/dictionaries.rs",
     find: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct_at(ty, span) => {\n                let boxed",
-    replace: "            None if (self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct_at(ty, span)) && false => {\n                let boxed",
+    replace:
+      "            None if (self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct_at(ty, span)) && false => {\n                let boxed",
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
   },
   {
     name: "own-hint-not-in-dictionary",
-    breaks: "the crate's iterator's `Iterator` dictionary lacks its own `size_hint`, so a compiled `Fuse` of it says `(0, None)`",
+    breaks:
+      "the crate's iterator's `Iterator` dictionary lacks its own `size_hint`, so a compiled `Fuse` of it says `(0, None)`",
     file: "src/lower/iterators/dictionaries.rs",
     find: "            props.push(js::Prop::Field(size_hint, hint));\n",
     replace: "            drop((size_hint, hint));\n",
@@ -125,18 +147,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "extension-dictionary-swapped",
-    breaks: "a `DoubleEndedIterator` dictionary is made `{ len }`, and an `ExactSizeIterator`'s `{ next_back }`",
+    breaks:
+      "a `DoubleEndedIterator` dictionary is made `{ len }`, and an `ExactSizeIterator`'s `{ next_back }`",
     file: "src/lower/iterators/dictionaries.rs",
     find: "        let double_ended = crate::lower::recognition::is_double_ended(self.tcx, trait_id);\n",
-    replace: "        let double_ended = !crate::lower::recognition::is_double_ended(self.tcx, trait_id);\n",
+    replace:
+      "        let double_ended = !crate::lower::recognition::is_double_ended(self.tcx, trait_id);\n",
     tests: ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$"],
   },
   {
     name: "dictionary-own-fold-left-out",
-    breaks: "the crate's iterator's dictionary leaves out its own `fold`, `nth` and `last`",
+    breaks:
+      "the crate's iterator's dictionary leaves out its own `fold`, `nth` and `last`",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "        for (name, own) in [(\"fold\", fold), (\"nth\", nth), (\"last\", last)] {\n",
-    replace: "        for (name, own) in [(\"fold\", fold), (\"nth\", nth), (\"last\", last)].into_iter().filter(|_| false) {\n",
+    find: '        for (name, own) in [("fold", fold), ("nth", nth), ("last", last)] {\n',
+    replace:
+      '        for (name, own) in [("fold", fold), ("nth", nth), ("last", last)].into_iter().filter(|_| false) {\n',
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },
   {
@@ -144,12 +170,14 @@ export const mutations: Mutation[] = [
     breaks: "`cycle()` of a `map` or a `filter` is refused",
     file: "src/lower/iterators/dictionaries.rs",
     find: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct_at(ty, span) => {\n",
-    replace: "            None if self.steps_an_array(ty) || self.compiled_struct_at(ty, span) => {\n",
+    replace:
+      "            None if self.steps_an_array(ty) || self.compiled_struct_at(ty, span) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^cloned_chains_and_cycles.rs$"],
   },
   {
     name: "adapter-dictionary-own-unpassed",
-    breaks: "std's adapter over the crate's own iterator, given to std's compiled code, is a dictionary of `next` alone, so a `fuse` over a `skip` asks `nth(2)`, not std's `nth(3)` (#214)",
+    breaks:
+      "std's adapter over the crate's own iterator, given to std's compiled code, is a dictionary of `next` alone, so a `fuse` over a `skip` asks `nth(2)`, not std's `nth(3)` (#214)",
     file: "src/lower/iterators/dictionaries.rs",
     find: "        let (fold, nth, last) = match self.is_user_iterator(ty) {\n",
     replace: "        let (fold, nth, last) = match true {\n",
@@ -158,7 +186,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "back-dictionary-own-unlisted",
-    breaks: "the crate's iterator's `DoubleEndedIterator` dictionary gives only `next_back`, not its own `rfold` and `nth_back`, which a compiled `fuse()` asks (#224)",
+    breaks:
+      "the crate's iterator's `DoubleEndedIterator` dictionary gives only `next_back`, not its own `rfold` and `nth_back`, which a compiled `fuse()` asks (#224)",
     file: "src/lower/iterators/dictionaries.rs",
     find: "                true => self.own_methods(ty, false, span)?.rfold,\n",
     replace: "                true => None,\n",
@@ -166,7 +195,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "given-back-entry-alone",
-    breaks: "a type parameter's iterator is given its `DoubleEndedIterator` dictionary's `next_back` alone, not the dictionary (#224)",
+    breaks:
+      "a type parameter's iterator is given its `DoubleEndedIterator` dictionary's `next_back` alone, not the dictionary (#224)",
     file: "src/lower/iterators/dictionaries.rs",
     find: "            if crate::lower::recognition::is_double_ended(self.tcx, trait_id) {\n                return Some(Some(dictionary));\n            }\n",
     replace: "",
@@ -174,24 +204,31 @@ export const mutations: Mutation[] = [
   },
   {
     name: "range-back-dictionary-nth-back-unknown",
-    breaks: "a range's `DoubleEndedIterator` dictionary has no `nth_back`, which a held `Rev`'s `nth` then steps number by number",
+    breaks:
+      "a range's `DoubleEndedIterator` dictionary has no `nth_back`, which a held `Rev`'s `nth` then steps number by number",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "                (false, Some(RangeKind::Exclusive)) if numbers => Some(Expr::helper(\"$rangeNthBack\")),\n",
+    find: '                (false, Some(RangeKind::Exclusive)) if numbers => Some(Expr::helper("$rangeNthBack")),\n',
     replace: "",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^held_fuse_back.rs$"],
   },
   {
     name: "mut-iterator-extension-unpeeled",
-    breaks: "the `ExactSizeIterator` dictionary of a `&mut` to the crate's iterator is std's default hint's",
+    breaks:
+      "the `ExactSizeIterator` dictionary of a `&mut` to the crate's iterator is std's default hint's",
     file: "src/lower/iterators/dictionaries.rs",
     find: "        let ty = self.reveal(ty.peel_refs());\n",
     replace: "        let ty = self.reveal(ty);\n",
-    tests: ["test/corpus.test.ts", "-t", "^(own_iterator_dropped_through_adapters|held_enumerate|std_enumerate).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(own_iterator_dropped_through_adapters|held_enumerate|std_enumerate).rs$",
+    ],
   },
   {
     name: "held-map-cycled-apart",
-    breaks: "a held `Map` cycled, std's struct, is cloned as the JS iterator it isn't",
+    breaks:
+      "a held `Map` cycled, std's struct, is cloned as the JS iterator it isn't",
     file: "src/lower/iterators/dictionaries.rs",
     find: "        let cloned = match self.compiled_struct_at(ty, span) {\n",
     replace: "        let cloned = match false {\n",
@@ -199,15 +236,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "compiled-struct-back-as-js",
-    breaks: "generic code given a held `Map`, std's struct, steps it from its back as a JS iterator, `$nextBack`, which it isn't",
+    breaks:
+      "generic code given a held `Map`, std's struct, steps it from its back as a JS iterator, `$nextBack`, which it isn't",
     file: "src/lower/iterators/dictionaries.rs",
     find: "            (_, None) if self.compiled_step(ty, trait_id, name) => Some(self.user_next(ty, trait_id, name, span)?.0),\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(filters_held_double_ended|back_stepped_adapter_sources).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(filters_held_double_ended|back_stepped_adapter_sources).rs$",
+    ],
   },
   {
     name: "compiled-struct-rfold-as-js",
-    breaks: "a held `Map`'s `rfold`, given to a compiled `fuse()`, is a JS iterator's `$foldBack`, which it isn't",
+    breaks:
+      "a held `Map`'s `rfold`, given to a compiled `fuse()`, is a JS iterator's `$foldBack`, which it isn't",
     file: "src/lower/iterators/dictionaries.rs",
     find: "        if double_ended && crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) {\n",
     replace: "        if false {\n",
@@ -215,15 +258,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "std-struct-fold-undictionaried",
-    breaks: "a `Map` std's `FlatMap` makes has no `fold` in its dictionary, so std's `FlattenCompat::fold` steps it by `next`, not the crate's own `fold` (ADR 0912)",
+    breaks:
+      "a `Map` std's `FlatMap` makes has no `fold` in its dictionary, so std's `FlattenCompat::fold` steps it by `next`, not the crate's own `fold` (ADR 0912)",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "                    || (crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)\n                        && self.compiled_fold_of(ty, (iterator, \"fold\"))?.is_some());\n",
+    find: '                    || (crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)\n                        && self.compiled_fold_of(ty, (iterator, "fold"))?.is_some());\n',
     replace: ";\n",
-    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+    tests: [
+      "test/std-package.test.ts",
+      "-t",
+      "the committed @rust-js/std is std's bodies",
+    ],
   },
   {
     name: "mut-ref-dictionary-whole",
-    breaks: "a `&mut I` is given all of `I`'s dictionary, so `by_ref().fuse().count()` runs the crate's own `fold`, which std's `&mut I` never calls (ADR 0912)",
+    breaks:
+      "a `&mut I` is given all of `I`'s dictionary, so `by_ref().fuse().count()` runs the crate's own `fold`, which std's `&mut I` never calls (ADR 0912)",
     file: "src/lower/iterators/dictionaries.rs",
     find: "                .filter(|prop| matches!(prop, js::Prop::Field(name, _) if passed.contains(name)))\n",
     replace: "",
@@ -231,26 +280,38 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cycled-std-struct-refused",
-    breaks: "`cycle()` of std's struct, a `rev()`'s, is refused where it steps it as the JS iterator it is (#308, ADR 0915)",
+    breaks:
+      "`cycle()` of std's struct, a `rev()`'s, is refused where it steps it as the JS iterator it is (#308, ADR 0915)",
     file: "src/lower/iterators/dictionaries.rs",
     find: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) || self.compiled_struct_at(ty, span) => {\n",
-    replace: "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) => {\n",
+    replace:
+      "            None if self.steps_an_array(ty) || self.iterator_cloned_apart(ty) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^cycled_reversed_ranges.rs$"],
   },
   {
     name: "inclusive-range-len-refused",
-    breaks: "`len()` of an `a..=b` given to generic code is refused, where rustc makes one an `ExactSizeIterator` (ADR 0918)",
+    breaks:
+      "`len()` of an `a..=b` given to generic code is refused, where rustc makes one an `ExactSizeIterator` (ADR 0918)",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "            (false, Some(RangeKind::Inclusive)) => Some(Expr::helper(\"$rangeInclusiveLen\")),\n",
+    find: '            (false, Some(RangeKind::Inclusive)) => Some(Expr::helper("$rangeInclusiveLen")),\n',
     replace: "",
-    tests: ["test/iterator-forms.test.ts", "-t", "^range_hints_given with std's iterator structs$"],
+    tests: [
+      "test/iterator-forms.test.ts",
+      "-t",
+      "^range_hints_given with std's iterator structs$",
+    ],
   },
   {
     name: "default-len-refused",
-    breaks: "std's `Skip`, whose `len` is std's default, has no `ExactSizeIterator` dictionary, so it can't be given to generic code that asks it (ADR 0918)",
+    breaks:
+      "std's `Skip`, whose `len` is std's default, has no `ExactSizeIterator` dictionary, so it can't be given to generic code that asks it (ADR 0918)",
     file: "src/lower/iterators/dictionaries.rs",
     find: "            (false, None) if let Some(len) = self.default_len(ty, trait_id) => Some(len),\n",
     replace: "",
-    tests: ["test/iterator-forms.test.ts", "-t", "^range_hints_given with std's iterator structs$"],
+    tests: [
+      "test/iterator-forms.test.ts",
+      "-t",
+      "^range_hints_given with std's iterator structs$",
+    ],
   },
 ];

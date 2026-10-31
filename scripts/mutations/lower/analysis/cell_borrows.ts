@@ -4,55 +4,80 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "cell-key-never-same",
-    breaks: "a thread-local's borrow is never its own, so `LOG`'s second borrow in its own closure isn't counted and doesn't throw",
+    breaks:
+      "a thread-local's borrow is never its own, so `LOG`'s second borrow in its own closure isn't counted and doesn't throw",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "        (Cell::Key(x), Cell::Key(y)) => x == y,\n",
     replace: "        (Cell::Key(_), Cell::Key(_)) => false,\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "closures call only what can't borrow"],
+    tests: [
+      "test/lowering-cells.test.ts",
+      "-t",
+      "closures call only what can't borrow",
+    ],
   },
   {
     name: "crate-call-borrows-nothing",
-    breaks: "a function of the crate's is taken to borrow nothing, so `logged()` in `LOG`'s closure makes `LOG` plain, and its borrow doesn't throw",
+    breaks:
+      "a function of the crate's is taken to borrow nothing, so `logged()` in `LOG`'s closure makes `LOG` plain, and its borrow doesn't throw",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "    match id.is_local() && !is_binding(tcx, id) {\n        true => Called::Body(id, instance.args),\n",
-    replace: "    match id.is_local() && !is_binding(tcx, id) {\n        true => Called::Nothing,\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "closures call only what can't borrow"],
+    replace:
+      "    match id.is_local() && !is_binding(tcx, id) {\n        true => Called::Nothing,\n",
+    tests: [
+      "test/lowering-cells.test.ts",
+      "-t",
+      "closures call only what can't borrow",
+    ],
   },
   {
     name: "crate-call-borrows-nothing-inside",
-    breaks: "a function of the crate's is taken to borrow nothing, so a thread-local's borrow inside its own closure isn't counted",
+    breaks:
+      "a function of the crate's is taken to borrow nothing, so a thread-local's borrow inside its own closure isn't counted",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "    match id.is_local() && !is_binding(tcx, id) {\n        true => Called::Body(id, instance.args),\n",
-    replace: "    match id.is_local() && !is_binding(tcx, id) {\n        true => Called::Nothing,\n",
+    replace:
+      "    match id.is_local() && !is_binding(tcx, id) {\n        true => Called::Nothing,\n",
     tests: ["test/corpus.test.ts", "-t", "thread_local_borrow_inside"],
   },
   {
     name: "crate-call-borrows-anything",
-    breaks: "a function of the crate's may borrow anything, as before, so `timerQueue` and `taskQueue` stay `{ value }` cells",
+    breaks:
+      "a function of the crate's may borrow anything, as before, so `timerQueue` and `taskQueue` stay `{ value }` cells",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "        Called::Body(body, args) => found.runs.push((body, Some(args))),\n",
     replace: "        Called::Body(..) => found.any = true,\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "closures call only what can't borrow"],
+    tests: [
+      "test/lowering-cells.test.ts",
+      "-t",
+      "closures call only what can't borrow",
+    ],
   },
   {
     name: "body-asks-of-nothing",
-    breaks: "a thread-local's `with_borrow_mut` closure that borrows it again keeps it plain, unchecked",
+    breaks:
+      "a thread-local's `with_borrow_mut` closure that borrows it again keeps it plain, unchecked",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "            Some(Some(summary)) => summary.asks(tcx, &self.closed, held),\n",
     replace: "            Some(Some(_)) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "thread_local_borrow_inside"],
   },
   {
-    "name": "jsx-builders-ask",
-    "breaks": "making an element counts as code that may ask, so a field's `RefCell` lent to a prop is a counted cell",
-    "file": "src/lower/analysis/cell_borrows.rs",
-    "find": "            JsForm::Jsx(_)\n                | JsForm::Prop(_)",
-    "replace": "            JsForm::Text\n                | JsForm::Prop(_)",
-    "tests": ["test/jsx-evaluation-order.test.ts", "-t", "borrowed for a prop is its value"]
+    name: "jsx-builders-ask",
+    breaks:
+      "making an element counts as code that may ask, so a field's `RefCell` lent to a prop is a counted cell",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "            JsForm::Jsx(_)\n                | JsForm::Prop(_)",
+    replace: "            JsForm::Text\n                | JsForm::Prop(_)",
+    tests: [
+      "test/jsx-evaluation-order.test.ts",
+      "-t",
+      "borrowed for a prop is its value",
+    ],
   },
   {
     name: "refcell-write-borrows-nothing",
-    breaks: "a `RefCell`'s `replace` borrows nothing, so a guard held across it isn't counted and the `replace` doesn't throw where Rust panics",
+    breaks:
+      "a `RefCell`'s `replace` borrows nothing, so a guard held across it isn't counted and the `replace` doesn't throw where Rust panics",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "        Some(Std::CellReplace | Std::CellTake | Std::CellSwap | Std::CellReplaceWith) if refcell => Some(true),\n",
     replace: "",
@@ -61,7 +86,8 @@ export const mutations: Mutation[] = [
 
   {
     name: "std-call-runs-nothing",
-    breaks: "std's code given a closure that borrows a cell held runs nothing, so the borrow isn't counted and the closure's second one runs on where Rust panics (ADR 0863)",
+    breaks:
+      "std's code given a closure that borrows a cell held runs nothing, so the borrow isn't counted and the closure's second one runs on where Rust panics (ADR 0863)",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "        false if recognition.is_std(id) => Called::Std(id, instance.args),\n",
     replace: "        false if recognition.is_std(id) => Called::Nothing,\n",
@@ -69,7 +95,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "closure-signature-walked",
-    breaks: "a closure std's code is given is taken to run what its signature names, a function pointer, anything, so `types.borrow().iter().any(..)` is counted, `$borrow`",
+    breaks:
+      "a closure std's code is given is taken to run what its signature names, a function pointer, anything, so `types.borrow().iter().any(..)` is counted, `$borrow`",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "            ty::Closure(closure, closure_args) => {\n                walk.skip_current_subtree();\n",
     replace: "            ty::Closure(closure, closure_args) => {\n",
@@ -78,23 +105,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "std-bound-impls-unrun",
-    breaks: "std's code bounding a type of the crate's by a trait runs none of its impls, so a borrow held while `Vec<Peek>::clone` runs `Peek::clone`, which asks, isn't counted",
+    breaks:
+      "std's code bounding a type of the crate's by a trait runs none of its impls, so a borrow held while `Vec<Peek>::clone` runs `Peek::clone`, which asks, isn't counted",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "                    given.bodies.extend(\n                        (tcx.associated_item_def_ids(imp).iter())\n",
-    replace: "                    given.bodies.extend(\n                        (tcx.associated_item_def_ids(imp).iter()).filter(|_| false)\n",
+    replace:
+      "                    given.bodies.extend(\n                        (tcx.associated_item_def_ids(imp).iter()).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_in_std_clone.rs$"],
   },
   {
     name: "derive-fields-unread",
-    breaks: "a derive std's code runs reads none of its fields, a `RefCell`'s clone of which borrows it",
+    breaks:
+      "a derive std's code runs reads none of its fields, a `RefCell`'s clone of which borrows it",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "                            for &t in &traits {\n                                bound_runs(recognition, impls, (field_ty, t), seen, given);\n",
-    replace: "                            for &t in traits.iter().filter(|_| false) {\n                                bound_runs(recognition, impls, (field_ty, t), seen, given);\n",
+    replace:
+      "                            for &t in traits.iter().filter(|_| false) {\n                                bound_runs(recognition, impls, (field_ty, t), seen, given);\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_in_std_clone.rs$"],
   },
   {
     name: "cell-may-be-ignores-dyn",
-    breaks: "a `RefCell<dyn Shape>` held isn't the `RefCell<Circle>` it was made of, so a borrow of the concrete one runs on where Rust panics",
+    breaks:
+      "a `RefCell<dyn Shape>` held isn't the `RefCell<Circle>` it was made of, so a borrow of the concrete one runs on where Rust panics",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "        (ty::Dynamic(..), _) | (_, ty::Dynamic(..)) if unsized_here => true,\n",
     replace: "",
@@ -102,7 +134,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "param-bound-never-std",
-    breaks: "a type parameter bound by `Hasher` runs anything, so a `HashSet` of a type whose `Hash` is `ptr::hash` is counted, `$borrowMut(t._updatedFibers, true)`",
+    breaks:
+      "a type parameter bound by `Hasher` runs anything, so a `HashSet` of a type whose `Hash` is `ptr::hash` is counted, `$borrowMut(t._updatedFibers, true)`",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "                        .all(|imp| !imp.is_local() && recognition.in_sysroot(imp))\n",
     replace: "                        .all(|_| false)\n",
@@ -111,7 +144,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "place-behind-ref-dropped",
-    breaks: "a place behind a reference, `*state`, is taken as dropped where it's read, so a generic `Hash` runs anything and its cell is counted",
+    breaks:
+      "a place behind a reference, `*state`, is taken as dropped where it's read, so a generic `Hash` runs anything and its cell is counted",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "        let behind_ref = matches!(e.kind, ExprKind::Deref { arg } if thir[arg].ty.is_ref());\n",
     replace: "        let behind_ref = false;\n",
@@ -120,7 +154,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "impls-ask-nothing",
-    breaks: "a `RefCell`'s own `clone`, which holds it while what it holds clones, is taken to ask nothing, so a `Clone` that borrows it mutably runs on where Rust panics",
+    breaks:
+      "a `RefCell`'s own `clone`, which holds it while what it holds clones, is taken to ask nothing, so a `Clone` that borrows it mutably runs on where Rust panics",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "        given.any\n            || given.cells.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held))\n            || (given.bodies.iter()).any(|&(body, args)| self.runs_asks(tcx, body, args, held, drops))\n    }\n\n    /// Whether calling",
     replace: "        false\n    }\n\n    /// Whether calling",
@@ -128,7 +163,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "impls-ask-of-what-it-hasnt",
-    breaks: "a `RefCell<Vec<&dyn Fn()>>`'s `PartialEq` and `Debug`, which it hasn't, are taken to run what a `dyn Fn()` may, so each moment's borrow of a list of listeners is checked, `$borrowMut(listeners, true)`",
+    breaks:
+      "a `RefCell<Vec<&dyn Fn()>>`'s `PartialEq` and `Debug`, which it hasn't, are taken to run what a `dyn Fn()` may, so each moment's borrow of a list of listeners is checked, `$borrowMut(listeners, true)`",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "        for trait_id in traits.into_iter().flatten().filter(|&t| has(t)) {\n",
     replace: "        for trait_id in traits.into_iter().flatten() {\n",
@@ -137,31 +173,41 @@ export const mutations: Mutation[] = [
   },
   {
     name: "impls-had-of-a-parameter-unknown",
-    breaks: "a `RefCell<T>` of a type parameter's has no impl of what's asked, as rustc can't select one, so a generic `Clone` that borrows its cell mutably runs on where Rust panics",
+    breaks:
+      "a `RefCell<T>` of a type parameter's has no impl of what's asked, as rustc can't select one, so a generic `Clone` that borrows its cell mutably runs on where Rust panics",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "            if cell.has_param() || cell.has_aliases() {\n                return true;\n            }\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^refcell_generic_borrow_meets_held.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^refcell_generic_borrow_meets_held.rs$",
+    ],
   },
   {
     name: "unseen-never",
-    breaks: "a borrow held while a library's code runs is taken to run only what rust-js sees, so a consumer holds one of a cell the library borrows unchecked (ADR 0863)",
+    breaks:
+      "a borrow held while a library's code runs is taken to run only what rust-js sees, so a consumer holds one of a cell the library borrows unchecked (ADR 0863)",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "            Called::Any => self.anything_asks(tcx, held),\n        }\n    }\n\n    /// Whether `cell`'s own impls",
-    replace: "            Called::Any => false,\n        }\n    }\n\n    /// Whether `cell`'s own impls",
+    replace:
+      "            Called::Any => false,\n        }\n    }\n\n    /// Whether `cell`'s own impls",
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
   },
   {
     name: "cell-own-impl-borrows-nothing",
-    breaks: "a `RefCell`'s own `PartialEq::eq` is taken to borrow nothing, so `a == b` while a `let` holds `a.borrow_mut()` doesn't panic (ADR 0863)",
+    breaks:
+      "a `RefCell`'s own `PartialEq::eq` is taken to borrow nothing, so `a == b` while a `let` holds `a.borrow_mut()` doesn't panic (ADR 0863)",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "        if recognition.is_borrowed_cell(cell) {\n            given.cells.push(Borrow {\n",
-    replace: "        if false && recognition.is_borrowed_cell(cell) {\n            given.cells.push(Borrow {\n",
+    replace:
+      "        if false && recognition.is_borrowed_cell(cell) {\n            given.cells.push(Borrow {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_eq_while_mut.rs$"],
   },
   {
     name: "binding-runs-nothing-ignored",
-    breaks: "a binding marked `#[rust_js::runs_nothing]` may run anything, so a borrow held across it is counted, `$borrow(log.quiet)` (ADR 0867)",
+    breaks:
+      "a binding marked `#[rust_js::runs_nothing]` may run anything, so a borrow held across it is counted, `$borrow(log.quiet)` (ADR 0867)",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "        ) || runs_nothing(tcx, id))\n",
     replace: "        ))\n",
@@ -169,7 +215,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "binding-runs-nothing-everywhere",
-    breaks: "every binding runs nothing, so a borrow held while JS calls the crate back isn't counted and doesn't panic `already borrowed` (ADR 0867)",
+    breaks:
+      "every binding runs nothing, so a borrow held while JS calls the crate back isn't counted and doesn't panic `already borrowed` (ADR 0867)",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "        ) || runs_nothing(tcx, id))\n",
     replace: "        ) || true)\n",
@@ -177,7 +224,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "is-defined-runs-code",
-    breaks: "`js::is_defined`'s `typeof` may run anything, so React's `aggregateErrors` makes `thrownErrors` a counted cell (ADR 0867)",
+    breaks:
+      "`js::is_defined`'s `typeof` may run anything, so React's `aggregateErrors` makes `thrownErrors` a counted cell (ADR 0867)",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "                | JsForm::StrictEquals\n                | JsForm::Asks(_)\n",
     replace: "                | JsForm::StrictEquals\n",
@@ -185,15 +233,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "js-object-deref-runs-code",
-    breaks: "an `&AggregateError`'s `Deref` to `&JsError` may run anything, so `thrownErrors` is a counted cell (ADR 0867)",
+    breaks:
+      "an `&AggregateError`'s `Deref` to `&JsError` may run anything, so `thrownErrors` is a counted cell (ADR 0867)",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "    binding_runs_nothing(tcx, id) || is_js_object_deref(tcx, tcx.parent(id))\n",
     replace: "    binding_runs_nothing(tcx, id)\n",
-    tests: ["test/js-builtins.test.ts", "-t", "AggregateError|a Map is a WeakMap"],
+    tests: [
+      "test/js-builtins.test.ts",
+      "-t",
+      "AggregateError|a Map is a WeakMap",
+    ],
   },
   {
     name: "std-impls-walk-every-part",
-    breaks: "std's `Clone` of an `Option<Rc<RefCell<Vec<Task>>>>` runs each part's, a `fn`'s, so the queue is a counted cell (ADR 0868)",
+    breaks:
+      "std's `Clone` of an `Option<Rc<RefCell<Vec<Task>>>>` runs each part's, a `fn`'s, so the queue is a counted cell (ADR 0868)",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "        if let Some(bounds) = std_impl_bounds(recognition, part, &traits) {\n",
     replace: "        if let Some(bounds) = None::<Vec<(Ty<'tcx>, DefId)>> {\n",
@@ -202,7 +256,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "std-impl-bounds-skipped",
-    breaks: "what std's impl is bounded by runs nothing, so `Some(Asks).clone()`, whose `T: Clone` borrows `WHO`, doesn't panic `already borrowed` (ADR 0868)",
+    breaks:
+      "what std's impl is bounded by runs nothing, so `Some(Asks).clone()`, whose `T: Clone` borrows `WHO`, doesn't panic `already borrowed` (ADR 0868)",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "            for bound in bounds {\n                bound_runs(recognition, impls, bound, seen, given);\n            }\n",
     replace: "            let _ = bounds;\n",
@@ -210,7 +265,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "derived-methods-run-anything",
-    breaks: "a derived `clone` is a body never lowered, which may run anything, so a cell borrowed while a `Task` is cloned is counted (ADR 0868)",
+    breaks:
+      "a derived `clone` is a body never lowered, which may run anything, so a cell borrowed while a `Task` is cloned is counted (ADR 0868)",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "    if id.is_local() && derived_method(tcx, id).is_some() {\n        return Called::Std(id, instance.args);\n    }\n",
     replace: "",
@@ -219,7 +275,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "derive-walk-skipped",
-    breaks: "a derived `clone` runs nothing, so `Holds`'s, whose field's `Clone` borrows `WHO`, doesn't panic `already borrowed` (ADR 0868)",
+    breaks:
+      "a derived `clone` runs nothing, so `Holds`'s, whose field's `Clone` borrows `WHO`, doesn't panic `already borrowed` (ADR 0868)",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "        bound_runs(recognition, impls, (ty, trait_id), &mut seen, &mut given);\n        return given;\n",
     replace: "        let _ = (ty, trait_id);\n        return given;\n",
@@ -227,7 +284,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fn-pointer-clone-runs-it",
-    breaks: "a function pointer's `Clone` may run it, so a cell of `Task(fn(..))`s borrowed while one's cloned is counted (ADR 0868)",
+    breaks:
+      "a function pointer's `Clone` may run it, so a cell of `Task(fn(..))`s borrowed while one's cloned is counted (ADR 0868)",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "        return (!calls).then(Vec::new);\n",
     replace: "        return calls.then(Vec::new);\n",
@@ -236,7 +294,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "trait-alias-selected",
-    breaks: "a trait alias, `ptr::Thin`, is selected as a trait, and rustc's metadata has no items of it: an internal compiler error",
+    breaks:
+      "a trait alias, `ptr::Thin`, is selected as a trait, and rustc's metadata has no items of it: an internal compiler error",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "    if traits.iter().any(|&t| tcx.def_kind(t) != DefKind::Trait) {\n        return None;\n    }\n",
     replace: "",
@@ -244,7 +303,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "trait-of-arguments-selected",
-    breaks: "a trait of more arguments, `FnMut(u32)`, is selected of its `Self` alone: an internal compiler error",
+    breaks:
+      "a trait of more arguments, `FnMut(u32)`, is selected of its `Self` alone: an internal compiler error",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "        if tcx.generics_of(t).count() != 1 {\n            return None;\n        }\n",
     replace: "",
@@ -252,7 +312,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unargued-summary-instantiated",
-    breaks: "a generic impl's method std's code runs, of no args a type says, has its own parameters read with its caller's: the compiler crashes instantiating them (#240)",
+    breaks:
+      "a generic impl's method std's code runs, of no args a type says, has its own parameters read with its caller's: the compiler crashes instantiating them (#240)",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "    if args.is_none()\n        && (summary.drops.iter().any(typed)\n",
     replace: "    if false\n        && (summary.drops.iter().any(typed)\n",
@@ -260,23 +321,35 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-identity-runs-code",
-    breaks: "a library's type equal only to itself is taken to run unseen code by its `Hash` and `==`, so a borrow held while a `Set` adds one is checked, `$borrowMut`",
+    breaks:
+      "a library's type equal only to itself is taken to run unseen code by its `Hash` and `==`, so a borrow held while a `Set` adds one is checked, `$borrowMut`",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "                if traits.iter().any(|&t| implemented(t) && !(identity && by_address(t))) {\n",
     replace: "                if traits.iter().any(|&t| implemented(t)) {\n",
-    tests: ["test/crates.test.ts", "-t", "equal only to itself keys its consumer"],
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "equal only to itself keys its consumer",
+    ],
   },
   {
     name: "library-impl-always-there",
-    breaks: "a library's type is taken to implement every trait by an impl of its own, `Borrow` too, which only std's blanket impl gives it, so a borrow of a `RefCell` of a set of it held while `contains` runs is refused as running the library's code",
+    breaks:
+      "a library's type is taken to implement every trait by an impl of its own, `Borrow` too, which only std's blanket impl gives it, so a borrow of a `RefCell` of a set of it held while `contains` runs is refused as running the library's code",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "                    impls.non_blanket_impls().contains_key(&own)\n",
-    replace: "                    true || impls.non_blanket_impls().contains_key(&own)\n",
-    tests: ["test/crates.test.ts", "-t", "equal only to itself keys its consumer"],
+    replace:
+      "                    true || impls.non_blanket_impls().contains_key(&own)\n",
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "equal only to itself keys its consumer",
+    ],
   },
   {
     name: "intrinsic-runs-anything",
-    breaks: "an intrinsic, `vec![..]`'s `write_box_via_move`, may run anything, so a borrow held across `vec![..]` is counted, and every borrow of its cell's type",
+    breaks:
+      "an intrinsic, `vec![..]`'s `write_box_via_move`, may run anything, so a borrow held across `vec![..]` is counted, and every borrow of its cell's type",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "            false => Called::Std(id, instance.args),\n",
     replace: "            false => Called::Any,\n",
@@ -285,7 +358,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "runs-only-given-ignored",
-    breaks: "a binding that runs only what it's given, `console.error(..)` of text, may run anything, so a borrow held across it is counted, `$borrowMut(root.expirationTimes, true)`",
+    breaks:
+      "a binding that runs only what it's given, `console.error(..)` of text, may run anything, so a borrow held across it is counted, `$borrowMut(root.expirationTimes, true)`",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "    binding_runs_nothing(recognition.tcx, def_id) || given_what_runs_nothing(recognition, def_id, args)\n",
     replace: "    binding_runs_nothing(recognition.tcx, def_id)\n",
@@ -293,47 +367,72 @@ export const mutations: Mutation[] = [
   },
   {
     name: "given-objects-run-nothing",
-    breaks: "an object given to `console.error(..)`, whose `toString` may borrow the cell, runs nothing, so a borrow held across it isn't counted and never panics `already borrowed`",
+    breaks:
+      "an object given to `console.error(..)`, whose `toString` may borrow the cell, runs nothing, so a borrow held across it isn't counted and never panics `already borrowed`",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "                runs_nothing(recognition, items.type_at(0))\n            }\n            _ => false,\n",
-    replace: "                runs_nothing(recognition, items.type_at(0))\n            }\n            _ => true,\n",
+    replace:
+      "                runs_nothing(recognition, items.type_at(0))\n            }\n            _ => true,\n",
     tests: ["test/lowering-cell-borrows.test.ts"],
   },
   {
     name: "fn-pointer-call-runs-anything",
-    breaks: "a fn pointer's call may run anything, as before, so `clz32`'s, while `root.entanglements` is held, counts it",
+    breaks:
+      "a fn pointer's call may run anything, as before, so `clz32`'s, while `root.entanglements` is held, counts it",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "                None => match pointers.may_be(tcx, thir[fun].ty) {\n",
-    replace: "                None => match None::<&[(DefId, ty::GenericArgsRef<'tcx>)]> {\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "fn pointer runs what the crate made"],
+    replace:
+      "                None => match None::<&[(DefId, ty::GenericArgsRef<'tcx>)]> {\n",
+    tests: [
+      "test/lowering-cell-borrows.test.ts",
+      "-t",
+      "fn pointer runs what the crate made",
+    ],
   },
   {
     name: "own-clone-runs-anything",
-    breaks: "a clone of a type parameter's whose `Clone` takes no dictionary is taken to run code rust-js can't see, so a library's unchecked borrow held across it is refused (ADR 0914, amended)",
+    breaks:
+      "a clone of a type parameter's whose `Clone` takes no dictionary is taken to run code rust-js can't see, so a library's unchecked borrow held across it is refused (ADR 0914, amended)",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "    if tcx.is_lang_item(def_id, LangItem::CloneFn) && args.types().next().is_some_and(clones_itself) {\n",
-    replace: "    if false && tcx.is_lang_item(def_id, LangItem::CloneFn) && args.types().next().is_some_and(clones_itself) {\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "judged by what its callers give"],
+    replace:
+      "    if false && tcx.is_lang_item(def_id, LangItem::CloneFn) && args.types().next().is_some_and(clones_itself) {\n",
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "judged by what its callers give",
+    ],
   },
   {
     name: "lent-key-reached-only-by-key",
-    breaks: "a thread-local whose `with` lends its cell is taken for one only its key reaches, so a `&RefCell` of its type borrowed mutably while its hooks run, `clear(hooks)`, isn't checked, where Rust panics (ADR 0960, amended)",
+    breaks:
+      "a thread-local whose `with` lends its cell is taken for one only its key reaches, so a `&RefCell` of its type borrowed mutably while its hooks run, `clear(hooks)`, isn't checked, where Rust panics (ADR 0960, amended)",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "        self.closed.contains(&key)\n",
     replace: "        true\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "checks no other cell of its type"],
+    tests: [
+      "test/lowering-cell-borrows.test.ts",
+      "-t",
+      "checks no other cell of its type",
+    ],
   },
   {
     name: "cell-dyn-anywhere",
-    breaks: "a `dyn` in a `Vec`'s items is taken to be any type, so a `RefCell<Vec<Rc<Node>>>` may be React's commit hooks' `RefCell<Vec<Rc<dyn Fn()>>>`, borrowed while they run, and each borrow of it is checked (#374, ADR 0960)",
+    breaks:
+      "a `dyn` in a `Vec`'s items is taken to be any type, so a `RefCell<Vec<Rc<Node>>>` may be React's commit hooks' `RefCell<Vec<Rc<dyn Fn()>>>`, borrowed while they run, and each borrow of it is checked (#374, ADR 0960)",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "        (ty::Dynamic(..), _) | (_, ty::Dynamic(..)) if unsized_here => true,\n",
     replace: "        (ty::Dynamic(..), _) | (_, ty::Dynamic(..)) => true,\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "field.s hooks held while they run meet no cell"],
+    tests: [
+      "test/lowering-cell-borrows.test.ts",
+      "-t",
+      "field.s hooks held while they run meet no cell",
+    ],
   },
   {
     name: "cell-unsized-tail-unseen",
-    breaks: "a `RefCell<T>`'s `T` isn't where a value is made unsized in place, so a `RefCell<dyn Shape>` isn't the `RefCell<Circle>` it was made of, and a borrow of the concrete one runs on where Rust panics (ADR 0960)",
+    breaks:
+      "a `RefCell<T>`'s `T` isn't where a value is made unsized in place, so a `RefCell<dyn Shape>` isn't the `RefCell<Circle>` it was made of, and a borrow of the concrete one runs on where Rust panics (ADR 0960)",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "            ty::Param(param) => return Some(param.index as usize),\n",
     replace: "            ty::Param(_) => return None,\n",
@@ -341,67 +440,106 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cell-borrow-runs-unseen",
-    breaks: "a cell's borrow is code rust-js can't see, so a consumer's borrow of a library's `RefCell<Vec<String>>` held while it borrows another is refused (ADR 0863, amended)",
+    breaks:
+      "a cell's borrow is code rust-js can't see, so a consumer's borrow of a library's `RefCell<Vec<String>>` held while it borrows another is refused (ADR 0863, amended)",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "            Some(crate::lower::Std::Borrow { .. } | crate::lower::Std::TryBorrow { .. })\n        ) {\n            return false;\n",
-    replace: "            Some(crate::lower::Std::Borrow { .. } | crate::lower::Std::TryBorrow { .. })\n        ) && false {\n            return false;\n",
+    replace:
+      "            Some(crate::lower::Std::Borrow { .. } | crate::lower::Std::TryBorrow { .. })\n        ) && false {\n            return false;\n",
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
   },
   {
     name: "unseen-runs-what-loads",
-    breaks: "what JS runs is taken to borrow what a module runs as it loads, `js::on_load!`'s own set, so React's DEV dispatchers stay `{ value: null }` cells checked around `setH` (ADR 0580, amended)",
+    breaks:
+      "what JS runs is taken to borrow what a module runs as it loads, `js::on_load!`'s own set, so React's DEV dispatchers stay `{ value: null }` cells checked around `setH` (ADR 0580, amended)",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "            .filter(|&(&id, _)| !crate::lower::bindings::is_on_load(tcx, id))\n",
     replace: "",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "a thread-local set only where its module loads"],
+    tests: [
+      "test/lowering-cell-borrows.test.ts",
+      "-t",
+      "a thread-local set only where its module loads",
+    ],
   },
   {
     name: "unseen-never-reaches-public",
-    breaks: "a `pub` thread-local, which another crate may borrow, is taken to be borrowed by the crate's code alone, its borrow across JS unchecked (ADR 0580, amended)",
+    breaks:
+      "a `pub` thread-local, which another crate may borrow, is taken to be borrowed by the crate's code alone, its borrow across JS unchecked (ADR 0580, amended)",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "    keys.retain(|&key| !open.contains(&key) && !tcx.visibility(key).is_public());\n",
     replace: "    keys.retain(|&key| !open.contains(&key));\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "a thread-local set only where its module loads"],
+    tests: [
+      "test/lowering-cell-borrows.test.ts",
+      "-t",
+      "a thread-local set only where its module loads",
+    ],
   },
   {
     name: "unseen-asks-everything",
-    breaks: "what JS runs is taken to borrow any cell, so a thread-local set only where its module loads is a checked `{ value }` cell (ADR 0580, amended)",
+    breaks:
+      "what JS runs is taken to borrow any cell, so a thread-local set only where its module loads is a checked `{ value }` cell (ADR 0580, amended)",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "            Cell::Key(key) if self.closed.contains(&key) => {\n",
-    replace: "            Cell::Key(key) if false && self.closed.contains(&key) => {\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "a thread-local set only where its module loads"],
+    replace:
+      "            Cell::Key(key) if false && self.closed.contains(&key) => {\n",
+    tests: [
+      "test/lowering-cell-borrows.test.ts",
+      "-t",
+      "a thread-local set only where its module loads",
+    ],
   },
   {
     name: "null-binding-runs-code",
-    breaks: "`js::null()` made while a borrow of a field is held is taken to run code that may borrow it, so React's update clone's `gesture` is a checked `$fieldCell` everywhere",
+    breaks:
+      "`js::null()` made while a borrow of a field is held is taken to run code that may borrow it, so React's update clone's `gesture` is a checked `$fieldCell` everywhere",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "                | JsForm::Null\n",
     replace: "",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "js::null.. made while a borrow"],
+    tests: [
+      "test/lowering-cell-borrows.test.ts",
+      "-t",
+      "js::null.. made while a borrow",
+    ],
   },
   {
     name: "own-key-cell-a-fields",
-    breaks: "a thread-local only its key reaches, set while a field of its cell's type is borrowed, may be that field, so every such field is a checked cell, `$borrow($fieldCell(fiber, \"parent\"), true)` (ADR 0960, amended)",
+    breaks:
+      'a thread-local only its key reaches, set while a field of its cell\'s type is borrowed, may be that field, so every such field is a checked cell, `$borrow($fieldCell(fiber, "parent"), true)` (ADR 0960, amended)',
     file: "src/lower/analysis/cell_borrows.rs",
     find: "            !closed.contains(&key) && held(key).is_none_or(|cell| alike(cell, ty))\n",
     replace: "            held(key).is_none_or(|cell| alike(cell, ty))\n",
-    tests: ["test/corpus.test.ts", "-t", "^thread_local_set_of_a_field_borrow.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^thread_local_set_of_a_field_borrow.rs$",
+    ],
     snapshots: true,
   },
   {
     name: "std-function-given-its-types",
-    breaks: "std's function given to std's, `get_or_insert_with(Vec::new)`, runs what each type it's of may, a `Vec<fn()>`'s `fn()`, so the thread-local is a checked cell, `$withBorrowMut(events, ..)` (ADR 0868, amended)",
+    breaks:
+      "std's function given to std's, `get_or_insert_with(Vec::new)`, runs what each type it's of may, a `Vec<fn()>`'s `fn()`, so the thread-local is a checked cell, `$withBorrowMut(events, ..)` (ADR 0868, amended)",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "            ty::FnDef(f, args) if recognition.is_std(f) => {\n",
-    replace: "            ty::FnDef(f, args) if false && recognition.is_std(f) => {\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "std's function given to std's"],
+    replace:
+      "            ty::FnDef(f, args) if false && recognition.is_std(f) => {\n",
+    tests: [
+      "test/lowering-cell-borrows.test.ts",
+      "-t",
+      "std's function given to std's",
+    ],
   },
   {
     name: "with-this-runs-its-closure",
-    breaks: "`function::with_this(closure)` is said to run its closure, so a `pub` thread-local made of a factory of constructors whose constructor calls a fn pointer, React's `export const SyntheticEvent = createSyntheticEvent(EventInterface)`, is refused",
+    breaks:
+      "`function::with_this(closure)` is said to run its closure, so a `pub` thread-local made of a factory of constructors whose constructor calls a fn pointer, React's `export const SyntheticEvent = createSyntheticEvent(EventInterface)`, is refused",
     file: "src/lower/analysis/cell_borrows.rs",
     find: "                | JsForm::WithThis\n",
     replace: "",
-    tests: ["test/js-constructors.test.ts", "-t", "a pub thread-local is made of a factory of constructors"],
+    tests: [
+      "test/js-constructors.test.ts",
+      "-t",
+      "a pub thread-local is made of a factory of constructors",
+    ],
   },
 ];

@@ -4,7 +4,8 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "impl-drops-unseeded",
-    breaks: "a generic impl isn't given drops, so what its methods, their helpers, or a default of its trait drop is never dropped",
+    breaks:
+      "a generic impl isn't given drops, so what its methods, their helpers, or a default of its trait drop is never dropped",
     file: "src/lower/analysis/drops.rs",
     find: "        if drops_nothing_derived(tcx, imp) {\n",
     replace: "        if true {\n",
@@ -12,15 +13,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "default-body-drops-unpassed",
-    breaks: "a default body gives its value to a generic helper, which isn't given a drop, and drops nothing",
+    breaks:
+      "a default body gives its value to a generic helper, which isn't given a drop, and drops nothing",
     file: "src/lower/analysis/drops.rs",
     find: "        let Some(trait_id) = tcx.trait_of_assoc(method) else {\n",
-    replace: "        let Some(trait_id) = tcx.trait_of_assoc(method).filter(|_| false) else {\n",
+    replace:
+      "        let Some(trait_id) = tcx.trait_of_assoc(method).filter(|_| false) else {\n",
     tests: ["test/corpus.test.ts", "-t", "drop_impl_indirect"],
   },
   {
     name: "drops-without-destructors",
-    breaks: "a crate with no destructor gives its generic impls drops nothing calls: right, but not the JS a person writes",
+    breaks:
+      "a crate with no destructor gives its generic impls drops nothing calls: right, but not the JS a person writes",
     file: "src/lower/analysis/drops.rs",
     find: "    if !library && !drops_any {",
     replace: "    if false {",
@@ -29,7 +33,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-drops-skipped",
-    breaks: "a library with no destructor gives its generic impls no drops, though its consumers' values may have one",
+    breaks:
+      "a library with no destructor gives its generic impls no drops, though its consumers' values may have one",
     file: "src/lower/analysis/drops.rs",
     find: "    if !library && !drops_any {",
     replace: "    if !drops_any {",
@@ -37,31 +42,42 @@ export const mutations: Mutation[] = [
   },
   {
     name: "trait-method-own-drops-not-taken",
-    breaks: "an impl's generic method takes no drop for its own type parameters, so what it's given is never dropped",
+    breaks:
+      "an impl's generic method takes no drop for its own type parameters, so what it's given is never dropped",
     file: "src/lower/analysis/drops.rs",
     find: "        for index in crate::lower::traits::own_drop_params(tcx, foreign, id) {\n            given.insert((id, index));\n",
-    replace: "        for index in crate::lower::traits::own_drop_params(tcx, foreign, id) {\n            let _ = (id, index);\n",
+    replace:
+      "        for index in crate::lower::traits::own_drop_params(tcx, foreign, id) {\n            let _ = (id, index);\n",
     tests: ["test/corpus.test.ts", "-t", "generic_method_drops"],
   },
   {
     name: "component-destructor-not-refused",
-    breaks: "a component given a type with a destructor is given a drop React can't pass, and drops nothing",
+    breaks:
+      "a component given a type with a destructor is given a drop React can't pass, and drops nothing",
     file: "src/lower/analysis/drops.rs",
     find: "            if crate::lower::bindings::is_component(tcx, callee) {",
-    replace: "            if false && crate::lower::bindings::is_component(tcx, callee) {",
-    tests: ["test/jsx-types.test.ts", "-t", "take no drop of their type parameters"],
+    replace:
+      "            if false && crate::lower::bindings::is_component(tcx, callee) {",
+    tests: [
+      "test/jsx-types.test.ts",
+      "-t",
+      "take no drop of their type parameters",
+    ],
   },
   {
     name: "item-drops-not-given",
-    breaks: "a std trait's associated type of a type parameter given a drop, `I::IntoIter`, is given none, and refused",
+    breaks:
+      "a std trait's associated type of a type parameter given a drop, `I::IntoIter`, is given none, and refused",
     file: "src/lower/analysis/drops.rs",
     find: "            if holds && given.insert((id, count + at as u32)) {\n",
-    replace: "            if false && holds && given.insert((id, count + at as u32)) {\n",
+    replace:
+      "            if false && holds && given.insert((id, count + at as u32)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^yielded_item_drops.rs$"],
   },
   {
     name: "guard-given-generic-undropped",
-    breaks: "a guard given to generic code isn't dropped there, so its cell stays borrowed and a later `borrow_mut()` panics",
+    breaks:
+      "a guard given to generic code isn't dropped there, so its cell stays borrowed and a later `borrow_mut()` panics",
     file: "src/lower/analysis/drops.rs",
     find: "                if runs(ty, caller) {\n",
     replace: "                if false && runs(ty, caller) {\n",
@@ -69,7 +85,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "nested-item-drop-ungiven",
-    breaks: "a drop slot of an associated type of one isn't given, though its caller's type has a destructor",
+    breaks:
+      "a drop slot of an associated type of one isn't given, though its caller's type has a destructor",
     file: "src/lower/analysis/drops.rs",
     find: "                Some(of) => alias.self_ty() == of,\n",
     replace: "                Some(_) => false,\n",
@@ -77,15 +94,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "item-slot-of-callers-item-unseen",
-    breaks: "`second(Gen(0))`, whose iterator has no destructor but its items do, is given no drop for them, and leaks the one it skips",
+    breaks:
+      "`second(Gen(0))`, whose iterator has no destructor but its items do, is given no drop for them, and leaks the one it skips",
     file: "src/lower/analysis/drops.rs",
     find: "                    _ if !item.has_param() && runs(item, caller) => {\n                        given.insert(slot);\n",
-    replace: "                    _ if !item.has_param() && runs(item, caller) => {\n",
+    replace:
+      "                    _ if !item.has_param() && runs(item, caller) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^yielded_item_drops.rs$"],
   },
   {
     name: "item-slot-of-callers-param-unseen",
-    breaks: "`made_second::<Loud>`'s iterator's items, its `T`, aren't given `second` its drop",
+    breaks:
+      "`made_second::<Loud>`'s iterator's items, its `T`, aren't given `second` its drop",
     file: "src/lower/analysis/drops.rs",
     find: "                    ty::Param(param) => passed.push(((caller, param.index), slot)),\n",
     replace: "                    ty::Param(_) => {}\n",
@@ -93,10 +113,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "item-slot-of-callers-item-slot-unseen",
-    breaks: "`relayed`'s `J::Item` drop isn't passed on to `second`'s `I::Item`",
+    breaks:
+      "`relayed`'s `J::Item` drop isn't passed on to `second`'s `I::Item`",
     file: "src/lower/analysis/drops.rs",
     find: "                        if let Some(own) = callers_items.iter().position(|&own| own == item) {\n",
-    replace: "                        if let Some(own) = callers_items.iter().position(|&own| own == item).filter(|_| false) {\n",
+    replace:
+      "                        if let Some(own) = callers_items.iter().position(|&own| own == item).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^yielded_item_drops.rs$"],
   },
 ];

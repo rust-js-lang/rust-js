@@ -4,7 +4,8 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "props-with-default-taken-whole",
-    breaks: "a component taking its props whole has no defaults, its JS callers' missing ones undefined",
+    breaks:
+      "a component taking its props whole has no defaults, its JS callers' missing ones undefined",
     file: "src/lower/bodies.rs",
     find: "            && !pat.is_some_and(|p| matches!(p.kind, PatKind::Leaf { .. }))",
     replace: "            && false",
@@ -12,7 +13,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "props-whole-refused",
-    breaks: "props passed on whole are refused, as if a field with a default were read",
+    breaks:
+      "props passed on whole are refused, as if a field with a default were read",
     file: "src/lower/bodies.rs",
     find: "            && !pat.is_some_and(|p| self.passed_on_whole(p, *adt))\n",
     replace: "",

@@ -4,23 +4,28 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "untagged-null-made-a-string",
-    breaks: "an untagged enum's `#[rust_js::null]` variant is made its name's string",
+    breaks:
+      "an untagged enum's `#[rust_js::null]` variant is made its name's string",
     file: "src/lower/aggregates.rs",
     find: "            && let Some(value) = super::untagged::unit_value(self.tcx, variant)\n",
-    replace: "            && let Some(value) = super::untagged::unit_value(self.tcx, variant).map(|_| Expr::str(bindings::variant_name(self.tcx, variant)))\n",
+    replace:
+      "            && let Some(value) = super::untagged::unit_value(self.tcx, variant).map(|_| Expr::str(bindings::variant_name(self.tcx, variant)))\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_null_undefined"],
   },
   {
     name: "replaced-node-default-made",
-    breaks: "an update's base makes the default of the children it gives, `C::default()`, which needs a dictionary",
+    breaks:
+      "an update's base makes the default of the children it gives, `C::default()`, which needs a dictionary",
     file: "src/lower/aggregates.rs",
     find: "            let value = if replaced && self.is_node_param(field_ty) {",
-    replace: "            let value = if false && replaced && self.is_node_param(field_ty) {",
+    replace:
+      "            let value = if false && replaced && self.is_node_param(field_ty) {",
     tests: ["test/jsx-props.test.ts", "-t", "and the component no dictionary"],
   },
   {
     name: "replaced-default-kept",
-    breaks: "an update's base keeps the default of a field it gives, `tags: []`, so the base is kept, `base.id`",
+    breaks:
+      "an update's base keeps the default of a field it gives, `tags: []`, so the base is kept, `base.id`",
     file: "src/lower/aggregates.rs",
     find: "                if replaced && !value.has_effects() {",
     replace: "                if false && replaced && !value.has_effects() {",
@@ -28,59 +33,95 @@ export const mutations: Mutation[] = [
   },
   {
     name: "untagged-constructor-tagged",
-    breaks: "`.map(Src::Number)` makes tagged objects of an untagged enum's values",
+    breaks:
+      "`.map(Src::Number)` makes tagged objects of an untagged enum's values",
     file: "src/lower/aggregates.rs",
     find: "        } else if self.untagged(ty).is_some() || bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {\n",
-    replace: "        } else if bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {\n",
-    tests: ["test/compiler.test.ts", "test/lowering-options.test.ts", "test/lowering-structs-enums.test.ts", "-t", "untagged enum"],
+    replace:
+      "        } else if bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {\n",
+    tests: [
+      "test/compiler.test.ts",
+      "test/lowering-options.test.ts",
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "untagged enum",
+    ],
   },
   {
     name: "otherwise-constructor-tagged",
-    breaks: "`.map(Message::Other)` makes `{ type: \"Other\", _0: value }` of each, not the object",
+    breaks:
+      '`.map(Message::Other)` makes `{ type: "Other", _0: value }` of each, not the object',
     file: "src/lower/aggregates.rs",
     find: "        } else if self.untagged(ty).is_some() || bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {\n",
     replace: "        } else if self.untagged(ty).is_some() {\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "otherwise variant is any other"],
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "otherwise variant is any other",
+    ],
   },
   {
     name: "fields-as-declared",
-    breaks: "a struct literal's object lists its fields as declared, `{ info, log }` of `Logs { log, info }`, not as written",
+    breaks:
+      "a struct literal's object lists its fields as declared, `{ info, log }` of `Logs { log, info }`, not as written",
     file: "src/lower/aggregates.rs",
     find: "        if variant.ctor_kind().is_some() || declared.len() < 2 {\n",
     replace: "        if true {\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "a struct literal's keys are in the order written"],
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "a struct literal's keys are in the order written",
+    ],
   },
   {
     name: "base-filled-first",
-    breaks: "what `..Default::default()` fills is listed before what's written, `{ name: \"\", tags: [], size }`, and evaluated first",
+    breaks:
+      'what `..Default::default()` fills is listed before what\'s written, `{ name: "", tags: [], size }`, and evaluated first',
     file: "src/lower/aggregates.rs",
     find: "                Some(written.iter().chain(filled).copied().collect::<Vec<usize>>())\n",
-    replace: "                Some(filled.chain(written.iter()).copied().collect::<Vec<usize>>())\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "default base is the defaults it reads"],
+    replace:
+      "                Some(filled.chain(written.iter()).copied().collect::<Vec<usize>>())\n",
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "default base is the defaults it reads",
+    ],
   },
   {
     name: "flattened-field-by-place",
-    breaks: "a flattened field is found by its place in the object, which lists them as written: `Outer { inner, last, first }` spreads `last`",
+    breaks:
+      "a flattened field is found by its place in the object, which lists them as written: `Outer { inner, last, first }` spreads `last`",
     file: "src/lower/aggregates.rs",
     find: "        for prop in props {\n            match prop {\n                Prop::Field(name, value) if flattened(&name) => match value.kind {\n",
-    replace: "        for (i, prop) in props.into_iter().enumerate() {\n            match prop {\n                Prop::Field(_, value) if { let _ = &flattened; bindings::is_flatten_field(self.tcx, ty, i) } => match value.kind {\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "a struct literal's keys are in the order written"],
+    replace:
+      "        for (i, prop) in props.into_iter().enumerate() {\n            match prop {\n                Prop::Field(_, value) if { let _ = &flattened; bindings::is_flatten_field(self.tcx, ty, i) } => match value.kind {\n",
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "a struct literal's keys are in the order written",
+    ],
   },
   {
     name: "flattened-made-spread-literal",
-    breaks: "a flattened struct made in place is spread, `{ ...{ line: 1 } }`, not its fields",
+    breaks:
+      "a flattened struct made in place is spread, `{ ...{ line: 1 } }`, not its fields",
     file: "src/lower/aggregates.rs",
     find: "                    js::ExprKind::Object(inner, ..) => flat.extend(inner),\n",
     replace: "",
-    tests: ["test/jsx-props.test.ts", "-t", "JSX gives a flattened struct's fields as a component's own props"],
+    tests: [
+      "test/jsx-props.test.ts",
+      "-t",
+      "JSX gives a flattened struct's fields as a component's own props",
+    ],
   },
   {
     name: "adt-value-ordering-tag",
     breaks: "an `Ordering` MIR makes is its variant's name, not -1, 0 or 1",
     file: "src/lower/aggregates.rs",
     find: "        if let Some(n) = ordering_value(self.tcx, adt_def.did(), variant.name) {\n",
-    replace: "        if false && let Some(n) = ordering_value(self.tcx, adt_def.did(), variant.name) {\n",
-    tests: ["test/corpus.test.ts","-t","collection_methods"],
+    replace:
+      "        if false && let Some(n) = ordering_value(self.tcx, adt_def.did(), variant.name) {\n",
+    tests: ["test/corpus.test.ts", "-t", "collection_methods"],
   },
   {
     name: "adt-value-fmt-ok-thrown",
@@ -88,19 +129,20 @@ export const mutations: Mutation[] = [
     file: "src/lower/aggregates.rs",
     find: "                    true => Expr::undefined(),\n",
     replace: "                    true if false => Expr::undefined(),\n",
-    tests: ["test/corpus.test.ts","-t","write_to_string"],
+    tests: ["test/corpus.test.ts", "-t", "write_to_string"],
   },
   {
     name: "io-unit-err-not-thrown",
     breaks: "an `io::Result<()>`'s `Err` is `undefined`, `Ok`",
     file: "src/lower/aggregates.rs",
-    find: "                _ => Expr::call_helper(\"$ioThrow\", fields),\n",
+    find: '                _ => Expr::call_helper("$ioThrow", fields),\n',
     replace: "                _ => Expr::undefined(),\n",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
   },
   {
     name: "pin-macro-helper-built",
-    breaks: "what `pin!` pins, built, is a struct of std's rust-js refuses, not the value",
+    breaks:
+      "what `pin!` pins, built, is a struct of std's rust-js refuses, not the value",
     file: "src/lower/aggregates.rs",
     find: "        if self.transparent(ty).is_some() {\n            let at",
     replace: "        if false {\n            let at",
@@ -108,7 +150,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "transparent-struct-built-of-marker",
-    breaks: "a `#[repr(transparent)]` struct built of a marker and its field is the marker, `undefined`",
+    breaks:
+      "a `#[repr(transparent)]` struct built of a marker and its field is the marker, `undefined`",
     file: "src/lower/aggregates.rs",
     find: "            let at = super::recognition::transparent_field(self.tcx, adt_def).unwrap_or(0);\n",
     replace: "            let at = 0;\n",
@@ -116,15 +159,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "transparent-constructor-value-shaped",
-    breaks: "a `#[repr(transparent)]` struct's constructor as a function makes an object of its field's shape, `{ pointer: p }` of a `NonNull`, where its value is its field",
+    breaks:
+      "a `#[repr(transparent)]` struct's constructor as a function makes an object of its field's shape, `{ pointer: p }` of a `NonNull`, where its value is its field",
     file: "src/lower/aggregates.rs",
     find: "        let value = if let Some(at) = transparent\n",
-    replace: "        let value = if let Some(at) = transparent.filter(|_| false)\n",
+    replace:
+      "        let value = if let Some(at) = transparent.filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^transparent_constructor_value.rs$"],
   },
   {
     name: "registered-symbol-made-its-struct",
-    breaks: "the registry's symbol made of a key, `SymbolFor(key)`, is its key's array, `[key]`, not `Symbol.for(key)`",
+    breaks:
+      "the registry's symbol made of a key, `SymbolFor(key)`, is its key's array, `[key]`, not `Symbol.for(key)`",
     file: "src/lower/aggregates.rs",
     find: "            return Ok(super::representation::symbol_for(key.clone()));\n",
     replace: "            return Ok(Expr::array(vec![key.clone()]));\n",
@@ -132,7 +178,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "registered-symbol-constructor-its-struct",
-    breaks: "`.map(SymbolFor)` makes its key's array, `[value]`, not `Symbol.for(value)`",
+    breaks:
+      "`.map(SymbolFor)` makes its key's array, `[value]`, not `Symbol.for(value)`",
     file: "src/lower/aggregates.rs",
     find: "            return Ok(super::representation::symbol_for_function());\n",
     replace: "            return Ok(Expr::array(Vec::new()));\n",
@@ -140,55 +187,88 @@ export const mutations: Mutation[] = [
   },
   {
     name: "nullable-cell-made-undefined",
-    breaks: "a nullable `Cell` field made `Cell::new(None)` is `{ value: undefined } ?? null`'s, its cell, not `null`",
+    breaks:
+      "a nullable `Cell` field made `Cell::new(None)` is `{ value: undefined } ?? null`'s, its cell, not `null`",
     file: "src/lower/aggregates.rs",
     find: "            let cell = self.property_cell(Some(field), field_ty).is_some();\n",
-    replace: "            let cell = !self.is_std_type(field_ty, StdItem::Cell) && self.property_cell(Some(field), field_ty).is_some();\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "nullable Cell field's None is null"],
+    replace:
+      "            let cell = !self.is_std_type(field_ty, StdItem::Cell) && self.property_cell(Some(field), field_ty).is_some();\n",
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "nullable Cell field's None is null",
+    ],
   },
   {
     name: "optional-field-made-null-in-literal",
-    breaks: "an optional nullable field made `None`, or `Cell::new(None)`, is `null` in its literal, not left out (ADR 0810)",
+    breaks:
+      "an optional nullable field made `None`, or `Cell::new(None)`, is `null` in its literal, not left out (ADR 0810)",
     file: "src/lower/aggregates.rs",
     find: "            if bindings::is_optional(self.tcx, field)\n                && (given == Given::WrittenNone\n",
-    replace: "            if false\n                && (given == Given::WrittenNone\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "an optional nullable field"],
+    replace:
+      "            if false\n                && (given == Given::WrittenNone\n",
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "an optional nullable field",
+    ],
   },
   {
     name: "optional-given-optional-coalesced",
-    breaks: "an optional nullable field made of another's value is `{ name: abort.name ?? null }`, `null` where upstream's copy is `undefined` (ADR 0810, amended)",
+    breaks:
+      "an optional nullable field made of another's value is `{ name: abort.name ?? null }`, `null` where upstream's copy is `undefined` (ADR 0810, amended)",
     file: "src/lower/aggregates.rs",
     find: "            let copied = given == Given::Optional && bindings::is_optional(self.tcx, field);\n",
     replace: "            let copied = false;\n",
-    tests: ["test/lowering-optional-fields.test.ts", "-t", "an optional nullable field given another's value"],
+    tests: [
+      "test/lowering-optional-fields.test.ts",
+      "-t",
+      "an optional nullable field given another's value",
+    ],
   },
   {
     name: "optional-given-any-nullable",
-    breaks: "a nullable field that isn't optional, made of an optional one's value, takes it as it is, `undefined` where it's absent, not `null` (ADR 0810, amended)",
+    breaks:
+      "a nullable field that isn't optional, made of an optional one's value, takes it as it is, `undefined` where it's absent, not `null` (ADR 0810, amended)",
     file: "src/lower/aggregates.rs",
     find: "            let copied = given == Given::Optional && bindings::is_optional(self.tcx, field);\n",
     replace: "            let copied = given == Given::Optional;\n",
-    tests: ["test/lowering-optional-fields.test.ts", "-t", "an optional nullable field given another's value"],
+    tests: [
+      "test/lowering-optional-fields.test.ts",
+      "-t",
+      "an optional nullable field given another's value",
+    ],
   },
   {
     name: "optional-written-none-unasked",
-    breaks: "an optional nullable field's `Cell::new(None)` of what has drop glue, a temporary MIR makes, is `undefined ?? null` in its literal, not left out (ADR 0810, amended)",
+    breaks:
+      "an optional nullable field's `Cell::new(None)` of what has drop glue, a temporary MIR makes, is `undefined ?? null` in its literal, not left out (ADR 0810, amended)",
     file: "src/lower/aggregates.rs",
     find: "                && (given == Given::WrittenNone\n                    || matches!(",
     replace: "                && (matches!(",
-    tests: ["test/lowering-nullable.test.ts", "-t", "an optional nullable field"],
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "an optional nullable field",
+    ],
   },
   {
     name: "optional-field-given-undefined",
-    breaks: "an optional nullable field made with an `Option` that may be `None` is given it as it is, `{ label }`, there and `undefined` (ADR 0810, amended)",
+    breaks:
+      "an optional nullable field made with an `Option` that may be `None` is given it as it is, `{ label }`, there and `undefined` (ADR 0810, amended)",
     file: "src/lower/aggregates.rs",
     find: "            if !bindings::is_nullable(self.tcx, field) {\n",
     replace: "            if !bindings::null_where_made(self.tcx, field) {\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "an optional nullable field"],
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "an optional nullable field",
+    ],
   },
   {
     name: "object-layout-ignored",
-    breaks: "a struct literal written across lines, as rustfmt writes one too long for a line, is an object on one line, where React's is one field a line (ADR 0835)",
+    breaks:
+      "a struct literal written across lines, as rustfmt writes one too long for a line, is an object on one line, where React's is one field a line (ADR 0835)",
     file: "src/lower/aggregates.rs",
     find: "            true => literal_layout(self.tcx, span),\n",
     replace: "            true => js::ObjectLayout::default(),\n",
@@ -196,7 +276,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "const-object-layout-ignored",
-    breaks: "a `const`'s struct literal written across lines is an object on one line, as rustc's value is, where one written in place is across lines (ADR 0835)",
+    breaks:
+      "a `const`'s struct literal written across lines is an object on one line, as rustc's value is, where one written in place is across lines (ADR 0835)",
     file: "src/lower/aggregates.rs",
     find: "        *layout = literal_layout(tcx, body.value.span);\n",
     replace: "",
@@ -204,7 +285,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "object-layout-of-a-tuple-variant",
-    breaks: "a tuple variant's object is across lines where what it's given is, `Placed(if a {`, which has no literal of fields to write so (ADR 0835)",
+    breaks:
+      "a tuple variant's object is across lines where what it's given is, `Placed(if a {`, which has no literal of fields to write so (ADR 0835)",
     file: "src/lower/aggregates.rs",
     find: "        adt.variant(variant_index).ctor_kind().is_none()\n",
     replace: "        true\n",
@@ -212,79 +294,124 @@ export const mutations: Mutation[] = [
   },
   {
     name: "commented-field-trailing-unread",
-    breaks: "a comment after a field's value on its line, `v: Cell::new(None), // why`, isn't the field's, so its `None` is left out with it",
+    breaks:
+      "a comment after a field's value on its line, `v: Cell::new(None), // why`, isn't the field's, so its `None` is left out with it",
     file: "src/lower/aggregates.rs",
     find: "                .map(|tail| tail.find('\\n').map_or(next, |n| value.end + n));\n",
     replace: "                .map(|_| value.end);\n",
-    tests: ["test/lowering-comment-fields.test.ts", "-t", "a None field a comment is written on keeps its key and its comment"],
+    tests: [
+      "test/lowering-comment-fields.test.ts",
+      "-t",
+      "a None field a comment is written on keeps its key and its comment",
+    ],
   },
   {
     name: "commented-field-leading-unread",
-    breaks: "a comment on lines of its own before the last field, a `None`, isn't kept a place, so it's before the object, `// Set where it's validated.` above `return {`",
+    breaks:
+      "a comment on lines of its own before the last field, a `None`, isn't kept a place, so it's before the object, `// Set where it's validated.` above `return {`",
     file: "src/lower/aggregates.rs",
     find: "        let led = (0..fields.len()).filter(|&k| before(k)).map(index).collect();\n",
     replace: "        let led = Vec::new();\n        let _ = before;\n",
-    tests: ["test/lowering-comment-fields.test.ts", "-t", "a comment before a field changes no key but where it has no other place"],
+    tests: [
+      "test/lowering-comment-fields.test.ts",
+      "-t",
+      "a comment before a field changes no key but where it has no other place",
+    ],
   },
   {
     name: "commented-field-leading-as-on",
-    breaks: "a comment on lines of its own before a field keeps its `None`'s key, so React's createContext writes `_currentRenderer: undefined` upstream leaves out",
+    breaks:
+      "a comment on lines of its own before a field keeps its `None`'s key, so React's createContext writes `_currentRenderer: undefined` upstream leaves out",
     file: "src/lower/aggregates.rs",
     find: "                kept = keys(on);\n",
-    replace: "                kept = keys(on.into_iter().chain(before.iter().copied()).collect());\n",
-    tests: ["test/lowering-comment-fields.test.ts", "-t", "a comment before a field changes no key but where it has no other place"],
+    replace:
+      "                kept = keys(on.into_iter().chain(before.iter().copied()).collect());\n",
+    tests: [
+      "test/lowering-comment-fields.test.ts",
+      "-t",
+      "a comment before a field changes no key but where it has no other place",
+    ],
   },
   {
     name: "nullable-refcell-made-undefined",
-    breaks: "a nullable plain `RefCell` field's `None` is left out where it's made, `{ tag }`, where upstream's `child: null` is what React's JS tests `=== null`",
+    breaks:
+      "a nullable plain `RefCell` field's `None` is left out where it's made, `{ tag }`, where upstream's `child: null` is what React's JS tests `=== null`",
     file: "src/lower/aggregates.rs",
     find: "            let cell = self.property_cell(Some(field), field_ty).is_some();\n",
-    replace: "            let cell = self.is_std_type(field_ty, StdItem::Cell);\n",
+    replace:
+      "            let cell = self.is_std_type(field_ty, StdItem::Cell);\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "no body borrows"],
   },
   {
     name: "object-literal-without-methods",
-    breaks: "an object of methods' literal holds its fields alone, `{ queries: 0 }`, so `scope.containsNode(..)` isn't a function (ADR 0943)",
+    breaks:
+      "an object of methods' literal holds its fields alone, `{ queries: 0 }`, so `scope.containsNode(..)` isn't a function (ADR 0943)",
     file: "src/lower/aggregates.rs",
     find: "            for method in super::classes::own_methods(self.tcx, adt_def.did()) {\n",
-    replace: "            for method in super::classes::own_methods(self.tcx, adt_def.did()).into_iter().skip(1) {\n",
-    tests: ["test/classes.test.ts", "-t", "an object's methods are its literal's own"],
+    replace:
+      "            for method in super::classes::own_methods(self.tcx, adt_def.did()).into_iter().skip(1) {\n",
+    tests: [
+      "test/classes.test.ts",
+      "-t",
+      "an object's methods are its literal's own",
+    ],
   },
   {
     name: "symbol-for-value-an-arrow",
-    breaks: "`js::SymbolFor` as a value is an arrow, `(value) => Symbol.for(value)`, not `Symbol.for`, React's `const symbolFor = Symbol.for` (ADR 0964)",
+    breaks:
+      "`js::SymbolFor` as a value is an arrow, `(value) => Symbol.for(value)`, not `Symbol.for`, React's `const symbolFor = Symbol.for` (ADR 0964)",
     file: "src/lower/aggregates.rs",
     find: "        if super::recognition::is_symbol_for_constructor(self.tcx, def_id) {\n",
     replace: "        if false {\n",
-    tests: ["test/lowering-is-function.test.ts", "-t", "js::SymbolFor is Symbol.for"],
+    tests: [
+      "test/lowering-is-function.test.ts",
+      "-t",
+      "js::SymbolFor is Symbol.for",
+    ],
   },
   {
     name: "cell-fields-unknown",
-    breaks: "no field is known to hold a cell where its struct literal is made, so `destroy: undefined` is left out, `{}`",
+    breaks:
+      "no field is known to hold a cell where its struct literal is made, so `destroy: undefined` is left out, `{}`",
     file: "src/lower/aggregates.rs",
     find: "                kept.extend(cells);\n",
     replace: "",
-    tests: ["test/lowering-field-cells.test.ts", "-t", "a cell field made None keeps its key"],
+    tests: [
+      "test/lowering-field-cells.test.ts",
+      "-t",
+      "a cell field made None keeps its key",
+    ],
   },
   {
     name: "commented-none-left-out",
-    breaks: "a `None` field a comment is written on is left out, and its comment with it, `v: undefined, // why` gone",
+    breaks:
+      "a `None` field a comment is written on is left out, and its comment with it, `v: undefined, // why` gone",
     file: "src/lower/aggregates.rs",
     find: "                kept = keys(on);\n",
     replace: "",
-    tests: ["test/lowering-comment-fields.test.ts", "-t", "a None field a comment is written on keeps its key and its comment"],
+    tests: [
+      "test/lowering-comment-fields.test.ts",
+      "-t",
+      "a None field a comment is written on keeps its key and its comment",
+    ],
   },
   {
     name: "field-docs-of-any-literal",
-    breaks: "a struct made in two places prints its field's doc comment at each literal, a copy of the declaration's in each (ADR 0444, amended)",
+    breaks:
+      "a struct made in two places prints its field's doc comment at each literal, a copy of the declaration's in each (ADR 0444, amended)",
     file: "src/lower/aggregates.rs",
     find: "                if adt_def.is_struct() && self.krate.struct_literals.get(&adt_def.did()) == Some(&1) {\n",
     replace: "                if adt_def.is_struct() {\n",
-    tests: ["test/lowering-comment-fields.test.ts", "-t", "doc comment is before it"],
+    tests: [
+      "test/lowering-comment-fields.test.ts",
+      "-t",
+      "doc comment is before it",
+    ],
   },
   {
     name: "field-docs-of-std",
-    breaks: "a range, `a..b`, std's `Range` literal, prints std's `/** The lower bound of the range (inclusive). */` before its `start` (ADR 0444, amended)",
+    breaks:
+      "a range, `a..b`, std's `Range` literal, prints std's `/** The lower bound of the range (inclusive). */` before its `start` (ADR 0444, amended)",
     file: "src/lower/aggregates.rs",
     find: "                && adt.did().is_local()\n",
     replace: "",
@@ -292,10 +419,15 @@ export const mutations: Mutation[] = [
   },
   {
     name: "field-docs-left-out",
-    breaks: "React's prototype object's `isPersistent` is printed without upstream's `/** Checks if this event should be released back into the pool. */` its struct's field documents (ADR 0444, amended)",
+    breaks:
+      "React's prototype object's `isPersistent` is printed without upstream's `/** Checks if this event should be released back into the pool. */` its struct's field documents (ADR 0444, amended)",
     file: "src/lower/aggregates.rs",
     find: "                docs: (written && !docs.is_empty()).then(|| Box::new(js::FieldDocs(docs))),\n",
     replace: "                docs: None,\n",
-    tests: ["test/lowering-comment-fields.test.ts", "-t", "doc comment is before it"],
+    tests: [
+      "test/lowering-comment-fields.test.ts",
+      "-t",
+      "doc comment is before it",
+    ],
   },
 ];

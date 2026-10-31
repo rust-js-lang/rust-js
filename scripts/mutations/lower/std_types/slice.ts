@@ -4,31 +4,41 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "retain-mut-no-handles",
-    breaks: "`retain_mut` of numbers gives each as a value, so what `f` writes is lost",
+    breaks:
+      "`retain_mut` of numbers gives each as a value, so what `f` writes is lost",
     file: "src/lower/std_types/slice.rs",
     find: "                let handles = self.handles_mut(item());\n                let mut given",
-    replace: "                let handles = false;\n                let mut given",
+    replace:
+      "                let handles = false;\n                let mut given",
     tests: ["test/corpus.test.ts", "-t", "cell_deque_char_methods"],
   },
   {
     name: "clone-from-slice-own-unused",
-    breaks: "`clone_from_slice` and `fill` of items with their own `clone_from` are refused",
+    breaks:
+      "`clone_from_slice` and `fill` of items with their own `clone_from` are refused",
     file: "src/lower/std_types/slice.rs",
     find: "        if self.recognition().own_clone_from(item) {\n",
     replace: "        if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(clone_from_slice_own|slice_edit_drops).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(clone_from_slice_own|slice_edit_drops).rs$",
+    ],
   },
   {
     name: "clone-from-slice-unboxed",
-    breaks: "`clone_from_slice`'s own `clone_from` of a fieldless enum writes a copy",
+    breaks:
+      "`clone_from_slice`'s own `clone_from` of a fieldless enum writes a copy",
     file: "src/lower/std_types/slice.rs",
     find: "            let target = match self.handles_mut(item) {\n                true => Expr::handle(place),",
-    replace: "            let target = match self.handles_mut(item) {\n                true => place,",
+    replace:
+      "            let target = match self.handles_mut(item) {\n                true => place,",
     tests: ["test/corpus.test.ts", "-t", "clone_from_slice_own"],
   },
   {
     name: "clone-from-slice-nested-allowed",
-    breaks: "`clone_from_slice` of `Vec`s of a type with its own `clone_from` clones each",
+    breaks:
+      "`clone_from_slice` of `Vec`s of a type with its own `clone_from` clones each",
     file: "src/lower/std_types/slice.rs",
     find: "        if self.recognition().reaches_clone_from(item) {\n",
     replace: "        if false {\n",
@@ -38,25 +48,27 @@ export const mutations: Mutation[] = [
     name: "split-at-mut-checked-dropped",
     breaks: "`split_at_mut_checked` panics where it's `None`",
     file: "src/lower/std_types/slice.rs",
-    find: "                if checked {\n                    list.push(Expr::bool(true));\n                }\n                self.view_call(\"$splitAtMut\", list)",
-    replace: "                self.view_call(\"$splitAtMut\", list)",
-    tests: ["test/corpus.test.ts","-t","slice_views"],
+    find: '                if checked {\n                    list.push(Expr::bool(true));\n                }\n                self.view_call("$splitAtMut", list)',
+    replace: '                self.view_call("$splitAtMut", list)',
+    tests: ["test/corpus.test.ts", "-t", "slice_views"],
   },
   {
     name: "split-end-mut-object-handle",
     breaks: "`split_first_mut()`'s number isn't a handle",
     file: "src/lower/std_types/slice.rs",
     find: "                let mut list = vec![arg(), Expr::bool(last)];\n                if self.handles_mut(item()) {\n",
-    replace: "                let mut list = vec![arg(), Expr::bool(last)];\n                if false {\n",
-    tests: ["test/corpus.test.ts","-t","slice_views"],
+    replace:
+      "                let mut list = vec![arg(), Expr::bool(last)];\n                if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "slice_views"],
   },
   {
     name: "first-chunk-mut-copy",
     breaks: "`first_chunk_mut::<N>()` is a copy, not a view",
     file: "src/lower/std_types/slice.rs",
-    find: "(false, true) => self.view_call(\"$view\", vec![items, Expr::int(0), Expr::int(n as i128)]),",
-    replace: "(false, true) => Expr::call(Expr::member(items, \"slice\"), vec![Expr::int(0), Expr::int(n as i128)]),",
-    tests: ["test/corpus.test.ts","-t","slice_views"],
+    find: '(false, true) => self.view_call("$view", vec![items, Expr::int(0), Expr::int(n as i128)]),',
+    replace:
+      '(false, true) => Expr::call(Expr::member(items, "slice"), vec![Expr::int(0), Expr::int(n as i128)]),',
+    tests: ["test/corpus.test.ts", "-t", "slice_views"],
   },
   {
     name: "last-chunk-mut-from-start",
@@ -64,55 +76,58 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/slice.rs",
     find: "                        let start = Expr::bin(Op::Sub, length.clone(), Expr::int(n as i128));\n",
     replace: "                        let start = Expr::int(0);\n",
-    tests: ["test/corpus.test.ts","-t","slice_views"],
+    tests: ["test/corpus.test.ts", "-t", "slice_views"],
   },
   {
     name: "split-by-mut-copies",
     breaks: "`split_mut(p)` gives copies, not views",
     file: "src/lower/std_types/slice.rs",
-    find: "                    true => self.view_call(\"$sliceSplitByMut\", list),",
-    replace: "                    true => helper(\"$sliceSplitBy\", list),",
-    tests: ["test/corpus.test.ts","-t","slice_views"],
+    find: '                    true => self.view_call("$sliceSplitByMut", list),',
+    replace: '                    true => helper("$sliceSplitBy", list),',
+    tests: ["test/corpus.test.ts", "-t", "slice_views"],
   },
   {
     name: "chunk-by-mut-copies",
     breaks: "`chunk_by_mut(p)` gives copies, not views",
     file: "src/lower/std_types/slice.rs",
-    find: "SliceOp::ChunkBy { mutable: true } => self.view_call(\"$chunkByMut\", vec![arg(), arg()]),",
-    replace: "SliceOp::ChunkBy { mutable: true } => helper(\"$chunkBy\", vec![arg(), arg()]),",
-    tests: ["test/corpus.test.ts","-t","slice_views"],
+    find: 'SliceOp::ChunkBy { mutable: true } => self.view_call("$chunkByMut", vec![arg(), arg()]),',
+    replace:
+      'SliceOp::ChunkBy { mutable: true } => helper("$chunkBy", vec![arg(), arg()]),',
+    tests: ["test/corpus.test.ts", "-t", "slice_views"],
   },
   {
     name: "split-chunk-mut-copies",
     breaks: "`split_first_chunk_mut` gives copies, not views",
     file: "src/lower/std_types/slice.rs",
-    find: "                    true => self.view_call(\"$splitChunkMut\", list),",
-    replace: "                    true => helper(\"$splitChunk\", list),",
-    tests: ["test/corpus.test.ts","-t","slice_views"],
+    find: '                    true => self.view_call("$splitChunkMut", list),',
+    replace: '                    true => helper("$splitChunk", list),',
+    tests: ["test/corpus.test.ts", "-t", "slice_views"],
   },
   {
     name: "chunks-exact-mut-copies",
     breaks: "`chunks_exact_mut` gives copies, not views",
     file: "src/lower/std_types/slice.rs",
-    find: "self.view_call(\"$chunksExactMut\", vec![arg(), arg()])",
-    replace: "helper(\"$chunksExact\", vec![arg(), arg()])",
-    tests: ["test/corpus.test.ts","-t","slice_views"],
+    find: 'self.view_call("$chunksExactMut", vec![arg(), arg()])',
+    replace: 'helper("$chunksExact", vec![arg(), arg()])',
+    tests: ["test/corpus.test.ts", "-t", "slice_views"],
   },
   {
     name: "rchunks-mut-copies",
     breaks: "`rchunks_mut` gives copies, not views",
     file: "src/lower/std_types/slice.rs",
-    find: "                self.view_call(\"$rchunksMut\", vec![arg(), arg(), Expr::bool(exact)])",
-    replace: "                helper(\"$rchunks\", vec![arg(), arg(), Expr::bool(exact)])",
-    tests: ["test/corpus.test.ts","-t","slice_views"],
+    find: '                self.view_call("$rchunksMut", vec![arg(), arg(), Expr::bool(exact)])',
+    replace:
+      '                helper("$rchunks", vec![arg(), arg(), Expr::bool(exact)])',
+    tests: ["test/corpus.test.ts", "-t", "slice_views"],
   },
   {
     name: "remainder-of-stepped",
-    breaks: "a stepped `ChunksExactMut`'s `into_remainder()` is read off `$iter`'s wrapper",
+    breaks:
+      "a stepped `ChunksExactMut`'s `into_remainder()` is read off `$iter`'s wrapper",
     file: "src/lower/std_types/slice.rs",
     find: "            SliceOp::Remainder if stepping => ",
     replace: "            SliceOp::Remainder if false => ",
-    tests: ["test/corpus.test.ts","-t","slice_views"],
+    tests: ["test/corpus.test.ts", "-t", "slice_views"],
   },
   {
     name: "item-eq-identity",
@@ -120,7 +135,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/slice.rs",
     find: "        if item == rhs\n            && (self.eq_is_identity(item) || (!self.has_cell_layer(item) && Num::of(item.peel_refs()).is_some()))\n        {\n            return Ok(None);",
     replace: "        if true {\n            return Ok(None);",
-    tests: ["test/corpus.test.ts","-t","slice_prefix_eq"],
+    tests: ["test/corpus.test.ts", "-t", "slice_prefix_eq"],
   },
   {
     name: "item-eq-arrow-kept",
@@ -128,7 +143,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/slice.rs",
     find: "            && matches!(callee.kind, js::ExprKind::Var(_))\n",
     replace: "            && false\n",
-    tests: ["test/corpus.test.ts","-t","slice_prefix_eq"],
+    tests: ["test/corpus.test.ts", "-t", "slice_prefix_eq"],
     snapshots: true,
   },
   {
@@ -137,7 +152,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/slice.rs",
     find: "                list.extend(self.item_eq((item(), item()), span)?);\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","slice_prefix_eq"],
+    tests: ["test/corpus.test.ts", "-t", "slice_prefix_eq"],
   },
   {
     name: "as-array-any-length",
@@ -145,15 +160,16 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/slice.rs",
     find: "                    Expr::bin(Op::Eq, length, Expr::int(n as i128)),",
     replace: "                    Expr::bool(true),",
-    tests: ["test/corpus.test.ts","-t","slice_arrays"],
+    tests: ["test/corpus.test.ts", "-t", "slice_arrays"],
   },
   {
     name: "array-windows-of-one",
     breaks: "`array_windows::<N>()` are of one",
     file: "src/lower/std_types/slice.rs",
-    find: "                Expr::call(Expr::helper(\"$windows\"), vec![arg(), Expr::int(n as i128)])",
-    replace: "                Expr::call(Expr::helper(\"$windows\"), vec![arg(), Expr::int(1)])",
-    tests: ["test/corpus.test.ts","-t","slice_arrays"],
+    find: '                Expr::call(Expr::helper("$windows"), vec![arg(), Expr::int(n as i128)])',
+    replace:
+      '                Expr::call(Expr::helper("$windows"), vec![arg(), Expr::int(1)])',
+    tests: ["test/corpus.test.ts", "-t", "slice_arrays"],
   },
   {
     name: "as-chunks-back-dropped",
@@ -161,15 +177,15 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/slice.rs",
     find: "                if back {\n                    list.push(Expr::bool(true));\n                }\n                let pair",
     replace: "                let pair",
-    tests: ["test/corpus.test.ts","-t","slice_arrays"],
+    tests: ["test/corpus.test.ts", "-t", "slice_arrays"],
   },
   {
     name: "as-chunks-mut-copies",
     breaks: "`as_chunks_mut` gives copies, not views",
     file: "src/lower/std_types/slice.rs",
-    find: "                    true => self.view_call(\"$asChunksMut\", list),",
-    replace: "                    true => helper(\"$asChunks\", list),",
-    tests: ["test/corpus.test.ts","-t","slice_arrays"],
+    find: '                    true => self.view_call("$asChunksMut", list),',
+    replace: '                    true => helper("$asChunks", list),',
+    tests: ["test/corpus.test.ts", "-t", "slice_arrays"],
   },
   {
     name: "as-chunks-unchecked-pair",
@@ -177,15 +193,16 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/slice.rs",
     find: "                    true => Expr::index(pair, Expr::int(0)),",
     replace: "                    true => pair,",
-    tests: ["test/corpus.test.ts","-t","slice_arrays"],
+    tests: ["test/corpus.test.ts", "-t", "slice_arrays"],
   },
   {
     name: "flattened-mut-copy",
     breaks: "`as_flattened_mut` is a copy, not a view",
     file: "src/lower/std_types/slice.rs",
-    find: "                self.view_call(\"$flatView\", vec![arg(), Expr::int(n as i128)])",
-    replace: "                Expr::call(Expr::member(arg(), \"flat\"), Vec::new())",
-    tests: ["test/corpus.test.ts","-t","slice_arrays"],
+    find: '                self.view_call("$flatView", vec![arg(), Expr::int(n as i128)])',
+    replace:
+      '                Expr::call(Expr::member(arg(), "flat"), Vec::new())',
+    tests: ["test/corpus.test.ts", "-t", "slice_arrays"],
   },
   {
     name: "split-off-back-front",
@@ -193,23 +210,24 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/slice.rs",
     find: "            (None, Some((n, None))) => list.extend([n, Expr::bool(true)]),",
     replace: "            (None, Some((n, None))) => list.push(n),",
-    tests: ["test/corpus.test.ts","-t","slice_split_off"],
+    tests: ["test/corpus.test.ts", "-t", "slice_split_off"],
   },
   {
     name: "split-off-end-no-handle",
     breaks: "`split_off_first_mut()`'s number isn't a handle",
     file: "src/lower/std_types/slice.rs",
     find: "                list.push(Expr::bool(last));\n                if mutable && self.handles_mut(item) {",
-    replace: "                list.push(Expr::bool(last));\n                if false {",
-    tests: ["test/corpus.test.ts","-t","slice_split_off"],
+    replace:
+      "                list.push(Expr::bool(last));\n                if false {",
+    tests: ["test/corpus.test.ts", "-t", "slice_split_off"],
   },
   {
     name: "split-off-mut-copies",
     breaks: "`split_off_mut` gives a copy, not a view",
     file: "src/lower/std_types/slice.rs",
-    find: "            (None, true) => \"$sliceSplitOffMut\",",
-    replace: "            (None, true) => \"$sliceSplitOff\",",
-    tests: ["test/corpus.test.ts","-t","slice_split_off"],
+    find: '            (None, true) => "$sliceSplitOffMut",',
+    replace: '            (None, true) => "$sliceSplitOff",',
+    tests: ["test/corpus.test.ts", "-t", "slice_split_off"],
   },
   {
     name: "disjoint-handle-dropped",
@@ -217,7 +235,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/slice.rs",
     find: "                let handle = index.is_usize() && self.handles_mut(item());",
     replace: "                let handle = false;",
-    tests: ["test/corpus.test.ts","-t","slice_disjoint"],
+    tests: ["test/corpus.test.ts", "-t", "slice_disjoint"],
   },
   {
     name: "disjoint-inclusive-dropped",
@@ -225,7 +243,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/slice.rs",
     find: "                if inclusive {\n                    list.push(Expr::bool(true));\n                }\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","slice_disjoint"],
+    tests: ["test/corpus.test.ts", "-t", "slice_disjoint"],
   },
   {
     name: "disjoint-unchecked-result",
@@ -233,7 +251,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/slice.rs",
     find: "                    true => crate::js::result::held(result),",
     replace: "                    true => result,",
-    tests: ["test/corpus.test.ts","-t","slice_disjoint"],
+    tests: ["test/corpus.test.ts", "-t", "slice_disjoint"],
   },
   {
     name: "uninit-write-copy-skipped",
@@ -241,7 +259,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/slice.rs",
     find: "        out.push(StmtKind::Expr(copy).at(self.js_span(span)));\n        Ok(slots)\n",
     replace: "        Ok(slots)\n",
-    tests: ["test/corpus.test.ts","-t","slice_uninit"],
+    tests: ["test/corpus.test.ts", "-t", "slice_uninit"],
   },
   {
     name: "uninit-write-clone-copies",
@@ -249,15 +267,16 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/slice.rs",
     find: "        if clone {\n            let clone = self.clone_arg(",
     replace: "        if false {\n            let clone = self.clone_arg(",
-    tests: ["test/corpus.test.ts","-t","slice_uninit"],
+    tests: ["test/corpus.test.ts", "-t", "slice_uninit"],
   },
   {
     name: "sort-kind-small-general",
-    breaks: "an item of 32 bytes takes the fallback small sort, not the general one",
+    breaks:
+      "an item of 32 bytes takes the fallback small sort, not the general one",
     file: "src/lower/std_types/slice.rs",
     find: "        } else if freeze && size * 48 <= 4096 {",
     replace: "        } else if freeze && size * 48 <= 1024 {",
-    tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
+    tests: ["test/corpus.test.ts", "-t", "sort_unstable_ties"],
   },
   {
     name: "less-value-le",
@@ -265,15 +284,16 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/slice.rs",
     find: "            return Ok(Expr::bin(Op::Lt, a, b));",
     replace: "            return Ok(Expr::bin(Op::Le, a, b));",
-    tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
+    tests: ["test/corpus.test.ts", "-t", "sort_unstable_ties"],
   },
   {
     name: "compare-inline-le",
     breaks: "a comparator's `is_less` is `<= 0`",
     file: "src/lower/std_types/slice.rs",
     find: "                    let less = Expr::bin(Op::Lt, order.clone(), Expr::int(0));",
-    replace: "                    let less = Expr::bin(Op::Le, order.clone(), Expr::int(0));",
-    tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
+    replace:
+      "                    let less = Expr::bin(Op::Le, order.clone(), Expr::int(0));",
+    tests: ["test/corpus.test.ts", "-t", "sort_unstable_ties"],
   },
   {
     name: "select-no-handle",
@@ -281,7 +301,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/slice.rs",
     find: "        if select && self.handles_mut(item) {",
     replace: "        if false {",
-    tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
+    tests: ["test/corpus.test.ts", "-t", "sort_unstable_ties"],
   },
   {
     name: "deque-insert-mut-no-handle",
@@ -289,19 +309,21 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/slice.rs",
     find: "mutable && self.handles_mut(item())",
     replace: "false",
-    tests: ["test/corpus.test.ts","-t","deque_push_mut"],
+    tests: ["test/corpus.test.ts", "-t", "deque_push_mut"],
   },
   {
     name: "sort-kind-host-size",
-    breaks: "an unstable sort picks by a 64-bit host's sizes, not rust-js's 32-bit ones",
+    breaks:
+      "an unstable sort picks by a 64-bit host's sizes, not rust-js's 32-bit ones",
     file: "src/lower/std_types/slice.rs",
     find: "        let size = layout.size.bytes();\n",
     replace: "        let size = layout.size.bytes() * 2;\n",
-    tests: ["test/corpus.test.ts","-t","sort_unstable_wasm32"],
+    tests: ["test/corpus.test.ts", "-t", "sort_unstable_wasm32"],
   },
   {
     name: "clone-from-slice-generic-refused",
-    breaks: "`clone_from_slice` of a type parameter's items, arrayvec's `clone_from`, is refused, where each is its dictionary's `clone_from` or a clone",
+    breaks:
+      "`clone_from_slice` of a type parameter's items, arrayvec's `clone_from`, is refused, where each is its dictionary's `clone_from` or a clone",
     file: "src/lower/std_types/slice.rs",
     find: "        if self.is_unknown(item) {\n",
     replace: "        if false {\n",
@@ -309,23 +331,31 @@ export const mutations: Mutation[] = [
   },
   {
     name: "array-from-fn-index-first",
-    breaks: "`array::from_fn`'s arrow is given each item, `undefined`, not its index",
+    breaks:
+      "`array::from_fn`'s arrow is given each item, `undefined`, not its index",
     file: "src/lower/std_types/slice.rs",
-    find: "                        params.insert(0, \"_\".into());\n",
+    find: '                        params.insert(0, "_".into());\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^array_from_fn.rs$"],
   },
   {
     name: "sort-of-held-param-measured",
-    breaks: "an unstable sort of items that hold a type parameter asks rustc their layout, which it can't give",
+    breaks:
+      "an unstable sort of items that hold a type parameter asks rustc their layout, which it can't give",
     file: "src/lower/std_types/slice.rs",
-    find: "        if item.has_param() {\n            return Err(self.unsupported(\n                span,\n                \"an unstable sort of items that hold a type parameter, whose order std's algorithm picks by their layout\",\n",
-    replace: "        if false {\n            return Err(self.unsupported(\n                span,\n                \"an unstable sort of items that hold a type parameter, whose order std's algorithm picks by their layout\",\n",
-    tests: ["test/diagnostics.test.ts", "-t", "an unstable sort of items that hold a type parameter"],
+    find: '        if item.has_param() {\n            return Err(self.unsupported(\n                span,\n                "an unstable sort of items that hold a type parameter, whose order std\'s algorithm picks by their layout",\n',
+    replace:
+      '        if false {\n            return Err(self.unsupported(\n                span,\n                "an unstable sort of items that hold a type parameter, whose order std\'s algorithm picks by their layout",\n',
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "an unstable sort of items that hold a type parameter",
+    ],
   },
   {
     name: "retain-mut-undropped",
-    breaks: "`retain_mut` of values with a destructor leaves those it removes undropped",
+    breaks:
+      "`retain_mut` of values with a destructor leaves those it removes undropped",
     file: "src/lower/std_types/slice.rs",
     find: "                given.extend(self.std_drop_function(item(), span)?);\n",
     replace: "",
@@ -333,31 +363,37 @@ export const mutations: Mutation[] = [
   },
   {
     name: "pop-front-if-no-handles",
-    breaks: "`pop_front_if(f)` of numbers gives `f` the number, not a handle on it",
+    breaks:
+      "`pop_front_if(f)` of numbers gives `f` the number, not a handle on it",
     file: "src/lower/std_types/slice.rs",
-    find: "                helper(\"$popFrontIf\", vec![arg(), arg(), Expr::bool(handles)])\n",
-    replace: "                helper(\"$popFrontIf\", vec![arg(), arg(), Expr::bool(false && handles)])\n",
+    find: '                helper("$popFrontIf", vec![arg(), arg(), Expr::bool(handles)])\n',
+    replace:
+      '                helper("$popFrontIf", vec![arg(), arg(), Expr::bool(false && handles)])\n',
     tests: ["test/corpus.test.ts", "-t", "cell_deque_char_methods"],
   },
   {
     name: "fill-undropped",
     breaks: "`fill` drops none of the items it writes over",
     file: "src/lower/std_types/slice.rs",
-    find: "                        let drop = self.std_drop_function(item(), span)?;\n                        helper(\n                            \"$fill\",",
-    replace: "                        let drop = None;\n                        helper(\n                            \"$fill\",",
+    find: '                        let drop = self.std_drop_function(item(), span)?;\n                        helper(\n                            "$fill",',
+    replace:
+      '                        let drop = None;\n                        helper(\n                            "$fill",',
     tests: ["test/corpus.test.ts", "-t", "^slice_edit_drops.rs$"],
   },
   {
     name: "generic-index-mut-known-boxed",
-    breaks: "`index_mut` by a generic index whose output is known here, `[u32]`, is left in its box",
+    breaks:
+      "`index_mut` by a generic index whose output is known here, `[u32]`, is left in its box",
     file: "src/lower/std_types/slice.rs",
     find: "                    Some(output) if mutable && !self.is_cell_pointee(output) => Expr::held(indexed),",
-    replace: "                    Some(output) if false && !self.is_cell_pointee(output) => Expr::held(indexed),",
+    replace:
+      "                    Some(output) if false && !self.is_cell_pointee(output) => Expr::held(indexed),",
     tests: ["test/corpus.test.ts", "-t", "^index_bound_generic.rs$"],
   },
   {
     name: "generic-index-mut-cell-unboxed",
-    breaks: "`index_mut` by a generic index of a `String`, a cell, is taken out of its handle",
+    breaks:
+      "`index_mut` by a generic index of a `String`, a cell, is taken out of its handle",
     file: "src/lower/std_types/slice.rs",
     find: "                    Some(output) if mutable && !self.is_cell_pointee(output) => Expr::held(indexed),",
     replace: "                    Some(_) if mutable => Expr::held(indexed),",
@@ -365,26 +401,32 @@ export const mutations: Mutation[] = [
   },
   {
     name: "copy-from-slice-shared",
-    breaks: "`copy_from_slice` of `Copy` structs puts the source's objects in place, so changing one changes the source",
+    breaks:
+      "`copy_from_slice` of `Copy` structs puts the source's objects in place, so changing one changes the source",
     file: "src/lower/std_types/slice.rs",
-    find: "                helper(\"$copyFromSlice\", Expr::optional_args(vec![items, source], vec![copy]))",
-    replace: "                helper(\"$copyFromSlice\", Expr::optional_args(vec![items, source], vec![copy.filter(|_| false)]))",
+    find: '                helper("$copyFromSlice", Expr::optional_args(vec![items, source], vec![copy]))',
+    replace:
+      '                helper("$copyFromSlice", Expr::optional_args(vec![items, source], vec![copy.filter(|_| false)]))',
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
   },
   {
     name: "repeat-items-shared",
-    breaks: "`repeat` of `Copy` structs holds the same objects each time, so changing one changes them all",
+    breaks:
+      "`repeat` of `Copy` structs holds the same objects each time, so changing one changes them all",
     file: "src/lower/std_types/slice.rs",
-    find: "                helper(\"$repeatItems\", Expr::optional_args(vec![items, n, size], vec![copy]))",
-    replace: "                helper(\"$repeatItems\", Expr::optional_args(vec![items, n, size], vec![copy.filter(|_| false)]))",
+    find: '                helper("$repeatItems", Expr::optional_args(vec![items, n, size], vec![copy]))',
+    replace:
+      '                helper("$repeatItems", Expr::optional_args(vec![items, n, size], vec![copy.filter(|_| false)]))',
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
   },
   {
     name: "deque-slices-swapped",
-    breaks: "a `VecDeque`'s `as_slices()` gives none first, so `as_mut_slices()`'s first writes nowhere and a reader of the first sees nothing",
+    breaks:
+      "a `VecDeque`'s `as_slices()` gives none first, so `as_mut_slices()`'s first writes nowhere and a reader of the first sees nothing",
     file: "src/lower/std_types/slice.rs",
     find: "            SliceOp::DequeSlices => Expr::array(vec![arg(), Expr::array(Vec::new())]),\n",
-    replace: "            SliceOp::DequeSlices => Expr::array(vec![Expr::array(Vec::new()), arg()]),\n",
+    replace:
+      "            SliceOp::DequeSlices => Expr::array(vec![Expr::array(Vec::new()), arg()]),\n",
     tests: ["test/corpus.test.ts", "-t", "^deque_slices.rs$"],
     snapshots: true,
   },
@@ -406,7 +448,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "utf16-sort-unstable-kept",
-    breaks: "`sort_unstable_by(|a, b| a.encode_utf16().cmp(b.encode_utf16()))` is `$sortUnstable`, where JS's `sort()` is that order, its ties the same string (ADR 0945)",
+    breaks:
+      "`sort_unstable_by(|a, b| a.encode_utf16().cmp(b.encode_utf16()))` is `$sortUnstable`, where JS's `sort()` is that order, its ties the same string (ADR 0945)",
     file: "src/lower/std_types/slice.rs",
     find: "        if matches!(op, SliceOp::SortUnstable { .. })\n",
     replace: "        if false\n",

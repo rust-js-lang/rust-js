@@ -4,23 +4,36 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "named-constant-signed-as-unsigned",
-    breaks: "a negative `const` is read as its bits, `-1` as 2^64 - 1, so a test against it narrows what can't be",
+    breaks:
+      "a negative `const` is read as its bits, `-1` as 2^64 - 1, so a test against it narrows what can't be",
     file: "src/lower/body_queries.rs",
     find: "        true => Some(scalar.to_int(scalar.size())),\n        false => i128::try_from(scalar.to_uint(scalar.size())).ok(),\n    }\n}\n\n/// Each call `given_present`",
-    replace: "        _ => i128::try_from(scalar.to_uint(scalar.size())).ok(),\n    }\n}\n\n/// Each call `given_present`",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a labeled block and a named constant"],
+    replace:
+      "        _ => i128::try_from(scalar.to_uint(scalar.size())).ok(),\n    }\n}\n\n/// Each call `given_present`",
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a labeled block and a named constant",
+    ],
   },
   {
     name: "classify-some-not-present",
-    breaks: "`classify(Some(value))` may be `null`, so its object's test leaves `null` out, `value !== null`",
+    breaks:
+      "`classify(Some(value))` may be `null`, so its object's test leaves `null` out, `value !== null`",
     file: "src/lower/body_queries.rs",
     find: "    (identity && untagged && matches!(&args[..], [arg] if some(*arg))).then_some(fn_span)",
-    replace: "    (identity && untagged && matches!(&args[..], [arg] if some(*arg) && false)).then_some(fn_span)",
-    tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is"],
+    replace:
+      "    (identity && untagged && matches!(&args[..], [arg] if some(*arg) && false)).then_some(fn_span)",
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "a match of what a value is",
+    ],
   },
   {
     name: "classify-any-present",
-    breaks: "`classify(value)` of an `Option` is taken as there, so its object's test takes `null`",
+    breaks:
+      "`classify(value)` of an `Option` is taken as there, so its object's test takes `null`",
     file: "src/lower/body_queries.rs",
     find: "    (identity && untagged && matches!(&args[..], [arg] if some(*arg))).then_some(fn_span)",
     replace: "    (identity && untagged).then_some(fn_span)",
@@ -28,7 +41,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "other-module-static-unread",
-    breaks: "a static made of another module's components is refused, as if JS hadn't imported them first",
+    breaks:
+      "a static made of another module's components is refused, as if JS hadn't imported them first",
     file: "src/lower/body_queries.rs",
     find: "            .is_some_and(|local| tcx.parent_module_from_def_id(local) == module)\n",
     replace: "            .is_some_and(|_| true)\n",
@@ -36,97 +50,146 @@ export const mutations: Mutation[] = [
   },
   {
     name: "own-thread-local-unread",
-    breaks: "a static made of its own module's `thread_local!` component is written before it, which JS hasn't made yet",
+    breaks:
+      "a static made of its own module's `thread_local!` component is written before it, which JS hasn't made yet",
     file: "src/lower/body_queries.rs",
     find: "        ExprKind::NamedConst { def_id, .. } => {\n            own(def_id)\n",
-    replace: "        ExprKind::NamedConst { def_id, .. } => {\n            false && own(def_id)\n",
+    replace:
+      "        ExprKind::NamedConst { def_id, .. } => {\n            false && own(def_id)\n",
     tests: ["test/jsx-types.test.ts", "-t", "ElementType, rendered as a tag"],
   },
   {
     name: "steady-ignores-mut-borrows",
-    breaks: "a variable lent as `&mut` isn't changed, so an `f64` a call halves is taken as the whole number it was, and `x as u8` is `1.5`",
+    breaks:
+      "a variable lent as `&mut` isn't changed, so an `f64` a call halves is taken as the whole number it was, and `x as u8` is `1.5`",
     file: "src/lower/body_queries.rs",
     find: "            ExprKind::Borrow {\n                borrow_kind: BorrowKind::Mut { .. },\n                arg,\n            }\n            | ExprKind::RawBorrow {",
     replace: "            ExprKind::RawBorrow {",
-    tests: ["test/lowering-numbers.test.ts", "-t", "an f64 known to be a whole number"],
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "an f64 known to be a whole number",
+    ],
   },
   {
     name: "registered-read-none-untold",
-    breaks: "a value read as the registry's symbol whose `None` an arm tells is the value itself, so a string is its `Some`, not `None`",
+    breaks:
+      "a value read as the registry's symbol whose `None` an arm tells is the value itself, so a string is its `Some`, not `None`",
     file: "src/lower/body_queries.rs",
     find: "        PatKind::Wild => true,\n        PatKind::Or { pats } => pats.iter().all(|p| tests_registered(tcx, p)),\n",
-    replace: "        PatKind::Wild | PatKind::Variant { .. } => true,\n        PatKind::Or { pats } => pats.iter().all(|p| tests_registered(tcx, p)),\n",
-    tests: ["test/lowering-symbols.test.ts", "-t", "a read of one it tells is checked"],
+    replace:
+      "        PatKind::Wild | PatKind::Variant { .. } => true,\n        PatKind::Or { pats } => pats.iter().all(|p| tests_registered(tcx, p)),\n",
+    tests: [
+      "test/lowering-symbols.test.ts",
+      "-t",
+      "a read of one it tells is checked",
+    ],
   },
   {
     name: "registered-read-binding-untold",
-    breaks: "a value read as the registry's symbol whose `Some(_)` an arm takes is the value itself, so a string is its `Some`",
+    breaks:
+      "a value read as the registry's symbol whose `Some(_)` an arm takes is the value itself, so a string is its `Some`",
     file: "src/lower/body_queries.rs",
     find: "                PatKind::Constant { .. } => p.ty.is_str(),\n                _ => false,\n",
-    replace: "                PatKind::Constant { .. } => p.ty.is_str(),\n                _ => true,\n",
-    tests: ["test/lowering-symbols.test.ts", "-t", "a read of one it tells is checked"],
+    replace:
+      "                PatKind::Constant { .. } => p.ty.is_str(),\n                _ => true,\n",
+    tests: [
+      "test/lowering-symbols.test.ts",
+      "-t",
+      "a read of one it tells is checked",
+    ],
   },
   {
     name: "held-guard-of-undefined",
-    breaks: "a guard `if let Some(_) = value` of an arm of `Kind::Undefined` is taken to hold, so `undefined` takes the arm (ADR 0790)",
+    breaks:
+      "a guard `if let Some(_) = value` of an arm of `Kind::Undefined` is taken to hold, so `undefined` takes the arm (ADR 0790)",
     file: "src/lower/body_queries.rs",
     find: "} => *adt_def == adt && !super::untagged::is_nullish(tcx, adt.variant(*variant_index)),",
     replace: "} => *adt_def == adt,",
-    tests: ["test/lowering-labels.test.ts", "-t", "a guard of what a kind says is there"],
+    tests: [
+      "test/lowering-labels.test.ts",
+      "-t",
+      "a guard of what a kind says is there",
+    ],
   },
   {
     name: "registered-equality-unread",
-    breaks: "`from_value(x) == Some(C)` reads `$symbolFor(x)`, where `matches!(from_value(x), Some(C))` is `x === C`: two outputs for one comparison",
+    breaks:
+      "`from_value(x) == Some(C)` reads `$symbolFor(x)`, where `matches!(from_value(x), Some(C))` is `x === C`: two outputs for one comparison",
     file: "src/lower/body_queries.rs",
     find: "            _ => registered_equality(tcx, thir, e).map(|(read, _)| read),\n",
     replace: "            _ => None,\n",
-    tests: ["test/lowering-symbols.test.ts", "-t", "an == of a value read as the registry's symbol"],
+    tests: [
+      "test/lowering-symbols.test.ts",
+      "-t",
+      "an == of a value read as the registry's symbol",
+    ],
   },
   {
     name: "body-registered-reads-uncollected",
-    breaks: "a body's registered symbol reads aren't collected, so each is checked, `$symbolFor(type)`",
+    breaks:
+      "a body's registered symbol reads aren't collected, so each is checked, `$symbolFor(type)`",
     file: "src/lower/body_queries.rs",
     find: "            registered_reads: registered_reads(tcx, thir),\n",
     replace: "            registered_reads: HashSet::new(),\n",
-    tests: ["test/lowering-symbols.test.ts", "-t", "a match of the registry's symbols"],
+    tests: [
+      "test/lowering-symbols.test.ts",
+      "-t",
+      "a match of the registry's symbols",
+    ],
   },
   {
     name: "body-registered-equalities-uncollected",
-    breaks: "a body's `==` of a registered symbol read and a `Some` isn't collected, so it's compared loosely",
+    breaks:
+      "a body's `==` of a registered symbol read and a `Some` isn't collected, so it's compared loosely",
     file: "src/lower/body_queries.rs",
     find: "            registered_equalities: registered_equalities(tcx, thir),\n",
     replace: "            registered_equalities: HashSet::new(),\n",
-    tests: ["test/lowering-symbols.test.ts", "-t", "an == of a value read as the registry's symbol"],
+    tests: [
+      "test/lowering-symbols.test.ts",
+      "-t",
+      "an == of a value read as the registry's symbol",
+    ],
   },
   {
     name: "forwards-args-unchecked",
-    breaks: "an `eq` that compares the addresses of other values than its own is taken as equal only to itself (ADR 0864)",
+    breaks:
+      "an `eq` that compares the addresses of other values than its own is taken as equal only to itself (ADR 0864)",
     file: "src/lower/body_queries.rs",
     find: "    (given == params).then(|| super::fn_def(thir[fun].ty)).flatten()\n",
     replace: "    Some(()).and(super::fn_def(thir[fun].ty))\n",
-    tests: ["test/lowering-collections.test.ts", "-t", "a type equal only to itself"],
+    tests: [
+      "test/lowering-collections.test.ts",
+      "-t",
+      "a type equal only to itself",
+    ],
   },
   {
     name: "rev-never-in-place",
-    breaks: "every `rev()` is std's compiled `Rev`, a chain stepped where it's made no longer `v.toReversed()`",
+    breaks:
+      "every `rev()` is std's compiled `Rev`, a chain stepped where it's made no longer `v.toReversed()`",
     file: "src/lower/body_queries.rs",
     find: "            if steps_as_js(callee, index, &found, at, maker, made) {\n",
-    replace: "            if false && steps_as_js(callee, index, &found, at, maker, made) {\n",
+    replace:
+      "            if false && steps_as_js(callee, index, &found, at, maker, made) {\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^rev_drops.rs$"],
   },
   {
     name: "rev-borrowed-held",
-    breaks: "a `rev()` borrowed for what steps it, `rev().nth(n)`, is taken as held",
+    breaks:
+      "a `rev()` borrowed for what steps it, `rev().nth(n)`, is taken as held",
     file: "src/lower/body_queries.rs",
     find: "                ExprKind::Borrow { arg, .. } => strip(thir, arg),\n                _ => strip(thir, arg),\n            };\n            let ExprKind::Call { fun, fn_span, .. } = thir[arg].kind else {",
-    replace: "                _ => strip(thir, arg),\n            };\n            let ExprKind::Call { fun, fn_span, .. } = thir[arg].kind else {",
+    replace:
+      "                _ => strip(thir, arg),\n            };\n            let ExprKind::Call { fun, fn_span, .. } = thir[arg].kind else {",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
   },
   {
     name: "rev-own-impl-in-place",
-    breaks: "`rev().next_back()`, `Rev`'s own compiled impl's, is given what the recognizers make of it",
+    breaks:
+      "`rev().next_back()`, `Rev`'s own compiled impl's, is given what the recognizers make of it",
     file: "src/lower/body_queries.rs",
     find: "        std && !(its_self && on_it_by_its_impl) || given_js\n",
     replace: "        std || given_js\n",
@@ -134,7 +197,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rev-given-js-held",
-    breaks: "a `rev()` given to the crate's generic function as a JS iterator is std's struct",
+    breaks:
+      "a `rev()` given to the crate's generic function as a JS iterator is std's struct",
     file: "src/lower/body_queries.rs",
     find: "        let given_js = callee.is_local()\n",
     replace: "        let given_js = false && callee.is_local()\n",
@@ -143,7 +207,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "local-adapter-held",
-    breaks: "an `enumerate()` a variable holds that only `next()` steps is std's struct, not `entries()`",
+    breaks:
+      "an `enumerate()` a variable holds that only `next()` steps is std's struct, not `entries()`",
     file: "src/lower/body_queries.rs",
     find: "            if !found.contains(&at)\n                && all > 0\n",
     replace: "            if false\n                && all > 0\n",
@@ -152,7 +217,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "local-adapter-lent-held",
-    breaks: "a variable's `enumerate()` lent by `by_ref()` to what steps it from its back, `next_back()`, is taken to be stepped as a JS iterator",
+    breaks:
+      "a variable's `enumerate()` lent by `by_ref()` to what steps it from its back, `next_back()`, is taken to be stepped as a JS iterator",
     file: "src/lower/body_queries.rs",
     find: "                _ if by_ref => lent.push((e, arg)),\n",
     replace: "",
@@ -170,27 +236,37 @@ export const mutations: Mutation[] = [
   },
   {
     name: "adapter-chain-held",
-    breaks: "an adapter given to another made in place, `rev().rev()`'s first, is std's struct, which the other steps from a back it hasn't",
+    breaks:
+      "an adapter given to another made in place, `rev().rev()`'s first, is std's struct, which the other steps from a back it hasn't",
     file: "src/lower/body_queries.rs",
     find: "            return in_place.contains(&at);\n",
     replace: "            return false;\n",
     snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^(rev_of_closed_items|own_iterator_dropped_through_adapters).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(rev_of_closed_items|own_iterator_dropped_through_adapters).rs$",
+    ],
   },
-
 
   {
     name: "extension-step-held",
-    breaks: "`v.iter().map(f).rfold(..)` takes the `map()` as std's struct, which `DoubleEndedIterator`'s methods steps where it's made",
+    breaks:
+      "`v.iter().map(f).rfold(..)` takes the `map()` as std's struct, which `DoubleEndedIterator`'s methods steps where it's made",
     file: "src/lower/body_queries.rs",
     find: " && !super::recognition::is_iterator_extension(tcx, tr));\n",
     replace: ");\n",
     snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^(extension_map_rfold|generic_map_folded_and_rfolded|map_stepped_from_its_back|exact_size_len).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(extension_map_rfold|generic_map_folded_and_rfolded|map_stepped_from_its_back|exact_size_len).rs$",
+    ],
   },
   {
     name: "local-adapter-made-of-held",
-    breaks: "a variable's `enumerate()` read only by a `map()` made in place of it is std's struct, not `entries()`",
+    breaks:
+      "a variable's `enumerate()` read only by a `map()` made in place of it is std's struct, not `entries()`",
     file: "src/lower/body_queries.rs",
     find: "                _ if super::recognition::makes_held_compiled(tcx, callee) => makers.push((arg, at)),\n",
     replace: "",
@@ -200,93 +276,123 @@ export const mutations: Mutation[] = [
 
   {
     name: "local-adapter-made-of-held-maker",
-    breaks: "a variable read by a `rev()` that's held is taken to be in place, a JS iterator the held `rev()`'s struct steps",
+    breaks:
+      "a variable read by a `rev()` that's held is taken to be in place, a JS iterator the held `rev()`'s struct steps",
     file: "src/lower/body_queries.rs",
     find: "                && of.iter().all(|maker| found.contains(maker))\n",
     replace: "",
     snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^(std_map|std_rev|std_enumerate|iter_by_ref).rs$"],
-  },
-  {
-    name: "flat-map-result-held",
-    breaks: "a `map()` a closure gives `flat_map` is std's struct, `iterator_map(..)`, not `g.map(f)`",
-    file: "src/lower/body_queries.rs",
-    find: "        given.insert(closure.closure_id.to_def_id());\n",
-    replace: "        given.insert(rustc_span::def_id::CRATE_DEF_ID.to_def_id());\n",
-    tests: ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR are array methods where order"],
-  },
-  {
-    name: "const-calling-crate-code-as-code",
-    breaks: "a const calling the crate's const fn, `doubled(SIZE)`, is that call where its module loads, not rustc's value of it",
-    file: "src/lower/body_queries.rs",
-    find: "        ExprKind::Call { fun, .. } => super::fn_def(thir[fun].ty).is_none_or(|(def_id, _)| by_name(def_id)),\n",
-    replace: "",
-    tests: ["test/lowering-constants.test.ts", "-t", "a const written of other consts is as it's written"],
-  },
-  {
-    name: "size-hint-in-place",
-    breaks: "a variable's flatten that `size_hint()` asks of is the recognizers' JS iterator, sized `(0, None)`",
-    file: "src/lower/body_queries.rs",
-    find: "            && callee != size_hint;\n",
-    replace: ";\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
-      "^std_flatten.rs$"
-    ]
+      "^(std_map|std_rev|std_enumerate|iter_by_ref).rs$",
+    ],
+  },
+  {
+    name: "flat-map-result-held",
+    breaks:
+      "a `map()` a closure gives `flat_map` is std's struct, `iterator_map(..)`, not `g.map(f)`",
+    file: "src/lower/body_queries.rs",
+    find: "        given.insert(closure.closure_id.to_def_id());\n",
+    replace:
+      "        given.insert(rustc_span::def_id::CRATE_DEF_ID.to_def_id());\n",
+    tests: [
+      "test/lowering-iterators.test.ts",
+      "-t",
+      "iterator chains from MIR are array methods where order",
+    ],
+  },
+  {
+    name: "const-calling-crate-code-as-code",
+    breaks:
+      "a const calling the crate's const fn, `doubled(SIZE)`, is that call where its module loads, not rustc's value of it",
+    file: "src/lower/body_queries.rs",
+    find: "        ExprKind::Call { fun, .. } => super::fn_def(thir[fun].ty).is_none_or(|(def_id, _)| by_name(def_id)),\n",
+    replace: "",
+    tests: [
+      "test/lowering-constants.test.ts",
+      "-t",
+      "a const written of other consts is as it's written",
+    ],
+  },
+  {
+    name: "size-hint-in-place",
+    breaks:
+      "a variable's flatten that `size_hint()` asks of is the recognizers' JS iterator, sized `(0, None)`",
+    file: "src/lower/body_queries.rs",
+    find: "            && callee != size_hint;\n",
+    replace: ";\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_flatten.rs$"],
   },
   {
     name: "cycle-source-in-place",
-    breaks: "a `rev()` a `cycle()` holds is made in place, a JS iterator, which `cycle()` clones as std's struct, so `(1..4u8).rev().cycle()` throws (#308, ADR 0915)",
+    breaks:
+      "a `rev()` a `cycle()` holds is made in place, a JS iterator, which `cycle()` clones as std's struct, so `(1..4u8).rev().cycle()` throws (#308, ADR 0915)",
     file: "src/lower/body_queries.rs",
     find: "                (callee == cycle || cloned_apart(tcx, cloned, thir[e].ty)) && !cloned_apart(tcx, cloned, thir[arg].ty);\n",
-    replace: "                (false || cloned_apart(tcx, cloned, thir[e].ty)) && !cloned_apart(tcx, cloned, thir[arg].ty);\n",
+    replace:
+      "                (false || cloned_apart(tcx, cloned, thir[e].ty)) && !cloned_apart(tcx, cloned, thir[arg].ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^cycled_reversed_ranges.rs$"],
   },
   {
     name: "cloned-apart-part-in-place",
-    breaks: "a `rev()` a chain cloned apart holds is made in place, a JS iterator, which the chain's clone clones as std's struct, so a cycled zigzag throws (#308, ADR 0915)",
+    breaks:
+      "a `rev()` a chain cloned apart holds is made in place, a JS iterator, which the chain's clone clones as std's struct, so a cycled zigzag throws (#308, ADR 0915)",
     file: "src/lower/body_queries.rs",
     find: "                (callee == cycle || cloned_apart(tcx, cloned, thir[e].ty)) && !cloned_apart(tcx, cloned, thir[arg].ty);\n",
-    replace: "                (callee == cycle || false) && !cloned_apart(tcx, cloned, thir[arg].ty);\n",
+    replace:
+      "                (callee == cycle || false) && !cloned_apart(tcx, cloned, thir[arg].ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^cycled_reversed_ranges.rs$"],
   },
   {
     name: "cloned-apart-part-held",
-    breaks: "a `map()` itself cloned apart, part of a `filter()` cloned apart, is held as std's struct, which the filter's maker clones as cloned apart, `$clone`, and throws (ADR 0915)",
+    breaks:
+      "a `map()` itself cloned apart, part of a `filter()` cloned apart, is held as std's struct, which the filter's maker clones as cloned apart, `$clone`, and throws (ADR 0915)",
     file: "src/lower/body_queries.rs",
     find: "                (callee == cycle || cloned_apart(tcx, cloned, thir[e].ty)) && !cloned_apart(tcx, cloned, thir[arg].ty);\n",
-    replace: "                (callee == cycle || cloned_apart(tcx, cloned, thir[e].ty));\n",
+    replace:
+      "                (callee == cycle || cloned_apart(tcx, cloned, thir[e].ty));\n",
     tests: ["test/corpus.test.ts", "-t", "^std_map.rs$"],
   },
   {
     name: "repeat-count-of-empty-text",
-    breaks: "a signed count of empty text's `repeat` is given as it is, `\"\".repeat(-1)`, which JS throws of where Rust gives `\"\"`",
+    breaks:
+      'a signed count of empty text\'s `repeat` is given as it is, `"".repeat(-1)`, which JS throws of where Rust gives `""`',
     file: "src/lower/body_queries.rs",
     find: "            if !super::recognition::is_str_repeat(tcx, def_id) || text_of(text)?.as_str().is_empty() {\n",
-    replace: "            if !super::recognition::is_str_repeat(tcx, def_id) || text_of(text).is_none() {\n",
+    replace:
+      "            if !super::recognition::is_str_repeat(tcx, def_id) || text_of(text).is_none() {\n",
     tests: ["test/corpus.test.ts", "-t", "^ptr_eq_items_and_counts.rs$"],
   },
   {
     name: "repeat-count-cast",
-    breaks: "a signed count of text's `repeat` is cast, `\"  \".repeat(indent >>> 0)`, where upstream's is `'  '.repeat(indent)`",
+    breaks:
+      "a signed count of text's `repeat` is cast, `\"  \".repeat(indent >>> 0)`, where upstream's is `'  '.repeat(indent)`",
     file: "src/lower/body_queries.rs",
     find: "            (signed && thir[count].ty.is_usize()).then_some(count)\n",
-    replace: "            (signed && thir[count].ty.is_usize() && false).then_some(count)\n",
+    replace:
+      "            (signed && thir[count].ty.is_usize() && false).then_some(count)\n",
     tests: ["test/corpus.test.ts", "-t", "^ptr_eq_items_and_counts.rs$"],
     snapshots: true,
   },
   {
     name: "repeat-count-of-wide",
-    breaks: "an `i64` count of text's `repeat` is given as it is, a `BigInt`, which JS's `repeat` throws of where Rust wraps it to a `usize`",
+    breaks:
+      "an `i64` count of text's `repeat` is given as it is, a `BigInt`, which JS's `repeat` throws of where Rust wraps it to a `usize`",
     file: "src/lower/body_queries.rs",
     find: "            let signed = matches!(*thir[source].ty.kind(), ty::Int(i) if i.bit_width().unwrap_or(pointer_bits) <= 32);\n",
-    replace: "            let signed = matches!(*thir[source].ty.kind(), ty::Int(_)) || pointer_bits == 0;\n",
-    tests: ["test/lowering-strings.test.ts", "-t", "a repeat's count of a signed integer is the integer"],
+    replace:
+      "            let signed = matches!(*thir[source].ty.kind(), ty::Int(_)) || pointer_bits == 0;\n",
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "a repeat's count of a signed integer is the integer",
+    ],
   },
   {
     name: "js-null-made-undeclared",
-    breaks: "a plain `Option` field a struct literal makes `js::null()` is declared `?: T | undefined`, where it holds `null` (ADR 0935, amended)",
+    breaks:
+      "a plain `Option` field a struct literal makes `js::null()` is declared `?: T | undefined`, where it holds `null` (ADR 0935, amended)",
     file: "src/lower/body_queries.rs",
     find: "                        .filter(|f| is_null(f.expr))\n",
     replace: "                        .filter(|f| is_null(f.expr) && false)\n",
@@ -294,7 +400,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "js-null-assigned-undeclared",
-    breaks: "a plain `Option` field assigned `js::null()`, `fiber.index = js::null()`, is declared `?: T | undefined` (ADR 0935, amended)",
+    breaks:
+      "a plain `Option` field assigned `js::null()`, `fiber.index = js::null()`, is declared `?: T | undefined` (ADR 0935, amended)",
     file: "src/lower/body_queries.rs",
     find: "            ExprKind::Assign { lhs, rhs } if is_null(rhs) => written.extend(field_of(lhs)),\n",
     replace: "",
@@ -302,15 +409,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "js-null-lent-undeclared",
-    breaks: "a plain `Option` field lent to `mem::replace` with a `js::null()` is declared `?: T | undefined` (ADR 0935, amended)",
+    breaks:
+      "a plain `Option` field lent to `mem::replace` with a `js::null()` is declared `?: T | undefined` (ADR 0935, amended)",
     file: "src/lower/body_queries.rs",
     find: "            ExprKind::Call { ref args, .. } if args.iter().any(|&a| is_null(a)) => {\n",
-    replace: "            ExprKind::Call { ref args, .. } if false && args.iter().any(|&a| is_null(a)) => {\n",
+    replace:
+      "            ExprKind::Call { ref args, .. } if false && args.iter().any(|&a| is_null(a)) => {\n",
     tests: ["test/lowering-nullable-constants.test.ts", "-t", "is declared"],
   },
   {
     name: "js-null-through-a-variable-undeclared",
-    breaks: "a plain `Option` field written `js::null()` through a variable lent it, `let slot = &mut fiber.ref_; *slot = js::null()`, is declared `?: T | undefined` (ADR 0935, amended)",
+    breaks:
+      "a plain `Option` field written `js::null()` through a variable lent it, `let slot = &mut fiber.ref_; *slot = js::null()`, is declared `?: T | undefined` (ADR 0935, amended)",
     file: "src/lower/body_queries.rs",
     find: "            ExprKind::VarRef { id } if thir[e].ty.is_ref() => e = *made.get(&id)?,\n",
     replace: "",
@@ -318,15 +428,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "utf16-order-of-either-parameter",
-    breaks: "`sort_by(|a, b| b.encode_utf16().cmp(a.encode_utf16()))`, descending, is JS's `sort()`, ascending (ADR 0945)",
+    breaks:
+      "`sort_by(|a, b| b.encode_utf16().cmp(a.encode_utf16()))`, descending, is JS's `sort()`, ascending (ADR 0945)",
     file: "src/lower/body_queries.rs",
     find: "        && units_of(first) == Some(params[0])\n        && units_of(second) == Some(params[1])\n",
-    replace: "        && units_of(first).is_some()\n        && units_of(second).is_some()\n",
+    replace:
+      "        && units_of(first).is_some()\n        && units_of(second).is_some()\n",
     tests: ["test/lowering-strings.test.ts", "-t", "only a sort by the first"],
   },
   {
     name: "utf16-order-of-any-cmp",
-    breaks: "a comparator calling what isn't `Iterator::cmp` of two strings' UTF-16 units is JS's `sort()` (ADR 0945)",
+    breaks:
+      "a comparator calling what isn't `Iterator::cmp` of two strings' UTF-16 units is JS's `sort()` (ADR 0945)",
     file: "src/lower/body_queries.rs",
     find: "    super::fn_def(thir[fun].ty).is_some_and(|(cmp, _)| compares_utf16_units(tcx, cmp, thir[strip(thir, first)].ty))\n",
     replace: "    super::fn_def(thir[fun].ty).is_some()\n",
@@ -334,23 +447,35 @@ export const mutations: Mutation[] = [
   },
   {
     name: "registered-let-compared-checked",
-    breaks: "a `let` of a `from_value` read that's only compared to a `Some` is checked, `const tag = $symbolFor(x)`, where React's mountLazyComponent reads `$$typeof` as it is (ADR 0771, amended)",
+    breaks:
+      "a `let` of a `from_value` read that's only compared to a `Some` is checked, `const tag = $symbolFor(x)`, where React's mountLazyComponent reads `$$typeof` as it is (ADR 0771, amended)",
     file: "src/lower/body_queries.rs",
     find: "        .chain(registered_lets(tcx, thir).into_iter().map(|(read, _)| read))\n",
     replace: "",
-    tests: ["test/lowering-symbols.test.ts", "-t", "an == of a value read as the registry's symbol"],
+    tests: [
+      "test/lowering-symbols.test.ts",
+      "-t",
+      "an == of a value read as the registry's symbol",
+    ],
   },
   {
     name: "registered-let-of-any-read",
-    breaks: "a `let` of a `from_value` read that's also returned is the value, so a string or a symbol not the registry's is its `Some` (ADR 0771, amended)",
+    breaks:
+      "a `let` of a `from_value` read that's also returned is the value, so a string or a symbol not the registry's is its `Some` (ADR 0771, amended)",
     file: "src/lower/body_queries.rs",
     find: "            (reads > 0 && reads == equalities.len()).then_some((read, equalities))\n",
-    replace: "            (reads > 0 && !equalities.is_empty()).then_some((read, equalities))\n",
-    tests: ["test/lowering-symbols.test.ts", "-t", "an == of a value read as the registry's symbol"],
+    replace:
+      "            (reads > 0 && !equalities.is_empty()).then_some((read, equalities))\n",
+    tests: [
+      "test/lowering-symbols.test.ts",
+      "-t",
+      "an == of a value read as the registry's symbol",
+    ],
   },
   {
     name: "rev-sized-whatever-its-source",
-    breaks: "a `rev()` of a zip whose `size_hint()` is asked is made in place, `$zipBack`, as only the `rev()` was asked whether it's sized: `(0, None)` (#400)",
+    breaks:
+      "a `rev()` of a zip whose `size_hint()` is asked is made in place, `$zipBack`, as only the `rev()` was asked whether it's sized: `(0, None)` (#400)",
     file: "src/lower/body_queries.rs",
     find: "            Some(&(source, of)) => (made, maker) = (source, of),\n",
     replace: "            Some(_) => break true,\n",

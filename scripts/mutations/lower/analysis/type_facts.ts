@@ -4,39 +4,52 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "struct-steps-own-params-unfilled",
-    breaks: "a held struct's `fold`, whose own `B` and `F` its resolution needs, isn't followed: a `Zip`'s `fold` asks its sides' `TrustedLen` of no caller, refused (ADR 0975)",
+    breaks:
+      "a held struct's `fold`, whose own `B` and `F` its resolution needs, isn't followed: a `Zip`'s `fold` asks its sides' `TrustedLen` of no caller, refused (ADR 0975)",
     file: "src/lower/analysis/type_facts.rs",
     find: "                        _ => tcx.mk_param_from_def(param),\n",
-    replace: "                        _ => return tcx.lifetimes.re_erased.into(),\n",
+    replace:
+      "                        _ => return tcx.lifetimes.re_erased.into(),\n",
     tests: ["test/std-package.test.ts"],
   },
   {
     name: "map-made-behind-mut-unasked",
-    breaks: "a map of a type parameter's keys an entry's `or_default()` makes has no class, its caller never asked, and is refused (#314)",
+    breaks:
+      "a map of a type parameter's keys an entry's `or_default()` makes has no class, its caller never asked, and is refused (#314)",
     file: "src/lower/analysis/type_facts.rs",
     find: "                    ty::Ref(_, pointee, ty::Mutability::Mut) => pointee,\n",
-    replace: "                    ty::Ref(_, _, ty::Mutability::Mut) => output,\n",
+    replace:
+      "                    ty::Ref(_, _, ty::Mutability::Mut) => output,\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_map_made_by_entry.rs$"],
   },
   {
     name: "map-made-by-a-std-fn-unasked",
-    breaks: "a map of a type parameter's keys a std function makes, `BTreeMap::new()`, `map(BTreeMap::from)`, has no class, its caller never asked, and is refused (ADR 0466)",
+    breaks:
+      "a map of a type parameter's keys a std function makes, `BTreeMap::new()`, `map(BTreeMap::from)`, has no class, its caller never asked, and is refused (ADR 0466)",
     file: "src/lower/analysis/type_facts.rs",
     find: "                if let Some((key, fact)) = map_of_param(tcx, made)\n",
-    replace: "                if let Some((key, fact)) = map_of_param(tcx, made).filter(|_| false)\n",
-    tests: ["test/corpus.test.ts", "-t", "^(generic_map_made_by_entry|generic_maps).rs$"],
+    replace:
+      "                if let Some((key, fact)) = map_of_param(tcx, made).filter(|_| false)\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(generic_map_made_by_entry|generic_maps).rs$",
+    ],
   },
   {
     name: "type-facts-not-passed-on",
-    breaks: "a generic function passing its `U` on to one that asks `size_of::<T>()` isn't given `U`'s size",
+    breaks:
+      "a generic function passing its `U` on to one that asks `size_of::<T>()` isn't given `U`'s size",
     file: "src/lower/analysis/type_facts.rs",
     find: "                if asked.contains(&(callee, to, fact)) && asked.insert((caller, from, fact)) {",
-    replace: "                if false && asked.contains(&(callee, to, fact)) && asked.insert((caller, from, fact)) {",
+    replace:
+      "                if false && asked.contains(&(callee, to, fact)) && asked.insert((caller, from, fact)) {",
     tests: ["test/corpus.test.ts", "-t", "type_facts"],
   },
   {
     name: "type-facts-unsized-asked",
-    breaks: "`size_of_val` of an unsized `T` asks its caller for a size its type hasn't",
+    breaks:
+      "`size_of_val` of an unsized `T` asks its caller for a size its type hasn't",
     file: "src/lower/analysis/type_facts.rs",
     find: "                && (of.is_sized(tcx, typing_env) || !matches!(fact, TypeFact::Size | TypeFact::Align))\n",
     replace: "\n",
@@ -61,15 +74,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "impl-method-facts-dropped",
-    breaks: "an impl's method takes no fact of the impl's type parameter, so a call of it isn't given its `TSize`",
+    breaks:
+      "an impl's method takes no fact of the impl's type parameter, so a call of it isn't given its `TSize`",
     file: "src/lower/analysis/type_facts.rs",
     find: "        if ask {\n            params.entry(id).or_default().push((index, fact));\n        }\n",
-    replace: "        if ask && tcx.trait_impl_of_assoc(id).is_none() {\n            params.entry(id).or_default().push((index, fact));\n        }\n",
+    replace:
+      "        if ask && tcx.trait_impl_of_assoc(id).is_none() {\n            params.entry(id).or_default().push((index, fact));\n        }\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_type_facts.rs$"],
   },
   {
     name: "library-facts-unpassed",
-    breaks: "a consumer's generic function that passes its `T` to a library's that asks its size doesn't ask it",
+    breaks:
+      "a consumer's generic function that passes its `T` to a library's that asks its size doesn't ask it",
     file: "src/lower/analysis/type_facts.rs",
     find: "                        self.asked.insert((caller, at, fact));\n",
     replace: "",
@@ -77,15 +93,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "bound-impl-facts-unasked",
-    breaks: "a caller giving an impl's dictionary for a callee's bound, `C: Push<T>` of a `Stack<T>`, isn't asked what the impl asks of `T`",
+    breaks:
+      "a caller giving an impl's dictionary for a callee's bound, `C: Push<T>` of a `Stack<T>`, isn't asked what the impl asks of `T`",
     file: "src/lower/analysis/type_facts.rs",
     find: "        for bound in bounds(tcx, foreign, given, callee) {\n",
-    replace: "            for bound in bounds(tcx, foreign, given, callee).into_iter().filter(|_| false) {\n",
+    replace:
+      "            for bound in bounds(tcx, foreign, given, callee).into_iter().filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_type_facts_through_trait.rs$"],
   },
   {
     name: "impl-facts-unlifted-in-fixpoint",
-    breaks: "an impl's method's facts are the impl's only after the fixpoint, so a caller giving the impl's dictionary isn't asked them",
+    breaks:
+      "an impl's method's facts are the impl's only after the fixpoint, so a caller giving the impl's dictionary isn't asked them",
     file: "src/lower/analysis/type_facts.rs",
     find: "            changed |= asked.insert(fact);\n",
     replace: "            let _ = fact;\n",
@@ -93,7 +112,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "assoc-fact-uncarried",
-    breaks: "`size_of::<A::Item>()` isn't carried by `A: Array`'s dictionary, and is refused",
+    breaks:
+      "`size_of::<A::Item>()` isn't carried by `A: Array`'s dictionary, and is refused",
     file: "src/lower/analysis/type_facts.rs",
     find: "                self.carried.insert((assoc, fact));\n",
     replace: "                let _ = (assoc, fact);\n",
@@ -101,18 +121,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "assoc-fact-unpassed",
-    breaks: "a callee given `A::Item` that asks its size doesn't make its caller's dictionary carry it",
+    breaks:
+      "a callee given `A::Item` that asks its size doesn't make its caller's dictionary carry it",
     file: "src/lower/analysis/type_facts.rs",
     find: "                    changed |= carried.insert((assoc, fact));\n                }\n            }\n        }\n",
-    replace: "                    let _ = (assoc, fact);\n                }\n            }\n        }\n",
+    replace:
+      "                    let _ = (assoc, fact);\n                }\n            }\n        }\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_type_facts.rs$"],
   },
   {
     name: "assoc-fact-impl-unasked",
-    breaks: "an impl whose dictionary carries `T`'s size for `type Item = T` isn't given it",
+    breaks:
+      "an impl whose dictionary carries `T`'s size for `type Item = T` isn't given it",
     file: "src/lower/analysis/type_facts.rs",
     find: "            if let ty::Param(param) = ty.kind() {\n                changed |= asked.insert((imp, param.index, fact));\n",
-    replace: "            if let ty::Param(param) = ty.kind() {\n                let _ = (imp, param, fact);\n",
+    replace:
+      "            if let ty::Param(param) = ty.kind() {\n                let _ = (imp, param, fact);\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_type_facts.rs$"],
   },
   {
@@ -125,34 +149,42 @@ export const mutations: Mutation[] = [
   },
   {
     name: "held-param-name-unasked",
-    breaks: "`type_name` of a type that holds a type parameter asks none of its name",
+    breaks:
+      "`type_name` of a type that holds a type parameter asks none of its name",
     file: "src/lower/analysis/type_facts.rs",
     find: "            if fact == TypeFact::Name\n                && let Some(of) = args.types().last()\n",
-    replace: "            if false\n                && let Some(of) = args.types().last()\n",
+    replace:
+      "            if false\n                && let Some(of) = args.types().last()\n",
     tests: ["test/corpus.test.ts", "-t", "^type_names_generic.rs$"],
   },
   {
     name: "phantom-field-unnamed",
-    breaks: "a derived `Debug` of a struct holding a `PhantomData<K>` is given no name of `K`, and refused",
+    breaks:
+      "a derived `Debug` of a struct holding a `PhantomData<K>` is given no name of `K`, and refused",
     file: "src/lower/analysis/type_facts.rs",
     find: "                for index in phantom_named(tcx, body.thir[source].ty) {\n",
-    replace: "                for index in phantom_named(tcx, body.thir[source].ty).into_iter().take(0) {\n",
+    replace:
+      "                for index in phantom_named(tcx, body.thir[source].ty).into_iter().take(0) {\n",
     tests: ["test/corpus.test.ts", "-t", "^phantom_debug.rs$"],
   },
   {
     name: "phantom-bound-unnamed",
-    breaks: "`{:?}` of a `PhantomData<T>` written in place is given no name of `T`, and refused",
+    breaks:
+      "`{:?}` of a `PhantomData<T>` written in place is given no name of `T`, and refused",
     file: "src/lower/analysis/type_facts.rs",
     find: "            for index in debug_named(tcx, bound) {\n",
-    replace: "            for index in debug_named(tcx, bound).into_iter().take(0) {\n",
+    replace:
+      "            for index in debug_named(tcx, bound).into_iter().take(0) {\n",
     tests: ["test/corpus.test.ts", "-t", "^phantom_debug.rs$"],
   },
   {
     name: "map-class-not-asked",
-    breaks: "a function that makes a map of its type parameter's keys isn't given their class",
+    breaks:
+      "a function that makes a map of its type parameter's keys isn't given their class",
     file: "src/lower/analysis/type_facts.rs",
     find: "                && let Some(index) = slot_of(tcx, foreign, caller, key)\n",
-    replace: "                && let Some(index) = slot_of(tcx, foreign, caller, key).filter(|_| false)\n",
+    replace:
+      "                && let Some(index) = slot_of(tcx, foreign, caller, key).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_maps.rs$"],
   },
   {
@@ -165,7 +197,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "facts-not-passed-through-calls",
-    breaks: "what a callee asks of a slot its caller's is given, `self.map(f).counts()`'s, isn't asked of the caller",
+    breaks:
+      "what a callee asks of a slot its caller's is given, `self.map(f).counts()`'s, isn't asked of the caller",
     file: "src/lower/analysis/type_facts.rs",
     find: "                    changed |= asked.insert((caller, at, fact));\n",
     replace: "",
@@ -173,10 +206,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "trait-method-facts-unshared",
-    breaks: "a trait method's own type parameter's fact isn't its impls' and its trait's",
+    breaks:
+      "a trait method's own type parameter's fact isn't its impls' and its trait's",
     file: "src/lower/analysis/type_facts.rs",
     find: "            for id in implementors(tcx, method) {\n",
-    replace: "            for id in implementors(tcx, method).into_iter().filter(|_| false) {\n",
+    replace:
+      "            for id in implementors(tcx, method).into_iter().filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_type_facts.rs$"],
   },
   {
@@ -189,7 +224,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "sort-fact-unasked",
-    breaks: "an unstable sort of a type parameter's items is given no `TSort`, and refused",
+    breaks:
+      "an unstable sort of a type parameter's items is given no `TSort`, and refused",
     file: "src/lower/analysis/type_facts.rs",
     find: "                asking.asked.insert((caller, index, TypeFact::Sort));\n",
     replace: "",
@@ -197,15 +233,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fused-specialization-fact-not-asked",
-    breaks: "a std body calling a std-private trait's method whose impl its parameter's being a `FusedIterator` picks, `FuseImpl::next`'s, doesn't ask `IFused` of it, so no caller gives it",
+    breaks:
+      "a std body calling a std-private trait's method whose impl its parameter's being a `FusedIterator` picks, `FuseImpl::next`'s, doesn't ask `IFused` of it, so no caller gives it",
     file: "src/lower/analysis/type_facts.rs",
     find: "                if let Some(spec) = fact_specialization(tcx, typing_env, callee, args) {\n",
-    replace: "                if let Some(spec) = fact_specialization(tcx, typing_env, callee, args).filter(|_| false) {\n",
+    replace:
+      "                if let Some(spec) = fact_specialization(tcx, typing_env, callee, args).filter(|_| false) {\n",
     tests: ["test/std-package.test.ts"],
   },
   {
     name: "std-callee-not-followed",
-    breaks: "a std body compiled with the crate is asked what its manifest says, which has none yet, not followed as the crate's own are: std's `fuse` doesn't ask what its `Fuse`'s `next` asks, `IFused`",
+    breaks:
+      "a std body compiled with the crate is asked what its manifest says, which has none yet, not followed as the crate's own are: std's `fuse` doesn't ask what its `Fuse`'s `next` asks, `IFused`",
     file: "src/lower/analysis/type_facts.rs",
     find: "        if !callee.is_local() && !fns.contains_key(&callee) {\n",
     replace: "        if !callee.is_local() {\n",
@@ -213,7 +252,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "std-provided-self-fact-not-asked",
-    breaks: "a std trait's provided method compiled as a function over `Self` asks no fact of `Self`, so `fuse()` of a `FusedIterator` drops it as it ends",
+    breaks:
+      "a std trait's provided method compiled as a function over `Self` asks no fact of `Self`, so `fuse()` of a `FusedIterator` drops it as it ends",
     file: "src/lower/analysis/type_facts.rs",
     find: "            (Some(_), _) => own || compiled,\n",
     replace: "            (Some(_), _) => own,\n",
@@ -221,7 +261,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "impl-method-facts-not-asked",
-    breaks: "a library impl method's facts, `Fuse<I>`'s `next_back`'s `IFused`, aren't asked of a caller of the trait's method, which gives `false`: a `FusedIterator`'s `Fuse` stepped from its back drops it as it ends",
+    breaks:
+      "a library impl method's facts, `Fuse<I>`'s `next_back`'s `IFused`, aren't asked of a caller of the trait's method, which gives `false`: a `FusedIterator`'s `Fuse` stepped from its back drops it as it ends",
     file: "src/lower/analysis/type_facts.rs",
     find: "                && instance.def_id() != callee\n",
     replace: "                && false\n",
@@ -229,15 +270,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-fact-of-alias-not-asked",
-    breaks: "a library function's fact of a std associated type of a caller's parameter, `I::IntoIter`'s `IFused`, isn't asked",
+    breaks:
+      "a library function's fact of a std associated type of a caller's parameter, `I::IntoIter`'s `IFused`, isn't asked",
     file: "src/lower/analysis/type_facts.rs",
     find: "        .filter_map(|(of, fact)| Some((slot_of(tcx, foreign, caller, of)?, fact)))\n",
-    replace: "        .filter_map(|(of, fact)| Some((slot_of(tcx, foreign, caller, of).filter(|_| matches!(of.kind(), ty::Param(_)))?, fact)))\n",
+    replace:
+      "        .filter_map(|(of, fact)| Some((slot_of(tcx, foreign, caller, of).filter(|_| matches!(of.kind(), ty::Param(_)))?, fact)))\n",
     tests: ["test/corpus.test.ts", "-t", "^std_fuse.rs$"],
   },
   {
     name: "stepped-iterator-impl-facts-asked",
-    breaks: "a caller asks the facts of `Fuse<I>`'s `next` impl, stepped as a JS iterator, so its impl methods take an `IFused` nothing reads",
+    breaks:
+      "a caller asks the facts of `Fuse<I>`'s `next` impl, stepped as a JS iterator, so its impl methods take an `IFused` nothing reads",
     file: "src/lower/analysis/type_facts.rs",
     find: "            if !crate::lower::recognition::stepped_as_js_iterator(tcx, callee, args)\n",
     replace: "            if true\n",
@@ -246,12 +290,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "specialized-facts-unfollowed",
-    breaks: "what both impls a fact picks between ask, `FlattenCompat`'s `size_hint`'s `ConstSize`, isn't asked of a `Flatten`'s, and std's compile refuses it",
+    breaks:
+      "what both impls a fact picks between ask, `FlattenCompat`'s `size_hint`'s `ConstSize`, isn't asked of a `Flatten`'s, and std's compile refuses it",
     file: "src/lower/analysis/type_facts.rs",
     find: "            if let Some(spec) = fact_specialization(tcx, typing_env, callee, args)\n                && fns.contains_key(&spec.selected.0)\n",
-    replace: "            if let Some(spec) = fact_specialization(tcx, typing_env, callee, args).filter(|_| false)\n                && fns.contains_key(&spec.selected.0)\n",
-    tests: [
-      "test/std-package.test.ts"
-    ]
+    replace:
+      "            if let Some(spec) = fact_specialization(tcx, typing_env, callee, args).filter(|_| false)\n                && fns.contains_key(&spec.selected.0)\n",
+    tests: ["test/std-package.test.ts"],
   },
 ];

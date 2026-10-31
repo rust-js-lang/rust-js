@@ -4,7 +4,8 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "optimized-boxes-read-through-pointer",
-    breaks: "a library's generic body, from its optimized MIR, reads a box through the pointer rustc makes of it, which its consumer refuses (#378)",
+    breaks:
+      "a library's generic body, from its optimized MIR, reads a box through the pointer rustc makes of it, which its consumer refuses (#378)",
     file: "src/lower/mir.rs",
     find: "            boxes_read_as_values(tcx, &mut body);\n",
     replace: "",
@@ -12,43 +13,69 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-drop-uses-unnoted",
-    breaks: "a generic function from MIR isn't given the drop functions it uses, so what it drops isn't",
+    breaks:
+      "a generic function from MIR isn't given the drop functions it uses, so what it drops isn't",
     file: "src/lower/mir.rs",
     find: "        self.note_drop_uses(def_id);\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","arm_temporaries"],
+    tests: ["test/corpus.test.ts", "-t", "arm_temporaries"],
   },
   {
     name: "mir-alike-reassigned",
-    breaks: "a variable assigned again reads alike, so JSX reads it later than Rust does",
+    breaks:
+      "a variable assigned again reads alike, so JSX reads it later than Rust does",
     file: "src/lower/mir.rs",
     find: "            if written_apart(&state, local) {\n",
     replace: "            if false {\n",
-    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
     name: "mir-props-taken-whole",
-    breaks: "props a pattern takes apart are taken whole, so a flattened field is all of them and a field's default is lost",
+    breaks:
+      "props a pattern takes apart are taken whole, so a flattened field is all of them and a field's default is lost",
     file: "src/lower/mir.rs",
     find: "            params[i] = pattern;\n",
     replace: "",
-    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
     name: "mir-plain-of-bound-vars",
-    breaks: "a local's type inside a binder, a function pointer's parameter, is asked whether it's `Freeze`, which crashes rustc",
+    breaks:
+      "a local's type inside a binder, a function pointer's parameter, is asked whether it's `Freeze`, which crashes rustc",
     file: "src/lower/mir.rs",
     find: "                    && !t.has_escaping_bound_vars()\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","fn_pointer_of_borrowed_struct"],
+    tests: ["test/corpus.test.ts", "-t", "fn_pointer_of_borrowed_struct"],
   },
   {
     name: "mir-await-loop-kept",
-    breaks: "an `.await`'s poll loop is lowered as it is, its `yield` none JS has",
+    breaks:
+      "an `.await`'s poll loop is lowered as it is, its `yield` none JS has",
     file: "src/lower/mir.rs",
     find: "            true => awaits::awaits(tcx, &mut body),\n",
     replace: "            true => Default::default(),\n",
-    tests: ["test/lowering-functions.test.ts", "test/lowering-matches.test.ts", "-t", "an awaited reference given to a generic function is awaited|an async fn"],
+    tests: [
+      "test/lowering-functions.test.ts",
+      "test/lowering-matches.test.ts",
+      "-t",
+      "an awaited reference given to a generic function is awaited|an async fn",
+    ],
   },
   {
     name: "mir-async-fn-arrow-called",
@@ -56,11 +83,12 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        if is_async {\n",
     replace: "        if false {\n",
-    tests: ["test/compiler.test.ts","-t","async code becomes"],
+    tests: ["test/compiler.test.ts", "-t", "async code becomes"],
   },
   {
     name: "mir-on-load-returns",
-    breaks: "an `on_load!` body from MIR returns at its module's top, which JS has no `return` at",
+    breaks:
+      "an `on_load!` body from MIR returns at its module's top, which JS has no `return` at",
     file: "src/lower/mir.rs",
     find: "                        stmt.kind = StmtKind::Break(Some(label.clone()));\n",
     replace: "",
@@ -68,88 +96,153 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-local-functions-undeclared",
-    breaks: "a function written in a body is declared nowhere from MIR, so what calls it reads nothing",
+    breaks:
+      "a function written in a body is declared nowhere from MIR, so what calls it reads nothing",
     file: "src/lower/mir.rs",
     find: "        self.place_written(written, &mut out);\n",
     replace: "",
-    tests: ["test/lowering-functions.test.ts", "-t", "a function written in a body is declared"],
+    tests: [
+      "test/lowering-functions.test.ts",
+      "-t",
+      "a function written in a body is declared",
+    ],
   },
   {
-    "name": "async-params-whole",
-    "breaks": "an `async fn`'s parameter pattern is `__arg0` and a `const params = __arg0.params;`",
-    "file": "src/lower/mir.rs",
-    "find": "            tidy::destructured_params(&mut params, &mut out);\n",
-    "replace": "",
-    "tests": ["test/lowering-matches.test.ts", "-t", "an async fn's parameter pattern from MIR"]
+    name: "async-params-whole",
+    breaks:
+      "an `async fn`'s parameter pattern is `__arg0` and a `const params = __arg0.params;`",
+    file: "src/lower/mir.rs",
+    find: "            tidy::destructured_params(&mut params, &mut out);\n",
+    replace: "",
+    tests: [
+      "test/lowering-matches.test.ts",
+      "-t",
+      "an async fn's parameter pattern from MIR",
+    ],
   },
   {
-    "name": "mir-imports-not-plain",
-    "breaks": "an import's member, `tags.link`, made before a branch that calls, is held, `const link = tags.link`, not read where it's given",
-    "file": "src/lower/mir.rs",
-    "find": "                .flat_map(|imports| imports.values().cloned()),\n",
-    "replace": "                .flat_map(|imports| imports.values().cloned())\n                .filter(|_| false),\n",
-    "tests": ["test/lowering-moves.test.ts", "-t", "an import's member is read past a branch that calls"],
+    name: "mir-imports-not-plain",
+    breaks:
+      "an import's member, `tags.link`, made before a branch that calls, is held, `const link = tags.link`, not read where it's given",
+    file: "src/lower/mir.rs",
+    find: "                .flat_map(|imports| imports.values().cloned()),\n",
+    replace:
+      "                .flat_map(|imports| imports.values().cloned())\n                .filter(|_| false),\n",
+    tests: [
+      "test/lowering-moves.test.ts",
+      "-t",
+      "an import's member is read past a branch that calls",
+    ],
   },
   {
-    "name": "mir-array-items-not-plain",
-    "breaks": "an array of JS's values isn't known to keep its items past calls, so `[...first, ...]` holds what's made after",
-    "file": "src/lower/mir.rs",
-    "find": "                self.locals.mir.plain.insert(format!(\"...{name}\"));\n",
-    "replace": "",
-    "tests": ["test/lowering-collections.test.ts", "-t", "arrays joined are one array of their items"]
+    name: "mir-array-items-not-plain",
+    breaks:
+      "an array of JS's values isn't known to keep its items past calls, so `[...first, ...]` holds what's made after",
+    file: "src/lower/mir.rs",
+    find: '                self.locals.mir.plain.insert(format!("...{name}"));\n',
+    replace: "",
+    tests: [
+      "test/lowering-collections.test.ts",
+      "-t",
+      "arrays joined are one array of their items",
+    ],
   },
   {
-    "name": "mir-props-default-taken-whole",
-    "breaks": "a component's props with a default taken whole from MIR are read without it, `props.target` undefined, not refused",
-    "file": "src/lower/mir.rs",
-    "find": "            self.check_props_taken_apart(param.ty, param.pat.as_deref(), param.ty_span.unwrap_or(span))?;\n",
-    "replace": "",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    name: "mir-props-default-taken-whole",
+    breaks:
+      "a component's props with a default taken whole from MIR are read without it, `props.target` undefined, not refused",
+    file: "src/lower/mir.rs",
+    find: "            self.check_props_taken_apart(param.ty, param.pat.as_deref(), param.ty_span.unwrap_or(span))?;\n",
+    replace: "",
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
-    "name": "mir-unread-param-named-temporary",
-    "breaks": "a parameter the program names nothing and reads nowhere is `_2`, not `_`",
-    "file": "src/lower/mir.rs",
-    "find": "                if unnamed(&state.locals, local) {\n",
-    "replace": "                if false && unnamed(&state.locals, local) {\n",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    name: "mir-unread-param-named-temporary",
+    breaks:
+      "a parameter the program names nothing and reads nowhere is `_2`, not `_`",
+    file: "src/lower/mir.rs",
+    find: "                if unnamed(&state.locals, local) {\n",
+    replace: "                if false && unnamed(&state.locals, local) {\n",
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
-    "name": "mir-plain-fields-unknown",
-    "breaks": "a plain field of a struct holding a `Cell`, `q.title`, isn't known to read the same",
-    "file": "src/lower/mir.rs",
-    "find": "            self.locals.mir.plain.extend(fields);\n",
-    "replace": "            drop(fields);\n",
-    "tests": ["test/corpus.test.ts", "-t", "^let_else_read_truth.rs$"],
-    "snapshots": true
+    name: "mir-plain-fields-unknown",
+    breaks:
+      "a plain field of a struct holding a `Cell`, `q.title`, isn't known to read the same",
+    file: "src/lower/mir.rs",
+    find: "            self.locals.mir.plain.extend(fields);\n",
+    replace: "            drop(fields);\n",
+    tests: ["test/corpus.test.ts", "-t", "^let_else_read_truth.rs$"],
+    snapshots: true,
   },
   {
-    "name": "mir-plain-through-mut",
-    "breaks": "a field through a `&mut`, `e.n`, is taken as unchanged, read after what sets it",
-    "file": "src/lower/mir.rs",
-    "find": "            let through_mut = matches!(\n",
-    "replace": "            let through_mut = false && matches!(\n",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    name: "mir-plain-through-mut",
+    breaks:
+      "a field through a `&mut`, `e.n`, is taken as unchanged, read after what sets it",
+    file: "src/lower/mir.rs",
+    find: "            let through_mut = matches!(\n",
+    replace: "            let through_mut = false && matches!(\n",
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
-    "name": "mir-props-drop-reads-counted",
-    "breaks": "the drops of a parameter's moved-out parts count as reads of it, so its pattern isn't taken, `{ label, rest }`",
-    "file": "src/lower/mir.rs",
-    "find": "            let drops = 2 * dropped.iter().filter(|&&local| local == arg).count();",
-    "replace": "            let drops = 0 * dropped.iter().filter(|&&local| local == arg).count();",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    name: "mir-props-drop-reads-counted",
+    breaks:
+      "the drops of a parameter's moved-out parts count as reads of it, so its pattern isn't taken, `{ label, rest }`",
+    file: "src/lower/mir.rs",
+    find: "            let drops = 2 * dropped.iter().filter(|&&local| local == arg).count();",
+    replace:
+      "            let drops = 0 * dropped.iter().filter(|&&local| local == arg).count();",
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
     name: "mir-param-type-unchecked",
-    breaks: "MIR's parameter of a `&mut &mut [i32]` compiles, given a copy its `*s = ..` never reaches the caller",
+    breaks:
+      "MIR's parameter of a `&mut &mut [i32]` compiles, given a copy its `*s = ..` never reaches the caller",
     file: "src/lower/mir.rs",
     find: "            self.check_value_ty(ty, def_span)?;\n",
     replace: "",
-    tests: ["test/lowering.test.ts", "-t", "slice reference is refused from MIR"],
+    tests: [
+      "test/lowering.test.ts",
+      "-t",
+      "slice reference is refused from MIR",
+    ],
   },
   {
     name: "mir-counted-rc-plain",
-    breaks: "MIR's `Arc::strong_count(&owner)` is read where it's shown, after a later `upgrade()` counted another",
+    breaks:
+      "MIR's `Arc::strong_count(&owner)` is read where it's shown, after a later `upgrade()` counted another",
     file: "src/lower/mir.rs",
     find: "                    && self.counted_rc(t).is_none()\n                    && self.counted_weak(t).is_none()\n",
     replace: "",
@@ -157,7 +250,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-closure-drops-unchecked",
-    breaks: "MIR's closure holding a destructor, given away uncalled, is never dropped",
+    breaks:
+      "MIR's closure holding a destructor, given away uncalled, is never dropped",
     file: "src/lower/mir.rs",
     find: "        self.check_closure_drops()?;\n",
     replace: "",
@@ -169,11 +263,12 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        out.splice(0..0, self.directives(body.def_id));\n",
     replace: "",
-    tests: ["test/modules.test.ts","-t","js::directive! in a body"],
+    tests: ["test/modules.test.ts", "-t", "js::directive! in a body"],
   },
   {
     name: "mir-cannot-throw-unwinds",
-    breaks: "MIR's call of what can't throw cleans up, its library function taking a drop",
+    breaks:
+      "MIR's call of what can't throw cleans up, its library function taking a drop",
     file: "src/lower/mir.rs",
     find: "                *unwind = UnwindAction::Unreachable;\n",
     replace: "",
@@ -186,7 +281,11 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "let options = (formatter.is_some() && self.writers_take_options())",
     replace: "let options = (formatter.is_some() && false)",
-    tests: ["test/lowering-strings.test.ts", "-t", "a writer from its MIR takes its Formatter's options"],
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "a writer from its MIR takes its Formatter's options",
+    ],
   },
   {
     name: "mir-fn-directives-dropped",
@@ -194,11 +293,12 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        out.splice(0..0, self.directives(body.def_id));\n",
     replace: "        out.splice(0..0, Vec::new());\n",
-    tests: ["test/modules.test.ts","-t","in a body is the body"],
+    tests: ["test/modules.test.ts", "-t", "in a body is the body"],
   },
   {
     name: "mir-params-suffixed",
-    breaks: "MIR's closure parameter keeps the suffix its function's names gave it",
+    breaks:
+      "MIR's closure parameter keeps the suffix its function's names gave it",
     file: "src/lower/mir.rs",
     find: "        tidy::unsuffixed_params(&mut out, self.module_names);\n",
     replace: "",
@@ -209,12 +309,14 @@ export const mutations: Mutation[] = [
     breaks: "a local a pointer's taken to, declared first, is no cell",
     file: "src/lower/mir.rs",
     find: "                    match state.facts.pointed().locals.contains(&local) {\n                        true => StmtKind::Const(\n",
-    replace: "                    match false {\n                        true => StmtKind::Const(\n",
+    replace:
+      "                    match false {\n                        true => StmtKind::Const(\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
   {
     name: "variadic-rest-unmade",
-    breaks: "a C-variadic function's last parameter takes one argument, not the rest",
+    breaks:
+      "a C-variadic function's last parameter takes one argument, not the rest",
     file: "src/lower/mir.rs",
     find: "            params.push(js::Pattern::Rest(name));\n",
     replace: "            params.push(js::Pattern::Name(name));\n",
@@ -222,15 +324,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "variadic-evidence-after-rest",
-    breaks: "a C-variadic function given a dictionary is compiled, its dictionary after what gathers the rest",
+    breaks:
+      "a C-variadic function given a dictionary is compiled, its dictionary after what gathers the rest",
     file: "src/lower/mir.rs",
     find: "        if super::recognition::is_c_variadic(self.tcx, def_id) && !evidence.is_empty() {\n",
     replace: "        if false {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a C-variadic function given a dictionary"],
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "a C-variadic function given a dictionary",
+    ],
   },
   {
     name: "settled-undeclared",
-    breaks: "a value settled before a drop is assigned to a variable nothing declares, and JS throws",
+    breaks:
+      "a value settled before a drop is assigned to a variable nothing declares, and JS throws",
     file: "src/lower/mir.rs",
     find: "        out.extend(state.settled_lets().chain(lowered));\n",
     replace: "        out.extend(lowered);\n",
@@ -238,15 +346,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dead-switch-kept",
-    breaks: "a std body's switch that goes one way whatever it tests, which drop elaboration leaves, is kept, and its discriminant read as a value",
+    breaks:
+      "a std body's switch that goes one way whatever it tests, which drop elaboration leaves, is kept, and its discriminant read as a value",
     file: "src/lower/mir.rs",
     find: "                    if let [way] = ways[..] {\n",
-    replace: "                    if let [way] = ways[..]\n                        && false\n                    {\n",
+    replace:
+      "                    if let [way] = ways[..]\n                        && false\n                    {\n",
     tests: ["test/std-package.test.ts"],
   },
   {
     name: "dead-discriminant-kept",
-    breaks: "the discriminant a std body read for a switch that went is kept, read as a value",
+    breaks:
+      "the discriminant a std body read for a switch that went is kept, read as a value",
     file: "src/lower/mir.rs",
     find: "tested != Some(local) && !read.0.contains(&local)))\n",
     replace: "false))\n",
@@ -254,10 +365,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "assume-kept",
-    breaks: "an `assume` of what an inlined `?` knows of its residual is kept in a std body, and the discriminant it compares read as a value",
+    breaks:
+      "an `assume` of what an inlined `?` knows of its residual is kept in a std body, and the discriminant it compares read as a value",
     file: "src/lower/mir.rs",
     find: "                        if matches!(**intrinsic, mir::NonDivergingIntrinsic::Assume(_)))\n",
-    replace: "                        if matches!(**intrinsic, mir::NonDivergingIntrinsic::Assume(_)) && false)\n",
+    replace:
+      "                        if matches!(**intrinsic, mir::NonDivergingIntrinsic::Assume(_)) && false)\n",
     tests: ["test/std-package.test.ts"],
   },
   {
@@ -270,31 +383,49 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rest-value-parameter-allowed",
-    breaks: "a Rust function taking rest arguments as a value is compiled, which a `fn` pointer's call would give only the first of",
+    breaks:
+      "a Rust function taking rest arguments as a value is compiled, which a `fn` pointer's call would give only the first of",
     file: "src/lower/mir.rs",
     find: "            if super::bindings::is_rest_value(self.tcx, ty) && !(closure && Some(local) == last) {\n",
-    replace: "            if super::bindings::is_rest_value(self.tcx, ty) && !(Some(local) == last) {\n",
-    tests: ["test/js-object.test.ts", "-t", "rest arguments as a value are refused"],
+    replace:
+      "            if super::bindings::is_rest_value(self.tcx, ty) && !(Some(local) == last) {\n",
+    tests: [
+      "test/js-object.test.ts",
+      "-t",
+      "rest arguments as a value are refused",
+    ],
   },
   {
     name: "rest-not-gathered",
-    breaks: "a function whose last parameter is `#[rust_js::rest]` takes the array whole, `function total(xs)`, where JS gives it its items",
+    breaks:
+      "a function whose last parameter is `#[rust_js::rest]` takes the array whole, `function total(xs)`, where JS gives it its items",
     file: "src/lower/mir.rs",
     find: "        if (super::recognition::is_c_variadic(self.tcx, def_id) || self.takes_rest(def_id) || rest_value)\n",
-    replace: "        if (super::recognition::is_c_variadic(self.tcx, def_id) || rest_value)\n",
-    tests: ["test/rest-parameters.test.ts", "-t", "rest slice is JS's rest parameter"],
+    replace:
+      "        if (super::recognition::is_c_variadic(self.tcx, def_id) || rest_value)\n",
+    tests: [
+      "test/rest-parameters.test.ts",
+      "-t",
+      "rest slice is JS's rest parameter",
+    ],
   },
   {
     name: "rest-before-dictionary",
-    breaks: "a function whose last parameter is `#[rust_js::rest]` is given its dictionaries after the rest, which gathers them",
+    breaks:
+      "a function whose last parameter is `#[rust_js::rest]` is given its dictionaries after the rest, which gathers them",
     file: "src/lower/mir.rs",
     find: "        if self.takes_rest(def_id) && !evidence.is_empty() {\n",
     replace: "        if false {\n",
-    tests: ["test/rest-parameters.test.ts", "-t", "refused: a function given a dictionary"],
+    tests: [
+      "test/rest-parameters.test.ts",
+      "-t",
+      "refused: a function given a dictionary",
+    ],
   },
   {
     name: "rest-value-closure-refused",
-    breaks: "a closure's last parameter of rest arguments as a value is refused, as a function's is, so React's `cache` can't give JS a function of its arguments",
+    breaks:
+      "a closure's last parameter of rest arguments as a value is refused, as a function's is, so React's `cache` can't give JS a function of its arguments",
     file: "src/lower/mir.rs",
     find: "            if super::bindings::is_rest_value(self.tcx, ty) && !(closure && Some(local) == last) {\n",
     replace: "            if super::bindings::is_rest_value(self.tcx, ty) {\n",
@@ -302,55 +433,85 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rest-value-closure-not-last-allowed",
-    breaks: "a closure's rest arguments as a value before its last parameter is compiled, a rest parameter JS refuses before another",
+    breaks:
+      "a closure's rest arguments as a value before its last parameter is compiled, a rest parameter JS refuses before another",
     file: "src/lower/mir.rs",
     find: "            if super::bindings::is_rest_value(self.tcx, ty) && !(closure && Some(local) == last) {\n",
-    replace: "            if super::bindings::is_rest_value(self.tcx, ty) && !closure {\n",
-    tests: ["test/rest-parameters.test.ts", "-t", "refused: a closure's before its last"],
+    replace:
+      "            if super::bindings::is_rest_value(self.tcx, ty) && !closure {\n",
+    tests: [
+      "test/rest-parameters.test.ts",
+      "-t",
+      "refused: a closure's before its last",
+    ],
   },
   {
     name: "rest-value-closure-not-gathered",
-    breaks: "a closure of rest arguments as a value takes one array, `(args) =>`, where JS's callers give its arguments one by one",
+    breaks:
+      "a closure of rest arguments as a value takes one array, `(args) =>`, where JS's callers give its arguments one by one",
     file: "src/lower/mir.rs",
     find: "        if (super::recognition::is_c_variadic(self.tcx, def_id) || self.takes_rest(def_id) || rest_value)\n",
-    replace: "        if (super::recognition::is_c_variadic(self.tcx, def_id) || self.takes_rest(def_id))\n",
+    replace:
+      "        if (super::recognition::is_c_variadic(self.tcx, def_id) || self.takes_rest(def_id))\n",
     tests: ["test/rest-parameters.test.ts", "-t", "React's cache"],
   },
   {
     name: "param-spans-unknown",
-    breaks: "a function's parameters map nowhere, and a comment before one is lost (ADR 0708, amended)",
+    breaks:
+      "a function's parameters map nowhere, and a comment before one is lost (ADR 0708, amended)",
     file: "src/lower/mir.rs",
     find: "                    .is_some_and(|b| b.params.len() == params.len()) =>\n",
-    replace: "                    .is_some_and(|b| b.params.len() == usize::MAX) =>\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "a comment before a parameter is before it"],
+    replace:
+      "                    .is_some_and(|b| b.params.len() == usize::MAX) =>\n",
+    tests: [
+      "test/lowering-comments.test.ts",
+      "-t",
+      "a comment before a parameter is before it",
+    ],
   },
   {
-    "name": "unnamed-last-params-kept",
-    "breaks": "React's `function findNextSibling(child, _, _$1, _$2)`, a private function's last `_`s kept",
-    "file": "src/lower/mir.rs",
-    "find": "        {\n            params.pop();\n        }\n",
-    "replace": "        {\n            break;\n        }\n",
-    "tests": ["test/lowering-parts.test.ts", "-t", "a private function's last unnamed parameters"]
+    name: "unnamed-last-params-kept",
+    breaks:
+      "React's `function findNextSibling(child, _, _$1, _$2)`, a private function's last `_`s kept",
+    file: "src/lower/mir.rs",
+    find: "        {\n            params.pop();\n        }\n",
+    replace: "        {\n            break;\n        }\n",
+    tests: [
+      "test/lowering-parts.test.ts",
+      "-t",
+      "a private function's last unnamed parameters",
+    ],
   },
   {
-    "name": "unnamed-last-params-of-generics-too",
-    "breaks": "a generic function's last `_` is left out though its dictionaries are given after it, `id(_, TAny)` reading the value as its dictionary",
-    "file": "src/lower/mir.rs",
-    "find": "            || tcx.generics_of(def_id).count() != 0\n",
-    "replace": "",
-    "tests": ["test/corpus.test.ts", "-t", "^(dyn_any|type_facts|closure_type_ids).rs$"]
+    name: "unnamed-last-params-of-generics-too",
+    breaks:
+      "a generic function's last `_` is left out though its dictionaries are given after it, `id(_, TAny)` reading the value as its dictionary",
+    file: "src/lower/mir.rs",
+    find: "            || tcx.generics_of(def_id).count() != 0\n",
+    replace: "",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(dyn_any|type_facts|closure_type_ids).rs$",
+    ],
   },
   {
-    "name": "unnamed-last-params-of-exported-too",
-    "breaks": "an exported function's last `_`s are left out too, its declaration's arity changed for JS callers",
-    "file": "src/lower/mir.rs",
-    "find": "            || tcx.visibility(def_id).is_public()\n",
-    "replace": "",
-    "tests": ["test/lowering-parts.test.ts", "-t", "a private function's last unnamed parameters"]
+    name: "unnamed-last-params-of-exported-too",
+    breaks:
+      "an exported function's last `_`s are left out too, its declaration's arity changed for JS callers",
+    file: "src/lower/mir.rs",
+    find: "            || tcx.visibility(def_id).is_public()\n",
+    replace: "",
+    tests: [
+      "test/lowering-parts.test.ts",
+      "-t",
+      "a private function's last unnamed parameters",
+    ],
   },
   {
     name: "mir-drops-not-hoisted",
-    breaks: "a function lowered from its MIR declares a drop function at each drop, `dropNode` once in each `catch`, not once at its top (#306)",
+    breaks:
+      "a function lowered from its MIR declares a drop function at each drop, `dropNode` once in each `catch`, not once at its top (#306)",
     file: "src/lower/mir.rs",
     find: "        out.splice(0..0, drops_read(hoisted, &out));\n",
     replace: "        let _ = hoisted;\n",
@@ -359,7 +520,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-drops-unread-kept",
-    breaks: "a drop function whose drop tidy took out is declared at its function's top anyway, `list`'s `dropList` (#306)",
+    breaks:
+      "a drop function whose drop tidy took out is declared at its function's top anyway, `list`'s `dropList` (#306)",
     file: "src/lower/mir.rs",
     find: "        .filter(|def| name(def).is_none_or(|n| read.contains(&n)))\n",
     replace: "",
@@ -368,26 +530,41 @@ export const mutations: Mutation[] = [
   },
   {
     name: "called-once-drops-nothing-returning",
-    breaks: "a closure a binding calls once, rustc's `Fn`, drops nothing of what it took as its call returns, where Rust's `call_once` drops it (ADR 1020)",
+    breaks:
+      "a closure a binding calls once, rustc's `Fn`, drops nothing of what it took as its call returns, where Rust's `call_once` drops it (ADR 1020)",
     file: "src/lower/mir.rs",
     find: "                TerminatorKind::Return => *kind = dropped(returned, UnwindAction::Continue),\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^called_once_closure_drops_after.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^called_once_closure_drops_after.rs$",
+    ],
   },
   {
     name: "called-once-own-cleanup-resumes",
-    breaks: "a closure a binding calls once, rustc's `Fn`, whose body drops a value of its own as it unwinds, resumes after it, dropping nothing of what it took (ADR 1020)",
+    breaks:
+      "a closure a binding calls once, rustc's `Fn`, whose body drops a value of its own as it unwinds, resumes after it, dropping nothing of what it took (ADR 1020)",
     file: "src/lower/mir.rs",
     find: "                TerminatorKind::UnwindResume => *kind = TerminatorKind::Goto { target: unwound },\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^called_once_closure_drops_after.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^called_once_closure_drops_after.rs$",
+    ],
   },
   {
     name: "called-once-self-left-a-reference",
-    breaks: "a closure a binding calls once, taken by value, reads what it took through itself as a reference still (ADR 1020)",
+    breaks:
+      "a closure a binding calls once, taken by value, reads what it took through itself as a reference still (ADR 1020)",
     file: "src/lower/mir.rs",
     find: "                        place.projection = self.tcx.mk_place_elems(&place.projection[1..]);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^called_once_closure_drops_after.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^called_once_closure_drops_after.rs$",
+    ],
   },
 ];

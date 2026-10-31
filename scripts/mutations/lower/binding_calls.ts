@@ -4,127 +4,200 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "static-constructor-refused",
-    breaks: "`class.call_static(js::weak_map::new, ())` of a held class is refused, where React writes `new PossiblyWeakMap()`",
+    breaks:
+      "`class.call_static(js::weak_map::new, ())` of a held class is refused, where React writes `new PossiblyWeakMap()`",
     file: "src/lower/binding_calls.rs",
     find: "        JsForm::New(name) if !name.contains('#') => Some((f, None)),\n",
     replace: "",
-    tests: ["test/lowering-is-function.test.ts", "-t", "a held class is constructed by its constructor"],
+    tests: [
+      "test/lowering-is-function.test.ts",
+      "-t",
+      "a held class is constructed by its constructor",
+    ],
   },
   {
     name: "static-constructor-called",
-    breaks: "a held class's constructor is called, `PossiblyWeakMap()`, which throws of a class",
+    breaks:
+      "a held class's constructor is called, `PossiblyWeakMap()`, which throws of a class",
     file: "src/lower/binding_calls.rs",
     find: "                    None => Expr::new_(this, args),\n",
     replace: "                    None => Expr::call(this, args),\n",
-    tests: ["test/lowering-is-function.test.ts", "-t", "a held class is constructed by its constructor"],
+    tests: [
+      "test/lowering-is-function.test.ts",
+      "-t",
+      "a held class is constructed by its constructor",
+    ],
   },
   {
     name: "static-none-given",
-    breaks: "a trailing `None` given a held class's static or constructor is an argument, `new PossiblyWeakMap(undefined)` (ADR 0443)",
+    breaks:
+      "a trailing `None` given a held class's static or constructor is an argument, `new PossiblyWeakMap(undefined)` (ADR 0443)",
     file: "src/lower/binding_calls.rs",
     find: "                    && is_optional_param(self.tcx, f, args.len() - 1)\n",
     replace: "                    && false\n",
-    tests: ["test/lowering-is-function.test.ts", "-t", "a held class is constructed by its constructor"],
+    tests: [
+      "test/lowering-is-function.test.ts",
+      "-t",
+      "a held class is constructed by its constructor",
+    ],
   },
   {
     name: "this-alias-kept",
-    breaks: "a variable that only holds a with_this function's `this` stays, `const state = this; state.count--;`, where upstream reads `this.count--` (rd196)",
+    breaks:
+      "a variable that only holds a with_this function's `this` stays, `const state = this; state.count--;`, where upstream reads `this.count--` (rd196)",
     file: "src/lower/binding_calls.rs",
     find: "            body.retain(|stmt| !matches!(&stmt.kind, StmtKind::Const(name, _) if *name == alias));\n            js::read_as_this(&mut body, &alias);\n",
     replace: "",
-    tests: ["test/js-functions.test.ts", "-t", "a with_this thread-local is a function declaration"],
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a with_this thread-local is a function declaration",
+    ],
   },
   {
     name: "this-alias-nested-read",
-    breaks: "a variable that holds a with_this function's `this` is read as `this` where a function made in it reads it too, which then reads a variable no longer declared",
+    breaks:
+      "a variable that holds a with_this function's `this` is read as `this` where a function made in it reads it too, which then reads a variable no longer declared",
     file: "src/lower/binding_calls.rs",
     find: "            if js::read_as_this(&mut body.clone(), &alias) {\n",
     replace: "            if false {\n",
-    tests: ["test/js-functions.test.ts", "-t", "a with_this thread-local is a function declaration"],
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a with_this thread-local is a function declaration",
+    ],
   },
   {
     name: "kind-object-any-value",
-    breaks: "`kind.object()` is the value of any kind, a string's too, which `WeakMap.prototype.set` throws of (ADR 0910)",
+    breaks:
+      "`kind.object()` is the value of any kind, a string's too, which `WeakMap.prototype.set` throws of (ADR 0910)",
     file: "src/lower/binding_calls.rs",
     find: "                Expr::cond(test, this.defined(), Expr::undefined())\n",
-    replace: "                {\n                    let _ = test;\n                    this.defined()\n                }\n",
+    replace:
+      "                {\n                    let _ = test;\n                    this.defined()\n                }\n",
     tests: ["test/js-object.test.ts", "-t", "one weak key"],
   },
   {
     name: "instance-of-given-backwards",
-    breaks: "`js::instance_of(value, constructor)` is `constructor instanceof value`, which throws of a value that's no function (ADR 0878)",
+    breaks:
+      "`js::instance_of(value, constructor)` is `constructor instanceof value`, which throws of a value that's no function (ADR 0878)",
     file: "src/lower/binding_calls.rs",
     find: "            (JsForm::InstanceOfGiven, Some(this)) if args.len() == 1 => Expr::bin(Op::InstanceOf, this, args.remove(0)),\n",
-    replace: "            (JsForm::InstanceOfGiven, Some(this)) if args.len() == 1 => Expr::bin(Op::InstanceOf, args.remove(0), this),\n",
-    tests: ["test/js-collections.test.ts", "-t", "instanceof of a constructor value"],
+    replace:
+      "            (JsForm::InstanceOfGiven, Some(this)) if args.len() == 1 => Expr::bin(Op::InstanceOf, args.remove(0), this),\n",
+    tests: [
+      "test/js-collections.test.ts",
+      "-t",
+      "instanceof of a constructor value",
+    ],
   },
   {
     name: "setter-write-only-makes-a-value",
-    breaks: "a binding's setter, `INTERNALS.T = v`, is a write that can't throw, so in an `Ok` arm it's in `catch_unwind`'s `try`, whose `catch` takes what it throws where Rust's panic goes on",
+    breaks:
+      "a binding's setter, `INTERNALS.T = v`, is a write that can't throw, so in an `Ok` arm it's in `catch_unwind`'s `try`, whose `catch` takes what it throws where Rust's panic goes on",
     file: "src/lower/binding_calls.rs",
     find: "                let property = Expr::member(this, name).answered_by_a_setter();\n",
     replace: "                let property = Expr::member(this, name);\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "Ok arm that sets a binding"],
+    tests: [
+      "test/lowering-unwinds.test.ts",
+      "-t",
+      "Ok arm that sets a binding",
+    ],
   },
   {
     name: "js-class-of-the-constructor-call",
-    breaks: "`js::class::<Component>()` is `Component.new`, no function, not the constructor `Component` (ADR 0761)",
+    breaks:
+      "`js::class::<Component>()` is `Component.new`, no function, not the constructor `Component` (ADR 0761)",
     file: "src/lower/binding_calls.rs",
     find: "                    js::ExprKind::Member(class, _) => *class,\n",
-    replace: "                    js::ExprKind::Member(class, name) => Expr::member(*class, name),\n",
-    tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
+    replace:
+      "                    js::ExprKind::Member(class, name) => Expr::member(*class, name),\n",
+    tests: [
+      "test/classes.test.ts",
+      "-t",
+      "React's Component is a constructor function",
+    ],
   },
   {
     name: "any-of-of-a-known-type",
-    breaks: "`js::any_of(5u32)` compiles, a second conversion of a value that's always there beside `js::unknown_of` (ADR 0909)",
+    breaks:
+      "`js::any_of(5u32)` compiles, a second conversion of a value that's always there beside `js::unknown_of` (ADR 0909)",
     file: "src/lower/binding_calls.rs",
     find: "        if super::recognition::is_any_of(self.tcx, def_id) && !ty::TypeVisitableExt::has_param(&generic_args.type_at(0))\n",
-    replace: "        if super::recognition::is_any_of(self.tcx, def_id) && false\n",
-    tests: ["test/js-object.test.ts", "-t", "a type parameter's value is any value"],
+    replace:
+      "        if super::recognition::is_any_of(self.tcx, def_id) && false\n",
+    tests: [
+      "test/js-object.test.ts",
+      "-t",
+      "a type parameter's value is any value",
+    ],
   },
   {
     name: "binding-class-refused",
-    breaks: "`js::class::<AbortController>()` of a binding's class is refused, as before, so React's `AbortControllerLocal` can't keep the host's class (ADR 0911)",
+    breaks:
+      "`js::class::<AbortController>()` of a binding's class is refused, as before, so React's `AbortControllerLocal` can't keep the host's class (ADR 0911)",
     file: "src/lower/binding_calls.rs",
     find: "                    (None, Some(class)) => self.js_ref(&class),\n",
-    replace: "                    (None, Some(_)) => return Err(self.unsupported(span, \"a binding's class\")),\n",
-    tests: ["test/webapi-bindings.test.ts", "-t", "a binding's class is the global class"],
+    replace:
+      '                    (None, Some(_)) => return Err(self.unsupported(span, "a binding\'s class")),\n',
+    tests: [
+      "test/webapi-bindings.test.ts",
+      "-t",
+      "a binding's class is the global class",
+    ],
   },
   {
     name: "js-throw-made-an-error",
-    breaks: "`js::throw(value)` throws `new Error(value)`, an `Error` made of it, not the value itself, so a thenable React's Suspense waits on is lost",
+    breaks:
+      "`js::throw(value)` throws `new Error(value)`, an `Error` made of it, not the value itself, so a thenable React's Suspense waits on is lost",
     file: "src/lower/binding_calls.rs",
     find: "                out.push(StmtKind::Throw(this).at(self.js_span(span)));\n",
-    replace: "                out.push(StmtKind::Throw(Expr::new_(Expr::var(\"Error\"), vec![this])).at(self.js_span(span)));\n",
+    replace:
+      '                out.push(StmtKind::Throw(Expr::new_(Expr::var("Error"), vec![this])).at(self.js_span(span)));\n',
     tests: ["test/lowering-throws.test.ts"],
   },
   {
     name: "js-throw-unthrown",
-    breaks: "`js::throw(value)` throws nothing, so the function goes on past it, its value `undefined`",
+    breaks:
+      "`js::throw(value)` throws nothing, so the function goes on past it, its value `undefined`",
     file: "src/lower/binding_calls.rs",
     find: "            (JsForm::Throw, Some(this)) if args.is_empty() => {\n                out.push(StmtKind::Throw(this).at(self.js_span(span)));\n",
-    replace: "            (JsForm::Throw, Some(this)) if args.is_empty() => {\n                out.push(StmtKind::Expr(this).at(self.js_span(span)));\n",
+    replace:
+      "            (JsForm::Throw, Some(this)) if args.is_empty() => {\n                out.push(StmtKind::Expr(this).at(self.js_span(span)));\n",
     tests: ["test/lowering-throws.test.ts"],
   },
   {
     name: "strict-equals-loose",
-    breaks: "`js::strict_equals(a, b)` is `a == b`, so a `null` is an `undefined` and `1` is `\"1\"`, where JS's `===` says neither is",
+    breaks:
+      '`js::strict_equals(a, b)` is `a == b`, so a `null` is an `undefined` and `1` is `"1"`, where JS\'s `===` says neither is',
     file: "src/lower/binding_calls.rs",
     find: "            (JsForm::StrictEquals, Some(this)) if args.len() == 1 => Expr::bin(Op::Eq, this, args.remove(0)),\n",
-    replace: "            (JsForm::StrictEquals, Some(this)) if args.len() == 1 => Expr::bin(Op::LooseEq, this, args.remove(0)),\n",
-    tests: ["test/lowering-bindings.test.ts", "-t", "js::strict_equals is JS's ==="],
+    replace:
+      "            (JsForm::StrictEquals, Some(this)) if args.len() == 1 => Expr::bin(Op::LooseEq, this, args.remove(0)),\n",
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "-t",
+      "js::strict_equals is JS's ===",
+    ],
   },
   {
     name: "static-getter-call-unsupported",
-    breaks: "a call of a `get X.y` binding without a receiver, a class's static property, is rejected",
+    breaks:
+      "a call of a `get X.y` binding without a receiver, a class's static property, is rejected",
     file: "src/lower/binding_calls.rs",
     find: "            (JsForm::Get(name), None) if args.is_empty() => self.js_ref(&name).or_at(fun_span).answered_by_a_getter(),",
-    replace: "            (JsForm::Get(name), None) if false => self.js_ref(&name).or_at(fun_span).answered_by_a_getter(),",
-    tests: ["test/lowering-bindings.test.ts", "-t", "a binding reads a static property"],
+    replace:
+      "            (JsForm::Get(name), None) if false => self.js_ref(&name).or_at(fun_span).answered_by_a_getter(),",
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "-t",
+      "a binding reads a static property",
+    ],
   },
   {
     name: "named-key-indexed",
-    breaks: "`js::set(value, \"name\", ..)` is `value[\"name\"]`, where a person writes `value.name`",
+    breaks:
+      '`js::set(value, "name", ..)` is `value["name"]`, where a person writes `value.name`',
     file: "src/lower/binding_calls.rs",
     find: "            Expr::member(this, name.clone())",
     replace: "            Expr::index(this, key.clone())",
@@ -132,11 +205,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "variadic-of-no-slice",
-    breaks: "a variadic binding whose last parameter isn't a slice spreads it anyway, `Math.max(1, ...2)`",
+    breaks:
+      "a variadic binding whose last parameter isn't a slice spreads it anyway, `Math.max(1, ...2)`",
     file: "src/lower/binding_calls.rs",
     find: "            if !last.is_some_and(collection) && !tuple && !rest && !object {\n",
     replace: "            if false {\n",
-    tests: ["test/diagnostics.test.ts","-t","variadic binding of no slice"],
+    tests: ["test/diagnostics.test.ts", "-t", "variadic binding of no slice"],
   },
   {
     name: "in-reversed",
@@ -144,7 +218,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "Expr::bin(Op::In, args.remove(0), this)",
     replace: "Expr::bin(Op::In, this, args.remove(0))",
-    tests: ["test/compiler.test.ts","-t","string functions are JS's"],
+    tests: ["test/compiler.test.ts", "-t", "string functions are JS's"],
   },
   {
     name: "truthy-once",
@@ -156,55 +230,89 @@ export const mutations: Mutation[] = [
   },
   {
     name: "global-call-on-window",
-    breaks: "a global function binding, `global::fetch(url)`, is called as `window.fetch(url)`, which a worker or Node has no `window` for",
+    breaks:
+      "a global function binding, `global::fetch(url)`, is called as `window.fetch(url)`, which a worker or Node has no `window` for",
     file: "src/lower/binding_calls.rs",
     find: "            (JsForm::Call(name), None) => Expr::call(self.binding_ref(&name, named).or_at(fun_span), args),",
-    replace: "            (JsForm::Call(name), None) => Expr::call(self.binding_ref(&format!(\"window.{name}\"), named).or_at(fun_span), args),",
-    tests: ["test/webapi-bindings.test.ts", "-t", "the global scope's functions are called bare"],
+    replace:
+      '            (JsForm::Call(name), None) => Expr::call(self.binding_ref(&format!("window.{name}"), named).or_at(fun_span), args),',
+    tests: [
+      "test/webapi-bindings.test.ts",
+      "-t",
+      "the global scope's functions are called bare",
+    ],
   },
   {
     name: "new-binding-called",
-    breaks: "a constructor binding, `weak_map::new()`, is called without `new`, `WeakMap()`, which throws",
+    breaks:
+      "a constructor binding, `weak_map::new()`, is called without `new`, `WeakMap()`, which throws",
     file: "src/lower/binding_calls.rs",
     find: "            (JsForm::New(name), None) => Expr::new_(self.js_ref(&name).or_at(fun_span), args),",
-    replace: "            (JsForm::New(name), None) => Expr::call(self.js_ref(&name).or_at(fun_span), args),",
-    tests: ["test/js-builtins.test.ts", "-t", "RegExp, Error, Symbol, weak collections and globals are JS's"],
+    replace:
+      "            (JsForm::New(name), None) => Expr::call(self.js_ref(&name).or_at(fun_span), args),",
+    tests: [
+      "test/js-builtins.test.ts",
+      "-t",
+      "RegExp, Error, Symbol, weak collections and globals are JS's",
+    ],
   },
   {
     name: "set-index-swapped",
-    breaks: "a `set []` binding, `a.set_index(1, 4.0)`, assigns its key at its value, `a[4] = 1`",
+    breaks:
+      "a `set []` binding, `a.set_index(1, 4.0)`, assigns its key at its value, `a[4] = 1`",
     file: "src/lower/binding_calls.rs",
     find: "                let (key, value) = (args.remove(0), args.remove(0));",
-    replace: "                let (value, key) = (args.remove(0), args.remove(0));",
-    tests: ["test/js-builtins.test.ts", "-t", "typed arrays and their buffers are JS's"],
+    replace:
+      "                let (value, key) = (args.remove(0), args.remove(0));",
+    tests: [
+      "test/js-builtins.test.ts",
+      "-t",
+      "typed arrays and their buffers are JS's",
+    ],
   },
   {
     name: "setter-binding-called",
-    breaks: "a setter binding, `history.set_scroll_restoration(\"auto\")`, calls the property, `history.scrollRestoration(\"auto\")`, instead of assigning it",
+    breaks:
+      'a setter binding, `history.set_scroll_restoration("auto")`, calls the property, `history.scrollRestoration("auto")`, instead of assigning it',
     file: "src/lower/binding_calls.rs",
     find: "            (JsForm::Set(name), Some(this)) if args.len() == 1 && !name.contains('#') => {\n                let value = args.remove(0);\n                // A setter may answer it, which may do anything, throw\n                // too: never a write that only makes a value (ADR 0660,\n                // amended).\n                let property = Expr::member(this, name).answered_by_a_setter();\n                out.push(StmtKind::Assign(property, value).at(self.js_span(span)));\n                Expr::undefined()\n            }",
-    replace: "            (JsForm::Set(name), Some(this)) if args.len() == 1 && !name.contains('#') => {\n                Expr::call(Expr::member(this, name), args)\n            }",
-    tests: ["test/webapi-bindings.test.ts", "-t", "the history global is the page's history"],
+    replace:
+      "            (JsForm::Set(name), Some(this)) if args.len() == 1 && !name.contains('#') => {\n                Expr::call(Expr::member(this, name), args)\n            }",
+    tests: [
+      "test/webapi-bindings.test.ts",
+      "-t",
+      "the history global is the page's history",
+    ],
   },
   {
     name: "dict-get-of-options-plain",
-    breaks: "a dictionary of Options is read `d[k]`, so a JSON `null` value reads as a missing key",
+    breaks:
+      "a dictionary of Options is read `d[k]`, so a JSON `null` value reads as a missing key",
     file: "src/lower/binding_calls.rs",
     find: "            (JsForm::GetIndex, Some(this)) if keyed_option => {",
-    replace: "            (JsForm::GetIndex, Some(this)) if keyed_option && false => {",
+    replace:
+      "            (JsForm::GetIndex, Some(this)) if keyed_option && false => {",
     tests: ["test/js-builtins.test.ts", "-t", "JSON is a typed value"],
   },
   {
     name: "map-get-of-options-plain",
-    breaks: "a JS `Map`'s `get` of an `Option` value is `map.get(key)`, so a key whose value is `None` reads as a key it lacks, `None` where Rust's is `Some(None)` (ADR 0884)",
+    breaks:
+      "a JS `Map`'s `get` of an `Option` value is `map.get(key)`, so a key whose value is `None` reads as a key it lacks, `None` where Rust's is `Some(None)` (ADR 0884)",
     file: "src/lower/binding_calls.rs",
     find: "            (JsForm::Call(_), Some(this)) if keyed_option && super::bindings::reads_a_key(self.tcx, def_id) => {",
-    replace: "            (JsForm::Call(_), Some(this)) if false && keyed_option && super::bindings::reads_a_key(self.tcx, def_id) => {",
-    tests: ["test/js-collections.test.ts", "test/corpus.test.ts", "-t", "get tells a nullish one|map_option_values"],
+    replace:
+      "            (JsForm::Call(_), Some(this)) if false && keyed_option && super::bindings::reads_a_key(self.tcx, def_id) => {",
+    tests: [
+      "test/js-collections.test.ts",
+      "test/corpus.test.ts",
+      "-t",
+      "get tells a nullish one|map_option_values",
+    ],
   },
   {
     name: "keyed-get-of-any-value",
-    breaks: "every keyed read is told apart from a key it lacks, `$someGet(map, key)` of a `Map<K, u32>` too, and a `Dict`'s own key alone, `$dictGet`, so an inherited key, `toString`, reads `None` where JS's `d[k]` reads it (ADRs 0225, 0884)",
+    breaks:
+      "every keyed read is told apart from a key it lacks, `$someGet(map, key)` of a `Map<K, u32>` too, and a `Dict`'s own key alone, `$dictGet`, so an inherited key, `toString`, reads `None` where JS's `d[k]` reads it (ADRs 0225, 0884)",
     file: "src/lower/binding_calls.rs",
     find: "        let keyed_option = args.len() == 1 && self.gives_boxed_option(def_id, generic_args);",
     replace: "        let keyed_option = args.len() == 1;",
@@ -213,7 +321,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "skips-falsy-ternary",
-    breaks: "a binding that skips what's falsy is given `test ? value : undefined`, where react.dev writes `test && value`",
+    breaks:
+      "a binding that skips what's falsy is given `test ? value : undefined`, where react.dev writes `test && value`",
     file: "src/lower/binding_calls.rs",
     find: "        if super::bindings::skips_falsy(self.tcx, def_id) {",
     replace: "        if false {",
@@ -221,23 +330,27 @@ export const mutations: Mutation[] = [
   },
   {
     name: "skips-falsy-test-kept",
-    breaks: "what skips what's falsy is given a test that keeps its `!!`, `(!!error || ready) && \"b\"`",
+    breaks:
+      'what skips what\'s falsy is given a test that keeps its `!!`, `(!!error || ready) && "b"`',
     file: "src/lower/binding_calls.rs",
     find: "                    *arg = Expr::bin(Op::And, test.tested(), (**value).clone());\n",
-    replace: "                    *arg = Expr::bin(Op::And, (**test).clone(), (**value).clone());\n",
+    replace:
+      "                    *arg = Expr::bin(Op::And, (**test).clone(), (**value).clone());\n",
     tests: ["test/bindings.test.ts", "-t", "skips what's falsy"],
   },
   {
     name: "binding-undefined-left-out",
-    breaks: "`Math.max(1, None::<f64>)`, of a parameter of any value, is `Math.max(1)`, `1` where it's `NaN`",
+    breaks:
+      "`Math.max(1, None::<f64>)`, of a parameter of any value, is `Math.max(1)`, `1` where it's `NaN`",
     file: "src/lower/binding_calls.rs",
     find: "        given_to_js(&mut args);\n",
     replace: "",
-    tests: ["test/runtime-package.test.ts","-t","undefined given to JS"],
+    tests: ["test/runtime-package.test.ts", "-t", "undefined given to JS"],
   },
   {
     name: "static-setter-refused",
-    breaks: "`set process.exitCode`, a global's property, is refused as a binding without a receiver",
+    breaks:
+      "`set process.exitCode`, a global's property, is refused as a binding without a receiver",
     file: "src/lower/binding_calls.rs",
     find: "                if args.len() == 1 && name.rsplit('#').next().is_some_and(super::bindings::has_steps) =>",
     replace: "                if false =>",
@@ -248,20 +361,24 @@ export const mutations: Mutation[] = [
     breaks: "a variadic binding's tuple, an event's arguments, is refused",
     file: "src/lower/binding_calls.rs",
     find: "            if !last.is_some_and(collection) && !tuple && !rest && !object {",
-    replace: "            if !last.is_some_and(collection) && !rest && !object {",
+    replace:
+      "            if !last.is_some_and(collection) && !rest && !object {",
     tests: ["test/bindings.test.ts", "-t", "takes a tuple as its rest"],
   },
   {
     name: "static-setter-of-import-refused",
-    breaks: "`set events#EventEmitter.defaultMaxListeners`, an import's property, is refused, where JS assigns it",
+    breaks:
+      "`set events#EventEmitter.defaultMaxListeners`, an import's property, is refused, where JS assigns it",
     file: "src/lower/binding_calls.rs",
     find: "                if args.len() == 1 && name.rsplit('#').next().is_some_and(super::bindings::has_steps) =>",
-    replace: "                if args.len() == 1 && !name.contains('#') && name.contains('.') =>",
+    replace:
+      "                if args.len() == 1 && !name.contains('#') && name.contains('.') =>",
     tests: ["test/node-bindings.test.ts", "-t", "typed by their emitters"],
   },
   {
     name: "dynamic-import-default-named",
-    breaks: "a module's default export is imported by its function's name, so `import_module!` refuses it",
+    breaks:
+      "a module's default export is imported by its function's name, so `import_module!` refuses it",
     file: "src/lower/binding_calls.rs",
     find: "            let export = super::default_exports::exported_as(tcx, id, info.exported());\n",
     replace: "            let export = info.name.clone();\n",
@@ -269,7 +386,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "binding-falsy-temporary-unsaid",
-    breaks: "a temporary a function that skips what's falsy is given, from MIR, stays `test ? value : undefined`",
+    breaks:
+      "a temporary a function that skips what's falsy is given, from MIR, stays `test ? value : undefined`",
     file: "src/lower/binding_calls.rs",
     find: "                    self.note_falsy(name);\n",
     replace: "",
@@ -277,15 +395,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "extern-fn-called-accepted",
-    breaks: "another crate's function in an `extern` block is called as a binding, a second form (ADR 0373)",
+    breaks:
+      "another crate's function in an `extern` block is called as a binding, a second form (ADR 0373)",
     file: "src/lower/binding_calls.rs",
     find: "        if self.tcx.is_foreign_item(def_id) {\n            let refused = super::bindings::extern_fn_refused(self.tcx, def_id);\n            return Err(self.tcx.dcx().span_err(span, refused));\n        }\n",
     replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "another crate's function in an extern block"],
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "another crate's function in an extern block",
+    ],
   },
   {
     name: "binding-trailing-none-given",
-    breaks: "a binding's trailing `None` of an optional parameter is written, `addRule(\"p\", undefined, undefined)`",
+    breaks:
+      'a binding\'s trailing `None` of an optional parameter is written, `addRule("p", undefined, undefined)`',
     file: "src/lower/binding_calls.rs",
     find: "            && is_optional_param(self.tcx, def_id, args.len() - 1 + offset)\n",
     replace: "            && false\n",
@@ -293,39 +417,57 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rest-of-a-vec-refused",
-    breaks: "a rest parameter given a `Vec` to spread, `max(&values)`, is refused",
+    breaks:
+      "a rest parameter given a `Vec` to spread, `max(&values)`, is refused",
     file: "src/lower/binding_calls.rs",
     find: "                ty.is_slice() || self.is_std_type(ty, StdItem::Vec)\n",
     replace: "                ty.is_slice()\n",
-    tests: ["test/bindings.test.ts", "-t", "a rest parameter takes a tuple or a slice"],
+    tests: [
+      "test/bindings.test.ts",
+      "-t",
+      "a rest parameter takes a tuple or a slice",
+    ],
   },
   {
     name: "rest-declared-slice-accepted",
-    breaks: "a variadic binding's slice declared, ADR 0221's old form, is accepted beside `impl js::Rest<T>`",
+    breaks:
+      "a variadic binding's slice declared, ADR 0221's old form, is accepted beside `impl js::Rest<T>`",
     file: "src/lower/binding_calls.rs",
     find: "            if declared.is_some_and(collection) {\n",
     replace: "            if false {\n",
-    tests: ["test/bindings.test.ts", "-t", "a rest parameter takes a tuple or a slice"],
+    tests: [
+      "test/bindings.test.ts",
+      "-t",
+      "a rest parameter takes a tuple or a slice",
+    ],
   },
   {
     name: "text-empty-last",
-    breaks: "`concat_text(value)` is `value + \"\"`, not `\"\" + value` as React writes it",
+    breaks:
+      '`concat_text(value)` is `value + ""`, not `"" + value` as React writes it',
     file: "src/lower/binding_calls.rs",
-    find: "Expr::bin(Op::Add, Expr::str(\"\"), this)",
-    replace: "Expr::bin(Op::Add, this, Expr::str(\"\"))",
+    find: 'Expr::bin(Op::Add, Expr::str(""), this)',
+    replace: 'Expr::bin(Op::Add, this, Expr::str(""))',
     tests: ["test/bindings.test.ts", "-t", "concat_text of any value"],
   },
   {
     name: "rest-of-none-keeps-none",
-    breaks: "a `None` before a rest of none, `console::time_log(None, ())`, is `console.timeLog(undefined)`",
+    breaks:
+      "a `None` before a rest of none, `console::time_log(None, ())`, is `console.timeLog(undefined)`",
     file: "src/lower/binding_calls.rs",
     find: "            .is_some_and(|last| matches!(last.kind, js::ExprKind::Undefined))\n            && is_optional_param(",
-    replace: "            .is_some_and(|last| matches!(last.kind, js::ExprKind::Undefined))\n            && !is_variadic(self.tcx, def_id)\n            && is_optional_param(",
-    tests: ["test/webapi-bindings.test.ts", "-t", "a rest parameter is a tuple"],
+    replace:
+      "            .is_some_and(|last| matches!(last.kind, js::ExprKind::Undefined))\n            && !is_variadic(self.tcx, def_id)\n            && is_optional_param(",
+    tests: [
+      "test/webapi-bindings.test.ts",
+      "-t",
+      "a rest parameter is a tuple",
+    ],
   },
   {
     name: "rest-value-refused-by-a-call",
-    breaks: "a variadic binding given rest arguments as a value, `console::warn(&(name,) as &dyn Rest<..>)`, is refused",
+    breaks:
+      "a variadic binding given rest arguments as a value, `console::warn(&(name,) as &dyn Rest<..>)`, is refused",
     file: "src/lower/binding_calls.rs",
     find: "            let rest = last.is_some_and(|ty| is_rest_value(self.tcx, ty));\n",
     replace: "            let rest = false;\n",
@@ -333,7 +475,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rest-imported",
-    breaks: "a function whose last parameter is `#[rust_js::rest]` is imported by `js::import!`, which its holder calls with the slice whole",
+    breaks:
+      "a function whose last parameter is `#[rust_js::rest]` is imported by `js::import!`, which its holder calls with the slice whole",
     file: "src/lower/binding_calls.rs",
     find: "        if self.takes_rest(id) {\n",
     replace: "        if false {\n",
@@ -341,27 +484,42 @@ export const mutations: Mutation[] = [
   },
   {
     name: "getters-unseen",
-    breaks: "a binding's read of a property isn't known for one a getter may be, so a chain reads `request.url` in its test and again for its binding",
+    breaks:
+      "a binding's read of a property isn't known for one a getter may be, so a chain reads `request.url` in its test and again for its binding",
     file: "src/lower/binding_calls.rs",
     find: "keyed(this, args.remove(0)).answered_by_a_getter(),",
     replace: "keyed(this, args.remove(0)),",
-    tests: ["test/lowering-bindings.test.ts", "-t", "a property a let chain tests and binds is read once"],
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "-t",
+      "a property a let chain tests and binds is read once",
+    ],
   },
   {
     name: "get-getter-unseen",
-    breaks: "a `get x` binding's read isn't said to be one a getter may answer, so a let chain reads it twice",
+    breaks:
+      "a `get x` binding's read isn't said to be one a getter may answer, so a let chain reads it twice",
     file: "src/lower/binding_calls.rs",
     find: "                    false => Expr::member(this, name).answered_by_a_getter(),\n",
     replace: "                    false => Expr::member(this, name),\n",
-    tests: ["test/lowering-moves.test.ts", "-t", "a getter's read given to a binding's method runs before its lookup"],
+    tests: [
+      "test/lowering-moves.test.ts",
+      "-t",
+      "a getter's read given to a binding's method runs before its lookup",
+    ],
   },
   {
     name: "js-new-this-called",
     breaks: "`js::new(f, ..)` is `f(..)`, a call, not `new f(..)`",
     file: "src/lower/binding_calls.rs",
     find: "            (JsForm::NewThis, Some(this)) => Expr::new_(this, args),\n",
-    replace: "            (JsForm::NewThis, Some(this)) => Expr::call(this, args),\n",
-    tests: ["test/js-object.test.ts", "-t", "new of a function value is JS's new"],
+    replace:
+      "            (JsForm::NewThis, Some(this)) => Expr::call(this, args),\n",
+    tests: [
+      "test/js-object.test.ts",
+      "-t",
+      "new of a function value is JS's new",
+    ],
   },
   {
     name: "js-delete-read",
@@ -373,23 +531,34 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rest-typed-array-refused",
-    breaks: "a typed array given as rest arguments isn't spread but refused: `String.fromCharCode(...bytes)` doesn't compile",
+    breaks:
+      "a typed array given as rest arguments isn't spread but refused: `String.fromCharCode(...bytes)` doesn't compile",
     file: "src/lower/binding_calls.rs",
     find: "            let object = last.is_some_and(|ty| self.is_js_object(ty.peel_refs()));\n",
     replace: "            let object = false;\n",
-    tests: ["test/js-builtins.test.ts", "-t", "String.fromCharCode takes its codes"],
+    tests: [
+      "test/js-builtins.test.ts",
+      "-t",
+      "String.fromCharCode takes its codes",
+    ],
   },
   {
     name: "binding-method-not-a-getter",
-    breaks: "a binding's method of a JS value isn't said to be one a getter may answer, so a call's value is read past it",
+    breaks:
+      "a binding's method of a JS value isn't said to be one a getter may answer, so a call's value is read past it",
     file: "src/lower/binding_calls.rs",
     find: "                    true => method.answered_by_a_getter(),\n",
     replace: "                    true => method,\n",
-    tests: ["test/lowering-moves.test.ts", "-t", "a binding's method is looked up after its arguments run"],
+    tests: [
+      "test/lowering-moves.test.ts",
+      "-t",
+      "a binding's method is looked up after its arguments run",
+    ],
   },
   {
     name: "typed-receiver-method-a-getters",
-    breaks: "a binding's method of a declared type, webapi's Element, is taken for one a getter may answer, so DOM calls hold their arguments",
+    breaks:
+      "a binding's method of a declared type, webapi's Element, is taken for one a getter may answer, so DOM calls hold their arguments",
     file: "src/lower/binding_calls.rs",
     find: "            |ty| matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if super::declarations::any_shape(tcx, adt.did())),",
     replace: "            |_| true,",
@@ -397,87 +566,140 @@ export const mutations: Mutation[] = [
   },
   {
     name: "new-of-a-method-the-global-class",
-    breaks: "`window.new_error_event(..)` constructs the global `ErrorEvent`, `new ErrorEvent(..)`, not the window's, which a jsdom window that isn't the global object holds apart (ADR 0891)",
+    breaks:
+      "`window.new_error_event(..)` constructs the global `ErrorEvent`, `new ErrorEvent(..)`, not the window's, which a jsdom window that isn't the global object holds apart (ADR 0891)",
     file: "src/lower/binding_calls.rs",
     find: "                let class = name.split('.').fold(this, Expr::member);\n",
-    replace: "                let class = { drop(this); self.js_ref(&name) };\n",
-    tests: ["test/bindings.test.ts", "-t", "a new binding of a method constructs what its receiver holds"],
+    replace:
+      "                let class = { drop(this); self.js_ref(&name) };\n",
+    tests: [
+      "test/bindings.test.ts",
+      "-t",
+      "a new binding of a method constructs what its receiver holds",
+    ],
   },
   {
     name: "binding-call-runs-nothing-unmarked",
-    breaks: "a weak set's `has(fiber)` isn't marked as running none of the program's code, so a copy of a module's variable read past it is kept, `const failedBoundaries$1 = failedBoundaries;` (ADR 0277, amended)",
+    breaks:
+      "a weak set's `has(fiber)` isn't marked as running none of the program's code, so a copy of a module's variable read past it is kept, `const failedBoundaries$1 = failedBoundaries;` (ADR 0277, amended)",
     file: "src/lower/binding_calls.rs",
     find: "                value.runs_nothing()\n",
     replace: "                value\n",
-    tests: ["test/lowering-shadows.test.ts", "-t", "a copy of a module's variable read past a call that runs nothing"],
+    tests: [
+      "test/lowering-shadows.test.ts",
+      "-t",
+      "a copy of a module's variable read past a call that runs nothing",
+    ],
   },
   {
     name: "every-binding-call-runs-nothing",
-    breaks: "a binding's call that may run the program's code, `before.call()`, is taken to run none, so a copy of a module's variable read past it is the variable, which the callback set (ADR 0277, amended)",
+    breaks:
+      "a binding's call that may run the program's code, `before.call()`, is taken to run none, so a copy of a module's variable read past it is the variable, which the callback set (ADR 0277, amended)",
     file: "src/lower/binding_calls.rs",
     find: "                if super::analysis::binding_call_runs_nothing(&self.recognition(), def_id, generic_args) =>\n",
     replace: "                if true =>\n",
-    tests: ["test/lowering-shadows.test.ts", "-t", "a copy of a module's variable read past a call that runs nothing"],
+    tests: [
+      "test/lowering-shadows.test.ts",
+      "-t",
+      "a copy of a module's variable read past a call that runs nothing",
+    ],
   },
   {
     name: "js-null-written-undefined",
-    breaks: "`js::null()` is `undefined`, as any `None`, so a fiber made `memoized_state: Cell::new(js::null())` has no `memoizedState` (ADR 0935, amended)",
+    breaks:
+      "`js::null()` is `undefined`, as any `None`, so a fiber made `memoized_state: Cell::new(js::null())` has no `memoizedState` (ADR 0935, amended)",
     file: "src/lower/binding_calls.rs",
     find: "            (JsForm::Null, None) if args.is_empty() => Expr::null(),\n",
-    replace: "            (JsForm::Null, None) if args.is_empty() => Expr::undefined(),\n",
-    tests: ["test/lowering-nullable-constants.test.ts", "-t", "js::null\\(\\) is null where it's written"],
+    replace:
+      "            (JsForm::Null, None) if args.is_empty() => Expr::undefined(),\n",
+    tests: [
+      "test/lowering-nullable-constants.test.ts",
+      "-t",
+      "js::null\\(\\) is null where it's written",
+    ],
   },
   {
     name: "binding-function-value-an-arrow",
-    breaks: "a binding's function given to `function::bind` or `function::name` is an arrow of it, `((label, ..) => console.timeStamp(label, ..)).bind(..)`, whose name is \"\" (ADR 0907, amended)",
+    breaks:
+      'a binding\'s function given to `function::bind` or `function::name` is an arrow of it, `((label, ..) => console.timeStamp(label, ..)).bind(..)`, whose name is "" (ADR 0907, amended)',
     file: "src/lower/binding_calls.rs",
     find: "                *arg = itself;\n",
     replace: "                let _ = itself;\n",
-    tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments"],
+    tests: [
+      "test/js-object.test.ts",
+      "-t",
+      "a function bound to its first arguments",
+    ],
   },
   {
     name: "any-function-value-itself",
-    breaks: "a function of the crate's given to `function::name` is taken for a binding's, its arrow made of its call, `add.name` lost (ADR 0907, amended)",
+    breaks:
+      "a function of the crate's given to `function::name` is taken for a binding's, its arrow made of its call, `add.name` lost (ADR 0907, amended)",
     file: "src/lower/binding_calls.rs",
     find: "                ty::FnDef(f, f_args) if super::bindings::is_binding(tcx, f) => Some((f, f_args)),\n",
     replace: "                ty::FnDef(f, f_args) => Some((f, f_args)),\n",
-    tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments"],
+    tests: [
+      "test/js-object.test.ts",
+      "-t",
+      "a function bound to its first arguments",
+    ],
   },
   {
     name: "callback-binding-function-itself",
-    breaks: "a binding's function given as a binding's callback is the function itself, `then(parseFloat)`, which JS may give more than Rust does (ADR 0907, amended)",
+    breaks:
+      "a binding's function given as a binding's callback is the function itself, `then(parseFloat)`, which JS may give more than Rust does (ADR 0907, amended)",
     file: "src/lower/binding_calls.rs",
     find: "                && of_any_shape(declared.peel_refs())\n",
     replace: "",
-    tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments"],
+    tests: [
+      "test/js-object.test.ts",
+      "-t",
+      "a function bound to its first arguments",
+    ],
   },
   {
     name: "bound-method-an-arrow",
-    breaks: "`function::bind` of a binding's method, its receiver bound first and its `this` the same, is an arrow of it bound, `((self, ..) => self.measure(..)).bind(performance, performance, ..)`, not React's `performance.measure.bind(performance, ..)`",
+    breaks:
+      "`function::bind` of a binding's method, its receiver bound first and its `this` the same, is an arrow of it bound, `((self, ..) => self.measure(..)).bind(performance, performance, ..)`, not React's `performance.measure.bind(performance, ..)`",
     file: "src/lower/binding_calls.rs",
     find: "                && js::same_path(this_arg, receiver)\n",
     replace: "                && false\n",
-    tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments"],
+    tests: [
+      "test/js-object.test.ts",
+      "-t",
+      "a function bound to its first arguments",
+    ],
   },
   {
     name: "bound-none-left-out-of-a-part",
-    breaks: "a trailing `None` bound where parameters are left to the call is left out, so what the call gives next is taken for it, `console.timeStamp.bind(console, label)`",
+    breaks:
+      "a trailing `None` bound where parameters are left to the call is left out, so what the call gives next is taken for it, `console.timeStamp.bind(console, label)`",
     file: "src/lower/binding_calls.rs",
     find: "            if first + args.len() - 1 == params {\n",
     replace: "            if true {\n",
-    tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments"],
+    tests: [
+      "test/js-object.test.ts",
+      "-t",
+      "a function bound to its first arguments",
+    ],
   },
   {
     name: "bound-none-kept",
-    breaks: "a trailing `None` bound where each parameter is bound stays, `performance.measure.bind(performance, name, options, undefined)`, not as its call leaves it out",
+    breaks:
+      "a trailing `None` bound where each parameter is bound stays, `performance.measure.bind(performance, name, options, undefined)`, not as its call leaves it out",
     file: "src/lower/binding_calls.rs",
     find: "                    && is_optional_param(self.tcx, f, first + args.len() - 2)\n",
     replace: "                    && false\n",
-    tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments"],
+    tests: [
+      "test/js-object.test.ts",
+      "-t",
+      "a function bound to its first arguments",
+    ],
   },
   {
     name: "with-this-this-a-variable",
-    breaks: "a `with_this` closure's `this` stays the variable it's named, which no one declares, not JS's `this`, a `ReferenceError` (ADR 0972)",
+    breaks:
+      "a `with_this` closure's `this` stays the variable it's named, which no one declares, not JS's `this`, a `ReferenceError` (ADR 0972)",
     file: "src/lower/binding_calls.rs",
     find: "                } else if js::read_as_this(&mut body, &this) {\n",
     replace: "                } else if false {\n",
@@ -485,7 +707,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "with-this-set-this-in-place",
-    breaks: "a `with_this` closure that sets its `this` assigns JS's, `this = undefined`, a `SyntaxError`, not a `let` of its own (ADR 0972)",
+    breaks:
+      "a `with_this` closure that sets its `this` assigns JS's, `this = undefined`, a `SyntaxError`, not a `let` of its own (ADR 0972)",
     file: "src/lower/binding_calls.rs",
     find: "                if js::Writes::of(&body).may_replace(&this) {\n",
     replace: "                if false {\n",
@@ -493,23 +716,27 @@ export const mutations: Mutation[] = [
   },
   {
     name: "with-this-tuple-no-parameters",
-    breaks: "a `with_this` closure's tuple isn't the function's parameters, so `function () { .. a + b .. }` reads names no one declares (ADR 0972)",
+    breaks:
+      "a `with_this` closure's tuple isn't the function's parameters, so `function () { .. a + b .. }` reads names no one declares (ADR 0972)",
     file: "src/lower/binding_calls.rs",
     find: "        let tuple = (params.len() > 1).then(|| params.remove(1));\n",
-    replace: "        let tuple = (params.len() > 1).then(|| params.remove(1)).filter(|_| false);\n",
+    replace:
+      "        let tuple = (params.len() > 1).then(|| params.remove(1)).filter(|_| false);\n",
     tests: ["test/js-functions.test.ts", "-t", "is what it's called on"],
   },
   {
     name: "with-this-item-left-out-dropped",
-    breaks: "an item a `with_this` closure's tuple leaves out, `(_, b)`, is no parameter, so `function (b)` takes the first argument for the second (a wrong answer, ADR 0972)",
+    breaks:
+      "an item a `with_this` closure's tuple leaves out, `(_, b)`, is no parameter, so `function (b)` takes the first argument for the second (a wrong answer, ADR 0972)",
     file: "src/lower/binding_calls.rs",
-    find: "                for item in items {\n                    own.push(match item {\n                        Some(pattern) => pattern,\n                        None => js::Pattern::Name(self.fresh(\"_\")),\n                    });\n                }\n",
+    find: '                for item in items {\n                    own.push(match item {\n                        Some(pattern) => pattern,\n                        None => js::Pattern::Name(self.fresh("_")),\n                    });\n                }\n',
     replace: "                own.extend(items.into_iter().flatten());\n",
     tests: ["test/js-functions.test.ts", "-t", "sets its `this`"],
   },
   {
     name: "with-this-tuple-whole-unread",
-    breaks: "a `with_this` closure that reads its tuple whole reads a name no one declares, not `const pair = [pair$1, pair$2];` (ADR 0972)",
+    breaks:
+      "a `with_this` closure that reads its tuple whole reads a name no one declares, not `const pair = [pair$1, pair$2];` (ADR 0972)",
     file: "src/lower/binding_calls.rs",
     find: "                body.insert(0, StmtKind::Const(tuple, whole).at(js::Span::NONE));\n",
     replace: "                let _ = (tuple, whole);\n",
@@ -517,31 +744,42 @@ export const mutations: Mutation[] = [
   },
   {
     name: "with-this-of-a-variable-an-arrow",
-    breaks: "`js::function::with_this` of what isn't a closure written in its call compiles nothing that says so (ADR 0972)",
+    breaks:
+      "`js::function::with_this` of what isn't a closure written in its call compiles nothing that says so (ADR 0972)",
     file: "src/lower/binding_calls.rs",
     find: "        let js::ExprKind::Arrow(mut params, mut body) = closure.kind else {\n",
-    replace: "        let js::ExprKind::Arrow(mut params, mut body) = closure.kind else {\n            return Ok(Expr::undefined());\n",
-    tests: ["test/js-functions.test.ts", "-t", "with_this of a variable is refused"],
+    replace:
+      "        let js::ExprKind::Arrow(mut params, mut body) = closure.kind else {\n            return Ok(Expr::undefined());\n",
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "with_this of a variable is refused",
+    ],
   },
   {
     name: "with-this-rest-one-value",
-    breaks: "Scheduler's wrapCallback, `function::with_this` of rest arguments, is `function (args) { return callback.apply(this, args); }`, given a JS caller's first argument alone, and a Rust call's spread ones the same",
+    breaks:
+      "Scheduler's wrapCallback, `function::with_this` of rest arguments, is `function (args) { return callback.apply(this, args); }`, given a JS caller's first argument alone, and a Rust call's spread ones the same",
     file: "src/lower/binding_calls.rs",
     find: "        let gathers = (items.last()).is_some_and(|&ty| super::bindings::is_rest_value(self.tcx, ty));\n",
-    replace: "        let gathers = (items.last()).is_some_and(|&ty| super::bindings::is_rest_value(self.tcx, ty)) && false;\n",
+    replace:
+      "        let gathers = (items.last()).is_some_and(|&ty| super::bindings::is_rest_value(self.tcx, ty)) && false;\n",
     tests: ["test/js-functions.test.ts", "-t", "takes rest arguments as JS"],
   },
   {
     name: "loose-equals-strict",
-    breaks: "`js::loose_equals(typed, value)` is `typed === value`, so ReactDOMInput's `\"0.0\"` typed where the value is `0` is clobbered (a wrong answer, ADR 1012)",
+    breaks:
+      '`js::loose_equals(typed, value)` is `typed === value`, so ReactDOMInput\'s `"0.0"` typed where the value is `0` is clobbered (a wrong answer, ADR 1012)',
     file: "src/lower/binding_calls.rs",
     find: "            (JsForm::LooseEquals, Some(this)) if args.len() == 1 => Expr::bin(Op::LooseEq, this, args.remove(0)),\n",
-    replace: "            (JsForm::LooseEquals, Some(this)) if args.len() == 1 => Expr::bin(Op::Eq, this, args.remove(0)),\n",
+    replace:
+      "            (JsForm::LooseEquals, Some(this)) if args.len() == 1 => Expr::bin(Op::Eq, this, args.remove(0)),\n",
     tests: ["test/js-any-values.test.ts", "-t", "loose_equals"],
   },
   {
     name: "receiver-iteration-unmarked",
-    breaks: "a `Set`'s `values()` isn't marked its own iteration, so its collect is `Array.from(set.values())`, not upstream's `Array.from(set)` (bw8)",
+    breaks:
+      "a `Set`'s `values()` isn't marked its own iteration, so its collect is `Array.from(set.values())`, not upstream's `Array.from(set)` (bw8)",
     file: "src/lower/binding_calls.rs",
     find: "            js::ExprKind::Call(..) if super::bindings::iterates_receiver(self.tcx, def_id) => value.receiver_iterated(),\n",
     replace: "",
@@ -549,34 +787,46 @@ export const mutations: Mutation[] = [
   },
   {
     name: "or-other-unspilled",
-    breaks: "`js::or(a, counted())` is `a || globalThis.counted()`, which skips the call Rust makes where `a` is truthy (rd181)",
+    breaks:
+      "`js::or(a, counted())` is `a || globalThis.counted()`, which skips the call Rust makes where `a` is truthy (rd181)",
     file: "src/lower/binding_calls.rs",
     find: "                if other.has_effects() {\n                    if this.has_effects() {",
-    replace: "                if false {\n                    if this.has_effects() {",
+    replace:
+      "                if false {\n                    if this.has_effects() {",
     tests: ["test/lowering-is-function.test.ts", "-t", "js::method"],
   },
   {
     name: "runs-nothing-read-a-getter",
-    breaks: "a read that runs nothing, `HTMLElement.prototype`, is one a getter may answer, so `element.focus || HTMLElement.prototype.focus` holds its right side first (rd181)",
+    breaks:
+      "a read that runs nothing, `HTMLElement.prototype`, is one a getter may answer, so `element.focus || HTMLElement.prototype.focus` holds its right side first (rd181)",
     file: "src/lower/binding_calls.rs",
     find: "                    true => Expr::member(this, name),\n",
-    replace: "                    true => Expr::member(this, name).answered_by_a_getter(),\n",
+    replace:
+      "                    true => Expr::member(this, name).answered_by_a_getter(),\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "js::method"],
   },
   {
     name: "static-call-given-itself",
-    breaks: "a class's static called on it is given its own binding first, `localPromise.resolve(Promise.resolve, null)` (rd235)",
+    breaks:
+      "a class's static called on it is given its own binding first, `localPromise.resolve(Promise.resolve, null)` (rd235)",
     file: "src/lower/binding_calls.rs",
     find: "                    return Err(self.unsupported(span, what));\n                };\n                args.remove(0);\n",
-    replace: "                    return Err(self.unsupported(span, what));\n                };\n",
-    tests: ["test/lowering-is-function.test.ts", "-t", "a class held as a value"],
+    replace:
+      "                    return Err(self.unsupported(span, what));\n                };\n",
+    tests: [
+      "test/lowering-is-function.test.ts",
+      "-t",
+      "a class held as a value",
+    ],
   },
   {
     name: "global-set-quoted-refused",
-    breaks: "`set window['$RT']` is refused as a write of no property, where it writes the global's quoted key",
+    breaks:
+      "`set window['$RT']` is refused as a write of no property, where it writes the global's quoted key",
     file: "src/lower/binding_calls.rs",
     find: "name.rsplit('#').next().is_some_and(super::bindings::has_steps)",
-    replace: "name.rsplit('#').next().is_some_and(|member| member.contains('.'))",
+    replace:
+      "name.rsplit('#').next().is_some_and(|member| member.contains('.'))",
     tests: ["test/lowering-binding-paths.test.ts"],
   },
 ];

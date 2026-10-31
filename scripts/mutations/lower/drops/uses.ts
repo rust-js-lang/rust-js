@@ -4,10 +4,12 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "drops-by-need-passed-ignored",
-    breaks: "a drop passed on to a function that uses it isn't kept, so `discard` drops nothing",
+    breaks:
+      "a drop passed on to a function that uses it isn't kept, so `discard` drops nothing",
     file: "src/lower/drops/uses.rs",
     find: "                if kept.contains(&to) && kept.insert(from) {\n",
-    replace: "                if false && kept.contains(&to) && kept.insert(from) {\n",
+    replace:
+      "                if false && kept.contains(&to) && kept.insert(from) {\n",
     tests: ["test/crates.test.ts", "-t", "drops_by_need"],
   },
   {
@@ -20,10 +22,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "drops-by-need-passed-as-used",
-    breaks: "a drop passed on counts as used, so `hand_on`, which passes its value on to itself and to `keep`, takes a drop neither uses, `handOn(value, steps, dropT)`",
+    breaks:
+      "a drop passed on counts as used, so `hand_on`, which passes its value on to itself and to `keep`, takes a drop neither uses, `handOn(value, steps, dropT)`",
     file: "src/lower/drops/uses.rs",
     find: "        if !self.in_copied_default() && self.krate.takes_used_drops.contains(self.item) {\n",
-    replace: "        if false && !self.in_copied_default() && self.krate.takes_used_drops.contains(self.item) {\n",
+    replace:
+      "        if false && !self.in_copied_default() && self.krate.takes_used_drops.contains(self.item) {\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_generic.rs$"],
     snapshots: true,
   },
@@ -37,24 +41,29 @@ export const mutations: Mutation[] = [
   },
   {
     name: "drops-by-need-arguments-kept",
-    breaks: "a call still gives a drop its callee doesn't take, before one it does, as `discard`'s of `pick`",
+    breaks:
+      "a call still gives a drop its callee doesn't take, before one it does, as `discard`'s of `pick`",
     file: "src/lower/drops/uses.rs",
     find: "kept.contains(&(local(item), index)).then_some(*drop)",
-    replace: "Some(if kept.contains(&(local(item), index)) { *drop } else { Expr::undefined() })",
+    replace:
+      "Some(if kept.contains(&(local(item), index)) { *drop } else { Expr::undefined() })",
     tests: ["test/crates.test.ts", "-t", "drops_by_need"],
   },
   {
     name: "drops-by-need-arrow-kept",
-    breaks: "a function given as a value stays an arrow that passes its parameters on, `(arg0) => keep(arg0)`",
+    breaks:
+      "a function given as a value stays an arrow that passes its parameters on, `(arg0) => keep(arg0)`",
     file: "src/lower/drops/uses.rs",
     find: "    if made && let Some(callee) = passed_on(e, Taker::Made, &[]) {\n",
-    replace: "    if !made && let Some(callee) = passed_on(e, Taker::Made, &[]) {\n",
+    replace:
+      "    if !made && let Some(callee) = passed_on(e, Taker::Made, &[]) {\n",
     tests: ["test/corpus.test.ts", "-t", "^function_value_drops_by_need.rs$"],
     snapshots: true,
   },
   {
     name: "generic-drop-not-given",
-    breaks: "a generic function given a value with a destructor isn't given its drop, and never drops it",
+    breaks:
+      "a generic function given a value with a destructor isn't given its drop, and never drops it",
     file: "src/lower/drops/uses.rs",
     find: "        let drop = drop?.unwrap_or_else(Expr::undefined);\n",
     replace: "        let drop = drop.map(|_| Expr::undefined())?;\n",
@@ -62,7 +71,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "instance-takes-unused-drops",
-    breaks: "a library's function the crate compiles itself takes every drop its callers give, used or not, `pick(a, b, dropA, dropB)` (ADRs 0300, 0914)",
+    breaks:
+      "a library's function the crate compiles itself takes every drop its callers give, used or not, `pick(a, b, dropA, dropB)` (ADRs 0300, 0914)",
     file: "src/lower/drops/uses.rs",
     find: "                    (id.is_local() || foreign.is_instance(id))\n",
     replace: "                    id.is_local()\n",

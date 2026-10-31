@@ -1215,3 +1215,20 @@ pub(super) fn call_part(e: &Expr) -> &Expr {
         _ => e,
     }
 }
+
+/// Whether `receiver` of a call of `def_id`, a namespace's method, is the
+/// `self` of the namespace's method `state`'s body is, its module's (ADR
+/// 1037).
+pub(super) fn namespace_self<'tcx>(
+    tcx: rustc_middle::ty::TyCtxt<'tcx>,
+    state: &State<'_, 'tcx>,
+    def_id: rustc_span::def_id::DefId,
+    receiver: &Expr,
+) -> bool {
+    let owner = state.body.source.def_id();
+    let namespace = |id| crate::lower::classes::member(tcx, id) == Some(crate::lower::classes::Member::Namespace);
+    namespace(def_id)
+        && !tcx.is_closure_like(owner)
+        && namespace(owner)
+        && matches!(&receiver.kind, js::ExprKind::Var(name) if *name == state.locals.names[rustc_middle::mir::Local::from_u32(1)])
+}

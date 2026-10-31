@@ -330,6 +330,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if adt_def.is_enum() && variant.fields.is_empty() {
             return Ok(self.unit_variant(adt_def.did(), variant));
         }
+        // A module's namespace (ADR 1037).
+        if super::classes::is_namespace(self.tcx, adt_def.did()) {
+            return self
+                .namespace_value(adt_def.did())
+                .ok_or_else(|| self.unsupported(span, "a library's `#[rust_js::namespace]` as a value"));
+        }
         if variant.ctor_kind() == Some(CtorKind::Const) {
             return Ok(bindings::unit_name(self.tcx, adt_def.did()).map_or_else(Expr::undefined, Expr::str));
         }

@@ -4,26 +4,31 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "repeat-uncloned",
-    breaks: "`repeat(vec![0])` gives the one `Vec` each time, where Rust clones it",
+    breaks:
+      "`repeat(vec![0])` gives the one `Vec` each time, where Rust clones it",
     file: "src/lower/iterators/ends.rs",
-    find: "                let clone = match self.needs_clone(item) {\n                    true => Some(self.clone_fn(\"value\", item, span)?),\n",
-    replace: "                let clone = match self.needs_clone(item) {\n                    true => None,\n",
-    tests: ["test/corpus.test.ts","-t","iterator_sources"],
+    find: '                let clone = match self.needs_clone(item) {\n                    true => Some(self.clone_fn("value", item, span)?),\n',
+    replace:
+      "                let clone = match self.needs_clone(item) {\n                    true => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "iterator_sources"],
   },
   {
     name: "successors-unboxed",
-    breaks: "a generic `successors` gives its boxed `Some`s, not what's in them",
+    breaks:
+      "a generic `successors` gives its boxed `Some`s, not what's in them",
     file: "src/lower/iterators/ends.rs",
     find: "                let boxed = self.boxed_payload(item);\n                let mut list: Vec<Expr>",
-    replace: "                let boxed = self.boxed_payload(item) && false;\n                let mut list: Vec<Expr>",
-    tests: ["test/corpus.test.ts","-t","iterator_sources"],
+    replace:
+      "                let boxed = self.boxed_payload(item) && false;\n                let mut list: Vec<Expr>",
+    tests: ["test/corpus.test.ts", "-t", "iterator_sources"],
   },
   {
     name: "boxed-last-unboxed",
     breaks: "`last()` of `()`s is `undefined`, and reads as `None`",
     file: "src/lower/iterators/ends.rs",
     find: "            Some(item) if self.boxed_payload(item) => {\n                let items = if items.reads_same() {",
-    replace: "            Some(item) if false && self.boxed_payload(item) => {\n                let items = if items.reads_same() {",
+    replace:
+      "            Some(item) if false && self.boxed_payload(item) => {\n                let items = if items.reads_same() {",
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
   },
   {
@@ -31,44 +36,60 @@ export const mutations: Mutation[] = [
     breaks: "`sort()` of strings is JS's, by UTF-16 units",
     file: "src/lower/iterators/ends.rs",
     find: "                } else if elem.is_bool() {",
-    replace: "                } else if elem.is_bool() || self.is_string_like(elem) {",
+    replace:
+      "                } else if elem.is_bool() || self.is_string_like(elem) {",
     tests: ["test/corpus.test.ts", "-t", "code_point_order"],
   },
   {
     name: "last-is-first",
-    breaks: "`path.split(\"/\").last()` is the first piece, `.at(0)`, not the last",
+    breaks:
+      '`path.split("/").last()` is the first piece, `.at(0)`, not the last',
     file: "src/lower/iterators/ends.rs",
-    find: "            _ => Expr::call(Expr::member(items, \"at\"), vec![Expr::int(-1)]),",
-    replace: "            _ => Expr::call(Expr::member(items, \"at\"), vec![Expr::int(0)]),",
-    tests: ["test/compiler.test.ts", "-t", "string methods are JS's, and format! is a template literal"],
+    find: '            _ => Expr::call(Expr::member(items, "at"), vec![Expr::int(-1)]),',
+    replace:
+      '            _ => Expr::call(Expr::member(items, "at"), vec![Expr::int(0)]),',
+    tests: [
+      "test/compiler.test.ts",
+      "-t",
+      "string methods are JS's, and format! is a template literal",
+    ],
   },
   {
     name: "repeat-drop-ungiven",
-    breaks: "`repeat`'s value is never dropped, as its iterator isn't given its drop",
+    breaks:
+      "`repeat`'s value is never dropped, as its iterator isn't given its drop",
     file: "src/lower/iterators/ends.rs",
     find: "                Expr::call(Expr::helper(name), Expr::optional_args(list, vec![clone, drop]))\n",
-    replace: "                Expr::call(Expr::helper(name), Expr::optional_args(list, vec![clone]))\n",
-    tests: ["test/corpus.test.ts", "-t", "^(repeat_drops|repeat_n_and_peek_mut).rs$"],
+    replace:
+      "                Expr::call(Expr::helper(name), Expr::optional_args(list, vec![clone]))\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(repeat_drops|repeat_n_and_peek_mut).rs$",
+    ],
   },
   {
     name: "extreme-by-unboxed",
-    breaks: "`max()` of items that may look like `None` isn't boxed, so the greatest `None` is no item",
+    breaks:
+      "`max()` of items that may look like `None` isn't boxed, so the greatest `None` is no item",
     file: "src/lower/iterators/ends.rs",
     find: "        let boxed = self.boxed_payload(item);\n        let drop = self.std_drop_function(item, span)?;\n",
-    replace: "        let boxed = false;\n        let drop = self.std_drop_function(item, span)?;\n",
+    replace:
+      "        let boxed = false;\n        let drop = self.std_drop_function(item, span)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
   },
   {
     name: "repeat-n-is-repeat",
     breaks: "`repeat_n` is `repeat`'s, given its count as its clone",
     file: "src/lower/iterators/ends.rs",
-    find: "                    _ => \"$repeatingN\",\n",
-    replace: "                    _ => \"$repeating\",\n",
+    find: '                    _ => "$repeatingN",\n',
+    replace: '                    _ => "$repeating",\n',
     tests: ["test/corpus.test.ts", "-t", "^repeat_n_and_peek_mut.rs$"],
   },
   {
     name: "successors-drop-not-given",
-    breaks: "`successors` of a value with a destructor isn't given its item's drop, so what it holds is never dropped",
+    breaks:
+      "`successors` of a value with a destructor isn't given its item's drop, so what it holds is never dropped",
     file: "src/lower/iterators/ends.rs",
     find: "                        self.drop_function(item, span)?\n",
     replace: "                        None\n",
@@ -76,15 +97,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "nullable-sort-by-js",
-    breaks: "a sort of items that can be `None` is JS's own `sort`, which puts each `undefined` last without asking the comparator, where `None` is first",
+    breaks:
+      "a sort of items that can be `None` is JS's own `sort`, which puts each `undefined` last without asking the comparator, where `None` is first",
     file: "src/lower/iterators/ends.rs",
-    find: "            true => Expr::call(Expr::helper(\"$sort\"), vec![items, compare]),\n",
-    replace: "            true => Expr::call(Expr::member(items, \"sort\"), vec![compare]),\n",
+    find: '            true => Expr::call(Expr::helper("$sort"), vec![items, compare]),\n',
+    replace:
+      '            true => Expr::call(Expr::member(items, "sort"), vec![compare]),\n',
     tests: ["test/corpus.test.ts", "-t", "^option_sort.rs$"],
   },
   {
     name: "zip-function-side-as-given",
-    breaks: "`std::iter::zip`'s second side is given as it is, so a range's `{ start, end }` or an `Option`'s value is zipped, not their items",
+    breaks:
+      "`std::iter::zip`'s second side is given as it is, so a range's `{ start, end }` or an `Option`'s value is zipped, not their items",
     file: "src/lower/iterators/ends.rs",
     find: "                let b = self.iterable_items(b, tys[1], span, out)?;\n",
     replace: "",
@@ -92,7 +116,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "discarded-throw-keeps-item",
-    breaks: "a `filter`, `take_while` or `skip_while` whose predicate panics leaves the item it was asked of undropped (#423)",
+    breaks:
+      "a `filter`, `take_while` or `skip_while` whose predicate panics leaves the item it was asked of undropped (#423)",
     file: "src/lower/iterators/ends.rs",
     find: "        if throws {\n            let answer =",
     replace: "        if false {\n            let answer =",

@@ -4,74 +4,121 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "at-load-own-const-reached",
-    breaks: "a `const` an initializer reads itself, which it reads as its value, makes it run another module of a cycle, so `load_cycle_values`' `pub` `COUNT` of `Cell::new(LIMIT)` is refused",
+    breaks:
+      "a `const` an initializer reads itself, which it reads as its value, makes it run another module of a cycle, so `load_cycle_values`' `pub` `COUNT` of `Cell::new(LIMIT)` is refused",
     file: "src/lower/analysis/lazy_locals.rs",
     find: "            if id == init\n                && !made_of.contains_key(&read)\n",
-    replace: "            if false\n                && !made_of.contains_key(&read)\n",
+    replace:
+      "            if false\n                && !made_of.contains_key(&read)\n",
     tests: ["test/corpus.test.ts", "-t", "^load_cycle_values.rs$"],
   },
   {
     name: "at-load-key-read-as-const",
-    breaks: "a thread-local's key an initializer reads, a `const` of std's macro, is taken for a `const` read as its value, so what that thread-local's initializer runs isn't followed: `pub N` of `M.with(..)`, whose `M` reads `N`, isn't refused",
+    breaks:
+      "a thread-local's key an initializer reads, a `const` of std's macro, is taken for a `const` read as its value, so what that thread-local's initializer runs isn't followed: `pub N` of `M.with(..)`, whose `M` reads `N`, isn't refused",
     file: "src/lower/analysis/lazy_locals.rs",
     find: "                && !made_of.contains_key(&read)\n",
     replace: "\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a pub thread-local that reads itself"],
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "a pub thread-local that reads itself",
+    ],
   },
   {
     name: "at-load-binding-runs-nothing-followed",
-    breaks: "a binding that runs nothing, React's `memo`, is taken to run what it's given, a `dyn Fn` rust-js can't follow, so `memo(Badge, Some(..))` is made where it's first used, which JSX can't name",
+    breaks:
+      "a binding that runs nothing, React's `memo`, is taken to run what it's given, a `dyn Fn` rust-js can't follow, so `memo(Badge, Some(..))` is made where it's first used, which JSX can't name",
     file: "src/lower/analysis/lazy_locals.rs",
     find: "            if super::cell_borrows::call_runs_nothing(tcx, callee) {\n                return true;\n            }\n",
-    replace: "            if false {\n                return true;\n            }\n",
-    tests: ["test/react.test.ts", "-t", "React components are hand-written JSX"],
+    replace:
+      "            if false {\n                return true;\n            }\n",
+    tests: [
+      "test/react.test.ts",
+      "-t",
+      "React components are hand-written JSX",
+    ],
   },
   {
     name: "exported-local-reads-unfollowed",
-    breaks: "what a thread-local a `pub` one reads runs as it's made there isn't asked, so one reading itself through it compiles, and throws reading itself before it's made (ADR 0037, amended)",
+    breaks:
+      "what a thread-local a `pub` one reads runs as it's made there isn't asked, so one reading itself through it compiles, and throws reading itself before it's made (ADR 0037, amended)",
     file: "src/lower/analysis/lazy_locals.rs",
     find: "            if let Some(&made) = made_of.get(&read) {\n",
-    replace: "            if let Some(&made) = made_of.get(&read).filter(|_| false) {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a pub thread-local that reads itself through another's initializer"],
+    replace:
+      "            if let Some(&made) = made_of.get(&read).filter(|_| false) {\n",
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "a pub thread-local that reads itself through another's initializer",
+    ],
   },
   {
     name: "exported-local-callee-unfollowed",
-    breaks: "what a `pub` thread-local's initializer calls of the crate's isn't asked, so one that runs a module in an import cycle with its own compiles, and reads what isn't made yet (ADR 0037, amended)",
+    breaks:
+      "what a `pub` thread-local's initializer calls of the crate's isn't asked, so one that runs a module in an import cycle with its own compiles, and reads what isn't made yet (ADR 0037, amended)",
     file: "src/lower/analysis/lazy_locals.rs",
     find: "                                    ty::InstanceKind::Item(f) if bodies.contains_key(&f) => {\n                                        work.push((f, instance.args));\n",
-    replace: "                                    ty::InstanceKind::Item(f) if bodies.contains_key(&f) => {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a pub thread-local of a module in an import cycle"],
+    replace:
+      "                                    ty::InstanceKind::Item(f) if bodies.contains_key(&f) => {\n",
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "a pub thread-local of a module in an import cycle",
+    ],
   },
   {
     name: "exported-local-std-given-unfollowed",
-    breaks: "a closure a `pub` thread-local's initializer gives std isn't asked, so one that runs a module in an import cycle with its own compiles (ADR 0037, amended)",
+    breaks:
+      "a closure a `pub` thread-local's initializer gives std isn't asked, so one that runs a module in an import cycle with its own compiles (ADR 0037, amended)",
     file: "src/lower/analysis/lazy_locals.rs",
     find: "                            .map(|(f, f_args)| (f, f_args.unwrap_or_else(|| identity(f)))),\n",
-    replace: "                            .map(|(f, f_args)| (f, f_args.unwrap_or_else(|| identity(f))))\n                            .filter(|_| false),\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a pub thread-local of a module in an import cycle"],
+    replace:
+      "                            .map(|(f, f_args)| (f, f_args.unwrap_or_else(|| identity(f))))\n                            .filter(|_| false),\n",
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "a pub thread-local of a module in an import cycle",
+    ],
   },
   {
     name: "exported-local-dyn-fn-followed",
-    breaks: "a `dyn Fn`'s call in a `pub` thread-local's initializer is taken to run none of the crate's code, which may be a module's not loaded yet (ADR 0037, amended)",
+    breaks:
+      "a `dyn Fn`'s call in a `pub` thread-local's initializer is taken to run none of the crate's code, which may be a module's not loaded yet (ADR 0037, amended)",
     file: "src/lower/analysis/lazy_locals.rs",
     find: "            if tcx.fn_trait_kind_from_def_id(trait_id).is_some() {\n                return false;\n            }\n            for &imp in impls.of_trait",
-    replace: "            if tcx.fn_trait_kind_from_def_id(trait_id).is_some() {\n                return true;\n            }\n            for &imp in impls.of_trait",
-    tests: ["test/diagnostics.test.ts", "-t", "a pub thread-local of a dyn Fn's call"],
+    replace:
+      "            if tcx.fn_trait_kind_from_def_id(trait_id).is_some() {\n                return true;\n            }\n            for &imp in impls.of_trait",
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "a pub thread-local of a dyn Fn's call",
+    ],
   },
   {
     name: "type-argument-dyn-followed",
-    breaks: "a `dyn Fn` a binding's call names only as a type argument, `js::class::<WeakMap<dyn Fn() -> .., String>>()`, is taken for one it may call, so React's componentFrameCache is `$local(() => ..)` and each read a call (rd281)",
+    breaks:
+      "a `dyn Fn` a binding's call names only as a type argument, `js::class::<WeakMap<dyn Fn() -> .., String>>()`, is taken for one it may call, so React's componentFrameCache is `$local(() => ..)` and each read a call (rd281)",
     file: "src/lower/analysis/lazy_locals.rs",
     find: "                .filter(|part| matches!(part.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..)))\n",
     replace: "",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "dyn Fn only as a type argument"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "dyn Fn only as a type argument",
+    ],
   },
   {
     name: "fn-item-arguments-walked",
-    breaks: "a function item's type arguments, `js::weak_map::new::<dyn Fn() -> .., String>` given to `call_static`, are taken for values it holds, so a `dyn Fn` among them makes the thread-local `$local` (rd281)",
+    breaks:
+      "a function item's type arguments, `js::weak_map::new::<dyn Fn() -> .., String>` given to `call_static`, are taken for values it holds, so a `dyn Fn` among them makes the thread-local `$local` (rd281)",
     file: "src/lower/analysis/lazy_locals.rs",
     find: "                walker.skip_current_subtree();\n",
     replace: "",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "dyn Fn only as a type argument"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "dyn Fn only as a type argument",
+    ],
   },
 ];

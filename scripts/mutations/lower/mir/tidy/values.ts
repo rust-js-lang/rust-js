@@ -4,139 +4,208 @@ import type { Mutation } from "../../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "field-path-not-of-this",
-    breaks: "no path is read through `this`, so a class's method's read of its own `bool` field isn't known a `bool`: `!!this.open || this.below(x)`",
+    breaks:
+      "no path is read through `this`, so a class's method's read of its own `bool` field isn't known a `bool`: `!!this.open || this.below(x)`",
     file: "src/lower/mir/tidy/values.rs",
-    find: "                ExprKind::This => \"this\".to_string(),\n",
+    find: '                ExprKind::This => "this".to_string(),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^class_bool_methods.rs$"],
     snapshots: true,
   },
   {
     name: "mir-tidy-plain-cell-escapes",
-    breaks: "a cell given whole, `bump(c)`, is a variable too, and what it's given reads `undefined`",
+    breaks:
+      "a cell given whole, `bump(c)`, is a variable too, and what it's given reads `undefined`",
     file: "src/lower/mir/tidy/values.rs",
     find: "    let plain: HashSet<&String> = (cells.iter()).filter(|c| reads.get(*c) == kept.get(*c)).collect();\n",
     replace: "    let plain: HashSet<&String> = cells.iter().collect();\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "only its function reads and sets"],
+    tests: [
+      "test/lowering-cells.test.ts",
+      "-t",
+      "only its function reads and sets",
+    ],
   },
   {
-    "name": "array-spread-of-array-kept",
-    "breaks": "`[...first, ...[a, b]]` keeps its spread of an array, not `[...first, a, b]`",
-    "file": "src/lower/mir/tidy/values.rs",
-    "find": "    if let ExprKind::Array(items) = &mut e.kind {",
-    "replace": "    if let ExprKind::Array(items) = &mut e.kind && false {",
-    "tests": ["test/lowering-collections.test.ts", "-t", "arrays joined are one array of their items"]
+    name: "array-spread-of-array-kept",
+    breaks:
+      "`[...first, ...[a, b]]` keeps its spread of an array, not `[...first, a, b]`",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "    if let ExprKind::Array(items) = &mut e.kind {",
+    replace: "    if let ExprKind::Array(items) = &mut e.kind && false {",
+    tests: [
+      "test/lowering-collections.test.ts",
+      "-t",
+      "arrays joined are one array of their items",
+    ],
   },
   {
-    "name": "array-values-kept-stepped",
-    "breaks": "an array's `$iter` an adapter alone steps stays `$iter(xs).filter(..)`, not `xs.values().filter(..)`",
-    "file": "src/lower/mir/tidy/values.rs",
-    "find": "        && crate::lower::iterators::is_stepped_items(it)\n        && let ExprKind::Call(_, args) = &mut it.kind\n",
-    "replace": "        && false\n        && let ExprKind::Call(_, args) = &mut it.kind\n",
-    "tests": ["test/lowering-iterators.test.ts", "-t", "an array's iterator for an adapter alone is its values"]
+    name: "array-values-kept-stepped",
+    breaks:
+      "an array's `$iter` an adapter alone steps stays `$iter(xs).filter(..)`, not `xs.values().filter(..)`",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "        && crate::lower::iterators::is_stepped_items(it)\n        && let ExprKind::Call(_, args) = &mut it.kind\n",
+    replace:
+      "        && false\n        && let ExprKind::Call(_, args) = &mut it.kind\n",
+    tests: [
+      "test/lowering-iterators.test.ts",
+      "-t",
+      "an array's iterator for an adapter alone is its values",
+    ],
   },
   {
-    "name": "named-callback-reads-base",
-    "breaks": "a closure reading what it would be named, `step` of `step$1`, is named it, reading itself",
-    "file": "src/lower/mir/tidy/values.rs",
-    "find": "            !reads\n",
-    "replace": "            true\n",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    name: "named-callback-reads-base",
+    breaks:
+      "a closure reading what it would be named, `step` of `step$1`, is named it, reading itself",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "            !reads\n",
+    replace: "            true\n",
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
-    "name": "mir-enumerate-mapped",
-    "breaks": "`iter().enumerate()` of a slice from MIR is `xs.values().map((x, i) => [i, x])`, not `xs.entries()`",
-    "file": "src/lower/mir/tidy/values.rs",
-    "find": "        && pairs_index(pair)\n",
-    "replace": "        && false\n",
-    "tests": ["test/lowering-loops.test.ts", "-t", "nested loops from MIR read as written"]
+    name: "mir-enumerate-mapped",
+    breaks:
+      "`iter().enumerate()` of a slice from MIR is `xs.values().map((x, i) => [i, x])`, not `xs.entries()`",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "        && pairs_index(pair)\n",
+    replace: "        && false\n",
+    tests: [
+      "test/lowering-loops.test.ts",
+      "-t",
+      "nested loops from MIR read as written",
+    ],
   },
   {
-    "name": "mir-rest-str-of-fresh",
-    "breaks": "`w.chars().as_str()` from MIR is `$restStr($iter(Array.from(w)))`, not `Array.from(w).join(\"\")`",
-    "file": "src/lower/mir/tidy/values.rs",
-    "find": "        && callee.helper_name() == Some(\"$restStr\")\n",
-    "replace": "        && false\n",
-    "tests": ["test/lowering-strings.test.ts", "-t", "the rest of a string's chars from MIR"]
+    name: "mir-rest-str-of-fresh",
+    breaks:
+      '`w.chars().as_str()` from MIR is `$restStr($iter(Array.from(w)))`, not `Array.from(w).join("")`',
+    file: "src/lower/mir/tidy/values.rs",
+    find: '        && callee.helper_name() == Some("$restStr")\n',
+    replace: "        && false\n",
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "the rest of a string's chars from MIR",
+    ],
   },
   {
-    "name": "mir-capital-chars-joined",
-    "breaks": "`c.to_uppercase().collect::<String>()` from MIR is `Array.from(c.toUpperCase()).join(\"\")`",
-    "file": "src/lower/mir/tidy/values.rs",
-    "find": "        && chars.facts.has(crate::js::Known::Chars)\n",
-    "replace": "        && false\n",
-    "tests": ["test/lowering-iterators.test.ts", "-t", "iterator chains from MIR are array methods"]
+    name: "mir-capital-chars-joined",
+    breaks:
+      '`c.to_uppercase().collect::<String>()` from MIR is `Array.from(c.toUpperCase()).join("")`',
+    file: "src/lower/mir/tidy/values.rs",
+    find: "        && chars.facts.has(crate::js::Known::Chars)\n",
+    replace: "        && false\n",
+    tests: [
+      "test/lowering-iterators.test.ts",
+      "-t",
+      "iterator chains from MIR are array methods",
+    ],
   },
   {
     name: "mir-tidy-plain-cell-shadowed",
-    breaks: "a cell a callback's parameter shadows is made plain, `(item) => item.value` read as `item`",
+    breaks:
+      "a cell a callback's parameter shadows is made plain, `(item) => item.value` read as `item`",
     file: "src/lower/mir/tidy/values.rs",
     find: "    cells.retain(|c| bound.get(c).copied().unwrap_or(0) <= 1);\n",
     replace: "",
-    tests: ["test/lowering-cells.test.ts", "-t", "callback's parameter shadows"],
+    tests: [
+      "test/lowering-cells.test.ts",
+      "-t",
+      "callback's parameter shadows",
+    ],
   },
   {
     name: "mir-tidy-plain-cells-not-in-closures",
     breaks: "MIR's cell cloned in a closure stays a `{ value }`",
     file: "src/lower/mir/tidy/values.rs",
     find: "    let mut clones: HashMap<String, String> = HashMap::new();\n    js::each_block_mut(&mut body.clone(), &mut |stmts| {\n",
-    replace: "    let mut clones: HashMap<String, String> = HashMap::new();\n    js::statement_lists(&mut body.clone(), &mut |stmts| {\n",
+    replace:
+      "    let mut clones: HashMap<String, String> = HashMap::new();\n    js::statement_lists(&mut body.clone(), &mut |stmts| {\n",
     tests: ["test/lowering-cells.test.ts", "-t", "a cell cloned in a closure"],
   },
   {
     name: "mir-tidy-handle-read-early",
-    breaks: "MIR's handle on a `Cell` field is read where it's made, though set before it's read",
+    breaks:
+      "MIR's handle on a `Cell` field is read where it's made, though set before it's read",
     file: "src/lower/mir/tidy/values.rs",
     find: "                handles.push((name.clone(), (**place).clone(), read_at_once(stmts, k, name), *storage));\n",
-    replace: "                handles.push((name.clone(), (**place).clone(), true, *storage));\n",
+    replace:
+      "                handles.push((name.clone(), (**place).clone(), true, *storage));\n",
     tests: ["test/lowering-cells.test.ts", "-t", "a Cell a let takes apart"],
   },
   {
-    "name": "lazy-flatmap-stepped",
-    "breaks": "a lazy flatten of arrays keeps `$iter(item)`",
-    "file": "src/lower/mir/tidy/values.rs",
-    "find": "        *each = Expr::var(param);\n",
-    "replace": "",
-    "tests": ["test/lowering-collections.test.ts", "-t", "arrays of arrays flattened"]
+    name: "lazy-flatmap-stepped",
+    breaks: "a lazy flatten of arrays keeps `$iter(item)`",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "        *each = Expr::var(param);\n",
+    replace: "",
+    tests: [
+      "test/lowering-collections.test.ts",
+      "-t",
+      "arrays of arrays flattened",
+    ],
   },
   {
     name: "applied-assignment-unseen",
-    breaks: "`out += `${((r) => ..)(f())}``, an assignment's value, keeps its function called in place",
+    breaks:
+      "`out += `${((r) => ..)(f())}``, an assignment's value, keeps its function called in place",
     file: "src/lower/mir/tidy/values.rs",
     find: "            StmtKind::Assign(target, e) | StmtKind::Compound(_, target, e) => {\n",
-    replace: "            StmtKind::Assign(target, e) | StmtKind::Compound(_, target, e) if false => {\n",
+    replace:
+      "            StmtKind::Assign(target, e) | StmtKind::Compound(_, target, e) if false => {\n",
     tests: ["test/snapshots.test.ts", "-t", "calc"],
     snapshots: true,
   },
   {
     name: "applied-arrow-kept",
-    breaks: "a closure read in place is called where it's made, `((e) => e.data)(r._0)`, not its value",
+    breaks:
+      "a closure read in place is called where it's made, `((e) => e.data)(r._0)`, not its value",
     file: "src/lower/mir/tidy/values.rs",
     find: "        *e = Expr {\n            span: e.span,\n            ..applied\n        };\n",
     replace: "        let _ = applied;\n",
-    tests: ["test/corpus.test.ts", "-t", "^(poison_error|is_sorted_items|option_combinator_drops).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(poison_error|is_sorted_items|option_combinator_drops).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "rest-str-case-mapping-unjoined",
-    breaks: "`{}` of `c.to_uppercase()` is `Array.from(c.toUpperCase()).join(\"\")`, not `c.toUpperCase()`",
+    breaks:
+      '`{}` of `c.to_uppercase()` is `Array.from(c.toUpperCase()).join("")`, not `c.toUpperCase()`',
     file: "src/lower/mir/tidy/values.rs",
-    find: "            ..Expr::call(Expr::member(items.clone(), \"join\"), vec![Expr::str(\"\")])\n        };\n    }\n",
-    replace: "            ..Expr::call(Expr::member(items.clone(), \"join\"), vec![Expr::str(\"\")])\n        };\n        return;\n    }\n",
+    find: '            ..Expr::call(Expr::member(items.clone(), "join"), vec![Expr::str("")])\n        };\n    }\n',
+    replace:
+      '            ..Expr::call(Expr::member(items.clone(), "join"), vec![Expr::str("")])\n        };\n        return;\n    }\n',
     tests: ["test/corpus.test.ts", "-t", "^writer_callables.rs$"],
     snapshots: true,
   },
   {
     name: "holed-lists-of-other-reads",
-    breaks: "a list with holes read whole, or by another index, is its one item all the same",
+    breaks:
+      "a list with holes read whole, or by another index, is its one item all the same",
     file: "src/lower/mir/tidy/values.rs",
     find: "        if js::mentions_in(&rest, &name) != usize::from(assigned)\n            || js::mentions_in(body, &name) == usize::from(assigned)\n        {\n",
-    replace: "        if js::mentions_in(body, &name) == usize::from(assigned) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(drop_functions|std_odds|associated_type_drops|and_value_drops).rs$"],
+    replace:
+      "        if js::mentions_in(body, &name) == usize::from(assigned) {\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(drop_functions|std_odds|associated_type_drops|and_value_drops).rs$",
+    ],
   },
   {
     name: "checked-set-failure-dropped",
-    breaks: "a check and a set merged, `xs[$at(xs, i)] = v`, lose the `VecDeque`'s message the check had",
+    breaks:
+      "a check and a set merged, `xs[$at(xs, i)] = v`, lose the `VecDeque`'s message the check had",
     file: "src/lower/mir/tidy/values.rs",
     find: "            let at = [vec![items.clone(), index.clone()], failure.to_vec()].concat();",
     replace: "            let at = vec![items.clone(), index.clone()];",
@@ -144,7 +213,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "read-handle-written-at-once",
-    breaks: "a handle written through in a closure, `r.set(5)` of `let r = &context.value`, is read where it's made, `const r = context.value; .. r = 5`",
+    breaks:
+      "a handle written through in a closure, `r.set(5)` of `let r = &context.value`, is read where it's made, `const r = context.value; .. r = 5`",
     file: "src/lower/mir/tidy/values.rs",
     find: "        *at_once &= !changed.contains(name);\n",
     replace: "",
@@ -152,71 +222,104 @@ export const mutations: Mutation[] = [
   },
   {
     name: "read-handle-write-unstored",
-    breaks: "a nullable field's `Cell` set in a closure through a variable writes `undefined`, the handle's storage left out",
+    breaks:
+      "a nullable field's `Cell` set in a closure through a variable writes `undefined`, the handle's storage left out",
     file: "src/lower/mir/tidy/values.rs",
     find: "                    *value = storage.written(std::mem::replace(value, Expr::undefined()), false);\n",
     replace: "                    let _ = storage;\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "through a reference and a helper"],
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "through a reference and a helper",
+    ],
   },
   {
     name: "nulled-kept-coalesced",
-    breaks: "a variable that holds a nullable field's value is stored `x ?? null`",
+    breaks:
+      "a variable that holds a nullable field's value is stored `x ?? null`",
     file: "src/lower/mir/tidy/values.rs",
     find: "            *e = (**made).clone().or_at(span);\n",
     replace: "            let _ = (made, span);\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "a nullable field's value a variable holds"],
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "a nullable field's value a variable holds",
+    ],
   },
   {
     name: "tested-defined-still-nulled",
-    breaks: "`x !== undefined ? x ?? null : null` keeps its `?? null`, of a value the test shows defined (ADR 0620, amended)",
+    breaks:
+      "`x !== undefined ? x ?? null : null` keeps its `?? null`, of a value the test shows defined (ADR 0620, amended)",
     file: "src/lower/mir/tidy/values.rs",
     find: "        Op::Ne => matches!(other.kind, ExprKind::Undefined | ExprKind::GivenUndefined),\n",
     replace: "        Op::Ne => false,\n",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "an if of returns the program wrote stays an if"],
+    tests: [
+      "test/lowering-written-branches.test.ts",
+      "-t",
+      "an if of returns the program wrote stays an if",
+    ],
   },
   {
     name: "tested-defined-where-it-isnt",
-    breaks: "`x === undefined` is taken to show `x` defined, its `?? null` dropped where it's `undefined`",
+    breaks:
+      "`x === undefined` is taken to show `x` defined, its `?? null` dropped where it's `undefined`",
     file: "src/lower/mir/tidy/values.rs",
     find: "    defined.then(|| var.clone())\n",
-    replace: "    Some(var.clone()).filter(|_| defined || matches!(op, Op::Eq))\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "a nullable result tested equal to a None given is null"],
+    replace:
+      "    Some(var.clone()).filter(|_| defined || matches!(op, Op::Eq))\n",
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "a nullable result tested equal to a None given is null",
+    ],
   },
   {
     name: "tested-defined-if-still-nulled",
-    breaks: "`if (x !== undefined) { return x ?? null; }` keeps its `?? null`, of a value its test shows defined (ADR 0620, amended)",
+    breaks:
+      "`if (x !== undefined) { return x ?? null; }` keeps its `?? null`, of a value its test shows defined (ADR 0620, amended)",
     file: "src/lower/mir/tidy/values.rs",
     find: "                js::each_expr_mut(then, &mut |e| unnulled(e, &x));\n",
     replace: "                let _ = (&then, &x);\n",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "an if of returns the program wrote stays an if"],
+    tests: [
+      "test/lowering-written-branches.test.ts",
+      "-t",
+      "an if of returns the program wrote stays an if",
+    ],
   },
   {
     name: "read-handle-this-rooted-kept",
-    breaks: "a `&Cell` handle on a field of `this` read later is kept, not its place, `const reads = { get value() { .. } }` (#359)",
+    breaks:
+      "a `&Cell` handle on a field of `this` read later is kept, not its place, `const reads = { get value() { .. } }` (#359)",
     file: "src/lower/mir/tidy/values.rs",
     find: "        js::mentions_in(&rest, name) == 0 && (*at_once || matches!(root.kind, ExprKind::Var(_) | ExprKind::This))\n",
-    replace: "        js::mentions_in(&rest, name) == 0 && (*at_once || matches!(root.kind, ExprKind::Var(_)))\n",
+    replace:
+      "        js::mentions_in(&rest, name) == 0 && (*at_once || matches!(root.kind, ExprKind::Var(_)))\n",
     tests: ["test/classes.test.ts", "-t", "Cell fields"],
   },
   {
     name: "present-place-stored-coalesced",
-    breaks: "React's `nextHydratableInstance = fiber.stateNode` after `fiber.stateNode != null` is `?? null` again (ADR 0957)",
+    breaks:
+      "React's `nextHydratableInstance = fiber.stateNode` after `fiber.stateNode != null` is `?? null` again (ADR 0957)",
     file: "src/lower/mir/tidy/values.rs",
     find: "                && shown_present(test, made)\n",
-    replace: "                && shown_present(test, made)\n                && false\n",
+    replace:
+      "                && shown_present(test, made)\n                && false\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "test shows present"],
   },
   {
     name: "present-place-of-an-or",
-    breaks: "a part of an `||` taken as shown, `a || p != null` storing `p` as it is where `p` may be `undefined` (ADR 0957)",
+    breaks:
+      "a part of an `||` taken as shown, `a || p != null` storing `p` as it is where `p` may be `undefined` (ADR 0957)",
     file: "src/lower/mir/tidy/values.rs",
     find: "        ExprKind::Binary(Op::And, a, b) => shown_present(a, place) || shown_present(b, place),\n",
-    replace: "        ExprKind::Binary(Op::And | Op::Or, a, b) => shown_present(a, place) || shown_present(b, place),\n",
+    replace:
+      "        ExprKind::Binary(Op::And | Op::Or, a, b) => shown_present(a, place) || shown_present(b, place),\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "test shows present"],
   },
   {
     name: "lets-never-undefined-unread",
-    breaks: "React's `return parentFragmentInstances` of a `let` made `null` is `?? null` (ADR 0957, amended)",
+    breaks:
+      "React's `return parentFragmentInstances` of a `let` made `null` is `?? null` (ADR 0957, amended)",
     file: "src/lower/mir/tidy/values.rs",
     find: "    defined.extend(lets_never_undefined(body, &declared));\n",
     replace: "",
@@ -224,7 +327,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "lets-never-undefined-of-closures",
-    breaks: "a `let` a closure sets, maybe to `undefined`, is returned with no `?? null` (ADR 0957, amended)",
+    breaks:
+      "a `let` a closure sets, maybe to `undefined`, is returned with no `?? null` (ADR 0957, amended)",
     file: "src/lower/mir/tidy/values.rs",
     find: "        ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) => closed(inner),\n",
     replace: "",

@@ -4,7 +4,8 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "array-items-unmutated",
-    breaks: "an array of `Copy` structs changed in place isn't copied: a copy's item, and a closure's by-value one, change the array they came from",
+    breaks:
+      "an array of `Copy` structs changed in place isn't copied: a copy's item, and a closure's by-value one, change the array they came from",
     file: "src/lower/copies.rs",
     find: "                    ty::Array(item, _) => self.contains_mutated(*item),\n",
     replace: "",
@@ -12,7 +13,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "generic-instance-unmatched",
-    breaks: "a generic function's clone of `Holder<T>` shares it, though its caller changes the `Holder<Numbers>` in place",
+    breaks:
+      "a generic function's clone of `Holder<T>` shares it, though its caller changes the `Holder<Numbers>` in place",
     file: "src/lower/copies.rs",
     find: "        _ if recognition.is_unknown(general) || recognition.is_unknown(ty) => true,",
     replace: "        _ if recognition.is_unknown(general) => true,",
@@ -23,28 +25,42 @@ export const mutations: Mutation[] = [
     breaks: "a `Copy` value read from a place is that place, not a copy",
     file: "src/lower/copies.rs",
     find: "        if self.contains_mutated(ty) && self.is_copy(ty) {",
-    replace: "        if false && self.contains_mutated(ty) && self.is_copy(ty) {",
+    replace:
+      "        if false && self.contains_mutated(ty) && self.is_copy(ty) {",
     tests: ["test/corpus.test.ts", "-t", "copy_mutation"],
   },
   {
     name: "library-type-shared",
-    breaks: "a library's type is read without a copy by a crate that never changes it itself, so the copy it kept of a `Shape` its holder has is the object the library then grows in place",
+    breaks:
+      "a library's type is read without a copy by a crate that never changes it itself, so the copy it kept of a `Shape` its holder has is the object the library then grows in place",
     file: "src/lower/copies.rs",
     find: "                self.krate.foreign.in_library(adt.did())\n                    || (self.krate.compiled_once",
-    replace: "                false\n                    || (self.krate.compiled_once",
-    tests: ["test/crates.test.ts", "-t", "two crates: copy_enum_library_changed"],
+    replace:
+      "                false\n                    || (self.krate.compiled_once",
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "two crates: copy_enum_library_changed",
+    ],
   },
   {
     name: "library-vec-shared",
-    breaks: "a crate using a library clones a `Vec` without a copy, which the library changes through its own method",
+    breaks:
+      "a crate using a library clones a `Vec` without a copy, which the library changes through its own method",
     file: "src/lower/copies.rs",
     find: "        (self.krate.compiled_once || self.krate.foreign.any())\n",
     replace: "        (self.krate.compiled_once && self.krate.foreign.any())\n",
-    tests: ["test/crates.test.ts", "test/cargo-workspace.test.ts", "-t", "prints what native"],
+    tests: [
+      "test/crates.test.ts",
+      "test/cargo-workspace.test.ts",
+      "-t",
+      "prints what native",
+    ],
   },
   {
     name: "library-tuple-shared",
-    breaks: "a crate's copy of a tuple, which a library changes through a `&mut`, is the tuple, so both change",
+    breaks:
+      "a crate's copy of a tuple, which a library changes through a `&mut`, is the tuple, so both change",
     file: "src/lower/copies.rs",
     find: "            ty::Tuple(_) | ty::Array(..) => self.krate.compiled_once || self.krate.foreign.any(),\n",
     replace: "            ty::Tuple(_) | ty::Array(..) => false,\n",
@@ -55,20 +71,24 @@ export const mutations: Mutation[] = [
     breaks: "a copy of a library's `Copy` enum with fields is the same object",
     file: "src/lower/copies.rs",
     find: "            && (adt.did().is_local() || self.krate.foreign.in_library(adt.did()) || self.is_std_type(ty, StdItem::Result)))\n",
-    replace: "            && (adt.did().is_local() || self.is_std_type(ty, StdItem::Result)))\n",
+    replace:
+      "            && (adt.did().is_local() || self.is_std_type(ty, StdItem::Result)))\n",
     tests: ["test/crates.test.ts", "-t", "two crates: copy_enum"],
   },
   {
     name: "functions-can-change",
-    breaks: "a static of a function, a closure or a `dyn` is taken to change in place, and refused",
+    breaks:
+      "a static of a function, a closure or a `dyn` is taken to change in place, and refused",
     file: "src/lower/copies.rs",
     find: "            ty::FnPtr(..) | ty::FnDef(..) | ty::Closure(..) | ty::Dynamic(..) => true,",
-    replace: "            ty::FnPtr(..) | ty::FnDef(..) | ty::Closure(..) | ty::Dynamic(..) => false,",
+    replace:
+      "            ty::FnPtr(..) | ty::FnDef(..) | ty::Closure(..) | ty::Dynamic(..) => false,",
     tests: ["test/corpus.test.ts", "-t", "static_fns"],
   },
   {
     name: "copy-into-box",
-    breaks: "a copy of an `Option<Option<[i32; 2]>>` that's `Some(None)` copies the box as an array",
+    breaks:
+      "a copy of an `Option<Option<[i32; 2]>>` that's `Some(None)` copies the box as an array",
     file: "src/lower/copies.rs",
     find: "                    let boxed = item != inner;",
     replace: "                    let boxed = false;",
@@ -77,24 +97,32 @@ export const mutations: Mutation[] = [
   },
   {
     name: "crossing-mixed-enum-not-copied",
-    breaks: "an enum with a fieldless variant another crate may change isn't copied where it's read, so the library's change in place of what holds one shows in the copy its consumer kept",
+    breaks:
+      "an enum with a fieldless variant another crate may change isn't copied where it's read, so the library's change in place of what holds one shows in the copy its consumer kept",
     file: "src/lower/copies.rs",
     find: "        shared && self.may_be_object(ty)",
     replace: "        shared && self.is_object(ty)",
-    tests: ["test/crates.test.ts", "-t", "two crates: copy_enum_library_changed"],
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "two crates: copy_enum_library_changed",
+    ],
   },
   {
     name: "untagged-copy-shared",
-    breaks: "a copy of a `Copy` untagged enum is a tagged one's, `{ ...spot, _0: { ...spot._0 } }`, a payload it hasn't",
+    breaks:
+      "a copy of a `Copy` untagged enum is a tagged one's, `{ ...spot, _0: { ...spot._0 } }`, a payload it hasn't",
     file: "src/lower/copies.rs",
     find: "                if self.untagged(ty).is_some() {\n                    return once(place, &|e| {\n",
-    replace: "                if false {\n                    return once(place, &|e| {\n",
+    replace:
+      "                if false {\n                    return once(place, &|e| {\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_enums"],
     snapshots: true,
   },
   {
     name: "copy-js-object-unshared",
-    breaks: "a static holding react's `ElementType` is refused: `statics of type Variant`",
+    breaks:
+      "a static holding react's `ElementType` is refused: `statics of type Variant`",
     file: "src/lower/copies.rs",
     find: "                tcx.type_is_copy_modulo_regions(ty::TypingEnv::fully_monomorphized(), ty)\n",
     replace: "                false\n",
@@ -102,15 +130,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fn-param-copied",
-    breaks: "props holding an `F: Fn() + Copy` are kept whole, `param.next`, as if the function needed a copy of its own",
+    breaks:
+      "props holding an `F: Fn() + Copy` are kept whole, `param.next`, as if the function needed a copy of its own",
     file: "src/lower/copies.rs",
     find: "        if self.is_unknown(ty) && self.is_callable(ty) {\n            return self.krate.closure_facts.functions_clone_apart();",
-    replace: "        if false {\n            return self.krate.closure_facts.functions_clone_apart();",
+    replace:
+      "        if false {\n            return self.krate.closure_facts.functions_clone_apart();",
     tests: ["test/jsx-props.test.ts", "-t", "Fn type parameter"],
   },
   {
     name: "unchanging-closure-uncopied",
-    breaks: "a closure that changes nothing it captured is taken for one that does, and its copy rejected",
+    breaks:
+      "a closure that changes nothing it captured is taken for one that does, and its copy rejected",
     file: "src/lower/copies.rs",
     find: "matches!(ty.kind(), ty::Closure(_, args) if args.as_closure().kind() != ty::ClosureKind::Fn) && self.is_copy(ty)",
     replace: "matches!(ty.kind(), ty::Closure(..)) && self.is_copy(ty)",
@@ -118,11 +149,16 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mutated-type-any-instance",
-    breaks: "a type's arguments aren't compared: a mutated `Pair<u32>` makes every `Pair<..>` copied where it's read, `Pair<bool>` too, which nothing changes",
+    breaks:
+      "a type's arguments aren't compared: a mutated `Pair<u32>` makes every `Pair<..>` copied where it's read, `Pair<bool>` too, which nothing changes",
     file: "src/lower/copies.rs",
     find: "(Some(arg), Some(general)) => instance_of(recognition, arg, general),",
     replace: "(Some(_), Some(_)) => true,",
-    tests: ["test/lowering-functions.test.ts", "-t", "copies are made for the mutated instantiations of a generic type only"],
+    tests: [
+      "test/lowering-functions.test.ts",
+      "-t",
+      "copies are made for the mutated instantiations of a generic type only",
+    ],
   },
   {
     name: "maybe-uninit-unshareable",
@@ -130,27 +166,35 @@ export const mutations: Mutation[] = [
     file: "src/lower/copies.rs",
     find: "            ty::Adt(adt, args) if super::recognition::is_std_def(tcx, adt.did(), StdItem::MaybeUninit) => {",
     replace: "            ty::Adt(adt, args) if false => {",
-    tests: ["test/corpus.test.ts","-t","slice_uninit"],
+    tests: ["test/corpus.test.ts", "-t", "slice_uninit"],
   },
   {
     name: "string-unshareable",
-    breaks: "a `static` `String` is refused, as if something could change it in place",
+    breaks:
+      "a `static` `String` is refused, as if something could change it in place",
     file: "src/lower/copies.rs",
     find: "            ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::String) => true,\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","const_block_values"],
+    tests: ["test/corpus.test.ts", "-t", "const_block_values"],
   },
   {
-    "name": "local-key-unshared",
-    "breaks": "a constant holding a thread-local by reference, a memo component, is refused",
-    "file": "src/lower/copies.rs",
-    "find": "            ty::Adt(adt, _) if super::recognition::is_std_def(tcx, adt.did(), StdItem::LocalKey) => true,",
-    "replace": "            ty::Adt(adt, _) if super::recognition::is_std_def(tcx, adt.did(), StdItem::LocalKey) => false,",
-    "tests": ["test/jsx-evaluation-order.test.ts", "-t", "thread-local by reference as its variable"]
+    name: "local-key-unshared",
+    breaks:
+      "a constant holding a thread-local by reference, a memo component, is refused",
+    file: "src/lower/copies.rs",
+    find: "            ty::Adt(adt, _) if super::recognition::is_std_def(tcx, adt.did(), StdItem::LocalKey) => true,",
+    replace:
+      "            ty::Adt(adt, _) if super::recognition::is_std_def(tcx, adt.did(), StdItem::LocalKey) => false,",
+    tests: [
+      "test/jsx-evaluation-order.test.ts",
+      "-t",
+      "thread-local by reference as its variable",
+    ],
   },
   {
     name: "vec-const-use-shared",
-    breaks: "each use of a `Vec` constant is its one JS array, so changing one changes every other",
+    breaks:
+      "each use of a `Vec` constant is its one JS array, so changing one changes every other",
     file: "src/lower/copies.rs",
     find: "        self.contains_mutated(ty) || (!self.is_copy(ty) && !shareable(self.tcx, ty))\n",
     replace: "        self.contains_mutated(ty)\n",
@@ -158,10 +202,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "const-use-uncloned",
-    breaks: "a use of a `Vec` constant is copied as a `Copy` value is, which is the array itself",
+    breaks:
+      "a use of a `Vec` constant is copied as a `Copy` value is, which is the array itself",
     file: "src/lower/copies.rs",
     find: "        if self.is_copy(ty) {\n            return Ok(self.copy(place, ty));\n",
-    replace: "        if true {\n            return Ok(self.copy(place, ty));\n",
+    replace:
+      "        if true {\n            return Ok(self.copy(place, ty));\n",
     tests: ["test/corpus.test.ts", "-t", "^const_block_vec.rs$"],
   },
   {
@@ -169,12 +215,14 @@ export const mutations: Mutation[] = [
     breaks: "a union read where one of it may change is shared, not copied",
     file: "src/lower/copies.rs",
     find: "                if self.is_union(ty) {\n                    return once(place, &|u| self.union_copy(u, ty));\n",
-    replace: "                if false {\n                    return once(place, &|u| self.union_copy(u, ty));\n",
+    replace:
+      "                if false {\n                    return once(place, &|u| self.union_copy(u, ty));\n",
     tests: ["test/corpus.test.ts", "-t", "^unions.rs$"],
   },
   {
     name: "union-holding-mutated-unseen",
-    breaks: "a union holding what changes in place, unchanged itself, isn't copied",
+    breaks:
+      "a union holding what changes in place, unchanged itself, isn't copied",
     file: "src/lower/copies.rs",
     find: "                    ty::Adt(..) if self.is_union(ty) => self.union_holds_mutated(ty),\n",
     replace: "",
@@ -182,7 +230,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "type-id-static-unshared",
-    breaks: "a `static` of a `TypeId`, its type's key, a string, isn't shareable, and is refused",
+    breaks:
+      "a `static` of a `TypeId`, its type's key, a string, isn't shareable, and is refused",
     file: "src/lower/copies.rs",
     find: "            ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::TypeId) => true,\n",
     replace: "",
@@ -190,7 +239,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "raw-pointer-not-shareable",
-    breaks: "a static holding a raw pointer isn't made as its initializer says, and is refused",
+    breaks:
+      "a static holding a raw pointer isn't made as its initializer says, and is refused",
     file: "src/lower/copies.rs",
     find: "            _ if super::pointers::raw_pointee(tcx, ty).is_some() => true,\n",
     replace: "",
@@ -198,7 +248,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fresh-array-copied",
-    breaks: "an array made here, a literal or a `.slice(..)`, is copied as it's bound, `[1, 2].slice()`, where nothing else holds it",
+    breaks:
+      "an array made here, a literal or a `.slice(..)`, is copied as it's bound, `[1, 2].slice()`, where nothing else holds it",
     file: "src/lower/copies.rs",
     find: "        if fresh && items_plain {",
     replace: "        if false && fresh && items_plain {",
@@ -207,31 +258,44 @@ export const mutations: Mutation[] = [
   },
   {
     name: "copy-not-given-called",
-    breaks: "a copy a caller gives none of is called, and JS's `createContext(defaultValue)` throws on `TCopy.copy`",
+    breaks:
+      "a copy a caller gives none of is called, and JS's `createContext(defaultValue)` throws on `TCopy.copy`",
     file: "src/lower/copies.rs",
     find: "                Expr::cond(dictionary.clone(), copy, place)\n",
     replace: "                copy\n",
-    tests: ["test/crates.test.ts", "-t", "Copy bound takes a copy only where one is given"],
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "Copy bound takes a copy only where one is given",
+    ],
   },
   {
     name: "library-copies-for-consumers",
-    breaks: "a library copies its public `Copy` type where its consumer may change one, which its program doesn't, so its JS changes when another crate uses it (ADR 0914, amended)",
+    breaks:
+      "a library copies its public `Copy` type where its consumer may change one, which its program doesn't, so its JS changes when another crate uses it (ADR 0914, amended)",
     file: "src/lower/copies.rs",
     find: "                    || (self.krate.compiled_once && super::library::reachable(self.tcx, adt.did()))\n",
-    replace: "                    || (self.krate.library && super::library::reachable(self.tcx, adt.did()))\n",
+    replace:
+      "                    || (self.krate.library && super::library::reachable(self.tcx, adt.did()))\n",
     tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
     name: "borrowing-std-type-holds",
-    breaks: "a std type of a lifetime, a `Ref` of a `Vec` the consumer changes, is taken to hold one by value, and a consumer compiles the library's `add_type`, which it needn't (ADR 0914, amended)",
+    breaks:
+      "a std type of a lifetime, a `Ref` of a `Vec` the consumer changes, is taken to hold one by value, and a consumer compiles the library's `add_type`, which it needn't (ADR 0914, amended)",
     file: "src/lower/copies.rs",
     find: "                        && (args.regions().next().is_some()\n",
     replace: "                        && (false\n",
-    tests: ["test/crates.test.ts", "-t", "a library.s RefCells are the values they hold"],
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "a library.s RefCells are the values they hold",
+    ],
   },
   {
     name: "own-copy-option-tested",
-    breaks: "a copy of an `Option` of a value that's its own copy tests it, `value == null ? value : value` (ADR 0051, amended)",
+    breaks:
+      "a copy of an `Option` of a value that's its own copy tests it, `value == null ? value : value` (ADR 0051, amended)",
     file: "src/lower/copies.rs",
     find: "                    if !boxed && self.copy(probe.clone(), item).kind == probe.kind {\n",
     replace: "                    if false {\n",

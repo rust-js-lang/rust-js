@@ -1,22 +1,37 @@
 // Mutations of src/lower/literals.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
-const concat = ["test/lowering-strings.test.ts", "-t", "a concat! of literals is its pieces joined by"];
+const concat = [
+  "test/lowering-strings.test.ts",
+  "-t",
+  "a concat! of literals is its pieces joined by",
+];
 
-const format = ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"];
+const format = [
+  "test/lowering-strings.test.ts",
+  "-t",
+  "a format string of a concat! is its pieces joined by",
+];
 
 export const mutations: Mutation[] = [
   {
     name: "concat-piece-unplaced",
-    breaks: "a `concat!`'s pieces have no place, so a comment between them goes after the strings, or nowhere (ADR 0641)",
+    breaks:
+      "a `concat!`'s pieces have no place, so a comment between them goes after the strings, or nowhere (ADR 0641)",
     file: "src/lower/literals.rs",
     find: "            true => js::Span::NONE,\n            false => at(call\n",
-    replace: "            _ if true => js::Span::NONE,\n            _ => at(call\n",
-    tests: ["test/lowering-strings.test.ts", "-t", "a comment inside a concat!"],
+    replace:
+      "            _ if true => js::Span::NONE,\n            _ => at(call\n",
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "a comment inside a concat!",
+    ],
   },
   {
     name: "format-string-concat-unseen",
-    breaks: "a format string of a `concat!` is one template, as if its pieces weren't in the source",
+    breaks:
+      "a format string of a `concat!` is one template, as if its pieces weren't in the source",
     file: "src/lower/literals.rs",
     find: "                let mut pieces = concat_arguments(code, &tokens[i..=i + close])?;",
     replace: "                let mut pieces: Vec<StrPiece> = None?;",
@@ -24,15 +39,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "format-string-literal-unread",
-    breaks: "a format string's literal isn't read, so one written across lines is a template of `\\n`s",
+    breaks:
+      "a format string's literal isn't read, so one written across lines is a template of `\\n`s",
     file: "src/lower/literals.rs",
     find: "            } => return Some(vec![piece(kind, code)?]),",
     replace: "            } => return None,",
-    tests: ["test/lowering-strings.test.ts", "-t", "a format string written across lines"],
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "a format string written across lines",
+    ],
   },
   {
     name: "concat-println-newline-unread",
-    breaks: "a `println!` of a `concat!` of literals alone is one string, as its line break isn't in the pieces",
+    breaks:
+      "a `println!` of a `concat!` of literals alone is one string, as its line break isn't in the pieces",
     file: "src/lower/literals.rs",
     find: "        Some(line) if line == joined => pieces.last_mut()?.text.push('\\n'),\n",
     replace: "",
@@ -40,7 +61,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "concat-one-literal",
-    breaks: "a `concat!` of literals is one string, not its pieces joined by `+`",
+    breaks:
+      "a `concat!` of literals is one string, not its pieces joined by `+`",
     file: "src/lower/literals.rs",
     find: "    let pieces = match recognition::from_concat(tcx, span) {",
     replace: "    let pieces = match false {",
@@ -56,17 +78,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "concat-negative-unsigned",
-    breaks: "a negative number of a `concat!`, `-3`, is its digits alone, and so the one string",
+    breaks:
+      "a negative number of a `concat!`, `-3`, is its digits alone, and so the one string",
     file: "src/lower/literals.rs",
-    find: "                text: format!(\"-{}\", number(*kind, code)?),",
+    find: '                text: format!("-{}", number(*kind, code)?),',
     replace: "                text: number(*kind, code)?,",
     tests: concat,
   },
   {
     name: "concat-bool-unread",
-    breaks: "a `bool` of a `concat!` isn't a piece, and so the `concat!` is one string",
+    breaks:
+      "a `bool` of a `concat!` isn't a piece, and so the `concat!` is one string",
     file: "src/lower/literals.rs",
-    find: "        TokenKind::Ident if code == \"true\" || code == \"false\" => code.to_owned(),\n",
+    find: '        TokenKind::Ident if code == "true" || code == "false" => code.to_owned(),\n',
     replace: "",
     tests: concat,
   },
@@ -92,7 +116,11 @@ export const mutations: Mutation[] = [
     file: "src/lower/literals.rs",
     find: "            Some('r') => true,",
     replace: "            Some('r') => false,",
-    tests: ["test/lowering-strings.test.ts", "-t", "a string written across lines"],
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "a string written across lines",
+    ],
   },
   {
     name: "literal-lines-cooked-unread",
@@ -100,15 +128,24 @@ export const mutations: Mutation[] = [
     file: "src/lower/literals.rs",
     find: "            Some('\"') => code.match_indices('\\n').any(|(i, _)| !code[..i].ends_with('\\\\')),",
     replace: "            Some('\"') => false,",
-    tests: ["test/lowering-strings.test.ts", "-t", "a string written across lines keeps its lines"],
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "a string written across lines keeps its lines",
+    ],
   },
   {
     name: "continued-line-kept",
-    breaks: "a string whose line ends in `\\` is printed with a line break where it has `\\n`",
+    breaks:
+      "a string whose line ends in `\\` is printed with a line break where it has `\\n`",
     file: "src/lower/literals.rs",
     find: "            Some('\"') => code.match_indices('\\n').any(|(i, _)| !code[..i].ends_with('\\\\')),",
     replace: "            Some('\"') => code.contains('\\n'),",
-    tests: ["test/lowering-strings.test.ts", "-t", "a string written across lines keeps its lines"],
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "a string written across lines keeps its lines",
+    ],
   },
   {
     name: "literal-lines-of-none",
@@ -116,14 +153,23 @@ export const mutations: Mutation[] = [
     file: "src/lower/literals.rs",
     find: "    text.contains('\\n')\n        && match code.chars().next() {",
     replace: "    true\n        && match code.chars().next() {",
-    tests: ["test/lowering-strings.test.ts", "-t", "a concat! of literals is its pieces joined by|written across lines"],
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "a concat! of literals is its pieces joined by|written across lines",
+    ],
   },
   {
     name: "const-string-unwritten",
-    breaks: "a `const` of a string is one literal, though its source writes it across lines or as `concat!`'s pieces",
+    breaks:
+      "a `const` of a string is one literal, though its source writes it across lines or as `concat!`'s pieces",
     file: "src/lower/literals.rs",
     find: "            string_literal(tcx, text, lit.span, at).or_at(value.span)\n",
     replace: "            value.clone()\n",
-    tests: ["test/lowering-strings.test.ts", "-t", "a concat! of literals is its pieces joined by|const of a string written across lines"],
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "a concat! of literals is its pieces joined by|const of a string written across lines",
+    ],
   },
 ];

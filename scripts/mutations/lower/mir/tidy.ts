@@ -4,31 +4,43 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "comments-before-unprinted-return-dropped",
-    breaks: "a tail `None`'s comments where its `return;` of nothing goes are taken for a `return null;`'s, and move before the code above them (ADR 0862, amended)",
+    breaks:
+      "a tail `None`'s comments where its `return;` of nothing goes are taken for a `return null;`'s, and move before the code above them (ADR 0862, amended)",
     file: "src/lower/mir/tidy.rs",
     find: "                        if matches!(v.kind, ExprKind::Undefined | ExprKind::GivenUndefined)) =>\n",
     replace: "                        if false) =>\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "a comment before a None given at a function's end"],
+    tests: [
+      "test/lowering-comments.test.ts",
+      "-t",
+      "a comment before a None given at a function's end",
+    ],
   },
   {
     name: "comments-before-tail-return-kept",
-    breaks: "a tail `None`'s comments, where a nullable function's `return null;` is printed, stay a block's of only comments, printed after it (ADR 0444)",
+    breaks:
+      "a tail `None`'s comments, where a nullable function's `return null;` is printed, stay a block's of only comments, printed after it (ADR 0444)",
     file: "src/lower/mir/tidy.rs",
     find: "                    && next.span.lo == comments.span.lo\n",
     replace: "                    && false\n",
-    tests: ["test/lowering-comments-ends.test.ts", "-t", "a comment before a tail None"],
+    tests: [
+      "test/lowering-comments-ends.test.ts",
+      "-t",
+      "a comment before a tail None",
+    ],
   },
   {
     name: "mir-tidy-inlined-past-changed-reads",
-    breaks: "a temporary that does something is written past reads of what it changes, `d.n + reset(d)`",
+    breaks:
+      "a temporary that does something is written past reads of what it changes, `d.n + reset(d)`",
     file: "src/lower/mir/tidy.rs",
     find: "    let plain_root = matches!(&root.kind, ExprKind::Var(v) if plain.contains(v) && !set.contains(v));\n",
     replace: "    let plain_root = true;\n",
-    tests: ["test/corpus.test.ts","-t","assignment_order"],
+    tests: ["test/corpus.test.ts", "-t", "assignment_order"],
   },
   {
     name: "mir-tidy-falsy-temporary-kept",
-    breaks: "a temporary given where what's falsy is skipped stays `test ? value : undefined`, not `test && value`",
+    breaks:
+      "a temporary given where what's falsy is skipped stays `test ? value : undefined`, not `test && value`",
     file: "src/lower/mir/tidy.rs",
     find: "                *value = Expr::bin(Op::And, test.tested(), (**then).clone());\n",
     replace: "",
@@ -36,7 +48,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-tidy-tested-kept",
-    breaks: "a test a skips-falsy call reads alone keeps its `!!`, `(!!error || ready) && \"b\"`",
+    breaks:
+      'a test a skips-falsy call reads alone keeps its `!!`, `(!!error || ready) && "b"`',
     file: "src/lower/mir/tidy.rs",
     find: "                *value = value.tested();\n",
     replace: "",
@@ -44,100 +57,190 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-tidy-constant-objects-block",
-    breaks: "a call isn't read in place past an object of constants before it, `const _3 = unquoted(..)`",
+    breaks:
+      "a call isn't read in place past an object of constants before it, `const _3 = unquoted(..)`",
     file: "src/lower/mir/tidy.rs",
     find: "read_past_calls(result, set, &plain)\n        }\n        _ => e.is_made_of_constants(),\n",
-    replace: "read_past_calls(result, set, &plain)\n        }\n        _ => e.is_constant(),\n",
-    tests: ["test/lowering-functions.test.ts", "-t", "past an object of constants"],
+    replace:
+      "read_past_calls(result, set, &plain)\n        }\n        _ => e.is_constant(),\n",
+    tests: [
+      "test/lowering-functions.test.ts",
+      "-t",
+      "past an object of constants",
+    ],
   },
   {
-    "name": "shown-child-conditional",
-    "breaks": "a child shown where a test holds is `shown ? hint : undefined`, not `shown && hint`",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "                && matches!(none.kind, ExprKind::Undefined)\n            {\n                let test = match is_boolean(test, booleans) {",
-    "replace": "                && false\n            {\n                let test = match is_boolean(test, booleans) {",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    name: "shown-child-conditional",
+    breaks:
+      "a child shown where a test holds is `shown ? hint : undefined`, not `shown && hint`",
+    file: "src/lower/mir/tidy.rs",
+    find: "                && matches!(none.kind, ExprKind::Undefined)\n            {\n                let test = match is_boolean(test, booleans) {",
+    replace:
+      "                && false\n            {\n                let test = match is_boolean(test, booleans) {",
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
-    "name": "late-not-unsimplified",
-    "breaks": "`!matches!(t, \"pre\")` read in place stays `!(t === \"pre\")`",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "        let made = Expr::unary(*op, (**arg).clone());\n",
-    "replace": "        let made = Expr { kind: ExprKind::Unary(*op, arg.clone()), facts: js::Facts::NONE, span: e.span };\n",
-    "tests": ["test/lowering-iterators.test.ts", "-t", "negated matches, string methods"]
+    name: "late-not-unsimplified",
+    breaks: '`!matches!(t, "pre")` read in place stays `!(t === "pre")`',
+    file: "src/lower/mir/tidy.rs",
+    find: "        let made = Expr::unary(*op, (**arg).clone());\n",
+    replace:
+      "        let made = Expr { kind: ExprKind::Unary(*op, arg.clone()), facts: js::Facts::NONE, span: e.span };\n",
+    tests: [
+      "test/lowering-iterators.test.ts",
+      "-t",
+      "negated matches, string methods",
+    ],
   },
   {
-    "name": "plain-field-blocks-inline",
-    "breaks": "a prop MIR holds for a borrow stays a `const _14`, read past `meta.tag` of a plain value",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "    let plain_root = matches!(&root.kind, ExprKind::Var(v) if plain.contains(v) && !set.contains(v));\n",
-    "replace": "    let plain_root = false;\n",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    name: "plain-field-blocks-inline",
+    breaks:
+      "a prop MIR holds for a borrow stays a `const _14`, read past `meta.tag` of a plain value",
+    file: "src/lower/mir/tidy.rs",
+    find: "    let plain_root = matches!(&root.kind, ExprKind::Var(v) if plain.contains(v) && !set.contains(v));\n",
+    replace: "    let plain_root = false;\n",
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
-    "name": "mir-tidy-import-blocks-inline",
-    "breaks": "a prop MIR holds for a borrow stays a `const _13`, read past an imported tag, `<Seo>`",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "        ExprKind::Symbol(_) => true,\n        ExprKind::Arrow(..)",
-    "replace": "        ExprKind::Arrow(..)",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    name: "mir-tidy-import-blocks-inline",
+    breaks:
+      "a prop MIR holds for a borrow stays a `const _13`, read past an imported tag, `<Seo>`",
+    file: "src/lower/mir/tidy.rs",
+    find: "        ExprKind::Symbol(_) => true,\n        ExprKind::Arrow(..)",
+    replace: "        ExprKind::Arrow(..)",
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
-    "name": "mir-tidy-sibling-element-blocks",
-    "breaks": "a prop MIR holds for a borrow stays a `const _16`, read past a sibling element, `<Search isOpen={show} />`",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "        ExprKind::Jsx(_) => inert_element(e, set),\n",
-    "replace": "",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    name: "mir-tidy-sibling-element-blocks",
+    breaks:
+      "a prop MIR holds for a borrow stays a `const _16`, read past a sibling element, `<Search isOpen={show} />`",
+    file: "src/lower/mir/tidy.rs",
+    find: "        ExprKind::Jsx(_) => inert_element(e, set),\n",
+    replace: "",
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
-    "name": "mir-tidy-closure-made-blocks",
-    "breaks": "a closure's making, `const value = () => ..`, blocks props held before it, `const value$3 = cn(..)`",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "        ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) => true,\n        ExprKind::Member(of, _) => {\n",
-    "replace": "        ExprKind::Member(of, _) => {\n",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    name: "mir-tidy-closure-made-blocks",
+    breaks:
+      "a closure's making, `const value = () => ..`, blocks props held before it, `const value$3 = cn(..)`",
+    file: "src/lower/mir/tidy.rs",
+    find: "        ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) => true,\n        ExprKind::Member(of, _) => {\n",
+    replace: "        ExprKind::Member(of, _) => {\n",
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
-    "name": "mir-tidy-choice-blocks",
-    "breaks": "a conditional of parameters, `selected ? \"page\" : undefined`, blocks a prop held after it",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "        ExprKind::Cond(a, b, c) => past(a) && past(b) && past(c),\n",
-    "replace": "",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    name: "mir-tidy-choice-blocks",
+    breaks:
+      'a conditional of parameters, `selected ? "page" : undefined`, blocks a prop held after it',
+    file: "src/lower/mir/tidy.rs",
+    find: "        ExprKind::Cond(a, b, c) => past(a) && past(b) && past(c),\n",
+    replace: "",
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
-    "name": "mir-tidy-concise-handlers-kept",
-    "breaks": "a held handler of one call from MIR keeps its block, `() => { f(); }`",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "                && of(value).is_some()\n",
-    "replace": "                && false\n",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    name: "mir-tidy-concise-handlers-kept",
+    breaks:
+      "a held handler of one call from MIR keeps its block, `() => { f(); }`",
+    file: "src/lower/mir/tidy.rs",
+    find: "                && of(value).is_some()\n",
+    replace: "                && false\n",
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
-    "name": "inert-element-chosen-not",
-    "breaks": "a child chosen of elements, `open ? <b /> : <i />`, stops classes held for a later child being read in place",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "        ExprKind::Cond(a, b, c) => [a, b, c].iter().all(|e| inert_element(e, changing)),\n",
-    "replace": "",
-    "tests": ["test/snapshots.test.ts", "-t", "^apis"],
-    "snapshots": true
+    name: "inert-element-chosen-not",
+    breaks:
+      "a child chosen of elements, `open ? <b /> : <i />`, stops classes held for a later child being read in place",
+    file: "src/lower/mir/tidy.rs",
+    find: "        ExprKind::Cond(a, b, c) => [a, b, c].iter().all(|e| inert_element(e, changing)),\n",
+    replace: "",
+    tests: ["test/snapshots.test.ts", "-t", "^apis"],
+    snapshots: true,
   },
   {
-    "name": "spread-items-not-read-past-calls",
-    "breaks": "`...first` of an array whose items nothing changes stops a later call's value being read in place",
-    "file": "src/lower/mir/tidy.rs",
-    "find": " || plain.contains(&format!(\"...{v}\"))",
-    "replace": "",
-    "tests": ["test/lowering-collections.test.ts", "-t", "arrays joined are one array of their items"]
+    name: "spread-items-not-read-past-calls",
+    breaks:
+      "`...first` of an array whose items nothing changes stops a later call's value being read in place",
+    file: "src/lower/mir/tidy.rs",
+    find: ' || plain.contains(&format!("...{v}"))',
+    replace: "",
+    tests: [
+      "test/lowering-collections.test.ts",
+      "-t",
+      "arrays joined are one array of their items",
+    ],
   },
   {
-    "name": "jsx-child-truth-test-kept",
-    "breaks": "a child shown where text is truthy stays `href ? <a /> : undefined`, not `!!href && <a />`",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "                    false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, (**test).clone())),",
-    "replace": "                    false => continue,",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    name: "jsx-child-truth-test-kept",
+    breaks:
+      "a child shown where text is truthy stays `href ? <a /> : undefined`, not `!!href && <a />`",
+    file: "src/lower/mir/tidy.rs",
+    find: "                    false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, (**test).clone())),",
+    replace: "                    false => continue,",
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
     name: "mir-tidy-return-span-none",
@@ -145,19 +248,21 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "            StmtKind::Return(Some(value)) if stmt.span.is_none() => stmt.span = value.span,\n",
     replace: "",
-    tests: ["test/emission.test.ts","-t","source map points from fib.js"],
+    tests: ["test/emission.test.ts", "-t", "source map points from fib.js"],
   },
   {
     name: "mir-tidy-if-span-of-test-kept",
-    breaks: "MIR's `if` maps to its condition or its `match`, not `if c` or its arm's pattern",
+    breaks:
+      "MIR's `if` maps to its condition or its `match`, not `if c` or its arm's pattern",
     file: "src/lower/mir/tidy.rs",
     find: "            StmtKind::If(test, ..) if !test.span.is_none() => stmt.span = test.span,\n",
     replace: "",
-    tests: ["test/emission.test.ts","-t","source map points from fib.js"],
+    tests: ["test/emission.test.ts", "-t", "source map points from fib.js"],
   },
   {
     name: "mir-tidy-template-unread-past",
-    breaks: "text made of what calls can't change, `${a} ${b}`, isn't read past a call, and what follows it stays a function called in place",
+    breaks:
+      "text made of what calls can't change, `${a} ${b}`, isn't read past a call, and what follows it stays a function called in place",
     file: "src/lower/mir/tidy.rs",
     find: "        ExprKind::Template(_, values, _) => values.iter().all(past),\n",
     replace: "",
@@ -166,15 +271,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-tidy-console-unread-past",
-    breaks: "`console.log` isn't read past a call, and a value it prints `{:?}` of stays a function called in place",
+    breaks:
+      "`console.log` isn't read past a call, and a value it prints `{:?}` of stays a function called in place",
     file: "src/lower/mir/tidy.rs",
-    find: "\"Number\" | \"String\" | \"console\"))",
-    replace: "\"Number\" | \"String\"))",
-    tests: ["test/lowering-strings.test.ts", "-t", "reads twice is held first, not given to a function called in place"],
+    find: '"Number" | "String" | "console"))',
+    replace: '"Number" | "String"))',
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "reads twice is held first, not given to a function called in place",
+    ],
   },
   {
     name: "mir-tidy-pure-call-unread-past",
-    breaks: "a call of the runtime's that only reads, `$debugStr(s)`, isn't read past a call",
+    breaks:
+      "a call of the runtime's that only reads, `$debugStr(s)`, isn't read past a call",
     file: "src/lower/mir/tidy.rs",
     find: "        ExprKind::Call(callee, args) if callee.helper_name().is_some_and(crate::runtime::is_pure) => {\n            args.iter().all(past)\n        }\n",
     replace: "",
@@ -183,7 +294,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-tidy-item-unread-past",
-    breaks: "an item of a plain value, `pair[0]`, isn't read past a call, as its field is, and what follows stays a function called in place",
+    breaks:
+      "an item of a plain value, `pair[0]`, isn't read past a call, as its field is, and what follows stays a function called in place",
     file: "src/lower/mir/tidy.rs",
     find: "        ExprKind::Index(_, index) => plain_root && past(index),\n",
     replace: "",
@@ -192,7 +304,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "tidy-applied-call-not-past",
-    breaks: "a function called at once on a held value is taken to read what a call may change, and the `Option` formatted after it stays a function called in place",
+    breaks:
+      "a function called at once on a held value is taken to read what a call may change, and the `Option` formatted after it stays a function called in place",
     file: "src/lower/mir/tidy.rs",
     find: "            past(given) && read_past_calls(result, set, &plain)\n",
     replace: "            false\n",
@@ -201,7 +314,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "member-read-in-place-unfolded",
-    breaks: "a field of an object read in place, a `dyn` field's pair, stays `{ value: f.inner, impl: f.impl }.impl`",
+    breaks:
+      "a field of an object read in place, a `dyn` field's pair, stays `{ value: f.inner, impl: f.impl }.impl`",
     file: "src/lower/mir/tidy.rs",
     find: "        && js::is_read_pair(props)\n",
     replace: "        && js::is_read_pair(props)\n        && false\n",
@@ -210,7 +324,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "member-of-any-object-read-in-place",
-    breaks: "a field of any object read in place is folded, a temporary's box on the left of `=` too, `42 = ..`, which the printer can't write",
+    breaks:
+      "a field of any object read in place is folded, a temporary's box on the left of `=` too, `42 = ..`, which the printer can't write",
     file: "src/lower/mir/tidy.rs",
     find: "        && js::is_read_pair(props)\n",
     replace: "",
@@ -218,19 +333,29 @@ export const mutations: Mutation[] = [
   },
   {
     name: "written-first-of-a-switch",
-    breaks: "an arm of a `switch (typeof value)` MIR tests first, whose case returns early, is turned `if (typeof value !== \"string\")` and the `match` stays an `if` chain",
+    breaks:
+      'an arm of a `switch (typeof value)` MIR tests first, whose case returns early, is turned `if (typeof value !== "string")` and the `match` stays an `if` chain',
     file: "src/lower/mir/tidy.rs",
     find: "        if switched(test, first.span, switches) {\n            continue;\n        }\n",
     replace: "",
-    tests: ["test/lowering-switches.test.ts", "-t", "an arm that returns early is still its case"],
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "an arm that returns early is still its case",
+    ],
   },
   {
     name: "again-stages-not-run",
-    breaks: "the stages a stage asks to run again, `scopes`'s, don't, so what a guard's `try` held apart stays apart",
+    breaks:
+      "the stages a stage asks to run again, `scopes`'s, don't, so what a guard's `try` held apart stays apart",
     file: "src/lower/mir/tidy.rs",
     find: "        if !stage.again.is_empty() && hints.again.take() {\n",
     replace: "        if false {\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "a guard's fields are its variables"],
+    tests: [
+      "test/lowering-unwinds.test.ts",
+      "-t",
+      "a guard's fields are its variables",
+    ],
   },
   {
     name: "again-stages-unchecked",
@@ -238,11 +363,16 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "                if run_stage(body, hints, again, &again_name(again)) {\n",
     replace: "                if run_stage(body, hints, again, again.name) {\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "a stage read again is its own"],
+    tests: [
+      "test/lowering-unwinds.test.ts",
+      "-t",
+      "a stage read again is its own",
+    ],
   },
   {
     name: "tidy-until-ignored",
-    breaks: "`--tidy-until` stops nowhere, so each stage's JS that's checked is the finished JS (ADR 0659, amended)",
+    breaks:
+      "`--tidy-until` stops nowhere, so each stage's JS that's checked is the finished JS (ADR 0659, amended)",
     file: "src/lower/mir/tidy.rs",
     find: "        if hints.until == Some(&*pass_name(name, pass)) {\n",
     replace: "        if false {\n",
@@ -250,7 +380,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "arrow-of-a-value-kept-a-block",
-    breaks: "`|| log(&seen, 1)` of a function of the crate's is `() => { log(seen, 1); }`, not its call's value as written (ADR 0883)",
+    breaks:
+      "`|| log(&seen, 1)` of a function of the crate's is `() => { log(seen, 1); }`, not its call's value as written (ADR 0883)",
     file: "src/lower/mir/tidy.rs",
     find: "    if matches!(e.kind, ExprKind::Arrow(..)) && of(e) == Some(crate::lower::jsx::OneCall::Value) {\n",
     replace: "    if matches!(e.kind, ExprKind::Arrow(..)) && false {\n",
@@ -258,15 +389,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "arrow-of-a-statement-its-value",
-    breaks: "`|| { log(&seen, 2); }` is `() => log(seen, 2)`, a statement made a value (ADR 0883)",
+    breaks:
+      "`|| { log(&seen, 2); }` is `() => log(seen, 2)`, a statement made a value (ADR 0883)",
     file: "src/lower/mir/tidy.rs",
     find: "    if matches!(e.kind, ExprKind::Arrow(..)) && of(e) == Some(crate::lower::jsx::OneCall::Value) {\n",
-    replace: "    if matches!(e.kind, ExprKind::Arrow(..)) && of(e).is_some() {\n",
+    replace:
+      "    if matches!(e.kind, ExprKind::Arrow(..)) && of(e).is_some() {\n",
     tests: ["test/lowering-arrows.test.ts"],
   },
   {
     name: "negation-else-dropped",
-    breaks: "a written `else` whose test is a negation, `if (!x)`, loses its mark when `negations` makes the test again, so preparation's `unelsed` drops it (ADR 0237, amended)",
+    breaks:
+      "a written `else` whose test is a negation, `if (!x)`, loses its mark when `negations` makes the test again, so preparation's `unelsed` drops it (ADR 0237, amended)",
     file: "src/lower/mir/tidy.rs",
     find: "        let facts = made.facts.and(e.facts.of_statement());\n",
     replace: "        let facts = made.facts;\n",
@@ -275,7 +409,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "placed-read-declared-apart",
-    breaks: "a placed read's `try` gone, its variable stays `let previous; previous = current;`, not `const previous = current;` (#408)",
+    breaks:
+      "a placed read's `try` gone, its variable stays `let previous; previous = current;`, not `const previous = current;` (#408)",
     file: "src/lower/mir/tidy.rs",
     find: "    if unthrown {\n        bindings::declarations(body);\n",
     replace: "    if false {\n        bindings::declarations(body);\n",
@@ -283,10 +418,16 @@ export const mutations: Mutation[] = [
   },
   {
     name: "tail-if-let-comments-dropped",
-    breaks: "a comment after a function's last `if let`, React DOM's Float's `// We don't error because ..`, is dropped: its JS `if` is where the pattern is, not the `if` to its value's end (rd288)",
+    breaks:
+      "a comment after a function's last `if let`, React DOM's Float's `// We don't error because ..`, is dropped: its JS `if` is where the pattern is, not the `if` to its value's end (rd288)",
     file: "src/lower/mir/tidy.rs",
     find: "            matches!(s.kind, StmtKind::If(..)) && !s.span.is_none() && done.lo <= s.span.lo && s.span.hi <= done.hi\n",
-    replace: "            matches!(s.kind, StmtKind::If(..)) && !s.span.is_none() && done.lo == s.span.lo && s.span.hi <= done.hi\n",
-    tests: ["test/lowering-comments-ends.test.ts", "-t", "last if is at its end"],
+    replace:
+      "            matches!(s.kind, StmtKind::If(..)) && !s.span.is_none() && done.lo == s.span.lo && s.span.hi <= done.hi\n",
+    tests: [
+      "test/lowering-comments-ends.test.ts",
+      "-t",
+      "last if is at its end",
+    ],
   },
 ];

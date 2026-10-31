@@ -23,15 +23,18 @@ export const mutations: Mutation[] = [
     breaks: "a raw pointer's values are refused",
     file: "src/lower/support.rs",
     find: "            _ if let Some((inner, _)) = super::pointers::raw_pointee(self.tcx, ty)\n",
-    replace: "            _ if false && let Some((inner, _)) = super::pointers::raw_pointee(self.tcx, ty)\n",
+    replace:
+      "            _ if false && let Some((inner, _)) = super::pointers::raw_pointee(self.tcx, ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
   {
     name: "auto-trait-dyn-unsupported",
-    breaks: "a value of a `dyn` of no trait but auto traits, `dyn Send`, is refused",
+    breaks:
+      "a value of a `dyn` of no trait but auto traits, `dyn Send`, is refused",
     file: "src/lower/support.rs",
     find: "                if predicates.principal_def_id().is_none_or(|id| {\n",
-    replace: "                if predicates.principal_def_id().is_some_and(|id| {\n",
+    replace:
+      "                if predicates.principal_def_id().is_some_and(|id| {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_auto_traits.rs$"],
   },
   {
@@ -55,39 +58,58 @@ export const mutations: Mutation[] = [
     breaks: "a raw pointer to a `dyn Trait` is refused as a value",
     file: "src/lower/support.rs",
     find: "                && !matches!(self.tcx.struct_tail_for_codegen(inner, self.typing_env).kind(), ty::Str) =>\n",
-    replace: "                && !matches!(\n                    self.tcx.struct_tail_for_codegen(inner, self.typing_env).kind(),\n                    ty::Str | ty::Dynamic(..)\n                ) =>\n",
+    replace:
+      "                && !matches!(\n                    self.tcx.struct_tail_for_codegen(inner, self.typing_env).kind(),\n                    ty::Str | ty::Dynamic(..)\n                ) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_pointers.rs$"],
   },
   {
     name: "transparent-held-unchecked",
-    breaks: "a `ManuallyDrop` of a type rust-js refuses is taken for a unit struct, its held type unchecked",
+    breaks:
+      "a `ManuallyDrop` of a type rust-js refuses is taken for a unit struct, its held type unchecked",
     file: "src/lower/support.rs",
     find: "            ty::Adt(..) if let Some(held) = self.transparent(ty) => return self.unsupported_in(held, seen),\n",
     replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "a ManuallyDrop of what's refused"],
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "a ManuallyDrop of what's refused",
+    ],
   },
   {
     name: "btree-of-own-ord-unsupported",
     breaks: "a `BTreeMap` of keys whose `Ord` is the crate's own is refused",
     file: "src/lower/support.rs",
     find: "                if !given && !self.is_sorted(ty) && !self.is_key(key, false) {\n",
-    replace: "                if !given && !self.is_key(key, self.is_sorted(ty)) {\n",
+    replace:
+      "                if !given && !self.is_key(key, self.is_sorted(ty)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_own_ord.rs$"],
   },
   {
     name: "binding-dyn-refused",
-    breaks: "a binding crate's `dyn IntoUnknown`, an `ErrorEventInit`'s `error`, is refused as a value, so `..Default::default()` of one is; and `Box<dyn ReactNode>`, the node itself",
+    breaks:
+      "a binding crate's `dyn IntoUnknown`, an `ErrorEventInit`'s `error`, is refused as a value, so `..Default::default()` of one is; and `Box<dyn ReactNode>`, the node itself",
     file: "src/lower/support.rs",
     find: "                    !self.recognition().is_pair_trait(t) && !super::recognition::is_std_crate(self.tcx, t)\n",
     replace: "                    false\n",
-    tests: ["test/bindings.test.ts", "test/jsx-types.test.ts", "-t", "member of any value|dyn ReactNode is the node"],
+    tests: [
+      "test/bindings.test.ts",
+      "test/jsx-types.test.ts",
+      "-t",
+      "member of any value|dyn ReactNode is the node",
+    ],
   },
   {
     name: "rest-value-dyn-fn-refused",
-    breaks: "a `dyn Fn` of rest arguments as a value, last, is refused, though its call spreads them",
+    breaks:
+      "a `dyn Fn` of rest arguments as a value, last, is refused, though its call spreads them",
     file: "src/lower/support.rs",
     find: "                        (items.iter().rev().skip(1)).any(|t| super::bindings::is_rest_value(self.tcx, t))\n",
-    replace: "                        items.iter().any(|t| super::bindings::is_rest_value(self.tcx, t))\n",
-    tests: ["test/js-object.test.ts", "-t", "rest arguments as a value are refused"],
+    replace:
+      "                        items.iter().any(|t| super::bindings::is_rest_value(self.tcx, t))\n",
+    tests: [
+      "test/js-object.test.ts",
+      "-t",
+      "rest arguments as a value are refused",
+    ],
   },
 ];

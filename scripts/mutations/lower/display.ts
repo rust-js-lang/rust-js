@@ -6,9 +6,14 @@ export const mutations: Mutation[] = [
     name: "format-pieces-last-only",
     breaks: "a format string of `concat!`'s pieces is its last piece alone",
     file: "src/lower/display.rs",
-    find: "    if pieces.len() == 1 {\n        let (parts, lines) = pieces.pop().expect(\"a piece\");",
-    replace: "    if !pieces.is_empty() {\n        let (parts, lines) = pieces.pop().expect(\"a piece\");",
-    tests: ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
+    find: '    if pieces.len() == 1 {\n        let (parts, lines) = pieces.pop().expect("a piece");',
+    replace:
+      '    if !pieces.is_empty() {\n        let (parts, lines) = pieces.pop().expect("a piece");',
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "a format string of a concat! is its pieces joined by",
+    ],
   },
   {
     name: "pretty-always-plain",
@@ -16,11 +21,12 @@ export const mutations: Mutation[] = [
     file: "src/lower/display.rs",
     find: "            Pretty::Always => Some(true),\n",
     replace: "            Pretty::Always => Some(false),\n",
-    tests: ["test/corpus.test.ts","-t","pretty_debug"],
+    tests: ["test/corpus.test.ts", "-t", "pretty_debug"],
   },
   {
     name: "run-time-options-ignored",
-    breaks: "a number a `fmt` hands its `Formatter` on to ignores the options it's given at run time",
+    breaks:
+      "a number a `fmt` hands its `Formatter` on to ignores the options it's given at run time",
     file: "src/lower/display.rs",
     find: "        if !self.krate.format_options {\n            return None;\n        }",
     replace: "        if true {\n            return None;\n        }",
@@ -28,7 +34,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "run-time-options-everywhere",
-    breaks: "a crate that gives no options but `{:#?}`'s applies them to each number its writers show: right, but not the JS a person writes",
+    breaks:
+      "a crate that gives no options but `{:#?}`'s applies them to each number its writers show: right, but not the JS a person writes",
     file: "src/lower/display.rs",
     find: "        if !self.krate.format_options {\n            return None;\n        }",
     replace: "",
@@ -37,7 +44,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "run-time-float-precision-dropped",
-    breaks: "an `f64` a `fmt` hands its `Formatter` on to ignores the precision it's given",
+    breaks:
+      "an `f64` a `fmt` hands its `Formatter` on to ignores the precision it's given",
     file: "src/lower/display.rs",
     find: "                vec![value, options.clone(), Expr::var(show)],",
     replace: "                vec![value, Expr::undefined(), Expr::var(show)],",
@@ -45,7 +53,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "run-time-str-debug-padded",
-    breaks: "a string's `{:?}` in a `fmt` given a width is padded, where std's isn't",
+    breaks:
+      "a string's `{:?}` in a `fmt` given a width is padded, where std's isn't",
     file: "src/lower/display.rs",
     find: "            Std::FmtDisplay if self.is_string_like(ty) => value,",
     replace: "            _ if self.is_string_like(ty) => value,",
@@ -53,7 +62,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "options-dropped-allowed",
-    breaks: "a width for a `&dyn Debug`, the string it shows already, is dropped",
+    breaks:
+      "a width for a `&dyn Debug`, the string it shows already, is dropped",
     file: "src/lower/display.rs",
     find: "        if matches!(pretty, Pretty::Given(..))\n",
     replace: "        if false\n",
@@ -61,23 +71,27 @@ export const mutations: Mutation[] = [
   },
   {
     name: "std-display-dictionary-plain",
-    breaks: "a generic `T`'s `{:>6}` of a number shows it unpadded: std's `Display` dictionary ignores the options",
+    breaks:
+      "a generic `T`'s `{:>6}` of a number shows it unpadded: std's `Display` dictionary ignores the options",
     file: "src/lower/display.rs",
-    find: "                Pretty::When(Expr::var(\"options\")),\n            ),\n            false => (vec![\"value\".into()], Pretty::Plain),\n        };\n        let shown = self.display_string_with(",
-    replace: "                Pretty::Plain,\n            ),\n            false => (vec![\"value\".into()], Pretty::Plain),\n        };\n        let shown = self.display_string_with(",
+    find: '                Pretty::When(Expr::var("options")),\n            ),\n            false => (vec!["value".into()], Pretty::Plain),\n        };\n        let shown = self.display_string_with(',
+    replace:
+      '                Pretty::Plain,\n            ),\n            false => (vec!["value".into()], Pretty::Plain),\n        };\n        let shown = self.display_string_with(',
     tests: ["test/corpus.test.ts", "-t", "options_handed_on"],
   },
   {
     name: "fill-default-empty",
-    breaks: "`f.fill()` of a placeholder that gives none is `''`, where it's a space",
+    breaks:
+      "`f.fill()` of a placeholder that gives none is `''`, where it's a space",
     file: "src/lower/display.rs",
-    find: "Expr::bin(Op::Coalesce, member(\"fill\"), Expr::str(\" \"))",
-    replace: "member(\"fill\")",
+    find: 'Expr::bin(Op::Coalesce, member("fill"), Expr::str(" "))',
+    replace: 'member("fill")',
     tests: ["test/corpus.test.ts", "-t", "formatter_queries"],
   },
   {
     name: "to-string-trait-assumed",
-    breaks: "a `#![no_std]` crate's trait call crashes rust-js, looking up `alloc`'s `ToString`, which isn't loaded",
+    breaks:
+      "a `#![no_std]` crate's trait call crashes rust-js, looking up `alloc`'s `ToString`, which isn't loaded",
     file: "src/lower/display.rs",
     find: "        opt_std_item(self.tcx, StdItem::ToString)",
     replace: "        Some(std_item(self.tcx, StdItem::ToString))",
@@ -87,37 +101,43 @@ export const mutations: Mutation[] = [
     name: "std-radix-unprefixed",
     breaks: "`{:#x}` through a delegating impl shows no `0x`",
     file: "src/lower/display.rs",
-    find: "                let prefix = Expr::cond(pretty.alternate(), Expr::str(radix.prefix()), Expr::str(\"\"));",
-    replace: "                let prefix = Expr::str(\"\");",
-    tests: ["test/corpus.test.ts","-t","user_fmt_traits"],
+    find: '                let prefix = Expr::cond(pretty.alternate(), Expr::str(radix.prefix()), Expr::str(""));',
+    replace: '                let prefix = Expr::str("");',
+    tests: ["test/corpus.test.ts", "-t", "user_fmt_traits"],
   },
   {
     name: "std-radix-unpadded",
     breaks: "`{:04x}` through a delegating impl isn't padded",
     file: "src/lower/display.rs",
-    find: "            Pretty::When(options) if self.krate.format_options => Expr::call(\n                Expr::helper(\"$formatted\"),\n                vec![text, options.clone(), Expr::bool(true)],\n",
-    replace: "            Pretty::When(options) if false && self.krate.format_options => Expr::call(\n                Expr::helper(\"$formatted\"),\n                vec![text, options.clone(), Expr::bool(true)],\n",
-    tests: ["test/corpus.test.ts","-t","user_fmt_traits"],
+    find: '            Pretty::When(options) if self.krate.format_options => Expr::call(\n                Expr::helper("$formatted"),\n                vec![text, options.clone(), Expr::bool(true)],\n',
+    replace:
+      '            Pretty::When(options) if false && self.krate.format_options => Expr::call(\n                Expr::helper("$formatted"),\n                vec![text, options.clone(), Expr::bool(true)],\n',
+    tests: ["test/corpus.test.ts", "-t", "user_fmt_traits"],
   },
   {
     name: "failing-write-whole",
-    breaks: "a `write!` of what fails writes nothing of its pieces before the one that fails",
+    breaks:
+      "a `write!` of what fails writes nothing of its pieces before the one that fails",
     file: "src/lower/display.rs",
     find: "    let parts = if pieces && let js::ExprKind::Template(texts, values, _) = &written.kind {",
-    replace: "    let parts = if false && pieces && let js::ExprKind::Template(texts, values, _) = &written.kind {",
-    tests: ["test/corpus.test.ts","-t","fmt_error_write"],
+    replace:
+      "    let parts = if false && pieces && let js::ExprKind::Template(texts, values, _) = &written.kind {",
+    tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
   },
   {
     name: "failing-call-uncaught",
-    breaks: "a call that returns a `fmt::Result` and may fail isn't caught as its value",
+    breaks:
+      "a call that returns a `fmt::Result` and may fail isn't caught as its value",
     file: "src/lower/display.rs",
     find: "        if !self.is_write_result(output) || self.formatter_param(def_id).is_some()",
-    replace: "        if true || !self.is_write_result(output) || self.formatter_param(def_id).is_some()",
-    tests: ["test/corpus.test.ts","-t","fmt_error_write"],
+    replace:
+      "        if true || !self.is_write_result(output) || self.formatter_param(def_id).is_some()",
+    tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
   },
   {
     name: "js-error-width-dropped",
-    breaks: "`{:>9?}` of a `js::JsError` is its text with no width, not refused",
+    breaks:
+      "`{:>9?}` of a `js::JsError` is its text with no width, not refused",
     file: "src/lower/display.rs",
     find: "                || self.recognition().is_js_error(ty)\n",
     replace: "",
@@ -125,10 +145,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "string-call-unstringed",
-    breaks: "`String(arg)` the program wrote is `${arg}` in a template, which throws on a symbol",
+    breaks:
+      "`String(arg)` the program wrote is `${arg}` in a template, which throws on a symbol",
     file: "src/lower/display.rs",
     find: "        js::ExprKind::Stringed(value) => *value,\n",
-    replace: "        js::ExprKind::Stringed(value) => *value,\n        js::ExprKind::Call(_, ref args) if args.len() == 1 => args[0].clone(),\n",
+    replace:
+      "        js::ExprKind::Stringed(value) => *value,\n        js::ExprKind::Call(_, ref args) if args.len() == 1 => args[0].clone(),\n",
     tests: ["test/bindings.test.ts", "-t", "js::shown"],
   },
   {
@@ -146,11 +168,12 @@ export const mutations: Mutation[] = [
     file: "src/lower/display.rs",
     find: "            FmtResultAnswer::Is(false) => Expr::bin(Op::Ne, result, Expr::undefined()),",
     replace: "            FmtResultAnswer::Is(false) => Expr::bool(false),",
-    tests: ["test/corpus.test.ts","-t","fmt_error_write"],
+    tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
   },
   {
     name: "fmt-map-err-unmapped",
-    breaks: "`map_err(f)` of a `fmt::Result` gives the error unmapped, not `f`'s",
+    breaks:
+      "`map_err(f)` of a `fmt::Result` gives the error unmapped, not `f`'s",
     file: "src/lower/display.rs",
     find: "                let mapped = crate::js::result::err(self.applied(f, result));\n",
     replace: "                let mapped = crate::js::result::err(result);\n",
@@ -166,16 +189,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fmt-result-map-unit-left-out",
-    breaks: "`map(Ok)` of a `fmt::Result` calls `Ok` with nothing, written as an arrow called where it's made",
+    breaks:
+      "`map(Ok)` of a `fmt::Result` calls `Ok` with nothing, written as an arrow called where it's made",
     file: "src/lower/display.rs",
     find: "                crate::js::result::ok(crate::lower::calls::apply(f, vec![Expr::undefined()]))\n",
-    replace: "                crate::js::result::ok(crate::lower::calls::apply(f, Vec::new()))\n",
+    replace:
+      "                crate::js::result::ok(crate::lower::calls::apply(f, Vec::new()))\n",
     tests: ["test/corpus.test.ts", "-t", "^fmt_result_map_err.rs$"],
     snapshots: true,
   },
   {
     name: "library-writer-takes-options",
-    breaks: "a library's writer that takes no options is given a consumer's, where its dictionaries go",
+    breaks:
+      "a library's writer that takes no options is given a consumer's, where its dictionaries go",
     file: "src/lower/display.rs",
     find: "            false => self.krate.foreign.writers_take_options(writer.krate),\n",
     replace: "            false => self.writers_take_options(),\n",
@@ -183,7 +209,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "writer-takes-no-options-placeholder",
-    breaks: "a writer that takes options, called where this one has none, isn't given their place: its dictionary is",
+    breaks:
+      "a writer that takes options, called where this one has none, isn't given their place: its dictionary is",
     file: "src/lower/display.rs",
     find: "            Some(_) => Some(self.writing.given.clone().unwrap_or_else(Expr::undefined)),\n",
     replace: "            Some(_) => self.writing.given.clone(),\n",
@@ -191,7 +218,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "boxed-dyn-debug-raw",
-    breaks: "a `Box<dyn Debug>` is its value, interpolated raw by `{:?}`, `0.30000001192092896` and `[object Object]`",
+    breaks:
+      "a `Box<dyn Debug>` is its value, interpolated raw by `{:?}`, `0.30000001192092896` and `[object Object]`",
     file: "src/lower/display.rs",
     find: "            && (ty.is_box() || self.is_rc(ty) && self.counted_rc(ty).is_none())\n",
     replace: "            && false\n",
@@ -202,12 +230,14 @@ export const mutations: Mutation[] = [
     breaks: "`{}` of an `impl Display` a function gives is refused",
     file: "src/lower/display.rs",
     find: "        let ty = self.reveal(ty);\n        match ty.kind() {\n            ty::Adt(_, args) if self.shows_inside(ty)",
-    replace: "        match ty.kind() {\n            ty::Adt(_, args) if self.shows_inside(ty)",
+    replace:
+      "        match ty.kind() {\n            ty::Adt(_, args) if self.shows_inside(ty)",
     tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
   },
   {
     name: "shown-text-taken-apart",
-    breaks: "`${n}` given to `join` alone is taken apart, `n`, a number where a `String` is text",
+    breaks:
+      "`${n}` given to `join` alone is taken apart, `n`, a number where a `String` is text",
     file: "src/lower/display.rs",
     find: "    if is_shown_text(&e) {\n        return vec![e];\n    }\n",
     replace: "",
@@ -215,7 +245,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "shown-texts-added",
-    breaks: "`format!(\"{}{}\", js::shown(a), js::shown(b))` is `${a}` + `${b}`, not one template, `${a}${b}`",
+    breaks:
+      '`format!("{}{}", js::shown(a), js::shown(b))` is `${a}` + `${b}`, not one template, `${a}${b}`',
     file: "src/lower/display.rs",
     find: "    let strings_alone = !pieces.iter().any(|p| is_text(p) || is_shown_text(&p.0));\n",
     replace: "    let strings_alone = !pieces.iter().any(is_text);\n",
@@ -223,7 +254,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "separable-strings-added",
-    breaks: "a `write!` of strings alone that fails part way is `s += a + b`, which loses what came before the one that fails",
+    breaks:
+      "a `write!` of strings alone that fails part way is `s += a + b`, which loses what came before the one that fails",
     file: "src/lower/display.rs",
     find: "strings_alone && !(separable && pieces.len() > 1)",
     replace: "strings_alone",
@@ -231,7 +263,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "instance-writer-options-library",
-    breaks: "a writer a consumer compiles takes its Formatter's options as its library's do, not its crate's own, so `{:>9?}` of a `Label` isn't padded (ADRs 0137, 0914)",
+    breaks:
+      "a writer a consumer compiles takes its Formatter's options as its library's do, not its crate's own, so `{:>9?}` of a `Label` isn't padded (ADRs 0137, 0914)",
     file: "src/lower/display.rs",
     find: "        match writer.is_local() || self.krate.foreign.is_instance(writer) {\n",
     replace: "        match writer.is_local() {\n",
@@ -239,7 +272,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "class-display-called",
-    breaks: "a class's `{p}` is `p.toString()`, not JS's text of it, `${p}` (#358)",
+    breaks:
+      "a class's `{p}` is `p.toString()`, not JS's text of it, `${p}` (#358)",
     file: "src/lower/display.rs",
     find: "        if self.is_shown_class(ty) && !self.writers_take_options() {\n",
     replace: "        if false {\n",
@@ -247,7 +281,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "class-display-template-arrow",
-    breaks: "a `T: Display` of a class is `{ fmt: (value) => `${value}` }`, not `{ fmt: String }` (#358)",
+    breaks:
+      "a `T: Display` of a class is `{ fmt: (value) => `${value}` }`, not `{ fmt: String }` (#358)",
     file: "src/lower/display.rs",
     find: "            js::ExprKind::Template(_, values, _) if is_shown_text(&shown) && values.len() == 1 => values.first(),\n",
     replace: "",
@@ -255,7 +290,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "class-writer-called-by-name",
-    breaks: "a class's `toString` a writer calls with options is `Position.toString(p, options)`, `this` the constructor (#358)",
+    breaks:
+      "a class's `toString` a writer calls with options is `Position.toString(p, options)`, `this` the constructor (#358)",
     file: "src/lower/display.rs",
     find: "        Ok(self.crate_called(instance.def_id(), values))\n",
     replace: "        Ok(Expr::call(self.fn_ref(instance.def_id()), values))\n",
@@ -263,7 +299,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "class-to-string-given-undefined",
-    breaks: "a class's plain `{p}`, where writers take options, is `p.toString(undefined)` (#358)",
+    breaks:
+      "a class's plain `{p}`, where writers take options, is `p.toString(undefined)` (#358)",
     file: "src/lower/display.rs",
     find: "        if self.takes_options(instance.def_id()) && !plain_to_string {\n",
     replace: "        if self.takes_options(instance.def_id()) {\n",
@@ -272,7 +309,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "appended-text-unjoined",
-    breaks: "`s.push_str(&js::concat_text(n))` is `s += \"\" + n`, its `String` not known text (ADR 0639, amended)",
+    breaks:
+      '`s.push_str(&js::concat_text(n))` is `s += "" + n`, its `String` not known text (ADR 0639, amended)',
     file: "src/lower/display.rs",
     find: "Expr::text_joined(target.clone(), part)",
     replace: "Expr::bin(Op::Add, target.clone(), part)",

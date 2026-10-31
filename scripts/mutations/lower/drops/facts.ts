@@ -4,7 +4,8 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "drop-let-value-context",
-    breaks: "a `let`'s value is taken as its block's, so a closure that holds a value with a destructor, made for a `let`, is refused",
+    breaks:
+      "a `let`'s value is taken as its block's, so a closure that holds a value with a destructor, made for a `let`, is refused",
     file: "src/lower/drops/facts.rs",
     find: "            if self.lets.contains_key(&child) {\n                return (None, child);\n            }\n",
     replace: "",
@@ -12,7 +13,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "temp-taken-apart-refused",
-    breaks: "`let (x, _) = (make(3), make(4));` in a trait's default method is refused",
+    breaks:
+      "`let (x, _) = (make(3), make(4));` in a trait's default method is refused",
     file: "src/lower/drops/facts.rs",
     find: "                if !self.follows(once(pat)) {",
     replace: "                if true {",
@@ -20,7 +22,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "closure-made-anywhere",
-    breaks: "a closure that holds a value with a destructor is made where its drop can't see what it took",
+    breaks:
+      "a closure that holds a value with a destructor is made where its drop can't see what it took",
     file: "src/lower/drops/facts.rs",
     find: "                    if !placed && !carried {",
     replace: "                    if false && !placed && !carried {",
@@ -28,27 +31,39 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fn-closure-given-away",
-    breaks: "an `Fn` closure that holds a value with a destructor is given to a call that consumes it, and never drops it",
+    breaks:
+      "an `Fn` closure that holds a value with a destructor is given to a call that consumes it, and never drops it",
     file: "src/lower/drops/facts.rs",
     find: "        matches!(ty.kind(), ty::Closure(_, args) if args.as_closure().kind() != ty::ClosureKind::FnOnce)",
     replace: "        false",
-    tests: ["test/bindings.test.ts", "-t", "listener holding a value with a destructor"],
+    tests: [
+      "test/bindings.test.ts",
+      "-t",
+      "listener holding a value with a destructor",
+    ],
   },
   {
     name: "closure-assigned",
-    breaks: "a closure that holds a value with a destructor is assigned where its drop can't see what it took",
+    breaks:
+      "a closure that holds a value with a destructor is assigned where its drop can't see what it took",
     file: "src/lower/drops/facts.rs",
-    find: "                self.closure_problem(expr.span, \"assigning a closure that holds a value with a destructor\");",
+    find: '                self.closure_problem(expr.span, "assigning a closure that holds a value with a destructor");',
     replace: "                let _ = expr;",
     tests: ["test/traits.test.ts", "-t", "closure assigned"],
   },
   {
     name: "momentary-always",
-    breaks: "a guard held while its statement calls code that borrows is only checked",
+    breaks:
+      "a guard held while its statement calls code that borrows is only checked",
     file: "src/lower/drops/facts.rs",
     find: "        if self.held_quietly((fun, cell), &[], &extents) {\n",
-    replace: "        if self.held_quietly((fun, cell), &[], &extents) || true {\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "a field's RefCell only borrowed for a moment is its value"],
+    replace:
+      "        if self.held_quietly((fun, cell), &[], &extents) || true {\n",
+    tests: [
+      "test/lowering-cells.test.ts",
+      "-t",
+      "a field's RefCell only borrowed for a moment is its value",
+    ],
   },
   {
     name: "momentary-never",
@@ -56,7 +71,11 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/facts.rs",
     find: "        if used_in_place {\n            self.momentary(e);\n        }\n",
     replace: "",
-    tests: ["test/jsx-react-dev.test.ts", "-t", "react.dev's InlineToc nests its headings in a field's array"],
+    tests: [
+      "test/jsx-react-dev.test.ts",
+      "-t",
+      "react.dev's InlineToc nests its headings in a field's array",
+    ],
   },
   {
     name: "quiet-ignores-calls",
@@ -64,7 +83,11 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/facts.rs",
     find: "                        self.borrows.call_asks(\n                            &self.cx.recognition,\n                            (self.owner, id, generic_args),\n                            receiver,\n                            self.cell,\n                            drops,\n                        )\n",
     replace: "                        false\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "a field's RefCell only borrowed for a moment is its value"],
+    tests: [
+      "test/lowering-cells.test.ts",
+      "-t",
+      "a field's RefCell only borrowed for a moment is its value",
+    ],
   },
   {
     name: "quiet-ignores-drops",
@@ -72,7 +95,11 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/facts.rs",
     find: "        if asks || writes_over || (!is_place(&expr.kind) && self.drops(expr.ty)) {",
     replace: "        if asks || writes_over {",
-    tests: ["test/lowering-cells.test.ts", "-t", "a field's RefCell only borrowed for a moment is its value"],
+    tests: [
+      "test/lowering-cells.test.ts",
+      "-t",
+      "a field's RefCell only borrowed for a moment is its value",
+    ],
   },
   {
     name: "quiet-statements-unseen",
@@ -80,11 +107,16 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/facts.rs",
     find: "                    .find(|(s, _)| *s == scope)\n",
     replace: "                    .find(|(s, _)| *s == scope && false)\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "a field's RefCell only borrowed for a moment is its value"],
+    tests: [
+      "test/lowering-cells.test.ts",
+      "-t",
+      "a field's RefCell only borrowed for a moment is its value",
+    ],
   },
   {
     name: "std-given-closure-refused",
-    breaks: "a closure called by `&` given by value to std, which drops it as it returns, is refused",
+    breaks:
+      "a closure called by `&` given by value to std, which drops it as it returns, is refused",
     file: "src/lower/drops/facts.rs",
     find: "            && (def_id.is_local() || crate::lower::recognition::is_std_crate(tcx, def_id))\n",
     replace: "            && def_id.is_local()\n",
@@ -92,7 +124,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "returned-closure-made-refused",
-    breaks: "a closure its maker gives back, holding a value with a destructor, is refused where it's made",
+    breaks:
+      "a closure its maker gives back, holding a value with a destructor, is refused where it's made",
     file: "src/lower/drops/facts.rs",
     find: "                    if !placed && !carried {\n",
     replace: "                    if !placed {\n",
@@ -100,7 +133,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "transparent-made-here",
-    breaks: "a closure that holds a value with a destructor, in an `AssertUnwindSafe` given to `catch_unwind`, is refused as made where it's not kept",
+    breaks:
+      "a closure that holds a value with a destructor, in an `AssertUnwindSafe` given to `catch_unwind`, is refused as made where it's not kept",
     file: "src/lower/drops/facts.rs",
     find: "                ExprKind::Adt(..) if self.cx.recognition.transparent(self.thir[parent].ty).is_some() => child = parent,\n",
     replace: "",
@@ -108,15 +142,17 @@ export const mutations: Mutation[] = [
   },
   {
     name: "closure-block-value-refused",
-    breaks: "a closure holding an `Rc` made as a block's value for a `let` is refused",
+    breaks:
+      "a closure holding an `Rc` made as a block's value for a `let` is refused",
     file: "src/lower/drops/facts.rs",
-    find: "                            self.block_for_let(parent.expect(\"a block\"))\n",
+    find: '                            self.block_for_let(parent.expect("a block"))\n',
     replace: "                            false\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_block_value.rs$"],
   },
   {
     name: "arm-temporaries-unscoped",
-    breaks: "a borrow in a `match` arm's value, `Some(prev) => prev.types.borrow().clone()`, is taken as held past the arm, counted, and its cell `{ value }`",
+    breaks:
+      "a borrow in a `match` arm's value, `Some(prev) => prev.types.borrow().clone()`, is taken as held past the arm, counted, and its cell `{ value }`",
     file: "src/lower/drops/facts.rs",
     find: "            .push((arm.scope, arm.guard.is_none().then_some(arm.body)));\n",
     replace: "            .push((arm.scope, None));\n",
@@ -125,15 +161,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "if-let-scrutinee-unscoped",
-    breaks: "a borrow an `if let` tests is taken as held where nothing says how long, so a consumer's of a library's cell is refused",
+    breaks:
+      "a borrow an `if let` tests is taken as held where nothing says how long, so a consumer's of a library's cell is refused",
     file: "src/lower/drops/facts.rs",
     find: "            } if if_then_scope == scope => Some([cond, then]),\n",
-    replace: "            } if if_then_scope == scope && false => Some([cond, then]),\n",
+    replace:
+      "            } if if_then_scope == scope && false => Some([cond, then]),\n",
     tests: ["test/crates.test.ts", "-t", "two crates: ref_cells"],
   },
   {
     name: "if-let-else-held",
-    breaks: "an `if let`'s scrutinee's borrow is taken to end before its `then`, so one held while the `then` borrows its cell runs on where Rust panics",
+    breaks:
+      "an `if let`'s scrutinee's borrow is taken to end before its `then`, so one held while the `then` borrows its cell runs on where Rust panics",
     file: "src/lower/drops/facts.rs",
     find: "            (Some(both), _) => both.to_vec(),\n",
     replace: "            (Some(both), _) => both[..1].to_vec(),\n",
@@ -141,15 +180,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "held-always-seen",
-    breaks: "a borrow held while JS's code runs is taken as held while only what rust-js sees runs, so a consumer holds one of a cell a library borrows unchecked (ADR 0863)",
+    breaks:
+      "a borrow held while JS's code runs is taken as held while only what rust-js sees runs, so a consumer holds one of a cell a library borrows unchecked (ADR 0863)",
     file: "src/lower/drops/facts.rs",
     find: "        if seen.seen {\n            self.facts.held_while_seen.insert(fun);\n",
-    replace: "        if true {\n            self.facts.held_while_seen.insert(fun);\n",
+    replace:
+      "        if true {\n            self.facts.held_while_seen.insert(fun);\n",
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
   },
   {
     name: "let-held-never",
-    breaks: "a guard a `let` holds while nothing can ask is counted, so its cell's every borrow is checked, `const v = $borrow(log, true)` where it's `const v = log` (ADR 0863)",
+    breaks:
+      "a guard a `let` holds while nothing can ask is counted, so its cell's every borrow is checked, `const v = $borrow(log, true)` where it's `const v = log` (ADR 0863)",
     file: "src/lower/drops/facts.rs",
     find: "            self.facts.let_held.insert(fun);\n",
     replace: "",
@@ -158,15 +200,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "let-held-moved-ignored",
-    breaks: "a `let`'s guard moved out of its block, `kept = v;`, is taken as held only until its block ends, so a borrow it meets after doesn't panic (ADR 0863)",
+    breaks:
+      "a `let`'s guard moved out of its block, `kept = v;`, is taken as held only until its block ends, so a borrow it meets after doesn't panic (ADR 0863)",
     file: "src/lower/drops/facts.rs",
     find: "        if !moves.moved && self.held_quietly((fun, cell), rest, value.as_slice()) {\n",
-    replace: "        if self.held_quietly((fun, cell), rest, value.as_slice()) {\n",
+    replace:
+      "        if self.held_quietly((fun, cell), rest, value.as_slice()) {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_let_guard_kept.rs$"],
   },
   {
     name: "let-held-past-drop",
-    breaks: "a `let`'s guard dropped by `drop(v);` is taken as held until its block ends, so what borrows its cell after counts it (ADR 0863)",
+    breaks:
+      "a `let`'s guard dropped by `drop(v);` is taken as held until its block ends, so what borrows its cell after counts it (ADR 0863)",
     file: "src/lower/drops/facts.rs",
     find: "            Some(at) => (&rest[..at], None),\n",
     replace: "            Some(_) => (rest, value),\n",
@@ -175,7 +220,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "let-of-moved-drop-unseen",
-    breaks: "a `let` of a value with a destructor moved from a place, `let q = p;`, is taken to run nothing, though it drops while a guard is held (ADR 0863)",
+    breaks:
+      "a `let` of a value with a destructor moved from a place, `let q = p;`, is taken to run nothing, though it drops while a guard is held (ADR 0863)",
     file: "src/lower/drops/facts.rs",
     find: "            && self.drops(pattern.ty)\n",
     replace: "            && false\n",
@@ -183,7 +229,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "write-over-drop-unseen",
-    breaks: "a write over a value with a destructor, `p = q;`, is taken to run nothing, though its destructor runs while a guard is held (ADR 0863)",
+    breaks:
+      "a write over a value with a destructor, `p = q;`, is taken to run nothing, though its destructor runs while a guard is held (ADR 0863)",
     file: "src/lower/drops/facts.rs",
     find: "        let writes_over = matches!(expr.kind, ExprKind::Assign { lhs, .. } if self.drops(self.thir[lhs].ty));\n",
     replace: "        let writes_over = false;\n",
@@ -191,7 +238,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "pointer-call-beside-guard-asks-nothing",
-    breaks: "a fn pointer's call while a guard is held asks nothing of its cell, so `report`'s borrow isn't counted while `f`, which may be `touch`, borrows it mutably, and nothing panics",
+    breaks:
+      "a fn pointer's call while a guard is held asks nothing of its cell, so `report`'s borrow isn't counted while `f`, which may be `touch`, borrows it mutably, and nothing panics",
     file: "src/lower/drops/facts.rs",
     find: "                    None => self\n                        .borrows\n                        .pointer_call_asks(&self.cx.recognition, self.thir[fun].ty, self.cell, drops),\n",
     replace: "                    None => false,\n",
@@ -199,16 +247,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "let-else-guard-held-through-else",
-    breaks: "a let-else's scrutinee's guard is taken to live through its `else`, so React's `update.next.borrow().clone()` counts the field's every borrow, `$cellReplace($borrowMut($fieldCell(update, \"next\", true)), ..)`",
+    breaks:
+      "a let-else's scrutinee's guard is taken to live through its `else`, so React's `update.next.borrow().clone()` counts the field's every borrow, `$cellReplace($borrowMut($fieldCell(update, \"next\", true)), ..)`",
     file: "src/lower/drops/facts.rs",
     find: "                initializer,\n                ..\n            } => (init_scope, initializer),\n",
-    replace: "                initializer,\n                else_block,\n                ..\n            } => (init_scope, initializer.filter(|_| else_block.is_none())),\n",
+    replace:
+      "                initializer,\n                else_block,\n                ..\n            } => (init_scope, initializer.filter(|_| else_block.is_none())),\n",
     tests: ["test/corpus.test.ts", "-t", "^let_else_guard_released.rs$"],
     snapshots: true,
   },
   {
     name: "unmet-of-a-float",
-    breaks: "a `contains` of a float guards the push as a string's does, though `NaN` isn't equal to itself: the push's borrow of the same cell isn't checked, and runs where Rust's is busy (ADR 0863, amended)",
+    breaks:
+      "a `contains` of a float guards the push as a string's does, though `NaN` isn't equal to itself: the push's borrow of the same cell isn't checked, and runs where Rust's is busy (ADR 0863, amended)",
     file: "src/lower/drops/facts.rs",
     find: "        let reflexive = recognition.is_string_like(element) || element.is_integral() || element.is_bool();\n",
     replace: "        let reflexive = true;\n",
@@ -216,7 +267,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unmet-of-any-value",
-    breaks: "a `contains` of any value guards the push, not only of the loop's item, which is there where the two are one cell (ADR 0863, amended)",
+    breaks:
+      "a `contains` of any value guards the push, not only of the loop's item, which is there where the two are one cell (ADR 0863, amended)",
     file: "src/lower/drops/facts.rs",
     find: "        if !self.items.contains(&item) || !reflexive {\n",
     replace: "        if !reflexive {\n",
@@ -224,16 +276,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unmet-never",
-    breaks: "React's scheduleGesture's push only where a type isn't there yet is counted, `$borrowMut`, as any borrow that may meet the loop's is",
+    breaks:
+      "React's scheduleGesture's push only where a type isn't there yet is counted, `$borrowMut`, as any borrow that may meet the loop's is",
     file: "src/lower/drops/facts.rs",
     find: "            && let Some(var) = self.unmet_in(cond)\n",
-    replace: "            && let Some(var) = self.unmet_in(cond).filter(|_| false)\n",
+    replace:
+      "            && let Some(var) = self.unmet_in(cond).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^contains_guarded_borrow.rs$"],
     snapshots: true,
   },
   {
     name: "unmet-of-a-handle-set-again",
-    breaks: "a handle the body sets again is one cell wherever it's read, so its borrow after the test may be of another, `own`'s",
+    breaks:
+      "a handle the body sets again is one cell wherever it's read, so its borrow after the test may be of another, `own`'s",
     file: "src/lower/drops/facts.rs",
     find: "        (!changed).then_some(var)\n",
     replace: "        Some(var)\n",
@@ -241,18 +296,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "assigned-value-held",
-    breaks: "a guard of an assignment's place, `*c.borrow_mut() = f(v);`, is taken as held while its value is evaluated, which Rust does first, so a library's `f` refuses it (ADR 0863, gap rd32)",
+    breaks:
+      "a guard of an assignment's place, `*c.borrow_mut() = f(v);`, is taken as held while its value is evaluated, which Rust does first, so a library's `f` refuses it (ADR 0863, gap rd32)",
     file: "src/lower/drops/facts.rs",
     find: "                vec![lhs]\n",
     replace: "                vec![extent]\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: assigned_after_its_value"],
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "two crates: assigned_after_its_value",
+    ],
   },
   {
     name: "called-once-closure-refused",
-    breaks: "a closure rustc infers `Fn` that holds a value with a destructor, given where it's made to a binding that calls it once, is refused as one given away without being called once (ADR 1020)",
+    breaks:
+      "a closure rustc infers `Fn` that holds a value with a destructor, given where it's made to a binding that calls it once, is refused as one given away without being called once (ADR 1020)",
     file: "src/lower/drops/facts.rs",
     find: "                            && !matches!(*ty.kind(), ty::Closure(id, _) if self.cx.closure_facts.called_once(id))\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^called_once_closure_drops_after.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^called_once_closure_drops_after.rs$",
+    ],
   },
 ];

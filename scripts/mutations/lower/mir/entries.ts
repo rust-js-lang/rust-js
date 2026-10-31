@@ -4,35 +4,44 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "mir-swap-one-way",
-    breaks: "`mem::swap(&mut a, &mut b)` of two places writes `b` into `a`, and leaves `b`",
+    breaks:
+      "`mem::swap(&mut a, &mut b)` of two places writes `b` into `a`, and leaves `b`",
     file: "src/lower/mir/entries.rs",
     find: "                out.push(StmtKind::Assign(b, old).at(js_span));\n",
     replace: "                let _ = (b, old);\n",
-    tests: ["test/corpus.test.ts","-t","swap_replace"],
+    tests: ["test/corpus.test.ts", "-t", "swap_replace"],
   },
   {
     name: "mir-entry-number-unhandled",
-    breaks: "`*m.entry(k).or_insert(0) += 1` adds to the value read, writing nothing back",
+    breaks:
+      "`*m.entry(k).or_insert(0) += 1` adds to the value read, writing nothing back",
     file: "src/lower/mir/entries.rs",
     find: "        if !self.is_cell(output) {\n",
     replace: "        if true || !self.is_cell(output) {\n",
-    tests: ["test/corpus.test.ts","-t","entry_counts"],
+    tests: ["test/corpus.test.ts", "-t", "entry_counts"],
   },
   {
     name: "mir-kept-entry-parts",
-    breaks: "an entry kept in a variable is taken apart as `[m, k]`, not `$entry`'s `_0`",
+    breaks:
+      "an entry kept in a variable is taken apart as `[m, k]`, not `$entry`'s `_0`",
     file: "src/lower/mir/entries.rs",
     find: "                let parts = Expr::member(entry, js::positional(0));\n",
     replace: "                let parts = entry;\n",
-    tests: ["test/corpus.test.ts","-t","entry_kept"],
+    tests: ["test/corpus.test.ts", "-t", "entry_kept"],
   },
   {
-    "name": "mir-take-variable-as-object",
-    "breaks": "`mem::take(&mut current)` of a variable is `$take(current, [])` from MIR, not `const old = current; current = [];`",
-    "file": "src/lower/mir/entries.rs",
-    "find": "Value::Expr(e) | Value::Place(e) if i < borrowed && variables && own(&e) => {",
-    "replace": "Value::Expr(e) | Value::Place(e) if false && i < borrowed && variables && own(&e) => {",
-    "tests": ["test/lowering-functions.test.ts", "-t", "taking a variable assigns the variable"]
+    name: "mir-take-variable-as-object",
+    breaks:
+      "`mem::take(&mut current)` of a variable is `$take(current, [])` from MIR, not `const old = current; current = [];`",
+    file: "src/lower/mir/entries.rs",
+    find: "Value::Expr(e) | Value::Place(e) if i < borrowed && variables && own(&e) => {",
+    replace:
+      "Value::Expr(e) | Value::Place(e) if false && i < borrowed && variables && own(&e) => {",
+    tests: [
+      "test/lowering-functions.test.ts",
+      "-t",
+      "taking a variable assigns the variable",
+    ],
   },
   {
     name: "mir-failing-result-methods-refused",
@@ -47,15 +56,18 @@ export const mutations: Mutation[] = [
     breaks: "MIR's `write!(s, ..)?` that may fail is refused",
     file: "src/lower/mir/entries.rs",
     find: "        self.fmt_check(tried, self.js_span(span), out);\n        Ok(Value::Branch(Expr::undefined(), ty))\n",
-    replace: "        let _ = tried;\n        Err(self.unsupported(span, \"`?` of a write's result that may fail, from its MIR\"))\n",
+    replace:
+      '        let _ = tried;\n        Err(self.unsupported(span, "`?` of a write\'s result that may fail, from its MIR"))\n',
     tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
   },
   {
     name: "mir-fmt-result-arguments",
-    breaks: "MIR's `{:?}` of a `fmt::Result` takes `Argument::new_debug` for a method of the result's",
+    breaks:
+      "MIR's `{:?}` of a `fmt::Result` takes `Argument::new_debug` for a method of the result's",
     file: "src/lower/mir/entries.rs",
     find: "            && tcx\n                .impl_of_assoc(def_id)\n",
-    replace: "            && true || tcx\n                .impl_of_assoc(def_id)\n",
+    replace:
+      "            && true || tcx\n                .impl_of_assoc(def_id)\n",
     tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
   },
   {
@@ -68,7 +80,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "replaced-cell-refused",
-    breaks: "`mem::replace` through a `&mut V` a store gives, which is a cell, is refused",
+    breaks:
+      "`mem::replace` through a `&mut V` a store gives, which is a cell, is refused",
     file: "src/lower/mir/entries.rs",
     find: "                Value::Expr(e) if i < borrowed && self.is_cell(arg_tys[i]) => {\n",
     replace: "                Value::Expr(e) if false => {\n",
@@ -76,15 +89,17 @@ export const mutations: Mutation[] = [
   },
   {
     name: "io-residual-returned",
-    breaks: "`?` of a value's `Result` into an `io::Result<()>` gives its `{ TAG }` object back, which its callers take for `Err`",
+    breaks:
+      "`?` of a value's `Result` into an `io::Result<()>` gives its `{ TAG }` object back, which its callers take for `Err`",
     file: "src/lower/mir/entries.rs",
-    find: "            false => Expr::call_helper(\"$ioThrow\", vec![crate::js::result::held(residual)]),\n",
+    find: '            false => Expr::call_helper("$ioThrow", vec![crate::js::result::held(residual)]),\n',
     replace: "            false => residual,\n",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
   },
   {
     name: "or-insert-key-dropped-twice",
-    breaks: "`or_insert` of an entry made before drops the key `entry` dropped already",
+    breaks:
+      "`or_insert` of an entry made before drops the key `entry` dropped already",
     file: "src/lower/mir/entries.rs",
     find: "            Some(key) if fused => self.std_drop_function(key, span)?,\n",
     replace: "            Some(key) => self.std_drop_function(key, span)?,\n",
@@ -92,7 +107,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "or-insert-with-function-ungiven",
-    breaks: "`or_insert_with` of a key that's there leaves its function, and what it holds, undropped",
+    breaks:
+      "`or_insert_with` of a key that's there leaves its function, and what it holds, undropped",
     file: "src/lower/mir/entries.rs",
     find: "        list.extend(make_drop);\n",
     replace: "",
@@ -100,7 +116,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "replaced-capture-not-in-place",
-    breaks: "`mem::replace` of a captured field holding an iterator given as it is is refused, as if it weren't changed in place",
+    breaks:
+      "`mem::replace` of a captured field holding an iterator given as it is is refused, as if it weren't changed in place",
     file: "src/lower/mir/entries.rs",
     find: "|| !self.written_in_place(pointee) {",
     replace: "|| !self.is_object(pointee) {",
@@ -108,39 +125,54 @@ export const mutations: Mutation[] = [
   },
   {
     name: "swap-some-fields-as-places",
-    breaks: "a swap of a variable and a field takes the field for a place where the variable is an object, and swaps a handle's keys into the array",
+    breaks:
+      "a swap of a variable and a field takes the field for a place where the variable is an object, and swaps a handle's keys into the array",
     file: "src/lower/mir/entries.rs",
     find: "        let fields = (0..borrowed).all(|i| self.borrows_field(def_id, span, i));\n",
-    replace: "        let fields = (0..borrowed).any(|i| self.borrows_field(def_id, span, i));\n",
+    replace:
+      "        let fields = (0..borrowed).any(|i| self.borrows_field(def_id, span, i));\n",
     tests: ["test/corpus.test.ts", "-t", "^swap_replace.rs$"],
   },
   {
     name: "nullable-item-taken-undefined",
-    breaks: "a nullable field's `Vec<Option<T>>` item taken, `v[i].take()`, is left `undefined`",
+    breaks:
+      "a nullable field's `Vec<Option<T>>` item taken, `v[i].take()`, is left `undefined`",
     file: "src/lower/mir/entries.rs",
     find: "        let b = match b_place.is_none() && self.lends_nullable_place(state) {\n",
     replace: "        let b = match b_place.is_none() && false {\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "Vec of Options holds null"],
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "Vec of Options holds null",
+    ],
   },
   {
     name: "tried-place-read-twice",
-    breaks: "`let p = s.next.borrow().clone()?;` reads `s.next` in its test and again in its binding, `if (s.next != null) { const p = s.next; .. }`, not once (ADR 0035, amended)",
+    breaks:
+      "`let p = s.next.borrow().clone()?;` reads `s.next` in its test and again in its binding, `if (s.next != null) { const p = s.next; .. }`, not once (ADR 0035, amended)",
     file: "src/lower/mir/entries.rs",
     find: "        if tried.reads_same() && !place {\n",
     replace: "        if tried.reads_same() {\n",
-    tests: ["test/lowering-early-exits.test.ts", "-t", "a place a question mark tries is read once"],
+    tests: [
+      "test/lowering-early-exits.test.ts",
+      "-t",
+      "a place a question mark tries is read once",
+    ],
   },
   {
     name: "option-take-unmarked",
-    breaks: "`root.pending.take()` then tested keeps its take first, `const pending = root.pending; root.pending = null; if (pending != null)`, not upstream's test of the place (ADR 0996)",
+    breaks:
+      "`root.pending.take()` then tested keeps its take first, `const pending = root.pending; root.pending = null; if (pending != null)`, not upstream's test of the place (ADR 0996)",
     file: "src/lower/mir/entries.rs",
     find: "        let b = match known == Std::OptionTake && made_here && js::taken_place(&a) {\n",
-    replace: "        let b = match false && made_here && js::taken_place(&a) {\n",
+    replace:
+      "        let b = match false && made_here && js::taken_place(&a) {\n",
     tests: ["test/lowering-takes.test.ts", "-t", "an Option taken then tested"],
   },
   {
     name: "swap-of-places-held",
-    breaks: "`mem::swap(&mut a[0], &mut b[0])` is `const t = a[0]; a[0] = b[0]; b[0] = t;`, not JS's own `[a[0], b[0]] = [b[0], a[0]]` (#369)",
+    breaks:
+      "`mem::swap(&mut a[0], &mut b[0])` is `const t = a[0]; a[0] = b[0]; b[0] = t;`, not JS's own `[a[0], b[0]] = [b[0], a[0]]` (#369)",
     file: "src/lower/mir/entries.rs",
     find: "        let place = |e: &Expr| !e.has_effects() && !matches!(e.kind, js::ExprKind::Var(_));\n",
     replace: "        let place = |_: &Expr| false;\n",
@@ -149,7 +181,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "swap-of-variables-destructured",
-    breaks: "`mem::swap(&mut a, &mut b)` of two variables is `[a, b] = [b, a]`, which reassigns the `const` a `let` that nothing else assigns is declared (#369)",
+    breaks:
+      "`mem::swap(&mut a, &mut b)` of two variables is `[a, b] = [b, a]`, which reassigns the `const` a `let` that nothing else assigns is declared (#369)",
     file: "src/lower/mir/entries.rs",
     find: "        let place = |e: &Expr| !e.has_effects() && !matches!(e.kind, js::ExprKind::Var(_));\n",
     replace: "        let place = |e: &Expr| !e.has_effects();\n",

@@ -4,16 +4,18 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "vec-remove-length-unasked",
-    breaks: "a `Vec`'s `remove(0)` its test shows in bounds is `$removeAt(targets, 0)`, not `targets.shift()` (rd103)",
+    breaks:
+      "a `Vec`'s `remove(0)` its test shows in bounds is `$removeAt(targets, 0)`, not `targets.shift()` (rd103)",
     file: "src/lower/recognition/types.rs",
-    find: "        \"remove\" if is_vec(owner) => Some(SliceLength::Remove),\n",
+    find: '        "remove" if is_vec(owner) => Some(SliceLength::Remove),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_remove_insert_in_bounds.rs$"],
     snapshots: true,
   },
   {
     name: "class-key-unpeeled",
-    breaks: "a map or a set keyed by a `&T` of a type parameter is refused, its class taken for the reference's, not `T`'s (#313)",
+    breaks:
+      "a map or a set keyed by a `&T` of a type parameter is refused, its class taken for the reference's, not `T`'s (#313)",
     file: "src/lower/recognition/types.rs",
     find: "        ty::Ref(_, inner, rustc_ast::Mutability::Not) => class_key(inner),\n",
     replace: "        ty::Ref(_, _, rustc_ast::Mutability::Not) => key,\n",
@@ -21,41 +23,51 @@ export const mutations: Mutation[] = [
   },
   {
     name: "drain-not-asked",
-    breaks: "a `Vec`'s `drain(0..i)` isn't judged by its range, and is `$drain(queue, 0, i)` where it's in bounds",
+    breaks:
+      "a `Vec`'s `drain(0..i)` isn't judged by its range, and is `$drain(queue, 0, i)` where it's in bounds",
     file: "src/lower/recognition/types.rs",
-    find: "        \"drain\" if vec(owner) => Some(SliceLength::Drain),\n",
+    find: '        "drain" if vec(owner) => Some(SliceLength::Drain),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
     snapshots: true,
   },
   {
     name: "cell-borrow-mut-unrecognized",
-    breaks: "`queue.borrow_mut()[i] = item` isn't the queue's, and is checked, `queue[$at(queue, i)]`, below its loop's test",
+    breaks:
+      "`queue.borrow_mut()[i] = item` isn't the queue's, and is checked, `queue[$at(queue, i)]`, below its loop's test",
     file: "src/lower/recognition/types.rs",
-    find: "        \"borrow_mut\" if of(owner, StdItem::RefCell) => Some(CellView::Guard { mutable: true }),\n",
+    find: '        "borrow_mut" if of(owner, StdItem::RefCell) => Some(CellView::Guard { mutable: true }),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
     snapshots: true,
   },
   {
     name: "js-object-itself-unknown",
-    breaks: "`JsObject`, what `Kind::Object` holds, isn't a JS object, so its `Deref` to the `Unknown` it is isn't the object itself",
+    breaks:
+      "`JsObject`, what `Kind::Object` holds, isn't a JS object, so its `Deref` to the `Unknown` it is isn't the object itself",
     file: "src/lower/recognition/types.rs",
     find: "        if self.is_js_object_itself(ty) {\n            return true;\n        }\n",
     replace: "",
-    tests: ["test/lowering-bindings.test.ts", "-t", "an unknown JS value is classified, and its properties read by name"],
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "-t",
+      "an unknown JS value is classified, and its properties read by name",
+    ],
   },
   {
     name: "js-type-of-struct-unrecognized",
-    breaks: "`pub struct Element(PhantomData<JsObject>)` is a Rust struct to copy, not a JS object, now `JsObject` is a struct",
+    breaks:
+      "`pub struct Element(PhantomData<JsObject>)` is a Rust struct to copy, not a JS object, now `JsObject` is a struct",
     file: "src/lower/recognition/types.rs",
     find: "            && marked.types().next().is_some_and(|t| matches!(t.kind(), ty::Foreign(_)) || self.is_js_object_itself(t)))\n",
-    replace: "            && marked.types().next().is_some_and(|t| matches!(t.kind(), ty::Foreign(_))))\n",
-    tests: ["test/snapshots.test.ts","-t","counter"],
+    replace:
+      "            && marked.types().next().is_some_and(|t| matches!(t.kind(), ty::Foreign(_))))\n",
+    tests: ["test/snapshots.test.ts", "-t", "counter"],
   },
   {
     name: "field-projection-kept",
-    breaks: "a field whose type is `K::Value` stays that projection where its struct is used, and a value of the struct is an error",
+    breaks:
+      "a field whose type is `K::Value` stays that projection where its struct is used, and a value of the struct is an error",
     file: "src/lower/recognition/types.rs",
     find: "        if !rustc_middle::ty::TypeVisitableExt::has_aliases(&ty) {\n            return ty;\n        }",
     replace: "        if true {\n            return ty;\n        }",
@@ -65,21 +77,31 @@ export const mutations: Mutation[] = [
     name: "js-error-of-another-crate",
     breaks: "`js::JsError` isn't told apart, its `{:?}` refused",
     file: "src/lower/recognition/types.rs",
-    find: "self.tcx.crate_name(adt.did().krate).as_str() == \"js\"",
-    replace: "self.tcx.crate_name(adt.did().krate).as_str() == \"jsx\"",
-    tests: ["test/js-builtins.test.ts", "-t", "a JS error is shown as JS shows it"],
+    find: 'self.tcx.crate_name(adt.did().krate).as_str() == "js"',
+    replace: 'self.tcx.crate_name(adt.did().krate).as_str() == "jsx"',
+    tests: [
+      "test/js-builtins.test.ts",
+      "-t",
+      "a JS error is shown as JS shows it",
+    ],
   },
   {
     name: "parse-error-by-name",
-    breaks: "a crate's own `struct ParseIntError` is taken for std's by its name, and shown as std's `ParseIntError { kind: .. }`",
+    breaks:
+      "a crate's own `struct ParseIntError` is taken for std's by its name, and shown as std's `ParseIntError { kind: .. }`",
     file: "src/lower/recognition/types.rs",
-    find: "        matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == rustc_span::sym::core\n            && [\"ParseIntError\"",
-    replace: "        matches!(ty.kind(), ty::Adt(adt, _) if [\"ParseIntError\"",
-    tests: ["test/recognition.test.ts", "-t", "library recognition distinguishes user lookalikes and preserves standard behavior"],
+    find: '        matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == rustc_span::sym::core\n            && ["ParseIntError"',
+    replace: '        matches!(ty.kind(), ty::Adt(adt, _) if ["ParseIntError"',
+    tests: [
+      "test/recognition.test.ts",
+      "-t",
+      "library recognition distinguishes user lookalikes and preserves standard behavior",
+    ],
   },
   {
     name: "deque-length-unknown",
-    breaks: "a `VecDeque`'s `args[i]` in `for i in 0..args.len()` is `$index(args, i)`",
+    breaks:
+      "a `VecDeque`'s `args[i]` in `for i in 0..args.len()` is `$index(args, i)`",
     file: "src/lower/recognition/types.rs",
     find: " || is_std_def(tcx, adt.did(), StdItem::VecDeque))\n",
     replace: ")\n",
@@ -91,7 +113,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/types.rs",
     find: "    StdItem::LinkedList,\n];\n",
     replace: "];\n",
-    tests: ["test/corpus.test.ts","-t","linked_lists"],
+    tests: ["test/corpus.test.ts", "-t", "linked_lists"],
   },
   {
     name: "cow-path-refused",
@@ -105,29 +127,39 @@ export const mutations: Mutation[] = [
     name: "exact-chunks-mut-no-remainder",
     breaks: "a `ChunksExactMut`'s `into_remainder()` is an error",
     file: "src/lower/recognition/types.rs",
-    find: "                | \"std::slice::ChunksExactMut\"\n",
+    find: '                | "std::slice::ChunksExactMut"\n',
     replace: "",
-    tests: ["test/corpus.test.ts","-t","slice_views"],
+    tests: ["test/corpus.test.ts", "-t", "slice_views"],
   },
   {
     name: "escape-ascii-not-bytes",
-    breaks: "a byte slice's `escape_ascii()` isn't the array of its escape's bytes: `{}` of it is refused (ADR 0971)",
+    breaks:
+      "a byte slice's `escape_ascii()` isn't the array of its escape's bytes: `{}` of it is refused (ADR 0971)",
     file: "src/lower/recognition/types.rs",
-    find: "        if matches!(std_path(tcx, adt.did()).as_str(), \"std::ascii::EscapeDefault\" | \"std::slice::EscapeAscii\"))",
-    replace: "        if matches!(std_path(tcx, adt.did()).as_str(), \"std::ascii::EscapeDefault\"))",
-    tests: ["test/corpus.test.ts","-t","slice_bytes_text"],
+    find: '        if matches!(std_path(tcx, adt.did()).as_str(), "std::ascii::EscapeDefault" | "std::slice::EscapeAscii"))',
+    replace:
+      '        if matches!(std_path(tcx, adt.did()).as_str(), "std::ascii::EscapeDefault"))',
+    tests: ["test/corpus.test.ts", "-t", "slice_bytes_text"],
   },
   {
     name: "deref-target-unknown",
-    breaks: "a JS class's `Deref` to the class it extends isn't followed, and an untagged enum takes a subclass and its class both",
+    breaks:
+      "a JS class's `Deref` to the class it extends isn't followed, and an untagged enum takes a subclass and its class both",
     file: "src/lower/recognition/types.rs",
     find: "        .filter_by_name_unhygienic(sym::Target)\n",
     replace: "        .filter_by_name_unhygienic(sym::value)\n",
-    tests: ["test/compiler.test.ts", "test/lowering-options.test.ts", "test/lowering-structs-enums.test.ts", "-t", "untagged enum"],
+    tests: [
+      "test/compiler.test.ts",
+      "test/lowering-options.test.ts",
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "untagged enum",
+    ],
   },
   {
     name: "boxed-slice-iter-unknown",
-    breaks: "a `Box<[T]>`'s `into_iter()`, by value or through a `&` or a `&mut`, is refused",
+    breaks:
+      "a `Box<[T]>`'s `into_iter()`, by value or through a `&` or a `&mut`, is refused",
     file: "src/lower/recognition/types.rs",
     find: "        ty.boxed_ty().is_some_and(|inner| inner.is_array() || inner.is_slice())\n",
     replace: "        ty.boxed_ty().is_some_and(|inner| inner.is_array())\n",
@@ -137,15 +169,15 @@ export const mutations: Mutation[] = [
     name: "var-error-unknown",
     breaks: "a `VarError` isn't shown as std shows it",
     file: "src/lower/recognition/types.rs",
-    find: "std_path(self.tcx, adt.did()) == \"std::env::VarError\"",
-    replace: "std_path(self.tcx, adt.did()) == \"std::env::NoSuchError\"",
+    find: 'std_path(self.tcx, adt.did()) == "std::env::VarError"',
+    replace: 'std_path(self.tcx, adt.did()) == "std::env::NoSuchError"',
     tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
   },
   {
     name: "needs-drop-unknown",
     breaks: "`mem::needs_drop::<T>()` is refused, not rustc's answer",
     file: "src/lower/recognition/types.rs",
-    find: "        \"std::mem::needs_drop\" => return &[TypeFact::NeedsDrop],\n",
+    find: '        "std::mem::needs_drop" => return &[TypeFact::NeedsDrop],\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^needs_drop.rs$"],
   },
@@ -153,7 +185,7 @@ export const mutations: Mutation[] = [
     name: "align-of-val-unknown",
     breaks: "`align_of_val(&x)`, which has no diagnostic name, is refused",
     file: "src/lower/recognition/types.rs",
-    find: "        _ if std_path(tcx, def_id) == \"std::mem::align_of_val\" => (TypeFact::Align, true),\n",
+    find: '        _ if std_path(tcx, def_id) == "std::mem::align_of_val" => (TypeFact::Align, true),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^size_of.rs$"],
   },
@@ -161,37 +193,47 @@ export const mutations: Mutation[] = [
     name: "size-of-val-as-align",
     breaks: "`size_of_val(&x)` is its alignment",
     file: "src/lower/recognition/types.rs",
-    find: "        _ if diagnostic(\"mem_size_of_val\") => (TypeFact::Size, true),\n",
-    replace: "        _ if diagnostic(\"mem_size_of_val\") => (TypeFact::Align, true),\n",
+    find: '        _ if diagnostic("mem_size_of_val") => (TypeFact::Size, true),\n',
+    replace:
+      '        _ if diagnostic("mem_size_of_val") => (TypeFact::Align, true),\n',
     tests: ["test/corpus.test.ts", "-t", "^size_of.rs$"],
   },
   {
     name: "range-inclusive-end-excluded",
-    breaks: "`2..=5`'s end is `Excluded`, one short: a B-tree's `range(2..=3)` of constants misses `3`, and `&b[2..=3]` through a generic `SliceIndex` is `$sliceIndexes.range`'s",
+    breaks:
+      "`2..=5`'s end is `Excluded`, one short: a B-tree's `range(2..=3)` of constants misses `3`, and `&b[2..=3]` through a generic `SliceIndex` is `$sliceIndexes.range`'s",
     file: "src/lower/recognition/types.rs",
-    find: "        _ if lang(LangItem::RangeInclusiveStruct) => (Field(\"Included\", \"start\"), Field(\"Included\", \"end\")),\n",
-    replace: "        _ if lang(LangItem::RangeInclusiveStruct) => (Field(\"Included\", \"start\"), Field(\"Excluded\", \"end\")),\n",
-    tests: ["test/corpus.test.ts", "-t", "^(btree_range_bounds|index_bound_generic).rs$"],
+    find: '        _ if lang(LangItem::RangeInclusiveStruct) => (Field("Included", "start"), Field("Included", "end")),\n',
+    replace:
+      '        _ if lang(LangItem::RangeInclusiveStruct) => (Field("Included", "start"), Field("Excluded", "end")),\n',
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(btree_range_bounds|index_bound_generic).rs$",
+    ],
   },
   {
     name: "bound-pair-items-swapped",
     breaks: "a pair of `Bound`s' start is its end",
     file: "src/lower/recognition/types.rs",
     find: "        _ if matches!(ty.kind(), ty::Tuple(items) if items.len() == 2) => (Item(0), Item(1)),\n",
-    replace: "        _ if matches!(ty.kind(), ty::Tuple(items) if items.len() == 2) => (Item(1), Item(0)),\n",
+    replace:
+      "        _ if matches!(ty.kind(), ty::Tuple(items) if items.len() == 2) => (Item(1), Item(0)),\n",
     tests: ["test/corpus.test.ts", "-t", "^range_bounds_generic.rs$"],
   },
   {
     name: "layout-new-asks-nothing",
-    breaks: "`Layout::new::<T>()` of a type parameter asks no size or alignment of its caller, and is refused",
+    breaks:
+      "`Layout::new::<T>()` of a type parameter asks no size or alignment of its caller, and is refused",
     file: "src/lower/recognition/types.rs",
-    find: "        \"std::alloc::Layout::new\" => return &[TypeFact::Size, TypeFact::Align],\n",
+    find: '        "std::alloc::Layout::new" => return &[TypeFact::Size, TypeFact::Align],\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^layout_new.rs$"],
   },
   {
     name: "clock-number-arithmetic",
-    breaks: "a time's `-=` is its number's `-`, wrapped to 128 bits, not its own",
+    breaks:
+      "a time's `-=` is its number's `-`, wrapped to 128 bits, not its own",
     file: "src/lower/recognition/types.rs",
     find: "    Num::of(ty).is_some() && !is_duration_ty(ty) && clock_type_of(ty).is_none()\n",
     replace: "    Num::of(ty).is_some() && !is_duration_ty(ty)\n",
@@ -200,10 +242,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "hashed-non-zero-as-itself",
-    breaks: "a `NonZero` is hashed as its own type, `write_NonZero<u32>`, not as its number",
+    breaks:
+      "a `NonZero` is hashed as its own type, `write_NonZero<u32>`, not as its number",
     file: "src/lower/recognition/types.rs",
     find: "            ty::Adt(_, args) if is_non_zero_ty(ty) => Hashed::Number(args.type_at(0)),\n",
-    replace: "            ty::Adt(_, args) if is_non_zero_ty(ty) => Hashed::Number(ty),\n",
+    replace:
+      "            ty::Adt(_, args) if is_non_zero_ty(ty) => Hashed::Number(ty),\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
   },
   {
@@ -216,15 +260,17 @@ export const mutations: Mutation[] = [
   },
   {
     name: "slice-swap-unasked",
-    breaks: "`swap` asks nothing of a slice's length, so a heap's `heap.swap(index, rightIndex)` is `$swap`",
+    breaks:
+      "`swap` asks nothing of a slice's length, so a heap's `heap.swap(index, rightIndex)` is `$swap`",
     file: "src/lower/recognition/types.rs",
-    find: "        \"swap\" => Some(SliceLength::Swap),\n",
+    find: '        "swap" => Some(SliceLength::Swap),\n',
     replace: "",
     tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "vec-deref-unseen",
-    breaks: "a `Vec`'s `deref_mut` isn't its slice, so `heap.swap(..)` of a `Vec` is `$swap`",
+    breaks:
+      "a `Vec`'s `deref_mut` isn't its slice, so `heap.swap(..)` of a `Vec` is `$swap`",
     file: "src/lower/recognition/types.rs",
     find: "            Some(VecView::Slice)\n",
     replace: "            None\n",
@@ -232,15 +278,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "index-mut-unasked",
-    breaks: "`index_mut` asks nothing of a `Vec`'s length, so `&mut heap[0]` where it isn't empty is checked",
+    breaks:
+      "`index_mut` asks nothing of a `Vec`'s length, so `&mut heap[0]` where it isn't empty is checked",
     file: "src/lower/recognition/types.rs",
     find: "        if !tcx.is_lang_item(trait_, LangItem::Index) && !tcx.is_lang_item(trait_, LangItem::IndexMut) {\n",
     replace: "        if !tcx.is_lang_item(trait_, LangItem::Index) {\n",
-    tests: ["test/lowering-options.test.ts", "-t", "nullable result is written"],
+    tests: [
+      "test/lowering-options.test.ts",
+      "-t",
+      "nullable result is written",
+    ],
   },
   {
     name: "btree-of-param-classless",
-    breaks: "a `BTreeSet` of a type parameter's keys is refused, its class not asked of its caller",
+    breaks:
+      "a `BTreeSet` of a type parameter's keys is refused, its class not asked of its caller",
     file: "src/lower/recognition/types.rs",
     find: "        _ if is(StdItem::BTreeSet) => TypeFact::TreeSet,\n",
     replace: "",
@@ -248,55 +300,71 @@ export const mutations: Mutation[] = [
   },
   {
     name: "tree-fact-hashed",
-    breaks: "a generic `BTreeMap` is given its caller's `HashMap` class, a `Map` of keys whose `Ord` is the crate's own",
+    breaks:
+      "a generic `BTreeMap` is given its caller's `HashMap` class, a `Map` of keys whose `Ord` is the crate's own",
     file: "src/lower/recognition/types.rs",
     find: "        [[TypeFact::Map, TypeFact::Set], [TypeFact::TreeMap, TypeFact::TreeSet]][usize::from(sorted)][usize::from(set)]\n",
-    replace: "        [[TypeFact::Map, TypeFact::Set], [TypeFact::Map, TypeFact::Set]][usize::from(sorted)][usize::from(set)]\n",
+    replace:
+      "        [[TypeFact::Map, TypeFact::Set], [TypeFact::Map, TypeFact::Set]][usize::from(sorted)][usize::from(set)]\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_own_ord.rs$"],
   },
   {
     name: "held-types-no-async-block",
-    breaks: "an `async move` block's future holds nothing, so its body drops none of what it took",
+    breaks:
+      "an `async move` block's future holds nothing, so its body drops none of what it took",
     file: "src/lower/recognition/types.rs",
     find: "        ty::Coroutine(def_id, args) => (def_id, args.as_coroutine().upvar_tys()),\n",
     replace: "",
-    tests: ["test/lowering-functions.test.ts", "-t", "an async block or closure drops what it took"],
+    tests: [
+      "test/lowering-functions.test.ts",
+      "-t",
+      "an async block or closure drops what it took",
+    ],
   },
   {
     name: "held-types-no-async-closure",
-    breaks: "an `async` closure holds nothing, so dropping it drops none of what it took",
+    breaks:
+      "an `async` closure holds nothing, so dropping it drops none of what it took",
     file: "src/lower/recognition/types.rs",
     find: "        ty::CoroutineClosure(def_id, args) => (def_id, args.as_coroutine_closure().upvar_tys()),\n",
     replace: "",
-    tests: ["test/lowering-functions.test.ts", "-t", "an async block or closure drops what it took"],
+    tests: [
+      "test/lowering-functions.test.ts",
+      "-t",
+      "an async block or closure drops what it took",
+    ],
   },
   {
     name: "string-drain-unrecognised",
     breaks: "a string Drain steps as chars() do",
     file: "src/lower/recognition/types.rs",
-    find: "== \"std::string::Drain\")",
-    replace: "== \"std::string::Drained\")",
+    find: '== "std::string::Drain")',
+    replace: '== "std::string::Drained")',
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
   },
   {
     name: "dyn-any-send-of-any",
-    breaks: "a `dyn Any` without `Send` is an unwind's payload's, so its own `&JsError` isn't found",
+    breaks:
+      "a `dyn Any` without `Send` is an unwind's payload's, so its own `&JsError` isn't found",
     file: "src/lower/recognition/types.rs",
-    find: "                if traits.auto_traits().any(|id| self.tcx.is_diagnostic_item(Symbol::intern(\"Send\"), id)))\n",
-    replace: "                if traits.auto_traits().all(|id| self.tcx.is_diagnostic_item(Symbol::intern(\"Send\"), id)))\n",
+    find: '                if traits.auto_traits().any(|id| self.tcx.is_diagnostic_item(Symbol::intern("Send"), id)))\n',
+    replace:
+      '                if traits.auto_traits().all(|id| self.tcx.is_diagnostic_item(Symbol::intern("Send"), id)))\n',
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
   },
   {
     name: "path-components-not-items",
-    breaks: "`next_back()` of a path's `components()` is refused, not an array's",
+    breaks:
+      "`next_back()` of a path's `components()` is refused, not an array's",
     file: "src/lower/recognition/types.rs",
-    find: "\"std::path::Iter\" | \"std::path::Components\" | \"std::path::Ancestors\"",
-    replace: "\"std::path::Iter\" | \"std::path::Ancestors\"",
+    find: '"std::path::Iter" | "std::path::Components" | "std::path::Ancestors"',
+    replace: '"std::path::Iter" | "std::path::Ancestors"',
     tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
   },
   {
     name: "range-from-not-a-range",
-    breaks: "`&v[a..]` isn't asked of the length, so one from at most it keeps `$slice` (ADR 0806)",
+    breaks:
+      "`&v[a..]` isn't asked of the length, so one from at most it keeps `$slice` (ADR 0806)",
     file: "src/lower/recognition/types.rs",
     find: "[LangItem::Range, LangItem::RangeTo, LangItem::RangeFrom, LangItem::RangeFull]",
     replace: "[LangItem::Range, LangItem::RangeTo, LangItem::RangeFull]",
@@ -305,16 +373,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "range-of-an-array-unasked",
-    breaks: "an array's range isn't asked of its length, so `&items[..2]` of a `[u32; 5]` keeps `$slice` (ADR 0806)",
+    breaks:
+      "an array's range isn't asked of its length, so `&items[..2]` of a `[u32; 5]` keeps `$slice` (ADR 0806)",
     file: "src/lower/recognition/types.rs",
     find: "            Some(ty) if (vec(ty) || ty.is_slice() || ty.is_array()) && range => Some(SliceLength::Range),\n",
-    replace: "            Some(ty) if (vec(ty) || ty.is_slice()) && range => Some(SliceLength::Range),\n",
+    replace:
+      "            Some(ty) if (vec(ty) || ty.is_slice()) && range => Some(SliceLength::Range),\n",
     tests: ["test/corpus.test.ts", "-t", "slice_ranges_known"],
     snapshots: true,
   },
   {
     name: "repeat-of-any-is-js",
-    breaks: "a slice's `repeat` is taken as a string's, JS's own, unchecked and no array's method",
+    breaks:
+      "a slice's `repeat` is taken as a string's, JS's own, unchecked and no array's method",
     file: "src/lower/recognition/types.rs",
     find: "            .is_some_and(|imp| tcx.type_of(imp).instantiate_identity().skip_normalization().is_str())\n",
     replace: "            .is_some()\n",
@@ -322,7 +393,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rc-deref-of-a-cell-unviewed",
-    breaks: "an `Rc`'s `deref` of a `RefCell` isn't a view of the cell, so `i < listeners.borrow().len()` of an `Rc<RefCell<Vec<T>>>` shows nothing of `i`: its item is `$index(listeners, i)` and `i += 1` `(i + 1) >>> 0` (ADR 0881)",
+    breaks:
+      "an `Rc`'s `deref` of a `RefCell` isn't a view of the cell, so `i < listeners.borrow().len()` of an `Rc<RefCell<Vec<T>>>` shows nothing of `i`: its item is `$index(listeners, i)` and `i += 1` `(i + 1) >>> 0` (ADR 0881)",
     file: "src/lower/recognition/types.rs",
     find: "        let of_cell = cell.is_some_and(|cell| of(cell, StdItem::RefCell));\n",
     replace: "        let of_cell = false;\n",
@@ -331,10 +403,15 @@ export const mutations: Mutation[] = [
   },
   {
     name: "untyped-class-never",
-    breaks: "no `js::Class` is taken to be untyped, a class held, so its construction as any value names `js::new(class, ..)`, which rustc refuses of one",
+    breaks:
+      "no `js::Class` is taken to be untyped, a class held, so its construction as any value names `js::new(class, ..)`, which rustc refuses of one",
     file: "src/lower/recognition/types.rs",
     find: "    is_js_class(tcx, class.did())\n        && args.types().next().is_some_and(|of| {\n",
     replace: "    false\n        && args.types().next().is_some_and(|of| {\n",
-    tests: ["test/js-constructors.test.ts", "-t", "a constructor held as a value of any shape is refused"],
+    tests: [
+      "test/js-constructors.test.ts",
+      "-t",
+      "a constructor held as a value of any shape is refused",
+    ],
   },
 ];

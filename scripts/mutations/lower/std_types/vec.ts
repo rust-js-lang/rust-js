@@ -4,10 +4,12 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "to-vec-shallow",
-    breaks: "`to_vec()` of structs shares each with the original, which a change to the copy changes",
+    breaks:
+      "`to_vec()` of structs shares each with the original, which a change to the copy changes",
     file: "src/lower/std_types/vec.rs",
     find: "                    Some(item) if tys[0].is_ref() => self.clone_items(items, item, span)?,",
-    replace: "                    Some(item) if false && tys[0].is_ref() => self.clone_items(items, item, span)?,",
+    replace:
+      "                    Some(item) if false && tys[0].is_ref() => self.clone_items(items, item, span)?,",
     tests: ["test/corpus.test.ts", "-t", "collection_methods"],
   },
   {
@@ -15,12 +17,14 @@ export const mutations: Mutation[] = [
     breaks: "a string's `is_empty()` is `text.length === 0`, not `!text`",
     file: "src/lower/std_types/vec.rs",
     find: "            Std::IsEmpty if self.is_string_like(tys[0].peel_refs()) => ",
-    replace: "            Std::IsEmpty if false && self.is_string_like(tys[0].peel_refs()) => ",
+    replace:
+      "            Std::IsEmpty if false && self.is_string_like(tys[0].peel_refs()) => ",
     tests: ["test/jsx-children.test.ts", "-t", "filtered child, in place"],
   },
   {
     name: "capacity-args-dropped",
-    breaks: "what a call JS has nothing of is given doesn't run, `assert_unchecked(loud(value) <= 9)`'s, a call's effects lost",
+    breaks:
+      "what a call JS has nothing of is given doesn't run, `assert_unchecked(loud(value) <= 9)`'s, a call's effects lost",
     file: "src/lower/std_types/vec.rs",
     find: "                    if value.has_effects() {\n",
     replace: "                    if false && value.has_effects() {\n",
@@ -28,18 +32,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "with-capacity-untracked",
-    breaks: "`Vec::with_capacity(n)` keeps no capacity, so it's asked less than `n`",
+    breaks:
+      "`Vec::with_capacity(n)` keeps no capacity, so it's asked less than `n`",
     file: "src/lower/std_types/vec.rs",
-    find: "                    (CapacityOp::WithCapacity, true) => helper(\"$withCapacity\", vec![arg()]),\n",
-    replace: "                    (CapacityOp::WithCapacity, true) => Expr::array(vec![arg()].into_iter().take(0).collect()),\n",
+    find: '                    (CapacityOp::WithCapacity, true) => helper("$withCapacity", vec![arg()]),\n',
+    replace:
+      "                    (CapacityOp::WithCapacity, true) => Expr::array(vec![arg()].into_iter().take(0).collect()),\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity.rs$"],
   },
   {
     name: "reserve-untracked",
     breaks: "`v.reserve(n)` keeps no room",
     file: "src/lower/std_types/vec.rs",
-    find: "                    (CapacityOp::Reserve, true) => helper(\"$reserve\", vec![arg(), arg()]),\n",
-    replace: "                    (CapacityOp::Reserve, true) => { let _ = (arg(), arg()); Expr::undefined() }\n",
+    find: '                    (CapacityOp::Reserve, true) => helper("$reserve", vec![arg(), arg()]),\n',
+    replace:
+      "                    (CapacityOp::Reserve, true) => { let _ = (arg(), arg()); Expr::undefined() }\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_capacity.rs$"],
   },
   {
@@ -47,20 +54,23 @@ export const mutations: Mutation[] = [
     breaks: "`clear` of items with a destructor drops none",
     file: "src/lower/std_types/vec.rs",
     find: "            Std::Clear => match self.items_drop(tys[0], span)? {\n",
-    replace: "            Std::Clear => match self.items_drop(tys[0], span)?.filter(|_| false) {\n",
+    replace:
+      "            Std::Clear => match self.items_drop(tys[0], span)?.filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
   },
   {
     name: "retain-given-no-drop",
     breaks: "`retain` of items with a destructor is given no drop",
     file: "src/lower/std_types/vec.rs",
-    find: "                Expr::call(Expr::helper(\"$retain\"), self.dropping(vec![v, keep], tys[0], span)?)\n",
-    replace: "                Expr::call(Expr::helper(\"$retain\"), vec![v, keep])\n",
+    find: '                Expr::call(Expr::helper("$retain"), self.dropping(vec![v, keep], tys[0], span)?)\n',
+    replace:
+      '                Expr::call(Expr::helper("$retain"), vec![v, keep])\n',
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
   },
   {
     name: "to-vec-moved-made-copied",
-    breaks: "an array made here and moved, `[..].map(f).into()`, is copied again",
+    breaks:
+      "an array made here and moved, `[..].map(f).into()`, is copied again",
     file: "src/lower/std_types/vec.rs",
     find: "                    _ if crate::lower::iterators::made_array(&items) => items,\n",
     replace: "",
@@ -69,15 +79,17 @@ export const mutations: Mutation[] = [
   },
   {
     name: "boxed-pop-front-unboxed",
-    breaks: "`pop_front` of a type parameter's items gives its item unboxed, which generic code reads as `Some` of what's in it",
+    breaks:
+      "`pop_front` of a type parameter's items gives its item unboxed, which generic code reads as `Some` of what's in it",
     file: "src/lower/std_types/vec.rs",
-    find: "            Std::Method(\"shift\") if boxed => Expr::call(Expr::helper(\"$shift\"), vec![arg()]),\n",
+    find: '            Std::Method("shift") if boxed => Expr::call(Expr::helper("$shift"), vec![arg()]),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_rc_drops.rs$"],
   },
   {
     name: "deque-index-as-slice",
-    breaks: "a `VecDeque`'s index past its end panics with a slice's message, `index out of bounds: the len is ..`, not `out of bounds access`",
+    breaks:
+      "a `VecDeque`'s index past its end panics with a slice's message, `index out of bounds: the len is ..`, not `out of bounds access`",
     file: "src/lower/std_types/vec.rs",
     find: "        if self.is_std_type(items_ty.peel_refs(), crate::lower::recognition::StdItem::VecDeque) {",
     replace: "        if false {",
@@ -94,7 +106,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "room-more-of-no-size-unchecked",
-    breaks: "`reserve(n)` of items of no size past `usize::MAX` of them is no panic",
+    breaks:
+      "`reserve(n)` of items of no size past `usize::MAX` of them is no panic",
     file: "src/lower/std_types/vec.rs",
     find: "        (_, Some(0)) => len.is_none(),\n",
     replace: "        (_, Some(0)) => true,\n",
@@ -118,7 +131,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "room-item-of-no-size",
-    breaks: "each item's size is taken as none, `Vec::<u8>::with_capacity(n)` checked by its count alone",
+    breaks:
+      "each item's size is taken as none, `Vec::<u8>::with_capacity(n)` checked by its count alone",
     file: "src/lower/std_types/vec.rs",
     find: "        Expr::int(self.layout(item).map_or(0, |layout| i128::from(layout.size.bytes())))\n",
     replace: "        Expr::int(0)\n",
@@ -128,8 +142,8 @@ export const mutations: Mutation[] = [
     name: "with-capacity-room-unchecked",
     breaks: "`Vec::with_capacity(n)` past `isize::MAX` bytes is no panic",
     file: "src/lower/std_types/vec.rs",
-    find: "                        let n = once(self, 0, \"n\");\n                        self.room_for((None, n), size, span, out);\n",
-    replace: "                        let _ = once(self, 0, \"n\");\n",
+    find: '                        let n = once(self, 0, "n");\n                        self.room_for((None, n), size, span, out);\n',
+    replace: '                        let _ = once(self, 0, "n");\n',
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
   },
   {
@@ -159,16 +173,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "room-of-a-constant-count-checked",
-    breaks: "`vec![None; LANES]` of a `const` that fits checks room it can't run out of, `$roomFor(LANES, 12)`",
+    breaks:
+      "`vec![None; LANES]` of a `const` that fits checks room it can't run out of, `$roomFor(LANES, 12)`",
     file: "src/lower/std_types/vec.rs",
     find: "        if value.is_some_and(|value| room_fits(None, &Expr::int(i128::from(value)), &size)) {\n",
-    replace: "        if false && value.is_some_and(|value| room_fits(None, &Expr::int(i128::from(value)), &size)) {\n",
+    replace:
+      "        if false && value.is_some_and(|value| room_fits(None, &Expr::int(i128::from(value)), &size)) {\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
   },
   {
     name: "room-of-a-constant-count-unchecked",
-    breaks: "`vec![0u32; ALL]` of a `const` past `isize::MAX` bytes is no panic",
+    breaks:
+      "`vec![0u32; ALL]` of a `const` past `isize::MAX` bytes is no panic",
     file: "src/lower/std_types/vec.rs",
     find: "        if value.is_some_and(|value| room_fits(None, &Expr::int(i128::from(value)), &size)) {\n",
     replace: "        if value.is_some() {\n",
@@ -176,10 +193,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "utf16-sort-by-kept",
-    breaks: "`sort_by(|a, b| a.encode_utf16().cmp(b.encode_utf16()))` is a comparator of `$iterCmp`, where JS's `sort()` is that order (ADR 0945)",
+    breaks:
+      "`sort_by(|a, b| a.encode_utf16().cmp(b.encode_utf16()))` is a comparator of `$iterCmp`, where JS's `sort()` is that order (ADR 0945)",
     file: "src/lower/std_types/vec.rs",
     find: "                    ty::Slice(elem) | ty::Array(elem, _) if self.sorts_as_js_strings(tys[1], *elem) => {\n",
-    replace: "                    ty::Slice(elem) | ty::Array(elem, _) if false => {\n",
+    replace:
+      "                    ty::Slice(elem) | ty::Array(elem, _) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^utf16_sort.rs$"],
     snapshots: true,
   },

@@ -4,7 +4,8 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "caller-read-unseen",
-    breaks: "a tracked function that reads `Location::caller()` takes no location, and reads none",
+    breaks:
+      "a tracked function that reads `Location::caller()` takes no location, and reads none",
     file: "src/lower/analysis/caller_locations.rs",
     find: "                taking.insert(owner);\n",
     replace: "                let _ = owner;\n",
@@ -12,7 +13,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "caller-passed-on-unseen",
-    breaks: "a tracked function that calls one taking its location takes none, and gives its own place instead",
+    breaks:
+      "a tracked function that calls one taking its location takes none, and gives its own place instead",
     file: "src/lower/analysis/caller_locations.rs",
     find: "            if (taking.contains(&callee) || foreign.takes_location(callee)) && taking.insert(caller) {\n",
     replace: "            if false && taking.insert(caller) {\n",
@@ -20,7 +22,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dictionary-location-untaken",
-    breaks: "a trait method one of whose impls reads its caller's location is called through a dictionary without it",
+    breaks:
+      "a trait method one of whose impls reads its caller's location is called through a dictionary without it",
     file: "src/lower/analysis/caller_locations.rs",
     find: "            if takes {\n                changed |= taking.insert(declared);\n            }\n",
     replace: "",
@@ -28,7 +31,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dictionary-call-not-passed-on",
-    breaks: "a tracked function calling a trait method through a dictionary passes on no location",
+    breaks:
+      "a tracked function calling a trait method through a dictionary passes on no location",
     file: "src/lower/analysis/caller_locations.rs",
     find: "                _ => calls.push((owner, callee)),\n",
     replace: "                _ => {}\n",

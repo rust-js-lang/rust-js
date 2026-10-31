@@ -4,7 +4,8 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "replaced-whole-not-mutation",
-    breaks: "`*p = P::default()` through a `&mut` isn't a change in place, so `let b = a` shares `a`'s object, and resetting `b` resets `a`",
+    breaks:
+      "`*p = P::default()` through a `&mut` isn't a change in place, so `let b = a` shares `a`'s object, and resetting `b` resets `a`",
     file: "src/lower/analysis/mutation.rs",
     find: "            {\n                mutated.insert(body.thir[lhs].ty);\n            }",
     replace: "            {}",
@@ -12,7 +13,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mem-swap-not-mutation",
-    breaks: "`mem::swap` of two `&mut` objects isn't a change in place, so a `Copy` value shared with the swapped one changes too",
+    breaks:
+      "`mem::swap` of two `&mut` objects isn't a change in place, so a `Copy` value shared with the swapped one changes too",
     file: "src/lower/analysis/mutation.rs",
     find: "                && replaces_whole(tcx, def_id)",
     replace: "                && replaces_whole(tcx, def_id) && false",
@@ -20,7 +22,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "replaced-string-mutated",
-    breaks: "a `String` replaced through a `&mut` counts as changed in place, so its `clone()` is refused",
+    breaks:
+      "a `String` replaced through a `&mut` counts as changed in place, so its `clone()` is refused",
     file: "src/lower/analysis/mutation.rs",
     find: "                && object_like(tcx, body.thir[lhs].ty)\n",
     replace: "",
@@ -28,23 +31,35 @@ export const mutations: Mutation[] = [
   },
   {
     name: "everything-copies-itself",
-    breaks: "a struct changed in place counts as its own copy, so `kept(p)` shares `p`'s object",
+    breaks:
+      "a struct changed in place counts as its own copy, so `kept(p)` shares `p`'s object",
     file: "src/lower/analysis/mutation.rs",
     find: "        ty::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Option) => copies_itself(tcx, args.type_at(0)),\n        _ => false,",
-    replace: "        ty::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Option) => copies_itself(tcx, args.type_at(0)),\n        _ => true,",
-    tests: ["test/lowering-functions.test.ts", "-t", "a Copy bound takes a copy only"],
+    replace:
+      "        ty::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Option) => copies_itself(tcx, args.type_at(0)),\n        _ => true,",
+    tests: [
+      "test/lowering-functions.test.ts",
+      "-t",
+      "a Copy bound takes a copy only",
+    ],
   },
   {
     name: "option-copies-not-itself",
-    breaks: "an `Option` of a reference takes a copy function, so `twice(name)` is given `{ copy: (value) => value }`",
+    breaks:
+      "an `Option` of a reference takes a copy function, so `twice(name)` is given `{ copy: (value) => value }`",
     file: "src/lower/analysis/mutation.rs",
     find: "LangItem::Option) => copies_itself(tcx, args.type_at(0)),",
     replace: "LangItem::Option) => false,",
-    tests: ["test/lowering-functions.test.ts", "-t", "a Copy bound takes a copy only"],
+    tests: [
+      "test/lowering-functions.test.ts",
+      "-t",
+      "a Copy bound takes a copy only",
+    ],
   },
   {
     name: "changing-closure-copies-itself",
-    breaks: "a closure that changes what it captured counts as its own copy, so copying one under a `Copy` bound compiles and its copies share their state",
+    breaks:
+      "a closure that changes what it captured counts as its own copy, so copying one under a `Copy` bound compiles and its copies share their state",
     file: "src/lower/analysis/mutation.rs",
     find: "args.as_closure().kind() == ty::ClosureKind::Fn,",
     replace: "true,",
@@ -52,23 +67,34 @@ export const mutations: Mutation[] = [
   },
   {
     name: "relayed-copy-lost",
-    breaks: "a type parameter passed on to a function that copies isn't given a copy itself, so `relay(p)` shares `p`'s object",
+    breaks:
+      "a type parameter passed on to a function that copies isn't given a copy itself, so `relay(p)` shares `p`'s object",
     file: "src/lower/analysis/mutation.rs",
     find: "            if given.contains(&from) && given.insert(to) {",
     replace: "            if false && given.insert(to) {",
-    tests: ["test/lowering-functions.test.ts", "-t", "a Copy bound takes a copy only"],
+    tests: [
+      "test/lowering-functions.test.ts",
+      "-t",
+      "a Copy bound takes a copy only",
+    ],
   },
   {
     name: "trait-method-copies-by-callers",
-    breaks: "a trait method's `Copy` bound is decided by the crate's direct calls, though it's called through a dictionary",
+    breaks:
+      "a trait method's `Copy` bound is decided by the crate's direct calls, though it's called through a dictionary",
     file: "src/lower/analysis/mutation.rs",
     find: "        && tcx.trait_of_assoc(id).is_none()\n",
     replace: "",
-    tests: ["test/lowering-functions.test.ts", "-t", "a Copy bound takes a copy only"],
+    tests: [
+      "test/lowering-functions.test.ts",
+      "-t",
+      "a Copy bound takes a copy only",
+    ],
   },
   {
     name: "trait-impl-copies-by-callers",
-    breaks: "a trait impl's own `T: Copy` takes no copy function, which its method's dictionary is given, so a copy of an `Option<Point>` its method makes is the value it copies, and a change to it shows there",
+    breaks:
+      "a trait impl's own `T: Copy` takes no copy function, which its method's dictionary is given, so a copy of an `Option<Point>` its method makes is the value it copies, and a change to it shows there",
     file: "src/lower/analysis/mutation.rs",
     find: "        && !matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true })\n",
     replace: "",
@@ -76,23 +102,31 @@ export const mutations: Mutation[] = [
   },
   {
     name: "pointee-copies-shared",
-    breaks: "a copy of what a pointer points to is the same object, so two copies' pointers are one",
+    breaks:
+      "a copy of what a pointer points to is the same object, so two copies' pointers are one",
     file: "src/lower/analysis/mutation.rs",
     find: "            if let Some((pointee, _)) = crate::lower::pointers::raw_pointee(tcx, expr.ty)\n",
-    replace: "            if let Some((pointee, _)) = crate::lower::pointers::raw_pointee(tcx, expr.ty)\n                && false\n",
+    replace:
+      "            if let Some((pointee, _)) = crate::lower::pointers::raw_pointee(tcx, expr.ty)\n                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
   {
     name: "std-macro-pointee-copied",
-    breaks: "a thread-local's value, which std's `thread_local!` points to, is taken for one the crate changes in place, so a library's function that makes one, `Cell::new(None)` of a `Cell<Option<&str>>`, is compiled here, and refused for reading its library's private `NEXT_ID`",
+    breaks:
+      "a thread-local's value, which std's `thread_local!` points to, is taken for one the crate changes in place, so a library's function that makes one, `Cell::new(None)` of a `Cell<Option<&str>>`, is compiled here, and refused for reading its library's private `NEXT_ID`",
     file: "src/lower/analysis/mutation.rs",
     find: "                && !expr.span.in_external_macro(tcx.sess.source_map())\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: thread_local_beside_a_made_cell"],
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "two crates: thread_local_beside_a_made_cell",
+    ],
   },
   {
     name: "part-borrow-unchanged",
-    breaks: "a struct whose text is changed through a `&mut` of it, `copy[0].0.push('?')`, isn't copied when cloned, so the original changes too",
+    breaks:
+      "a struct whose text is changed through a `&mut` of it, `copy[0].0.push('?')`, isn't copied when cloned, so the original changes too",
     file: "src/lower/analysis/mutation.rs",
     find: "                } if !object_like(tcx, body.thir[arg].ty) => Some(arg),\n",
     replace: "                } if false => Some(arg),\n",
@@ -100,7 +134,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "part-borrow-objects",
-    breaks: "a `&mut` of a part that's an object, changed in place, counts its holder changed, so it's copied where it needn't be",
+    breaks:
+      "a `&mut` of a part that's an object, changed in place, counts its holder changed, so it's copied where it needn't be",
     file: "src/lower/analysis/mutation.rs",
     find: "                } if !object_like(tcx, body.thir[arg].ty) => Some(arg),\n",
     replace: "                } if true => Some(arg),\n",
@@ -109,15 +144,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "array-borrowed-mut-unchanged",
-    breaks: "an array something takes `&mut` of, to sort it or change it through a slice, isn't seen to change, so a copy made before shares it, and a grid's rows are one array",
+    breaks:
+      "an array something takes `&mut` of, to sort it or change it through a slice, isn't seen to change, so a copy made before shares it, and a grid's rows are one array",
     file: "src/lower/analysis/mutation.rs",
     find: "                } if matches!(body.thir[arg].ty.kind(), ty::Array(..)) => {\n",
-    replace: "                } if false && matches!(body.thir[arg].ty.kind(), ty::Array(..)) => {\n",
+    replace:
+      "                } if false && matches!(body.thir[arg].ty.kind(), ty::Array(..)) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^arrays_changed_through_slices.rs$"],
   },
   {
     name: "ref-mut-holders-unseen",
-    breaks: "a `ref mut` binding of a pattern, `let (a, _) = &mut t`, isn't seen to change the tuple or struct it's a field of, so a copy made before shares it",
+    breaks:
+      "a `ref mut` binding of a pattern, `let (a, _) = &mut t`, isn't seen to change the tuple or struct it's a field of, so a copy made before shares it",
     file: "src/lower/analysis/mutation.rs",
     find: "        mutated.insert(pat.ty.peel_refs());\n    }\n    holds || parts\n",
     replace: "    }\n    holds || parts\n",
@@ -125,7 +163,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "flattened-rows-unchanged",
-    breaks: "a grid's rows changed through `as_flattened_mut()` are one array, `new Array(3).fill([0, 0])`, so a change shows in each",
+    breaks:
+      "a grid's rows changed through `as_flattened_mut()` are one array, `new Array(3).fill([0, 0])`, so a change shows in each",
     file: "src/lower/analysis/mutation.rs",
     find: "                    mutated.insert(*row);\n",
     replace: "",
@@ -133,23 +172,34 @@ export const mutations: Mutation[] = [
   },
   {
     name: "option-mut-changes-in-place",
-    breaks: "an `Option` a closure writes through a `&mut` counts as changed in place, so a slice of them's `to_vec()` is `xs.map((item) => item)`, not `xs.slice()`",
+    breaks:
+      "an `Option` a closure writes through a `&mut` counts as changed in place, so a slice of them's `to_vec()` is `xs.map((item) => item)`, not `xs.slice()`",
     file: "src/lower/analysis/mutation.rs",
     find: "if adt.is_enum()) && object_like(tcx, ty)",
     replace: "if adt.is_enum())",
-    tests: ["test/lowering-collections.test.ts", "-t", "an option written through a &mut is no object changed in place"],
+    tests: [
+      "test/lowering-collections.test.ts",
+      "-t",
+      "an option written through a &mut is no object changed in place",
+    ],
   },
   {
     name: "instance-copies-unasked",
-    breaks: "a library's function the crate compiles itself takes a copy of each `Copy` type parameter, as one a dictionary calls, `pairOf(value, dropped, TCopy, dropD)` where its callers give its own copy (ADR 0914)",
+    breaks:
+      "a library's function the crate compiles itself takes a copy of each `Copy` type parameter, as one a dictionary calls, `pairOf(value, dropped, TCopy, dropD)` where its callers give its own copy (ADR 0914)",
     file: "src/lower/analysis/mutation.rs",
     find: "    (id.is_local() || foreign.is_instance(id))\n",
     replace: "    id.is_local()\n",
-    tests: ["test/crates.test.ts", "-t", "is its program's, alone or a dependency"],
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "is its program's, alone or a dependency",
+    ],
   },
   {
     name: "rc-written-through-mut-changed-in-place",
-    breaks: "an `Rc` written through a `&mut` is taken for one changed in place, so its clone, React's `pending.next.borrow().clone()`, is refused",
+    breaks:
+      "an `Rc` written through a `&mut` is taken for one changed in place, so its clone, React's `pending.next.borrow().clone()`, is refused",
     file: "src/lower/analysis/mutation.rs",
     find: "        ty::Adt(..)\n            if crate::lower::recognition::rc_pointee(tcx, ty).is_some()\n                || crate::lower::recognition::weak_pointee(tcx, ty).is_some() =>\n        {\n            false\n        }\n",
     replace: "",
@@ -157,15 +207,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "clone-given-of-its-own-clone",
-    breaks: "a `T: Clone` given only what's its own clone, `Option<Rc<Cache>>`, still takes a `TClone`, and its clone under a library's unchecked borrow is refused (ADR 0914, amended)",
+    breaks:
+      "a `T: Clone` given only what's its own clone, `Option<Rc<Cache>>`, still takes a `TClone`, and its clone under a library's unchecked borrow is refused (ADR 0914, amended)",
     file: "src/lower/analysis/mutation.rs",
     find: "                    _ if itself(given_ty) => {}\n",
     replace: "",
-    tests: ["test/cross-crate-items.test.ts", "-t", "judged by what its callers give"],
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "judged by what its callers give",
+    ],
   },
   {
     name: "string-clone-not-itself",
-    breaks: "a `String` given a `T: Clone` is taken to be no clone of itself, so its function takes a `TClone`, `read(names, { clone })` (ADR 0914, amended)",
+    breaks:
+      "a `String` given a `T: Clone` is taken to be no clone of itself, so its function takes a `TClone`, `read(names, { clone })` (ADR 0914, amended)",
     file: "src/lower/analysis/mutation.rs",
     find: "        ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::String) => true,\n",
     replace: "",
@@ -174,15 +230,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "counted-rc-clones-itself",
-    breaks: "a counted `Rc` given a `T: Clone` is taken to be its own clone, so the clone adds nothing to its count and its last owner drops what it holds early (ADR 0914, amended)",
+    breaks:
+      "a counted `Rc` given a `T: Clone` is taken to be its own clone, so the clone adds nothing to its count and its last owner drops what it holds early (ADR 0914, amended)",
     file: "src/lower/analysis/mutation.rs",
     find: "        _ if let Some(pointee) = crate::lower::recognition::rc_pointee(tcx, ty) => !counted.counts(tcx, pointee),\n",
-    replace: "        _ if let Some(_) = crate::lower::recognition::rc_pointee(tcx, ty) => true,\n",
+    replace:
+      "        _ if let Some(_) = crate::lower::recognition::rc_pointee(tcx, ty) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_generic_given_drops.rs$"],
   },
   {
     name: "unboxed-param-given",
-    breaks: "every type parameter is taken to be given what may look like `None`, so a JS caller of React's `flushSyncFromReconciler` gets `{ $someNone: 0 }` where its callback gave `undefined` (ADR 0051, amended)",
+    breaks:
+      "every type parameter is taken to be given what may look like `None`, so a JS caller of React's `flushSyncFromReconciler` gets `{ $someNone: 0 }` where its callback gave `undefined` (ADR 0051, amended)",
     file: "src/lower/analysis/mutation.rs",
     find: "        .filter(|param| !nullish.contains(param))\n",
     replace: "        .filter(|_| false)\n",
@@ -190,7 +249,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "nullish-given-unseen",
-    breaks: "no type a caller gives is taken to look like `None`, so `relay(())`'s `Some(())` is `undefined`, `None` (ADR 0051, amended)",
+    breaks:
+      "no type a caller gives is taken to look like `None`, so `relay(())`'s `Some(())` is `undefined`, `None` (ADR 0051, amended)",
     file: "src/lower/analysis/mutation.rs",
     find: "        &|ty| !crate::lower::representation::may_look_like_none(recognition, ty),\n",
     replace: "        &|_| true,\n",

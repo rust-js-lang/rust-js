@@ -4,85 +4,113 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "dictionary-declared-once-used",
-    breaks: "a dictionary its body writes once is declared at its top too, where inline it reads as it's asked (ADR 0979)",
+    breaks:
+      "a dictionary its body writes once is declared at its top too, where inline it reads as it's asked (ADR 0979)",
     file: "src/lower/traits/dictionaries.rs",
     find: "            if count < 2 {\n",
     replace: "            if count < 1 {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(std_inspect|nested_item_drops|held_peekable|writer_fn_pointer).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(std_inspect|nested_item_drops|held_peekable|writer_fn_pointer).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "dictionary-repeats-unnamed",
-    breaks: "a dictionary its body writes twice or more is written each time, not declared once at its top (ADR 0979)",
+    breaks:
+      "a dictionary its body writes twice or more is written each time, not declared once at its top (ADR 0979)",
     file: "src/lower/traits/dictionaries.rs",
     find: "            self.keep_dictionary(&made, name, shared);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(std_inspect|nested_item_drops|held_peekable|writer_fn_pointer).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(std_inspect|nested_item_drops|held_peekable|writer_fn_pointer).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "dictionary-of-steps-declared",
-    breaks: "a dictionary of helpers alone, `{ next: $next }`, is declared at its body's top, where inline it reads as well (ADR 0979)",
+    breaks:
+      "a dictionary of helpers alone, `{ next: $next }`, is declared at its body's top, where inline it reads as well (ADR 0979)",
     file: "src/lower/traits/dictionaries.rs",
     find: "            && holds_a_function(&made)\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(std_inspect|nested_item_drops|held_peekable|writer_fn_pointer).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(std_inspect|nested_item_drops|held_peekable|writer_fn_pointer).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "identity-copy-param-refused",
-    breaks: "a type parameter whose `Copy` bound takes no copy function, each value its callers give its own copy, is refused a `Copy` dictionary, `Copy without representation evidence`, where std's compiled `Copied` asks one (ADR 0938)",
+    breaks:
+      "a type parameter whose `Copy` bound takes no copy function, each value its callers give its own copy, is refused a `Copy` dictionary, `Copy without representation evidence`, where std's compiled `Copied` asks one (ADR 0938)",
     file: "src/lower/traits/dictionaries.rs",
     find: "                && !self.krate.given.copied.contains(&(item, param.index))\n            {\n                return Ok(Expr::undefined());\n",
-    replace: "                && false\n            {\n                return Ok(Expr::undefined());\n",
+    replace:
+      "                && false\n            {\n                return Ok(Expr::undefined());\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^heap_pop_of_a_param with"],
   },
   {
     name: "mut-ref-extension-of-evidence-unseen",
-    breaks: "a `&mut R`'s `DoubleEndedIterator`, of a type parameter given one, isn't of the dictionary `R` was given: `self.inner.by_ref().map(f).rfold(..)` is refused, `the DoubleEndedIterator of a R` (ADR 0937)",
+    breaks:
+      "a `&mut R`'s `DoubleEndedIterator`, of a type parameter given one, isn't of the dictionary `R` was given: `self.inner.by_ref().map(f).rfold(..)` is refused, `the DoubleEndedIterator of a R` (ADR 0937)",
     file: "src/lower/traits/dictionaries.rs",
     find: "                && self.is_unknown(*inner)\n            {\n                let of = self.dictionary(ty::TraitRef::new(self.tcx, tr.def_id, [*inner]), span)?;\n                return Ok(self.mut_ref_extension_dictionary(tr.def_id, of));\n",
-    replace: "                && false\n            {\n                let of = self.dictionary(ty::TraitRef::new(self.tcx, tr.def_id, [*inner]), span)?;\n                return Ok(self.mut_ref_extension_dictionary(tr.def_id, of));\n",
+    replace:
+      "                && false\n            {\n                let of = self.dictionary(ty::TraitRef::new(self.tcx, tr.def_id, [*inner]), span)?;\n                return Ok(self.mut_ref_extension_dictionary(tr.def_id, of));\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^held_enumerate with"],
   },
   {
     name: "evidence-unnormalized",
-    breaks: "`shown(&mut Words ..)` is given the dictionary of `<Words as Source>::Item: Debug`, not `String: Debug`, and it's refused",
+    breaks:
+      "`shown(&mut Words ..)` is given the dictionary of `<Words as Source>::Item: Debug`, not `String: Debug`, and it's refused",
     file: "src/lower/traits/dictionaries.rs",
     find: "            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(tr))\n            .unwrap_or(tr);\n",
-    replace: "            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(tr))\n            .map(|_| tr)\n            .unwrap_or(tr);\n",
-    tests: ["test/corpus.test.ts","-t","associated_types"],
+    replace:
+      "            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(tr))\n            .map(|_| tr)\n            .unwrap_or(tr);\n",
+    tests: ["test/corpus.test.ts", "-t", "associated_types"],
   },
   {
     name: "into-without-from",
-    breaks: "`Into<Name>` of a `&str` isn't the crate's `From<&str> for Name`, and is refused",
+    breaks:
+      "`Into<Name>` of a `&str` isn't the crate's `From<&str> for Name`, and is refused",
     file: "src/lower/traits/dictionaries.rs",
     find: "            } else if let Some(instance) = self.resolve_instance(from, from_args)?\n                && self.is_rust_fn(instance.def_id())\n",
-    replace: "            } else if let Some(instance) = self.resolve_instance(from, from_args)?\n                && false\n",
-    tests: ["test/corpus.test.ts","-t","generic_into"],
+    replace:
+      "            } else if let Some(instance) = self.resolve_instance(from, from_args)?\n                && false\n",
+    tests: ["test/corpus.test.ts", "-t", "generic_into"],
   },
   {
     name: "object-dictionary-unselected",
     breaks: "a `dyn` given to generic code has no dictionary, and is refused",
     file: "src/lower/traits/dictionaries.rs",
     find: "        if let Ok(ImplSource::Builtin(BuiltinImplSource::Object(_), _)) = selected {",
-    replace: "        if let Ok(ImplSource::Builtin(BuiltinImplSource::Object(_), _)) = selected && false {",
+    replace:
+      "        if let Ok(ImplSource::Builtin(BuiltinImplSource::Object(_), _)) = selected && false {",
     tests: ["test/corpus.test.ts", "-t", "dyn_generic"],
   },
   {
     name: "object-mut-receiver-unboxed",
-    breaks: "a `&mut self` method of a `dyn` in generic code takes generic code's box for the pair, and JS throws",
+    breaks:
+      "a `&mut self` method of a `dyn` in generic code takes generic code's box for the pair, and JS throws",
     file: "src/lower/traits/dictionaries.rs",
     find: "            let pair = match mutable {\n                true => Expr::held(object.clone()),",
-    replace: "            let pair = match mutable {\n                true => object.clone(),",
+    replace:
+      "            let pair = match mutable {\n                true => object.clone(),",
     tests: ["test/corpus.test.ts", "-t", "dyn_generic"],
   },
   {
     name: "object-supertraits-missing",
-    breaks: "a `dyn`'s dictionary in generic code has no supertraits, and a supertrait's method throws",
+    breaks:
+      "a `dyn`'s dictionary in generic code has no supertraits, and a supertrait's method throws",
     file: "src/lower/traits/dictionaries.rs",
     find: "            .ok_or_else(|| self.no_evidence(span, tr))?;\n        let mut props = self.supertrait_entries(tr, span)?;\n",
-    replace: "            .ok_or_else(|| self.no_evidence(span, tr))?;\n        let mut props = Vec::new();\n",
+    replace:
+      "            .ok_or_else(|| self.no_evidence(span, tr))?;\n        let mut props = Vec::new();\n",
     tests: ["test/corpus.test.ts", "-t", "dyn_generic"],
   },
   {
@@ -95,7 +123,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "std-as-ref-dictionary-missing",
-    breaks: "`shout(\"hi\")` of an `S: AsRef<str>` has no dictionary for a `&str`'s",
+    breaks:
+      '`shout("hi")` of an `S: AsRef<str>` has no dictionary for a `&str`\'s',
     file: "src/lower/traits/dictionaries.rs",
     find: "            && self.recognition().as_ref_is_itself(ty, tr.args.type_at(1))\n        {\n            let same",
     replace: "            && false\n        {\n            let same",
@@ -106,12 +135,14 @@ export const mutations: Mutation[] = [
     breaks: "a `T: Mul` given a `Wrapping<u8>` has no dictionary",
     file: "src/lower/traits/dictionaries.rs",
     find: "            && let Some(inner) = self.recognition().wrapping_of(ty.peel_refs())\n",
-    replace: "            && let Some(inner) = self.recognition().wrapping_of(ty.peel_refs()).filter(|_| false)\n",
+    replace:
+      "            && let Some(inner) = self.recognition().wrapping_of(ty.peel_refs()).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "wrapping_type"],
   },
   {
     name: "dyn-item-drops-left-out",
-    breaks: "a `dyn`'s dictionary has no drop for the associated type its type names, so generic code given one drops nothing",
+    breaks:
+      "a `dyn`'s dictionary has no drop for the associated type its type names, so generic code given one drops nothing",
     file: "src/lower/traits/dictionaries.rs",
     find: "        }\n        props.extend(self.item_drops(tr, span)?);\n        Ok(Expr::object(props))\n",
     replace: "        }\n        Ok(Expr::object(props))\n",
@@ -119,7 +150,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "string-writer-no-dictionary",
-    breaks: "a `String` or a `Formatter` given to generic code that writes to any writer has no dictionary, and it's refused",
+    breaks:
+      "a `String` or a `Formatter` given to generic code that writes to any writer has no dictionary, and it's refused",
     file: "src/lower/traits/dictionaries.rs",
     find: "if text(ty) {",
     replace: "if false && text(ty) {",
@@ -127,31 +159,38 @@ export const mutations: Mutation[] = [
   },
   {
     name: "std-radix-dictionary-missing",
-    breaks: "`impl<T: LowerHex> LowerHex for Bits<T>` of a `u8` has no `u8: LowerHex` to call",
+    breaks:
+      "`impl<T: LowerHex> LowerHex for Bits<T>` of a `u8` has no `u8: LowerHex` to call",
     file: "src/lower/traits/dictionaries.rs",
     find: "            && let Some(radix) = self.radix_trait(tr.def_id)\n",
-    replace: "            && let Some(radix) = self.radix_trait(tr.def_id).filter(|_| false)\n",
-    tests: ["test/corpus.test.ts","-t","user_fmt_traits"],
+    replace:
+      "            && let Some(radix) = self.radix_trait(tr.def_id).filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "user_fmt_traits"],
   },
   {
     name: "marker-dyn-no-evidence",
-    breaks: "a `T: Marker` made a `dyn` has no dictionary, as no bound passed one, and doesn't compile",
+    breaks:
+      "a `T: Marker` made a `dyn` has no dictionary, as no bound passed one, and doesn't compile",
     file: "src/lower/traits/dictionaries.rs",
     find: "        if tr.self_ty().has_param() && is_marker(self.tcx, self.krate.foreign, tr.def_id) {",
-    replace: "        if false && tr.self_ty().has_param() && is_marker(self.tcx, self.krate.foreign, tr.def_id) {",
-    tests: ["test/traits.test.ts","-t","nothing in it passes no dictionary"],
+    replace:
+      "        if false && tr.self_ty().has_param() && is_marker(self.tcx, self.krate.foreign, tr.def_id) {",
+    tests: ["test/traits.test.ts", "-t", "nothing in it passes no dictionary"],
   },
   {
     name: "marker-dyn-no-drop",
-    breaks: "a `T: Marker` made a `dyn` isn't dropped: its dictionary has no `$drop`",
+    breaks:
+      "a `T: Marker` made a `dyn` isn't dropped: its dictionary has no `$drop`",
     file: "src/lower/traits/dictionaries.rs",
     find: "            let mut props = self.supertrait_entries(tr, span)?;\n            props.extend(self.dictionary_drop(tr.self_ty(), span)?);\n            return Ok(Expr::object(props));",
-    replace: "            let props = self.supertrait_entries(tr, span)?;\n            return Ok(Expr::object(props));",
-    tests: ["test/traits.test.ts","-t","nothing in it passes no dictionary"],
+    replace:
+      "            let props = self.supertrait_entries(tr, span)?;\n            return Ok(Expr::object(props));",
+    tests: ["test/traits.test.ts", "-t", "nothing in it passes no dictionary"],
   },
   {
     name: "stateful-closure-copy-bound",
-    breaks: "a closure that changes what it captured is given where a `Copy` bound copies it, and each copy shares its count",
+    breaks:
+      "a closure that changes what it captured is given where a `Copy` bound copies it, and each copy shares its count",
     file: "src/lower/traits/dictionaries.rs",
     find: "            if self.copies_own_captures(ty) {",
     replace: "            if false && self.copies_own_captures(ty) {",
@@ -159,7 +198,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "std-deref-dictionary-missing",
-    breaks: "std's `Deref` of a `String` or a `Box` given to generic code has no dictionary",
+    breaks:
+      "std's `Deref` of a `String` or a `Box` given to generic code has no dictionary",
     file: "src/lower/traits/dictionaries.rs",
     find: "        if self.tcx.is_lang_item(tr.def_id, LangItem::Deref) && !self.has_user_impl(tr.def_id, ty) {\n",
     replace: "        if false {\n",
@@ -167,7 +207,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "number-assign-dictionary-missing",
-    breaks: "std's `AddAssign` of numbers, given to generic code, has no dictionary",
+    breaks:
+      "std's `AddAssign` of numbers, given to generic code, has no dictionary",
     file: "src/lower/traits/dictionaries.rs",
     find: "            && (self.primitive_operands(tr) || (op == BinOp::Add && tr.args.types().all(text)))\n",
     replace: "            && (op == BinOp::Add && tr.args.types().all(text))\n",
@@ -175,7 +216,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "text-assign-dictionary-missing",
-    breaks: "std's `AddAssign<&str>` of a `String`, given to generic code, has no dictionary",
+    breaks:
+      "std's `AddAssign<&str>` of a `String`, given to generic code, has no dictionary",
     file: "src/lower/traits/dictionaries.rs",
     find: "            && (self.primitive_operands(tr) || (op == BinOp::Add && tr.args.types().all(text)))\n",
     replace: "            && self.primitive_operands(tr)\n",
@@ -185,13 +227,15 @@ export const mutations: Mutation[] = [
     name: "slice-index-inclusive-as-exclusive",
     breaks: "`..=end`'s dictionary is `..end`'s, one item short",
     file: "src/lower/traits/dictionaries.rs",
-    find: "                    Some((Unbounded, Field(\"Included\", _))) => Some(\"toInclusive\"),\n",
-    replace: "                    Some((Unbounded, Field(\"Included\", _))) => Some(\"to\"),\n",
+    find: '                    Some((Unbounded, Field("Included", _))) => Some("toInclusive"),\n',
+    replace:
+      '                    Some((Unbounded, Field("Included", _))) => Some("to"),\n',
     tests: ["test/corpus.test.ts", "-t", "^slice_index_generic.rs$"],
   },
   {
     name: "any-dictionary-without-drop",
-    breaks: "`Any`'s dictionary has no `$drop`, so a `Box<dyn Any>` of a value with a destructor never drops it",
+    breaks:
+      "`Any`'s dictionary has no `$drop`, so a `Box<dyn Any>` of a value with a destructor never drops it",
     file: "src/lower/traits/dictionaries.rs",
     find: "                type_id,\n            )];\n            props.extend(self.dictionary_drop(tr.self_ty(), span)?);\n",
     replace: "                type_id,\n            )];\n",
@@ -199,7 +243,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "extend-dictionary-none",
-    breaks: "a std collection's `Extend` has no dictionary, and generic code that extends one is refused",
+    breaks:
+      "a std collection's `Extend` has no dictionary, and generic code that extends one is refused",
     file: "src/lower/traits/dictionaries.rs",
     find: "            && let Some(dictionary) = self.extend_dictionary(ty, span)?\n",
     replace: "            && let Some(dictionary) = None::<Expr>\n",
@@ -207,7 +252,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "from-iter-dictionary-none",
-    breaks: "a std collection's `FromIterator` has no dictionary, and generic code that collects into one is refused",
+    breaks:
+      "a std collection's `FromIterator` has no dictionary, and generic code that collects into one is refused",
     file: "src/lower/traits/dictionaries.rs",
     find: "        if is_std_def(self.tcx, tr.def_id, StdItem::FromIterator) && !self.has_user_impl(tr.def_id, ty) {\n",
     replace: "        if false {\n",
@@ -215,23 +261,30 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mut-writer-unboxed",
-    breaks: "a `&mut` to a writer taken by value is given its writer's dictionary, which reads the box as the writer, and what it writes is lost",
+    breaks:
+      "a `&mut` to a writer taken by value is given its writer's dictionary, which reads the box as the writer, and what it writes is lost",
     file: "src/lower/traits/dictionaries.rs",
-    find: "            return Ok(Expr::call_helper(\"$mutWriter\", vec![writer]));\n",
+    find: '            return Ok(Expr::call_helper("$mutWriter", vec![writer]));\n',
     replace: "            return Ok(writer);\n",
-    tests: ["test/corpus.test.ts", "-t", "^(generic_writers|mut_given_as_type_param).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(generic_writers|mut_given_as_type_param).rs$",
+    ],
   },
   {
     name: "mut-deref-unboxed",
-    breaks: "std's `Deref` of a `&mut` in a dictionary is the box, not what's in it",
+    breaks:
+      "std's `Deref` of a `&mut` in a dictionary is the box, not what's in it",
     file: "src/lower/traits/dictionaries.rs",
-    find: "                let value = Expr::held(Expr::var(\"x\"));\n",
-    replace: "                let value = Expr::var(\"x\");\n",
+    find: '                let value = Expr::held(Expr::var("x"));\n',
+    replace: '                let value = Expr::var("x");\n',
     tests: ["test/corpus.test.ts", "-t", "^mut_given_as_type_param.rs$"],
   },
   {
     name: "as-mut-dictionary-missing",
-    breaks: "std's `AsMut` of a `String` or `Vec` has no dictionary, and is refused",
+    breaks:
+      "std's `AsMut` of a `String` or `Vec` has no dictionary, and is refused",
     file: "src/lower/traits/dictionaries.rs",
     find: "        if is_std_def(self.tcx, tr.def_id, StdItem::AsMut) && !self.has_user_impl(tr.def_id, ty) {\n",
     replace: "        if false {\n",
@@ -239,7 +292,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "as-mut-through-mut-unread",
-    breaks: "std's `AsMut` of a `&mut String` gives its box, not the cell of its text",
+    breaks:
+      "std's `AsMut` of a `&mut String` gives its box, not the cell of its text",
     file: "src/lower/traits/dictionaries.rs",
     find: "                cell = Expr::held(cell);\n                at = inner;\n",
     replace: "                at = inner;\n",
@@ -247,7 +301,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "deref-mut-dictionary-missing",
-    breaks: "std's `DerefMut` of a `Box`, a `Vec`, a `String`, a `&mut` or a guard has no dictionary, and generic code over a `P: DerefMut` is refused",
+    breaks:
+      "std's `DerefMut` of a `Box`, a `Vec`, a `String`, a `&mut` or a guard has no dictionary, and generic code over a `P: DerefMut` is refused",
     file: "src/lower/traits/dictionaries.rs",
     find: "        if self.tcx.is_lang_item(tr.def_id, LangItem::DerefMut) && !self.has_user_impl(tr.def_id, ty) {\n",
     replace: "        if false {\n",
@@ -255,50 +310,61 @@ export const mutations: Mutation[] = [
   },
   {
     name: "deref-mut-of-mut-ref-unread",
-    breaks: "std's `DerefMut` of a `&mut` gives the box around it, not the one it is",
+    breaks:
+      "std's `DerefMut` of a `&mut` gives the box around it, not the one it is",
     file: "src/lower/traits/dictionaries.rs",
-    find: "                _ if matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut)) => Some(Expr::held(Expr::var(\"cell\"))),\n",
-    replace: "                _ if matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut)) => Some(Expr::var(\"cell\")),\n",
+    find: '                _ if matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut)) => Some(Expr::held(Expr::var("cell"))),\n',
+    replace:
+      '                _ if matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut)) => Some(Expr::var("cell")),\n',
     tests: ["test/corpus.test.ts", "-t", "^generic_deref_mut.rs$"],
   },
   {
     name: "deref-mut-of-guard-unread",
-    breaks: "std's `DerefMut` of a guard gives the box around it, not the guard, which holds its value",
+    breaks:
+      "std's `DerefMut` of a guard gives the box around it, not the guard, which holds its value",
     file: "src/lower/traits/dictionaries.rs",
-    find: "                Some(Std::GuardValue { .. }) => Some(Expr::held(Expr::var(\"cell\"))),\n",
-    replace: "                Some(Std::GuardValue { .. }) => Some(Expr::var(\"cell\")),\n",
+    find: '                Some(Std::GuardValue { .. }) => Some(Expr::held(Expr::var("cell"))),\n',
+    replace:
+      '                Some(Std::GuardValue { .. }) => Some(Expr::var("cell")),\n',
     tests: ["test/corpus.test.ts", "-t", "^generic_deref_mut.rs$"],
   },
   {
     name: "deref-mut-of-box-refused",
-    breaks: "std's `DerefMut` of a `Box`, which MIR never calls, has no dictionary",
+    breaks:
+      "std's `DerefMut` of a `Box`, which MIR never calls, has no dictionary",
     file: "src/lower/traits/dictionaries.rs",
-    find: "                _ if ty.is_box() => Some(Expr::var(\"cell\")),\n",
+    find: '                _ if ty.is_box() => Some(Expr::var("cell")),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_deref_mut.rs$"],
   },
   {
     name: "deref-mut-without-deref",
-    breaks: "std's `DerefMut` dictionary has no `Deref`, which generic code over a `P: DerefMut` reads `p.len()` through",
+    breaks:
+      "std's `DerefMut` dictionary has no `Deref`, which generic code over a `P: DerefMut` reads `p.len()` through",
     file: "src/lower/traits/dictionaries.rs",
     find: "                let mut props = self.supertrait_entries(tr, span)?;\n                props.push(Prop::Field(bindings::fn_name(self.tcx, deref_mut), f));\n",
-    replace: "                let mut props = Vec::new();\n                props.push(Prop::Field(bindings::fn_name(self.tcx, deref_mut), f));\n",
+    replace:
+      "                let mut props = Vec::new();\n                props.push(Prop::Field(bindings::fn_name(self.tcx, deref_mut), f));\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_deref_mut.rs$"],
   },
   {
     name: "into-iter-std-dictionary-missing",
-    breaks: "std's `IntoIterator` of a `&mut Vec`, a `&[T]`, a `&mut Option` or a `&mut BTreeMap` has no dictionary",
+    breaks:
+      "std's `IntoIterator` of a `&mut Vec`, a `&[T]`, a `&mut Option` or a `&mut BTreeMap` has no dictionary",
     file: "src/lower/traits/dictionaries.rs",
     find: "        if is_std_def(self.tcx, tr.def_id, StdItem::IntoIterator)\n            && matches!(ty.kind(), ty::Ref(..))\n",
-    replace: "        if false\n            && matches!(ty.kind(), ty::Ref(..))\n",
+    replace:
+      "        if false\n            && matches!(ty.kind(), ty::Ref(..))\n",
     tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
   },
   {
     name: "std-error-dictionary-not-found",
-    breaks: "`e.source()` of a concrete `io::Error` asks for evidence of its `Error`, which nothing gives",
+    breaks:
+      "`e.source()` of a concrete `io::Error` asks for evidence of its `Error`, which nothing gives",
     file: "src/lower/traits/dictionaries.rs",
     find: "        if is_std_def(self.tcx, tr.def_id, StdItem::Error)\n            && let Some(dictionary) = self.std_error_dictionary(tr.self_ty())\n",
-    replace: "        if false\n            && let Some(dictionary) = self.std_error_dictionary(tr.self_ty())\n",
+    replace:
+      "        if false\n            && let Some(dictionary) = self.std_error_dictionary(tr.self_ty())\n",
     tests: ["test/corpus.test.ts", "-t", "^io_error_values.rs$"],
   },
   {
@@ -311,15 +377,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "default-impl-resolved-in-trait-env",
-    breaks: "a copied default resolves an impl of the impl's terms in its trait's environment, `Map<T, F>: Counting`",
+    breaks:
+      "a copied default resolves an impl of the impl's terms in its trait's environment, `Map<T, F>: Counting`",
     file: "src/lower/traits/dictionaries.rs",
     find: "        let typing_env = self.impl_typing_env().unwrap_or(self.typing_env);\n        if let Some((impl_id, impl_args)) = evidence_impl(self.tcx, typing_env, tr)\n",
-    replace: "        let typing_env = self.typing_env;\n        if let Some((impl_id, impl_args)) = evidence_impl(self.tcx, typing_env, tr)\n",
+    replace:
+      "        let typing_env = self.typing_env;\n        if let Some((impl_id, impl_args)) = evidence_impl(self.tcx, typing_env, tr)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_maps.rs$"],
   },
   {
     name: "default-bound-unnormalized",
-    breaks: "a copied default's bound of the impl's terms isn't normalized, `<Map<T, F> as Iterator>::Item: Hash`",
+    breaks:
+      "a copied default's bound of the impl's terms isn't normalized, `<Map<T, F> as Iterator>::Item: Hash`",
     file: "src/lower/traits/dictionaries.rs",
     find: "        let tr = match self.impl_typing_env() {\n",
     replace: "        let tr = match None::<ty::TypingEnv<'tcx>> {\n",
@@ -329,16 +398,17 @@ export const mutations: Mutation[] = [
     name: "std-product-dictionary-sums",
     breaks: "std's `Product` dictionary of a number sums",
     file: "src/lower/traits/dictionaries.rs",
-    find: "            let made = self.accumulated_numbers(items, num, name == \"sum\");\n",
-    replace: "            let made = self.accumulated_numbers(items, num, true);\n",
+    find: '            let made = self.accumulated_numbers(items, num, name == "sum");\n',
+    replace:
+      "            let made = self.accumulated_numbers(items, num, true);\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_accumulations.rs$"],
   },
   {
     name: "from-dictionary-named-into",
     breaks: "a `From` dictionary's conversion is named `into`",
     file: "src/lower/traits/dictionaries.rs",
-    find: "            let name = if into { \"into\" } else { \"from\" };\n",
-    replace: "            let name = \"into\";\n",
+    find: '            let name = if into { "into" } else { "from" };\n',
+    replace: '            let name = "into";\n',
     tests: ["test/corpus.test.ts", "-t", "^generic_from.rs$"],
   },
   {
@@ -353,13 +423,14 @@ export const mutations: Mutation[] = [
     name: "std-borrow-mut-dictionary-missing",
     breaks: "std's `BorrowMut` of a `Vec` has no `borrow_mut`",
     file: "src/lower/traits/dictionaries.rs",
-    find: "                bindings::trait_method_name(self.tcx, tr.def_id, \"borrow_mut\"),\n",
-    replace: "                \"borrowed\".into(),\n",
+    find: '                bindings::trait_method_name(self.tcx, tr.def_id, "borrow_mut"),\n',
+    replace: '                "borrowed".into(),\n',
     tests: ["test/corpus.test.ts", "-t", "^borrow_mut_supertrait.rs$"],
   },
   {
     name: "std-into-iterator-steps-missing",
-    breaks: "std's `IntoIterator` dictionary of a type known here carries no `Iterator` of what it makes, so generic code holding that as it is can't step it",
+    breaks:
+      "std's `IntoIterator` dictionary of a type known here carries no `Iterator` of what it makes, so generic code holding that as it is can't step it",
     file: "src/lower/traits/dictionaries.rs",
     find: "            if is_std_def(self.tcx, bound.def_id, StdItem::Iterator) {\n",
     replace: "                if false {\n",
@@ -370,12 +441,14 @@ export const mutations: Mutation[] = [
     breaks: "`read::<i32>(s)` of a `T: FromStr` has no dictionary for `i32`'s",
     file: "src/lower/traits/dictionaries.rs",
     find: "        if crate::lower::recognition::is_from_str(self.tcx, tr.def_id) && parsed_by_std {",
-    replace: "        if crate::lower::recognition::is_from_str(self.tcx, tr.def_id) && parsed_by_std && false {",
+    replace:
+      "        if crate::lower::recognition::is_from_str(self.tcx, tr.def_id) && parsed_by_std && false {",
     tests: ["test/corpus.test.ts", "-t", "generic_from_str"],
   },
   {
     name: "into-iterator-of-bound-iterator-refused",
-    breaks: "an iterator only bounds know, `J::IntoIter`, given where an `IntoIterator` is held as it is, has no evidence",
+    breaks:
+      "an iterator only bounds know, `J::IntoIter`, given where an `IntoIterator` is held as it is, has no evidence",
     file: "src/lower/traits/dictionaries.rs",
     find: "            && (!crate::lower::recognition::known_by_bounds(ty) || self.recognition().iterates_as_itself(ty))\n",
     replace: "            && !crate::lower::recognition::known_by_bounds(ty)\n",
@@ -383,15 +456,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dictionary-const-called",
-    breaks: "a dictionary that's its module's `const` is called, `circleShape()`",
+    breaks:
+      "a dictionary that's its module's `const` is called, `circleShape()`",
     file: "src/lower/traits/dictionaries.rs",
     find: "                false => callee,\n",
     replace: "                false => Expr::call(callee, Vec::new()),\n",
-    tests: ["test/lowering-dictionaries.test.ts", "-t", "a dictionary that takes nothing"],
+    tests: [
+      "test/lowering-dictionaries.test.ts",
+      "-t",
+      "a dictionary that takes nothing",
+    ],
   },
   {
     name: "io-writer-mut-as-its-writer",
-    breaks: "an `io::Write` given by `&mut`, `W = &mut Vec<u8>`, gets the `Vec`'s dictionary, which reads the box it's in as the `Vec`, and throws",
+    breaks:
+      "an `io::Write` given by `&mut`, `W = &mut Vec<u8>`, gets the `Vec`'s dictionary, which reads the box it's in as the `Vec`, and throws",
     file: "src/lower/traits/dictionaries.rs",
     find: "        if (is_std_def(self.tcx, tr.def_id, StdItem::FmtWrite) || is_std_def(self.tcx, tr.def_id, StdItem::IoWrite))",
     replace: "        if is_std_def(self.tcx, tr.def_id, StdItem::FmtWrite)",
@@ -399,7 +478,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "other-type-compare-synthesized",
-    breaks: "a `PartialOrd<u32>` dictionary of a struct compares it with itself, not by its impl",
+    breaks:
+      "a `PartialOrd<u32>` dictionary of a struct compares it with itself, not by its impl",
     file: "src/lower/traits/dictionaries.rs",
     find: "            && !of_other\n",
     replace: "",
@@ -407,7 +487,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "reference-dictionary-unforwarded",
-    breaks: "a reference's dictionary through std's forwarding impl is its referent's",
+    breaks:
+      "a reference's dictionary through std's forwarding impl is its referent's",
     file: "src/lower/traits/dictionaries.rs",
     find: "        if let Some(referent) = self.forwarded_to_referent(tr, typing_env) {",
     replace: "        if let Some(referent) = None::<ty::TraitRef<'tcx>> {",
@@ -423,43 +504,55 @@ export const mutations: Mutation[] = [
   },
   {
     name: "copy-of-itself-given",
-    breaks: "a value that's its own copy is given `{ copy: (value) => value }`, `createContext(7, ..)`, where JS gives none",
+    breaks:
+      "a value that's its own copy is given `{ copy: (value) => value }`, `createContext(7, ..)`, where JS gives none",
     file: "src/lower/traits/dictionaries.rs",
     find: "            if js::same_path(&copy, &value) {\n",
     replace: "            if false {\n",
-    tests: ["test/crates.test.ts", "-t", "Copy bound takes a copy only where one is given"],
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "Copy bound takes a copy only where one is given",
+    ],
   },
   {
     name: "ref-into-iter-steps-missing",
-    breaks: "a reference's `IntoIterator` dictionary carries no `Iterator` of what it makes, so a held flatten of `&[T; N]` items can't step them",
+    breaks:
+      "a reference's `IntoIterator` dictionary carries no `Iterator` of what it makes, so a held flatten of `&[T; N]` items can't step them",
     file: "src/lower/traits/dictionaries.rs",
     find: "        let mut props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];\n        props.extend(self.made_steps(tr, span)?);\n        Ok(Expr::object(props))\n",
-    replace: "        let props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];\n        Ok(Expr::object(props))\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^std_flatten.rs$"
-    ]
+    replace:
+      "        let props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];\n        Ok(Expr::object(props))\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_flatten.rs$"],
   },
   {
     name: "mut-ref-dictionary-unpeeled",
-    breaks: "a `&mut` of a range or of the crate's iterator is given a JS iterator's dictionary, so std's `Map` or `Fuse` holding it steps it by `it.next`, which neither has (ADR 0912)",
+    breaks:
+      "a `&mut` of a range or of the crate's iterator is given a JS iterator's dictionary, so std's `Map` or `Fuse` holding it steps it by `it.next`, which neither has (ADR 0912)",
     file: "src/lower/traits/dictionaries.rs",
     find: "            if let ty::Ref(_, inner, ty::Mutability::Mut) = tr.self_ty().kind() {\n                let of",
-    replace: "            if false && let ty::Ref(_, inner, ty::Mutability::Mut) = tr.self_ty().kind() {\n                let of",
+    replace:
+      "            if false && let ty::Ref(_, inner, ty::Mutability::Mut) = tr.self_ty().kind() {\n                let of",
     tests: ["test/corpus.test.ts", "-t", "^held_adapters_of_by_ref.rs$"],
   },
   {
     name: "control-flow-try-never-short-circuits",
-    breaks: "a `ControlFlow`'s `Try` is given as a `NeverShortCircuit`'s, so std's `Take::try_fold` never stops at its count (ADR 0913)",
+    breaks:
+      "a `ControlFlow`'s `Try` is given as a `NeverShortCircuit`'s, so std's `Take::try_fold` never stops at its count (ADR 0913)",
     file: "src/lower/traits/dictionaries.rs",
-    find: "                Some(TryKind::ControlFlow) => Ok(Expr::helper(\"$controlFlowTry\")),\n",
-    replace: "                Some(TryKind::ControlFlow) => Ok(Expr::helper(\"$neverShortCircuitTry\")),\n",
-    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+    find: '                Some(TryKind::ControlFlow) => Ok(Expr::helper("$controlFlowTry")),\n',
+    replace:
+      '                Some(TryKind::ControlFlow) => Ok(Expr::helper("$neverShortCircuitTry")),\n',
+    tests: [
+      "test/std-package.test.ts",
+      "-t",
+      "the committed @rust-js/std is std's bodies",
+    ],
   },
   {
     name: "made-steps-of-a-js-iterator",
-    breaks: "what an `I: Iterator` makes, itself, is stepped as a JS iterator in its `IntoIterator` dictionary, not by `I`'s own, so std's `chain` of two ranges given as they are throws (ADR 0920)",
+    breaks:
+      "what an `I: Iterator` makes, itself, is stepped as a JS iterator in its `IntoIterator` dictionary, not by `I`'s own, so std's `chain` of two ranges given as they are throws (ADR 0920)",
     file: "src/lower/traits/dictionaries.rs",
     find: "                let dictionary = match self.iterator_evidence(of, bound.def_id) {\n",
     replace: "                let dictionary = match None::<Expr> {\n",
@@ -467,7 +560,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unexported-impl-evidence-refused",
-    breaks: "a library's impl its JS doesn't make has no evidence where its consumer gives it to generic code, and is refused (ADR 0914, amended)",
+    breaks:
+      "a library's impl its JS doesn't make has no evidence where its consumer gives it to generic code, and is refused (ADR 0914, amended)",
     file: "src/lower/traits/dictionaries.rs",
     find: "                || self.krate.foreign.compiles(impl_id))\n",
     replace: ")\n",
@@ -475,7 +569,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "class-display-dictionary-impl",
-    breaks: "a `T: Display` of a class is its impl's dictionary, which isn't emitted (#358)",
+    breaks:
+      "a `T: Display` of a class is its impl's dictionary, which isn't emitted (#358)",
     file: "src/lower/traits/dictionaries.rs",
     find: "            && (!self.has_user_impl(tr.def_id, ty) || shown)\n",
     replace: "            && !self.has_user_impl(tr.def_id, ty)\n",
@@ -483,10 +578,15 @@ export const mutations: Mutation[] = [
   },
   {
     name: "js-object-deref-dictionary-unmade",
-    breaks: "a generic function bounded by `Deref<Target = Base>`, given a JS class whose `Deref` is to the class it extends, panics: its dictionary looks for the impl's function, which is never lowered (#403)",
+    breaks:
+      "a generic function bounded by `Deref<Target = Base>`, given a JS class whose `Deref` is to the class it extends, panics: its dictionary looks for the impl's function, which is never lowered (#403)",
     file: "src/lower/traits/dictionaries.rs",
     find: "            && crate::lower::recognition::is_js_object_deref(self.tcx, imp)\n",
     replace: "            && false\n",
-    tests: ["test/js-class-deref.test.ts", "-t", "a JS class's Deref to the class it extends is no JS"],
+    tests: [
+      "test/js-class-deref.test.ts",
+      "-t",
+      "a JS class's Deref to the class it extends is no JS",
+    ],
   },
 ];

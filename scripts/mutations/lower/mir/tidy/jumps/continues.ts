@@ -1,12 +1,17 @@
 // Mutations of src/lower/mir/tidy/jumps/continues.rs (ADR 0093).
 import type { Mutation } from "../../../../../mutations";
 
-const keysIn = ["test/lowering-written-branches.test.ts", "-t", "continues are as written"];
+const keysIn = [
+  "test/lowering-written-branches.test.ts",
+  "-t",
+  "continues are as written",
+];
 
 export const mutations: Mutation[] = [
   {
     name: "jumps-into-branches-past-a-written-jump",
-    breaks: "the `break` the program wrote after an `if` with an `else` is moved into the branch that goes on, `if (n === 0) { ..; break; } else { ..; continue; }` (uz2)",
+    breaks:
+      "the `break` the program wrote after an `if` with an `else` is moved into the branch that goes on, `if (n === 0) { ..; break; } else { ..; continue; }` (uz2)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "            && !written_after(&stmts[i], &stmts[i + 1], elses)\n",
     replace: "",
@@ -15,7 +20,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "written-before-then-unbroken",
-    breaks: "an `if` the program wrote of a `break` with an `else`, then a `break` it wrote after it, loses its `then`'s, `if (exitStatus === ROOT_IN_PROGRESS) { .. } else { .. } break;` (performWorkOnRoot)",
+    breaks:
+      "an `if` the program wrote of a `break` with an `else`, then a `break` it wrote after it, loses its `then`'s, `if (exitStatus === ROOT_IN_PROGRESS) { .. } else { .. } break;` (performWorkOnRoot)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "            && !after\n            && !arm.last().is_some_and(ends)\n",
     replace: "            && false\n",
@@ -24,7 +30,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "written-before-copy-kept",
-    breaks: "MIR's copy of the `break` after an `if .. else` stays at its `else`'s end, `finishConcurrentRender(..); break; } break;` (performWorkOnRoot)",
+    breaks:
+      "MIR's copy of the `break` after an `if .. else` stays at its `else`'s end, `finishConcurrentRender(..); break; } break;` (performWorkOnRoot)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "            if !wrote {\n                arm.pop();\n            }\n",
     replace: "",
@@ -33,7 +40,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "written-before-written-copy-dropped",
-    breaks: "a `break` the program wrote in an `if` an `else`'s end holds, `if (exitStatus === ROOT_FATAL_ERRORED) { ..; break; }`, is taken for MIR's copy of the one after, its rest an `else` (performWorkOnRoot)",
+    breaks:
+      "a `break` the program wrote in an `if` an `else`'s end holds, `if (exitStatus === ROOT_FATAL_ERRORED) { ..; break; }`, is taken for MIR's copy of the one after, its rest an `else` (performWorkOnRoot)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "            uncopied(then, jump, jump_tested(jumps.0, span).is_some(), jumps);\n",
     replace: "            uncopied(then, jump, false, jumps);\n",
@@ -42,23 +50,36 @@ export const mutations: Mutation[] = [
   },
   {
     name: "last-loop-break-returned",
-    breaks: "a `break` of the loop a function ends with prints `return;`, React's commitDeletedPairViewTransitions' `if (pairs.size === 0) { return; }` (ADR 0684, amended)",
+    breaks:
+      "a `break` of the loop a function ends with prints `return;`, React's commitDeletedPairViewTransitions' `if (pairs.size === 0) { return; }` (ADR 0684, amended)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                *branch.last_mut().expect(\"matched\") = StmtKind::Break(None).at(at);\n",
-    replace: "                *branch.last_mut().expect(\"matched\") = StmtKind::Return(None).at(at);\n",
-    tests: ["test/lowering-early-exits.test.ts", "-t", "break of the loop a function ends with"],
+    find: '                *branch.last_mut().expect("matched") = StmtKind::Break(None).at(at);\n',
+    replace:
+      '                *branch.last_mut().expect("matched") = StmtKind::Return(None).at(at);\n',
+    tests: [
+      "test/lowering-early-exits.test.ts",
+      "-t",
+      "break of the loop a function ends with",
+    ],
   },
   {
     name: "last-loop-return-of-any-if-broken",
-    breaks: "a `return` the program wrote in the loop a function ends with prints `break;`, not as written (ADR 0684, amended)",
+    breaks:
+      "a `return` the program wrote in the loop a function ends with prints `break;`, not as written (ADR 0684, amended)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "                && let Some(at) = tested(breaks)\n",
-    replace: "                && let Some(at) = tested(breaks).or(Some(last.span))\n",
-    tests: ["test/lowering-early-exits.test.ts", "-t", "break of the loop a function ends with"],
+    replace:
+      "                && let Some(at) = tested(breaks).or(Some(last.span))\n",
+    tests: [
+      "test/lowering-early-exits.test.ts",
+      "-t",
+      "break of the loop a function ends with",
+    ],
   },
   {
     name: "kept-last-loop-breaks-unrun",
-    breaks: "React DOM's replayUnblockedFormActions' `} else { break; }` prints `} else { return; }`, not as written (the user's decision, ADR 0684, amended)",
+    breaks:
+      "React DOM's replayUnblockedFormActions' `} else { break; }` prints `} else { return; }`, not as written (the user's decision, ADR 0684, amended)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "        kept_in_turn(body, written, Kept::Breaks, true);\n",
     replace: "",
@@ -66,7 +87,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "kept-continue-dropped",
-    breaks: "a `continue` the program wrote where the turn ends anyway is gone, `if (inst != null) { ..; }` and the rest its `else`, not upstream's `continue;` (the user's decision, ADR 0684, amended)",
+    breaks:
+      "a `continue` the program wrote where the turn ends anyway is gone, `if (inst != null) { ..; }` and the rest its `else`, not upstream's `continue;` (the user's decision, ADR 0684, amended)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "                branch.push(StmtKind::Continue(None).at(at));\n",
     replace: "",
@@ -74,7 +96,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "kept-continue-before-the-turn-end",
-    breaks: "a written `continue` is given back to a branch a value's drop follows, `if (x > 3) { ..; continue; } else { .. } drop(n)`, skipping the drop, a wrong answer",
+    breaks:
+      "a written `continue` is given back to a branch a value's drop follows, `if (x > 3) { ..; continue; } else { .. } drop(n)`, skipping the drop, a wrong answer",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "        let end = at_end && k == last;\n",
     replace: "        let end = at_end || k == last;\n",
@@ -82,15 +105,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "kept-else-jumps-of-thens",
-    breaks: "an `else`'s written `continue` or `break` is looked for among the `then`s', so `} else { break; }` stays MIR's `return;` (ADR 0684, amended)",
+    breaks:
+      "an `else`'s written `continue` or `break` is looked for among the `then`s', so `} else { break; }` stays MIR's `return;` (ADR 0684, amended)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "                let elses = (written.else_continues.as_slice(), written.else_breaks.as_slice());\n",
-    replace: "                let elses = (written.continues.as_slice(), written.breaks.as_slice());\n",
+    replace:
+      "                let elses = (written.continues.as_slice(), written.breaks.as_slice());\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "tidy takes"],
   },
   {
     name: "kept-break-of-a-turned-if",
-    breaks: "a written `break` is given to the branch of an `if` tidy turned whose statements are written after it",
+    breaks:
+      "a written `break` is given to the branch of an `if` tidy turned whose statements are written after it",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "                && let Some(at) = tested(breaks)\n                && !after(at)\n",
     replace: "                && let Some(at) = tested(breaks)\n",
@@ -99,7 +125,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "kept-turned-continue-unturned",
-    breaks: "`if c { continue; } rest` in an arm, MIR's `if (!c) { rest }`, stays so, not React's findAllNodes' `if (isHiddenSubtree(node)) { continue; }` (ADR 0684, amended)",
+    breaks:
+      "`if c { continue; } rest` in an arm, MIR's `if (!c) { rest }`, stays so, not React's findAllNodes' `if (isHiddenSubtree(node)) { continue; }` (ADR 0684, amended)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "        turned_continue(stmts, &written.continues);\n",
     replace: "",
@@ -108,7 +135,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "kept-turned-continue-of-any-then",
-    breaks: "an `if` of a written `continue` whose `then` is written before the jump, `if (x > 3) { out.push(x); }` of `if x > 3 { out.push(x); continue; }`, is turned, `if (x <= 3) { continue; } out.push(x);`, not as written",
+    breaks:
+      "an `if` of a written `continue` whose `then` is written before the jump, `if (x > 3) { out.push(x); }` of `if x > 3 { out.push(x); continue; }`, is turned, `if (x <= 3) { continue; } out.push(x);`, not as written",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "    if !then.iter().all(|s| s.span.is_none() || s.span.hi > at.lo) {\n",
     replace: "    if false {\n",
@@ -117,7 +145,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "written-continue-else-dropped",
-    breaks: "a written `else` after a `then` that ends in a written `continue` is gone, `if (x > 3) { ..; continue; } out.push(0);` (the user's decision, ADR 0684, amended)",
+    breaks:
+      "a written `else` after a `then` that ends in a written `continue` is gone, `if (x > 3) { ..; continue; } out.push(0);` (the user's decision, ADR 0684, amended)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "        && tests_continue(continues, *span)\n        && !test.facts.has(js::Known::Else)\n",
     replace: "        && tests_continue(continues, *span)\n",
@@ -126,15 +155,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "tail-continued-label-kept",
-    breaks: "a loop's label whose last jump was a `continue` where its body ends stays, named by nothing",
+    breaks:
+      "a loop's label whose last jump was a `continue` where its body ends stays, named by nothing",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "            if named && label.as_deref().is_some_and(|l| !js::names_jump(body, l)) {\n                *label = None;\n",
-    replace: "            if named && label.as_deref().is_some_and(|l| !js::names_jump(body, l)) {\n",
+    replace:
+      "            if named && label.as_deref().is_some_and(|l| !js::names_jump(body, l)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^while_exit_continues.rs$"],
   },
   {
     name: "mir-tidy-continue-guard-kept",
-    breaks: "a loop body ending `if (!c) { a; b }` stays, not `if (c) { continue; } a; b`",
+    breaks:
+      "a loop body ending `if (!c) { a; b }` stays, not `if (c) { continue; } a; b`",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "                    if !turned_continue(body, guards) {\n",
     replace: "                    if true {\n",
@@ -143,49 +175,70 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-tidy-continued-block-kept",
-    breaks: "a loop body's last labeled block, its `break` the loop's `continue`, stays, a `bb` label left in `numbers`' while loop",
+    breaks:
+      "a loop body's last labeled block, its `break` the loop's `continue`, stays, a `bb` label left in `numbers`' while loop",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "                    if clashes || continues(&mut inner, &block, looped.as_deref(), false).is_none() {\n",
     replace: "                    if true {\n",
-    tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where they're written"],
+    tests: [
+      "test/lowering-loops.test.ts",
+      "-t",
+      "returns in a loop are where they're written",
+    ],
   },
   {
     name: "mir-tidy-written-continue-nested",
-    breaks: "a loop body's last `if` of more than one statement is an early `continue` the program never wrote",
+    breaks:
+      "a loop body's last `if` of more than one statement is an early `continue` the program never wrote",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "    let Some(at) = jump_tested(continues, *span).map(|k| continues[k].1) else {\n",
-    replace: "    let Some(at) = jump_tested(continues, *span).map(|k| continues[k].1).or((then.len() > 1).then_some(js::Span::NONE)) else {\n",
+    replace:
+      "    let Some(at) = jump_tested(continues, *span).map(|k| continues[k].1).or((then.len() > 1).then_some(js::Span::NONE)) else {\n",
     tests: ["test/lowering-early-exits.test.ts", "-t", "a loop.s early break"],
   },
   {
-    "name": "ending-continue-as-else",
-    "breaks": "an `if` the program ended with `continue` stays MIR's `if (t) { a } else { .. }`",
-    "file": "src/lower/mir/tidy/jumps/continues.rs",
-    "find": "                    if tests_continue(guards, body.last().expect(\"matched\").span)\n                        && !declared(otherwise)",
-    "replace": "                    if false\n                        && !declared(otherwise)",
-    "tests": ["test/lowering-loops.test.ts", "-t", "continues a loop's ifs end with are kept"]
+    name: "ending-continue-as-else",
+    breaks:
+      "an `if` the program ended with `continue` stays MIR's `if (t) { a } else { .. }`",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: '                    if tests_continue(guards, body.last().expect("matched").span)\n                        && !declared(otherwise)',
+    replace:
+      "                    if false\n                        && !declared(otherwise)",
+    tests: [
+      "test/lowering-loops.test.ts",
+      "-t",
+      "continues a loop's ifs end with are kept",
+    ],
   },
   {
-    "name": "mir-tidy-continue-written-negated-only",
-    "breaks": "a `continue` the program wrote is an `if (i % 2 !== 0) { \u2026 }` where MIR's test isn't a `!`",
-    "file": "src/lower/mir/tidy/jumps/continues.rs",
-    "find": "                Some(StmtKind::If(_, _, None)) => {\n",
-    "replace": "                Some(StmtKind::If(test, _, None)) if matches!(test.kind, ExprKind::Unary(js::UnaryOp::Not, _)) => {\n",
-    "tests": ["test/corpus.test.ts", "-t", "^loop_exits.rs$"],
-    "snapshots": true
+    name: "mir-tidy-continue-written-negated-only",
+    breaks:
+      "a `continue` the program wrote is an `if (i % 2 !== 0) { \u2026 }` where MIR's test isn't a `!`",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                Some(StmtKind::If(_, _, None)) => {\n",
+    replace:
+      "                Some(StmtKind::If(test, _, None)) if matches!(test.kind, ExprKind::Unary(js::UnaryOp::Not, _)) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^loop_exits.rs$"],
+    snapshots: true,
   },
   {
     name: "block-jump-not-forwarded",
-    breaks: "a labeled block's `break` to a `continue` of the loop after it stays, `bb3: { .. break bb3; } continue bb1;`",
+    breaks:
+      "a labeled block's `break` to a `continue` of the loop after it stays, `bb3: { .. break bb3; } continue bb1;`",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "            StmtKind::Break(Some(l)) if l == label => stmt.kind = jump.clone(),\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(nested_loop_jumps|interpreter|rc_counted_uses|loop_drops).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(nested_loop_jumps|interpreter|rc_counted_uses|loop_drops).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "outer-continue-kept",
-    breaks: "an inner loop's way out, which ends the outer loop's turn, is `continue bb4`, not its `break`",
+    breaks:
+      "an inner loop's way out, which ends the outer loop's turn, is `continue bb4`, not its `break`",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "            StmtKind::Continue(Some(l)) if l == looped => stmt.kind = StmtKind::Break(None),\n",
     replace: "",
@@ -194,23 +247,34 @@ export const mutations: Mutation[] = [
   },
   {
     name: "written-continue-unplaced",
-    breaks: "a `continue` the program wrote has no place, so the comment before it is gone",
+    breaks:
+      "a `continue` the program wrote has no place, so the comment before it is gone",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "            last.span = *at;\n",
     replace: "            let _ = at;\n",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "a continue the program wrote"],
+    tests: [
+      "test/lowering-written-branches.test.ts",
+      "-t",
+      "a continue the program wrote",
+    ],
   },
   {
     name: "else-continue-kept",
-    breaks: "an `else` of only the `continue` a loop's body ends with anyway stays, and is left past a `return` as a `continue;` the program didn't write",
+    breaks:
+      "an `else` of only the `continue` a loop's body ends with anyway stays, and is left past a `return` as a `continue;` the program didn't write",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "                    *otherwise = None;\n",
     replace: "                    let _ = otherwise;\n",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "has no continue after it"],
+    tests: [
+      "test/lowering-written-branches.test.ts",
+      "-t",
+      "has no continue after it",
+    ],
   },
   {
     name: "loop-ending-block-kept",
-    breaks: "a loop that ends a block MIR made keeps its `break bb97`, and the block its label",
+    breaks:
+      "a loop that ends a block MIR made keeps its `break bb97`, and the block its label",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "                        *broken = None;\n",
     replace: "                        let _ = broken;\n",
@@ -219,16 +283,23 @@ export const mutations: Mutation[] = [
   },
   {
     name: "loop-ending-block-not-last",
-    breaks: "a block's first statement taken for what it ends with, its loop's `break bb29` kept, loop_ends_branch's `bb29: { .. }`",
+    breaks:
+      "a block's first statement taken for what it ends with, its loop's `break bb29` kept, loop_ends_branch's `bb29: { .. }`",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "        let Some(last) = stmts.last_mut() else {\n            return;\n        };\n",
-    replace: "        let Some(last) = stmts.first_mut() else {\n            return;\n        };\n",
-    tests: ["test/corpus.test.ts", "-t", "^(loop_ends_branch|loop_value_after_loop)\\.rs$"],
+    replace:
+      "        let Some(last) = stmts.first_mut() else {\n            return;\n        };\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(loop_ends_branch|loop_value_after_loop)\\.rs$",
+    ],
     snapshots: true,
   },
   {
     name: "loop-ending-branch-breaks-unnested",
-    breaks: "a loop that ends an `if`'s branch, an `else` after it, keeps its `break bb24` of an `if` in it, and prints a label (ADR 0859)",
+    breaks:
+      "a loop that ends an `if`'s branch, an `else` after it, keeps its `break bb24` of an `if` in it, and prints a label (ADR 0859)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "                StmtKind::If(_, a, b) => {\n                    own_breaks(a, label);\n                    if let Some(b) = b {\n                        own_breaks(b, label);\n                    }\n                }\n",
     replace: "                StmtKind::If(..) => {}\n",
@@ -237,98 +308,152 @@ export const mutations: Mutation[] = [
   },
   {
     name: "loop-ending-branch-inner-loops-unlabeled",
-    breaks: "a `break 'rows` in a `for` of the `loop` that ends a branch is the `for`'s `break`, which goes on in the `loop` (ADR 0859)",
+    breaks:
+      "a `break 'rows` in a `for` of the `loop` that ends a branch is the `for`'s `break`, which goes on in the `loop` (ADR 0859)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "                StmtKind::Labeled(_, body) => own_breaks(body, label),\n",
-    replace: "                StmtKind::Labeled(_, body) | StmtKind::ForOf { body, .. } => own_breaks(body, label),\n",
+    replace:
+      "                StmtKind::Labeled(_, body) | StmtKind::ForOf { body, .. } => own_breaks(body, label),\n",
     tests: ["test/corpus.test.ts", "-t", "loop_ends_branch"],
   },
   {
     name: "block-jump-unnamed-not-forwarded",
-    breaks: "a block MIR made followed by a `continue` of no label keeps its `break bb97`, the `continue` the program wrote in a chain's arm a `break` (ADR 0745)",
+    breaks:
+      "a block MIR made followed by a `continue` of no label keeps its `break bb97`, the `continue` the program wrote in a chain's arm a `break` (ADR 0745)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "            jump @ (StmtKind::Continue(_) | StmtKind::Break(_)) => jump.clone(),\n",
-    replace: "            jump @ (StmtKind::Continue(Some(_)) | StmtKind::Break(Some(_))) => jump.clone(),\n",
-    tests: ["test/lowering-early-exits.test.ts", "-t", "a continue the program wrote in a chain"],
+    replace:
+      "            jump @ (StmtKind::Continue(Some(_)) | StmtKind::Break(Some(_))) => jump.clone(),\n",
+    tests: [
+      "test/lowering-early-exits.test.ts",
+      "-t",
+      "a continue the program wrote in a chain",
+    ],
   },
   {
     name: "jumps-into-branches-off",
-    breaks: "a jump after an `if` one branch of which leaves stays after it, `if (c) { a } else { b; break l; } continue;` (ADR 0745), and so a chain's at its block's end, `bb16: { if (a) { A } else if (b) { B } else { break bb16; } continue; }`, which `breaks as ends` gave each arm too (ADR 0745, amended)",
+    breaks:
+      "a jump after an `if` one branch of which leaves stays after it, `if (c) { a } else { b; break l; } continue;` (ADR 0745), and so a chain's at its block's end, `bb16: { if (a) { A } else if (b) { B } else { break bb16; } continue; }`, which `breaks as ends` gave each arm too (ADR 0745, amended)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "            && into_arms(&stmts[i])\n",
     replace: "            && false\n",
-    tests: ["test/lowering-early-exits.test.ts", "test/corpus.test.ts", "-t", "a continue the program wrote in a chain|^continues_in_arms.rs$"],
+    tests: [
+      "test/lowering-early-exits.test.ts",
+      "test/corpus.test.ts",
+      "-t",
+      "a continue the program wrote in a chain|^continues_in_arms.rs$",
+    ],
     snapshots: true,
   },
   {
     name: "jumps-into-branches-wrong-branch",
-    breaks: "the jump after an `if` goes into the branch that leaves, not the one that goes on (ADR 0745)",
+    breaks:
+      "the jump after an `if` goes into the branch that leaves, not the one that goes on (ADR 0745)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "                if !arm.last().is_some_and(ends) {\n                    arm.push(jump.clone());\n",
-    replace: "                if arm.last().is_some_and(ends) {\n                    arm.push(jump.clone());\n",
-    tests: ["test/lowering-early-exits.test.ts", "-t", "a continue the program wrote in a chain"],
+    replace:
+      "                if arm.last().is_some_and(ends) {\n                    arm.push(jump.clone());\n",
+    tests: [
+      "test/lowering-early-exits.test.ts",
+      "-t",
+      "a continue the program wrote in a chain",
+    ],
   },
   {
     name: "jumps-into-chain-arms-uncounted",
-    breaks: "an `else if` chain whose last arm leaves keeps the jump MIR joined after it, `} else { break bb53; } continue;`, as its chained `else` is taken for one arm that goes on (ADR 0745, amended)",
+    breaks:
+      "an `else if` chain whose last arm leaves keeps the jump MIR joined after it, `} else { break bb53; } continue;`, as its chained `else` is taken for one arm that goes on (ADR 0745, amended)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "        if linked(otherwise) {\n            arms(&otherwise[0], leaves);\n",
-    replace: "        if false && linked(otherwise) {\n            arms(&otherwise[0], leaves);\n",
+    replace:
+      "        if false && linked(otherwise) {\n            arms(&otherwise[0], leaves);\n",
     tests: ["test/corpus.test.ts", "-t", "^continue_arms_of_else_if.rs$"],
     snapshots: true,
   },
   {
     name: "written-continue-elsed",
-    breaks: "a `continue` the program wrote, its rest made an `else` by `jumps into branches`, is dropped as a tail one, so rev_loops' `if (x > 100) { break; }` and what follows it, after a written `continue`, is `if (!(x > 100)) { ..; continue; } break;`",
+    breaks:
+      "a `continue` the program wrote, its rest made an `else` by `jumps into branches`, is dropped as a tail one, so rev_loops' `if (x > 100) { break; }` and what follows it, after a written `continue`, is `if (!(x > 100)) { ..; continue; } break;`",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "        && tests_continue(continues, *span)\n",
     replace: "        && false\n",
-    tests: ["test/corpus.test.ts", "-t", "^(rev_loops|mut_ref_loop|inclusive_range_loops)\\.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(rev_loops|mut_ref_loop|inclusive_range_loops)\\.rs$",
+    ],
     snapshots: true,
   },
   {
     name: "jumps-past-blocks-returns-kept",
-    breaks: "a block MIR made followed by `return;`, past a drop MIR shares, stays a block, `bb104: { .. break bb104; .. } return;`",
+    breaks:
+      "a block MIR made followed by `return;`, past a drop MIR shares, stays a block, `bb104: { .. break bb104; .. } return;`",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "            jump @ StmtKind::Return(_) if returns_one_value(&stmts[i + 1]) => jump.clone(),\n",
-    replace: "            jump @ StmtKind::Return(_) if false && returns_one_value(&stmts[i + 1]) => jump.clone(),\n",
-    tests: ["test/lowering-labels.test.ts", "-t", "a block MIR made followed by a return"],
+    replace:
+      "            jump @ StmtKind::Return(_) if false && returns_one_value(&stmts[i + 1]) => jump.clone(),\n",
+    tests: [
+      "test/lowering-labels.test.ts",
+      "-t",
+      "a block MIR made followed by a return",
+    ],
   },
   {
     name: "jumps-past-blocks-return-at-tails",
-    breaks: "a block's `break` where it ends anyway, before the `return` after it, is that `return`, written again in the arm, `message = kind._0; return message;`",
+    breaks:
+      "a block's `break` where it ends anyway, before the `return` after it, is that `return`, written again in the arm, `message = kind._0; return message;`",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "            if matches!(jump, StmtKind::Return(_)) {\n                drop_tail(body, &StmtKind::Break(Some(label.clone())));\n            }\n",
     replace: "",
-    tests: ["test/lowering-branches.test.ts", "-t", "an if-let chain ending in a panic keeps its arms in written order"],
+    tests: [
+      "test/lowering-branches.test.ts",
+      "-t",
+      "an if-let chain ending in a panic keeps its arms in written order",
+    ],
   },
   {
     name: "jumps-past-blocks-return-into-loops",
-    breaks: "a loop's `break` of a block followed by `return` is that `return`: ReactFiberLane's getEntangledLanes returns in the `if` its `while` ends, `while (rest > 0) { .. } return entangled; } return entangled;`, not once after the `if`",
+    breaks:
+      "a loop's `break` of a block followed by `return` is that `return`: ReactFiberLane's getEntangledLanes returns in the `if` its `while` ends, `while (rest > 0) { .. } return entangled; } return entangled;`, not once after the `if`",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "        StmtKind::Continue(None) | StmtKind::Break(None) | StmtKind::Return(_)\n",
     replace: "        StmtKind::Continue(None) | StmtKind::Break(None)\n",
-    tests: ["test/lowering-loops.test.ts", "-t", "a while that ends an if's branch keeps its test"],
+    tests: [
+      "test/lowering-loops.test.ts",
+      "-t",
+      "a while that ends an if's branch keeps its test",
+    ],
   },
   {
     name: "written-break-unplaced",
-    breaks: "a loop's `break` the program wrote has no place, so the comment before it is before the loop (#298)",
+    breaks:
+      "a loop's `break` the program wrote has no place, so the comment before it is before the loop (#298)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "            Some(StmtKind::Break(None)) => breaks,\n",
     replace: "            Some(StmtKind::Break(None)) => &[],\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "a comment before a loop's break"],
+    tests: [
+      "test/lowering-comments.test.ts",
+      "-t",
+      "a comment before a loop's break",
+    ],
   },
   {
     name: "jump-tested-at-its-test-alone",
-    breaks: "an `if` at the `if` it's written in, `if i > n`, which ends where its test does, isn't the program's, so the comment before its `break` is before the loop",
+    breaks:
+      "an `if` at the `if` it's written in, `if i > n`, which ends where its test does, isn't the program's, so the comment before its `break` is before the loop",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "        super::written(std::slice::from_ref(test), at) || (!at.is_none() && at.lo <= test.lo && at.hi == test.hi)\n",
     replace: "        super::written(std::slice::from_ref(test), at)\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "a comment before a loop's break"],
+    tests: [
+      "test/lowering-comments.test.ts",
+      "-t",
+      "a comment before a loop's break",
+    ],
   },
   {
     name: "written-at-its-own-span",
-    breaks: "a test of no place, `!enableAlwaysYieldScheduler && ..` of a thread-local's read, isn't where what it's made of is written, so the scheduler's comment is before its loop (#298)",
+    breaks:
+      "a test of no place, `!enableAlwaysYieldScheduler && ..` of a thread-local's read, isn't where what it's made of is written, so the scheduler's comment is before its loop (#298)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "            at = e.span;\n",
     replace: "            at = test.span;\n",
@@ -336,7 +461,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "restored-continue-at-its-if",
-    breaks: "a `continue` restored where the program wrote it is placed at its `if`, so `written jumps` leaves it there and its comment is before the loop",
+    breaks:
+      "a `continue` restored where the program wrote it is placed at its `if`, so `written jumps` leaves it there and its comment is before the loop",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "    let jump = vec![StmtKind::Continue(None).at(at)];\n",
     replace: "    let jump = vec![StmtKind::Continue(None).at(span)];\n",
@@ -344,32 +470,46 @@ export const mutations: Mutation[] = [
   },
   {
     name: "outer-continues-of-a-branch-unseen",
-    breaks: "a loop that ends a branch of an `if` that ends another's body leaves by `continue bb7`, a label, not as the `while (child != null)` React's test selectors write (ADR 0961)",
+    breaks:
+      "a loop that ends a branch of an `if` that ends another's body leaves by `continue bb7`, a label, not as the `while (child != null)` React's test selectors write (ADR 0961)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "        Some(StmtKind::If(_, a, b)) => {\n            ending(a, looped);\n",
-    replace: "        Some(StmtKind::If(_, a, b)) if false => {\n            ending(a, looped);\n",
+    replace:
+      "        Some(StmtKind::If(_, a, b)) if false => {\n            ending(a, looped);\n",
     tests: ["test/corpus.test.ts", "-t", "^loop_ending_branch_loop.rs$"],
     snapshots: true,
   },
   {
     name: "continues-written-left-breaks",
-    breaks: "getHostSibling's `if (isScope(node)) { continue siblings; }` is a `break` past MIR's block to its one `continue`, the rest nested in negated tests",
+    breaks:
+      "getHostSibling's `if (isScope(node)) { continue siblings; }` is a `break` past MIR's block to its one `continue`, the rest nested in negated tests",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "            replaced(body, block, &after[0], guards);\n",
     replace: "",
-    tests: ["test/lowering-early-exits.test.ts", "-t", "continues of the loop around"],
+    tests: [
+      "test/lowering-early-exits.test.ts",
+      "-t",
+      "continues of the loop around",
+    ],
   },
   {
     name: "continues-written-of-any-break",
-    breaks: "a `break` past a block to a `continue` is that `continue` where the program wrote no `continue`, a `break` of its own labeled block's (ADR 0790)",
+    breaks:
+      "a `break` past a block to a `continue` is that `continue` where the program wrote no `continue`, a `break` of its own labeled block's (ADR 0790)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "                        && tests_continue(guards, span) =>\n                {\n                    then[0] = Stmt {\n",
-    replace: "                        && true =>\n                {\n                    then[0] = Stmt {\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
+    replace:
+      "                        && true =>\n                {\n                    then[0] = Stmt {\n",
+    tests: [
+      "test/lowering-matches.test.ts",
+      "-t",
+      "a match of constants is a switch",
+    ],
   },
   {
     name: "blocks-breaking-loops-kept",
-    breaks: "a block MIR made that a loop's turn ends with, then the loop's `break;`, stays, its arms' `break bb22;` of it: `bb22: { switch (codes[value]) { case 97: break bb22; .. } .. continue; } break;` (#389c)",
+    breaks:
+      "a block MIR made that a loop's turn ends with, then the loop's `break;`, stays, its arms' `break bb22;` of it: `bb22: { switch (codes[value]) { case 97: break bb22; .. } .. continue; } break;` (#389c)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "        body.splice(at..=at, broken);\n",
     replace: "        continue;\n",
@@ -378,7 +518,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "blocks-breaking-loops-of-written-label",
-    breaks: "a loop the program labeled, left through a block MIR made, has its arms' `break`s of no label, not its own, so its `match` is no `switch` of `break findParent;` cases (#389c)",
+    breaks:
+      "a loop the program labeled, left through a block MIR made, has its arms' `break`s of no label, not its own, so its `match` is no `switch` of `break findParent;` cases (#389c)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "        if !js::names_break(&broken, &block) && named.is_some() {\n",
     replace: "        if false {\n",
@@ -387,7 +528,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "blocks-breaking-loops-written-label-unnamed",
-    breaks: "a `break 'rows` of an inner loop, which MIR makes a `break` of a block the outer turn ends, stays `bb22:` in a `while (true)`, not the outer loop's `break rows;` and its test (uz3)",
+    breaks:
+      "a `break 'rows` of an inner loop, which MIR makes a `break` of a block the outer turn ends, stays `bb22:` in a `while (true)`, not the outer loop's `break rows;` and its test (uz3)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "            super::tails::relabeled(&mut broken, &block, named);\n            *looped = Some(named.clone());\n",
     replace: "            continue;\n",
@@ -396,38 +538,55 @@ export const mutations: Mutation[] = [
   },
   {
     name: "blocks-breaking-loops-inner-loop",
-    breaks: "a block whose `break` is in a loop of its own, an arm's inner `loop` MIR leaves by the outer's way out (`counted`), is spliced in, its `break bb19` left with no block, which tidy's \"each jump lands\" refuses; a `break;` there would leave only the inner loop",
+    breaks:
+      "a block whose `break` is in a loop of its own, an arm's inner `loop` MIR leaves by the outer's way out (`counted`), is spliced in, its `break bb19` left with no block, which tidy's \"each jump lands\" refuses; a `break;` there would leave only the inner loop",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "        if js::names_break(&broken, &block) {\n",
     replace: "        if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(match_breaks_its_loop|while_let_at_end|guarded_arms_nested_break|inner_while_then_break|loop_break_choice).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(match_breaks_its_loop|while_let_at_end|guarded_arms_nested_break|inner_while_then_break|loop_break_choice).rs$",
+    ],
     snapshots: true,
   },
 
   {
     name: "jumps-into-branches-of-falling-match",
-    breaks: "a chain of a `match` whose guarded arms fall gets the jump after it pushed into its arms, which `switches` then can't read: `1 if on(n) => break` before `1 | 2 => { .. }` keeps `bb26: { bb12: { .. } } ` (#389c)",
+    breaks:
+      "a chain of a `match` whose guarded arms fall gets the jump after it pushed into its arms, which `switches` then can't read: `1 if on(n) => break` before `1 | 2 => { .. }` keeps `bb26: { bb12: { .. } } ` (#389c)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "        if switched(test, stmt.span, falling) {\n",
     replace: "        if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^guarded_arm_breaks_before_its_fall.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^guarded_arm_breaks_before_its_fall.rs$",
+    ],
     snapshots: true,
   },
   {
     name: "named-continues-unseen",
-    breaks: "a `continue 'outer` in an inner loop after a test that skips the turn stays MIR's `break bb25` of a block, `bb25: { .. }`, the label and the turn's trailing `continue` kept (#442)",
+    breaks:
+      "a `continue 'outer` in an inner loop after a test that skips the turn stays MIR's `break bb25` of a block, `bb25: { .. }`, the label and the turn's trailing `continue` kept (#442)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "        {\n            named_continues(body, looped);\n        }\n",
     replace: "        {}\n",
-    tests: ["test/corpus.test.ts", "-t", "^(continue_outer_past_block|borrow_loop_inner_break_outer).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(continue_outer_past_block|borrow_loop_inner_break_outer).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "named-continue-unnamed",
-    breaks: "a block's `break` in an inner loop, which goes on with the outer loop, is `continue;`, which goes on with the inner one, a wrong total (#442)",
+    breaks:
+      "a block's `break` in an inner loop, which goes on with the outer loop, is `continue;`, which goes on with the inner one, a wrong total (#442)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "                    rejump(body, label, &StmtKind::Continue(Some(looped.to_owned())))\n",
-    replace: "                    rejump(body, label, &StmtKind::Continue(None))\n",
+    replace:
+      "                    rejump(body, label, &StmtKind::Continue(None))\n",
     tests: ["test/corpus.test.ts", "-t", "^continue_outer_past_block.rs$"],
   },
 ];

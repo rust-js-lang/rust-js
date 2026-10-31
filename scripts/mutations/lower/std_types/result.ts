@@ -4,10 +4,12 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "question-box-error-unconverted",
-    breaks: "`?` into a `Box<dyn Error>` returns the error as it is, not as a pair",
+    breaks:
+      "`?` into a `Box<dyn Error>` returns the error as it is, not as a pair",
     file: "src/lower/std_types/result.rs",
     find: "            Conversion::Dyn(dictionary) => Expr::object(vec![\n",
-    replace: "            Conversion::Dyn(_) => error,\n            #[allow(unreachable_patterns)]\n            Conversion::Dyn(dictionary) => Expr::object(vec![\n",
+    replace:
+      "            Conversion::Dyn(_) => error,\n            #[allow(unreachable_patterns)]\n            Conversion::Dyn(dictionary) => Expr::object(vec![\n",
     tests: ["test/corpus.test.ts", "-t", "dyn_display"],
   },
 ];

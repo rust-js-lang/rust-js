@@ -4,23 +4,27 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "compiled-copied-cloned-as-source",
-    breaks: "a `copied()` std compiles held, `--std-iterators`', is cloned as the crate's iterator it copies, `held.it.with(..)`: `TypeError: held.it.with is not a function` (ADR 0999)",
+    breaks:
+      "a `copied()` std compiles held, `--std-iterators`', is cloned as the crate's iterator it copies, `held.it.with(..)`: `TypeError: held.it.with is not a function` (ADR 0999)",
     file: "src/lower/std_impls.rs",
     find: "        if let Some(source) = super::recognition::copied_source(self.tcx, ty)\n            && !held_compiled\n",
-    replace: "        if let Some(source) = super::recognition::copied_source(self.tcx, ty)\n",
+    replace:
+      "        if let Some(source) = super::recognition::copied_source(self.tcx, ty)\n",
     tests: ["test/iterator-forms.test.ts", "-t", "copied_clone_of_its_own"],
   },
   {
     name: "eq-items-fixed-names",
-    breaks: "`==` of two `Vec`s of other item types names its arrow's `x` and `i` as they are, hiding a variable so named and a nested one's outer index (#307)",
+    breaks:
+      "`==` of two `Vec`s of other item types names its arrow's `x` and `i` as they are, hiding a variable so named and a nested one's outer index (#307)",
     file: "src/lower/std_impls.rs",
-    find: "        let (x, i) = (self.fresh(\"x\"), self.fresh(\"i\"));\n",
-    replace: "        let (x, i) = (\"x\".to_string(), \"i\".to_string());\n",
+    find: '        let (x, i) = (self.fresh("x"), self.fresh("i"));\n',
+    replace: '        let (x, i) = ("x".to_string(), "i".to_string());\n',
     tests: ["test/corpus.test.ts", "-t", "^eq_items_of_other_types.rs$"],
   },
   {
     name: "uncounted-weak-cloned",
-    breaks: "a clone of an uncounted `Weak` copies what it points at, or is refused, where it's the same object (ADR 0843)",
+    breaks:
+      "a clone of an uncounted `Weak` copies what it points at, or is refused, where it's the same object (ADR 0843)",
     file: "src/lower/std_impls.rs",
     find: "        if self.uncounted_weak(ty).is_some() {\n            return false;\n        }\n",
     replace: "",
@@ -28,7 +32,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "numbered-eq-structural",
-    breaks: "`==` of two numbered enums is `$eq(a, b)`, where they're numbers JS's `===` compares",
+    breaks:
+      "`==` of two numbered enums is `$eq(a, b)`, where they're numbers JS's `===` compares",
     file: "src/lower/std_impls.rs",
     find: " || super::bindings::numbered(self.tcx, *adt))\n",
     replace: ")\n",
@@ -37,7 +42,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "untagged-undefined-loosely-null",
-    breaks: "an untagged enum's `undefined` is `==` its `null`, as an `Option`'s `None` is",
+    breaks:
+      "an untagged enum's `undefined` is `==` its `null`, as an `Option`'s `None` is",
     file: "src/lower/std_impls.rs",
     find: "            let none = !nullish && [&a, &b]",
     replace: "            let none = [&a, &b]",
@@ -53,7 +59,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unknown-option-eq-loose",
-    breaks: "`Option<&Unknown>`'s `==` is `==`, which makes `\"1\"` of `1`",
+    breaks: '`Option<&Unknown>`\'s `==` is `==`, which makes `"1"` of `1`',
     file: "src/lower/std_impls.rs",
     find: "                    true => js::nullish_equal(a, b),\n",
     replace: "                    true => Expr::bin(Op::LooseEq, a, b),\n",
@@ -65,11 +71,16 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_impls.rs",
     find: "                        let both = self.untagged_variant_test(ty, &[variant], &[], &b, false);",
     replace: "                        let both = Expr::bool(true);",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "variant without fields is its name"],
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "variant without fields is its name",
+    ],
   },
   {
     name: "library-recursive-clone-inline",
-    breaks: "a clone of a library's type inside itself isn't a function that calls itself, and never ends",
+    breaks:
+      "a clone of a library's type inside itself isn't a function that calls itself, and never ends",
     file: "src/lower/std_impls.rs",
     find: "        id.is_local() || self.krate.foreign.in_library(id)\n",
     replace: "        id.is_local()\n",
@@ -77,7 +88,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "eq-without-cells",
-    breaks: "`o == Some(&mut 7)` of an `Option<&mut i32>` compares the cells, not what they point at",
+    breaks:
+      "`o == Some(&mut 7)` of an `Option<&mut i32>` compares the cells, not what they point at",
     file: "src/lower/std_impls.rs",
     find: "        let (mut a, _) = self.through_refs(a, ty);\n        let (mut b, mut ty) = self.through_refs(b, ty);\n",
     replace: "        let (mut a, mut b, mut ty) = (a, b, ty.peel_refs());\n",
@@ -88,15 +100,18 @@ export const mutations: Mutation[] = [
     breaks: "`==` of what holds `&mut`s to numbers is JS's `===` of the cells",
     file: "src/lower/std_impls.rs",
     find: "    pub(super) fn js_eq(&self, ty: Ty<'tcx>) -> Option<JsEq> {\n        // A `&mut` to a number is a cell, an object (ADR 0099).\n        if self.has_cell_layer(ty) {",
-    replace: "    pub(super) fn js_eq(&self, ty: Ty<'tcx>) -> Option<JsEq> {\n        // A `&mut` to a number is a cell, an object (ADR 0099).\n        if false && self.has_cell_layer(ty) {",
+    replace:
+      "    pub(super) fn js_eq(&self, ty: Ty<'tcx>) -> Option<JsEq> {\n        // A `&mut` to a number is a cell, an object (ADR 0099).\n        if false && self.has_cell_layer(ty) {",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_compare"],
   },
   {
     name: "value-key-clone-shares-keys",
-    breaks: "a map's clone shares its keys, which a consumed original's owner then changes",
+    breaks:
+      "a map's clone shares its keys, which a consumed original's owner then changes",
     file: "src/lower/std_impls.rs",
     find: "                let key = key.filter(|&k| self.is_value_key(k) && self.needs_clone(k));",
-    replace: "                let key = key.filter(|&k| false && self.is_value_key(k) && self.needs_clone(k));",
+    replace:
+      "                let key = key.filter(|&k| false && self.is_value_key(k) && self.needs_clone(k));",
     tests: ["test/corpus.test.ts", "-t", "value_keys"],
   },
   {
@@ -104,24 +119,27 @@ export const mutations: Mutation[] = [
     breaks: "`(1..4) == (1..4)` is refused",
     file: "src/lower/std_impls.rs",
     find: "        if self.range_kind(ty).is_some() {\n            return self.range_eq(a, b, ty, span, out);\n",
-    replace: "        if false && self.range_kind(ty).is_some() {\n            return self.range_eq(a, b, ty, span, out);\n",
-    tests: ["test/corpus.test.ts","-t","range_values"],
+    replace:
+      "        if false && self.range_kind(ty).is_some() {\n            return self.range_eq(a, b, ty, span, out);\n",
+    tests: ["test/corpus.test.ts", "-t", "range_values"],
   },
   {
     name: "default-str-unknown",
     breaks: "`Default` of a `&str` is refused",
     file: "src/lower/std_impls.rs",
-    find: "            ty::Ref(_, inner, _) if inner.is_str() => Expr::str(\"\"),",
-    replace: "            ty::Ref(_, inner, _) if inner.is_str() && false => Expr::str(\"\"),",
-    tests: ["test/corpus.test.ts","-t","std_odds"],
+    find: '            ty::Ref(_, inner, _) if inner.is_str() => Expr::str(""),',
+    replace:
+      '            ty::Ref(_, inner, _) if inner.is_str() && false => Expr::str(""),',
+    tests: ["test/corpus.test.ts", "-t", "std_odds"],
   },
   {
     name: "default-array-empty",
     breaks: "`Default` of a `[u16; 3]` is no items",
     file: "src/lower/std_impls.rs",
     find: "                Expr::array((0..len).map(|_| self.default_value(*item, span)).collect::<R<_>>()?)",
-    replace: "                Expr::array((0..len).skip(len as usize).map(|_| self.default_value(*item, span)).collect::<R<_>>()?)",
-    tests: ["test/corpus.test.ts","-t","std_odds"],
+    replace:
+      "                Expr::array((0..len).skip(len as usize).map(|_| self.default_value(*item, span)).collect::<R<_>>()?)",
+    tests: ["test/corpus.test.ts", "-t", "std_odds"],
   },
   {
     name: "default-boxed-slice-unknown",
@@ -129,13 +147,14 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_impls.rs",
     find: "            ty::Slice(_) => Expr::array(Vec::new()),",
     replace: "            ty::Slice(_) if false => Expr::array(Vec::new()),",
-    tests: ["test/corpus.test.ts","-t","std_odds"],
+    tests: ["test/corpus.test.ts", "-t", "std_odds"],
   },
   {
     name: "sender-clone-uncounted",
-    breaks: "a sender's clone is the same sender, not one more, so dropping both drops one too many",
+    breaks:
+      "a sender's clone is the same sender, not one more, so dropping both drops one too many",
     file: "src/lower/std_impls.rs",
-    find: "            return Ok(Expr::call(Expr::helper(\"$cloneSender\"), vec![place]));",
+    find: '            return Ok(Expr::call(Expr::helper("$cloneSender"), vec![place]));',
     replace: "            return Ok(place);",
     tests: ["test/corpus.test.ts", "-t", "channels"],
   },
@@ -149,7 +168,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "given-eq-of-parametrized-ignored",
-    breaks: "`==` of a `Wrapping<T>` asks `T`'s `PartialEq`, not the one its bound gives",
+    breaks:
+      "`==` of a `Wrapping<T>` asks `T`'s `PartialEq`, not the one its bound gives",
     file: "src/lower/std_impls.rs",
     find: "        if ty.has_param() && !self.is_unknown(ty) {",
     replace: "        if false {",
@@ -157,26 +177,36 @@ export const mutations: Mutation[] = [
   },
   {
     name: "element-default-null",
-    breaks: "an \`Element\`'s default, children not given, is \`null\`, written as a child",
+    breaks:
+      "an \`Element\`'s default, children not given, is \`null\`, written as a child",
     file: "src/lower/std_impls.rs",
     find: "            return Ok(Expr::undefined());\n        }\n        // react's `Rest`: no props,",
-    replace: "            return Ok(Expr::null());\n        }\n        // react's `Rest`: no props,",
-    tests: ["test/jsx-props.test.ts", "-t", "named props and the rest from a base"],
+    replace:
+      "            return Ok(Expr::null());\n        }\n        // react's `Rest`: no props,",
+    tests: [
+      "test/jsx-props.test.ts",
+      "-t",
+      "named props and the rest from a base",
+    ],
   },
   {
     name: "rest-default-object",
-    breaks: "a `Rest`'s default is `{}`, which a Rust caller's struct update writes as a `rest` prop",
+    breaks:
+      "a `Rest`'s default is `{}`, which a Rust caller's struct update writes as a `rest` prop",
     file: "src/lower/std_impls.rs",
     find: "        if super::bindings::is_rest(self.tcx, ty) {\n            return Ok(Expr::undefined());",
-    replace: "        if super::bindings::is_rest(self.tcx, ty) {\n            return Ok(Expr::object(Vec::new()));",
+    replace:
+      "        if super::bindings::is_rest(self.tcx, ty) {\n            return Ok(Expr::object(Vec::new()));",
     tests: ["test/jsx-props.test.ts", "-t", "doesn't name as ...rest"],
   },
   {
     name: "untagged-clone-shared",
-    breaks: "a clone of an untagged enum's `Vec` is the same array, which a push to the first changes",
+    breaks:
+      "a clone of an untagged enum's `Vec` is the same array, which a push to the first changes",
     file: "src/lower/std_impls.rs",
     find: "            ty::Adt(adt, args) if self.untagged(ty).is_some() => {\n                let mut value = place.clone();\n",
-    replace: "            ty::Adt(adt, args) if false => {\n                let mut value = place.clone();\n",
+    replace:
+      "            ty::Adt(adt, args) if false => {\n                let mut value = place.clone();\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_enums"],
   },
   {
@@ -184,79 +214,124 @@ export const mutations: Mutation[] = [
     breaks: "`==` of an untagged enum compares tags it hasn't",
     file: "src/lower/std_impls.rs",
     find: "            ty::Adt(adt, args) if self.untagged(ty).is_some() => {\n                let mut value = Expr::bool(false);\n",
-    replace: "            ty::Adt(adt, args) if false => {\n                let mut value = Expr::bool(false);\n",
+    replace:
+      "            ty::Adt(adt, args) if false => {\n                let mut value = Expr::bool(false);\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_enums"],
   },
   {
     name: "derived-clone-shares-changed-vec",
-    breaks: "a derived `clone` is `{ ...s }`, sharing the `Vec` the copy is pushed to, so the push shows in the original too",
+    breaks:
+      "a derived `clone` is `{ ...s }`, sharing the `Vec` the copy is pushed to, so the push shows in the original too",
     file: "src/lower/std_impls.rs",
     find: "                .map_or(self.needs_clone(t), |item| self.needs_clone(item))\n            {\n",
-    replace: "                .map_or(self.needs_clone(t), |item| self.needs_clone(item))\n                && false\n            {\n",
-    tests: ["test/compiler.test.ts", "-t", "std trait impls are direct calls, and a clone copies only what changes"],
+    replace:
+      "                .map_or(self.needs_clone(t), |item| self.needs_clone(item))\n                && false\n            {\n",
+    tests: [
+      "test/compiler.test.ts",
+      "-t",
+      "std trait impls are direct calls, and a clone copies only what changes",
+    ],
   },
   {
     name: "inner-eq-unseen",
-    breaks: "a derived `==` of a struct holding a type with a hand-written `eq` compares field by field with `$eq`, never calling that `eq`",
+    breaks:
+      "a derived `==` of a struct holding a type with a hand-written `eq` compares field by field with `$eq`, never calling that `eq`",
     file: "src/lower/std_impls.rs",
     find: "            ty::Adt(adt, args) => adt\n                .all_fields()\n                .any(|f| self.custom_eq_in(self.field_ty(f, args), seen)),",
     replace: "            ty::Adt(..) => false,",
-    tests: ["test/compiler.test.ts", "-t", "== calls a hand-written eq wherever it's inside, and generics take a dictionary"],
+    tests: [
+      "test/compiler.test.ts",
+      "-t",
+      "== calls a hand-written eq wherever it's inside, and generics take a dictionary",
+    ],
   },
   {
     name: "map-clone-shares-values",
-    breaks: "a clone of a `HashMap` of `Vec`s is `new Map(m)`, sharing each `Vec`, so a push to the clone's shows in the original's",
+    breaks:
+      "a clone of a `HashMap` of `Vec`s is `new Map(m)`, sharing each `Vec`, so a push to the clone's shows in the original's",
     file: "src/lower/std_impls.rs",
     find: "                let value = args.types().nth(1).filter(|&v| !set && self.needs_clone(v));",
-    replace: "                let value = args.types().nth(1).filter(|&v| false && !set && self.needs_clone(v));",
-    tests: ["test/compiler.test.ts", "-t", "HashMap and HashSet are a JS Map and Set"],
+    replace:
+      "                let value = args.types().nth(1).filter(|&v| false && !set && self.needs_clone(v));",
+    tests: [
+      "test/compiler.test.ts",
+      "-t",
+      "HashMap and HashSet are a JS Map and Set",
+    ],
   },
   {
     name: "default-cell-field-boxed",
-    breaks: "a derived `Default`'s `Cell` field is `{ value: 0 }`, where it's `0`",
+    breaks:
+      "a derived `Default`'s `Cell` field is `{ value: 0 }`, where it's `0`",
     file: "src/lower/std_impls.rs",
     find: "                                Ok(Prop::Field(name, self.holding(value, self.struct_field_def(ty, i), t)))\n",
     replace: "                                Ok(Prop::Field(name, value))\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "cell in a field is the property"],
+    tests: [
+      "test/lowering-cells.test.ts",
+      "-t",
+      "cell in a field is the property",
+    ],
   },
   {
     name: "clone-cell-field-respread",
-    breaks: "a derived clone of a `Cell` or a `OnceCell` field copies it again, `{ ...c, count: c.count }`, which the spread did",
+    breaks:
+      "a derived clone of a `Cell` or a `OnceCell` field copies it again, `{ ...c, count: c.count }`, which the spread did",
     file: "src/lower/std_impls.rs",
     find: "            if self\n                .property_cell(def, t)\n                .map_or(self.needs_clone(t), |item| self.needs_clone(item))\n            {\n",
     replace: "            if self.needs_clone(t) {\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "cell in a field is the property"],
+    tests: [
+      "test/lowering-cells.test.ts",
+      "-t",
+      "cell in a field is the property",
+    ],
   },
   {
     name: "eq-cell-field-unhandled",
-    breaks: "a derived `==` beside a hand-written one compares a `Cell` field's `value` of the number it holds, so any two are equal",
+    breaks:
+      "a derived `==` beside a hand-written one compares a `Cell` field's `value` of the number it holds, so any two are equal",
     file: "src/lower/std_impls.rs",
     find: "                            let x = self.held(Expr::member(a.clone(), name.clone()), def, t);\n",
-    replace: "                            let x = Expr::member(a.clone(), name.clone());\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "cell in a field is the property"],
+    replace:
+      "                            let x = Expr::member(a.clone(), name.clone());\n",
+    tests: [
+      "test/lowering-cells.test.ts",
+      "-t",
+      "cell in a field is the property",
+    ],
   },
   {
     name: "some-true-compared",
-    breaks: "`o == Some(true)` of an `Option<bool>` is `o === true`, where the original tests `o`",
+    breaks:
+      "`o == Some(true)` of an `Option<bool>` is `o === true`, where the original tests `o`",
     file: "src/lower/std_impls.rs",
     find: "        if self.option_of(ty).is_some_and(|inner| inner.is_bool()) {",
     replace: "        if false {",
-    tests: ["test/lowering-options.test.ts", "-t", "an Option of an object is tested against null, as of any value"],
+    tests: [
+      "test/lowering-options.test.ts",
+      "-t",
+      "an Option of an object is tested against null, as of any value",
+    ],
   },
   {
     name: "flattened-default-nested",
-    breaks: "a derived `Default` of props with a flattened field nests it, `{ anchor: {} }`",
+    breaks:
+      "a derived `Default` of props with a flattened field nests it, `{ anchor: {} }`",
     file: "src/lower/std_impls.rs",
     find: "                    self.flattened_object(made, ty)\n",
     replace: "                    made\n",
-    tests: ["test/jsx-props.test.ts", "-t", "JSX gives a flattened struct's fields as a component's own props"],
+    tests: [
+      "test/jsx-props.test.ts",
+      "-t",
+      "JSX gives a flattened struct's fields as a component's own props",
+    ],
   },
   {
     name: "lazy-default-made",
     breaks: "`LazyCell::default()` is made already, not on first use",
     file: "src/lower/std_impls.rs",
     find: '                let init = Expr::arrow(vec![], vec![StmtKind::Return(Some(made)).at(js::Span::NONE)]);\n                Expr::object(vec![Prop::Field("init".into(), init)])\n',
-    replace: '                Expr::object(vec![Prop::Field("value".into(), made)])\n',
+    replace:
+      '                Expr::object(vec![Prop::Field("value".into(), made)])\n',
     tests: ["test/corpus.test.ts", "-t", "lazy_cells"],
   },
   {
@@ -277,19 +352,23 @@ export const mutations: Mutation[] = [
   },
   {
     name: "refcell-clone-unheld",
-    breaks: "a `RefCell`'s clone of what may ask runs with it free to borrow mutably",
+    breaks:
+      "a `RefCell`'s clone of what may ask runs with it free to borrow mutably",
     file: "src/lower/std_impls.rs",
     find: "            ty::Adt(_, args) if std(StdItem::RefCell) && !self.recognition().std_alone(args.type_at(0)) => {\n                // Its parameter named apart",
-    replace: "            ty::Adt(_, args) if false => {\n                // Its parameter named apart",
+    replace:
+      "            ty::Adt(_, args) if false => {\n                // Its parameter named apart",
     tests: ["test/corpus.test.ts", "-t", "^refcell_clone_nested_parts.rs$"],
     snapshots: true,
   },
   {
     name: "refcell-eq-unheld",
-    breaks: "`==` of `RefCell`s of what may ask runs with them free to borrow mutably",
+    breaks:
+      "`==` of `RefCell`s of what may ask runs with them free to borrow mutably",
     file: "src/lower/std_impls.rs",
     find: "            ty::Adt(_, args) if std(StdItem::RefCell) && !self.recognition().std_alone(args.type_at(0)) => {\n                let itself = self.is_value_cell(ty);\n",
-    replace: "            ty::Adt(_, args) if false => {\n                let itself = self.is_value_cell(ty);\n",
+    replace:
+      "            ty::Adt(_, args) if false => {\n                let itself = self.is_value_cell(ty);\n",
     tests: ["test/corpus.test.ts", "-t", "refcell_held_while_asked"],
   },
   {
@@ -305,7 +384,8 @@ export const mutations: Mutation[] = [
     breaks: "`==` of `Box`es of a unit struct with its own `eq` skips it",
     file: "src/lower/std_impls.rs",
     find: "                ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) && self.counted_rc(ty).is_none() => {\n                    ty = args.type_at(0);",
-    replace: "                ty::Adt(_, args) if false => {\n                    ty = args.type_at(0);",
+    replace:
+      "                ty::Adt(_, args) if false => {\n                    ty = args.type_at(0);",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
   },
   {
@@ -313,7 +393,8 @@ export const mutations: Mutation[] = [
     breaks: "`==` of `Pin`s of a unit struct with its own `eq` skips it",
     file: "src/lower/std_impls.rs",
     find: "                ty::Adt(_, args) if self.recognition().pinned(ty).is_some() => {\n                    let pointer",
-    replace: "                ty::Adt(_, args) if false => {\n                    let pointer",
+    replace:
+      "                ty::Adt(_, args) if false => {\n                    let pointer",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
   },
   {
@@ -327,24 +408,29 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-array-iterator-clone-shared",
-    breaks: "a clone of std's iterator over an array from MIR is the same `$iter`, stepped by both",
+    breaks:
+      "a clone of std's iterator over an array from MIR is the same `$iter`, stepped by both",
     file: "src/lower/std_impls.rs",
     find: "            ty::Adt(..) if self.steps_an_array(ty) => {\n",
-    replace: "            ty::Adt(..) if false && self.steps_an_array(ty) => {\n",
-    tests: ["test/corpus.test.ts","-t","iterator_clones"],
+    replace:
+      "            ty::Adt(..) if false && self.steps_an_array(ty) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "iterator_clones"],
   },
   {
     name: "tagged-enum-eq-generic",
-    breaks: "a tagged enum's fieldless variants are compared by the generic `$eq`, not by their tag",
+    breaks:
+      "a tagged enum's fieldless variants are compared by the generic `$eq`, not by their tag",
     file: "src/lower/std_impls.rs",
     find: "            && let Some(key) = super::bindings::declared_tag(self.tcx, adt.did())\n        {\n            return Ok(Expr::bin(Op::Eq, Expr::member(a, &key), Expr::member(b, &key)));\n",
-    replace: "            && let Some(key) = super::bindings::declared_tag(self.tcx, adt.did())\n            && false\n        {\n            return Ok(Expr::bin(Op::Eq, Expr::member(a, &key), Expr::member(b, &key)));\n",
+    replace:
+      "            && let Some(key) = super::bindings::declared_tag(self.tcx, adt.did())\n            && false\n        {\n            return Ok(Expr::bin(Op::Eq, Expr::member(a, &key), Expr::member(b, &key)));\n",
     tests: ["test/corpus.test.ts", "-t", "tagged_enum_values"],
     snapshots: true,
   },
   {
     name: "own-eq-enum-by-identity",
-    breaks: "a fieldless enum with an `eq` of the crate's is compared by `===`, `contains` by `includes`, not by its `eq`",
+    breaks:
+      "a fieldless enum with an `eq` of the crate's is compared by `===`, `contains` by `includes`, not by its `eq`",
     file: "src/lower/std_impls.rs",
     find: "                && !self.has_user_impl(self.partial_eq_trait(), ty));\n",
     replace: ");\n",
@@ -361,7 +447,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "float-same-value",
-    breaks: "a float is found by `includes`, `[NaN].includes(NaN)`, where Rust's `contains` doesn't find `NaN`",
+    breaks:
+      "a float is found by `includes`, `[NaN].includes(NaN)`, where Rust's `contains` doesn't find `NaN`",
     file: "src/lower/std_impls.rs",
     find: "            return Some(match Num::of(ty).is_some_and(Num::float) || any {\n",
     replace: "            return Some(match any {\n",
@@ -385,15 +472,16 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cow-eq-as-enum",
-    breaks: "two `Cow`s compare their variants, `Borrowed(\"a\") != Owned(\"a\")`",
+    breaks: 'two `Cow`s compare their variants, `Borrowed("a") != Owned("a")`',
     file: "src/lower/std_impls.rs",
-    find: "                ty::Adt(..) if let Some((x, borrowed)) = self.cow_deref(&a, ty) => {\n                    (a, b, ty) = (x, self.cow_deref(&b, ty).expect(\"a `Cow`\").0, borrowed);\n                }\n",
+    find: '                ty::Adt(..) if let Some((x, borrowed)) = self.cow_deref(&a, ty) => {\n                    (a, b, ty) = (x, self.cow_deref(&b, ty).expect("a `Cow`").0, borrowed);\n                }\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cow_compare.rs$"],
   },
   {
     name: "cow-eq-structural",
-    breaks: "what holds a `Cow`, an `Option` of one, compares it with `$eq`, its variant too",
+    breaks:
+      "what holds a `Cow`, an `Option` of one, compares it with `$eq`, its variant too",
     file: "src/lower/std_impls.rs",
     find: "            ty::Adt(..) if self.recognition().is_cow(ty) => true,\n",
     replace: "",
@@ -403,8 +491,9 @@ export const mutations: Mutation[] = [
     name: "path-eq-as-text",
     breaks: "`==` of paths is refused, where it's their components'",
     file: "src/lower/std_impls.rs",
-    find: "        if self.recognition().is_path(ty) {\n            return Ok(Expr::call(Expr::helper(\"$pathEq\"), vec![a, b]));\n",
-    replace: "        if false {\n            return Ok(Expr::call(Expr::helper(\"$pathEq\"), vec![a, b]));\n",
+    find: '        if self.recognition().is_path(ty) {\n            return Ok(Expr::call(Expr::helper("$pathEq"), vec![a, b]));\n',
+    replace:
+      '        if false {\n            return Ok(Expr::call(Expr::helper("$pathEq"), vec![a, b]));\n',
     tests: ["test/corpus.test.ts", "-t", "^path_compare.rs$"],
   },
   {
@@ -412,12 +501,14 @@ export const mutations: Mutation[] = [
     breaks: "`p == q` of raw pointers is refused",
     file: "src/lower/std_impls.rs",
     find: "        if self.compared_by_address(ty)\n            && let Some((pointee, _)) = super::pointers::raw_pointee(self.tcx, ty)\n        {\n            return self.pointers_equal(a, b, pointee, span);\n",
-    replace: "        if false\n            && let Some((pointee, _)) = super::pointers::raw_pointee(self.tcx, ty)\n        {\n            return self.pointers_equal(a, b, pointee, span);\n",
+    replace:
+      "        if false\n            && let Some((pointee, _)) = super::pointers::raw_pointee(self.tcx, ty)\n        {\n            return self.pointers_equal(a, b, pointee, span);\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
   {
     name: "pointer-held-compared-by-value",
-    breaks: "what holds a raw pointer, an `Option` of one, compares it with `$eq`, the handles' fields, not their identity",
+    breaks:
+      "what holds a raw pointer, an `Option` of one, compares it with `$eq`, the handles' fields, not their identity",
     file: "src/lower/std_impls.rs",
     find: "            _ if self.compared_by_address(ty) => true,\n",
     replace: "",
@@ -425,7 +516,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "eq-two-types-as-one",
-    breaks: "`==` of two types' items asks `PartialEq` of the left one's alone, and is refused",
+    breaks:
+      "`==` of two types' items asks `PartialEq` of the left one's alone, and is refused",
     file: "src/lower/std_impls.rs",
     find: "        if lhs != other {\n",
     replace: "        if false {\n",
@@ -435,14 +527,15 @@ export const mutations: Mutation[] = [
     name: "eq-items-repeated",
     breaks: "a side of `==` of items that's a call is called for each item",
     file: "src/lower/std_impls.rs",
-    find: "        let b = if b.reads_same() { b } else { self.spill(\"other\", b, out) };\n",
+    find: '        let b = if b.reads_same() { b } else { self.spill("other", b, out) };\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^eq_two_types.rs$"],
     snapshots: true,
   },
   {
     name: "va-list-clone-unknown",
-    breaks: "a clone of a `VaList` is an error, where it's a copy of what's left",
+    breaks:
+      "a clone of a `VaList` is an error, where it's a copy of what's left",
     file: "src/lower/std_impls.rs",
     find: "            ty::Adt(..) if super::recognition::is_va_list(self.tcx, ty) => {\n",
     replace: "            ty::Adt(..) if false => {\n",
@@ -450,23 +543,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "default-bound-of-parameters-unread",
-    breaks: "`Default::default()` of `[T; N]`, which a where clause gives a dictionary of, is refused, as only a type parameter's bound is read",
+    breaks:
+      "`Default::default()` of `[T; N]`, which a where clause gives a dictionary of, is refused, as only a type parameter's bound is read",
     file: "src/lower/std_impls.rs",
     find: "        // its dictionary's.\n        let tr = ty::TraitRef::new(self.tcx, default, [ty]);\n        if let Some(dictionary) = self.evidence_for(tr) {\n",
-    replace: "        // its dictionary's.\n        let tr = ty::TraitRef::new(self.tcx, default, [ty]);\n        if let Some(dictionary) = self.evidence_for(tr).filter(|_| self.is_unknown(ty)) {\n",
+    replace:
+      "        // its dictionary's.\n        let tr = ty::TraitRef::new(self.tcx, default, [ty]);\n        if let Some(dictionary) = self.evidence_for(tr).filter(|_| self.is_unknown(ty)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^array_defaults.rs$"],
   },
   {
     name: "boxed-some-compared-as-object",
-    breaks: "`Some(())`, an object of its own, compares by which object it is, so `o == Some(())` is never true",
+    breaks:
+      "`Some(())`, an object of its own, compares by which object it is, so `o == Some(())` is never true",
     file: "src/lower/std_impls.rs",
     find: "            if (self.js_eq(inner).is_some() || self.eq_by_address(inner)) && !self.boxed_payload(inner) {\n",
-    replace: "            if self.js_eq(inner).is_some() || self.eq_by_address(inner) {\n",
+    replace:
+      "            if self.js_eq(inner).is_some() || self.eq_by_address(inner) {\n",
     tests: ["test/corpus.test.ts", "-t", "^option_boxed_eq.rs$"],
   },
   {
     name: "option-unknown-strict",
-    breaks: "`==` of two `Option<&Unknown>`s is `a === b`, so a `null` `None` isn't an `undefined` one, as std's `Option` says it is",
+    breaks:
+      "`==` of two `Option<&Unknown>`s is `a === b`, so a `null` `None` isn't an `undefined` one, as std's `Option` says it is",
     file: "src/lower/std_impls.rs",
     find: "                    true => js::nullish_equal(a, b),\n",
     replace: "                    true => Expr::bin(Op::Eq, a, b),\n",
@@ -474,10 +572,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unknown-compared-by-contents",
-    breaks: "a struct, a slice or a tuple holding a value of any shape compares it by `$eq`, by what's in it, so two objects alike are equal, where `===` says they aren't",
+    breaks:
+      "a struct, a slice or a tuple holding a value of any shape compares it by `$eq`, by what's in it, so two objects alike are equal, where `===` says they aren't",
     file: "src/lower/std_impls.rs",
     find: "        self.any_shape(ty) || self.equal_only_to_itself(ty) || self.untagged(ty).is_some_and(of_one)\n",
-    replace: "        self.equal_only_to_itself(ty) || self.untagged(ty).is_some_and(of_one)\n",
+    replace:
+      "        self.equal_only_to_itself(ty) || self.untagged(ty).is_some_and(of_one)\n",
     tests: ["test/corpus.test.ts", "-t", "^unknown_option_equality.rs$"],
   },
   {
@@ -494,23 +594,26 @@ export const mutations: Mutation[] = [
     breaks: "`==` of two maps is refused",
     file: "src/lower/std_impls.rs",
     find: "        if self.is_map(ty)\n            && let ty::Adt(_, args) = ty.kind()\n        {\n",
-    replace: "        if false\n            && let ty::Adt(_, args) = ty.kind()\n        {\n",
+    replace:
+      "        if false\n            && let ty::Adt(_, args) = ty.kind()\n        {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_eq.rs$"],
   },
   {
     name: "set-eq-as-map",
     breaks: "`==` of two sets compares them as maps, a key as an entry",
     file: "src/lower/std_impls.rs",
-    find: "            if self.is_set(ty) {\n                return Ok(Expr::call_helper(\"$setEq\", vec![a, b]));\n            }\n",
+    find: '            if self.is_set(ty) {\n                return Ok(Expr::call_helper("$setEq", vec![a, b]));\n            }\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_eq.rs$"],
   },
   {
     name: "map-eq-helper-wrapped",
-    breaks: "a map's values compared by `$eq` are `(x, y) => $eq(x, y)`, not `$eq`",
+    breaks:
+      "a map's values compared by `$eq` are `(x, y) => $eq(x, y)`, not `$eq`",
     file: "src/lower/std_impls.rs",
     find: "                    list.push((**callee).clone());\n",
-    replace: "                    made.push(StmtKind::Return(Some(same.clone())).at(js::Span::NONE));\n                    list.push(Expr::arrow(vec![x.clone().into(), y.clone().into()], made));\n",
+    replace:
+      "                    made.push(StmtKind::Return(Some(same.clone())).at(js::Span::NONE));\n                    list.push(Expr::arrow(vec![x.clone().into(), y.clone().into()], made));\n",
     tests: ["test/corpus.test.ts", "-t", "^map_eq.rs$"],
     snapshots: true,
   },
@@ -518,7 +621,7 @@ export const mutations: Mutation[] = [
     name: "std-hasher-clone-shared",
     breaks: "a cloned std hasher is the same one",
     file: "src/lower/std_impls.rs",
-    find: "                Ok(Expr::call(Expr::member(place, \"clone\"), Vec::new()))\n",
+    find: '                Ok(Expr::call(Expr::member(place, "clone"), Vec::new()))\n',
     replace: "                Ok(place)\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
   },
@@ -526,7 +629,7 @@ export const mutations: Mutation[] = [
     name: "cloned-apart-is-itself",
     breaks: "a clone of a closure cloned apart is the closure itself",
     file: "src/lower/std_impls.rs",
-    find: "                return Ok(Expr::call_helper(\"$clone\", vec![place]));\n",
+    find: '                return Ok(Expr::call_helper("$clone", vec![place]));\n',
     replace: "                return Ok(place);\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_clone.rs$"],
   },
@@ -535,28 +638,37 @@ export const mutations: Mutation[] = [
     breaks: "a struct's clone shares a field's closure cloned apart",
     file: "src/lower/std_impls.rs",
     find: "            ty::Closure(id, _) => self.krate.closure_facts.clones_apart(*id),\n",
-    replace: "            ty::Closure(id, _) => false && self.krate.closure_facts.clones_apart(*id),\n",
+    replace:
+      "            ty::Closure(id, _) => false && self.krate.closure_facts.clones_apart(*id),\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_clone_counted.rs$"],
   },
   {
     name: "iterator-clone-is-itself",
     breaks: "a clone of a `map` cloned apart is the `map` itself",
     file: "src/lower/std_impls.rs",
-    find: "        if (self.iterator_cloned_apart(ty) && !held_compiled) || self.recognition().is_memchr_iter(ty) {\n            return Ok(Expr::call_helper(\"$clone\", vec![place]));\n",
-    replace: "        if (self.iterator_cloned_apart(ty) && !held_compiled) || self.recognition().is_memchr_iter(ty) {\n            return Ok(place);\n",
+    find: '        if (self.iterator_cloned_apart(ty) && !held_compiled) || self.recognition().is_memchr_iter(ty) {\n            return Ok(Expr::call_helper("$clone", vec![place]));\n',
+    replace:
+      "        if (self.iterator_cloned_apart(ty) && !held_compiled) || self.recognition().is_memchr_iter(ty) {\n            return Ok(place);\n",
     tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
   },
   {
     name: "copied-clone-refused",
-    breaks: "a clone of a `copied()` is refused, though it's the iterator it copies",
+    breaks:
+      "a clone of a `copied()` is refused, though it's the iterator it copies",
     file: "src/lower/std_impls.rs",
     find: "            && !held_compiled\n        {\n            return self.copied_clone(place, (ty, source), span, out);\n",
-    replace: "            && false\n        {\n            return self.copied_clone(place, (ty, source), span, out);\n",
-    tests: ["test/lowering-iterators.test.ts", "-t", "a clone of a generic iterator.s copied"],
+    replace:
+      "            && false\n        {\n            return self.copied_clone(place, (ty, source), span, out);\n",
+    tests: [
+      "test/lowering-iterators.test.ts",
+      "-t",
+      "a clone of a generic iterator.s copied",
+    ],
   },
   {
     name: "memchr-iter-clone-refused",
-    breaks: "a clone of memchr's iterator is refused, though it carries its clone",
+    breaks:
+      "a clone of memchr's iterator is refused, though it carries its clone",
     file: "src/lower/std_impls.rs",
     find: "        if (self.iterator_cloned_apart(ty) && !held_compiled) || self.recognition().is_memchr_iter(ty) {\n",
     replace: "        if self.iterator_cloned_apart(ty) && !held_compiled {\n",
@@ -564,7 +676,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "iter-clone-items-shared",
-    breaks: "a clone of a `Vec`'s `into_iter()` shares its items, which change in place",
+    breaks:
+      "a clone of a `Vec`'s `into_iter()` shares its items, which change in place",
     file: "src/lower/std_impls.rs",
     find: "                let owns = self.array_source(ty).unwrap_or(false);\n",
     replace: "                let owns = false;\n",
@@ -575,7 +688,8 @@ export const mutations: Mutation[] = [
     breaks: "a clone of a `Box<[T]>`'s slice is refused",
     file: "src/lower/std_impls.rs",
     find: "            ty::Array(item, _) | ty::Slice(item) => return self.clone_items(place, *item, span),\n",
-    replace: "            ty::Array(item, _) => return self.clone_items(place, *item, span),\n",
+    replace:
+      "            ty::Array(item, _) => return self.clone_items(place, *item, span),\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_slice_values.rs$"],
   },
   {
@@ -591,12 +705,14 @@ export const mutations: Mutation[] = [
     breaks: "a held `Cycle`'s clone is refused",
     file: "src/lower/std_impls.rs",
     find: "            ty::Adt(..) if self.explicit_adapter(ty) && super::recognition::cycled_source(self.tcx, ty).is_some() => {\n",
-    replace: "            ty::Adt(..) if self.explicit_adapter(ty) && super::recognition::cycled_source(self.tcx, ty).is_some() && false => {\n",
+    replace:
+      "            ty::Adt(..) if self.explicit_adapter(ty) && super::recognition::cycled_source(self.tcx, ty).is_some() && false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
   },
   {
     name: "clone-value-opaque-unrevealed",
-    breaks: "a clone of a value returned as `impl Trait + Clone` is written of its opaque type, which rust-js refuses to clone",
+    breaks:
+      "a clone of a value returned as `impl Trait + Clone` is written of its opaque type, which rust-js refuses to clone",
     file: "src/lower/std_impls.rs",
     find: "        let ty = self.reveal(ty);\n        // A closure is its JS function",
     replace: "        // A closure is its JS function",
@@ -604,31 +720,42 @@ export const mutations: Mutation[] = [
   },
   {
     name: "copies-of-shared",
-    breaks: "what std copies of `Copy` structs, `extend` of references, `concat`, `partition`, is the same objects, so changing a copy changes the original",
+    breaks:
+      "what std copies of `Copy` structs, `extend` of references, `concat`, `partition`, is the same objects, so changing a copy changes the original",
     file: "src/lower/std_impls.rs",
     find: "    pub(super) fn copies_of(&mut self, items: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {\n        if !self.needs_clone(ty) {",
-    replace: "    pub(super) fn copies_of(&mut self, items: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {\n        if true || !self.needs_clone(ty) {",
+    replace:
+      "    pub(super) fn copies_of(&mut self, items: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {\n        if true || !self.needs_clone(ty) {",
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
   },
   {
     name: "eq-of-other-type-derived",
-    breaks: "`==` of a type with another through references or items, its own `PartialEq<Other>`, compares the type with itself field by field, `$eq(a, b)`, so it's false",
+    breaks:
+      "`==` of a type with another through references or items, its own `PartialEq<Other>`, compares the type with itself field by field, `$eq(a, b)`, so it's false",
     file: "src/lower/std_impls.rs",
     find: "            if self.is_user_impl(tr) {\n                let eq = self.tcx.associated_item_def_ids(self.partial_eq_trait())[0];",
-    replace: "            if false && self.is_user_impl(tr) {\n                let eq = self.tcx.associated_item_def_ids(self.partial_eq_trait())[0];",
+    replace:
+      "            if false && self.is_user_impl(tr) {\n                let eq = self.tcx.associated_item_def_ids(self.partial_eq_trait())[0];",
     tests: ["test/corpus.test.ts", "-t", "^partial_eq_other_type.rs$"],
   },
   {
     name: "registered-symbol-key-tested",
-    breaks: "a pattern of the registry's symbol tests its key, `Symbol.keyFor(ty) === \"react.fragment\"`, which throws of a value not a symbol",
+    breaks:
+      'a pattern of the registry\'s symbol tests its key, `Symbol.keyFor(ty) === "react.fragment"`, which throws of a value not a symbol',
     file: "src/lower/std_impls.rs",
     find: "                if let Some(symbol) = super::representation::symbol_of_key(key) {\n",
-    replace: "                if let Some(symbol) = super::representation::symbol_of_key(key).filter(|_| false) {\n",
-    tests: ["test/lowering-symbols.test.ts", "-t", "a match of the registry's symbols"],
+    replace:
+      "                if let Some(symbol) = super::representation::symbol_of_key(key).filter(|_| false) {\n",
+    tests: [
+      "test/lowering-symbols.test.ts",
+      "-t",
+      "a match of the registry's symbols",
+    ],
   },
   {
     name: "registered-symbol-equal-by-key",
-    breaks: "`==` of two registered symbols compares them as structs, not by JS's `===`",
+    breaks:
+      "`==` of two registered symbols compares them as structs, not by JS's `===`",
     file: "src/lower/std_impls.rs",
     find: "            || self.recognition().is_symbol_for(ty)\n            || self.is_string_like(ty)\n",
     replace: "            || self.is_string_like(ty)\n",
@@ -647,7 +774,8 @@ export const mutations: Mutation[] = [
     breaks: "a `ManuallyDrop`'s clone is refused, where it's its value's",
     file: "src/lower/std_impls.rs",
     find: "            ty::Adt(..) if let Some(held) = self.recognition().std_wrapped(ty) => {\n                return self.clone_value(place, held, span, out);\n",
-    replace: "            ty::Adt(..) if false => {\n                return Err(self.unsupported(span, \"\"));\n",
+    replace:
+      '            ty::Adt(..) if false => {\n                return Err(self.unsupported(span, ""));\n',
     tests: ["test/corpus.test.ts", "-t", "^manually_drop_values.rs$"],
   },
   {
@@ -668,7 +796,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "os-text-not-js-eq",
-    breaks: "an `OsStr` isn't a key a map finds by value, so a set of `Component`s is refused",
+    breaks:
+      "an `OsStr` isn't a key a map finds by value, so a set of `Component`s is refused",
     file: "src/lower/std_impls.rs",
     find: "            || self.recognition().is_os_text(ty)\n",
     replace: "",
@@ -676,23 +805,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "refcell-clone-param-named-alone",
-    breaks: "a `RefCell`'s clone's arrow names its parameter `value` itself, which a part its body spills is named too: `(value) => { const value = ..`, JS that doesn't parse (#200)",
+    breaks:
+      "a `RefCell`'s clone's arrow names its parameter `value` itself, which a part its body spills is named too: `(value) => { const value = ..`, JS that doesn't parse (#200)",
     file: "src/lower/std_impls.rs",
-    find: "                // part read more than once of a `RefCell` inside (#200).\n                let param = self.fresh(\"value\");\n",
-    replace: "                // part read more than once of a `RefCell` inside (#200).\n                let param = String::from(\"value\");\n",
+    find: '                // part read more than once of a `RefCell` inside (#200).\n                let param = self.fresh("value");\n',
+    replace:
+      '                // part read more than once of a `RefCell` inside (#200).\n                let param = String::from("value");\n',
     tests: ["test/corpus.test.ts", "-t", "^refcell_clone_nested_parts.rs$"],
   },
   {
     name: "value-cell-cloned-boxed",
-    breaks: "a `RefCell` of an object's clone is a `{ value }` of the clone, read as the object it isn't",
+    breaks:
+      "a `RefCell` of an object's clone is a `{ value }` of the clone, read as the object it isn't",
     file: "src/lower/std_impls.rs",
-    find: "                    return Ok(Expr::call(\n                        Expr::helper(\"$withBorrow\"),\n                        vec![place, Expr::arrow(vec![param.as_str().into()], body), Expr::bool(true)],\n                    ));\n",
-    replace: "                    return Ok(Expr::object(vec![Prop::Field(js::HELD.into(), Expr::call(\n                        Expr::helper(\"$withBorrow\"),\n                        vec![place, Expr::arrow(vec![param.as_str().into()], body), Expr::bool(true)],\n                    ))]));\n",
+    find: '                    return Ok(Expr::call(\n                        Expr::helper("$withBorrow"),\n                        vec![place, Expr::arrow(vec![param.as_str().into()], body), Expr::bool(true)],\n                    ));\n',
+    replace:
+      '                    return Ok(Expr::object(vec![Prop::Field(js::HELD.into(), Expr::call(\n                        Expr::helper("$withBorrow"),\n                        vec![place, Expr::arrow(vec![param.as_str().into()], body), Expr::bool(true)],\n                    ))]));\n',
     tests: ["test/corpus.test.ts", "-t", "^refcell_objects.rs$"],
   },
   {
     name: "value-cell-default-boxed",
-    breaks: "a `RefCell` of an object's `default` is a `{ value }`, read as the object it isn't",
+    breaks:
+      "a `RefCell` of an object's `default` is a `{ value }`, read as the object it isn't",
     file: "src/lower/std_impls.rs",
     find: "            ty::Adt(_, args) if std(StdItem::RefCell) && self.is_value_cell(ty) => {\n                self.default_value(args.type_at(0), span)?\n            }\n",
     replace: "",
@@ -700,7 +834,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "eq-of-values-borrows",
-    breaks: "what a `RefCell` of an object holds, compared through the guard that holds it, is borrowed to compare and found borrowed",
+    breaks:
+      "what a `RefCell` of an object holds, compared through the guard that holds it, is borrowed to compare and found borrowed",
     file: "src/lower/std_impls.rs",
     find: "            if self.recognition().is_borrowed_cell(ty) {\n                given.push(Expr::bool(true));\n            }\n",
     replace: "            given.push(Expr::bool(true));\n",
@@ -709,7 +844,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "eq-of-cells-unborrowed",
-    breaks: "`==` of two `RefCell`s, one mutably borrowed, runs on where Rust panics",
+    breaks:
+      "`==` of two `RefCell`s, one mutably borrowed, runs on where Rust panics",
     file: "src/lower/std_impls.rs",
     find: "            if self.recognition().is_borrowed_cell(ty) {\n                given.push(Expr::bool(true));\n            }\n",
     replace: "",
@@ -717,7 +853,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "identity-eq-unseen",
-    breaks: "a type equal only to itself, by `ptr::eq`, keys no `Set`, refused as a key",
+    breaks:
+      "a type equal only to itself, by `ptr::eq`, keys no `Set`, refused as a key",
     file: "src/lower/std_impls.rs",
     find: "            || self.equal_only_to_itself(ty)\n",
     replace: "",
@@ -725,7 +862,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "transparent-of-no-object-cloned",
-    breaks: "a derived `Clone` of a transparent struct of a function, written over where it's kept, is refused, \"cloning `Task`\" (ADR 0584, amended)",
+    breaks:
+      'a derived `Clone` of a transparent struct of a function, written over where it\'s kept, is refused, "cloning `Task`" (ADR 0584, amended)',
     file: "src/lower/std_impls.rs",
     find: "            && !self.may_be_object(held)\n            && !self.has_user_impl(self.clone_trait(), ty)\n",
     replace: "            && false\n",
@@ -733,39 +871,51 @@ export const mutations: Mutation[] = [
   },
   {
     name: "transparent-default-unsupported",
-    breaks: "a derived `Default` of a transparent struct, a `RefCell`'s `take` of one, is refused, \"`Default` of `Lines`\" (ADR 0584)",
+    breaks:
+      'a derived `Default` of a transparent struct, a `RefCell`\'s `take` of one, is refused, "`Default` of `Lines`" (ADR 0584)',
     file: "src/lower/std_impls.rs",
     find: "            ty::Adt(adt, args) if let Some(at) = super::recognition::transparent_field(self.tcx, *adt) => {\n                let field",
-    replace: "            ty::Adt(adt, args) if false && let Some(at) = super::recognition::transparent_field(self.tcx, *adt) => {\n                let field",
+    replace:
+      "            ty::Adt(adt, args) if false && let Some(at) = super::recognition::transparent_field(self.tcx, *adt) => {\n                let field",
     tests: ["test/corpus.test.ts", "-t", "^refcell_transparent.rs$"],
   },
   {
     name: "held-map-cloned-apart",
-    breaks: "a held `Map`, std's struct, is cloned as an adapter cloned apart, `$clone`, which it isn't",
+    breaks:
+      "a held `Map`, std's struct, is cloned as an adapter cloned apart, `$clone`, which it isn't",
     file: "src/lower/std_impls.rs",
     find: "        if (self.iterator_cloned_apart(ty) && !held_compiled) || self.recognition().is_memchr_iter(ty) {\n",
-    replace: "        if self.iterator_cloned_apart(ty) || self.recognition().is_memchr_iter(ty) {\n",
+    replace:
+      "        if self.iterator_cloned_apart(ty) || self.recognition().is_memchr_iter(ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(std_map|lazy_iterator_clone).rs$"],
   },
   {
     name: "library-identity-unread",
-    breaks: "a library's type equal only to itself isn't, to its consumer: a `HashSet<&'static Fiber>` of the library's is refused, as React's reconciler's was",
+    breaks:
+      "a library's type equal only to itself isn't, to its consumer: a `HashSet<&'static Fiber>` of the library's is refused, as React's reconciler's was",
     file: "src/lower/std_impls.rs",
     find: "            true => recognition.foreign.equal_only_to_itself(adt.did()),\n",
     replace: "            true => false,\n",
-    tests: ["test/crates.test.ts", "-t", "equal only to itself keys its consumer"],
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "equal only to itself keys its consumer",
+    ],
   },
   {
     name: "rc-identity-unread",
-    breaks: "an `Rc` of a type equal only to itself isn't, so React's root's `HashSet<Rc<Fiber>>` is refused, \"values of type `Rc<Fiber>`\"",
+    breaks:
+      "an `Rc` of a type equal only to itself isn't, so React's root's `HashSet<Rc<Fiber>>` is refused, \"values of type `Rc<Fiber>`\"",
     file: "src/lower/std_impls.rs",
     find: "    if let Some(pointee) = super::recognition::rc_pointee(recognition.tcx, ty) {\n",
-    replace: "    if let Some(pointee) = super::recognition::rc_pointee(recognition.tcx, ty).filter(|_| false) {\n",
+    replace:
+      "    if let Some(pointee) = super::recognition::rc_pointee(recognition.tcx, ty).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_identity_set(_counted)?.rs$"],
   },
   {
     name: "identity-eq-value-called",
-    breaks: "`==` of two values whose `PartialEq` is `ptr::eq` but has no `Hash` calls its `eq`, `updatePartialEq_eq(a, b)`, not `a === b`",
+    breaks:
+      "`==` of two values whose `PartialEq` is `ptr::eq` but has no `Hash` calls its `eq`, `updatePartialEq_eq(a, b)`, not `a === b`",
     file: "src/lower/std_impls.rs",
     find: "        if self.js_eq(ty).is_some() || self.eq_by_address(ty) {\n",
     replace: "        if self.js_eq(ty).is_some() {\n",
@@ -773,15 +923,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "identity-eq-option-called",
-    breaks: "`a != b` of two `Option<Rc<Update>>` whose `PartialEq` is `ptr::eq` calls its `eq` on two `Some`s, not `a != b`",
+    breaks:
+      "`a != b` of two `Option<Rc<Update>>` whose `PartialEq` is `ptr::eq` calls its `eq` on two `Some`s, not `a != b`",
     file: "src/lower/std_impls.rs",
     find: "            if (self.js_eq(inner).is_some() || self.eq_by_address(inner)) && !self.boxed_payload(inner) {\n",
-    replace: "            if self.js_eq(inner).is_some() && !self.boxed_payload(inner) {\n",
+    replace:
+      "            if self.js_eq(inner).is_some() && !self.boxed_payload(inner) {\n",
     tests: ["test/lowering-dictionaries.test.ts", "-t", "identity PartialEq"],
   },
   {
     name: "identity-eq-needs-hash",
-    breaks: "a `PartialEq` of `ptr::eq` is identity only with a `Hash` of its address too, so React's `Update`'s `a != b` calls its `eq`",
+    breaks:
+      "a `PartialEq` of `ptr::eq` is identity only with a `Hash` of its address too, so React's `Update`'s `a != b` calls its `eq`",
     file: "src/lower/std_impls.rs",
     find: "    if !hashed {\n        return (recognition.own_eq(adt.did())).is_some_and(|eq| calls(eq, super::recognition::Std::PtrEq));\n    }\n",
     replace: "",
@@ -789,7 +942,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "untagged-eq-structural",
-    breaks: "an untagged enum of primitives, React's `ReactKey`, is compared by `$eq`, not JS's `===`",
+    breaks:
+      "an untagged enum of primitives, React's `ReactKey`, is compared by `$eq`, not JS's `===`",
     file: "src/lower/std_impls.rs",
     find: "        self.untagged_js_eq(ty)\n",
     replace: "        None\n",
@@ -798,7 +952,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "untagged-eq-of-a-float-same-value",
-    breaks: "an untagged enum of a float is found by `includes`, whose `NaN` is found where Rust's `==` finds none",
+    breaks:
+      "an untagged enum of a float is found by `includes`, whose `NaN` is found where Rust's `==` finds none",
     file: "src/lower/std_impls.rs",
     find: "                    if self.js_eq(payload)? == JsEq::Strict {\n                        eq = JsEq::Strict;\n",
     replace: "                    if self.js_eq(payload)? == JsEq::Strict {\n",
@@ -806,7 +961,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "untagged-option-eq-loose",
-    breaks: "an `Option` of an untagged enum of a string and a number is compared by `==`, which makes `\"7\"` of `7`",
+    breaks:
+      'an `Option` of an untagged enum of a string and a number is compared by `==`, which makes `"7"` of `7`',
     file: "src/lower/std_impls.rs",
     find: "self.any_shape(inner) || self.untagged(inner).is_some()",
     replace: "self.any_shape(inner)",
@@ -814,15 +970,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "untagged-eq-of-a-payload-compared-otherwise",
-    breaks: "an untagged enum of a `Vec` is compared by `===`, two lists alike unequal",
+    breaks:
+      "an untagged enum of a `Vec` is compared by `===`, two lists alike unequal",
     file: "src/lower/std_impls.rs",
     find: "                    if self.js_eq(payload)? == JsEq::Strict {\n",
-    replace: "                    if self.js_eq(payload).unwrap_or(JsEq::SameValue) == JsEq::Strict {\n",
+    replace:
+      "                    if self.js_eq(payload).unwrap_or(JsEq::SameValue) == JsEq::Strict {\n",
     tests: ["test/corpus.test.ts", "-t", "^untagged_eq_by_value.rs$"],
   },
   {
     name: "contains-strict-some",
-    breaks: "`contains` of floats is `some((each) => each === x)`, not `indexOf(x) >= 0`, React's `nextInstanceRoots.indexOf(target) < 0` (ADR 0966)",
+    breaks:
+      "`contains` of floats is `some((each) => each === x)`, not `indexOf(x) >= 0`, React's `nextInstanceRoots.indexOf(target) < 0` (ADR 0966)",
     file: "src/lower/std_impls.rs",
     find: "        if body.is_empty() && strict {\n",
     replace: "        if body.is_empty() && strict && false {\n",
@@ -831,31 +990,38 @@ export const mutations: Mutation[] = [
   },
   {
     name: "contains-strict-includes",
-    breaks: "`contains` of floats is `includes(x)`, which finds `NaN`, where Rust's `==` doesn't (ADR 0966)",
+    breaks:
+      "`contains` of floats is `includes(x)`, which finds `NaN`, where Rust's `==` doesn't (ADR 0966)",
     file: "src/lower/std_impls.rs",
-    find: "                    Expr::call(Expr::member(items, \"indexOf\"), vec![x]),\n                    Expr::int(0),\n",
-    replace: "                    Expr::call(Expr::member(items, \"includes\"), vec![x]),\n                    Expr::bool(true),\n",
+    find: '                    Expr::call(Expr::member(items, "indexOf"), vec![x]),\n                    Expr::int(0),\n',
+    replace:
+      '                    Expr::call(Expr::member(items, "includes"), vec![x]),\n                    Expr::bool(true),\n',
     tests: ["test/corpus.test.ts", "-t", "^float_partial_cmp_tests.rs$"],
   },
   {
     name: "identity-inside-compared-by-contents",
-    breaks: "`==` of an `Option<&Option<Rc<Fiber>>>`, a tuple, a `Vec` or a derived struct holding a type equal only to itself is `$eq`, which walks the fibers' fields: two alike are equal, and a cycle overflows the stack, React's `processDispatchQueueItemsInOrder` (rd104)",
+    breaks:
+      "`==` of an `Option<&Option<Rc<Fiber>>>`, a tuple, a `Vec` or a derived struct holding a type equal only to itself is `$eq`, which walks the fibers' fields: two alike are equal, and a cycle overflows the stack, React's `processDispatchQueueItemsInOrder` (rd104)",
     file: "src/lower/std_impls.rs",
     find: "        if self.js_eq(ty).is_some() {\n            return self.eq_of_objects(ty);\n        }\n",
-    replace: "        if self.js_eq(ty).is_some() {\n            return false;\n        }\n",
+    replace:
+      "        if self.js_eq(ty).is_some() {\n            return false;\n        }\n",
     tests: ["test/corpus.test.ts", "-t", "^eq_of_identities_inside.rs$"],
   },
   {
     name: "identity-inside-unseen",
-    breaks: "a type equal only to itself inside what `==` compares is no object `===` compares by itself, so `$eq` walks it (rd104)",
+    breaks:
+      "a type equal only to itself inside what `==` compares is no object `===` compares by itself, so `$eq` walks it (rd104)",
     file: "src/lower/std_impls.rs",
     find: "        self.any_shape(ty) || self.equal_only_to_itself(ty) || self.untagged(ty).is_some_and(of_one)\n",
-    replace: "        self.any_shape(ty) || self.untagged(ty).is_some_and(of_one)\n",
+    replace:
+      "        self.any_shape(ty) || self.untagged(ty).is_some_and(of_one)\n",
     tests: ["test/corpus.test.ts", "-t", "^eq_of_identities_inside.rs$"],
   },
   {
     name: "identity-inside-untagged-unseen",
-    breaks: "an untagged enum of an `Rc<Fiber>` in a derived struct is compared by `$eq`, which walks the fiber (rd104)",
+    breaks:
+      "an untagged enum of an `Rc<Fiber>` in a derived struct is compared by `$eq`, which walks the fiber (rd104)",
     file: "src/lower/std_impls.rs",
     find: "        self.any_shape(ty) || self.equal_only_to_itself(ty) || self.untagged(ty).is_some_and(of_one)\n",
     replace: "        self.any_shape(ty) || self.equal_only_to_itself(ty)\n",
@@ -863,15 +1029,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-eq-by-address-unread",
-    breaks: "a consumer asks a library's `Update`, whose `PartialEq` alone is `ptr::eq`, whether it's equal only to itself, which needs its `Hash` too, and calls its `eq` (ADR 0864, amended)",
+    breaks:
+      "a consumer asks a library's `Update`, whose `PartialEq` alone is `ptr::eq`, whether it's equal only to itself, which needs its `Hash` too, and calls its `eq` (ADR 0864, amended)",
     file: "src/lower/std_impls.rs",
     find: "            false => recognition.foreign.eq_by_address(adt.did()) ||",
-    replace: "            false => recognition.foreign.equal_only_to_itself(adt.did()) ||",
+    replace:
+      "            false => recognition.foreign.equal_only_to_itself(adt.did()) ||",
     tests: ["test/crates.test.ts", "-t", "never \\$eq"],
   },
   {
     name: "webapi-eq-binding-unread",
-    breaks: "`==` of two webapi classes, whose `eq` is the binding of `===`, is refused as of any JS object, and `v.contains(&node)` with it (ADR 1016)",
+    breaks:
+      "`==` of two webapi classes, whose `eq` is the binding of `===`, is refused as of any JS object, and `v.contains(&node)` with it (ADR 1016)",
     file: "src/lower/std_impls.rs",
     find: " || recognition.eq_bound_to_strict_equality(adt.did()),\n",
     replace: ",\n",
@@ -879,26 +1048,32 @@ export const mutations: Mutation[] = [
   },
   {
     name: "eq-by-address-of-references-unseen",
-    breaks: "`a != b` of two `Option<&Node>`s asks whether `==` of a reference is its address's, which isn't a type of its own, and compares `a == null || b == null ? a == b : a === b` (ADR 1016)",
+    breaks:
+      "`a != b` of two `Option<&Node>`s asks whether `==` of a reference is its address's, which isn't a type of its own, and compares `a == null || b == null ? a == b : a === b` (ADR 1016)",
     file: "src/lower/std_impls.rs",
     find: "        !self.has_cell_layer(ty) && eq_by_address(&self.recognition(), self.krate.bodies, ty.peel_refs())\n",
-    replace: "        !self.has_cell_layer(ty) && eq_by_address(&self.recognition(), self.krate.bodies, ty)\n",
+    replace:
+      "        !self.has_cell_layer(ty) && eq_by_address(&self.recognition(), self.krate.bodies, ty)\n",
     tests: ["test/webapi-bindings.test.ts", "-t", "equal only to itself"],
   },
   {
     name: "contains-of-identity-index-of",
-    breaks: "`v.contains(&node)` of what `===` compares and is never `NaN`, an object equal only to itself, is `v.indexOf(node) >= 0`, not `v.includes(node)` (ADR 1016)",
+    breaks:
+      "`v.contains(&node)` of what `===` compares and is never `NaN`, an object equal only to itself, is `v.indexOf(node) >= 0`, not `v.includes(node)` (ADR 1016)",
     file: "src/lower/std_impls.rs",
-    find: "                None => Expr::call(Expr::member(items, \"includes\"), vec![x]),\n",
-    replace: "                None => Expr::bin(Op::Ge, Expr::call(Expr::member(items, \"indexOf\"), vec![x]), Expr::int(0)),\n",
+    find: '                None => Expr::call(Expr::member(items, "includes"), vec![x]),\n',
+    replace:
+      '                None => Expr::bin(Op::Ge, Expr::call(Expr::member(items, "indexOf"), vec![x]), Expr::int(0)),\n',
     tests: ["test/webapi-bindings.test.ts", "-t", "equal only to itself"],
   },
   {
     name: "range-inclusive-clone-unexhausted",
-    breaks: "a clone of an exhausted inclusive range copies its bounds alone, not exhausted, `3..=3` where std's clone is `3..=3 (exhausted)` (#414)",
+    breaks:
+      "a clone of an exhausted inclusive range copies its bounds alone, not exhausted, `3..=3` where std's clone is `3..=3 (exhausted)` (#414)",
     file: "src/lower/std_impls.rs",
     find: "                Ok(Expr::object(vec![Prop::Spread(place)]))\n",
-    replace: "                Ok(Expr::object(vec![Prop::Field(\"start\".into(), Expr::member(place.clone(), \"start\")), Prop::Field(\"end\".into(), Expr::member(place, \"end\"))]))\n",
+    replace:
+      '                Ok(Expr::object(vec![Prop::Field("start".into(), Expr::member(place.clone(), "start")), Prop::Field("end".into(), Expr::member(place, "end"))]))\n',
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
   },
 ];

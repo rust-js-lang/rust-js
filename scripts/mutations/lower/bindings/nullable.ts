@@ -4,119 +4,190 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "any-value-none-nulled",
-    breaks: "a map of any value, `Map<K, Option<&Unknown>>`, writes a `None` `null`, `data.set(key, value ?? null)`, so an `undefined` comes back `null` (#443)",
+    breaks:
+      "a map of any value, `Map<K, Option<&Unknown>>`, writes a `None` `null`, `data.set(key, value ?? null)`, so an `undefined` comes back `null` (#443)",
     file: "src/lower/bindings/nullable.rs",
     find: "    !matches!(payload.peel_refs().kind(), ty::Adt(adt, _) if crate::lower::declarations::any_shape(tcx, adt.did()))\n",
     replace: "    let _ = (tcx, payload);\n    true\n",
-    tests: ["test/js-collections.test.ts", "-t", "a Map of any value holds undefined as it is"],
+    tests: [
+      "test/js-collections.test.ts",
+      "-t",
+      "a Map of any value holds undefined as it is",
+    ],
   },
   {
     name: "any-value-read-held",
-    breaks: "a map of any value's `get` is JS's read alone, which can't tell a key it lacks from one whose value is `undefined` (#443)",
+    breaks:
+      "a map of any value's `get` is JS's read alone, which can't tell a key it lacks from one whose value is `undefined` (#443)",
     file: "src/lower/bindings/nullable.rs",
     find: "                holds_none_as_null(tcx, of.type_at(0))\n",
     replace: "                true\n",
-    tests: ["test/js-collections.test.ts", "-t", "a Map of any value holds undefined as it is"],
+    tests: [
+      "test/js-collections.test.ts",
+      "-t",
+      "a Map of any value holds undefined as it is",
+    ],
   },
   {
     name: "any-value-entries-refused",
-    breaks: "a map of any value made of entries made before is refused, though it holds them as they are (#443)",
+    breaks:
+      "a map of any value made of entries made before is refused, though it holds them as they are (#443)",
     file: "src/lower/bindings/nullable.rs",
     find: "                            && holds_none_as_null(tcx, args.type_at(0))\n",
     replace: "",
-    tests: ["test/js-collections.test.ts", "-t", "a Map of any value holds undefined as it is"],
+    tests: [
+      "test/js-collections.test.ts",
+      "-t",
+      "a Map of any value holds undefined as it is",
+    ],
   },
   {
     name: "optional-field-made-null",
-    breaks: "an optional nullable field's read, which may be absent, is taken for `null` or a value, so a nullable field given it stores `undefined` (ADR 0810, amended)",
+    breaks:
+      "an optional nullable field's read, which may be absent, is taken for `null` or a value, so a nullable field given it stores `undefined` (ADR 0810, amended)",
     file: "src/lower/bindings/nullable.rs",
     find: "    is_nullable(tcx, field) && !is_optional(tcx, field)\n",
     replace: "    is_nullable(tcx, field)\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "an optional nullable field"],
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "an optional nullable field",
+    ],
   },
   {
     name: "nullable-refcell-refused",
-    breaks: "`#[rust_js::nullable]` of a field's `RefCell<Option<T>>` is refused (ADR 0863)",
+    breaks:
+      "`#[rust_js::nullable]` of a field's `RefCell<Option<T>>` is refused (ADR 0863)",
     file: "src/lower/bindings/nullable.rs",
     find: "            if (cell(*adt, crate::lower::recognition::StdItem::Cell)\n                || cell(*adt, crate::lower::recognition::StdItem::RefCell))\n",
-    replace: "            if cell(*adt, crate::lower::recognition::StdItem::Cell)\n",
+    replace:
+      "            if cell(*adt, crate::lower::recognition::StdItem::Cell)\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "a nullable RefCell field"],
   },
   {
     name: "nullable-generic-cell-field-refused",
-    breaks: "`#[rust_js::nullable]` of a generic struct's `RefCell<T>` or `Cell<T>` field is refused, React's `StackCursor<T>`'s `current` (ADR 0586, amended)",
+    breaks:
+      "`#[rust_js::nullable]` of a generic struct's `RefCell<T>` or `Cell<T>` field is refused, React's `StackCursor<T>`'s `current` (ADR 0586, amended)",
     file: "src/lower/bindings/nullable.rs",
     find: "            matches!(args.type_at(0).kind(), ty::Param(_))\n",
     replace: "            false\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "a generic struct's nullable field"],
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "a generic struct's nullable field",
+    ],
   },
   {
     name: "nullable-thread-local-of-options-refused",
-    breaks: "`#[rust_js::nullable]` of a thread-local a generic constructor makes of an `Option`, `StackCursor<Option<Rc<HiddenContext>>>`, is refused (ADR 0586, amended)",
+    breaks:
+      "`#[rust_js::nullable]` of a thread-local a generic constructor makes of an `Option`, `StackCursor<Option<Rc<HiddenContext>>>`, is refused (ADR 0586, amended)",
     file: "src/lower/bindings/nullable.rs",
     find: "    matches!(held.kind(), ty::Adt(adt, args) if !tcx.is_lang_item(adt.did(), LangItem::Option) && args.types().any(option))\n",
     replace: "    let _ = (held, option);\n    false\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a generic constructor makes"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a generic constructor makes",
+    ],
   },
   {
     name: "nullable-init-of-any-thread-local",
-    breaks: "a thread-local that isn't `#[rust_js::nullable]`, made by a generic constructor, is given `null` for `None`, `createCursor(null)` where its JS reads `undefined` (ADR 0586, amended)",
+    breaks:
+      "a thread-local that isn't `#[rust_js::nullable]`, made by a generic constructor, is given `null` for `None`, `createCursor(null)` where its JS reads `undefined` (ADR 0586, amended)",
     file: "src/lower/bindings/nullable.rs",
     find: "    tcx.opt_parent(body).is_some_and(|key| nullable_local(tcx, key))\n",
     replace: "    tcx.opt_parent(body).is_some()\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a generic constructor makes"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a generic constructor makes",
+    ],
   },
   {
     name: "nullable-option-init-undefined",
-    breaks: "a nullable thread-local of an `Option`'s `init` writes its `None` `undefined`, `__DEV__ ? f : undefined`",
+    breaks:
+      "a nullable thread-local of an `Option`'s `init` writes its `None` `undefined`, `__DEV__ ? f : undefined`",
     file: "src/lower/bindings/nullable.rs",
     find: "    nullable_result(tcx, body) || tcx.opt_parent(body).is_some_and(|key| nullable_local_option(tcx, key))\n",
     replace: "    nullable_result(tcx, body)\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a nullable thread-local of an Option is null where it's made"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a nullable thread-local of an Option is null where it's made",
+    ],
   },
   {
     name: "nullable-local-of-no-option-kept",
-    breaks: "a `#[rust_js::nullable]` thread-local of a number is taken as one whose `None` is `null`, nothing to do (ADR 0586, amended)",
+    breaks:
+      "a `#[rust_js::nullable]` thread-local of a number is taken as one whose `None` is `null`, nothing to do (ADR 0586, amended)",
     file: "src/lower/bindings/nullable.rs",
     find: "            (!of_option).then_some(\n",
     replace: "            false.then_some(\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "of no Option is refused"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "of no Option is refused",
+    ],
   },
   {
     name: "nullable-const-of-no-option-kept",
-    breaks: "a `#[rust_js::nullable]` `const` of a number is taken as one whose `None` is `null`, nothing to do (ADR 0586, amended)",
+    breaks:
+      "a `#[rust_js::nullable]` `const` of a number is taken as one whose `None` is `null`, nothing to do (ADR 0586, amended)",
     file: "src/lower/bindings/nullable.rs",
     find: "        _ => (!option(ty)).then_some(\n",
     replace: "        _ => (!option(ty) && false).then_some(\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a nullable const's None is null"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a nullable const's None is null",
+    ],
   },
   {
     name: "nullable-const-taken-for-a-thread-local",
-    breaks: "a `#[rust_js::nullable]` `const` of an `Option` is refused as a thread-local of no `Cell` of one, `export const NoTransition = null` unwritable (ADR 0586, amended)",
+    breaks:
+      "a `#[rust_js::nullable]` `const` of an `Option` is refused as a thread-local of no `Cell` of one, `export const NoTransition = null` unwritable (ADR 0586, amended)",
     file: "src/lower/bindings/nullable.rs",
     find: "        ty::Adt(key, args) if is_std_def(tcx, key.did(), StdItem::LocalKey) => {\n",
-    replace: "        ty::Adt(key, args) if is_std_def(tcx, key.did(), StdItem::LocalKey) || true => {\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a nullable const's None is null"],
+    replace:
+      "        ty::Adt(key, args) if is_std_def(tcx, key.did(), StdItem::LocalKey) || true => {\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a nullable const's None is null",
+    ],
   },
   {
     name: "nullable-thread-local-of-option-refused",
-    breaks: "a `#[rust_js::nullable]` thread-local of an `Option` itself, React's `callComponentInDEV`, is refused",
+    breaks:
+      "a `#[rust_js::nullable]` thread-local of an `Option` itself, React's `callComponentInDEV`, is refused",
     file: "src/lower/bindings/nullable.rs",
     find: "            let of_option = nullable_option(tcx, held).is_some() || made_of_options(tcx, held);\n",
-    replace: "            let of_option = nullable_option(tcx, held).is_some_and(|option| option != held) || made_of_options(tcx, held);\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a nullable thread-local of an Option is null where it's made"],
+    replace:
+      "            let of_option = nullable_option(tcx, held).is_some_and(|option| option != held) || made_of_options(tcx, held);\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a nullable thread-local of an Option is null where it's made",
+    ],
   },
   {
     name: "nullable-result-js-null-unnamed",
-    breaks: "`#[rust_js::nullable]` on a function returning an array of `Option`s is refused without naming `js::null()`, the way its `None`s are `null` (ADR 0935, amended)",
+    breaks:
+      "`#[rust_js::nullable]` on a function returning an array of `Option`s is refused without naming `js::null()`, the way its `None`s are `null` (ADR 0935, amended)",
     file: "src/lower/bindings/nullable.rs",
     find: "    let holds_option = output.walk().any(|arg| arg.as_type().is_some_and(is_option));\n",
-    replace: "    let holds_option = false && output.walk().any(|arg| arg.as_type().is_some_and(is_option));\n",
-    tests: ["test/lowering-nullable-constants.test.ts", "-t", "an array's and a tuple's js::null"],
+    replace:
+      "    let holds_option = false && output.walk().any(|arg| arg.as_type().is_some_and(is_option));\n",
+    tests: [
+      "test/lowering-nullable-constants.test.ts",
+      "-t",
+      "an array's and a tuple's js::null",
+    ],
   },
   {
     name: "closure-nullable-not-an-option-allowed",
-    breaks: "a closure's `#[rust_js::nullable(name)]` of a binding that's no `Option`, or of none, is taken without a word (ADR 0861, amended)",
+    breaks:
+      "a closure's `#[rust_js::nullable(name)]` of a binding that's no `Option`, or of none, is taken without a word (ADR 0861, amended)",
     file: "src/lower/bindings/nullable.rs",
     find: "                if !option {\n",
     replace: "                if false && !option {\n",
@@ -124,7 +195,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fn-param-nullable-allowed",
-    breaks: "a function's parameter marked `#[rust_js::nullable]` is taken without a word, where the function says it, `#[rust_js::nullable(value)]` (ADR 0861, amended)",
+    breaks:
+      "a function's parameter marked `#[rust_js::nullable]` is taken without a word, where the function says it, `#[rust_js::nullable(value)]` (ADR 0861, amended)",
     file: "src/lower/bindings/nullable.rs",
     find: "            if !closure {\n",
     replace: "            if false && !closure {\n",
@@ -132,15 +204,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "nullable-values-unread",
-    breaks: "no collection holds its value's `None` as `null`, so `map.set(key, None)` is `map.set(key, undefined)`, which a held `get`, `map.get(key)`, reads as a key it lacks (ADR 0884, amended)",
+    breaks:
+      "no collection holds its value's `None` as `null`, so `map.set(key, None)` is `map.set(key, undefined)`, which a held `get`, `map.get(key)`, reads as a key it lacks (ADR 0884, amended)",
     file: "src/lower/bindings/nullable.rs",
     find: "    (tcx.generics_of(adt).own_params.iter())\n        .filter(|param| matches!(param.kind, ty::GenericParamDefKind::Type { .. }) && names.contains(&param.name))",
-    replace: "    (tcx.generics_of(adt).own_params.iter())\n        .filter(|param| matches!(param.kind, ty::GenericParamDefKind::Type { .. }) && names.contains(&param.name) && false)",
+    replace:
+      "    (tcx.generics_of(adt).own_params.iter())\n        .filter(|param| matches!(param.kind, ty::GenericParamDefKind::Type { .. }) && names.contains(&param.name) && false)",
     tests: ["test/js-collections.test.ts", "-t", "a Map's value is any value"],
   },
   {
     name: "nullable-value-written-undefined",
-    breaks: "a collection's value given a binding as itself, `set(key, value: V)`, isn't written `null` for `None`, `map.set(key, undefined)`, which `map.get(key)` reads as a key it lacks (ADR 0884, amended)",
+    breaks:
+      "a collection's value given a binding as itself, `set(key, value: V)`, isn't written `null` for `None`, `map.set(key, undefined)`, which `map.get(key)` reads as a key it lacks (ADR 0884, amended)",
     file: "src/lower/bindings/nullable.rs",
     find: "    named\n        || input.is_some_and(\n            |input| matches!(input.kind(), ty::Param(p) if nullable_type_params(tcx, def_id).contains(&p.index)),\n        )\n}",
     replace: "    named\n}",
@@ -148,26 +223,35 @@ export const mutations: Mutation[] = [
   },
   {
     name: "nullable-value-read-boxed",
-    breaks: "a keyed read of a value a collection holds `None` of as `null` isn't JS's read held where it's made, `appearing.get(name) === null`, but `$someGet`'s box (ADR 0884, amended)",
+    breaks:
+      "a keyed read of a value a collection holds `None` of as `null` isn't JS's read held where it's made, `appearing.get(name) === null`, but `$someGet`'s box (ADR 0884, amended)",
     file: "src/lower/bindings/nullable.rs",
     find: "    tcx.is_lang_item(adt.did(), LangItem::Option)\n        && nullable_type_params(tcx, def_id).contains(&p.index)\n",
-    replace: "    tcx.is_lang_item(adt.did(), LangItem::Option)\n        && nullable_type_params(tcx, def_id).contains(&p.index)\n        && false\n",
+    replace:
+      "    tcx.is_lang_item(adt.did(), LangItem::Option)\n        && nullable_type_params(tcx, def_id).contains(&p.index)\n        && false\n",
     tests: ["test/js-collections.test.ts", "-t", "a Map's value is any value"],
   },
   {
     name: "nullable-entries-made-before-taken",
-    breaks: "entries made before `new Map`, which hold a `None` as `undefined`, are taken for a map of `Option` values, whose `get` reads it as a key it lacks (ADR 0884, amended)",
+    breaks:
+      "entries made before `new Map`, which hold a `None` as `undefined`, are taken for a map of `Option` values, whose `get` reads it as a key it lacks (ADR 0884, amended)",
     file: "src/lower/bindings/nullable.rs",
     find: "            _ => return false,\n        }\n    }\n}",
     replace: "            _ => return true,\n        }\n    }\n}",
-    tests: ["test/js-collections.test.ts", "-t", "made of entries made before is refused"],
+    tests: [
+      "test/js-collections.test.ts",
+      "-t",
+      "made of entries made before is refused",
+    ],
   },
   {
     name: "nullable-entries-in-place-refused",
-    breaks: "entries written where they're given, `map::new(Some(&[(\"none\", None)]))`, are refused as made before (ADR 0884, amended)",
+    breaks:
+      'entries written where they\'re given, `map::new(Some(&[("none", None)]))`, are refused as made before (ADR 0884, amended)',
     file: "src/lower/bindings/nullable.rs",
     find: "                return fields.iter().all(|&field| {",
-    replace: "                return fields.is_empty() && fields.iter().all(|&field| {",
+    replace:
+      "                return fields.is_empty() && fields.iter().all(|&field| {",
     tests: ["test/js-collections.test.ts", "-t", "a Map's value is any value"],
   },
 ];

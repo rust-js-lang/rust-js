@@ -20,7 +20,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-unwind-never-caught",
-    breaks: "what may panic is never in a `try`, so nothing is dropped as a panic unwinds",
+    breaks:
+      "what may panic is never in a `try`, so nothing is dropped as a panic unwinds",
     file: "src/lower/mir/drops.rs",
     find: "        let first = body.iter().take_while(|s| s.only_makes_values()).count();\n",
     replace: "        let first = body.len();\n",
@@ -28,7 +29,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-flags-never-set",
-    breaks: "a drop flag keeps its first value, so what moved is dropped or what's there isn't",
+    breaks:
+      "a drop flag keeps its first value, so what moved is dropped or what's there isn't",
     file: "src/lower/mir/drops.rs",
     find: "            if flagged[path] {\n",
     replace: "            if false {\n",
@@ -36,11 +38,17 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-open-drop-other-variant",
-    breaks: "an enum some of which has moved drops what's left of a variant when it's another",
+    breaks:
+      "an enum some of which has moved drops what's left of a variant when it's another",
     file: "src/lower/mir/drops.rs",
     find: "                None => self.mir_variant_test(subject.clone(), ty, adt, &[variant], &[], false),\n",
-    replace: "                None => Expr::unary(js::UnaryOp::Not, self.mir_variant_test(subject.clone(), ty, adt, &[variant], &[], false)),\n",
-    tests: ["test/corpus.test.ts","-t","drop_partial|struct_update_drops|temporaries_taken_apart"],
+    replace:
+      "                None => Expr::unary(js::UnaryOp::Not, self.mir_variant_test(subject.clone(), ty, adt, &[variant], &[], false)),\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "drop_partial|struct_update_drops|temporaries_taken_apart",
+    ],
   },
   {
     name: "mir-drop-behind-pointer-skipped",
@@ -48,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/drops.rs",
     find: "                    behind.insert(block);\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","drop_generic"],
+    tests: ["test/corpus.test.ts", "-t", "drop_generic"],
   },
   {
     name: "mir-cleanup-write-dropped",
@@ -56,11 +64,12 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/drops.rs",
     find: "                            .and_then(|()| self.mir_assign(state, place, rvalue, span, &mut out));\n",
     replace: "                            .and_then(|()| Ok(()));\n",
-    tests: ["test/corpus.test.ts","-t","drop_replace_panics"],
+    tests: ["test/corpus.test.ts", "-t", "drop_replace_panics"],
   },
   {
     name: "mir-drop-branch-unmapped",
-    breaks: "MIR's drop of what `?` made, a part still there, reads `ControlFlow` as a place and is refused",
+    breaks:
+      "MIR's drop of what `?` made, a part still there, reads `ControlFlow` as a place and is refused",
     file: "src/lower/mir/drops.rs",
     find: "            Some((tried, _)) => tried.clone(),\n            None => self.mir_place(state, place, span, out)?,\n",
     replace: "            _ => self.mir_place(state, place, span, out)?,\n",
@@ -68,15 +77,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "array-open-drop-refused",
-    breaks: "an array some of whose items moved, `[a, b] = items`, is refused, not dropped item by item",
+    breaks:
+      "an array some of whose items moved, `[a, b] = items`, is refused, not dropped item by item",
     file: "src/lower/mir/drops.rs",
     find: "                return self.open_drop_array(state, block, (place, path), size, cleanup, span, out);\n",
-    replace: "                return Err(self.unsupported(span, &format!(\"an array of {size}\")));\n",
+    replace:
+      '                return Err(self.unsupported(span, &format!("an array of {size}")));\n',
     tests: ["test/corpus.test.ts", "-t", "^array_partial_moves.rs$"],
   },
   {
     name: "array-open-drop-first-first",
-    breaks: "what's left of an array some of whose items moved drops first first, where rustc drops the last first",
+    breaks:
+      "what's left of an array some of whose items moved drops first first, where rustc drops the last first",
     file: "src/lower/mir/drops.rs",
     find: "        for (part, subpath) in pieces.into_iter().rev() {\n",
     replace: "        for (part, subpath) in pieces.into_iter() {\n",
@@ -92,24 +104,29 @@ export const mutations: Mutation[] = [
   },
   {
     name: "array-open-drop-run-unflagged",
-    breaks: "an array's items left are dropped though the array moved whole, in another branch",
+    breaks:
+      "an array's items left are dropped though the array moved whole, in another branch",
     file: "src/lower/mir/drops.rs",
     find: "                None => self.complete_drop(state, block, (part, path), span, out)?,\n            }\n        }\n        if !cleanup",
-    replace: "                None => self.drop_place(state, part, span, out)?,\n            }\n        }\n        if !cleanup",
+    replace:
+      "                None => self.drop_place(state, part, span, out)?,\n            }\n        }\n        if !cleanup",
     tests: ["test/corpus.test.ts", "-t", "^array_partial_moves.rs$"],
   },
   {
     name: "unwinding-made-first-tried",
-    breaks: "a closure made before a call that may panic is assigned in its `try`, `let key; try { key = (n) => n[0]; .. }`, not `const key = (n) => n[0];` before it",
+    breaks:
+      "a closure made before a call that may panic is assigned in its `try`, `let key; try { key = (n) => n[0]; .. }`, not `const key = (n) => n[0];` before it",
     file: "src/lower/mir/drops.rs",
     find: "        let first = body.iter().take_while(|s| s.only_makes_values()).count();\n",
-    replace: "        let first = if body.iter().all(Stmt::only_makes_values) { body.len() } else { 0 };\n",
+    replace:
+      "        let first = if body.iter().all(Stmt::only_makes_values) { body.len() } else { 0 };\n",
     tests: ["test/corpus.test.ts", "-t", "^(cell_drops|take_destructors).rs$"],
     snapshots: true,
   },
   {
     name: "mir-quiet-drop-unwinds",
-    breaks: "a drop of what JS drops nothing of is taken to unwind, so a set field's old value dropped in a cycle is given a live flag, `let next$live = true`, and its drop an `if` of it (ADR 0800)",
+    breaks:
+      "a drop of what JS drops nothing of is taken to unwind, so a set field's old value dropped in a cycle is given a live flag, `let next$live = true`, and its drop an `if` of it (ADR 0800)",
     file: "src/lower/mir/drops.rs",
     find: "        let flow = pruned.as_ref().unwrap_or(body);\n",
     replace: "        let flow = pruned.as_ref().map_or(body, |_| body);\n",
@@ -118,24 +135,33 @@ export const mutations: Mutation[] = [
   },
   {
     name: "held-iterator-unheld",
-    breaks: "an iterator its owner drops isn't held, so what it holds is dropped as it's done, before its scope's or statement's end (#206)",
+    breaks:
+      "an iterator its owner drops isn't held, so what it holds is dropped as it's done, before its scope's or statement's end (#206)",
     file: "src/lower/mir/drops.rs",
     find: "        place.projection.is_empty()\n            && (self.dropped_by_closing(ty) || self.recognition().bounded_iterator(ty))\n",
-    replace: "        false\n            && (self.dropped_by_closing(ty) || self.recognition().bounded_iterator(ty))\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_iterator_dropped_by_its_owner.rs$"],
+    replace:
+      "        false\n            && (self.dropped_by_closing(ty) || self.recognition().bounded_iterator(ty))\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^held_iterator_dropped_by_its_owner.rs$",
+    ],
   },
   {
     name: "held-iterator-by-unwind-too",
-    breaks: "an iterator dropped only as a panic unwinds past it, then moved into a chain, is held, so the chain's first side isn't dropped as it's done (#206)",
+    breaks:
+      "an iterator dropped only as a panic unwinds past it, then moved into a chain, is held, so the chain's first side isn't dropped as it's done (#206)",
     file: "src/lower/mir/drops.rs",
     find: "            !data.is_cleanup\n                && matches!(&data.terminator().kind, TerminatorKind::Drop {",
-    replace: "            matches!(&data.terminator().kind, TerminatorKind::Drop {",
+    replace:
+      "            matches!(&data.terminator().kind, TerminatorKind::Drop {",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^adapter_source_drops.rs$"],
   },
   {
     name: "moved-into-owner-unheld",
-    breaks: "a `take` moved into a call whose value the body drops, `wrap(..)`'s `Holder<Take<..>>`, isn't held: what it has left drops as it reaches its limit, before the `println!` Rust drops it after (#243)",
+    breaks:
+      "a `take` moved into a call whose value the body drops, `wrap(..)`'s `Holder<Take<..>>`, isn't held: what it has left drops as it reaches its limit, before the `println!` Rust drops it after (#243)",
     file: "src/lower/mir/drops.rs",
     find: "        dropped\n            || depth < 4\n",
     replace: "        dropped\n            || depth < 0\n",
@@ -143,16 +169,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "owner-closing-held-again",
-    breaks: "what's moved into an adapter that's held itself is `$held(..)` again, inside: `$lazyTakeWhile($held($rev(..)))`, where the adapter's `hold()` holds it (#243)",
+    breaks:
+      "what's moved into an adapter that's held itself is `$held(..)` again, inside: `$lazyTakeWhile($held($rev(..)))`, where the adapter's `hold()` holds it (#243)",
     file: "src/lower/mir/drops.rs",
     find: "                                && !self.dropped_by_closing(body.local_decls[destination.local].ty)\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^held_iterator_dropped_by_its_owner.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^held_iterator_dropped_by_its_owner.rs$",
+    ],
     snapshots: true,
   },
   {
     name: "empty-cleanup-caught",
-    breaks: "a call whose unwinding drops nothing, an `FnOnce`'s self given away, is `try { .. } catch (error) { throw error; }` (ADR 0873)",
+    breaks:
+      "a call whose unwinding drops nothing, an `FnOnce`'s self given away, is `try { .. } catch (error) { throw error; }` (ADR 0873)",
     file: "src/lower/mir/drops.rs",
     find: "        if cleanup.is_empty() {\n            out.extend(body);\n            return;\n        }\n",
     replace: "",
@@ -161,50 +193,73 @@ export const mutations: Mutation[] = [
   },
   {
     name: "quiet-guard-released",
-    breaks: "a guard of a struct's field no borrow of which can meet another releases a borrow it never counted, `$unborrow(times)`, in a `try` of its own (ADR 0863, amended)",
+    breaks:
+      "a guard of a struct's field no borrow of which can meet another releases a borrow it never counted, `$unborrow(times)`, in a `try` of its own (ADR 0863, amended)",
     file: "src/lower/mir/drops.rs",
     find: "        if place.projection.is_empty() && state.facts.quiet_cells().guards.contains(&place.local) {\n",
     replace: "        if false {\n",
-    tests: ["test/lowering-field-cells.test.ts", "-t", "whatever else has its type"],
+    tests: [
+      "test/lowering-field-cells.test.ts",
+      "-t",
+      "whatever else has its type",
+    ],
   },
   {
     name: "cleanup-flag-refused",
-    breaks: "a drop flag optimized MIR's cleanup tests, another crate's, is refused, `this cleanup, from its MIR`, so a library's function that drops what it's given after asking its dispatcher can't be compiled by its consumer (ADR 0914)",
+    breaks:
+      "a drop flag optimized MIR's cleanup tests, another crate's, is refused, `this cleanup, from its MIR`, so a library's function that drops what it's given after asking its dispatcher can't be compiled by its consumer (ADR 0914)",
     file: "src/lower/mir/drops.rs",
     find: "                    if let [(value, then)] = targets.iter().collect::<Vec<_>>()[..] =>\n",
-    replace: "                    if false && let [(value, then)] = targets.iter().collect::<Vec<_>>()[..] =>\n",
+    replace:
+      "                    if false && let [(value, then)] = targets.iter().collect::<Vec<_>>()[..] =>\n",
     tests: ["test/crates.test.ts", "-t", "two crates: program_form"],
   },
   {
     name: "lent-iterator-unheld",
-    breaks: "an iterator a variable steps by `next()` and then moves into `drop` isn't held, `$held(..)`, which its owner drops where Rust does (#392): its JS, as nothing shows the drop's timing apart now",
+    breaks:
+      "an iterator a variable steps by `next()` and then moves into `drop` isn't held, `$held(..)`, which its owner drops where Rust does (#392): its JS, as nothing shows the drop's timing apart now",
     file: "src/lower/mir/drops.rs",
     find: "            || lent\n",
     replace: "",
     snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^(held_adapters_stepped_to_their_end|adapter_drops)\\.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(held_adapters_stepped_to_their_end|adapter_drops)\\.rs$",
+    ],
   },
   {
     name: "generic-iterator-unheld",
-    breaks: "a generic body's iterator of a type it's given, a parameter `impl Iterator` or `FromIterator`'s `items.into_iter()`, isn't held, `$held(..)`, which its owner drops where Rust does (#392): its JS, as nothing shows the drop's timing apart now",
+    breaks:
+      "a generic body's iterator of a type it's given, a parameter `impl Iterator` or `FromIterator`'s `items.into_iter()`, isn't held, `$held(..)`, which its owner drops where Rust does (#392): its JS, as nothing shows the drop's timing apart now",
     file: "src/lower/mir/drops.rs",
     find: "            && (self.dropped_by_closing(ty) || self.recognition().bounded_iterator(ty))\n",
     replace: "            && self.dropped_by_closing(ty)\n",
     snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^held_adapters_stepped_to_their_end.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^held_adapters_stepped_to_their_end.rs$",
+    ],
   },
   {
     name: "parameters-unheld",
-    breaks: "a function's parameter it steps by `next()` and drops at its end isn't held, so what it's given drops at its first `None`, before `consume done` (#392)",
+    breaks:
+      "a function's parameter it steps by `next()` and drops at its end isn't held, so what it's given drops at its first `None`, before `consume done` (#392)",
     file: "src/lower/mir/drops.rs",
-    find: "                out.push(StmtKind::Expr(Expr::call_helper(\"$held\", vec![name])).at(js::Span::NONE));\n",
+    find: '                out.push(StmtKind::Expr(Expr::call_helper("$held", vec![name])).at(js::Span::NONE));\n',
     replace: "                let _ = name;\n",
     snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^held_adapters_stepped_to_their_end.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^held_adapters_stepped_to_their_end.rs$",
+    ],
   },
   {
     name: "compiled-std-parameters-held",
-    breaks: "std's compiled struct, a `Skip` its method takes by value, is `$held(skip);` at the method's start, a call that holds nothing, as std's struct has no `hold()`",
+    breaks:
+      "std's compiled struct, a `Skip` its method takes by value, is `$held(skip);` at the method's start, a call that holds nothing, as std's struct has no `hold()`",
     file: "src/lower/mir/drops.rs",
     find: "            if !crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)\n",
     replace: "            if true\n",
@@ -212,43 +267,64 @@ export const mutations: Mutation[] = [
   },
   {
     name: "constant-flags-never",
-    breaks: "a library's optimized MIR's drop flag, a consumer's copy of `vec![t]`'s, is `const value = false;` and a `catch` testing it, `if (value) { dropT?.(t); }` (#381), and React's `runWithFiberInDEV`'s copy nests its flags' tests 2^k ways (#394)",
+    breaks:
+      "a library's optimized MIR's drop flag, a consumer's copy of `vec![t]`'s, is `const value = false;` and a `catch` testing it, `if (value) { dropT?.(t); }` (#381), and React's `runWithFiberInDEV`'s copy nests its flags' tests 2^k ways (#394)",
     file: "src/lower/mir/drops.rs",
     find: "        .map(|(local, _)| local)\n        .collect();\n    flags.sort();",
-    replace: "        .map(|(local, _)| local)\n        .filter(|_| false)\n        .collect();\n    flags.sort();",
+    replace:
+      "        .map(|(local, _)| local)\n        .filter(|_| false)\n        .collect();\n    flags.sort();",
     tests: ["test/crates.test.ts", "-t", "never crashes|settles its cleanup"],
   },
   {
     name: "constant-flags-of-any-use",
-    breaks: "a `bool` set to other than a constant, or read other than by a test, is settled as a drop flag (#381)",
+    breaks:
+      "a `bool` set to other than a constant, or read other than by a test, is settled as a drop flag (#381)",
     file: "src/lower/mir/drops.rs",
     find: "is_bool() && uses.0.get(local) == Some(n))",
     replace: "is_bool())",
-    tests: ["test/corpus.test.ts", "-t", "^(catch_unwind_drops|drop_update_panics).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(catch_unwind_drops|drop_update_panics).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "cleanup-switch-bool-only",
-    breaks: "a cleanup that tests an enum's discriminant before it drops a variant's field, as a `core` built to unwind has, is refused (#424)",
+    breaks:
+      "a cleanup that tests an enum's discriminant before it drops a variant's field, as a `core` built to unwind has, is refused (#424)",
     file: "src/lower/mir/drops.rs",
     find: "                    if let [(value, then)] = targets.iter().collect::<Vec<_>>()[..] =>\n",
-    replace: "                    if discr.ty(&state.body.local_decls, self.tcx).is_bool()\n                        && let [(value, then)] = targets.iter().collect::<Vec<_>>()[..] =>\n",
-    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+    replace:
+      "                    if discr.ty(&state.body.local_decls, self.tcx).is_bool()\n                        && let [(value, then)] = targets.iter().collect::<Vec<_>>()[..] =>\n",
+    tests: [
+      "test/std-package.test.ts",
+      "-t",
+      "the committed @rust-js/std is std",
+    ],
   },
   {
     name: "cleanup-discriminant-written",
-    breaks: "a discriminant a cleanup's switch tests is written to a temporary the function never declares, a `ReferenceError` as a panic unwinds (#424)",
+    breaks:
+      "a discriminant a cleanup's switch tests is written to a temporary the function never declares, a `ReferenceError` as a panic unwinds (#424)",
     file: "src/lower/mir/drops.rs",
     find: "                        if matches!(&assign.1, mir::Rvalue::Discriminant(_)) && assign.0.as_local() == tested =>\n",
-    replace: "                        if false && matches!(&assign.1, mir::Rvalue::Discriminant(_)) && assign.0.as_local() == tested =>\n",
-    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+    replace:
+      "                        if false && matches!(&assign.1, mir::Rvalue::Discriminant(_)) && assign.0.as_local() == tested =>\n",
+    tests: [
+      "test/std-package.test.ts",
+      "-t",
+      "the committed @rust-js/std is std",
+    ],
   },
   {
     name: "cleanup-flag-tested-negated",
-    breaks: "a cleanup's drop flag is tested negated, `if (!flag) { .. } else { drop(x); }`, which `settled_flags` leaves unsettled, a cleanup of every way it could be (#424)",
+    breaks:
+      "a cleanup's drop flag is tested negated, `if (!flag) { .. } else { drop(x); }`, which `settled_flags` leaves unsettled, a cleanup of every way it could be (#424)",
     file: "src/lower/mir/drops.rs",
     find: "                        true => (self.value_expr(subject, span)?, targets.otherwise(), then),\n",
-    replace: "                        true => (self.switch_test(&subject, ty, value, span, None)?, then, targets.otherwise()),\n",
+    replace:
+      "                        true => (self.switch_test(&subject, ty, value, span, None)?, then, targets.otherwise()),\n",
     tests: ["test/crates.test.ts", "-t", "settles its cleanup's drop flags"],
   },
 ];

@@ -4,7 +4,8 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "compiled-source-map-length-unknown",
-    breaks: "a map whose closure has a destructor, of a `fuse()`, std's compiled struct, isn't read as knowing its length where it's made knowing it: refused as an `ExactSizeIterator` (#385)",
+    breaks:
+      "a map whose closure has a destructor, of a `fuse()`, std's compiled struct, isn't read as knowing its length where it's made knowing it: refused as an `ExactSizeIterator` (#385)",
     file: "src/lower/iterators/knowing.rs",
     find: "                    && compiled_exact()\n",
     replace: "                    && false\n",
@@ -12,23 +13,31 @@ export const mutations: Mutation[] = [
   },
   {
     name: "inspect-made-here-backless",
-    breaks: "an `inspect(f)` made in place and `rev()`'d isn't stepped from its back as the map it's made as: refused",
+    breaks:
+      "an `inspect(f)` made in place and `rev()`'d isn't stepped from its back as the map it's made as: refused",
     file: "src/lower/iterators/knowing.rs",
-    find: "            .or_else(|| crate::lower::recognition::inspected_source(self.tcx, ty))\n            && let js::ExprKind::Call(callee, args) = &value.kind\n            && let js::ExprKind::Member(source_value, method) = &callee.kind\n            && method == \"map\"\n            && let [f] = args.as_slice()\n        {\n            let source_value = self.as_double_ended(",
-    replace: "            .or_else(|| None)\n            && let js::ExprKind::Call(callee, args) = &value.kind\n            && let js::ExprKind::Member(source_value, method) = &callee.kind\n            && method == \"map\"\n            && let [f] = args.as_slice()\n        {\n            let source_value = self.as_double_ended(",
+    find: '            .or_else(|| crate::lower::recognition::inspected_source(self.tcx, ty))\n            && let js::ExprKind::Call(callee, args) = &value.kind\n            && let js::ExprKind::Member(source_value, method) = &callee.kind\n            && method == "map"\n            && let [f] = args.as_slice()\n        {\n            let source_value = self.as_double_ended(',
+    replace:
+      '            .or_else(|| None)\n            && let js::ExprKind::Call(callee, args) = &value.kind\n            && let js::ExprKind::Member(source_value, method) = &callee.kind\n            && method == "map"\n            && let [f] = args.as_slice()\n        {\n            let source_value = self.as_double_ended(',
     tests: ["test/corpus.test.ts", "-t", "^inspect_from_back.rs$"],
   },
   {
     name: "back-stepped-enumerate-unknown",
-    breaks: "an enumeration the crate steps from its back, made knowing it, isn't read as knowing it: refused (#383)",
+    breaks:
+      "an enumeration the crate steps from its back, made knowing it, isn't read as knowing it: refused (#383)",
     file: "src/lower/iterators/knowing.rs",
     find: "                || self.stepped_from_its_back(ty);\n",
     replace: ";\n",
-    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_droppers_from_back.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^enumerate_of_droppers_from_back.rs$",
+    ],
   },
   {
     name: "stepped-range-restepped",
-    breaks: "a range stepped from its start already, an `enumerate()`'s source, is stepped as a range again where it's made knowing its length: `(1..5).enumerate()` given to code stepping its back is `(false, 0)`, not `(true, 3)` (#385)",
+    breaks:
+      "a range stepped from its start already, an `enumerate()`'s source, is stepped as a range again where it's made knowing its length: `(1..5).enumerate()` given to code stepping its back is `(false, 0)`, not `(true, 3)` (#385)",
     file: "src/lower/iterators/knowing.rs",
     find: "            // source's, the range it steps (#385).\n            let value = stepped_value(&value).unwrap_or(value);\n",
     replace: "            // source's, the range it steps (#385).\n",
@@ -36,63 +45,78 @@ export const mutations: Mutation[] = [
   },
   {
     name: "made-skipping-reread",
-    breaks: "a `$skipping` `as_exact_size` made already, a `rev()`'s source, is refused as an `ExactSizeIterator`: `first((0..10).skip(6).rev())` (#385)",
+    breaks:
+      "a `$skipping` `as_exact_size` made already, a `rev()`'s source, is refused as an `ExactSizeIterator`: `first((0..10).skip(6).rev())` (#385)",
     file: "src/lower/iterators/knowing.rs",
-    find: "            && args.len() == 2\n            && callee.helper_name() == Some(if skip { \"$skipping\" } else { \"$taking\" })\n",
-    replace: "            && args.len() == 99\n            && callee.helper_name() == Some(if skip { \"$skipping\" } else { \"$taking\" })\n",
+    find: '            && args.len() == 2\n            && callee.helper_name() == Some(if skip { "$skipping" } else { "$taking" })\n',
+    replace:
+      '            && args.len() == 99\n            && callee.helper_name() == Some(if skip { "$skipping" } else { "$taking" })\n',
     tests: ["test/corpus.test.ts", "-t", "^lengths_and_backs_given_on.rs$"],
   },
   {
     name: "enumerate-back-of-arrays-only",
-    breaks: "an `enumerate()` made in place of what isn't an array's items, a `fuse()` of owned items, is refused where it's stepped from its back (#383)",
+    breaks:
+      "an `enumerate()` made in place of what isn't an array's items, a `fuse()` of owned items, is refused where it's stepped from its back (#383)",
     file: "src/lower/iterators/knowing.rs",
     find: "                false => self.as_exact_size(source_value.clone(), source.peel_refs(), true, span)?,\n",
-    replace: "                false => return Err(self.unsupported(span, \"a mutated enumerate\")),\n",
+    replace:
+      '                false => return Err(self.unsupported(span, "a mutated enumerate")),\n',
     tests: ["test/corpus.test.ts", "-t", "^enumerate_of_a_fuse_from_back.rs$"],
   },
   {
     name: "double-ended-rev-unread",
-    breaks: "a `rev()` made in place, given where generic code steps it from its back, is refused: `ends((1..4).rev())` (ADR 0987)",
+    breaks:
+      "a `rev()` made in place, given where generic code steps it from its back, is refused: `ends((1..4).rev())` (ADR 0987)",
     file: "src/lower/iterators/knowing.rs",
     find: "        if let Some(source) = crate::lower::recognition::reversed_source(self.tcx, ty)\n            && let Some(reversal) = self.reversal_of(&value, source)\n        {\n            return match reversal {\n                Reversal::Stepped(_) => Ok(value.clone()),\n",
-    replace: "        if let Some(source) = crate::lower::recognition::reversed_source(self.tcx, ty).filter(|_| false)\n            && let Some(reversal) = self.reversal_of(&value, source)\n        {\n            return match reversal {\n                Reversal::Stepped(_) => Ok(value.clone()),\n",
+    replace:
+      "        if let Some(source) = crate::lower::recognition::reversed_source(self.tcx, ty).filter(|_| false)\n            && let Some(reversal) = self.reversal_of(&value, source)\n        {\n            return match reversal {\n                Reversal::Stepped(_) => Ok(value.clone()),\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_given_to_generic_code.rs$"],
   },
   {
     name: "double-ended-reversed-range-forward",
-    breaks: "a reversed range made in place, given where generic code steps it, is stepped forward: `ends((1..4).rev())` is `(Some(3), Some(1), ..)`, not `(Some(1), Some(3), ..)` (ADR 0987)",
+    breaks:
+      "a reversed range made in place, given where generic code steps it, is stepped forward: `ends((1..4).rev())` is `(Some(3), Some(1), ..)`, not `(Some(1), Some(3), ..)` (ADR 0987)",
     file: "src/lower/iterators/knowing.rs",
-    find: "                    let range = self.as_double_ended(range.clone(), source, span)?;\n                    Ok(Expr::call_helper(\"$rev\", vec![range]))\n",
-    replace: "                    let range = self.as_double_ended(range.clone(), source, span)?;\n                    Ok(range)\n",
+    find: '                    let range = self.as_double_ended(range.clone(), source, span)?;\n                    Ok(Expr::call_helper("$rev", vec![range]))\n',
+    replace:
+      "                    let range = self.as_double_ended(range.clone(), source, span)?;\n                    Ok(range)\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_given_to_generic_code.rs$"],
   },
   {
     name: "exact-size-rev-unread",
-    breaks: "a `rev()` made in place, given where its length is asked, is refused: `count((1..4).rev())` (ADRs 0986, 0987)",
+    breaks:
+      "a `rev()` made in place, given where its length is asked, is refused: `count((1..4).rev())` (ADRs 0986, 0987)",
     file: "src/lower/iterators/knowing.rs",
     find: "            && let Some(reversal) = self.reversal_of(&value, source)\n        {\n            return match reversal {\n                Reversal::Stepped(it) | Reversal::Range(it) => {\n",
-    replace: "            && let Some(reversal) = self.reversal_of(&value, source).filter(|_| false)\n        {\n            return match reversal {\n                Reversal::Stepped(it) | Reversal::Range(it) => {\n",
+    replace:
+      "            && let Some(reversal) = self.reversal_of(&value, source).filter(|_| false)\n        {\n            return match reversal {\n                Reversal::Stepped(it) | Reversal::Range(it) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^len_made_in_place.rs$"],
   },
   {
     name: "exact-size-reversed-items-unread",
-    breaks: "an array's items reversed where they're made, or a map of them, given where their length is asked, are refused: `count(v.iter().map(f).rev())` (ADRs 0986, 0987)",
+    breaks:
+      "an array's items reversed where they're made, or a map of them, given where their length is asked, are refused: `count(v.iter().map(f).rev())` (ADRs 0986, 0987)",
     file: "src/lower/iterators/knowing.rs",
     find: "                Reversal::Chain => self.as_exact_size(value.clone(), source, back, span),\n",
-    replace: "                Reversal::Chain => Err(self.unsupported(span, \"a mutated reversal\")),\n",
+    replace:
+      '                Reversal::Chain => Err(self.unsupported(span, "a mutated reversal")),\n',
     tests: ["test/corpus.test.ts", "-t", "^len_made_in_place.rs$"],
   },
   {
     name: "knowing-try-rfold-ungiven",
-    breaks: "a held `skip()` over a `take()` stepped by `rfind` steps each from its back, not by std's `Take::try_rfold`, one `nth_back` of the crate's iterator (ADR 0930)",
+    breaks:
+      "a held `skip()` over a `take()` stepped by `rfind` steps each from its back, not by std's `Take::try_rfold`, one `nth_back` of the crate's iterator (ADR 0930)",
     file: "src/lower/iterators/knowing.rs",
     find: "            let own = [rfold, nth_back, try_rfold];\n",
-    replace: "            let own = [rfold, nth_back, try_rfold.filter(|_| false)];\n",
+    replace:
+      "            let own = [rfold, nth_back, try_rfold.filter(|_| false)];\n",
     tests: ["test/corpus.test.ts", "-t", "^held_back_folds_by_try_rfold.rs$"],
   },
   {
     name: "iterator-evidence-of-any-param",
-    breaks: "a parameter bound by a trait `Iterator` is a supertrait of is stepped through that trait's dictionary, which has no `Iterator`",
+    breaks:
+      "a parameter bound by a trait `Iterator` is a supertrait of is stepped through that trait's dictionary, which has no `Iterator`",
     file: "src/lower/iterators/knowing.rs",
     find: "        if !self.iterator_given_as_it_is(ty) {\n",
     replace: "        if false {\n",
@@ -100,7 +124,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "double-ended-held-knows-its-back",
-    breaks: "a generic iterator held as it is, stepped by its `Iterator` dictionary, is stepped by `$nextBack`, which it has no back for",
+    breaks:
+      "a generic iterator held as it is, stepped by its `Iterator` dictionary, is stepped by `$nextBack`, which it has no back for",
     file: "src/lower/iterators/knowing.rs",
     find: "            ty::Param(param) => !given_as_it_is(self.tcx, id, *param),\n",
     replace: "            ty::Param(_) => true,\n",
@@ -116,23 +141,31 @@ export const mutations: Mutation[] = [
   },
   {
     name: "map-made-unstepped",
-    breaks: "`rfind` of an array's map made in place, `v.iter().map(f)`, is refused",
+    breaks:
+      "`rfind` of an array's map made in place, `v.iter().map(f)`, is refused",
     file: "src/lower/iterators/knowing.rs",
-    find: "            && method == \"map\"\n            && let [f] = args.as_slice()\n        {\n            let source_value = self.as_double_ended(",
-    replace: "            && method == \"unmapped\"\n            && let [f] = args.as_slice()\n        {\n            let source_value = self.as_double_ended(",
+    find: '            && method == "map"\n            && let [f] = args.as_slice()\n        {\n            let source_value = self.as_double_ended(',
+    replace:
+      '            && method == "unmapped"\n            && let [f] = args.as_slice()\n        {\n            let source_value = self.as_double_ended(',
     tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
   },
   {
     name: "associated-double-ended-unknown",
-    breaks: "`rev()` of an `I::IntoIter` a bound says is double-ended is refused",
+    breaks:
+      "`rev()` of an `I::IntoIter` a bound says is double-ended is refused",
     file: "src/lower/iterators/knowing.rs",
     find: "            ty::Alias(..) => true,\n            _ => false,\n        };\n",
     replace: "            _ => false,\n        };\n",
-    tests: ["test/corpus.test.ts", "-t", "^(associated_double_ended|backs_given_behind_impls).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(associated_double_ended|backs_given_behind_impls).rs$",
+    ],
   },
   {
     name: "default-evidence-trait-terms",
-    breaks: "a copied default's `Self` is asked its `Iterator` dictionary in the trait's terms, finds none, and is stepped as a JS iterator",
+    breaks:
+      "a copied default's `Self` is asked its `Iterator` dictionary in the trait's terms, finds none, and is stepped as a JS iterator",
     file: "src/lower/iterators/knowing.rs",
     find: "        let ty = self.impl_type(ty.peel_refs());\n",
     replace: "        let ty = ty.peel_refs();\n",
@@ -140,23 +173,32 @@ export const mutations: Mutation[] = [
   },
   {
     name: "filter-made-here-backless",
-    breaks: "a filter made where it's stepped from its back, `xs.iter().filter(p).rfold(..)`, is refused",
+    breaks:
+      "a filter made where it's stepped from its back, `xs.iter().filter(p).rfold(..)`, is refused",
     file: "src/lower/iterators/knowing.rs",
-    find: "            && method == \"filter\"\n            && let [p] = args.as_slice()\n",
-    replace: "            && method == \"filtered\"\n            && let [p] = args.as_slice()\n",
-    tests: ["test/corpus.test.ts", "-t", "^(filter_ends|rev_given_to_generic_code|user_iterator_ends|returned_slice_iters|own_back_through_adapters)\\.rs$"],
+    find: '            && method == "filter"\n            && let [p] = args.as_slice()\n',
+    replace:
+      '            && method == "filtered"\n            && let [p] = args.as_slice()\n',
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(filter_ends|rev_given_to_generic_code|user_iterator_ends|returned_slice_iters|own_back_through_adapters)\\.rs$",
+    ],
   },
   {
     name: "enumerate-back-unknown",
-    breaks: "an `enumerate` of what knows its back and length isn't seen to know its back",
+    breaks:
+      "an `enumerate` of what knows its back and length isn't seen to know its back",
     file: "src/lower/iterators/knowing.rs",
     find: "            return (self.knows_its_back(source) || self.user_double_ended(source))\n",
-    replace: "            return false && (self.knows_its_back(source) || self.user_double_ended(source))\n",
+    replace:
+      "            return false && (self.knows_its_back(source) || self.user_double_ended(source))\n",
     tests: ["test/corpus.test.ts", "-t", "^fuse_enumerate_ends.rs$"],
   },
   {
     name: "memchr-iter-backless",
-    breaks: "memchr's iterator isn't seen to know its back, and `next_back` of it is refused",
+    breaks:
+      "memchr's iterator isn't seen to know its back, and `next_back` of it is refused",
     file: "src/lower/iterators/knowing.rs",
     find: "        if self.recognition().is_memchr_iter(ty) {\n",
     replace: "        if false && self.recognition().is_memchr_iter(ty) {\n",
@@ -164,18 +206,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "double-ended-of-a-js-iterator-again",
-    breaks: "a map's source made a JS iterator, `$iterator(range, $rangeNext)`, is stepped as a range again, and gives nothing",
+    breaks:
+      "a map's source made a JS iterator, `$iterator(range, $rangeNext)`, is stepped as a range again, and gives nothing",
     file: "src/lower/iterators/knowing.rs",
     find: "        }\n        let value = stepped_value(&value).unwrap_or(value);\n        // One a struct holds, which keeps its source (ADR 0542): of one given\n",
-    replace: "        }\n        // One a struct holds, which keeps its source (ADR 0542): of one given\n",
+    replace:
+      "        }\n        // One a struct holds, which keeps its source (ADR 0542): of one given\n",
     tests: ["test/corpus.test.ts", "-t", "^range_mapped_by_a_function.rs$"],
   },
   {
     name: "held-enumerate-not-knowing",
-    breaks: "a held `Enumerate` of a source given as it is isn't given this use's back and length, and its back is refused",
+    breaks:
+      "a held `Enumerate` of a source given as it is isn't given this use's back and length, and its back is refused",
     file: "src/lower/iterators/knowing.rs",
     find: "        // was made; of one made knowing them, an array's or a range's, itself.\n        if let Some(knowing) = self.knowing_held(value.clone(), ty, span)? {\n",
-    replace: "        // was made; of one made knowing them, an array's or a range's, itself.\n        if let Some(knowing) = self.knowing_held(value.clone(), ty, span)?.filter(|_| false) {\n",
+    replace:
+      "        // was made; of one made knowing them, an array's or a range's, itself.\n        if let Some(knowing) = self.knowing_held(value.clone(), ty, span)?.filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
   },
   {
@@ -188,31 +234,37 @@ export const mutations: Mutation[] = [
   },
   {
     name: "std-iterator-hint-missing",
-    breaks: "a compiled std iterator's struct is made with no `size_hint` of its own, a `Fuse`'s, so `$sizeHint` of it is a lazy iterator's",
+    breaks:
+      "a compiled std iterator's struct is made with no `size_hint` of its own, a `Fuse`'s, so `$sizeHint` of it is a lazy iterator's",
     file: "src/lower/iterators/knowing.rs",
-    find: "            true => Some(self.user_next(ty, iterator, \"size_hint\", span)?.0),\n",
+    find: '            true => Some(self.user_next(ty, iterator, "size_hint", span)?.0),\n',
     replace: "            true => None,\n",
     tests: ["test/std-package.test.ts"],
   },
   {
     name: "compiled-iterator-not-knowing",
-    breaks: "a compiled std iterator stepped from its back by a JS helper, `rev()`'s, isn't given its compiled `next_back` with this use's dictionaries",
+    breaks:
+      "a compiled std iterator stepped from its back by a JS helper, `rev()`'s, isn't given its compiled `next_back` with this use's dictionaries",
     file: "src/lower/iterators/knowing.rs",
     find: "                    Some(trait_id) if self.compiled_step(ty, trait_id, method) => {\n",
-    replace: "                    Some(trait_id) if false && self.compiled_step(ty, trait_id, method) => {\n",
+    replace:
+      "                    Some(trait_id) if false && self.compiled_step(ty, trait_id, method) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^fuse_enumerate_ends.rs$"],
   },
   {
     name: "own-size-hint-dropped",
-    breaks: "the crate's iterator made a JS iterator isn't given its own `size_hint`, so generic code asks `(0, None)`",
+    breaks:
+      "the crate's iterator made a JS iterator isn't given its own `size_hint`, so generic code asks `(0, None)`",
     file: "src/lower/iterators/knowing.rs",
     find: "        let (next, boxed) = self.user_next(ty, trait_id, method, span)?;\n        let hint = self.own_size_hint(ty, span)?;\n",
-    replace: "        let (next, boxed) = self.user_next(ty, trait_id, method, span)?;\n        let hint = None;\n",
+    replace:
+      "        let (next, boxed) = self.user_next(ty, trait_id, method, span)?;\n        let hint = None;\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_size_hints.rs$"],
   },
   {
     name: "std-size-hint-taken-as-own",
-    breaks: "an iterator of the crate's with std's `size_hint` is given it as its own, a call of the provided method",
+    breaks:
+      "an iterator of the crate's with std's `size_hint` is given it as its own, a call of the provided method",
     file: "src/lower/iterators/knowing.rs",
     find: "            .is_some_and(|instance| instance.def_id() != size_hint && self.is_rust_fn(instance.def_id()));\n",
     replace: "            .is_some_and(|_| true);\n",
@@ -220,7 +272,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "peekable-hint-undictionaried",
-    breaks: "a compiled `Peekable`'s hint isn't given its source's dictionary, so it says `(0, None)` of the crate's iterator",
+    breaks:
+      "a compiled `Peekable`'s hint isn't given its source's dictionary, so it says `(0, None)` of the crate's iterator",
     file: "src/lower/iterators/knowing.rs",
     find: "                Some(match self.iterator_evidence(source, iterator) {\n",
     replace: "                Some(match None::<Expr> {\n",
@@ -228,7 +281,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dyn-double-ended-forgets-its-back",
-    breaks: "a `dyn DoubleEndedIterator` is a JS iterator that can't step from its back, and is refused",
+    breaks:
+      "a `dyn DoubleEndedIterator` is a JS iterator that can't step from its back, and is refused",
     file: "src/lower/iterators/knowing.rs",
     find: "            return crate::lower::recognition::is_double_ended(self.tcx, id);\n",
     replace: "            return false;\n",
@@ -236,7 +290,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "copied-not-double-ended",
-    breaks: "a `Copied` of a slice's iterator, given as a `DoubleEndedIterator`, is refused",
+    breaks:
+      "a `Copied` of a slice's iterator, given as a `DoubleEndedIterator`, is refused",
     file: "src/lower/iterators/knowing.rs",
     find: "        // A copy of one, which it is (ADR 0480).\n        if let Some(source) = crate::lower::recognition::copied_source(self.tcx, ty) {\n            return self.as_double_ended(value, source, span);\n        }\n",
     replace: "",
@@ -244,15 +299,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "held-hint-of-lazy-adapter",
-    breaks: "`len()` of a `Peekable` of a `map` made here asks the JS iterator's hint, `(0, None)`, and its exact length panics",
+    breaks:
+      "`len()` of a `Peekable` of a `map` made here asks the JS iterator's hint, `(0, None)`, and its exact length panics",
     file: "src/lower/iterators/knowing.rs",
     find: "                .all(|held| self.held_hint_known(held))\n",
     replace: "                .all(|_| true)\n",
-    tests: ["test/diagnostics.test.ts", "-t", "the size hint of a peekable filter made here"],
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "the size hint of a peekable filter made here",
+    ],
   },
   {
     name: "held-hint-of-range-unknown",
-    breaks: "`len()` of a `Peekable` of a range is refused, though the range knows how many it has left",
+    breaks:
+      "`len()` of a `Peekable` of a range is refused, though the range knows how many it has left",
     file: "src/lower/iterators/knowing.rs",
     find: "            || self.range_kind(ty).is_some()\n",
     replace: "",
@@ -260,25 +321,30 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rev-take-as-skip",
-    breaks: "`take(n).rev()` steps from the back as `skip(n)` does, giving what it should leave",
+    breaks:
+      "`take(n).rev()` steps from the back as `skip(n)` does, giving what it should leave",
     file: "src/lower/iterators/knowing.rs",
-    find: "            let name = if skip { \"$skipping\" } else { \"$taking\" };\n",
-    replace: "            let name = if skip || true { \"$skipping\" } else { \"$taking\" };\n",
+    find: '            let name = if skip { "$skipping" } else { "$taking" };\n',
+    replace:
+      '            let name = if skip || true { "$skipping" } else { "$taking" };\n',
     tests: ["test/corpus.test.ts", "-t", "^rev_counted.rs$"],
   },
   {
     name: "exact-size-map-unknown",
-    breaks: "a `map` of an `ExactSizeIterator` can't be counted, so `map(f).skip(n).rev()` is refused",
+    breaks:
+      "a `map` of an `ExactSizeIterator` can't be counted, so `map(f).skip(n).rev()` is refused",
     file: "src/lower/iterators/knowing.rs",
-    find: "            && method == \"map\"\n            && let [f] = args.as_slice()\n        {\n            let source_value = stepped_value(source_value).unwrap_or_else(|| (**source_value).clone());\n            let source_value = self.as_exact_size(",
-    replace: "            && method == \"map\" && false\n            && let [f] = args.as_slice()\n        {\n            let source_value = stepped_value(source_value).unwrap_or_else(|| (**source_value).clone());\n            let source_value = self.as_exact_size(",
+    find: '            && method == "map"\n            && let [f] = args.as_slice()\n        {\n            let source_value = stepped_value(source_value).unwrap_or_else(|| (**source_value).clone());\n            let source_value = self.as_exact_size(',
+    replace:
+      '            && method == "map" && false\n            && let [f] = args.as_slice()\n        {\n            let source_value = stepped_value(source_value).unwrap_or_else(|| (**source_value).clone());\n            let source_value = self.as_exact_size(',
     tests: ["test/corpus.test.ts", "-t", "^rev_counted.rs$"],
   },
   {
     name: "exact-size-inclusive-unknown",
-    breaks: "an inclusive range can't be counted, so `(1..=10u8).skip(7).rev()` is refused",
+    breaks:
+      "an inclusive range can't be counted, so `(1..=10u8).skip(7).rev()` is refused",
     file: "src/lower/iterators/knowing.rs",
-    find: "            Some(crate::lower::std_types::range::RangeKind::Inclusive) => Some(\"$rangeInclusiveLen\"),\n",
+    find: '            Some(crate::lower::std_types::range::RangeKind::Inclusive) => Some("$rangeInclusiveLen"),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rev_counted.rs$"],
   },
@@ -286,8 +352,8 @@ export const mutations: Mutation[] = [
     name: "chain-made-unstepped",
     breaks: "`rev()` of a chain made in place is refused",
     file: "src/lower/iterators/knowing.rs",
-    find: "            && callee.helper_name() == Some(\"$lazyChain\")\n",
-    replace: "            && callee.helper_name() == Some(\"$unchained\")\n",
+    find: '            && callee.helper_name() == Some("$lazyChain")\n',
+    replace: '            && callee.helper_name() == Some("$unchained")\n',
     tests: ["test/corpus.test.ts", "-t", "^rev_chain.rs$"],
   },
   {
@@ -295,22 +361,25 @@ export const mutations: Mutation[] = [
     breaks: "`rev()` of a `step_by` made in place is refused",
     file: "src/lower/iterators/knowing.rs",
     find: "            && let Some(step) = crate::lower::std_types::range::every_nth(f)\n",
-    replace: "            && let Some(step) = crate::lower::std_types::range::every_nth(f).filter(|_| false)\n",
+    replace:
+      "            && let Some(step) = crate::lower::std_types::range::every_nth(f).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_step_by.rs$"],
   },
   {
     name: "flatten-not-double-ended",
-    breaks: "a flatten stepped from its back is refused, not made `$flattenEnds`",
+    breaks:
+      "a flatten stepped from its back is refused, not made `$flattenEnds`",
     file: "src/lower/iterators/knowing.rs",
-    find: "            && method == \"flatMap\"\n",
-    replace: "            && method == \"never\"\n",
+    find: '            && method == "flatMap"\n',
+    replace: '            && method == "never"\n',
     tests: ["test/corpus.test.ts", "-t", "^flatten_from_its_back.rs$"],
   },
   {
     name: "user-iterator-backless",
-    breaks: "the crate's double-ended iterator, asked its back, is made without its `next_back`",
+    breaks:
+      "the crate's double-ended iterator, asked its back, is made without its `next_back`",
     file: "src/lower/iterators/knowing.rs",
-    find: "            Some(double_ended) if back => Some(self.user_next(ty, double_ended, \"next_back\", span)?.0),\n",
+    find: '            Some(double_ended) if back => Some(self.user_next(ty, double_ended, "next_back", span)?.0),\n',
     replace: "            Some(_) if back => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^user_iterator_ends.rs$"],
   },
@@ -319,7 +388,8 @@ export const mutations: Mutation[] = [
     breaks: "an enumerate of an array's items made here steps from its back",
     file: "src/lower/iterators/knowing.rs",
     find: "        if let Some(source) = crate::lower::recognition::enumerated_source(self.tcx, ty)\n            && let Some(source_value) = crate::lower::iterators::enumeration_source(&value)\n        {\n            let items = match",
-    replace: "        if let Some(source) = None::<ty::Ty<'tcx>>\n            && let Some(source_value) = crate::lower::iterators::enumeration_source(&value)\n        {\n            let items = match",
+    replace:
+      "        if let Some(source) = None::<ty::Ty<'tcx>>\n            && let Some(source_value) = crate::lower::iterators::enumeration_source(&value)\n        {\n            let items = match",
     tests: ["test/corpus.test.ts", "-t", "^returned_slice_iters.rs$"],
   },
   {
@@ -327,23 +397,30 @@ export const mutations: Mutation[] = [
     breaks: "an enumerate of an array's items made here is exact-sized",
     file: "src/lower/iterators/knowing.rs",
     find: "        // An enumeration made here of an array's items, `$enumerate` of their\n        // `$iter`, as `as_double_ended` makes it.\n        if let Some(source) = crate::lower::recognition::enumerated_source(self.tcx, ty)\n            && self.steps_an_array(source.peel_refs())",
-    replace: "        // An enumeration made here of an array's items, `$enumerate` of their\n        // `$iter`, as `as_double_ended` makes it.\n        if let Some(source) = crate::lower::recognition::enumerated_source(self.tcx, ty)\n            && false",
+    replace:
+      "        // An enumeration made here of an array's items, `$enumerate` of their\n        // `$iter`, as `as_double_ended` makes it.\n        if let Some(source) = crate::lower::recognition::enumerated_source(self.tcx, ty)\n            && false",
     tests: ["test/corpus.test.ts", "-t", "^rposition_of_lazy.rs$"],
   },
   {
     name: "rposition-of-user-refused",
-    breaks: "`rposition` of the crate's double-ended, exact-sized iterator steps it unknowing",
+    breaks:
+      "`rposition` of the crate's double-ended, exact-sized iterator steps it unknowing",
     file: "src/lower/iterators/knowing.rs",
     find: "            return self.user_iterator_knowing(value, ty, (back, true), span);\n",
     replace: "            return Ok(value);\n",
-    tests: ["test/corpus.test.ts", "-t", "^(user_iterator_ends|rposition_of_lazy).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(user_iterator_ends|rposition_of_lazy).rs$",
+    ],
   },
   {
     name: "knows-back-of-impl-hidden",
     breaks: "knows_its_back reveals what an impl hides",
     file: "src/lower/iterators/knowing.rs",
     find: "        let ty = self.reveal(ty.peel_refs());\n        // A map of one, made one",
-    replace: "        let ty = ty.peel_refs();\n        // A map of one, made one",
+    replace:
+      "        let ty = ty.peel_refs();\n        // A map of one, made one",
     tests: ["test/corpus.test.ts", "-t", "^returned_impl_ends.rs$"],
   },
   {
@@ -352,70 +429,94 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "                || self.steps_an_array(source) && self.knows_its_back(ty)\n",
     replace: "\n",
-    tests: ["test/corpus.test.ts", "-t", "^(returned_impl_ends|owned_maps_asked_their_length).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(returned_impl_ends|owned_maps_asked_their_length).rs$",
+    ],
   },
   {
     name: "compiled-last-unhooked",
-    breaks: "a fuse's or a peekable's compiled `last` isn't given to its JS iterator",
+    breaks:
+      "a fuse's or a peekable's compiled `last` isn't given to its JS iterator",
     file: "src/lower/iterators/knowing.rs",
-    find: "        if self.compiled_step(ty, iterator, \"last\") {\n",
+    find: '        if self.compiled_step(ty, iterator, "last") {\n',
     replace: "        if false {\n",
     tests: ["test/std-package.test.ts"],
   },
   {
     name: "user-iterator-reversed-forward-own",
-    breaks: "`rev()` of the crate's iterator is given its forward `nth` and `fold` (#217)",
+    breaks:
+      "`rev()` of the crate's iterator is given its forward `nth` and `fold` (#217)",
     file: "src/lower/iterators/knowing.rs",
-    find: "        let own = self.own_methods(ty, method == \"next_back\", span)?;\n",
+    find: '        let own = self.own_methods(ty, method == "next_back", span)?;\n',
     replace: "        let own = self.own_methods(ty, false, span)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_own_back_methods.rs$"],
   },
   {
     name: "user-iterator-knowing-closed-rewrapped",
-    breaks: "the crate's iterator closed to drop it, made knowing its back, is wrapped as if it were the crate's value, whose methods it's then given: a wrong value (#223)",
+    breaks:
+      "the crate's iterator closed to drop it, made knowing its back, is wrapped as if it were the crate's value, whose methods it's then given: a wrong value (#223)",
     file: "src/lower/iterators/knowing.rs",
     find: "        if let Some((it, drop)) = crate::lower::iterators::closed_parts(&value) {\n",
-    replace: "        if let Some((it, drop)) = crate::lower::iterators::closed_parts(&value).filter(|_| false) {\n",
+    replace:
+      "        if let Some((it, drop)) = crate::lower::iterators::closed_parts(&value).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_from_back.rs$"],
   },
   {
     name: "user-iterator-knowing-lent-rewrapped",
-    breaks: "a `&mut` of the crate's iterator, lent, made knowing its back, is wrapped as if it were the crate's value: a wrong value (#225)",
+    breaks:
+      "a `&mut` of the crate's iterator, lent, made knowing its back, is wrapped as if it were the crate's value: a wrong value (#225)",
     file: "src/lower/iterators/knowing.rs",
     find: "        if super::in_place::is_lent(&value) {\n",
     replace: "        if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^own_iterator_dropped_through_adapters.rs$",
+    ],
   },
   {
     name: "user-iterator-knowing-lent-folds",
-    breaks: "a `&mut` of the crate's iterator, lent, is given its own folds, which take it and drop it (#225)",
+    breaks:
+      "a `&mut` of the crate's iterator, lent, is given its own folds, which take it and drop it (#225)",
     file: "src/lower/iterators/knowing.rs",
     find: "            return self.user_iterator_knowing(it, borrowed, (back, len), span);\n",
-    replace: "            return self.user_iterator_knowing(it, ty, (back, len), span);\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_through_adapters.rs$"],
+    replace:
+      "            return self.user_iterator_knowing(it, ty, (back, len), span);\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^own_iterator_dropped_through_adapters.rs$",
+    ],
   },
   {
     name: "knowing-rfold-unasked",
-    breaks: "a compiled struct stepped from its back isn't given std's compiled `rfold`, so `rev()` of a `fuse()` folds the crate's iterator by `next_back`, not by its own `rfold` (#224, ADR 0981)",
+    breaks:
+      "a compiled struct stepped from its back isn't given std's compiled `rfold`, so `rev()` of a `fuse()` folds the crate's iterator by `next_back`, not by its own `rfold` (#224, ADR 0981)",
     file: "src/lower/iterators/knowing.rs",
     find: "                Some(back) if self.recognition().rfolds_its_own(ty) => self.compiled_fold(",
-    replace: "                Some(back) if false && self.recognition().rfolds_its_own(ty) => self.compiled_fold(",
+    replace:
+      "                Some(back) if false && self.recognition().rfolds_its_own(ty) => self.compiled_fold(",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
   {
     name: "knowing-fuse-nth-back-unasked",
     breaks: "a compiled `fuse()` isn't given its compiled `nth_back` (#224)",
     file: "src/lower/iterators/knowing.rs",
-    find: "                Some(back) if self.compiled_step(ty, back, \"nth_back\") => {\n",
-    replace: "                Some(back) if false && self.compiled_step(ty, back, \"nth_back\") => {\n",
+    find: '                Some(back) if self.compiled_step(ty, back, "nth_back") => {\n',
+    replace:
+      '                Some(back) if false && self.compiled_step(ty, back, "nth_back") => {\n',
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
   {
     name: "step-by-made-by-nth-backless",
-    breaks: "a range's `step_by(n).rev()`, `$stepBy(range, n)`, isn't made knowing its back, and is refused (#231)",
+    breaks:
+      "a range's `step_by(n).rev()`, `$stepBy(range, n)`, isn't made knowing its back, and is refused (#231)",
     file: "src/lower/iterators/knowing.rs",
-    find: "            && callee.helper_name() == Some(\"$stepBy\")\n            && let [source_value, step] = args.as_slice()\n",
-    replace: "            && callee.helper_name() == Some(\"$stepByNot\")\n            && let [source_value, step] = args.as_slice()\n",
+    find: '            && callee.helper_name() == Some("$stepBy")\n            && let [source_value, step] = args.as_slice()\n',
+    replace:
+      '            && callee.helper_name() == Some("$stepByNot")\n            && let [source_value, step] = args.as_slice()\n',
     tests: ["test/corpus.test.ts", "-t", "^rev_step_by.rs$"],
   },
   {
@@ -423,123 +524,189 @@ export const mutations: Mutation[] = [
     breaks: "a held `Rev` closed, or dropped, drops nothing it holds",
     file: "src/lower/iterators/knowing.rs",
     find: "            if !body.is_empty() {\n                props.push(crate::js::Prop::Field(\n",
-    replace: "            if false {\n                props.push(crate::js::Prop::Field(\n",
+    replace:
+      "            if false {\n                props.push(crate::js::Prop::Field(\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std"],
   },
   {
     name: "in-place-adapter-made-knowing",
-    breaks: "an `enumerate()` made in place is given std's compiled back, which it hasn't, where a `rev()` past it asks",
+    breaks:
+      "an `enumerate()` made in place is given std's compiled back, which it hasn't, where a `rev()` past it asks",
     file: "src/lower/iterators/knowing.rs",
     find: "        if self.compiled_struct_at(ty, span) && !made_in_place(&it) {\n",
     replace: "        if self.compiled_struct_at(ty, span) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(flatten_from_its_back|flatten_of_iterators_from_back).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(flatten_from_its_back|flatten_of_iterators_from_back).rs$",
+    ],
   },
   {
     name: "compiled-rfold-unasked",
-    breaks: "a held `Map` given to a compiled `fuse()` is folded from its back by each `next_back`, not its own `rfold`, which the crate's own passes on",
+    breaks:
+      "a held `Map` given to a compiled `fuse()` is folded from its back by each `next_back`, not its own `rfold`, which the crate's own passes on",
     file: "src/lower/iterators/knowing.rs",
     find: "        Ok(compiled.then_some(found))\n",
-    replace: "        Ok(compiled.then_some(found).filter(|_| method != \"rfold\"))\n",
+    replace:
+      '        Ok(compiled.then_some(found).filter(|_| method != "rfold"))\n',
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^(own_back_through_adapters).rs$"],
   },
 
   {
     name: "reversed-held-made-again",
-    breaks: "a variable's `rev()` of the crate's iterator, whose form isn't there, is made again as if it were the iterator itself: a wrong answer, not refused",
+    breaks:
+      "a variable's `rev()` of the crate's iterator, whose form isn't there, is made again as if it were the iterator itself: a wrong answer, not refused",
     file: "src/lower/iterators/knowing.rs",
     find: "        let Some(value) = crate::lower::iterators::stepped_form(&value).cloned() else {\n",
-    replace: "        let Some(value) = crate::lower::iterators::stepped_form(&value).cloned().or(Some(value)) else {\n",
+    replace:
+      "        let Some(value) = crate::lower::iterators::stepped_form(&value).cloned().or(Some(value)) else {\n",
     tests: ["test/diagnostics.test.ts", "-t", "held rev of the crate"],
   },
   {
     name: "reversed-unknowing-length",
-    breaks: "an in-place `rev()` of the crate's iterator asked its length past a `skip` isn't made knowing it: refused",
+    breaks:
+      "an in-place `rev()` of the crate's iterator asked its length past a `skip` isn't made knowing it: refused",
     file: "src/lower/iterators/knowing.rs",
     find: "            return self.reversed_user_knowing(value, source, (back, true), span);\n",
-    replace: "            return Err(self.unsupported(span, \"\"));\n",
-    tests: ["test/corpus.test.ts", "-t", "^(rev_in_place_through_adapters).rs$"],
+    replace: '            return Err(self.unsupported(span, ""));\n',
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(rev_in_place_through_adapters).rs$",
+    ],
   },
   {
     name: "reversed-unknowing-back",
-    breaks: "an in-place `rev()` of the crate's iterator asked its back past a `step_by` isn't made knowing it: refused",
+    breaks:
+      "an in-place `rev()` of the crate's iterator asked its back past a `step_by` isn't made knowing it: refused",
     file: "src/lower/iterators/knowing.rs",
     find: "            return self.reversed_user_knowing(value, source, (true, false), span);\n",
-    replace: "            return Err(self.unsupported(span, \"\"));\n",
-    tests: ["test/corpus.test.ts", "-t", "^(rev_in_place_through_adapters).rs$"],
+    replace: '            return Err(self.unsupported(span, ""));\n',
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(rev_in_place_through_adapters).rs$",
+    ],
   },
   {
     name: "reversed-own-folds-unswapped",
-    breaks: "an in-place `rev()` of the crate's iterator made knowing its back folds from its back by the iterator's own `fold`, not its `rfold`",
+    breaks:
+      "an in-place `rev()` of the crate's iterator made knowing its back folds from its back by the iterator's own `fold`, not its `rfold`",
     file: "src/lower/iterators/knowing.rs",
     find: "            fold: forward.rfold,\n",
     replace: "            fold: None,\n",
     snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^(rev_in_place_through_adapters|own_back_through_adapters).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(rev_in_place_through_adapters|own_back_through_adapters).rs$",
+    ],
   },
   {
     name: "flatten-of-iterators-unknowing",
-    breaks: "a flatten of an `Option`'s slice iterator, stepped from its back, is a JS `flatMap` that has no back: it throws (#260)",
+    breaks:
+      "a flatten of an `Option`'s slice iterator, stepped from its back, is a JS `flatMap` that has no back: it throws (#260)",
     file: "src/lower/iterators/knowing.rs",
     find: "                    if self.implements_iterator(inner)\n",
-    replace: "                    if false && self.implements_iterator(inner)\n",
-    tests: ["test/corpus.test.ts", "-t", "^(flatten_of_iterators_from_back).rs$"],
+    replace:
+      "                    if false && self.implements_iterator(inner)\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(flatten_of_iterators_from_back).rs$",
+    ],
   },
   {
     name: "flatten-of-iterators-each-called",
-    breaks: "a flatten of ranges made knowing its back takes what `each` gives as a range, and steps its JS iterator by its bounds",
+    breaks:
+      "a flatten of ranges made knowing its back takes what `each` gives as a range, and steps its JS iterator by its bounds",
     file: "src/lower/iterators/knowing.rs",
     find: "                    let knowing = self.as_double_ended(taken.clone(), inner, span)?;\n",
-    replace: "                    let knowing = self.as_double_ended(Expr::call(each.clone(), vec![Expr::var(item)]), inner, span)?;\n",
-    tests: ["test/corpus.test.ts", "-t", "^(flatten_of_iterators_from_back).rs$"],
+    replace:
+      "                    let knowing = self.as_double_ended(Expr::call(each.clone(), vec![Expr::var(item)]), inner, span)?;\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(flatten_of_iterators_from_back).rs$",
+    ],
   },
   {
     name: "compiled-fold-untaken",
-    breaks: "std's compiled `fold` of a `fuse()` isn't said to take it, so `$closing` drops what it held again after (ADR 0912)",
+    breaks:
+      "std's compiled `fold` of a `fuse()` isn't said to take it, so `$closing` drops what it held again after (ADR 0912)",
     file: "src/lower/iterators/knowing.rs",
-    find: "            takes.push(\"fold\");\n",
+    find: '            takes.push("fold");\n',
     replace: "",
-    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+    tests: [
+      "test/std-package.test.ts",
+      "-t",
+      "the committed @rust-js/std is std's bodies",
+    ],
   },
   {
     name: "compiled-count-unlisted",
-    breaks: "a held `enumerate()`'s `count` isn't std's compiled one, its source's own, so it steps each item (ADR 0912)",
+    breaks:
+      "a held `enumerate()`'s `count` isn't std's compiled one, its source's own, so it steps each item (ADR 0912)",
     file: "src/lower/iterators/knowing.rs",
-    find: "        if self.compiled_step(ty, iterator, \"count\") {\n            let (count, _) = self.user_next(ty, iterator, \"count\", span)?;\n",
-    replace: "        if false {\n            let (count, _) = self.user_next(ty, iterator, \"count\", span)?;\n",
-    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+    find: '        if self.compiled_step(ty, iterator, "count") {\n            let (count, _) = self.user_next(ty, iterator, "count", span)?;\n',
+    replace:
+      '        if false {\n            let (count, _) = self.user_next(ty, iterator, "count", span)?;\n',
+    tests: [
+      "test/std-package.test.ts",
+      "-t",
+      "the committed @rust-js/std is std's bodies",
+    ],
   },
   {
     name: "compiled-try-fold-unlisted",
-    breaks: "std's struct has no compiled `try_fold`, so std's default `nth` through it asks a `skip`'s source `nth(n)` where Rust's asks `nth(n - 1)` (ADR 0913)",
+    breaks:
+      "std's struct has no compiled `try_fold`, so std's default `nth` through it asks a `skip`'s source `nth(n)` where Rust's asks `nth(n - 1)` (ADR 0913)",
     file: "src/lower/iterators/knowing.rs",
-    find: "        if let Some(try_fold) = self.compiled_try_fold(ty, (iterator, \"try_fold\"), span)? {\n",
+    find: '        if let Some(try_fold) = self.compiled_try_fold(ty, (iterator, "try_fold"), span)? {\n',
     replace: "        if let Some(try_fold) = None::<Expr> {\n",
-    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+    tests: [
+      "test/std-package.test.ts",
+      "-t",
+      "the committed @rust-js/std is std's bodies",
+    ],
   },
   {
     name: "held-default-len-unknown",
-    breaks: "a held `skip()` reversed isn't given its length, std's default of its exact `size_hint` (ADR 0918)",
+    breaks:
+      "a held `skip()` reversed isn't given its length, std's default of its exact `size_hint` (ADR 0918)",
     file: "src/lower/iterators/knowing.rs",
-    find: "                    Some(trait_id) if method == \"len\" => self.default_len(ty, trait_id),\n",
+    find: '                    Some(trait_id) if method == "len" => self.default_len(ty, trait_id),\n',
     replace: "",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^held_adapters_by_ref.rs$"],
   },
   {
     name: "compiled-fold-given-no-unwind",
-    breaks: "a compiled std fold, a `Fuse`'s, is given no drop of its accumulator, so a stage's panic inside it leaves it undropped (#424)",
+    breaks:
+      "a compiled std fold, a `Fuse`'s, is given no drop of its accumulator, so a stage's panic inside it leaves it undropped (#424)",
     file: "src/lower/iterators/knowing.rs",
-    find: "        let dropped = vec![(acc, Expr::var(\"unwind\"))];\n",
-    replace: "        let dropped: Vec<(u32, Expr)> = vec![(acc, Expr::var(\"unwind\"))].into_iter().filter(|_| false).collect();\n",
-    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+    find: '        let dropped = vec![(acc, Expr::var("unwind"))];\n',
+    replace:
+      '        let dropped: Vec<(u32, Expr)> = vec![(acc, Expr::var("unwind"))].into_iter().filter(|_| false).collect();\n',
+    tests: [
+      "test/std-package.test.ts",
+      "-t",
+      "the committed @rust-js/std is std",
+    ],
   },
   {
     name: "compiled-try-fold-given-no-unwind",
-    breaks: "std's compiled `try_fold` of its struct, `TakeWhile`'s, which its `fold` is, is given no drop of its accumulator: a stage's panic leaves it undropped (#423)",
+    breaks:
+      "std's compiled `try_fold` of its struct, `TakeWhile`'s, which its `fold` is, is given no drop of its accumulator: a stage's panic leaves it undropped (#423)",
     file: "src/lower/iterators/knowing.rs",
-    find: "                drops: &[(acc, Expr::var(\"unwind\"))],\n",
-    replace: "                drops: &[(acc, Expr::var(\"unwind\"))][..0],\n",
-    tests: ["test/std-package.test.ts", "test/iterator-forms.test.ts", "-t", "the committed @rust-js/std is std|^generic_folds_unwind with"],
+    find: '                drops: &[(acc, Expr::var("unwind"))],\n',
+    replace: '                drops: &[(acc, Expr::var("unwind"))][..0],\n',
+    tests: [
+      "test/std-package.test.ts",
+      "test/iterator-forms.test.ts",
+      "-t",
+      "the committed @rust-js/std is std|^generic_folds_unwind with",
+    ],
   },
 ];

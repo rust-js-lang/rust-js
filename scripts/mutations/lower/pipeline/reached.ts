@@ -4,40 +4,62 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "marker-dictionary-written",
-    breaks: "an impl of a marker trait, or of bindings, writes its empty dictionary though nothing reads it",
+    breaks:
+      "an impl of a marker trait, or of bindings, writes its empty dictionary though nothing reads it",
     file: "src/lower/pipeline/reached.rs",
     find: "            super::super::recognition::known_derive(tcx, id)\n                || super::super::traits::is_marker(tcx, foreign, trait_id)\n",
     replace: "            super::super::recognition::known_derive(tcx, id)\n",
-    tests: ["test/bindings.test.ts", "-t", "binding method is read of the value"],
+    tests: [
+      "test/bindings.test.ts",
+      "-t",
+      "binding method is read of the value",
+    ],
   },
   {
     name: "generic-only-dictionary-kept-unread",
-    breaks: "a crate's `Deref` or operator impl's dictionary is written where nothing reads it",
+    breaks:
+      "a crate's `Deref` or operator impl's dictionary is written where nothing reads it",
     file: "src/lower/pipeline/reached.rs",
     find: "super::super::traits::read_only_generically(tcx, trait_of(id))",
     replace: "false",
-    tests: ["test/corpus.test.ts", "-t", "^(user_deref|as_deref|bitwise_operators).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(user_deref|as_deref|bitwise_operators).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "generic-only-methods-written-unreached",
-    breaks: "a `From` or `Deref` impl's method nothing calls is written as a function of its module, `eventPriorityFromI32_from`, which upstream's JS hasn't (ADR 0477, amended)",
+    breaks:
+      "a `From` or `Deref` impl's method nothing calls is written as a function of its module, `eventPriorityFromI32_from`, which upstream's JS hasn't (ADR 0477, amended)",
     file: "src/lower/pipeline/reached.rs",
     find: "                .flat_map(|id| std::iter::once(id).chain(tcx.associated_item_def_ids(id).iter().copied())),\n",
-    replace: "                .flat_map(|id| std::iter::once(id).chain(tcx.associated_item_def_ids(id).iter().copied().filter(|_| false))),\n",
-    tests: ["test/crates.test.ts", "-t", "a library's From impl nothing of its own calls"],
+    replace:
+      "                .flat_map(|id| std::iter::once(id).chain(tcx.associated_item_def_ids(id).iter().copied().filter(|_| false))),\n",
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "a library's From impl nothing of its own calls",
+    ],
   },
   {
     name: "identity-eq-written-unreached",
-    breaks: "a type equal only to itself has its `PartialEq`'s dictionary written, `fiberPartialEq`, where nothing reads it (ADR 0864, amended)",
+    breaks:
+      "a type equal only to itself has its `PartialEq`'s dictionary written, `fiberPartialEq`, where nothing reads it (ADR 0864, amended)",
     file: "src/lower/pipeline/reached.rs",
     find: "                || identity_eq(id, trait_id, false)\n",
     replace: "",
-    tests: ["test/lowering-collections.test.ts", "-t", "a type equal only to itself"],
+    tests: [
+      "test/lowering-collections.test.ts",
+      "-t",
+      "a type equal only to itself",
+    ],
   },
   {
     name: "identity-eq-dictionary-always-written",
-    breaks: "the dictionary of a `PartialEq` of `ptr::eq` without a `Hash` is written though nothing reads it",
+    breaks:
+      "the dictionary of a `PartialEq` of `ptr::eq` without a `Hash` is written though nothing reads it",
     file: "src/lower/pipeline/reached.rs",
     find: "                || identity_eq(id, trait_id, false)\n",
     replace: "                || identity_eq(id, trait_id, true)\n",
@@ -45,7 +67,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "instance-impl-kept-unused",
-    breaks: "an impl a consumer compiles writes its dictionary though only its method is called, `labelDebug` (ADR 0914, amended)",
+    breaks:
+      "an impl a consumer compiles writes its dictionary though only its method is called, `labelDebug` (ADR 0914, amended)",
     file: "src/lower/pipeline/reached.rs",
     find: "                || foreign.is_instance(id)\n        })\n",
     replace: "        })\n",
@@ -53,18 +76,29 @@ export const mutations: Mutation[] = [
   },
   {
     name: "own-name-fn-written",
-    breaks: "a fieldless enum's `pub(crate) fn name(self)`, each call of which is the value itself, is still written, `export const HookType = { name(hookType) { return hookType; } }`, which nothing reads (ADR 0264, amended)",
+    breaks:
+      "a fieldless enum's `pub(crate) fn name(self)`, each call of which is the value itself, is still written, `export const HookType = { name(hookType) { return hookType; } }`, which nothing reads (ADR 0264, amended)",
     file: "src/lower/pipeline/reached.rs",
     find: "                && super::super::patterns::gives_its_argument(tcx, function_bodies, id)\n",
-    replace: "                && super::super::patterns::gives_its_argument(tcx, function_bodies, id)\n                && false\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "an enum's own names of the crate alone, called, are written nowhere"],
+    replace:
+      "                && super::super::patterns::gives_its_argument(tcx, function_bodies, id)\n                && false\n",
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "an enum's own names of the crate alone, called, are written nowhere",
+    ],
   },
   {
     name: "own-name-fn-of-a-library-unwritten",
-    breaks: "a library's `pub fn as_str(self)` giving each variant its own name, which another crate's JS calls, is written nowhere (ADR 0264, amended)",
+    breaks:
+      "a library's `pub fn as_str(self)` giving each variant its own name, which another crate's JS calls, is written nowhere (ADR 0264, amended)",
     file: "src/lower/pipeline/reached.rs",
     find: "                && !super::super::library::reachable(tcx, id)\n                && super::super::patterns::gives_its_argument",
     replace: "                && super::super::patterns::gives_its_argument",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "an enum's own names of the crate alone, called, are written nowhere"],
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "an enum's own names of the crate alone, called, are written nowhere",
+    ],
   },
 ];

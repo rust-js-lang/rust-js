@@ -4,56 +4,67 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "signed-zero-pad-start",
-    breaks: "`{:05}` of a negative `i32` is `padStart`, `000-5` where Rust's is `-0005`",
+    breaks:
+      "`{:05}` of a negative `i32` is `padStart`, `000-5` where Rust's is `-0005`",
     file: "src/lower/format_spec.rs",
     find: "            if !spec.plus && !spec.alternate && num.is_some_and(|n| !n.signed() && !n.float()) {\n",
-    replace: "            if !spec.plus && !spec.alternate && num.is_some_and(|n| !n.float()) {\n",
+    replace:
+      "            if !spec.plus && !spec.alternate && num.is_some_and(|n| !n.float()) {\n",
     tests: ["test/corpus.test.ts", "-t", "^matrix_integers.rs$"],
   },
   {
     name: "unsigned-big-zero-padded-by-helper",
-    breaks: "`{:064b}` of a `u64` is `$zeroPad(..)`, not `.padStart(64, \"0\")` as a `u32`'s",
+    breaks:
+      '`{:064b}` of a `u64` is `$zeroPad(..)`, not `.padStart(64, "0")` as a `u32`\'s',
     file: "src/lower/format_spec.rs",
     find: "            if !spec.plus && !spec.alternate && num.is_some_and(|n| !n.signed() && !n.float()) {\n",
-    replace: "            if !spec.plus && !spec.alternate && num.is_some_and(|n| !n.signed() && !n.float() && !n.big()) {\n",
+    replace:
+      "            if !spec.plus && !spec.alternate && num.is_some_and(|n| !n.signed() && !n.float() && !n.big()) {\n",
     tests: ["test/corpus.test.ts", "-t", "^stock_orders.rs$"],
     snapshots: true,
   },
   {
     name: "options-not-handed-on",
-    breaks: "`{:8.2}` of a type whose `fmt` hands its `Formatter` on to an `f64`'s shows it unpadded, with all its digits",
+    breaks:
+      "`{:8.2}` of a type whose `fmt` hands its `Formatter` on to an `f64`'s shows it unpadded, with all its digits",
     file: "src/lower/format_spec.rs",
     find: "        if options && !leaf && matches!(kind, Std::FmtDisplay | Std::FmtDebug) {",
-    replace: "        if options && !leaf && matches!(kind, Std::FmtDisplay | Std::FmtDebug) && false {",
+    replace:
+      "        if options && !leaf && matches!(kind, Std::FmtDisplay | Std::FmtDebug) && false {",
     tests: ["test/corpus.test.ts", "-t", "options_handed_on|debug_options"],
   },
   {
     name: "options-parts-not-given",
-    breaks: "`{:5?}` of `Some(1)` gives the `1` no width, where Rust gives a `{:?}`'s options to each part",
+    breaks:
+      "`{:5?}` of `Some(1)` gives the `1` no width, where Rust gives a `{:?}`'s options to each part",
     file: "src/lower/format_spec.rs",
     find: "            return self.with_options(Some(options), |cx| match kind {",
-    replace: "            return self.with_options(None.filter(|_: &Options| options.spec.plus), |cx| match kind {",
+    replace:
+      "            return self.with_options(None.filter(|_: &Options| options.spec.plus), |cx| match kind {",
     tests: ["test/corpus.test.ts", "-t", "debug_options"],
   },
   {
     name: "options-object-without-align",
-    breaks: "`{:<9.1}` of a type whose `fmt` hands its `Formatter` on to a number pads it on the left",
+    breaks:
+      "`{:<9.1}` of a type whose `fmt` hands its `Formatter` on to a number pads it on the left",
     file: "src/lower/format_spec.rs",
-    find: "        field(\"align\", Expr::str(name));",
+    find: '        field("align", Expr::str(name));',
     replace: "        let _ = name;",
     tests: ["test/corpus.test.ts", "-t", "options_handed_on"],
   },
   {
     name: "options-object-without-precision",
-    breaks: "`{:8.2}` of a type whose `fmt` hands its `Formatter` on to an `f64` shows all its digits",
+    breaks:
+      "`{:8.2}` of a type whose `fmt` hands its `Formatter` on to an `f64` shows all its digits",
     file: "src/lower/format_spec.rs",
-    find: "        field(\"precision\", precision.clone());",
+    find: '        field("precision", precision.clone());',
     replace: "        let _ = precision;",
     tests: ["test/corpus.test.ts", "-t", "options_handed_on"],
   },
   {
     name: "debug-bool-unpadded",
-    breaks: "`{:5?}` of `true` isn't padded, where a `bool`'s `Debug` is its `Display`, which pads",
+    breaks:
+      "`{:5?}` of `true` isn't padded, where a `bool`'s `Debug` is its `Display`, which pads",
     file: "src/lower/format_spec.rs",
     find: "        let pads = num.is_some()\n            || ty.is_bool()\n",
     replace: "        let pads = num.is_some()\n",
@@ -61,7 +72,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "align-left-named-right",
-    breaks: "`f.align()` of `{:<5}` is `Right`, and a `{:<6}` given on pads on the left",
+    breaks:
+      "`f.align()` of `{:<5}` is `Right`, and a `{:<6}` given on pads on the left",
     file: "src/lower/format_spec.rs",
     find: "            '<' => \"Left\",",
     replace: "            '<' => \"Right\",",
@@ -69,7 +81,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "lower-exp-f32-as-f64",
-    breaks: "`{:e}` of an `f32` has its `f64`'s digits, `1.0000000149011612e-1` for `0.1`",
+    breaks:
+      "`{:e}` of an `f32` has its `f64`'s digits, `1.0000000149011612e-1` for `0.1`",
     file: "src/lower/format_spec.rs",
     find: "        args.push(Expr::bool(num == Num::F32));\n",
     replace: "        args.push(Expr::bool(false));\n",
@@ -80,7 +93,8 @@ export const mutations: Mutation[] = [
     breaks: "`{:E}` of infinity is `INF`, and of NaN `NAN`",
     file: "src/lower/format_spec.rs",
     find: '        true => Expr::call(Expr::member(text, "replace"), vec![Expr::str("e"), Expr::str("E")]),',
-    replace: '        true => Expr::call(Expr::member(text, "toUpperCase"), Vec::new()),',
+    replace:
+      '        true => Expr::call(Expr::member(text, "toUpperCase"), Vec::new()),',
     tests: ["test/corpus.test.ts", "-t", "exp_format"],
   },
   {
@@ -93,7 +107,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "other-fmt-options-dropped",
-    breaks: "`{:#x}` and `{:>10b}` of a type of the crate's give its impl no options, so no `0x` and no padding",
+    breaks:
+      "`{:#x}` and `{:>10b}` of a type of the crate's give its impl no options, so no `0x` and no padding",
     file: "src/lower/format_spec.rs",
     find: "            if !options && !spec.alternate {",
     replace: "            if true {",
@@ -104,12 +119,14 @@ export const mutations: Mutation[] = [
     breaks: "`{:#x}` of a generic `T` is given no options, so no `0x`",
     file: "src/lower/format_spec.rs",
     find: "            let pretty = if !options && !spec.alternate {\n                Pretty::Plain",
-    replace: "            let pretty = if true {\n                Pretty::Plain",
+    replace:
+      "            let pretty = if true {\n                Pretty::Plain",
     tests: ["test/corpus.test.ts", "-t", "generic_fmt_traits"],
   },
   {
     name: "i128-hex-signed",
-    breaks: "`{:x}` of a negative `i128` is `-80..`, not its two's complement bits",
+    breaks:
+      "`{:x}` of a negative `i128` is `-80..`, not its two's complement bits",
     file: "src/lower/format_spec.rs",
     find: "            Num::I128 => Num::U128.wrap(value),\n",
     replace: "",
@@ -117,23 +134,30 @@ export const mutations: Mutation[] = [
   },
   {
     name: "i32-hex-signed",
-    breaks: "`{:x}` of a negative `i32` is `-ff`, not its two's complement bits, `ffffff01`",
+    breaks:
+      "`{:x}` of a negative `i32` is `-ff`, not its two's complement bits, `ffffff01`",
     file: "src/lower/format_spec.rs",
     find: "            Num::I32 => Expr::bin(Op::UShr, value, Expr::int(0)),\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "format options pad, round and change base as Rust does"],
+    tests: [
+      "test/compiler.test.ts",
+      "-t",
+      "format options pad, round and change base as Rust does",
+    ],
   },
   {
     name: "shown-formatted",
     breaks: "`js::shown(msg)` in `format!` calls its `Display`, not `${msg}`",
     file: "src/lower/format_spec.rs",
     find: "        if self.displays_itself(ty) {\n            return (super::display::shown_text(value), text);\n",
-    replace: "        if false {\n            return (super::display::shown_text(value), text);\n",
+    replace:
+      "        if false {\n            return (super::display::shown_text(value), text);\n",
     tests: ["test/bindings.test.ts", "-t", "js::shown"],
   },
   {
     name: "shown-formatted-as-itself",
-    breaks: "`format!(\"{}\", js::shown(n))` is `n`, a number, not its text, `${n}`",
+    breaks:
+      '`format!("{}", js::shown(n))` is `n`, a number, not its text, `${n}`',
     file: "src/lower/format_spec.rs",
     find: "            return (super::display::shown_text(value), text);\n",
     replace: "            return (value, text);\n",
@@ -141,11 +165,16 @@ export const mutations: Mutation[] = [
   },
   {
     name: "pointer-p-refused",
-    breaks: "`{:p}` of a raw pointer is refused, even where an assertion that holds never shows it",
+    breaks:
+      "`{:p}` of a raw pointer is refused, even where an assertion that holds never shows it",
     file: "src/lower/format_spec.rs",
     find: "            Std::FmtPointer if self.is_handle_pointer(ty) => self.pointer_shown(value, ty, span)?,\n",
     replace: "",
-    tests: ["test/runtime-package.test.ts", "-t", "a pointer's address is shown"],
+    tests: [
+      "test/runtime-package.test.ts",
+      "-t",
+      "a pointer's address is shown",
+    ],
   },
   {
     name: "exp-precision-dropped",
@@ -168,12 +197,14 @@ export const mutations: Mutation[] = [
     breaks: "`{:x?}` of an integer shows it in decimal, as `{:?}` does",
     file: "src/lower/format_spec.rs",
     find: "            if num.is_some_and(|n| !n.float()) {\n                return self.format_value(value, (Std::FmtRadix(radix), ty), leaf, (width, precision), span);\n",
-    replace: "            if false {\n                return self.format_value(value, (Std::FmtRadix(radix), ty), leaf, (width, precision), span);\n",
+    replace:
+      "            if false {\n                return self.format_value(value, (Std::FmtRadix(radix), ty), leaf, (width, precision), span);\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_hex_integers.rs$"],
   },
   {
     name: "debug-hex-composite-not-given",
-    breaks: "`{:x?}` of a composite isn't given to its parts, so its integers show in decimal",
+    breaks:
+      "`{:x?}` of a composite isn't given to its parts, so its integers show in decimal",
     file: "src/lower/format_spec.rs",
     find: "            || spec.debug_hex.is_some()\n            || spec.align.is_some()\n",
     replace: "            || spec.align.is_some()\n",
@@ -181,23 +212,27 @@ export const mutations: Mutation[] = [
   },
   {
     name: "debug-hex-of-a-string-refused",
-    breaks: "`{:x?}` of a string inside a composite is refused, where std's `fmt` of it reads no hex flag",
+    breaks:
+      "`{:x?}` of a string inside a composite is refused, where std's `fmt` of it reads no hex flag",
     file: "src/lower/format_spec.rs",
     find: "            if self.is_debug_leaf(self.shown_type(ty)) {\n                return self.format_value(value, (kind, ty), leaf, (width, precision), span);\n            }\n",
-    replace: "            if self.is_debug_leaf(self.shown_type(ty)) {\n                return Err(self.unsupported(span, \"`{:x?}` of a string\"));\n            }\n",
+    replace:
+      '            if self.is_debug_leaf(self.shown_type(ty)) {\n                return Err(self.unsupported(span, "`{:x?}` of a string"));\n            }\n',
     tests: ["test/corpus.test.ts", "-t", "^debug_hex_composite.rs$"],
   },
   {
     name: "debug-hex-not-in-options",
-    breaks: "the options a writer is given don't say `{:x?}`, so a derived `Debug`'s integers show in decimal",
+    breaks:
+      "the options a writer is given don't say `{:x?}`, so a derived `Debug`'s integers show in decimal",
     file: "src/lower/format_spec.rs",
-    find: "        field(\"debugHex\", Expr::str(if radix == Radix::UpperHex { \"X\" } else { \"x\" }));\n",
+    find: '        field("debugHex", Expr::str(if radix == Radix::UpperHex { "X" } else { "x" }));\n',
     replace: "        let _ = radix;\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_hex_composite.rs$"],
   },
   {
     name: "format-of-box-not-what-it-holds",
-    breaks: "a placeholder's options of what's shown inside, an `impl Display + Debug` a function gives, aren't of its type: `{:?}` of it refused. A `Box`'s or an `Rc`'s, `through_boxes` takes through first (#197)",
+    breaks:
+      "a placeholder's options of what's shown inside, an `impl Display + Debug` a function gives, aren't of its type: `{:?}` of it refused. A `Box`'s or an `Rc`'s, `through_boxes` takes through first (#197)",
     file: "src/lower/format_spec.rs",
     find: "        let ty = self.shown_type(ty);\n        let (value, ty) = match kind {\n",
     replace: "        let (value, ty) = match kind {\n",
@@ -205,7 +240,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "display-handed-on-nothing",
-    breaks: "a placeholder's options of a `Wrapping`, a `Cow<str>`, a path's `display()` or a parse error are dropped, as std's `Display` hands them to what it shows",
+    breaks:
+      "a placeholder's options of a `Wrapping`, a `Cow<str>`, a path's `display()` or a parse error are dropped, as std's `Display` hands them to what it shows",
     file: "src/lower/format_spec.rs",
     find: "            Std::FmtDisplay => self.display_handed_on(value, ty),\n",
     replace: "            Std::FmtDisplay => (value, ty),\n",
@@ -215,13 +251,15 @@ export const mutations: Mutation[] = [
     name: "duration-precision-dropped",
     breaks: "`{:.2?}` of a `Duration` shows it in full, its precision dropped",
     file: "src/lower/format_spec.rs",
-    find: "                Expr::call(Expr::helper(\"$debugDuration\"), vec![value, digits])\n",
-    replace: "                Expr::call(Expr::helper(\"$debugDuration\"), vec![value])\n",
+    find: '                Expr::call(Expr::helper("$debugDuration"), vec![value, digits])\n',
+    replace:
+      '                Expr::call(Expr::helper("$debugDuration"), vec![value])\n',
     tests: ["test/corpus.test.ts", "-t", "^format_options_reached.rs$"],
   },
   {
     name: "align-without-width-dropped",
-    breaks: "`{:<}` without a width gives a `fmt` no options, so `f.align()` is `None`",
+    breaks:
+      "`{:<}` without a width gives a `fmt` no options, so `f.align()` is `None`",
     file: "src/lower/format_spec.rs",
     find: "            || spec.align.is_some()\n",
     replace: "",
@@ -229,7 +267,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "debug-text-precision-refused",
-    breaks: "`{:.1?}` of a `str` is refused, where std's `Debug` of it takes no precision",
+    breaks:
+      "`{:.1?}` of a `str` is refused, where std's `Debug` of it takes no precision",
     file: "src/lower/format_spec.rs",
     find: " && !(kind == Std::FmtDebug && self.is_string_like(ty)) => {\n",
     replace: " => {\n",

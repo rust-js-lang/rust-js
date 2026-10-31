@@ -4,87 +4,132 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "or-option-kept",
-    breaks: "`a.filter(..).or(b)` keeps the filter's `Option` in a `const option` before its `??`, where `??` reads it once: not `a || b`",
+    breaks:
+      "`a.filter(..).or(b)` keeps the filter's `Option` in a `const option` before its `??`, where `??` reads it once: not `a || b`",
     file: "src/lower/combinators.rs",
     find: "            Comb::Or if !values[0].has_effects() => Some(values.remove(0)),\n",
     replace: "            Comb::Or if false => Some(values.remove(0)),\n",
-    tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
+    tests: [
+      "test/lowering-options.test.ts",
+      "-t",
+      "filter by truth then a fallback",
+    ],
   },
   {
     name: "or-fallback-first",
-    breaks: "`a().or(b())` works out `b()` in a `const` before `a()`, where Rust works out `a()` first",
+    breaks:
+      "`a().or(b())` works out `b()` in a `const` before `a()`, where Rust works out `a()` first",
     file: "src/lower/combinators.rs",
     find: "            Comb::Or if !values[0].has_effects() => Some(values.remove(0)),\n",
-    replace: "            Comb::Or => Some(self.spill(\"fallback\", values.remove(0), out)),\n",
-    tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
+    replace:
+      '            Comb::Or => Some(self.spill("fallback", values.remove(0), out)),\n',
+    tests: [
+      "test/lowering-options.test.ts",
+      "-t",
+      "filter by truth then a fallback",
+    ],
   },
   {
     name: "filter-truth-unread",
-    breaks: "`o.filter(|v| js::truthy(Some(*v)))` keeps `o` in a `const option`, `option ? option : undefined`, not `o || undefined`, read once",
+    breaks:
+      "`o.filter(|v| js::truthy(Some(*v)))` keeps `o` in a `const option`, `option ? option : undefined`, not `o || undefined`, read once",
     file: "src/lower/combinators.rs",
     find: "            && tests_its_truth(&values[0])\n        {\n            return Ok(Some(Expr::bin(Op::Or,",
-    replace: "            && false\n        {\n            return Ok(Some(Expr::bin(Op::Or,",
-    tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
+    replace:
+      "            && false\n        {\n            return Ok(Some(Expr::bin(Op::Or,",
+    tests: [
+      "test/lowering-options.test.ts",
+      "-t",
+      "filter by truth then a fallback",
+    ],
   },
   {
     name: "filter-any-predicate-truth",
-    breaks: "a `filter` of any predicate is `o || undefined`: `filter(|v| !js::truthy(Some(*v)))` keeps what's truthy",
+    breaks:
+      "a `filter` of any predicate is `o || undefined`: `filter(|v| !js::truthy(Some(*v)))` keeps what's truthy",
     file: "src/lower/combinators.rs",
     find: "    matches!(&applied.tested().kind, js::ExprKind::Var(v) if v == HELD_SOME)\n",
     replace: "    applied.mentions_var(HELD_SOME)\n",
-    tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
+    tests: [
+      "test/lowering-options.test.ts",
+      "-t",
+      "filter by truth then a fallback",
+    ],
   },
   {
     name: "filter-truth-of-a-part",
-    breaks: "`filter(|v| js::truthy(Some(v.name)))`, a part's truth, is `o || undefined`, the `Option`'s own",
+    breaks:
+      "`filter(|v| js::truthy(Some(v.name)))`, a part's truth, is `o || undefined`, the `Option`'s own",
     file: "src/lower/combinators.rs",
     find: "    matches!(&applied.tested().kind, js::ExprKind::Var(v) if v == HELD_SOME)\n",
-    replace: "    matches!(&applied.tested().kind, js::ExprKind::Var(v) if v == HELD_SOME) || matches!(&applied.tested().kind, js::ExprKind::Member(..))\n",
-    tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
+    replace:
+      "    matches!(&applied.tested().kind, js::ExprKind::Var(v) if v == HELD_SOME) || matches!(&applied.tested().kind, js::ExprKind::Member(..))\n",
+    tests: [
+      "test/lowering-options.test.ts",
+      "-t",
+      "filter by truth then a fallback",
+    ],
   },
   {
     name: "unwrap-or-default-spilled",
-    breaks: "`get(n).unwrap_or_default()` keeps the call in a `const option` before its `??`",
+    breaks:
+      "`get(n).unwrap_or_default()` keeps the call in a `const option` before its `??`",
     file: "src/lower/combinators.rs",
     find: "            Comb::UnwrapOrDefault if !boxed => {",
     replace: "            Comb::UnwrapOrDefault if false && !boxed => {",
-    tests: ["test/lowering-options.test.ts", "-t", "unwrap_or_default of a call"],
+    tests: [
+      "test/lowering-options.test.ts",
+      "-t",
+      "unwrap_or_default of a call",
+    ],
   },
   {
     name: "unwrap-or-default-boxed-coalesced",
-    breaks: "a boxed `Some(None)`'s `unwrap_or_default()` is `??`, which gives the box",
+    breaks:
+      "a boxed `Some(None)`'s `unwrap_or_default()` is `??`, which gives the box",
     file: "src/lower/combinators.rs",
     find: "            Comb::UnwrapOrDefault if !boxed => {",
     replace: "            Comb::UnwrapOrDefault => {",
-    tests: ["test/lowering-options.test.ts", "-t", "unwrap_or_default of a call"],
+    tests: [
+      "test/lowering-options.test.ts",
+      "-t",
+      "unwrap_or_default of a call",
+    ],
   },
   {
     name: "boxed-subject-unopened",
-    breaks: "`map_or` of `Some(None)` gives its closure the box, not the `None` in it",
+    breaks:
+      "`map_or` of `Some(None)` gives its closure the box, not the `None` in it",
     file: "src/lower/combinators.rs",
     find: "        let value = if boxed {\n            self.some_value(subject.clone())\n        } else {",
-    replace: "        let value = if false {\n            self.some_value(subject.clone())\n        } else {",
+    replace:
+      "        let value = if false {\n            self.some_value(subject.clone())\n        } else {",
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
   },
   {
     name: "boxed-unwrap-or-else-coalesced",
-    breaks: "`unwrap_or_else` of `Some(None)` gives the box, `??`'s, not the `None` in it",
+    breaks:
+      "`unwrap_or_else` of `Some(None)` gives the box, `??`'s, not the `None` in it",
     file: "src/lower/combinators.rs",
-    find: "                let fallback = self.call_with(f, Vec::new(), \"fallback\", out);\n                match boxed {",
-    replace: "                let fallback = self.call_with(f, Vec::new(), \"fallback\", out);\n                match false {",
+    find: '                let fallback = self.call_with(f, Vec::new(), "fallback", out);\n                match boxed {',
+    replace:
+      '                let fallback = self.call_with(f, Vec::new(), "fallback", out);\n                match false {',
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
   },
   {
     name: "boxed-unwrap-or-default-coalesced",
-    breaks: "`unwrap_or_default` of `Some(None)` gives the box, not the `None` in it",
+    breaks:
+      "`unwrap_or_default` of `Some(None)` gives the box, not the `None` in it",
     file: "src/lower/combinators.rs",
     find: "                let fallback = self.default_value(inner, span)?;\n                Expr::cond(some, value, fallback)",
-    replace: "                let fallback = self.default_value(inner, span)?;\n                Expr::bin(Op::Coalesce, subject, fallback)",
+    replace:
+      "                let fallback = self.default_value(inner, span)?;\n                Expr::bin(Op::Coalesce, subject, fallback)",
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
   },
   {
     name: "extend-from-slice-shallow",
-    breaks: "`extend_from_slice` of structs shares each with the slice it's from",
+    breaks:
+      "`extend_from_slice` of structs shares each with the slice it's from",
     file: "src/lower/combinators.rs",
     find: "                let items = if self.needs_clone(item) {",
     replace: "                let items = if false && self.needs_clone(item) {",
@@ -92,7 +137,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "binary-search-by-key-reversed",
-    breaks: "`binary_search_by_key` compares the key sought with each item's, the other way round",
+    breaks:
+      "`binary_search_by_key` compares the key sought with each item's, the other way round",
     file: "src/lower/combinators.rs",
     find: "apply(compare, vec![mapped, key])",
     replace: "apply(compare, vec![key, mapped])",
@@ -102,13 +148,15 @@ export const mutations: Mutation[] = [
     name: "result-map-or-else-no-error",
     breaks: "a `Result`'s `map_or_else` calls its fallback without the error",
     file: "src/lower/combinators.rs",
-    find: "                let fallback = self.call_with(g, vec![inside()], \"fallback\", out);",
-    replace: "                let fallback = self.call_with(g, Vec::new(), \"fallback\", out);",
+    find: '                let fallback = self.call_with(g, vec![inside()], "fallback", out);',
+    replace:
+      '                let fallback = self.call_with(g, Vec::new(), "fallback", out);',
     tests: ["test/corpus.test.ts", "-t", "user_from_str"],
   },
   {
     name: "filter-drops-kept",
-    breaks: "`filter` drops the value it keeps too, so its destructor runs while it's still in use",
+    breaks:
+      "`filter` drops the value it keeps too, so its destructor runs while it's still in use",
     file: "src/lower/combinators.rs",
     find: "StmtKind::If(Expr::bin(Op::And, some, unkept), drop, None)",
     replace: "StmtKind::If(some, drop, None)",
@@ -124,7 +172,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "concat-of-parts-flattened",
-    breaks: "`[path, &[last]].concat()` is `[path, [last]].flat()` of an array kept first, where JS writes `[...path, last]`",
+    breaks:
+      "`[path, &[last]].concat()` is `[path, [last]].flat()` of an array kept first, where JS writes `[...path, last]`",
     file: "src/lower/combinators.rs",
     find: "        if comb == Comb::Concat\n",
     replace: "        if comb == Comb::Concat && false\n",
@@ -132,10 +181,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "map-or-nullish-kept",
-    breaks: "`map_or(d, |(_, f)| f)` is `o != null ? o[1] : d`, where a `match` of it is `e?.[1] ?? d`",
+    breaks:
+      "`map_or(d, |(_, f)| f)` is `o != null ? o[1] : d`, where a `match` of it is `e?.[1] ?? d`",
     file: "src/lower/combinators.rs",
     find: "                match option.filter(|_| !boxed).and_then(|(name, option, spilled)| {\n",
-    replace: "                match option.filter(|_| false).and_then(|(name, option, spilled)| {\n",
+    replace:
+      "                match option.filter(|_| false).and_then(|(name, option, spilled)| {\n",
     tests: ["test/lowering-branches.test.ts", "-t", "only gives a value"],
   },
   {
@@ -159,7 +210,8 @@ export const mutations: Mutation[] = [
     breaks: "`inspect` calls its function of a `None` too",
     file: "src/lower/combinators.rs",
     find: "                out.push(StmtKind::If(test, call, None).at(self.js_span(span)));\n",
-    replace: "                out.push(StmtKind::If(Expr::bool(true), call, None).at(self.js_span(span)));\n",
+    replace:
+      "                out.push(StmtKind::If(Expr::bool(true), call, None).at(self.js_span(span)));\n",
     tests: ["test/corpus.test.ts", "-t", "option_result_methods"],
   },
   {
@@ -183,7 +235,8 @@ export const mutations: Mutation[] = [
     breaks: "`is_ok_and` drops by its `Ok`'s type, not its `Err`'s",
     file: "src/lower/combinators.rs",
     find: "                if self.drops(generic_args.type_at(usize::from(comb == Comb::IsOkAnd))) != Drops::Nothing =>",
-    replace: "                if self.drops(generic_args.type_at(usize::from(comb != Comb::IsOkAnd))) != Drops::Nothing =>",
+    replace:
+      "                if self.drops(generic_args.type_at(usize::from(comb != Comb::IsOkAnd))) != Drops::Nothing =>",
     tests: ["test/corpus.test.ts", "-t", "combinators_owned_drops"],
   },
   {
@@ -204,11 +257,13 @@ export const mutations: Mutation[] = [
   },
   {
     name: "result-as-mut-copied",
-    breaks: "`as_mut()` of a `Result` of a number gives the number, not a handle",
+    breaks:
+      "`as_mut()` of a `Result` of a number gives the number, not a handle",
     file: "src/lower/combinators.rs",
     find: "                    true => Expr::handle(inside()),\n                    false => inside(),",
-    replace: "                    true => inside(),\n                    false => inside(),",
-    tests: ["test/corpus.test.ts","-t","option_result_mut"],
+    replace:
+      "                    true => inside(),\n                    false => inside(),",
+    tests: ["test/corpus.test.ts", "-t", "option_result_mut"],
   },
   {
     name: "result-as-mut-tag-ok",
@@ -216,15 +271,16 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators.rs",
     find: "                            result::tagged(result::tag(subject.clone()), ok)",
     replace: "                            result::ok(ok)",
-    tests: ["test/corpus.test.ts","-t","option_result_mut"],
+    tests: ["test/corpus.test.ts", "-t", "option_result_mut"],
   },
   {
     name: "result-as-mut-mixed-err",
-    breaks: "`as_mut()` of a `Result` of a number and an object is always `Err`",
+    breaks:
+      "`as_mut()` of a `Result` of a number and an object is always `Err`",
     file: "src/lower/combinators.rs",
     find: "                            Expr::cond(tag(true), result::ok(ok), result::err(err))",
     replace: "                            result::err(err)",
-    tests: ["test/corpus.test.ts","-t","option_result_mut"],
+    tests: ["test/corpus.test.ts", "-t", "option_result_mut"],
   },
   {
     name: "as-deref-rc-rebuilt",
@@ -232,7 +288,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators.rs",
     find: "(self.is_rc(inner) && self.counted_rc(inner).is_none()) || ",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","^as_deref\\.rs"],
+    tests: ["test/corpus.test.ts", "-t", "^as_deref\\.rs"],
   },
   {
     name: "as-deref-result-unwrapped",
@@ -240,22 +296,24 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators.rs",
     find: "                    None => Expr::cond(tag(true), result::ok(pointee), subject),",
     replace: "                    None => pointee,",
-    tests: ["test/corpus.test.ts","-t","as_deref_counted"],
+    tests: ["test/corpus.test.ts", "-t", "as_deref_counted"],
   },
   {
-    "name": "unwrap-or-else-option-kept",
-    "breaks": "`unwrap_or_else` of a call keeps it in a `const option` first, where `??` reads it once",
-    "file": "src/lower/combinators.rs",
-    "find": "            Comb::UnwrapOrElse if !boxed => Some(",
-    "replace": "            Comb::UnwrapOrElse if !boxed && false => Some(",
-    "tests": ["test/lowering-options.test.ts", "-t", "unwrap_or_else of a call"]
+    name: "unwrap-or-else-option-kept",
+    breaks:
+      "`unwrap_or_else` of a call keeps it in a `const option` first, where `??` reads it once",
+    file: "src/lower/combinators.rs",
+    find: "            Comb::UnwrapOrElse if !boxed => Some(",
+    replace: "            Comb::UnwrapOrElse if !boxed && false => Some(",
+    tests: ["test/lowering-options.test.ts", "-t", "unwrap_or_else of a call"],
   },
   {
     name: "truncate-given-no-drop",
     breaks: "`truncate` of items with a destructor is given no drop",
     file: "src/lower/combinators.rs",
-    find: "            Comb::Truncate => helper(\"$truncate\", self.dropping(vec![subject, next()], subject_ty, span)?),\n",
-    replace: "            Comb::Truncate => helper(\"$truncate\", vec![subject, next()]),\n",
+    find: '            Comb::Truncate => helper("$truncate", self.dropping(vec![subject, next()], subject_ty, span)?),\n',
+    replace:
+      '            Comb::Truncate => helper("$truncate", vec![subject, next()]),\n',
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
   },
   {
@@ -268,7 +326,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "made-ok-unwrap-or-else-tested",
-    breaks: "`unwrap_or_else(f)` of an `Ok` just made, a lock's, tests it, where `unwrap()` of one is its value",
+    breaks:
+      "`unwrap_or_else(f)` of an `Ok` just made, a lock's, tests it, where `unwrap()` of one is its value",
     file: "src/lower/combinators.rs",
     find: "        if let Comb::ResultUnwrapOrElse | Comb::ResultUnwrapOrDefault = comb {\n",
     replace: "        if let Comb::ResultUnwrapOrDefault = comb {\n",
@@ -277,18 +336,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "find-map-leaves-drops",
-    breaks: "`find_map` of items with a destructor is refused, though it gives each to its function",
+    breaks:
+      "`find_map` of items with a destructor is refused, though it gives each to its function",
     file: "src/lower/combinators.rs",
     find: "            IterComb::Partition | IterComb::FindMap | IterComb::MaxBy(_) | IterComb::MaxByKey(_) | IterComb::Nth\n",
-    replace: "            IterComb::Partition | IterComb::MaxBy(_) | IterComb::MaxByKey(_) | IterComb::Nth\n",
+    replace:
+      "            IterComb::Partition | IterComb::MaxBy(_) | IterComb::MaxByKey(_) | IterComb::Nth\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps_drop.rs$"],
   },
   {
     name: "max-by-leaves-drops",
-    breaks: "`max_by` of items with a destructor is refused, though it drops each it passes over",
+    breaks:
+      "`max_by` of items with a destructor is refused, though it drops each it passes over",
     file: "src/lower/combinators.rs",
     find: "            IterComb::Partition | IterComb::FindMap | IterComb::MaxBy(_) | IterComb::MaxByKey(_) | IterComb::Nth\n",
-    replace: "            IterComb::Partition | IterComb::FindMap | IterComb::MaxByKey(_) | IterComb::Nth\n",
+    replace:
+      "            IterComb::Partition | IterComb::FindMap | IterComb::MaxByKey(_) | IterComb::Nth\n",
     tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
   },
   {
@@ -296,12 +359,14 @@ export const mutations: Mutation[] = [
     breaks: "`zip` of items with a destructor is refused",
     file: "src/lower/combinators.rs",
     find: "            IterComb::Zip\n                | IterComb::Chain\n                | IterComb::FlatMap\n",
-    replace: "            IterComb::Chain\n                | IterComb::FlatMap\n",
+    replace:
+      "            IterComb::Chain\n                | IterComb::FlatMap\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
   },
   {
     name: "map-or-default-as-function",
-    breaks: "`map_or`'s default is taken for its function, which a `None` leaves undropped",
+    breaks:
+      "`map_or`'s default is taken for its function, which a `None` leaves undropped",
     file: "src/lower/combinators.rs",
     find: "        Std::Comb(Comb::MapOr) => &[(2, Unused::None)],\n",
     replace: "        Std::Comb(Comb::MapOr) => &[(1, Unused::None)],\n",
@@ -309,18 +374,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "map-or-else-functions-swapped",
-    breaks: "`map_or_else`'s default is dropped where it ran, and its function where it ran",
+    breaks:
+      "`map_or_else`'s default is dropped where it ran, and its function where it ran",
     file: "src/lower/combinators.rs",
     find: "        Std::Comb(Comb::MapOrElse) => &[(1, Unused::Some), (2, Unused::None)],\n",
-    replace: "        Std::Comb(Comb::MapOrElse) => &[(1, Unused::None), (2, Unused::Some)],\n",
+    replace:
+      "        Std::Comb(Comb::MapOrElse) => &[(1, Unused::None), (2, Unused::Some)],\n",
     tests: ["test/corpus.test.ts", "-t", "^unrun_function_drops.rs$"],
   },
   {
     name: "ok-or-else-unrun-kept",
-    breaks: "`ok_or_else` of a `Some` leaves its function, and what it holds, undropped",
+    breaks:
+      "`ok_or_else` of a `Some` leaves its function, and what it holds, undropped",
     file: "src/lower/combinators.rs",
     find: "        Std::UnwrapOr | Std::Comb(Comb::UnwrapOrElse | Comb::OkOr | Comb::OkOrElse | Comb::Or | Comb::OrElse) => {\n",
-    replace: "        Std::UnwrapOr | Std::Comb(Comb::UnwrapOrElse | Comb::OkOr | Comb::Or | Comb::OrElse) => {\n",
+    replace:
+      "        Std::UnwrapOr | Std::Comb(Comb::UnwrapOrElse | Comb::OkOr | Comb::Or | Comb::OrElse) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^unrun_function_drops.rs$"],
   },
   {
@@ -333,10 +402,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "result-or-else-unrun-kept",
-    breaks: "a `Result`'s `or_else` of an `Ok` leaves its function, and what it holds, undropped",
+    breaks:
+      "a `Result`'s `or_else` of an `Ok` leaves its function, and what it holds, undropped",
     file: "src/lower/combinators.rs",
     find: "        Std::Comb(Comb::MapErr | Comb::ResultUnwrapOrElse | Comb::IsErrAnd | Comb::ResultOrElse) => &[(1, Unused::Ok)],\n",
-    replace: "        Std::Comb(Comb::MapErr | Comb::ResultUnwrapOrElse | Comb::IsErrAnd) => &[(1, Unused::Ok)],\n",
+    replace:
+      "        Std::Comb(Comb::MapErr | Comb::ResultUnwrapOrElse | Comb::IsErrAnd) => &[(1, Unused::Ok)],\n",
     tests: ["test/corpus.test.ts", "-t", "^unrun_function_drops.rs$"],
   },
   {
@@ -344,7 +415,8 @@ export const mutations: Mutation[] = [
     breaks: "`Some(a).unwrap_or(b)` leaves `b` undropped",
     file: "src/lower/combinators.rs",
     find: "        Std::UnwrapOr | Std::Comb(Comb::UnwrapOrElse | Comb::OkOr | Comb::OkOrElse | Comb::Or | Comb::OrElse) => {\n",
-    replace: "        Std::Comb(Comb::UnwrapOrElse | Comb::OkOr | Comb::OkOrElse | Comb::Or | Comb::OrElse) => {\n",
+    replace:
+      "        Std::Comb(Comb::UnwrapOrElse | Comb::OkOr | Comb::OkOrElse | Comb::Or | Comb::OrElse) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^unused_value_drops.rs$"],
   },
   {
@@ -352,7 +424,8 @@ export const mutations: Mutation[] = [
     breaks: "`Some(6).ok_or(e)` leaves `e` undropped",
     file: "src/lower/combinators.rs",
     find: "        Std::UnwrapOr | Std::Comb(Comb::UnwrapOrElse | Comb::OkOr | Comb::OkOrElse | Comb::Or | Comb::OrElse) => {\n",
-    replace: "        Std::UnwrapOr | Std::Comb(Comb::UnwrapOrElse | Comb::OkOrElse | Comb::Or | Comb::OrElse) => {\n",
+    replace:
+      "        Std::UnwrapOr | Std::Comb(Comb::UnwrapOrElse | Comb::OkOrElse | Comb::Or | Comb::OrElse) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^unused_value_drops.rs$"],
   },
   {
@@ -360,7 +433,8 @@ export const mutations: Mutation[] = [
     breaks: "`Some(a).or(b)` leaves `b` undropped",
     file: "src/lower/combinators.rs",
     find: "        Std::UnwrapOr | Std::Comb(Comb::UnwrapOrElse | Comb::OkOr | Comb::OkOrElse | Comb::Or | Comb::OrElse) => {\n",
-    replace: "        Std::UnwrapOr | Std::Comb(Comb::UnwrapOrElse | Comb::OkOr | Comb::OkOrElse | Comb::OrElse) => {\n",
+    replace:
+      "        Std::UnwrapOr | Std::Comb(Comb::UnwrapOrElse | Comb::OkOr | Comb::OkOrElse | Comb::OrElse) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^unused_value_drops.rs$"],
   },
   {
@@ -373,7 +447,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "result-or-other-kept",
-    breaks: "`Ok(a).unwrap_or(b)` and `Ok(a).or(r)` of a `Result` leave `b` and `r` undropped",
+    breaks:
+      "`Ok(a).unwrap_or(b)` and `Ok(a).or(r)` of a `Result` leave `b` and `r` undropped",
     file: "src/lower/combinators.rs",
     find: "        Std::ResultOr | Std::Comb(Comb::ResultOr) => &[(1, Unused::Ok)],\n",
     replace: "",
@@ -384,7 +459,8 @@ export const mutations: Mutation[] = [
     breaks: "`Some(a).and(b)` leaves `a` undropped",
     file: "src/lower/combinators.rs",
     find: "                self.kept_or(none(), Expr::undefined(), given_up, other, span, out)?\n",
-    replace: "                let _ = given_up;\n                Expr::cond(some, other, Expr::undefined())\n",
+    replace:
+      "                let _ = given_up;\n                Expr::cond(some, other, Expr::undefined())\n",
     tests: ["test/corpus.test.ts", "-t", "^and_value_drops.rs$"],
   },
   {
@@ -408,12 +484,14 @@ export const mutations: Mutation[] = [
     breaks: "`Ok(v).and(r)` of a `Result` leaves `v` undropped",
     file: "src/lower/combinators.rs",
     find: "                let given_up = (inside(), generic_args.type_at(usize::from(ok)));\n",
-    replace: "                let given_up = (inside(), generic_args.type_at(1));\n",
+    replace:
+      "                let given_up = (inside(), generic_args.type_at(1));\n",
     tests: ["test/corpus.test.ts", "-t", "^and_value_drops.rs$"],
   },
   {
     name: "unwrap-or-default-err-kept",
-    breaks: "`unwrap_or_default` of an `Err` with a destructor drops none of it",
+    breaks:
+      "`unwrap_or_default` of an `Err` with a destructor drops none of it",
     file: "src/lower/combinators.rs",
     find: "                self.kept_or(tag(true), inside(), given_up, fallback, span, out)?\n",
     replace: "                Expr::cond(tag(true), inside(), fallback)\n",
@@ -421,7 +499,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "flat-map-sources-refused",
-    breaks: "`flat_map` and `flatten` of a source of items with a destructor are refused",
+    breaks:
+      "`flat_map` and `flatten` of a source of items with a destructor are refused",
     file: "src/lower/combinators.rs",
     find: "                | IterComb::FlatMap\n                | IterComb::Flatten\n",
     replace: "",
@@ -429,7 +508,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "map-while-holds-none",
-    breaks: "`map_while` of items with a destructor is refused, its source never closed",
+    breaks:
+      "`map_while` of items with a destructor is refused, its source never closed",
     file: "src/lower/combinators.rs",
     find: "                | IterComb::TakeWhile\n                | IterComb::MapWhile\n",
     replace: "                | IterComb::TakeWhile\n",
@@ -445,7 +525,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "filter-map-holds-none",
-    breaks: "`filter_map`'s source isn't closed, and drops none of what it hasn't given",
+    breaks:
+      "`filter_map`'s source isn't closed, and drops none of what it hasn't given",
     file: "src/lower/combinators.rs",
     find: "                | IterComb::Scan\n                | IterComb::FilterMap\n",
     replace: "                | IterComb::Scan\n",
@@ -453,16 +534,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "extend-copies-first",
-    breaks: "`extend` copies every item into an array before it pushes any, `Array.from(items)`, where it pushes each as it's stepped",
+    breaks:
+      "`extend` copies every item into an array before it pushes any, `Array.from(items)`, where it pushes each as it's stepped",
     file: "src/lower/combinators.rs",
-    find: "        Ok(Expr::call_helper(\"$extend\", vec![collection, items]))\n",
-    replace: "        Ok(Expr::call_helper(\"$extend\", vec![collection, Expr::call(Expr::member(Expr::var(\"Array\"), \"from\"), vec![items])]))\n",
+    find: '        Ok(Expr::call_helper("$extend", vec![collection, items]))\n',
+    replace:
+      '        Ok(Expr::call_helper("$extend", vec![collection, Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items])]))\n',
     tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
     snapshots: true,
   },
   {
     name: "extend-of-array-iterator-kept",
-    breaks: "`extend` of an array's iterator made here keeps `$iter(xs)`, not the array",
+    breaks:
+      "`extend` of an array's iterator made here keeps `$iter(xs)`, not the array",
     file: "src/lower/combinators.rs",
     find: "        let items = super::iterators::fresh_iter_source(&items).cloned().unwrap_or(items);\n",
     replace: "",
@@ -471,31 +555,45 @@ export const mutations: Mutation[] = [
   },
   {
     name: "is-some-and-compared-tested",
-    breaks: "`is_some_and` of a comparison with what's never nullish still tests the `Some` first, `option != null && option === task`",
+    breaks:
+      "`is_some_and` of a comparison with what's never nullish still tests the `Some` first, `option != null && option === task`",
     file: "src/lower/combinators.rs",
     find: "        if comb == Comb::IsSomeAnd && !boxed && self.option_of(subject_ty).is_some() {\n",
-    replace: "        if comb == Comb::IsSomeAnd && false && self.option_of(subject_ty).is_some() {\n",
-    tests: ["test/lowering-options.test.ts", "-t", "is_some_and of an equality"],
+    replace:
+      "        if comb == Comb::IsSomeAnd && false && self.option_of(subject_ty).is_some() {\n",
+    tests: [
+      "test/lowering-options.test.ts",
+      "-t",
+      "is_some_and of an equality",
+    ],
   },
   {
     name: "is-some-and-unread-dropped",
-    breaks: "`is_some_and(|_| n == 5)` of a `None` is `n === 5`, its predicate run where Rust's isn't",
+    breaks:
+      "`is_some_and(|_| n == 5)` of a `None` is `n === 5`, its predicate run where Rust's isn't",
     file: "src/lower/combinators.rs",
     find: "    ((held(a) || held(b)) && mentions == 1).then_some(applied)\n",
     replace: "    (mentions <= 1).then_some(applied)\n",
-    tests: ["test/lowering-options.test.ts", "-t", "is_some_and of an equality"],
+    tests: [
+      "test/lowering-options.test.ts",
+      "-t",
+      "is_some_and of an equality",
+    ],
   },
   {
     name: "err-some-unboxed",
-    breaks: "`err()` of a `Result<_, ()>` is the error itself, `undefined`, so `Some(())` is `None`",
+    breaks:
+      "`err()` of a `Result<_, ()>` is the error itself, `undefined`, so `Some(())` is `None`",
     file: "src/lower/combinators.rs",
     find: "                let error = self.held_in_option(inside(), generic_args.type_at(1));\n                Expr::cond(",
-    replace: "                let error = inside();\n                Expr::cond(",
+    replace:
+      "                let error = inside();\n                Expr::cond(",
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_results.rs$"],
   },
   {
     name: "heap-extend-unordered",
-    breaks: "`extend` of a `BinaryHeap` appends its items as an array's does, out of heap order, so `pop` isn't the greatest",
+    breaks:
+      "`extend` of a `BinaryHeap` appends its items as an array's does, out of heap order, so `pop` isn't the greatest",
     file: "src/lower/combinators.rs",
     find: "        if self.is_std_type(into, crate::lower::recognition::StdItem::BinaryHeap) {\n",
     replace: "        if false {\n",
@@ -503,7 +601,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "deque-swap-unmarked",
-    breaks: "a `VecDeque`'s `swap` out of bounds panics with a slice's index message, not its own assertion",
+    breaks:
+      "a `VecDeque`'s `swap` out of bounds panics with a slice's index message, not its own assertion",
     file: "src/lower/combinators.rs",
     find: "            args.push(Expr::bool(true));\n        }\n        args\n",
     replace: "        }\n        args\n",
@@ -511,7 +610,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dedup-key-by-identity",
-    breaks: "`dedup_by_key` compares its keys by `===`, so a tuple key is never equal to another",
+    breaks:
+      "`dedup_by_key` compares its keys by `===`, so a tuple key is never equal to another",
     file: "src/lower/combinators.rs",
     find: "                let same = self.eq_value(ka, kb, key_ty, span, &mut body)?;\n",
     replace: "                let same = Expr::bin(Op::Eq, ka, kb);\n",
@@ -519,23 +619,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "and-then-of-filter-held",
-    breaks: "`value.filter(..).and_then(f)` holds the filter's `Option` in a `const option`",
+    breaks:
+      "`value.filter(..).and_then(f)` holds the filter's `Option` in a `const option`",
     file: "src/lower/combinators.rs",
     find: "            && let Some((kept, value)) = super::std_types::option::filtered(subject)\n",
-    replace: "            && let Some((kept, value)) = super::std_types::option::filtered(subject).filter(|_| false)\n",
+    replace:
+      "            && let Some((kept, value)) = super::std_types::option::filtered(subject).filter(|_| false)\n",
     tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
   },
   {
     name: "search-key-type-of-owner",
-    breaks: "`binary_search_by_key`'s key type is its owner's second, a deque's allocator, so a deque's is refused",
+    breaks:
+      "`binary_search_by_key`'s key type is its owner's second, a deque's allocator, so a deque's is refused",
     file: "src/lower/combinators.rs",
-    find: "    (generic_args.types().rev().nth(1)).expect(\"`binary_search_by_key` has a key type\")\n",
-    replace: "    (generic_args.types().nth(1)).expect(\"`binary_search_by_key` has a key type\")\n",
+    find: '    (generic_args.types().rev().nth(1)).expect("`binary_search_by_key` has a key type")\n',
+    replace:
+      '    (generic_args.types().nth(1)).expect("`binary_search_by_key` has a key type")\n',
     tests: ["test/corpus.test.ts", "-t", "^deque_search_by_key.rs$"],
   },
   {
     name: "list-extend-steps",
-    breaks: "`extend` of a `LinkedList` by the crate's iterator steps it by `next`, not by its own `fold`",
+    breaks:
+      "`extend` of a `LinkedList` by the crate's iterator steps it by `next`, not by its own `fold`",
     file: "src/lower/combinators.rs",
     find: "            true => self.by_its_fold(items, iterable),\n",
     replace: "            true => items,\n",
@@ -543,7 +648,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "nth-leaves-some",
-    breaks: "`nth` of a generic iterator given one with a destructor is refused, as if it might leave it undropped",
+    breaks:
+      "`nth` of a generic iterator given one with a destructor is refused, as if it might leave it undropped",
     file: "src/lower/combinators.rs",
     find: " | IterComb::MaxByKey(_) | IterComb::Nth\n",
     replace: " | IterComb::MaxByKey(_)\n",
@@ -551,32 +657,46 @@ export const mutations: Mutation[] = [
   },
   {
     name: "extend-written-helper",
-    breaks: "a `Vec`'s `extend` of an array written in place is the runtime's `$extend(v, [a, b])`, not `v.push(a, b)`",
+    breaks:
+      "a `Vec`'s `extend` of an array written in place is the runtime's `$extend(v, [a, b])`, not `v.push(a, b)`",
     file: "src/lower/combinators.rs",
     find: "            && matches!(items.kind, js::ExprKind::Array(_))\n",
-    replace: "            && matches!(items.kind, js::ExprKind::Array(_)) && false\n",
-    tests: ["test/lowering-collections.test.ts", "-t", "extend of an array written in place"],
+    replace:
+      "            && matches!(items.kind, js::ExprKind::Array(_)) && false\n",
+    tests: [
+      "test/lowering-collections.test.ts",
+      "-t",
+      "extend of an array written in place",
+    ],
   },
   {
     name: "extend-written-of-any",
-    breaks: "an `extend` of an array written in place onto a deque is `queue.push(1, 2)`, not its own `$extend`",
+    breaks:
+      "an `extend` of an array written in place onto a deque is `queue.push(1, 2)`, not its own `$extend`",
     file: "src/lower/combinators.rs",
     find: "        if self.is_std_type(into.peel_refs(), crate::lower::recognition::StdItem::Vec)\n            && matches!",
     replace: "        if true\n            && matches!",
-    tests: ["test/lowering-collections.test.ts", "-t", "extend of an array written in place"],
+    tests: [
+      "test/lowering-collections.test.ts",
+      "-t",
+      "extend of an array written in place",
+    ],
   },
   {
     name: "is-some-and-truth-twice",
-    breaks: "`is_some_and(|&w| w)` of an `Option<bool>` reads it twice, `const option = d[k]; option != null && option`, where it's `!!d[k]`",
+    breaks:
+      "`is_some_and(|&w| w)` of an `Option<bool>` reads it twice, `const option = d[k]; option != null && option`, where it's `!!d[k]`",
     file: "src/lower/combinators.rs",
     find: "        if comb == Comb::IsSomeAnd\n            && !boxed\n            && self.drops(",
-    replace: "        if comb == Comb::IsSomeAnd\n            && false\n            && self.drops(",
+    replace:
+      "        if comb == Comb::IsSomeAnd\n            && false\n            && self.drops(",
     tests: ["test/corpus.test.ts", "-t", "option_bool_tested"],
     snapshots: true,
   },
   {
     name: "as-deref-counted-rc-in-place",
-    breaks: "`as_deref()` of an `Option` of a counted `Rc`, `{ value, count }`, is the `Rc` itself, not what it points at",
+    breaks:
+      "`as_deref()` of an `Option` of a counted `Rc`, `{ value, count }`, is the `Rc` itself, not what it points at",
     file: "src/lower/combinators.rs",
     find: "(self.is_rc(inner) && self.counted_rc(inner).is_none())",
     replace: "self.is_rc(inner)",
@@ -584,24 +704,33 @@ export const mutations: Mutation[] = [
   },
   {
     name: "extended-std-struct-undropped",
-    breaks: "a held `repeat(x).take(n)` given whole to `extend` isn't closed after, `repeated.return()`, where `extend`'s own close drops its `x` as Rust does now: its JS (ADR 0913)",
+    breaks:
+      "a held `repeat(x).take(n)` given whole to `extend` isn't closed after, `repeated.return()`, where `extend`'s own close drops its `x` as Rust does now: its JS (ADR 0913)",
     file: "src/lower/combinators.rs",
     find: "        if !iterable.is_ref()\n            && self.compiled_struct_at(iterable, span)\n",
-    replace: "        if false\n            && self.compiled_struct_at(iterable, span)\n",
+    replace:
+      "        if false\n            && self.compiled_struct_at(iterable, span)\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^held_skip_take.rs$"],
   },
   {
     name: "filtered-and-then-none-undefined",
-    breaks: "an `and_then` of a nullable function after a `filter` gives `undefined` for `None`, `owner ? nameOfOwner(owner) : undefined`, where upstream writes `null` (ADR 0841, amended)",
+    breaks:
+      "an `and_then` of a nullable function after a `filter` gives `undefined` for `None`, `owner ? nameOfOwner(owner) : undefined`, where upstream writes `null` (ADR 0841, amended)",
     file: "src/lower/combinators.rs",
     find: "            return Ok(Some(Expr::cond(kept, then, none)));\n",
-    replace: "            return Ok(Some(Expr::cond(kept, then, Expr::undefined())));\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "an and_then of a nullable function is stored as it is"],
+    replace:
+      "            return Ok(Some(Expr::cond(kept, then, Expr::undefined())));\n",
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "an and_then of a nullable function is stored as it is",
+    ],
   },
   {
     name: "as-deref-of-an-object-guard-tested",
-    breaks: "`as_deref()` of an `Option` of a guard of an object's cell, the object, is `types != null ? types : undefined`",
+    breaks:
+      "`as_deref()` of an `Option` of a guard of an object's cell, the object, is `types != null ? types : undefined`",
     file: "src/lower/combinators.rs",
     find: " || self.guards_value_cell(inner))",
     replace: ")",

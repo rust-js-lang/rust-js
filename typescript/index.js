@@ -17,7 +17,7 @@ import * as f from "typescript/ast/factory";
  * An `export` from a module whose one name is `["*", ns]` is `export * as
  * ns from`, its namespace by a name.
  *
- * @typedef {{ kind: "import", from: string, names: string[], default?: string, typeOnly: boolean }
+ * @typedef {{ kind: "import", from: string, names: string[], default?: string, namespace?: string, typeOnly: boolean }
  *   | { kind: "interface", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], extends: Type[], members: Member[], docs?: string }
  *   | { kind: "type", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], type: Type, docs?: string }
  *   | { kind: "function", name: string, exported: boolean, default?: boolean, declare: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type, docs?: string }
@@ -68,7 +68,9 @@ const KEYWORDS = {
   [SyntaxKind.VoidKeyword]: "void",
   [SyntaxKind.NeverKeyword]: "never",
 };
-const KEYWORD_KINDS = Object.fromEntries(Object.entries(KEYWORDS).map(([kind, name]) => [name, Number(kind)]));
+const KEYWORD_KINDS = Object.fromEntries(
+  Object.entries(KEYWORDS).map(([kind, name]) => [name, Number(kind)]),
+);
 
 /**
  * A session of TypeScript's, over `files`, which `read` reads; `print`
@@ -84,7 +86,12 @@ export async function open(files = []) {
   writeFileSync(
     config,
     JSON.stringify({
-      compilerOptions: { noEmit: true, noLib: true, skipLibCheck: true, types: [] },
+      compilerOptions: {
+        noEmit: true,
+        noLib: true,
+        skipLibCheck: true,
+        types: [],
+      },
       files: [own, ...files.map((file) => resolve(file))],
     }),
   );
@@ -113,8 +120,10 @@ export async function open(files = []) {
       const parts = [];
       let previous;
       for (const declaration of module.declarations) {
-        const text = await documented(declaration, await api.printer.printNode(statement(declaration)), (node) =>
-          api.printer.printNode(node),
+        const text = await documented(
+          declaration,
+          await api.printer.printNode(statement(declaration)),
+          (node) => api.printer.printNode(node),
         );
         // Imports together, then a blank line before each declaration.
         const together = previous === "import" && declaration.kind === "import";
@@ -148,7 +157,10 @@ async function documented(declaration, text, printNode) {
       if (found < 0) continue;
       const start = text.lastIndexOf("\n", found) + 1;
       const indent = text.slice(start, found);
-      const docs = m.docs.split("\n").map((line) => `${indent}${line}\n`).join("");
+      const docs = m.docs
+        .split("\n")
+        .map((line) => `${indent}${line}\n`)
+        .join("");
       text = text.slice(0, start) + docs + text.slice(start);
       at = found + docs.length + first.length;
     }
@@ -190,12 +202,15 @@ function declared(node) {
 /** `<C extends ReactNode>`: each name, and what it extends, where it's said. */
 function typeParameters(node, text) {
   return (node.typeParameters ?? []).map((p) =>
-    p.constraint ? { name: p.name.text, constraint: readType(p.constraint, text) } : { name: p.name.text },
+    p.constraint
+      ? { name: p.name.text, constraint: readType(p.constraint, text) }
+      : { name: p.name.text },
   );
 }
 
 function nameOf(name, text) {
-  return name.kind === SyntaxKind.Identifier || name.kind === SyntaxKind.StringLiteral
+  return name.kind === SyntaxKind.Identifier ||
+    name.kind === SyntaxKind.StringLiteral
     ? name.text
     : sourceOf(name, text);
 }
@@ -216,26 +231,43 @@ function readStatements(statements, text) {
           kind: "import",
           from: node.moduleSpecifier.text,
           names: named.elements.map((e) => e.name.text),
-          typeOnly: clause.phaseModifier === SyntaxKind.TypeKeyword || !!clause.isTypeOnly,
+          typeOnly:
+            clause.phaseModifier === SyntaxKind.TypeKeyword ||
+            !!clause.isTypeOnly,
         });
         break;
       }
       case SyntaxKind.ExportDeclaration: {
         const named = node.exportClause;
         // `export * as ns from "./m.js"`, a module's namespace by a name.
-        if (named?.kind === SyntaxKind.NamespaceExport && node.moduleSpecifier && !node.isTypeOnly) {
-          out.push({ kind: "export", from: node.moduleSpecifier.text, names: [["*", named.name.text]] });
+        if (
+          named?.kind === SyntaxKind.NamespaceExport &&
+          node.moduleSpecifier &&
+          !node.isTypeOnly
+        ) {
+          out.push({
+            kind: "export",
+            from: node.moduleSpecifier.text,
+            names: [["*", named.name.text]],
+          });
           break;
         }
         // A list that's types, or names one, is text: the model has no type-only name.
-        if (named?.kind !== SyntaxKind.NamedExports || node.isTypeOnly || named.elements.some((e) => e.isTypeOnly)) {
+        if (
+          named?.kind !== SyntaxKind.NamedExports ||
+          node.isTypeOnly ||
+          named.elements.some((e) => e.isTypeOnly)
+        ) {
           out.push({ kind: "other", text: sourceOf(node, text) });
           break;
         }
         out.push({
           kind: "export",
           ...(node.moduleSpecifier && { from: node.moduleSpecifier.text }),
-          names: named.elements.map((e) => [(e.propertyName ?? e.name).text, e.name.text]),
+          names: named.elements.map((e) => [
+            (e.propertyName ?? e.name).text,
+            e.name.text,
+          ]),
         });
         break;
       }
@@ -246,7 +278,9 @@ function readStatements(statements, text) {
           exported: exported(node),
           declare: declared(node),
           typeParameters: typeParameters(node, text),
-          extends: (node.heritageClauses ?? []).flatMap((clause) => clause.types.map((t) => readType(t, text))),
+          extends: (node.heritageClauses ?? []).flatMap((clause) =>
+            clause.types.map((t) => readType(t, text)),
+          ),
           members: node.members.map((m) => readMember(m, text)),
         });
         break;
@@ -265,11 +299,15 @@ function readStatements(statements, text) {
           kind: "function",
           name: node.name?.text ?? "default",
           exported: exported(node),
-          ...(node.modifiers?.some((m) => m.kind === SyntaxKind.DefaultKeyword) && { default: true }),
+          ...(node.modifiers?.some(
+            (m) => m.kind === SyntaxKind.DefaultKeyword,
+          ) && { default: true }),
           declare: declared(node),
           typeParameters: typeParameters(node, text),
           params: node.parameters.map((p) => readParam(p, text)),
-          returns: node.type ? readType(node.type, text) : { kind: "keyword", keyword: "void" },
+          returns: node.type
+            ? readType(node.type, text)
+            : { kind: "keyword", keyword: "void" },
         });
         break;
       case SyntaxKind.VariableStatement:
@@ -279,7 +317,9 @@ function readStatements(statements, text) {
             name: sourceOf(declaration.name, text),
             exported: exported(node),
             declare: declared(node),
-            type: declaration.type ? readType(declaration.type, text) : { kind: "keyword", keyword: "any" },
+            type: declaration.type
+              ? readType(declaration.type, text)
+              : { kind: "keyword", keyword: "any" },
           });
         }
         break;
@@ -311,7 +351,9 @@ function readStatements(statements, text) {
 }
 
 function optional(node) {
-  return (node.postfixToken ?? node.questionToken)?.kind === SyntaxKind.QuestionToken;
+  return (
+    (node.postfixToken ?? node.questionToken)?.kind === SyntaxKind.QuestionToken
+  );
 }
 
 /** @returns {Member} */
@@ -322,8 +364,12 @@ function readMember(node, text) {
         kind: "property",
         name: nameOf(node.name, text),
         optional: optional(node),
-        readonly: !!node.modifiers?.some((m) => m.kind === SyntaxKind.ReadonlyKeyword),
-        type: node.type ? readType(node.type, text) : { kind: "keyword", keyword: "any" },
+        readonly: !!node.modifiers?.some(
+          (m) => m.kind === SyntaxKind.ReadonlyKeyword,
+        ),
+        type: node.type
+          ? readType(node.type, text)
+          : { kind: "keyword", keyword: "any" },
       };
     case SyntaxKind.MethodSignature:
       return {
@@ -332,7 +378,9 @@ function readMember(node, text) {
         optional: optional(node),
         typeParameters: typeParameters(node, text),
         params: node.parameters.map((p) => readParam(p, text)),
-        returns: node.type ? readType(node.type, text) : { kind: "keyword", keyword: "any" },
+        returns: node.type
+          ? readType(node.type, text)
+          : { kind: "keyword", keyword: "any" },
       };
     case SyntaxKind.IndexSignature: {
       const [parameter] = node.parameters;
@@ -354,13 +402,16 @@ function readParam(node, text) {
     name: sourceOf(node.name, text),
     optional: optional(node),
     rest: !!node.dotDotDotToken,
-    type: node.type ? readType(node.type, text) : { kind: "keyword", keyword: "any" },
+    type: node.type
+      ? readType(node.type, text)
+      : { kind: "keyword", keyword: "any" },
   };
 }
 
 /** @returns {Type} */
 function readType(node, text) {
-  if (KEYWORDS[node.kind]) return { kind: "keyword", keyword: KEYWORDS[node.kind] };
+  if (KEYWORDS[node.kind])
+    return { kind: "keyword", keyword: KEYWORDS[node.kind] };
   switch (node.kind) {
     case SyntaxKind.LiteralType: {
       const literal = node.literal;
@@ -394,16 +445,33 @@ function readType(node, text) {
     case SyntaxKind.UnionType:
       return { kind: "union", types: node.types.map((t) => readType(t, text)) };
     case SyntaxKind.IntersectionType:
-      return { kind: "intersection", types: node.types.map((t) => readType(t, text)) };
+      return {
+        kind: "intersection",
+        types: node.types.map((t) => readType(t, text)),
+      };
     case SyntaxKind.ArrayType:
-      return { kind: "array", element: readType(node.elementType, text), readonly: false };
+      return {
+        kind: "array",
+        element: readType(node.elementType, text),
+        readonly: false,
+      };
     case SyntaxKind.TypeOperator:
-      if (node.operator === SyntaxKind.ReadonlyKeyword && node.type.kind === SyntaxKind.ArrayType) {
-        return { kind: "array", element: readType(node.type.elementType, text), readonly: true };
+      if (
+        node.operator === SyntaxKind.ReadonlyKeyword &&
+        node.type.kind === SyntaxKind.ArrayType
+      ) {
+        return {
+          kind: "array",
+          element: readType(node.type.elementType, text),
+          readonly: true,
+        };
       }
       return { kind: "other", text: sourceOf(node, text) };
     case SyntaxKind.TupleType:
-      return { kind: "tuple", elements: node.elements.map((t) => readType(t, text)) };
+      return {
+        kind: "tuple",
+        elements: node.elements.map((t) => readType(t, text)),
+      };
     case SyntaxKind.ParenthesizedType:
       return readType(node.type, text);
     case SyntaxKind.FunctionType:
@@ -414,9 +482,13 @@ function readType(node, text) {
         returns: readType(node.type, text),
       };
     case SyntaxKind.TypeLiteral:
-      return { kind: "object", members: node.members.map((m) => readMember(m, text)) };
+      return {
+        kind: "object",
+        members: node.members.map((m) => readMember(m, text)),
+      };
     case SyntaxKind.TypeQuery:
-      if (node.typeArguments) return { kind: "other", text: sourceOf(node, text) };
+      if (node.typeArguments)
+        return { kind: "other", text: sourceOf(node, text) };
       return { kind: "typeof", name: sourceOf(node.exprName, text) };
     default:
       return { kind: "other", text: sourceOf(node, text) };
@@ -431,17 +503,24 @@ const IDENTIFIER = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 
 function modifiers(declaration) {
   const tokens = [];
-  if (declaration.exported) tokens.push(f.createToken(SyntaxKind.ExportKeyword));
+  if (declaration.exported)
+    tokens.push(f.createToken(SyntaxKind.ExportKeyword));
   // `export default function noop(): void;`, a module's default alone (ADR 0611).
-  if (declaration.default) tokens.push(f.createToken(SyntaxKind.DefaultKeyword));
-  if (declaration.declare) tokens.push(f.createToken(SyntaxKind.DeclareKeyword));
+  if (declaration.default)
+    tokens.push(f.createToken(SyntaxKind.DefaultKeyword));
+  if (declaration.declare)
+    tokens.push(f.createToken(SyntaxKind.DeclareKeyword));
   return tokens.length ? tokens : undefined;
 }
 
 function typeParameterNodes(parameters) {
   return parameters?.length
     ? parameters.map((p) =>
-        f.createTypeParameterDeclaration(undefined, id(p.name), p.constraint ? typeNode(p.constraint) : undefined),
+        f.createTypeParameterDeclaration(
+          undefined,
+          id(p.name),
+          p.constraint ? typeNode(p.constraint) : undefined,
+        ),
       )
     : undefined;
 }
@@ -460,9 +539,15 @@ function statement(declaration) {
         f.createImportClause(
           declaration.typeOnly ? SyntaxKind.TypeKeyword : undefined,
           declaration.default ? id(declaration.default) : undefined,
-          declaration.names.length
-            ? f.createNamedImports(declaration.names.map((name) => f.createImportSpecifier(false, undefined, id(name))))
-            : undefined,
+          declaration.namespace
+            ? f.createNamespaceImport(id(declaration.namespace))
+            : declaration.names.length
+              ? f.createNamedImports(
+                  declaration.names.map((name) =>
+                    f.createImportSpecifier(false, undefined, id(name)),
+                  ),
+                )
+              : undefined,
         ),
         string(declaration.from),
       );
@@ -506,23 +591,47 @@ function statement(declaration) {
       return f.createVariableStatement(
         modifiers(declaration),
         f.createVariableDeclarationList(
-          [f.createVariableDeclaration(id(declaration.name), undefined, typeNode(declaration.type))],
+          [
+            f.createVariableDeclaration(
+              id(declaration.name),
+              undefined,
+              typeNode(declaration.type),
+            ),
+          ],
           // A module's variable it sets, `export let` (ADR 0270, amended).
           declaration.mutable ? NodeFlags.Let : NodeFlags.Const,
         ),
       );
     case "export-default":
-      return f.createExportAssignment(undefined, false, undefined, id(declaration.name));
+      return f.createExportAssignment(
+        undefined,
+        false,
+        undefined,
+        id(declaration.name),
+      );
     case "export":
-      if (declaration.from !== undefined && declaration.names.length === 1 && declaration.names[0][0] === "*") {
-        return f.createExportDeclaration(undefined, false, f.createNamespaceExport(id(declaration.names[0][1])), string(declaration.from));
+      if (
+        declaration.from !== undefined &&
+        declaration.names.length === 1 &&
+        declaration.names[0][0] === "*"
+      ) {
+        return f.createExportDeclaration(
+          undefined,
+          false,
+          f.createNamespaceExport(id(declaration.names[0][1])),
+          string(declaration.from),
+        );
       }
       return f.createExportDeclaration(
         undefined,
         false,
         f.createNamedExports(
           declaration.names.map(([name, alias]) =>
-            f.createExportSpecifier(false, name === alias ? undefined : id(name), id(alias)),
+            f.createExportSpecifier(
+              false,
+              name === alias ? undefined : id(name),
+              id(alias),
+            ),
           ),
         ),
         declaration.from === undefined ? undefined : string(declaration.from),
@@ -542,7 +651,9 @@ function statement(declaration) {
       // `erasableSyntaxOnly`: a namespace that holds values is JS, but a
       // `declare`d one's.
       if (!declaration.declare && !declaration.declarations.every(erasable)) {
-        throw new Error(`namespace ${declaration.name} holds values, which isn't erasable: declare it`);
+        throw new Error(
+          `namespace ${declaration.name} holds values, which isn't erasable: declare it`,
+        );
       }
       return f.createModuleDeclaration(
         modifiers(declaration),
@@ -552,7 +663,9 @@ function statement(declaration) {
         f.createModuleBlock(declaration.declarations.map(statement)),
       );
     default:
-      throw new Error(`a ${declaration.kind} declaration isn't one TypeScript is given`);
+      throw new Error(
+        `a ${declaration.kind} declaration isn't one TypeScript is given`,
+      );
   }
 }
 
@@ -597,7 +710,15 @@ function member(m) {
     case "index":
       return f.createIndexSignatureDeclaration(
         undefined,
-        [f.createParameterDeclaration(undefined, undefined, id(m.parameter), undefined, typeNode(m.key))],
+        [
+          f.createParameterDeclaration(
+            undefined,
+            undefined,
+            id(m.parameter),
+            undefined,
+            typeNode(m.key),
+          ),
+        ],
         typeNode(m.type),
       );
     default:
@@ -607,10 +728,17 @@ function member(m) {
 
 /** @param {ClassMember} m */
 function classMember(m) {
-  const modifiers = "static" in m && m.static ? [f.createToken(SyntaxKind.StaticKeyword)] : undefined;
+  const modifiers =
+    "static" in m && m.static
+      ? [f.createToken(SyntaxKind.StaticKeyword)]
+      : undefined;
   switch (m.kind) {
     case "constructor":
-      return f.createConstructorDeclaration(undefined, undefined, m.params.map(param));
+      return f.createConstructorDeclaration(
+        undefined,
+        undefined,
+        m.params.map(param),
+      );
     case "property":
       return f.createPropertyDeclaration(
         modifiers,
@@ -629,7 +757,13 @@ function classMember(m) {
         typeNode(m.returns),
       );
     case "getter":
-      return f.createGetAccessorDeclaration(undefined, propertyName(m.name), undefined, [], typeNode(m.returns));
+      return f.createGetAccessorDeclaration(
+        undefined,
+        propertyName(m.name),
+        undefined,
+        [],
+        typeNode(m.returns),
+      );
     default:
       throw new Error(`a ${m.kind} class member isn't one TypeScript is given`);
   }
@@ -649,43 +783,67 @@ function param(p) {
 /** `t`, in parentheses where an array's element needs them: `(string | undefined)[]`. */
 function element(t) {
   const node = typeNode(t);
-  return ["union", "intersection", "function"].includes(t.kind) ? f.createParenthesizedTypeNode(node) : node;
+  return ["union", "intersection", "function"].includes(t.kind)
+    ? f.createParenthesizedTypeNode(node)
+    : node;
 }
 
 /** @param {Type} t */
 function typeNode(t) {
   switch (t.kind) {
     case "keyword":
-      if (t.keyword === "null") return f.createLiteralTypeNode(f.createToken(SyntaxKind.NullKeyword));
-      if (!(t.keyword in KEYWORD_KINDS)) throw new Error(`\`${t.keyword}\` isn't a keyword TypeScript has`);
+      if (t.keyword === "null")
+        return f.createLiteralTypeNode(f.createToken(SyntaxKind.NullKeyword));
+      if (!(t.keyword in KEYWORD_KINDS))
+        throw new Error(`\`${t.keyword}\` isn't a keyword TypeScript has`);
       return f.createKeywordTypeNode(KEYWORD_KINDS[t.keyword]);
     case "literal":
       switch (typeof t.value) {
         case "string":
           return f.createLiteralTypeNode(string(t.value));
         case "number":
-          return f.createLiteralTypeNode(f.createNumericLiteral(String(t.value), TokenFlags.None));
+          return f.createLiteralTypeNode(
+            f.createNumericLiteral(String(t.value), TokenFlags.None),
+          );
         default:
-          return f.createLiteralTypeNode(f.createToken(t.value ? SyntaxKind.TrueKeyword : SyntaxKind.FalseKeyword));
+          return f.createLiteralTypeNode(
+            f.createToken(
+              t.value ? SyntaxKind.TrueKeyword : SyntaxKind.FalseKeyword,
+            ),
+          );
       }
     case "reference":
-      return f.createTypeReferenceNode(entity(t.name), t.args?.length ? t.args.map(typeNode) : undefined);
+      return f.createTypeReferenceNode(
+        entity(t.name),
+        t.args?.length ? t.args.map(typeNode) : undefined,
+      );
     case "union":
       return f.createUnionTypeNode(t.types.map(typeNode));
     case "intersection":
       return f.createIntersectionTypeNode(t.types.map(typeNode));
     case "array": {
       const array = f.createArrayTypeNode(element(t.element));
-      return t.readonly ? f.createTypeOperatorNode(SyntaxKind.ReadonlyKeyword, array) : array;
+      return t.readonly
+        ? f.createTypeOperatorNode(SyntaxKind.ReadonlyKeyword, array)
+        : array;
     }
     case "tuple":
       return f.createTupleTypeNode(t.elements.map(typeNode));
     case "function":
       // A constructor's, `new (a: A) => T`, of a typed `js::Class` (ADR 1009).
       if (t.construct) {
-        return f.createConstructorTypeNode(undefined, typeParameterNodes(t.typeParameters), t.params.map(param), typeNode(t.returns));
+        return f.createConstructorTypeNode(
+          undefined,
+          typeParameterNodes(t.typeParameters),
+          t.params.map(param),
+          typeNode(t.returns),
+        );
       }
-      return f.createFunctionTypeNode(typeParameterNodes(t.typeParameters), t.params.map(param), typeNode(t.returns));
+      return f.createFunctionTypeNode(
+        typeParameterNodes(t.typeParameters),
+        t.params.map(param),
+        typeNode(t.returns),
+      );
     case "object":
       return f.createTypeLiteralNode(t.members.map(member));
     case "typeof":

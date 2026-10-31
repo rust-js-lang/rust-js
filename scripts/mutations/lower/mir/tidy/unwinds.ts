@@ -1,21 +1,28 @@
 // Mutations of src/lower/mir/tidy/unwinds.rs (ADR 0093).
 import type { Mutation } from "../../../../mutations";
 
-const panics = ["test/corpus.test.ts", "-t", "^(drop_on_panic|question_drops|vec_destructors|dyn_auto_traits|scoped_drops_cross).rs$"];
+const panics = [
+  "test/corpus.test.ts",
+  "-t",
+  "^(drop_on_panic|question_drops|vec_destructors|dyn_auto_traits|scoped_drops_cross).rs$",
+];
 
 export const mutations: Mutation[] = [
   {
     name: "scoped-drops-kept-per-statement",
-    breaks: "each statement a value's drop ends stays its own `try { .. } catch (error) { drop(x); throw error; }`, not one `try { .. } finally { drop(x) }`",
+    breaks:
+      "each statement a value's drop ends stays its own `try { .. } catch (error) { drop(x); throw error; }`, not one `try { .. } finally { drop(x) }`",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "        if let Some(end) = scope_end(stmts, i, result) {\n",
-    replace: "        if let Some(end) = scope_end(stmts, i, result).filter(|_| false) {\n",
+    replace:
+      "        if let Some(end) = scope_end(stmts, i, result).filter(|_| false) {\n",
     tests: panics,
     snapshots: true,
   },
   {
     name: "scoped-drop-left-in-catch",
-    breaks: "a statement's `catch` in a scope keeps the scope's drop, which a panic then runs twice, there and in the `finally`",
+    breaks:
+      "a statement's `catch` in a scope keeps the scope's drop, which a panic then runs twice, there and in the `finally`",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "                handler.remove(handler.len() - 2);\n",
     replace: "",
@@ -31,31 +38,45 @@ export const mutations: Mutation[] = [
   },
   {
     name: "scoped-drops-if-uncovered",
-    breaks: "an `if` in a guard's scope ends its run, so each statement keeps a `try` and `catch` of the drop, not one `finally`",
+    breaks:
+      "an `if` in a guard's scope ends its run, so each statement keeps a `try` and `catch` of the drop, not one `finally`",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "                StmtKind::If(test, a, b) => {\n                    !test.may_throw()\n",
-    replace: "                StmtKind::If(test, a, b) => {\n                    false && !test.may_throw()\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "a guard's scope is one finally"],
+    replace:
+      "                StmtKind::If(test, a, b) => {\n                    false && !test.may_throw()\n",
+    tests: [
+      "test/lowering-unwinds.test.ts",
+      "-t",
+      "a guard's scope is one finally",
+    ],
   },
   {
     name: "scoped-drops-exit-kept",
-    breaks: "a way out of a guard's scope keeps its drop in the `try`, which the `finally` runs again",
+    breaks:
+      "a way out of a guard's scope keeps its drop in the `try`, which the `finally` runs again",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "            out.push(leaving);\n            continue;\n",
-    replace: "            out.push(stmt);\n            out.push(leaving);\n            continue;\n",
+    replace:
+      "            out.push(stmt);\n            out.push(leaving);\n            continue;\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_guard_scope_returns.rs$"],
   },
   {
     name: "scope-declarations-unhoisted",
-    breaks: "what a scope declares and what follows it reads is declared inside its `try`, out of reach",
+    breaks:
+      "what a scope declares and what follows it reads is declared inside its `try`, out of reach",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "            let hoisted = hoist_read_after(&mut body, &rest);\n",
     replace: "            let hoisted: Vec<Stmt> = Vec::new();\n",
-    tests: ["test/corpus.test.ts", "-t", "^(drop_scopes|drop_temporaries|scope_temporaries|option_combinator_drops|slice_pointers|subscriptions|lock_destructors|drop_generic|dyn_drops).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(drop_scopes|drop_temporaries|scope_temporaries|option_combinator_drops|slice_pointers|subscriptions|lock_destructors|drop_generic|dyn_drops).rs$",
+    ],
   },
   {
     name: "scope-lets-left-before",
-    breaks: "a `let x;` only a scope reads stays before its `try`, `let tmp; try { tmp = .. }`",
+    breaks:
+      "a `let x;` only a scope reads stays before its `try`, `let tmp; try { tmp = .. }`",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "        if elsewhere == 0 && js::mentions_in(rest, name) == 0 && js::mentions_in(std::slice::from_ref(drop), name) == 0\n",
     replace: "        if false\n",
@@ -64,7 +85,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "result-not-returned-in-try",
-    breaks: "`let result; try { result = e; } finally { .. } return result;` stays, where it's `try { return e; } finally { .. }`",
+    breaks:
+      "`let result; try { result = e; } finally { .. } return result;` stays, where it's `try { return e; } finally { .. }`",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "        if found {\n            stmts.remove(i + 2);\n",
     replace: "        if found && false {\n            stmts.remove(i + 2);\n",
@@ -72,48 +94,73 @@ export const mutations: Mutation[] = [
   },
   {
     name: "scoped-drops-unread-in-place",
-    breaks: "what a statement's `try` held apart stays apart once its scope is one `finally`, `const tmp = lines[s].includes(..); if (tmp)`",
+    breaks:
+      "what a statement's `try` held apart stays apart once its scope is one `finally`, `const tmp = lines[s].includes(..); if (tmp)`",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "            stmts.extend(rest);\n            scoped = true;\n",
     replace: "            stmts.extend(rest);\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "a guard's fields are its variables"],
+    tests: [
+      "test/lowering-unwinds.test.ts",
+      "-t",
+      "a guard's fields are its variables",
+    ],
   },
   {
     name: "guard-try-at-drop",
-    breaks: "a guard's `try` is where its drop is, so the blank line before the guard's `let` is in its block, where none is printed (ADR 0865, amended)",
+    breaks:
+      "a guard's `try` is where its drop is, so the blank line before the guard's `let` is in its block, where none is printed (ADR 0865, amended)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "                Some(lo) if !drop.span.is_none() && lo < drop.span.lo => js::Span { lo, hi: drop.span.hi },\n",
-    replace: "                Some(lo) if false => js::Span { lo, hi: drop.span.hi },\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "a blank line before a guard's let"],
+    replace:
+      "                Some(lo) if false => js::Span { lo, hi: drop.span.hi },\n",
+    tests: [
+      "test/lowering-comments.test.ts",
+      "-t",
+      "a blank line before a guard's let",
+    ],
   },
   {
     name: "guard-try-at-first",
-    breaks: "a guard's `try` starts at its first statement, so a comment after the guard's `let` is before the `try`, not in it (ADR 0865, amended)",
+    breaks:
+      "a guard's `try` starts at its first statement, so a comment after the guard's `let` is before the `try`, not in it (ADR 0865, amended)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "                    .filter(|&&(guard, end)| end == drop.span.hi && written < guard && guard < lo)\n",
     replace: "                    .filter(|_| false)\n",
-    tests: ["test/lowering-drop-guards.test.ts", "-t", "a guard's try starts at its let"],
+    tests: [
+      "test/lowering-drop-guards.test.ts",
+      "-t",
+      "a guard's try starts at its let",
+    ],
   },
   {
     name: "guard-try-at-an-earlier-guard",
-    breaks: "a run's `try` starts at an earlier guard's `let` the same block drops, `swapped`'s, and the blank line before the run is lost (ADR 0865, amended)",
+    breaks:
+      "a run's `try` starts at an earlier guard's `let` the same block drops, `swapped`'s, and the blank line before the run is lost (ADR 0865, amended)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "                    .filter(|&&(guard, end)| end == drop.span.hi && written < guard && guard < lo)\n",
-    replace: "                    .filter(|&&(guard, end)| end == drop.span.hi && guard < lo)\n",
+    replace:
+      "                    .filter(|&&(guard, end)| end == drop.span.hi && guard < lo)\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
     snapshots: true,
   },
   {
     name: "guard-try-first-unwritten",
-    breaks: "a guard's `try` whose first statement is a temporary's, `result = scope()`, placed nowhere, is where its drop is (ADR 0865, amended)",
+    breaks:
+      "a guard's `try` whose first statement is a temporary's, `result = scope()`, placed nowhere, is where its drop is (ADR 0865, amended)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "        | StmtKind::Return(Some(value))\n            if !value.span.is_none() =>\n",
-    replace: "        | StmtKind::Return(Some(value))\n            if false =>\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "a blank line before a guard's let"],
+    replace:
+      "        | StmtKind::Return(Some(value))\n            if false =>\n",
+    tests: [
+      "test/lowering-comments.test.ts",
+      "-t",
+      "a blank line before a guard's let",
+    ],
   },
   {
     name: "guard-try-past-first",
-    breaks: "a guard's `try` whose first statement is a call's own `try`, placed nowhere, is where its drop is, and the blank line before the guard's `let` is lost (ADR 0865, amended)",
+    breaks:
+      "a guard's `try` whose first statement is a call's own `try`, placed nowhere, is where its drop is, and the blank line before the guard's `let` is lost (ADR 0865, amended)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "        StmtKind::Try(body, _) | StmtKind::TryCatch(body, ..) => body.first().and_then(written_at),\n",
     replace: "",
@@ -122,16 +169,23 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fixed-return-kept-in-finally",
-    breaks: "a function or a constant a guard's scope returns last stays in its `try`, `try { try { .. } catch { .. } return noop; } finally { .. }`, not after one `try`, `catch` and `finally`",
+    breaks:
+      "a function or a constant a guard's scope returns last stays in its `try`, `try { try { .. } catch { .. } return noop; } finally { .. }`, not after one `try`, `catch` and `finally`",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "                StmtKind::Assign(_, value) if value.is_fixed() => {\n",
-    replace: "                StmtKind::Assign(_, value) if false && value.is_fixed() => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_(guard_returned|nested_ok).rs$"],
+    replace:
+      "                StmtKind::Assign(_, value) if false && value.is_fixed() => {\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^catch_unwind_(guard_returned|nested_ok).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "unthrown-catch-kept",
-    breaks: "a `catch_unwind` whose `catch` drops what's held, no scope's `finally` taking it, keeps that `try`, though its call never throws (ADR 0873)",
+    breaks:
+      "a `catch_unwind` whose `catch` drops what's held, no scope's `finally` taking it, keeps that `try`, though its call never throws (ADR 0873)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "    if !stmts.iter().any(unthrown) {\n",
     replace: "    if true {\n",
@@ -140,7 +194,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "thrown-catch-dropped",
-    breaks: "a `try` whose body may throw loses the `catch` that drops what's held as it unwinds (ADR 0873)",
+    breaks:
+      "a `try` whose body may throw loses the `catch` that drops what's held as it unwinds (ADR 0873)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "            if body.iter().all(Stmt::cannot_throw) && handler",
     replace: "            if handler",
@@ -148,7 +203,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unwrap-tested-made",
-    breaks: "the `try` of an `unwrap()` of an option a call makes is its test, which runs the call again for its value, `counted()` twice",
+    breaks:
+      "the `try` of an `unwrap()` of an option a call makes is its test, which runs the call again for its value, `counted()` twice",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "        let given = option.reads_same()\n            && rest",
     replace: "        let given = rest",
@@ -156,7 +212,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unwrap-tested-drops-lost",
-    breaks: "an `unwrap()`'s test throws its panic without the drops its `catch` ran, so the task no impl takes isn't dropped",
+    breaks:
+      "an `unwrap()`'s test throws its panic without the drops its `catch` ran, so the task no impl takes isn't dropped",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "        handler.push(StmtKind::Throw(panic).at(last.span));\n",
     replace: "        handler = vec![StmtKind::Throw(panic).at(last.span)];\n",
@@ -164,15 +221,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "return-place-out-of-scope",
-    breaks: "an early `return callback();` from a guard's scope, of the function's return place, ends the scope: a `try` of each way out and a `let result`, where React's `runWithFiberInDEV` returns in its one `try` (ADR 0693, amended)",
+    breaks:
+      "an early `return callback();` from a guard's scope, of the function's return place, ends the scope: a `try` of each way out and a `let result`, where React's `runWithFiberInDEV` returns in its one `try` (ADR 0693, amended)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "                    name == self.result || self.declared.contains(name) && !self.set_by_closures.contains(name)\n",
-    replace: "                    self.declared.contains(name) && !self.set_by_closures.contains(name)\n",
-    tests: ["test/lowering-drop-guards.test.ts", "-t", "an early return in a guard's scope"],
+    replace:
+      "                    self.declared.contains(name) && !self.set_by_closures.contains(name)\n",
+    tests: [
+      "test/lowering-drop-guards.test.ts",
+      "-t",
+      "an early return in a guard's scope",
+    ],
   },
   {
     name: "looped-drops-never",
-    breaks: "a `for` over a `RefCell`'s borrow drops it in a `catch` around each step and before each way out, not one `try { for .. } finally { $unborrow(..) }` (rd191)",
+    breaks:
+      "a `for` over a `RefCell`'s borrow drops it in a `catch` around each step and before each way out, not one `try { for .. } finally { $unborrow(..) }` (rd191)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "        if for_made && item.is_none() {\n",
     replace: "        if true {\n",
@@ -181,7 +245,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "early-looped-drops-of-any-loop",
-    breaks: "a loop of a user iterator, which no `for` is made of, takes its value's `finally` early, its exhaustion's `return` then inside it, `while (true) { .. if (x == null) { return acc; } }` (rd200)",
+    breaks:
+      "a loop of a user iterator, which no `for` is made of, takes its value's `finally` early, its exhaustion's `return` then inside it, `while (true) { .. if (x == null) { return acc; } }` (rd200)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "        if for_made && item.is_none() {\n",
     replace: "        if false && for_made && item.is_none() {\n",
@@ -190,25 +255,33 @@ export const mutations: Mutation[] = [
   },
   {
     name: "looped-drops-outer-break-refused",
-    breaks: "a loop over a borrow that leaves the block it's in, `break 'get_instance`, keeps a `catch` of the drop around each step, React Float's hydrateHoistable's `bb93:` (rd200)",
+    breaks:
+      "a loop over a borrow that leaves the block it's in, `break 'get_instance`, keeps a `catch` of the drop around each step, React Float's hydrateHoistable's `bb93:` (rd200)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "            StmtKind::Break(Some(label)) => !inside.labels.contains(label),\n",
-    replace: "            StmtKind::Break(Some(label)) if inside.labels.contains(label) => false,\n            StmtKind::Break(Some(_)) => return false,\n",
+    replace:
+      "            StmtKind::Break(Some(label)) if inside.labels.contains(label) => false,\n            StmtKind::Break(Some(_)) => return false,\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_loops.rs$"],
     snapshots: true,
   },
   {
     name: "looped-drop-inner-continue-leaves",
-    breaks: "every labeled `continue` is a way out of the loop that drops, an inner loop's `continue bb10` and its own `continue bb5` alike: the drop of a value given again in an inner loop is the outer loop's `finally`, run once at its end (generated program 12454574), or a loop over a borrow with a `continue 'outer` keeps a `catch` of the drop around each step (#440)",
+    breaks:
+      "every labeled `continue` is a way out of the loop that drops, an inner loop's `continue bb10` and its own `continue bb5` alike: the drop of a value given again in an inner loop is the outer loop's `finally`, run once at its end (generated program 12454574), or a loop over a borrow with a `continue 'outer` keeps a `catch` of the drop around each step (#440)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "            StmtKind::Continue(Some(label)) => !inside.labels.contains(label) && inside.own != Some(label.as_str()),\n",
     replace: "            StmtKind::Continue(Some(_)) => true,\n",
-    tests: ["test/corpus.test.ts", "-t", "^(drop_reassigned_in_inner_loop|looped_drops_jumps).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(drop_reassigned_in_inner_loop|looped_drops_jumps).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "looped-drop-inner-loop-labels-unseen",
-    breaks: "the labels of the loops inside a loop that drops a value aren't its own, so an inner loop's `continue bb10` leaves it, and a value given again there is dropped once, at the outer loop's end (generated program 12454574)",
+    breaks:
+      "the labels of the loops inside a loop that drops a value aren't its own, so an inner loop's `continue bb10` leaves it, and a value given again there is dropped once, at the outer loop's end (generated program 12454574)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "            StmtKind::While { label, .. }\n            | StmtKind::DoWhile { label, .. }\n            | StmtKind::For { label, .. }\n            | StmtKind::ForOf { label, .. } => label.clone(),\n",
     replace: "",
@@ -216,25 +289,33 @@ export const mutations: Mutation[] = [
   },
   {
     name: "looped-drops-own-continue-leaves",
-    breaks: "the loop's own `continue bb2`, kept in a loop in it, is a way out of it, so a loop over a borrow with one stays a `catch` of the drop around each step (#440)",
+    breaks:
+      "the loop's own `continue bb2`, kept in a loop in it, is a way out of it, so a loop over a borrow with one stays a `catch` of the drop around each step (#440)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "            StmtKind::Continue(Some(label)) => !inside.labels.contains(label) && inside.own != Some(label.as_str()),\n",
-    replace: "            StmtKind::Continue(Some(label)) => !inside.labels.contains(label),\n",
+    replace:
+      "            StmtKind::Continue(Some(label)) => !inside.labels.contains(label),\n",
     tests: ["test/corpus.test.ts", "-t", "^looped_drops_jumps.rs$"],
     snapshots: true,
   },
   {
     name: "ended-exit-unmoved",
-    breaks: "a borrow loop's way out where it's done, `$unborrow(borrow); return false;`, stays in the `try`, `try { for (..) { .. } return false; } finally { .. }`, not after it, as the loop's end is written (#442)",
+    breaks:
+      "a borrow loop's way out where it's done, `$unborrow(borrow); return false;`, stays in the `try`, `try { for (..) { .. } return false; } finally { .. }`, not after it, as the loop's end is written (#442)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "            Some(item) if for_made => ended_exit(",
     replace: "            Some(item) if false && for_made => ended_exit(",
-    tests: ["test/corpus.test.ts", "-t", "^(refcell_borrow_loops|borrow_loop_inner_break_outer).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(refcell_borrow_loops|borrow_loop_inner_break_outer).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "run-reads-what-drop-reads",
-    breaks: "what a loop steps that its drop reads too, `iter = self`, is taken into its `try`, `let iter; try { iter = self; .. } finally { dropT?.(iter); }`, where it was `const iter = self;` before it; one a `for` takes in, the `finally` reading what's never declared, a ReferenceError (#442)",
+    breaks:
+      "what a loop steps that its drop reads too, `iter = self`, is taken into its `try`, `let iter; try { iter = self; .. } finally { dropT?.(iter); }`, where it was `const iter = self;` before it; one a `for` takes in, the `finally` reading what's never declared, a ReferenceError (#442)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "                    && js::mentions_in(std::slice::from_ref(&drop), name) == 0),\n",
     replace: "),\n",
@@ -243,16 +324,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "run-labels-unseen",
-    breaks: "a block's `break` in what's before a loop, `bb42: { .. break bb42; }`, is a way out of the run, so a scope's `try` is cut around it (#442)",
+    breaks:
+      "a block's `break` in what's before a loop, `bb42: { .. break bb42; }`, is a way out of the run, so a scope's `try` is cut around it (#442)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "            let labels = own_labels(&mut run);\n",
     replace: "            let labels: Vec<String> = Vec::new();\n",
-    tests: ["test/corpus.test.ts", "-t", "^(slice_edit_drops|refused_drops_and_displays).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(slice_edit_drops|refused_drops_and_displays).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "wide-run-unextended",
-    breaks: "an early loop's run stops at what has no way out before it, `if (..) { .. }`, so the scope's `try`s before it stay `catch`es each (#442)",
+    breaks:
+      "an early loop's run stops at what has no way out before it, `if (..) { .. }`, so the scope's `try`s before it stay `catch`es each (#442)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "                    || wide && first.is_some_and(|first| first < start - 1) && !escapes(&stmts[start - 1..start]))\n",
     replace: ")\n",
@@ -261,28 +348,38 @@ export const mutations: Mutation[] = [
   },
   {
     name: "escapes-own-labels-unseen",
-    breaks: "a block's `break` of itself is taken for a way out of it, so an early run stops at it (#442)",
+    breaks:
+      "a block's `break` of itself is taken for a way out of it, so an early run stops at it (#442)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "            StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => !inner.contains(l),\n",
-    replace: "            StmtKind::Break(Some(_)) | StmtKind::Continue(Some(_)) => true,\n",
+    replace:
+      "            StmtKind::Break(Some(_)) | StmtKind::Continue(Some(_)) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
     snapshots: true,
   },
   {
     name: "leading-assignment-taken",
-    breaks: "what can't throw before an early loop's run, `let sum = 0;`, is taken into its `try` (#442)",
+    breaks:
+      "what can't throw before an early loop's run, `let sum = 0;`, is taken into its `try` (#442)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "                        for_made\n                            && stmts[start].cannot_throw()\n",
-    replace: "                        false\n                            && stmts[start].cannot_throw()\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_adapters_stepped_to_their_end.rs$"],
+    replace:
+      "                        false\n                            && stmts[start].cannot_throw()\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^held_adapters_stepped_to_their_end.rs$",
+    ],
     snapshots: true,
   },
   {
     name: "branches-given-unreturned",
-    breaks: "a guard's scope whose value is an `if`'s, React's flushSync's, stays `let result; try { if (f != null) { result = f(); } else { result = undefined; } } finally { .. } return result;`, not each branch's `return` in the `try` (rd286)",
+    breaks:
+      "a guard's scope whose value is an `if`'s, React's flushSync's, stays `let result; try { if (f != null) { result = f(); } else { result = undefined; } } finally { .. } return result;`, not each branch's `return` in the `try` (rd286)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "        StmtKind::If(_, then, Some(otherwise)) => {\n            let ended",
-    replace: "        StmtKind::If(_, then, Some(otherwise)) if false => {\n            let ended",
+    replace:
+      "        StmtKind::If(_, then, Some(otherwise)) if false => {\n            let ended",
     tests: ["test/corpus.test.ts", "-t", "^guard_value_of_branches.rs$"],
     snapshots: true,
   },

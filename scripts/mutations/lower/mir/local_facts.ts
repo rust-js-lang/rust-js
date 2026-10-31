@@ -4,7 +4,8 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "quiet-with-borrow-of-another-module",
-    breaks: "another module's quiet thread-local's `with_borrow` is given its value where it's lowered, not as that module's import reads it (ADR 0866, amended)",
+    breaks:
+      "another module's quiet thread-local's `with_borrow` is given its value where it's lowered, not as that module's import reads it (ADR 0866, amended)",
     file: "src/lower/mir/local_facts.rs",
     find: "                        && tcx.parent_module_from_def_id(key) == self.module =>\n",
     replace: "                        =>\n",
@@ -12,15 +13,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "facts-held-arms-unjoined",
-    breaks: "a guard that holds still tests in each alternative of its arm, its graph made without the arms it goes on to (ADR 0790)",
+    breaks:
+      "a guard that holds still tests in each alternative of its arm, its graph made without the arms it goes on to (ADR 0790)",
     file: "src/lower/mir/local_facts.rs",
     find: "            graph: cfg::Graph::of(body, &held_arms, &payload_tests),\n",
-    replace: "            graph: cfg::Graph::of(body, &Default::default(), &payload_tests),\n",
-    tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled that ends a case"],
+    replace:
+      "            graph: cfg::Graph::of(body, &Default::default(), &payload_tests),\n",
+    tests: [
+      "test/lowering-labels.test.ts",
+      "-t",
+      "a block the program labeled that ends a case",
+    ],
   },
   {
     name: "facts-patterned-none",
-    breaks: "a temporary a `let` pattern of one field takes apart is folded, `const getProps = f().get_props`",
+    breaks:
+      "a temporary a `let` pattern of one field takes apart is folded, `const getProps = f().get_props`",
     file: "src/lower/mir/local_facts.rs",
     find: "            patterned: self.mir_patterned(body),\n",
     replace: "            patterned: Default::default(),\n",
@@ -28,7 +36,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "facts-jsx-props-none",
-    breaks: "a component's props with a flattened field are flattened before JSX takes them apart",
+    breaks:
+      "a component's props with a flattened field are flattened before JSX takes them apart",
     file: "src/lower/mir/local_facts.rs",
     find: "            jsx_props: self.mir_jsx_props(body),\n",
     replace: "            jsx_props: Default::default(),\n",
@@ -36,39 +45,61 @@ export const mutations: Mutation[] = [
   },
   {
     name: "quiet-field-calls-unseen",
-    breaks: "no call of a struct's quiet field is found, so each is checked by its type's borrows elsewhere (ADR 0863, amended)",
+    breaks:
+      "no call of a struct's quiet field is found, so each is checked by its type's borrows elsewhere (ADR 0863, amended)",
     file: "src/lower/mir/local_facts.rs",
     find: "                    quiet.calls.insert(block);\n                    if matches!(known, Std::Borrow { .. })",
     replace: "                    if matches!(known, Std::Borrow { .. })",
-    tests: ["test/lowering-field-cells.test.ts", "-t", "whatever else has its type"],
+    tests: [
+      "test/lowering-field-cells.test.ts",
+      "-t",
+      "whatever else has its type",
+    ],
   },
   {
     name: "module-variable-set-unseen",
-    breaks: "a thread-local that's its module's variable is set as a cell, `$borrowMut(current)` (ADR 0270, amended)",
+    breaks:
+      "a thread-local that's its module's variable is set as a cell, `$borrowMut(current)` (ADR 0270, amended)",
     file: "src/lower/mir/local_facts.rs",
     find: "                        quiet.calls.insert(block);\n                    }\n                    if crate::lower::bindings::nullable_local(tcx, key) {\n",
-    replace: "                    }\n                    if crate::lower::bindings::nullable_local(tcx, key) {\n",
-    tests: ["test/lowering-field-cells.test.ts", "-t", "whatever else has its type"],
+    replace:
+      "                    }\n                    if crate::lower::bindings::nullable_local(tcx, key) {\n",
+    tests: [
+      "test/lowering-field-cells.test.ts",
+      "-t",
+      "whatever else has its type",
+    ],
   },
   {
     name: "quiet-guards-unmoved",
-    breaks: "a quiet field's guard moved to a variable, `let times = root.times.borrow(); .. drop(times);`, releases what it never counted, `$unborrow(times)` (ADR 0863, amended)",
+    breaks:
+      "a quiet field's guard moved to a variable, `let times = root.times.borrow(); .. drop(times);`, releases what it never counted, `$unborrow(times)` (ADR 0863, amended)",
     file: "src/lower/mir/local_facts.rs",
     find: "            quiet.guards.extend(more);\n",
     replace: "            let _ = more;\n            break;\n",
-    tests: ["test/lowering-field-cells.test.ts", "-t", "whatever else has its type"],
+    tests: [
+      "test/lowering-field-cells.test.ts",
+      "-t",
+      "whatever else has its type",
+    ],
   },
   {
     name: "nullable-local-calls-unseen",
-    breaks: "no call that writes a nullable thread-local is found, so its `None` is written `undefined` (ADR 0586, amended)",
+    breaks:
+      "no call that writes a nullable thread-local is found, so its `None` is written `undefined` (ADR 0586, amended)",
     file: "src/lower/mir/local_facts.rs",
     find: "                        quiet.nullable.insert(block);\n",
     replace: "",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "nullable thread-local's None is null"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "nullable thread-local's None is null",
+    ],
   },
   {
     name: "nullable-local-get-unmarked",
-    breaks: "a nullable thread-local's `get` isn't known `null` or a value, `return CURRENT ?? null;` (ADR 0949)",
+    breaks:
+      "a nullable thread-local's `get` isn't known `null` or a value, `return CURRENT ?? null;` (ADR 0949)",
     file: "src/lower/mir/local_facts.rs",
     find: "                Some(Std::CellGet)\n",
     replace: "                Some(Std::Drop)\n",
@@ -76,15 +107,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "nullable-local-clone-unread",
-    breaks: "a nullable thread-local's `with_borrow(Clone::clone)` may be `undefined`, so popSearchTarget returns `searchTarget ?? null`",
+    breaks:
+      "a nullable thread-local's `with_borrow(Clone::clone)` may be `undefined`, so popSearchTarget returns `searchTarget ?? null`",
     file: "src/lower/mir/local_facts.rs",
     find: "                    .is_some_and(|t| tcx.is_lang_item(t, LangItem::Clone))\n            {\n                quiet.nullable.insert(block);\n",
-    replace: "                    .is_some_and(|t| tcx.is_lang_item(t, LangItem::Clone))\n            {\n",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable parameter, a nullable thread-local"],
+    replace:
+      "                    .is_some_and(|t| tcx.is_lang_item(t, LangItem::Clone))\n            {\n",
+    tests: [
+      "test/lowering-nullable-reads.test.ts",
+      "-t",
+      "a nullable parameter, a nullable thread-local",
+    ],
   },
   {
     name: "whole-variable-unknown",
-    breaks: "a variable given a WebIDL integer, `let status = response.status()`, isn't known whole, `${$displayF64(status)}` (ADR 0994, amended)",
+    breaks:
+      "a variable given a WebIDL integer, `let status = response.status()`, isn't known whole, `${$displayF64(status)}` (ADR 0994, amended)",
     file: "src/lower/mir/local_facts.rs",
     find: "            read.facts = read.facts.with(js::Known::Whole);\n",
     replace: "",
@@ -92,7 +130,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "whole-some-payload-unread",
-    breaks: "the `Some`'s number of a nullable WebIDL integer, `Some(start) => ..`, isn't known whole (ADR 0994, amended)",
+    breaks:
+      "the `Some`'s number of a nullable WebIDL integer, `Some(start) => ..`, isn't known whole (ADR 0994, amended)",
     file: "src/lower/mir/local_facts.rs",
     find: "                    [PlaceElem::Downcast(_, some), PlaceElem::Field(..)] if some.as_u32() == 1 => {\n                        Some(Some(read.local))\n                    }\n",
     replace: "",
@@ -100,7 +139,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "whole-parameter-trusted",
-    breaks: "a parameter set again to a WebIDL integer is known whole, though its caller gave `-0`, which `${n}` writes `0` (ADR 0994, amended)",
+    breaks:
+      "a parameter set again to a WebIDL integer is known whole, though its caller gave `-0`, which `${n}` writes `0` (ADR 0994, amended)",
     file: "src/lower/mir/local_facts.rs",
     find: "            local.as_usize() > body.arg_count\n                && ",
     replace: "            ",
@@ -108,16 +148,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "made-pointer-cast-unfollowed",
-    breaks: "a `let f: Rc<dyn Fn()> = Rc::new(..)`, whose unsizing cast MIR makes, isn't the program's own `Rc`, so its closure is a function declared, not a `const` of its arrow (ADR 0882, amended)",
+    breaks:
+      "a `let f: Rc<dyn Fn()> = Rc::new(..)`, whose unsizing cast MIR makes, isn't the program's own `Rc`, so its closure is a function declared, not a `const` of its arrow (ADR 0882, amended)",
     file: "src/lower/mir/local_facts.rs",
     find: "                | Rvalue::Cast(_, Operand::Copy(read) | Operand::Move(read), _)\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(dyn_fn_generic_closure_drops|rc_fn_ptr_eq|self_handle).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(dyn_fn_generic_closure_drops|rc_fn_ptr_eq|self_handle).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "tried-int-never",
-    breaks: "an integer's `try_from` only tested is `$tryFromInt(..)` and `value.TAG !== \"Ok\"`, not its range test, `if (stairsNum < 0)` (#366)",
+    breaks:
+      'an integer\'s `try_from` only tested is `$tryFromInt(..)` and `value.TAG !== "Ok"`, not its range test, `if (stairsNum < 0)` (#366)',
     file: "src/lower/mir/local_facts.rs",
     find: "        self.tried_ints.contains(&block)\n",
     replace: "        false && self.tried_ints.contains(&block)\n",
@@ -126,7 +172,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "momentary-borrow-held",
-    breaks: "a borrow of a counted `RefCell` held only while nothing can ask, `queue.borrow_mut().push(x)`, is counted and released in a `finally`, `const b = $borrowMut(queue, true); try { b.push(x); } finally { $unborrow(b); }`, not checked alone, `$borrowMut(queue).push(x)` (rd218)",
+    breaks:
+      "a borrow of a counted `RefCell` held only while nothing can ask, `queue.borrow_mut().push(x)`, is counted and released in a `finally`, `const b = $borrowMut(queue, true); try { b.push(x); } finally { $unborrow(b); }`, not checked alone, `$borrowMut(queue).push(x)` (rd218)",
     file: "src/lower/mir/local_facts.rs",
     find: "                    quiet.momentary.insert(block);\n                    quiet.guards.insert(destination.local);\n",
     replace: "",
@@ -135,7 +182,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "counter-past-2-53",
-    breaks: "a counter that starts past 2^53, `1e21`, is taken for whole and shown as JS's text, `1e+21` where Rust shows its digits (rd266)",
+    breaks:
+      "a counter that starts past 2^53, `1e21`, is taken for whole and shown as JS's text, `1e+21` where Rust shows its digits (rd266)",
     file: "src/lower/mir/local_facts.rs",
     find: "n.fract() == 0.0 && n.abs() <= 9007199254740992.0 && ",
     replace: "n.fract() == 0.0 && ",
@@ -144,7 +192,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "counter-negative-zero",
-    breaks: "a counter that starts at `-0` is shown as JS's text, `0` where Rust shows `-0` (rd266)",
+    breaks:
+      "a counter that starts at `-0` is shown as JS's text, `0` where Rust shows `-0` (rd266)",
     file: "src/lower/mir/local_facts.rs",
     find: " && !(n == 0.0 && n.is_sign_negative())",
     replace: "",
@@ -153,16 +202,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "counter-any-step",
-    breaks: "a counter of any step, `big += 4e20`, is shown as JS's text, `1.2e+21` past 1e21 (rd266)",
+    breaks:
+      "a counter of any step, `big += 4e20`, is shown as JS's text, `1.2e+21` past 1e21 (rd266)",
     file: "src/lower/mir/local_facts.rs",
     find: "f64::from_bits(scalar.to_bits_unchecked() as u64) == 1.0)",
-    replace: "f64::from_bits(scalar.to_bits_unchecked() as u64).fract() == 0.0)",
+    replace:
+      "f64::from_bits(scalar.to_bits_unchecked() as u64).fract() == 0.0)",
     tests: ["test/corpus.test.ts", "-t", "^counter_shown_as_js_text.rs$"],
     snapshots: true,
   },
   {
     name: "counter-of-itself-unknown",
-    breaks: "a counter, written of itself, isn't known whole, `$displayF64(index)` (rd266)",
+    breaks:
+      "a counter, written of itself, isn't known whole, `$displayF64(index)` (rd266)",
     file: "src/lower/mir/local_facts.rs",
     find: "                        .any(|of| of.is_some_and(|of| !wholes.contains(&of)))\n",
     replace: "                        .any(|of| of.is_some())\n",
@@ -171,18 +223,29 @@ export const mutations: Mutation[] = [
   },
   {
     name: "lasting-of-any-call",
-    breaks: "a reference any call gives is lasting, so a field a borrow of a local gives, `(outer.inner().f)({ outer.inner.f = triple; n })`, is read after what's given (rd285)",
+    breaks:
+      "a reference any call gives is lasting, so a field a borrow of a local gives, `(outer.inner().f)({ outer.inner.f = triple; n })`, is read after what's given (rd285)",
     file: "src/lower/mir/local_facts.rs",
     find: "                    && matches!(output.kind(), ty::Ref(region, ..) if region.is_static())\n",
     replace: "                    && matches!(output.kind(), ty::Ref(..))\n",
-    tests: ["test/corpus.test.ts", "-t", "^field_functions_called_after_arguments.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^field_functions_called_after_arguments.rs$",
+    ],
   },
   {
     name: "lasting-parameter-rebound",
-    breaks: "a `&T` parameter the body assigns again is lasting, so `(hooks.f)({ hooks = other; n })` calls `other`'s (rd285)",
+    breaks:
+      "a `&T` parameter the body assigns again is lasting, so `(hooks.f)({ hooks = other; n })` calls `other`'s (rd285)",
     file: "src/lower/mir/local_facts.rs",
     find: "            .filter(|&local| shared(body.local_decls[local].ty) && written(local) == 0);\n",
-    replace: "            .filter(|&local| shared(body.local_decls[local].ty));\n",
-    tests: ["test/corpus.test.ts", "-t", "^field_functions_called_after_arguments.rs$"],
+    replace:
+      "            .filter(|&local| shared(body.local_decls[local].ty));\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^field_functions_called_after_arguments.rs$",
+    ],
   },
 ];

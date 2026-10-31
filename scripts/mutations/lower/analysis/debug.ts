@@ -4,16 +4,18 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "pretty-flag-any-alternate",
-    breaks: "`{:#}` of a `Value` gives the crate's `Debug`s an `alternate` they're never asked for: right, but not the JS a person writes",
+    breaks:
+      "`{:#}` of a `Value` gives the crate's `Debug`s an `alternate` they're never asked for: right, but not the JS a person writes",
     file: "src/lower/analysis/debug.rs",
     find: "                        &ty::FnDef(made_by, _) => is_debug_argument(tcx, made_by),",
     replace: "                        &ty::FnDef(_, _) => true,",
-    tests: ["test/snapshots.test.ts","-t","dynamic"],
+    tests: ["test/snapshots.test.ts", "-t", "dynamic"],
     snapshots: true,
   },
   {
     name: "debug-argument-unrecognized",
-    breaks: "a `{:#?}` placeholder's `Debug` argument isn't told from another, and the crate's `Debug`s are never shown pretty",
+    breaks:
+      "a `{:#?}` placeholder's `Debug` argument isn't told from another, and the crate's `Debug`s are never shown pretty",
     file: "src/lower/analysis/debug.rs",
     find: "                        &ty::FnDef(made_by, _) => is_debug_argument(tcx, made_by),",
     replace: "                        &ty::FnDef(_, _) => false,",
@@ -21,7 +23,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "format-options-flag-primitive",
-    breaks: "a crate that gives a width to its own types is taken to give none, and the numbers its writers show are unpadded",
+    breaks:
+      "a crate that gives a width to its own types is taken to give none, and the numbers its writers show are unpadded",
     file: "src/lower/analysis/debug.rs",
     find: "                args.first().is_none_or(|&arg| !primitive(thir[arg].ty.peel_refs()))",
     replace: "                args.first().is_some_and(|_| false)",
@@ -29,18 +32,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "formatter-asked-unseen",
-    breaks: "a crate that asks `f.width()`, and gives no placeholder's options, has writers that take none, and the question is an error",
+    breaks:
+      "a crate that asks `f.width()`, and gives no placeholder's options, has writers that take none, and the question is an error",
     file: "src/lower/analysis/debug.rs",
     find: "        formatter_query(tcx, id).is_some_and(|query| query != FormatterQuery::Alternate)",
-    replace: "        false && formatter_query(tcx, id).is_some_and(|query| query != FormatterQuery::Alternate)",
+    replace:
+      "        false && formatter_query(tcx, id).is_some_and(|query| query != FormatterQuery::Alternate)",
     tests: ["test/corpus.test.ts", "-t", "formatter_asked"],
   },
   {
     name: "debug-hex-unasked",
-    breaks: "a crate that asks `{:x?}` writes its writers' integers in decimal whatever their options say",
+    breaks:
+      "a crate that asks `{:x?}` writes its writers' integers in decimal whatever their options say",
     file: "src/lower/analysis/debug.rs",
     find: "                .any(|piece| matches!(piece, Piece::Argument(_, spec) if spec.debug_hex.is_some()))\n",
-    replace: "                .any(|piece| matches!(piece, Piece::Argument(_, spec) if spec.debug_hex.is_some() && false))\n",
+    replace:
+      "                .any(|piece| matches!(piece, Piece::Argument(_, spec) if spec.debug_hex.is_some() && false))\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_hex_composite.rs$"],
   },
 ];

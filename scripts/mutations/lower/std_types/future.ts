@@ -12,15 +12,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "then-field-not-thenable",
-    breaks: "a struct with a function named `then` an async fn gives is adopted as a thenable, and its `.await` never resolves",
+    breaks:
+      "a struct with a function named `then` an async fn gives is adopted as a thenable, and its `.await` never resolves",
     file: "src/lower/std_types/future.rs",
-    find: "                field.name.as_str() == \"then\" && (self.is_callable(held) || self.is_unknown(held))\n",
-    replace: "                false && field.name.as_str() == \"then\" && (self.is_callable(held) || self.is_unknown(held))\n",
+    find: '                field.name.as_str() == "then" && (self.is_callable(held) || self.is_unknown(held))\n',
+    replace:
+      '                false && field.name.as_str() == "then" && (self.is_callable(held) || self.is_unknown(held))\n',
     tests: ["test/lowering-functions.test.ts", "-t", "thenable"],
   },
   {
     name: "future-of-future-not-thenable",
-    breaks: "an `Option` of a future an async fn gives is flattened by the promise, `None` where it's `Some`",
+    breaks:
+      "an `Option` of a future an async fn gives is flattened by the promise, `None` where it's `Some`",
     file: "src/lower/std_types/future.rs",
     find: "            ty::Adt(..) if let Some(inner) = self.option_of(ty) => self.may_be_thenable(inner),\n",
     replace: "",

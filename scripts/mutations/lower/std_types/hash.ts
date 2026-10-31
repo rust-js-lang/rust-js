@@ -15,12 +15,14 @@ export const mutations: Mutation[] = [
     breaks: "`SipHasher::new_with_keys(k0, k1)` hashes as zero keys",
     file: "src/lower/std_types/hash.rs",
     find: "            HashOp::NewWithKeys => new_hasher(StdHasher::Sip, values.collect()),\n",
-    replace: "            HashOp::NewWithKeys => new_hasher(StdHasher::Sip, Vec::new()),\n",
+    replace:
+      "            HashOp::NewWithKeys => new_hasher(StdHasher::Sip, Vec::new()),\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_hashers.rs$"],
   },
   {
     name: "hash-std-hasher-by-dictionary",
-    breaks: "a std hasher's writes are its dictionary's, `$sipHasher.write_u32({ value: h }, n)`, not `h.write_u32(n)`",
+    breaks:
+      "a std hasher's writes are its dictionary's, `$sipHasher.write_u32({ value: h }, n)`, not `h.write_u32(n)`",
     file: "src/lower/std_types/hash.rs",
     find: "        let own = self.recognition().std_hasher(ty).is_some();\n",
     replace: "        let own = false;\n",
@@ -29,7 +31,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "hash-crate-hasher-unboxed",
-    breaks: "a crate's hasher is given to its dictionary as the object, where its methods read a box's `value`",
+    breaks:
+      "a crate's hasher is given to its dictionary as the object, where its methods read a box's `value`",
     file: "src/lower/std_types/hash.rs",
     find: "        let held = match !own && self.is_cell_pointee(ty) {\n",
     replace: "        let held = match true {\n",
@@ -37,17 +40,20 @@ export const mutations: Mutation[] = [
   },
   {
     name: "hash-char-as-text",
-    breaks: "a `char` is hashed as text, `write_str`, not as its code point, a `u32`",
+    breaks:
+      "a `char` is hashed as text, `write_str`, not as its code point, a `u32`",
     file: "src/lower/std_types/hash.rs",
-    find: "                out.push(hasher.write(&self.hasher_key(\"write_u32\"), vec![code]));\n",
-    replace: "                out.push(hasher.write(&self.hasher_key(\"write_str\"), vec![code]));\n",
+    find: '                out.push(hasher.write(&self.hasher_key("write_u32"), vec![code]));\n',
+    replace:
+      '                out.push(hasher.write(&self.hasher_key("write_str"), vec![code]));\n',
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
   },
   {
     name: "hash-slice-unprefixed",
-    breaks: "a slice's length isn't written before its items, so `([1], [2])` and `([1, 2], [])` hash alike",
+    breaks:
+      "a slice's length isn't written before its items, so `([1], [2])` and `([1, 2], [])` hash alike",
     file: "src/lower/std_types/hash.rs",
-    find: "                out.push(hasher.write(\n                    &self.hasher_key(\"write_length_prefix\"),\n                    vec![Expr::member(value.clone(), \"length\")],\n                ));\n",
+    find: '                out.push(hasher.write(\n                    &self.hasher_key("write_length_prefix"),\n                    vec![Expr::member(value.clone(), "length")],\n                ));\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
   },
@@ -55,8 +61,9 @@ export const mutations: Mutation[] = [
     name: "hash-option-discriminants-swapped",
     breaks: "`Some` is hashed as discriminant 0 and `None` as 1",
     file: "src/lower/std_types/hash.rs",
-    find: "                let mut some = vec![hasher.write(&self.hasher_key(\"write_isize\"), vec![Expr::int(1)])];\n",
-    replace: "                let mut some = vec![hasher.write(&self.hasher_key(\"write_isize\"), vec![Expr::int(0)])];\n",
+    find: '                let mut some = vec![hasher.write(&self.hasher_key("write_isize"), vec![Expr::int(1)])];\n',
+    replace:
+      '                let mut some = vec![hasher.write(&self.hasher_key("write_isize"), vec![Expr::int(0)])];\n',
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
   },
   {
@@ -64,20 +71,24 @@ export const mutations: Mutation[] = [
     breaks: "an `Ok` is hashed as `Err`'s discriminant",
     file: "src/lower/std_types/hash.rs",
     find: "                for (discriminant, held) in [(0, ok), (1, err)] {\n",
-    replace: "                for (discriminant, held) in [(1, ok), (0, err)] {\n",
+    replace:
+      "                for (discriminant, held) in [(1, ok), (0, err)] {\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
   },
   {
     name: "hash-own-hash-slice-ignored",
-    breaks: "a slice of a crate's type is hashed item by item, not by its own `hash_slice`",
+    breaks:
+      "a slice of a crate's type is hashed item by item, not by its own `hash_slice`",
     file: "src/lower/std_types/hash.rs",
-    find: "            return self.dictionary_writes(\"hash_slice\", items, item, hasher, span, out);\n",
-    replace: "            return self.each_item_writes(items, item, hasher, span, out);\n",
+    find: '            return self.dictionary_writes("hash_slice", items, item, hasher, span, out);\n',
+    replace:
+      "            return self.each_item_writes(items, item, hasher, span, out);\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
   },
   {
     name: "hash-integer-slice-each",
-    breaks: "an integer slice's items are each a write, where std's are one `write` of their bytes",
+    breaks:
+      "an integer slice's items are each a write, where std's are one `write` of their bytes",
     file: "src/lower/std_types/hash.rs",
     find: "        let Some(num) = (matches!(item.kind(), ty::Int(_) | ty::Uint(_)))\n",
     replace: "        let Some(num) = (false)\n",
@@ -85,7 +96,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "hash-bytes-mapped",
-    breaks: "a `[u8]`'s bytes are each mapped to themselves, `bytes.flatMap(..)`, not written as they are",
+    breaks:
+      "a `[u8]`'s bytes are each mapped to themselves, `bytes.flatMap(..)`, not written as they are",
     file: "src/lower/std_types/hash.rs",
     find: "            8 if !num.signed() => items,\n",
     replace: "",

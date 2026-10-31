@@ -4,23 +4,27 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "serde-field-keyless",
-    breaks: "a hand-written struct's `serialize_field` writes its value with no key",
+    breaks:
+      "a hand-written struct's `serialize_field` writes its value with no key",
     file: "src/lower/serde/protocol.rs",
-    find: "            SerdeOp::Field => {\n                out.push(step(&json, \"key\", vec![values.remove(0)]));\n",
-    replace: "            SerdeOp::Field => {\n                values.remove(0);\n",
+    find: '            SerdeOp::Field => {\n                out.push(step(&json, "key", vec![values.remove(0)]));\n',
+    replace:
+      "            SerdeOp::Field => {\n                values.remove(0);\n",
     tests: ["test/serde.test.ts", "-t", "hand-written Serialize"],
   },
   {
     name: "serde-compound-unclosed",
     breaks: "a hand-written compound's `end()` writes no closing bracket",
     file: "src/lower/serde/protocol.rs",
-    find: "                    SerdeCompound::Map | SerdeCompound::Struct | SerdeCompound::StructVariant => \"endObject\",\n                };\n                out.push(step(&json, method, Vec::new()));\n                // A variant's",
-    replace: "                    SerdeCompound::Map | SerdeCompound::Struct | SerdeCompound::StructVariant => \"endObject\",\n                };\n                let _ = method;\n                // A variant's",
+    find: '                    SerdeCompound::Map | SerdeCompound::Struct | SerdeCompound::StructVariant => "endObject",\n                };\n                out.push(step(&json, method, Vec::new()));\n                // A variant\'s',
+    replace:
+      '                    SerdeCompound::Map | SerdeCompound::Struct | SerdeCompound::StructVariant => "endObject",\n                };\n                let _ = method;\n                // A variant\'s',
     tests: ["test/serde.test.ts", "-t", "hand-written Serialize"],
   },
   {
     name: "serde-compound-box-unread",
-    breaks: "a compound's `&mut self`, a box in generic code, is taken as the writer, and JS throws",
+    breaks:
+      "a compound's `&mut self`, a box in generic code, is taken as the writer, and JS throws",
     file: "src/lower/serde/protocol.rs",
     find: "                Expr::held(values.remove(0))\n",
     replace: "                values.remove(0)\n",
@@ -36,34 +40,38 @@ export const mutations: Mutation[] = [
   },
   {
     name: "serde-deserialize-unmade",
-    breaks: "`T::deserialize(d)` in a hand-written impl is what's read, not a `Result` of it, and `?` of it throws",
+    breaks:
+      "`T::deserialize(d)` in a hand-written impl is what's read, not a `Result` of it, and `?` of it throws",
     file: "src/lower/serde/protocol.rs",
-    find: "            return Ok(Expr::call(Expr::helper(\"$jsonRead\"), vec![values.remove(0), reader]));\n",
-    replace: "            return Ok(Expr::call(reader, vec![values.remove(0)]));\n",
+    find: '            return Ok(Expr::call(Expr::helper("$jsonRead"), vec![values.remove(0), reader]));\n',
+    replace:
+      "            return Ok(Expr::call(reader, vec![values.remove(0)]));\n",
     tests: ["test/serde.test.ts", "-t", "hand-written Deserialize"],
   },
   {
     name: "serde-visit-ignores-hint",
-    breaks: "`deserialize_u64` of a visitor given a string calls its `visit_str`, where serde_json says it's an invalid type",
+    breaks:
+      "`deserialize_u64` of a visitor given a string calls its `visit_str`, where serde_json says it's an invalid type",
     file: "src/lower/serde/protocol.rs",
-    find: "                (VisitorMethod::Str, SerdeHint::Any | SerdeHint::Str) => \"str\",\n",
-    replace: "                (VisitorMethod::Str, _) => \"str\",\n",
+    find: '                (VisitorMethod::Str, SerdeHint::Any | SerdeHint::Str) => "str",\n',
+    replace: '                (VisitorMethod::Str, _) => "str",\n',
     tests: ["test/serde.test.ts", "-t", "hand-written Visitor"],
   },
   {
     name: "serde-visit-borrowed-as-copied",
-    breaks: "a borrowed string is given to a visitor's `visit_str`, not its `visit_borrowed_str`",
+    breaks:
+      "a borrowed string is given to a visitor's `visit_str`, not its `visit_borrowed_str`",
     file: "src/lower/serde/protocol.rs",
-    find: "                (VisitorMethod::BorrowedStr, SerdeHint::Any | SerdeHint::Str) => \"borrowedStr\",\n",
+    find: '                (VisitorMethod::BorrowedStr, SerdeHint::Any | SerdeHint::Str) => "borrowedStr",\n',
     replace: "",
     tests: ["test/serde.test.ts", "-t", "hand-written Visitor"],
   },
   {
     name: "serde-invalid-value-as-type",
-    breaks: "`invalid_value` says \"invalid type\"",
+    breaks: '`invalid_value` says "invalid type"',
     file: "src/lower/serde/protocol.rs",
-    find: "                    \"invalid value: \"\n",
-    replace: "                    \"invalid type: \"\n",
+    find: '                    "invalid value: "\n',
+    replace: '                    "invalid type: "\n',
     tests: ["test/serde.test.ts", "-t", "hand-written Visitor"],
   },
   {
@@ -71,20 +79,24 @@ export const mutations: Mutation[] = [
     breaks: "what a visitor's error says it expected, `&self`, is refused",
     file: "src/lower/serde/protocol.rs",
     find: "            Some((_, f)) => Ok(Expr::call(self.fn_ref(f), vec![value])),\n",
-    replace: "            Some(_) => Err(self.unsupported(span, \"what's expected\")),\n",
+    replace:
+      '            Some(_) => Err(self.unsupported(span, "what\'s expected")),\n',
     tests: ["test/serde.test.ts", "-t", "hand-written Visitor"],
   },
   {
     name: "serde-struct-hint-map-only",
-    breaks: "`deserialize_struct` of a sequence isn't given to the visitor's `visit_seq`, where serde_json gives it",
+    breaks:
+      "`deserialize_struct` of a sequence isn't given to the visitor's `visit_seq`, where serde_json gives it",
     file: "src/lower/serde/protocol.rs",
-    find: "                (VisitorMethod::Seq, SerdeHint::Any | SerdeHint::Seq | SerdeHint::Struct) => \"seq\",\n",
-    replace: "                (VisitorMethod::Seq, SerdeHint::Any | SerdeHint::Seq) => \"seq\",\n",
+    find: '                (VisitorMethod::Seq, SerdeHint::Any | SerdeHint::Seq | SerdeHint::Struct) => "seq",\n',
+    replace:
+      '                (VisitorMethod::Seq, SerdeHint::Any | SerdeHint::Seq) => "seq",\n',
     tests: ["test/serde.test.ts", "-t", "sequence and a map"],
   },
   {
     name: "serde-next-unboxed-access",
-    breaks: "`seq.next_element()`'s `&mut self`, a box in generic code, is taken as the access, and JS throws",
+    breaks:
+      "`seq.next_element()`'s `&mut self`, a box in generic code, is taken as the access, and JS throws",
     file: "src/lower/serde/protocol.rs",
     find: "            let access = Expr::held(values.remove(0));\n",
     replace: "            let access = values.remove(0);\n",
@@ -92,23 +104,26 @@ export const mutations: Mutation[] = [
   },
   {
     name: "serde-hint-errors-as-any",
-    breaks: "`deserialize_map` of a sequence errs where it's read, not where it's peeked at, as serde_json does",
+    breaks:
+      "`deserialize_map` of a sequence errs where it's read, not where it's peeked at, as serde_json does",
     file: "src/lower/serde/protocol.rs",
-    find: "            _ => \"$jsonVisitHint\",\n",
-    replace: "            _ => \"$jsonVisit\",\n",
+    find: '            _ => "$jsonVisitHint",\n',
+    replace: '            _ => "$jsonVisit",\n',
     tests: ["test/serde.test.ts", "-t", "sequence and a map"],
   },
   {
     name: "serde-variant-unnamed",
-    breaks: "`serialize_struct_variant` writes the variant's fields without the object of its name",
+    breaks:
+      "`serialize_struct_variant` writes the variant's fields without the object of its name",
     file: "src/lower/serde/protocol.rs",
-    find: "                    out.push(step(&json, \"key\", vec![values.remove(2)]));\n",
+    find: '                    out.push(step(&json, "key", vec![values.remove(2)]));\n',
     replace: "                    values.remove(2);\n",
     tests: ["test/serde.test.ts", "-t", "collects and writes variants"],
   },
   {
     name: "serde-collect-map-keys-unwritten",
-    breaks: "`collect_map` writes its keys as they are, a number where JSON's is text",
+    breaks:
+      "`collect_map` writes its keys as they are, a number where JSON's is text",
     file: "src/lower/serde/protocol.rs",
     find: "                let text = self.json_key(Expr::var(&key), own(1), span)?;\n",
     replace: "                let text = Expr::var(&key);\n",
@@ -116,7 +131,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "serde-visit-none-given-a-value",
-    breaks: "a visitor's `visit_none` is called with a value, which its function takes as nothing, so it's the same",
+    breaks:
+      "a visitor's `visit_none` is called with a value, which its function takes as nothing, so it's the same",
     file: "src/lower/serde/protocol.rs",
     find: "                VisitorMethod::Unit | VisitorMethod::None => Vec::new(),\n",
     replace: "",

@@ -8,6 +8,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/places.rs",
     find: "        match self.is_cell(output) {\n            true => Expr::object(",
     replace: "        match false {\n            true => Expr::object(",
-    tests: ["test/corpus.test.ts","-t","leaked_string_written"],
+    tests: ["test/corpus.test.ts", "-t", "leaked_string_written"],
   },
 ];

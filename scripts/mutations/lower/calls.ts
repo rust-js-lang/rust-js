@@ -4,15 +4,21 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "none-argument-given",
-    breaks: "a trailing `None` given a function value is an argument, `cb(undefined)` of `cb(None)`, where a person writes `cb()` (rd271, ADR 0443, amended)",
+    breaks:
+      "a trailing `None` given a function value is an argument, `cb(undefined)` of `cb(None)`, where a person writes `cb()` (rd271, ADR 0443, amended)",
     file: "src/lower/calls.rs",
     find: "(optional(i) && matches!(last.kind, js::ExprKind::Undefined))",
     replace: "(optional(i) && matches!(last.kind, js::ExprKind::Null))",
-    tests: ["test/js-functions.test.ts", "-t", "a trailing None given a function value"],
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a trailing None given a function value",
+    ],
   },
   {
     name: "none-argument-any-undefined",
-    breaks: "a trailing `undefined` given a function value is left out whatever its type, so a `Some(())` given an `Option<()>` would be too",
+    breaks:
+      "a trailing `undefined` given a function value is left out whatever its type, so a `Some(())` given an `Option<()>` would be too",
     file: "src/lower/calls.rs",
     find: "        matches!(tys[i].kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option))\n",
     replace: "        true\n",
@@ -21,39 +27,61 @@ export const mutations: Mutation[] = [
   },
   {
     name: "bool-call-result-unknown",
-    breaks: "a call of another module's function that gives a `bool` isn't known one, so `ready && isSupported(name) && (..)` is `!!(ready && isSupported(name)) && (..)` (rd145)",
+    breaks:
+      "a call of another module's function that gives a `bool` isn't known one, so `ready && isSupported(name) && (..)` is `!!(ready && isSupported(name)) && (..)` (rd145)",
     file: "src/lower/calls.rs",
     find: "    if output.is_bool() {\n        facts = facts.with(Known::Boolean);\n",
     replace: "    if false {\n        facts = facts.with(Known::Boolean);\n",
-    tests: ["test/lowering-bool-ternaries.test.ts", "-t", "another module's function that gives a bool"],
+    tests: [
+      "test/lowering-bool-ternaries.test.ts",
+      "-t",
+      "another module's function that gives a bool",
+    ],
   },
   {
     name: "trait-nullable-result-trusted",
-    breaks: "a trait's method marked `#[rust_js::nullable]` is taken to give `null`, whose impl gives `undefined`: `internals.T = PPeek.peek(queue)` stores it (ADR 0841, amended)",
+    breaks:
+      "a trait's method marked `#[rust_js::nullable]` is taken to give `null`, whose impl gives `undefined`: `internals.T = PPeek.peek(queue)` stores it (ADR 0841, amended)",
     file: "src/lower/calls.rs",
     find: "    super::bindings::nullable_result(tcx, def_id) && tcx.trait_of_assoc(def_id).is_none()\n",
     replace: "    super::bindings::nullable_result(tcx, def_id)\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "result is written to a nullable place"],
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "result is written to a nullable place",
+    ],
   },
   {
     name: "apply-pattern-called",
-    breaks: "a closure taking a pair apart, `|&(_, age)| age`, is called where it's inlined, `(([, age]) => age)(item)`, not `item[1]`",
+    breaks:
+      "a closure taking a pair apart, `|&(_, age)| age`, is called where it's inlined, `(([, age]) => age)(item)`, not `item[1]`",
     file: "src/lower/calls.rs",
     find: "                js::Pattern::Array(items) => (items.iter().enumerate())",
-    replace: "                js::Pattern::Array(items) if false => (items.iter().enumerate())",
-    tests: ["test/lowering-matches.test.ts", "-t", "taken apart through a reference"],
+    replace:
+      "                js::Pattern::Array(items) if false => (items.iter().enumerate())",
+    tests: [
+      "test/lowering-matches.test.ts",
+      "-t",
+      "taken apart through a reference",
+    ],
   },
   {
     name: "promise-result-unsettled",
-    breaks: "a JS promise of a `Result` that rejects throws at its `.await`, not an `Err`",
+    breaks:
+      "a JS promise of a `Result` that rejects throws at its `.await`, not an `Err`",
     file: "src/lower/calls.rs",
-    find: "            Catching::PromiseResult => Expr::call(Expr::helper(\"$settle\"), vec![value]),\n",
+    find: '            Catching::PromiseResult => Expr::call(Expr::helper("$settle"), vec![value]),\n',
     replace: "            Catching::PromiseResult => value,\n",
-    tests: ["test/compiler.test.ts", "-t", "the builtins crate's object and js_error functions are JS's"],
+    tests: [
+      "test/compiler.test.ts",
+      "-t",
+      "the builtins crate's object and js_error functions are JS's",
+    ],
   },
   {
     name: "variadic-array-not-spread-out",
-    breaks: "rest arguments written out are one array argument, `Math.max([a, b, 1])`, `total([1, 2])`",
+    breaks:
+      "rest arguments written out are one array argument, `Math.max([a, b, 1])`, `total([1, 2])`",
     file: "src/lower/calls.rs",
     find: "        }) => args.extend(items),\n",
     replace: "        }) => args.push(Expr::array(items)),\n",
@@ -61,7 +89,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "variadic-slice-given-whole",
-    breaks: "rest arguments a variable holds are one argument, `Math.max(values)`, `total(v)`, not spread",
+    breaks:
+      "rest arguments a variable holds are one argument, `Math.max(values)`, `total(v)`, not spread",
     file: "src/lower/calls.rs",
     find: "        Some(last) => args.push(Expr::spread(last)),\n",
     replace: "        Some(last) => args.push(last),\n",
@@ -69,15 +98,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rest-call-not-spread",
-    breaks: "a call of the crate's function whose last parameter is `#[rust_js::rest]` gives its slice whole, `total(v)`, where the function gathers `...xs`",
+    breaks:
+      "a call of the crate's function whose last parameter is `#[rust_js::rest]` gives its slice whole, `total(v)`, where the function gathers `...xs`",
     file: "src/lower/calls.rs",
     find: "        if self.takes_rest(def_id) {\n            spread_rest(args);",
     replace: "        if false {\n            spread_rest(args);",
-    tests: ["test/rest-parameters.test.ts", "-t", "rest slice is JS's rest parameter"],
+    tests: [
+      "test/rest-parameters.test.ts",
+      "-t",
+      "rest slice is JS's rest parameter",
+    ],
   },
   {
     name: "library-rest-unknown",
-    breaks: "a library's function whose last parameter is `#[rust_js::rest]` is called with its slice whole by another crate",
+    breaks:
+      "a library's function whose last parameter is `#[rust_js::rest]` is called with its slice whole by another crate",
     file: "src/lower/calls.rs",
     find: "super::bindings::takes_rest(self.tcx, def_id) || self.krate.foreign.takes_rest(def_id)",
     replace: "super::bindings::takes_rest(self.tcx, def_id)",
@@ -85,63 +120,99 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rest-value-type-parameter-allowed",
-    breaks: "rest arguments as a value given as a type parameter's value are compiled, so `f(a)` of an `F: Fn(A)` gives the closure one array",
+    breaks:
+      "rest arguments as a value given as a type parameter's value are compiled, so `f(a)` of an `F: Fn(A)` gives the closure one array",
     file: "src/lower/calls.rs",
     find: "        self.check_rest_unspread(def_id, generic_args, span)?;\n",
     replace: "",
-    tests: ["test/rest-parameters.test.ts", "-t", "refused: a type parameter's value"],
+    tests: [
+      "test/rest-parameters.test.ts",
+      "-t",
+      "refused: a type parameter's value",
+    ],
   },
   {
     name: "rest-value-binding-refused",
-    breaks: "a variadic binding given rest arguments as a value, `function::call(f, None, args)`, is refused as a type parameter's value",
+    breaks:
+      "a variadic binding given rest arguments as a value, `function::call(f, None, args)`, is refused as a type parameter's value",
     file: "src/lower/calls.rs",
     find: "        if !super::bindings::is_binding(self.tcx, def_id)\n            && generic_args\n",
     replace: "        if true\n            && generic_args\n",
-    tests: ["test/rest-parameters.test.ts", "-t", "spreads them, through any type"],
+    tests: [
+      "test/rest-parameters.test.ts",
+      "-t",
+      "spreads them, through any type",
+    ],
   },
   {
     name: "and-then-of-nullable-coalesced",
-    breaks: "`o.and_then(nullable_fn)` stored in a nullable place is `(o != null ? f(o) : undefined) ?? null`, where it's `o != null ? f(o) : null` (ADR 0841, amended)",
+    breaks:
+      "`o.and_then(nullable_fn)` stored in a nullable place is `(o != null ? f(o) : undefined) ?? null`, where it's `o != null ? f(o) : null` (ADR 0841, amended)",
     file: "src/lower/calls.rs",
     find: "    if gives_null_for_none(tcx, def_id) {\n",
     replace: "    if false && gives_null_for_none(tcx, def_id) {\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "an and_then of a nullable function is stored as it is"],
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "an and_then of a nullable function is stored as it is",
+    ],
   },
   {
     name: "and-then-of-any-function-defined",
-    breaks: "`o.and_then(f)` of a function that may give `undefined` is stored as it is in a nullable place, its `None` `undefined` there",
+    breaks:
+      "`o.and_then(f)` of a function that may give `undefined` is stored as it is in a nullable place, its `None` `undefined` there",
     file: "src/lower/calls.rs",
     find: "    if gives_null_for_none(tcx, def_id) {\n",
     replace: "    if true {\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "an and_then of a nullable function is stored as it is"],
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "an and_then of a nullable function is stored as it is",
+    ],
   },
   {
     name: "and-then-of-nullable-none-undefined",
-    breaks: "an `and_then` of a nullable function kept in a variable gives `undefined` for `None`, `owner ? nameOfOwner(owner) : undefined`, where upstream and the function write `null` (ADR 0841, amended)",
+    breaks:
+      "an `and_then` of a nullable function kept in a variable gives `undefined` for `None`, `owner ? nameOfOwner(owner) : undefined`, where upstream and the function write `null` (ADR 0841, amended)",
     file: "src/lower/calls.rs",
     find: "        ty::FnDef(def_id, _) if gives_null_for_none(tcx, *def_id) && !super::bindings::is_binding(tcx, *def_id) => {\n            Expr::null()\n        }\n",
     replace: "",
-    tests: ["test/lowering-nullable.test.ts", "-t", "an and_then of a nullable function is stored as it is"],
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "an and_then of a nullable function is stored as it is",
+    ],
   },
   {
     name: "and-then-of-closure-of-nullable-none-undefined",
-    breaks: "React's `nextInstance ? tryHydrateActivity(fiber, nextInstance) : undefined`, an `and_then` of a closure of a nullable function's call giving `undefined` for `None` (ADR 0841, amended)",
+    breaks:
+      "React's `nextInstance ? tryHydrateActivity(fiber, nextInstance) : undefined`, an `and_then` of a closure of a nullable function's call giving `undefined` for `None` (ADR 0841, amended)",
     file: "src/lower/calls.rs",
     find: "        ty::Closure(..) if then.facts.has(Known::Defined) && !then.facts.has(Known::NoneNull) => Expr::null(),\n",
     replace: "",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "an and_then of a closure of a nullable"],
+    tests: [
+      "test/lowering-nullable-reads.test.ts",
+      "-t",
+      "an and_then of a closure of a nullable",
+    ],
   },
   {
     name: "nullable-call-of-any-function",
-    breaks: "a nullable result of any function's call is the call, so `plain(n)`'s `None`, `undefined`, is a JS caller's value",
+    breaks:
+      "a nullable result of any function's call is the call, so `plain(n)`'s `None`, `undefined`, is a JS caller's value",
     file: "src/lower/calls.rs",
     find: "    if gives_null_for_none(tcx, def_id) {\n",
     replace: "    if true {\n",
-    tests: ["test/lowering-options.test.ts", "-t", "nullable function's call is the call"],
+    tests: [
+      "test/lowering-options.test.ts",
+      "-t",
+      "nullable function's call is the call",
+    ],
   },
   {
     name: "none-given-by-the-crates-nullable-function",
-    breaks: "the crate's `#[rust_js::nullable]` function, which gives a nullable field of an object JS made as it is, `undefined` too, is taken to give only `null`, so `childOf(holder) !== null` holds of `{}` (a wrong answer, ADR 0298, amended)",
+    breaks:
+      "the crate's `#[rust_js::nullable]` function, which gives a nullable field of an object JS made as it is, `undefined` too, is taken to give only `null`, so `childOf(holder) !== null` holds of `{}` (a wrong answer, ADR 0298, amended)",
     file: "src/lower/calls.rs",
     find: "    if !super::bindings::is_binding(tcx, def_id) || tcx.trait_of_assoc(def_id).is_some() {\n",
     replace: "    if tcx.trait_of_assoc(def_id).is_some() {\n",
@@ -149,16 +220,23 @@ export const mutations: Mutation[] = [
   },
   {
     name: "and-then-of-a-binding-nulled",
-    breaks: "`and_then` of a closure of a nullable binding's call, `labels.item(0)`, writes `null` where what it's of is `None`, `option != null ? option.item(0) : null`, not JS's `input.labels?.item(0)` (ADR 0298, amended)",
+    breaks:
+      "`and_then` of a closure of a nullable binding's call, `labels.item(0)`, writes `null` where what it's of is `None`, `option != null ? option.item(0) : null`, not JS's `input.labels?.item(0)` (ADR 0298, amended)",
     file: "src/lower/calls.rs",
     find: "        ty::Closure(..) if then.facts.has(Known::Defined) && !then.facts.has(Known::NoneNull) => Expr::null(),\n",
-    replace: "        ty::Closure(..) if then.facts.has(Known::Defined) => Expr::null(),\n",
-    tests: ["test/snapshots.test.ts", "-t", "^web_forms: the generated JS is its snapshot$"],
+    replace:
+      "        ty::Closure(..) if then.facts.has(Known::Defined) => Expr::null(),\n",
+    tests: [
+      "test/snapshots.test.ts",
+      "-t",
+      "^web_forms: the generated JS is its snapshot$",
+    ],
     snapshots: true,
   },
   {
     name: "whole-fact-unset",
-    breaks: "what a `#[rust_js::whole]` binding gives isn't known whole, so its `{}` is `$displayF64(response.status)`",
+    breaks:
+      "what a `#[rust_js::whole]` binding gives isn't known whole, so its `{}` is `$displayF64(response.status)`",
     file: "src/lower/calls.rs",
     find: "    if super::bindings::whole_output(tcx, output) && super::bindings::whole_range(tcx, def_id).is_some() {\n",
     replace: "    if false {\n",
@@ -166,10 +244,15 @@ export const mutations: Mutation[] = [
   },
   {
     name: "and-then-binding-null",
-    breaks: "an `and_then` of a nullable binding is `node != null ? node.firstChild : null`, not JS's `node?.firstChild` (rd81)",
+    breaks:
+      "an `and_then` of a nullable binding is `node != null ? node.firstChild : null`, not JS's `node?.firstChild` (rd81)",
     file: "src/lower/calls.rs",
     find: " && !super::bindings::is_binding(tcx, *def_id)",
     replace: "",
-    tests: ["test/webapi-bindings.test.ts", "-t", "and_then of a nullable binding"],
+    tests: [
+      "test/webapi-bindings.test.ts",
+      "-t",
+      "and_then of a nullable binding",
+    ],
   },
 ];

@@ -1,20 +1,30 @@
 // Mutations of src/lower/format_args.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
-const concat = ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"];
+const concat = [
+  "test/lowering-strings.test.ts",
+  "-t",
+  "a format string of a concat! is its pieces joined by",
+];
 
 export const mutations: Mutation[] = [
   {
     name: "format-lines-flattened",
-    breaks: "a format string written across lines is a template of `\\n`s on one line",
+    breaks:
+      "a format string written across lines is a template of `\\n`s on one line",
     file: "src/lower/format_args.rs",
     find: "    let lines = breaks && written.first().is_some_and(|piece| piece.lines);",
     replace: "    let lines = false;",
-    tests: ["test/lowering-strings.test.ts", "-t", "a format string written across lines"],
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "a format string written across lines",
+    ],
   },
   {
     name: "format-concat-one-template",
-    breaks: "a format string of a `concat!` is one template, not its pieces joined by `+`",
+    breaks:
+      "a format string of a `concat!` is one template, not its pieces joined by `+`",
     file: "src/lower/format_args.rs",
     find: "    if written.len() > 1\n",
     replace: "    if written.len() > usize::MAX - 1\n",
@@ -22,7 +32,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "format-concat-escape-unread",
-    breaks: "a `{{` or `}}` in a piece of a `concat!` format string makes it one template",
+    breaks:
+      "a `{{` or `}}` in a piece of a `concat!` format string makes it one template",
     file: "src/lower/format_args.rs",
     find: "            '{' | '}' if chars.next_if(|&(_, next)| next == c).is_some() => literal.push(c),\n",
     replace: "",
@@ -30,39 +41,47 @@ export const mutations: Mutation[] = [
   },
   {
     name: "format-concat-placeholder-unended",
-    breaks: "a placeholder's text is taken as what follows the `{`, to the piece's end",
+    breaks:
+      "a placeholder's text is taken as what follows the `{`, to the piece's end",
     file: "src/lower/format_args.rs",
     find: "                while chars.next_if(|&(i, _)| i <= end).is_some() {}\n",
-    replace: "                while chars.next_if(|&(i, _)| i < end).is_some() {}\n",
+    replace:
+      "                while chars.next_if(|&(i, _)| i < end).is_some() {}\n",
     tests: concat,
   },
   {
     name: "format-concat-text-unsplit",
-    breaks: "a template's text written across `concat!`'s pieces makes it one template",
+    breaks:
+      "a template's text written across `concat!`'s pieces makes it one template",
     file: "src/lower/format_args.rs",
     find: "                            let after = head.strip_prefix(text)?;",
-    replace: "                            let after = head.strip_prefix(text).filter(|_| false)?;",
+    replace:
+      "                            let after = head.strip_prefix(text).filter(|_| false)?;",
     tests: concat,
   },
   {
     name: "format-concat-placeholder-unchecked",
-    breaks: "a placeholder in the source where rustc wrote a literal's value in the template takes the template's next part",
+    breaks:
+      "a placeholder in the source where rustc wrote a literal's value in the template takes the template's next part",
     file: "src/lower/format_args.rs",
     find: "                    Some(argument @ Piece::Argument(..)) => pieces.push(argument),\n                    _ => return None,",
-    replace: "                    Some(argument) => pieces.push(argument),\n                    _ => return None,",
+    replace:
+      "                    Some(argument) => pieces.push(argument),\n                    _ => return None,",
     tests: concat,
   },
   {
     name: "format-concat-println-newline",
-    breaks: "a `println!` of a `concat!` format string is one template, as its template ends with a line break its pieces don't",
+    breaks:
+      "a `println!` of a `concat!` format string is one template, as its template ends with a line break its pieces don't",
     file: "src/lower/format_args.rs",
-    find: "        Some(Piece::Text(text)) if text == \"\\n\" && rest.is_empty() => split.last_mut()?.push(Piece::Text(text)),\n",
+    find: '        Some(Piece::Text(text)) if text == "\\n" && rest.is_empty() => split.last_mut()?.push(Piece::Text(text)),\n',
     replace: "",
     tests: concat,
   },
   {
     name: "format-concat-rest-unchecked",
-    breaks: "a template longer than its `concat!`'s pieces loses what's after them",
+    breaks:
+      "a template longer than its `concat!`'s pieces loses what's after them",
     file: "src/lower/format_args.rs",
     find: "        Some(_) => return None,\n    }\n    Some(split)",
     replace: "        Some(_) => {}\n    }\n    Some(split)",
@@ -70,7 +89,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "println-newline-kept",
-    breaks: "a `println!`'s line is logged with the line break `console.log` ends it with",
+    breaks:
+      "a `println!`'s line is logged with the line break `console.log` ends it with",
     file: "src/lower/format_args.rs",
     find: "            last.pop();\n",
     replace: "",
@@ -78,9 +98,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "println-written-newline-kept",
-    breaks: "a `println!` of a `concat!` of literals alone writes its pieces and a line break with `$print`, not `console.log`",
+    breaks:
+      "a `println!` of a `concat!` of literals alone writes its pieces and a line break with `$print`, not `console.log`",
     file: "src/lower/format_args.rs",
-    find: "        js::ExprKind::Written(pieces) => &mut pieces.last_mut().expect(\"a written string's pieces\").text,\n",
+    find: '        js::ExprKind::Written(pieces) => &mut pieces.last_mut().expect("a written string\'s pieces").text,\n',
     replace: "",
     tests: concat,
   },
@@ -112,31 +133,43 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unreachable-display-unprefixed",
-    breaks: "an edition 2018 `unreachable!(x)` panics with what `x` shows alone, not after std's words",
+    breaks:
+      "an edition 2018 `unreachable!(x)` panics with what `x` shows alone, not after std's words",
     file: "src/lower/format_args.rs",
-    find: "                    true => join(vec![Expr::str(\"internal error: entered unreachable code: \"), shown]),\n",
+    find: '                    true => join(vec![Expr::str("internal error: entered unreachable code: "), shown]),\n',
     replace: "                    true => shown,\n",
     tests: ["test/corpus.test.ts", "-t", "^unreachable_display.rs$"],
   },
   {
     name: "named-argument-unplaced",
-    breaks: "a placeholder of a named argument, `{kind}` of `kind = if .. { .. }`, is taken for one the call captures, so its value written across lines is on the template's line however long (ADR 0641, amended)",
+    breaks:
+      "a placeholder of a named argument, `{kind}` of `kind = if .. { .. }`, is taken for one the call captures, so its value written across lines is on the template's line however long (ADR 0641, amended)",
     file: "src/lower/format_args.rs",
     find: "            Err(_) => arguments.iter().position(|(name, _)| name.as_deref() == Some(argument)),\n",
     replace: "            Err(_) => None,\n",
-    tests: ["test/lowering-strings.test.ts", "-t", "a format argument written across lines"],
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "a format argument written across lines",
+    ],
   },
   {
     name: "placeholders-counted-past-template",
-    breaks: "placeholders are matched to the template's though rustc wrote a literal argument in it, so `{} {}` of `\"lit\", x` places `x` where `\"lit\"` is written",
+    breaks:
+      'placeholders are matched to the template\'s though rustc wrote a literal argument in it, so `{} {}` of `"lit", x` places `x` where `"lit"` is written',
     file: "src/lower/format_args.rs",
     find: "    (placed.len() == placeholders).then_some(placed)\n",
     replace: "    Some(placed)\n",
-    tests: ["test/lowering-strings.test.ts", "-t", "a format argument written across lines"],
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "a format argument written across lines",
+    ],
   },
   {
     name: "print-may-throw",
-    breaks: "a `println!` while a value with a destructor is live may throw, so its drop is a `try`/`finally` round a print whose stream never fails",
+    breaks:
+      "a `println!` while a value with a destructor is live may throw, so its drop is a `try`/`finally` round a print whose stream never fails",
     file: "src/lower/format_args.rs",
     find: "                    vec![line],\n                )\n                .never_throws(),\n",
     replace: "                    vec![line],\n                ),\n",

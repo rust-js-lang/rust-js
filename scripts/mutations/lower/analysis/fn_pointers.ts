@@ -4,7 +4,8 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "fn-pointer-made-of-nothing",
-    breaks: "no coercion makes a fn pointer, so `report`'s `f`, which may be `touch`, borrows nothing, its borrow isn't counted, and `touch`'s doesn't panic",
+    breaks:
+      "no coercion makes a fn pointer, so `report`'s `f`, which may be `touch`, borrows nothing, its borrow isn't counted, and `touch`'s doesn't panic",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "            Some(key) if !args.has_param() => self.made.entry(key).or_default().push((f, args)),\n",
     replace: "            Some(_) if !args.has_param() => {}\n",
@@ -12,71 +13,117 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fn-pointer-closures-made-of-nothing",
-    breaks: "a closure made a fn pointer isn't one it may be, so `record`'s `f`, `counted`, borrows nothing, and its borrow doesn't panic",
+    breaks:
+      "a closure made a fn pointer isn't one it may be, so `record`'s `f`, `counted`, borrows nothing, and its borrow doesn't panic",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "                    ty::Closure(closure, args) => self.found.made(tcx, adjustment.target, closure, args),\n",
     replace: "                    ty::Closure(..) => {}\n",
-    tests: ["test/corpus.test.ts", "-t", "^fn_pointer_closure_borrows_held.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^fn_pointer_closure_borrows_held.rs$",
+    ],
   },
   {
     name: "fn-pointer-never-from-outside",
-    breaks: "no value comes from outside the crate's code, so what JS gives `apply` borrows nothing, and its borrow isn't counted",
+    breaks:
+      "no value comes from outside the crate's code, so what JS gives `apply` borrows nothing, and its borrow isn't counted",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "        let held = held(recognition, ty);\n        self.all_open |= held.any;\n        self.open.extend(held.keys);\n        self.library_rust.extend(held.rust);\n",
     replace: "        let _ = (recognition, ty);\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "fn pointer runs what the crate made"],
+    tests: [
+      "test/lowering-cell-borrows.test.ts",
+      "-t",
+      "fn pointer runs what the crate made",
+    ],
   },
   {
     name: "fn-pointer-of-a-dyn-opens-all",
-    breaks: "a fn pointer type of a `dyn`, `function::bind`'s result, isn't keyed and makes every fn pointer type anything, so `clz32` under a borrow is counted again (ADRs 0907, 1007, amended)",
+    breaks:
+      "a fn pointer type of a `dyn`, `function::bind`'s result, isn't keyed and makes every fn pointer type anything, so `clz32` under a borrow is counted again (ADRs 0907, 1007, amended)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "                    if let Some(key) = key(tcx, part) {\n",
-    replace: "                    held.any |= part.walk().any(|p| p.as_type().is_some_and(|t| t.is_trait()));\n                    if let Some(key) = key(tcx, part) {\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "a fn pointer of a dyn given from outside"],
+    replace:
+      "                    held.any |= part.walk().any(|p| p.as_type().is_some_and(|t| t.is_trait()));\n                    if let Some(key) = key(tcx, part) {\n",
+    tests: [
+      "test/lowering-cell-borrows.test.ts",
+      "-t",
+      "a fn pointer of a dyn given from outside",
+    ],
   },
   {
     name: "binding-pointer-undefined-left-out",
-    breaks: "a fn pointer that may be a binding's, `Math.max`, is called without its trailing `undefined`, `max(1)`, which is 1 where Rust's call gives `NaN` (ADR 0330, amended)",
+    breaks:
+      "a fn pointer that may be a binding's, `Math.max`, is called without its trailing `undefined`, `max(1)`, which is 1 where Rust's call gives `NaN` (ADR 0330, amended)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "            && (self.made.get(&key).into_iter().flatten()).all(|&(f, _)| f.is_local() && !is_binding(tcx, f))\n",
-    replace: "            && (self.made.get(&key).into_iter().flatten()).all(|&(f, _)| f.is_local() || is_binding(tcx, f))\n",
-    tests: ["test/runtime-package.test.ts", "-t", "an undefined given to JS is an argument"],
+    replace:
+      "            && (self.made.get(&key).into_iter().flatten()).all(|&(f, _)| f.is_local() || is_binding(tcx, f))\n",
+    tests: [
+      "test/runtime-package.test.ts",
+      "-t",
+      "an undefined given to JS is an argument",
+    ],
   },
   {
     name: "pointer-given-from-outside-left-out",
-    breaks: "a fn pointer a JS caller may give, of a signature that holds a `dyn Fn`, is called without its trailing `undefined`, which a JS function counts (ADR 0330, amended)",
+    breaks:
+      "a fn pointer a JS caller may give, of a signature that holds a `dyn Fn`, is called without its trailing `undefined`, which a JS function counts (ADR 0330, amended)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "            && !self.open.contains(&key)\n            && (self.made",
     replace: "            && (self.made",
-    tests: ["test/runtime-package.test.ts", "-t", "an undefined given to JS is an argument"],
+    tests: [
+      "test/runtime-package.test.ts",
+      "-t",
+      "an undefined given to JS is an argument",
+    ],
   },
   {
     name: "pointer-of-a-dyn-signature-unkeyed",
-    breaks: "a fn pointer whose signature holds a `dyn Fn`, React's `Children.forEach`, may be anything, so a call of the crate's own is given a trailing `undefined` (ADR 0330, amended, rd56)",
+    breaks:
+      "a fn pointer whose signature holds a `dyn Fn`, React's `Children.forEach`, may be anything, so a call of the crate's own is given a trailing `undefined` (ADR 0330, amended, rd56)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "    Some(ptr.fold_with(&mut Lifetimeless(tcx)))\n",
-    replace: "    (!ptr.walk().any(|part| part.as_type().is_some_and(|ty| matches!(ty.kind(), ty::Dynamic(..))))).then(|| ptr.fold_with(&mut Lifetimeless(tcx)))\n",
-    tests: ["test/runtime-package.test.ts", "-t", "an undefined given to JS is an argument"],
+    replace:
+      "    (!ptr.walk().any(|part| part.as_type().is_some_and(|ty| matches!(ty.kind(), ty::Dynamic(..))))).then(|| ptr.fold_with(&mut Lifetimeless(tcx)))\n",
+    tests: [
+      "test/runtime-package.test.ts",
+      "-t",
+      "an undefined given to JS is an argument",
+    ],
   },
   {
     name: "library-rust-fields-unwritten",
-    breaks: "a library's contract says none of its fields holds only its own Rust functions, so a consumer's `Children.forEach(children, fn, undefined)` keeps its `undefined` (ADR 0330, amended, rd56)",
+    breaks:
+      "a library's contract says none of its fields holds only its own Rust functions, so a consumer's `Children.forEach(children, fn, undefined)` keeps its `undefined` (ADR 0330, amended, rd56)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "        (self.rust_fields.iter()).map(|&field| (field, crate::library::FieldFact::RustFunctions))\n",
-    replace: "        (self.rust_fields.iter()).filter(|_| false).map(|&field| (field, crate::library::FieldFact::RustFunctions))\n",
-    tests: ["test/crates.test.ts", "-t", "a library's field of its own functions"],
+    replace:
+      "        (self.rust_fields.iter()).filter(|_| false).map(|&field| (field, crate::library::FieldFact::RustFunctions))\n",
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "a library's field of its own functions",
+    ],
   },
   {
     name: "library-rust-field-read-as-open",
-    breaks: "a consumer reads a library's field of its own Rust functions as any function's, so its call keeps a trailing `undefined` (ADR 0330, amended, rd56)",
+    breaks:
+      "a consumer reads a library's field of its own Rust functions as any function's, so its call keeps a trailing `undefined` (ADR 0330, amended, rd56)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "                            .field_has(field.did, crate::library::FieldFact::RustFunctions)\n",
-    replace: "                            .field_has(field.did, crate::library::FieldFact::RustFunctions)\n                            && false\n",
-    tests: ["test/crates.test.ts", "-t", "a library's field of its own functions"],
+    replace:
+      "                            .field_has(field.did, crate::library::FieldFact::RustFunctions)\n                            && false\n",
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "a library's field of its own functions",
+    ],
   },
   {
     name: "library-rust-pointer-runs-nothing",
-    breaks: "a consumer takes a library's fn pointer of its own Rust functions to run none of its code, so a thread-local whose initializer calls one is made as its module loads, and what it's given prints before `main` (ADR 0330, amended, rd56)",
+    breaks:
+      "a consumer takes a library's fn pointer of its own Rust functions to run none of its code, so a thread-local whose initializer calls one is made as its module loads, and what it's given prints before `main` (ADR 0330, amended, rd56)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "        if self.all_open || self.open.contains(&key) || self.library_rust.contains(&key) {\n",
     replace: "        if self.all_open || self.open.contains(&key) {\n",
@@ -84,87 +131,144 @@ export const mutations: Mutation[] = [
   },
   {
     name: "with-this-unrecorded",
-    breaks: "a with_this function a field holds, `(s.f)()`, is called `s.f()`, as the with_this function the crate makes wasn't recorded (#402)",
+    breaks:
+      "a with_this function a field holds, `(s.f)()`, is called `s.f()`, as the with_this function the crate makes wasn't recorded (#402)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "                            false => _ = self.found.with_this.insert((erased(called), erased(gives))),\n",
     replace: "                            false => {}\n",
-    tests: ["test/js-functions.test.ts", "-t", "a dyn Fn a field or an item holds is called with no this"],
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a dyn Fn a field or an item holds is called with no this",
+    ],
   },
   {
     name: "with-this-generic-unrecorded",
-    breaks: "a with_this function generic code makes, of any signature, is called through a field `s.f()` (#402)",
+    breaks:
+      "a with_this function generic code makes, of any signature, is called through a field `s.f()` (#402)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "                            true => self.found.with_this_generic = true,\n",
     replace: "                            true => {}\n",
-    tests: ["test/js-functions.test.ts", "-t", "a dyn Fn a field or an item holds is called with no this"],
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a dyn Fn a field or an item holds is called with no this",
+    ],
   },
   {
     name: "with-this-any-signature",
-    breaks: "a field of a signature no with_this function the crate makes has, `Box<dyn Fn(u32) -> u32>`, is held first, `const g = o.g; g(1)`, not called through its object as JS calls it (#404)",
+    breaks:
+      "a field of a signature no with_this function the crate makes has, `Box<dyn Fn(u32) -> u32>`, is held first, `const g = o.g; g(1)`, not called through its object as JS calls it (#404)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "            || self.with_this.contains(&(\n",
-    replace: "            || !self.with_this.is_empty() || self.with_this.contains(&(\n",
-    tests: ["test/js-functions.test.ts", "-t", "a dyn Fn a field or an item holds is called with no this"],
+    replace:
+      "            || !self.with_this.is_empty() || self.with_this.contains(&(\n",
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a dyn Fn a field or an item holds is called with no this",
+    ],
   },
   {
     name: "own-field-held",
-    breaks: "a field the crate fills with its own closures alone, `tracker.stop()`, is held first, `const stop = t.stop; stop()`, as any with_this function of its signature may be it (#405)",
+    breaks:
+      "a field the crate fills with its own closures alone, `tracker.stop()`, is held first, `const stop = t.stop; stop()`, as any with_this function of its signature may be it (#405)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "            Called::Function(..) if field.is_some_and(|field| self.own_fields.get(&field) == Some(&true)) => false,\n",
-    replace: "            Called::Function(..) if false && field.is_some_and(|field| self.own_fields.get(&field) == Some(&true)) => false,\n",
-    tests: ["test/js-functions.test.ts", "-t", "a dyn Fn field the crate fills with its own closures is called through its object"],
+    replace:
+      "            Called::Function(..) if false && field.is_some_and(|field| self.own_fields.get(&field) == Some(&true)) => false,\n",
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a dyn Fn field the crate fills with its own closures is called through its object",
+    ],
   },
   {
     name: "own-field-of-any-value",
-    breaks: "a field filled with a variable that holds a with_this function is taken for one of the crate's closures alone, `h.f()`, which gives it `h` as its `this` (#405)",
+    breaks:
+      "a field filled with a variable that holds a with_this function is taken for one of the crate's closures alone, `h.f()`, which gives it `h` as its `this` (#405)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "        let own = value.is_some_and(|value| self.own_function(value));\n",
     replace: "        let own = value.is_some();\n",
-    tests: ["test/js-functions.test.ts", "-t", "a dyn Fn field the crate fills with its own closures is called through its object"],
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a dyn Fn field the crate fills with its own closures is called through its object",
+    ],
   },
   {
     name: "own-field-lent-unwritten",
-    breaks: "a field lent mutably, `set(&mut l.g)`, which writes a with_this function through it, is taken for one of the crate's closures alone, `l.g()`, giving it `l` as its `this` (#405)",
+    breaks:
+      "a field lent mutably, `set(&mut l.g)`, which writes a with_this function through it, is taken for one of the crate's closures alone, `l.g()`, giving it `l` as its `this` (#405)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "Mutability::Mut, place) if let Some(def) = self.field_of(place) => {\n                self.field_written(def, None);\n",
-    replace: "Mutability::Mut, place) if let Some(def) = self.field_of(place) => {\n",
-    tests: ["test/js-functions.test.ts", "-t", "a dyn Fn field the crate fills with its own closures is called through its object"],
+    replace:
+      "Mutability::Mut, place) if let Some(def) = self.field_of(place) => {\n",
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a dyn Fn field the crate fills with its own closures is called through its object",
+    ],
   },
   {
     name: "js-made-results-unmarked",
-    breaks: "a binding's result, `js::cast`'s struct, is taken for one the program built, so a `let` of its field is read again where it's used, `styleProp.margin` twice, a getter run twice (rd204)",
+    breaks:
+      "a binding's result, `js::cast`'s struct, is taken for one the program built, so a `let` of its field is read again where it's used, `styleProp.margin` twice, a getter run twice (rd204)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "        if !crate::lower::bindings::gives_back(tcx, f) && !crate::lower::bindings::gives_plain_data(tcx, f) {\n            self.found.made_outside(result);\n",
-    replace: "        if !crate::lower::bindings::gives_back(tcx, f) && !crate::lower::bindings::gives_plain_data(tcx, f) {\n",
-    tests: ["test/lowering-moves.test.ts", "-t", "a field of a struct JS made is read as often as Rust reads it"],
+    replace:
+      "        if !crate::lower::bindings::gives_back(tcx, f) && !crate::lower::bindings::gives_plain_data(tcx, f) {\n",
+    tests: [
+      "test/lowering-moves.test.ts",
+      "-t",
+      "a field of a struct JS made is read as often as Rust reads it",
+    ],
   },
   {
     name: "js-made-through-references-lost",
-    breaks: "a struct JS made behind a reference or an `Option`, `Option<&StyleProp>`, isn't seen, its field read twice (rd204)",
+    breaks:
+      "a struct JS made behind a reference or an `Option`, `Option<&StyleProp>`, isn't seen, its field read twice (rd204)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "            ty::Ref(_, inner, _) | ty::Slice(inner) | ty::Array(inner, _) => self.walk(recognition, own, inner, seen),\n",
-    replace: "            ty::Ref(_, inner, _) | ty::Slice(inner) | ty::Array(inner, _) => _ = inner,\n",
-    tests: ["test/lowering-moves.test.ts", "-t", "a field of a struct JS made is read as often as Rust reads it"],
+    replace:
+      "            ty::Ref(_, inner, _) | ty::Slice(inner) | ty::Array(inner, _) => _ = inner,\n",
+    tests: [
+      "test/lowering-moves.test.ts",
+      "-t",
+      "a field of a struct JS made is read as often as Rust reads it",
+    ],
   },
   {
     name: "js-made-everything",
-    breaks: "every struct is taken for one JS made, so the program's own struct's field isn't read in place (rd204)",
+    breaks:
+      "every struct is taken for one JS made, so the program's own struct's field isn't read in place (rd204)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "        self.js_made.structs.contains(&adt) || (self.js_made.any && !self.built.contains(&adt))\n",
     replace: "        let _ = adt;\n        true\n",
-    tests: ["test/lowering-moves.test.ts", "-t", "a field of a struct JS made is read as often as Rust reads it"],
+    tests: [
+      "test/lowering-moves.test.ts",
+      "-t",
+      "a field of a struct JS made is read as often as Rust reads it",
+    ],
   },
   {
     name: "js-made-given-back",
-    breaks: "what a binding gives back, `#[rust_js::gives_back]`'s, React's state, is taken for a JS object of its own, its fields held in a `const` (rd204's follow-up, the user's decision)",
+    breaks:
+      "what a binding gives back, `#[rust_js::gives_back]`'s, React's state, is taken for a JS object of its own, its fields held in a `const` (rd204's follow-up, the user's decision)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "        if !crate::lower::bindings::gives_back(tcx, f) && !crate::lower::bindings::gives_plain_data(tcx, f) {\n",
-    replace: "        if true && !crate::lower::bindings::gives_plain_data(tcx, f) {\n",
-    tests: ["test/lowering-moves.test.ts", "-t", "a field of a struct JS made is read as often as Rust reads it"],
+    replace:
+      "        if true && !crate::lower::bindings::gives_plain_data(tcx, f) {\n",
+    tests: [
+      "test/lowering-moves.test.ts",
+      "-t",
+      "a field of a struct JS made is read as often as Rust reads it",
+    ],
   },
   {
     name: "plain-data-taken-for-js-made",
-    breaks: "what a binding gives fresh of data properties, `#[rust_js::gives_plain_data]`'s, `JSON.parse`'s and `Object.getOwnPropertyDescriptor`'s, is taken for a JS object of getters, its fields held in a `const`, trackValueOnNode's ifs nested (#411)",
+    breaks:
+      "what a binding gives fresh of data properties, `#[rust_js::gives_plain_data]`'s, `JSON.parse`'s and `Object.getOwnPropertyDescriptor`'s, is taken for a JS object of getters, its fields held in a `const`, trackValueOnNode's ifs nested (#411)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "        if !crate::lower::bindings::gives_back(tcx, f) && !crate::lower::bindings::gives_plain_data(tcx, f) {\n",
     replace: "        if !crate::lower::bindings::gives_back(tcx, f) {\n",
@@ -172,107 +276,174 @@ export const mutations: Mutation[] = [
   },
   {
     name: "built-struct-unrecorded",
-    breaks: "a struct the program makes values of, React's fiber, is taken for JS's where a cast of an owner of any shape gives one, so its fields are held, `const old = fiber.return;` before each write (rd221)",
+    breaks:
+      "a struct the program makes values of, React's fiber, is taken for JS's where a cast of an owner of any shape gives one, so its fields are held, `const old = fiber.return;` before each write (rd221)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "                self.found.built.insert(adt.did());\n",
     replace: "",
-    tests: ["test/lowering-moves.test.ts", "-t", "a struct the program builds is its own data"],
+    tests: [
+      "test/lowering-moves.test.ts",
+      "-t",
+      "a struct the program builds is its own data",
+    ],
   },
   {
     name: "built-struct-holds-js-made",
-    breaks: "what a struct the program builds holds, a fiber's view of its updates, is taken for JS's, its fields held (rd221)",
+    breaks:
+      "what a struct the program builds holds, a fiber's view of its updates, is taken for JS's, its fields held (rd221)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "                    if own(adt.did()) {\n                        return;\n                    }\n",
     replace: "",
-    tests: ["test/lowering-moves.test.ts", "-t", "a struct the program builds is its own data"],
+    tests: [
+      "test/lowering-moves.test.ts",
+      "-t",
+      "a struct the program builds is its own data",
+    ],
   },
   {
     name: "recast-taken-for-js",
-    breaks: "a view of a value the program has, `js::cast(Some(js::unknown_of(Rc::clone(queue))))`, is taken for a JS object, its fields held (rd221)",
+    breaks:
+      "a view of a value the program has, `js::cast(Some(js::unknown_of(Rc::clone(queue))))`, is taken for a JS object, its fields held (rd221)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "        if !this(f) {\n            return None;\n        }\n",
-    replace: "        if !this(f) || this(f) {\n            return None;\n        }\n",
-    tests: ["test/lowering-moves.test.ts", "-t", "a struct the program builds is its own data"],
+    replace:
+      "        if !this(f) || this(f) {\n            return None;\n        }\n",
+    tests: [
+      "test/lowering-moves.test.ts",
+      "-t",
+      "a struct the program builds is its own data",
+    ],
   },
   {
     name: "recast-of-js-made-plain",
-    breaks: "a view of a struct JS made, a style prop's, is taken for the program's own data, its field read twice, a getter run twice (rd221)",
+    breaks:
+      "a view of a struct JS made, a style prop's, is taken for the program's own data, its field read twice, a getter run twice (rd221)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "                of_it.any || of_it.structs.iter().any(|adt| made.structs.contains(adt))\n",
     replace: "                let _ = &of_it;\n                false\n",
-    tests: ["test/lowering-moves.test.ts", "-t", "a struct the program builds is its own data"],
+    tests: [
+      "test/lowering-moves.test.ts",
+      "-t",
+      "a struct the program builds is its own data",
+    ],
   },
   {
     name: "std-structs-js-made",
-    breaks: "std's structs, an `Rc`, are taken for JS objects a value JS made holds, so a view of the program's `Rc` is JS's (rd221)",
+    breaks:
+      "std's structs, an `Rc`, are taken for JS objects a value JS made holds, so a view of the program's `Rc` is JS's (rd221)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "                if adt.is_struct() && !std {\n",
     replace: "                if adt.is_struct() {\n",
-    tests: ["test/lowering-moves.test.ts", "-t", "a struct the program builds is its own data"],
+    tests: [
+      "test/lowering-moves.test.ts",
+      "-t",
+      "a struct the program builds is its own data",
+    ],
   },
   {
     name: "host-fn-field-called-through",
-    breaks: "a field's fn that may be a host function, `CONFIG.schedule`, is called through its object, which a browser's `queueMicrotask` refuses, Illegal invocation (#427)",
+    breaks:
+      "a field's fn that may be a host function, `CONFIG.schedule`, is called through its object, which a browser's `queueMicrotask` refuses, Illegal invocation (#427)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: ".is_some_and(|key| (self.made.get(&key).into_iter().flatten()).any(|&(f, _)| is_binding(tcx, f))),\n",
-    replace: ".is_some_and(|key| (self.made.get(&key).into_iter().flatten()).any(|&(f, _)| is_binding(tcx, f) && false)),\n",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host function is held first"],
+    replace:
+      ".is_some_and(|key| (self.made.get(&key).into_iter().flatten()).any(|&(f, _)| is_binding(tcx, f) && false)),\n",
+    tests: [
+      "test/lowering-passed-on.test.ts",
+      "-t",
+      "may hold a host function is held first",
+    ],
   },
   {
     name: "own-fn-pointer-field-unseen",
-    breaks: "a `Cell<fn()>` field the crate sets of its own closures alone is held first, `const flush = hooks.flush; flush();`, where React calls `ReactStrictModeWarnings.discardPendingWarnings()` (#427)",
+    breaks:
+      "a `Cell<fn()>` field the crate sets of its own closures alone is held first, `const flush = hooks.flush; flush();`, where React calls `ReactStrictModeWarnings.discardPendingWarnings()` (#427)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "            Called::Pointer(_) if field.is_some_and(|field| self.own_fields.get(&field) == Some(&true)) => false,\n",
     replace: "",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host function is held first"],
+    tests: [
+      "test/lowering-passed-on.test.ts",
+      "-t",
+      "may hold a host function is held first",
+    ],
   },
   {
     name: "cell-set-unwritten",
-    breaks: "a `Cell<fn()>` field set of a host function, `hooks.schedule.set(queue_microtask)`, is taken for the crate's own, called through it, Illegal invocation (#427)",
+    breaks:
+      "a `Cell<fn()>` field set of a host function, `hooks.schedule.set(queue_microtask)`, is taken for the crate's own, called through it, Illegal invocation (#427)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "                            (CellMethod::Writes, [value]) => self.field_written(def, Some(value)),\n",
     replace: "                            (CellMethod::Writes, [_]) => {}\n",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host function is held first"],
+    tests: [
+      "test/lowering-passed-on.test.ts",
+      "-t",
+      "may hold a host function is held first",
+    ],
   },
   {
     name: "cell-other-method-unwritten",
-    breaks: "a `Cell<fn()>` field another method writes, `swap`'s, is taken for the crate's own, called through it (#427)",
+    breaks:
+      "a `Cell<fn()>` field another method writes, `swap`'s, is taken for the crate's own, called through it (#427)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "                            _ => self.field_written(def, None),\n",
     replace: "                            _ => {}\n",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "a cell's other method may write"],
+    tests: [
+      "test/lowering-passed-on.test.ts",
+      "-t",
+      "a cell's other method may write",
+    ],
   },
   {
     name: "cell-field-lent-unwritten",
-    breaks: "a `Cell<fn()>` field lent, `lend(&hooks.ended)`, which sets it of a host function, is taken for the crate's own (#427)",
+    breaks:
+      "a `Cell<fn()>` field lent, `lend(&hooks.ended)`, which sets it of a host function, is taken for the crate's own (#427)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "                self.field_written(def, None);\n            }\n            // An operator",
     replace: "            }\n            // An operator",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host function is held first"],
+    tests: [
+      "test/lowering-passed-on.test.ts",
+      "-t",
+      "may hold a host function is held first",
+    ],
   },
   {
     name: "cell-new-not-own",
-    breaks: "a `Cell::new(|| {})` field isn't taken for one of the crate's own, so the field's call is held first (#427)",
+    breaks:
+      "a `Cell::new(|| {})` field isn't taken for one of the crate's own, so the field's call is held first (#427)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "                || cell_own_method(tcx, id) == Some(CellMethod::New)\n",
     replace: "",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host function is held first"],
+    tests: [
+      "test/lowering-passed-on.test.ts",
+      "-t",
+      "may hold a host function is held first",
+    ],
   },
   {
     name: "binding-fn-def-own",
-    breaks: "a binding's function set in a field, `hooks.schedule.set(queue_microtask)`, is taken for one of the crate's own, called through it, Illegal invocation (#427)",
+    breaks:
+      "a binding's function set in a field, `hooks.schedule.set(queue_microtask)`, is taken for one of the crate's own, called through it, Illegal invocation (#427)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "            ty::FnDef(f, _) => return !is_binding(tcx, f),\n",
     replace: "            ty::FnDef(..) => return true,\n",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host function is held first"],
+    tests: [
+      "test/lowering-passed-on.test.ts",
+      "-t",
+      "may hold a host function is held first",
+    ],
   },
   {
     name: "binding-body-builds",
-    breaks: "a struct a binding's native body builds, JSON.parse's stand-in, is taken for the program's own, read in place (#430)",
+    breaks:
+      "a struct a binding's native body builds, JSON.parse's stand-in, is taken for the program's own, read in place (#430)",
     file: "src/lower/analysis/fn_pointers.rs",
     find: "            if is_binding(tcx, tcx.typeck_root_def_id(owner.to_def_id())) {\n                continue;\n            }\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^subject_of_a_struct_js_made_read_once.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^subject_of_a_struct_js_made_read_once.rs$",
+    ],
     snapshots: true,
   },
 ];

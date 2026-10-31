@@ -6,47 +6,54 @@ const tests = ["test/declarations.test.ts"];
 export const mutations: Mutation[] = [
   {
     name: "any-value-declared-null",
-    breaks: "a map of any value is declared `Map<K, unknown | null>`, without the `undefined` it holds (#443)",
+    breaks:
+      "a map of any value is declared `Map<K, unknown | null>`, without the `undefined` it holds (#443)",
     file: "src/lower/declarations.rs",
     find: "                            && super::bindings::holds_none_as_null(out.tcx, of.type_at(0)) =>\n",
     replace: " =>\n",
-    tests: ["test/js-collections.test.ts", "-t", "a Map of any value holds undefined as it is"],
+    tests: [
+      "test/js-collections.test.ts",
+      "-t",
+      "a Map of any value holds undefined as it is",
+    ],
   },
   {
     name: "bound-methods-undeclared",
-    breaks: "a struct's methods its impl binds of the JS object, `isPersistent()`, aren't in its interface, narrower than upstream's type (rd144)",
+    breaks:
+      "a struct's methods its impl binds of the JS object, `isPersistent()`, aren't in its interface, narrower than upstream's type (rd144)",
     file: "src/lower/declarations.rs",
     find: "        for (method, name) in super::bindings::bound_methods(self.tcx, def_id) {\n",
-    replace: "        for (method, name) in super::bindings::bound_methods(self.tcx, def_id).into_iter().take(0) {\n",
+    replace:
+      "        for (method, name) in super::bindings::bound_methods(self.tcx, def_id).into_iter().take(0) {\n",
     tests: ["test/declarations-bound-methods.test.ts"],
   },
   {
     name: "default-class-declared-const",
-    breaks: "a default class is declared `declare const Complex: Complex;`, not a class",
+    breaks:
+      "a default class is declared `declare const Complex: Complex;`, not a class",
     file: "src/lower/declarations.rs",
     find: "                DefKind::Struct => out.class(def_id),\n",
     replace: "",
-    tests: ["test/classes.test.ts", "-t", "a class is its module's default export"],
-  },
-  {
-    name: "default-class-type-imported-by-name",
-    breaks: "a module's declarations import another's default class `import type { Complex }`",
-    file: "src/lower/declarations.rs",
-    find: "        let default = super::default_exports::exported_as(self.tcx, did, &name) == \"default\";\n",
-    replace: "        let default = false;\n",
-    tests: ["test/classes.test.ts", "-t", "a class is its module's default export"],
+    tests: [
+      "test/classes.test.ts",
+      "-t",
+      "a class is its module's default export",
+    ],
   },
   {
     name: "library-type-declared-any",
-    breaks: "a library's type its declarations export is `any` in a consumer's, React's `CacheContext` a `ReactContext<Cache>` (ADR 0210, amended)",
+    breaks:
+      "a library's type its declarations export is `any` in a consumer's, React's `CacheContext` a `ReactContext<Cache>` (ADR 0210, amended)",
     file: "src/lower/declarations.rs",
     find: "                if let Some((from, name, default)) = self.foreign.declared_type(did) {\n",
-    replace: "                if let Some((from, name, default)) = None::<&(String, String, bool)> {\n",
+    replace:
+      "                if let Some((from, name, default)) = None::<&(String, String, bool)> {\n",
     tests: ["test/declarations-libraries.test.ts"],
   },
   {
     name: "declaration-erased-of-the-last-item",
-    breaks: "an `impl Fn(A) -> T` parameter is declared of what the item before erased by `T`'s index, `(a: A) => () => T`",
+    breaks:
+      "an `impl Fn(A) -> T` parameter is declared of what the item before erased by `T`'s index, `(a: A) => () => T`",
     file: "src/lower/declarations.rs",
     find: "        let outer = std::mem::take(&mut self.erased);\n",
     replace: "        let outer = self.erased.clone();\n",
@@ -54,7 +61,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "map-declared-any",
-    breaks: "a `HashMap<String, u32>` is declared `any`, not the `Map<string, number>` its JS is (ADR 0876)",
+    breaks:
+      "a `HashMap<String, u32>` is declared `any`, not the `Map<string, number>` its JS is (ADR 0876)",
     file: "src/lower/declarations.rs",
     find: "                    .any(|&map| is_std_def(tcx, did, map))\n",
     replace: "                    .any(|_| false)\n",
@@ -62,7 +70,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "set-declared-any",
-    breaks: "a `HashSet<u32>` is declared `any`, not the `Set<number>` its JS is (ADR 0876)",
+    breaks:
+      "a `HashSet<u32>` is declared `any`, not the `Set<number>` its JS is (ADR 0876)",
     file: "src/lower/declarations.rs",
     find: "                    .any(|&set| is_std_def(tcx, did, set))\n",
     replace: "                    .any(|_| false)\n",
@@ -70,39 +79,53 @@ export const mutations: Mutation[] = [
   },
   {
     name: "uncounted-rc-declared-any",
-    breaks: "an uncounted `Rc` is declared `any`, React's `createContext` returning one (ADR 0845)",
+    breaks:
+      "an uncounted `Rc` is declared `any`, React's `createContext` returning one (ADR 0845)",
     file: "src/lower/declarations.rs",
     find: "                    && !self.counted.counts(tcx, pointee)\n                {\n                    return self.ts(pointee);\n",
-    replace: "                    && false\n                {\n                    return self.ts(pointee);\n",
+    replace:
+      "                    && false\n                {\n                    return self.ts(pointee);\n",
     tests: ["test/declarations.test.ts", "-t", "an Rc is declared"],
   },
   {
     name: "weak-declared-never-null",
-    breaks: "an uncounted `Weak` is declared what it points at, though `Weak::new()` is `null` (ADR 0845)",
+    breaks:
+      "an uncounted `Weak` is declared what it points at, though `Weak::new()` is `null` (ADR 0845)",
     file: "src/lower/declarations.rs",
-    find: "                    return json!({ \"kind\": \"union\", \"types\": [self.ts(pointee), keyword(\"null\")] });\n",
+    find: '                    return json!({ "kind": "union", "types": [self.ts(pointee), keyword("null")] });\n',
     replace: "                    return self.ts(pointee);\n",
     tests: ["test/declarations.test.ts", "-t", "an Rc is declared"],
   },
   {
     name: "numbered-declared-names",
-    breaks: "a numbered enum is declared `\"Empty\" | ..`, its names, where its JS is its numbers",
+    breaks:
+      'a numbered enum is declared `"Empty" | ..`, its names, where its JS is its numbers',
     file: "src/lower/declarations.rs",
     find: "            crate::js::ExprKind::Num(n) => json!(n as i64),\n",
     replace: "",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variant is its number"],
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "a repr enum's variant is its number",
+    ],
   },
   {
     name: "numbered-variant-consts-undeclared",
-    breaks: "a numbered enum's `.d.ts` has no `export const Empty: 0;`, so TypeScript finds no `Empty` its JS exports",
+    breaks:
+      "a numbered enum's `.d.ts` has no `export const Empty: 0;`, so TypeScript finds no `Empty` its JS exports",
     file: "src/lower/declarations.rs",
     find: "            items.extend(out.variant_constants(def_id));\n",
     replace: "",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variant is its number"],
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "a repr enum's variant is its number",
+    ],
   },
   {
     name: "alias-undeclared",
-    breaks: "a `.d.ts` has no `export { currentTime as unstable_now };`, so TypeScript finds no `unstable_now`",
+    breaks:
+      "a `.d.ts` has no `export { currentTime as unstable_now };`, so TypeScript finds no `unstable_now`",
     file: "src/lower/declarations.rs",
     find: "    if !names.is_empty() {\n",
     replace: "    if false && !names.is_empty() {\n",
@@ -110,47 +133,72 @@ export const mutations: Mutation[] = [
   },
   {
     name: "untagged-unit-undeclared",
-    breaks: "a variant without fields isn't its literal in the union, `boolean | undefined`",
+    breaks:
+      "a variant without fields isn't its literal in the union, `boolean | undefined`",
     file: "src/lower/declarations.rs",
-    find: "                            _ => json!({ \"kind\": \"literal\", \"value\": variant_name(self.tcx, v) }),",
-    replace: "                            _ => json!({ \"kind\": \"keyword\", \"name\": \"undefined\" }),",
+    find: '                            _ => json!({ "kind": "literal", "value": variant_name(self.tcx, v) }),',
+    replace:
+      '                            _ => json!({ "kind": "keyword", "name": "undefined" }),',
     tests: ["test/declarations.test.ts"],
   },
   {
     name: "untagged-null-declared-literal",
-    breaks: "an untagged enum's `#[rust_js::null]` variant is declared its name's string, not `null`",
+    breaks:
+      "an untagged enum's `#[rust_js::null]` variant is declared its name's string, not `null`",
     file: "src/lower/declarations.rs",
-    find: "                            Some(crate::js::ExprKind::Null) => keyword(\"null\"),\n",
+    find: '                            Some(crate::js::ExprKind::Null) => keyword("null"),\n',
     replace: "",
-    tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "declarations type what a module exports",
+    ],
   },
   {
     name: "enum-fields-declared-any",
-    breaks: "an enum with fields is declared `any`, not its tagged objects' union",
+    breaks:
+      "an enum with fields is declared `any`, not its tagged objects' union",
     file: "src/lower/declarations.rs",
     find: "            false => {\n                let args = ty::GenericArgs::identity_for_item(self.tcx, def_id);",
-    replace: "            false if true => keyword(\"any\"),\n            false => {\n                let args = ty::GenericArgs::identity_for_item(self.tcx, def_id);",
-    tests: ["test/declarations.test.ts","-t","declarations type what a module exports"],
+    replace:
+      '            false if true => keyword("any"),\n            false => {\n                let args = ty::GenericArgs::identity_for_item(self.tcx, def_id);',
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "declarations type what a module exports",
+    ],
   },
   {
     name: "foreign-untagged-any",
-    breaks: "another crate's untagged enum, `js::Json`, is `any`, not the union of its payloads",
+    breaks:
+      "another crate's untagged enum, `js::Json`, is `any`, not the union of its payloads",
     file: "src/lower/declarations.rs",
     find: "if !did.is_local() && adt.is_enum() && is_untagged(tcx, did) {",
-    replace: "if false && !did.is_local() && adt.is_enum() && is_untagged(tcx, did) {",
-    tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
+    replace:
+      "if false && !did.is_local() && adt.is_enum() && is_untagged(tcx, did) {",
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "declarations type what a module exports",
+    ],
   },
   {
     name: "written-param-unsubstituted",
-    breaks: "a name in a `types` that's the Rust type's parameter isn't what it's given: `Dict<f64>`, `{ [key: string]: T }`, isn't `{ [key: string]: number }`",
+    breaks:
+      "a name in a `types` that's the Rust type's parameter isn't what it's given: `Dict<f64>`, `{ [key: string]: T }`, isn't `{ [key: string]: number }`",
     file: "src/lower/declarations.rs",
     find: "            Some(param) if (param.index as usize) < args.len() => {\n",
     replace: "            Some(param) if false => {\n",
-    tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "declarations type what a module exports",
+    ],
   },
   {
     name: "written-method-parameter-substituted",
-    breaks: "a method's own type parameter written in a `types`, `map<T>(f: (value: T) => T)`, is taken for the Rust type's `T`, `(value: string) => string`",
+    breaks:
+      "a method's own type parameter written in a `types`, `map<T>(f: (value: T) => T)`, is taken for the Rust type's `T`, `(value: string) => string`",
     file: "src/lower/declarations.rs",
     find: "                if from.is_none() && args.is_none() && !bound.contains(name) {",
     replace: "                if from.is_none() && args.is_none() {",
@@ -158,23 +206,32 @@ export const mutations: Mutation[] = [
   },
   {
     name: "written-object-members-dropped",
-    breaks: "an object type written in a `types`, `ConsoleTask`'s `{ run<T>(f: () => T): T }`, is declared `{}`, and its `run` is TypeScript's error",
+    breaks:
+      "an object type written in a `types`, `ConsoleTask`'s `{ run<T>(f: () => T): T }`, is declared `{}`, and its `run` is TypeScript's error",
     file: "src/lower/declarations.rs",
-    find: "                json!({ \"kind\": \"object\", \"members\": values })",
-    replace: "                json!({ \"kind\": \"object\", \"members\": values.drain(..0).collect::<Vec<_>>() })",
+    find: '                json!({ "kind": "object", "members": values })',
+    replace:
+      '                json!({ "kind": "object", "members": values.drain(..0).collect::<Vec<_>>() })',
     tests: ["test/declarations.test.ts", "-t", "a binding's object type"],
   },
   {
     name: "types-args-appended",
-    breaks: "a `types` written with its arguments, `react#ReactNode<>`, takes the Rust type's too: `ReactNode<any>`",
+    breaks:
+      "a `types` written with its arguments, `react#ReactNode<>`, takes the Rust type's too: `ReactNode<any>`",
     file: "src/lower/declarations.rs",
     find: "        if let Written::Reference { from, name, args: None } = declared {",
-    replace: "        if let Written::Reference { from, name, args: _ } = declared {",
-    tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
+    replace:
+      "        if let Written::Reference { from, name, args: _ } = declared {",
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "declarations type what a module exports",
+    ],
   },
   {
     name: "declared-option-required",
-    breaks: "an `Option` field is a required prop to TypeScript, `text: string`, which a caller leaving it out is an error of",
+    breaks:
+      "an `Option` field is a required prop to TypeScript, `text: string`, which a caller leaving it out is an error of",
     file: "src/lower/declarations.rs",
     find: "                        false => (true, inner),\n",
     replace: "                        false => (false, inner),\n",
@@ -182,7 +239,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "declared-tagged-unit-variant-named",
-    breaks: "a tagged enum's variant of no fields is declared its name, where JS has an object of its tag",
+    breaks:
+      "a tagged enum's variant of no fields is declared its name, where JS has an object of its tag",
     file: "src/lower/declarations.rs",
     find: "                        if v.fields.is_empty() && !tagged {",
     replace: "                        if v.fields.is_empty() {",
@@ -190,23 +248,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "declared-rest-dropped",
-    breaks: "props a struct doesn't name, `...rest`, are an error to TypeScript, `aria-label` of a link",
+    breaks:
+      "props a struct doesn't name, `...rest`, are an error to TypeScript, `aria-label` of a link",
     file: "src/lower/declarations.rs",
     find: "            if is_rest(self.tcx, ty) || (is_flatten(self.tcx, field) && extends.is_empty()) {",
-    replace: "            if false && (is_rest(self.tcx, ty) || (is_flatten(self.tcx, field) && extends.is_empty())) {",
+    replace:
+      "            if false && (is_rest(self.tcx, ty) || (is_flatten(self.tcx, field) && extends.is_empty())) {",
     tests,
   },
   {
     name: "declared-binding-type-any",
-    breaks: "a binding's type, react's `Memo<P>`, is `any` to TypeScript, which checks none of a `memo`'s props",
+    breaks:
+      "a binding's type, react's `Memo<P>`, is `any` to TypeScript, which checks none of a `memo`'s props",
     file: "src/lower/declarations.rs",
     find: "                if let Some(declared) = written_types(tcx, did) {\n",
-    replace: "                if false\n                    && let Some(declared) = written_types(tcx, did)\n                {\n",
+    replace:
+      "                if false\n                    && let Some(declared) = written_types(tcx, did)\n                {\n",
     tests,
   },
   {
     name: "flattened-declared-nested",
-    breaks: "a flattened field is declared a field, `anchor: Anchor`, not `extends Anchor`",
+    breaks:
+      "a flattened field is declared a field, `anchor: Anchor`, not `extends Anchor`",
     file: "src/lower/declarations.rs",
     find: "                    (false, 0) => vec![inner],",
     replace: "                    (false, 0) => Vec::new(),",
@@ -214,7 +277,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "flattened-extends-any",
-    breaks: "a flattened field of another module's type of the crate's own, `pub(crate) struct Far`, is `extends any`, which TypeScript refuses",
+    breaks:
+      "a flattened field of another module's type of the crate's own, `pub(crate) struct Far`, is `extends any`, which TypeScript refuses",
     file: "src/lower/declarations.rs",
     find: "                    (true, _) => Vec::new(),",
     replace: "                    (true, _) => vec![inner],",
@@ -222,18 +286,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "shadowed-names-not-omitted",
-    breaks: "props extend what they shadow, not `Omit<Linked, \"href\" | \"className\">`",
+    breaks:
+      'props extend what they shadow, not `Omit<Linked, "href" | "className">`',
     file: "src/lower/declarations.rs",
-    find: "                    (false, _) => vec![reference(\n                        \"Omit\",",
-    replace: "                    (false, _) => vec![inner.clone(), reference(\n                        \"Omit\",",
+    find: '                    (false, _) => vec![reference(\n                        "Omit",',
+    replace:
+      '                    (false, _) => vec![inner.clone(), reference(\n                        "Omit",',
     tests,
   },
   {
     name: "generic-type-imported-whole",
-    breaks: "a namespace's member is imported by its whole name, `JSX.Element`, not as its namespace, `JSX`",
+    breaks:
+      "a namespace's member is imported by its whole name, `JSX.Element`, not as its namespace, `JSX`",
     file: "src/lower/declarations.rs",
     find: "            self.imports.insert((from.to_string(), imported(name)));\n",
-    replace: "            self.imports.insert((from.to_string(), name.to_string()));\n",
+    replace:
+      "            self.imports.insert((from.to_string(), name.to_string()));\n",
     tests: tests,
   },
   {
@@ -246,15 +314,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "defaulted-field-required",
-    breaks: "a field with a default is declared required, `count: number`, where a caller may leave it out",
+    breaks:
+      "a field with a default is declared required, `count: number`, where a caller may leave it out",
     file: "src/lower/declarations.rs",
     find: "                    field_default(self.tcx, field).is_some(),\n                    self.as_written(written, |out| out.field_ts(ty, Some(field))),",
-    replace: "                    false,\n                    self.as_written(written, |out| out.field_ts(ty, Some(field))),",
+    replace:
+      "                    false,\n                    self.as_written(written, |out| out.field_ts(ty, Some(field))),",
     tests,
   },
   {
     name: "untagged-declared-any",
-    breaks: "an untagged enum is declared as a tagged one's objects, not TS's union of its payloads",
+    breaks:
+      "an untagged enum is declared as a tagged one's objects, not TS's union of its payloads",
     file: "src/lower/declarations.rs",
     find: "        let union = match untagged {",
     replace: "        let union = match false {",
@@ -262,31 +333,37 @@ export const mutations: Mutation[] = [
   },
   {
     name: "option-declared-without-null",
-    breaks: "an `Option` is declared `T | undefined`, so a TypeScript caller's `null`, which rust-js reads as `None`, doesn't typecheck",
+    breaks:
+      "an `Option` is declared `T | undefined`, so a TypeScript caller's `null`, which rust-js reads as `None`, doesn't typecheck",
     file: "src/lower/declarations.rs",
-    find: "                    return json!({ \"kind\": \"union\", \"types\": [self.ts(args.type_at(0)), keyword(\"null\"), keyword(\"undefined\")] });\n",
-    replace: "                    return json!({ \"kind\": \"union\", \"types\": [self.ts(args.type_at(0)), keyword(\"undefined\")] });\n",
+    find: '                    return json!({ "kind": "union", "types": [self.ts(args.type_at(0)), keyword("null"), keyword("undefined")] });\n',
+    replace:
+      '                    return json!({ "kind": "union", "types": [self.ts(args.type_at(0)), keyword("undefined")] });\n',
     tests: ["test/declarations.test.ts", "-t", "null for an Option"],
   },
   {
     name: "option-field-without-null",
-    breaks: "a `#[rust_js::nullable]` field is declared `?: T`, so a TypeScript caller's `{ label: null }`, which rust-js reads as `None`, doesn't typecheck",
+    breaks:
+      "a `#[rust_js::nullable]` field is declared `?: T`, so a TypeScript caller's `{ label: null }`, which rust-js reads as `None`, doesn't typecheck",
     file: "src/lower/declarations.rs",
-    find: "                        true => (true, json!({ \"kind\": \"union\", \"types\": [inner, keyword(\"null\")] })),\n",
+    find: '                        true => (true, json!({ "kind": "union", "types": [inner, keyword("null")] })),\n',
     replace: "                        true => (true, inner),\n",
     tests: ["test/declarations.test.ts", "-t", "null for an Option"],
   },
   {
     name: "every-option-field-nullable",
-    breaks: "every `Option` field is declared `?: T | null`, so a TypeScript caller reading one passes `null` where a default takes only `undefined`",
+    breaks:
+      "every `Option` field is declared `?: T | null`, so a TypeScript caller reading one passes `null` where a default takes only `undefined`",
     file: "src/lower/declarations.rs",
     find: "                    match is_nullable(self.tcx, field) || self.null_fields.contains(&field.did) {\n",
-    replace: "                    match true || is_nullable(self.tcx, field) {\n",
+    replace:
+      "                    match true || is_nullable(self.tcx, field) {\n",
     tests: ["test/declarations.test.ts", "-t", "null for an Option"],
   },
   {
     name: "type-alias-undeclared",
-    breaks: "a `pub type` isn't declared, so TypeScript importing it, react.dev's Toc its `Toc`, finds no such export",
+    breaks:
+      "a `pub type` isn't declared, so TypeScript importing it, react.dev's Toc its `Toc`, finds no such export",
     file: "src/lower/declarations.rs",
     find: "            DefKind::TyAlias => Some(out.alias(def_id)),\n",
     replace: "",
@@ -294,7 +371,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "private-default-undeclared",
-    breaks: "a component only `js::export_default! { .. }` exports isn't declared, so its `.d.ts` exports no default, which TypeScript importing it refuses",
+    breaks:
+      "a component only `js::export_default! { .. }` exports isn't declared, so its `.d.ts` exports no default, which TypeScript importing it refuses",
     file: "src/lower/declarations.rs",
     find: "        let held = held_default == Some(def_id);\n",
     replace: "        let held = false;\n",
@@ -302,23 +380,31 @@ export const mutations: Mutation[] = [
   },
   {
     name: "private-default-exported",
-    breaks: "a component only `js::export_default! { .. }` exports is declared `export function Callout`, which its JS doesn't export by that name",
+    breaks:
+      "a component only `js::export_default! { .. }` exports is declared `export function Callout`, which its JS doesn't export by that name",
     file: "src/lower/declarations.rs",
-    find: "                if function {\n                    declared[\"default\"] = json!(true);\n",
-    replace: "                if false {\n                    declared[\"default\"] = json!(true);\n",
+    find: '                if function {\n                    declared["default"] = json!(true);\n',
+    replace:
+      '                if false {\n                    declared["default"] = json!(true);\n',
     tests: ["test/declarations.test.ts", "-t", "private default"],
   },
   {
     name: "pub-default-exported-by-name",
-    breaks: "a `pub fn` `js::export_default! { .. }` holds is declared `export function noop`, where its JS is `export default function noop`, so TypeScript imports a name the JS doesn't export",
+    breaks:
+      "a `pub fn` `js::export_default! { .. }` holds is declared `export function noop`, where its JS is `export default function noop`, so TypeScript imports a name the JS doesn't export",
     file: "src/lower/declarations.rs",
     find: "            if held {\n",
     replace: "            if held && !tcx.visibility(def_id).is_public() {\n",
-    tests: ["test/declarations.test.ts", "-t", "pub default export the macro holds"],
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "pub default export the macro holds",
+    ],
   },
   {
     name: "named-default-undeclared",
-    breaks: "a thread-local `js::export_default!(Memoized)` names isn't declared, so its `.d.ts` says `export default Memoized;` of no `Memoized`",
+    breaks:
+      "a thread-local `js::export_default!(Memoized)` names isn't declared, so its `.d.ts` says `export default Memoized;` of no `Memoized`",
     file: "src/lower/declarations.rs",
     find: "        if named_default == Some(def_id) {\n",
     replace: "        if false {\n",
@@ -326,15 +412,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "pub-named-default-declared-by-name",
-    breaks: "a `pub fn` `js::export_default!(page)` names is declared `export function page`, where its JS exports it as the default alone, so TypeScript imports a name the JS doesn't export",
+    breaks:
+      "a `pub fn` `js::export_default!(page)` names is declared `export function page`, where its JS exports it as the default alone, so TypeScript imports a name the JS doesn't export",
     file: "src/lower/declarations.rs",
     find: " || is_mark(tcx, def_id) || named_default == Some(def_id) {\n",
     replace: " || is_mark(tcx, def_id) {\n",
-    tests: ["test/declarations.test.ts", "-t", "naming form names as the default alone"],
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "naming form names as the default alone",
+    ],
   },
   {
     name: "node-param-kept",
-    breaks: "a type parameter bound by react's `Node` stays a parameter, `children: C`, where a person writes `children: ReactNode`",
+    breaks:
+      "a type parameter bound by react's `Node` stays a parameter, `children: C`, where a person writes `children: ReactNode`",
     file: "src/lower/declarations.rs",
     find: "            ty::Param(param) => match self.erased.get(&param.index) {\n",
     replace: "            ty::Param(param) => match None::<&Value> {\n",
@@ -342,7 +434,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "erased-param-declared",
-    breaks: "a type parameter that's `ReactNode` is still declared, `ButtonLinkProps<C>`, of a `C` nothing uses",
+    breaks:
+      "a type parameter that's `ReactNode` is still declared, `ButtonLinkProps<C>`, of a `C` nothing uses",
     file: "src/lower/declarations.rs",
     find: "            .filter(|param| !erased.iter().any(|(index, _)| *index == param.index))\n",
     replace: "",
@@ -350,7 +443,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "erased-arg-given",
-    breaks: "a reference gives an argument for a type parameter its declaration doesn't have, `ButtonLinkProps<ReactNode>` of `ButtonLinkProps`",
+    breaks:
+      "a reference gives an argument for a type parameter its declaration doesn't have, `ButtonLinkProps<ReactNode>` of `ButtonLinkProps`",
     file: "src/lower/declarations.rs",
     find: "            .filter(|(index, _)| !erased.iter().any(|(e, _)| *e as usize == *index))\n",
     replace: "",
@@ -358,7 +452,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dyn-fn-untyped",
-    breaks: "a `Box<dyn Fn(&event::Mouse)>` prop is declared `(...args: any[]) => any`, so a TypeScript caller's handler is checked against nothing",
+    breaks:
+      "a `Box<dyn Fn(&event::Mouse)>` prop is declared `(...args: any[]) => any`, so a TypeScript caller's handler is checked against nothing",
     file: "src/lower/declarations.rs",
     find: "                    .is_some_and(|t| tcx.fn_trait_kind_from_def_id(t).is_some()) =>\n",
     replace: "                    .is_some_and(|_| false) =>\n",
@@ -374,7 +469,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fn-param-names-collide",
-    breaks: "two parameters of one type are both `value`, which TypeScript refuses as a duplicate",
+    breaks:
+      "two parameters of one type are both `value`, which TypeScript refuses as a duplicate",
     file: "src/lower/declarations.rs",
     find: "                let name = if taken == 0 {\n",
     replace: "                let name = if true || taken == 0 {\n",
@@ -382,63 +478,95 @@ export const mutations: Mutation[] = [
   },
   {
     name: "impl-trait-param-named",
-    breaks: "an `impl Trait` parameter is declared by rustc's name for it, `impl js::Defined + 'a`, which isn't TypeScript",
+    breaks:
+      "an `impl Trait` parameter is declared by rustc's name for it, `impl js::Defined + 'a`, which isn't TypeScript",
     file: "src/lower/declarations.rs",
-    find: "                None if param.name.as_str().starts_with(\"impl \") => keyword(\"unknown\"),\n",
+    find: '                None if param.name.as_str().starts_with("impl ") => keyword("unknown"),\n',
     replace: "",
-    tests: ["test/declarations.test.ts", "-t", "impl Trait parameter of no TypeScript type"],
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "impl Trait parameter of no TypeScript type",
+    ],
   },
   {
     name: "alias-expanded",
-    breaks: "a field written as @types/react's alias is its expansion, `(event: MouseEvent<..>) => void`, where it's `MouseEventHandler<HTMLButtonElement>`",
+    breaks:
+      "a field written as @types/react's alias is its expansion, `(event: MouseEvent<..>) => void`, where it's `MouseEventHandler<HTMLButtonElement>`",
     file: "src/lower/declarations.rs",
     find: "        let declared = written_types(self.tcx, did)?;\n        let given: Vec<&hir::Ty<'tcx>>",
-    replace: "        let declared = written_types(self.tcx, did).filter(|_| false)?;\n        let given: Vec<&hir::Ty<'tcx>>",
-    tests: ["test/declarations.test.ts", "-t", "aliases as the Rust names them"],
+    replace:
+      "        let declared = written_types(self.tcx, did).filter(|_| false)?;\n        let given: Vec<&hir::Ty<'tcx>>",
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "aliases as the Rust names them",
+    ],
   },
   {
     name: "alias-option-unwritten",
-    breaks: "an `Option` of an alias, an optional field's, isn't read as written, so it's the alias expanded",
+    breaks:
+      "an `Option` of an alias, an optional field's, isn't read as written, so it's the alias expanded",
     file: "src/lower/declarations.rs",
     find: "        if !self.tcx.is_lang_item(did, LangItem::Option) {",
-    replace: "        if true || !self.tcx.is_lang_item(did, LangItem::Option) {",
-    tests: ["test/declarations.test.ts", "-t", "aliases as the Rust names them"],
+    replace:
+      "        if true || !self.tcx.is_lang_item(did, LangItem::Option) {",
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "aliases as the Rust names them",
+    ],
   },
   {
     name: "alias-default-written",
-    breaks: "an alias's argument left to its default is written out, `MouseEventHandler<Element>`, where it's `MouseEventHandler`",
+    breaks:
+      "an alias's argument left to its default is written out, `MouseEventHandler<Element>`, where it's `MouseEventHandler`",
     file: "src/lower/declarations.rs",
     find: "                    && at(name).is_some_and(|at| at >= given.len())\n                {\n                    break;\n",
-    replace: "                    && at(name).is_some_and(|at| at >= given.len())\n                {\n                    let param = (self.tcx.generics_of(did).own_params.iter()).find(|p| p.name.as_str() == name.as_str()).expect(\"a parameter\");\n                    let ty = self.tcx.type_of(param.def_id).instantiate_identity().skip_normalization();\n                    args.push(self.ts(ty));\n                    continue;\n",
-    tests: ["test/declarations.test.ts", "-t", "aliases as the Rust names them"],
+    replace:
+      '                    && at(name).is_some_and(|at| at >= given.len())\n                {\n                    let param = (self.tcx.generics_of(did).own_params.iter()).find(|p| p.name.as_str() == name.as_str()).expect("a parameter");\n                    let ty = self.tcx.type_of(param.def_id).instantiate_identity().skip_normalization();\n                    args.push(self.ts(ty));\n                    continue;\n',
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "aliases as the Rust names them",
+    ],
   },
   {
     name: "namespace-member-imported-whole",
-    breaks: "`JSX.Element` is imported as `import type { JSX.Element } from \"react\"`, which isn't TypeScript",
+    breaks:
+      '`JSX.Element` is imported as `import type { JSX.Element } from "react"`, which isn\'t TypeScript',
     file: "src/lower/declarations.rs",
     find: "name.split('.').next().unwrap_or(name).to_string()",
     replace: "name.to_string()",
-    tests: ["test/declarations.test.ts", "-t", "declarations declare a private default export"],
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "declarations declare a private default export",
+    ],
   },
   {
     name: "dyn-node-a-function",
-    breaks: "`Box<dyn ReactNode>` is declared a function, `(...args: any[]) => any`, not a `ReactNode`",
+    breaks:
+      "`Box<dyn ReactNode>` is declared a function, `(...args: any[]) => any`, not a `ReactNode`",
     file: "src/lower/declarations.rs",
     find: "                    && let Some(declared) = written_types(tcx, t) =>",
-    replace: "                    && let Some(declared) = written_types(tcx, t).filter(|_| false) =>",
+    replace:
+      "                    && let Some(declared) = written_types(tcx, t).filter(|_| false) =>",
     tests: ["test/declarations.test.ts", "-t", "dyn ReactNode"],
   },
   {
     name: "default-export-const-as-function",
-    breaks: "a private `thread_local!` default export is declared a function, not `declare const Memoized: ..`",
+    breaks:
+      "a private `thread_local!` default export is declared a function, not `declare const Memoized: ..`",
     file: "src/lower/declarations.rs",
     find: "                _ => out.constant(def_id),\n",
     replace: "                _ => out.function(def_id),\n",
-    tests: ["test/declarations.test.ts","-t","thread-local default"],
+    tests: ["test/declarations.test.ts", "-t", "thread-local default"],
   },
   {
     name: "impl-fn-unknown",
-    breaks: "an `impl Fn(&Item, usize) -> R` parameter is declared `unknown`, not its function",
+    breaks:
+      "an `impl Fn(&Item, usize) -> R` parameter is declared `unknown`, not its function",
     file: "src/lower/declarations.rs",
     find: "            erased.insert(param.index, function);\n",
     replace: "",
@@ -446,65 +574,84 @@ export const mutations: Mutation[] = [
   },
   {
     name: "otherwise-declared-tagged",
-    breaks: "a discriminated union's `otherwise` is declared `{ kind: \"Other\"; _0: any }`, where it's the object",
+    breaks:
+      "a discriminated union's `otherwise` is declared `{ kind: \"Other\"; _0: any }`, where it's the object",
     file: "src/lower/declarations.rs",
     find: "                            && is_otherwise(self.tcx, v.def_id)\n",
     replace: "                            && false\n",
-    tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "declarations type what a module exports",
+    ],
   },
   {
     name: "cell-field-declared-any",
     breaks: "a `Cell` field is declared `any`, where it's the number it holds",
     file: "src/lower/declarations.rs",
     find: "                if is_std_def(self.tcx, adt.did(), StdItem::Cell)\n                    || field.is_some_and(|field| self.ref_cells.holds_value(self.tcx, field))\n",
-    replace: "                if field.is_some_and(|field| self.ref_cells.holds_value(self.tcx, field))\n",
-    tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
+    replace:
+      "                if field.is_some_and(|field| self.ref_cells.holds_value(self.tcx, field))\n",
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "declarations type what a module exports",
+    ],
   },
   {
     name: "lent-cell-declared-any",
     breaks: "a `&Cell` parameter is declared `any`, where it's `{ value }`",
     file: "src/lower/declarations.rs",
     find: "                if is_std_def(tcx, did, StdItem::Cell) {\n",
-    replace: "                if false && is_std_def(tcx, did, StdItem::Cell) {\n",
-    tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
+    replace:
+      "                if false && is_std_def(tcx, did, StdItem::Cell) {\n",
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "declarations type what a module exports",
+    ],
   },
   {
-    "name": "bool-tag-declared-string",
-    "breaks": "a boolean tag is declared the string `\"true\"`",
-    "file": "src/lower/declarations.rs",
-    "find": "            crate::js::ExprKind::Bool(b) => json!(b),\n",
-    "replace": "            crate::js::ExprKind::Bool(b) => json!(b.to_string()),\n",
-    "tests": [
-      "test/declarations.test.ts"
-    ]
+    name: "bool-tag-declared-string",
+    breaks: 'a boolean tag is declared the string `"true"`',
+    file: "src/lower/declarations.rs",
+    find: "            crate::js::ExprKind::Bool(b) => json!(b),\n",
+    replace:
+      "            crate::js::ExprKind::Bool(b) => json!(b.to_string()),\n",
+    tests: ["test/declarations.test.ts"],
   },
   {
-    "name": "plain-refcell-declared-cell",
-    "breaks": "a field's `RefCell` held as its value is declared `{ value }`",
-    "file": "src/lower/declarations.rs",
-    "find": "                    || field.is_some_and(|field| self.ref_cells.holds_value(self.tcx, field))\n                    || self.ref_cells.is_value_cell(self.tcx, ty) =>",
-    "replace": "                    || self.ref_cells.is_value_cell(self.tcx, ty) =>",
-    "tests": ["test/declarations.test.ts", "test/lowering-field-cells.test.ts"]
+    name: "plain-refcell-declared-cell",
+    breaks: "a field's `RefCell` held as its value is declared `{ value }`",
+    file: "src/lower/declarations.rs",
+    find: "                    || field.is_some_and(|field| self.ref_cells.holds_value(self.tcx, field))\n                    || self.ref_cells.is_value_cell(self.tcx, ty) =>",
+    replace:
+      "                    || self.ref_cells.is_value_cell(self.tcx, ty) =>",
+    tests: ["test/declarations.test.ts", "test/lowering-field-cells.test.ts"],
   },
   {
     name: "declarations-private-type-any",
-    breaks: "a module's private props struct, which its exported component names, is `any`",
+    breaks:
+      "a module's private props struct, which its exported component names, is `any`",
     file: "src/lower/declarations.rs",
     find: "                // exported (ADR 0385). Another module's isn't its to declare.\n                if !tcx.visibility(did).is_public() {",
-    replace: "                // exported (ADR 0385). Another module's isn't its to declare.\n                if !tcx.visibility(did).is_public() {\n                    return keyword(\"any\");\n                }\n                if false {",
+    replace:
+      "                // exported (ADR 0385). Another module's isn't its to declare.\n                if !tcx.visibility(did).is_public() {\n                    return keyword(\"any\");\n                }\n                if false {",
     tests: ["test/declarations.test.ts", "-t", "private struct"],
   },
   {
     name: "declarations-private-type-exported",
-    breaks: "a module's private struct is exported from its `.d.ts`, where its Rust doesn't export it",
+    breaks:
+      "a module's private struct is exported from its `.d.ts`, where its Rust doesn't export it",
     file: "src/lower/declarations.rs",
-    find: "                        };\n                        declared[\"exported\"] = json!(false);\n",
+    find: '                        };\n                        declared["exported"] = json!(false);\n',
     replace: "                        };\n",
     tests: ["test/declarations.test.ts", "-t", "private struct"],
   },
   {
     name: "declarations-unexported-last",
-    breaks: "a type declared but not exported comes after what names it, not before, as TypeScript has it",
+    breaks:
+      "a type declared but not exported comes after what names it, not before, as TypeScript has it",
     file: "src/lower/declarations.rs",
     find: "    items.splice(0..0, out.unexported.into_values().flatten());",
     replace: "    items.extend(out.unexported.into_values().flatten());",
@@ -512,15 +659,17 @@ export const mutations: Mutation[] = [
   },
   {
     name: "declarations-never-unknown",
-    breaks: "a function that never returns is declared as returning something other than `never`",
+    breaks:
+      "a function that never returns is declared as returning something other than `never`",
     file: "src/lower/declarations.rs",
-    find: "            ty::Never => keyword(\"never\"),\n",
+    find: '            ty::Never => keyword("never"),\n',
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "declarations type what"],
   },
   {
     name: "union-declared-any",
-    breaks: "an exported union is TypeScript's `any`, not the fields it may hold",
+    breaks:
+      "an exported union is TypeScript's `any`, not the fields it may hold",
     file: "src/lower/declarations.rs",
     find: "            DefKind::Union => Some(out.union_type(def_id)),\n",
     replace: "",
@@ -528,7 +677,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "optional-field-refuses-undefined",
-    breaks: "a field a caller may leave out is `?: T`, which refuses `undefined` under `exactOptionalPropertyTypes`, where Rust takes it as `None`",
+    breaks:
+      "a field a caller may leave out is `?: T`, which refuses `undefined` under `exactOptionalPropertyTypes`, where Rust takes it as `None`",
     file: "src/lower/declarations.rs",
     find: "            let ty = if optional { or_undefined(ty) } else { ty };\n",
     replace: "",
@@ -536,87 +686,129 @@ export const mutations: Mutation[] = [
   },
   {
     name: "optional-unknown-or-undefined",
-    breaks: "an optional `unknown` or `any` field is `?: unknown | undefined`, which says nothing more",
+    breaks:
+      "an optional `unknown` or `any` field is `?: unknown | undefined`, which says nothing more",
     file: "src/lower/declarations.rs",
-    find: "    if ty[\"kind\"] == \"keyword\" && (ty[\"keyword\"] == \"any\" || ty[\"keyword\"] == \"unknown\") {\n        return ty;\n    }\n",
+    find: '    if ty["kind"] == "keyword" && (ty["keyword"] == "any" || ty["keyword"] == "unknown") {\n        return ty;\n    }\n',
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "null for an Option"],
   },
   {
     name: "optional-union-nested",
-    breaks: "an optional field of a union holds it whole, `(string | null) | undefined`",
+    breaks:
+      "an optional field of a union holds it whole, `(string | null) | undefined`",
     file: "src/lower/declarations.rs",
-    find: "        Some(\"union\") => ty[\"types\"].as_array().cloned().unwrap_or_default(),\n",
+    find: '        Some("union") => ty["types"].as_array().cloned().unwrap_or_default(),\n',
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "null for an Option"],
   },
   {
     name: "empty-union-unprinted",
-    breaks: "an enum of no variants is declared `type Void = ;`, which isn't TypeScript, where it's `never`",
+    breaks:
+      "an enum of no variants is declared `type Void = ;`, which isn't TypeScript, where it's `never`",
     file: "src/lower/declarations.rs",
-    find: "    if types.is_empty() {\n        return keyword(\"never\");\n    }\n",
+    find: '    if types.is_empty() {\n        return keyword("never");\n    }\n',
     replace: "",
     tests: ["test/declarations.test.ts", "-t", "no variants"],
   },
   {
     name: "written-alias-expanded",
-    breaks: "an alias the Rust writes is what it stands for, `TocItem[]`, where it's `Toc`",
+    breaks:
+      "an alias the Rust writes is what it stands for, `TocItem[]`, where it's `Toc`",
     file: "src/lower/declarations.rs",
     find: "        if let Some((_, named)) = self.named.iter().rev().find(|(named, _)| *named == erased) {",
-    replace: "        if let Some((_, named)) = self.named.iter().rev().find(|_| false) {",
-    tests: ["test/declarations.test.ts", "-t", "declarations name a type alias"],
+    replace:
+      "        if let Some((_, named)) = self.named.iter().rev().find(|_| false) {",
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "declarations name a type alias",
+    ],
   },
   {
     name: "written-alias-not-nested",
-    breaks: "an alias written as another type's argument, `Context<Toc>`, is what it stands for, `Context<TocItem[]>`",
+    breaks:
+      "an alias written as another type's argument, `Context<Toc>`, is what it stands for, `Context<TocItem[]>`",
     file: "src/lower/declarations.rs",
     find: "                        self.aliases_in(ty.as_unambig_ty(), named);",
     replace: "                        let _ = ty;",
-    tests: ["test/declarations.test.ts", "-t", "declarations name a type alias"],
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "declarations name a type alias",
+    ],
   },
   {
     name: "written-alias-args-expanded",
-    breaks: "an alias's argument written as an alias, `Pair<Toc>`, is what it stands for",
+    breaks:
+      "an alias's argument written as an alias, `Pair<Toc>`, is what it stands for",
     file: "src/lower/declarations.rs",
     find: "                self.as_written(Some(given), |out| out.ts(ty))\n",
     replace: "                self.ts(ty)\n",
-    tests: ["test/declarations.test.ts", "-t", "declarations name a type alias"],
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "declarations name a type alias",
+    ],
   },
   {
     name: "written-alias-in-ref",
-    breaks: "an alias written behind a reference, `&Toc`, is what it stands for",
+    breaks:
+      "an alias written behind a reference, `&Toc`, is what it stands for",
     file: "src/lower/declarations.rs",
     find: "            hir::TyKind::Ref(_, inner) | hir::TyKind::Ptr(inner) => self.aliases_in(inner.ty, named),",
-    replace: "            hir::TyKind::Ptr(inner) => self.aliases_in(inner.ty, named),",
-    tests: ["test/declarations.test.ts", "-t", "declarations name a type alias"],
+    replace:
+      "            hir::TyKind::Ptr(inner) => self.aliases_in(inner.ty, named),",
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "declarations name a type alias",
+    ],
   },
   {
     name: "written-private-alias-named",
-    breaks: "a private alias, which isn't declared, is named, and TypeScript finds no `Depth`",
+    breaks:
+      "a private alias, which isn't declared, is named, and TypeScript finds no `Depth`",
     file: "src/lower/declarations.rs",
     find: "        if !self.tcx.visibility(did).is_public() {\n            return None;\n        }\n        let home",
-    replace: "        if false {\n            return None;\n        }\n        let home",
-    tests: ["test/declarations.test.ts", "-t", "declarations name a type alias"],
+    replace:
+      "        if false {\n            return None;\n        }\n        let home",
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "declarations name a type alias",
+    ],
   },
   {
     name: "written-alias-unimported",
-    breaks: "another module's alias is named but not imported, and TypeScript finds no `Toc`",
+    breaks:
+      "another module's alias is named but not imported, and TypeScript finds no `Toc`",
     file: "src/lower/declarations.rs",
     find: "            self.imported(file, did, name.clone());",
     replace: "            let _ = file;",
-    tests: ["test/declarations.test.ts", "-t", "declarations name a type alias"],
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "declarations name a type alias",
+    ],
   },
   {
     name: "written-const-expanded",
-    breaks: "a `const`'s type written with an alias, `Context<Toc>`, is what it stands for",
+    breaks:
+      "a `const`'s type written with an alias, `Context<Toc>`, is what it stands for",
     file: "src/lower/declarations.rs",
     find: "            _ => self.as_written(written, |out| out.ts(ty)),\n",
     replace: "            _ => self.ts(ty),\n",
-    tests: ["test/declarations.test.ts", "-t", "declarations name a type alias"],
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "declarations name a type alias",
+    ],
   },
   {
     name: "declaration-named-as-rust",
-    breaks: "a function named as JS keeps a word apart is declared as `new`, not its JS's `new$`",
+    breaks:
+      "a function named as JS keeps a word apart is declared as `new`, not its JS's `new$`",
     file: "src/lower/declarations.rs",
     find: "        (self.fns.get(&def_id)).map_or_else(|| fn_name(self.tcx, def_id), |info| info.name.clone())\n",
     replace: "        fn_name(self.tcx, def_id)\n",
@@ -624,11 +816,17 @@ export const mutations: Mutation[] = [
   },
   {
     name: "transparent-declared-as-struct",
-    breaks: "a `#[repr(transparent)]` struct is declared an interface of its fields, where its JS is its field",
+    breaks:
+      "a `#[repr(transparent)]` struct is declared an interface of its fields, where its JS is its field",
     file: "src/lower/declarations.rs",
     find: "        if let Some(at) = super::recognition::transparent_field(self.tcx, adt) {\n",
-    replace: "        if let Some(at) = super::recognition::transparent_field(self.tcx, adt).filter(|_| false) {\n",
-    tests: ["test/declarations.test.ts", "-t", "transparent struct is declared"],
+    replace:
+      "        if let Some(at) = super::recognition::transparent_field(self.tcx, adt).filter(|_| false) {\n",
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "transparent struct is declared",
+    ],
   },
   {
     name: "transparent-tuple-struct-any",
@@ -636,19 +834,30 @@ export const mutations: Mutation[] = [
     file: "src/lower/declarations.rs",
     find: "            adt.non_enum_variant().ctor.is_none() || super::recognition::transparent_field(tcx, adt).is_some()\n",
     replace: "            adt.non_enum_variant().ctor.is_none()\n",
-    tests: ["test/declarations.test.ts", "-t", "transparent struct is declared"],
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "transparent struct is declared",
+    ],
   },
   {
     name: "bound-global-undeclared",
-    breaks: "a module's `const assign = Object.assign` isn't declared, so its `.d.ts`'s `export default assign` names nothing",
+    breaks:
+      "a module's `const assign = Object.assign` isn't declared, so its `.d.ts`'s `export default assign` names nothing",
     file: "src/lower/declarations.rs",
     find: "    for held in held.iter().filter(|held| held.through.is_none()) {\n",
-    replace: "    for held in held.iter().filter(|held| held.through.is_none()).take(0) {\n",
-    tests: ["test/declarations.test.ts", "-t", "a global binding a module names"],
+    replace:
+      "    for held in held.iter().filter(|held| held.through.is_none()).take(0) {\n",
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "a global binding a module names",
+    ],
   },
   {
     name: "held-static-typeof",
-    breaks: "a binding's static a module holds is declared `typeof Symbol.iterator`, not its type",
+    breaks:
+      "a binding's static a module holds is declared `typeof Symbol.iterator`, not its type",
     file: "src/lower/declarations.rs",
     find: "            DefKind::Static { .. } => out.constant(held.binding),\n",
     replace: "",
@@ -656,91 +865,148 @@ export const mutations: Mutation[] = [
   },
   {
     name: "default-constant-declared-as-default",
-    breaks: "a default constant's `.d.ts` is `export default const`, which TypeScript can't read",
+    breaks:
+      "a default constant's `.d.ts` is `export default const`, which TypeScript can't read",
     file: "src/lower/declarations.rs",
     find: "                let function = tcx.def_kind(def_id) == DefKind::Fn;\n",
     replace: "                let function = true;\n",
-    tests: ["test/modules.test.ts", "-t", "the constant's value where the macro holds it"],
+    tests: [
+      "test/modules.test.ts",
+      "-t",
+      "the constant's value where the macro holds it",
+    ],
   },
   {
     name: "nullable-cell-declared-undefined",
-    breaks: "a nullable `Cell` field is declared `T | undefined`, where JS has its `None` `null`",
+    breaks:
+      "a nullable `Cell` field is declared `T | undefined`, where JS has its `None` `null`",
     file: "src/lower/declarations.rs",
     find: "                true => super::bindings::nullable_option(self.tcx, ty).and_then(|option| self.option(option)),\n",
     replace: "                true => self.option(ty),\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "nullable Cell field's None is null"],
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "nullable Cell field's None is null",
+    ],
   },
   {
     name: "once-field-declared-a-cell",
-    breaks: "a `OnceCell` field is declared as one that's always there, where it's absent until it's set, `ioInfo?: string | undefined`",
+    breaks:
+      "a `OnceCell` field is declared as one that's always there, where it's absent until it's set, `ioInfo?: string | undefined`",
     file: "src/lower/declarations.rs",
     find: "                false => self.option(ty).or_else(|| self.once_cell_item(ty)),\n",
     replace: "                false => self.option(ty),\n",
-    tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "declarations type what a module exports",
+    ],
   },
   {
     name: "opaque-fn-undeclared",
-    breaks: "an `impl Fn` a function gives is declared `any`, not the function it says",
+    breaks:
+      "an `impl Fn` a function gives is declared `any`, not the function it says",
     file: "src/lower/declarations.rs",
     find: "            ) if let Some((inputs, output)) = opaque_fn_signature(tcx, *alias) => self.function_type(&inputs, output),\n",
-    replace: "            ) if let Some((inputs, output)) = opaque_fn_signature(tcx, *alias).filter(|_| false) => self.function_type(&inputs, output),\n",
-    tests: ["test/rest-parameters.test.ts", "-t", "spreads them, through any type"],
+    replace:
+      "            ) if let Some((inputs, output)) = opaque_fn_signature(tcx, *alias).filter(|_| false) => self.function_type(&inputs, output),\n",
+    tests: [
+      "test/rest-parameters.test.ts",
+      "-t",
+      "spreads them, through any type",
+    ],
   },
   {
     name: "own-alias-declared-exported",
-    breaks: "a `.d.ts` exports `getCurrentTime` by its name too, where its JS exports it as `unstable_now` alone (ADR 0596, amended)",
+    breaks:
+      "a `.d.ts` exports `getCurrentTime` by its name too, where its JS exports it as `unstable_now` alone (ADR 0596, amended)",
     file: "src/lower/declarations.rs",
     find: "            if !held && let Some((_, (_, export))) = aliases.iter().find(|&&(item, _)| item == def_id) {\n",
-    replace: "            if false && let Some((_, (_, export))) = aliases.iter().find(|&&(item, _)| item == def_id) {\n",
-    tests: ["test/modules.test.ts", "-t", "a pub use by another name of the module's own function exports it by that"],
+    replace:
+      "            if false && let Some((_, (_, export))) = aliases.iter().find(|&&(item, _)| item == def_id) {\n",
+    tests: [
+      "test/modules.test.ts",
+      "-t",
+      "a pub use by another name of the module's own function exports it by that",
+    ],
   },
   {
     name: "value-cell-declared-any",
-    breaks: "a `RefCell` of an array a function gives is declared `any`, not the array it is",
+    breaks:
+      "a `RefCell` of an array a function gives is declared `any`, not the array it is",
     file: "src/lower/declarations.rs",
     find: "                if self.ref_cells.is_value_cell(tcx, ty) {\n",
-    replace: "                if false && self.ref_cells.is_value_cell(tcx, ty) {\n",
+    replace:
+      "                if false && self.ref_cells.is_value_cell(tcx, ty) {\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "a nullable RefCell field"],
   },
   {
     name: "variable-declared-const",
-    breaks: "an exported variable its module sets is declared `export const enabled: boolean;` (ADR 0270, amended)",
+    breaks:
+      "an exported variable its module sets is declared `export const enabled: boolean;` (ADR 0270, amended)",
     file: "src/lower/declarations.rs",
-    find: "            declared[\"mutable\"] = json!(true);\n",
+    find: '            declared["mutable"] = json!(true);\n',
     replace: "",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "an exported cell its module alone sets"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "an exported cell its module alone sets",
+    ],
   },
   {
     name: "variable-declared-cell",
-    breaks: "an exported variable is declared as its cell, `export let enabled: { value: boolean };` (ADR 0270, amended)",
+    breaks:
+      "an exported variable is declared as its cell, `export let enabled: { value: boolean };` (ADR 0270, amended)",
     file: "src/lower/declarations.rs",
     find: "                ty::Adt(_, held) if variable.is_some() => held.type_at(0),\n",
-    replace: "                ty::Adt(_, held) if variable.is_some() && held.is_empty() => held.type_at(0),\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "an exported cell its module alone sets"],
+    replace:
+      "                ty::Adt(_, held) if variable.is_some() && held.is_empty() => held.type_at(0),\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "an exported cell its module alone sets",
+    ],
   },
   {
     name: "nullable-local-declared-undefined",
-    breaks: "a nullable thread-local's variable is declared `Fiber | null | undefined`, where its `None` is `null` (ADR 0586, amended)",
+    breaks:
+      "a nullable thread-local's variable is declared `Fiber | null | undefined`, where its `None` is `null` (ADR 0586, amended)",
     file: "src/lower/declarations.rs",
     find: "                if super::bindings::nullable_local(self.tcx, def_id)\n",
-    replace: "                if false && super::bindings::nullable_local(self.tcx, def_id)\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "nullable thread-local's None is null"],
+    replace:
+      "                if false && super::bindings::nullable_local(self.tcx, def_id)\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "nullable thread-local's None is null",
+    ],
   },
   {
     name: "nullable-local-declared-unaliased",
-    breaks: "a nullable thread-local of an `Option<CallDestroy>`, and a variable's `Cell<Option<ConsoleTask>>`, are declared by what the alias is, `((fiber: Fiber, value: number) => number) | null`, not `CallDestroy | null` (ADR 0586, amended)",
+    breaks:
+      "a nullable thread-local of an `Option<CallDestroy>`, and a variable's `Cell<Option<ConsoleTask>>`, are declared by what the alias is, `((fiber: Fiber, value: number) => number) | null`, not `CallDestroy | null` (ADR 0586, amended)",
     file: "src/lower/declarations.rs",
     find: "        let written = self.written_type(def_id);\n        let ty = match variable {\n",
     replace: "        let written = None;\n        let ty = match variable {\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a nullable thread-local of an Option is null where it's made"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a nullable thread-local of an Option is null where it's made",
+    ],
   },
   {
     name: "nullable-option-local-declared-undefined",
-    breaks: "a nullable thread-local of an `Option`, and a nullable `const`, is declared `T | undefined`, not `T | null` (ADR 0586, amended)",
+    breaks:
+      "a nullable thread-local of an `Option`, and a nullable `const`, is declared `T | undefined`, not `T | null` (ADR 0586, amended)",
     file: "src/lower/declarations.rs",
     find: "            None if super::bindings::nullable_local(self.tcx, def_id)\n                && let Some(inner) = self.option(ty) =>\n",
-    replace: "            None if false\n                && let Some(inner) = self.option(ty) =>\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a nullable thread-local of an Option is null where it's made|a nullable const's None is null"],
+    replace:
+      "            None if false\n                && let Some(inner) = self.option(ty) =>\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a nullable thread-local of an Option is null where it's made|a nullable const's None is null",
+    ],
   },
   {
     name: "class-to-string-undeclared",
@@ -752,7 +1018,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "class-declared-by-its-struct-name",
-    breaks: "a class named apart from its struct is declared and named by the struct's name, `class Fiber`, where its JS is `FiberNode`",
+    breaks:
+      "a class named apart from its struct is declared and named by the struct's name, `class Fiber`, where its JS is `FiberNode`",
     file: "src/lower/declarations.rs",
     find: "    super::classes::name(tcx, did).unwrap_or_else(|| tcx.item_name(did).to_string())\n",
     replace: "    tcx.item_name(did).to_string()\n",
@@ -760,7 +1027,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "class-of-another-modules-struct-undeclared",
-    breaks: "a class whose struct is another module's is declared nowhere, though its references import it from where its constructor is",
+    breaks:
+      "a class whose struct is another module's is declared nowhere, though its references import it from where its constructor is",
     file: "src/lower/declarations.rs",
     find: "            items.push(documented(out.class(class), tcx, class));\n",
     replace: "",
@@ -768,15 +1036,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "object-methods-undeclared",
-    breaks: "an object of methods' interface declares its fields alone, so TypeScript has no `scope.containsNode(..)` (ADR 0943)",
+    breaks:
+      "an object of methods' interface declares its fields alone, so TypeScript has no `scope.containsNode(..)` (ADR 0943)",
     file: "src/lower/declarations.rs",
     find: "            if !self.tcx.visibility(method).is_public() {\n",
     replace: "            if true {\n",
-    tests: ["test/classes.test.ts", "-t", "an object's methods are its literal's own"],
+    tests: [
+      "test/classes.test.ts",
+      "-t",
+      "an object's methods are its literal's own",
+    ],
   },
   {
     name: "js-null-fields-unread",
-    breaks: "a plain `Option` field a `js::null()` is written to is declared `?: T | undefined`, though it holds `null` (ADR 0935, amended)",
+    breaks:
+      "a plain `Option` field a `js::null()` is written to is declared `?: T | undefined`, though it holds `null` (ADR 0935, amended)",
     file: "src/lower/declarations.rs",
     find: "                    match is_nullable(self.tcx, field) || self.null_fields.contains(&field.did) {\n",
     replace: "                    match is_nullable(self.tcx, field) {\n",
@@ -784,43 +1058,77 @@ export const mutations: Mutation[] = [
   },
   {
     name: "typed-class-declared-a-function",
-    breaks: "a typed `js::Class` is declared as a function, `(value: string) => unknown`, which TypeScript calls, not `new`s",
+    breaks:
+      "a typed `js::Class` is declared as a function, `(value: string) => unknown`, which TypeScript calls, not `new`s",
     file: "src/lower/declarations.rs",
-    find: "                    constructor[\"construct\"] = json!(true);\n",
+    find: '                    constructor["construct"] = json!(true);\n',
     replace: "",
-    tests: ["test/js-constructors.test.ts", "-t", "a typed class is declared as its constructor's type"],
+    tests: [
+      "test/js-constructors.test.ts",
+      "-t",
+      "a typed class is declared as its constructor's type",
+    ],
   },
   {
     name: "export-named-apart-declared-apart",
-    breaks: "the `.d.ts` of an export named apart of a global, `console`, is `declare function console$()` and its alias, not `export function console()` (#338)",
+    breaks:
+      "the `.d.ts` of an export named apart of a global, `console`, is `declare function console$()` and its alias, not `export function console()` (#338)",
     file: "src/lower/declarations.rs",
-    find: "                    true => declared[\"name\"] = json!(export),\n",
-    replace: "                    true if false => declared[\"name\"] = json!(export),\n                    true => {\n                        declared[\"exported\"] = json!(false);\n                        declared[\"declare\"] = json!(true);\n                    }\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "an export its module names apart is exported by its own name"],
+    find: '                    true => declared["name"] = json!(export),\n',
+    replace:
+      '                    true if false => declared["name"] = json!(export),\n                    true => {\n                        declared["exported"] = json!(false);\n                        declared["declare"] = json!(true);\n                    }\n',
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "an export its module names apart is exported by its own name",
+    ],
   },
   {
     name: "kept-word-declared-by-its-name",
-    breaks: "the `.d.ts` of `pub fn delete()` is `export function delete(): number;`, a declaration no `.d.ts` may name (#338)",
+    breaks:
+      "the `.d.ts` of `pub fn delete()` is `export function delete(): number;`, a declaration no `.d.ts` may name (#338)",
     file: "src/lower/declarations.rs",
     find: " == Some(export) && !crate::names::kept_word(export)\n",
     replace: " == Some(export)\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "an export its module names apart is exported by its own name"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "an export its module names apart is exported by its own name",
+    ],
   },
   {
     name: "intersection-declared-union",
-    breaks: "a `RegExpMatch`'s `.d.ts` is `string[] | { .. }`, a union, not the intersection it's declared (#303)",
+    breaks:
+      "a `RegExpMatch`'s `.d.ts` is `string[] | { .. }`, a union, not the intersection it's declared (#303)",
     file: "src/lower/declarations.rs",
-    find: "                json!({ \"kind\": \"intersection\", \"types\": types })\n",
+    find: '                json!({ "kind": "intersection", "types": types })\n',
     replace: "                union(types)\n",
-    tests: ["test/compiler.test.ts", "-t", "an untagged enum's js::RegExpMatch is an array"],
+    tests: [
+      "test/compiler.test.ts",
+      "-t",
+      "an untagged enum's js::RegExpMatch is an array",
+    ],
   },
   {
     name: "nullable-value-declared-undefined",
-    breaks: "a map of `Option` values is declared `Map<string, string | null | undefined>`, where it holds `None` as `null` alone, `Map<string, string | null>` (ADR 0884, amended)",
+    breaks:
+      "a map of `Option` values is declared `Map<string, string | null | undefined>`, where it holds `None` as `null` alone, `Map<string, string | null>` (ADR 0884, amended)",
     file: "src/lower/declarations.rs",
     find: "                        if nullable.contains(&param.index)\n",
-    replace: "                        if false && nullable.contains(&param.index)\n",
+    replace:
+      "                        if false && nullable.contains(&param.index)\n",
     tests: ["test/js-collections.test.ts", "-t", "a Map's value is any value"],
   },
-
+  {
+    name: "namespace-type-any",
+    breaks: "a namespace's type is `any`, not `typeof Reconciler` (ADR 1037)",
+    file: "src/lower/declarations.rs",
+    find: "                    return self.namespace_type(did);\n",
+    replace: '                    return keyword("any");\n',
+    tests: [
+      "test/namespaces.test.ts",
+      "-t",
+      "a namespace's methods are its module's functions",
+    ],
+  },
 ];

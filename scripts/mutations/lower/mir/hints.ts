@@ -1,20 +1,34 @@
 // Mutations of src/lower/mir/hints.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
-const fallthrough = ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to its case"];
-const toDefault = ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to the default"];
+const fallthrough = [
+  "test/lowering-switch-fallthrough.test.ts",
+  "-t",
+  "falls through to its case",
+];
+const toDefault = [
+  "test/lowering-switch-fallthrough.test.ts",
+  "-t",
+  "falls through to the default",
+];
 export const mutations: Mutation[] = [
   {
     name: "switch-constants-unvalued",
-    breaks: "a `match` of the registry's symbols in a `Some`, `Some(A | B)`, is no `switch` that takes `None` to its `default`, its `if (symbolFor != null)` kept (#221)",
+    breaks:
+      "a `match` of the registry's symbols in a `Some`, `Some(A | B)`, is no `switch` that takes `None` to its `default`, its `if (symbolFor != null)` kept (#221)",
     file: "src/lower/mir/hints.rs",
     find: "                    _ => self.constant_values(&arm.pattern, present).is_some(),\n",
     replace: "                    _ => false,\n",
-    tests: ["test/lowering-switch-symbols.test.ts", "-t", "a match of symbols give is given"],
+    tests: [
+      "test/lowering-switch-symbols.test.ts",
+      "-t",
+      "a match of symbols give is given",
+    ],
   },
   {
     name: "guard-before-its-constants-unjoined",
-    breaks: "a guarded arm that does nothing before an arm of its constants alone, `I if legacy_off => {}` then `I => { .. }`, makes no `switch` of its `match`, React's completeWork an `if` chain in labeled blocks (ADR 0905, amended)",
+    breaks:
+      "a guarded arm that does nothing before an arm of its constants alone, `I if legacy_off => {}` then `I => { .. }`, makes no `switch` of its `match`, React's completeWork an `if` chain in labeled blocks (ADR 0905, amended)",
     file: "src/lower/mir/hints.rs",
     find: "                            && self.does_nothing(arms[i].body)\n",
     replace: "                            && false\n",
@@ -23,15 +37,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "switch-last-name-an-if-chain",
-    breaks: "a `match` of constants whose last arm is a name, `current => current`, is an `if` chain or its `?:`, not upstream's `switch` with that arm its `default` (ADR 0629, amended)",
+    breaks:
+      "a `match` of constants whose last arm is a name, `current => current`, is an `if` chain or its `?:`, not upstream's `switch` with that arm its `default` (ADR 0629, amended)",
     file: "src/lower/mir/hints.rs",
     find: "                            thir::PatKind::Wild | thir::PatKind::Binding { subpattern: None, .. }\n                                if i == last && guard.is_none() =>\n",
-    replace: "                            thir::PatKind::Wild\n                                if i == last && guard.is_none() =>\n",
+    replace:
+      "                            thir::PatKind::Wild\n                                if i == last && guard.is_none() =>\n",
     tests: ["test/port-scheduler.test.ts"],
   },
   {
     name: "clone-names-unfound",
-    breaks: "no local is told as a `clone()`'s, so an `Rc`'s clone stays `const resolved = payload` (ADR 0846)",
+    breaks:
+      "no local is told as a `clone()`'s, so an `Rc`'s clone stays `const resolved = payload` (ADR 0846)",
     file: "src/lower/mir/hints.rs",
     find: "self.tcx.is_lang_item(def_id, LangItem::CloneFn)",
     replace: "self.tcx.is_lang_item(def_id, LangItem::Clone)",
@@ -40,27 +57,40 @@ export const mutations: Mutation[] = [
   },
   {
     name: "typeof-nullish-no-case",
-    breaks: "`Kind::Undefined` and `Kind::Null`, which have no fields, aren't cases of a `switch (typeof value)`",
+    breaks:
+      "`Kind::Undefined` and `Kind::Null`, which have no fields, aren't cases of a `switch (typeof value)`",
     file: "src/lower/mir/hints.rs",
     find: "                && crate::lower::untagged::told_by_kind(self.tcx, adt_def.variant(*variant_index))\n",
-    replace: "                && !adt_def.variant(*variant_index).fields.is_empty()\n",
+    replace:
+      "                && !adt_def.variant(*variant_index).fields.is_empty()\n",
     tests: ["test/lowering-switches.test.ts", "-t", "undefined and null"],
   },
   {
     name: "typeof-switch-present-unknown",
-    breaks: "a `switch` of `classify(Some(value))` isn't told it's there, so its object's case leaves out `null`",
+    breaks:
+      "a `switch` of `classify(Some(value))` isn't told it's there, so its object's case leaves out `null`",
     file: "src/lower/mir/hints.rs",
     find: "                let present = crate::lower::body_queries::given_present(self.tcx, self.frame.thir, scrutinee).is_some();\n",
     replace: "                let present = false;\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is is a switch"],
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "a match of what a value is is a switch",
+    ],
   },
   {
     name: "pattern-tests-nested",
-    breaks: "`(Some(x), Some(y))`'s tests are `if (p != null) { if (q != null) {` nested",
+    breaks:
+      "`(Some(x), Some(y))`'s tests are `if (p != null) { if (q != null) {` nested",
     file: "src/lower/mir/hints.rs",
     find: "                    std::iter::once((tested, tested))\n                        .chain(guards)\n",
-    replace: "                    std::iter::empty()\n                        .chain(guards)\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "a match arm's pattern of parts"],
+    replace:
+      "                    std::iter::empty()\n                        .chain(guards)\n",
+    tests: [
+      "test/lowering-matches.test.ts",
+      "-t",
+      "a match arm's pattern of parts",
+    ],
   },
   {
     name: "mir-booleans-unhinted",
@@ -68,59 +98,100 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/hints.rs",
     find: "        booleans.retain(|name| !others.contains(name));\n",
     replace: "        booleans.clear();\n",
-    tests: ["test/lowering-branches.test.ts", "-t", "a function.s match of two arms and its if of two values"],
+    tests: [
+      "test/lowering-branches.test.ts",
+      "-t",
+      "a function.s match of two arms and its if of two values",
+    ],
   },
   {
     name: "mir-captured-booleans-unknown",
-    breaks: "a closure doesn't know a `bool` it captures as one, `!!force || n > 2`",
+    breaks:
+      "a closure doesn't know a `bool` it captures as one, `!!force || n > 2`",
     file: "src/lower/mir/hints.rs",
     find: "                    match ty.peel_refs().is_bool() {\n",
     replace: "                    match false {\n",
-    tests: ["test/lowering-functions.test.ts", "-t", "names its .&x. parameter"],
+    tests: [
+      "test/lowering-functions.test.ts",
+      "-t",
+      "names its .&x. parameter",
+    ],
   },
   {
     name: "mir-guard-conditions-unknown",
     breaks: "a guarded arm's pattern test and its guard stay nested `if`s",
     file: "src/lower/mir/hints.rs",
     find: "                        let guard = self.frame.thir[arm].guard?;\n",
-    replace: "                        let guard = self.frame.thir[arm].guard.filter(|_| false)?;\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "a match arm's guard from MIR is one test"],
+    replace:
+      "                        let guard = self.frame.thir[arm].guard.filter(|_| false)?;\n",
+    tests: [
+      "test/lowering-matches.test.ts",
+      "-t",
+      "a match arm's guard from MIR is one test",
+    ],
   },
   {
     name: "while-hint-span-whole",
-    breaks: "a `while` in a closure isn't known as one: its desugared test's span, of another body, isn't the loop's",
+    breaks:
+      "a `while` in a closure isn't known as one: its desugared test's span, of another body, isn't the loop's",
     file: "src/lower/mir/hints.rs",
     find: "                            && w.span.source_callsite().source_equal(written)\n",
-    replace: "                            && w.span.source_callsite() == written\n",
-    tests: ["test/lowering-loops.test.ts", "-t", "a while in a closure from MIR keeps its test|while"],
+    replace:
+      "                            && w.span.source_callsite() == written\n",
+    tests: [
+      "test/lowering-loops.test.ts",
+      "-t",
+      "a while in a closure from MIR keeps its test|while",
+    ],
   },
   {
     name: "mir-bool-ref-unknown",
-    breaks: "a state's `bool`, a `&bool` local, isn't known as one, `showHint ? hint : undefined`",
+    breaks:
+      "a state's `bool`, a `&bool` local, isn't known as one, `showHint ? hint : undefined`",
     file: "src/lower/mir/hints.rs",
     find: "                ty::Ref(_, inner, ty::Mutability::Not) => inner.is_bool(),\n",
     replace: "",
-    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
     name: "mir-continue-alone-only",
-    breaks: "only an `if` of a `continue` alone is known written so, not one that ends with one",
+    breaks:
+      "only an `if` of a `continue` alone is known written so, not one that ends with one",
     file: "src/lower/mir/hints.rs",
     find: "let only = match (block.stmts.last(), block.expr) {",
-    replace: "let only = match (block.stmts.last().filter(|_| block.stmts.len() == 1), block.expr) {",
-    tests: ["test/lowering-loops.test.ts", "-t", "continues a loop's ifs end with are kept"],
+    replace:
+      "let only = match (block.stmts.last().filter(|_| block.stmts.len() == 1), block.expr) {",
+    tests: [
+      "test/lowering-loops.test.ts",
+      "-t",
+      "continues a loop's ifs end with are kept",
+    ],
   },
   {
     name: "mir-let-else-continue-unwritten",
-    breaks: "a `let \u2026 else { continue; }` from MIR isn't one the program wrote: `if (current) { .. }` around the rest, not the guard",
+    breaks:
+      "a `let \u2026 else { continue; }` from MIR isn't one the program wrote: `if (current) { .. }` around the rest, not the guard",
     file: "src/lower/mir/hints.rs",
     find: "        let lets = if of_else { Vec::new() } else { self.let_else_jumps(jump) };\n",
     replace: "        let lets = Vec::new();\n",
-    tests: ["test/lowering-loops.test.ts", "-t", "a let-else's written continue"],
+    tests: [
+      "test/lowering-loops.test.ts",
+      "-t",
+      "a let-else's written continue",
+    ],
   },
   {
     name: "mir-else-continues-of-thens",
-    breaks: "an `else`'s written `continue` isn't known, so `} else { ..; continue; }` at a turn's end loses it (ADR 0684, amended)",
+    breaks:
+      "an `else`'s written `continue` isn't known, so `} else { ..; continue; }` at a turn's end loses it (ADR 0684, amended)",
     file: "src/lower/mir/hints.rs",
     find: "        let else_continues = self.jump_ifs(&continue_of, true);\n",
     replace: "        let else_continues = Vec::new();\n",
@@ -129,7 +200,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-else-breaks-unknown",
-    breaks: "an `else`'s written `break` isn't known, so React DOM's replayUnblockedFormActions' `} else { break; }` prints `return;` (ADR 0684, amended)",
+    breaks:
+      "an `else`'s written `break` isn't known, so React DOM's replayUnblockedFormActions' `} else { break; }` prints `return;` (ADR 0684, amended)",
     file: "src/lower/mir/hints.rs",
     find: "        let else_breaks = self.jump_ifs(&break_of, true);\n",
     replace: "        let else_breaks = Vec::new();\n",
@@ -137,7 +209,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-label-of-scope",
-    breaks: "MIR's labeled loop in a scope of its own is named `bbN`, not its label",
+    breaks:
+      "MIR's labeled loop in a scope of its own is named `bbN`, not its label",
     file: "src/lower/mir/hints.rs",
     find: "Some((self.strip(value), written_label(&label))),\n",
     replace: "Some((value, written_label(&label))),\n",
@@ -145,11 +218,16 @@ export const mutations: Mutation[] = [
   },
   {
     name: "temporary-named-by-unwritten-call",
-    breaks: "a temporary is named after a call the source doesn't write by its name, `vec![..]`'s `newUninit`, `a[i]`'s `indexMut`, `f(x)`'s `callMut`",
+    breaks:
+      "a temporary is named after a call the source doesn't write by its name, `vec![..]`'s `newUninit`, `a[i]`'s `indexMut`, `f(x)`'s `callMut`",
     file: "src/lower/mir/hints.rs",
     find: "                && written.starts_with(self.tcx.item_name(def_id).as_str())\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(adapter_drops|assignment_order|arm_temporaries).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(adapter_drops|assignment_order|arm_temporaries).rs$",
+    ],
     snapshots: true,
   },
   {
@@ -157,13 +235,15 @@ export const mutations: Mutation[] = [
     breaks: "a temporary is named `mut`, of `as_mut()`, a keyword's name",
     file: "src/lower/mir/hints.rs",
     find: "        (plain && !keyword && !USELESS_NAMES.contains(&name)).then(|| name.to_string())\n",
-    replace: "        (plain && !USELESS_NAMES.contains(&name)).then(|| name.to_string())\n",
+    replace:
+      "        (plain && !USELESS_NAMES.contains(&name)).then(|| name.to_string())\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_end_entries.rs$"],
     snapshots: true,
   },
   {
     name: "temporary-named-by-useless-method",
-    breaks: "a temporary is named after a method that names nothing, `unwrapErr`, not `value`",
+    breaks:
+      "a temporary is named after a method that names nothing, `unwrapErr`, not `value`",
     file: "src/lower/mir/hints.rs",
     find: "            true if USELESS_METHODS.contains(&name) => return None,\n",
     replace: "",
@@ -171,16 +251,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "temporary-taken-reference-unnamed",
-    breaks: "a reference MIR takes to a call's result, `format_args!`'s, isn't named after the call",
+    breaks:
+      "a reference MIR takes to a call's result, `format_args!`'s, isn't named after the call",
     file: "src/lower/mir/hints.rs",
     find: "                    taken_from.insert(local, from);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(temporary_names|cell_const|extreme_drops).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(temporary_names|cell_const|extreme_drops).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "temporary-type-unnamed",
-    breaks: "a temporary holding the program's type isn't named after it, `point` of an `Option<Point>`",
+    breaks:
+      "a temporary holding the program's type isn't named after it, `point` of an `Option<Point>`",
     file: "src/lower/mir/hints.rs",
     find: "                    self.held_type_name(mir_body.local_decls[local].ty),\n",
     replace: "                    None,\n",
@@ -189,143 +275,229 @@ export const mutations: Mutation[] = [
   },
   {
     name: "temporary-result-named-by-ok",
-    breaks: "a `Result` temporary is named after its `Ok` type, `order.TAG`, as JS holds it `{ TAG, _0 }`",
+    breaks:
+      "a `Result` temporary is named after its `Ok` type, `order.TAG`, as JS holds it `{ TAG, _0 }`",
     file: "src/lower/mir/hints.rs",
     find: "                ty::Adt(_, args) if ty.is_box() || self.is_std_type(ty, StdItem::Rc) => args.type_at(0).peel_refs(),\n",
-    replace: "                ty::Adt(_, args) if ty.is_box() || self.is_std_type(ty, StdItem::Rc) || self.is_std_type(ty, StdItem::Result) => args.type_at(0).peel_refs(),\n",
+    replace:
+      "                ty::Adt(_, args) if ty.is_box() || self.is_std_type(ty, StdItem::Rc) || self.is_std_type(ty, StdItem::Result) => args.type_at(0).peel_refs(),\n",
     tests: ["test/snapshots.test.ts", "-t", "inbox"],
   },
   {
     name: "switch-of-two-arms",
-    breaks: "a `match` of two cases is a `switch`, `switch (s) { case \"a\": .. default: .. }`, not the `if` of two ways",
+    breaks:
+      'a `match` of two cases is a `switch`, `switch (s) { case "a": .. default: .. }`, not the `if` of two ways',
     file: "src/lower/mir/hints.rs",
     find: "const SWITCH_CASES: usize = 3;\n",
     replace: "const SWITCH_CASES: usize = 2;\n",
-    tests: ["test/lowering-branches.test.ts", "-t", "a function.s match of two arms and its if of two values"],
+    tests: [
+      "test/lowering-branches.test.ts",
+      "-t",
+      "a function.s match of two arms and its if of two values",
+    ],
   },
   {
     name: "switch-of-a-guard",
-    breaks: "a guarded arm is a case where a later arm does something, `1 if n > 0 => 1, .., _ => 3`, which a failed guard leaves for after the `switch`, not the arms after it",
+    breaks:
+      "a guarded arm is a case where a later arm does something, `1 if n > 0 => 1, .., _ => 3`, which a failed guard leaves for after the `switch`, not the arms after it",
     file: "src/lower/mir/hints.rs",
     find: "                                guard.is_none() || falls[i] || self.fails_to_nothing(&arm.pattern, &arms[i + 1..])\n",
     replace: "                                true\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
+    tests: [
+      "test/lowering-matches.test.ts",
+      "-t",
+      "a match of constants is a switch",
+    ],
   },
   {
     name: "switch-guard-refused",
-    breaks: "a guarded arm after which only `_ => {}` comes isn't a case, so React's `match` of seven constants is an `if` chain",
+    breaks:
+      "a guarded arm after which only `_ => {}` comes isn't a case, so React's `match` of seven constants is an `if` chain",
     file: "src/lower/mir/hints.rs",
     find: "                                guard.is_none() || falls[i] || self.fails_to_nothing(&arm.pattern, &arms[i + 1..])\n",
     replace: "                                guard.is_none() || falls[i]\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "a guarded arm of a match of constants"],
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "a guarded arm of a match of constants",
+    ],
   },
   {
     name: "switch-guard-later-arms-unasked",
-    breaks: "a guarded arm is a case where a later arm could take its constant, `C if on => 30, .., _ => 0`, so a failed guard gives nothing, not `0`",
+    breaks:
+      "a guarded arm is a case where a later arm could take its constant, `C if on => 30, .., _ => 0`, so a failed guard gives nothing, not `0`",
     file: "src/lower/mir/hints.rs",
     find: "            !self.may_match_alike(pattern, &arm.pattern)\n",
     replace: "            true\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "a guarded arm of a match of constants"],
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "a guarded arm of a match of constants",
+    ],
   },
   {
     name: "switch-guard-later-wild-unread",
-    breaks: "a guarded arm is a case where the `_` after it does something, `_ => 0`, which a failed guard then doesn't",
+    breaks:
+      "a guarded arm is a case where the `_` after it does something, `_ => 0`, which a failed guard then doesn't",
     file: "src/lower/mir/hints.rs",
     find: "                    && self.does_nothing(arm.body))\n",
     replace: "                    )\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "a guarded arm of a match of constants"],
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "a guarded arm of a match of constants",
+    ],
   },
   {
     name: "switch-guard-variants-alike",
-    breaks: "a later arm of another variant may take a guarded arm's, so the `match` is an `if` chain",
+    breaks:
+      "a later arm of another variant may take a guarded arm's, so the `match` is an `if` chain",
     file: "src/lower/mir/hints.rs",
     find: "            ) => x == y && (xs.iter().zip(ys)).all(|(x, y)| self.may_match_alike(&x.pattern, &y.pattern)),\n",
     replace: "            ) => true,\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "a guarded arm of a match of constants"],
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "a guarded arm of a match of constants",
+    ],
   },
   {
     name: "switch-guard-constants-alike",
-    breaks: "a later arm of another constant may take a guarded arm's, so the `match` is an `if` chain",
+    breaks:
+      "a later arm of another constant may take a guarded arm's, so the `match` is an `if` chain",
     file: "src/lower/mir/hints.rs",
     find: "                (Some(x), Some(y)) => x == y,\n",
     replace: "                (Some(_), Some(_)) => true,\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "a guarded arm of a match of constants"],
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "a guarded arm of a match of constants",
+    ],
   },
   {
     name: "switch-of-a-value-in-place",
-    breaks: "a `match` whose value is read in place is a `switch` of a temporary, `let tmp; switch (n) { .. } f(tmp)`, not its `?:`",
+    breaks:
+      "a `match` whose value is read in place is a `switch` of a temporary, `let tmp; switch (n) { .. } f(tmp)`, not its `?:`",
     file: "src/lower/mir/hints.rs",
     find: "                    || self.read_in_place(hir_id)\n",
     replace: "",
-    tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
+    tests: [
+      "test/lowering-matches.test.ts",
+      "-t",
+      "a match of constants is a switch",
+    ],
   },
   {
     name: "switch-cases-counted-as-arms",
-    breaks: "a `match` of one arm of several constants and a `_` is two arms, so no `switch`, though it's a case of each",
+    breaks:
+      "a `match` of one arm of several constants and a `_` is two arms, so no `switch`, though it's a case of each",
     file: "src/lower/mir/hints.rs",
     find: "                let cases: usize = arms.iter().map(SwitchArm::cases).sum();\n",
     replace: "                let cases: usize = arms.len();\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
+    tests: [
+      "test/lowering-matches.test.ts",
+      "-t",
+      "a match of constants is a switch",
+    ],
   },
   {
     name: "typeof-switch-of-bindings-unseen",
-    breaks: "an arm that names its variant's value, `Kind::String(text)`, the value itself, is no case, so a `match` of what a value is stays an `if` chain",
+    breaks:
+      "an arm that names its variant's value, `Kind::String(text)`, the value itself, is no case, so a `match` of what a value is stays an `if` chain",
     file: "src/lower/mir/hints.rs",
     find: "                        thir::PatKind::Wild | thir::PatKind::Binding { subpattern: None, .. }\n                    )\n",
-    replace: "                        thir::PatKind::Wild\n                    )\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is"],
+    replace:
+      "                        thir::PatKind::Wild\n                    )\n",
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "a match of what a value is",
+    ],
   },
   {
     name: "typeof-array-counted-a-case",
-    breaks: "an arm of `Kind::Array`, an `if` before the `switch`, counts a case, so `String`, `Array` and `_` are a `switch` of two",
+    breaks:
+      "an arm of `Kind::Array`, an `if` before the `switch`, counts a case, so `String`, `Array` and `_` are a `switch` of two",
     file: "src/lower/mir/hints.rs",
     find: "                .filter(|c| !matches!(c, Constant::Kind(TypeofCase::Tested(_) | TypeofCase::Inside(..))))\n",
     replace: "",
-    tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is"],
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "a match of what a value is",
+    ],
   },
   {
     name: "range-arm-tests-apart",
-    breaks: "a range pattern's two bounds are an `if` in an `if`, not `score >= 90 && score <= 100`",
+    breaks:
+      "a range pattern's two bounds are an `if` in an `if`, not `score >= 90 && score <= 100`",
     file: "src/lower/mir/hints.rs",
     find: "                        .chain(patterns)\n",
     replace: "                        .chain(patterns.take(0))\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a range pattern's bounds are one test"],
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a range pattern's bounds are one test",
+    ],
   },
   {
     name: "or-pattern-cases-each",
-    breaks: "an arm of `Kind::Object(_) | Kind::Array(_)` has the cases of each, which its test, `typeof value === \"object\"`, isn't, so the `match` is no `switch`",
+    breaks:
+      'an arm of `Kind::Object(_) | Kind::Array(_)` has the cases of each, which its test, `typeof value === "object"`, isn\'t, so the `match` is no `switch`',
     file: "src/lower/mir/hints.rs",
     find: "                let (adt, args, mut variants) = each.next()??;\n",
-    replace: "                let (adt, args, mut variants) = each.next()??;\n                return None;\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is is a switch"],
+    replace:
+      "                let (adt, args, mut variants) = each.next()??;\n                return None;\n",
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "a match of what a value is is a switch",
+    ],
   },
   {
     name: "mir-labeled-block-breaks-unfound",
-    breaks: "no `break` the program wrote is known of the block it labeled, which is MIR's `bb41` (ADR 0742)",
+    breaks:
+      "no `break` the program wrote is known of the block it labeled, which is MIR's `bb41` (ADR 0742)",
     file: "src/lower/mir/hints.rs",
     find: "                block.breaks.push(self.js_span(e.span));\n",
     replace: "",
-    tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled keeps its label"],
+    tests: [
+      "test/lowering-labels.test.ts",
+      "-t",
+      "a block the program labeled keeps its label",
+    ],
   },
   {
     name: "held-guard-not-a-case",
-    breaks: "a `match js::classify(value)` whose object arm's guard holds stays an `if` chain, not a `switch` (ADR 0790)",
+    breaks:
+      "a `match js::classify(value)` whose object arm's guard holds stays an `if` chain, not a `switch` (ADR 0790)",
     file: "src/lower/mir/hints.rs",
     find: "                            !held.contains(\n",
     replace: "                            true || !held.contains(\n",
-    tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled that ends a case"],
+    tests: [
+      "test/lowering-labels.test.ts",
+      "-t",
+      "a block the program labeled that ends a case",
+    ],
   },
   {
     name: "written-ifs-unseen",
-    breaks: "no `if` is one the program wrote, so one an earlier test decides is folded away with its comment",
+    breaks:
+      "no `if` is one the program wrote, so one an earlier test decides is folded away with its comment",
     file: "src/lower/mir/hints.rs",
     find: "                thir::ExprKind::If { cond, .. } if !e.span.from_expansion() => {\n                    Some(self.js_span(self.frame.thir[cond].span))\n",
-    replace: "                thir::ExprKind::If { cond, .. } if !e.span.from_expansion() && false => {\n                    Some(self.js_span(self.frame.thir[cond].span))\n",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "earlier test decides"],
+    replace:
+      "                thir::ExprKind::If { cond, .. } if !e.span.from_expansion() && false => {\n                    Some(self.js_span(self.frame.thir[cond].span))\n",
+    tests: [
+      "test/lowering-written-branches.test.ts",
+      "-t",
+      "earlier test decides",
+    ],
   },
   {
     name: "kept-captures-of-borrows-too",
-    breaks: "a capture a closure borrowed, which its maker gives another value later, is fixed in it, so a clone of it made in a call reads the new value (ADR 0879)",
+    breaks:
+      "a capture a closure borrowed, which its maker gives another value later, is fixed in it, so a clone of it made in a call reads the new value (ADR 0879)",
     file: "src/lower/mir/hints.rs",
     find: "        .filter(|(_, place)| !place)\n",
     replace: "",
@@ -333,7 +505,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "switch-falls-nowhere",
-    breaks: "no guarded arm falls to the next arm's case, so React's `getComponentNameFromFiber` is an `if` chain",
+    breaks:
+      "no guarded arm falls to the next arm's case, so React's `getComponentNameFromFiber` is an `if` chain",
     file: "src/lower/mir/hints.rs",
     find: "        values.iter().all(|v| next.contains(v)) && next.iter().any(|v| !values.contains(v))\n",
     replace: "        false && values.iter().all(|v| next.contains(v))\n",
@@ -341,7 +514,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "switch-fallen-to-names-all",
-    breaks: "the arm a guarded arm falls to keeps the constants the one before names, which MIR tests only there, so the `match` stays an `if` chain",
+    breaks:
+      "the arm a guarded arm falls to keeps the constants the one before names, which MIR tests only there, so the `match` stays an `if` chain",
     file: "src/lower/mir/hints.rs",
     find: "                                    .filter(|(_, value)| !before.contains(value))\n",
     replace: "",
@@ -349,7 +523,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "switch-guard-to-default-no-fall",
-    breaks: "a guarded arm just before a last `_` that does something isn't a case, so React's `describeFiber` is an `if` chain",
+    breaks:
+      "a guarded arm just before a last `_` that does something isn't a case, so React's `describeFiber` is an `if` chain",
     file: "src/lower/mir/hints.rs",
     find: "                                || (i + 1 == last\n",
     replace: "                                || (false && i + 1 == last\n",
@@ -357,7 +532,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "switch-default-after-fall-unvalued",
-    breaks: "the `_` a guarded arm falls to is asked the values of its constants, which it has none of, so the `match` is an `if` chain",
+    breaks:
+      "the `_` a guarded arm falls to is asked the values of its constants, which it has none of, so the `match` is an `if` chain",
     file: "src/lower/mir/hints.rs",
     find: "                            true if constants.is_empty() => constants,\n",
     replace: "",
@@ -365,23 +541,32 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-loop-breaks-of-blocks",
-    breaks: "the `if`s of a `break` the program wrote are of its labeled blocks' `break`s, not its loops', so a comment before a loop's `break` is before the loop (#298)",
+    breaks:
+      "the `if`s of a `break` the program wrote are of its labeled blocks' `break`s, not its loops', so a comment before a loop's `break` is before the loop (#298)",
     file: "src/lower/mir/hints.rs",
     find: "matches!(kind, thir::ExprKind::Break { label, .. } if !labeled.contains(&label.local_id));\n",
-    replace: "matches!(kind, thir::ExprKind::Break { label, .. } if labeled.contains(&label.local_id));\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "a comment before a loop's break"],
+    replace:
+      "matches!(kind, thir::ExprKind::Break { label, .. } if labeled.contains(&label.local_id));\n",
+    tests: [
+      "test/lowering-comments.test.ts",
+      "-t",
+      "a comment before a loop's break",
+    ],
   },
   {
     name: "written-label-snake-case",
-    breaks: "the program's `'get_tag` is `get_tag:` in JS, not camelCase as every name is (ADR 0944)",
+    breaks:
+      "the program's `'get_tag` is `get_tag:` in JS, not camelCase as every name is (ADR 0944)",
     file: "src/lower/mir/hints.rs",
     find: "    crate::lower::camel_case(label.ident.name.as_str().trim_start_matches('\\''))\n",
-    replace: "    label.ident.name.as_str().trim_start_matches('\\'').to_string()\n",
+    replace:
+      "    label.ident.name.as_str().trim_start_matches('\\'').to_string()\n",
     tests: ["test/lowering-labels.test.ts", "-t", "inner switch leaves"],
   },
   {
     name: "match-arms-no-else",
-    breaks: "a two-arm `match` is no `if` the program wrote with an `else`, so its last arm follows a guard, `if (current == null) { ..; return ..; } wip.lanes = ..;`, not React's `if (..) { .. } else { .. }` (ADR 0237, amended, the user's decision)",
+    breaks:
+      "a two-arm `match` is no `if` the program wrote with an `else`, so its last arm follows a guard, `if (current == null) { ..; return ..; } wip.lanes = ..;`, not React's `if (..) { .. } else { .. }` (ADR 0237, amended, the user's decision)",
     file: "src/lower/mir/hints.rs",
     find: "                } if arms.len() == 2\n",
     replace: "                } if arms.len() == 2 && false\n",
@@ -390,7 +575,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "match-arm-jump-alone-an-else",
-    breaks: "a `match` whose arm is a jump alone, `None => break`, is an `if` with an `else`, which takes the loop's way out from its `while` (ADR 0237, amended)",
+    breaks:
+      "a `match` whose arm is a jump alone, `None => break`, is an `if` with an `else`, which takes the loop's way out from its `while` (ADR 0237, amended)",
     file: "src/lower/mir/hints.rs",
     find: "                    && !arms.iter().any(|&arm| self.jump_alone(self.frame.thir[arm].body))\n",
     replace: "",
@@ -399,7 +585,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "question-exit-not-a-guard",
-    breaks: "React's findHostInstance, `let host_fiber = host_fiber?;` of an `Option<Rc<T>>`, is `if (hostFiber != null) { return ..; } return null;`, the guard turned (q1, ADR 0879, amended)",
+    breaks:
+      "React's findHostInstance, `let host_fiber = host_fiber?;` of an `Option<Rc<T>>`, is `if (hostFiber != null) { return ..; } return null;`, the guard turned (q1, ADR 0879, amended)",
     file: "src/lower/mir/hints.rs",
     find: "            .chain(tries)\n",
     replace: "",
@@ -407,7 +594,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "arm-exit-not-a-guard",
-    breaks: "React's trackDeletedPairViewTransitions, `let pairs = match e { Some(p) if .. => p, _ => { return; } };`, is the rest inside `if (pairs != null && pairs.size !== 0) { .. }`, its comment lost (ag6, ADR 0879, amended)",
+    breaks:
+      "React's trackDeletedPairViewTransitions, `let pairs = match e { Some(p) if .. => p, _ => { return; } };`, is the rest inside `if (pairs != null && pairs.size !== 0) { .. }`, its comment lost (ag6, ADR 0879, amended)",
     file: "src/lower/mir/hints.rs",
     find: "            .chain(arm_exits)\n",
     replace: "",
@@ -416,42 +604,51 @@ export const mutations: Mutation[] = [
   },
   {
     name: "else-if-links-unrecorded",
-    breaks: "no `else if` is a link of a chain, so a function's value of one keeps its last link folded, `else { return thing === \"\" ? .. : .. }`, half a chain (ADR 0969, amended, rd23)",
+    breaks:
+      'no `else if` is a link of a chain, so a function\'s value of one keeps its last link folded, `else { return thing === "" ? .. : .. }`, half a chain (ADR 0969, amended, rd23)',
     file: "src/lower/mir/hints.rs",
     find: "                    thir::ExprKind::If { cond, .. } => Some(self.js_span(self.frame.thir[cond].span)),\n",
-    replace: "                    thir::ExprKind::If { cond, .. } => Some(self.js_span(self.frame.thir[cond].span)).filter(|_| false),\n",
+    replace:
+      "                    thir::ExprKind::If { cond, .. } => Some(self.js_span(self.frame.thir[cond].span)).filter(|_| false),\n",
     tests: ["test/lowering-returned-chains.test.ts"],
   },
   {
     name: "guard-read-not-a-case",
-    breaks: "React DOM's SimpleEventPlugin, `name if ANIMATION_END.with(|e| e == name) => ..`, is no case, so the `match` is an `if` chain, a labeled block where a guarded arm falls through, not `case ANIMATION_END:` (rd113, ADR 0629 amended)",
+    breaks:
+      "React DOM's SimpleEventPlugin, `name if ANIMATION_END.with(|e| e == name) => ..`, is no case, so the `match` is an `if` chain, a labeled block where a guarded arm falls through, not `case ANIMATION_END:` (rd113, ADR 0629 amended)",
     file: "src/lower/mir/hints.rs",
     find: "                            && let Some(reads) = self.reads_compared(guard, var)\n",
-    replace: "                            && let Some(reads) = self.reads_compared(guard, var).filter(|_| false)\n",
+    replace:
+      "                            && let Some(reads) = self.reads_compared(guard, var).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_case_of_a_read.rs$"],
     snapshots: true,
   },
   {
     name: "guard-read-of-a-local",
-    breaks: "a guard comparing what's matched with a parameter, `n if n == limit`, is a case of it, `case limit:`, where the user decided only a thread-local's or a `static`'s read is (rd113, ADR 0629 amended)",
+    breaks:
+      "a guard comparing what's matched with a parameter, `n if n == limit`, is a case of it, `case limit:`, where the user decided only a thread-local's or a `static`'s read is (rd113, ADR 0629 amended)",
     file: "src/lower/mir/hints.rs",
     find: "                thir::ExprKind::StaticRef { .. } => true,\n",
-    replace: "                thir::ExprKind::StaticRef { .. } | thir::ExprKind::VarRef { .. } => true,\n",
+    replace:
+      "                thir::ExprKind::StaticRef { .. } | thir::ExprKind::VarRef { .. } => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_case_of_a_read.rs$"],
     snapshots: true,
   },
   {
     name: "guard-read-of-any-cell",
-    breaks: "a guard comparing what's matched with a parameter's `Cell`, `n if n == cell.get()`, is a case of it, `case cell.value:`, not only a thread-local's `get()` (rd113, ADR 0629 amended)",
+    breaks:
+      "a guard comparing what's matched with a parameter's `Cell`, `n if n == cell.get()`, is a case of it, `case cell.value:`, not only a thread-local's `get()` (rd113, ADR 0629 amended)",
     file: "src/lower/mir/hints.rs",
     find: "                                .is_std_type(thir[key].ty.peel_refs(), StdItem::LocalKey)\n",
-    replace: "                                .is_std_type(thir[key].ty.peel_refs(), StdItem::LocalKey) || true\n",
+    replace:
+      "                                .is_std_type(thir[key].ty.peel_refs(), StdItem::LocalKey) || true\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_case_of_a_read.rs$"],
     snapshots: true,
   },
   {
     name: "or-guard-of-reads-no-case",
-    breaks: "SimpleEventPlugin's `name if ANIMATION_END.with(..) || ANIMATION_START.with(..)` is no case, so its `match` is a labeled block's `if` chain, not `case ANIMATION_END: case ANIMATION_START:` (rd118, ADR 0905 amended)",
+    breaks:
+      "SimpleEventPlugin's `name if ANIMATION_END.with(..) || ANIMATION_START.with(..)` is no case, so its `match` is a labeled block's `if` chain, not `case ANIMATION_END: case ANIMATION_START:` (rd118, ADR 0905 amended)",
     file: "src/lower/mir/hints.rs",
     find: "            return Some(self.reads_compared(lhs, name)? + self.reads_compared(rhs, name)?);\n",
     replace: "            return None;\n",

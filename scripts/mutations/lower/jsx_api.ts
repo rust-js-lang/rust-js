@@ -4,7 +4,8 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "unexpanded-jsx-unrefused",
-    breaks: "a `jsx!` by a path to it, `react::jsx!`, is refused as a call of `__jsx`, which says nothing of how it's written",
+    breaks:
+      "a `jsx!` by a path to it, `react::jsx!`, is refused as a call of `__jsx`, which says nothing of how it's written",
     file: "src/lower/jsx_api.rs",
     find: "        if super::bindings::is_unexpanded_jsx(self.tcx, def) {\n",
     replace: "        if false {\n",
@@ -12,7 +13,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "element-builder-allowed",
-    breaks: "an element builder called directly, `react::element(..)`, compiles to what no `jsx!` wrote",
+    breaks:
+      "an element builder called directly, `react::element(..)`, compiles to what no `jsx!` wrote",
     file: "src/lower/jsx_api.rs",
     find: "        } else if is_element_builder(self.tcx, def) {\n",
     replace: "        } else if false {\n",
@@ -20,7 +22,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "element-attribute-any-case",
-    breaks: "an element's attribute in Rust's case, `<button on_click>`, is taken as `onClick`",
+    breaks:
+      "an element's attribute in Rust's case, `<button on_click>`, is taken as `onClick`",
     file: "src/lower/jsx_api.rs",
     find: "                        self.spelled(segment.ident.span, &prop);\n",
     replace: "",
@@ -28,7 +31,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "component-prop-any-case",
-    breaks: "a component's prop in Rust's case, `<Badge label_text>`, is taken as `labelText`",
+    breaks:
+      "a component's prop in Rust's case, `<Badge label_text>`, is taken as `labelText`",
     file: "src/lower/jsx_api.rs",
     find: "            hir::ExprKind::Block(block, _) => self.component_props(block),\n",
     replace: "",

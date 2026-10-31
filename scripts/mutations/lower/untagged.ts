@@ -4,79 +4,115 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "untagged-class-a-tuple",
-    breaks: "an untagged enum's `js::Class` variant is tested `Array.isArray(value)`, as a tuple struct, so a class given is no `Class` (#303)",
+    breaks:
+      "an untagged enum's `js::Class` variant is tested `Array.isArray(value)`, as a tuple struct, so a class given is no `Class` (#303)",
     file: "src/lower/untagged.rs",
     find: "            && crate::lower::recognition::is_js_class(self.tcx, adt.did())\n",
-    replace: "            && false && crate::lower::recognition::is_js_class(self.tcx, adt.did())\n",
+    replace:
+      "            && false && crate::lower::recognition::is_js_class(self.tcx, adt.did())\n",
     tests: ["test/compiler.test.ts", "-t", "js::Class is a function"],
   },
   {
     name: "untagged-ref-cell-refused",
-    breaks: "an untagged enum's variant of a `RefCell<Vec<f64>>`, the array, is refused, React's `ThenableState` (ADR 0214, amended)",
+    breaks:
+      "an untagged enum's variant of a `RefCell<Vec<f64>>`, the array, is refused, React's `ThenableState` (ADR 0214, amended)",
     file: "src/lower/untagged.rs",
     find: "            && super::drops::holds_itself(self.tcx, args.type_at(0))\n        {\n            return self.untagged_payload(args.type_at(0));\n",
-    replace: "            && false\n        {\n            return self.untagged_payload(args.type_at(0));\n",
+    replace:
+      "            && false\n        {\n            return self.untagged_payload(args.type_at(0));\n",
     tests: ["test/corpus.test.ts", "-t", "^untagged_ref_cells.rs$"],
   },
   {
     name: "untagged-rc-refused",
-    breaks: "an untagged enum's variant of an `Rc<RefCell<Vec<f64>>>`, the array it points at, is refused (ADR 0214, amended)",
+    breaks:
+      "an untagged enum's variant of an `Rc<RefCell<Vec<f64>>>`, the array it points at, is refused (ADR 0214, amended)",
     file: "src/lower/untagged.rs",
     find: "        if let Some(pointee) = super::recognition::rc_pointee(self.tcx, ty) {\n            return self.untagged_payload(pointee);\n",
-    replace: "        if let Some(pointee) = super::recognition::rc_pointee(self.tcx, ty).filter(|_| false) {\n            return self.untagged_payload(pointee);\n",
+    replace:
+      "        if let Some(pointee) = super::recognition::rc_pointee(self.tcx, ty).filter(|_| false) {\n            return self.untagged_payload(pointee);\n",
     tests: ["test/corpus.test.ts", "-t", "^untagged_ref_cells.rs$"],
   },
   {
     name: "numbered-payload-untold",
-    breaks: "an untagged enum's numbered payload has no kind JS tells, so its enum is refused",
+    breaks:
+      "an untagged enum's numbered payload has no kind JS tells, so its enum is refused",
     file: "src/lower/untagged.rs",
     find: "            ty::Adt(adt, _) if bindings::numbered(self.tcx, *adt) => Some(Kind::Number),\n",
     replace: "",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variant is its number"],
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "a repr enum's variant is its number",
+    ],
   },
   {
     name: "binding-class-any-name",
-    breaks: "a JS object type that declares no `#[rust_js::types]` is the global class of its name, so an untagged enum's variant of an undeclared `Tag` is `instanceof Tag`, a `ReferenceError`, and `js::class::<Tag>()` is `Tag`, not an object of no class (ADR 0911, #391)",
+    breaks:
+      "a JS object type that declares no `#[rust_js::types]` is the global class of its name, so an untagged enum's variant of an undeclared `Tag` is `instanceof Tag`, a `ReferenceError`, and `js::class::<Tag>()` is `Tag`, not an object of no class (ADR 0911, #391)",
     file: "src/lower/untagged.rs",
     find: "                None if self.is_js_error(ty) => None,\n                None => Some(Kind::Object),\n",
-    replace: "                None if self.is_js_error(ty) => None,\n                None => class(bindings::class_name(self.tcx, adt.did())),\n",
-    tests: ["test/compiler.test.ts", "-t", "an untagged enum's JS object is tested by the class TypeScript names"],
+    replace:
+      "                None if self.is_js_error(ty) => None,\n                None => class(bindings::class_name(self.tcx, adt.did())),\n",
+    tests: [
+      "test/compiler.test.ts",
+      "-t",
+      "an untagged enum's JS object is tested by the class TypeScript names",
+    ],
   },
   {
     name: "untagged-literal-any",
-    breaks: "a variant without fields is matched by any value, `matches!(false, Blocking)`",
+    breaks:
+      "a variant without fields is matched by any value, `matches!(false, Blocking)`",
     file: "src/lower/untagged.rs",
     find: "            Kind::Literal(name) => Expr::bin(Op::Eq, value.clone(), Expr::str(name)),",
     replace: "            Kind::Literal(_) => Expr::bool(true),",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "variant without fields is its name"],
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "variant without fields is its name",
+    ],
   },
   {
     name: "untagged-literal-beside-string",
-    breaks: "a literal beside a variant of any string isn't refused, though JS can't tell them apart",
+    breaks:
+      "a literal beside a variant of any string isn't refused, though JS can't tell them apart",
     file: "src/lower/untagged.rs",
     find: "            (Kind::Literal(_), Kind::String) | (Kind::String, Kind::Literal(_)) => true,",
-    replace: "            (Kind::Literal(_), Kind::String) | (Kind::String, Kind::Literal(_)) => false,",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "variant without fields is its name"],
+    replace:
+      "            (Kind::Literal(_), Kind::String) | (Kind::String, Kind::Literal(_)) => false,",
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "variant without fields is its name",
+    ],
   },
   {
     name: "untagged-unit-refused",
     breaks: "an untagged enum's variant without fields is refused",
     file: "src/lower/untagged.rs",
     find: "                if let Some(kind) = unit_kind(tcx, variant) {\n",
-    replace: "                if let Some(kind) = unit_kind(tcx, variant).filter(|_| false) {\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "variant without fields is its name"],
+    replace:
+      "                if let Some(kind) = unit_kind(tcx, variant).filter(|_| false) {\n",
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "variant without fields is its name",
+    ],
   },
   {
     name: "untagged-null-loose",
-    breaks: "`Kind::Null`'s test is `value == null`, which `undefined` passes too",
+    breaks:
+      "`Kind::Null`'s test is `value == null`, which `undefined` passes too",
     file: "src/lower/untagged.rs",
     find: "            Kind::Null => Expr::bin(Op::Eq, value.clone(), Expr::null()),",
-    replace: "            Kind::Null => Expr::bin(Op::LooseEq, value.clone(), Expr::null()),",
+    replace:
+      "            Kind::Null => Expr::bin(Op::LooseEq, value.clone(), Expr::null()),",
     tests: ["test/lowering-switches.test.ts", "-t", "undefined and null"],
   },
   {
     name: "untagged-undefined-typeof",
-    breaks: "`Kind::Undefined`'s test is `typeof value === \"undefined\"`, not `value === undefined`",
+    breaks:
+      '`Kind::Undefined`\'s test is `typeof value === "undefined"`, not `value === undefined`',
     file: "src/lower/untagged.rs",
     find: "            Kind::Undefined => Expr::bin(Op::Eq, value.clone(), Expr::undefined()),\n",
     replace: "",
@@ -84,7 +120,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "untagged-object-takes-null",
-    breaks: "`Kind::Object` of an `Option<&Unknown>` takes `null`, which `typeof` says is an object",
+    breaks:
+      "`Kind::Object` of an `Option<&Unknown>` takes `null`, which `typeof` says is an object",
     file: "src/lower/untagged.rs",
     find: "                (Kind::Object, Kind::Null) => !present,\n",
     replace: "",
@@ -92,15 +129,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "untagged-present-leaves-out-null",
-    breaks: "`classify(Some(value))`'s object test leaves out `null`, which it never is",
+    breaks:
+      "`classify(Some(value))`'s object test leaves out `null`, which it never is",
     file: "src/lower/untagged.rs",
     find: "                (Kind::Object, Kind::Null) => !present,\n",
     replace: "                (Kind::Object, Kind::Null) => true,\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is"],
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "a match of what a value is",
+    ],
   },
   {
     name: "untagged-null-last",
-    breaks: "an object's test leaves out `null` after an array, `!Array.isArray(value) && value !== null`",
+    breaks:
+      "an object's test leaves out `null` after an array, `!Array.isArray(value) && value !== null`",
     file: "src/lower/untagged.rs",
     find: "        narrower.sort_by_key(|kind| *kind != Kind::Null);\n",
     replace: "",
@@ -111,12 +154,14 @@ export const mutations: Mutation[] = [
     breaks: "a `#[rust_js::null]` variant is its name's string",
     file: "src/lower/untagged.rs",
     find: "        Some(bindings::Nullish::Null) => Kind::Null,\n",
-    replace: "        Some(bindings::Nullish::Null) => Kind::Literal(bindings::variant_name(tcx, variant)),\n",
+    replace:
+      "        Some(bindings::Nullish::Null) => Kind::Literal(bindings::variant_name(tcx, variant)),\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_null_undefined"],
   },
   {
     name: "untagged-nullish-unboxed",
-    breaks: "an `Option` of an enum of `undefined` is the value itself, so `Some(Missing)` is `None`",
+    breaks:
+      "an `Option` of an enum of `undefined` is the value itself, so `Some(Missing)` is `None`",
     file: "src/lower/untagged.rs",
     find: "        && (adt.variants().iter()).any(|v| matches!(unit_kind(tcx, v), Some(Kind::Null | Kind::Undefined)))",
     replace: "        && false",
@@ -124,10 +169,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "untagged-null-case-before",
-    breaks: "`null`'s arm is an `if` before the `switch`, not in the case of the arm that takes the objects",
+    breaks:
+      "`null`'s arm is an `if` before the `switch`, not in the case of the arm that takes the objects",
     file: "src/lower/untagged.rs",
-    find: "                    (Kind::Null, _) => Some(TypeofCase::Inside(\n                        Kind::Object.type_of().expect(\"an object's `typeof`\"),\n                        self.kind_test(&own, value, &no_class),\n                    )),",
-    replace: "                    (Kind::Null, _) => Some(TypeofCase::Tested(self.kind_test(&own, value, &no_class))),",
+    find: '                    (Kind::Null, _) => Some(TypeofCase::Inside(\n                        Kind::Object.type_of().expect("an object\'s `typeof`"),\n                        self.kind_test(&own, value, &no_class),\n                    )),',
+    replace:
+      "                    (Kind::Null, _) => Some(TypeofCase::Tested(self.kind_test(&own, value, &no_class))),",
     tests: ["test/lowering-switches.test.ts", "-t", "undefined and null"],
   },
   {
@@ -135,52 +182,88 @@ export const mutations: Mutation[] = [
     breaks: "a `#[rust_js::null]` variant with a field isn't refused",
     file: "src/lower/untagged.rs",
     find: "                if let Some(nullish) = bindings::given_nullish(tcx, variant.def_id) {",
-    replace: "                if let Some(nullish) = bindings::given_nullish(tcx, variant.def_id).filter(|_| false) {",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "null variant holds nothing"],
+    replace:
+      "                if let Some(nullish) = bindings::given_nullish(tcx, variant.def_id).filter(|_| false) {",
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "null variant holds nothing",
+    ],
   },
   {
     name: "untagged-bigint-number",
-    breaks: "an untagged enum's `i64` is told as a number, where JS's is a BigInt",
+    breaks:
+      "an untagged enum's `i64` is told as a number, where JS's is a BigInt",
     file: "src/lower/untagged.rs",
     find: "            return Some(if num.big() { Kind::BigInt } else { Kind::Number });\n",
     replace: "            return Some(Kind::Number);\n",
-    tests: ["test/compiler.test.ts", "test/lowering-options.test.ts", "test/lowering-structs-enums.test.ts", "-t", "untagged enum"],
+    tests: [
+      "test/compiler.test.ts",
+      "test/lowering-options.test.ts",
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "untagged enum",
+    ],
   },
   {
     name: "untagged-object-takes-arrays",
-    breaks: "an untagged enum's struct variant takes an array, or a class's instance, as `typeof` says object of each",
+    breaks:
+      "an untagged enum's struct variant takes an array, or a class's instance, as `typeof` says object of each",
     file: "src/lower/untagged.rs",
     find: "                (Kind::Object, Kind::Array | Kind::Class(..) | Kind::Test(_) | Kind::Member(..)) => true,\n",
     replace: "                (Kind::Object, Kind::Member(..)) => true,\n",
-    tests: ["test/compiler.test.ts", "test/lowering-options.test.ts", "test/lowering-structs-enums.test.ts", "-t", "untagged enum"],
+    tests: [
+      "test/compiler.test.ts",
+      "test/lowering-options.test.ts",
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "untagged enum",
+    ],
   },
   {
     name: "untagged-class-takes-subclass",
-    breaks: "an untagged enum's `Error` variant takes a `TypeError`, another variant's",
+    breaks:
+      "an untagged enum's `Error` variant takes a `TypeError`, another variant's",
     file: "src/lower/untagged.rs",
     find: "                (Kind::Class(_, Some(base)), Kind::Class(_, Some(sub))) => self.superclasses(*sub).contains(base),\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "test/lowering-options.test.ts", "test/lowering-structs-enums.test.ts", "-t", "untagged enum"],
+    tests: [
+      "test/compiler.test.ts",
+      "test/lowering-options.test.ts",
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "untagged enum",
+    ],
   },
   {
     name: "untagged-subclass-left-out-twice",
-    breaks: "an untagged enum's test leaves out a `TypeError` as well as the `Error` it is",
+    breaks:
+      "an untagged enum's test leaves out a `TypeError` as well as the `Error` it is",
     file: "src/lower/untagged.rs",
     find: "            .filter(|kind| !narrower.iter().any(|base| extends(kind, base)))\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "test/lowering-options.test.ts", "test/lowering-structs-enums.test.ts", "-t", "untagged enum"],
+    tests: [
+      "test/compiler.test.ts",
+      "test/lowering-options.test.ts",
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "untagged enum",
+    ],
   },
   {
     name: "untagged-kinds-alike",
-    breaks: "an untagged enum's two string variants are accepted, which JS can't tell apart",
+    breaks:
+      "an untagged enum's two string variants are accepted, which JS can't tell apart",
     file: "src/lower/untagged.rs",
     find: "                // tests them is refused here.\n                if let Some((_, other)) = seen.iter().find(|(k, _)| k.overlaps(&kind))\n",
-    replace: "                // tests them is refused here.\n                if let Some((_, other)) = seen.iter().find(|_| false)\n",
+    replace:
+      "                // tests them is refused here.\n                if let Some((_, other)) = seen.iter().find(|_| false)\n",
     tests: ["test/diagnostics.test.ts", "-t", "one kind, cloned"],
   },
   {
     name: "untagged-from-unchecked",
-    breaks: "a `From` into an untagged enum that does more than make the variant is accepted, and skipped where called",
+    breaks:
+      "a `From` into an untagged enum that does more than make the variant is accepted, and skipped where called",
     file: "src/lower/untagged.rs",
     find: "    (!variant_of_param).then(|| {\n",
     replace: "    (variant_of_param && !variant_of_param).then(|| {\n",
@@ -188,7 +271,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "untagged-serde-accepted",
-    breaks: "serde of an untagged enum is accepted, and its codec reads a `TAG` its values haven't",
+    breaks:
+      "serde of an untagged enum is accepted, and its codec reads a `TAG` its values haven't",
     file: "src/lower/untagged.rs",
     find: "        if serde_impl(tcx, def_id.to_def_id()).is_some()\n",
     replace: "        if false\n",
@@ -196,23 +280,31 @@ export const mutations: Mutation[] = [
   },
   {
     name: "otherwise-tested-as-its-kind",
-    breaks: "the `#[rust_js::otherwise]` variant is tested as its own value's kind, an object, so an array or a number is neither variant",
+    breaks:
+      "the `#[rust_js::otherwise]` variant is tested as its own value's kind, an object, so an array or a number is neither variant",
     file: "src/lower/untagged.rs",
     find: "        if let Some(i) = (variants.iter()).position(|v| otherwise(v) && self.otherwise_kind(adt, args).is_none()) {\n",
-    replace: "        if let Some(i) = (variants.iter()).position(|v| false && otherwise(v) && self.otherwise_kind(adt, args).is_none()) {\n",
+    replace:
+      "        if let Some(i) = (variants.iter()).position(|v| false && otherwise(v) && self.otherwise_kind(adt, args).is_none()) {\n",
     tests: ["test/compiler.test.ts", "-t", "untagged enum is its payload"],
   },
   {
     name: "otherwise-kind-unseen",
-    breaks: "`js::Kind::Object`, what's left once a symbol is a `Kind::Symbol`, is none of seven tests, not `typeof value === \"object\" && !Array.isArray(value)`, and no `case \"object\"`",
+    breaks:
+      '`js::Kind::Object`, what\'s left once a symbol is a `Kind::Symbol`, is none of seven tests, not `typeof value === "object" && !Array.isArray(value)`, and no `case "object"`',
     file: "src/lower/untagged.rs",
     find: "            Ok([only]) => Some(only),\n",
     replace: "            Ok([_]) => None,\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is"],
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "a match of what a value is",
+    ],
   },
   {
     name: "otherwise-kind-of-several",
-    breaks: "an `otherwise` that's more kinds than one, `Json`'s `Object`, is tested as the first of them, `typeof value === \"bigint\"`",
+    breaks:
+      "an `otherwise` that's more kinds than one, `Json`'s `Object`, is tested as the first of them, `typeof value === \"bigint\"`",
     file: "src/lower/untagged.rs",
     find: "            Err(_) => None,\n",
     replace: "            Err(left) => left.into_iter().next(),\n",
@@ -220,31 +312,47 @@ export const mutations: Mutation[] = [
   },
   {
     name: "otherwise-kind-past-a-literal",
-    breaks: "a literal, `\"auto\"`, counts as every string, so an `otherwise` beside it and five other kinds is an object, and `\"xyz\"` none of the variants",
+    breaks:
+      'a literal, `"auto"`, counts as every string, so an `otherwise` beside it and five other kinds is an object, and `"xyz"` none of the variants',
     file: "src/lower/untagged.rs",
     find: "            .filter(|kind| !matches!(kind, Kind::Literal(_)))\n",
     replace: "",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "otherwise is the kind left"],
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "otherwise is the kind left",
+    ],
   },
   {
     name: "untagged-symbol-a-class",
-    breaks: "a `js::Symbol` payload is `instanceof Symbol`, which no symbol is, not `typeof value === \"symbol\"`",
+    breaks:
+      'a `js::Symbol` payload is `instanceof Symbol`, which no symbol is, not `typeof value === "symbol"`',
     file: "src/lower/untagged.rs",
     find: "            && let Some(kind) = written_types(self.tcx, adt.did())\n                .as_ref()\n                .and_then(Written::keyword)\n                .and_then(Kind::of_types)\n",
     replace: "            && let Some(kind) = None::<Kind>\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is"],
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "a match of what a value is",
+    ],
   },
   {
     name: "typeof-array-no-case",
-    breaks: "an arm of `Kind::Array` is no case of a `switch (typeof value)`, so its `match` stays an `if` chain",
+    breaks:
+      "an arm of `Kind::Array` is no case of a `switch (typeof value)`, so its `match` stays an `if` chain",
     file: "src/lower/untagged.rs",
     find: "            (Kind::Array, _) => Some(TypeofCase::Tested(self.kind_test(&own, value, &no_class))),\n",
     replace: "            (Kind::Array, _) => None,\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is"],
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "a match of what a value is",
+    ],
   },
   {
     name: "otherwise-anywhere",
-    breaks: "an untagged enum's `#[rust_js::otherwise]` variant before another is taken, shadowing it",
+    breaks:
+      "an untagged enum's `#[rust_js::otherwise]` variant before another is taken, shadowing it",
     file: "src/lower/untagged.rs",
     find: "                    if i != last {\n",
     replace: "                    if false {\n",
@@ -252,7 +360,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "tested-variant-always",
-    breaks: "an element of an untagged enum is whatever its test's turn comes to, a list of children cloned as an element",
+    breaks:
+      "an element of an untagged enum is whatever its test's turn comes to, a list of children cloned as an element",
     file: "src/lower/untagged.rs",
     find: "            Kind::Test(test) => Expr::call(class(test), vec![value.clone()]),\n",
     replace: "            Kind::Test(_) => Expr::bool(true),\n",
@@ -260,7 +369,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "tested-type-a-class",
-    breaks: "`ReactElement`, told by `isValidElement`, is told by `instanceof ReactElement`, a class there's none of",
+    breaks:
+      "`ReactElement`, told by `isValidElement`, is told by `instanceof ReactElement`, a class there's none of",
     file: "src/lower/untagged.rs",
     find: "            && let Some(test) = bindings::test_of(self.tcx, adt.did())\n",
     replace: "            && let Some(test) = None::<String>\n",
@@ -268,15 +378,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "made-untagged-alike-refused",
-    breaks: "an untagged enum only made, whose two variants hold objects, `getStaticProps`'s, is refused",
+    breaks:
+      "an untagged enum only made, whose two variants hold objects, `getStaticProps`'s, is refused",
     file: "src/lower/untagged.rs",
     find: "k.overlaps(&kind))\n                    && tested_by_impls(tcx, def_id.to_def_id(), &recognition)\n",
     replace: "k.overlaps(&kind))\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "untagged enum only made"],
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "untagged enum only made",
+    ],
   },
   {
     name: "cloned-untagged-alike-allowed",
-    breaks: "an untagged enum whose `Clone` tells two variants of one kind apart is allowed, and clones one as the other",
+    breaks:
+      "an untagged enum whose `Clone` tells two variants of one kind apart is allowed, and clones one as the other",
     file: "src/lower/untagged.rs",
     find: "    implemented || ty.needs_drop(tcx, recognition.typing_env)\n",
     replace: "    false\n",
@@ -284,111 +400,185 @@ export const mutations: Mutation[] = [
   },
   {
     name: "untagged-text-kindless",
-    breaks: "an untagged enum's text payload, `ReactNodeKind::Text(&str)`, has no kind JS tells, and is refused",
+    breaks:
+      "an untagged enum's text payload, `ReactNodeKind::Text(&str)`, has no kind JS tells, and is refused",
     file: "src/lower/untagged.rs",
     find: "        if self.is_string_like(ty) || ty.is_char() {",
     replace: "        if ty.is_char() {",
-    tests: ["test/jsx-types.test.ts", "-t", "JSX tells text children from any other node"],
+    tests: [
+      "test/jsx-types.test.ts",
+      "-t",
+      "JSX tells text children from any other node",
+    ],
   },
   {
     name: "untagged-slice-kindless",
-    breaks: "an untagged enum's slice payload, `ReactNodeKind::List(&[..])`, isn't an array JS tells, and is refused",
+    breaks:
+      "an untagged enum's slice payload, `ReactNodeKind::List(&[..])`, isn't an array JS tells, and is refused",
     file: "src/lower/untagged.rs",
     find: "            || ty.is_slice()\n",
     replace: "",
-    tests: ["test/jsx-types.test.ts", "-t", "JSX components take apart a list of children"],
+    tests: [
+      "test/jsx-types.test.ts",
+      "-t",
+      "JSX components take apart a list of children",
+    ],
   },
   {
     name: "untagged-fieldless-unknown",
-    breaks: "an untagged enum's `One(Weight)`, of a fieldless enum, is refused, though its value is a string",
+    breaks:
+      "an untagged enum's `One(Weight)`, of a fieldless enum, is refused, though its value is a string",
     file: "src/lower/untagged.rs",
     find: "                if is_string_enum(self.tcx, *adt) && !adt.variants().is_empty() && !self.is_std(adt.did()) =>",
-    replace: "                if false && is_string_enum(self.tcx, *adt) && !adt.variants().is_empty() && !self.is_std(adt.did()) =>",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "may hold a fieldless enum"],
+    replace:
+      "                if false && is_string_enum(self.tcx, *adt) && !adt.variants().is_empty() && !self.is_std(adt.did()) =>",
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "may hold a fieldless enum",
+    ],
   },
   {
-    "name": "untagged-dict-a-class",
-    "breaks": "an untagged enum's `Dict` is tested `instanceof Dict`, a class JS hasn't",
-    "file": "src/lower/untagged.rs",
-    "find": "                Some(Written::Object(_) | Written::Reference { from: Some(_), .. }) => Some(Kind::Object),\n",
-    "replace": "                Some(Written::Object(_)) => class(bindings::class_name(self.tcx, adt.did())),\n                Some(Written::Reference { from: Some(_), .. }) => Some(Kind::Object),\n",
-    "tests": ["test/lowering-structs-enums.test.ts", "-t", "dictionary is told apart"]
+    name: "untagged-dict-a-class",
+    breaks:
+      "an untagged enum's `Dict` is tested `instanceof Dict`, a class JS hasn't",
+    file: "src/lower/untagged.rs",
+    find: "                Some(Written::Object(_) | Written::Reference { from: Some(_), .. }) => Some(Kind::Object),\n",
+    replace:
+      "                Some(Written::Object(_)) => class(bindings::class_name(self.tcx, adt.did())),\n                Some(Written::Reference { from: Some(_), .. }) => Some(Kind::Object),\n",
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "dictionary is told apart",
+    ],
   },
   {
     name: "union-keeps-whole-exclusions",
-    breaks: "`Kind::Object(_) | Kind::Array(_)` tests an object that's no array or an array, `Array.isArray(v) || (typeof v === \"object\" && !Array.isArray(v))`, not `typeof v === \"object\"`",
+    breaks:
+      '`Kind::Object(_) | Kind::Array(_)` tests an object that\'s no array or an array, `Array.isArray(v) || (typeof v === "object" && !Array.isArray(v))`, not `typeof v === "object"`',
     file: "src/lower/untagged.rs",
     find: "            .map(|(own, narrower)| (own, narrower.into_iter().filter(|kind| !whole.contains(kind)).collect()))\n",
-    replace: "            .map(|(own, narrower)| (own, narrower.into_iter().filter(|kind| !whole.contains(kind) || true).collect()))\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "a test of an object or an array is typeof object"],
+    replace:
+      "            .map(|(own, narrower)| (own, narrower.into_iter().filter(|kind| !whole.contains(kind) || true).collect()))\n",
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "a test of an object or an array is typeof object",
+    ],
   },
   {
     name: "union-keeps-arrays",
-    breaks: "`Kind::Object(_) | Kind::Array(_)` tests an array too, `Array.isArray(v) || typeof v === \"object\"`, which an object is anyway",
+    breaks:
+      '`Kind::Object(_) | Kind::Array(_)` tests an array too, `Array.isArray(v) || typeof v === "object"`, which an object is anyway',
     file: "src/lower/untagged.rs",
     find: "            .filter(|(_, (own, _))| !(arrays && *own == Kind::Array || nulls && *own == Kind::Null))\n",
-    replace: "            .filter(|(_, (own, _))| !(false && *own == Kind::Array || nulls && *own == Kind::Null))\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "a test of an object or an array is typeof object"],
+    replace:
+      "            .filter(|(_, (own, _))| !(false && *own == Kind::Array || nulls && *own == Kind::Null))\n",
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "a test of an object or an array is typeof object",
+    ],
   },
   {
     name: "union-keeps-nulls",
-    breaks: "`Kind::Null | Kind::Object(_) | Kind::Array(_)` tests `null` too, `typeof value === \"object\" || value === null`, which an object's `typeof` is anyway",
+    breaks:
+      '`Kind::Null | Kind::Object(_) | Kind::Array(_)` tests `null` too, `typeof value === "object" || value === null`, which an object\'s `typeof` is anyway',
     file: "src/lower/untagged.rs",
     find: "            .filter(|(_, (own, _))| !(arrays && *own == Kind::Array || nulls && *own == Kind::Null))\n",
-    replace: "            .filter(|(_, (own, _))| !(arrays && *own == Kind::Array || false && *own == Kind::Null))\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "a test of an object or an array is typeof object"],
+    replace:
+      "            .filter(|(_, (own, _))| !(arrays && *own == Kind::Array || false && *own == Kind::Null))\n",
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "a test of an object or an array is typeof object",
+    ],
   },
   {
     name: "alternative-unplaced",
-    breaks: "an untagged enum's or-pattern's alternative isn't where it's written, so a comment before it, React's cache's `// $FlowFixMe`, is before the `if` (ADR 0444, amended)",
+    breaks:
+      "an untagged enum's or-pattern's alternative isn't where it's written, so a comment before it, React's cache's `// $FlowFixMe`, is before the `if` (ADR 0444, amended)",
     file: "src/lower/untagged.rs",
     find: "            Some(&span) if test.span.is_none() => Expr { span, ..test },\n",
     replace: "            Some(_) if false => test,\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "a comment before an or-pattern's alternative"],
+    tests: [
+      "test/lowering-comments.test.ts",
+      "-t",
+      "a comment before an or-pattern's alternative",
+    ],
   },
   {
     name: "untagged-symbol-for-an-array",
-    breaks: "an untagged enum's `js::SymbolFor` payload is told by `Array.isArray`, as a tuple struct, so a symbol is read as another variant",
+    breaks:
+      "an untagged enum's `js::SymbolFor` payload is told by `Array.isArray`, as a tuple struct, so a symbol is read as another variant",
     file: "src/lower/untagged.rs",
     find: "        if self.is_symbol_for(ty) {\n            return Some(Kind::Symbol);\n",
     replace: "        if false {\n            return Some(Kind::Symbol);\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "symbol is told by typeof"],
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "symbol is told by typeof",
+    ],
   },
   {
     name: "untagged-class-by-rust-name",
-    breaks: "an untagged enum's JS object variant declared `#[rust_js::types = \"URL\"]` is tested `instanceof Url`, its Rust name, which JS has no class of (#391)",
+    breaks:
+      'an untagged enum\'s JS object variant declared `#[rust_js::types = "URL"]` is tested `instanceof Url`, its Rust name, which JS has no class of (#391)',
     file: "src/lower/untagged.rs",
     find: "                Some(Written::Reference { from: None, name, .. }) => class(name),\n",
-    replace: "                Some(Written::Reference { from: None, .. }) => class(bindings::class_name(self.tcx, adt.did())),\n",
-    tests: ["test/compiler.test.ts", "-t", "an untagged enum's JS object is tested by the class TypeScript names"],
+    replace:
+      "                Some(Written::Reference { from: None, .. }) => class(bindings::class_name(self.tcx, adt.did())),\n",
+    tests: [
+      "test/compiler.test.ts",
+      "-t",
+      "an untagged enum's JS object is tested by the class TypeScript names",
+    ],
   },
   {
     name: "untagged-module-class-unimported",
-    breaks: "an untagged enum's variant of a module's type, `./shapes.js#Chart`, is tested `instanceof Chart` of a `Chart` its module never imports (#391)",
+    breaks:
+      "an untagged enum's variant of a module's type, `./shapes.js#Chart`, is tested `instanceof Chart` of a `Chart` its module never imports (#391)",
     file: "src/lower/untagged.rs",
     find: "                Some(Written::Object(_) | Written::Reference { from: Some(_), .. }) => Some(Kind::Object),\n",
-    replace: "                Some(Written::Object(_)) => Some(Kind::Object),\n                Some(Written::Reference { from: Some(_), name, .. }) => class(name),\n",
-    tests: ["test/compiler.test.ts", "-t", "an untagged enum's JS object is tested by the class TypeScript names"],
+    replace:
+      "                Some(Written::Object(_)) => Some(Kind::Object),\n                Some(Written::Reference { from: Some(_), name, .. }) => class(name),\n",
+    tests: [
+      "test/compiler.test.ts",
+      "-t",
+      "an untagged enum's JS object is tested by the class TypeScript names",
+    ],
   },
   {
     name: "untagged-js-error-an-object",
-    breaks: "an untagged enum's variant of `JsError`, whatever JS threw, a string or a number too, is tested as an object, not refused (#391)",
+    breaks:
+      "an untagged enum's variant of `JsError`, whatever JS threw, a string or a number too, is tested as an object, not refused (#391)",
     file: "src/lower/untagged.rs",
     find: "                None if self.is_js_error(ty) => None,\n",
     replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "an untagged enum's variant of what JS threw"],
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "an untagged enum's variant of what JS threw",
+    ],
   },
   {
     name: "intersected-array-unknown",
-    breaks: "an untagged variant of a `RegExpMatch`, `string[] & { .. }`, is refused as JS can't tell it, not an array, `Array.isArray` (#303)",
+    breaks:
+      "an untagged variant of a `RegExpMatch`, `string[] & { .. }`, is refused as JS can't tell it, not an array, `Array.isArray` (#303)",
     file: "src/lower/untagged.rs",
     find: "                Some(Written::Intersection(types)) if types.iter().any(|ty| matches!(ty, Written::Array { .. })) => {\n",
-    replace: "                Some(Written::Intersection(types)) if false && types.iter().any(|ty| matches!(ty, Written::Array { .. })) => {\n",
-    tests: ["test/compiler.test.ts", "-t", "an untagged enum's js::RegExpMatch is an array"],
+    replace:
+      "                Some(Written::Intersection(types)) if false && types.iter().any(|ty| matches!(ty, Written::Array { .. })) => {\n",
+    tests: [
+      "test/compiler.test.ts",
+      "-t",
+      "an untagged enum's js::RegExpMatch is an array",
+    ],
   },
   {
     name: "untagged-member-unread",
-    breaks: "a struct told apart by a member it declares is a plain object, so `Instance | TextInstance` can't be told apart (rd291)",
+    breaks:
+      "a struct told apart by a member it declares is a plain object, so `Instance | TextInstance` can't be told apart (rd291)",
     file: "src/lower/untagged.rs",
     find: ".find(|f| bindings::is_test_field(self.tcx, f.did))",
     replace: ".find(|_| false)",
@@ -396,23 +586,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "untagged-member-tested-whole",
-    breaks: "a member's test is of the value, `Array.isArray(child)`, not of its member, `Array.isArray(child.children)` (rd291)",
+    breaks:
+      "a member's test is of the value, `Array.isArray(child)`, not of its member, `Array.isArray(child.children)` (rd291)",
     file: "src/lower/untagged.rs",
     find: "            Kind::Member(key, kind) => self.kind_test(kind, &Expr::member(value.clone(), key.clone()), class),\n",
-    replace: "            Kind::Member(_, kind) => self.kind_test(kind, value, class),\n",
+    replace:
+      "            Kind::Member(_, kind) => self.kind_test(kind, value, class),\n",
     tests: ["test/corpus.test.ts", "-t", "^untagged_told_by_members.rs$"],
   },
   {
     name: "untagged-objects-typeof-kept",
-    breaks: "of an enum each variant of which is an object, a plain one's test keeps `typeof child === \"object\"`, which holds of each (rd291)",
+    breaks:
+      'of an enum each variant of which is an object, a plain one\'s test keeps `typeof child === "object"`, which holds of each (rd291)',
     file: "src/lower/untagged.rs",
     find: "                    Some((first, rest)) if objects && *own == Kind::Object => rest\n",
-    replace: "                    Some((first, rest)) if false && objects && *own == Kind::Object => rest\n",
+    replace:
+      "                    Some((first, rest)) if false && objects && *own == Kind::Object => rest\n",
     tests: ["test/untagged-members.test.ts"],
   },
   {
     name: "untagged-shared-member-telling",
-    breaks: "a member another variant has too tells its variant apart, so a `Container`, which has `children` too, is taken for an `Instance` (rd291)",
+    breaks:
+      "a member another variant has too tells its variant apart, so a `Container`, which has `children` too, is taken for an `Instance` (rd291)",
     file: "src/lower/untagged.rs",
     find: "            true => Some(Kind::Object),\n",
     replace: "            true => Some(kind),\n",
@@ -420,15 +615,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "untagged-member-left-in",
-    breaks: "a plain object's test leaves in what a member tells, so a text instance's test holds of an instance too (rd291)",
+    breaks:
+      "a plain object's test leaves in what a member tells, so a text instance's test holds of an instance too (rd291)",
     file: "src/lower/untagged.rs",
     find: "                (Kind::Object, Kind::Array | Kind::Class(..) | Kind::Test(_) | Kind::Member(..)) => true,\n",
-    replace: "                (Kind::Object, Kind::Array | Kind::Class(..) | Kind::Test(_)) => true,\n",
+    replace:
+      "                (Kind::Object, Kind::Array | Kind::Class(..) | Kind::Test(_)) => true,\n",
     tests: ["test/untagged-members.test.ts"],
   },
   {
     name: "untagged-member-of-an-object",
-    breaks: "a member that tells a struct apart may hold an object, which JS can't tell apart (rd291)",
+    breaks:
+      "a member that tells a struct apart may hold an object, which JS can't tell apart (rd291)",
     file: "src/lower/untagged.rs",
     find: "                if matches!(*told, Kind::Object | Kind::Member(..) | Kind::Null | Kind::Undefined) {\n",
     replace: "                if false {\n",

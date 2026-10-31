@@ -4,7 +4,8 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "ptr-eq-of-library-struct-counts",
-    breaks: "`Rc::ptr_eq` of a library's struct counts it, so a crate an uncounting library hands it is refused (ADR 0844)",
+    breaks:
+      "`Rc::ptr_eq` of a library's struct counts it, so a crate an uncounting library hands it is refused (ADR 0844)",
     file: "src/lower/recognition/wrappers.rs",
     find: "            && (adt.did().is_local() || !super::std_items::is_std_item(tcx, adt.did()) && holds_data(tcx, adt))\n",
     replace: "            && adt.did().is_local()\n",
@@ -12,7 +13,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "ptr-eq-of-transparent-uncounted",
-    breaks: "`Rc::ptr_eq` of a transparent struct, its number, is `1 === 1`, `true`, of two `Rc`s (ADR 0582, amended)",
+    breaks:
+      "`Rc::ptr_eq` of a transparent struct, its number, is `1 === 1`, `true`, of two `Rc`s (ADR 0582, amended)",
     file: "src/lower/recognition/wrappers.rs",
     find: "            && transparent_field(tcx, adt).is_none())\n",
     replace: "            )\n",
@@ -20,19 +22,23 @@ export const mutations: Mutation[] = [
   },
   {
     name: "downgrade-counts",
-    breaks: "`Rc::downgrade` counts its `Rc`, so React's context is `{ value, strong, weak }` where nothing asks a count (ADR 0843)",
+    breaks:
+      "`Rc::downgrade` counts its `Rc`, so React's context is `{ value, strong, weak }` where nothing asks a count (ADR 0843)",
     file: "src/lower/recognition/wrappers.rs",
-    find: "                    | \"unwrap_or_clone\"\n                    | \"new_cyclic\"\n",
-    replace: "                    | \"unwrap_or_clone\"\n                    | \"downgrade\"\n                    | \"new_cyclic\"\n",
+    find: '                    | "unwrap_or_clone"\n                    | "new_cyclic"\n',
+    replace:
+      '                    | "unwrap_or_clone"\n                    | "downgrade"\n                    | "new_cyclic"\n',
     tests: ["test/corpus.test.ts", "-t", "^weak_cycle_set_after.rs$"],
     snapshots: true,
   },
   {
     name: "weak-upgrade-uncounted",
-    breaks: "a `Weak`'s `upgrade` doesn't count its `Rc`, which can't answer it (ADR 0843)",
+    breaks:
+      "a `Weak`'s `upgrade` doesn't count its `Rc`, which can't answer it (ADR 0843)",
     file: "src/lower/recognition/wrappers.rs",
-    find: "    weak_pointee(tcx, owner).is_some() && tcx.item_name(id).as_str() != \"new\"\n",
-    replace: "    weak_pointee(tcx, owner).is_some() && !matches!(tcx.item_name(id).as_str(), \"new\" | \"upgrade\")\n",
+    find: '    weak_pointee(tcx, owner).is_some() && tcx.item_name(id).as_str() != "new"\n',
+    replace:
+      '    weak_pointee(tcx, owner).is_some() && !matches!(tcx.item_name(id).as_str(), "new" | "upgrade")\n',
     tests: ["test/corpus.test.ts", "-t", "^weak_debug.rs$"],
   },
   {
@@ -45,7 +51,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mutex-guard-unguarded",
-    breaks: "a `MutexGuard` held in a variable is an error, where it's the object it guards",
+    breaks:
+      "a `MutexGuard` held in a variable is an error, where it's the object it guards",
     file: "src/lower/recognition/wrappers.rs",
     find: "            StdItem::RefCellRefMut,\n            StdItem::MutexGuard,\n",
     replace: "            StdItem::RefCellRefMut,\n",
@@ -53,7 +60,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "std-borrow-of-itself-unknown",
-    breaks: "std's `Borrow` of a value as itself, `T: Borrow<T>`, has no dictionary",
+    breaks:
+      "std's `Borrow` of a value as itself, `T: Borrow<T>`, has no dictionary",
     file: "src/lower/recognition/wrappers.rs",
     find: "        from == to\n            || (self.is_string_like(from) && to.is_str())",
     replace: "        (self.is_string_like(from) && to.is_str())",
@@ -61,23 +69,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "borrowed-lookup-unchecked",
-    breaks: "a map's `get(q)` of keys whose `Borrow` is the crate's compiles, and finds nothing",
+    breaks:
+      "a map's `get(q)` of keys whose `Borrow` is the crate's compiles, and finds nothing",
     file: "src/lower/recognition/wrappers.rs",
     find: "        let users = |tr: ty::TraitRef<'tcx>| (tr.def_id == borrow && self.is_user_impl(tr)).then(|| tr.self_ty());",
-    replace: "        let users = |tr: ty::TraitRef<'tcx>| (tr.def_id == borrow && self.is_user_impl(tr) && false).then(|| tr.self_ty());",
+    replace:
+      "        let users = |tr: ty::TraitRef<'tcx>| (tr.def_id == borrow && self.is_user_impl(tr) && false).then(|| tr.self_ty());",
     tests: ["test/diagnostics.test.ts", "-t", "Borrow"],
   },
   {
     name: "borrowed-join-unchecked",
-    breaks: "`[S]::join` of items whose `Borrow<str>` is the crate's compiles, joining the items themselves",
+    breaks:
+      "`[S]::join` of items whose `Borrow<str>` is the crate's compiles, joining the items themselves",
     file: "src/lower/recognition/wrappers.rs",
     find: "                        bounds(imp.impl_def_id, imp.args).into_iter().find_map(users)",
-    replace: "                        bounds(imp.impl_def_id, imp.args).into_iter().find_map(users).filter(|_| false)",
+    replace:
+      "                        bounds(imp.impl_def_id, imp.args).into_iter().find_map(users).filter(|_| false)",
     tests: ["test/diagnostics.test.ts", "-t", "joined through"],
   },
   {
     name: "borrowed-through-crate-impl",
-    breaks: "std's `sort` of a type whose own `Ord` takes a `K: Borrow<str>` is an error, as if std's JS took the key as what it borrows as",
+    breaks:
+      "std's `sort` of a type whose own `Ord` takes a `K: Borrow<str>` is an error, as if std's JS took the key as what it borrows as",
     file: "src/lower/recognition/wrappers.rs",
     find: "                        if !self.trait_impls.contains(&imp.impl_def_id) && !self.foreign.has_impl(imp.impl_def_id) =>",
     replace: "                        if true =>",
@@ -87,17 +100,18 @@ export const mutations: Mutation[] = [
     name: "local-borrow-plain",
     breaks: "a thread-local's `with_borrow` is taken as only reading it",
     file: "src/lower/recognition/wrappers.rs",
-    find: "    local_key_access(tcx, id) == Some(false) && tcx.item_name(id).as_str() != \"get\"",
+    find: '    local_key_access(tcx, id) == Some(false) && tcx.item_name(id).as_str() != "get"',
     replace: "    false",
     tests: ["test/corpus.test.ts", "-t", "thread_local_borrow_inside"],
   },
   {
     name: "non-zero-fields-read",
-    breaks: "a `NonZero` matched against a constant is read by its fields, which its number hasn't",
+    breaks:
+      "a `NonZero` matched against a constant is read by its fields, which its number hasn't",
     file: "src/lower/recognition/wrappers.rs",
     find: "            || is_non_zero(adt.did())\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","nonzero"],
+    tests: ["test/corpus.test.ts", "-t", "nonzero"],
   },
   {
     name: "text-not-borrowed-as-path",
@@ -109,7 +123,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "crate-future-lowered",
-    breaks: "a future whose `Future` is the crate's own, nowhere lowered, is a JS promise: `S(1).await` is `await [1]`",
+    breaks:
+      "a future whose `Future` is the crate's own, nowhere lowered, is a JS promise: `S(1).await` is `await [1]`",
     file: "src/lower/recognition/wrappers.rs",
     find: "        self.own_impl_of(LangItem::FuturePoll, self.future_pointee(ty))\n",
     replace: "        false\n",
@@ -117,7 +132,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "pinned-crate-future-unseen",
-    breaks: "a `Pin` of a future of the crate's is a JS promise: `Pin::new(&mut s).await` is `await s`",
+    breaks:
+      "a `Pin` of a future of the crate's is a JS promise: `Pin::new(&mut s).await` is `await s`",
     file: "src/lower/recognition/wrappers.rs",
     find: "        while let Some(inner) = self.pinned(ty).or_else(|| ty.builtin_deref(true)) {\n",
     replace: "        while let Some(inner) = ty.builtin_deref(true) {\n",
@@ -125,15 +141,17 @@ export const mutations: Mutation[] = [
   },
   {
     name: "into-future-of-crate-future-unasked",
-    breaks: "`.await` of a future of the crate's, `into_future`'s `IntoFuture`, is JS's `await` of it",
+    breaks:
+      "`.await` of a future of the crate's, `into_future`'s `IntoFuture`, is JS's `await` of it",
     file: "src/lower/recognition/wrappers.rs",
-    find: "                        || self\n                            .tcx\n                            .is_diagnostic_item(Symbol::intern(\"IntoFuture\"), bound.def_id()) =>\n",
+    find: '                        || self\n                            .tcx\n                            .is_diagnostic_item(Symbol::intern("IntoFuture"), bound.def_id()) =>\n',
     replace: " =>\n",
     tests: ["test/diagnostics.test.ts", "-t", "an await of a crate's future"],
   },
   {
     name: "future-bound-of-crate-future-unasked",
-    breaks: "a future of the crate's given to an `F: Future` is awaited as a JS promise",
+    breaks:
+      "a future of the crate's given to an `F: Future` is awaited as a JS promise",
     file: "src/lower/recognition/wrappers.rs",
     find: "                    if self.tcx.is_lang_item(bound.def_id(), LangItem::Future)\n",
     replace: "                    if false\n",
@@ -149,7 +167,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rc-from-text-unknown",
-    breaks: "`Rc<str>::from(\"hi\")` is refused",
+    breaks: '`Rc<str>::from("hi")` is refused',
     file: "src/lower/recognition/wrappers.rs",
     find: "        ty::Str => text(from) && !matches!(from.kind(), ty::Ref(_, _, Mutability::Mut)),\n",
     replace: "        ty::Str => false,\n",
@@ -165,15 +183,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "views-as-itself-no-slices",
-    breaks: "std's `AsRef<[T]>` and `AsMut<[T]>` of a `Vec` aren't the same JS value, and refused",
+    breaks:
+      "std's `AsRef<[T]>` and `AsMut<[T]>` of a `Vec` aren't the same JS value, and refused",
     file: "src/lower/recognition/wrappers.rs",
     find: "        (self.is_string_like(from) && to.is_str()) || (sequence && to.is_slice())\n",
     replace: "        self.is_string_like(from) && to.is_str()\n",
-    tests: ["test/corpus.test.ts", "-t", "^(generic_as_ref|as_mut_generic).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(generic_as_ref|as_mut_generic).rs$",
+    ],
   },
   {
     name: "formatter-not-text",
-    breaks: "a `&mut Formatter` kept in a struct is the text, `formatterSink.f += s`, not a handle on it",
+    breaks:
+      "a `&mut Formatter` kept in a struct is the text, `formatterSink.f += s`, not a handle on it",
     file: "src/lower/recognition/wrappers.rs",
     find: "            || self.is_formatter_type(ty)\n            || self.is_rc(ty)\n",
     replace: "            || self.is_rc(ty)\n",
@@ -181,7 +205,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rc-borrow-the-rc",
-    breaks: "`rc.borrow()` of a counted `Rc` is the `Rc`, `[object Object]` where it's shown",
+    breaks:
+      "`rc.borrow()` of a counted `Rc` is the `Rc`, `[object Object]` where it's shown",
     file: "src/lower/recognition/wrappers.rs",
     find: "            && (is_std_def(tcx, trait_, StdItem::Borrow) || is_std_def(tcx, trait_, StdItem::AsRef))\n",
     replace: "            && false\n",
@@ -189,10 +214,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "as-mut-known-by-dictionary",
-    breaks: "a concrete `as_mut()` of an array goes to the dictionary, which takes a cell",
+    breaks:
+      "a concrete `as_mut()` of an array goes to the dictionary, which takes a cell",
     file: "src/lower/recognition/wrappers.rs",
     find: "            || (is_std_def(tcx, trait_, StdItem::AsMut)\n                && !known_by_bounds(ty.peel_refs())\n",
-    replace: "            || (is_std_def(tcx, trait_, StdItem::AsMut)\n                && false\n",
+    replace:
+      "            || (is_std_def(tcx, trait_, StdItem::AsMut)\n                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_associated_as_mut.rs$"],
   },
   {
@@ -205,7 +232,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "own-into-future-awaited-refused",
-    breaks: "`.await` of an `IntoFuture` of the crate's is refused as generic code given one",
+    breaks:
+      "`.await` of an `IntoFuture` of the crate's is refused as generic code given one",
     file: "src/lower/recognition/wrappers.rs",
     find: "        if self.tcx.is_lang_item(def_id, LangItem::IntoFutureIntoFuture) {\n            return None;\n        }\n",
     replace: "",
@@ -213,31 +241,38 @@ export const mutations: Mutation[] = [
   },
   {
     name: "ptr-eq-object-counted",
-    breaks: "`ptr_eq` of an `Rc` of a struct counts it, `{ value, strong, weak }`",
+    breaks:
+      "`ptr_eq` of an `Rc` of a struct counts it, `{ value, strong, weak }`",
     file: "src/lower/recognition/wrappers.rs",
-    find: "    if object && matches!(tcx.item_name(id).as_str(), \"ptr_eq\" | \"as_ptr\") {\n",
-    replace: "    if false && object && matches!(tcx.item_name(id).as_str(), \"ptr_eq\" | \"as_ptr\") {\n",
+    find: '    if object && matches!(tcx.item_name(id).as_str(), "ptr_eq" | "as_ptr") {\n',
+    replace:
+      '    if false && object && matches!(tcx.item_name(id).as_str(), "ptr_eq" | "as_ptr") {\n',
     tests: ["test/lowering-cells.test.ts", "-t", "ptr_eq of an Rc of a struct"],
   },
   {
     name: "ptr-eq-number-uncounted",
-    breaks: "`ptr_eq` of an `Rc` of a number isn't counted, so two `Rc::new(1)` are one",
+    breaks:
+      "`ptr_eq` of an `Rc` of a number isn't counted, so two `Rc::new(1)` are one",
     file: "src/lower/recognition/wrappers.rs",
-    find: "    if object && matches!(tcx.item_name(id).as_str(), \"ptr_eq\" | \"as_ptr\") {\n",
-    replace: "    if matches!(tcx.item_name(id).as_str(), \"ptr_eq\" | \"as_ptr\") {\n",
+    find: '    if object && matches!(tcx.item_name(id).as_str(), "ptr_eq" | "as_ptr") {\n',
+    replace:
+      '    if matches!(tcx.item_name(id).as_str(), "ptr_eq" | "as_ptr") {\n',
     tests: ["test/lowering-cells.test.ts", "-t", "ptr_eq of an Rc of a struct"],
   },
   {
     name: "transparent-struct-an-array",
-    breaks: "a `#[repr(transparent)]` struct is `[field]`, React's scheduler's `Callback` called `callback[0](didTimeout)`",
+    breaks:
+      "a `#[repr(transparent)]` struct is `[field]`, React's scheduler's `Callback` called `callback[0](didTimeout)`",
     file: "src/lower/recognition/wrappers.rs",
     find: "        if let Some(at) = transparent_field(self.tcx, adt) {\n",
-    replace: "        if let Some(at) = transparent_field(self.tcx, adt).filter(|_| false) {\n",
+    replace:
+      "        if let Some(at) = transparent_field(self.tcx, adt).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^transparent_transmute.rs$"],
   },
   {
     name: "transparent-marker-its-field",
-    breaks: "a `#[repr(transparent)]` struct whose `PhantomData` comes first is the marker",
+    breaks:
+      "a `#[repr(transparent)]` struct whose `PhantomData` comes first is the marker",
     file: "src/lower/recognition/wrappers.rs",
     find: "    !ty.is_unit() && !matches!(ty.kind(), ty::Adt(held, _) if tcx.is_lang_item(held.did(), LangItem::PhantomData))\n",
     replace: "    !ty.is_unit()\n",
@@ -245,7 +280,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "transparent-std-struct-its-field",
-    breaks: "std's `#[repr(transparent)]` `Cell` is its value, not the `{ value }` set in place",
+    breaks:
+      "std's `#[repr(transparent)]` `Cell` is its value, not the `{ value }` set in place",
     file: "src/lower/recognition/wrappers.rs",
     find: "    if !adt.is_struct() || !adt.repr().transparent() || super::std_items::is_std_item(tcx, adt.did()) {\n",
     replace: "    if !adt.is_struct() || !adt.repr().transparent() {\n",
@@ -254,11 +290,16 @@ export const mutations: Mutation[] = [
 
   {
     name: "assert-unwind-safe-a-struct",
-    breaks: "an `AssertUnwindSafe` is an array of its closure, which `catch_unwind` calls as a function",
+    breaks:
+      "an `AssertUnwindSafe` is an array of its closure, which `catch_unwind` calls as a function",
     file: "src/lower/recognition/wrappers.rs",
     find: "            || is_assert_unwind_safe(self.tcx, adt.did())\n",
     replace: "",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "resume_unwind throws what unwound"],
+    tests: [
+      "test/lowering-unwinds.test.ts",
+      "-t",
+      "resume_unwind throws what unwound",
+    ],
   },
   {
     name: "as-ref-path-not-itself",
@@ -270,10 +311,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "as-ref-path-dispatched",
-    breaks: "`as_ref()` of text as a `Path` asks for std's impl's dictionary, which there's none of, and is refused",
+    breaks:
+      "`as_ref()` of text as a `Path` asks for std's impl's dictionary, which there's none of, and is refused",
     file: "src/lower/recognition/wrappers.rs",
     find: "        let held = from.is_box() || rc_pointee(self.tcx, from.peel_refs()).is_some() || self.is_path_like(to);",
-    replace: "        let held = from.is_box() || rc_pointee(self.tcx, from.peel_refs()).is_some();",
+    replace:
+      "        let held = from.is_box() || rc_pointee(self.tcx, from.peel_refs()).is_some();",
     tests: ["test/corpus.test.ts", "-t", "^as_ref_path.rs$"],
   },
   {
@@ -286,7 +329,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "box-as-mut-unknown",
-    breaks: "a `Box`'s `as_mut()` is refused, a call and generic code's dictionary alike",
+    breaks:
+      "a `Box`'s `as_mut()` is refused, a call and generic code's dictionary alike",
     file: "src/lower/recognition/wrappers.rs",
     find: "        self.views_as_itself(from, to) || (boxed.is_box() && boxed.boxed_ty() == Some(to))\n",
     replace: "        self.views_as_itself(from, to)\n",
@@ -294,57 +338,71 @@ export const mutations: Mutation[] = [
   },
   {
     name: "ptr-eq-of-refcell-counts",
-    breaks: "`Rc::ptr_eq` of an `Rc<RefCell<_>>` counts it, `$rcClone`, though what it points at is an object of its own (ADR 0863)",
+    breaks:
+      "`Rc::ptr_eq` of an `Rc<RefCell<_>>` counts it, `$rcClone`, though what it points at is an object of its own (ADR 0863)",
     file: "src/lower/recognition/wrappers.rs",
     find: "            if super::is_std_def(tcx, adt.did(), StdItem::RefCell));\n",
-    replace: "            if false && super::is_std_def(tcx, adt.did(), StdItem::RefCell));\n",
+    replace:
+      "            if false && super::is_std_def(tcx, adt.did(), StdItem::RefCell));\n",
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
   },
   {
     name: "never-short-circuit-a-tuple",
-    breaks: "std's `NeverShortCircuit` is a one-item array where its `Try` is its value, so a held `take`'s `fold` folds into arrays (ADR 0913)",
+    breaks:
+      "std's `NeverShortCircuit` is a one-item array where its `Try` is its value, so a held `take`'s `fold` folds into arrays (ADR 0913)",
     file: "src/lower/recognition/wrappers.rs",
     find: "            || try_kind(self.tcx, ty) == Some(TryKind::NeverShortCircuit)\n",
     replace: "",
-    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+    tests: [
+      "test/std-package.test.ts",
+      "-t",
+      "the committed @rust-js/std is std's bodies",
+    ],
   },
   {
     name: "thread-local-refcell-take-refused",
-    breaks: "a thread-local `RefCell`'s own `take` and `replace` aren't its cell's, so React's `QUEUE.take()` is refused",
+    breaks:
+      "a thread-local `RefCell`'s own `take` and `replace` aren't its cell's, so React's `QUEUE.take()` is refused",
     file: "src/lower/recognition/wrappers.rs",
     find: "                    if is_std_def(tcx, cell.did(), StdItem::Cell) || is_std_def(tcx, cell.did(), StdItem::RefCell)) =>\n",
-    replace: "                    if is_std_def(tcx, cell.did(), StdItem::Cell)) =>\n",
+    replace:
+      "                    if is_std_def(tcx, cell.did(), StdItem::Cell)) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_refcell_take.rs$"],
   },
   {
     name: "thread-local-take-boxes-it",
-    breaks: "a thread-local's `take` and `replace` aren't its reads and writes, so one taken is its `{ value }`, every borrow of it counted, `$withBorrowMut(queue, ..)`",
+    breaks:
+      "a thread-local's `take` and `replace` aren't its reads and writes, so one taken is its `{ value }`, every borrow of it counted, `$withBorrowMut(queue, ..)`",
     file: "src/lower/recognition/wrappers.rs",
-    find: "        \"set\" | \"take\" | \"replace\" => Some(true),\n",
-    replace: "        \"set\" => Some(true),\n",
+    find: '        "set" | "take" | "replace" => Some(true),\n',
+    replace: '        "set" => Some(true),\n',
     tests: ["test/corpus.test.ts", "-t", "^thread_local_refcell_take.rs$"],
     snapshots: true,
   },
   {
     name: "rc-as-ptr-of-number-uncounted",
-    breaks: "`Rc::as_ptr` of an `Rc<u32>` doesn't count it, so the `Rc` is its number, which no pointer can point at, and it's refused",
+    breaks:
+      "`Rc::as_ptr` of an `Rc<u32>` doesn't count it, so the `Rc` is its number, which no pointer can point at, and it's refused",
     file: "src/lower/recognition/wrappers.rs",
-    find: "                    | \"ptr_eq\"\n                    | \"as_ptr\"\n",
-    replace: "                    | \"ptr_eq\"\n",
+    find: '                    | "ptr_eq"\n                    | "as_ptr"\n',
+    replace: '                    | "ptr_eq"\n',
     tests: ["test/corpus.test.ts", "-t", "^rc_as_ptr.rs$"],
   },
   {
     name: "rc-as-ptr-of-object-counted",
-    breaks: "`Rc::as_ptr` of an `Rc` of a struct counts it, `{ value, strong, weak }`, where the object is its identity",
+    breaks:
+      "`Rc::as_ptr` of an `Rc` of a struct counts it, `{ value, strong, weak }`, where the object is its identity",
     file: "src/lower/recognition/wrappers.rs",
-    find: "    if object && matches!(tcx.item_name(id).as_str(), \"ptr_eq\" | \"as_ptr\") {\n",
-    replace: "    if object && matches!(tcx.item_name(id).as_str(), \"ptr_eq\") {\n",
+    find: '    if object && matches!(tcx.item_name(id).as_str(), "ptr_eq" | "as_ptr") {\n',
+    replace:
+      '    if object && matches!(tcx.item_name(id).as_str(), "ptr_eq") {\n',
     tests: ["test/corpus.test.ts", "-t", "^rc_as_ptr.rs$"],
     snapshots: true,
   },
   {
     name: "fn-identity-read-as-count",
-    breaks: "`Rc::ptr_eq` of an `Rc<dyn Fn>` counts it, so React's commit hooks, each made of its closure, are `{ value, strong, weak }`, and what holds one `$dropping` (ADR 0959)",
+    breaks:
+      "`Rc::ptr_eq` of an `Rc<dyn Fn>` counts it, so React's commit hooks, each made of its closure, are `{ value, strong, weak }`, and what holds one `$dropping` (ADR 0959)",
     file: "src/lower/recognition/wrappers.rs",
     find: "    if compares_fn_identity(tcx, id, pointee) {\n        return false;\n    }\n",
     replace: "",
@@ -353,16 +411,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rc-new-of-closure-unseen",
-    breaks: "`Rc::new` isn't recognized, so no `Rc<dyn Fn>` is seen made of its closure, and each compared by identity is counted (ADR 0959)",
+    breaks:
+      "`Rc::new` isn't recognized, so no `Rc<dyn Fn>` is seen made of its closure, and each compared by identity is counted (ADR 0959)",
     file: "src/lower/recognition/wrappers.rs",
-    find: "    tcx.item_name(id).as_str() == \"new\" && is_rc_method(tcx, id)\n",
-    replace: "    tcx.item_name(id).as_str() == \"new_rc\" && is_rc_method(tcx, id)\n",
+    find: '    tcx.item_name(id).as_str() == "new" && is_rc_method(tcx, id)\n',
+    replace:
+      '    tcx.item_name(id).as_str() == "new_rc" && is_rc_method(tcx, id)\n',
     tests: ["test/corpus.test.ts", "-t", "^rc_fn_ptr_eq.rs$"],
     snapshots: true,
   },
   {
     name: "rc-from-box-unsupported",
-    breaks: "`Rc::from` of a `Box` of a sized value, `Rc::from(Box::new(5u32))`, is refused, where it's the value (ADR 0907, amended)",
+    breaks:
+      "`Rc::from` of a `Box` of a sized value, `Rc::from(Box::new(5u32))`, is refused, where it's the value (ADR 0907, amended)",
     file: "src/lower/recognition/wrappers.rs",
     find: "        _ if from.boxed_ty().is_some_and(|inner| erased(inner) == erased(pointee)) => true,\n",
     replace: "",

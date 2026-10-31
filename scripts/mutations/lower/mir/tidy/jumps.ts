@@ -4,7 +4,8 @@ import type { Mutation } from "../../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "turned-returns-left-turned",
-    breaks: "two `if`s the program wrote of `return false` are one `if` of all four tests, `if (lower === \"module\" || .. || lower === \"text/ecmascript\")`, as MIR nests them (rd237)",
+    breaks:
+      'two `if`s the program wrote of `return false` are one `if` of all four tests, `if (lower === "module" || .. || lower === "text/ecmascript")`, as MIR nests them (rd237)',
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        if tests.is_empty() || written.is_none() ||",
     replace: "        if true || tests.is_empty() || written.is_none() ||",
@@ -13,17 +14,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "turned-returns-unnegated",
-    breaks: "a turned `if`'s tests aren't negated, so it exits where they pass (rd237)",
+    breaks:
+      "a turned `if`'s tests aren't negated, so it exits where they pass (rd237)",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "            tests.push(test.negated_test());\n",
     replace: "            tests.push(test);\n",
     tests: ["test/corpus.test.ts", "-t", "^written_ifs_of_one_exit.rs$"],
   },
 
-
   {
     name: "early-break-going-on-unbroken",
-    breaks: "a written `if n > 99 { break; }` before an `if` with an `else` that goes on to the `break` after it stays nested, `if (n != null) { if (n <= 99) { if (n === 0) { .. } else { .. } } } break;`, not `while ((n = ..) != null) { if (n > 99) { break; } .. }` (uz2)",
+    breaks:
+      "a written `if n > 99 { break; }` before an `if` with an `else` that goes on to the `break` after it stays nested, `if (n != null) { if (n <= 99) { if (n === 0) { .. } else { .. } } } break;`, not `while ((n = ..) != null) { if (n > 99) { break; } .. }` (uz2)",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "            !leaves && innermost(then)",
     replace: "            false && innermost(then)",
@@ -32,7 +34,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "early-break-going-on-of-an-ending-body",
-    breaks: "an early `break` whose innermost body ends, `i++; continue;`, which goes round anyway and is dropped, gets the `break` after it too, `i++; break;`, ending the loop after its first word (uz2)",
+    breaks:
+      "an early `break` whose innermost body ends, `i++; continue;`, which goes round anyway and is dropped, gets the `break` after it too, `i++; break;`, ending the loop after its first word (uz2)",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "of(t).is_some() && !inner.last().is_some_and(ends)",
     replace: "of(t).is_some()",
@@ -40,7 +43,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "broken-in-then-of-a-written-else",
-    breaks: "an `if` the program wrote with an `else` that continues, then the `break` after it, is made `if (n === 0) { ..; break; } i++;`, its `else` and `continue` gone (uz2)",
+    breaks:
+      "an `if` the program wrote with an `else` that continues, then the `break` after it, is made `if (n === 0) { ..; break; } i++;`, its `else` and `continue` gone (uz2)",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        || written_else(last_if, elses)\n",
     replace: "",
@@ -49,7 +53,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-tidy-early-breaks-kept",
-    breaks: "a loop body ending `if (c) { a; continue; } break;` stays, not `if (!c) { break; } a`",
+    breaks:
+      "a loop body ending `if (c) { a; continue; } break;` stays, not `if (!c) { break; } a`",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        if tests.is_empty() || !(leaves || goes_on) {\n",
     replace: "        if true {\n",
@@ -57,55 +62,86 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-tidy-tail-guard-kept",
-    breaks: "`if (!c) { return; } rest` MIR made of `if c { rest }` stays a guard",
+    breaks:
+      "`if (!c) { return; } rest` MIR made of `if c { rest }` stays a guard",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "StmtKind::If(_, then, None) if then.last().is_some_and(unwritten)))",
-    replace: "StmtKind::If(_, then, None) if false && then.last().is_some_and(unwritten)))",
-    tests: ["test/lowering-matches.test.ts", "-t", "a let-else from MIR inside a branch|a match's arms as statements chain in written order|a match arm that does nothing is no empty else if"],
+    replace:
+      "StmtKind::If(_, then, None) if false && then.last().is_some_and(unwritten)))",
+    tests: [
+      "test/lowering-matches.test.ts",
+      "-t",
+      "a let-else from MIR inside a branch|a match's arms as statements chain in written order|a match arm that does nothing is no empty else if",
+    ],
   },
   {
     name: "mir-tidy-tail-return-branch-kept",
-    breaks: "`if (c) { s; return; } t` where the program wrote no `return` stays, not `if (c) { s } else { t }`",
+    breaks:
+      "`if (c) { s; return; } t` where the program wrote no `return` stays, not `if (c) { s } else { t }`",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if then.last().is_some_and(unwritten)))\n",
-    replace: "        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if matches!(then.as_slice(), [r] if unwritten(r))))\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "a let-else from MIR inside a branch|a match's arms as statements chain in written order|a match arm that does nothing is no empty else if"],
+    replace:
+      "        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if matches!(then.as_slice(), [r] if unwritten(r))))\n",
+    tests: [
+      "test/lowering-matches.test.ts",
+      "-t",
+      "a let-else from MIR inside a branch|a match's arms as statements chain in written order|a match arm that does nothing is no empty else if",
+    ],
   },
   {
     name: "mir-tidy-tail-return-else-lost",
     breaks: "`if (c) { s; return; } t` is `if (c) { s }`, `t` lost",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "            (false, false) => stmts.push(StmtKind::If(test, then, Some(rest)).at(span)),\n",
-    replace: "            (false, false) => stmts.push(StmtKind::If(test, then, None).at(span)),\n",
+    replace:
+      "            (false, false) => stmts.push(StmtKind::If(test, then, None).at(span)),\n",
     tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
   },
   {
     name: "mir-tidy-tail-return-emptied-then-kept",
-    breaks: "`if (!c) { return; } else { s; return; }`, a macro's function's `if let`, is `if (!c) {} else { s }`, not `if (c) { s }`",
+    breaks:
+      "`if (!c) { return; } else { s; return; }`, a macro's function's `if let`, is `if (!c) {} else { s }`, not `if (c) { s }`",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "            if let Some(kind) = emptied_branch(last.kind) {\n                stmts.push(kind.at(last.span));\n            }\n",
     replace: "            stmts.push(last);\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "React's BadMapPolyfill is its export let"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "React's BadMapPolyfill is its export let",
+    ],
   },
   {
     name: "mir-tidy-inner-let-else-kept",
-    breaks: "`if (c) { s } else { return; }`, a let-else's, stays, not the guard `if (!c) { return; } s`",
+    breaks:
+      "`if (c) { s } else { return; }`, a let-else's, stays, not the guard `if (!c) { return; } s`",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        && !then.last().is_some_and(ends)\n    {\n        let Some(Stmt {\n            kind: StmtKind::If(test, then, Some(otherwise)),\n",
-    replace: "        && false\n    {\n        let Some(Stmt {\n            kind: StmtKind::If(test, then, Some(otherwise)),\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "inside a branch, its .else. a .return."],
+    replace:
+      "        && false\n    {\n        let Some(Stmt {\n            kind: StmtKind::If(test, then, Some(otherwise)),\n",
+    tests: [
+      "test/lowering-matches.test.ts",
+      "-t",
+      "inside a branch, its .else. a .return.",
+    ],
   },
   {
     name: "mir-tidy-let-else-binding-after",
-    breaks: "a let-else's binding is after its guard, which tests what it's bound to",
+    breaks:
+      "a let-else's binding is after its guard, which tests what it's bound to",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "                Some(b.clone())\n            }\n            _ => None,\n        };\n        let test = match &bound {",
-    replace: "                let _ = b;\n                None::<String>\n            }\n            _ => None,\n        };\n        let test = match &bound {",
-    tests: ["test/lowering-matches.test.ts", "-t", "inside a branch, its .else. a .return."],
+    replace:
+      "                let _ = b;\n                None::<String>\n            }\n            _ => None,\n        };\n        let test = match &bound {",
+    tests: [
+      "test/lowering-matches.test.ts",
+      "-t",
+      "inside a branch, its .else. a .return.",
+    ],
   },
   {
     name: "loop-exit-before-what-goes-on",
-    breaks: "`if (c) { a } return x;` is `if (!c) { return x; } a`, where `a` goes on round the loop instead of returning",
+    breaks:
+      "`if (c) { a } return x;` is `if (!c) { return x; } a`, where `a` goes on round the loop instead of returning",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "    if !in_else && !goes_on && !then.last().is_some_and(ends) {\n",
     replace: "    if false {\n",
@@ -113,7 +149,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "jumps-exit-each-way-turned",
-    breaks: "a loop's `if (c) { return 1; } return 2;` is turned, and turned back, without end: its compile never finishes",
+    breaks:
+      "a loop's `if (c) { return 1; } return 2;` is turned, and turned back, without end: its compile never finishes",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "    if !in_else && matches!(then.as_slice(), [e] if exits(e)) {",
     replace: "    if false && matches!(then.as_slice(), [e] if exits(e)) {",
@@ -121,7 +158,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "early-breaks-nested-tests-kept",
-    breaks: "a `while let`'s `if (d != null) { if (c) { a; continue; } } break;` stays, not `if (d == null || !c) { break; } a`",
+    breaks:
+      "a `while let`'s `if (d != null) { if (c) { a; continue; } } break;` stays, not `if (d == null || !c) { break; } a`",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        if groups.iter().any(|group| group.len() > 1) || groups.len() > 1 {\n",
     replace: "        if false {\n",
@@ -130,7 +168,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "early-breaks-not-nested",
-    breaks: "a loop body ending `if (a) { x; if (b) { y; continue; } } break;` stays, not `if (!a) { break; } x; if (!b) { break; } y`, its `while (a)` lost",
+    breaks:
+      "a loop body ending `if (a) { x; if (b) { y; continue; } } break;` stays, not `if (!a) { break; } x; if (!b) { break; } y`, its `while (a)` lost",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "            true => leaves_early(then),\n",
     replace: "            true => then.last().is_some_and(ends),\n",
@@ -139,7 +178,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "early-break-in-then-kept",
-    breaks: "a loop body ending `if (c) { a } else { b; continue; } break;` stays, not `if (c) { a; break; } b`",
+    breaks:
+      "a loop body ending `if (c) { a } else { b; continue; } break;` stays, not `if (c) { a; break; } b`",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        if broken_in_then(body, &continues, elses) {\n",
     replace: "        if false {\n",
@@ -148,16 +188,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-tidy-nested-written-break-elsed",
-    breaks: "a while let's `if n == 0 { log.push(..); break; }` stays MIR's `if (n != null) { if (n === 0) { .. } else { ..; continue; } } break;` in a `while (true)`",
+    breaks:
+      "a while let's `if n == 0 { log.push(..); break; }` stays MIR's `if (n != null) { if (n === 0) { .. } else { ..; continue; } } break;` in a `while (true)`",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        broken_in_nested_then(body, &continues, breaks);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(while_let_break_after_work|loop_drops).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(while_let_break_after_work|loop_drops).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "mir-tidy-nested-written-break-or-kept",
-    breaks: "a while let's `if n > 9 || n == 3 { ..; break; }` stays MIR's `if (n <= 9 && n !== 3) { ..; continue; } ..` in a `while (true)`",
+    breaks:
+      "a while let's `if n > 9 || n == 3 { ..; break; }` stays MIR's `if (n <= 9 && n !== 3) { ..; continue; } ..` in a `while (true)`",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "            && let Some(k) = written(test)\n",
     replace: "            && let Some(k) = written(test).filter(|_| false)\n",
@@ -166,32 +212,42 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-tidy-nested-written-break-unwritten",
-    breaks: "an `if (c) { a } else { d; continue; } break;` of no `break` the program wrote, its own `else` or MIR's, is turned, `if (c) { a; break; } d`, as if it wrote one there",
+    breaks:
+      "an `if (c) { a } else { d; continue; } break;` of no `break` the program wrote, its own `else` or MIR's, is turned, `if (c) { a; break; } d`, as if it wrote one there",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        let Some(k) = written(test) else {\n",
-    replace: "        let Some(k) = written(test).or((!breaks.is_empty()).then_some(0)) else {\n",
+    replace:
+      "        let Some(k) = written(test).or((!breaks.is_empty()).then_some(0)) else {\n",
     tests: ["test/corpus.test.ts", "-t", "^while_let_break_after_work.rs$"],
     snapshots: true,
   },
   {
     name: "mir-tidy-nested-written-break-twice",
-    breaks: "a loop body's last `if c { break; }`, MIR's `if (c) { break; } else { continue; }`, gets a second `break` after its own, which tidy's \"nothing after a jump\" refuses (rd141)",
+    breaks:
+      "a loop body's last `if c { break; }`, MIR's `if (c) { break; } else { continue; }`, gets a second `break` after its own, which tidy's \"nothing after a jump\" refuses (rd141)",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        if !goes_on(d) || a.last().is_some_and(ends) || !fits_in_place(before, usize::MAX, d) {\n",
-    replace: "        if !goes_on(d) || !fits_in_place(before, usize::MAX, d) {\n",
+    replace:
+      "        if !goes_on(d) || !fits_in_place(before, usize::MAX, d) {\n",
     tests: ["test/corpus.test.ts", "-t", "^loop_ends_in_its_break.rs$"],
   },
   {
     name: "guarded-or-at-block",
-    breaks: "the `if (a || b)` of guards MIR's labeled block makes is placed where the block is, nowhere, so the comment before it is before the next `if`",
+    breaks:
+      "the `if (a || b)` of guards MIR's labeled block makes is placed where the block is, nowhere, so the comment before it is before the next `if`",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        let span = made_where(stmts[i].span, body);\n",
     replace: "        let span = stmts[i].span;\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "a comment before an or's if"],
+    tests: [
+      "test/lowering-comments.test.ts",
+      "-t",
+      "a comment before an or's if",
+    ],
   },
   {
     name: "written-else-made-an-early-exit",
-    breaks: "`if let Some(c) = c { a } else { break }` is `if (c == null) { break; } a`, an early exit the program didn't write (ADR 0879)",
+    breaks:
+      "`if let Some(c) = c { a } else { break }` is `if (c == null) { break; } a`, an early exit the program didn't write (ADR 0879)",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "    if in_else && written_else(&rest[0], elses) {\n",
     replace: "    if in_else && written_else(&rest[0], elses) && false {\n",
@@ -200,7 +256,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "tail-returns-branch-else-after",
-    breaks: "an arm whose branches each return, made the `if`'s, runs what the other arm does after it, as its `else` isn't made (rd93)",
+    breaks:
+      "an arm whose branches each return, made the `if`'s, runs what the other arm does after it, as its `else` isn't made (rd93)",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        if !rest.is_empty() {\n            *otherwise = Some(rest);\n        }\n",
     replace: "        stmts.extend(rest);\n",
@@ -208,33 +265,40 @@ export const mutations: Mutation[] = [
   },
   {
     name: "tail-returns-of-branches-only-at-the-top",
-    breaks: "a function's last `match`, an `if` chain of a guarded arm, keeps MIR's `return;`s in an arm whose branches each end so, `} else { if (tag === 3) { if (r) { ..; return; } else { ..; return; } } if (tag === 22) ..`, a comment of the next arm moved into it (rd93)",
+    breaks:
+      "a function's last `match`, an `if` chain of a guarded arm, keeps MIR's `return;`s in an arm whose branches each end so, `} else { if (tag === 3) { if (r) { ..; return; } else { ..; return; } } if (tag === 22) ..`, a comment of the next arm moved into it (rd93)",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        |s| matches!(&s.kind, StmtKind::If(_, then, None) if returns_at_end(then, &unwritten) && !then.last().is_some_and(unwritten)),\n",
-    replace: "        |s| matches!(&s.kind, StmtKind::If(_, then, None) if false && returns_at_end(then, &unwritten)),\n",
+    replace:
+      "        |s| matches!(&s.kind, StmtKind::If(_, then, None) if false && returns_at_end(then, &unwritten)),\n",
     tests: ["test/corpus.test.ts", "-t", "^guarded_match_ends_function.rs$"],
     snapshots: true,
   },
   {
     name: "branch-undefined-return-kept",
-    breaks: "the playground's outcome, `} else if (report.tested) { return ..; } else { return; }`, keeps the `return undefined;` MIR made of a `None` at the function's end",
+    breaks:
+      "the playground's outcome, `} else if (report.tested) { return ..; } else { return; }`, keeps the `return undefined;` MIR made of a `None` at the function's end",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        StmtKind::Return(Some(v)) => branch && matches!(v.kind, ExprKind::Undefined) && !written(returns, s.span),\n",
-    replace: "        StmtKind::Return(Some(v)) => false && matches!(v.kind, ExprKind::Undefined) && !written(returns, s.span),\n",
+    replace:
+      "        StmtKind::Return(Some(v)) => false && matches!(v.kind, ExprKind::Undefined) && !written(returns, s.span),\n",
     tests: ["test/snapshots.test.ts", "-t", "playground"],
   },
   {
     name: "body-undefined-return-dropped",
-    breaks: "a constant's value `undefined`, its body's `return undefined;`, is dropped, the constant `(() => {})()` and its tests `$eq`s",
+    breaks:
+      "a constant's value `undefined`, its body's `return undefined;`, is dropped, the constant `(() => {})()` and its tests `$eq`s",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        StmtKind::Return(Some(v)) => branch && matches!(v.kind, ExprKind::Undefined) && !written(returns, s.span),\n",
-    replace: "        StmtKind::Return(Some(v)) => matches!(v.kind, ExprKind::Undefined) && !written(returns, s.span),\n",
+    replace:
+      "        StmtKind::Return(Some(v)) => matches!(v.kind, ExprKind::Undefined) && !written(returns, s.span),\n",
     tests: ["test/corpus.test.ts", "-t", "^untagged_null_undefined.rs$"],
     snapshots: true,
   },
   {
     name: "ended-returns-kept",
-    breaks: "a `return;` MIR made at a `let … else`'s `then`'s end, the function's end once the `let … else` is first, stays: `log.push(`Created ${path}, ${module}.`); return; }` (rd98)",
+    breaks:
+      "a `return;` MIR made at a `let … else`'s `then`'s end, the function's end once the `let … else` is first, stays: `log.push(`Created ${path}, ${module}.`); return; }` (rd98)",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        ) if !written(returns, last.span) => {\n",
     replace: "        ) if false => {\n",
@@ -244,7 +308,8 @@ export const mutations: Mutation[] = [
 
   {
     name: "early-break-somes-joined",
-    breaks: "a `while let`'s `Some` test and the program's `if` of a `break` are joined, `if (word == null || word.startsWith(\"#\")) { break; }`, not `while ((word = words[i]) != null) { if (word.startsWith(\"#\")) { .. } }` (#301, ADR 0702 amended)",
+    breaks:
+      'a `while let`\'s `Some` test and the program\'s `if` of a `break` are joined, `if (word == null || word.startsWith("#")) { break; }`, not `while ((word = words[i]) != null) { if (word.startsWith("#")) { .. } }` (#301, ADR 0702 amended)',
     file: "src/lower/mir/tidy/jumps.rs",
     find: "                Some(group) if of(&group[0].0) == of(&test.0) => group.push(test),\n",
     replace: "                Some(group) => group.push(test),\n",
@@ -253,7 +318,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "early-break-joined-test-kept",
-    breaks: "a `while let`'s `Some` and an `if` of `&&` and `||` the program wrote of a `break`, one test `skipped tests` made, stay one, `if (time == null || (time > now && (!hasTime || yields()))) { break; }`, its comment above the loop (rd215)",
+    breaks:
+      "a `while let`'s `Some` and an `if` of `&&` and `||` the program wrote of a `break`, one test `skipped tests` made, stay one, `if (time == null || (time > now && (!hasTime || yields()))) { break; }`, its comment above the loop (rd215)",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "                match parts.iter().all(|part| of(part) == of(&parts[0])) {\n",
     replace: "                match true {\n",
@@ -262,25 +328,30 @@ export const mutations: Mutation[] = [
   },
   {
     name: "early-break-split-part-placed-first",
-    breaks: "a part of a joined test is placed where the first is, the `while let`'s, so its `break` isn't the program's and its comment moves above the loop (rd215)",
+    breaks:
+      "a part of a joined test is placed where the first is, the `while let`'s, so its `break` isn't the program's and its comment moves above the loop (rd215)",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "                            let at = if i == 0 { span } else { written_at(&part) };\n",
-    replace: "                            let at = if i == usize::MAX { written_at(&part) } else { span };\n",
+    replace:
+      "                            let at = if i == usize::MAX { written_at(&part) } else { span };\n",
     tests: ["test/corpus.test.ts", "-t", "^while_let_written_break.rs$"],
     snapshots: true,
   },
   {
     name: "early-break-and-parts-one",
-    breaks: "a joined test isn't split at its `&&`s, so the `while let`'s `Some` stays joined to the program's `if` (rd215)",
+    breaks:
+      "a joined test isn't split at its `&&`s, so the `while let`'s `Some` stays joined to the program's `if` (rd215)",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        ExprKind::Binary(Op::And, a, b) => {\n            let mut parts = and_parts(a);\n",
-    replace: "        ExprKind::Binary(Op::And, a, b) if false => {\n            let mut parts = and_parts(a);\n",
+    replace:
+      "        ExprKind::Binary(Op::And, a, b) if false => {\n            let mut parts = and_parts(a);\n",
     tests: ["test/corpus.test.ts", "-t", "^while_let_written_break.rs$"],
     snapshots: true,
   },
   {
     name: "ending-try-return-kept",
-    breaks: "a `try` that ends the function keeps the `return;` MIR made at its body's end, `for (..) { .. } return; } finally { $unborrow(items); }` (rd200)",
+    breaks:
+      "a `try` that ends the function keeps the `return;` MIR made at its body's end, `for (..) { .. } return; } finally { $unborrow(items); }` (rd200)",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "        Some(StmtKind::Try(body, _)) => ending_returns(body, returns, true),\n",
     replace: "",
@@ -289,7 +360,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "ended-returns-of-the-last-only",
-    breaks: "once a unit function's last `return;` goes, the `if` then last keeps its branches' `return;`s MIR joined, `if (inner > 3) { ..; return; } else { ..; return; }`, as React's completeBoundary printed (rd262)",
+    breaks:
+      "once a unit function's last `return;` goes, the `if` then last keeps its branches' `return;`s MIR joined, `if (inner > 3) { ..; return; } else { ..; return; }`, as React's completeBoundary printed (rd262)",
     file: "src/lower/mir/tidy/jumps.rs",
     find: "            stmts.pop();\n            ended_returns(stmts, returns);\n",
     replace: "            stmts.pop();\n",

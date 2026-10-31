@@ -4,16 +4,19 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "default-dictionaries-kept",
-    breaks: "a compiled std function's call writes each default dictionary it takes where it's given none, `{ next: $next }`, at its end (ADR 0995)",
+    breaks:
+      "a compiled std function's call writes each default dictionary it takes where it's given none, `{ next: $next }`, at its end (ADR 0995)",
     file: "src/lower/traits/calls.rs",
     find: "                && is_plain_dictionary(last, *default)\n",
-    replace: "                && is_plain_dictionary(last, *default)\n                && false\n",
+    replace:
+      "                && is_plain_dictionary(last, *default)\n                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^std_map.rs$"],
     snapshots: true,
   },
   {
     name: "into-iter-param-boxed",
-    breaks: "a `U: IntoIterator` given a `&mut [T]` is given a dictionary that takes the box a `&mut C` is: std's `zip` reads `cell.value` of the array, `undefined is not iterable` (ADR 0976)",
+    breaks:
+      "a `U: IntoIterator` given a `&mut [T]` is given a dictionary that takes the box a `&mut C` is: std's `zip` reads `cell.value` of the array, `undefined is not iterable` (ADR 0976)",
     file: "src/lower/traits/calls.rs",
     find: "                        None if as_it_is => values.push(self.ref_into_iter_dictionary(bound, false, span)?),\n",
     replace: "",
@@ -21,15 +24,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "identity-eq-impl-called",
-    breaks: "`a == b` of two values of a type equal only to itself calls its `eq`, `fiberPartialEq_eq(a, b)`, not `a === b` as of references to them (ADR 0864, amended)",
+    breaks:
+      "`a == b` of two values of a type equal only to itself calls its `eq`, `fiberPartialEq_eq(a, b)`, not `a === b` as of references to them (ADR 0864, amended)",
     file: "src/lower/traits/calls.rs",
     find: "            && self.eq_by_address(tr.self_ty());\n",
     replace: "            && false;\n",
-    tests: ["test/lowering-collections.test.ts", "-t", "a type equal only to itself"],
+    tests: [
+      "test/lowering-collections.test.ts",
+      "-t",
+      "a type equal only to itself",
+    ],
   },
   {
     name: "dyn-mut-self-given-value",
-    breaks: "`d.bump()` of a `&mut dyn Counter` gives the `&mut self` method the pair's `value`, a number with no box to write",
+    breaks:
+      "`d.bump()` of a `&mut dyn Counter` gives the `&mut self` method the pair's `value`, a number with no box to write",
     file: "src/lower/traits/calls.rs",
     find: "                    (if by_mut { pair } else { Expr::held(pair) }, dictionary)\n",
     replace: "                    (Expr::held(pair), dictionary)\n",
@@ -37,51 +46,66 @@ export const mutations: Mutation[] = [
   },
   {
     name: "own-evidence-unpassed",
-    breaks: "`SShape.describe(s, label)` in generic code isn't given `T`'s `Display`, and the entry reads `undefined`",
+    breaks:
+      "`SShape.describe(s, label)` in generic code isn't given `T`'s `Display`, and the entry reads `undefined`",
     file: "src/lower/traits/calls.rs",
     find: "            let location = self.caller_location(span);\n            values.extend(self.with_impl_drops(|cx| cx.own_evidence(id, generic_args, Some(location), span))?);\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","generic_trait_methods"],
+    tests: ["test/corpus.test.ts", "-t", "generic_trait_methods"],
   },
   {
     name: "entry-evidence-in-trait-order",
-    breaks: "a generic method's entry passes the trait's evidence in the trait's order, where `Square`'s `tagged` declares `A: Debug + Clone`",
+    breaks:
+      "a generic method's entry passes the trait's evidence in the trait's order, where `Square`'s `tagged` declares `A: Debug + Clone`",
     file: "src/lower/traits/calls.rs",
     find: "                    .position(|&d| self.tcx.erase_and_anonymize_regions(d) == here)\n",
     replace: "                    .position(|_| true)\n",
-    tests: ["test/corpus.test.ts","-t","generic_trait_methods"],
+    tests: ["test/corpus.test.ts", "-t", "generic_trait_methods"],
   },
   {
     name: "const-args-unpassed",
-    breaks: "`sum([1, 2, 3])` isn't given its `N`, and the loop runs to `undefined`",
+    breaks:
+      "`sum([1, 2, 3])` isn't given its `N`, and the loop runs to `undefined`",
     file: "src/lower/traits/calls.rs",
     find: "                Slot::Const(index) => values.push(self.const_arg(args.const_at(index as usize), span)?),\n                Slot::Bound(declared) => {\n",
-    replace: "                Slot::Const(_) => {}\n                Slot::Bound(declared) => {\n",
-    tests: ["test/corpus.test.ts","-t","const_generics"],
+    replace:
+      "                Slot::Const(_) => {}\n                Slot::Bound(declared) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "const_generics"],
   },
   {
     name: "operator-entry-named-output",
-    breaks: "a number's `Add` dictionary's entry is named for its `Output`, not `add`",
+    breaks:
+      "a number's `Add` dictionary's entry is named for its `Output`, not `add`",
     file: "src/lower/traits/calls.rs",
     find: "            .find(|item| item.is_fn())\n",
     replace: "            .next()\n",
-    tests: ["test/corpus.test.ts","-t","generic_operators"],
+    tests: ["test/corpus.test.ts", "-t", "generic_operators"],
   },
   {
     name: "known-into-through-dictionary",
-    breaks: "`i % 2` and `\"paren\".into()`, of known types, are a dictionary's call, `{ rem: .. }.rem(i, 2)`, not `i % 2`",
+    breaks:
+      '`i % 2` and `"paren".into()`, of known types, are a dictionary\'s call, `{ rem: .. }.rem(i, 2)`, not `i % 2`',
     file: "src/lower/traits/calls.rs",
     find: "            && (!tr.args.has_non_region_param() || (conversion && self.evidence_for(tr).is_none()))\n",
     replace: "            && false\n",
-    tests: ["test/lowering-iterators.test.ts", "-t", "a range made where it's stepped from MIR is its numbers"],
+    tests: [
+      "test/lowering-iterators.test.ts",
+      "-t",
+      "a range made where it's stepped from MIR is its numbers",
+    ],
   },
   {
     name: "dyn-error-other-methods",
-    breaks: "a method std provides, called through a `dyn Error`, is its dictionary's, which hasn't it, and JS throws",
+    breaks:
+      "a method std provides, called through a `dyn Error`, is its dictionary's, which hasn't it, and JS throws",
     file: "src/lower/traits/calls.rs",
     find: "            if !self.is_rust_trait(trait_id) && self.tcx.defaultness(id).has_value() && !in_std_dictionary(self.tcx, id)\n            {",
     replace: "            if false\n            {",
-    tests: ["test/diagnostics.test.ts", "-t", "a provided method of a dyn io::Write"],
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "a provided method of a dyn io::Write",
+    ],
   },
   {
     name: "own-const-not-given",
@@ -89,27 +113,32 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/calls.rs",
     find: "                Slot::Const(index) => values.push(self.const_arg(generic_args.const_at(index as usize), span)?),\n",
     replace: "                Slot::Const(_) => {}\n",
-    tests: ["test/corpus.test.ts","-t","const_generic_traits"],
+    tests: ["test/corpus.test.ts", "-t", "const_generic_traits"],
   },
   {
     name: "method-evidence-consts-missing",
-    breaks: "a generic method's entry with a const parameter and a bound gives no const value",
+    breaks:
+      "a generic method's entry with a const parameter and a bound gives no const value",
     file: "src/lower/traits/calls.rs",
     find: "                Slot::Const(index) => values.push(self.const_arg(args.const_at(index as usize), span)?),\n                Slot::Bound(bound) => {\n                    let here = ty::EarlyBinder::bind(self.tcx, bound)\n",
-    replace: "                Slot::Const(_) => {}\n                Slot::Bound(bound) => {\n                    let here = ty::EarlyBinder::bind(self.tcx, bound)\n",
-    tests: ["test/corpus.test.ts","-t","const_generic_traits"],
+    replace:
+      "                Slot::Const(_) => {}\n                Slot::Bound(bound) => {\n                    let here = ty::EarlyBinder::bind(self.tcx, bound)\n",
+    tests: ["test/corpus.test.ts", "-t", "const_generic_traits"],
   },
   {
     name: "type-facts-not-given",
-    breaks: "a call of a generic function that asks `size_of::<T>()` gives it no size",
+    breaks:
+      "a call of a generic function that asks `size_of::<T>()` gives it no size",
     file: "src/lower/traits/calls.rs",
     find: "                    }\n                    values.push(self.type_fact_value(of, fact, span)?);\n                }\n",
-    replace: "                    }\n                    let _ = (of, fact);\n                }\n",
+    replace:
+      "                    }\n                    let _ = (of, fact);\n                }\n",
     tests: ["test/corpus.test.ts", "-t", "type_facts"],
   },
   {
     name: "to-string-through-dictionary",
-    breaks: "`x.to_string()` of a known type, or a `dyn ToString`, goes through a dictionary it's made for it",
+    breaks:
+      "`x.to_string()` of a known type, or a `dyn ToString`, goes through a dictionary it's made for it",
     file: "src/lower/traits/calls.rs",
     find: "        if Some(trait_id) == self.to_string_trait() {\n            return Ok(None);\n        }",
     replace: "",
@@ -118,15 +147,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dictionary-call-own-drops-missing",
-    breaks: "a generic method called through a dictionary is given no drop for its own type parameters",
+    breaks:
+      "a generic method called through a dictionary is given no drop for its own type parameters",
     file: "src/lower/traits/calls.rs",
     find: "                    let ty = self.drop_slot_of(id, index, generic_args);\n                    drops.push(self.drop_function(ty, span)?);\n",
-    replace: "                    let _ = self.drop_slot_of(id, index, generic_args);\n                    drops.push(None);\n",
+    replace:
+      "                    let _ = self.drop_slot_of(id, index, generic_args);\n                    drops.push(None);\n",
     tests: ["test/corpus.test.ts", "-t", "generic_method_drops"],
   },
   {
     name: "dyn-receiver-evaluated-twice",
-    breaks: "a `dyn` method call's receiver with effects, as `make(&c).add(..)`, runs once for its value and again for its impl",
+    breaks:
+      "a `dyn` method call's receiver with effects, as `make(&c).add(..)`, runs once for its value and again for its impl",
     file: "src/lower/traits/calls.rs",
     find: "            let pair = if !receiver.reads_same() {",
     replace: "            let pair = if false {",
@@ -135,23 +167,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "drops-by-need-unmarked",
-    breaks: "a call gives every drop its callee took before, where it now takes only those it uses",
+    breaks:
+      "a call gives every drop its callee took before, where it now takes only those it uses",
     file: "src/lower/traits/calls.rs",
     find: "                true => Some(self.drop_argument(id, index, (ty, iterated), span)?),\n",
-    replace: "                true => self.held_drop_function(ty, iterated, span)?,\n",
+    replace:
+      "                true => self.held_drop_function(ty, iterated, span)?,\n",
     tests: ["test/crates.test.ts", "-t", "drops_by_need"],
   },
   {
     name: "collection-as-iterable-unchecked",
-    breaks: "a collection of the crate's given to `extend` or generic code is iterated as JS does, to nothing or a crash",
+    breaks:
+      "a collection of the crate's given to `extend` or generic code is iterated as JS does, to nothing or a crash",
     file: "src/lower/traits/calls.rs",
     find: "        if let Some(collection) = self.collection_as_iterable(def_id, generic_args) {",
-    replace: "        if let Some(collection) = self.collection_as_iterable(def_id, generic_args).filter(|_| false) {",
-    tests: ["test/diagnostics.test.ts","-t","collection of the crate"],
+    replace:
+      "        if let Some(collection) = self.collection_as_iterable(def_id, generic_args).filter(|_| false) {",
+    tests: ["test/diagnostics.test.ts", "-t", "collection of the crate"],
   },
   {
     name: "own-borrow-mut-guarded",
-    breaks: "the crate's own `borrow_mut()`, whose trait needs its `Borrow`, is refused as a std call taking what it borrows as",
+    breaks:
+      "the crate's own `borrow_mut()`, whose trait needs its `Borrow`, is refused as a std call taking what it borrows as",
     file: "src/lower/traits/calls.rs",
     find: "        Ok(match self.is_rust_fn(def_id) || crates {",
     replace: "        Ok(match self.is_rust_fn(def_id) {",
@@ -159,7 +196,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cow-eq-borrowed-left-whole",
-    breaks: "`cow == \"a\"` reads `\"a\"._0`, as if both were `Cow`s",
+    breaks: '`cow == "a"` reads `"a"._0`, as if both were `Cow`s',
     file: "src/lower/traits/calls.rs",
     find: "                    false => self.cow_side(a, lhs),\n",
     replace: "                    false => (a, lhs),\n",
@@ -167,7 +204,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cow-eq-borrowed-right-whole",
-    breaks: "`\"a\" == cow` compares the text with the `Cow` object",
+    breaks: '`"a" == cow` compares the text with the `Cow` object',
     file: "src/lower/traits/calls.rs",
     find: "                    false => self.cow_side(b, rhs),\n",
     replace: "                    false => (b, rhs),\n",
@@ -178,12 +215,14 @@ export const mutations: Mutation[] = [
     breaks: "an `OsStr` beside a path compares as text, `a//b` not `a/b`",
     file: "src/lower/traits/calls.rs",
     find: "                    true => self.eq_value(a, b, rhs, span, out)?,\n",
-    replace: "                    true => self.eq_value(a, b, lhs, span, out)?,\n",
+    replace:
+      "                    true => self.eq_value(a, b, lhs, span, out)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^path_compare.rs$"],
   },
   {
     name: "dyn-pair-parts-spilled",
-    breaks: "a call through a struct's `dyn` field spills its pair, `receiver.impl.to_val(receiver.value)`",
+    breaks:
+      "a call through a struct's `dyn` field spills its pair, `receiver.impl.to_val(receiver.value)`",
     file: "src/lower/traits/calls.rs",
     find: "            let parts = match &receiver.kind {\n",
     replace: "            let parts = match &Expr::undefined().kind {\n",
@@ -192,7 +231,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-facts-ungiven",
-    breaks: "a library's function that asks its type parameter's size isn't given it by its consumer",
+    breaks:
+      "a library's function that asks its type parameter's size isn't given it by its consumer",
     file: "src/lower/traits/calls.rs",
     find: "            false => self.krate.foreign.type_facts(id),\n",
     replace: "            false => Vec::new(),\n",
@@ -200,7 +240,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "impl-method-iterator-arg-unwrapped",
-    breaks: "a trait impl's method given the crate's iterator where a generic iterator goes gets its struct, which JS can't step",
+    breaks:
+      "a trait impl's method given the crate's iterator where a generic iterator goes gets its struct, which JS can't step",
     file: "src/lower/traits/calls.rs",
     find: "            self.given_iterators(instance.def_id(), &mut values, &given, span, out)?;\n",
     replace: "            let _ = given;\n",
@@ -208,7 +249,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dyn-fact-given",
-    breaks: "a type's fact of a `dyn` given to generic code is its own, where rustc calls the `dyn`'s value's",
+    breaks:
+      "a type's fact of a `dyn` given to generic code is its own, where rustc calls the `dyn`'s value's",
     file: "src/lower/traits/calls.rs",
     find: "            if matches!(of.kind(), ty::Dynamic(..)) {\n",
     replace: "            if false {\n",
@@ -216,7 +258,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dyn-untracked-declaration-given-caller",
-    breaks: "a `dyn`'s call of a method only an impl tracks gives the call's location, where rustc's shim gives the impl's definition's",
+    breaks:
+      "a `dyn`'s call of a method only an impl tracks gives the call's location, where rustc's shim gives the impl's definition's",
     file: "src/lower/traits/calls.rs",
     find: "            let location = tracks_caller(self.tcx, id).then(|| self.caller_location(span));\n",
     replace: "            let location = Some(self.caller_location(span));\n",
@@ -224,31 +267,41 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dictionary-call-location-unpassed",
-    breaks: "a call through a dictionary of a method whose entries take its caller's location gives none",
+    breaks:
+      "a call through a dictionary of a method whose entries take its caller's location gives none",
     file: "src/lower/traits/calls.rs",
     find: "        for slot in self.evidence_slots(id, Scope::Own) {\n            match slot {\n                Slot::Location => values.extend(location.take()),\n",
-    replace: "        for slot in self.evidence_slots(id, Scope::Own) {\n            match slot {\n                Slot::Location => values.extend(location.take().filter(|_| false)),\n",
+    replace:
+      "        for slot in self.evidence_slots(id, Scope::Own) {\n            match slot {\n                Slot::Location => values.extend(location.take().filter(|_| false)),\n",
     tests: ["test/corpus.test.ts", "-t", "^track_caller_traits.rs$"],
   },
   {
     name: "generic-method-entry-location-lost",
-    breaks: "an impl's generic method that reads its caller's location, through a dictionary, is given none",
+    breaks:
+      "an impl's generic method that reads its caller's location, through a dictionary, is given none",
     file: "src/lower/traits/calls.rs",
     find: "        for slot in self.evidence_slots(method, Scope::Whole) {\n            match slot {\n                Slot::Location => values.extend(location.take()),\n",
-    replace: "        for slot in self.evidence_slots(method, Scope::Whole) {\n            match slot {\n                Slot::Location => values.extend(location.take().filter(|_| false)),\n",
+    replace:
+      "        for slot in self.evidence_slots(method, Scope::Whole) {\n            match slot {\n                Slot::Location => values.extend(location.take().filter(|_| false)),\n",
     tests: ["test/corpus.test.ts", "-t", "^track_caller_traits.rs$"],
   },
   {
     name: "dictionary-iterator-unconverted",
-    breaks: "a range given a trait's method through its dictionary, `c.extend(0..n)` of a `C: Extend`, or a `&mut Self` given as it is, isn't a JS iterator",
+    breaks:
+      "a range given a trait's method through its dictionary, `c.extend(0..n)` of a `C: Extend`, or a `&mut Self` given as it is, isn't a JS iterator",
     file: "src/lower/traits/calls.rs",
     find: "            self.given_iterators(id, &mut values, &given, span, out)?;\n            let location",
     replace: "            let location",
-    tests: ["test/corpus.test.ts", "-t", "^(generic_extend|self_given_on_as_into_iter).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(generic_extend|self_given_on_as_into_iter).rs$",
+    ],
   },
   {
     name: "into-iter-crate-collection-refused",
-    breaks: "a crate's collection given where a `for<'a> &'a C: IntoIterator` bound is, a dictionary, is refused as one where any `IntoIterator` goes",
+    breaks:
+      "a crate's collection given where a `for<'a> &'a C: IntoIterator` bound is, a dictionary, is refused as one where any `IntoIterator` goes",
     file: "src/lower/traits/calls.rs",
     find: "                if into_iter_by_dictionary(self.tcx, declared.def_id, declared.self_ty()) {\n                    return None;\n                }\n",
     replace: "",
@@ -256,15 +309,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "own-evidence-facts-ungiven",
-    breaks: "a call through a dictionary gives none of what the method asks of its own type parameters",
+    breaks:
+      "a call through a dictionary gives none of what the method asks of its own type parameters",
     file: "src/lower/traits/calls.rs",
     find: "                    let of = self.drop_slot_of(id, index, generic_args);\n                    values.push(self.type_fact_value(of, fact, span)?);\n",
-    replace: "                    let of = self.drop_slot_of(id, index, generic_args);\n                    let _ = (of, fact);\n",
+    replace:
+      "                    let of = self.drop_slot_of(id, index, generic_args);\n                    let _ = (of, fact);\n",
     tests: ["test/corpus.test.ts", "-t", "^own_type_facts.rs$"],
   },
   {
     name: "method-evidence-facts-ungiven",
-    breaks: "an entry calls an impl's method with none of what it asks of its type parameters",
+    breaks:
+      "an entry calls an impl's method with none of what it asks of its type parameters",
     file: "src/lower/traits/calls.rs",
     find: "                    let of = self.drop_slot_of(method, index, args);\n                    values.push(self.type_fact_value(of, fact, span)?);\n",
     replace: "                    let _ = (index, fact);\n",
@@ -272,7 +328,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "std-conversion-through-dictionary",
-    breaks: "`VecDeque::from(v)` of a generic `Vec<T>`, which no bound gives, is asked of a dictionary, and refused",
+    breaks:
+      "`VecDeque::from(v)` of a generic `Vec<T>`, which no bound gives, is asked of a dictionary, and refused",
     file: "src/lower/traits/calls.rs",
     find: "            && (!tr.args.has_non_region_param() || (conversion && self.evidence_for(tr).is_none()))\n",
     replace: "            && !tr.args.has_non_region_param()\n",
@@ -280,15 +337,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "impl-call-default-drops",
-    breaks: "a copied default's call of its impl's own method gives it its trait's `Self`'s drop for the impl's `I`, whose index they share",
+    breaks:
+      "a copied default's call of its impl's own method gives it its trait's `Self`'s drop for the impl's `I`, whose index they share",
     file: "src/lower/traits/calls.rs",
     find: "            values.extend(self.with_impl_drops(|cx| cx.evidence_args(instance.def_id(), instance.args, span))?);\n",
-    replace: "            values.extend(self.evidence_args(instance.def_id(), instance.args, span)?);\n",
+    replace:
+      "            values.extend(self.evidence_args(instance.def_id(), instance.args, span)?);\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_default_impl_drops.rs$"],
   },
   {
     name: "impl-dictionary-default-drops",
-    breaks: "a copied default's call of another through its impl's dictionary makes it with its trait's `Self`'s drop for the impl's `I`",
+    breaks:
+      "a copied default's call of another through its impl's dictionary makes it with its trait's `Self`'s drop for the impl's `I`",
     file: "src/lower/traits/calls.rs",
     find: "            let dictionary = self.with_impl_drops(|cx| cx.dictionary(tr, span))?;\n",
     replace: "            let dictionary = self.dictionary(tr, span)?;\n",
@@ -296,7 +356,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dyn-mut-self-always-pair",
-    breaks: "a `&mut dyn` of a trait that extends `Iterator` is given its pair, which its dictionary steps as the value",
+    breaks:
+      "a `&mut dyn` of a trait that extends `Iterator` is given its pair, which its dictionary steps as the value",
     file: "src/lower/traits/calls.rs",
     find: "            let by_mut = self.param_is_box(id, 0);\n",
     replace: "            let by_mut = true;\n",
@@ -304,7 +365,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "into-iter-held-written-in-place",
-    breaks: "`into_iter()` of one whose `IntoIter` is held as it is is std's written in place, refused",
+    breaks:
+      "`into_iter()` of one whose `IntoIter` is held as it is is std's written in place, refused",
     file: "src/lower/traits/calls.rs",
     find: "known_here) && !self.holds_into_iter(tr.self_ty()) {",
     replace: "known_here) {",
@@ -312,31 +374,38 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fused-impl-not-picked",
-    breaks: "a std-private trait's call whose impl `I` being a `FusedIterator` picks takes the impl rustc selects for `I: Iterator` alone, so a `FusedIterator`'s `Fuse` drops it as it ends",
+    breaks:
+      "a std-private trait's call whose impl `I` being a `FusedIterator` picks takes the impl rustc selects for `I: Iterator` alone, so a `FusedIterator`'s `Fuse` drops it as it ends",
     file: "src/lower/traits/calls.rs",
-    find: "                called = Expr::cond(tested.expect(\"a fact picks it\"), special, called);\n",
-    replace: "                called = Expr::cond(tested.expect(\"a fact picks it\"), called.clone(), called);\n",
+    find: '                called = Expr::cond(tested.expect("a fact picks it"), special, called);\n',
+    replace:
+      '                called = Expr::cond(tested.expect("a fact picks it"), called.clone(), called);\n',
     tests: ["test/std-package.test.ts"],
   },
   {
     name: "operator-right-side-unchecked",
-    breaks: "`f64: Mul<V2>` is a number's `*`, where it's the crate's impl, and gives `NaN`",
+    breaks:
+      "`f64: Mul<V2>` is a number's `*`, where it's the crate's impl, and gives `NaN`",
     file: "src/lower/traits/calls.rs",
     find: "        tr.args\n            .types()\n            .all(|t| crate::lower::representation::Num::of(t.peel_refs()).is_some() || t.peel_refs().is_bool())",
-    replace: "        [tr.self_ty()]\n            .into_iter()\n            .all(|t| crate::lower::representation::Num::of(t.peel_refs()).is_some() || t.peel_refs().is_bool())",
+    replace:
+      "        [tr.self_ty()]\n            .into_iter()\n            .all(|t| crate::lower::representation::Num::of(t.peel_refs()).is_some() || t.peel_refs().is_bool())",
     tests: ["test/corpus.test.ts", "-t", "generic_operators"],
   },
   {
     name: "number-op-in-default-unknown",
-    breaks: "`self - Self::one()` in a default copied into an `f64`'s impl is an error",
+    breaks:
+      "`self - Self::one()` in a default copied into an `f64`'s impl is an error",
     file: "src/lower/traits/calls.rs",
     find: "            if self.given.self_args.is_some()\n                && let Some(op) = crate::lower::recognition::value_operator(self.tcx, trait_id)",
-    replace: "            if false\n                && let Some(op) = crate::lower::recognition::value_operator(self.tcx, trait_id)",
+    replace:
+      "            if false\n                && let Some(op) = crate::lower::recognition::value_operator(self.tcx, trait_id)",
     tests: ["test/corpus.test.ts", "-t", "trait_default_bounds"],
   },
   {
     name: "known-assign-through-dictionary",
-    breaks: "a known type's `+=` call, a `Wrapping`'s, is a dictionary's, which std's of it hasn't",
+    breaks:
+      "a known type's `+=` call, a `Wrapping`'s, is a dictionary's, which std's of it hasn't",
     file: "src/lower/traits/calls.rs",
     find: "            || crate::lower::recognition::assign_operator(self.tcx, trait_id).is_some()\n",
     replace: "",
@@ -344,23 +413,27 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dictionary-big-shift-amount",
-    breaks: "a dictionary's `Shl<u64>` of a `u32` shifts a JS number by a BigInt, which JS throws at",
+    breaks:
+      "a dictionary's `Shl<u64>` of a `u32` shifts a JS number by a BigInt, which JS throws at",
     file: "src/lower/traits/calls.rs",
-    find: "let b = crate::lower::std_types::number::shift_amount_of(\n                    op,\n                    b.expect(\"two operands\"),\n                    ty,\n                    tr.args.type_at(1),\n                );",
-    replace: "let b = b.expect(\"two operands\");",
+    find: 'let b = crate::lower::std_types::number::shift_amount_of(\n                    op,\n                    b.expect("two operands"),\n                    ty,\n                    tr.args.type_at(1),\n                );',
+    replace: 'let b = b.expect("two operands");',
     tests: ["test/corpus.test.ts", "-t", "generic_bitwise_operators"],
   },
   {
     name: "mut-mut-object-to-generic-given",
-    breaks: "a `&mut &mut` of an object given to generic code is a box short, read as the object's field of `undefined`",
+    breaks:
+      "a `&mut &mut` of an object given to generic code is a box short, read as the object's field of `undefined`",
     file: "src/lower/traits/calls.rs",
     find: "        if crate_call\n            && let Some(ty) = generic_args.types().find(|&ty| {\n",
-    replace: "        if false\n            && let Some(ty) = generic_args.types().find(|&ty| {\n",
+    replace:
+      "        if false\n            && let Some(ty) = generic_args.types().find(|&ty| {\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_mut_object_to_generic.rs$"],
   },
   {
     name: "rest-value-read-as-dyn",
-    breaks: "a closure's rest arguments read, `args.iter()`, through the js crate's `Deref` of a `dyn Rest`, is taken for the `dyn`'s dictionary's, refused",
+    breaks:
+      "a closure's rest arguments read, `args.iter()`, through the js crate's `Deref` of a `dyn Rest`, is taken for the `dyn`'s dictionary's, refused",
     file: "src/lower/traits/calls.rs",
     find: "        if bindings::reads_rest_value(self.tcx, trait_id, tr.self_ty()) {\n",
     replace: "        if false {\n",
@@ -368,15 +441,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "given-evidence-ignored",
-    breaks: "std's compiled `try_fold` a JS iterator's `tryFold` calls is given a `ControlFlow`'s `Try`, not `$tryOf(broke)`, so what breaks it isn't asked (ADR 0913)",
+    breaks:
+      "std's compiled `try_fold` a JS iterator's `tryFold` calls is given a `ControlFlow`'s `Try`, not `$tryOf(broke)`, so what breaks it isn't asked (ADR 0913)",
     file: "src/lower/traits/calls.rs",
     find: "                        Some((_, dictionary)) => values.push(dictionary.clone()),\n",
-    replace: "                        Some(_) => values.push(self.dictionary(bound, span)?),\n",
-    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+    replace:
+      "                        Some(_) => values.push(self.dictionary(bound, span)?),\n",
+    tests: [
+      "test/std-package.test.ts",
+      "-t",
+      "the committed @rust-js/std is std's bodies",
+    ],
   },
   {
     name: "identity-eq-trait-call-resolved",
-    breaks: "a trait call of `==` of a type whose `PartialEq` is `ptr::eq` without a `Hash` resolves to the impl's `eq`",
+    breaks:
+      "a trait call of `==` of a type whose `PartialEq` is `ptr::eq` without a `Hash` resolves to the impl's `eq`",
     file: "src/lower/traits/calls.rs",
     find: "            && self.eq_by_address(tr.self_ty());\n",
     replace: "            && self.equal_only_to_itself(tr.self_ty());\n",
@@ -384,7 +464,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "instance-facts-library",
-    breaks: "what a function a consumer compiles asks of its type parameters is read of its library's manifest, which has none of it, so `footprint` is given no size (ADRs 0145, 0914)",
+    breaks:
+      "what a function a consumer compiles asks of its type parameters is read of its library's manifest, which has none of it, so `footprint` is given no size (ADRs 0145, 0914)",
     file: "src/lower/traits/calls.rs",
     find: "            || self.krate.foreign.is_instance(id)\n            || crate::lower::recognition::is_compiled_std",
     replace: "            || crate::lower::recognition::is_compiled_std",
@@ -392,15 +473,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "given-drop-ignored",
-    breaks: "a drop given for a type parameter by index, a compiled fold's `B`'s, is the type's own, `undefined` of `()` (#424)",
+    breaks:
+      "a drop given for a type parameter by index, a compiled fold's `B`'s, is the type's own, `undefined` of `()` (#424)",
     file: "src/lower/traits/calls.rs",
     find: "                Slot::Drop(index) if let Some((_, drop)) = dropped.iter().find(|(at, _)| *at == index) => {",
-    replace: "                Slot::Drop(index) if false && let Some((_, drop)) = dropped.iter().find(|(at, _)| *at == index) => {",
-    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+    replace:
+      "                Slot::Drop(index) if false && let Some((_, drop)) = dropped.iter().find(|(at, _)| *at == index) => {",
+    tests: [
+      "test/std-package.test.ts",
+      "-t",
+      "the committed @rust-js/std is std",
+    ],
   },
   {
     name: "class-trait-call-through-dictionary",
-    breaks: "a method of a trait of classes is called through a dictionary no class has, `reactDOMRootRootType.render(a, 1)`, not `a.render(1)` (rd283)",
+    breaks:
+      "a method of a trait of classes is called through a dictionary no class has, `reactDOMRootRootType.render(a, 1)`, not `a.render(1)` (rd283)",
     file: "src/lower/traits/calls.rs",
     find: "        if crate::lower::classes::is_class_trait(self.tcx, trait_id) {\n",
     replace: "        if false {\n",

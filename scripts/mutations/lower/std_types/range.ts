@@ -4,11 +4,17 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "range-count-unfolded",
-    breaks: "a range's count of numbers known, `(1..4).len()`, is `Math.max(4 - 1, 0)`, not `3`",
+    breaks:
+      "a range's count of numbers known, `(1..4).len()`, is `Math.max(4 - 1, 0)`, not `3`",
     file: "src/lower/std_types/range.rs",
     find: "    if let (Some(start), Some(end)) = (start.as_int(), end.as_int()) {\n",
-    replace: "    if let (Some(start), Some(end), false) = (start.as_int(), end.as_int(), true) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(range_values|len_made_in_place)\\.rs$"],
+    replace:
+      "    if let (Some(start), Some(end), false) = (start.as_int(), end.as_int(), true) {\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(range_values|len_made_in_place)\\.rs$",
+    ],
     snapshots: true,
   },
   {
@@ -16,16 +22,17 @@ export const mutations: Mutation[] = [
     breaks: "`(1..=7).contains(&7)` is false",
     file: "src/lower/std_types/range.rs",
     find: "                    compare(Op::Le, item, end.clone()),\n                ],\n                (RangeKind::From, [start])",
-    replace: "                    compare(Op::Lt, item, end.clone()),\n                ],\n                (RangeKind::From, [start])",
-    tests: ["test/corpus.test.ts","-t","range_values"],
+    replace:
+      "                    compare(Op::Lt, item, end.clone()),\n                ],\n                (RangeKind::From, [start])",
+    tests: ["test/corpus.test.ts", "-t", "range_values"],
   },
   {
     name: "range-debug-inclusive-dots",
     breaks: "`{:?}` of `1..=6` is `1..6`",
     file: "src/lower/std_types/range.rs",
-    find: "            RangeKind::Inclusive | RangeKind::ToInclusive => \"..=\",",
-    replace: "            RangeKind::ToInclusive => \"..=\",",
-    tests: ["test/corpus.test.ts","-t","range_values"],
+    find: '            RangeKind::Inclusive | RangeKind::ToInclusive => "..=",',
+    replace: '            RangeKind::ToInclusive => "..=",',
+    tests: ["test/corpus.test.ts", "-t", "range_values"],
   },
   {
     name: "char-range-contains-by-units",
@@ -37,63 +44,98 @@ export const mutations: Mutation[] = [
   },
   {
     name: "range-literal-arithmetic-held",
-    breaks: "a range literal's bound that does nothing but isn't a read, `i + 1`, is held in a `const range` read by its fields",
+    breaks:
+      "a range literal's bound that does nothing but isn't a read, `i + 1`, is held in a `const range` read by its fields",
     file: "src/lower/std_types/range.rs",
     find: "                    Prop::Field(field, value) if field == name && (value.reads_same() || !value.has_effects()) => {\n",
-    replace: "                    Prop::Field(field, value) if field == name && value.reads_same() => {\n",
-    tests: ["test/lowering-loops.test.ts", "-t", "whose end is a call holds it first"],
+    replace:
+      "                    Prop::Field(field, value) if field == name && value.reads_same() => {\n",
+    tests: [
+      "test/lowering-loops.test.ts",
+      "-t",
+      "whose end is a call holds it first",
+    ],
   },
   {
     name: "mir-tidy-range-items-eager",
-    breaks: "`(0..n).find(f)` from MIR is `$range(0, n).find(f)`, an array of all n numbers made before the first is tried",
+    breaks:
+      "`(0..n).find(f)` from MIR is `$range(0, n).find(f)`, an array of all n numbers made before the first is tried",
     file: "src/lower/std_types/range.rs",
     find: "    Some(Expr::call_helper(LAZY_RANGE, vec![range.start.clone(), end]))\n",
-    replace: "    Some(Expr::call_helper(\"$iter\", vec![Expr::call_helper(\"$range\", vec![range.start.clone(), end])]))\n",
-    tests: ["test/lowering-iterators.test.ts", "-t", "a range made where it's stepped"],
+    replace:
+      '    Some(Expr::call_helper("$iter", vec![Expr::call_helper("$range", vec![range.start.clone(), end])]))\n',
+    tests: [
+      "test/lowering-iterators.test.ts",
+      "-t",
+      "a range made where it's stepped",
+    ],
   },
   {
     name: "mir-tidy-range-items-chars",
-    breaks: "a range of `char`s made where it's stepped is `$lazyRange(\"a\", \"e\")`, which counts text as numbers",
+    breaks:
+      'a range of `char`s made where it\'s stepped is `$lazyRange("a", "e")`, which counts text as numbers',
     file: "src/lower/std_types/range.rs",
     find: "    if range.back || !matches!(range.start.kind, js::ExprKind::Num(_)) {\n",
     replace: "    if range.back {\n",
-    tests: ["test/lowering-iterators.test.ts", "-t", "a range made where it's stepped"],
+    tests: [
+      "test/lowering-iterators.test.ts",
+      "-t",
+      "a range made where it's stepped",
+    ],
   },
   {
     name: "mir-tidy-range-items-lent",
-    breaks: "a range made where it's stepped stays lent, `$lent($lazyRange(0, n)).find(f)`, though nothing else steps it",
+    breaks:
+      "a range made where it's stepped stays lent, `$lent($lazyRange(0, n)).find(f)`, though nothing else steps it",
     file: "src/lower/std_types/range.rs",
     find: "    if let Some(made) = lazy_range(crate::lower::iterators::unlent(e)) {\n",
     replace: "    if let Some(made) = lazy_range(e) {\n",
-    tests: ["test/lowering-iterators.test.ts", "-t", "a range made where it's stepped"],
+    tests: [
+      "test/lowering-iterators.test.ts",
+      "-t",
+      "a range made where it's stepped",
+    ],
   },
   {
     name: "mir-tidy-lazy-range-end-unfolded",
-    breaks: "`(1..=5).filter(f)` from MIR is `$lazyRange(1, 5 + 1)`, not `$lazyRange(1, 6)`",
+    breaks:
+      "`(1..=5).filter(f)` from MIR is `$lazyRange(1, 5 + 1)`, not `$lazyRange(1, 6)`",
     file: "src/lower/std_types/range.rs",
     find: "            Some(n) => Expr::int(n + 1),\n            None => Expr::bin(Op::Add, range.end.clone(), Expr::int(1)),\n",
-    replace: "            Some(_) | None => Expr::bin(Op::Add, range.end.clone(), Expr::int(1)),\n",
-    tests: ["test/lowering-iterators.test.ts", "-t", "a range mapped and collected"],
+    replace:
+      "            Some(_) | None => Expr::bin(Op::Add, range.end.clone(), Expr::int(1)),\n",
+    tests: [
+      "test/lowering-iterators.test.ts",
+      "-t",
+      "a range mapped and collected",
+    ],
   },
   {
     name: "range-steps-back-forward",
-    breaks: "`(1..4).rev()` and `range.next_back()` step the range from its start",
+    breaks:
+      "`(1..4).rev()` and `range.next_back()` step the range from its start",
     file: "src/lower/std_types/range.rs",
-    find: "            (RangeKind::Exclusive, true) => \"$rangeNextBack\",\n",
-    replace: "            (RangeKind::Exclusive, true) => \"$rangeNext\",\n",
+    find: '            (RangeKind::Exclusive, true) => "$rangeNextBack",\n',
+    replace: '            (RangeKind::Exclusive, true) => "$rangeNext",\n',
     tests: ["test/corpus.test.ts", "-t", "iterator_back_ends"],
   },
   {
     name: "inclusive-range-back-refused",
-    breaks: "`(250..=255u8).rev()` and an inclusive range's `next_back()` are refused",
+    breaks:
+      "`(250..=255u8).rev()` and an inclusive range's `next_back()` are refused",
     file: "src/lower/std_types/range.rs",
-    find: "            (RangeKind::Inclusive, true) => \"$rangeInclusiveNextBack\",\n",
+    find: '            (RangeKind::Inclusive, true) => "$rangeInclusiveNextBack",\n',
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "byte_ascii|range_inclusive_next_back"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "byte_ascii|range_inclusive_next_back",
+    ],
   },
   {
     name: "range-count-inclusive-short",
-    breaks: "an inclusive range's `len()` and `size_hint()` count one fewer than it has",
+    breaks:
+      "an inclusive range's `len()` and `size_hint()` count one fewer than it has",
     file: "src/lower/std_types/range.rs",
     find: "        RangeKind::Inclusive => Expr::bin(Op::Add, gap, Expr::int(1)),\n",
     replace: "",
@@ -103,35 +145,35 @@ export const mutations: Mutation[] = [
     name: "range-count-negative",
     breaks: "a range stepped past its end counts below zero",
     file: "src/lower/std_types/range.rs",
-    find: "    Expr::call(Expr::member(Expr::var(\"Math\"), \"max\"), vec![gap, Expr::int(0)])\n",
+    find: '    Expr::call(Expr::member(Expr::var("Math"), "max"), vec![gap, Expr::int(0)])\n',
     replace: "    gap\n",
     tests: ["test/corpus.test.ts", "-t", "^range_size_hint.rs$"],
   },
   {
-    "name": "mir-range-len-refused",
-    "breaks": "`r.len()` of a range of numbers from MIR is refused",
-    "file": "src/lower/std_types/range.rs",
-    "find": "        let (start, end) = range_bounds(it)?;\n",
-    "replace": "        let (start, end) = range_bounds(it).filter(|_| false)?;\n",
-    "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "range_values"
-    ]
+    name: "mir-range-len-refused",
+    breaks: "`r.len()` of a range of numbers from MIR is refused",
+    file: "src/lower/std_types/range.rs",
+    find: "        let (start, end) = range_bounds(it)?;\n",
+    replace:
+      "        let (start, end) = range_bounds(it).filter(|_| false)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "range_values"],
   },
 
   {
     name: "range-bounds-literal-read",
-    breaks: "a range made where its bounds are taken is read, `{ start: 2, end: 5 }.start`, not its fields",
+    breaks:
+      "a range made where its bounds are taken is read, `{ start: 2, end: 5 }.start`, not its fields",
     file: "src/lower/std_types/range.rs",
     find: "                    let held = held.unwrap_or_else(|| Expr::member(range.clone(), field));\n",
-    replace: "                    let held = Expr::member(range.clone(), field);\n",
+    replace:
+      "                    let held = Expr::member(range.clone(), field);\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^btree_range_bounds.rs$"],
   },
   {
     name: "range-bounds-spilled-twice",
-    breaks: "a range's value that doesn't read the same is read once a bound, and made twice",
+    breaks:
+      "a range's value that doesn't read the same is read once a bound, and made twice",
     file: "src/lower/std_types/range.rs",
     find: "        let range = match literal || range.reads_same() {\n",
     replace: "        let range = match true {\n",
@@ -140,76 +182,89 @@ export const mutations: Mutation[] = [
   },
   {
     name: "range-skip-stepped",
-    breaks: "`skip(n)` of a range isn't its start moved up, `$lazyRange(0, b).drop(n)` (#231)",
+    breaks:
+      "`skip(n)` of a range isn't its start moved up, `$lazyRange(0, b).drop(n)` (#231)",
     file: "src/lower/std_types/range.rs",
-    find: "        (\"drop\", [n]) if n.reads_same() => {\n",
-    replace: "        (\"drop\", [n]) if false && n.reads_same() => {\n",
+    find: '        ("drop", [n]) if n.reads_same() => {\n',
+    replace: '        ("drop", [n]) if false && n.reads_same() => {\n',
     tests: ["test/corpus.test.ts", "-t", "^range_steps_known.rs$"],
     snapshots: true,
   },
   {
     name: "range-own-nth-stepped",
-    breaks: "a range's own `nth(n)` isn't `$rangeNth(r, n)`, but its iterator's, whose `nth` is the same arithmetic (#231)",
+    breaks:
+      "a range's own `nth(n)` isn't `$rangeNth(r, n)`, but its iterator's, whose `nth` is the same arithmetic (#231)",
     file: "src/lower/std_types/range.rs",
-    find: "            (IterMethod::Nth, RangeKind::Exclusive, false) => \"$rangeNth\",\n",
+    find: '            (IterMethod::Nth, RangeKind::Exclusive, false) => "$rangeNth",\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
     snapshots: true,
   },
   {
     name: "range-own-step-chars",
-    breaks: "a range of `char`s is stepped by `$rangeNth`'s arithmetic, `('a'..'z').nth(2)` giving `\"a2\"`",
+    breaks:
+      "a range of `char`s is stepped by `$rangeNth`'s arithmetic, `('a'..'z').nth(2)` giving `\"a2\"`",
     file: "src/lower/std_types/range.rs",
     find: "        let num = self.range_index(reversed.unwrap_or(range)).and_then(Num::of)?;\n",
-    replace: "        let num = self.range_index(reversed.unwrap_or(range)).and_then(Num::of).unwrap_or(Num::U32);\n",
+    replace:
+      "        let num = self.range_index(reversed.unwrap_or(range)).and_then(Num::of).unwrap_or(Num::U32);\n",
     tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
   },
   {
     name: "range-nth-back-stepped",
-    breaks: "a reversed range's `nth(n)` isn't `$rangeNthBack(r, n)`, but its iterator's, whose `nth` is the same arithmetic (#231)",
+    breaks:
+      "a reversed range's `nth(n)` isn't `$rangeNthBack(r, n)`, but its iterator's, whose `nth` is the same arithmetic (#231)",
     file: "src/lower/std_types/range.rs",
-    find: "            (IterMethod::Nth, RangeKind::Exclusive, true) => \"$rangeNthBack\",\n",
+    find: '            (IterMethod::Nth, RangeKind::Exclusive, true) => "$rangeNthBack",\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
     snapshots: true,
   },
   {
     name: "range-inclusive-nth-exclusive",
-    breaks: "`(a..=b).nth(n)` is an exclusive range's, giving none at its end `b`",
+    breaks:
+      "`(a..=b).nth(n)` is an exclusive range's, giving none at its end `b`",
     file: "src/lower/std_types/range.rs",
-    find: "            (IterMethod::Nth, RangeKind::Inclusive, false) => \"$rangeInclusiveNth\",\n",
-    replace: "            (IterMethod::Nth, RangeKind::Inclusive, false) => \"$rangeNth\",\n",
+    find: '            (IterMethod::Nth, RangeKind::Inclusive, false) => "$rangeInclusiveNth",\n',
+    replace:
+      '            (IterMethod::Nth, RangeKind::Inclusive, false) => "$rangeNth",\n',
     tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
   },
   {
     name: "range-inclusive-first-exclusive",
     breaks: "`(3..=3).rev().last()` is none, as an exclusive range's would be",
     file: "src/lower/std_types/range.rs",
-    find: "            (IterMethod::Last, RangeKind::Inclusive, true) => \"$rangeInclusiveFirst\",\n",
-    replace: "            (IterMethod::Last, RangeKind::Inclusive, true) => \"$rangeFirst\",\n",
+    find: '            (IterMethod::Last, RangeKind::Inclusive, true) => "$rangeInclusiveFirst",\n',
+    replace:
+      '            (IterMethod::Last, RangeKind::Inclusive, true) => "$rangeFirst",\n',
     tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
   },
   {
     name: "reversed-range-of-kept",
-    breaks: "a reversed range made in place is read through its `$iterator`'s `.of`, not its bounds",
+    breaks:
+      "a reversed range made in place is read through its `$iterator`'s `.of`, not its bounds",
     file: "src/lower/std_types/range.rs",
-    find: "        js::ExprKind::Member(made, field) if field == \"of\" => {\n",
-    replace: "        js::ExprKind::Member(made, field) if field == \"of\" && false => {\n",
+    find: '        js::ExprKind::Member(made, field) if field == "of" => {\n',
+    replace:
+      '        js::ExprKind::Member(made, field) if field == "of" && false => {\n',
     tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
     snapshots: true,
   },
   {
     name: "reversed-range-drop-stepped",
-    breaks: "`skip(n)` of a reversed range isn't its end moved down, `.drop(n)` of it (#231)",
+    breaks:
+      "`skip(n)` of a reversed range isn't its end moved down, `.drop(n)` of it (#231)",
     file: "src/lower/std_types/range.rs",
-    find: "            if method != \"drop\" || !range.back || !n.reads_same() || range.end.as_int().is_none() {\n",
-    replace: "            if true || method != \"drop\" || !range.back || !n.reads_same() || range.end.as_int().is_none() {\n",
+    find: '            if method != "drop" || !range.back || !n.reads_same() || range.end.as_int().is_none() {\n',
+    replace:
+      '            if true || method != "drop" || !range.back || !n.reads_same() || range.end.as_int().is_none() {\n',
     tests: ["test/corpus.test.ts", "-t", "^range_own_steps.rs$"],
     snapshots: true,
   },
   {
     name: "steps-a-range-not-reversed",
-    breaks: "a `rev()` of a range isn't said to step a range's numbers, so its `step_by` held steps each one (#231)",
+    breaks:
+      "a `rev()` of a range isn't said to step a range's numbers, so its `step_by` held steps each one (#231)",
     file: "src/lower/std_types/range.rs",
     find: "        let source = (self.recognition().reversed(ty)).or_else(|| {\n",
     replace: "        let source = None.or_else(|| {\n",
@@ -217,33 +272,39 @@ export const mutations: Mutation[] = [
   },
   {
     name: "range-step-by-unfolded",
-    breaks: "`$stepBy($lazyRange(a, b), n)` isn't folded into `$lazyRange(a, b, n)` (#231)",
+    breaks:
+      "`$stepBy($lazyRange(a, b), n)` isn't folded into `$lazyRange(a, b, n)` (#231)",
     file: "src/lower/std_types/range.rs",
-    find: "    if callee.helper_name() == Some(\"$stepBy\")\n        && let [source, n] = &args[..]\n",
-    replace: "    if callee.helper_name() == Some(\"$stepByNot\")\n        && let [source, n] = &args[..]\n",
+    find: '    if callee.helper_name() == Some("$stepBy")\n        && let [source, n] = &args[..]\n',
+    replace:
+      '    if callee.helper_name() == Some("$stepByNot")\n        && let [source, n] = &args[..]\n',
     tests: ["test/corpus.test.ts", "-t", "^range_steps_known.rs$"],
     snapshots: true,
   },
   {
     name: "range-back-step-by-unfolded",
-    breaks: "a reversed range's `$stepBy` isn't folded into `$lazyRangeBack(a, b, n)` (#231)",
+    breaks:
+      "a reversed range's `$stepBy` isn't folded into `$lazyRangeBack(a, b, n)` (#231)",
     file: "src/lower/std_types/range.rs",
-    find: "            if callee.helper_name() == Some(\"$stepBy\")\n                && let [made, n] = &args[..]\n",
-    replace: "            if callee.helper_name() == Some(\"$stepByNot\")\n                && let [made, n] = &args[..]\n",
+    find: '            if callee.helper_name() == Some("$stepBy")\n                && let [made, n] = &args[..]\n',
+    replace:
+      '            if callee.helper_name() == Some("$stepByNot")\n                && let [made, n] = &args[..]\n',
     tests: ["test/corpus.test.ts", "-t", "^range_steps_known.rs$"],
     snapshots: true,
   },
   {
     name: "held-rev-range-bounds-of",
-    breaks: "a held reversed range's bounds are read as one made in place's, `.of`",
+    breaks:
+      "a held reversed range's bounds are read as one made in place's, `.of`",
     file: "src/lower/std_types/range.rs",
-    find: "                true => \"of\",\n                false => \"iter\",",
-    replace: "                true => \"of\",\n                false => \"of\",",
+    find: '                true => "of",\n                false => "iter",',
+    replace: '                true => "of",\n                false => "of",',
     tests: ["test/corpus.test.ts", "-t", "^std_rev.rs$"],
   },
   {
     name: "range-from-bounds-dropped",
-    breaks: "an `a..` of integers is stepped without its type's bounds, `$rangeFromNext(bytes)`, and never wraps past its last (#414)",
+    breaks:
+      "an `a..` of integers is stepped without its type's bounds, `$rangeFromNext(bytes)`, and never wraps past its last (#414)",
     file: "src/lower/std_types/range.rs",
     find: "            (RangeKind::From, Some(num)) => {\n",
     replace: "            (RangeKind::From, Some(num)) if false => {\n",
@@ -251,7 +312,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "range-lent-count-kept",
-    breaks: "a range lent to `count()` or `last()`, `r.by_ref().count()`, isn't used up, its next after a number where Rust's is `None` (#414)",
+    breaks:
+      "a range lent to `count()` or `last()`, `r.by_ref().count()`, isn't used up, its next after a number where Rust's is `None` (#414)",
     file: "src/lower/std_types/range.rs",
     find: "        let lent = lent && reversed.is_none();\n",
     replace: "        let lent = false && reversed.is_none();\n",
@@ -259,7 +321,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "range-state-unwrapped",
-    breaks: "an inclusive range stepped past its type's last reads its bounds unwrapped, `128..=127`, not std's exhausted `-128..=127 (exhausted)` (#414)",
+    breaks:
+      "an inclusive range stepped past its type's last reads its bounds unwrapped, `128..=127`, not std's exhausted `-128..=127 (exhausted)` (#414)",
     file: "src/lower/std_types/range.rs",
     find: "        (vec![num.wrap(start), num.wrap(end)], Some(exhausted))\n",
     replace: "        (vec![start, end], Some(exhausted))\n",
@@ -267,15 +330,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "range-bounds-exhausted-included",
-    breaks: "an exhausted inclusive range's `RangeBounds` end is its end, included, which a `BTreeMap::range` panics of, where std's excludes its start (#414)",
+    breaks:
+      "an exhausted inclusive range's `RangeBounds` end is its end, included, which a `BTreeMap::range` panics of, where std's excludes its start (#414)",
     file: "src/lower/std_types/range.rs",
     find: "            return Ok(Some([from, Expr::cond(exhausted, before, to)]));\n",
-    replace: "            let _ = (exhausted, before);\n            return Ok(Some([from, to]));\n",
+    replace:
+      "            let _ = (exhausted, before);\n            return Ok(Some([from, to]));\n",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
   },
   {
     name: "range-eq-exhausted-ignored",
-    breaks: "`==` of an exhausted inclusive range and a fresh one of the same bounds is true, where std's derive compares `exhausted` too (#414)",
+    breaks:
+      "`==` of an exhausted inclusive range and a fresh one of the same bounds is true, where std's derive compares `exhausted` too (#414)",
     file: "src/lower/std_types/range.rs",
     find: "            (Some(x), None) | (None, Some(x)) => Some(Expr::unary(UnaryOp::Not, x)),\n",
     replace: "            (Some(_), None) | (None, Some(_)) => None,\n",
@@ -283,7 +349,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "range-state-held-unread",
-    breaks: "an inclusive range used up by a fold reads its own bounds, past each other, not Rust's in `exhausted` (#414)",
+    breaks:
+      "an inclusive range used up by a fold reads its own bounds, past each other, not Rust's in `exhausted` (#414)",
     file: "src/lower/std_types/range.rs",
     find: "        let own = Expr::bin(Op::Coalesce, held.clone(), range.clone());\n",
     replace: "        let own = range.clone();\n",
@@ -291,18 +358,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "steps-lent-inclusive-never",
-    breaks: "a `collect()` of a lent inclusive range, or a `map` of one, steps it by `next`, past its end, `4..=3`, where std's `fold` leaves it exhausted at its last (#414)",
+    breaks:
+      "a `collect()` of a lent inclusive range, or a `map` of one, steps it by `next`, past its end, `4..=3`, where std's `fold` leaves it exhausted at its last (#414)",
     file: "src/lower/std_types/range.rs",
     find: "                    if self.range_kind(*inner) == Some(RangeKind::Inclusive))\n",
-    replace: "                    if false && self.range_kind(*inner) == Some(RangeKind::Inclusive))\n",
+    replace:
+      "                    if false && self.range_kind(*inner) == Some(RangeKind::Inclusive))\n",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
   },
   {
     name: "range-full-eq-bound-asked",
-    breaks: "`==` of two `RangeFull`s asks the bound type they haven't, and rust-js panics, as `range-implement-clone.rs` found",
+    breaks:
+      "`==` of two `RangeFull`s asks the bound type they haven't, and rust-js panics, as `range-implement-clone.rs` found",
     file: "src/lower/std_types/range.rs",
     find: "        let index = self.range_index(ty);\n        let (a, a_exhausted) = self.range_state(a, ty, out);\n",
-    replace: "        let index = Some(self.range_index(ty).expect(\"a bound's type\"));\n        let (a, a_exhausted) = self.range_state(a, ty, out);\n",
+    replace:
+      '        let index = Some(self.range_index(ty).expect("a bound\'s type"));\n        let (a, a_exhausted) = self.range_state(a, ty, out);\n',
     tests: ["test/corpus.test.ts", "-t", "^range_values.rs$"],
   },
 ];

@@ -4,7 +4,8 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "bound-methods-private-declared",
-    breaks: "a private binding of a struct's impl is declared its interface's method, a JS caller's to call",
+    breaks:
+      "a private binding of a struct's impl is declared its interface's method, a JS caller's to call",
     file: "src/lower/bindings.rs",
     find: "        .filter(|&item| tcx.visibility(item).is_public() && is_binding(tcx, item))\n",
     replace: "        .filter(|&item| is_binding(tcx, item))\n",
@@ -12,39 +13,62 @@ export const mutations: Mutation[] = [
   },
   {
     name: "numbered-enum-named",
-    breaks: "a `#[repr(u8)]` enum's variant is its name, `\"Empty\"`, where it's its number, `0`, as React's `EMPTY_ARRAY` is",
+    breaks:
+      "a `#[repr(u8)]` enum's variant is its name, `\"Empty\"`, where it's its number, `0`, as React's `EMPTY_ARRAY` is",
     file: "src/lower/bindings.rs",
     find: "    narrow\n        && adt.is_enum()\n",
     replace: "    false\n        && narrow\n        && adt.is_enum()\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variant is its number"],
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "a repr enum's variant is its number",
+    ],
   },
   {
     name: "numbered-enum-wide",
-    breaks: "a `#[repr(u64)]` enum's variant is a JS number, where a 64-bit integer is a BigInt, so a caller's name of one is shown as nothing",
+    breaks:
+      "a `#[repr(u64)]` enum's variant is a JS number, where a 64-bit integer is a BigInt, so a caller's name of one is shown as nothing",
     file: "src/lower/bindings.rs",
     find: "        Some(IntegerType::Fixed(int, _)) => int.size().bits() <= 32,\n",
-    replace: "        Some(IntegerType::Fixed(int, _)) => int.size().bits() <= 64,\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variant is its number"],
+    replace:
+      "        Some(IntegerType::Fixed(int, _)) => int.size().bits() <= 64,\n",
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "a repr enum's variant is its number",
+    ],
   },
   {
     name: "numbered-given-name-a-string",
-    breaks: "a `#[repr(u8)]` enum's variant named `#[rust_js::name = \"UNTERMINATED\"]` is the string `'UNTERMINATED'`, where it's its number, its module's `const UNTERMINATED = 0;`, as React's cache's",
+    breaks:
+      "a `#[repr(u8)]` enum's variant named `#[rust_js::name = \"UNTERMINATED\"]` is the string `'UNTERMINATED'`, where it's its number, its module's `const UNTERMINATED = 0;`, as React's cache's",
     file: "src/lower/bindings.rs",
     find: "        && (adt.variants().iter()).all(|v| v.fields.is_empty() && given_bool(tcx, v.def_id).is_none())\n",
-    replace: "        && (adt.variants().iter()).all(|v| v.fields.is_empty() && given_name(tcx, v.def_id).is_none() && given_bool(tcx, v.def_id).is_none())\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variants are its module's consts"],
+    replace:
+      "        && (adt.variants().iter()).all(|v| v.fields.is_empty() && given_name(tcx, v.def_id).is_none() && given_bool(tcx, v.def_id).is_none())\n",
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "a repr enum's variants are its module's consts",
+    ],
   },
   {
     name: "numbered-given-name-unchecked",
-    breaks: "a numbered enum's variant named `\"un-terminated\"`, which can't name a `const`, is written `const un-terminated = 0;`, JS that doesn't parse, where it's refused",
+    breaks:
+      "a numbered enum's variant named `\"un-terminated\"`, which can't name a `const`, is written `const un-terminated = 0;`, JS that doesn't parse, where it's refused",
     file: "src/lower/bindings.rs",
     find: "                    && !crate::names::is_identifier(&given)\n",
     replace: "                    && given.is_empty()\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variants are its module's consts"],
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "a repr enum's variants are its module's consts",
+    ],
   },
   {
     name: "any-length-a-strings",
-    breaks: "an array's `get length` is taken for a JS string's, below `2^32 - 1`, so two steps below it lose their wrap",
+    breaks:
+      "an array's `get length` is taken for a JS string's, below `2^32 - 1`, so two steps below it lose their wrap",
     file: "src/lower/bindings.rs",
     find: "            .is_some_and(|this| this.peel_refs().is_str())\n",
     replace: "            .is_some()\n",
@@ -55,20 +79,30 @@ export const mutations: Mutation[] = [
     breaks: "`REACT_ELEMENT_TYPE` of a symbol is `reactElementType`",
     file: "src/lower/bindings.rs",
     find: "        DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some_and(|held| primitive(tcx, held)) => {\n",
-    replace: "        DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some_and(|held| primitive(tcx, held) && false) => {\n",
-    tests: ["test/lowering-names.test.ts", "-t", "a thread-local of a primitive is named"],
+    replace:
+      "        DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some_and(|held| primitive(tcx, held) && false) => {\n",
+    tests: [
+      "test/lowering-names.test.ts",
+      "-t",
+      "a thread-local of a primitive is named",
+    ],
   },
   {
     name: "symbol-not-primitive",
     breaks: "a symbol isn't taken for a primitive, `reactElementType`",
     file: "src/lower/bindings.rs",
-    find: "                || written_types(tcx, adt.did()).as_ref().and_then(Written::keyword) == Some(\"symbol\"))\n",
+    find: '                || written_types(tcx, adt.did()).as_ref().and_then(Written::keyword) == Some("symbol"))\n',
     replace: "                || false)\n",
-    tests: ["test/lowering-names.test.ts", "-t", "a thread-local of a primitive is named"],
+    tests: [
+      "test/lowering-names.test.ts",
+      "-t",
+      "a thread-local of a primitive is named",
+    ],
   },
   {
     name: "directive-owner-stops-at-coroutine",
-    breaks: "an `async fn`'s directive is its body's coroutine's, which no function writes",
+    breaks:
+      "an `async fn`'s directive is its body's coroutine's, which no function writes",
     file: "src/lower/bindings.rs",
     find: "    while matches!(\n        tcx.coroutine_kind(owner),",
     replace: "    while false && matches!(\n        tcx.coroutine_kind(owner),",
@@ -76,7 +110,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "tagged-unit-variant-string",
-    breaks: "a discriminated union's variant without fields is its bare name, `\"pending\"`, not `{ status: \"pending\" }`",
+    breaks:
+      'a discriminated union\'s variant without fields is its bare name, `"pending"`, not `{ status: "pending" }`',
     file: "src/lower/bindings.rs",
     find: "        Some(key) => js::Expr::object(vec![js::Prop::Field(key, name)]),",
     replace: "        Some(_) => name,",
@@ -84,11 +119,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "tagged-tuple-variant-accepted",
-    breaks: "a `#[rust_js::tag]` enum's tuple variant is accepted, its fields `_0` beside the tag",
+    breaks:
+      "a `#[rust_js::tag]` enum's tuple variant is accepted, its fields `_0` beside the tag",
     file: "src/lower/bindings.rs",
     find: "                if tuple || clash {",
     replace: "                if clash {",
-    tests: ["test/diagnostics.test.ts","-t","tagged enum"],
+    tests: ["test/diagnostics.test.ts", "-t", "tagged enum"],
   },
   {
     name: "event-method-receiver-lost",
@@ -100,7 +136,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "nullable-param-unchecked",
-    breaks: "`#[rust_js::nullable(n)]` naming no `Option` parameter is accepted",
+    breaks:
+      "`#[rust_js::nullable(n)]` naming no `Option` parameter is accepted",
     file: "src/lower/bindings.rs",
     find: "                if !at.is_some_and(",
     replace: "                if false && !at.is_some_and(",
@@ -108,15 +145,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "assoc-this-not-method",
-    breaks: "a type's own function whose first parameter is `this`, `Mouse::widen(this)`, isn't a method: rust-js refuses it",
+    breaks:
+      "a type's own function whose first parameter is `this`, `Mouse::widen(this)`, isn't a method: rust-js refuses it",
     file: "src/lower/bindings.rs",
     find: "        DefKind::AssocFn => tcx.associated_item(def_id).is_method() || named_this(),",
-    replace: "        DefKind::AssocFn => tcx.associated_item(def_id).is_method(),",
+    replace:
+      "        DefKind::AssocFn => tcx.associated_item(def_id).is_method(),",
     tests: ["test/jsx-events.test.ts", "-t", "tag's element"],
   },
   {
     name: "route-marks-written",
-    breaks: "\`js::directive!\`'s and \`js::export_default!\`'s \`const _\` is written to the JS",
+    breaks:
+      "\`js::directive!\`'s and \`js::export_default!\`'s \`const _\` is written to the JS",
     file: "src/lower/bindings.rs",
     find: '    ["import", "directive", "export_default", "on_load"].iter().any(|name| {\n',
     replace: '    ["import", "on_load"].iter().any(|name| {\n',
@@ -124,23 +164,27 @@ export const mutations: Mutation[] = [
   },
   {
     name: "flatten-not-a-rest",
-    breaks: "a flattened field is a field, `{ size, children, anchor }`, not `...anchor`",
+    breaks:
+      "a flattened field is a field, `{ size, children, anchor }`, not `...anchor`",
     file: "src/lower/bindings.rs",
     find: "        .is_some_and(|field| is_flatten(tcx, field) || is_rest(tcx, field.ty(tcx, args).skip_normalization()))",
-    replace: "        .is_some_and(|field| is_rest(tcx, field.ty(tcx, args).skip_normalization()))",
+    replace:
+      "        .is_some_and(|field| is_rest(tcx, field.ty(tcx, args).skip_normalization()))",
     tests: ["test/jsx-props.test.ts", "-t", "flattened struct"],
   },
   {
     name: "on-load-const-written",
-    breaks: "`js::on_load!`'s `const _`, which holds its function, is written, `const _ = undefined`",
+    breaks:
+      "`js::on_load!`'s `const _`, which holds its function, is written, `const _ = undefined`",
     file: "src/lower/bindings.rs",
-    find: "[\"import\", \"directive\", \"export_default\", \"on_load\"]",
-    replace: "[\"import\", \"directive\", \"export_default\"]",
+    find: '["import", "directive", "export_default", "on_load"]',
+    replace: '["import", "directive", "export_default"]',
     tests: ["test/modules.test.ts", "-t", "js::on_load!"],
   },
   {
     name: "optional-component-takes-dictionary",
-    breaks: "a generic component of an `Option<JSX::Element>` takes a dictionary, `Shown(props, CDefault)`, which React never gives",
+    breaks:
+      "a generic component of an `Option<JSX::Element>` takes a dictionary, `Shown(props, CDefault)`, which React never gives",
     file: "src/lower/bindings.rs",
     find: "        ty::TyKind::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Option) => args.type_at(0),\n",
     replace: "",
@@ -148,23 +192,34 @@ export const mutations: Mutation[] = [
   },
   {
     name: "given-variant-name-ignored",
-    breaks: "a variant's `#[rust_js::name = \"not-equal\"]` is ignored: it's its Rust name, `\"NotEqual\"`, which JS never gives",
+    breaks:
+      'a variant\'s `#[rust_js::name = "not-equal"]` is ignored: it\'s its Rust name, `"NotEqual"`, which JS never gives',
     file: "src/lower/bindings.rs",
     find: "    (given_name(tcx, variant.def_id))\n        .or_else(|| given_bool(tcx, variant.def_id).map(|b| b.to_string()))\n        .unwrap_or_else(|| default_name(tcx, variant.def_id))",
     replace: "    default_name(tcx, variant.def_id)",
-    tests: ["test/js-builtins.test.ts", "-t", "Atomics are JS's, of a view of a shared buffer"],
+    tests: [
+      "test/js-builtins.test.ts",
+      "-t",
+      "Atomics are JS's, of a view of a shared buffer",
+    ],
   },
   {
     name: "given-field-name-ignored",
-    breaks: "a field's `#[rust_js::name = \"react-dom\"]` is ignored: its key is its Rust name, `react_dom`",
+    breaks:
+      'a field\'s `#[rust_js::name = "react-dom"]` is ignored: its key is its Rust name, `react_dom`',
     file: "src/lower/bindings.rs",
     find: "    let key = name_in_js(tcx, field.did);\n",
     replace: "    let key = default_name(tcx, field.did);\n",
-    tests: ["test/js-builtins.test.ts", "-t", "a struct whose JS is its JSON is stringified as it is"],
+    tests: [
+      "test/js-builtins.test.ts",
+      "-t",
+      "a struct whose JS is its JSON is stringified as it is",
+    ],
   },
   {
     name: "tagged-otherwise-not-last",
-    breaks: "an `otherwise` variant before another is taken, so the one after it is never matched",
+    breaks:
+      "an `otherwise` variant before another is taken, so the one after it is never matched",
     file: "src/lower/bindings.rs",
     find: "                    if index + 1 != variants.len() || !tuple || variant.fields.len() != 1 {\n",
     replace: "                    if !tuple || variant.fields.len() != 1 {\n",
@@ -172,7 +227,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "open-union-derive-taken",
-    breaks: "`#[derive(Clone)]` of a union with an `otherwise` copies its object as a variant of its own",
+    breaks:
+      "`#[derive(Clone)]` of a union with an `otherwise` copies its object as a variant of its own",
     file: "src/lower/bindings.rs",
     find: "            && adt.variants().iter().any(|v| is_tagged_otherwise(tcx, adt.did(), v))\n",
     replace: "            && false\n",
@@ -180,135 +236,190 @@ export const mutations: Mutation[] = [
   },
   {
     name: "named-callback-unread",
-    breaks: "no hook names its function, so `useEffect(startTicking, [])` follows `const startTicking = () => ..`",
+    breaks:
+      "no hook names its function, so `useEffect(startTicking, [])` follows `const startTicking = () => ..`",
     file: "src/lower/bindings.rs",
-    find: "    let path = [Symbol::intern(\"rust_js\"), Symbol::intern(\"named_callback\")];\n    tcx.get_attrs_by_path(def_id, &path).next().is_some()",
-    replace: "    let path = [Symbol::intern(\"rust_js\"), Symbol::intern(\"named_callback\")];\n    tcx.get_attrs_by_path(def_id, &path).next().is_some() && false",
-    tests: ["test/jsx-children.test.ts", "-t", "a closure a let names for a hook"],
+    find: '    let path = [Symbol::intern("rust_js"), Symbol::intern("named_callback")];\n    tcx.get_attrs_by_path(def_id, &path).next().is_some()',
+    replace:
+      '    let path = [Symbol::intern("rust_js"), Symbol::intern("named_callback")];\n    tcx.get_attrs_by_path(def_id, &path).next().is_some() && false',
+    tests: [
+      "test/jsx-children.test.ts",
+      "-t",
+      "a closure a let names for a hook",
+    ],
   },
   {
     name: "skips-falsy-unread",
-    breaks: "no binding skips what's falsy, so classnames is given `test ? value : undefined`",
+    breaks:
+      "no binding skips what's falsy, so classnames is given `test ? value : undefined`",
     file: "src/lower/bindings.rs",
-    find: "    let path = [Symbol::intern(\"rust_js\"), Symbol::intern(\"skips_falsy\")];\n    tcx.get_attrs_by_path(def_id, &path).next().is_some()",
-    replace: "    let path = [Symbol::intern(\"rust_js\"), Symbol::intern(\"skips_falsy\")];\n    tcx.get_attrs_by_path(def_id, &path).next().is_some() && false",
+    find: '    let path = [Symbol::intern("rust_js"), Symbol::intern("skips_falsy")];\n    tcx.get_attrs_by_path(def_id, &path).next().is_some()',
+    replace:
+      '    let path = [Symbol::intern("rust_js"), Symbol::intern("skips_falsy")];\n    tcx.get_attrs_by_path(def_id, &path).next().is_some() && false',
     tests: ["test/bindings.test.ts", "-t", "skips what's falsy"],
   },
   {
     name: "getter-export-unimported",
-    breaks: "a getter of a module's export, `get node:path#delimiter`, isn't imported",
+    breaks:
+      "a getter of a module's export, `get node:path#delimiter`, isn't imported",
     file: "src/lower/bindings.rs",
     find: "            JsForm::Call(name) | JsForm::New(name) | JsForm::Get(name) if !is_method(tcx, def_id) => Some(name),\n",
-    replace: "            JsForm::Call(name) | JsForm::New(name) if !is_method(tcx, def_id) => Some(name),\n",
+    replace:
+      "            JsForm::Call(name) | JsForm::New(name) if !is_method(tcx, def_id) => Some(name),\n",
     tests: ["test/bindings.test.ts", "-t", "a required binding"],
   },
   {
-    "name": "bool-tag-string",
-    "breaks": "a discriminated union's `#[rust_js::name = true]` tag is the string `\"true\"`",
-    "file": "src/lower/bindings.rs",
-    "find": "        Some(b) => js::Expr::bool(b),",
-    "replace": "        Some(b) => js::Expr::str(b.to_string()),",
-    "tests": ["test/lowering-structs-enums.test.ts", "-t", "tag may be a boolean"]
+    name: "bool-tag-string",
+    breaks:
+      'a discriminated union\'s `#[rust_js::name = true]` tag is the string `"true"`',
+    file: "src/lower/bindings.rs",
+    find: "        Some(b) => js::Expr::bool(b),",
+    replace: "        Some(b) => js::Expr::str(b.to_string()),",
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "tag may be a boolean",
+    ],
   },
   {
-    "name": "bool-name-of-untagged-accepted",
-    "breaks": "a boolean `rust_js::name` of an enum without a tag is accepted, its variant `true`",
-    "file": "src/lower/bindings.rs",
-    "find": "                    && declared_tag(tcx, tcx.parent(named)).is_some()\n",
-    "replace": "",
-    "tests": [
-      "test/diagnostics.test.ts",
-      "-t",
-      "boolean name of"
-    ]
+    name: "bool-name-of-untagged-accepted",
+    breaks:
+      "a boolean `rust_js::name` of an enum without a tag is accepted, its variant `true`",
+    file: "src/lower/bindings.rs",
+    find: "                    && declared_tag(tcx, tcx.parent(named)).is_some()\n",
+    replace: "",
+    tests: ["test/diagnostics.test.ts", "-t", "boolean name of"],
   },
   {
-    "name": "variant-names-unchecked",
-    "breaks": "a variant's `rust_js::name` isn't checked, only an item's",
-    "file": "src/lower/bindings.rs",
-    "find": "        for named in std::iter::once(def.to_def_id()).chain(variants) {",
-    "replace": "        for named in std::iter::once(def.to_def_id()) {",
-    "tests": [
-      "test/diagnostics.test.ts",
-      "-t",
-      "name of"
-    ]
+    name: "variant-names-unchecked",
+    breaks: "a variant's `rust_js::name` isn't checked, only an item's",
+    file: "src/lower/bindings.rs",
+    find: "        for named in std::iter::once(def.to_def_id()).chain(variants) {",
+    replace: "        for named in std::iter::once(def.to_def_id()) {",
+    tests: ["test/diagnostics.test.ts", "-t", "name of"],
   },
   {
     name: "trait-method-keyed-as-rust",
-    breaks: "a std trait's method in std's dictionary is keyed as Rust spells it, `as_ref`, where a call through it asks `asRef`",
+    breaks:
+      "a std trait's method in std's dictionary is keyed as Rust spells it, `as_ref`, where a call through it asks `asRef`",
     file: "src/lower/bindings.rs",
     find: "    fn_name(tcx, super::recognition::trait_method(tcx, trait_id, name))\n",
-    replace: "    let _ = super::recognition::trait_method(tcx, trait_id, name);\n    name.to_string()\n",
-    tests: ["test/corpus.test.ts", "-t", "^(generic_as_ref|hash_values|generic_from_str).rs$"],
+    replace:
+      "    let _ = super::recognition::trait_method(tcx, trait_id, name);\n    name.to_string()\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(generic_as_ref|hash_values|generic_from_str).rs$",
+    ],
   },
   {
     name: "repeated-name-allowed",
-    breaks: "a `#[rust_js::name]` that repeats its item's camelCase name is let through, a second way to write it",
+    breaks:
+      "a `#[rust_js::name]` that repeats its item's camelCase name is let through, a second way to write it",
     file: "src/lower/bindings.rs",
     find: "            && given == default_name(tcx, def)\n",
-    replace: "            && given == default_name(tcx, def)\n            && false\n",
-    tests: ["test/bindings.test.ts", "-t", "a generator's camelCase is the compiler's"],
+    replace:
+      "            && given == default_name(tcx, def)\n            && false\n",
+    tests: [
+      "test/bindings.test.ts",
+      "-t",
+      "a generator's camelCase is the compiler's",
+    ],
   },
   {
     name: "nullable-result-not-an-option",
-    breaks: "`#[rust_js::nullable]` on a function whose result isn't an `Option` is let through, saying nothing",
+    breaks:
+      "`#[rust_js::nullable]` on a function whose result isn't an `Option` is let through, saying nothing",
     file: "src/lower/bindings.rs",
     find: "            if let Some(message) = nullable::refused_result(tcx, def.to_def_id()) {\n",
-    replace: "            if let Some(message) = nullable::refused_result(tcx, def.to_def_id()).filter(|_| false) {\n",
-    tests: ["test/bindings.test.ts", "-t", "a nullable function's None is null"],
+    replace:
+      "            if let Some(message) = nullable::refused_result(tcx, def.to_def_id()).filter(|_| false) {\n",
+    tests: [
+      "test/bindings.test.ts",
+      "-t",
+      "a nullable function's None is null",
+    ],
   },
   {
     name: "thread-local-screaming",
-    breaks: "a thread-local keeps its `SCREAMING_SNAKE` name, `let TASK_ID_COUNTER`, where JS names a variable camelCase",
+    breaks:
+      "a thread-local keeps its `SCREAMING_SNAKE` name, `let TASK_ID_COUNTER`, where JS names a variable camelCase",
     file: "src/lower/bindings.rs",
     find: "        DefKind::Const { .. } if thread_local_value(tcx, def_id).is_some() => variable_name(tcx, def_id, name),\n",
-    replace: "        DefKind::Const { .. } if false && thread_local_value(tcx, def_id).is_some() => variable_name(tcx, def_id, name),\n",
-    tests: ["test/lowering-names.test.ts", "-t", "thread-local's SCREAMING_SNAKE"],
+    replace:
+      "        DefKind::Const { .. } if false && thread_local_value(tcx, def_id).is_some() => variable_name(tcx, def_id, name),\n",
+    tests: [
+      "test/lowering-names.test.ts",
+      "-t",
+      "thread-local's SCREAMING_SNAKE",
+    ],
   },
   {
     name: "thread-local-component-lowercase",
-    breaks: "a context's thread-local is `theme`, which JSX can't take as a component's name",
+    breaks:
+      "a context's thread-local is `theme`, which JSX can't take as a component's name",
     file: "src/lower/bindings.rs",
     find: "        true => super::upper_first(&variable),\n",
     replace: "        true => variable,\n",
-    tests: ["test/jsx-types.test.ts", "-t", "JSX context providers take any node"],
+    tests: [
+      "test/jsx-types.test.ts",
+      "-t",
+      "JSX context providers take any node",
+    ],
   },
   {
     name: "thread-local-name-taken",
-    breaks: "a thread-local named as another item of its module is renamed, `cache$1`, not kept as written",
+    breaks:
+      "a thread-local named as another item of its module is renamed, `cache$1`, not kept as written",
     file: "src/lower/bindings.rs",
     find: "        true => name.to_string(),\n        false => named,\n",
     replace: "        true => named.clone(),\n        false => named,\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "an insert in a thread-local's closure"],
+    tests: [
+      "test/lowering-cells.test.ts",
+      "-t",
+      "an insert in a thread-local's closure",
+    ],
   },
   {
     name: "thread-local-name-kept-for-private",
-    breaks: "an exported thread-local keeps its Rust name beside a private function of its camelCase name, `EMPTY_CONTEXT_OBJECT`, which JS's importer of `emptyContextObject` doesn't read (ADR 0922)",
+    breaks:
+      "an exported thread-local keeps its Rust name beside a private function of its camelCase name, `EMPTY_CONTEXT_OBJECT`, which JS's importer of `emptyContextObject` doesn't read (ADR 0922)",
     file: "src/lower/bindings.rs",
     find: "            && (!exported || exported_by_name(tcx, other))\n",
     replace: "",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "an export keeps its name beside a private item of it"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "an export keeps its name beside a private item of it",
+    ],
   },
   {
     name: "private-item-exported-by-name",
-    breaks: "a private item is taken for an export, so an exported thread-local beside a private function of its name keeps its Rust name (ADR 0922)",
+    breaks:
+      "a private item is taken for an export, so an exported thread-local beside a private function of its name keeps its Rust name (ADR 0922)",
     file: "src/lower/bindings.rs",
     find: "        && tcx.def_kind(tcx.parent(def_id)) == DefKind::Mod\n        && tcx.visibility(def_id).is_public()\n",
     replace: "        && tcx.def_kind(tcx.parent(def_id)) == DefKind::Mod\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "an export keeps its name beside a private item of it"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "an export keeps its name beside a private item of it",
+    ],
   },
   {
     name: "nullable-field-unchecked",
-    breaks: "`#[rust_js::nullable]` of a field that isn't an `Option` compiles, and does nothing it says",
+    breaks:
+      "`#[rust_js::nullable]` of a field that isn't an `Option` compiles, and does nothing it says",
     file: "src/lower/bindings.rs",
     find: "                if is_nullable(tcx, field)\n                    && nullable_option(tcx, ty).is_none()\n",
-    replace: "                if false\n                    && nullable_option(tcx, ty).is_none()\n",
+    replace:
+      "                if false\n                    && nullable_option(tcx, ty).is_none()\n",
     tests: ["test/diagnostics.test.ts", "-t", "nullable field"],
   },
   {
     name: "lazy-param-unchecked",
-    breaks: "`#[rust_js::lazy(..)]` naming no parameter compiles, and makes nothing lazy",
+    breaks:
+      "`#[rust_js::lazy(..)]` naming no parameter compiles, and makes nothing lazy",
     file: "src/lower/bindings.rs",
     find: "                if !idents.iter().any(|ident| ident.is_some_and(|ident| ident.name == name)) {\n",
     replace: "                if false {\n",
@@ -316,31 +427,48 @@ export const mutations: Mutation[] = [
   },
   {
     name: "bound-global-unexported",
-    breaks: "a `pub use` of a global binding is its module's `const`, but not exported",
+    breaks:
+      "a `pub use` of a global binding is its module's `const`, but not exported",
     file: "src/lower/bindings.rs",
     find: "            path: read,\n            export,\n",
     replace: "            path: read,\n            export: false,\n",
-    tests: ["test/lowering-bindings.test.ts", "-t", "a global binding a module names"],
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "-t",
+      "a global binding a module names",
+    ],
   },
   {
     name: "bound-global-renamed-lost",
     breaks: "`pub use js::object::keys as names` is `keys`, not `names`",
     file: "src/lower/bindings.rs",
     find: "            false => alias_name(tcx, item.owner_id.to_def_id(), ident.name),\n        };\n        let named_default",
-    replace: "            false => fn_name(tcx, binding),\n        };\n        let named_default",
-    tests: ["test/lowering-bindings.test.ts", "-t", "a global binding a module names"],
+    replace:
+      "            false => fn_name(tcx, binding),\n        };\n        let named_default",
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "-t",
+      "a global binding a module names",
+    ],
   },
   {
     name: "bound-global-of-a-method",
-    breaks: "a method binding, `this.name(..)`, is taken for a global function a module can hold",
+    breaks:
+      "a method binding, `this.name(..)`, is taken for a global function a module can hold",
     file: "src/lower/bindings.rs",
     find: "            JsForm::Call(name) if is_binding(tcx, def_id) && !is_method(tcx, def_id) && js_import(&name).is_none() => {\n",
-    replace: "            JsForm::Call(name) if is_binding(tcx, def_id) && js_import(&name).is_none() => {\n",
-    tests: ["test/lowering-bindings.test.ts", "-t", "a global binding a module names"],
+    replace:
+      "            JsForm::Call(name) if is_binding(tcx, def_id) && js_import(&name).is_none() => {\n",
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "-t",
+      "a global binding a module names",
+    ],
   },
   {
     name: "held-read-in-place",
-    breaks: "a caller that names a binding through the module that holds it reads it in place, `Object.assign(target, source)`",
+    breaks:
+      "a caller that names a binding through the module that holds it reads it in place, `Object.assign(target, source)`",
     file: "src/lower/bindings.rs",
     find: "                self.reads.insert(expr.span, read);\n",
     replace: "                let _ = read;\n",
@@ -348,23 +476,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "held-name-alone-unfollowed",
-    breaks: "a binding named alone, through its module's `use crate::assign::assign;`, is read in place",
+    breaks:
+      "a binding named alone, through its module's `use crate::assign::assign;`, is read in place",
     file: "src/lower/bindings.rs",
     find: "        let [only] = segments else { return None };\n",
-    replace: "        let [only] = segments else { return None };\n        if true {\n            return None;\n        }\n",
+    replace:
+      "        let [only] = segments else { return None };\n        if true {\n            return None;\n        }\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "named through the module"],
   },
   {
     name: "held-name-not-default",
-    breaks: "a caller imports a binding a module holds as its default and by `pub use` by its name, not as the default its functions are",
+    breaks:
+      "a caller imports a binding a module holds as its default and by `pub use` by its name, not as the default its functions are",
     file: "src/lower/bindings.rs",
-    find: "            (true, _) => Some(\"default\"),\n            (false, true) => Some(&self.name),\n",
-    replace: "            (_, true) => Some(&self.name),\n            (true, _) => Some(\"default\"),\n",
+    find: '            (true, _) => Some("default"),\n            (false, true) => Some(&self.name),\n',
+    replace:
+      '            (_, true) => Some(&self.name),\n            (true, _) => Some("default"),\n',
     tests: ["test/cargo-link.test.ts", "-t", "holds a binding"],
   },
   {
     name: "held-static-unheld",
-    breaks: "`js::export_default!(REACT_SHARED_INTERNALS)` of a binding's static is refused",
+    breaks:
+      "`js::export_default!(REACT_SHARED_INTERNALS)` of a binding's static is refused",
     file: "src/lower/bindings.rs",
     find: "        DefKind::Static { .. } if is_binding(tcx, def_id) => {\n",
     replace: "        DefKind::Static { .. } if false => {\n",
@@ -372,7 +505,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "held-reexport-a-const",
-    breaks: "a `pub use` of a binding through the module that holds it is a `const` of its own, not that module's re-exported",
+    breaks:
+      "a `pub use` of a binding through the module that holds it is a `const` of its own, not that module's re-exported",
     file: "src/lower/bindings.rs",
     find: "        let through = named_through(tcx, foreign, module, path.segments, binding, modules);\n",
     replace: "        let through: Option<HeldRead> = None;\n",
@@ -380,15 +514,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "default-constant-a-mark",
-    breaks: "`js::export_default! { const V: &str = \"19.3.0\"; }` is taken for the naming form's `const _`, and nothing is written",
+    breaks:
+      '`js::export_default! { const V: &str = "19.3.0"; }` is taken for the naming form\'s `const _`, and nothing is written',
     file: "src/lower/bindings.rs",
     find: "    if super::default_exports::held_by_default(tcx, def_id) {\n        return false;\n    }\n",
     replace: "",
-    tests: ["test/modules.test.ts", "-t", "the constant's value where the macro holds it"],
+    tests: [
+      "test/modules.test.ts",
+      "-t",
+      "the constant's value where the macro holds it",
+    ],
   },
   {
     name: "setter-value-optional",
-    breaks: "a setter's `None` is taken for an optional argument left out, so `Error.prepareStackTrace = undefined` is refused",
+    breaks:
+      "a setter's `None` is taken for an optional argument left out, so `Error.prepareStackTrace = undefined` is refused",
     file: "src/lower/bindings.rs",
     find: "    if matches!(js_form(tcx, def_id), JsForm::Set(_)) {\n",
     replace: "    if false {\n",
@@ -396,87 +536,134 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rest-marked-anywhere",
-    breaks: "`#[rust_js::rest]` is read of no parameter, and a function marked so takes the array whole",
+    breaks:
+      "`#[rust_js::rest]` is read of no parameter, and a function marked so takes the array whole",
     file: "src/lower/bindings.rs",
     find: "        .filter(move |(_, param)| tcx.hir_attrs(param.hir_id).iter().any(|attr| attr.path_matches(&path)))\n",
-    replace: "        .filter(move |(_, param)| tcx.hir_attrs(param.hir_id).iter().all(|attr| attr.path_matches(&path)) && false)\n",
-    tests: ["test/rest-parameters.test.ts", "-t", "rest slice is JS's rest parameter"],
+    replace:
+      "        .filter(move |(_, param)| tcx.hir_attrs(param.hir_id).iter().all(|attr| attr.path_matches(&path)) && false)\n",
+    tests: [
+      "test/rest-parameters.test.ts",
+      "-t",
+      "rest slice is JS's rest parameter",
+    ],
   },
   {
     name: "nullable-cell-refused",
-    breaks: "`#[rust_js::nullable]` of a `Cell<Option<T>>` field, React's shared internals', is refused, where its `None` can be `null`",
+    breaks:
+      "`#[rust_js::nullable]` of a `Cell<Option<T>>` field, React's shared internals', is refused, where its `None` can be `null`",
     file: "src/lower/bindings.rs",
     find: "                    && nullable_option(tcx, ty).is_none()\n                    && nullable_items(tcx, ty).is_none()\n",
-    replace: "                    && nullable_option(tcx, ty) != Some(ty)\n                    && nullable_items(tcx, ty).is_none()\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "nullable Cell field's None is null"],
+    replace:
+      "                    && nullable_option(tcx, ty) != Some(ty)\n                    && nullable_items(tcx, ty).is_none()\n",
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "nullable Cell field's None is null",
+    ],
   },
   {
     name: "held-default-exported-by-name",
-    breaks: "a library's `pub use` of a binding its default names is `export const assign` too, which no caller reads and upstream's `shared/assign` hasn't",
+    breaks:
+      "a library's `pub use` of a binding its default names is `export const assign` too, which no caller reads and upstream's `shared/assign` hasn't",
     file: "src/lower/bindings.rs",
     find: "        self.export && !self.default\n",
     replace: "        self.export\n",
-    tests: ["test/cargo-link.test.ts", "-t", "a library's module that holds a binding"],
+    tests: [
+      "test/cargo-link.test.ts",
+      "-t",
+      "a library's module that holds a binding",
+    ],
   },
   {
     name: "optional-unnullable-unrefused",
-    breaks: "`#[rust_js::optional]` of a field that isn't nullable, which says nothing, compiles (ADR 0810)",
+    breaks:
+      "`#[rust_js::optional]` of a field that isn't nullable, which says nothing, compiles (ADR 0810)",
     file: "src/lower/bindings.rs",
     find: "                if is_optional(tcx, field) && !is_nullable(tcx, field) && !once {\n",
     replace: "                if false {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "an optional field that isn't nullable"],
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "an optional field that isn't nullable",
+    ],
   },
   {
     name: "nullable-items-refused",
-    breaks: "`#[rust_js::nullable]` of a field of a `Vec<Option<T>>` is refused, as of what isn't an `Option`",
+    breaks:
+      "`#[rust_js::nullable]` of a field of a `Vec<Option<T>>` is refused, as of what isn't an `Option`",
     file: "src/lower/bindings.rs",
     find: "                    && nullable_items(tcx, ty).is_none()\n                    && !of_type_parameter(tcx, ty)\n",
     replace: "                    && !of_type_parameter(tcx, ty)\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "Vec of Options holds null"],
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "Vec of Options holds null",
+    ],
   },
   {
     name: "nullable-type-parameter-refused",
-    breaks: "a binding's type parameter `#[rust_js::nullable(..)]` names is refused, React's `createCursor<T>(defaultValue)` (ADR 0586, amended)",
+    breaks:
+      "a binding's type parameter `#[rust_js::nullable(..)]` names is refused, React's `createCursor<T>(defaultValue)` (ADR 0586, amended)",
     file: "src/lower/bindings.rs",
     find: "                    ty::Param(_) => true,\n",
     replace: "                    ty::Param(_) => false,\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "nullable type parameter"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "nullable type parameter",
+    ],
   },
   {
     name: "std-field-key-shared",
-    breaks: "`Enumerate`'s field `count` shares its key with the `count` method `$stdIterator` gives it, which overwrites it (ADR 0912)",
+    breaks:
+      "`Enumerate`'s field `count` shares its key with the `count` method `$stdIterator` gives it, which overwrites it (ADR 0912)",
     file: "src/lower/bindings.rs",
-    find: "        true => format!(\"{key}$\"),\n",
+    find: '        true => format!("{key}$"),\n',
     replace: "        true => key,\n",
     tests: ["test/std-package.test.ts"],
   },
   {
     name: "nullable-generic-field-refused",
-    breaks: "`#[rust_js::nullable]` of a generic struct's field of a type parameter's value is refused, React's `StackCursor<T>`'s `current: RefCell<T>` (ADR 0586, amended)",
+    breaks:
+      "`#[rust_js::nullable]` of a generic struct's field of a type parameter's value is refused, React's `StackCursor<T>`'s `current: RefCell<T>` (ADR 0586, amended)",
     file: "src/lower/bindings.rs",
     find: "                    && !of_type_parameter(tcx, ty)\n",
     replace: "",
-    tests: ["test/lowering-nullable.test.ts", "-t", "a generic struct's nullable field"],
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "a generic struct's nullable field",
+    ],
   },
   {
     name: "optional-once-cell-refused",
-    breaks: "a `#[rust_js::optional]` `OnceCell` field is refused, so React's lazy payload keeps `_ioInfo: undefined` (ADR 0280, amended)",
+    breaks:
+      "a `#[rust_js::optional]` `OnceCell` field is refused, so React's lazy payload keeps `_ioInfo: undefined` (ADR 0280, amended)",
     file: "src/lower/bindings.rs",
     find: "                if is_optional(tcx, field) && !is_nullable(tcx, field) && !once {\n",
-    replace: "                if is_optional(tcx, field) && !is_nullable(tcx, field) && (!once || true) {\n",
-    tests: ["test/lowering-optional-fields.test.ts", "-t", "an optional OnceCell field"],
+    replace:
+      "                if is_optional(tcx, field) && !is_nullable(tcx, field) && (!once || true) {\n",
+    tests: [
+      "test/lowering-optional-fields.test.ts",
+      "-t",
+      "an optional OnceCell field",
+    ],
   },
   {
     name: "binding-path-unchecked",
-    breaks: "a binding's path that isn't JS's, `window.$R-T`, is taken and printed as a subtraction, not refused naming its quoted key",
+    breaks:
+      "a binding's path that isn't JS's, `window.$R-T`, is taken and printed as a subtraction, not refused naming its quoted key",
     file: "src/lower/bindings.rs",
     find: "        if let Some(message) = path_refused(tcx, def.to_def_id()) {\n",
-    replace: "        if let Some(message) = path_refused(tcx, def.to_def_id()).filter(|_| false) {\n",
+    replace:
+      "        if let Some(message) = path_refused(tcx, def.to_def_id()).filter(|_| false) {\n",
     tests: ["test/lowering-binding-paths.test.ts"],
   },
   {
     name: "method-path-quoted",
-    breaks: "a method's quoted key, `['matchMedia']`, is taken as its property's name and printed `this[\"['matchMedia']\"]`",
+    breaks:
+      "a method's quoted key, `['matchMedia']`, is taken as its property's name and printed `this[\"['matchMedia']\"]`",
     file: "src/lower/bindings.rs",
     find: "        true => path.contains(['[', '\\'']).then(|| {\n",
     replace: "        true => path.contains(['\\0']).then(|| {\n",
@@ -484,7 +671,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "import-path-unchecked",
-    breaks: "an import's path past its export, `./shell.js#times.shell-time`, isn't checked, and prints a subtraction",
+    breaks:
+      "an import's path past its export, `./shell.js#times.shell-time`, isn't checked, and prints a subtraction",
     file: "src/lower/bindings.rs",
     find: "            Some((_, rest)) => paths::steps(rest).err(),\n",
     replace: "            Some(_) => None,\n",

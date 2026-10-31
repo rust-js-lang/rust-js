@@ -784,9 +784,14 @@ pub(super) fn name_items(
         let owner_type = owner_type.or_else(|| crate::lower::classes::shown_class(tcx, def_id));
         // A method of a trait of classes, its prototype's (rd283).
         let owner_type = owner_type.or_else(|| crate::lower::classes::trait_member_class(tcx, def_id));
-        // An object's method, a function of its module (ADR 0943).
-        let owner_type = owner_type
-            .filter(|_| crate::lower::classes::member(tcx, def_id) != Some(crate::lower::classes::Member::Own));
+        // An object's method, a function of its module (ADR 0943); a
+        // namespace's, its module's exported function (ADR 1037).
+        let owner_type = owner_type.filter(|_| {
+            !matches!(
+                crate::lower::classes::member(tcx, def_id),
+                Some(crate::lower::classes::Member::Own | crate::lower::classes::Member::Namespace)
+            )
+        });
         let own_name = js_name.clone();
         let (name, owner) = match owner_type {
             Some(ty) => {

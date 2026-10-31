@@ -4,7 +4,8 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "into-iter-self-items-given",
-    breaks: "`for x in &mut v` steps `v`'s numbers, not a handle on each: `into_iter`'s own `self`, bound by `IntoIterator`, counted as giving the `&mut`s it makes (ADR 0926)",
+    breaks:
+      "`for x in &mut v` steps `v`'s numbers, not a handle on each: `into_iter`'s own `self`, bound by `IntoIterator`, counted as giving the `&mut`s it makes (ADR 0926)",
     file: "src/lower/mut_refs.rs",
     find: "                matches!(input.kind(), ty::Param(param) if !super::recognition::is_trait_self(*param))\n",
     replace: "                matches!(input.kind(), ty::Param(_))\n",
@@ -12,71 +13,92 @@ export const mutations: Mutation[] = [
   },
   {
     name: "into-iterator-items-made",
-    breaks: "`a.iter().zip(b)` of a `&mut [u32]` is refused, `a &mut u32 from zip used as a value`: the `&mut`s `b`'s `IntoIterator` gives counted as `zip`'s own (ADR 0926)",
+    breaks:
+      "`a.iter().zip(b)` of a `&mut [u32]` is refused, `a &mut u32 from zip used as a value`: the `&mut`s `b`'s `IntoIterator` gives counted as `zip`'s own (ADR 0926)",
     file: "src/lower/mut_refs.rs",
     find: "            let into = taken_into(i).then(|| self.iterable_item(t));\n",
-    replace: "            let into = taken_into(i).then(|| self.iterable_item(t)).filter(|_| false);\n",
+    replace:
+      "            let into = taken_into(i).then(|| self.iterable_item(t)).filter(|_| false);\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_into_mut_slice.rs$"],
   },
   {
     name: "into-iterator-items-of-any-argument",
-    breaks: "`b.iter_mut()` of a `&mut Vec<u32>` steps its numbers, not a handle on each: its receiver's `IntoIterator` items counted as given where `iter_mut` takes it as itself (ADR 0926)",
+    breaks:
+      "`b.iter_mut()` of a `&mut Vec<u32>` steps its numbers, not a handle on each: its receiver's `IntoIterator` items counted as given where `iter_mut` takes it as itself (ADR 0926)",
     file: "src/lower/mut_refs.rs",
     find: "            let into = taken_into(i).then(|| self.iterable_item(t));\n",
-    replace: "            let into = Some(self.iterable_item(t)).filter(|_| i < usize::MAX);\n",
+    replace:
+      "            let into = Some(self.iterable_item(t)).filter(|_| i < usize::MAX);\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_into_mut_slice.rs$"],
   },
   {
     name: "nested-mut-object-accepted",
-    breaks: "`to_vec(c)` of an object gives a `Vec` of handles, which the caller takes for the objects",
+    breaks:
+      "`to_vec(c)` of an object gives a `Vec` of handles, which the caller takes for the objects",
     file: "src/lower/mut_refs.rs",
     find: "            && let Some(here) = self.nested_mut_object(def_id, generic_args)\n",
     replace: "            && let Some(here) = None::<Ty<'tcx>>\n",
-    tests: ["test/diagnostics.test.ts","-t","generic &mut T"],
+    tests: ["test/diagnostics.test.ts", "-t", "generic &mut T"],
   },
   {
     name: "nested-mut-object-fields-unread",
-    breaks: "a generic struct's `r: &mut T` field, built of an object by the caller, is read as a cell",
+    breaks:
+      "a generic struct's `r: &mut T` field, built of an object by the caller, is read as a cell",
     file: "src/lower/mut_refs.rs",
     find: "                    todo.extend(adt.all_fields().map(|field| field_ty(field, args)));",
-    replace: "                    todo.extend(adt.all_fields().map(|field| field_ty(field, args)).filter(|_| false));",
-    tests: ["test/diagnostics.test.ts","-t","in a struct"],
+    replace:
+      "                    todo.extend(adt.all_fields().map(|field| field_ty(field, args)).filter(|_| false));",
+    tests: ["test/diagnostics.test.ts", "-t", "in a struct"],
   },
   {
     name: "nested-mut-object-bounds-unread",
-    breaks: "a closure's parameter holding a `&mut` to an object, `F: FnOnce(Vec<&mut T>)`, isn't refused, and the closure is given generic code's boxes",
+    breaks:
+      "a closure's parameter holding a `&mut` to an object, `F: FnOnce(Vec<&mut T>)`, isn't refused, and the closure is given generic code's boxes",
     file: "src/lower/mut_refs.rs",
     find: "        for (clause, _) in self.tcx.clauses_of(def_id).instantiate_identity(self.tcx) {\n",
-    replace: "        for (clause, _) in self.tcx.clauses_of(def_id).instantiate_identity(self.tcx).into_iter().filter(|_| false) {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a Vec of generic &mut Ts to objects given to a closure"],
+    replace:
+      "        for (clause, _) in self.tcx.clauses_of(def_id).instantiate_identity(self.tcx).into_iter().filter(|_| false) {\n",
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "a Vec of generic &mut Ts to objects given to a closure",
+    ],
   },
   {
     name: "generic-result-kept-as-cell",
-    breaks: "`pick(true, &mut c, &mut d).n += 5` of an object `T` writes `n` on the handle, not on `c`",
+    breaks:
+      "`pick(true, &mut c, &mut d).n += 5` of an object `T` writes `n` on the handle, not on `c`",
     file: "src/lower/mut_refs.rs",
     find: "            Some(_) => Expr::held(value),\n",
     replace: "            Some(_) => value,\n",
-    tests: ["test/corpus.test.ts","-t","generic_mut_ref_kept"],
+    tests: ["test/corpus.test.ts", "-t", "generic_mut_ref_kept"],
   },
   {
     name: "map-handles-unsorted",
-    breaks: "a B-tree's `iter_mut()` and `values_mut()` go in insertion order, not its keys', of a `Map` JS gives in another order (the crate's own are kept in order, ADR 0404, amended)",
+    breaks:
+      "a B-tree's `iter_mut()` and `values_mut()` go in insertion order, not its keys', of a `Map` JS gives in another order (the crate's own are kept in order, ADR 0404, amended)",
     file: "src/lower/mut_refs.rs",
     find: "            Std::Map(MapOp::Iter(_)) if self.is_sorted(receiver) => {",
-    replace: "            Std::Map(MapOp::Iter(_)) if false && self.is_sorted(receiver) => {",
-    tests: ["test/lowering-collections.test.ts", "-t", "a B-tree JS gives is changed through in its keys' order"],
+    replace:
+      "            Std::Map(MapOp::Iter(_)) if false && self.is_sorted(receiver) => {",
+    tests: [
+      "test/lowering-collections.test.ts",
+      "-t",
+      "a B-tree JS gives is changed through in its keys' order",
+    ],
   },
   {
     name: "cow-mut-no-handle",
     breaks: "`to_mut()` of a `Cow<str>` is refused",
     file: "src/lower/mut_refs.rs",
-    find: "            Std::Cow(CowOp::ToMut) => \"$cowMut\",\n",
+    find: '            Std::Cow(CowOp::ToMut) => "$cowMut",\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cows"],
   },
   {
     name: "mut-items-box-unseen",
-    breaks: "a `Box<[T; N]>`'s `&mut` items, `for n in &mut boxed`, aren't a sequence's",
+    breaks:
+      "a `Box<[T; N]>`'s `&mut` items, `for n in &mut boxed`, aren't a sequence's",
     file: "src/lower/mut_refs.rs",
     find: "        let receiver = receiver.boxed_ty().unwrap_or(receiver);\n",
     replace: "",
@@ -86,21 +108,23 @@ export const mutations: Mutation[] = [
     name: "mut-items-pointee-unseen",
     breaks: "a `Box<[T; N]>`'s `into_iter()` through a `&mut` makes no handles",
     file: "src/lower/mut_refs.rs",
-    find: "            Std::Same | Std::Pointee if sequence => \"$mutItems\",\n",
-    replace: "            Std::Same if sequence => \"$mutItems\",\n",
+    find: '            Std::Same | Std::Pointee if sequence => "$mutItems",\n',
+    replace: '            Std::Same if sequence => "$mutItems",\n',
     tests: ["test/corpus.test.ts", "-t", "boxed_array_iter"],
   },
   {
     name: "mir-box-not-copied-back",
-    breaks: "a box given for a `&mut` number isn't copied back, so the caller never sees what the call wrote",
+    breaks:
+      "a box given for a `&mut` number isn't copied back, so the caller never sees what the call wrote",
     file: "src/lower/mut_refs.rs",
     find: "            false => StmtKind::Assign(place, back).at(at),\n",
     replace: "            false => StmtKind::Expr(Expr::undefined()).at(at),\n",
-    tests: ["test/corpus.test.ts","-t","mut_number_args"],
+    tests: ["test/corpus.test.ts", "-t", "mut_number_args"],
   },
   {
     name: "borrow-kept-by-parameter-boxed",
-    breaks: "a `&mut` of a local given to a function that keeps it in another parameter is a box, copied back when the call returns, so writes through it after are lost",
+    breaks:
+      "a `&mut` of a local given to a function that keeps it in another parameter is a box, copied back when the call returns, so writes through it after are lost",
     file: "src/lower/mut_refs.rs",
     find: "            .filter(|&(j, _)| j != i)\n",
     replace: "            .filter(|_| false)\n",
@@ -108,7 +132,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "borrow-kept-by-what-it-refers-to",
-    breaks: "a `&mut` of a reference is taken as kept where what it refers to is, `pick(slot: &mut &'a [i32], other: &'a [i32])`'s, a handle where a box reads as the original",
+    breaks:
+      "a `&mut` of a reference is taken as kept where what it refers to is, `pick(slot: &mut &'a [i32], other: &'a [i32])`'s, a handle where a box reads as the original",
     file: "src/lower/mut_refs.rs",
     find: "            ty::Ref(region, ..) => vec![region],\n",
     replace: "            ty::Ref(..) => regions(input),\n",
@@ -117,15 +142,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "param-given-mut-raw",
-    breaks: "a `&mut` to an object given as a type parameter's value is the object, which an impl for `&mut T` reads as a box, and JS throws",
+    breaks:
+      "a `&mut` to an object given as a type parameter's value is the object, which an impl for `&mut T` reads as a box, and JS throws",
     file: "src/lower/mut_refs.rs",
     find: "            ty::Param(_) if self.is_generic_boxed(ty, param_env) => match *self.instantiated(ty, generic_args).kind() {\n",
-    replace: "            ty::Param(_) if false => match *self.instantiated(ty, generic_args).kind() {\n",
+    replace:
+      "            ty::Param(_) if false => match *self.instantiated(ty, generic_args).kind() {\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_given_as_type_param.rs$"],
   },
   {
     name: "boxed-through-shared-unpeeled",
-    breaks: "an impl for `&mut T`'s `&self`, called where its type is known, is given the object, not a box of it",
+    breaks:
+      "an impl for `&mut T`'s `&self`, called where its type is known, is given the object, not a box of it",
     file: "src/lower/mut_refs.rs",
     find: "        while let ty::Ref(_, inner, Mutability::Not) = *ty.kind() {\n            ty = inner;\n        }\n        let pointee",
     replace: "        let pointee",
@@ -133,23 +161,32 @@ export const mutations: Mutation[] = [
   },
   {
     name: "nested-param-mut-allowed",
-    breaks: "a `&mut` to an object given for a type parameter inside an `Option` generic code takes is allowed, though it has a box there and its caller the object",
+    breaks:
+      "a `&mut` to an object given for a type parameter inside an `Option` generic code takes is allowed, though it has a box there and its caller the object",
     file: "src/lower/mut_refs.rs",
     find: "                if let ty::Param(_) = part.kind()\n                    && let Some(here) = self.boxed_in_call(def_id, part, generic_args)\n",
-    replace: "                if let ty::Param(_) = part.kind()\n                    && false\n                    && let Some(here) = self.boxed_in_call(def_id, part, generic_args)\n",
-    tests: ["test/limitations.test.ts", "-t", "an .Option., which it has as a box"],
+    replace:
+      "                if let ty::Param(_) = part.kind()\n                    && false\n                    && let Some(here) = self.boxed_in_call(def_id, part, generic_args)\n",
+    tests: [
+      "test/limitations.test.ts",
+      "-t",
+      "an .Option., which it has as a box",
+    ],
   },
   {
     name: "clause-self-nested",
-    breaks: "a bound's own type, `D: Total`'s `D`, counts as a value inside what generic code takes, so a `&mut` given for `D` is refused",
+    breaks:
+      "a bound's own type, `D: Total`'s `D`, counts as a value inside what generic code takes, so a `&mut` given for `D` is refused",
     file: "src/lower/mut_refs.rs",
     find: "                todo.extend(walked(bound.def_id(), args));\n                given.push(args.type_at(0));\n",
-    replace: "                todo.extend(walked(bound.def_id(), args));\n                todo.extend(args.types().take(1));\n",
+    replace:
+      "                todo.extend(walked(bound.def_id(), args));\n                todo.extend(args.types().take(1));\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_given_as_type_param.rs$"],
   },
   {
     name: "dictionary-result-unread",
-    breaks: "a call through a dictionary of a `&mut Self::Out` of an object takes the box its entry gives as the object",
+    breaks:
+      "a call through a dictionary of a `&mut Self::Out` of an object takes the box its entry gives as the object",
     file: "src/lower/mut_refs.rs",
     find: "        if !self.is_rust_fn(def_id) && self.tcx.trait_of_assoc(def_id).is_none() {\n",
     replace: "        if !self.is_rust_fn(def_id) {\n",
@@ -157,7 +194,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "bound-mut-self-walked",
-    breaks: "a `for<'a> &'a mut C: IntoIterator` bound's own `&mut C`, which isn't a value, refuses a caller given a `&mut Vec` as one inside generic code's parameters",
+    breaks:
+      "a `for<'a> &'a mut C: IntoIterator` bound's own `&mut C`, which isn't a value, refuses a caller given a `&mut Vec` as one inside generic code's parameters",
     file: "src/lower/mut_refs.rs",
     find: "                ty::Ref(_, inner, Mutability::Mut) => todo.push(inner),\n",
     replace: "",
@@ -165,31 +203,37 @@ export const mutations: Mutation[] = [
   },
   {
     name: "generic-result-not-fmt",
-    breaks: "a generic `Result` of a `fmt::Error`, read where a `fmt::Result` goes, is the object, whose `Err` a writer never throws",
+    breaks:
+      "a generic `Result` of a `fmt::Error`, read where a `fmt::Result` goes, is the object, whose `Err` a writer never throws",
     file: "src/lower/mut_refs.rs",
-    find: "            return Ok(Expr::call_helper(\"$writeOf\", vec![value]));\n",
+    find: '            return Ok(Expr::call_helper("$writeOf", vec![value]));\n',
     replace: "            return Ok(value);\n",
     tests: ["test/corpus.test.ts", "-t", "^formatter_sink.rs$"],
   },
   {
     name: "callee-fields-caller-terms",
-    breaks: "a generic function's fields are read in its caller's terms, whose type parameters it doesn't have, and rustc panics",
+    breaks:
+      "a generic function's fields are read in its caller's terms, whose type parameters it doesn't have, and rustc panics",
     file: "src/lower/mut_refs.rs",
     find: "                    todo.extend(adt.all_fields().map(|field| field_ty(field, args)));\n",
-    replace: "                    todo.extend(adt.all_fields().map(|field| self.field_ty(field, args)));\n",
+    replace:
+      "                    todo.extend(adt.all_fields().map(|field| self.field_ty(field, args)));\n",
     tests: ["test/corpus.test.ts", "-t", "^callee_field_own_terms.rs$"],
   },
   {
     name: "function-param-mut-refused",
-    breaks: "a `&mut T` in a function's parameters through `F: Fn(&mut T)`, of a `T` that's an object here, is refused as a nested `&mut`, though the function given takes it out of the box",
+    breaks:
+      "a `&mut T` in a function's parameters through `F: Fn(&mut T)`, of a `T` that's an object here, is refused as a nested `&mut`, though the function given takes it out of the box",
     file: "src/lower/mut_refs.rs",
     find: "                            ty::Ref(_, pointee, Mutability::Mut) => pointee,\n",
-    replace: "                            ty::Ref(_, pointee, Mutability::Mut) => Ty::new_mut_ref(self.tcx, self.tcx.lifetimes.re_erased, pointee),\n",
+    replace:
+      "                            ty::Ref(_, pointee, Mutability::Mut) => Ty::new_mut_ref(self.tcx, self.tcx.lifetimes.re_erased, pointee),\n",
     tests: ["test/corpus.test.ts", "-t", "^function_given_for_a_mut_param.rs$"],
   },
   {
     name: "static-result-not-the-borrow",
-    breaks: "a `&'static mut` result made of a `&'a mut` argument by `transmute` is taken for another place, so the argument's box is copied back before a write through the result, which is lost",
+    breaks:
+      "a `&'static mut` result made of a `&'a mut` argument by `transmute` is taken for another place, so the argument's box is copied back before a write through the result, which is lost",
     file: "src/lower/mut_refs.rs",
     find: "        static_to_it\n            || others\n",
     replace: "        others\n",
@@ -197,10 +241,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "moved-out-of-box-unseen",
-    breaks: "a generic `&mut T` of an object is boxed as the object itself, so what the callee moves out of it, `mem::replace`'s old value, is changed by the write-back after",
+    breaks:
+      "a generic `&mut T` of an object is boxed as the object itself, so what the callee moves out of it, `mem::replace`'s old value, is changed by the write-back after",
     file: "src/lower/mut_refs.rs",
     find: "    holds(sig.output()) || others.into_iter().any(holds)",
-    replace: "    false && (holds(sig.output()) || others.into_iter().any(holds))",
+    replace:
+      "    false && (holds(sig.output()) || others.into_iter().any(holds))",
     tests: ["test/corpus.test.ts", "-t", "^generic_mut_moved_out.rs$"],
   },
 ];

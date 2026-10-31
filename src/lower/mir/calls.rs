@@ -432,6 +432,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
         let mut exprs = self.boxed_args(state, (def_id, generic_args), values, span, out)?;
+        // A namespace's method called in one of its own on its `self`, its
+        // module's: by its name, as on the namespace named (ADR 1037).
+        if let Some(receiver) = exprs.first_mut()
+            && super::queries::namespace_self(self.tcx, state, def_id, receiver)
+        {
+            *receiver = Expr::undefined();
+        }
         // A callback it calls once, `impl FnOnce(A0, A1) -> T`, an arrow that
         // only passes on what it's given: the function it passes on to,
         // React's `runWithFiberInDEV(fiber, commitCallbacks, queue, instance)`,
@@ -488,6 +495,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (def_id, copy, named): (rustc_span::def_id::DefId, Option<usize>, Option<Span>),
         mut args: Vec<Expr>,
     ) -> Expr {
+        // A namespace's method (ADR 1037): through the value it's called on,
+        // `NoopRenderer.createContainer(..)`, one JS may have made of
+        // another instance of its module; of the namespace named, the item
+        // (`namespace_value`), or `undefined`, its own method's `self` left
+        // out, the function itself, `createContainer(..)`.
+        if crate::lower::classes::member(self.tcx, def_id) == Some(crate::lower::classes::Member::Namespace)
+            && !args.is_empty()
+        {
+            let receiver = args.remove(0);
+            let named = match &receiver.kind {
+                js::ExprKind::Undefined => true,
+                js::ExprKind::Symbol(_) | js::ExprKind::Var(_) => receiver.facts.has(js::Known::Item),
+                _ => false,
+            };
+            if !named {
+                return Expr::call(
+                    Expr::member(receiver, crate::lower::classes::property(self.tcx, def_id)),
+                    args,
+                );
+            }
+        }
         let callee = match (copy, named) {
             (_, Some(named)) => self.named_fn_ref(def_id, copy, named),
             (Some(_), None) => self.own_fn_ref(def_id, copy),

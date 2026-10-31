@@ -4,65 +4,89 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "reversal-of-range-chain-as-items",
-    breaks: "a map of a range stepped from its end, made in place, is read as its source's map, which steps the range forward: `Some(2)` where Rust gives `Some(9)` (ADR 0987)",
+    breaks:
+      "a map of a range stepped from its end, made in place, is read as its source's map, which steps the range forward: `Some(2)` where Rust gives `Some(9)` (ADR 0987)",
     file: "src/lower/iterators.rs",
     find: "            _ if is_stepped_items(e) => true,\n",
-    replace: "            _ if is_stepped_items(e) || stepped_form(e).is_some() => true,\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a map of a reversed range given where its length is asked"],
+    replace:
+      "            _ if is_stepped_items(e) || stepped_form(e).is_some() => true,\n",
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "a map of a reversed range given where its length is asked",
+    ],
   },
   {
     name: "discarded-iterator-kept",
-    breaks: "a discarded `drain(0..i)` in bounds is `$iter(queue.splice(0, i));`, an iterator nothing steps",
+    breaks:
+      "a discarded `drain(0..i)` in bounds is `$iter(queue.splice(0, i));`, an iterator nothing steps",
     file: "src/lower/iterators.rs",
-    find: "        && callee.helper_name() == Some(\"$iter\")\n        && let [items] = args.as_mut_slice()\n",
-    replace: "        && callee.helper_name() == Some(\"$none\")\n        && let [items] = args.as_mut_slice()\n",
+    find: '        && callee.helper_name() == Some("$iter")\n        && let [items] = args.as_mut_slice()\n',
+    replace:
+      '        && callee.helper_name() == Some("$none")\n        && let [items] = args.as_mut_slice()\n',
     tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
     snapshots: true,
   },
   {
-    "name": "made-array-helper-lazy",
-    "breaks": "`v.windows(2).map(f).collect()` from MIR stays `Array.from(Iterator.from($windows(v, 2)).map(f))`",
-    "file": "src/lower/iterators.rs",
-    "find": "        js::ExprKind::Call(callee, _) if matches!(callee.kind, js::ExprKind::Var(_)) => fresh(e),\n",
-    "replace": "",
-    "tests": ["test/corpus.test.ts", "-t", "^(calculator|map_set_methods).rs$"],
-    "snapshots": true
+    name: "made-array-helper-lazy",
+    breaks:
+      "`v.windows(2).map(f).collect()` from MIR stays `Array.from(Iterator.from($windows(v, 2)).map(f))`",
+    file: "src/lower/iterators.rs",
+    find: "        js::ExprKind::Call(callee, _) if matches!(callee.kind, js::ExprKind::Var(_)) => fresh(e),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(calculator|map_set_methods).rs$"],
+    snapshots: true,
   },
   {
     name: "mir-object-keys-iterated",
-    breaks: "`Object.keys(o)`, an array, is taken as a JS iterator and stepped as one",
+    breaks:
+      "`Object.keys(o)`, an array, is taken as a JS iterator and stepped as one",
     file: "src/lower/iterators.rs",
-    find: "            js::ExprKind::Var(v) if v == \"Object\" => false,\n",
+    find: '            js::ExprKind::Var(v) if v == "Object" => false,\n',
     replace: "",
     tests: ["test/lowering-loops.test.ts", "-t", "a for over Object.keys"],
   },
   {
-    "name": "mir-adapter-not-js-iterator",
-    "breaks": "an adapter of a JS iterator, `.map(f)` of a range's, is made one again, `Iterator.from(..)`",
-    "file": "src/lower/iterators.rs",
-    "find": "            _ if matches!(name.as_str(), \"map\" | \"filter\" | \"flatMap\" | \"take\" | \"drop\") => is_js_iterator(object),\n",
-    "replace": "",
-    "tests": ["test/lowering-iterators.test.ts", "-t", "an adapter of a JS iterator is not made one again"]
+    name: "mir-adapter-not-js-iterator",
+    breaks:
+      "an adapter of a JS iterator, `.map(f)` of a range's, is made one again, `Iterator.from(..)`",
+    file: "src/lower/iterators.rs",
+    find: '            _ if matches!(name.as_str(), "map" | "filter" | "flatMap" | "take" | "drop") => is_js_iterator(object),\n',
+    replace: "",
+    tests: [
+      "test/lowering-iterators.test.ts",
+      "-t",
+      "an adapter of a JS iterator is not made one again",
+    ],
   },
   {
-    "name": "mir-range-inclusive-lazy",
-    "breaks": "`(1..=n).collect()` from MIR stays `Array.from($iterator(\u2026, $rangeInclusiveNext))`, not `$range(1, n + 1)`",
-    "file": "src/lower/iterators.rs",
-    "find": "    let (inclusive, back) = [(false, false), (false, true), (true, false), (true, true)]\n",
-    "replace": "    let (inclusive, back) = [(false, false), (false, true), (true, true)]\n",
-    "tests": ["test/lowering-iterators.test.ts", "-t", "a range mapped and collected"]
+    name: "mir-range-inclusive-lazy",
+    breaks:
+      "`(1..=n).collect()` from MIR stays `Array.from($iterator(\u2026, $rangeInclusiveNext))`, not `$range(1, n + 1)`",
+    file: "src/lower/iterators.rs",
+    find: "    let (inclusive, back) = [(false, false), (false, true), (true, false), (true, true)]\n",
+    replace:
+      "    let (inclusive, back) = [(false, false), (false, true), (true, true)]\n",
+    tests: [
+      "test/lowering-iterators.test.ts",
+      "-t",
+      "a range mapped and collected",
+    ],
   },
   {
     name: "given-as-it-is-not-held",
-    breaks: "an adapter's `I`, which its type holds, is a JS iterator, so `Doubled { inner: 0..4 }`'s range is stepped as one",
+    breaks:
+      "an adapter's `I`, which its type holds, is a JS iterator, so `Doubled { inner: 0..4 }`'s range is stepped as one",
     file: "src/lower/iterators.rs",
     find: "    .is_some_and(|imp| has(tcx.type_of(imp).instantiate_identity().skip_normalization()));\n",
-    replace: "    .is_some_and(|imp| has(tcx.type_of(imp).instantiate_identity().skip_normalization()) && false);\n",
+    replace:
+      "    .is_some_and(|imp| has(tcx.type_of(imp).instantiate_identity().skip_normalization()) && false);\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
   {
     name: "given-as-it-is-not-given-back",
-    breaks: "`doubled(0..4)`, whose result holds its `I`, converts the range to a JS iterator its caller steps as a range",
+    breaks:
+      "`doubled(0..4)`, whose result holds its `I`, converts the range to a JS iterator its caller steps as a range",
     file: "src/lower/iterators.rs",
     find: "            has(sig.output())\n",
     replace: "            false\n",
@@ -70,7 +94,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "given-as-it-is-not-in-input",
-    breaks: "`second(Wrap(7..10))`'s range, in what's given, is stepped as a JS iterator",
+    breaks:
+      "`second(Wrap(7..10))`'s range, in what's given, is stepped as a JS iterator",
     file: "src/lower/iterators.rs",
     find: "                    !matches!(input.peel_refs().kind(), ty::Param(p) if p.index == param.index) && has(input)\n",
     replace: "                    false\n",
@@ -78,7 +103,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "given-as-it-is-projection",
-    breaks: "`all<I>(i) -> Vec<I::Item>`, which gives back only its items, takes its `I` as it is, with a dictionary",
+    breaks:
+      "`all<I>(i) -> Vec<I::Item>`, which gives back only its items, takes its `I` as it is, with a dictionary",
     file: "src/lower/iterators.rs",
     find: "                Some(ty::Alias(..)) => walk.skip_current_subtree(),\n",
     replace: "",
@@ -87,25 +113,29 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fresh-iter-sliced",
-    breaks: "what's left of a just-made `$iter(items)` is `it.items.slice(it.at, it.end)`, not `items`",
+    breaks:
+      "what's left of a just-made `$iter(items)` is `it.items.slice(it.at, it.end)`, not `items`",
     file: "src/lower/iterators.rs",
-    find: "        js::ExprKind::Call(callee, args) if callee.helper_name() == Some(\"$iter\") && args.len() == 1 => args.first(),\n",
-    replace: "        js::ExprKind::Call(callee, args) if false && callee.helper_name() == Some(\"$iter\") && args.len() == 1 => args.first(),\n",
+    find: '        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$iter") && args.len() == 1 => args.first(),\n',
+    replace:
+      '        js::ExprKind::Call(callee, args) if false && callee.helper_name() == Some("$iter") && args.len() == 1 => args.first(),\n',
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
   },
   {
     name: "cycle-wrapped",
-    breaks: "a `$cycle`'s generator is wrapped in `Iterator.from(..)`, though it's a JS iterator already",
+    breaks:
+      "a `$cycle`'s generator is wrapped in `Iterator.from(..)`, though it's a JS iterator already",
     file: "src/lower/iterators.rs",
-    find: "    \"$cycle\",\n",
-    replace: "    \"$cycled\",\n",
+    find: '    "$cycle",\n',
+    replace: '    "$cycled",\n',
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
   },
   {
     name: "stepped-back-as-boxed",
-    breaks: "`$iterator(it, next, nextBack)` reads its `nextBack` as whether its `Some` is boxed",
+    breaks:
+      "`$iterator(it, next, nextBack)` reads its `nextBack` as whether its `Some` is boxed",
     file: "src/lower/iterators.rs",
     find: "        list.push(arg.unwrap_or_else(|| match at {\n            0 => Expr::bool(false),\n            _ => Expr::undefined(),\n        }));\n",
     replace: "        let _ = at;\n        list.extend(arg);\n",
@@ -114,16 +144,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "lazy-chain-not-iterator",
-    breaks: "`$lazyChain(a, b)`, a generator, is taken for what isn't a JS iterator, and wrapped in `Iterator.from`",
+    breaks:
+      "`$lazyChain(a, b)`, a generator, is taken for what isn't a JS iterator, and wrapped in `Iterator.from`",
     file: "src/lower/iterators.rs",
-    find: "    \"$lazyChain\",\n",
-    replace: "    \"$lazyChained\",\n",
+    find: '    "$lazyChain",\n',
+    replace: '    "$lazyChained",\n',
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
     snapshots: true,
   },
   {
     name: "iterator-read-as-js",
-    breaks: "the crate's iterator given to `I: Iterator + Clone` is its JS iterator, which its `Clone` and `Debug` read as its value",
+    breaks:
+      "the crate's iterator given to `I: Iterator + Clone` is its JS iterator, which its `Clone` and `Debug` read as its value",
     file: "src/lower/iterators.rs",
     find: "    held || signature || read\n",
     replace: "    held || signature\n",
@@ -131,7 +163,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "extension-bound-read",
-    breaks: "a `DoubleEndedIterator` bound is taken for one that reads its iterator as its own type, which is then given as it is",
+    breaks:
+      "a `DoubleEndedIterator` bound is taken for one that reads its iterator as its own type, which is then given as it is",
     file: "src/lower/iterators.rs",
     find: "        && !super::recognition::is_iterator_extension(tcx, tr)\n",
     replace: "",
@@ -140,7 +173,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "extension-bound-not-given-as-is",
-    breaks: "an `I: DoubleEndedIterator` a type holds is a JS iterator in its impl, which its caller's range isn't",
+    breaks:
+      "an `I: DoubleEndedIterator` a type holds is a JS iterator in its impl, which its caller's range isn't",
     file: "src/lower/iterators.rs",
     find: "        .any(|&tr| tr == iterator || super::recognition::implies_iterator(tcx, tr))\n",
     replace: "        .any(|&tr| tr == iterator)\n",
@@ -148,16 +182,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "closing-not-an-iterator",
-    breaks: "`$closing` is taken for what isn't a JS iterator, written inside `Iterator.from`, and its chain not made eager",
+    breaks:
+      "`$closing` is taken for what isn't a JS iterator, written inside `Iterator.from`, and its chain not made eager",
     file: "src/lower/iterators.rs",
-    find: "    \"$closing\",\n",
-    replace: "    \"$peekable\",\n",
+    find: '    "$closing",\n',
+    replace: '    "$peekable",\n',
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
     snapshots: true,
   },
   {
     name: "std-provided-self-given-by-trait",
-    breaks: "a compiled std provided method's `Self`, `peekable`'s, isn't given as it is, so `@rust-js/std`'s `iterator_peekable` takes no dictionary for it, and a caller's generic iterator steps nothing",
+    breaks:
+      "a compiled std provided method's `Self`, `peekable`'s, isn't given as it is, so `@rust-js/std`'s `iterator_peekable` takes no dictionary for it, and a caller's generic iterator steps nothing",
     file: "src/lower/iterators.rs",
     find: "    ) && (tcx.trait_of_assoc(id).is_none() || super::recognition::is_compiled_std(tcx, id))\n",
     replace: "    ) && tcx.trait_of_assoc(id).is_none()\n",
@@ -165,7 +201,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "into-iter-never-held",
-    breaks: "no `IntoIterator`'s `IntoIter` is held as it is, so a range is given as a JS iterator and stepped as a range",
+    breaks:
+      "no `IntoIterator`'s `IntoIter` is held as it is, so a range is given as a JS iterator and stepped as a range",
     file: "src/lower/iterators.rs",
     find: "    read || held\n",
     replace: "    false\n",
@@ -173,7 +210,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "into-iter-param-made-js-iterator",
-    breaks: "a type parameter whose `IntoIter` is held as it is is made a JS iterator by its caller",
+    breaks:
+      "a type parameter whose `IntoIter` is held as it is is made a JS iterator by its caller",
     file: "src/lower/iterators.rs",
     find: "    if into_iter_held_as_it_is(tcx, id, Ty::new_param(tcx, param.index, param.name)) {\n        return true;\n    }\n",
     replace: "",
@@ -181,7 +219,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "into-iter-held-in-struct-a-js-iterator",
-    breaks: "an `IntoIterator` whose `IntoIter` a function holds in a struct of the crate's, `Pair<I::IntoIter>`, is given a JS iterator, which a compiled `Fuse` then holds where its callers read the struct",
+    breaks:
+      "an `IntoIterator` whose `IntoIter` a function holds in a struct of the crate's, `Pair<I::IntoIter>`, is given a JS iterator, which a compiled `Fuse` then holds where its callers read the struct",
     file: "src/lower/iterators.rs",
     find: "    read || held\n",
     replace: "    read\n",
@@ -189,7 +228,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dyn-keeps-own-fold",
-    breaks: "a `Box<dyn Iterator>` of the crate's iterator folds by its own `fold`, where std's `Box` folds by `next`",
+    breaks:
+      "a `Box<dyn Iterator>` of the crate's iterator folds by its own `fold`, where std's `Box` folds by `next`",
     file: "src/lower/iterators.rs",
     find: "        given[6] = Expr::undefined();\n",
     replace: "",
@@ -207,13 +247,15 @@ export const mutations: Mutation[] = [
     name: "mir-enumerate-swapped",
     breaks: "`enumerate` gives `(item, index)`, not `(index, item)`",
     file: "src/lower/iterators.rs",
-    find: "    let pair = Expr::array(vec![Expr::var(\"i\"), Expr::var(\"x\")]);\n",
-    replace: "    let pair = Expr::array(vec![Expr::var(\"x\"), Expr::var(\"i\")]);\n",
+    find: '    let pair = Expr::array(vec![Expr::var("i"), Expr::var("x")]);\n',
+    replace:
+      '    let pair = Expr::array(vec![Expr::var("x"), Expr::var("i")]);\n',
     tests: ["test/corpus.test.ts", "-t", "labeled_blocks"],
   },
   {
     name: "sliced-not-made",
-    breaks: "a slice's range in bounds, `items.slice(0, 3)`, isn't an array made here, so its `to_vec()` copies it again, `.slice(0, 3).slice()` (ADR 0806)",
+    breaks:
+      "a slice's range in bounds, `items.slice(0, 3)`, isn't an array made here, so its `to_vec()` copies it again, `.slice(0, 3).slice()` (ADR 0806)",
     file: "src/lower/iterators.rs",
     find: "        _ if e.facts.has(js::Known::Sliced) => true,\n",
     replace: "",
@@ -222,37 +264,40 @@ export const mutations: Mutation[] = [
   },
   {
     name: "in-place-form-peeled",
-    breaks: "a `rev()` of the crate's iterator made in place is peeled to the iterator it reverses, which a `step_by` then steps forward",
+    breaks:
+      "a `rev()` of the crate's iterator made in place is peeled to the iterator it reverses, which a `step_by` then steps forward",
     file: "src/lower/iterators.rs",
     find: "    if made_in_place(e) {\n        return None;\n    }\n    stepped_form(e).cloned()\n",
     replace: "    stepped_form(e).cloned()\n",
-    tests: ["test/corpus.test.ts", "-t", "^(rev_in_place_through_adapters).rs$"],
-  },
-  {
-    name: "alias-into-iter-not-held",
-    breaks: "generic code given `I::Item: IntoIterator` iterates each item as a JS iterator, which an `Option`'s `T | undefined` isn't (#278)",
-    file: "src/lower/iterators.rs",
-    find: "    if matches!(*into.kind(), ty::Alias(_, ty::AliasTy { kind: ty::Projection { def_id }, .. }) if def_id != into_iter)\n    {\n",
-    replace: "    if false && matches!(*into.kind(), ty::Alias(_, ty::AliasTy { kind: ty::Projection { def_id }, .. }) if def_id != into_iter)\n    {\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
-      "^into_iter_of_items.rs$"
-    ]
+      "^(rev_in_place_through_adapters).rs$",
+    ],
+  },
+  {
+    name: "alias-into-iter-not-held",
+    breaks:
+      "generic code given `I::Item: IntoIterator` iterates each item as a JS iterator, which an `Option`'s `T | undefined` isn't (#278)",
+    file: "src/lower/iterators.rs",
+    find: "    if matches!(*into.kind(), ty::Alias(_, ty::AliasTy { kind: ty::Projection { def_id }, .. }) if def_id != into_iter)\n    {\n",
+    replace:
+      "    if false && matches!(*into.kind(), ty::Alias(_, ty::AliasTy { kind: ty::Projection { def_id }, .. }) if def_id != into_iter)\n    {\n",
+    tests: ["test/corpus.test.ts", "-t", "^into_iter_of_items.rs$"],
   },
   {
     name: "held-into-iter-param-not-given",
-    breaks: "`U` of `I::Item: IntoIterator<IntoIter = U>` is a JS iterator, so `Flatten`'s `next` gives `FlattenCompat` a generic `{ next }` of what's held as it is",
+    breaks:
+      "`U` of `I::Item: IntoIterator<IntoIter = U>` is a JS iterator, so `Flatten`'s `next` gives `FlattenCompat` a generic `{ next }` of what's held as it is",
     file: "src/lower/iterators.rs",
     find: "    if is_held_into_iter(tcx, id, param) {\n",
     replace: "    if false && is_held_into_iter(tcx, id, param) {\n",
-    tests: [
-      "test/std-package.test.ts"
-    ]
+    tests: ["test/std-package.test.ts"],
   },
   {
     name: "adapter-field-not-held",
-    breaks: "what a compiled std struct's field holds as it is, `FlatMap`'s `U::IntoIter`, isn't, so std's `FlatMap` is refused its `U: IntoIterator`'s dictionary",
+    breaks:
+      "what a compiled std struct's field holds as it is, `FlatMap`'s `U::IntoIter`, isn't, so std's `FlatMap` is refused its `U: IntoIterator`'s dictionary",
     file: "src/lower/iterators.rs",
     find: "                    || (super::recognition::is_compiled_std_type(tcx, adt.did())\n",
     replace: "                    || (false\n",
@@ -260,7 +305,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "impl-trait-hides-held-into-iter",
-    breaks: "an `impl Iterator` a function gives, hiding std's `Chain` of what it's given, isn't read as holding a `J::IntoIter`, so `J` is given as a JS iterator, `chain($iterator(countdown, next), tmp, drop)`, with dictionaries made in the function, not given as it is with its dictionary (ADR 0920)",
+    breaks:
+      "an `impl Iterator` a function gives, hiding std's `Chain` of what it's given, isn't read as holding a `J::IntoIter`, so `J` is given as a JS iterator, `chain($iterator(countdown, next), tmp, drop)`, with dictionaries made in the function, not given as it is with its dictionary (ADR 0920)",
     file: "src/lower/iterators.rs",
     find: "        .any(|ty| holds(ty) || hidden(ty));\n",
     replace: "        .any(|ty| holds(ty) || false && hidden(ty));\n",
@@ -269,7 +315,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "stepped-slices-length-kept",
-    breaks: "a slice's iterator asked its length too, `it.len()`, is made the array's own `values()`, which has none, a TypeError (rd270)",
+    breaks:
+      "a slice's iterator asked its length too, `it.len()`, is made the array's own `values()`, which has none, a TypeError (rd270)",
     file: "src/lower/iterators.rs",
     find: "        if declared != 1 || steps == 0 || js::mentions_in(body, &name) != steps {\n",
     replace: "        if declared != 1 || steps == 0 {\n",
@@ -277,10 +324,15 @@ export const mutations: Mutation[] = [
   },
   {
     name: "known-iterator-made-again",
-    breaks: "a variable its type says is a JS iterator, a held `take_while`'s, is made one again by `Iterator.from`, whose `[Symbol.iterator]` makes it close as it's done, dropping what's left before the statement ends (generated program 12454000)",
+    breaks:
+      "a variable its type says is a JS iterator, a held `take_while`'s, is made one again by `Iterator.from`, whose `[Symbol.iterator]` makes it close as it's done, dropping what's left before the statement ends (generated program 12454000)",
     file: "src/lower/iterators.rs",
     find: "    if e.facts.has(js::Known::Iterator) {\n        return true;\n    }\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^step_by_of_a_call_holds_its_items.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^step_by_of_a_call_holds_its_items.rs$",
+    ],
   },
 ];

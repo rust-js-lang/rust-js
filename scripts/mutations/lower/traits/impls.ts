@@ -4,7 +4,8 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "dyn-dictionary-without-drop",
-    breaks: "a dictionary doesn't carry its type's drop, so a `dyn` of a value with a destructor never drops it",
+    breaks:
+      "a dictionary doesn't carry its type's drop, so a `dyn` of a value with a destructor never drops it",
     file: "src/lower/traits/impls.rs",
     find: "        props.extend(self.dictionary_drop(tr.self_ty(), span)?);\n        props.extend(self.item_drops(tr, span)?);\n",
     replace: "        props.extend(self.item_drops(tr, span)?);\n",
@@ -12,7 +13,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "impl-dictionary-cache-undropped",
-    breaks: "a generic impl's dictionary is cached by its dictionaries only, not the drops it's given",
+    breaks:
+      "a generic impl's dictionary is cached by its dictionaries only, not the drops it's given",
     file: "src/lower/traits/impls.rs",
     find: "                    .chain(self.given_drops().iter().map(|name| Expr::var(name)))\n",
     replace: "",
@@ -20,10 +22,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "impl-dictionary-drops-unforwarded",
-    breaks: "a method through a generic impl's dictionary is given its dictionaries, but not its drops",
+    breaks:
+      "a method through a generic impl's dictionary is given its dictionaries, but not its drops",
     file: "src/lower/traits/impls.rs",
     find: "                true => self.evidence_args_with(method, instance.args, location, span),\n",
-    replace: "                true => (|| -> R<Vec<Expr>> {\n                    let mut evidence: Vec<Expr> = self.takes_caller_location(method).then_some(location).into_iter().collect();\n                    for param in const_params(self.tcx, method) {\n                        evidence.push(self.const_arg(instance.args.const_at(param.index as usize), span)?);\n                    }\n                    for bound in bounds(self.tcx, self.krate.foreign, self.krate.given, method) {\n                        let bound = ty::EarlyBinder::bind(self.tcx, bound)\n                            .instantiate(self.tcx, instance.args)\n                            .skip_normalization();\n                        evidence.push(self.dictionary(bound, span)?);\n                    }\n                    Ok(evidence)\n                })(),\n",
+    replace:
+      "                true => (|| -> R<Vec<Expr>> {\n                    let mut evidence: Vec<Expr> = self.takes_caller_location(method).then_some(location).into_iter().collect();\n                    for param in const_params(self.tcx, method) {\n                        evidence.push(self.const_arg(instance.args.const_at(param.index as usize), span)?);\n                    }\n                    for bound in bounds(self.tcx, self.krate.foreign, self.krate.given, method) {\n                        let bound = ty::EarlyBinder::bind(self.tcx, bound)\n                            .instantiate(self.tcx, instance.args)\n                            .skip_normalization();\n                        evidence.push(self.dictionary(bound, span)?);\n                    }\n                    Ok(evidence)\n                })(),\n",
     tests: ["test/corpus.test.ts", "-t", "drop_impl_dictionary"],
   },
   {
@@ -36,7 +40,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "default-unsupported-drop-eager",
-    breaks: "a default that only borrows is refused, for a drop of its `Self` rust-js can't make and it never needs",
+    breaks:
+      "a default that only borrows is refused, for a drop of its `Self` rust-js can't make and it never needs",
     file: "src/lower/traits/impls.rs",
     find: "                    unsupported.insert(index as u32, (t, what));\n                    continue;\n",
     replace: "                    let _ = (t, what);\n",
@@ -44,7 +49,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dictionary-mut-self-boxed",
-    breaks: "an object impl's `&mut self` method in its dictionary is given the box generic code calls it with",
+    breaks:
+      "an object impl's `&mut self` method in its dictionary is given the box generic code calls it with",
     file: "src/lower/traits/impls.rs",
     find: "                let given = usize::from(self.param_is_box(item.def_id, i)) + usize::from(i == 0 && self_held);\n",
     replace: "                let given = usize::from(i == 0 && self_held);\n",
@@ -52,47 +58,54 @@ export const mutations: Mutation[] = [
   },
   {
     name: "item-bounds-unwritten",
-    breaks: "an impl's dictionary has no `LabelDisplay`, and generic code reads it",
+    breaks:
+      "an impl's dictionary has no `LabelDisplay`, and generic code reads it",
     file: "src/lower/traits/impls.rs",
     find: "        let mut shared = Vec::new();\n        let mut props = self.supertrait_entries(tr, span)?;\n        props.extend(self.item_bound_entries(tr, span)?);\n",
-    replace: "        let mut shared = Vec::new();\n        let mut props = self.supertrait_entries(tr, span)?;\n",
-    tests: ["test/corpus.test.ts","-t","associated_types"],
+    replace:
+      "        let mut shared = Vec::new();\n        let mut props = self.supertrait_entries(tr, span)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "associated_types"],
   },
   {
     name: "default-own-unparameterized",
-    breaks: "a copied generic default, `describe<T: Display>`, takes no `TDisplay`, which its body reads",
+    breaks:
+      "a copied generic default, `describe<T: Display>`, takes no `TDisplay`, which its body reads",
     file: "src/lower/traits/impls.rs",
     find: "                Slot::Bound(bound) => own_params.iter().find(|&&(b, _)| b == bound).map(|(_, n)| n.clone()),\n",
     replace: "                Slot::Bound(_) => continue,\n",
-    tests: ["test/corpus.test.ts","-t","generic_trait_methods"],
+    tests: ["test/corpus.test.ts", "-t", "generic_trait_methods"],
   },
   {
     name: "trait-const-shared",
-    breaks: "`T::ZERO` of a type changed in place is one value for every use, so a `bump` of one changes the next",
+    breaks:
+      "`T::ZERO` of a type changed in place is one value for every use, so a `bump` of one changes the next",
     file: "src/lower/traits/impls.rs",
     find: "                props.push(match self.contains_mutated(ty) {\n",
     replace: "                props.push(match false {\n",
-    tests: ["test/corpus.test.ts","-t","associated_consts"],
+    tests: ["test/corpus.test.ts", "-t", "associated_consts"],
   },
   {
     name: "trait-consts-all-evaluated",
-    breaks: "every trait constant is in each dictionary, so `Wrap`'s `PER_SIDE`, which nothing reads, divides by zero as rustc evaluates it",
+    breaks:
+      "every trait constant is in each dictionary, so `Wrap`'s `PER_SIDE`, which nothing reads, divides by zero as rustc evaluates it",
     file: "src/lower/traits/impls.rs",
     find: "                if !self.krate.library && !self.krate.generic_consts.contains(&item.def_id) {\n",
     replace: "                if false {\n",
-    tests: ["test/corpus.test.ts","-t","associated_consts"],
+    tests: ["test/corpus.test.ts", "-t", "associated_consts"],
   },
   {
     name: "const-dictionary-weak-cache",
-    breaks: "`ringShow(2)` caches its dictionary in a `WeakMap`, which throws on the number `2`",
+    breaks:
+      "`ringShow(2)` caches its dictionary in a `WeakMap`, which throws on the number `2`",
     file: "src/lower/traits/impls.rs",
-    find: "                false => \"Map\",\n",
-    replace: "                false => \"WeakMap\",\n",
-    tests: ["test/corpus.test.ts","-t","const_generics"],
+    find: '                false => "Map",\n',
+    replace: '                false => "WeakMap",\n',
+    tests: ["test/corpus.test.ts", "-t", "const_generics"],
   },
   {
     name: "error-without-source",
-    breaks: "an `Error` dictionary has no `source`, which a `dyn Error` calls, and JS throws",
+    breaks:
+      "an `Error` dictionary has no `source`, which a `dyn Error` calls, and JS throws",
     file: "src/lower/traits/impls.rs",
     find: "            let source = self.is_error_source(item.def_id);",
     replace: "            let source = false;",
@@ -100,11 +113,13 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dictionary-const-not-taken",
-    breaks: "a dictionary's entry for `repeat<const N>` doesn't take `N` from its caller",
+    breaks:
+      "a dictionary's entry for `repeat<const N>` doesn't take `N` from its caller",
     file: "src/lower/traits/impls.rs",
     find: "                self.given.const_params.push((index, Expr::var(&name)));\n                params.push(name);",
-    replace: "                self.given.const_params.push((index, Expr::var(&name)));",
-    tests: ["test/corpus.test.ts","-t","const_generic_traits"],
+    replace:
+      "                self.given.const_params.push((index, Expr::var(&name)));",
+    tests: ["test/corpus.test.ts", "-t", "const_generic_traits"],
   },
   {
     name: "default-trait-consts-unknown",
@@ -112,11 +127,12 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/impls.rs",
     find: "        for index in 0..generics.parent_count {",
     replace: "        for index in 0..0 {",
-    tests: ["test/corpus.test.ts","-t","const_generic_traits"],
+    tests: ["test/corpus.test.ts", "-t", "const_generic_traits"],
   },
   {
     name: "default-without-impl-evidence",
-    breaks: "a default copied into a generic impl gives the impl's methods a clone that copies nothing, not the impl's `SClone`",
+    breaks:
+      "a default copied into a generic impl gives the impl's methods a clone that copies nothing, not the impl's `SClone`",
     file: "src/lower/traits/impls.rs",
     find: "        specialized.extend(self.given.evidence.iter().cloned());\n",
     replace: "",
@@ -124,7 +140,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dictionary-entry-own-drops-unlent",
-    breaks: "a dictionary's entry for a generic method takes its caller's drops but doesn't pass them on",
+    breaks:
+      "a dictionary's entry for a generic method takes its caller's drops but doesn't pass them on",
     file: "src/lower/traits/impls.rs",
     find: "                replaced.push(self.lend_drop_param(index, name.clone(), ty));",
     replace: "                let _ = (index, ty, &mut replaced);",
@@ -132,7 +149,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "blanket-unsized-impl-unresolved",
-    breaks: "a blanket impl over a `?Sized` type, `impl<Q: ?Sized> Equivalent<K> for Q`, is an error",
+    breaks:
+      "a blanket impl over a `?Sized` type, `impl<Q: ?Sized> Equivalent<K> for Q`, is an error",
     file: "src/lower/traits/impls.rs",
     find: "                .or_else(own)\n",
     replace: "",
@@ -140,15 +158,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "default-own-bound-trait-terms",
-    breaks: "a default's `where Self: PartialEq` isn't found as the impl's type's",
+    breaks:
+      "a default's `where Self: PartialEq` isn't found as the impl's type's",
     file: "src/lower/traits/impls.rs",
     find: "                if concrete != bound {\n                    specialized.push((concrete, Expr::var(&name)));",
-    replace: "                if false {\n                    specialized.push((concrete, Expr::var(&name)));",
+    replace:
+      "                if false {\n                    specialized.push((concrete, Expr::var(&name)));",
     tests: ["test/corpus.test.ts", "-t", "trait_default_bounds"],
   },
   {
     name: "generic-impl-const-trait-item",
-    breaks: "a generic impl's constant is looked up as its trait's, which has no body here",
+    breaks:
+      "a generic impl's constant is looked up as its trait's, which has no body here",
     file: "src/lower/traits/impls.rs",
     find: "                let own = self.tcx.impl_item_implementor_ids(id).get(&item.def_id).copied();",
     replace: "                let own = Some(item.def_id);",
@@ -156,23 +177,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "impl-item-drops-left-out",
-    breaks: "an impl's dictionary has no drop for its associated types, so generic code holding one drops nothing",
+    breaks:
+      "an impl's dictionary has no drop for its associated types, so generic code holding one drops nothing",
     file: "src/lower/traits/impls.rs",
     find: "        props.extend(self.dictionary_drop(tr.self_ty(), span)?);\n        props.extend(self.item_drops(tr, span)?);\n",
-    replace: "        props.extend(self.dictionary_drop(tr.self_ty(), span)?);\n",
+    replace:
+      "        props.extend(self.dictionary_drop(tr.self_ty(), span)?);\n",
     tests: ["test/corpus.test.ts", "-t", "associated_type_drops"],
   },
   {
     name: "writer-defaults-missing",
-    breaks: "a writer of the crate's that keeps std's `write_char` has no `write_char` in its dictionary, and it's refused",
+    breaks:
+      "a writer of the crate's that keeps std's `write_char` has no `write_char` in its dictionary, and it's refused",
     file: "src/lower/traits/impls.rs",
     find: "if is_writer_default(self.tcx, item.def_id) && !self.krate.fns.contains_key(&method) {",
-    replace: "if false && is_writer_default(self.tcx, item.def_id) && !self.krate.fns.contains_key(&method) {",
+    replace:
+      "if false && is_writer_default(self.tcx, item.def_id) && !self.krate.fns.contains_key(&method) {",
     tests: ["test/corpus.test.ts", "-t", "generic_writers"],
   },
   {
     name: "writer-entry-repeated",
-    breaks: "a writer's dictionary repeats its `write_str` arrow for `write_char` and `write_fmt`: right, but not the JS a person writes",
+    breaks:
+      "a writer's dictionary repeats its `write_str` arrow for `write_char` and `write_fmt`: right, but not the JS a person writes",
     file: "src/lower/traits/impls.rs",
     find: "        if value.is_named() {",
     replace: "        if true {",
@@ -181,64 +207,93 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-default-copied",
-    breaks: "a consumer's impl copies a library's default, whose body it can't read",
+    breaks:
+      "a consumer's impl copies a library's default, whose body it can't read",
     file: "src/lower/traits/impls.rs",
     find: "            let library_default = self.krate.foreign.in_library(method);\n",
-    replace: "            let library_default = false && self.krate.foreign.in_library(method);\n",
-    tests: ["test/crates.test.ts","-t","defaults are what"],
+    replace:
+      "            let library_default = false && self.krate.foreign.in_library(method);\n",
+    tests: ["test/crates.test.ts", "-t", "defaults are what"],
   },
   {
     name: "std-error-dictionary-markers",
-    breaks: "an associated type's marker bound, `type Label: Display + Send`, is asked a dictionary, which `Send` has none of",
+    breaks:
+      "an associated type's marker bound, `type Label: Display + Send`, is asked a dictionary, which `Send` has none of",
     file: "src/lower/traits/impls.rs",
     find: "            if operational(self.tcx, self.krate.foreign, bound.def_id) {\n                let dictionary = self.dictionary(bound, span)?;",
-    replace: "            if true {\n                let dictionary = self.dictionary(bound, span)?;",
+    replace:
+      "            if true {\n                let dictionary = self.dictionary(bound, span)?;",
     tests: ["test/corpus.test.ts", "-t", "^associated_types.rs$"],
   },
   {
     name: "dictionary-uncached",
-    breaks: "a generic impl's dictionary is made anew on each call, so two of the same impl given the same aren't the same object",
+    breaks:
+      "a generic impl's dictionary is made anew on each call, so two of the same impl given the same aren't the same object",
     file: "src/lower/traits/impls.rs",
     find: "                    vec![Expr::var(cache), keys, make],\n",
-    replace: "                    vec![Expr::new_(Expr::var(\"WeakMap\"), Vec::new()), keys, make],\n",
+    replace:
+      '                    vec![Expr::new_(Expr::var("WeakMap"), Vec::new()), keys, make],\n',
     tests: ["test/traits.test.ts", "-t", "dictionaries are explicit"],
   },
 
   {
     name: "binding-in-dictionary",
-    breaks: "an impl of a trait of bindings is refused: its methods aren't the crate's",
+    breaks:
+      "an impl of a trait of bindings is refused: its methods aren't the crate's",
     file: "src/lower/traits/impls.rs",
     find: "            if self.tcx.def_kind(item.def_id) != DefKind::AssocFn || bindings::is_binding(self.tcx, item.def_id) {\n",
-    replace: "            if self.tcx.def_kind(item.def_id) != DefKind::AssocFn {\n",
-    tests: ["test/bindings.test.ts", "-t", "binding method is read of the value"],
+    replace:
+      "            if self.tcx.def_kind(item.def_id) != DefKind::AssocFn {\n",
+    tests: [
+      "test/bindings.test.ts",
+      "-t",
+      "binding method is read of the value",
+    ],
   },
   {
     name: "library-default-const-computed",
-    breaks: "a library's trait default constant is computed, and `360 / Self::A` of 0 is rustc's error, where no consumer reads it",
+    breaks:
+      "a library's trait default constant is computed, and `360 / Self::A` of 0 is rustc's error, where no consumer reads it",
     file: "src/lower/traits/impls.rs",
     find: "                    (true, None) => None,\n",
     replace: "",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "default constant of Self"],
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "default constant of Self",
+    ],
   },
   {
     name: "default-const-of-self-refused",
-    breaks: "a generic impl's trait default constant of `Self`, `Self::A + 1`, is refused, where it's its initializer copied in",
+    breaks:
+      "a generic impl's trait default constant of `Self`, `Self::A + 1`, is refused, where it's its initializer copied in",
     file: "src/lower/traits/impls.rs",
     find: "                        None => self.default_method(item.def_id, tr.args)?,",
-    replace: "                        None => return Err(self.unsupported(span, \"a generic impl's default constant of its parameters\")),",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "default constant of Self"],
+    replace:
+      '                        None => return Err(self.unsupported(span, "a generic impl\'s default constant of its parameters")),',
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "default constant of Self",
+    ],
   },
   {
     name: "default-const-literal-getter",
-    breaks: "a literal default, `\"k\"`, is a getter that gives it back, where it's the field",
+    breaks:
+      'a literal default, `"k"`, is a getter that gives it back, where it\'s the field',
     file: "src/lower/traits/impls.rs",
     find: "                            ] if value.is_constant() => Some(value.clone()),",
     replace: "                            ] if false => Some(value.clone()),",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "default constant of Self"],
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "default constant of Self",
+    ],
   },
   {
     name: "dictionary-iterator-unmade",
-    breaks: "an impl's range for an associated type bound by `Iterator` is given to generic code as a range, which `for .. of` can't step",
+    breaks:
+      "an impl's range for an associated type bound by `Iterator` is given to generic code as a range, which `for .. of` can't step",
     file: "src/lower/traits/impls.rs",
     find: "                && (self.range_kind(output).is_some() || self.is_user_iterator(output));\n",
     replace: "                && false;\n",
@@ -246,7 +301,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "impl-cache-ignores-facts",
-    breaks: "an impl's dictionary of one size is cached for every size, a `Wrap<u64>`'s footprint counted in a `Wrap<u8>`'s bytes",
+    breaks:
+      "an impl's dictionary of one size is cached for every size, a `Wrap<u64>`'s footprint counted in a `Wrap<u8>`'s bytes",
     file: "src/lower/traits/impls.rs",
     find: "                    .chain(self.given.type_facts.iter().map(|(_, _, value)| value.clone()))\n",
     replace: "",
@@ -254,7 +310,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "impl-cache-weak-of-facts",
-    breaks: "an impl's dictionaries keyed by a type's fact, a number, are a `WeakMap`'s, which refuses it",
+    breaks:
+      "an impl's dictionaries keyed by a type's fact, a number, are a `WeakMap`'s, which refuses it",
     file: "src/lower/traits/impls.rs",
     find: " && self.given.type_facts.is_empty() {\n",
     replace: " {\n",
@@ -262,7 +319,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "own-clone-from-not-in-dictionary",
-    breaks: "an impl's own `clone_from` isn't in its `Clone` dictionary, so a generic `clone_from_slice` clones each item instead",
+    breaks:
+      "an impl's own `clone_from` isn't in its `Clone` dictionary, so a generic `clone_from_slice` clones each item instead",
     file: "src/lower/traits/impls.rs",
     find: "                && !own_clone_from\n",
     replace: "",
@@ -270,7 +328,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "default-without-impl-consts",
-    breaks: "a trait's default method lowered for an impl isn't given the impl's const parameters its `Self` names, arrayvec's `CAP`, and is refused",
+    breaks:
+      "a trait's default method lowered for an impl isn't given the impl's const parameters its `Self` names, arrayvec's `CAP`, and is refused",
     file: "src/lower/traits/impls.rs",
     find: "                false => consts.push((index, value)),\n",
     replace: "                false => {}\n",
@@ -278,31 +337,39 @@ export const mutations: Mutation[] = [
   },
   {
     name: "default-const-clash-taken",
-    breaks: "a trait default's const parameter numbered as one its impl's `Self` names is taken as either, the trait's value given for the impl's",
+    breaks:
+      "a trait default's const parameter numbered as one its impl's `Self` names is taken as either, the trait's value given for the impl's",
     file: "src/lower/traits/impls.rs",
     find: "                true if names_const(index) => {\n",
     replace: "                true if false => {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a default's const parameter numbered as its impl's"],
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "a default's const parameter numbered as its impl's",
+    ],
   },
   {
     name: "io-write-default-refused",
-    breaks: "a writer of bytes of the crate's has no `write_all` or `write_fmt`, std's defaults, so it's refused where a `W: Write` goes",
+    breaks:
+      "a writer of bytes of the crate's has no `write_all` or `write_fmt`, std's defaults, so it's refused where a `W: Write` goes",
     file: "src/lower/traits/impls.rs",
     find: "            if let Some(all) = io_write_default(self.tcx, item.def_id)\n",
-    replace: "            if let Some(all) = io_write_default(self.tcx, item.def_id).filter(|_| false)\n",
+    replace:
+      "            if let Some(all) = io_write_default(self.tcx, item.def_id).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^io_write_impl.rs$"],
   },
   {
     name: "io-write-all-as-fmt",
     breaks: "a writer of the crate's `write_all` takes its bytes as text",
     file: "src/lower/traits/impls.rs",
-    find: "                    true => \"$ioWriteAll\",\n",
-    replace: "                    true => \"$ioWriteFmt\",\n",
+    find: '                    true => "$ioWriteAll",\n',
+    replace: '                    true => "$ioWriteFmt",\n',
     tests: ["test/corpus.test.ts", "-t", "^io_write_impl.rs$"],
   },
   {
     name: "dictionary-item-facts-missing",
-    breaks: "an impl's dictionary has no `ItemSize`, so generic code reads `undefined`",
+    breaks:
+      "an impl's dictionary has no `ItemSize`, so generic code reads `undefined`",
     file: "src/lower/traits/impls.rs",
     find: "        props.extend(self.item_facts(tr, span)?);\n",
     replace: "",
@@ -310,7 +377,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "impossible-method-in-dictionary",
-    breaks: "a default whose `where` clauses an impl can't meet is copied into its dictionary, and refused",
+    breaks:
+      "a default whose `where` clauses an impl can't meet is copied into its dictionary, and refused",
     file: "src/lower/traits/impls.rs",
     find: "            if self.tcx.instantiate_and_check_impossible_clauses((item.def_id, args)) {\n",
     replace: "            if false {\n",
@@ -319,15 +387,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dyn-shim-location-undefined",
-    breaks: "an impl tracking its caller where its declaration doesn't, called through a `dyn`, is given no location, not its definition's",
+    breaks:
+      "an impl tracking its caller where its declaration doesn't, called through a `dyn`, is given no location, not its definition's",
     file: "src/lower/traits/impls.rs",
     find: "                        defaulted = Some((name.clone(), at_definition));\n",
-    replace: "                        defaulted = Some((name.clone(), at_definition)).filter(|_| false);\n",
+    replace:
+      "                        defaulted = Some((name.clone(), at_definition)).filter(|_| false);\n",
     tests: ["test/corpus.test.ts", "-t", "^track_caller_traits.rs$"],
   },
   {
     name: "copied-default-location-param-lost",
-    breaks: "a copied default that reads its caller's location takes no `location`, and reads one it wasn't given",
+    breaks:
+      "a copied default that reads its caller's location takes no `location`, and reads one it wasn't given",
     file: "src/lower/traits/impls.rs",
     find: "                Slot::Location => location.clone(),\n",
     replace: "                Slot::Location => continue,\n",
@@ -335,7 +406,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "error-defaults-unwritten",
-    breaks: "an `Error` dictionary's `description` and `cause` are its impl's, which std's aren't, and are refused",
+    breaks:
+      "an `Error` dictionary's `description` and `cause` are its impl's, which std's aren't, and are refused",
     file: "src/lower/traits/impls.rs",
     find: "            if let Some(cause) = error_default(self.tcx, item.def_id)\n",
     replace: "            if let Some(cause) = None::<bool>\n",
@@ -346,12 +418,14 @@ export const mutations: Mutation[] = [
     breaks: "an impl's own `description` and `cause` are replaced by std's",
     file: "src/lower/traits/impls.rs",
     find: "            if let Some(cause) = error_default(self.tcx, item.def_id)\n                && !self.krate.fns.contains_key(&method)\n",
-    replace: "            if let Some(cause) = error_default(self.tcx, item.def_id)\n",
+    replace:
+      "            if let Some(cause) = error_default(self.tcx, item.def_id)\n",
     tests: ["test/corpus.test.ts", "-t", "^error_description_cause.rs$"],
   },
   {
     name: "mut-result-of-impl-unboxed",
-    breaks: "an impl's `&mut Vec` given where the trait's signature says a generic `&mut Self::Out`, a box, is the array, and its caller's `.value` of it `undefined`",
+    breaks:
+      "an impl's `&mut Vec` given where the trait's signature says a generic `&mut Self::Out`, a box, is the array, and its caller's `.value` of it `undefined`",
     file: "src/lower/traits/impls.rs",
     find: "            let call = match self.boxed_in_call(item.def_id, declared_output, args) {\n",
     replace: "            let call = match None::<Ty<'tcx>> {\n",
@@ -359,7 +433,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "into-iter-given-unread",
-    breaks: "`into_iter` of a `&C` its bound gives a dictionary of is std's `Iterator.from(c)`, which a crate's collection isn't, and a `&mut C`'s is refused",
+    breaks:
+      "`into_iter` of a `&C` its bound gives a dictionary of is std's `Iterator.from(c)`, which a crate's collection isn't, and a `&mut C`'s is refused",
     file: "src/lower/traits/impls.rs",
     find: "            && (into_iter_by_dictionary(self.tcx, trait_id, self_ty)\n",
     replace: "            && (false\n",
@@ -367,7 +442,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "into-iter-given-in-generic-terms",
-    breaks: "a copied default's `into_iter` of a `&Self` is its dictionary's, where in its impl's terms it's std's, and refused",
+    breaks:
+      "a copied default's `into_iter` of a `&Self` is its dictionary's, where in its impl's terms it's std's, and refused",
     file: "src/lower/traits/impls.rs",
     find: "            && let self_ty = self.in_impl_terms(generic_args).type_at(0)\n",
     replace: "            && let self_ty = generic_args.type_at(0)\n",
@@ -375,7 +451,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "into-iter-given-box-unread",
-    breaks: "std's `IntoIterator` of a `&mut Vec` reads the box generic code gives as the array",
+    breaks:
+      "std's `IntoIterator` of a `&mut Vec` reads the box generic code gives as the array",
     file: "src/lower/traits/impls.rs",
     find: "        matches!(*self_ty.kind(), ty::Ref(_, pointee, Mutability::Mut) if !self.is_cell_pointee(pointee))\n",
     replace: "        false\n",
@@ -383,23 +460,32 @@ export const mutations: Mutation[] = [
   },
   {
     name: "self-held-not-unboxed",
-    breaks: "an impl for `&mut Money` through a dictionary is given generic code's box of a box, and reads the box as the object",
+    breaks:
+      "an impl for `&mut Money` through a dictionary is given generic code's box of a box, and reads the box as the object",
     file: "src/lower/traits/impls.rs",
     find: "                let given = usize::from(self.param_is_box(item.def_id, i)) + usize::from(i == 0 && self_held);\n",
-    replace: "                let given = usize::from(self.param_is_box(item.def_id, i));\n",
-    tests: ["test/corpus.test.ts", "-t", "^(mut_ref_to_object_impl|into_iter_of_ref_param).rs$"],
+    replace:
+      "                let given = usize::from(self.param_is_box(item.def_id, i));\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(mut_ref_to_object_impl|into_iter_of_ref_param).rs$",
+    ],
   },
   {
     name: "fmt-result-not-generic",
-    breaks: "an impl's `fmt::Result` given where generic code has a `Result<(), Self::Error>` is `undefined`, whose `TAG` it reads",
+    breaks:
+      "an impl's `fmt::Result` given where generic code has a `Result<(), Self::Error>` is `undefined`, whose `TAG` it reads",
     file: "src/lower/traits/impls.rs",
     find: "            let call = match self.generic_fmt_result(declared_output, args) {\n",
-    replace: "            let call = match false && self.generic_fmt_result(declared_output, args) {\n",
+    replace:
+      "            let call = match false && self.generic_fmt_result(declared_output, args) {\n",
     tests: ["test/corpus.test.ts", "-t", "^formatter_sink.rs$"],
   },
   {
     name: "hasher-dictionary-unfilled",
-    breaks: "a crate's hasher's dictionary has none of the provided methods its impl doesn't write",
+    breaks:
+      "a crate's hasher's dictionary has none of the provided methods its impl doesn't write",
     file: "src/lower/traits/impls.rs",
     find: "        let object = match is_hasher(self.tcx, tr.def_id) {\n",
     replace: "        let object = match false {\n",
@@ -407,7 +493,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "entry-own-facts-unlent",
-    breaks: "a dictionary's entry passes no facts its caller gives of the method's own type parameters",
+    breaks:
+      "a dictionary's entry passes no facts its caller gives of the method's own type parameters",
     file: "src/lower/traits/impls.rs",
     find: "            params.extend(fact_names);\n",
     replace: "            let _ = fact_names;\n",
@@ -423,7 +510,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "default-slot-drops-trait-terms",
-    breaks: "a copied default has no drop of `Self::Item` though its impl's given one, and reads a dictionary entry that isn't",
+    breaks:
+      "a copied default has no drop of `Self::Item` though its impl's given one, and reads a dictionary entry that isn't",
     file: "src/lower/traits/impls.rs",
     find: "            items.insert(alias, index);\n",
     replace: "            let _ = (alias, index);\n",
@@ -431,23 +519,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "default-item-drops-ungiven",
-    breaks: "a copied default isn't given the impl's drops of `T::Item`, and reads a dictionary entry that isn't",
+    breaks:
+      "a copied default isn't given the impl's drops of `T::Item`, and reads a dictionary entry that isn't",
     file: "src/lower/traits/impls.rs",
     find: "        for (at, (alias, name)) in self.given_item_drops().into_iter().enumerate() {\n",
-    replace: "        for (at, (alias, name)) in self.given_item_drops().into_iter().take(0).enumerate() {\n",
+    replace:
+      "        for (at, (alias, name)) in self.given_item_drops().into_iter().take(0).enumerate() {\n",
     tests: ["test/corpus.test.ts", "-t", "^item_keyed_map.rs$"],
   },
   {
     name: "blanket-unsized-default-refused",
-    breaks: "a blanket impl over `?Sized` types that keeps its trait's default methods, `Itertools`'s, is refused",
+    breaks:
+      "a blanket impl over `?Sized` types that keeps its trait's default methods, `Itertools`'s, is refused",
     file: "src/lower/traits/impls.rs",
     find: "                    .has_value()\n                    .then(|| ty::Instance::new_raw(item.def_id, args)),",
-    replace: "                    .has_value()\n                    .then(|| ty::Instance::new_raw(item.def_id, args))\n                    .filter(|_| false),",
+    replace:
+      "                    .has_value()\n                    .then(|| ty::Instance::new_raw(item.def_id, args))\n                    .filter(|_| false),",
     tests: ["test/corpus.test.ts", "-t", "^blanket_unsized_impl.rs$"],
   },
   {
     name: "into-iter-held-known-to-std",
-    breaks: "`into_iter()` of one whose `IntoIter` is held as it is is what recognition knows of std's, not its dictionary's",
+    breaks:
+      "`into_iter()` of one whose `IntoIter` is held as it is is what recognition knows of std's, not its dictionary's",
     file: "src/lower/traits/impls.rs",
     find: "                || (is_std_def(self.tcx, trait_id, StdItem::IntoIterator) && self.holds_into_iter(self_ty)))",
     replace: "                || false)",
@@ -455,35 +548,46 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dictionary-coded-const-getter",
-    breaks: "a dictionary's entry of an impl's function constant lowers its initializer again, where it's the module's constant it is (ADR 0410)",
+    breaks:
+      "a dictionary's entry of an impl's function constant lowers its initializer again, where it's the module's constant it is (ADR 0410)",
     file: "src/lower/traits/impls.rs",
     find: "                        Some(own) if crate::lower::analysis::impl_const(self.tcx, own) => Expr::arrow(\n",
-    replace: "                        Some(own) if false && crate::lower::analysis::impl_const(self.tcx, own) => Expr::arrow(\n",
+    replace:
+      "                        Some(own) if false && crate::lower::analysis::impl_const(self.tcx, own) => Expr::arrow(\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_fn_consts.rs$"],
     snapshots: true,
   },
   {
     name: "dictionary-const-a-function",
-    breaks: "a dictionary that takes nothing is a function, which its readers take for the object",
+    breaks:
+      "a dictionary that takes nothing is a function, which its readers take for the object",
     file: "src/lower/traits/impls.rs",
     find: "        if !self.takes_evidence(id) {\n",
     replace: "        if false {\n",
-    tests: ["test/lowering-dictionaries.test.ts", "-t", "a dictionary that takes nothing"],
+    tests: [
+      "test/lowering-dictionaries.test.ts",
+      "-t",
+      "a dictionary that takes nothing",
+    ],
   },
   {
     name: "instance-dictionary-exported",
-    breaks: "a dictionary a consumer compiles of its library's impl is exported, as if its own (ADR 0914, amended)",
+    breaks:
+      "a dictionary a consumer compiles of its library's impl is exported, as if its own (ADR 0914, amended)",
     file: "src/lower/traits/impls.rs",
     find: "            export: self.tcx.visibility(tr.def_id).is_public() && !self.krate.foreign.is_instance(id),\n",
-    replace: "            export: self.tcx.visibility(tr.def_id).is_public(),\n",
+    replace:
+      "            export: self.tcx.visibility(tr.def_id).is_public(),\n",
     tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
     name: "class-default-fields-unread",
-    breaks: "a trait default on a class's prototype calls the method that gives a field, `this.counter().value`, not the field (rd283)",
+    breaks:
+      "a trait default on a class's prototype calls the method that gives a field, `this.counter().value`, not the field (rd283)",
     file: "src/lower/traits/impls.rs",
     find: "                    bodies.get(&instance.def_id())?.mir.as_ref()?.field_given()\n",
-    replace: "                    bodies.get(&instance.def_id())?.mir.as_ref()?.field_given().filter(|_| false)\n",
+    replace:
+      "                    bodies.get(&instance.def_id())?.mir.as_ref()?.field_given().filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^class_trait_methods.rs$"],
     snapshots: true,
   },

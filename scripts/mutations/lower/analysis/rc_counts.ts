@@ -4,7 +4,8 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "self-handle-upgrade-counts",
-    breaks: "a closure's upgrade of its handle on itself counts its `Rc`, `{ value, strong, weak }`, where it always gives that `Rc` (ADR 0843, amended)",
+    breaks:
+      "a closure's upgrade of its handle on itself counts its `Rc`, `{ value, strong, weak }`, where it always gives that `Rc` (ADR 0843, amended)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "                    && !self_handles.asks_no_count(body.def_id, expr.span)\n",
     replace: "",
@@ -13,7 +14,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-counts-every-rc",
-    breaks: "a crate that counts one type's `Rc`s counts every one, React's context `{ value, strong, weak }` beside a counted `Rc<Slot<T>>` (ADR 0852)",
+    breaks:
+      "a crate that counts one type's `Rc`s counts every one, React's context `{ value, strong, weak }` beside a counted `Rc<Slot<T>>` (ADR 0852)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "    counted.all = counted.types.iter().any(|&t| head(tcx, t).is_none());\n",
     replace: "    counted.all = !counted.types.is_empty();\n",
@@ -21,7 +23,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "copy-param-dropping",
-    breaks: "an `Rc` of a `Copy` associated type's value, `U::Value`'s, is taken to drop it, so a library holding one counts it (ADR 0844)",
+    breaks:
+      "an `Rc` of a `Copy` associated type's value, `U::Value`'s, is taken to drop it, so a library holding one counts it (ADR 0844)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "                Some(t) if known_by_bounds(t) && t.needs_drop(tcx, env) => return true,\n",
     replace: "                Some(t) if known_by_bounds(t) => return true,\n",
@@ -29,15 +32,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "held-fields-unseen",
-    breaks: "a generic `Rc` in a library's struct a body drops isn't seen, so it counts none, and its consumer, given a value with a destructor, is refused (ADR 0844)",
+    breaks:
+      "a generic `Rc` in a library's struct a body drops isn't seen, so it counts none, and its consumer, given a value with a destructor, is refused (ADR 0844)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "            } else if let ty::Adt(adt, args) = *part.kind()\n                && !is_std_crate(tcx, adt.did())\n",
-    replace: "            } else if false\n                && let ty::Adt(adt, args) = *part.kind()\n                && !is_std_crate(tcx, adt.did())\n",
+    replace:
+      "            } else if false\n                && let ty::Adt(adt, args) = *part.kind()\n                && !is_std_crate(tcx, adt.did())\n",
     tests: ["test/crates.test.ts", "-t", "reads no count"],
   },
   {
     name: "borrowed-place-owned",
-    breaks: "a generic function reading a struct through a reference, `shelf.items.len()`, is taken to own its `Rc<Item<T>>`s, which it may drop, so it counts them (ADR 0852)",
+    breaks:
+      "a generic function reading a struct through a reference, `shelf.items.len()`, is taken to own its `Rc<Item<T>>`s, which it may drop, so it counts them (ADR 0852)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "        ExprKind::Deref { .. } => true,\n",
     replace: "        ExprKind::Deref { .. } => false,\n",
@@ -45,7 +51,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fn-item-owned",
-    breaks: "a function's type, `Vec::<Rc<Item<T>>>::len`'s, is taken to own its arguments' types' values, so a generic function reading a shelf counts its `Rc<Item<T>>`s (ADR 0852)",
+    breaks:
+      "a function's type, `Vec::<Rc<Item<T>>>::len`'s, is taken to own its arguments' types' values, so a generic function reading a shelf counts its `Rc<Item<T>>`s (ADR 0852)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "            if matches!(part.kind(), ty::Ref(..) | ty::FnDef(..))\n",
     replace: "            if matches!(part.kind(), ty::Ref(..))\n",
@@ -53,10 +60,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "weak-owns-pointee",
-    breaks: "a `Weak` is taken to own what it points at, so a generic function holding React's context's consumer, whose `_context` is one, counts it (ADR 0852)",
+    breaks:
+      "a `Weak` is taken to own what it points at, so a generic function holding React's context's consumer, whose `_context` is one, counts it (ADR 0852)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "                Some(t) if matches!(t.kind(), ty::Ref(..)) || weak_pointee(tcx, t).is_some() => {\n",
-    replace: "                Some(t) if matches!(t.kind(), ty::Ref(..)) => {\n",
+    replace:
+      "                Some(t) if matches!(t.kind(), ty::Ref(..)) => {\n",
     tests: ["test/crates.test.ts", "-t", "counts each type"],
   },
   {
@@ -65,12 +74,17 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/rc_counts.rs",
     find: "                counted.types.iter().any(|&t| may_be(tcx, t, pointee))\n                    || ",
     replace: "                false || ",
-    tests: ["test/corpus.test.ts", "-t", "^(rc_count_through_generic|rc_counted_per_type).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(rc_count_through_generic|rc_counted_per_type).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "rc-destructor-uncounted",
-    breaks: "an `Rc` of a value with a destructor isn't counted, and is refused",
+    breaks:
+      "an `Rc` of a value with a destructor isn't counted, and is refused",
     file: "src/lower/analysis/rc_counts.rs",
     find: "                    || !pointee.has_non_region_param() && runs(&counted, pointee)\n",
     replace: "                    || false && runs(&counted, pointee)\n",
@@ -78,35 +92,39 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rc-destructor-one-round",
-    breaks: "an `Rc` of a value that holds a counted `Rc` isn't counted, as its drop runs only once that one is",
+    breaks:
+      "an `Rc` of a value that holds a counted `Rc` isn't counted, as its drop runs only once that one is",
     file: "src/lower/analysis/rc_counts.rs",
     find: "        counted.types.extend(more);\n    }\n",
     replace: "        counted.types.extend(more);\n        break;\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_destructors.rs$"],
   },
   {
-    "name": "rc-made-counted-uncounted",
-    "breaks": "an `Rc` made a counted `Rc<RefCell<dyn T>>` isn't counted itself: the two disagree on what an `Rc` is, and a method reads what isn't there",
-    "file": "src/lower/analysis/rc_counts.rs",
-    "find": "                .filter(|(from, to)| counted.types.contains(to) && !counted.types.contains(from))\n",
-    "replace": "                .filter(|_| false)\n",
-    "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "rc_dyn_sinks"
-    ]
+    name: "rc-made-counted-uncounted",
+    breaks:
+      "an `Rc` made a counted `Rc<RefCell<dyn T>>` isn't counted itself: the two disagree on what an `Rc` is, and a method reads what isn't there",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "                .filter(|(from, to)| counted.types.contains(to) && !counted.types.contains(from))\n",
+    replace: "                .filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "rc_dyn_sinks"],
   },
   {
     name: "generic-rc-uncounted",
-    breaks: "an `Rc` of a type parameter's value, in a crate with a destructor, isn't counted, and its drop is refused",
+    breaks:
+      "an `Rc` of a type parameter's value, in a crate with a destructor, isn't counted, and its drop is refused",
     file: "src/lower/analysis/rc_counts.rs",
     find: "                counted.insert(tcx.erase_and_anonymize_regions(pointee));\n",
     replace: "                let _ = pointee;\n",
-    tests: ["test/corpus.test.ts", "-t", "^(generic_rc_drops|rc_of_param_unnamed).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(generic_rc_drops|rc_of_param_unnamed).rs$",
+    ],
   },
   {
     name: "generic-rc-of-reference-counted",
-    breaks: "an `Rc` of a reference to a type parameter's value is counted, though it drops nothing it points at",
+    breaks:
+      "an `Rc` of a reference to a type parameter's value is counted, though it drops nothing it points at",
     file: "src/lower/analysis/rc_counts.rs",
     find: "                Some(t) if matches!(t.kind(), ty::Ref(..)) || weak_pointee(tcx, t).is_some() => {\n",
     replace: "                Some(t) if weak_pointee(tcx, t).is_some() => {\n",
@@ -115,7 +133,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "may-be-ignores-arguments",
-    breaks: "two types of one constructor are taken to be one whatever they're of, so counting an `Rc<Cell<f64>>` counts every `Rc<Cell<_>>` (ADR 0852)",
+    breaks:
+      "two types of one constructor are taken to be one whatever they're of, so counting an `Rc<Cell<f64>>` counts every `Rc<Cell<_>>` (ADR 0852)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "            a == b && of_a.len() == of_b.len() && of_a.iter().zip(&of_b).all(|(&a, &b)| may_be(tcx, a, b))\n",
     replace: "            a == b\n",
@@ -124,47 +143,61 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rc-count-fn-value-unread",
-    breaks: "a count read by a function given as a value, `.map(Rc::strong_count)`, doesn't count its `Rc`s, and the compiler panics",
+    breaks:
+      "a count read by a function given as a value, `.map(Rc::strong_count)`, doesn't count its `Rc`s, and the compiler panics",
     file: "src/lower/analysis/rc_counts.rs",
     find: "            if let Some((def_id, args)) = fn_def(expr.ty) {\n",
-    replace: "            if let Some((def_id, args)) = fn_def(expr.ty).filter(|_| matches!(expr.kind, ExprKind::Call { .. })) {\n",
+    replace:
+      "            if let Some((def_id, args)) = fn_def(expr.ty).filter(|_| matches!(expr.kind, ExprKind::Call { .. })) {\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_count_fn_value.rs$"],
   },
   {
     name: "generic-rc-of-any-param-counted",
-    breaks: "a program's `Rc` of a value of a type parameter is counted where its bounds let it have a destructor, whatever its callers give, so the reconciler's `Rc<ReactContext<T>>` is `{ value, strong, weak }` (ADR 0914, amended)",
+    breaks:
+      "a program's `Rc` of a value of a type parameter is counted where its bounds let it have a destructor, whatever its callers give, so the reconciler's `Rc<ReactContext<T>>` is `{ value, strong, weak }` (ADR 0914, amended)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "                    if given(param.index) && t.needs_drop(tcx, env) {\n",
     replace: "                    if t.needs_drop(tcx, env) {\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "judged by what its callers give"],
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "judged by what its callers give",
+    ],
   },
   {
     name: "fn-identity-of-fn-items",
-    breaks: "an `Rc<dyn Fn>` made of a function item, or a type parameter's function, is compared uncounted, so two `Rc::new(hello)`s are `hello === hello`, one, where Rust's are apart (ADR 0959)",
+    breaks:
+      "an `Rc<dyn Fn>` made of a function item, or a type parameter's function, is compared uncounted, so two `Rc::new(hello)`s are `hello === hello`, one, where Rust's are apart (ADR 0959)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "        ty::Dynamic(predicates, ..) => is_fn_dyn(tcx, predicates),\n        _ => false,\n",
-    replace: "        ty::Dynamic(predicates, ..) => is_fn_dyn(tcx, predicates),\n        _ => true,\n",
+    replace:
+      "        ty::Dynamic(predicates, ..) => is_fn_dyn(tcx, predicates),\n        _ => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_fn_ptr_eq_of_(item|param).rs$"],
   },
   {
     name: "fn-identity-of-copied-closure",
-    breaks: "an `Rc<dyn Fn>` made of a closure given `Rc::new` as a variable, a copy, is compared uncounted, so two of one `Copy` closure are one function (ADR 0959)",
+    breaks:
+      "an `Rc<dyn Fn>` made of a closure given `Rc::new` as a variable, a copy, is compared uncounted, so two of one `Copy` closure are one function (ADR 0959)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "            id.is_local()\n                && (made_with.contains(&from) && !made_apart.contains(&from)\n",
-    replace: "            true || id.is_local()\n                && (made_with.contains(&from) && !made_apart.contains(&from)\n",
+    replace:
+      "            true || id.is_local()\n                && (made_with.contains(&from) && !made_apart.contains(&from)\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_fn_ptr_eq_of_copy.rs$"],
   },
   {
     name: "fn-identity-variable-made-where-given",
-    breaks: "a closure given `Rc::new` by a variable is taken to be made there, so two `Rc`s of one `Copy` closure compare as one (ADR 0959)",
+    breaks:
+      "a closure given `Rc::new` by a variable is taken to be made there, so two `Rc`s of one `Copy` closure compare as one (ADR 0959)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "    matches!(thir[given].kind, ExprKind::Closure(_))\n",
-    replace: "    matches!(thir[given].kind, ExprKind::Closure(_) | ExprKind::VarRef { .. })\n",
+    replace:
+      "    matches!(thir[given].kind, ExprKind::Closure(_) | ExprKind::VarRef { .. })\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_fn_ptr_eq_of_copy.rs$"],
   },
   {
     name: "fn-identity-through-dyn-counted",
-    breaks: "an `Rc<dyn Fn>` made another's, its lifetime's as it's pushed, is taken to be made of a function made apart, so React's commit hooks are counted, `{ value, strong, weak }` (ADR 0959)",
+    breaks:
+      "an `Rc<dyn Fn>` made another's, its lifetime's as it's pushed, is taken to be made of a function made apart, so React's commit hooks are counted, `{ value, strong, weak }` (ADR 0959)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "        ty::Dynamic(predicates, ..) => is_fn_dyn(tcx, predicates),\n",
     replace: "        ty::Dynamic(..) => false,\n",
@@ -173,7 +206,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rc-fn-moved-made-apart",
-    breaks: "an `Rc<dyn Fn>` made of a closure a `let` holds, neither `Copy` nor cloned, is counted where one is compared by `ptr_eq`, so React's Hooks, giving one to JS, is refused (ts7, ADR 0959, amended)",
+    breaks:
+      "an `Rc<dyn Fn>` made of a closure a `let` holds, neither `Copy` nor cloned, is counted where one is compared by `ptr_eq`, so React's Hooks, giving one to JS, is refused (ts7, ADR 0959, amended)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "                    || !copied.contains(&from) && !cloned.contains(&from))\n",
     replace: "                    || false)\n",
@@ -182,7 +216,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rc-fn-cloned-uncounted",
-    breaks: "an `Rc<dyn Fn>` made of a cloned closure, `Rc::new(read.clone())` beside `Rc::new(read)`, is the function, one JS function twice, so `ptr_eq` of the two is `true` (a wrong answer, ADR 0959, amended)",
+    breaks:
+      "an `Rc<dyn Fn>` made of a cloned closure, `Rc::new(read.clone())` beside `Rc::new(read)`, is the function, one JS function twice, so `ptr_eq` of the two is `true` (a wrong answer, ADR 0959, amended)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "                    cloned.insert(erased(of));\n",
     replace: "                    let _ = of;\n",
@@ -190,7 +225,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rc-fn-copied-coerced-uncounted",
-    breaks: "an `Rc<dyn Fn>` made of a `Copy` closure given `Rc::new` by its variable twice is the function, so `ptr_eq` of the two is `true` (a wrong answer, ADR 0959, amended)",
+    breaks:
+      "an `Rc<dyn Fn>` made of a `Copy` closure given `Rc::new` by its variable twice is the function, so `ptr_eq` of the two is `true` (a wrong answer, ADR 0959, amended)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "                    copied.insert(erased(from));\n",
     replace: "",
@@ -198,7 +234,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rc-of-bound-function-made-apart",
-    breaks: "an `Rc` of a `&dyn Fn` made of a function made with it, `Rc::from(function::bind(..))`, is one that may share it, so React's hooks' `dyn Fn`s are counted and drop, which `react_isomorphic`'s refuse (rd231)",
+    breaks:
+      "an `Rc` of a `&dyn Fn` made of a function made with it, `Rc::from(function::bind(..))`, is one that may share it, so React's hooks' `dyn Fn`s are counted and drop, which `react_isomorphic`'s refuse (rd231)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "            made_with.contains(&from) && !made_apart.contains(&from)\n        }\n        ty::Closure(id, _) => {",
     replace: "            false\n        }\n        ty::Closure(id, _) => {",
@@ -206,10 +243,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rc-of-shared-reference-made-with",
-    breaks: "an `Rc` of a `&dyn Fn` made of a reference given it is that function, so two of one reference are `ptr_eq` in JS where Rust's are two (rd231)",
+    breaks:
+      "an `Rc` of a `&dyn Fn` made of a reference given it is that function, so two of one reference are `ptr_eq` in JS where Rust's are two (rd231)",
     file: "src/lower/analysis/rc_counts.rs",
     find: "                        false => made_apart.insert(erased(from)),\n                    };\n                }",
-    replace: "                        false => made_with.insert(erased(from)),\n                    };\n                }",
+    replace:
+      "                        false => made_with.insert(erased(from)),\n                    };\n                }",
     tests: ["test/cross-crate-items.test.ts", "-t", "bound function, compared"],
   },
 ];

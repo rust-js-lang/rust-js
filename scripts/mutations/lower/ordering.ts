@@ -4,23 +4,28 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "unknown-lt-by-partial-cmp",
-    breaks: "`a < b` of two `js::Unknown`s is `$partialCmp(a, b) < 0`, not JS's `a < b`",
+    breaks:
+      "`a < b` of two `js::Unknown`s is `$partialCmp(a, b) < 0`, not JS's `a < b`",
     file: "src/lower/ordering.rs",
     find: "        if let Some(op @ (Op::Lt | Op::Gt)) = operator\n            && any_shape(self.tcx, field)\n",
-    replace: "        if let Some(op @ (Op::Lt | Op::Gt)) = operator\n            && false && any_shape(self.tcx, field)\n",
+    replace:
+      "        if let Some(op @ (Op::Lt | Op::Gt)) = operator\n            && false && any_shape(self.tcx, field)\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "js::Unknown's < is JS's"],
   },
   {
     name: "unknown-le-as-js",
-    breaks: "`a <= b` of two `js::Unknown`s is JS's `a <= b`, which coerces `\"1\" <= 1` true where `partial_cmp` finds none",
+    breaks:
+      '`a <= b` of two `js::Unknown`s is JS\'s `a <= b`, which coerces `"1" <= 1` true where `partial_cmp` finds none',
     file: "src/lower/ordering.rs",
     find: "        if let Some(op @ (Op::Lt | Op::Gt)) = operator\n            && any_shape(self.tcx, field)\n",
-    replace: "        if let Some(op @ (Op::Lt | Op::Gt | Op::Le | Op::Ge)) = operator\n            && any_shape(self.tcx, field)\n",
+    replace:
+      "        if let Some(op @ (Op::Lt | Op::Gt | Op::Le | Op::Ge)) = operator\n            && any_shape(self.tcx, field)\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "js::Unknown's < is JS's"],
   },
   {
     name: "unknown-unordered",
-    breaks: "`partial_cmp` of two `js::Unknown`s asks for a `PartialOrd` dictionary, and is refused",
+    breaks:
+      "`partial_cmp` of two `js::Unknown`s asks for a `PartialOrd` dictionary, and is refused",
     file: "src/lower/ordering.rs",
     find: "        if partial && (Num::of(ty).is_some_and(Num::float) || any_shape(self.tcx, ty)) {\n",
     replace: "        if partial && (Num::of(ty).is_some_and(Num::float)) {\n",
@@ -28,7 +33,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "numbered-ordered-by-name",
-    breaks: "a numbered enum's derived order is by its names' places, of numbers no name is, so each is equal and a sort leaves them as they were",
+    breaks:
+      "a numbered enum's derived order is by its names' places, of numbers no name is, so each is equal and a sort leaves them as they were",
     file: "src/lower/ordering.rs",
     find: "LangItem::OrderingEnum) || numbered\n",
     replace: "LangItem::OrderingEnum)\n",
@@ -36,7 +42,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cmp-without-cells",
-    breaks: "`refs.sort()` of a `Vec<&mut i32>` orders the cells, not what they point at",
+    breaks:
+      "`refs.sort()` of a `Vec<&mut i32>` orders the cells, not what they point at",
     file: "src/lower/ordering.rs",
     find: "        let (a, _) = self.through_refs(a, ty);\n        let (b, ty) = self.through_refs(b, ty);\n",
     replace: "        let ty = ty.peel_refs();\n",
@@ -47,12 +54,14 @@ export const mutations: Mutation[] = [
     breaks: "`Wrapping`s order the other way round, as `Reverse`'s",
     file: "src/lower/ordering.rs",
     find: "                self.cmp_value(inside(a), inside(b), args.type_at(0), partial, span, out)",
-    replace: "                self.cmp_value(inside(b), inside(a), args.type_at(0), partial, span, out)",
+    replace:
+      "                self.cmp_value(inside(b), inside(a), args.type_at(0), partial, span, out)",
     tests: ["test/corpus.test.ts", "-t", "wrapping_type"],
   },
   {
     name: "text-literal-any-order",
-    breaks: "a string compared with any literal is JS's `<`, which orders 🦀 before a full-width `！`",
+    breaks:
+      "a string compared with any literal is JS's `<`, which orders 🦀 before a full-width `！`",
     file: "src/lower/ordering.rs",
     find: "(c as u32) < 0xd800",
     replace: "(c as u32) < 0x110000",
@@ -68,58 +77,78 @@ export const mutations: Mutation[] = [
   },
   {
     name: "partial-parts-joined-by-or",
-    breaks: "a derived `partial_cmp` of `f64` parts joins them with `||`, so a `NaN` part, unordered, goes on to the next part, not `None`",
+    breaks:
+      "a derived `partial_cmp` of `f64` parts joins them with `||`, so a `NaN` part, unordered, goes on to the next part, not `None`",
     file: "src/lower/ordering.rs",
     find: "                let total = !partial || parts.iter().all(|&(_, _, t)| self.is_total(t));",
-    replace: "                let total = true || !partial || parts.iter().all(|&(_, _, t)| self.is_total(t));",
-    tests: ["test/compiler.test.ts", "-t", "PartialOrd and Ord compare with \\$cmp, a hand-written cmp, or the parts in turn"],
+    replace:
+      "                let total = true || !partial || parts.iter().all(|&(_, _, t)| self.is_total(t));",
+    tests: [
+      "test/compiler.test.ts",
+      "-t",
+      "PartialOrd and Ord compare with \\$cmp, a hand-written cmp, or the parts in turn",
+    ],
   },
   {
     name: "pin-cmp-unknown",
     breaks: "`<` of pinned `Box`es is an error",
     file: "src/lower/ordering.rs",
     find: "            ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) || self.recognition().pinned(ty).is_some() => {",
-    replace: "            ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => {",
+    replace:
+      "            ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => {",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
   },
   {
-    "name": "enum-order-refused",
-    "breaks": "a derived order of an enum with fields is refused",
-    "file": "src/lower/ordering.rs",
-    "find": "                    && (adt.did().is_local() && !bindings::is_untagged(self.tcx, adt.did())\n",
-    "replace": "                    && (false\n",
-    "tests": ["test/lowering-structs-enums.test.ts", "-t", "a derived order of an enum with fields"]
+    name: "enum-order-refused",
+    breaks: "a derived order of an enum with fields is refused",
+    file: "src/lower/ordering.rs",
+    find: "                    && (adt.did().is_local() && !bindings::is_untagged(self.tcx, adt.did())\n",
+    replace: "                    && (false\n",
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "a derived order of an enum with fields",
+    ],
   },
   {
-    "name": "enum-order-variants-only",
-    "breaks": "a derived order of an enum with fields compares its variants alone, `Rect(2, 3)` equal to `Rect(1, 9)`",
-    "file": "src/lower/ordering.rs",
-    "find": "                Ok(Expr::bin(Op::Or, order, same))",
-    "replace": "                let _ = same;\n                Ok(order)",
-    "tests": ["test/lowering-structs-enums.test.ts", "-t", "a derived order of an enum with fields"]
+    name: "enum-order-variants-only",
+    breaks:
+      "a derived order of an enum with fields compares its variants alone, `Rect(2, 3)` equal to `Rect(1, 9)`",
+    file: "src/lower/ordering.rs",
+    find: "                Ok(Expr::bin(Op::Or, order, same))",
+    replace: "                let _ = same;\n                Ok(order)",
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "a derived order of an enum with fields",
+    ],
   },
   {
     name: "cow-cmp-refused",
     breaks: "ordering `Cow`s is refused, where it's what they borrow",
     file: "src/lower/ordering.rs",
     find: "            ty::Adt(..) if let Some((x, borrowed)) = self.cow_deref(&a, ty) => {\n                let y",
-    replace: "            ty::Adt(..) if let Some((x, borrowed)) = self.cow_deref(&a, ty).filter(|_| false) => {\n                let y",
+    replace:
+      "            ty::Adt(..) if let Some((x, borrowed)) = self.cow_deref(&a, ty).filter(|_| false) => {\n                let y",
     tests: ["test/corpus.test.ts", "-t", "^cow_compare.rs$"],
   },
   {
     name: "path-cmp-refused",
     breaks: "ordering paths is refused, where it's their components'",
     file: "src/lower/ordering.rs",
-    find: "        if self.recognition().is_path(ty) {\n            return Ok(Expr::call(Expr::helper(\"$pathCmp\"), vec![a, b]));\n",
-    replace: "        if false {\n            return Ok(Expr::call(Expr::helper(\"$pathCmp\"), vec![a, b]));\n",
+    find: '        if self.recognition().is_path(ty) {\n            return Ok(Expr::call(Expr::helper("$pathCmp"), vec![a, b]));\n',
+    replace:
+      '        if false {\n            return Ok(Expr::call(Expr::helper("$pathCmp"), vec![a, b]));\n',
     tests: ["test/corpus.test.ts", "-t", "^path_compare.rs$"],
   },
   {
     name: "unit-struct-unordered",
-    breaks: "a struct of no fields, `struct Zst;`, isn't compared, and a map keyed by one is an error",
+    breaks:
+      "a struct of no fields, `struct Zst;`, isn't compared, and a map keyed by one is an error",
     file: "src/lower/ordering.rs",
     find: "            _ if self.one_value(ty) && !a.has_effects() && !b.has_effects() => Ok(Expr::int(0)),\n",
-    replace: "            _ if false && self.one_value(ty) && !a.has_effects() && !b.has_effects() => Ok(Expr::int(0)),\n",
+    replace:
+      "            _ if false && self.one_value(ty) && !a.has_effects() && !b.has_effects() => Ok(Expr::int(0)),\n",
     tests: ["test/corpus.test.ts", "-t", "^unit_struct_order.rs$"],
   },
   {
@@ -132,7 +161,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-derive-refused",
-    breaks: "a library's struct with a derived `Ord` is refused, compared as one whose impl may not be field by field",
+    breaks:
+      "a library's struct with a derived `Ord` is refused, compared as one whose impl may not be field by field",
     file: "src/lower/ordering.rs",
     find: " && !self.recognition().derives(if partial { partial_ord } else { ord }, ty)",
     replace: "",
@@ -140,7 +170,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-partial-derive-as-ord",
-    breaks: "a library's derived `PartialOrd` is asked as an `Ord`, which it hasn't, and refused",
+    breaks:
+      "a library's derived `PartialOrd` is asked as an `Ord`, which it hasn't, and refused",
     file: "src/lower/ordering.rs",
     find: "&& !self.recognition().derives(if partial { partial_ord } else { ord }, ty)",
     replace: "&& !self.recognition().derives(ord, ty)",
@@ -148,7 +179,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "ordering-of-other-type-as-self",
-    breaks: "`<` of a type with another, its own `PartialOrd<u32>`, orders the type with itself, `$cmp(m[0], 4[0])`, so it's false",
+    breaks:
+      "`<` of a type with another, its own `PartialOrd<u32>`, orders the type with itself, `$cmp(m[0], 4[0])`, so it's false",
     file: "src/lower/ordering.rs",
     find: "        if other {\n",
     replace: "        if false {\n",
@@ -156,43 +188,53 @@ export const mutations: Mutation[] = [
   },
   {
     name: "transparent-order-refused",
-    breaks: "a derived order of a `#[repr(transparent)]` struct, uuid's `Uuid`, is refused, where it's its field's",
+    breaks:
+      "a derived order of a `#[repr(transparent)]` struct, uuid's `Uuid`, is refused, where it's its field's",
     file: "src/lower/ordering.rs",
     find: "        if let Some(field) = self.transparent(ty) {\n            return self.cmp_value(a, b, field, partial, span, out);\n",
-    replace: "        if let Some(field) = self.transparent(ty).filter(|_| false) {\n            return self.cmp_value(a, b, field, partial, span, out);\n",
+    replace:
+      "        if let Some(field) = self.transparent(ty).filter(|_| false) {\n            return self.cmp_value(a, b, field, partial, span, out);\n",
     tests: ["test/corpus.test.ts", "-t", "^transparent_ord.rs$"],
   },
   {
     name: "recursive-order-inlined",
-    breaks: "a derived order of a type inside itself is inlined into its own fields' without end, and the compiler overflows its stack",
+    breaks:
+      "a derived order of a type inside itself is inlined into its own fields' without end, and the compiler overflows its stack",
     file: "src/lower/ordering.rs",
     find: "            if let Some((.., name)) = self.ordering.iter().find(|&&(t, p, _)| t == ty && p == partial) {\n",
-    replace: "            if let Some((.., name)) = self.ordering.iter().find(|_| false) {\n",
+    replace:
+      "            if let Some((.., name)) = self.ordering.iter().find(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^recursive_order.rs$"],
   },
   {
     name: "binary-search-by-lt",
-    breaks: "`binary_search` of a derived `Ord` enum compares by `<`, which orders objects as strings",
+    breaks:
+      "`binary_search` of a derived `Ord` enum compares by `<`, which orders objects as strings",
     file: "src/lower/ordering.rs",
-    find: "        if self.is_primitive_ord(item) {\n            return Ok(Expr::call_helper(\"$binarySearch\", vec![items, x]));\n",
-    replace: "        if true || self.is_primitive_ord(item) {\n            return Ok(Expr::call_helper(\"$binarySearch\", vec![items, x]));\n",
+    find: '        if self.is_primitive_ord(item) {\n            return Ok(Expr::call_helper("$binarySearch", vec![items, x]));\n',
+    replace:
+      '        if true || self.is_primitive_ord(item) {\n            return Ok(Expr::call_helper("$binarySearch", vec![items, x]));\n',
     tests: ["test/corpus.test.ts", "-t", "^search_by_ord.rs$"],
   },
   {
     name: "binary-search-own-order",
-    breaks: "`binary_search` asks its own way what `<` orders, and searches a slice of `&i32`s and one of `Ordering`s by their `Ord`, not `<`",
+    breaks:
+      "`binary_search` asks its own way what `<` orders, and searches a slice of `&i32`s and one of `Ordering`s by their `Ord`, not `<`",
     file: "src/lower/ordering.rs",
-    find: "        if self.is_primitive_ord(item) {\n            return Ok(Expr::call_helper(\"$binarySearch\", vec![items, x]));\n",
-    replace: "        if super::representation::Num::of(item).is_some_and(|n| !n.float()) || item.is_bool() {\n            return Ok(Expr::call_helper(\"$binarySearch\", vec![items, x]));\n",
+    find: '        if self.is_primitive_ord(item) {\n            return Ok(Expr::call_helper("$binarySearch", vec![items, x]));\n',
+    replace:
+      '        if super::representation::Num::of(item).is_some_and(|n| !n.float()) || item.is_bool() {\n            return Ok(Expr::call_helper("$binarySearch", vec![items, x]));\n',
     tests: ["test/corpus.test.ts", "-t", "^ordered_searches.rs$"],
     snapshots: true,
   },
   {
     name: "is-sorted-by-lte",
-    breaks: "`is_sorted()` of `char`s or of an enum compares by `<=`, which orders an astral `char` and an object wrongly",
+    breaks:
+      "`is_sorted()` of `char`s or of an enum compares by `<=`, which orders an astral `char` and an object wrongly",
     file: "src/lower/ordering.rs",
     find: "        let le = match super::representation::Num::of(item) {\n            Some(_) => Expr::bin(Op::Le, a, b),\n",
-    replace: "        let le = match Some(()) {\n            Some(_) => Expr::bin(Op::Le, a, b),\n",
+    replace:
+      "        let le = match Some(()) {\n            Some(_) => Expr::bin(Op::Le, a, b),\n",
     tests: ["test/corpus.test.ts", "-t", "^is_sorted_items.rs$"],
   },
   {
@@ -200,23 +242,30 @@ export const mutations: Mutation[] = [
     breaks: "`is_sorted` of a NaN says it's sorted",
     file: "src/lower/ordering.rs",
     find: "            Some(_) => Expr::bin(Op::Le, a, b),\n",
-    replace: "            Some(_) => Expr::unary(crate::js::UnaryOp::Not, Expr::bin(Op::Gt, a, b)),\n",
+    replace:
+      "            Some(_) => Expr::unary(crate::js::UnaryOp::Not, Expr::bin(Op::Gt, a, b)),\n",
     tests: ["test/corpus.test.ts", "-t", "slice_methods"],
   },
   {
     name: "char-clamp-unshown",
-    breaks: "a `char`'s `clamp` of bounds the wrong way round panics as `Ord`'s default does, not showing them",
+    breaks:
+      "a `char`'s `clamp` of bounds the wrong way round panics as `Ord`'s default does, not showing them",
     file: "src/lower/ordering.rs",
     find: "            if ty.peel_refs().is_char() {\n",
     replace: "            if false && ty.peel_refs().is_char() {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(clamp_ord|clamp_char_bounds)\\.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(clamp_ord|clamp_char_bounds)\\.rs$",
+    ],
   },
   {
     name: "generic-other-type-compare-refused",
     breaks: "`x <= 3u32` in code bounded by `T: PartialOrd<u32>` is refused",
     file: "src/lower/ordering.rs",
     find: "            let Some(op) = operator.filter(|_| generic || self.is_user_impl(tr)) else {\n",
-    replace: "            let Some(op) = operator.filter(|_| self.is_user_impl(tr)) else {\n",
+    replace:
+      "            let Some(op) = operator.filter(|_| self.is_user_impl(tr)) else {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_other_type_compare.rs$"],
   },
   {
@@ -224,7 +273,8 @@ export const mutations: Mutation[] = [
     breaks: "comparing B-trees, `a < b` of two `BTreeSet`s, is refused",
     file: "src/lower/ordering.rs",
     find: "            ty::Adt(_, args) if self.is_sorted(ty) => {\n",
-    replace: "            ty::Adt(_, args) if false && self.is_sorted(ty) => {\n",
+    replace:
+      "            ty::Adt(_, args) if false && self.is_sorted(ty) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_compare.rs$"],
   },
   {
@@ -254,18 +304,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "transparent-order-by-cmp",
-    breaks: "a transparent `EventPriority`'s derived `a < b` is `$cmp(a, b) < 0`, not its number's `<`",
+    breaks:
+      "a transparent `EventPriority`'s derived `a < b` is `$cmp(a, b) < 0`, not its number's `<`",
     file: "src/lower/ordering.rs",
     find: "        let field = self.ordered_as(ty);\n",
     replace: "        let field = ty;\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a transparent struct's derived order"],
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a transparent struct's derived order",
+    ],
   },
   {
     name: "transparent-order-of-its-own-impl-too",
-    breaks: "a transparent struct's hand-written `Ord`, the other way round, is taken for its field's `<`",
+    breaks:
+      "a transparent struct's hand-written `Ord`, the other way round, is taken for its field's `<`",
     file: "src/lower/ordering.rs",
     find: "            Some(field) if derived => self.ordered_as(field),\n",
     replace: "            Some(field) => self.ordered_as(field),\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a transparent struct's derived order"],
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a transparent struct's derived order",
+    ],
   },
 ];

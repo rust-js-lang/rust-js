@@ -4,16 +4,19 @@ import type { Mutation } from "../../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "clone-alias-kept",
-    breaks: "an `Rc`'s clone of a parameter is a variable of its own, `const resolved = payload`, where it's the same object, read by its name (ADR 0846)",
+    breaks:
+      "an `Rc`'s clone of a parameter is a variable of its own, `const resolved = payload`, where it's the same object, read by its name (ADR 0846)",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                && fixed.contains(a)\n                && clones.contains(b)\n",
-    replace: "                && fixed.contains(a)\n                && clones.contains(b)\n                && false\n",
+    replace:
+      "                && fixed.contains(a)\n                && clones.contains(b)\n                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_shared_by_closures.rs$"],
     snapshots: true,
   },
   {
     name: "clone-alias-of-a-reassigned-parameter",
-    breaks: "a clone of a parameter given another value after is read by the parameter's name, the other value: `payload.status = 9` of `first.status.set(9)`",
+    breaks:
+      "a clone of a parameter given another value after is read by the parameter's name, the other value: `payload.status = 9` of `first.status.set(9)`",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "        .filter(|name| !rebinds(body, name))\n",
     replace: "",
@@ -21,7 +24,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "clone-alias-of-any-const",
-    breaks: "any `const b = a` of a parameter is read as `a`, the name the program gave `b` lost: `const gas = n`'s `gas`",
+    breaks:
+      "any `const b = a` of a parameter is read as `a`, the name the program gave `b` lost: `const gas = n`'s `gas`",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                && fixed.contains(a)\n                && clones.contains(b)\n",
     replace: "                && fixed.contains(a)\n",
@@ -30,23 +34,27 @@ export const mutations: Mutation[] = [
   },
   {
     name: "tidy-effectful-init-dropped",
-    breaks: "`let a = made(1); a = 2;` is `let a = 2;`, and `made(1)` never runs",
+    breaks:
+      "`let a = made(1); a = 2;` is `let a = 2;`, and `made(1)` never runs",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "is_none_or(|e| !e.has_effects())",
     replace: "is_none_or(|e| true || !e.has_effects())",
-    tests: ["test/corpus.test.ts","-t","declarations_assigned_later"],
+    tests: ["test/corpus.test.ts", "-t", "declarations_assigned_later"],
   },
   {
     name: "tidy-declaration-past-read",
-    breaks: "a `let` moves to its next assignment past a read of it, which reads it before it's declared",
+    breaks:
+      "a `let` moves to its next assignment past a read of it, which reads it before it's declared",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                    .find(|&j| js::mentions_in(&stmts[j..=j], name) > 0)\n",
-    replace: "                    .find(|&j| matches!(stmts[j].kind, StmtKind::Assign(..)) && js::mentions_in(&stmts[j..=j], name) > 0)\n",
-    tests: ["test/corpus.test.ts","-t","declarations_assigned_later"],
+    replace:
+      "                    .find(|&j| matches!(stmts[j].kind, StmtKind::Assign(..)) && js::mentions_in(&stmts[j..=j], name) > 0)\n",
+    tests: ["test/corpus.test.ts", "-t", "declarations_assigned_later"],
   },
   {
     name: "mir-tidy-alias-kept",
-    breaks: "a `const` read once, by another `const` of it, stays a name for a name",
+    breaks:
+      "a `const` read once, by another `const` of it, stays a name for a name",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                            && js::mentions_in(&stmts[j..], a) == 1\n",
     replace: "                            && false\n",
@@ -58,112 +66,177 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                if !kept {\n",
     replace: "                if false {\n",
-    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
     name: "mir-tidy-named-temporary-kept-binding",
-    breaks: "the `const found = _4;` a temporary's renaming took stays, `const found = found;`",
+    breaks:
+      "the `const found = _4;` a temporary's renaming took stays, `const found = found;`",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "    stmts.retain(|s| {\n        !matches!(&s.kind, StmtKind::Const(n, value)\n            if n == b && matches!(&value.kind, ExprKind::Var(v) if v == a))\n    });\n",
     replace: "",
-    tests: ["test/lowering-names.test.ts", "-t", "if-let's binding from MIR keeps"],
+    tests: [
+      "test/lowering-names.test.ts",
+      "-t",
+      "if-let's binding from MIR keeps",
+    ],
   },
   {
     name: "mir-tidy-let-not-into-branch",
-    breaks: "a `let` one branch alone names is declared before the `if`, not in the branch",
+    breaks:
+      "a `let` one branch alone names is declared before the `if`, not in the branch",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "            if let Some(branch) = branch {\n",
     replace: "            if let Some(branch) = branch.filter(|_| false) {\n",
-    tests: ["test/lowering-mir-lets.test.ts", "-t", "declared where it.s first named"],
+    tests: [
+      "test/lowering-mir-lets.test.ts",
+      "-t",
+      "declared where it.s first named",
+    ],
   },
   {
     name: "mir-tidy-loop-let-outside",
-    breaks: "a `let` a loop's body assigns before it's read is declared outside the loop, `let start;`",
+    breaks:
+      "a `let` a loop's body assigns before it's read is declared outside the loop, `let start;`",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "            && !looped_reads(&stmts[first], &name)\n",
     replace: "            && false\n",
-    tests: ["test/lowering-mir-lets.test.ts", "-t", "loop.s body makes, from MIR"],
+    tests: [
+      "test/lowering-mir-lets.test.ts",
+      "-t",
+      "loop.s body makes, from MIR",
+    ],
   },
   {
     name: "mir-tidy-let-outside-label",
     breaks: "a `let` only a labeled block names stays before it, `let _7;`",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "        if alone && let StmtKind::Labeled(_, body) = &mut stmts[first].kind {\n",
-    replace: "        if false && alone && let StmtKind::Labeled(_, body) = &mut stmts[first].kind {\n",
+    replace:
+      "        if false && alone && let StmtKind::Labeled(_, body) = &mut stmts[first].kind {\n",
     tests: ["test/corpus.test.ts", "-t", "^or_bindings.rs$"],
     snapshots: true,
   },
   {
-    "name": "loop-let-branch-assigned-not-sunk",
-    "breaks": "a `let` a loop's branch makes from MIR stays one `let` before the loop, not a `const` in the branch",
-    "file": "src/lower/mir/tidy/bindings.rs",
-    "find": "                && (alone && assigned(then) && otherwise.as_deref().is_none_or(assigned)",
-    "replace": "                && (false",
-    "tests": ["test/lowering-mir-lets.test.ts", "-t", "a let a loop's branch makes is declared in the loop"]
+    name: "loop-let-branch-assigned-not-sunk",
+    breaks:
+      "a `let` a loop's branch makes from MIR stays one `let` before the loop, not a `const` in the branch",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                && (alone && assigned(then) && otherwise.as_deref().is_none_or(assigned)",
+    replace: "                && (false",
+    tests: [
+      "test/lowering-mir-lets.test.ts",
+      "-t",
+      "a let a loop's branch makes is declared in the loop",
+    ],
   },
   {
-    "name": "alias-takes-prop-name",
-    "breaks": "a named variable moved into a held prop takes the prop's name, `const code = ..`, and is read away",
-    "file": "src/lower/mir/tidy/bindings.rs",
-    "find": "                if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b) || named) {",
-    "replace": "                if false {",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    name: "alias-takes-prop-name",
+    breaks:
+      "a named variable moved into a held prop takes the prop's name, `const code = ..`, and is read away",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b) || named) {",
+    replace: "                if false {",
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
-    "name": "forwarded-value-kept",
-    "breaks": "a value a `try` makes in each branch stays a temporary's, `children = tmp` after it",
-    "file": "src/lower/mir/tidy/bindings.rs",
-    "find": "            && last_assigns(&stmts[i + 1..=i + 1], t)\n",
-    "replace": "            && false\n",
-    "tests": ["test/lowering-functions.test.ts", "-t", "a value a try makes in each branch is the variable's there"]
+    name: "forwarded-value-kept",
+    breaks:
+      "a value a `try` makes in each branch stays a temporary's, `children = tmp` after it",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "            && last_assigns(&stmts[i + 1..=i + 1], t)\n",
+    replace: "            && false\n",
+    tests: [
+      "test/lowering-functions.test.ts",
+      "-t",
+      "a value a try makes in each branch is the variable's there",
+    ],
   },
   {
-    "name": "held-prop-named-value",
-    "breaks": "what MIR holds for a prop is named `value`, not after the prop, `const href = made(\"h\")`",
-    "file": "src/lower/mir/tidy/bindings.rs",
-    "find": "                        (Some(prop), _) => vec![prop.clone()],\n",
-    "replace": "                        (Some(_), _) => Vec::new(),\n",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    name: "held-prop-named-value",
+    breaks:
+      'what MIR holds for a prop is named `value`, not after the prop, `const href = made("h")`',
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                        (Some(prop), _) => vec![prop.clone()],\n",
+    replace: "                        (Some(_), _) => Vec::new(),\n",
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
-    "name": "held-arg-named-value",
-    "breaks": "an argument MIR holds, `format!`'s, is named `value`, not `arg`",
-    "file": "src/lower/mir/tidy/bindings.rs",
-    "find": "                        true => \"arg\",\n",
-    "replace": "                        true => \"value\",\n",
-    "tests": ["test/lowering-strings.test.ts", "-t", "format!"]
+    name: "held-arg-named-value",
+    breaks: "an argument MIR holds, `format!`'s, is named `value`, not `arg`",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: '                        true => "arg",\n',
+    replace: '                        true => "value",\n',
+    tests: ["test/lowering-strings.test.ts", "-t", "format!"],
   },
   {
-    "name": "alias-takes-temporary-name",
-    "breaks": "a variable the program names, `const props = {..}`, aliased by a temporary, takes the temporary's place and is read away",
-    "file": "src/lower/mir/tidy/bindings.rs",
-    "find": "if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b) || named) {",
-    "replace": "if !is_temporary(a) && (captured.contains(&b) || named) {",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    name: "alias-takes-temporary-name",
+    breaks:
+      "a variable the program names, `const props = {..}`, aliased by a temporary, takes the temporary's place and is read away",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b) || named) {",
+    replace: "if !is_temporary(a) && (captured.contains(&b) || named) {",
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
-    "name": "mir-tidy-turn-let-branches-unseen",
-    "breaks": "`let y;` of `let y = match x { 0 => continue, .. }` is declared before the loop, as an `if`'s branches each assigning it don't count",
-    "file": "src/lower/mir/tidy/bindings.rs",
-    "find": "                    || assigned_on(&stmts[at..], name, false, past))",
-    "replace": "                    || false)",
-    "tests": ["test/lowering-mir-lets.test.ts", "-t", "a let each turn assigns"]
+    name: "mir-tidy-turn-let-branches-unseen",
+    breaks:
+      "`let y;` of `let y = match x { 0 => continue, .. }` is declared before the loop, as an `if`'s branches each assigning it don't count",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                    || assigned_on(&stmts[at..], name, false, past))",
+    replace: "                    || false)",
+    tests: ["test/lowering-mir-lets.test.ts", "-t", "a let each turn assigns"],
   },
   {
-    "name": "mir-tidy-turn-continue-goes-on",
-    "breaks": "a branch that `continue`s is taken to go on unassigned, and `let y;` stays before the loop",
-    "file": "src/lower/mir/tidy/bindings.rs",
-    "find": "            StmtKind::Continue(_) | StmtKind::Return(_) | StmtKind::Throw(_) => return true,",
-    "replace": "            StmtKind::Return(_) | StmtKind::Throw(_) => return true,",
-    "tests": ["test/lowering-mir-lets.test.ts", "-t", "a let each turn assigns"]
+    name: "mir-tidy-turn-continue-goes-on",
+    breaks:
+      "a branch that `continue`s is taken to go on unassigned, and `let y;` stays before the loop",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "            StmtKind::Continue(_) | StmtKind::Return(_) | StmtKind::Throw(_) => return true,",
+    replace:
+      "            StmtKind::Return(_) | StmtKind::Throw(_) => return true,",
+    tests: ["test/lowering-mir-lets.test.ts", "-t", "a let each turn assigns"],
   },
   {
     name: "mir-tidy-receiver-named-value",
-    breaks: "MIR's trait object a method is called on is named `value`, not `receiver`",
+    breaks:
+      "MIR's trait object a method is called on is named `value`, not `receiver`",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "            given.entry(v.clone()).or_insert_with(|| \"receiver\".to_string());\n",
+    find: '            given.entry(v.clone()).or_insert_with(|| "receiver".to_string());\n',
     replace: "",
-    tests: ["test/traits.test.ts","-t","MIR dictionaries are explicit"],
+    tests: ["test/traits.test.ts", "-t", "MIR dictionaries are explicit"],
   },
   {
     name: "mir-tidy-unread-call-kept",
@@ -171,11 +244,16 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings.rs",
     find: "            && matches!(value.kind, ExprKind::Call(..))\n",
     replace: "            && false\n",
-    tests: ["test/lowering-names.test.ts", "-t", "a block's const reuses a name where each read keeps its own"],
+    tests: [
+      "test/lowering-names.test.ts",
+      "-t",
+      "a block's const reuses a name where each read keeps its own",
+    ],
   },
   {
     name: "arms-binding-one-name-apart",
-    breaks: "`n` that two arms bind, `n` and `n$1` until named in their scopes, stays `const n = length;` in each",
+    breaks:
+      "`n` that two arms bind, `n` and `n$1` until named in their scopes, stays `const n = length;` in each",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                base(other) != base(b)\n",
     replace: "                *other != *b\n",
@@ -184,9 +262,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "user-name-taken-for-temporary",
-    breaks: "a local the program names `_5` is taken for a temporary, and named `value`",
+    breaks:
+      "a local the program names `_5` is taken for a temporary, and named `value`",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "        true => format!(\"{name}_\"),\n",
+    find: '        true => format!("{name}_"),\n',
     replace: "        true => name.to_string(),\n",
     tests: ["test/corpus.test.ts", "-t", "temporary_shaped_names"],
     snapshots: true,
@@ -202,7 +281,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "alias-of-changing-set-between",
-    breaks: "an alias of a variable set before it's read is the variable, `pair(n, { n += 1; n })` given the new `n` twice",
+    breaks:
+      "an alias of a variable set before it's read is the variable, `pair(n, { n += 1; n })` given the new `n` twice",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                let kept = last.is_some_and(|last| {\n",
     replace: "                let kept = false && last.is_some_and(|last| {\n",
@@ -219,7 +299,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "let-not-sunk-through-loop",
-    breaks: "a `let` of an inner loop is declared before the outer one, `let score;`, assigned in the inner",
+    breaks:
+      "a `let` of an inner loop is declared before the outer one, `let score;`, assigned in the inner",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "            alone && !looped_reads(&stmts[at], name) && assigned_first(body, name, past)\n",
     replace: "            false\n",
@@ -228,24 +309,35 @@ export const mutations: Mutation[] = [
   },
   {
     name: "let-not-sunk-through-labeled-block",
-    breaks: "a `let` first assigned in a labeled block is declared before the loop around it",
+    breaks:
+      "a `let` first assigned in a labeled block is declared before the loop around it",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "        StmtKind::Labeled(label, body) => {\n            alone && assigned_first(body, name, &within(past, label, true))\n                || assigned_on(&stmts[at..], name, false, past)\n        }\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(nested_loop_jumps|range_values|or_bindings|interpreter).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(nested_loop_jumps|range_values|or_bindings|interpreter).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "paired-temporaries-unpaired",
-    breaks: "a temporary assigned then read once each time stays a `let` assigned and read, `tmp$7 = make(8); tmp$8 = [tmp$6, tmp$7]` (ADR 0564)",
+    breaks:
+      "a temporary assigned then read once each time stays a `let` assigned and read, `tmp$7 = make(8); tmp$8 = [tmp$6, tmp$7]` (ADR 0564)",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                        true => *pairs.entry(name.clone()).or_default() += 1,\n",
     replace: "                        true => {}\n",
-    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+    tests: [
+      "test/std-package.test.ts",
+      "-t",
+      "the committed @rust-js/std is std's bodies",
+    ],
   },
   {
     name: "temporary-names-unsuggested",
-    breaks: "a temporary is never named as rust-analyzer suggests, after the call that made it or the type it holds, but `value`",
+    breaks:
+      "a temporary is never named as rust-analyzer suggests, after the call that made it or the type it holds, but `value`",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                        (None, _) => suggested.get(name).cloned().unwrap_or_default(),\n",
     replace: "                        (None, _) => Vec::new(),\n",
@@ -254,7 +346,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "temporary-name-taken-suffixed",
-    breaks: "a temporary whose suggested names are taken is given one apart, `point$1`, not `value`",
+    breaks:
+      "a temporary whose suggested names are taken is given one apart, `point$1`, not `value`",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "            .find(|name| !taken.contains(name))\n",
     replace: "            .next()\n",
@@ -263,7 +356,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "temporary-takes-import-name",
-    breaks: "a temporary is named after a function another module gives this one, so its import is renamed `prepare$1`",
+    breaks:
+      "a temporary is named after a function another module gives this one, so its import is renamed `prepare$1`",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "            taken.insert(symbol.export.clone());\n",
     replace: "            let _ = symbol;\n",
@@ -272,7 +366,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "shadow-of-what-a-handle-sets",
-    breaks: "a binding a `&mut`'s handle sets after the shadow is assigned, so the handle sets the new one",
+    breaks:
+      "a binding a `&mut`'s handle sets after the shadow is assigned, so the handle sets the new one",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "        ExprKind::Handle(place, _) | ExprKind::Pair(place, _) => place.visit_vars(&mut insert),\n",
     replace: "",
@@ -280,15 +375,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unread-read-kept",
-    breaks: "an old value a `replace` gave and nothing reads stays, `const old = task.callback;`",
+    breaks:
+      "an old value a `replace` gave and nothing reads stays, `const old = task.callback;`",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                Some(StmtKind::Assign(target, _)) if target.kind == value.kind)\n",
-    replace: "                Some(StmtKind::Assign(target, _)) if false && target.kind == value.kind)\n",
+    replace:
+      "                Some(StmtKind::Assign(target, _)) if false && target.kind == value.kind)\n",
     tests: ["test/lowering-cells.test.ts", "-t", "written by replace and take"],
   },
   {
     name: "sunk-let-at-shadowing-closure",
-    breaks: "a `let` sinks only as far as a closure whose parameter shadows it, `(a, b) => ..`, and isn't merged with the write after",
+    breaks:
+      "a `let` sinks only as far as a closure whose parameter shadows it, `(a, b) => ..`, and isn't merged with the write after",
     file: "src/lower/mir/tidy/bindings.rs",
     find: " && reads_past_shadows(&stmts[j], &name))",
     replace: ")",
@@ -297,41 +395,58 @@ export const mutations: Mutation[] = [
   },
   {
     name: "sunk-let-block-unset",
-    breaks: "a labeled block MIR made of an `if` chain, each way out of which sets a `let`, isn't known to set it, so the `let` is hoisted out of the loop",
+    breaks:
+      "a labeled block MIR made of an `if` chain, each way out of which sets a `let`, isn't known to set it, so the `let` is hoisted out of the loop",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "            alone && assigned_first(body, name, &within(past, label, true))\n                || assigned_on(&stmts[at..], name, false, past)\n",
-    replace: "            alone && assigned_first(body, name, &within(past, label, true))\n",
-    tests: ["test/lowering-loops.test.ts", "-t", "a let a loop's body declares"],
+    replace:
+      "            alone && assigned_first(body, name, &within(past, label, true))\n",
+    tests: [
+      "test/lowering-loops.test.ts",
+      "-t",
+      "a let a loop's body declares",
+    ],
   },
   {
     name: "sunk-let-if-falls-through-unset",
-    breaks: "an `if` with no `else` that sets a `let`, what follows setting it where it doesn't, isn't known to set it",
+    breaks:
+      "an `if` with no `else` that sets a `let`, what follows setting it where it doesn't, isn't known to set it",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                        && assigned_on(otherwise.as_deref().unwrap_or_default(), name, on, past)\n",
-    replace: "                        && assigned_on(otherwise.as_deref().unwrap_or_default(), name, false, past)\n",
-    tests: ["test/lowering-loops.test.ts", "-t", "a let a loop's body declares"],
+    replace:
+      "                        && assigned_on(otherwise.as_deref().unwrap_or_default(), name, false, past)\n",
+    tests: [
+      "test/lowering-loops.test.ts",
+      "-t",
+      "a let a loop's body declares",
+    ],
   },
   {
     name: "sunk-let-own-break-unknown",
-    breaks: "a labeled block all that names a `let` sets, its `break` past where nothing reads it, isn't known to go there, so the `let` is hoisted out of the loop",
+    breaks:
+      "a labeled block all that names a `let` sets, its `break` past where nothing reads it, isn't known to go there, so the `let` is hoisted out of the loop",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "            alone && assigned_first(body, name, &within(past, label, true))\n",
-    replace: "            alone && assigned_first(body, name, &within(past, label, false))\n",
+    replace:
+      "            alone && assigned_first(body, name, &within(past, label, false))\n",
     tests: ["test/corpus.test.ts", "-t", "^or_bindings.rs$"],
     snapshots: true,
   },
   {
     name: "sunk-let-loop-unset",
-    breaks: "a `while (true)` each of whose `break`s goes on with a `let` set isn't known to set it, so the `let` is hoisted out of the loop around",
+    breaks:
+      "a `while (true)` each of whose `break`s goes on with a `let` set isn't known to set it, so the `let` is hoisted out of the loop around",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                StmtKind::While { cond, body, label } if matches!(cond.kind, ExprKind::Bool(true)) => {\n",
-    replace: "                StmtKind::While { cond, body, label } if matches!(cond.kind, ExprKind::Bool(true)) && false => {\n",
+    replace:
+      "                StmtKind::While { cond, body, label } if matches!(cond.kind, ExprKind::Bool(true)) && false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^loop_value_after_loop.rs$"],
     snapshots: true,
   },
   {
     name: "temporaries-named-by-nesting",
-    breaks: "temporaries are named outer lists first, so a `let` set late takes `next` from one read first",
+    breaks:
+      "temporaries are named outer lists first, so a `let` set late takes `next` from one read first",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "    renames.sort_by_key(|(from, ..)| first.get(from).copied().unwrap_or(usize::MAX));\n",
     replace: "",
@@ -340,15 +455,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "plain-read-of-a-getter",
-    breaks: "a getter's read held by MIR is written where it's read, each time, `typeof child.type` then `const type = child.type`",
+    breaks:
+      "a getter's read held by MIR is written where it's read, each time, `typeof child.type` then `const type = child.type`",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                    && value.reads_same()\n",
     replace: "",
-    tests: ["test/jsx-children.test.ts", "-t", "a capture of an inlined closure leaves no const behind"],
+    tests: [
+      "test/jsx-children.test.ts",
+      "-t",
+      "a capture of an inlined closure leaves no const behind",
+    ],
   },
   {
     name: "given-last-past-a-jump",
-    breaks: "`node = { let node = make(); if skip { continue; } node }` gives `node` what's made where it's made, so a turn that skips still changes it",
+    breaks:
+      "`node = { let node = make(); if skip { continue; } node }` gives `node` what's made where it's made, so a turn that skips still changes it",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "        || jumps(between)\n",
     replace: "",
@@ -356,7 +477,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "given-last-of-a-captured",
-    breaks: "a closure reading `node`, run before `node` is given what's made, reads what's made, not what `node` was",
+    breaks:
+      "a closure reading `node`, run before `node` is given what's made, reads what's made, not what `node` was",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "    if early(x) || early(y) {\n",
     replace: "    if false {\n",
@@ -364,16 +486,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "given-last-of-another-name",
-    breaks: "`const value = make(); x = value;` is `x = make()`, the program's `value` lost",
+    breaks:
+      "`const value = make(); x = value;` is `x = make()`, the program's `value` lost",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "    crate::names::apart(apart).is_some_and(|(of, _)| of == base)\n",
-    replace: "    crate::names::apart(apart).is_some_and(|(of, _)| of == base) || !apart.is_empty()\n",
+    replace:
+      "    crate::names::apart(apart).is_some_and(|(of, _)| of == base) || !apart.is_empty()\n",
     tests: ["test/corpus.test.ts", "-t", "^cache_node_walk.rs$"],
     snapshots: true,
   },
   {
     name: "filled-lazily-not-negated",
-    breaks: "`if let Some(cache) = node.o.get() { cache } else { fill }` fills the cache where it's there, `if (cache)`, not `if (!cache)`",
+    breaks:
+      "`if let Some(cache) = node.o.get() { cache } else { fill }` fills the cache where it's there, `if (cache)`, not `if (!cache)`",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                false => StmtKind::If(test.negated_test(), otherwise, None),\n",
     replace: "                false => StmtKind::If(test, otherwise, None),\n",
@@ -381,7 +506,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "given-last-of-a-capture",
-    breaks: "a closure's `x = { let x = k * 10; check(k); x }` of a variable it captures sets it before `check` unwinds, which `catch_unwind`'s caller then reads",
+    breaks:
+      "a closure's `x = { let x = k * 10; check(k); x }` of a variable it captures sets it before `check` unwinds, which `catch_unwind`'s caller then reads",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "    if !kin(x, y) || !declared.contains(x) {\n",
     replace: "    if !kin(x, y) {\n",
@@ -389,16 +515,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "held-arg-let-unnamed",
-    breaks: "a held argument a `try` assigns, `let _arg; try { _arg = .. }`, keeps MIR's lowering's name, not `arg`",
+    breaks:
+      "a held argument a `try` assigns, `let _arg; try { _arg = .. }`, keeps MIR's lowering's name, not `arg`",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                StmtKind::Let(name, _) if is_held_arg(name) => renames.push((name.clone(), Vec::new(), \"arg\")),\n",
+    find: '                StmtKind::Let(name, _) if is_held_arg(name) => renames.push((name.clone(), Vec::new(), "arg")),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_drops_nothing.rs$"],
     snapshots: true,
   },
   {
     name: "unread-spreads-apart",
-    breaks: "an unread `[...a, ...b]`, a `chain` collected, is taken apart into `...a;` statements, which no JS writes: the compiler crashes (#256)",
+    breaks:
+      "an unread `[...a, ...b]`, a `chain` collected, is taken apart into `...a;` statements, which no JS writes: the compiler crashes (#256)",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "            && !parts.iter().any(|part| matches!(part.kind, ExprKind::Spread(_)))\n",
     replace: "",
@@ -406,7 +534,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "clone-alias-of-a-capture-kept",
-    breaks: "a clone of what a `move` closure captured stays `const prev$1 = prev`, read by that name (ADR 0879)",
+    breaks:
+      "a clone of what a `move` closure captured stays `const prev$1 = prev`, read by that name (ADR 0879)",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "        .chain(kept.iter().map(String::as_str))\n",
     replace: "",
@@ -415,15 +544,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "alias-kept-where-set-after",
-    breaks: "`const _15 = newLast;` of a variable set past each of its reads stays, named `last`, `if (last == null)`, not `newLast` where it's read",
+    breaks:
+      "`const _15 = newLast;` of a variable set past each of its reads stays, named `last`, `if (last == null)`, not `newLast` where it's read",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                        && (declares(reads, of) || !read_before_set(reads, alias, of, &mut false))\n",
     replace: "",
-    tests: ["test/lowering-shadows.test.ts", "-t", "a binding of a variable set again past its reads is the variable"],
+    tests: [
+      "test/lowering-shadows.test.ts",
+      "-t",
+      "a binding of a variable set again past its reads is the variable",
+    ],
   },
   {
     name: "alias-read-after-set",
-    breaks: "a copy read after what it copies is set, `const old = current; current = next; sum += old.value`, reads the new value",
+    breaks:
+      "a copy read after what it copies is set, `const old = current; current = next; sum += old.value`, reads the new value",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "            _ if reads(one) && (*set || sets(one)) => return false,\n",
     replace: "            _ if reads(one) && sets(one) => return false,\n",
@@ -431,7 +566,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "alias-read-in-a-branch-after-set",
-    breaks: "an `if` whose branch reads a copy after its variable is set before the `if` reads the new value",
+    breaks:
+      "an `if` whose branch reads a copy after its variable is set before the `if` reads the new value",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                if (*set && reads(&test)) || (reads(&test) && sets(&test)) {\n",
     replace: "                if reads(&test) && sets(&test) {\n",
@@ -439,48 +575,76 @@ export const mutations: Mutation[] = [
   },
   {
     name: "set-in-a-leaving-branch-carried",
-    breaks: "a `while let`'s binding stays `const current = child;` where the branch that sets `child` leaves the turn, `child = current.sibling; continue;` (ADR 0434, amended)",
+    breaks:
+      "a `while let`'s binding stays `const current = child;` where the branch that sets `child` leaves the turn, `child = current.sibling; continue;` (ADR 0434, amended)",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                *set = (goes_on(then) && *set) || (goes_on(otherwise) && other);\n",
     replace: "                *set = *set || (goes_on(otherwise) && other);\n",
-    tests: ["test/corpus.test.ts", "-t", "^while_let_binding_is_its_scrutinee.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^while_let_binding_is_its_scrutinee.rs$",
+    ],
     snapshots: true,
   },
   {
     name: "set-in-a-going-on-then-lost",
-    breaks: "a `then` that sets the variable and goes on sets it on no way: a read after it reads the new value",
+    breaks:
+      "a `then` that sets the variable and goes on sets it on no way: a read after it reads the new value",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                *set = (goes_on(then) && *set) || (goes_on(otherwise) && other);\n",
     replace: "                *set = goes_on(otherwise) && other;\n",
-    tests: ["test/corpus.test.ts", "-t", "^while_let_binding_is_its_scrutinee.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^while_let_binding_is_its_scrutinee.rs$",
+    ],
   },
   {
     name: "set-in-a-going-on-else-lost",
-    breaks: "an `else` that sets the variable and goes on sets it on no way: a read after it reads the new value",
+    breaks:
+      "an `else` that sets the variable and goes on sets it on no way: a read after it reads the new value",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                *set = (goes_on(then) && *set) || (goes_on(otherwise) && other);\n",
     replace: "                *set = goes_on(then) && *set;\n",
-    tests: ["test/corpus.test.ts", "-t", "^while_let_binding_is_its_scrutinee.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^while_let_binding_is_its_scrutinee.rs$",
+    ],
   },
   {
     name: "alias-read-placeless",
-    breaks: "a temporary's read written as its variable has no place, so a field's doc comment, placed where its value is, is lost: the playground's `crates: crateFiles` after `module: await module` without its `/** Each crate .. */`",
+    breaks:
+      "a temporary's read written as its variable has no place, so a field's doc comment, placed where its value is, is lost: the playground's `crates: crateFiles` after `module: await module` without its `/** Each crate .. */`",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                                *e = of.clone().or_at(e.span).or_at(at);\n",
-    replace: "                                *e = of.clone().or_at(e.span);\n                                let _ = at;\n",
-    tests: ["test/lowering-comment-fields.test.ts", "-t", "where its value is a variable MIR moved"],
+    replace:
+      "                                *e = of.clone().or_at(e.span);\n                                let _ = at;\n",
+    tests: [
+      "test/lowering-comment-fields.test.ts",
+      "-t",
+      "where its value is a variable MIR moved",
+    ],
   },
   {
     name: "alias-of-a-given-name-renamed",
-    breaks: "a variable a `let`'s `#[rust_js::name]` names, moved into another, `let made = synthetic_event`, takes the other's name: `const made = createSyntheticEvent(..)`, the name the program gave gone",
+    breaks:
+      "a variable a `let`'s `#[rust_js::name]` names, moved into another, `let made = synthetic_event`, takes the other's name: `const made = createSyntheticEvent(..)`, the name the program gave gone",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                let named = given.contains(a.as_str()) && !given.contains(&b);\n",
-    replace: "                let named = given.contains(a.as_str()) && false;\n",
-    tests: ["test/js-constructors.test.ts", "-t", "a factory makes a constructor function closed over"],
+    replace:
+      "                let named = given.contains(a.as_str()) && false;\n",
+    tests: [
+      "test/js-constructors.test.ts",
+      "-t",
+      "a factory makes a constructor function closed over",
+    ],
   },
   {
     name: "given-last-made-before-in-its-block-unseen",
-    breaks: "a closure made before in the block, `const read = () => seen`, called between, reads what `seen` is given, not what it was (rd105, ADR 0853)",
+    breaks:
+      "a closure made before in the block, `const read = () => seen`, called between, reads what `seen` is given, not what it was (rd105, ADR 0853)",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "    let captured = captured(&stmts[..given]);\n",
     replace: "    let captured = HashSet::<String>::new();\n",
@@ -488,7 +652,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "given-last-made-around-unseen",
-    breaks: "a closure made before the `if` the variable's given in, called between, reads what it's given, not what it was (rd105, ADR 0853)",
+    breaks:
+      "a closure made before the `if` the variable's given in, called between, reads what it's given, not what it was (rd105, ADR 0853)",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "        made.extend(captured(std::slice::from_ref(&*stmt)));\n",
     replace: "",

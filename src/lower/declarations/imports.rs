@@ -52,6 +52,32 @@ pub(super) fn imports(
     declarations
 }
 
+impl super::Declarations<'_, '_> {
+    /// Another module's item `did`, imported from `file`, as its default where it is (ADR 0761).
+    pub(super) fn imported(&mut self, file: Vec<String>, did: rustc_span::def_id::DefId, name: String) {
+        let default = crate::lower::default_exports::exported_as(self.tcx, did, &name) == "default";
+        self.module_imports.insert((file, name, default));
+    }
+}
+
+/// The modules whose namespaces the declarations name, each imported whole,
+/// `import type * as ReactFiberReconciler from "./ReactFiberReconciler.js";`
+/// (ADR 1037): of the crate's modules by their path, of libraries' by their
+/// file's specifier, as their types are.
+pub(super) fn namespaces(imported: &BTreeSet<(Result<Vec<String>, String>, String)>) -> Vec<Value> {
+    (imported.iter())
+        .map(|(from, name)| {
+            let mut import = json!({ "kind": "import", "names": [], "namespace": name, "typeOnly": true });
+            let from = match from {
+                Ok(path) => json!({ "module": path }),
+                Err(specifier) => json!({ "specifier": specifier }),
+            };
+            (import.as_object_mut().expect("an object")).extend(from.as_object().expect("an object").clone());
+            import
+        })
+        .collect()
+}
+
 /// The type-only imports of a module, `from`, of its default and `names`:
 /// one of each, `import type Complex from ..;` and `import type { Parts }
 /// from ..;`, as TypeScript allows a type-only import a default or named

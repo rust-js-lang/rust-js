@@ -4,7 +4,8 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "layout-in-function-environment",
-    breaks: "`size_of_val` of a generic `async fn`'s future is laid out in the function's environment, where 1.98 finds it too generic, and is refused",
+    breaks:
+      "`size_of_val` of a generic `async fn`'s future is laid out in the function's environment, where 1.98 finds it too generic, and is refused",
     file: "src/lower/plain.rs",
     find: "            .layout_of(ty::TypingEnv::fully_monomorphized().as_query_input(ty))\n",
     replace: "            .layout_of(self.typing_env.as_query_input(ty))\n",
@@ -22,13 +23,14 @@ export const mutations: Mutation[] = [
     name: "zeroed-struct-allowed",
     breaks: "a zeroed struct of a `String` is `undefined`, a value no field is",
     file: "src/lower/plain.rs",
-    find: "            return Err(self.unsupported(span, &format!(\"a zeroed `{ty}`, which may be no value of it\")));\n",
+    find: '            return Err(self.unsupported(span, &format!("a zeroed `{ty}`, which may be no value of it")));\n',
     replace: "            return Ok(Expr::undefined());\n",
     tests: ["test/corpus.test.ts", "-t", "box_zeroed_struct"],
   },
   {
     name: "plain-std-struct",
-    breaks: "a zeroed `Wrapping<u32>` is made as a struct of its field, where JS has its number",
+    breaks:
+      "a zeroed `Wrapping<u32>` is made as a struct of its field, where JS has its number",
     file: "src/lower/plain.rs",
     find: "            ty::Adt(adt, args) if adt.is_struct() && self.is_rust_adt(adt.did()) => {\n",
     replace: "            ty::Adt(adt, args) if adt.is_struct() => {\n",
@@ -36,7 +38,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "plain-std-number",
-    breaks: "a `Duration`, which JS has as its nanoseconds, is read as its bytes, `0n` zeroed",
+    breaks:
+      "a `Duration`, which JS has as its nanoseconds, is read as its bytes, `0n` zeroed",
     file: "src/lower/plain.rs",
     find: "        let number = matches!(ty.kind(), ty::Int(_) | ty::Uint(_) | ty::Float(_)) && Num::of(ty).is_some();\n",
     replace: "        let number = Num::of(ty).is_some();\n",
@@ -44,15 +47,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "transmute-lifetime-refused",
-    breaks: "a `transmute` of a `&'a str` as a `&'static str`, the same value, is refused",
+    breaks:
+      "a `transmute` of a `&'a str` as a `&'static str`, the same value, is refused",
     file: "src/lower/plain.rs",
     find: "        if erased(from) == erased(to) {\n",
     replace: "        if erased(from) == erased(to) && false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(plain_data|transparent_transmute).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(plain_data|transparent_transmute).rs$",
+    ],
   },
   {
     name: "transmute-part-any-size",
-    breaks: "a part at the same offset is retyped whatever its size: a `Halves`'s `low` is the `u32` it's read as",
+    breaks:
+      "a part at the same offset is retyped whatever its size: a `Halves`'s `low` is the `u32` it's read as",
     file: "src/lower/plain.rs",
     find: "                    .find(|r| r.offset == offset && cx.scalar_bytes(r.ty) == bytes_of)\n",
     replace: "                    .find(|r| r.offset == offset)\n",
@@ -63,7 +72,8 @@ export const mutations: Mutation[] = [
     breaks: "no part is another's: a `u32` as an `i32` goes through its bytes",
     file: "src/lower/plain.rs",
     find: "                    .find(|r| r.offset == offset && cx.scalar_bytes(r.ty) == bytes_of)\n",
-    replace: "                    .find(|r| r.offset == offset && cx.scalar_bytes(r.ty) == bytes_of && false)\n",
+    replace:
+      "                    .find(|r| r.offset == offset && cx.scalar_bytes(r.ty) == bytes_of && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
     snapshots: true,
   },
@@ -72,7 +82,8 @@ export const mutations: Mutation[] = [
     breaks: "a part's bytes are written big-endian, as wasm32's aren't",
     file: "src/lower/plain.rs",
     find: "            vec![bits, Expr::int(i128::from(n)), Expr::bool(true)],\n",
-    replace: "            vec![bits, Expr::int(i128::from(n)), Expr::bool(false)],\n",
+    replace:
+      "            vec![bits, Expr::int(i128::from(n)), Expr::bool(false)],\n",
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
   },
   {
@@ -80,7 +91,8 @@ export const mutations: Mutation[] = [
     breaks: "a part is read from the bytes big-endian, as wasm32's aren't",
     file: "src/lower/plain.rs",
     find: "            vec![mine, Expr::int(i128::from(n)), Expr::bool(true), Expr::bool(signed)],\n",
-    replace: "            vec![mine, Expr::int(i128::from(n)), Expr::bool(false), Expr::bool(signed)],\n",
+    replace:
+      "            vec![mine, Expr::int(i128::from(n)), Expr::bool(false), Expr::bool(signed)],\n",
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
   },
   {
@@ -88,12 +100,14 @@ export const mutations: Mutation[] = [
     breaks: "an `i32` read from the bytes is unsigned, `4294967294` for `-2`",
     file: "src/lower/plain.rs",
     find: "            vec![mine, Expr::int(i128::from(n)), Expr::bool(true), Expr::bool(signed)],\n",
-    replace: "            vec![mine, Expr::int(i128::from(n)), Expr::bool(true), Expr::bool(false)],\n",
+    replace:
+      "            vec![mine, Expr::int(i128::from(n)), Expr::bool(true), Expr::bool(false)],\n",
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
   },
   {
     name: "padding-dropped",
-    breaks: "the padding between a value's parts has no bytes, so what's after it is read early",
+    breaks:
+      "the padding between a value's parts has no bytes, so what's after it is read early",
     file: "src/lower/plain.rs",
     find: "            items.extend((at..read.offset).map(|_| Expr::int(0)));\n",
     replace: "",
@@ -101,10 +115,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "parts-at-their-own-offset",
-    breaks: "a part's offset is in its parent, not the whole: a `Split`'s `halves.high` is at 2",
+    breaks:
+      "a part's offset is in its parent, not the whole: a `Split`'s `halves.high` is at 2",
     file: "src/lower/plain.rs",
     find: "            .map(|(at, part)| self.plain_made(part, offset + at, scalar, span))\n",
-    replace: "            .map(|(at, part)| self.plain_made(part, *at, scalar, span))\n",
+    replace:
+      "            .map(|(at, part)| self.plain_made(part, *at, scalar, span))\n",
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
   },
   {
@@ -120,14 +136,15 @@ export const mutations: Mutation[] = [
     breaks: "a `bool` of a byte is whether it's 0",
     file: "src/lower/plain.rs",
     find: "            None if ty.is_bool() => Expr::bin(Op::Ne, bits, Expr::int(0)),\n",
-    replace: "            None if ty.is_bool() => Expr::bin(Op::Eq, bits, Expr::int(0)),\n",
+    replace:
+      "            None if ty.is_bool() => Expr::bin(Op::Eq, bits, Expr::int(0)),\n",
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
   },
   {
     name: "char-of-bits-number",
     breaks: "a `char` of a `u32` is the number, not its character",
     file: "src/lower/plain.rs",
-    find: "            None => Expr::call(Expr::member(Expr::var(\"String\"), \"fromCodePoint\"), vec![bits]),\n",
+    find: '            None => Expr::call(Expr::member(Expr::var("String"), "fromCodePoint"), vec![bits]),\n',
     replace: "            None => bits,\n",
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
   },
@@ -135,8 +152,9 @@ export const mutations: Mutation[] = [
     name: "float-bits-as-number",
     breaks: "an `f32` as a `u32` is its value, `1`, not its bits",
     file: "src/lower/plain.rs",
-    find: "            Some(num) if num.float() => Ok(Expr::call(\n                Expr::helper(\"$floatToBits\"),\n",
-    replace: "            Some(num) if num.float() && false => Ok(Expr::call(\n                Expr::helper(\"$floatToBits\"),\n",
+    find: '            Some(num) if num.float() => Ok(Expr::call(\n                Expr::helper("$floatToBits"),\n',
+    replace:
+      '            Some(num) if num.float() && false => Ok(Expr::call(\n                Expr::helper("$floatToBits"),\n',
     tests: ["test/corpus.test.ts", "-t", "^plain_data.rs$"],
   },
   {
@@ -150,7 +168,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "one-scalar-spread",
-    breaks: "one `u32`'s bytes are `[...$toBytes(x, 4, true)]`, not its `$toBytes`",
+    breaks:
+      "one `u32`'s bytes are `[...$toBytes(x, 4, true)]`, not its `$toBytes`",
     file: "src/lower/plain.rs",
     find: "            && self.scalar_bytes(read.ty) == size\n",
     replace: "            && false\n",
@@ -168,7 +187,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "bytes-target-rebuilt",
-    breaks: "a `u32` as a `[u8; 4]` is an array of each of its bytes, not its bytes",
+    breaks:
+      "a `u32` as a `[u8; 4]` is an array of each of its bytes, not its bytes",
     file: "src/lower/plain.rs",
     find: "        if self.is_bytes(to) {\n",
     replace: "        if false {\n",
@@ -177,15 +197,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "zeroed-uninit-not-plain",
-    breaks: "a `MaybeUninit<T>` isn't laid out as its `T`, so a zeroed array of them is refused",
+    breaks:
+      "a `MaybeUninit<T>` isn't laid out as its `T`, so a zeroed array of them is refused",
     file: "src/lower/plain.rs",
     find: "        if let Some(held) = self.recognition().uninit_of(ty) {\n",
-    replace: "        if let Some(held) = self.recognition().uninit_of(ty).filter(|_| false) {\n",
+    replace:
+      "        if let Some(held) = self.recognition().uninit_of(ty).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^zeroed_uninit_arrays.rs$"],
   },
   {
     name: "zeroed-generic-length-refused",
-    breaks: "a zeroed array of a length generic code is given, arrayvec's `[MaybeUninit<u8>; CAP]`, is refused",
+    breaks:
+      "a zeroed array of a length generic code is given, arrayvec's `[MaybeUninit<u8>; CAP]`, is refused",
     file: "src/lower/plain.rs",
     find: "            && len.try_to_target_usize(self.tcx).is_none()\n",
     replace: "            && false\n",
@@ -195,13 +218,14 @@ export const mutations: Mutation[] = [
     name: "zeroed-slice-unfilled",
     breaks: "`new_zeroed_slice` leaves its slots `undefined`",
     file: "src/lower/plain.rs",
-    find: "        return Expr::call(Expr::member(made, \"fill\"), vec![zero.clone()]);",
+    find: '        return Expr::call(Expr::member(made, "fill"), vec![zero.clone()]);',
     replace: "        return made;",
     tests: ["test/corpus.test.ts", "-t", "box_uninit"],
   },
   {
     name: "transparent-transmute-refused",
-    breaks: "a `transmute` between a `#[repr(transparent)]` struct and its field is refused, uuid's `from_bytes_ref`",
+    breaks:
+      "a `transmute` between a `#[repr(transparent)]` struct and its field is refused, uuid's `from_bytes_ref`",
     file: "src/lower/plain.rs",
     find: "        (held(from) == held(to)).then_some(value)\n",
     replace: "        None\n",
@@ -209,31 +233,38 @@ export const mutations: Mutation[] = [
   },
   {
     name: "transparent-mut-transmute-refused",
-    breaks: "a `transmute` of a `&mut` between a `#[repr(transparent)]` struct and its field is refused, though both are one value",
+    breaks:
+      "a `transmute` of a `&mut` between a `#[repr(transparent)]` struct and its field is refused, though both are one value",
     file: "src/lower/plain.rs",
     find: "            (ty::Ref(_, from, a), ty::Ref(_, to, b)) if a == b => (*from, *to),\n",
-    replace: "            (ty::Ref(_, from, ty::Mutability::Not), ty::Ref(_, to, ty::Mutability::Not)) => (*from, *to),\n",
+    replace:
+      "            (ty::Ref(_, from, ty::Mutability::Not), ty::Ref(_, to, ty::Mutability::Not)) => (*from, *to),\n",
     tests: ["test/corpus.test.ts", "-t", "^transparent_transmute.rs$"],
   },
   {
     name: "reference-transmute-refused",
-    breaks: "a reference to an object `transmute`d to `usize` is refused, where it's the object's address",
+    breaks:
+      "a reference to an object `transmute`d to `usize` is refused, where it's the object's address",
     file: "src/lower/plain.rs",
     find: "            || matches!(ty.kind(), ty::Ref(_, pointee, _)",
-    replace: "            || false && matches!(ty.kind(), ty::Ref(_, pointee, _)",
+    replace:
+      "            || false && matches!(ty.kind(), ty::Ref(_, pointee, _)",
     tests: ["test/corpus.test.ts", "-t", "^pointer_addresses.rs$"],
   },
   {
     name: "text-transmute-refused",
-    breaks: "`Box<[u8]>` as `Box<str>` is refused, where it's the bytes decoded",
+    breaks:
+      "`Box<[u8]>` as `Box<str>` is refused, where it's the bytes decoded",
     file: "src/lower/plain.rs",
-    find: "            && text.is_str()\n        {\n            return Ok(Expr::call(Expr::helper(\"$utf8Decode\"), vec![value]));",
-    replace: "            && text.is_str()\n            && false\n        {\n            return Ok(Expr::call(Expr::helper(\"$utf8Decode\"), vec![value]));",
+    find: '            && text.is_str()\n        {\n            return Ok(Expr::call(Expr::helper("$utf8Decode"), vec![value]));',
+    replace:
+      '            && text.is_str()\n            && false\n        {\n            return Ok(Expr::call(Expr::helper("$utf8Decode"), vec![value]));',
     tests: ["test/corpus.test.ts", "-t", "^bytes_through_pointers.rs$"],
   },
   {
     name: "fills-ignores-padding",
-    breaks: "a struct with padding counts as filling its size, so a union holding it in another's place loses the padding's bytes",
+    breaks:
+      "a struct with padding counts as filling its size, so a union holding it in another's place loses the padding's bytes",
     file: "src/lower/plain.rs",
     find: "            && self.plain(ty).and_then(|plain| scalars(self, &plain)) == Some(size)\n",
     replace: "            && self.plain(ty).is_some()\n",

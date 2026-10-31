@@ -4,7 +4,8 @@ import type { Mutation } from "../../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "chain-rest-one-arm",
-    breaks: "a value's chain of four arms has only its next arm its own, the rest a conditional, `else if (b) { x = q; } else { x = c ? r : s; }`",
+    breaks:
+      "a value's chain of four arms has only its next arm its own, the rest a conditional, `else if (b) { x = q; } else { x = c ? r : s; }`",
     file: "src/lower/mir/tidy/value_chains.rs",
     find: "    let rest = match chained_arms(x, r, at) {\n",
     replace: "    let rest = match None::<Vec<Stmt>> {\n",
@@ -12,15 +13,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "plain-arm-any-value",
-    breaks: "a chain with an arm that's more than a value, a sum or a conditional of its own, is one nested conditional, not the `else if` chain (ADR 0969, amended)",
+    breaks:
+      "a chain with an arm that's more than a value, a sum or a conditional of its own, is one nested conditional, not the `else if` chain (ADR 0969, amended)",
     file: "src/lower/mir/tidy/value_chains.rs",
     find: "        ExprKind::Unary(UnaryOp::Neg, n) => matches!(n.kind, ExprKind::Num(_)),\n        _ => false,\n",
-    replace: "        ExprKind::Unary(UnaryOp::Neg, n) => matches!(n.kind, ExprKind::Num(_)),\n        _ => true,\n",
+    replace:
+      "        ExprKind::Unary(UnaryOp::Neg, n) => matches!(n.kind, ExprKind::Num(_)),\n        _ => true,\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "arms from MIR"],
   },
   {
     name: "plain-chain-first-arm-any",
-    breaks: "a chain whose first arm is more than a value, `n + 1`, and the rest plain values, is one nested conditional (ADR 0969, amended)",
+    breaks:
+      "a chain whose first arm is more than a value, `n + 1`, and the rest plain values, is one nested conditional (ADR 0969, amended)",
     file: "src/lower/mir/tidy/value_chains.rs",
     find: "        (false, true, _) if plain(&yes) => ",
     replace: "        (false, true, _) => ",
@@ -28,7 +32,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "plain-chain-turned-then-last",
-    breaks: "a value whose `then`, which MIR turned to its `else`, is a chain of plain values is `t ? e : ..`, the chain last, not where it's written (ADR 0969, amended)",
+    breaks:
+      "a value whose `then`, which MIR turned to its `else`, is a chain of plain values is `t ? e : ..`, the chain last, not where it's written (ADR 0969, amended)",
     file: "src/lower/mir/tidy/value_chains.rs",
     find: "        (false, true, Some(true)) if plain(&yes) => {\n",
     replace: "        (false, true, Some(true)) if false => {\n",
@@ -37,7 +42,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "plain-chain-in-yes-kept",
-    breaks: "a match of plain values whose `None` arm comes first is `if (value != null) { align = a ? .. : .. } else { align = \"none\"; }`, half a chain (ADR 0969, amended)",
+    breaks:
+      'a match of plain values whose `None` arm comes first is `if (value != null) { align = a ? .. : .. } else { align = "none"; }`, half a chain (ADR 0969, amended)',
     file: "src/lower/mir/tidy/value_chains.rs",
     find: "        (true, false, _) if plain(&no) => ",
     replace: "        (true, false, _) if false => ",
@@ -45,23 +51,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "returned-chain-plain-unfolded",
-    breaks: "a function's value of an `else if` chain of plain values is `if (n === 0) { return \"zero\"; } return n === 1 ? .. : ..;`, half a chain, not one nested conditional (ADR 0969, amended, rd23)",
+    breaks:
+      'a function\'s value of an `else if` chain of plain values is `if (n === 0) { return "zero"; } return n === 1 ? .. : ..;`, half a chain, not one nested conditional (ADR 0969, amended, rd23)',
     file: "src/lower/mir/tidy/value_chains.rs",
     find: "    if let Some(values) = values.filter(|v| v.len() == arms - 1)\n        && plain(&rest)\n",
-    replace: "    if let Some(values) = values.filter(|v| v.len() == arms - 1)\n        && false\n",
+    replace:
+      "    if let Some(values) = values.filter(|v| v.len() == arms - 1)\n        && false\n",
     tests: ["test/lowering-returned-chains.test.ts"],
   },
   {
     name: "returned-chain-last-link-folded",
-    breaks: "a function's value of an `else if` chain with an arm more than a value keeps its last link folded, `else { return n === 2 ? \"two\" : `many ${n}`; }`, half a chain (ADR 0969, amended, rd23)",
+    breaks:
+      'a function\'s value of an `else if` chain with an arm more than a value keeps its last link folded, `else { return n === 2 ? "two" : `many ${n}`; }`, half a chain (ADR 0969, amended, rd23)',
     file: "src/lower/mir/tidy/value_chains.rs",
     find: "    let Some((test, yes, no)) = folded else {\n",
-    replace: "    let Some((test, yes, no)) = folded.filter(|_| false) else {\n",
+    replace:
+      "    let Some((test, yes, no)) = folded.filter(|_| false) else {\n",
     tests: ["test/lowering-returned-chains.test.ts"],
   },
   {
     name: "returned-chain-link-headed",
-    breaks: "a chain's links after an arm more than a value, each plain, fold alone, `else { return n === 0 ? \"zero\" : .. }`, half a chain (ADR 0969, amended, rd23)",
+    breaks:
+      'a chain\'s links after an arm more than a value, each plain, fold alone, `else { return n === 0 ? "zero" : .. }`, half a chain (ADR 0969, amended, rd23)',
     file: "src/lower/mir/tidy/value_chains.rs",
     find: "    if link(tested[0].0) && !bound || ",
     replace: "    if ",
@@ -69,18 +80,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "returned-chain-guard-unelsed",
-    breaks: "a chain's last link unfolded after a guard `written_elses` left is an `if` of its own, `if (n < 0) { return ..; } if (n === 0) { .. } else { .. }`, not the guard's `else if` (ADR 0969, amended, rd23)",
+    breaks:
+      "a chain's last link unfolded after a guard `written_elses` left is an `if` of its own, `if (n < 0) { return ..; } if (n === 0) { .. } else { .. }`, not the guard's `else if` (ADR 0969, amended, rd23)",
     file: "src/lower/mir/tidy/value_chains.rs",
     find: "                test.facts = test.facts.with(js::Known::Else);\n                *otherwise = Some(vec![unfolded]);\n                list.pop();\n",
-    replace: "                let _ = (test, otherwise);\n                *list.last_mut().expect(\"walked\") = unfolded;\n",
+    replace:
+      '                let _ = (test, otherwise);\n                *list.last_mut().expect("walked") = unfolded;\n',
     tests: ["test/lowering-returned-chains.test.ts"],
   },
   {
     name: "returned-chain-bound-rest-headless",
-    breaks: "the links after an `else if let`'s binding stay an `if` and its last two's conditional, `if (s != null) { return s; } return n > 5 ? \"big\" : \"small\";`, not a chain of their own (rd23b)",
+    breaks:
+      'the links after an `else if let`\'s binding stay an `if` and its last two\'s conditional, `if (s != null) { return s; } return n > 5 ? "big" : "small";`, not a chain of their own (rd23b)',
     file: "src/lower/mir/tidy/value_chains.rs",
     find: "    if link(tested[0].0) && !bound || !tested[1..].iter().all(|(s, ..)| link(s)) {\n",
-    replace: "    if link(tested[0].0) && (true || !bound) || !tested[1..].iter().all(|(s, ..)| link(s)) {\n",
+    replace:
+      "    if link(tested[0].0) && (true || !bound) || !tested[1..].iter().all(|(s, ..)| link(s)) {\n",
     tests: ["test/lowering-returned-chains.test.ts", "-t", "else if let"],
   },
 ];

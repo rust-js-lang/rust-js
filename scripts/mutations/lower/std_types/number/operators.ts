@@ -4,10 +4,12 @@ import type { Mutation } from "../../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "u32-mask-with-bit-31-unwrapped",
-    breaks: "a `u32`'s `n & 0x8000_0000` is JS's signed `&`, `-2147483648` of `u32::MAX`",
+    breaks:
+      "a `u32`'s `n & 0x8000_0000` is JS's signed `&`, `-2147483648` of `u32::MAX`",
     file: "src/lower/std_types/number/operators.rs",
     find: "                .any(|e| e.as_int().is_some_and(|k| (0..1 << 31).contains(&k)));\n",
-    replace: "                .any(|e| e.as_int().is_some_and(|k| (0..=1 << 31).contains(&k)));\n",
+    replace:
+      "                .any(|e| e.as_int().is_some_and(|k| (0..=1 << 31).contains(&k)));\n",
     tests: ["test/corpus.test.ts", "-t", "^u32_masks.rs$"],
   },
   {
@@ -21,7 +23,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "f32-arithmetic-unrounded",
-    breaks: "an `f32`'s `+` is a double's, which may be no `f32` at all: ten tenths are 1.0000000149011612",
+    breaks:
+      "an `f32`'s `+` is a double's, which may be no `f32` at all: ten tenths are 1.0000000149011612",
     file: "src/lower/std_types/number/operators.rs",
     find: "            return Ok(if num == Num::F32 && op != BinOp::Rem {\n                num.wrap(e)\n",
     replace: "            return Ok(if false {\n                num.wrap(e)\n",
@@ -29,23 +32,27 @@ export const mutations: Mutation[] = [
   },
   {
     name: "big-to-f32-through-f64",
-    breaks: "`n as f32` of a `u64` is rounded to an `f64` first, and then can't be told from a tie",
+    breaks:
+      "`n as f32` of a `u64` is rounded to an `f64` first, and then can't be told from a tie",
     file: "src/lower/std_types/number/operators.rs",
-    find: "Expr::call(Expr::helper(\"$bigToF32\"), vec![v]",
-    replace: "target.wrap(Expr::call(Expr::var(\"Number\"), vec![v])",
+    find: 'Expr::call(Expr::helper("$bigToF32"), vec![v]',
+    replace: 'target.wrap(Expr::call(Expr::var("Number"), vec![v])',
     tests: ["test/corpus.test.ts", "-t", "f32\\.rs"],
   },
   {
     name: "signed-remainder-negative-zero",
-    breaks: "`-2 % 2` of an `i32` is JS's `-0`, which an `f64` of it shows as `-0.0`",
+    breaks:
+      "`-2 % 2` of an `i32` is JS's `-0`, which an `f64` of it shows as `-0.0`",
     file: "src/lower/std_types/number/operators.rs",
     find: "                if op == BinOp::Rem && safe && num.signed() {",
-    replace: "                if op == BinOp::Rem && safe && num.signed() && false {",
+    replace:
+      "                if op == BinOp::Rem && safe && num.signed() && false {",
     tests: ["test/corpus.test.ts", "-t", "remainder_sign"],
   },
   {
     name: "compared-remainder-zero-sign",
-    breaks: "a signed remainder compared keeps its `| 0`, `((x % 2) | 0) === 0`, where `x % 2 === 0` is the same",
+    breaks:
+      "a signed remainder compared keeps its `| 0`, `((x % 2) | 0) === 0`, where `x % 2 === 0` is the same",
     file: "src/lower/std_types/number/operators.rs",
     find: "            let mut compared = Expr::bin(js_op, without_zero_sign(l), without_zero_sign(r));",
     replace: "            let mut compared = Expr::bin(js_op, l, r);",
@@ -54,7 +61,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "integer-comparison-unknown",
-    breaks: "a comparison of integers isn't known never to be of a NaN, so a `loop` ending `if n > limit { break; }` is `do { .. } while (!(n > limit))`, not `while (n <= limit)` (ADR 0978, amended)",
+    breaks:
+      "a comparison of integers isn't known never to be of a NaN, so a `loop` ending `if n > limit { break; }` is `do { .. } while (!(n > limit))`, not `while (n <= limit)` (ADR 0978, amended)",
     file: "src/lower/std_types/number/operators.rs",
     find: "            if ty.is_integral() {\n                compared.facts",
     replace: "            if false {\n                compared.facts",
@@ -63,7 +71,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "big-shift-masked-to-63",
-    breaks: "a 128-bit shift's amount is masked to 63, `1u128 << 100` being `1 << 36`",
+    breaks:
+      "a 128-bit shift's amount is masked to 63, `1u128 << 100` being `1 << 36`",
     file: "src/lower/std_types/number/operators.rs",
     find: "    let mask = i128::from(num.bits()) - 1;",
     replace: "    let mask = 63;",
@@ -79,18 +88,26 @@ export const mutations: Mutation[] = [
   },
   {
     name: "big-div-unknown-unchecked",
-    breaks: "an `i64` division by what may be zero is `7n / zero`, which throws JS's `RangeError`, not Rust's panic",
+    breaks:
+      "an `i64` division by what may be zero is `7n / zero`, which throws JS's `RangeError`, not Rust's panic",
     file: "src/lower/std_types/number/operators.rs",
     find: "                    .or_else(|| r.as_bigint())\n                    .is_some_and(|d| d != 0 && !(num.signed() && d == -1));",
-    replace: "                    .or_else(|| r.as_bigint())\n                    .is_none_or(|d| d != 0 && !(num.signed() && d == -1));",
-    tests: ["test/compiler.test.ts", "-t", "64-bit integers are BigInts, wrapped as release Rust wraps them"],
+    replace:
+      "                    .or_else(|| r.as_bigint())\n                    .is_none_or(|d| d != 0 && !(num.signed() && d == -1));",
+    tests: [
+      "test/compiler.test.ts",
+      "-t",
+      "64-bit integers are BigInts, wrapped as release Rust wraps them",
+    ],
   },
   {
     name: "number-from-bool-as-cast",
-    breaks: "`f64::from(flag)` goes the way of `as`, which has no `bool` as a float",
+    breaks:
+      "`f64::from(flag)` goes the way of `as`, which has no `bool` as a float",
     file: "src/lower/std_types/number/operators.rs",
     find: "        if from.is_bool() {\n            let num = self.num(to, span)?;",
-    replace: "        if false && from.is_bool() {\n            let num = self.num(to, span)?;",
+    replace:
+      "        if false && from.is_bool() {\n            let num = self.num(to, span)?;",
     tests: ["test/lowering-numbers.test.ts", "-t", "from a bool or a char"],
   },
   {
@@ -99,11 +116,12 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/number/operators.rs",
     find: "        Ok(Expr::cond(zero, Expr::undefined(), n))\n",
     replace: "        Ok(Expr::cond(zero, n.clone(), n))\n",
-    tests: ["test/corpus.test.ts","-t","nonzero"],
+    tests: ["test/corpus.test.ts", "-t", "nonzero"],
   },
   {
     name: "exact-wrapped",
-    breaks: "an operator the body's ranges show in range keeps its wrap, `(index + 1) * 2 - 1` as `(Math.imul((index + 1) >>> 0, 2) - 1) >>> 0`",
+    breaks:
+      "an operator the body's ranges show in range keeps its wrap, `(index + 1) * 2 - 1` as `(Math.imul((index + 1) >>> 0, 2) - 1) >>> 0`",
     file: "src/lower/std_types/number/operators.rs",
     find: "            && self.frame.facts.exact.contains(&span)\n",
     replace: "            && false\n",
@@ -120,7 +138,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mul-exact-factor-too-large",
-    breaks: "a 32-bit multiply by a constant past 2^21 is JS's own `*`, whose product past 2^53 is rounded",
+    breaks:
+      "a 32-bit multiply by a constant past 2^21 is JS's own `*`, whose product past 2^53 is rounded",
     file: "src/lower/std_types/number/operators.rs",
     find: "const EXACT_FACTOR: u128 = 1 << 21;\n",
     replace: "const EXACT_FACTOR: u128 = 1 << 23;\n",
@@ -128,7 +147,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mul-constant-on-the-left-unseen",
-    breaks: "`-7 * n` of an `i32` is `Math.imul`, as only a constant on the right is seen",
+    breaks:
+      "`-7 * n` of an `i32` is `Math.imul`, as only a constant on the right is seen",
     file: "src/lower/std_types/number/operators.rs",
     find: "                if small(known.or_else(|| r.as_int())) || small(l.as_int()) {\n",
     replace: "                if small(known.or_else(|| r.as_int())) {\n",
@@ -137,43 +157,71 @@ export const mutations: Mutation[] = [
   },
   {
     name: "range-bound-tested",
-    breaks: "a range pattern's bound its type has anyway is tested, `n >= -2147483648` of `i32::MIN..=-1`",
+    breaks:
+      "a range pattern's bound its type has anyway is tested, `n >= -2147483648` of `i32::MIN..=-1`",
     file: "src/lower/std_types/number/operators.rs",
     find: "        if comparison.is_some() && bounds(ty).is_some_and(|(min, max)| at_bound(op, &l, &r, min, max)) {\n",
-    replace: "        if false && comparison.is_some() && bounds(ty).is_some_and(|(min, max)| at_bound(op, &l, &r, min, max)) {\n",
-    tests: ["test/lowering-numbers.test.ts", "test/lowering-matches.test.ts", "-t", "a range pattern tests no bound its type has|a range pattern's tests from MIR"],
+    replace:
+      "        if false && comparison.is_some() && bounds(ty).is_some_and(|(min, max)| at_bound(op, &l, &r, min, max)) {\n",
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "test/lowering-matches.test.ts",
+      "-t",
+      "a range pattern tests no bound its type has|a range pattern's tests from MIR",
+    ],
   },
   {
     name: "range-bound-drops-effects",
-    breaks: "a comparison with its type's bound is true even where its other side calls a function, which isn't called",
+    breaks:
+      "a comparison with its type's bound is true even where its other side calls a function, which isn't called",
     file: "src/lower/std_types/number/operators.rs",
     find: "    bound && !other.has_effects()\n",
     replace: "    bound\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a range pattern tests no bound its type has"],
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a range pattern tests no bound its type has",
+    ],
   },
   {
     name: "char-bound-tested",
-    breaks: "a `char` range's bound every `char` passes is tested, `c >= \"\\0\"` of `'\\0'..='/'`",
+    breaks:
+      "a `char` range's bound every `char` passes is tested, `c >= \"\\0\"` of `'\\0'..='/'`",
     file: "src/lower/std_types/number/operators.rs",
     find: "    if ty.is_char() {\n        return Some((0, char::MAX as i128));\n    }\n",
     replace: "",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a range pattern tests no bound its type has"],
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a range pattern tests no bound its type has",
+    ],
   },
   {
     name: "i32-shift-left-unwrapped-for-u32-too",
-    breaks: "a `u32`'s `n << 1` is JS's int32, `0x40000000 << 1` negative (ADR 0895)",
+    breaks:
+      "a `u32`'s `n << 1` is JS's int32, `0x40000000 << 1` negative (ADR 0895)",
     file: "src/lower/std_types/number/operators.rs",
     find: "            BinOp::Shl if num == Num::I32 => ",
     replace: "            BinOp::Shl if num.bits() == 32 => ",
-    tests: ["test/lowering-bits.test.ts", "-t", "operand of a bitwise operator are unwrapped"],
+    tests: [
+      "test/lowering-bits.test.ts",
+      "-t",
+      "operand of a bitwise operator are unwrapped",
+    ],
   },
   {
     name: "bitwise-operand-of-any-or-unwrapped",
-    breaks: "an operand `a | 1` of a bitwise operator is taken for a wrap, `a & b` (ADR 0895)",
+    breaks:
+      "an operand `a | 1` of a bitwise operator is taken for a wrap, `a & b` (ADR 0895)",
     file: "src/lower/std_types/number/operators.rs",
     find: "        js::ExprKind::Binary(Op::BitOr | Op::UShr, x, zero) if zero.as_int() == Some(0) => *x,\n",
-    replace: "        js::ExprKind::Binary(Op::BitOr | Op::UShr, x, zero) if zero.as_int().is_some() => *x,\n",
-    tests: ["test/lowering-bits.test.ts", "-t", "operand of a bitwise operator are unwrapped"],
+    replace:
+      "        js::ExprKind::Binary(Op::BitOr | Op::UShr, x, zero) if zero.as_int().is_some() => *x,\n",
+    tests: [
+      "test/lowering-bits.test.ts",
+      "-t",
+      "operand of a bitwise operator are unwrapped",
+    ],
   },
   {
     name: "negation-unwrapped",
@@ -181,11 +229,16 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/number/operators.rs",
     find: "                Ok(num.wrap(Expr::unary(UnaryOp::Neg, a)))\n",
     replace: "                Ok(Expr::unary(UnaryOp::Neg, a))\n",
-    tests: ["test/lowering-bits.test.ts", "-t", "operand of a bitwise operator are unwrapped"],
+    tests: [
+      "test/lowering-bits.test.ts",
+      "-t",
+      "operand of a bitwise operator are unwrapped",
+    ],
   },
   {
     name: "remainder-operand-wrapped",
-    breaks: "a signed remainder given to `+`, `-` or `*` keeps its `| 0`, `(length - ((length % 5) | 0)) | 0`, where the operator's wrap makes its `-0` `0` (ADR 0895, amended)",
+    breaks:
+      "a signed remainder given to `+`, `-` or `*` keeps its `| 0`, `(length - ((length % 5) | 0)) | 0`, where the operator's wrap makes its `-0` `0` (ADR 0895, amended)",
     file: "src/lower/std_types/number/operators.rs",
     find: "            BinOp::Add | BinOp::Sub | BinOp::Mul => (without_zero_sign(l), without_zero_sign(r)),\n",
     replace: "",

@@ -27,6 +27,7 @@ use super::representation::Num;
 mod comments;
 mod functions;
 mod imports;
+mod namespaces;
 mod parts;
 mod written;
 
@@ -73,6 +74,7 @@ pub(super) fn module<'tcx>(
         imports: BTreeSet::new(),
         library_imports: BTreeSet::new(),
         module_imports: BTreeSet::new(),
+        namespaces: BTreeSet::new(),
         unexported: BTreeMap::new(),
         erased: HashMap::new(),
         named: Vec::new(),
@@ -104,6 +106,11 @@ pub(super) fn module<'tcx>(
             continue;
         }
         out.erased = out.erased(def_id);
+        // A module's namespace, no type: its module's functions (ADR 1037).
+        if super::classes::is_namespace(tcx, def_id) {
+            items.extend(out.namespace_functions(def_id));
+            continue;
+        }
         let declaration = match tcx.def_kind(def_id) {
             DefKind::Fn if !is_binding(tcx, def_id) => Some(out.function(def_id)),
             DefKind::Struct if super::classes::is_class(tcx, def_id) => {
@@ -190,6 +197,7 @@ pub(super) fn module<'tcx>(
         return None;
     }
     let mut declarations = imports::imports((&out.imports, &out.library_imports, &out.module_imports), reexports);
+    declarations.splice(0..0, imports::namespaces(&out.namespaces));
     declarations.extend(items);
     // `export { greetAll as unstable_greet };`, its `pub use` of its own
     // function by another name, after it, as its JS has it (ADR 0596).
@@ -358,6 +366,8 @@ struct Declarations<'a, 'tcx> {
     /// Each by its module's path, its name, and whether it's that module's
     /// default, a class (ADR 0761).
     module_imports: BTreeSet<(Vec<String>, String, bool)>,
+    /// The modules whose namespace it names, each by where it's from and its name (ADR 1037).
+    namespaces: BTreeSet<(Result<Vec<String>, String>, String)>,
     /// What it names that it doesn't export, by name: another crate's
     /// untagged enums, and its own private types. Each one's declaration,
     /// `None` while it's being made, as a field or a payload names it.
@@ -372,12 +382,6 @@ struct Declarations<'a, 'tcx> {
 }
 
 impl<'tcx> Declarations<'_, 'tcx> {
-    /// Another module's item `did`, imported from `file`, as its default where it is (ADR 0761).
-    fn imported(&mut self, file: Vec<String>, did: DefId, name: String) {
-        let default = super::default_exports::exported_as(self.tcx, did, &name) == "default";
-        self.module_imports.insert((file, name, default));
-    }
-
     /// `["C"]`: an item's type parameters, but those `impl Trait` stands
     /// for, and those that are a type of TypeScript's.
     fn generics(&mut self, def_id: DefId) -> Vec<Value> {
@@ -827,7 +831,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                             "returns": function["returns"],
                         })
                     }
-                    Some(Member::Own) | None => continue,
+                    Some(Member::Own | Member::Namespace) | None => continue,
                 };
                 members.push(documented(declared, self.tcx, item));
             }
@@ -1432,6 +1436,10 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     }
                     let type_args = self.type_args(did, args);
                     return reference(&name, type_args);
+                }
+                // A module's namespace, its module imported whole (ADR 1037).
+                if super::classes::is_namespace(tcx, did) {
+                    return self.namespace_type(did);
                 }
                 // A library's its declarations export, imported from them
                 // (ADR 0210, amended).

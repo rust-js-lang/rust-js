@@ -4,7 +4,8 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "any-derived-impl-not-compiled",
-    breaks: "a library's derived `Debug` a consumer asks, which its JS doesn't export, is taken for a codec and imported, not compiled by the consumer",
+    breaks:
+      "a library's derived `Debug` a consumer asks, which its JS doesn't export, is taken for a codec and imported, not compiled by the consumer",
     file: "src/lower/items.rs",
     find: "            super::serde::serde_trait(self.tcx, self.tcx.impl_trait_id(imp)).is_some()\n",
     replace: "            true\n",
@@ -12,7 +13,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "derived-codec-compiled-by-consumer",
-    breaks: "a library's derived serde codec a consumer's copying asks is compiled by the consumer, whose visitor isn't its own: the pilot doesn't build (#341)",
+    breaks:
+      "a library's derived serde codec a consumer's copying asks is compiled by the consumer, whose visitor isn't its own: the pilot doesn't build (#341)",
     file: "src/lower/items.rs",
     find: "            && !derived_codec\n",
     replace: "",
@@ -20,7 +22,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "into-a-from-unbound",
-    breaks: "`x.into()` of a type parameter's target is its `From`'s where the function is bound `T: Into<U>`, whose `From` it has no dictionary of (#321)",
+    breaks:
+      "`x.into()` of a type parameter's target is its `From`'s where the function is bound `T: Into<U>`, whose `From` it has no dictionary of (#321)",
     file: "src/lower/items.rs",
     find: "                self.evidence_for(ty::TraitRef::new_from_args(self.tcx, from, args))\n                    .is_some()\n",
     replace: "                from == from\n",
@@ -28,15 +31,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "into-of-a-bound-not-redirected",
-    breaks: "`x.into()` whose `From` is a bound's, `U: From<T>`, isn't lowered as that bound's `from`, and is refused (#321)",
+    breaks:
+      "`x.into()` whose `From` is a bound's, `U: From<T>`, isn't lowered as that bound's `from`, and is refused (#321)",
     file: "src/lower/items.rs",
     find: "        (self.is_rust_fn(implementation) || bound).then_some((method, args))\n",
-    replace: "        self.is_rust_fn(implementation).then_some((method, args))\n",
+    replace:
+      "        self.is_rust_fn(implementation).then_some((method, args))\n",
     tests: ["test/corpus.test.ts", "-t", "^into_a_bound_target.rs$"],
   },
   {
     name: "load-reads-by-name",
-    breaks: "a thread-local's value reads another module's `const` and variant by name, `{ value: Pending }`, which an import cycle may load first: `Cannot access 'Pending' before initialization` (ADR 0722)",
+    breaks:
+      "a thread-local's value reads another module's `const` and variant by name, `{ value: Pending }`, which an import cycle may load first: `Cannot access 'Pending' before initialization` (ADR 0722)",
     file: "src/lower/items.rs",
     find: "        module.is_none_or(|module| module == self.module) || !self.krate.loads_in_cycles.borrow().contains(&self.item)\n",
     replace: "        true\n",
@@ -44,24 +50,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "load-reads-own-module-by-value",
-    breaks: "what a module's load makes reads its own module's variant as its number, `let state = 3`, where its `const`, made before it, is `Pending`",
+    breaks:
+      "what a module's load makes reads its own module's variant as its number, `let state = 3`, where its `const`, made before it, is `Pending`",
     file: "src/lower/items.rs",
     find: "        module.is_none_or(|module| module == self.module) || !self.krate.loads_in_cycles.borrow().contains(&self.item)\n",
-    replace: "        module.is_none() || (module != Some(self.module) && !self.krate.loads_in_cycles.borrow().contains(&self.item))\n",
+    replace:
+      "        module.is_none() || (module != Some(self.module) && !self.krate.loads_in_cycles.borrow().contains(&self.item))\n",
     tests: ["test/corpus.test.ts", "-t", "load_cycle_values"],
     snapshots: true,
   },
   {
     name: "class-const-not-the-prototypes",
-    breaks: "a class's constant read is `Counter.limit`, the constructor's, where it's the prototype's, `Counter.prototype.limit` (ADR 0761)",
+    breaks:
+      "a class's constant read is `Counter.limit`, the constructor's, where it's the prototype's, `Counter.prototype.limit` (ADR 0761)",
     file: "src/lower/items.rs",
-    find: "            Expr::member(Expr::member(reference, \"prototype\"), target.name.clone())\n",
+    find: '            Expr::member(Expr::member(reference, "prototype"), target.name.clone())\n',
     replace: "            Expr::member(reference, target.name.clone())\n",
     tests: ["test/corpus.test.ts", "-t", "class_methods"],
   },
   {
     name: "binding-value-args-raw",
-    breaks: "a nullable binding as a value is given `undefined`, `(to) => rustJsReset(to)`, where its call gives `null`",
+    breaks:
+      "a nullable binding as a value is given `undefined`, `(to) => rustJsReset(to)`, where its call gives `null`",
     file: "src/lower/items.rs",
     find: "            .map(|(i, (name, &ty))| self.binding_arg(def_id, (i, false), Expr::var(name), ty))\n",
     replace: "            .map(|(_, (name, _))| Expr::var(name))\n",
@@ -69,7 +79,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "binding-fn-pointer-arrow",
-    breaks: "`const localHook = (n) => rustJsHook(n);` reads the global at each call, so a polyfill set later is called",
+    breaks:
+      "`const localHook = (n) => rustJsHook(n);` reads the global at each call, so a polyfill set later is called",
     file: "src/lower/items.rs",
     find: "        Ok(passed_on(&arrow, Taker::Made, &[]).unwrap_or(arrow))\n",
     replace: "        Ok(arrow)\n",
@@ -77,67 +88,90 @@ export const mutations: Mutation[] = [
   },
   {
     name: "binding-value-bare",
-    breaks: "a binding as a value is the JS function itself, which `.map` gives each index too: `parseInt(text, i)`",
+    breaks:
+      "a binding as a value is the JS function itself, which `.map` gives each index too: `parseInt(text, i)`",
     file: "src/lower/items.rs",
     find: "        // One that's a statement, a setter's, is no value.\n",
-    replace: "        if let ExprKind::Call(callee, _) = &body.kind {\n            return Ok((**callee).clone());\n        }\n",
-    tests: ["test/lowering-functions.test.ts", "-t", "a crate function given as a callback is passed as itself"],
+    replace:
+      "        if let ExprKind::Call(callee, _) = &body.kind {\n            return Ok((**callee).clone());\n        }\n",
+    tests: [
+      "test/lowering-functions.test.ts",
+      "-t",
+      "a crate function given as a callback is passed as itself",
+    ],
   },
   {
     name: "callee-unresolved",
-    breaks: "`checked.push(1)` through the crate's `DerefMut` pushes onto its handle, and `k.slot()` is taken for a std call's items",
+    breaks:
+      "`checked.push(1)` through the crate's `DerefMut` pushes onto its handle, and `k.slot()` is taken for a std call's items",
     file: "src/lower/items.rs",
     find: "        self.impl_method(def_id, args)\n            .ok()\n            .flatten()\n            .or_else(|| self.resolve_into(def_id, args))\n",
     replace: "        None.or_else(|| self.resolve_into(def_id, args))\n",
-    tests: ["test/corpus.test.ts","-t","generic_mut_ref_kept"],
+    tests: ["test/corpus.test.ts", "-t", "generic_mut_ref_kept"],
   },
   {
     name: "f32-fn-value-unrounded",
-    breaks: "`.map(f32::sqrt)` is a double's square root, no `f32`, where its call is rounded to one",
+    breaks:
+      "`.map(f32::sqrt)` is a double's square root, no `f32`, where its call is rounded to one",
     file: "src/lower/items.rs",
     find: "                    Some(num) if math::function(op, num).is_none() => num.wrap(value),",
-    replace: "                    Some(num) if false && math::function(op, num).is_none() => num.wrap(value),",
+    replace:
+      "                    Some(num) if false && math::function(op, num).is_none() => num.wrap(value),",
     tests: ["test/corpus.test.ts", "-t", "function_values|math_values"],
   },
   {
     name: "size-of-value-unknown",
-    breaks: "`size_of::<u16>` as a value, and `size_of::<T>` of a type parameter, is refused, where it's a call's arrow",
+    breaks:
+      "`size_of::<u16>` as a value, and `size_of::<T>` of a type parameter, is refused, where it's a call's arrow",
     file: "src/lower/items.rs",
     find: "        match known {\n            Std::Drop | Std::Forget => {",
-    replace: "        match known {\n            Std::Layout { .. } => return Err(self.unsupported(span, \"`size_of` as a value\")),\n            Std::Drop | Std::Forget => {",
-    tests: ["test/corpus.test.ts","-t","expression_values"],
+    replace:
+      '        match known {\n            Std::Layout { .. } => return Err(self.unsupported(span, "`size_of` as a value")),\n            Std::Drop | Std::Forget => {',
+    tests: ["test/corpus.test.ts", "-t", "expression_values"],
   },
   {
     name: "drop-value-skips-destructor",
     breaks: "`drop` as a value runs no destructor",
     file: "src/lower/items.rs",
     find: "                if known == Std::Drop {\n                    self.drop_value(",
-    replace: "                if false && known == Std::Drop {\n                    self.drop_value(",
-    tests: ["test/corpus.test.ts","-t","expression_values"],
+    replace:
+      "                if false && known == Std::Drop {\n                    self.drop_value(",
+    tests: ["test/corpus.test.ts", "-t", "expression_values"],
   },
   {
     name: "is-some-value-negated",
     breaks: "`Option::is_some` as a value is `is_none`",
     file: "src/lower/items.rs",
     find: "            Std::IsSome => Expr::bin(Op::LooseNe, x, Expr::null()),",
-    replace: "            Std::IsSome => Expr::bin(Op::LooseEq, x, Expr::null()),",
-    tests: ["test/corpus.test.ts","-t","expression_values"],
+    replace:
+      "            Std::IsSome => Expr::bin(Op::LooseEq, x, Expr::null()),",
+    tests: ["test/corpus.test.ts", "-t", "expression_values"],
   },
   {
     name: "copied-default-import-unused",
-    breaks: "a trait's default that calls a JS import, copied into an impl in another module, calls it there unimported, and throws a `ReferenceError`",
+    breaks:
+      "a trait's default that calls a JS import, copied into an impl in another module, calls it there unimported, and throws a `ReferenceError`",
     file: "src/lower/items.rs",
     find: "        super::path_read(path, self.krate.required, |export| {\n            self.dependencies\n                .borrow_mut()\n                .package_uses\n                .insert((self.module, export.clone()));\n",
     replace: "        super::path_read(path, self.krate.required, |export| {\n",
-    tests: ["test/traits.test.ts", "-t", "impls and default bodies retain their defining modules across cycles"],
+    tests: [
+      "test/traits.test.ts",
+      "-t",
+      "impls and default bodies retain their defining modules across cycles",
+    ],
   },
   {
     name: "named-expression-module-function",
-    breaks: "a function a block makes and gives is the module's, `memo(Label)` beside `function Label`, and the static is renamed",
+    breaks:
+      "a function a block makes and gives is the module's, `memo(Label)` beside `function Label`, and the static is renamed",
     file: "src/lower/items.rs",
     find: "        if self.krate.named_expressions.contains(&def_id) {",
     replace: "        if false {",
-    tests: ["test/jsx-children.test.ts", "-t", "a function a block makes and gives"],
+    tests: [
+      "test/jsx-children.test.ts",
+      "-t",
+      "a function a block makes and gives",
+    ],
   },
   {
     name: "leak-fn-unboxed",
@@ -145,7 +179,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/items.rs",
     find: "            Std::Leak => self.leaked(x, sig.output()),\n",
     replace: "            Std::Leak => x,\n",
-    tests: ["test/corpus.test.ts","-t","leaked_string_written"],
+    tests: ["test/corpus.test.ts", "-t", "leaked_string_written"],
   },
   {
     name: "number-from-function-unconverted",
@@ -157,7 +191,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "guard-deref-value-unknown",
-    breaks: "std's `Deref` of a `Ref<T>` in a dictionary, stable_deref_trait's, is refused",
+    breaks:
+      "std's `Deref` of a `Ref<T>` in a dictionary, stable_deref_trait's, is refused",
     file: "src/lower/items.rs",
     find: "            Std::GuardValue { mutable } => self.guard_value(x, input, mutable),\n",
     replace: "",
@@ -165,23 +200,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "crate-resolution-trait-terms",
-    breaks: "a copied default's `self.next()` of the crate's iterator isn't seen to be its impl's",
+    breaks:
+      "a copied default's `self.next()` of the crate's iterator isn't seen to be its impl's",
     file: "src/lower/items.rs",
     find: "        let resolved = self.resolve_self_instance(def_id, self.in_impl_terms(generic_args))?;\n",
-    replace: "        let resolved = self.resolve_self_instance(def_id, generic_args)?;\n",
+    replace:
+      "        let resolved = self.resolve_self_instance(def_id, generic_args)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_iterator_defaults.rs$"],
   },
   {
     name: "fused-specialization-not-crates",
-    breaks: "a std-private trait's call whose impl the caller's type picks doesn't resolve to the crate's impls, and is refused",
+    breaks:
+      "a std-private trait's call whose impl the caller's type picks doesn't resolve to the crate's impls, and is refused",
     file: "src/lower/items.rs",
     find: "            return Ok(spec.methods().all(|method| self.is_rust_fn(method)));\n",
-    replace: "            return Ok(false && spec.methods().all(|method| self.is_rust_fn(method)));\n",
+    replace:
+      "            return Ok(false && spec.methods().all(|method| self.is_rust_fn(method)));\n",
     tests: ["test/std-package.test.ts"],
   },
   {
     name: "rest-value-arrow-unspread",
-    breaks: "a variadic binding's arrow takes rest arguments as one, `(data) => console.log(...data)`, so `prevLog = console.log` is that arrow",
+    breaks:
+      "a variadic binding's arrow takes rest arguments as one, `(data) => console.log(...data)`, so `prevLog = console.log` is that arrow",
     file: "src/lower/items.rs",
     find: "                true => Pattern::Rest(name),\n",
     replace: "                true => name.into(),\n",
@@ -189,7 +229,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "lazy-local-read-bare",
-    breaks: "a thread-local made where it's first used is read as its holder, not its call, `x.value` of `x()`",
+    breaks:
+      "a thread-local made where it's first used is read as its holder, not its call, `x.value` of `x()`",
     file: "src/lower/items.rs",
     find: "                ..Expr::call(place, Vec::new())\n",
     replace: "                ..place\n",
@@ -197,7 +238,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "own-item-reference-unknown",
-    breaks: "one of the crate's functions, `noop`, isn't known as one, so a guard's scope returns it inside its `try`, not after the `finally`",
+    breaks:
+      "one of the crate's functions, `noop`, isn't known as one, so a guard's scope returns it inside its `try`, not after the `finally`",
     file: "src/lower/items.rs",
     find: "        } else {\n            reference.item()\n",
     replace: "        } else {\n            reference\n",
@@ -206,23 +248,31 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-item-reference-unknown",
-    breaks: "a library's function, `noop`, isn't known as one, so a guard's scope returns it inside its `try`, not after the `finally`",
+    breaks:
+      "a library's function, `noop`, isn't known as one, so a guard's scope returns it inside its `try`, not after the `finally`",
     file: "src/lower/items.rs",
     find: "                None => reference.item(),\n",
     replace: "                None => reference,\n",
-    tests: ["test/crates.test.ts", "-t", "a library's function returned past a guard's drop"],
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "a library's function returned past a guard's drop",
+    ],
   },
   {
     name: "lazy-read-unmarked",
-    breaks: "a lazy thread-local's read is a call like any, made before what its call is given, and `set` runs its initializer",
+    breaks:
+      "a lazy thread-local's read is a call like any, made before what its call is given, and `set` runs its initializer",
     file: "src/lower/items.rs",
     find: "            true => Expr {\n                facts: js::Facts::of(js::Known::LocalRead),\n",
-    replace: "            true => Expr {\n                facts: js::Facts::NONE,\n",
+    replace:
+      "            true => Expr {\n                facts: js::Facts::NONE,\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_set_before_use.rs$"],
   },
   {
     name: "never-unwinding-unmarked",
-    breaks: "a call of the crate's function that never unwinds is taken for one that may, so a drop after it is a `try`/`finally` again",
+    breaks:
+      "a call of the crate's function that never unwinds is taken for one that may, so a drop after it is a `try`/`finally` again",
     file: "src/lower/items.rs",
     find: "            true => reference.never_throws(),\n",
     replace: "            true => reference,\n",
@@ -231,23 +281,31 @@ export const mutations: Mutation[] = [
   },
   {
     name: "load-reads-values",
-    breaks: "another module's constant is read as its value, `createCursor(0)`, though its module loads first",
+    breaks:
+      "another module's constant is read as its value, `createCursor(0)`, though its module loads first",
     file: "src/lower/items.rs",
     find: "        module.is_none_or(|module| module == self.module) || !self.krate.loads_in_cycles.borrow().contains(&self.item)\n",
     replace: "        module.is_none_or(|module| module == self.module)\n",
-    tests: ["test/lowering-constants.test.ts", "-t", "read by its name where its module loads first"],
+    tests: [
+      "test/lowering-constants.test.ts",
+      "-t",
+      "read by its name where its module loads first",
+    ],
   },
   {
     name: "unexported-library-item-imported",
-    breaks: "a library's item its JS doesn't export, an impl's dictionary, isn't asked for, and its reference panics (ADR 0914, amended)",
+    breaks:
+      "a library's item its JS doesn't export, an impl's dictionary, isn't asked for, and its reference panics (ADR 0914, amended)",
     file: "src/lower/items.rs",
     find: "            && (foreign.compiles(def_id) || (foreign.item(def_id).is_some() && self.krate.copying.copies(def_id)))\n",
-    replace: "            && (foreign.item(def_id).is_some() && self.krate.copying.copies(def_id))\n",
+    replace:
+      "            && (foreign.item(def_id).is_some() && self.krate.copying.copies(def_id))\n",
     tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
     name: "exported-copying-impl-imported",
-    breaks: "an exported dictionary whose method copies a `Spot` its consumer changes in place is imported, so changing what `first()` gives changes the `Vec`'s (ADR 0914, amended)",
+    breaks:
+      "an exported dictionary whose method copies a `Spot` its consumer changes in place is imported, so changing what `first()` gives changes the `Vec`'s (ADR 0914, amended)",
     file: "src/lower/items.rs",
     find: "            && (foreign.compiles(def_id) || (foreign.item(def_id).is_some() && self.krate.copying.copies(def_id)))\n",
     replace: "            && foreign.compiles(def_id)\n",
@@ -255,43 +313,64 @@ export const mutations: Mutation[] = [
   },
   {
     name: "namespace-read-of-a-default",
-    breaks: "a module's default called through its path, `about::about()`, is read as its namespace's `About.default()`, where it's the module's default import (rd114, ADR 1018)",
+    breaks:
+      "a module's default called through its path, `about::about()`, is read as its namespace's `About.default()`, where it's the module's default import (rd114, ADR 1018)",
     file: "src/lower/items.rs",
-    find: "        let namespaced = through && target.module != self.module && exported != \"default\";\n",
-    replace: "        let namespaced = through && target.module != self.module;\n",
+    find: '        let namespaced = through && target.module != self.module && exported != "default";\n',
+    replace:
+      "        let namespaced = through && target.module != self.module;\n",
     tests: ["test/modules.test.ts", "-t", "make a module a Next.js route"],
   },
   {
     name: "namespace-read-of-a-library-dropped",
-    breaks: "a library's function called through its module, `dep::events::extract_events(2)`, is its named import, not its module's namespace's (rd114, ADR 1018)",
+    breaks:
+      "a library's function called through its module, `dep::events::extract_events(2)`, is its named import, not its module's namespace's (rd114, ADR 1018)",
     file: "src/lower/items.rs",
     find: "        if through\n            && copy.is_none()\n",
     replace: "        if false\n            && copy.is_none()\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "read through its namespace"],
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "read through its namespace",
+    ],
   },
   {
     name: "item-read-by-name-through-its-module",
-    breaks: "a thread-local or a `const` read through its module's path, `plugin::CALLS.get()`, is its named import, `import { calls }`, beside the module's namespace (rd114a, ADR 1018)",
+    breaks:
+      "a thread-local or a `const` read through its module's path, `plugin::CALLS.get()`, is its named import, `import { calls }`, beside the module's namespace (rd114a, ADR 1018)",
     file: "src/lower/items.rs",
     find: "        let place = self.named_fn_ref(def_id, None, named);\n",
-    replace: "        let place = {\n            let _ = named;\n            self.fn_ref(def_id)\n        };\n",
+    replace:
+      "        let place = {\n            let _ = named;\n            self.fn_ref(def_id)\n        };\n",
     tests: ["test/corpus.test.ts", "-t", "^module_path_namespace.rs$"],
     snapshots: true,
   },
   {
     name: "export-named-apart-read-apart",
-    breaks: "another module reads an export named apart through its module's namespace by the name its module gives it, `Keys.delete$()`, which isn't exported (#338)",
+    breaks:
+      "another module reads an export named apart through its module's namespace by the name its module gives it, `Keys.delete$()`, which isn't exported (#338)",
     file: "src/lower/items.rs",
     find: "            false => super::default_exports::exported_as(self.tcx, def_id, target.exported()),\n",
-    replace: "            false => super::default_exports::exported_as(self.tcx, def_id, &name),\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "an export its module names apart is exported by its own name"],
+    replace:
+      "            false => super::default_exports::exported_as(self.tcx, def_id, &name),\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "an export its module names apart is exported by its own name",
+    ],
   },
   {
     name: "reexported-path-own-name",
-    breaks: "a function a module re-exports by another name, `pub use crate::shared::doubled as twice;`, read through that module's namespace is read by its own name, `Plugins.doubled`, not the name it's re-exported as, `Plugins.twice` (rd137)",
+    breaks:
+      "a function a module re-exports by another name, `pub use crate::shared::doubled as twice;`, read through that module's namespace is read by its own name, `Plugins.doubled`, not the name it's re-exported as, `Plugins.twice` (rd137)",
     file: "src/lower/items.rs",
     find: "super::reexports::exported_in(self.tcx, self.krate.fns, module, path.name, def_id)",
-    replace: "super::reexports::exported_in(self.tcx, self.krate.fns, module, self.tcx.item_name(def_id), def_id)",
-    tests: ["test/modules.test.ts", "-t", "a function called through its module is read through its namespace"],
+    replace:
+      "super::reexports::exported_in(self.tcx, self.krate.fns, module, self.tcx.item_name(def_id), def_id)",
+    tests: [
+      "test/modules.test.ts",
+      "-t",
+      "a function called through its module is read through its namespace",
+    ],
   },
 ];

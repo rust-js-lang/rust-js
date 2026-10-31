@@ -6,9 +6,10 @@ export const mutations: Mutation[] = [
     name: "stderr-is-stdout",
     breaks: "a write to standard error goes to standard output",
     file: "src/lower/recognition/fmt.rs",
-    find: "            \"std::io::Stderr\" | \"std::io::StderrLock\" => Some(true),",
-    replace: "            \"std::io::Stderr\" | \"std::io::StderrLock\" => Some(false),",
-    tests: ["test/corpus.test.ts","-t","std_odds"],
+    find: '            "std::io::Stderr" | "std::io::StderrLock" => Some(true),',
+    replace:
+      '            "std::io::Stderr" | "std::io::StderrLock" => Some(false),',
+    tests: ["test/corpus.test.ts", "-t", "std_odds"],
   },
   {
     name: "fmt-result-unwrap-refused",
@@ -28,33 +29,41 @@ export const mutations: Mutation[] = [
   },
   {
     name: "debug-struct-builder-unknown",
-    breaks: "`f.debug_struct(\"P\")`'s builder isn't known, and a writer's `Debug` of a struct by one is refused",
+    breaks:
+      "`f.debug_struct(\"P\")`'s builder isn't known, and a writer's `Debug` of a struct by one is refused",
     file: "src/lower/recognition/fmt.rs",
-    find: "        \"DebugStruct\" => DebugBuilder::Struct,\n",
+    find: '        "DebugStruct" => DebugBuilder::Struct,\n',
     replace: "",
-    tests: ["test/lowering-strings.test.ts", "-t", "a writer's Debug builder from its MIR"],
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "a writer's Debug builder from its MIR",
+    ],
   },
   {
     name: "builder-entries-unknown",
-    breaks: "a `Debug` builder's `entries(..)` isn't known, and a writer's list of them is refused",
+    breaks:
+      "a `Debug` builder's `entries(..)` isn't known, and a writer's list of them is refused",
     file: "src/lower/recognition/fmt.rs",
-    find: "        \"entries\" => BuilderStep::Entries,\n",
+    find: '        "entries" => BuilderStep::Entries,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "pretty_debug|std_methods"],
   },
   {
     name: "formatter-method-unknown",
-    breaks: "a `Formatter`'s own methods, `f.width()`, `f.pad(s)`, aren't known as its",
+    breaks:
+      "a `Formatter`'s own methods, `f.width()`, `f.pad(s)`, aren't known as its",
     file: "src/lower/recognition/fmt.rs",
     find: "            ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Formatter))\n",
-    replace: "            ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Vec))\n",
+    replace:
+      "            ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Vec))\n",
     tests: ["test/corpus.test.ts", "-t", "^formatter_(asked|queries).rs$"],
   },
   {
     name: "write-result-ok-refused",
     breaks: "`ok()` of a write's `io::Result<()>`, `Some(())`, is refused",
     file: "src/lower/recognition/fmt.rs",
-    find: "        \"ok\" => FmtResultAnswer::Ok,\n",
+    find: '        "ok" => FmtResultAnswer::Ok,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^io_writers.rs$"],
   },
@@ -62,7 +71,7 @@ export const mutations: Mutation[] = [
     name: "boxed-dyn-writer-unknown",
     breaks: "a `Box<dyn Write>` as a `Write` has no dictionary, and is refused",
     file: "src/lower/recognition/fmt.rs",
-    find: "            return Some(\"$dynWriter\");\n",
+    find: '            return Some("$dynWriter");\n',
     replace: "            return None;\n",
     tests: ["test/corpus.test.ts", "-t", "^io_writers.rs$"],
   },
@@ -70,37 +79,42 @@ export const mutations: Mutation[] = [
     name: "io-result-unwrap-or-refused",
     breaks: "`unwrap_or(())` of a write's result is refused",
     file: "src/lower/recognition/fmt.rs",
-    find: "        \"unwrap_or\" | \"unwrap_or_default\" => FmtResultAnswer::UnwrapOr,\n",
+    find: '        "unwrap_or" | "unwrap_or_default" => FmtResultAnswer::UnwrapOr,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^io_write_impl.rs$"],
   },
   {
     name: "phantom-named-shallow",
-    breaks: "a struct of the crate's holding a `PhantomData<K>`, `{:?}` of it written in place, asks no name of `K`",
+    breaks:
+      "a struct of the crate's holding a `PhantomData<K>`, `{:?}` of it written in place, asks no name of `K`",
     file: "src/lower/recognition/fmt.rs",
     find: "        ty::Adt(adt, args) if adt.did().is_local() => {\n",
-    replace: "        ty::Adt(adt, args) if adt.did().is_local() && false => {\n",
+    replace:
+      "        ty::Adt(adt, args) if adt.did().is_local() && false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^phantom_debug.rs$"],
   },
   {
     name: "fmt-result-map-unknown",
     breaks: "`map(f)` of a `fmt::Result`, writeable's, is refused",
     file: "src/lower/recognition/fmt.rs",
-    find: "        \"map\" => FmtResultAnswer::Map,\n",
+    find: '        "map" => FmtResultAnswer::Map,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fmt_result_map.rs$"],
   },
   {
     name: "error-cause-as-description",
-    breaks: "an `Error`'s `cause` is std's `description`, its text, not its `source`",
+    breaks:
+      "an `Error`'s `cause` is std's `description`, its text, not its `source`",
     file: "src/lower/recognition/fmt.rs",
-    find: "        _ if is_std_method(tcx, id, StdItem::Error, \"cause\") => Some(true),\n",
-    replace: "        _ if is_std_method(tcx, id, StdItem::Error, \"cause\") => Some(false),\n",
+    find: '        _ if is_std_method(tcx, id, StdItem::Error, "cause") => Some(true),\n',
+    replace:
+      '        _ if is_std_method(tcx, id, StdItem::Error, "cause") => Some(false),\n',
     tests: ["test/corpus.test.ts", "-t", "^error_description_cause.rs$"],
   },
   {
     name: "closure-not-a-writer",
-    breaks: "a closure that writes to the `Formatter` it's given isn't a writer: `|f| write!(f, \"-\")` takes a box",
+    breaks:
+      "a closure that writes to the `Formatter` it's given isn't a writer: `|f| write!(f, \"-\")` takes a box",
     file: "src/lower/recognition/fmt.rs",
     find: "        if self.tcx.def_kind(def_id) == DefKind::Closure {\n",
     replace: "        if false {\n",

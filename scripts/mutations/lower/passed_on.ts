@@ -1,32 +1,56 @@
 // Mutations of src/lower/passed_on.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
-const once = ["test/lowering-passed-on.test.ts", "-t", "FnOnce callback that only passes its call on"];
-const kept = ["test/lowering-passed-on.test.ts", "-t", "only where the function would see"];
-const handler = ["test/jsx-events.test.ts", "-t", "calls a function with nothing"];
-const callback = ["test/lowering-functions.test.ts", "-t", "only passes its arguments on"];
-const restCallee = ["test/lowering-passed-on.test.ts", "-t", "of rest arguments that passes them all on"];
+const once = [
+  "test/lowering-passed-on.test.ts",
+  "-t",
+  "FnOnce callback that only passes its call on",
+];
+const kept = [
+  "test/lowering-passed-on.test.ts",
+  "-t",
+  "only where the function would see",
+];
+const handler = [
+  "test/jsx-events.test.ts",
+  "-t",
+  "calls a function with nothing",
+];
+const callback = [
+  "test/lowering-functions.test.ts",
+  "-t",
+  "only passes its arguments on",
+];
+const restCallee = [
+  "test/lowering-passed-on.test.ts",
+  "-t",
+  "of rest arguments that passes them all on",
+];
 
 export const mutations: Mutation[] = [
   {
     name: "passed-on-array-method-kept",
-    breaks: "`xs.map((x) => double(x))` keeps its arrow: `map` isn't an array method whose callback may be the function (ADR 0279)",
+    breaks:
+      "`xs.map((x) => double(x))` keeps its arrow: `map` isn't an array method whose callback may be the function (ADR 0279)",
     file: "src/lower/passed_on.rs",
-    find: "        [\"map\", \"filter\", \"some\", \"every\", \"find\", \"forEach\"]\n",
-    replace: "        [\"filter\", \"some\", \"every\", \"find\", \"forEach\"]\n",
+    find: '        ["map", "filter", "some", "every", "find", "forEach"]\n',
+    replace: '        ["filter", "some", "every", "find", "forEach"]\n',
     tests: callback,
   },
   {
     name: "passed-on-handler-kept",
-    breaks: "`onClick={() => onClear()}`, not `onClick={onClear}`: no prop is an event's (ADR 0198)",
+    breaks:
+      "`onClick={() => onClear()}`, not `onClick={onClear}`: no prop is an event's (ADR 0198)",
     file: "src/lower/passed_on.rs",
     find: "        js::is_handler_name(name).then_some(Taker::Handler)\n",
-    replace: "        (js::is_handler_name(name) && false).then_some(Taker::Handler)\n",
+    replace:
+      "        (js::is_handler_name(name) && false).then_some(Taker::Handler)\n",
     tests: handler,
   },
   {
     name: "once-callback-kept",
-    breaks: "a binding's `FnOnce` callback that only passes its call on stays an arrow, `p.then(() => ping())`, not `p.then(ping)`",
+    breaks:
+      "a binding's `FnOnce` callback that only passes its call on stays an arrow, `p.then(() => ping())`, not `p.then(ping)`",
     file: "src/lower/passed_on.rs",
     find: "            true => Taker::OnceCallback,\n",
     replace: "            true => Taker::Callback,\n",
@@ -34,15 +58,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "once-callback-of-any-fn-bound",
-    breaks: "a binding's `impl Fn` parameter, a listener's, is the function the closure passes on to, `listenEvery(count)`, which JS may keep and compare",
+    breaks:
+      "a binding's `impl Fn` parameter, a listener's, is the function the closure passes on to, `listenEvery(count)`, which JS may keep and compare",
     file: "src/lower/passed_on.rs",
     find: "            ty::Param(_) => crate::lower::recognition::function_kind(tcx, def_id, ty) == Some(ty::ClosureKind::FnOnce),\n",
-    replace: "            ty::Param(_) => crate::lower::recognition::function_kind(tcx, def_id, ty).is_some(),\n",
+    replace:
+      "            ty::Param(_) => crate::lower::recognition::function_kind(tcx, def_id, ty).is_some(),\n",
     tests: once,
   },
   {
     name: "once-callback-of-boxed-fn",
-    breaks: "a binding's `Box<dyn Fn>` parameter, a listener's, is a once-callback, so `|x| shown(x)` given to it is `shown`, which JS may keep and compare, and give more",
+    breaks:
+      "a binding's `Box<dyn Fn>` parameter, a listener's, is a once-callback, so `|x| shown(x)` given to it is `shown`, which JS may keep and compare, and give more",
     file: "src/lower/passed_on.rs",
     find: "                ty::Dynamic(traits, ..) => traits.principal_def_id().is_some_and(only_once),\n",
     replace: "                ty::Dynamic(..) => true,\n",
@@ -51,7 +78,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "once-callback-of-js-function",
-    breaks: "a once-callback that calls a generic `impl Fn` or a `dyn Fn`, which may be a JS caller's function, is it: `p.then(f)` gives `f` the value it may read",
+    breaks:
+      "a once-callback that calls a generic `impl Fn` or a `dyn Fn`, which may be a JS caller's function, is it: `p.then(f)` gives `f` the value it may read",
     file: "src/lower/passed_on.rs",
     find: "            Taker::OnceCallback => callee == Callee::Own,\n",
     replace: "            Taker::OnceCallback => true,\n",
@@ -59,7 +87,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "array-method-of-dyn-fn",
-    breaks: "`xs.map((x) => f(x))` of a `dyn Fn` is `xs.map(f)`, which gives a JS caller's function the index and the array",
+    breaks:
+      "`xs.map((x) => f(x))` of a `dyn Fn` is `xs.map(f)`, which gives a JS caller's function the index and the array",
     file: "src/lower/passed_on.rs",
     find: "            Taker::ArrayMethod => matches!(callee, Callee::Own | Callee::Generic),\n",
     replace: "            Taker::ArrayMethod => true,\n",
@@ -67,23 +96,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "passed-on-without-fact",
-    breaks: "an arrow MIR made no fact of, one rust-js writes itself, `(x) => f(x)`, is the function it calls, `f`, which then reads the index and array JS's `map` gives it too",
+    breaks:
+      "an arrow MIR made no fact of, one rust-js writes itself, `(x) => f(x)`, is the function it calls, `f`, which then reads the index and array JS's `map` gives it too",
     file: "src/lower/passed_on.rs",
     find: "            let fact = (forwarding.iter()).find(|fact| !f.span.is_none() && fact.span == f.span)?;\n",
-    replace: "            let fact = (forwarding.iter()).find(|fact| !f.span.is_none() && fact.span == f.span).copied().unwrap_or(Forwarding { span: f.span, callee: Callee::Own, adapts: true, item: false, binds: false, ignores: false });\n",
+    replace:
+      "            let fact = (forwarding.iter()).find(|fact| !f.span.is_none() && fact.span == f.span).copied().unwrap_or(Forwarding { span: f.span, callee: Callee::Own, adapts: true, item: false, binds: false, ignores: false });\n",
     tests: ["test/corpus.test.ts", "-t", "^array_map.rs$"],
   },
   {
     name: "optional-handler-kept",
-    breaks: "a component's optional handler passed on is `(e) => { if (onClick != null) { onClick(e); } }`, not `onClick` (ADR 0198)",
+    breaks:
+      "a component's optional handler passed on is `(e) => { if (onClick != null) { onClick(e); } }`, not `onClick` (ADR 0198)",
     file: "src/lower/passed_on.rs",
     find: "    if taker == Taker::Handler\n        && let Some(handler) = optional_handler(f)\n",
-    replace: "    if taker == Taker::Made\n        && let Some(handler) = optional_handler(f)\n",
+    replace:
+      "    if taker == Taker::Made\n        && let Some(handler) = optional_handler(f)\n",
     tests: ["test/jsx-events.test.ts", "-t", "optional event handler"],
   },
   {
     name: "made-member-kept",
-    breaks: "a binding of a namespace's function taken as a `fn` stays an arrow, `(...data) => console.log(...data)`, not `console.log`",
+    breaks:
+      "a binding of a namespace's function taken as a `fn` stays an arrow, `(...data) => console.log(...data)`, not `console.log`",
     file: "src/lower/passed_on.rs",
     find: "        Taker::Made => named || matches!(callee.kind, js::ExprKind::Member(..)),\n",
     replace: "        Taker::Made => named,\n",
@@ -91,7 +125,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "generic-callback-kept",
-    breaks: "an `impl Fn` called with what it's given is `(x, i) => f(x, i)`, not `f`",
+    breaks:
+      "an `impl Fn` called with what it's given is `(x, i) => f(x, i)`, not `f`",
     file: "src/lower/passed_on.rs",
     find: "                    ty::Param(_) => Callee::Generic,\n",
     replace: "                    ty::Param(_) => return None,\n",
@@ -99,23 +134,32 @@ export const mutations: Mutation[] = [
   },
   {
     name: "boxed-dyn-fn-not-rust",
-    breaks: "a `Box<dyn Fn()>` prop's call isn't a Rust function's, `() => onClear()` kept",
+    breaks:
+      "a `Box<dyn Fn()>` prop's call isn't a Rust function's, `() => onClear()` kept",
     file: "src/lower/passed_on.rs",
     find: "                    ty::Adt(adt, args) if adt.is_box() && matches!(args.type_at(0).kind(), ty::Dynamic(..)) => {\n",
-    replace: "                    ty::Adt(adt, args) if adt.is_box() && matches!(args.type_at(0).kind(), ty::Never) => {\n",
+    replace:
+      "                    ty::Adt(adt, args) if adt.is_box() && matches!(args.type_at(0).kind(), ty::Never) => {\n",
     tests: handler,
   },
   {
     name: "binding-callee-passed-on",
-    breaks: "`onClick={() => alert()}` is `onClick={alert}`, which shows the event, and `xs.map((x) => parseFloat(x))` `xs.map(parseFloat)`, which reads the index",
+    breaks:
+      "`onClick={() => alert()}` is `onClick={alert}`, which shows the event, and `xs.map((x) => parseFloat(x))` `xs.map(parseFloat)`, which reads the index",
     file: "src/lower/passed_on.rs",
     find: "                callee: Callee::Host,\n",
     replace: "                callee: Callee::Own,\n",
-    tests: ["test/jsx-events.test.ts", "test/lowering-functions.test.ts", "-t", "calls a function with nothing|only passes its arguments"],
+    tests: [
+      "test/jsx-events.test.ts",
+      "test/lowering-functions.test.ts",
+      "-t",
+      "calls a function with nothing|only passes its arguments",
+    ],
   },
   {
     name: "rest-callee-passed-on",
-    breaks: "`xs.map((x) => many(x))` of a function of rest arguments is `xs.map(many)`, which counts the index and the array too",
+    breaks:
+      "`xs.map((x) => many(x))` of a function of rest arguments is `xs.map(many)`, which counts the index and the array too",
     file: "src/lower/passed_on.rs",
     find: "\n                && (!self.takes_rest(def_id) || self.gathers_rest(body.def_id)))",
     replace: ")",
@@ -123,15 +167,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "passed-handler-wrapped",
-    breaks: "an optional handler passed on to an element is wrapped, `(e) => { if (onClick != null) { onClick(e); } }`",
+    breaks:
+      "an optional handler passed on to an element is wrapped, `(e) => { if (onClick != null) { onClick(e); } }`",
     file: "src/lower/passed_on.rs",
     find: "    (given && called && handler != param).then(|| tested.clone())",
-    replace: "    (false && given && called && handler != param).then(|| tested.clone())",
-    tests: ["test/jsx-events.test.ts", "-t", "optional event handler on as it is"],
+    replace:
+      "    (false && given && called && handler != param).then(|| tested.clone())",
+    tests: [
+      "test/jsx-events.test.ts",
+      "-t",
+      "optional event handler on as it is",
+    ],
   },
   {
     name: "helper-called-by-name",
-    breaks: "a std helper as a value is it by name, not the arrow that names what it's given by its type",
+    breaks:
+      "a std helper as a value is it by name, not the arrow that names what it's given by its type",
     file: "src/lower/passed_on.rs",
     find: "            js::ExprKind::Var(_) => callee.helper_name().is_none(),\n",
     replace: "            js::ExprKind::Var(_) => true,\n",
@@ -140,7 +191,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "called-arrow-wrapped",
-    breaks: "an arrow called with exactly its parameters is wrapped in another, not itself",
+    breaks:
+      "an arrow called with exactly its parameters is wrapped in another, not itself",
     file: "src/lower/passed_on.rs",
     find: "                taken.len() == arity && taken.iter().all(|p| matches!(p, js::Pattern::Name(_)))\n",
     replace: "                false\n",
@@ -149,55 +201,85 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-callee-not-rust",
-    breaks: "a once-callback that passes its call on to a library's function, shared's `noop`, keeps its arrow, `then(() => { noop(); }, ..)`",
+    breaks:
+      "a once-callback that passes its call on to a library's function, shared's `noop`, keeps its arrow, `then(() => { noop(); }, ..)`",
     file: "src/lower/passed_on.rs",
     find: "(def_id.is_local() || self.krate.foreign.is_library(def_id.krate))",
     replace: "def_id.is_local()",
-    tests: ["test/cross-crate-items.test.ts", "-t", "once-callback that passes its call on"],
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "once-callback that passes its call on",
+    ],
   },
   {
     name: "library-rest-callee-passed-on",
-    breaks: "a once-callback that gives one argument to a library's function of rest arguments is the function, which reads all JS gives it",
+    breaks:
+      "a once-callback that gives one argument to a library's function of rest arguments is the function, which reads all JS gives it",
     file: "src/lower/passed_on.rs",
     find: "\n                && (!self.takes_rest(def_id) || self.gathers_rest(body.def_id)))",
-    replace: "\n                && (def_id.is_local() && !self.takes_rest(def_id) || self.gathers_rest(body.def_id)))",
-    tests: ["test/cross-crate-items.test.ts", "-t", "once-callback that passes its call on"],
+    replace:
+      "\n                && (def_id.is_local() && !self.takes_rest(def_id) || self.gathers_rest(body.def_id)))",
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "once-callback that passes its call on",
+    ],
   },
   {
     name: "fn-pointer-statement-kept",
-    breaks: "a closure as a `fn` whose call never returns, `|_, _| throw_invalid_hook_error()`, keeps its arrow, as its JS is a statement (ADR 0605, amended)",
+    breaks:
+      "a closure as a `fn` whose call never returns, `|_, _| throw_invalid_hook_error()`, keeps its arrow, as its JS is a statement (ADR 0605, amended)",
     file: "src/lower/passed_on.rs",
     find: "                Taker::Handler | Taker::OnceCallback | Taker::FnPointer | Taker::Callback\n            )\n",
-    replace: "                Taker::Handler | Taker::OnceCallback | Taker::Callback\n            )\n",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "a closure as a fn that only calls"],
+    replace:
+      "                Taker::Handler | Taker::OnceCallback | Taker::Callback\n            )\n",
+    tests: [
+      "test/lowering-passed-on.test.ts",
+      "-t",
+      "a closure as a fn that only calls",
+    ],
   },
   {
     name: "fn-pointer-wrapper-collapsed",
-    breaks: "a closure as a `fn` of a function Rust could name there, a DEV dispatcher's wrapper `|context| read_context(context)`, is the function, not the function of its own the program wrote (ADR 0605, amended)",
+    breaks:
+      "a closure as a `fn` of a function Rust could name there, a DEV dispatcher's wrapper `|context| read_context(context)`, is the function, not the function of its own the program wrote (ADR 0605, amended)",
     file: "src/lower/passed_on.rs",
     find: "            if taker == Taker::FnPointer && !fact.adapts {\n",
     replace: "            if false {\n",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "a closure as a fn that only calls"],
+    tests: [
+      "test/lowering-passed-on.test.ts",
+      "-t",
+      "a closure as a fn that only calls",
+    ],
   },
   {
     name: "fn-pointer-always-adapts",
-    breaks: "every function a closure calls is taken to have a signature other than the closure's, so a wrapper of one Rust could name is the function (ADR 0605, amended)",
+    breaks:
+      "every function a closure calls is taken to have a signature other than the closure's, so a wrapper of one Rust could name is the function (ADR 0605, amended)",
     file: "src/lower/passed_on.rs",
     find: "        inputs.len() != called.inputs().len()\n",
     replace: "        true || inputs.len() != called.inputs().len()\n",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "a closure as a fn that only calls"],
+    tests: [
+      "test/lowering-passed-on.test.ts",
+      "-t",
+      "a closure as a fn that only calls",
+    ],
   },
   {
     name: "bound-any-variable",
-    breaks: "a closure that passes on what it borrows, `(cb, o) => startTransition(fiber, false, cb, o)` of `&fiber`, is bound to it as a moved value is (ADR 0605, amended)",
+    breaks:
+      "a closure that passes on what it borrows, `(cb, o) => startTransition(fiber, false, cb, o)` of `&fiber`, is bound to it as a moved value is (ADR 0605, amended)",
     file: "src/lower/passed_on.rs",
     find: "    let taken = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(v) if moved.contains(v));\n",
-    replace: "    let taken = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(v) if moved.contains(v) || v != \"\");\n",
+    replace:
+      '    let taken = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(v) if moved.contains(v) || v != "");\n',
     tests: ["test/lowering-passed-on.test.ts", "-t", "is the function bound"],
   },
   {
     name: "bound-thunk",
-    breaks: "a closure of no parameters of its own, `() => shown(fiber)`, is `shown.bind(null, fiber)` (ADR 0605, amended)",
+    breaks:
+      "a closure of no parameters of its own, `() => shown(fiber)`, is `shown.bind(null, fiber)` (ADR 0605, amended)",
     file: "src/lower/passed_on.rs",
     find: " && named && !params.is_empty())?;\n",
     replace: " && named)?;\n",
@@ -205,7 +287,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "bound-a-closure",
-    breaks: "a closure that passes on to a closure, `(cb, o) => start(true, cb, o)`, is `start.bind(null, true)` (ADR 0605, amended)",
+    breaks:
+      "a closure that passes on to a closure, `(cb, o) => start(true, cb, o)`, is `start.bind(null, true)` (ADR 0605, amended)",
     file: "src/lower/passed_on.rs",
     find: "    fact.item\n        && fact.callee == Callee::Own\n",
     replace: "    fact.callee == Callee::Own\n",
@@ -213,7 +296,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "bound-of-nothing-captured",
-    breaks: "a closure that captures nothing, `(x) => noisy(\"take\", x)`, is `noisy.bind(null, \"take\")`, which an arrow called in place leaves `noisy.bind(null, \"find\")(x)` (ADR 0605, amended)",
+    breaks:
+      'a closure that captures nothing, `(x) => noisy("take", x)`, is `noisy.bind(null, "take")`, which an arrow called in place leaves `noisy.bind(null, "find")(x)` (ADR 0605, amended)',
     file: "src/lower/passed_on.rs",
     find: "bound.iter().any(taken) && ",
     replace: "",
@@ -221,7 +305,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "bound-never",
-    breaks: "React's `startTransition.bind(null, fiber, queue, true, false)` stays `(callback, options) => startTransition(fiber, queue, true, false, callback, options)` (ADR 0605, amended)",
+    breaks:
+      "React's `startTransition.bind(null, fiber, queue, true, false)` stays `(callback, options) => startTransition(fiber, queue, true, false, callback, options)` (ADR 0605, amended)",
     file: "src/lower/passed_on.rs",
     find: "    (forwarding.iter()).find(|fact| fact.binds && ",
     replace: "    (forwarding.iter()).find(|fact| false && fact.binds && ",
@@ -229,7 +314,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rest-callee-never-passed-on",
-    breaks: "ReactFiberConfigWithNoPersistence's `export const cloneInstance = shim;` is `(...args) => { shim(...args); }`: a closure of rest arguments that passes them all on to a rest function stays its arrow (ADR 0605, amended)",
+    breaks:
+      "ReactFiberConfigWithNoPersistence's `export const cloneInstance = shim;` is `(...args) => { shim(...args); }`: a closure of rest arguments that passes them all on to a rest function stays its arrow (ADR 0605, amended)",
     file: "src/lower/passed_on.rs",
     find: "(!self.takes_rest(def_id) || self.gathers_rest(body.def_id))",
     replace: "!self.takes_rest(def_id)",
@@ -237,7 +323,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rest-gathered-of-any-last-parameter",
-    breaks: "a closure's last parameter of any type gathers JS's arguments: `xs.map((x) => total(x))` of a rest function is `xs.map(total)`",
+    breaks:
+      "a closure's last parameter of any type gathers JS's arguments: `xs.map((x) => total(x))` of a rest function is `xs.map(total)`",
     file: "src/lower/passed_on.rs",
     find: "ty::Tuple(items) => items.last().is_some_and(rest),",
     replace: "ty::Tuple(items) => !items.is_empty(),",
@@ -245,15 +332,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "namespace-fn-value-arrowed",
-    breaks: "a library's function given as a value through its module's namespace, `&dep::noop` as a `&dyn Fn`, is `() => Dep.noop()`, not `Dep.noop` as its named import was (ADR 1018, amended)",
+    breaks:
+      "a library's function given as a value through its module's namespace, `&dep::noop` as a `&dyn Fn`, is `() => Dep.noop()`, not `Dep.noop` as its named import was (ADR 1018, amended)",
     file: "src/lower/passed_on.rs",
     find: "            js::ExprKind::Member(..) => callee.is_named(),\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "returned past a guard's drop is returned after its finally"],
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "returned past a guard's drop is returned after its finally",
+    ],
   },
   {
     name: "host-callee-not-a-fn",
-    breaks: "a closure as a `fn` that only calls a host function, `|cb| { js::set_timeout(cb, None); }`, stays its arrow, where React holds `setTimeout` itself (rd158)",
+    breaks:
+      "a closure as a `fn` that only calls a host function, `|cb| { js::set_timeout(cb, None); }`, stays its arrow, where React holds `setTimeout` itself (rd158)",
     file: "src/lower/passed_on.rs",
     find: "            Taker::FnPointer => matches!(callee, Callee::Own | Callee::Host),\n",
     replace: "            Taker::FnPointer => callee == Callee::Own,\n",
@@ -261,23 +354,32 @@ export const mutations: Mutation[] = [
   },
   {
     name: "host-statement-unread",
-    breaks: "a closure of one statement, `{ js::set_timeout(cb, None); }`, passes its call on to nothing, an arrow (rd158)",
+    breaks:
+      "a closure of one statement, `{ js::set_timeout(cb, None); }`, passes its call on to nothing, an arrow (rd158)",
     file: "src/lower/passed_on.rs",
     find: "                    statement = true;\n",
-    replace: "                    statement = true;\n                    return None;\n",
+    replace:
+      "                    statement = true;\n                    return None;\n",
     tests: ["test/lowering-passed-on.test.ts", "-t", "one host function"],
   },
   {
     name: "own-statement-passed-on",
-    breaks: "a closure that discards the crate's function's value, `|a| { first(a); }`, is that function, so a JS caller sees what it gives (rd158)",
+    breaks:
+      "a closure that discards the crate's function's value, `|a| { first(a); }`, is that function, so a JS caller sees what it gives (rd158)",
     file: "src/lower/passed_on.rs",
     find: "        if statement && !super::bindings::is_binding(self.tcx, def_id) {\n",
-    replace: "        if false && statement && !super::bindings::is_binding(self.tcx, def_id) {\n",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "only calls the crate's function"],
+    replace:
+      "        if false && statement && !super::bindings::is_binding(self.tcx, def_id) {\n",
+    tests: [
+      "test/lowering-passed-on.test.ts",
+      "-t",
+      "only calls the crate's function",
+    ],
   },
   {
     name: "host-callee-a-handler",
-    breaks: "an event handler that only calls a binding's function with the event is that function, which may read what React gives it more (rd158)",
+    breaks:
+      "an event handler that only calls a binding's function with the event is that function, which may read what React gives it more (rd158)",
     file: "src/lower/passed_on.rs",
     find: "            Taker::Handler => callee != Callee::Host,\n",
     replace: "            Taker::Handler => true,\n",
@@ -285,7 +387,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "ignoring-listener-kept",
-    breaks: "a listener that ignores what it's given and calls a function of the crate's keeps its arrow, `addEventListener(\"layout\", () => { layoutCallback(); })` (rd212)",
+    breaks:
+      "a listener that ignores what it's given and calls a function of the crate's keeps its arrow, `addEventListener(\"layout\", () => { layoutCallback(); })` (rd212)",
     file: "src/lower/passed_on.rs",
     find: "            false => Taker::Callback,\n",
     replace: "            false => return None,\n",
@@ -293,7 +396,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "ignoring-not-taken",
-    breaks: "a callback taker takes no closure that ignores what it's given, a listener's arrow kept (rd212)",
+    breaks:
+      "a callback taker takes no closure that ignores what it's given, a listener's arrow kept (rd212)",
     file: "src/lower/passed_on.rs",
     find: "            if !taker.takes(fact.callee) && !fact.ignores {\n",
     replace: "            if !taker.takes(fact.callee) {\n",
@@ -301,7 +405,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "ignoring-item-given",
-    breaks: "a closure that calls a function of the crate's with nothing isn't known to ignore what it's given (rd212)",
+    breaks:
+      "a closure that calls a function of the crate's with nothing isn't known to ignore what it's given (rd212)",
     file: "src/lower/passed_on.rs",
     find: "                ignores: args.is_empty(),\n",
     replace: "                ignores: false,\n",
@@ -309,7 +414,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "bound-own-dyn",
-    breaks: "a bound function of the crate's is taken for a `dyn Fn` a JS function may be, `move |_| ping()` kept an arrow (rd196)",
+    breaks:
+      "a bound function of the crate's is taken for a `dyn Fn` a JS function may be, `move |_| ping()` kept an arrow (rd196)",
     file: "src/lower/passed_on.rs",
     find: "                    ty::Dynamic(..) if captured.is_some_and(|var| self.bound_own(var)) => Callee::Own,\n",
     replace: "",
@@ -317,7 +423,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "bound-host-own",
-    breaks: "a binding's JS function bound is taken for the crate's, given to a listener that reads what it's given (rd196)",
+    breaks:
+      "a binding's JS function bound is taken for the crate's, given to a listener that reads what it's given (rd196)",
     file: "src/lower/passed_on.rs",
     find: "                    && !super::bindings::is_binding(tcx, f)\n                    && !self.takes_rest(f);\n",
     replace: "                    && !self.takes_rest(f);\n",
@@ -325,7 +432,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "bound-with-this-not-own",
-    breaks: "a `with_this` function bound isn't taken for one that ignores what it's given, `onUnsuspend.bind(state)` kept in an arrow (rd196)",
+    breaks:
+      "a `with_this` function bound isn't taken for one that ignores what it's given, `onUnsuspend.bind(state)` kept in an arrow (rd196)",
     file: "src/lower/passed_on.rs",
     find: "                ty::FnDef(f, _) => matches!(super::bindings::js_form(tcx, f), super::bindings::JsForm::WithThis),\n",
     replace: "                ty::FnDef(..) => false,\n",
@@ -333,15 +441,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "passed-on-closure-of-a-left-out-none",
-    breaks: "a closure that calls a closure with a trailing `None`, `|n| tagged(n, None)`, is that closure, `[3, 4].map(tagged)`, which JS's `map` gives the index for the `None`: a wrong answer",
+    breaks:
+      "a closure that calls a closure with a trailing `None`, `|n| tagged(n, None)`, is that closure, `[3, 4].map(tagged)`, which JS's `map` gives the index for the `None`: a wrong answer",
     file: "src/lower/passed_on.rs",
     find: "                    ExprKind::Tuple { ref fields } if leaves_out(fields) => return None,\n",
-    replace: "                    ExprKind::Tuple { ref fields } if false && leaves_out(fields) => return None,\n",
+    replace:
+      "                    ExprKind::Tuple { ref fields } if false && leaves_out(fields) => return None,\n",
     tests: ["test/corpus.test.ts", "-t", "^option_arguments.rs$"],
   },
   {
     name: "passed-on-function-of-a-left-out-none",
-    breaks: "a closure that calls the crate's function with a trailing `None`, `|n| plus(n, None)`, is that function, `[1, 2].map(plus)`, which JS's `map` gives the index for the `None`: a wrong answer",
+    breaks:
+      "a closure that calls the crate's function with a trailing `None`, `|n| plus(n, None)`, is that function, `[1, 2].map(plus)`, which JS's `map` gives the index for the `None`: a wrong answer",
     file: "src/lower/passed_on.rs",
     find: "                && !leaves_out(args)\n",
     replace: "                && !(false && leaves_out(args))\n",

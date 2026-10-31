@@ -466,4 +466,17 @@ export const mutations: Mutation[] = [
     replace: "    if true {\n        return name();\n",
     tests: ["test/modules.test.ts", "-t", "a function called through its module is read through its namespace"],
   },
+  {
+    name: "namespace-method-value-itself",
+    breaks:
+      "a namespace's method as a value is its module's function, given the namespace as its first argument (ADR 1037)",
+    file: "src/lower.rs",
+    find: "                            | classes::Member::Namespace\n",
+    replace: "",
+    tests: [
+      "test/namespaces.test.ts",
+      "-t",
+      "a namespace's methods are its module's functions",
+    ],
+  },
 ];

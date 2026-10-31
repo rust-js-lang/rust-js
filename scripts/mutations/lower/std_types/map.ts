@@ -4,15 +4,21 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "map-made-of-iter",
-    breaks: "a set or a map collected from an array is `new Set($iter([1, 2]))`, `new $KeySet($iter(xs))`, where its constructor steps the array the same",
+    breaks:
+      "a set or a map collected from an array is `new Set($iter([1, 2]))`, `new $KeySet($iter(xs))`, where its constructor steps the array the same",
     file: "src/lower/std_types/map.rs",
     find: "            _ if crate::lower::iterators::is_stepped_items(&items) => {\n",
     replace: "            _ if false => {\n",
-    tests: ["test/lowering-collections.test.ts", "-t", "sets and maps from MIR"],
+    tests: [
+      "test/lowering-collections.test.ts",
+      "-t",
+      "sets and maps from MIR",
+    ],
   },
   {
     name: "map-class-of-the-ref",
-    breaks: "a map or a set keyed by a `&T` is made a plain `Map` or `Set`, not the class its caller gives for `T`, so a tuple key is found by identity (#313)",
+    breaks:
+      "a map or a set keyed by a `&T` is made a plain `Map` or `Set`, not the class its caller gives for `T`, so a tuple key is found by identity (#313)",
     file: "src/lower/std_types/map.rs",
     find: "        let key = key.map(crate::lower::recognition::class_key);\n",
     replace: "",
@@ -20,7 +26,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "map-index-of-options-unboxed",
-    breaks: "`m[k]` of a map of values that could look like `None` takes a stored `None` for a missing key, and panics (#311)",
+    breaks:
+      "`m[k]` of a map of values that could look like `None` takes a stored `None` for a missing key, and panics (#311)",
     file: "src/lower/std_types/map.rs",
     find: "            MapOp::Index if types.get(1).is_some_and(|&value| self.boxed_payload(value)) => {\n",
     replace: "            MapOp::Index if false => {\n",
@@ -28,7 +35,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "set-items-unknown",
-    breaks: "a `HashSet`'s items aren't known to be a set's, so its `iter().for_each(..)` is `Array.from(set).forEach(..)` (ADR 0877)",
+    breaks:
+      "a `HashSet`'s items aren't known to be a set's, so its `iter().for_each(..)` is `Array.from(set).forEach(..)` (ADR 0877)",
     file: "src/lower/std_types/map.rs",
     find: "        Ok(match self.is_set(map_ty) {\n",
     replace: "        Ok(match self.is_set(map_ty) && false {\n",
@@ -37,23 +45,27 @@ export const mutations: Mutation[] = [
   },
   {
     name: "value-keys-by-identity",
-    breaks: "a `HashMap<Point, _>` is a plain `Map`, which finds a struct key by identity, and never the equal one asked for",
+    breaks:
+      "a `HashMap<Point, _>` is a plain `Map`, which finds a struct key by identity, and never the equal one asked for",
     file: "src/lower/std_types/map.rs",
-    find: "            Some(key) if self.is_value_key(key) && !self.is_js_key(key) => [\"$KeyMap\", \"$KeySet\"][usize::from(set)],\n",
+    find: '            Some(key) if self.is_value_key(key) && !self.is_js_key(key) => ["$KeyMap", "$KeySet"][usize::from(set)],\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "value_keys"],
   },
   {
     name: "option-keys-by-identity",
-    breaks: "a `HashMap<Option<u32>, _>` is a plain `Map`, whose `null` key and `undefined` key are two, where Rust has one `None`, and `get(&None)` misses a nullable field's (ADR 0935)",
+    breaks:
+      "a `HashMap<Option<u32>, _>` is a plain `Map`, whose `null` key and `undefined` key are two, where Rust has one `None`, and `get(&None)` misses a nullable field's (ADR 0935)",
     file: "src/lower/std_types/map.rs",
     find: "        self.is_primitive_key(ty.peel_refs())\n",
-    replace: "        let ty = ty.peel_refs();\n        self.is_primitive_key(ty) || self.option_of(ty).is_some_and(|inner| self.is_primitive_key(inner.peel_refs()))\n",
+    replace:
+      "        let ty = ty.peel_refs();\n        self.is_primitive_key(ty) || self.option_of(ty).is_some_and(|inner| self.is_primitive_key(inner.peel_refs()))\n",
     tests: ["test/corpus.test.ts", "-t", "^null_option_keys.rs$"],
   },
   {
     name: "map-index-message",
-    breaks: "`m[&k]` of a missing key panics with `key not found`, not Rust's `no entry found for key`",
+    breaks:
+      "`m[&k]` of a missing key panics with `key not found`, not Rust's `no entry found for key`",
     file: "src/lower/std_types/map.rs",
     find: 'vec![value, Expr::str("no entry found for key")]',
     replace: 'vec![value, Expr::str("key not found")]',
@@ -61,7 +73,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "ordered-key-custom-ord",
-    breaks: "a `BTreeMap` of a key with its own `Ord` is kept in the key's JS order, not the order its `cmp` says",
+    breaks:
+      "a `BTreeMap` of a key with its own `Ord` is kept in the key's JS order, not the order its `cmp` says",
     file: "src/lower/std_types/map.rs",
     find: "            && (!ordered || !self.has_user_impl(self.ord_trait(), peeled));",
     replace: ";",
@@ -69,7 +82,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "retain-map-no-handles",
-    breaks: "a map's `retain` gives a number's value, so what `f` writes is lost",
+    breaks:
+      "a map's `retain` gives a number's value, so what `f` writes is lost",
     file: "src/lower/std_types/map.rs",
     find: "                        let handles = types.get(1).is_some_and(|&value| self.handles_mut(value));\n",
     replace: "                        let handles = false;\n",
@@ -79,25 +93,27 @@ export const mutations: Mutation[] = [
     name: "set-take-keeps",
     breaks: "a set's `take` leaves the item in it",
     file: "src/lower/std_types/map.rs",
-    find: "                    _ => method(s, \"delete\", vec![x.clone()]),\n",
-    replace: "                    _ => method(s, \"has\", vec![x.clone()]),\n",
+    find: '                    _ => method(s, "delete", vec![x.clone()]),\n',
+    replace: '                    _ => method(s, "has", vec![x.clone()]),\n',
     tests: ["test/corpus.test.ts", "-t", "map_set_methods"],
   },
   {
     name: "tree-extract-checked",
-    breaks: "a B-tree's `extract_if` of a range that ends before it starts panics",
+    breaks:
+      "a B-tree's `extract_if` of a range that ends before it starts panics",
     file: "src/lower/std_types/map.rs",
     find: "                list.push(Expr::bool(false));\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","extract_if"],
+    tests: ["test/corpus.test.ts", "-t", "extract_if"],
   },
   {
     name: "map-extract-no-handles",
-    breaks: "a map's `extract_if` gives its filter a number, not a handle on it",
+    breaks:
+      "a map's `extract_if` gives its filter a number, not a handle on it",
     file: "src/lower/std_types/map.rs",
     find: "        let handles = !set\n            && matches!(",
     replace: "        let handles = false\n            && matches!(",
-    tests: ["test/corpus.test.ts","-t","extract_if"],
+    tests: ["test/corpus.test.ts", "-t", "extract_if"],
   },
   {
     name: "entry-get-no-handle",
@@ -105,7 +121,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/map.rs",
     find: "                if mutable && types.get(1).is_some_and(|&value| self.handles_mut(value)) {",
     replace: "                if false {",
-    tests: ["test/corpus.test.ts","-t","btree_end_entries"],
+    tests: ["test/corpus.test.ts", "-t", "btree_end_entries"],
   },
   {
     name: "vacant-insert-not-boxed",
@@ -113,15 +129,15 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/map.rs",
     find: "                    list.push(Expr::bool(true));\n                }\n                let name = match op {\n",
     replace: "                }\n                let name = match op {\n",
-    tests: ["test/corpus.test.ts","-t","map_entry_match"],
+    tests: ["test/corpus.test.ts", "-t", "map_entry_match"],
   },
   {
     name: "entry-not-tagged",
     breaks: "a matched entry is `[m, key]`, untagged",
     file: "src/lower/std_types/map.rs",
-    find: "MapOp::Entry => map_ops(\"$entry\", with_drops(vec![arg(), arg()], vec![keys_drop])),",
+    find: 'MapOp::Entry => map_ops("$entry", with_drops(vec![arg(), arg()], vec![keys_drop])),',
     replace: "MapOp::Entry => Expr::array(vec![arg(), arg()]),",
-    tests: ["test/corpus.test.ts","-t","map_entry_match"],
+    tests: ["test/corpus.test.ts", "-t", "map_entry_match"],
   },
   {
     name: "range-mut-no-handles",
@@ -129,7 +145,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/map.rs",
     find: "        let handles = mutable && self.handles_mut(map.type_at(1));",
     replace: "        let handles = false;",
-    tests: ["test/corpus.test.ts","-t","btree_range_mut"],
+    tests: ["test/corpus.test.ts", "-t", "btree_range_mut"],
   },
   {
     name: "range-mut-handles-objects",
@@ -137,46 +153,54 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/map.rs",
     find: "        let handles = mutable && self.handles_mut(map.type_at(1));",
     replace: "        let handles = mutable;",
-    tests: ["test/corpus.test.ts","-t","btree_range_mut"],
+    tests: ["test/corpus.test.ts", "-t", "btree_range_mut"],
   },
   {
-    "name": "local-add-discarded-helper",
-    "breaks": "a thread-local set's insert, its answer unused, stays `$add(LIKED, id)`, not `LIKED.add(id)`",
-    "file": "src/lower/std_types/map.rs",
-    "find": "                    (\"$add\", 2) => Some(\"add\"),\n",
-    "replace": "",
-    "tests": ["test/lowering-cells.test.ts", "-t", "its answer unused"]
+    name: "local-add-discarded-helper",
+    breaks:
+      "a thread-local set's insert, its answer unused, stays `$add(LIKED, id)`, not `LIKED.add(id)`",
+    file: "src/lower/std_types/map.rs",
+    find: '                    ("$add", 2) => Some("add"),\n',
+    replace: "",
+    tests: ["test/lowering-cells.test.ts", "-t", "its answer unused"],
   },
   {
-    "name": "local-insert-discarded-helper",
-    "breaks": "a thread-local map's insert, its answer unused, stays `$insert(CACHE, key, n)`, not `CACHE.set(key, n)`",
-    "file": "src/lower/std_types/map.rs",
-    "find": "                    (\"$insert\", 3) => Some(\"set\"),\n",
-    "replace": "",
-    "tests": ["test/lowering-cells.test.ts", "-t", "its answer unused"]
+    name: "local-insert-discarded-helper",
+    breaks:
+      "a thread-local map's insert, its answer unused, stays `$insert(CACHE, key, n)`, not `CACHE.set(key, n)`",
+    file: "src/lower/std_types/map.rs",
+    find: '                    ("$insert", 3) => Some("set"),\n',
+    replace: "",
+    tests: ["test/lowering-cells.test.ts", "-t", "its answer unused"],
   },
   {
     name: "discarded-remove-helper",
-    breaks: "a map's `remove` nothing reads is `$remove(m, k)`, not `m.delete(k)`",
+    breaks:
+      "a map's `remove` nothing reads is `$remove(m, k)`, not `m.delete(k)`",
     file: "src/lower/std_types/map.rs",
-    find: "                    (\"$remove\", 2) => Some(\"delete\"),\n",
+    find: '                    ("$remove", 2) => Some("delete"),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "map_set_methods"],
     snapshots: true,
   },
   {
     name: "mir-map-count-literal-key",
-    breaks: "`*m.entry(\"a\").or_insert(0) += 5` from MIR stays a handle, `$mutGet(m, \"a\")`",
+    breaks:
+      '`*m.entry("a").or_insert(0) += 5` from MIR stays a handle, `$mutGet(m, "a")`',
     file: "src/lower/std_types/map.rs",
     find: "js::ExprKind::Str(a), js::ExprKind::Str(b)) if a == b))",
     replace: "js::ExprKind::Str(a), js::ExprKind::Str(b)) if a == b && false))",
-    tests: ["test/lowering-collections.test.ts", "-t", "a count kept in a map from MIR"],
+    tests: [
+      "test/lowering-collections.test.ts",
+      "-t",
+      "a count kept in a map from MIR",
+    ],
   },
   {
     name: "path-key-plain-map",
     breaks: "a map of paths is a `Map`, which finds a path by its text",
     file: "src/lower/std_types/map.rs",
-    find: "            Some(key) if self.recognition().is_path(key) => [\"$PathMap\", \"$PathSet\"][usize::from(set)],\n",
+    find: '            Some(key) if self.recognition().is_path(key) => ["$PathMap", "$PathSet"][usize::from(set)],\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^path_keys.rs$"],
   },
@@ -190,7 +214,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "path-key-given-back",
-    breaks: "a path set's item is given back as it was asked with, `a//b`, where it holds `a/b`",
+    breaks:
+      "a path set's item is given back as it was asked with, `a//b`, where it holds `a/b`",
     file: "src/lower/std_types/map.rs",
     find: "            MapOp::SetGet if self.finds_others(types[0], self.is_sorted(receiver)) => {\n",
     replace: "            MapOp::SetGet if false => {\n",
@@ -198,7 +223,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "path-tree-made-as-inserted",
-    breaks: "a B-tree of paths made of items keeps the first of equal ones, as `insert` does",
+    breaks:
+      "a B-tree of paths made of items keeps the first of equal ones, as `insert` does",
     file: "src/lower/std_types/map.rs",
     find: "            Some(key) if sorted && (!drops.is_empty() || self.finds_others(key, sorted)) => {\n",
     replace: "            Some(key) if sorted && !drops.is_empty() => {\n",
@@ -208,7 +234,7 @@ export const mutations: Mutation[] = [
     name: "cow-key-plain-map",
     breaks: "a map of `Cow`s is a `Map`, which finds one by its object",
     file: "src/lower/std_types/map.rs",
-    find: "            Some(key) if self.is_cow_key(key) => [\"$CowMap\", \"$CowSet\"][usize::from(set)],\n",
+    find: '            Some(key) if self.is_cow_key(key) => ["$CowMap", "$CowSet"][usize::from(set)],\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cow_keys.rs$"],
   },
@@ -222,10 +248,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cow-key-given-back",
-    breaks: "a `Cow` map's key is given back as it was asked with, a `&str` where it holds a `Cow`",
+    breaks:
+      "a `Cow` map's key is given back as it was asked with, a `&str` where it holds a `Cow`",
     file: "src/lower/std_types/map.rs",
     find: "        self.is_cow_key(key) || self.recognition().is_path(key) || (sorted && self.found_by_cmp(key))\n",
-    replace: "        self.recognition().is_path(key) || (sorted && self.found_by_cmp(key))\n",
+    replace:
+      "        self.recognition().is_path(key) || (sorted && self.found_by_cmp(key))\n",
     tests: ["test/corpus.test.ts", "-t", "^held_keys.rs$"],
   },
   {
@@ -238,7 +266,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "own-ord-tree-plain-map",
-    breaks: "a B-tree keyed by a struct whose `Ord` and `Eq` are the crate's own is a `Map`, which finds a key by its object",
+    breaks:
+      "a B-tree keyed by a struct whose `Ord` and `Eq` are the crate's own is a `Map`, which finds a key by its object",
     file: "src/lower/std_types/map.rs",
     find: "            Some(key) if sorted && self.found_by_cmp(key) => {\n",
     replace: "            Some(key) if false => {\n",
@@ -246,7 +275,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "own-ord-set-take-asked",
-    breaks: "a B-tree set's `take` gives back the item it was asked with, not the one it held",
+    breaks:
+      "a B-tree set's `take` gives back the item it was asked with, not the one it held",
     file: "src/lower/std_types/map.rs",
     find: "            MapOp::SetTake if self.finds_others(types[0], self.is_sorted(receiver)) => {\n",
     replace: "            MapOp::SetTake if false => {\n",
@@ -254,15 +284,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "own-ord-tree-made-as-inserted",
-    breaks: "a B-tree of its own `Ord` made of items keeps the first of equal ones, as `insert` does",
+    breaks:
+      "a B-tree of its own `Ord` made of items keeps the first of equal ones, as `insert` does",
     file: "src/lower/std_types/map.rs",
     find: "        self.is_cow_key(key) || self.recognition().is_path(key) || (sorted && self.found_by_cmp(key))\n",
-    replace: "        self.is_cow_key(key) || self.recognition().is_path(key)\n",
+    replace:
+      "        self.is_cow_key(key) || self.recognition().is_path(key)\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_own_ord.rs$"],
   },
   {
     name: "map-get-unboxed",
-    breaks: "`get` of a map's value that looks like `None` is `m.get(k)`, `None` where it's there",
+    breaks:
+      "`get` of a map's value that looks like `None` is `m.get(k)`, `None` where it's there",
     file: "src/lower/std_types/map.rs",
     find: "            MapOp::Get if types.get(1).is_some_and(|&value| self.boxed_payload(value)) => {\n",
     replace: "            MapOp::Get if false => {\n",
@@ -270,7 +303,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "value-key-trees-refused",
-    breaks: "a B-tree keyed by a tuple, or by a struct whose `Ord` is derived, is an ordered tree of its `cmp`, `$ordMap`, not a `$KeyMap` of its value",
+    breaks:
+      "a B-tree keyed by a tuple, or by a struct whose `Ord` is derived, is an ordered tree of its `cmp`, `$ordMap`, not a `$KeyMap` of its value",
     file: "src/lower/std_types/map.rs",
     find: "            || (self.is_value_key(ty) && (!ordered || self.orders_by_value(ty, &mut Vec::new())))\n",
     replace: "            || (self.is_value_key(ty) && !ordered)\n",
@@ -279,7 +313,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "value-key-tree-own-ord",
-    breaks: "a B-tree keyed by a struct whose `Ord` is the crate's own is a `$KeyMap`, which finds a key by its fields",
+    breaks:
+      "a B-tree keyed by a struct whose `Ord` is the crate's own is a `$KeyMap`, which finds a key by its fields",
     file: "src/lower/std_types/map.rs",
     find: "            ty::Adt(adt, args) => {\n                self.recognition().derives(self.ord_trait(), ty)\n                    && adt\n",
     replace: "            ty::Adt(adt, args) => {\n                adt\n",
@@ -288,7 +323,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "value-key-tree-own-enum-ord",
-    breaks: "a B-tree keyed by a tuple holding a fieldless enum whose `Ord` is the crate's own is a `$KeyMap`, which finds a key by its fields",
+    breaks:
+      "a B-tree keyed by a tuple holding a fieldless enum whose `Ord` is the crate's own is a `$KeyMap`, which finds a key by its fields",
     file: "src/lower/std_types/map.rs",
     find: "                !self.is_rust_adt(adt.did()) || self.recognition().derives(self.ord_trait(), ty)\n",
     replace: "                true || !self.is_rust_adt(adt.did())\n",
@@ -299,56 +335,58 @@ export const mutations: Mutation[] = [
     name: "last-entry-first",
     breaks: "`last_entry` is `first_entry`",
     file: "src/lower/std_types/map.rs",
-    find: "            last: name == \"last_entry\",",
+    find: '            last: name == "last_entry",',
     replace: "            last: false,",
-    tests: ["test/corpus.test.ts","-t","btree_end_entries"],
+    tests: ["test/corpus.test.ts", "-t", "btree_end_entries"],
   },
   {
     name: "vacant-key-unknown",
     breaks: "a `VacantEntry`'s `key` is refused",
     file: "src/lower/std_types/map.rs",
-    find: "\"key\" if occupied || vacant =>",
-    replace: "\"key\" if occupied =>",
-    tests: ["test/corpus.test.ts","-t","map_entry_match"],
+    find: '"key" if occupied || vacant =>',
+    replace: '"key" if occupied =>',
+    tests: ["test/corpus.test.ts", "-t", "map_entry_match"],
   },
   {
     name: "vacant-insert-unknown",
     breaks: "a `VacantEntry`'s `insert` is refused",
     file: "src/lower/std_types/map.rs",
-    find: "        \"insert\" if vacant => MapOp::VacantInsert,\n",
+    find: '        "insert" if vacant => MapOp::VacantInsert,\n',
     replace: "",
-    tests: ["test/corpus.test.ts","-t","map_entry_match"],
+    tests: ["test/corpus.test.ts", "-t", "map_entry_match"],
   },
   {
     name: "vacant-into-key-unknown",
     breaks: "a `VacantEntry`'s `into_key` is refused",
     file: "src/lower/std_types/map.rs",
-    find: "        \"into_key\" if vacant => MapOp::EntryKey,\n",
+    find: '        "into_key" if vacant => MapOp::EntryKey,\n',
     replace: "",
-    tests: ["test/corpus.test.ts","-t","map_entry_match"],
+    tests: ["test/corpus.test.ts", "-t", "map_entry_match"],
   },
   {
     name: "range-mut-unknown",
     breaks: "a B-tree's `range_mut` is refused",
     file: "src/lower/std_types/map.rs",
-    find: "        \"range_mut\" if std_map => MapOp::TreeRange { mutable: true },\n",
+    find: '        "range_mut" if std_map => MapOp::TreeRange { mutable: true },\n',
     replace: "",
-    tests: ["test/corpus.test.ts","-t","btree_range_mut"],
+    tests: ["test/corpus.test.ts", "-t", "btree_range_mut"],
   },
   {
     name: "index-map-remove-shifts",
-    breaks: "indexmap's `remove`, its `swap_remove`, shifts what's after it, as std's map's `remove` does",
+    breaks:
+      "indexmap's `remove`, its `swap_remove`, shifts what's after it, as std's map's `remove` does",
     file: "src/lower/std_types/map.rs",
-    find: "        \"swap_remove\" | \"remove\" if placed =>",
-    replace: "        \"swap_remove\" if placed =>",
+    find: '        "swap_remove" | "remove" if placed =>',
+    replace: '        "swap_remove" if placed =>',
     tests: ["test/bound-maps.test.ts", "-t", "indexmap"],
   },
   {
     name: "index-map-shift-remove-swaps",
     breaks: "indexmap's `shift_remove` swaps the last into its place",
     file: "src/lower/std_types/map.rs",
-    find: "        \"shift_remove\" if placed && map => MapOp::Remove,\n",
-    replace: "        \"shift_remove\" if placed && map => MapOp::ByPlace(PlaceOp::SwapRemove),\n",
+    find: '        "shift_remove" if placed && map => MapOp::Remove,\n',
+    replace:
+      '        "shift_remove" if placed && map => MapOp::ByPlace(PlaceOp::SwapRemove),\n',
     tests: ["test/bound-maps.test.ts", "-t", "indexmap"],
   },
   {
@@ -360,43 +398,44 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^map_value_destructors.rs$"],
   },
   {
-    "name": "and-modify-unknown",
-    "breaks": "an entry's `and_modify` is refused",
-    "file": "src/lower/std_types/map.rs",
-    "find": "        \"and_modify\" if entry => MapOp::AndModify,\n",
-    "replace": "",
-    "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "entry_and_modify"
-    ]
+    name: "and-modify-unknown",
+    breaks: "an entry's `and_modify` is refused",
+    file: "src/lower/std_types/map.rs",
+    find: '        "and_modify" if entry => MapOp::AndModify,\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "entry_and_modify"],
   },
   {
-    "name": "and-modify-value-unhandled",
-    "breaks": "an entry's `and_modify` of a number gives `f` the number, which its `*n += 1` can't write",
-    "file": "src/lower/std_types/map.rs",
-    "find": "            MapOp::VacantInsert | MapOp::AndModify => {\n                let mut list = vec![arg(), arg()];\n                if types.get(1).is_some_and(|&value| self.handles_mut(value)) {\n",
-    "replace": "            MapOp::VacantInsert | MapOp::AndModify => {\n                let mut list = vec![arg(), arg()];\n                if op != MapOp::AndModify && types.get(1).is_some_and(|&value| self.handles_mut(value)) {\n",
-    "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "entry_and_modify"
-    ]
+    name: "and-modify-value-unhandled",
+    breaks:
+      "an entry's `and_modify` of a number gives `f` the number, which its `*n += 1` can't write",
+    file: "src/lower/std_types/map.rs",
+    find: "            MapOp::VacantInsert | MapOp::AndModify => {\n                let mut list = vec![arg(), arg()];\n                if types.get(1).is_some_and(|&value| self.handles_mut(value)) {\n",
+    replace:
+      "            MapOp::VacantInsert | MapOp::AndModify => {\n                let mut list = vec![arg(), arg()];\n                if op != MapOp::AndModify && types.get(1).is_some_and(|&value| self.handles_mut(value)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "entry_and_modify"],
   },
   {
-    "name": "and-modify-entry-kept",
-    "breaks": "`or_insert` after an entry's `and_modify` reads the entry's parts, `entry._0[0]`, not its map and key",
-    "file": "src/lower/std_types/map.rs",
-    "find": "            js::ExprKind::Call(callee, parts) if callee.helper_name() == Some(\"$andModify\") => parts.first(),\n",
-    "replace": "            js::ExprKind::Call(callee, parts) if callee.helper_name() == Some(\"$none\") => parts.first(),\n",
-    "tests": ["test/lowering-collections.test.ts", "-t", "and_modify then or_insert"]
+    name: "and-modify-entry-kept",
+    breaks:
+      "`or_insert` after an entry's `and_modify` reads the entry's parts, `entry._0[0]`, not its map and key",
+    file: "src/lower/std_types/map.rs",
+    find: '            js::ExprKind::Call(callee, parts) if callee.helper_name() == Some("$andModify") => parts.first(),\n',
+    replace:
+      '            js::ExprKind::Call(callee, parts) if callee.helper_name() == Some("$none") => parts.first(),\n',
+    tests: [
+      "test/lowering-collections.test.ts",
+      "-t",
+      "and_modify then or_insert",
+    ],
   },
   {
     name: "generic-map-class-plain",
-    breaks: "a map of a type parameter's keys is a `Map`, whatever its caller's keys are",
+    breaks:
+      "a map of a type parameter's keys is a `Map`, whatever its caller's keys are",
     file: "src/lower/std_types/map.rs",
     find: "                _ => self.given_fact_of(key, fact),\n",
-    replace: "                _ => Some(Expr::var(\"Map\")),\n",
+    replace: '                _ => Some(Expr::var("Map")),\n',
     tests: ["test/corpus.test.ts", "-t", "^item_keyed_map.rs$"],
   },
   {
@@ -417,7 +456,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "tree-end-item-unboxed",
-    breaks: "`first()` of a `BTreeSet<Option<i32>>` whose first is `None` gives `None`, where it's `Some(None)`",
+    breaks:
+      "`first()` of a `BTreeSet<Option<i32>>` whose first is `None` gives `None`, where it's `Some(None)`",
     file: "src/lower/std_types/map.rs",
     find: "                if set && types.first().is_some_and(|&item| self.boxed_payload(item)) {\n",
     replace: "                if false {\n",
@@ -427,7 +467,7 @@ export const mutations: Mutation[] = [
     name: "set-operator-items",
     breaks: "`&a - &b` of sets is an array of the items, not a set",
     file: "src/lower/std_types/map.rs",
-    find: "                    MapOp::SetOperator(_) => Expr::new_(Expr::var(\"Set\"), vec![items]),\n",
+    find: '                    MapOp::SetOperator(_) => Expr::new_(Expr::var("Set"), vec![items]),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^set_operators.rs$"],
   },
@@ -435,13 +475,14 @@ export const mutations: Mutation[] = [
     name: "or-insert-with-key-refused",
     breaks: "an entry's `or_insert_with_key` is refused",
     file: "src/lower/std_types/map.rs",
-    find: "        \"or_insert_with_key\" if entry => MapOp::OrInsertWith { keyed: true },\n",
+    find: '        "or_insert_with_key" if entry => MapOp::OrInsertWith { keyed: true },\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^entry_or_insert_with_key.rs$"],
   },
   {
     name: "map-extend-raw",
-    breaks: "`extend` of a set by the crate's iterator is given the struct, not its items, which JS can't step",
+    breaks:
+      "`extend` of a set by the crate's iterator is given the struct, not its items, which JS can't step",
     file: "src/lower/std_types/map.rs",
     find: "                let items = self.iterable_items(items, tys[1], span, out)?;\n",
     replace: "",
@@ -449,7 +490,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "map-extend-steps",
-    breaks: "`extend` of a hash map or set by the crate's iterator steps it by `next`, not by its own `fold`",
+    breaks:
+      "`extend` of a hash map or set by the crate's iterator steps it by `next`, not by its own `fold`",
     file: "src/lower/std_types/map.rs",
     find: "                let items = self.by_its_fold(items, tys[1]);\n",
     replace: "",
@@ -465,7 +507,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "map-capacity-args-dropped",
-    breaks: "what a `HashMap`'s or a `HashSet`'s `with_capacity` is given doesn't run, a call's effects lost (#195)",
+    breaks:
+      "what a `HashMap`'s or a `HashSet`'s `with_capacity` is given doesn't run, a call's effects lost (#195)",
     file: "src/lower/std_types/map.rs",
     find: "                        self.table_room(table, set, generic_args, value, span, out);\n",
     replace: "                        let _ = (table, value);\n",
@@ -476,7 +519,8 @@ export const mutations: Mutation[] = [
     breaks: "a type equal only to itself is refused as a set's key (ADR 0864)",
     file: "src/lower/std_types/map.rs",
     find: "            && (!self.has_user_impl(self.partial_eq_trait(), peeled) || self.equal_only_to_itself(peeled))\n",
-    replace: "            && !self.has_user_impl(self.partial_eq_trait(), peeled)\n",
+    replace:
+      "            && !self.has_user_impl(self.partial_eq_trait(), peeled)\n",
     tests: ["test/corpus.test.ts", "-t", "^identity_keys.rs$"],
   },
   {
@@ -500,23 +544,25 @@ export const mutations: Mutation[] = [
     name: "map-reserve-unasked",
     breaks: "a `HashMap`'s `reserve(n)` past `isize::MAX` bytes is no panic",
     file: "src/lower/std_types/map.rs",
-    find: "        \"reserve\" if let Some(table) = table => MapOp::Reserve(table),\n",
+    find: '        "reserve" if let Some(table) = table => MapOp::Reserve(table),\n',
     replace: "",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^asked_length_overflow.rs$"],
   },
   {
     name: "map-reserve-of-n-alone",
-    breaks: "a `HashMap`'s `reserve(n)` asks room for `n` alone, not its entries and `n`",
+    breaks:
+      "a `HashMap`'s `reserve(n)` asks room for `n` alone, not its entries and `n`",
     file: "src/lower/std_types/map.rs",
-    find: "                let count = Expr::bin(Op::Add, Expr::member(m, \"size\"), n);\n",
+    find: '                let count = Expr::bin(Op::Add, Expr::member(m, "size"), n);\n',
     replace: "                let count = { let _ = m; n };\n",
     snapshots: true,
     tests: ["test/runtime-package.test.ts", "-t", "ends where wasm32"],
   },
   {
     name: "index-map-entries-room-unasked",
-    breaks: "an `IndexMap`'s `with_capacity(n)` asks its table's room, not its entries' `Vec`'s",
+    breaks:
+      "an `IndexMap`'s `with_capacity(n)` asks its table's room, not its entries' `Vec`'s",
     file: "src/lower/std_types/map.rs",
     find: "                self.room_for((None, count), bucket, span, out);\n",
     replace: "                let _ = (count, bucket);\n",
@@ -524,7 +570,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "discarded-calls-of-functions-alone",
-    breaks: "a set's insert nothing reads, in a closure `js::on_load!` sets, is `$add(set, x)` (ADR 0951)",
+    breaks:
+      "a set's insert nothing reads, in a closure `js::on_load!` sets, is `$add(set, x)` (ADR 0951)",
     file: "src/lower/std_types/map.rs",
     find: "    js::each_item_block_mut(items, &mut |stmts| {\n",
     replace: "    js::each_item_block_mut(&mut items[..0], &mut |stmts| {\n",
@@ -532,16 +579,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "inserted-entries-helper",
-    breaks: "`m.entry(k).or_default().push(v)` stays `$orInsertWith(m, k, () => []).push(v)`, not `if (!m.has(k)) { m.set(k, []); } m.get(k).push(v);` (ADR 0059, amended)",
+    breaks:
+      "`m.entry(k).or_default().push(v)` stays `$orInsertWith(m, k, () => []).push(v)`, not `if (!m.has(k)) { m.set(k, []); } m.get(k).push(v);` (ADR 0059, amended)",
     file: "src/lower/std_types/map.rs",
     find: "        let Some((map, key, made)) = made else {\n",
-    replace: "        let Some((map, key, made)) = made.filter(|_| false) else {\n",
+    replace:
+      "        let Some((map, key, made)) = made.filter(|_| false) else {\n",
     tests: ["test/corpus.test.ts", "-t", "^entry_default_pushed.rs$"],
     snapshots: true,
   },
   {
     name: "inserted-entry-value-alone",
-    breaks: "a count's `const current = $orInsert(m, k, 0)` is its map's steps too, `if (!m.has(k)) { .. } const current = m.get(k);`, three statements for one (ADR 0059, amended)",
+    breaks:
+      "a count's `const current = $orInsert(m, k, 0)` is its map's steps too, `if (!m.has(k)) { .. } const current = m.get(k);`, three statements for one (ADR 0059, amended)",
     file: "src/lower/std_types/map.rs",
     find: "            .filter(|e| !matches!(&e.kind, js::ExprKind::Call(callee, _) if callee.helper_name().is_some()))\n",
     replace: "",
@@ -550,23 +600,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "identity-in-key-by-contents",
-    breaks: "a `HashMap` keyed by a derived struct holding an `Rc<Fiber>` equal only to itself is a `$KeyMap`, which keys it by the fiber's fields: two fibers alike are one key, and a cycle of them overflows the stack (#398)",
+    breaks:
+      "a `HashMap` keyed by a derived struct holding an `Rc<Fiber>` equal only to itself is a `$KeyMap`, which keys it by the fiber's fields: two fibers alike are one key, and a cycle of them overflows the stack (#398)",
     file: "src/lower/std_types/map.rs",
     find: "            Some(key) if self.is_value_key(key) && !self.is_js_key(key) && self.holds_identity(key) => {\n",
-    replace: "            Some(key) if self.is_value_key(key) && !self.is_js_key(key) && false => {\n",
+    replace:
+      "            Some(key) if self.is_value_key(key) && !self.is_js_key(key) && false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^identity_inside_keys.rs$"],
   },
   {
     name: "identity-in-key-library-by-contents",
-    breaks: "a library's key holding its `Fiber` is keyed by the fiber's fields, in the library and its consumer (#398)",
+    breaks:
+      "a library's key holding its `Fiber` is keyed by the fiber's fields, in the library and its consumer (#398)",
     file: "src/lower/std_types/map.rs",
     find: "            Some(key) if self.is_value_key(key) && !self.is_js_key(key) && self.holds_identity(key) => {\n",
-    replace: "            Some(key) if self.is_value_key(key) && !self.is_js_key(key) && self.holds_identity(key) && key.ty_adt_def().is_none_or(|adt| adt.did().is_local()) => {\n",
+    replace:
+      "            Some(key) if self.is_value_key(key) && !self.is_js_key(key) && self.holds_identity(key) && key.ty_adt_def().is_none_or(|adt| adt.did().is_local()) => {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: identity_inside_keys"],
   },
   {
     name: "identity-in-key-fields-unseen",
-    breaks: "a struct's or an enum's field holding a fiber isn't seen, so the key is a `$KeyMap` of its fields (#398)",
+    breaks:
+      "a struct's or an enum's field holding a fiber isn't seen, so the key is a `$KeyMap` of its fields (#398)",
     file: "src/lower/std_types/map.rs",
     find: "                .any(|field| self.holds_identity_in(self.field_ty(field, args), seen)),\n",
     replace: "                .any(|_| false),\n",
@@ -574,15 +629,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "identity-in-key-option-by-contents",
-    breaks: "a `HashSet<Option<Rc<Fiber>>>` keys each `Some` by the fiber's fields (#398)",
+    breaks:
+      "a `HashSet<Option<Rc<Fiber>>>` keys each `Some` by the fiber's fields (#398)",
     file: "src/lower/std_types/map.rs",
     find: "                if self.js_eq(inner.peel_refs()).is_some() {\n                    return self.key_parts(key, inner, span);\n",
-    replace: "                if self.js_eq(inner.peel_refs()).is_some() {\n                    return Ok(key);\n",
+    replace:
+      "                if self.js_eq(inner.peel_refs()).is_some() {\n                    return Ok(key);\n",
     tests: ["test/corpus.test.ts", "-t", "^identity_inside_keys.rs$"],
   },
   {
     name: "identity-in-key-option-none-read",
-    breaks: "an `Option` of a struct holding a fiber reads the `None`'s fields, a throw (#398)",
+    breaks:
+      "an `Option` of a struct holding a fiber reads the `None`'s fields, a throw (#398)",
     file: "src/lower/std_types/map.rs",
     find: "                Ok(Expr::cond(Expr::presence(key.clone(), false), key, some))\n",
     replace: "                Ok(some)\n",
@@ -590,55 +648,73 @@ export const mutations: Mutation[] = [
   },
   {
     name: "identity-in-key-variant-skipped",
-    breaks: "an enum's variant holding a fiber keys it by the fiber's fields (#398)",
+    breaks:
+      "an enum's variant holding a fiber keys it by the fiber's fields (#398)",
     file: "src/lower/std_types/map.rs",
     find: "                    if !fields.iter().any(|&(_, t)| self.holds_identity(t)) {\n                        continue;\n",
-    replace: "                    if !fields.iter().any(|&(_, t)| self.holds_identity(t)) || index.as_u32() == 0 {\n                        continue;\n",
+    replace:
+      "                    if !fields.iter().any(|&(_, t)| self.holds_identity(t)) || index.as_u32() == 0 {\n                        continue;\n",
     tests: ["test/corpus.test.ts", "-t", "^identity_inside_keys.rs$"],
   },
   {
     name: "identity-in-key-items-unmapped",
     breaks: "a `Vec` of fibers as a key is keyed by each fiber's fields (#398)",
     file: "src/lower/std_types/map.rs",
-    find: "        let each = self.key_parts_fn(\"item\", item, span)?;\n        Ok(Expr::call(Expr::member(items, \"map\"), vec![each]))\n",
+    find: '        let each = self.key_parts_fn("item", item, span)?;\n        Ok(Expr::call(Expr::member(items, "map"), vec![each]))\n',
     replace: "        let _ = (item, span);\n        Ok(items)\n",
     tests: ["test/corpus.test.ts", "-t", "^identity_inside_keys.rs$"],
   },
   {
     name: "identity-in-key-tuple-part-kept",
-    breaks: "a tuple key `(Rc<Fiber>, u32)` keys its fiber by its fields (#398)",
+    breaks:
+      "a tuple key `(Rc<Fiber>, u32)` keys its fiber by its fields (#398)",
     file: "src/lower/std_types/map.rs",
     find: "                    .map(|(i, t)| self.key_parts(Expr::index(key.clone(), Expr::int(i as i128)), t, span))\n",
-    replace: "                    .map(|(i, _)| Ok(Expr::index(key.clone(), Expr::int(i as i128))))\n",
+    replace:
+      "                    .map(|(i, _)| Ok(Expr::index(key.clone(), Expr::int(i as i128))))\n",
     tests: ["test/corpus.test.ts", "-t", "^identity_inside_keys.rs$"],
   },
   {
     name: "identity-in-key-nested-struct-kept",
-    breaks: "a struct holding a struct holding a fiber keys the inner one by the fiber's fields (#398)",
+    breaks:
+      "a struct holding a struct holding a fiber keys the inner one by the fiber's fields (#398)",
     file: "src/lower/std_types/map.rs",
     find: "                            let part = self.key_parts(self.project(key.clone(), ty, i), t, span)?;\n",
-    replace: "                            let part = match self.js_eq(t.peel_refs()) {\n                                Some(_) => self.key_parts(self.project(key.clone(), ty, i), t, span)?,\n                                None => self.project(key.clone(), ty, i),\n                            };\n",
+    replace:
+      "                            let part = match self.js_eq(t.peel_refs()) {\n                                Some(_) => self.key_parts(self.project(key.clone(), ty, i), t, span)?,\n                                None => self.project(key.clone(), ty, i),\n                            };\n",
     tests: ["test/corpus.test.ts", "-t", "^identity_inside_keys.rs$"],
   },
   {
     name: "identity-in-cow-key-by-contents",
-    breaks: "a `HashSet<Cow<[&Fiber]>>` is a `$CowSet`, which keys each fiber by its fields (#398)",
+    breaks:
+      "a `HashSet<Cow<[&Fiber]>>` is a `$CowSet`, which keys each fiber by its fields (#398)",
     file: "src/lower/std_types/map.rs",
     find: "                ty::Slice(item) => self.compares_by_value(*item, &mut Vec::new()) && !self.holds_identity(*item),\n",
-    replace: "                ty::Slice(item) => self.compares_by_value(*item, &mut Vec::new()),\n",
-    tests: ["test/lowering-collections.test.ts", "-t", "a type equal only to itself keys a JS Set by itself"],
+    replace:
+      "                ty::Slice(item) => self.compares_by_value(*item, &mut Vec::new()),\n",
+    tests: [
+      "test/lowering-collections.test.ts",
+      "-t",
+      "a type equal only to itself keys a JS Set by itself",
+    ],
   },
   {
     name: "generic-made-key-classed",
-    breaks: "a set in generic code keyed by `(T, i32)` is a JS `Set`, which holds `(1, 0)` twice, as it finds objects by themselves (#401)",
+    breaks:
+      "a set in generic code keyed by `(T, i32)` is a JS `Set`, which holds `(1, 0)` twice, as it finds objects by themselves (#401)",
     file: "src/lower/std_types/map.rs",
     find: "            && (key.walk()).any(|part| part.as_type().is_some_and(crate::lower::recognition::known_by_bounds))\n",
     replace: "            && false\n",
-    tests: ["test/limitations.test.ts", "-t", "A map or set in generic code keyed by a type made of a type parameter"],
+    tests: [
+      "test/limitations.test.ts",
+      "-t",
+      "A map or set in generic code keyed by a type made of a type parameter",
+    ],
   },
   {
     name: "btree-class-hashed",
-    breaks: "a B-tree of keys a hashed map finds is a plain `Map` or `$KeyMap` in the order it's added, so JS reads `[[2, \"silver\"], [1, \"gold\"]]` where Rust's order is its keys' (#237)",
+    breaks:
+      'a B-tree of keys a hashed map finds is a plain `Map` or `$KeyMap` in the order it\'s added, so JS reads `[[2, "silver"], [1, "gold"]]` where Rust\'s order is its keys\' (#237)',
     file: "src/lower/std_types/map.rs",
     find: "        if !sorted {\n            return Ok(base.unwrap_or_else(",
     replace: "        if true {\n            return Ok(base.unwrap_or_else(",
@@ -646,10 +722,15 @@ export const mutations: Mutation[] = [
   },
   {
     name: "into-keys-other-part-unrefused",
-    breaks: "a map's `into_keys()` of values with a destructor is the array of its keys, whose drop reads entries' values of them: `iter.inner is not iterable` (#432)",
+    breaks:
+      "a map's `into_keys()` of values with a destructor is the array of its keys, whose drop reads entries' values of them: `iter.inner is not iterable` (#432)",
     file: "src/lower/std_types/map.rs",
     find: "                if other.is_some_and(|other| self.drops(other) != crate::lower::drops::Drops::Nothing) {\n",
     replace: "                if other.is_some() && false {\n",
-    tests: ["test/lowering-collections.test.ts", "-t", "into_keys of values with a destructor is refused"],
+    tests: [
+      "test/lowering-collections.test.ts",
+      "-t",
+      "into_keys of values with a destructor is refused",
+    ],
   },
 ];

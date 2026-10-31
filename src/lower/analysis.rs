@@ -781,6 +781,30 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             uses.named.insert(export, through.namespace.clone());
         }
     }
+    // A library's `#[rust_js::namespace]` a body writes, its module
+    // imported whole, by the struct's name, from where its functions are
+    // (ADR 1037).
+    let namespaces: HashSet<DefId> = (with_initializers.iter())
+        .flat_map(|body| body.thir.exprs.iter())
+        .filter_map(|expr| match expr.ty.peel_refs().kind() {
+            ty::Adt(adt, _) if !adt.did().is_local() && super::classes::is_namespace(tcx, adt.did()) => Some(adt.did()),
+            _ => None,
+        })
+        .collect();
+    for adt in namespaces {
+        let methods =
+            (tcx.inherent_impls(adt).iter()).flat_map(|&imp| tcx.associated_item_def_ids(imp).iter().copied());
+        if let Some(from) = methods
+            .filter_map(|item| foreign.item(item))
+            .map(|item| item.from.clone())
+            .next()
+        {
+            let export = (from, crate::js::NAMESPACE.to_string());
+            uses.bound_to.entry(export.clone()).or_default();
+            uses.imported.entry(export.clone()).or_default();
+            uses.named.insert(export, tcx.item_name(adt).to_string());
+        }
+    }
     // A binding a library's module holds, named after its `const` there.
     for held in foreign.all_held() {
         let export = (held.from.clone(), held.export.clone());

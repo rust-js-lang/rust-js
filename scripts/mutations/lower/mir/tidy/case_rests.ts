@@ -1,30 +1,39 @@
 // Mutations of src/lower/mir/tidy/case_rests.rs (ADR 0905).
 import type { Mutation } from "../../../../mutations";
 
-const fallthrough = ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to its case"];
+const fallthrough = [
+  "test/lowering-switch-fallthrough.test.ts",
+  "-t",
+  "falls through to its case",
+];
 
 export const mutations: Mutation[] = [
   {
     name: "ending-switch-returns-kept",
-    breaks: "a `switch` that ends a function of no value keeps the `return;` MIR made in each case, `if (flags) { b(); return; } return;`, not upstream's `break;` (ADR 0905, amended)",
+    breaks:
+      "a `switch` that ends a function of no value keeps the `return;` MIR made in each case, `if (flags) { b(); return; } return;`, not upstream's `break;` (ADR 0905, amended)",
     file: "src/lower/mir/tidy/case_rests.rs",
     find: "                StmtKind::Return(None) if !super::written(returns, stmt.span) => stmt.kind = StmtKind::Break(None),\n",
-    replace: "                StmtKind::Return(None) if false => stmt.kind = StmtKind::Break(None),\n",
+    replace:
+      "                StmtKind::Return(None) if false => stmt.kind = StmtKind::Break(None),\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_ends_function.rs$"],
     snapshots: true,
   },
   {
     name: "ending-switch-written-returns-broken",
-    breaks: "a `return;` the program wrote in a case of a `switch` that ends the function is a `break;` too, not as written (ADR 0905, amended)",
+    breaks:
+      "a `return;` the program wrote in a case of a `switch` that ends the function is a `break;` too, not as written (ADR 0905, amended)",
     file: "src/lower/mir/tidy/case_rests.rs",
     find: "                StmtKind::Return(None) if !super::written(returns, stmt.span) => stmt.kind = StmtKind::Break(None),\n",
-    replace: "                StmtKind::Return(None) => stmt.kind = StmtKind::Break(None),\n",
+    replace:
+      "                StmtKind::Return(None) => stmt.kind = StmtKind::Break(None),\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_ends_function.rs$"],
     snapshots: true,
   },
   {
     name: "ending-switch-breaks-kept",
-    breaks: "an ending `switch`'s `break;`s where a branch goes on to the case's end anyway stay, `if (flags) { b(); break; } break;` (ADR 0905, amended)",
+    breaks:
+      "an ending `switch`'s `break;`s where a branch goes on to the case's end anyway stay, `if (flags) { b(); break; } break;` (ADR 0905, amended)",
     file: "src/lower/mir/tidy/case_rests.rs",
     find: "            ended(then, ends);\n",
     replace: "",
@@ -34,16 +43,19 @@ export const mutations: Mutation[] = [
 
   {
     name: "case-rest-in-guard-unplaced",
-    breaks: "a guarded arm's body that a guarded arm falls to stays past the `switch`, `case HostSingleton: if (supportsSingletons) { break; }` and `bb19`, not in its guard (ADR 0905, amended)",
+    breaks:
+      "a guarded arm's body that a guarded arm falls to stays past the `switch`, `case HostSingleton: if (supportsSingletons) { break; }` and `bb19`, not in its guard (ADR 0905, amended)",
     file: "src/lower/mir/tidy/case_rests.rs",
     find: "            placed(then, inner, outer, rest) || otherwise.as_mut().is_some_and(|b| placed(b, inner, outer, rest))\n",
-    replace: "            false && (placed(then, inner, outer, rest) || otherwise.as_mut().is_some_and(|b| placed(b, inner, outer, rest)))\n",
+    replace:
+      "            false && (placed(then, inner, outer, rest) || otherwise.as_mut().is_some_and(|b| placed(b, inner, outer, rest)))\n",
     tests: ["test/corpus.test.ts", "-t", "^guarded_arm_chains.rs$"],
     snapshots: true,
   },
   {
     name: "case-rest-blocks-outer-first",
-    breaks: "of blocks a chain of guarded arms makes, `bb29: { bb6: { bb17: { switch .. } .. } .. }`, the outer is tried first, before the inner's `switch` is its own, and keeps its label (ADR 0905, amended)",
+    breaks:
+      "of blocks a chain of guarded arms makes, `bb29: { bb6: { bb17: { switch .. } .. } .. }`, the outer is tried first, before the inner's `switch` is its own, and keeps its label (ADR 0905, amended)",
     file: "src/lower/mir/tidy/case_rests.rs",
     find: "        let outer = outer.clone();\n        blocks_one_case_reaches(list);\n",
     replace: "        let outer = outer.clone();\n",
@@ -53,7 +65,8 @@ export const mutations: Mutation[] = [
 
   {
     name: "rest-one-case-reaches-kept-after",
-    breaks: "the body of the arm a guarded arm falls to stays after a labeled block, `bb4: { switch (..) { .. break bb4; } throw ..; } work(1);`, not that case's (ADR 0905, amended)",
+    breaks:
+      "the body of the arm a guarded arm falls to stays after a labeled block, `bb4: { switch (..) { .. break bb4; } throw ..; } work(1);`, not that case's (ADR 0905, amended)",
     file: "src/lower/mir/tidy/case_rests.rs",
     find: "        if found != Some(1) || named != 1 {\n",
     replace: "        if true {\n",
@@ -62,7 +75,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "switch-block-one-case-reaches-kept",
-    breaks: "the statements of the arm a case falls to stay after the `switch`, in labeled blocks, `break bb9`",
+    breaks:
+      "the statements of the arm a case falls to stay after the `switch`, in labeled blocks, `break bb9`",
     file: "src/lower/mir/tidy/case_rests.rs",
     find: "        let [only] = reaching[..] else {\n",
     replace: "        let [.., only, _] = reaching[..] else {\n",
@@ -70,16 +84,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "loop-left-by-cases-unlabeled",
-    breaks: "a loop the program labeled, `'find_parent:`, left by its `switch`'s cases, stays MIR's `switch (..) { case A: ..; break; default: rest; continue; } break;`, not React's `findParent: while (..) { switch (..) { case A: ..; break findParent; } rest }` (ADR 0702, amended)",
+    breaks:
+      "a loop the program labeled, `'find_parent:`, left by its `switch`'s cases, stays MIR's `switch (..) { case A: ..; break; default: rest; continue; } break;`, not React's `findParent: while (..) { switch (..) { case A: ..; break findParent; } rest }` (ADR 0702, amended)",
     file: "src/lower/mir/tidy/case_rests.rs",
     find: "        let Some((.., Some(written))) = super::written_loop(loops, span) else {\n",
-    replace: "        let Some((.., Some(written))) = super::written_loop(loops, span).filter(|_| false) else {\n",
+    replace:
+      "        let Some((.., Some(written))) = super::written_loop(loops, span).filter(|_| false) else {\n",
     tests: ["test/corpus.test.ts", "-t", "^while_let_at_end.rs$"],
     snapshots: true,
   },
   {
     name: "case-rest-past-a-turns-end-kept",
-    breaks: "an arm a guarded arm falls to, whose statements MIR shares past a `switch` followed by the rest of the loop's turn, stays a block, `bb12: { switch (..) { case 2: break bb12; } parent = ..; continue; } ..`, not its case's (ADR 0702, amended)",
+    breaks:
+      "an arm a guarded arm falls to, whose statements MIR shares past a `switch` followed by the rest of the loop's turn, stays a block, `bb12: { switch (..) { case 2: break bb12; } parent = ..; continue; } ..`, not its case's (ADR 0702, amended)",
     file: "src/lower/mir/tidy/case_rests.rs",
     find: "            _ => tail.last().is_some_and(js::ends) && !js::names_jump(tail, &inner),\n",
     replace: "            _ => false,\n",
@@ -88,16 +105,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "turn-block-left-by-cases-kept",
-    breaks: "a block MIR made of a labeled loop's turn, `bb42: { switch (..) { .. break bb42; } ..; continue; } break;`, stays, not each `break bb42` the loop's `break findParent;` (ADR 0702, amended)",
+    breaks:
+      "a block MIR made of a labeled loop's turn, `bb42: { switch (..) { .. break bb42; } ..; continue; } break;`, stays, not each `break bb42` the loop's `break findParent;` (ADR 0702, amended)",
     file: "src/lower/mir/tidy/case_rests.rs",
     find: "            && crate::lower::mir::is_block_label(b)\n",
-    replace: "            && crate::lower::mir::is_block_label(b)\n            && false\n",
+    replace:
+      "            && crate::lower::mir::is_block_label(b)\n            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^while_let_at_end.rs$"],
     snapshots: true,
   },
   {
     name: "emptied-default-kept",
-    breaks: "a last `_ => {}` of a function's ending `switch`, MIR's `return;`, is an empty `default:` (rd119, ADR 0905 amended)",
+    breaks:
+      "a last `_ => {}` of a function's ending `switch`, MIR's `return;`, is an empty `default:` (rd119, ADR 0905 amended)",
     file: "src/lower/mir/tidy/case_rests.rs",
     find: "        if body.is_empty() {\n",
     replace: "        if false {\n",

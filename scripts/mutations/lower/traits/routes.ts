@@ -4,15 +4,17 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "item-evidence-missing",
-    breaks: "`tag` has no dictionary for `<L as Labeled>::Label: Display`, which the trait declares",
+    breaks:
+      "`tag` has no dictionary for `<L as Labeled>::Label: Display`, which the trait declares",
     file: "src/lower/traits/routes.rs",
     find: "            .or_else(|| self.item_route(tr))\n",
     replace: "\n",
-    tests: ["test/corpus.test.ts","-t","associated_types"],
+    tests: ["test/corpus.test.ts", "-t", "associated_types"],
   },
   {
     name: "error-supertraits-unseen",
-    breaks: "an `Error` dictionary's `Display` and `Debug` aren't looked for, so `{e}` of a `dyn Error` is refused",
+    breaks:
+      "an `Error` dictionary's `Display` and `Debug` aren't looked for, so `{e}` of a `dyn Error` is refused",
     file: "src/lower/traits/routes.rs",
     find: "        if !self.recognition.holds_supertraits(from.def_id) {",
     replace: "        if !self.recognition.is_rust_trait(from.def_id) {",
@@ -20,15 +22,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "evidence-compared-as-written",
-    breaks: "`<I as Int>::T: NonZero` isn't found as the evidence for `J: NonZero` of an `I: Int<T = J>`",
+    breaks:
+      "`<I as Int>::T: NonZero` isn't found as the evidence for `J: NonZero` of an `I: Int<T = J>`",
     file: "src/lower/traits/routes.rs",
     find: "        if normalized(from) == normalized(to) {",
-    replace: "        if self.recognition.tcx.erase_and_anonymize_regions(from) == self.recognition.tcx.erase_and_anonymize_regions(to) {",
+    replace:
+      "        if self.recognition.tcx.erase_and_anonymize_regions(from) == self.recognition.tcx.erase_and_anonymize_regions(to) {",
     tests: ["test/corpus.test.ts", "-t", "evidence_paths"],
   },
   {
     name: "known-writer-through-dictionary",
-    breaks: "`write!` of a writer whose type is known goes through its dictionary, given the writer unboxed, and JS throws",
+    breaks:
+      "`write!` of a writer whose type is known goes through its dictionary, given the writer unboxed, and JS throws",
     file: "src/lower/traits/routes.rs",
     find: "    (writer && known_here) || (holder",
     replace: "    (writer && false) || (holder",
@@ -36,7 +41,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "known-deref-through-dictionary",
-    breaks: "a known std type's `deref()`, a `RefCell` guard's or a `Cow`'s, is a dictionary's call, not recognized in place",
+    breaks:
+      "a known std type's `deref()`, a `RefCell` guard's or a `Cow`'s, is a dictionary's call, not recognized in place",
     file: "src/lower/traits/routes.rs",
     find: "    let holder = tcx.is_lang_item(trait_id, LangItem::Deref)\n        || ",
     replace: "    let holder = ",
@@ -44,7 +50,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "as-mut-read-where-known",
-    breaks: "an `AsMut` dictionary is written for each impl, where only generic code reads it",
+    breaks:
+      "an `AsMut` dictionary is written for each impl, where only generic code reads it",
     file: "src/lower/traits/routes.rs",
     find: "        || is_std_def(tcx, trait_id, StdItem::AsMut)\n        || is_std_def(tcx, trait_id, StdItem::BorrowMut)\n",
     replace: "        || is_std_def(tcx, trait_id, StdItem::BorrowMut)\n",
@@ -53,7 +60,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "into-iter-written-in-place",
-    breaks: "`into_iter` of a `&mut C` with a dictionary is written in place as std's, which doesn't know `C`",
+    breaks:
+      "`into_iter` of a `&mut C` with a dictionary is written in place as std's, which doesn't know `C`",
     file: "src/lower/traits/routes.rs",
     find: "        is_std_def(tcx, trait_id, StdItem::IntoIterator) && !into_iter_by_dictionary(tcx, trait_id, self_ty);\n",
     replace: "        is_std_def(tcx, trait_id, StdItem::IntoIterator);\n",
@@ -61,7 +69,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "from-dictionary-written-everywhere",
-    breaks: "the crate's `From` impl's dictionary is written where nothing generic reads it",
+    breaks:
+      "the crate's `From` impl's dictionary is written where nothing generic reads it",
     file: "src/lower/traits/routes.rs",
     find: "        || is_std_def(tcx, trait_id, StdItem::From)\n}\n",
     replace: "}\n",
@@ -70,7 +79,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "borrow-mut-dictionary-written-everywhere",
-    breaks: "the crate's `BorrowMut` impl's dictionary is written where nothing generic reads it",
+    breaks:
+      "the crate's `BorrowMut` impl's dictionary is written where nothing generic reads it",
     file: "src/lower/traits/routes.rs",
     find: "        || is_std_def(tcx, trait_id, StdItem::BorrowMut)\n        || is_std_def(tcx, trait_id, StdItem::IntoIterator)\n",
     replace: "        || is_std_def(tcx, trait_id, StdItem::IntoIterator)\n",
@@ -79,41 +89,57 @@ export const mutations: Mutation[] = [
   },
   {
     name: "route-through-unheld-supertrait",
-    breaks: "a route to a dictionary goes through a supertrait no dictionary has, `SelfExt.Iterator()`",
+    breaks:
+      "a route to a dictionary goes through a supertrait no dictionary has, `SelfExt.Iterator()`",
     file: "src/lower/traits/routes.rs",
     find: "        held_supertraits(self.recognition.tcx, self.recognition.foreign, from.def_id, from.args)\n            .into_iter()\n            .find_map(|(name, tr)| {\n",
-    replace: "        supertraits(self.recognition.tcx, from.def_id, from.args)\n            .into_iter()\n            .find_map(|(name, tr, _)| {\n",
+    replace:
+      "        supertraits(self.recognition.tcx, from.def_id, from.args)\n            .into_iter()\n            .find_map(|(name, tr, _)| {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: extension_default"],
   },
   {
     name: "known-extend-by-dictionary",
-    breaks: "a known collection's `extend` of generic items goes through a dictionary, given the collection where it takes its box",
+    breaks:
+      "a known collection's `extend` of generic items goes through a dictionary, given the collection where it takes its box",
     file: "src/lower/traits/routes.rs",
     find: "|| (holder && !crate::lower::recognition::known_by_bounds(self_ty.peel_refs()))",
     replace: "|| (holder && known_here)",
-    tests: ["test/corpus.test.ts", "-t", "^(repeat_drops|generic_guard_deref).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(repeat_drops|generic_guard_deref).rs$",
+    ],
   },
   {
     name: "deref-mut-read-where-known",
-    breaks: "a crate's `DerefMut` dictionary is written for each impl, where only generic code reads it",
+    breaks:
+      "a crate's `DerefMut` dictionary is written for each impl, where only generic code reads it",
     file: "src/lower/traits/routes.rs",
     find: "        || tcx.is_lang_item(trait_id, LangItem::DerefMut)\n        || crate::lower::recognition::is_extend(tcx, trait_id)\n        || is_std_def(tcx, trait_id, StdItem::FromIterator)\n        || is_std_def(tcx, trait_id, StdItem::AsMut)\n",
-    replace: "        || crate::lower::recognition::is_extend(tcx, trait_id)\n        || is_std_def(tcx, trait_id, StdItem::FromIterator)\n        || is_std_def(tcx, trait_id, StdItem::AsMut)\n",
+    replace:
+      "        || crate::lower::recognition::is_extend(tcx, trait_id)\n        || is_std_def(tcx, trait_id, StdItem::FromIterator)\n        || is_std_def(tcx, trait_id, StdItem::AsMut)\n",
     tests: ["test/corpus.test.ts", "-t", "^user_deref.rs$"],
     snapshots: true,
   },
   {
     name: "deref-mut-dictionary-where-known",
-    breaks: "a guard's `*g += 1`, its type known, calls a dictionary of std's `DerefMut` where it's written in place",
+    breaks:
+      "a guard's `*g += 1`, its type known, calls a dictionary of std's `DerefMut` where it's written in place",
     file: "src/lower/traits/routes.rs",
     find: "        || tcx.is_lang_item(trait_id, LangItem::DerefMut)\n        || crate::lower::recognition::is_extend(tcx, trait_id)\n        || is_std_def(tcx, trait_id, StdItem::FromIterator);",
-    replace: "        || crate::lower::recognition::is_extend(tcx, trait_id)\n        || is_std_def(tcx, trait_id, StdItem::FromIterator);",
-    tests: ["test/corpus.test.ts", "-t", "^(refcell_borrows|locks|user_deref|generic_deref_mut).rs$"],
+    replace:
+      "        || crate::lower::recognition::is_extend(tcx, trait_id)\n        || is_std_def(tcx, trait_id, StdItem::FromIterator);",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(refcell_borrows|locks|user_deref|generic_deref_mut).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "sum-dictionary-written-everywhere",
-    breaks: "the crate's `Sum` impl's dictionary is written where nothing generic reads it",
+    breaks:
+      "the crate's `Sum` impl's dictionary is written where nothing generic reads it",
     file: "src/lower/traits/routes.rs",
     find: "        || crate::lower::recognition::is_sum_or_product(tcx, trait_id)\n        || is_std_def(tcx, trait_id, StdItem::From)\n",
     replace: "        || is_std_def(tcx, trait_id, StdItem::From)\n",
@@ -122,10 +148,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "hash-impls-written-unreached",
-    breaks: "a `Hash` impl nothing calls is written, where a map never calls it (ADR 0463)",
+    breaks:
+      "a `Hash` impl nothing calls is written, where a map never calls it (ADR 0463)",
     file: "src/lower/traits/routes.rs",
     find: "        || crate::lower::recognition::is_hashing(tcx, trait_id)\n        || crate::lower::recognition::is_sum_or_product(tcx, trait_id)\n",
-    replace: "        || crate::lower::recognition::is_sum_or_product(tcx, trait_id)\n",
+    replace:
+      "        || crate::lower::recognition::is_sum_or_product(tcx, trait_id)\n",
     tests: ["test/corpus.test.ts", "-t", "^user_hash.rs$"],
     snapshots: true,
   },

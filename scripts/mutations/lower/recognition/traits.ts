@@ -4,32 +4,45 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "union-function-member-unseen",
-    breaks: "a binding's union whose `Function` member is any function called once, `js::set_timeout`'s `H: IntoTimerHandler`, isn't called once, so a closure rustc infers `Fn` given to it, `move || { let s = &second; .. }`, isn't one whose call drops what it took, and is refused (ADR 1020)",
+    breaks:
+      "a binding's union whose `Function` member is any function called once, `js::set_timeout`'s `H: IntoTimerHandler`, isn't called once, so a closure rustc infers `Fn` given to it, `move || { let s = &second; .. }`, isn't one whose call drops what it took, and is refused (ADR 1020)",
     file: "src/lower/recognition/traits.rs",
     find: "                (tcx.fn_trait_kind_from_def_id(bound.def_id())).or_else(|| member_function_kind(tcx, bound.def_id()))\n",
     replace: "                tcx.fn_trait_kind_from_def_id(bound.def_id())\n",
-    tests: ["test/corpus.test.ts", "-t", "^called_once_closure_drops_after.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^called_once_closure_drops_after.rs$",
+    ],
   },
   {
     name: "union-function-member-of-any-trait",
-    breaks: "a trait of the program's implemented for any function is taken for a binding's union, so a binding's parameter of it is a once-callback, `keepAny(shown)` of `|x| shown(x)`, which JS may give more, where the trait says nothing of how JS calls it (ADR 1020)",
+    breaks:
+      "a trait of the program's implemented for any function is taken for a binding's union, so a binding's parameter of it is a once-callback, `keepAny(shown)` of `|x| shown(x)`, which JS may give more, where the trait says nothing of how JS calls it (ADR 1020)",
     file: "src/lower/recognition/traits.rs",
     find: "    tcx.get_attrs_by_path(trait_id, &union).next()?;\n",
     replace: "",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "FnOnce callback that only passes its call on"],
+    tests: [
+      "test/lowering-passed-on.test.ts",
+      "-t",
+      "FnOnce callback that only passes its call on",
+    ],
   },
   {
     name: "equated-bounds-unseen",
-    breaks: "a type parameter the where-clauses make an iterator's associated type isn't bound as an iterator: its `&mut` a cell, `(x0) => $next(x0.value)`, where it's the iterator, and std's `Flatten::try_fold` refused (ADR 0924)",
+    breaks:
+      "a type parameter the where-clauses make an iterator's associated type isn't bound as an iterator: its `&mut` a cell, `(x0) => $next(x0.value)`, where it's the iterator, and std's `Flatten::try_fold` refused (ADR 0924)",
     file: "src/lower/recognition/traits.rs",
     find: "        let clauses = clauses.chain(declared.into_iter().flatten()).chain(equated);\n",
-    replace: "        let clauses = clauses.chain(declared.into_iter().flatten()).chain(equated.filter(|_| false));\n",
+    replace:
+      "        let clauses = clauses.chain(declared.into_iter().flatten()).chain(equated.filter(|_| false));\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^equated_iterator_parameter.rs$"],
   },
   {
     name: "into-a-bound-target-unresolved",
-    breaks: "`x.into()` of a type parameter's target, `U: From<T>`, is refused, its `From` no impl to resolve (#321)",
+    breaks:
+      "`x.into()` of a type parameter's target, `U: From<T>`, is refused, its `From` no impl to resolve (#321)",
     file: "src/lower/recognition/traits.rs",
     find: "            _ if known_by_bounds(args.type_at(0)) => method,\n",
     replace: "",
@@ -37,7 +50,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "trait-of-no-items-impl",
-    breaks: "an impl of a trait of no items, `unsafe impl Sync`, `impl FusedIterator`, is rejected, though it runs nothing",
+    breaks:
+      "an impl of a trait of no items, `unsafe impl Sync`, `impl FusedIterator`, is rejected, though it runs nothing",
     file: "src/lower/recognition/traits.rs",
     find: "        || (tcx.associated_item_def_ids(id).iter()).all(|&item| matches!(tcx.def_kind(item), DefKind::AssocTy))\n",
     replace: "",
@@ -45,7 +59,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-trait-no-dictionary",
-    breaks: "a library's trait isn't one whose impls are dictionaries, so a call of its generic function passes none",
+    breaks:
+      "a library's trait isn't one whose impls are dictionaries, so a call of its generic function passes none",
     file: "src/lower/recognition/traits.rs",
     find: "        || foreign.in_library(id)\n",
     replace: "        || false\n",
@@ -57,19 +72,21 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/traits.rs",
     find: "        || value_operator(tcx, id).is_some()\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","generic_operators"],
+    tests: ["test/corpus.test.ts", "-t", "generic_operators"],
   },
   {
     name: "generic-into-refused",
-    breaks: "`name.into()` of an `impl Into<String>` has no dictionary, and is refused",
+    breaks:
+      "`name.into()` of an `impl Into<String>` has no dictionary, and is refused",
     file: "src/lower/recognition/traits.rs",
     find: "        || tcx.is_diagnostic_item(sym::Into, id)\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","generic_into"],
+    tests: ["test/corpus.test.ts", "-t", "generic_into"],
   },
   {
     name: "generic-bitwise-operators",
-    breaks: "`a | b` of a `T: BitOr` in generic code is refused, where `a + b` of a `T: Add` isn't",
+    breaks:
+      "`a | b` of a `T: BitOr` in generic code is refused, where `a + b` of a `T: Add` isn't",
     file: "src/lower/recognition/traits.rs",
     find: "        (LangItem::BitOr, Ok(BinOp::BitOr)),\n",
     replace: "",
@@ -77,15 +94,17 @@ export const mutations: Mutation[] = [
   },
   {
     name: "to-string-not-operational",
-    breaks: "a `T: ToString` bound is given no dictionary, and `x.to_string()` asks for a `Display`",
+    breaks:
+      "a `T: ToString` bound is given no dictionary, and `x.to_string()` asks for a `Display`",
     file: "src/lower/recognition/traits.rs",
-    find: "        || tcx.is_diagnostic_item(Symbol::intern(\"ToString\"), id)\n",
+    find: '        || tcx.is_diagnostic_item(Symbol::intern("ToString"), id)\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "evidence_paths"],
   },
   {
     name: "projection-bounds-undeclared",
-    breaks: "an associated type's bound in its trait, `type Iter: Iterator`, isn't seen: a `&mut` to one is boxed, and what steps it is given the box",
+    breaks:
+      "an associated type's bound in its trait, `type Iter: Iterator`, isn't seen: a `&mut` to one is boxed, and what steps it is given the box",
     file: "src/lower/recognition/traits.rs",
     find: "            ) => Some(self.tcx.item_bounds(*def_id).skip_binder()),\n",
     replace: "            ) => Some(ty::List::empty()),\n",
@@ -93,7 +112,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "user-from-str-refused",
-    breaks: "a type's own `impl FromStr` is an error, and `T: FromStr` in generic code",
+    breaks:
+      "a type's own `impl FromStr` is an error, and `T: FromStr` in generic code",
     file: "src/lower/recognition/traits.rs",
     find: "        || is_from_str(tcx, id)\n",
     replace: "",
@@ -103,22 +123,24 @@ export const mutations: Mutation[] = [
     name: "delegated-sum-unresolved",
     breaks: "`sum()` into a type of the crate's isn't its `Sum`",
     file: "src/lower/recognition/traits.rs",
-    find: "            \"sum\" => \"sum\",\n",
+    find: '            "sum" => "sum",\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^user_collections.rs$"],
     snapshots: true,
   },
   {
     name: "delegated-own-param-dropped",
-    breaks: "`collect()` into a collection of the crate's resolves its `from_iter` without the iterator, which doesn't resolve",
+    breaks:
+      "`collect()` into a collection of the crate's resolves its `from_iter` without the iterator, which doesn't resolve",
     file: "src/lower/recognition/traits.rs",
     find: "args.types().take(own)",
     replace: "args.types().take(0)",
-    tests: ["test/corpus.test.ts","-t","user_collections"],
+    tests: ["test/corpus.test.ts", "-t", "user_collections"],
   },
   {
     name: "as-ref-not-dictionary",
-    breaks: "`s.as_ref()` of a generic `S: AsRef<str>`, and a type's own `impl AsRef`, are errors",
+    breaks:
+      "`s.as_ref()` of a generic `S: AsRef<str>`, and a type's own `impl AsRef`, are errors",
     file: "src/lower/recognition/traits.rs",
     find: "        || is_std_def(tcx, id, StdItem::AsRef)\n",
     replace: "",
@@ -136,7 +158,7 @@ export const mutations: Mutation[] = [
     name: "user-fmt-write-refused",
     breaks: "a writer of the crate's own, `impl fmt::Write`, is an error",
     file: "src/lower/recognition/traits.rs",
-    find: "        || tcx.is_diagnostic_item(Symbol::intern(\"FmtWrite\"), id)\n",
+    find: '        || tcx.is_diagnostic_item(Symbol::intern("FmtWrite"), id)\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "user_fmt_write|generic_writers"],
   },
@@ -166,7 +188,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "other-fmt-traits-not-dictionaries",
-    breaks: "a user `LowerHex` or `Pointer` is an error, and `{:x}` of a generic `T`",
+    breaks:
+      "a user `LowerHex` or `Pointer` is an error, and `{:x}` of a generic `T`",
     file: "src/lower/recognition/traits.rs",
     find: "        // `T: LowerHex` or `T: Pointer` (ADR 0174).\n        || is_other_fmt_trait(tcx, id)\n",
     replace: "",
@@ -174,47 +197,68 @@ export const mutations: Mutation[] = [
   },
   {
     name: "number-lt-in-default-unknown",
-    breaks: "`self < Self::zero()` in a default copied into an `f64`'s impl is an error",
+    breaks:
+      "`self < Self::zero()` in a default copied into an `f64`'s impl is an error",
     file: "src/lower/recognition/traits.rs",
-    find: "!matches!(name.as_str(), \"partial_cmp\" | \"lt\" | \"le\" | \"gt\" | \"ge\")",
-    replace: "!matches!(name.as_str(), \"partial_cmp\")",
+    find: '!matches!(name.as_str(), "partial_cmp" | "lt" | "le" | "gt" | "ge")',
+    replace: '!matches!(name.as_str(), "partial_cmp")',
     tests: ["test/corpus.test.ts", "-t", "trait_default_bounds"],
   },
   {
     name: "projection-not-unknown",
-    breaks: "`drain`'s `Vec<S::Item>` is refused as a type, and std's `I::Item` too",
+    breaks:
+      "`drain`'s `Vec<S::Item>` is refused as a type, and std's `I::Item` too",
     file: "src/lower/recognition/traits.rs",
     find: "            ) => self\n                .tcx\n                .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))\n",
-    replace: "            ) if false => self\n                .tcx\n                .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))\n",
-    tests: ["test/corpus.test.ts","-t","associated_types"],
+    replace:
+      "            ) if false => self\n                .tcx\n                .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))\n",
+    tests: ["test/corpus.test.ts", "-t", "associated_types"],
   },
   {
     name: "type-only-trait-refused",
-    breaks: "an impl of a trait of types only, react's `Lifetimes`, which runs nothing, is refused as a user implementation",
+    breaks:
+      "an impl of a trait of types only, react's `Lifetimes`, which runs nothing, is refused as a user implementation",
     file: "src/lower/recognition/traits.rs",
     find: "(tcx.associated_item_def_ids(id).iter()).all(|&item| matches!(tcx.def_kind(item), DefKind::AssocTy))",
     replace: "tcx.associated_item_def_ids(id).is_empty()",
-    tests: ["test/jsx-evaluation-order.test.ts", "-t", "thread_local component takes props"],
+    tests: [
+      "test/jsx-evaluation-order.test.ts",
+      "-t",
+      "thread_local component takes props",
+    ],
   },
   {
     name: "throwing-call-uncaught",
-    breaks: "a JS function Rust says gives a `Result` isn't run in a `try`, so what it throws is thrown, not an `Err` its caller can match or `?`",
+    breaks:
+      "a JS function Rust says gives a `Result` isn't run in a `try`, so what it throws is thrown, not an `Err` its caller can match or `?`",
     file: "src/lower/recognition/traits.rs",
     find: "        if self.is_std_type(output, StdItem::Result) {\n            Catching::Result",
-    replace: "        if false && self.is_std_type(output, StdItem::Result) {\n            Catching::Result",
-    tests: ["test/compiler.test.ts", "-t", "a throwing JS call is a Result, and \\? returns early"],
+    replace:
+      "        if false && self.is_std_type(output, StdItem::Result) {\n            Catching::Result",
+    tests: [
+      "test/compiler.test.ts",
+      "-t",
+      "a throwing JS call is a Result, and \\? returns early",
+    ],
   },
   {
     name: "binding-result-uncaught",
-    breaks: "a binding that returns a `Result`, `d.to_iso_string()`, isn't run in a `try`: what it throws escapes, and what it returns is taken for a `Result`",
+    breaks:
+      "a binding that returns a `Result`, `d.to_iso_string()`, isn't run in a `try`: what it throws escapes, and what it returns is taken for a `Result`",
     file: "src/lower/recognition/traits.rs",
     find: "        if self.is_std_type(output, StdItem::Result) {\n            Catching::Result",
-    replace: "        if false && self.is_std_type(output, StdItem::Result) {\n            Catching::Result",
-    tests: ["test/js-builtins.test.ts", "-t", "a Date is JS's, its members methods"],
+    replace:
+      "        if false && self.is_std_type(output, StdItem::Result) {\n            Catching::Result",
+    tests: [
+      "test/js-builtins.test.ts",
+      "-t",
+      "a Date is JS's, its members methods",
+    ],
   },
   {
     name: "catching-generic-signature",
-    breaks: "whether a binding may throw is its generic signature's: `stringify_with` of an `Unknown` isn't in a `try`",
+    breaks:
+      "whether a binding may throw is its generic signature's: `stringify_with` of an `Unknown` isn't in a `try`",
     file: "src/lower/recognition/traits.rs",
     find: "        let output = sig\n            .instantiate(self.tcx, args)\n",
     replace: "        let output = sig\n            .instantiate_identity()\n",
@@ -234,23 +278,23 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/traits.rs",
     find: "            _ => {\n                !ty.walk()\n",
     replace: "            _ => true || {\n                !ty.walk()\n",
-    tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
+    tests: ["test/corpus.test.ts", "-t", "sort_unstable_ties"],
   },
   {
     name: "wrapping-const-unknown",
     breaks: "a constant `Wrapping(x)` is refused",
     file: "src/lower/recognition/traits.rs",
-    find: "        || tcx.is_diagnostic_item(Symbol::intern(\"Wrapping\"), id)\n",
+    find: '        || tcx.is_diagnostic_item(Symbol::intern("Wrapping"), id)\n',
     replace: "",
-    tests: ["test/corpus.test.ts","-t","wrapping_type"],
+    tests: ["test/corpus.test.ts", "-t", "wrapping_type"],
   },
   {
     name: "cmp-max-unknown",
     breaks: "`cmp::max(a, b)` of what isn't a number is refused",
     file: "src/lower/recognition/traits.rs",
-    find: "        \"std::cmp::max\" => Some(true),\n",
-    replace: "        \"std::cmp::max\" => None,\n",
-    tests: ["test/corpus.test.ts","-t","std_methods"],
+    find: '        "std::cmp::max" => Some(true),\n',
+    replace: '        "std::cmp::max" => None,\n',
+    tests: ["test/corpus.test.ts", "-t", "std_methods"],
   },
   {
     name: "io-write-not-operational",
@@ -262,9 +306,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "io-write-all-not-given",
-    breaks: "generic code's `out.write_all(bytes)` isn't its dictionary's, and is refused",
+    breaks:
+      "generic code's `out.write_all(bytes)` isn't its dictionary's, and is refused",
     file: "src/lower/recognition/traits.rs",
-    find: "        || is_std_method(tcx, id, StdItem::IoWrite, \"write_all\")\n",
+    find: '        || is_std_method(tcx, id, StdItem::IoWrite, "write_all")\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^io_writers.rs$"],
   },
@@ -278,7 +323,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "assign-operator-not-operational",
-    breaks: "a `T: AddAssign` in generic code is given no dictionary, and refused",
+    breaks:
+      "a `T: AddAssign` in generic code is given no dictionary, and refused",
     file: "src/lower/recognition/traits.rs",
     find: "        // `a += b` of a `T: AddAssign`: its dictionary's `add_assign` (ADR 0396).\n        || assign_operator(tcx, id).is_some()\n",
     replace: "",
@@ -286,7 +332,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "index-impl-refused",
-    breaks: "the crate's own `impl Index` is refused, not an operator it may implement",
+    breaks:
+      "the crate's own `impl Index` is refused, not an operator it may implement",
     file: "src/lower/recognition/traits.rs",
     find: "        || [LangItem::Index, LangItem::IndexMut]\n",
     replace: "        || [LangItem::IndexMut]\n",
@@ -294,7 +341,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "range-bounds-unoperational",
-    breaks: "`range.start_bound()` in generic code is refused, though a range's dictionary gives it",
+    breaks:
+      "`range.start_bound()` in generic code is refused, though a range's dictionary gives it",
     file: "src/lower/recognition/traits.rs",
     find: "        || is_std_def(tcx, id, StdItem::RangeBounds)\n",
     replace: "",
@@ -312,24 +360,24 @@ export const mutations: Mutation[] = [
     name: "user-read-refused",
     breaks: "a type's own `impl io::Read` is an error",
     file: "src/lower/recognition/traits.rs",
-    find: "            \"std::io::Read\" | \"std::io::BufRead\" | \"std::io::Seek\"\n",
-    replace: "            \"std::io::BufRead\" | \"std::io::Seek\"\n",
+    find: '            "std::io::Read" | "std::io::BufRead" | "std::io::Seek"\n',
+    replace: '            "std::io::BufRead" | "std::io::Seek"\n',
     tests: ["test/corpus.test.ts", "-t", "^unlowered_impls.rs$"],
   },
   {
     name: "user-buf-read-refused",
     breaks: "a type's own `impl BufRead` is an error",
     file: "src/lower/recognition/traits.rs",
-    find: "            \"std::io::Read\" | \"std::io::BufRead\" | \"std::io::Seek\"\n",
-    replace: "            \"std::io::Read\" | \"std::io::Seek\"\n",
+    find: '            "std::io::Read" | "std::io::BufRead" | "std::io::Seek"\n',
+    replace: '            "std::io::Read" | "std::io::Seek"\n',
     tests: ["test/corpus.test.ts", "-t", "^unlowered_impls.rs$"],
   },
   {
     name: "user-seek-refused",
     breaks: "a type's own `impl Seek` is an error",
     file: "src/lower/recognition/traits.rs",
-    find: "            \"std::io::Read\" | \"std::io::BufRead\" | \"std::io::Seek\"\n",
-    replace: "            \"std::io::Read\" | \"std::io::BufRead\"\n",
+    find: '            "std::io::Read" | "std::io::BufRead" | "std::io::Seek"\n',
+    replace: '            "std::io::Read" | "std::io::BufRead"\n',
     tests: ["test/corpus.test.ts", "-t", "^unlowered_impls.rs$"],
   },
   {
@@ -358,10 +406,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "auto-trait-dyn-unpaired",
-    breaks: "a `dyn` of no trait but auto traits, `dyn Send`, isn't a pair, so a `Box<dyn Send>` of a value with a destructor is refused",
+    breaks:
+      "a `dyn` of no trait but auto traits, `dyn Send`, isn't a pair, so a `Box<dyn Send>` of a value with a destructor is refused",
     file: "src/lower/recognition/traits.rs",
     find: "        predicates.principal_def_id().is_none_or(|id| self.is_pair_trait(id))\n",
-    replace: "        predicates.principal_def_id().is_some_and(|id| self.is_pair_trait(id))\n",
+    replace:
+      "        predicates.principal_def_id().is_some_and(|id| self.is_pair_trait(id))\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_auto_traits.rs$"],
   },
   {
@@ -374,7 +424,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "as-mut-not-operational",
-    breaks: "a `T: AsMut<str>` in generic code is given no dictionary, and refused",
+    breaks:
+      "a `T: AsMut<str>` in generic code is given no dictionary, and refused",
     file: "src/lower/recognition/traits.rs",
     find: "        || is_std_def(tcx, id, StdItem::AsMut)\n",
     replace: "",
@@ -382,7 +433,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "error-defaults-not-in-dictionary",
-    breaks: "an `Error`'s `description` and `cause`, called in generic code, aren't in its dictionary, and are refused",
+    breaks:
+      "an `Error`'s `description` and `cause`, called in generic code, aren't in its dictionary, and are refused",
     file: "src/lower/recognition/traits.rs",
     find: "        || error_default(tcx, id).is_some()\n",
     replace: "",
@@ -390,7 +442,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "deref-mut-not-operational",
-    breaks: "a `P: DerefMut` in generic code is given no dictionary, and refused",
+    breaks:
+      "a `P: DerefMut` in generic code is given no dictionary, and refused",
     file: "src/lower/recognition/traits.rs",
     find: "        || tcx.is_lang_item(id, LangItem::DerefMut)\n",
     replace: "",
@@ -398,7 +451,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "deref-mut-holds-no-supertraits",
-    breaks: "a `P: DerefMut`'s `Deref` isn't looked for in its dictionary, and generic code that reads one is refused",
+    breaks:
+      "a `P: DerefMut`'s `Deref` isn't looked for in its dictionary, and generic code that reads one is refused",
     file: "src/lower/recognition/traits.rs",
     find: "            || self.tcx.is_lang_item(id, LangItem::DerefMut)\n            || is_std_def(self.tcx, id, StdItem::BorrowMut)\n",
     replace: "            || is_std_def(self.tcx, id, StdItem::BorrowMut)\n",
@@ -406,7 +460,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "into-iter-not-operational",
-    breaks: "`IntoIterator` has no dictionaries, and a `for<'a> &'a mut C: IntoIterator` bound's `for x in c` is refused",
+    breaks:
+      "`IntoIterator` has no dictionaries, and a `for<'a> &'a mut C: IntoIterator` bound's `for x in c` is refused",
     file: "src/lower/recognition/traits.rs",
     find: "        // dictionary's `into_iter` (ADR 0457).\n        || tcx.is_diagnostic_item(sym::IntoIterator, id)\n",
     replace: "",
@@ -422,9 +477,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "hash-slice-not-in-dictionary",
-    breaks: "a `Hash`'s dictionary has no `hash_slice`, which a slice of its type calls",
+    breaks:
+      "a `Hash`'s dictionary has no `hash_slice`, which a slice of its type calls",
     file: "src/lower/recognition/traits.rs",
-    find: "        || is_std_method(tcx, id, StdItem::Hash, \"hash_slice\")\n",
+    find: '        || is_std_method(tcx, id, StdItem::Hash, "hash_slice")\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^hash_values.rs$"],
   },
@@ -438,7 +494,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "function-kind-weakest",
-    breaks: "an `F: FnMut` is taken for one called by `FnOnce`, whose body drops what it holds, and left undropped",
+    breaks:
+      "an `F: FnMut` is taken for one called by `FnOnce`, whose body drops what it holds, and left undropped",
     file: "src/lower/recognition/traits.rs",
     find: "            .reduce(|a, b| if a.extends(b) { a } else { b }),\n",
     replace: "            .reduce(|a, b| if a.extends(b) { b } else { a }),\n",
@@ -446,7 +503,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "sum-bound-ungiven",
-    breaks: "a generic function's `S: Sum<A>` is given no dictionary, and its `sum()` refused",
+    breaks:
+      "a generic function's `S: Sum<A>` is given no dictionary, and its `sum()` refused",
     file: "src/lower/recognition/traits.rs",
     find: "        || is_sum_or_product(tcx, id)\n}\n",
     replace: "}\n",
@@ -454,7 +512,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "from-bound-ungiven",
-    breaks: "a generic function's `W: From<U>` is given no dictionary, and `W::from(u)` refused",
+    breaks:
+      "a generic function's `W: From<U>` is given no dictionary, and `W::from(u)` refused",
     file: "src/lower/recognition/traits.rs",
     find: "        || tcx.is_diagnostic_item(sym::From, id)\n        // A writer of the crate's own",
     replace: "        // A writer of the crate's own",
@@ -462,23 +521,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "borrow-mut-bound-ungiven",
-    breaks: "a `BorrowMut` supertrait gives its trait's dictionary no entry, so `self.borrow()` of a trait's own default finds no `Borrow`",
+    breaks:
+      "a `BorrowMut` supertrait gives its trait's dictionary no entry, so `self.borrow()` of a trait's own default finds no `Borrow`",
     file: "src/lower/recognition/traits.rs",
     find: "        || is_std_def(tcx, id, StdItem::Borrow)\n        || is_std_def(tcx, id, StdItem::BorrowMut)\n",
-    replace: "        || is_std_def(tcx, id, StdItem::Borrow)\n        || serde_visitor(tcx, id) && false\n",
+    replace:
+      "        || is_std_def(tcx, id, StdItem::Borrow)\n        || serde_visitor(tcx, id) && false\n",
     tests: ["test/corpus.test.ts", "-t", "^borrow_mut_supertrait.rs$"],
   },
   {
     name: "returned-closure-carries-nothing",
-    breaks: "a closure its maker gives back is taken for one that carries no drop, and refused where it's dropped",
+    breaks:
+      "a closure its maker gives back is taken for one that carries no drop, and refused where it's dropped",
     file: "src/lower/recognition/traits.rs",
     find: "    let maker = tcx.typeck_root_def_id(closure);\n    if !matches!(tcx.def_kind(maker), DefKind::Fn | DefKind::AssocFn) {\n",
-    replace: "    let maker = tcx.typeck_root_def_id(closure);\n    if true || !matches!(tcx.def_kind(maker), DefKind::Fn | DefKind::AssocFn) {\n",
+    replace:
+      "    let maker = tcx.typeck_root_def_id(closure);\n    if true || !matches!(tcx.def_kind(maker), DefKind::Fn | DefKind::AssocFn) {\n",
     tests: ["test/corpus.test.ts", "-t", "^returned_closure_drops.rs$"],
   },
   {
     name: "borrow-mut-holds-no-borrow",
-    breaks: "a `BorrowMut` dictionary is taken to hold no `Borrow`, so `self.borrow()` of a trait's own default through it is refused",
+    breaks:
+      "a `BorrowMut` dictionary is taken to hold no `Borrow`, so `self.borrow()` of a trait's own default through it is refused",
     file: "src/lower/recognition/traits.rs",
     find: "            || is_std_def(self.tcx, id, StdItem::BorrowMut)\n            // `Try`'s its `FromResidual` (ADR 0913).\n",
     replace: "            // `Try`'s its `FromResidual` (ADR 0913).\n",
@@ -486,7 +550,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "known-by-bounds-not-associated",
-    breaks: "an associated type, `T::Buffer`, isn't known by its bounds, and its `as_mut()` is refused",
+    breaks:
+      "an associated type, `T::Buffer`, isn't known by its bounds, and its `as_mut()` is refused",
     file: "src/lower/recognition/traits.rs",
     find: "    matches!(ty.kind(), ty::Param(_) | ty::Alias(..))\n}",
     replace: "    matches!(ty.kind(), ty::Param(_))\n}",
@@ -496,32 +561,45 @@ export const mutations: Mutation[] = [
     name: "into-future-unimplementable",
     breaks: "an `IntoFuture` of the crate's is refused",
     file: "src/lower/recognition/traits.rs",
-    find: "        || tcx.is_diagnostic_item(Symbol::intern(\"IntoFuture\"), id)\n        // Never lowered",
+    find: '        || tcx.is_diagnostic_item(Symbol::intern("IntoFuture"), id)\n        // Never lowered',
     replace: "        // Never lowered",
     tests: ["test/snapshots.test.ts", "-t", "async"],
   },
   {
     name: "generic-result-taken-to-throw",
-    breaks: "a binding declared to give a `T`, given a `Result`, runs in a `$try`, its `Result` wrapped in another `Ok`",
+    breaks:
+      "a binding declared to give a `T`, given a `Result`, runs in a `$try`, its `Result` wrapped in another `Ok`",
     file: "src/lower/recognition/traits.rs",
     find: "        if given(declared)\n",
     replace: "        if false\n",
-    tests: ["test/lowering-bindings.test.ts", "-t", "generic binding given a Result"],
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "-t",
+      "generic binding given a Result",
+    ],
   },
   {
     name: "generic-promise-result-settled",
-    breaks: "`js::promise` of an `async fn` that gives a `Result` is settled, its `Result` wrapped in another `Ok`",
+    breaks:
+      "`js::promise` of an `async fn` that gives a `Result` is settled, its `Result` wrapped in another `Ok`",
     file: "src/lower/recognition/traits.rs",
     find: "                && inner.types().next().is_some_and(given))\n",
-    replace: "                && inner.types().next().is_some_and(|_| false))\n",
-    tests: ["test/lowering-bindings.test.ts", "-t", "generic binding given a Result"],
+    replace:
+      "                && inner.types().next().is_some_and(|_| false))\n",
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "-t",
+      "generic binding given a Result",
+    ],
   },
   {
     name: "assert-unwind-safe-uncalled",
-    breaks: "a closure given to `catch_unwind` through `AssertUnwindSafe` isn't called as what it holds, and never drops what it took (#196)",
+    breaks:
+      "a closure given to `catch_unwind` through `AssertUnwindSafe` isn't called as what it holds, and never drops what it took (#196)",
     file: "src/lower/recognition/traits.rs",
     find: "        ty::Adt(adt, args) if super::wrappers::is_assert_unwind_safe(tcx, adt.did()) => {\n",
-    replace: "        ty::Adt(adt, args) if false && super::wrappers::is_assert_unwind_safe(tcx, adt.did()) => {\n",
+    replace:
+      "        ty::Adt(adt, args) if false && super::wrappers::is_assert_unwind_safe(tcx, adt.did()) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_assert_drops.rs$"],
   },
 ];

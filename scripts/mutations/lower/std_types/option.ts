@@ -4,17 +4,20 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "option-slot-iterator-a-handle",
-    breaks: "`slot.get_or_insert_with(f).next()` of a generic iterator steps a handle, `$someMut(..)`, not the iterator: `None` where Rust gives `Some(4)`",
+    breaks:
+      "`slot.get_or_insert_with(f).next()` of a generic iterator steps a handle, `$someMut(..)`, not the iterator: `None` where Rust gives `Some(4)`",
     file: "src/lower/std_types/option.rs",
     find: "            (true, false) => self.some_value(place),",
-    replace: "            (true, false) => Expr::call_helper(\"$someMut\", vec![Expr::handle(place)]),",
+    replace:
+      '            (true, false) => Expr::call_helper("$someMut", vec![Expr::handle(place)]),',
     tests: ["test/corpus.test.ts", "-t", "option_slot_iterators"],
   },
   {
     name: "option-slot-number-not-a-handle",
-    breaks: "`*slot.get_or_insert_with(T::default) += by` of a generic `T` writes a copy, not the `Option`'s place",
+    breaks:
+      "`*slot.get_or_insert_with(T::default) += by` of a generic `T` writes a copy, not the `Option`'s place",
     file: "src/lower/std_types/option.rs",
-    find: "            (true, true) => Expr::call_helper(\"$someMut\", vec![Expr::handle(place)]),",
+    find: '            (true, true) => Expr::call_helper("$someMut", vec![Expr::handle(place)]),',
     replace: "            (true, true) => self.some_value(place),",
     tests: ["test/corpus.test.ts", "-t", "option_slot_iterators"],
   },
@@ -28,16 +31,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "some-literal-boxed",
-    breaks: "`Some(Some(4))` is `$some(4)`: right, but not the JS a person writes",
+    breaks:
+      "`Some(Some(4))` is `$some(4)`: right, but not the JS a person writes",
     file: "src/lower/std_types/option.rs",
     find: "        if (value.is_constant() && !nullish) || literal {",
-    replace: "        if false && ((value.is_constant() && !nullish) || literal) {",
+    replace:
+      "        if false && ((value.is_constant() && !nullish) || literal) {",
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
     snapshots: true,
   },
   {
     name: "some-undefined-folded",
-    breaks: "`Some(None)` is `undefined`, folded as a literal, and reads as `None`",
+    breaks:
+      "`Some(None)` is `undefined`, folded as a literal, and reads as `None`",
     file: "src/lower/std_types/option.rs",
     find: "        if (value.is_constant() && !nullish) || literal {",
     replace: "        if value.is_constant() || literal {",
@@ -45,40 +51,56 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unwrap-untyped-debug",
-    breaks: "`unwrap()` of an `Err` of an enum shows `{ TAG: \"Missing\", .. }`, not `Missing { .. }`",
+    breaks:
+      '`unwrap()` of an `Err` of an enum shows `{ TAG: "Missing", .. }`, not `Missing { .. }`',
     file: "src/lower/std_types/option.rs",
     find: "        let peeled = ty.peel_refs();\n        if peeled.is_integral()",
-    replace: "        let peeled = ty.peel_refs();\n        if true || peeled.is_integral()",
+    replace:
+      "        let peeled = ty.peel_refs();\n        if true || peeled.is_integral()",
     tests: ["test/corpus.test.ts", "-t", "unwrap_typed_debug"],
   },
   {
     name: "unwrap-debug-wrapped",
-    breaks: "`unwrap()`'s debug is `(e) => stockErrorDebug_fmt(e)`, not the function itself",
+    breaks:
+      "`unwrap()`'s debug is `(e) => stockErrorDebug_fmt(e)`, not the function itself",
     file: "src/lower/std_types/option.rs",
     find: "                if matches!(callee.kind, js::ExprKind::Var(_))",
-    replace: "                if false && matches!(callee.kind, js::ExprKind::Var(_))",
+    replace:
+      "                if false && matches!(callee.kind, js::ExprKind::Var(_))",
     tests: ["test/corpus.test.ts", "-t", "unwrap_typed_debug"],
     snapshots: true,
   },
   {
     name: "filter-truth-map-unfused",
-    breaks: "`a.filter(|s| js::truthy(Some(*s))).map(f)` keeps `a || undefined` in a `const option`, not `a ? f(a) : undefined`",
+    breaks:
+      "`a.filter(|s| js::truthy(Some(*s))).map(f)` keeps `a || undefined` in a `const option`, not `a ? f(a) : undefined`",
     file: "src/lower/std_types/option.rs",
     find: "        return Some((truth, (**value).clone()));\n",
     replace: "        return None;\n",
-    tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
+    tests: [
+      "test/lowering-options.test.ts",
+      "-t",
+      "filter by truth then a fallback",
+    ],
   },
   {
     name: "filter-truth-map-chained",
-    breaks: "`a.filter(|s| js::truthy(Some(*s))).map(|s| s.to_uppercase())` is `a?.toUpperCase()`, its test read as `a`'s presence, `a != null`, which gives `\"\"` of an empty string",
+    breaks:
+      '`a.filter(|s| js::truthy(Some(*s))).map(|s| s.to_uppercase())` is `a?.toUpperCase()`, its test read as `a`\'s presence, `a != null`, which gives `""` of an empty string',
     file: "src/lower/std_types/option.rs",
     find: "                    Some((kept, value)) => (value, kept),\n",
-    replace: "                    Some((kept, value)) => (value.clone(), js::Expr::presence(value, true)),\n",
-    tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
+    replace:
+      "                    Some((kept, value)) => (value.clone(), js::Expr::presence(value, true)),\n",
+    tests: [
+      "test/lowering-options.test.ts",
+      "-t",
+      "filter by truth then a fallback",
+    ],
   },
   {
     name: "filter-map-unfused",
-    breaks: "`excerpt.filter(..).map(..)` keeps the filter's `Option` in a `const`, which pulls what JSX reads before it out of the JSX",
+    breaks:
+      "`excerpt.filter(..).map(..)` keeps the filter's `Option` in a `const`, which pulls what JSX reads before it out of the JSX",
     file: "src/lower/std_types/option.rs",
     find: "                    false => filtered(&option),\n",
     replace: "                    false => None,\n",
@@ -86,47 +108,70 @@ export const mutations: Mutation[] = [
   },
   {
     name: "filter-unwrap-or-unfused",
-    breaks: "`n.filter(|n| *n > 0).unwrap_or(1)` is `(n != null && n > 0 ? n : undefined) ?? 1`, not `n != null && n > 0 ? n : 1`",
+    breaks:
+      "`n.filter(|n| *n > 0).unwrap_or(1)` is `(n != null && n > 0 ? n : undefined) ?? 1`, not `n != null && n > 0 ? n : 1`",
     file: "src/lower/std_types/option.rs",
     find: "    match filtered(&option) {\n        Some((kept, value)) => Expr::cond(kept, value, fallback),\n",
-    replace: "    match None::<(Expr, Expr)> {\n        Some((kept, value)) => Expr::cond(kept, value, fallback),\n",
+    replace:
+      "    match None::<(Expr, Expr)> {\n        Some((kept, value)) => Expr::cond(kept, value, fallback),\n",
     tests: ["test/jsx-children.test.ts", "-t", "filtered child, in place"],
   },
   {
     name: "map-field-spilled",
-    breaks: "`p.title.map(|t| ..)` reads `p.title` into a `const t` first, where a field of a plain value is read as it is",
+    breaks:
+      "`p.title.map(|t| ..)` reads `p.title` into a `const t` first, where a field of a plain value is read as it is",
     file: "src/lower/std_types/option.rs",
     find: "                            js::ExprKind::Member(object, _) if matches!(&object.kind, js::ExprKind::Var(name) if self.plain_value(name)) => {",
-    replace: "                            js::ExprKind::Member(object, _) if false && matches!(&object.kind, js::ExprKind::Var(name) if self.plain_value(name)) => {",
-    tests: ["test/jsx-evaluation-order.test.ts", "-t", "field of what never changes in place"]
+    replace:
+      "                            js::ExprKind::Member(object, _) if false && matches!(&object.kind, js::ExprKind::Var(name) if self.plain_value(name)) => {",
+    tests: [
+      "test/jsx-evaluation-order.test.ts",
+      "-t",
+      "field of what never changes in place",
+    ],
   },
   {
     name: "own-name-map-called",
-    breaks: "an option mapped by a function giving each variant its own name, `section.map(Section::as_str)`, is a conditional of a call, not `section`",
+    breaks:
+      "an option mapped by a function giving each variant its own name, `section.map(Section::as_str)`, is a conditional of a call, not `section`",
     file: "src/lower/std_types/option.rs",
     find: "        (itself || self.gives_its_argument(self.callee(function, args).0))\n",
-    replace: "        (itself || false && self.gives_its_argument(self.callee(function, args).0))\n",
+    replace:
+      "        (itself || false && self.gives_its_argument(self.callee(function, args).0))\n",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "enum's own names"],
   },
   {
     name: "getter-option-chain-spilled",
-    breaks: "`first_element_child(p).map(|c| id(c))` is `const child = ..; child?.id`, not `p.firstElementChild?.id`",
+    breaks:
+      "`first_element_child(p).map(|c| id(c))` is `const child = ..; child?.id`, not `p.firstElementChild?.id`",
     file: "src/lower/std_types/option.rs",
     find: "                            && let Some(chain) = optional_chain(&option, b, p)\n",
-    replace: "                            && let Some(chain) = optional_chain(&option, b, p).filter(|_| false)\n",
-    tests: ["test/lowering-options.test.ts", "-t", "mapped to a property is an optional chain"],
+    replace:
+      "                            && let Some(chain) = optional_chain(&option, b, p).filter(|_| false)\n",
+    tests: [
+      "test/lowering-options.test.ts",
+      "-t",
+      "mapped to a property is an optional chain",
+    ],
   },
   {
     name: "unwrap-unchecked-unboxed",
-    breaks: "`unwrap_unchecked()` of an `Option<Option<T>>` is the box, so `Some(None)` unwrapped is `{ ... }`, not `undefined`",
+    breaks:
+      "`unwrap_unchecked()` of an `Option<Option<T>>` is the box, so `Some(None)` unwrapped is `{ ... }`, not `undefined`",
     file: "src/lower/std_types/option.rs",
     find: "                let value = arg();\n                if self.boxed_payload(generic_args.type_at(0)) {\n                    self.some_value(value)",
-    replace: "                let value = arg();\n                if false {\n                    self.some_value(value)",
-    tests: ["test/lowering-options.test.ts", "-t", "unwrap_unchecked is the value"],
+    replace:
+      "                let value = arg();\n                if false {\n                    self.some_value(value)",
+    tests: [
+      "test/lowering-options.test.ts",
+      "-t",
+      "unwrap_unchecked is the value",
+    ],
   },
   {
     name: "nullish-part-kept",
-    breaks: "a part of an option or a default is `m ? m[1] : d` of a `const m`, not `e?.[1] ?? d`",
+    breaks:
+      "a part of an option or a default is `m ? m[1] : d` of a `const m`, not `e?.[1] ?? d`",
     file: "src/lower/std_types/option.rs",
     find: "        _ if part_never_nullish => optional_part(yes, m, option)?,\n",
     replace: "",
@@ -137,7 +182,8 @@ export const mutations: Mutation[] = [
     breaks: "`get_or_insert` replaces what's there",
     file: "src/lower/std_types/option.rs",
     find: "                out.push(StmtKind::If(absent, vec![assign], otherwise).at(js_span));\n",
-    replace: "                let _ = (absent, otherwise);\n                out.push(assign);\n",
+    replace:
+      "                let _ = (absent, otherwise);\n                out.push(assign);\n",
     tests: ["test/corpus.test.ts", "-t", "option_result_methods"],
   },
   {
@@ -145,7 +191,8 @@ export const mutations: Mutation[] = [
     breaks: "`take_if` takes without asking its predicate",
     file: "src/lower/std_types/option.rs",
     find: "                out.push(StmtKind::If(Expr::bin(Op::And, present, holds), take, None).at(js_span));\n",
-    replace: "                out.push(StmtKind::If(present, take, None).at(js_span));\n",
+    replace:
+      "                out.push(StmtKind::If(present, take, None).at(js_span));\n",
     tests: ["test/corpus.test.ts", "-t", "option_result_methods"],
   },
   {
@@ -166,11 +213,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "option-items-mut-copied",
-    breaks: "`iter_mut()` of an `Option` of a number gives the number, not a handle on it",
+    breaks:
+      "`iter_mut()` of an `Option` of a number gives the number, not a handle on it",
     file: "src/lower/std_types/option.rs",
     find: "            Expr::array(vec![cell]),\n",
-    replace: "            Expr::array(vec![Expr::member(cell, \"value\")]),\n",
-    tests: ["test/corpus.test.ts","-t","option_result_mut"],
+    replace: '            Expr::array(vec![Expr::member(cell, "value")]),\n',
+    tests: ["test/corpus.test.ts", "-t", "option_result_mut"],
   },
   {
     name: "option-items-mut-object-cell",
@@ -178,19 +226,25 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/option.rs",
     find: "            let (option, _) = self.through_refs(option, option_ref);\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","option_result_mut"],
+    tests: ["test/corpus.test.ts", "-t", "option_result_mut"],
   },
   {
-    "name": "option-identity-map",
-    "breaks": "`env.map(String::as_str)` is `env != null ? env : undefined`, not `env`",
-    "file": "src/lower/std_types/option.rs",
-    "find": "                if f.is_identity() {\n                    return Ok(Some(option));\n                }\n",
-    "replace": "",
-    "tests": ["test/lowering-iterators.test.ts", "-t", "gives the value itself is none"]
+    name: "option-identity-map",
+    breaks:
+      "`env.map(String::as_str)` is `env != null ? env : undefined`, not `env`",
+    file: "src/lower/std_types/option.rs",
+    find: "                if f.is_identity() {\n                    return Ok(Some(option));\n                }\n",
+    replace: "",
+    tests: [
+      "test/lowering-iterators.test.ts",
+      "-t",
+      "gives the value itself is none",
+    ],
   },
   {
     name: "option-insert-drops-none",
-    breaks: "`insert` into an `Option` of a value with a destructor drops none of the old one",
+    breaks:
+      "`insert` into an `Option` of a value with a destructor drops none of the old one",
     file: "src/lower/std_types/option.rs",
     find: "                self.std_drop_call(item, old, span)?\n",
     replace: "                let _ = old;\n                None\n",
@@ -198,7 +252,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "option-get-or-insert-keeps-given",
-    breaks: "`get_or_insert` of an `Option` that holds one drops none of the one it's given",
+    breaks:
+      "`get_or_insert` of an `Option` that holds one drops none of the one it's given",
     file: "src/lower/std_types/option.rs",
     find: "            OptionPlaceOp::GetOrInsert => self.std_drop_call(item, value.clone(), span)?,\n",
     replace: "            OptionPlaceOp::GetOrInsert => None,\n",
@@ -214,16 +269,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "made-ok-unwrap-or-tested",
-    breaks: "`unwrap_or(d)` of an `Ok` just made tests it, where `unwrap()` of one is its value",
+    breaks:
+      "`unwrap_or(d)` of an `Ok` just made tests it, where `unwrap()` of one is its value",
     file: "src/lower/std_types/option.rs",
     find: "                if let Some(d) = &fallback\n",
-    replace: "                if let Some(d) = &fallback\n                    && false\n",
+    replace:
+      "                if let Some(d) = &fallback\n                    && false\n",
     tests: ["test/corpus.test.ts", "-t", "^poison_error.rs$"],
     snapshots: true,
   },
   {
     name: "option-items-name-spilled",
-    breaks: "a `&mut Option`'s items, of a name, name it again, `const option = cell`",
+    breaks:
+      "a `&mut Option`'s items, of a name, name it again, `const option = cell`",
     file: "src/lower/std_types/option.rs",
     find: "            js::ExprKind::Var(_) => (Expr::held(option.clone()), option),\n",
     replace: "",
@@ -232,15 +290,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "get-or-insert-with-unrun-kept",
-    breaks: "`get_or_insert_with` of a `Some` leaves its function, and what it holds, undropped",
+    breaks:
+      "`get_or_insert_with` of a `Some` leaves its function, and what it holds, undropped",
     file: "src/lower/std_types/option.rs",
     find: "            out.push(StmtKind::If(absent, vec![assign], Some(dropped)).at(js_span));\n",
-    replace: "            out.push(StmtKind::If(absent, vec![assign], None).at(js_span));\n",
+    replace:
+      "            out.push(StmtKind::If(absent, vec![assign], None).at(js_span));\n",
     tests: ["test/corpus.test.ts", "-t", "^unrun_function_drops.rs$"],
   },
   {
     name: "option-place-unboxed",
-    breaks: "`get_or_insert(None)` of an `Option<Option<T>>` leaves it `None`, its value held unboxed",
+    breaks:
+      "`get_or_insert(None)` of an `Option<Option<T>>` leaves it `None`, its value held unboxed",
     file: "src/lower/std_types/option.rs",
     find: "            true => self.some(value),\n            false => value,\n",
     replace: "            true => value,\n            false => value,\n",
@@ -248,9 +309,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "option-place-through-box",
-    breaks: "`*o.get_or_insert(..) = None` of an `Option<Option<T>>` writes the outer `Option` `None`",
+    breaks:
+      "`*o.get_or_insert(..) = None` of an `Option<Option<T>>` writes the outer `Option` `None`",
     file: "src/lower/std_types/option.rs",
-    find: "            (true, true) => Expr::call_helper(\"$someMut\", vec![Expr::handle(place)]),",
+    find: '            (true, true) => Expr::call_helper("$someMut", vec![Expr::handle(place)]),',
     replace: "            (true, true) => Expr::handle(place),",
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_places.rs$"],
   },
@@ -259,20 +321,24 @@ export const mutations: Mutation[] = [
     breaks: "`Err(e).unwrap_or(d)` of a `Result` leaves `e` undropped",
     file: "src/lower/std_types/option.rs",
     find: "            Std::ResultOk | Std::ResultOr if self.drops(generic_args.type_at(1)) != Drops::Nothing => {",
-    replace: "            Std::ResultOk if self.drops(generic_args.type_at(1)) != Drops::Nothing => {",
+    replace:
+      "            Std::ResultOk if self.drops(generic_args.type_at(1)) != Drops::Nothing => {",
     tests: ["test/corpus.test.ts", "-t", "^unused_value_drops.rs$"],
   },
   {
     name: "unwrap-of-throwing-call-caught",
-    breaks: "`json::parse(text).unwrap()` is `$unwrapOk($try(() => JSON.parse(text)))`, not the call, whose throw goes on as JS threw it",
+    breaks:
+      "`json::parse(text).unwrap()` is `$unwrapOk($try(() => JSON.parse(text)))`, not the call, whose throw goes on as JS threw it",
     file: "src/lower/std_types/option.rs",
     find: "                    && let Some(call) = result.uncaught()\n",
-    replace: "                    && let Some(call) = result.uncaught().filter(|_| false)\n",
+    replace:
+      "                    && let Some(call) = result.uncaught().filter(|_| false)\n",
     tests: ["test/js-builtins.test.ts", "-t", "unwrap of a throwing JS call"],
   },
   {
     name: "expect-of-throwing-call-unsaid",
-    breaks: "`.expect(\"valid JSON\")` of a throwing call is the call, its message dropped",
+    breaks:
+      '`.expect("valid JSON")` of a throwing call is the call, its message dropped',
     file: "src/lower/std_types/option.rs",
     find: "                if let [result] = list.as_slice()\n",
     replace: "                if let [result, ..] = list.as_slice()\n",
@@ -280,7 +346,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "flatten-of-then-boxed",
-    breaks: "`c.then(|| o).flatten()` is `$someValue(c ? $some(o) : undefined)`, not `c ? o : undefined`",
+    breaks:
+      "`c.then(|| o).flatten()` is `$someValue(c ? $some(o) : undefined)`, not `c ? o : undefined`",
     file: "src/lower/std_types/option.rs",
     find: "            && let Some(x) = made(then)\n",
     replace: "            && let Some(x) = made(then).filter(|_| false)\n",
@@ -288,7 +355,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "and-then-chain-held",
-    breaks: "`o.and_then(|l| l.item(0))` of a getter's read holds it, `const option = input.labels; option?.item(0)`, not `input.labels?.item(0)`",
+    breaks:
+      "`o.and_then(|l| l.item(0))` of a getter's read holds it, `const option = input.labels; option?.item(0)`, not `input.labels?.item(0)`",
     file: "src/lower/std_types/option.rs",
     find: "    match chained {\n        Some(chain) => {",
     replace: "    match None::<Expr> {\n        Some(chain) => {",
@@ -296,15 +364,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "map-some-undefined",
-    breaks: "a `map`'s `Some` isn't known never `undefined`, so a nullable field given it is `(c ? c(..) : undefined) ?? null`",
+    breaks:
+      "a `map`'s `Some` isn't known never `undefined`, so a nullable field given it is `(c ? c(..) : undefined) ?? null`",
     file: "src/lower/std_types/option.rs",
     find: "                    value.defined()\n",
     replace: "                    value\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "what's never undefined as it is"],
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "what's never undefined as it is",
+    ],
   },
   {
     name: "unwrap-tested-message-late",
-    breaks: "an `expect` whose message is a variable's is its test too, the message read after the drops, which changed it: `changed` where Rust's is `no impl`",
+    breaks:
+      "an `expect` whose message is a variable's is its test too, the message read after the drops, which changed it: `changed` where Rust's is `no impl`",
     file: "src/lower/std_types/option.rs",
     find: "        [option, message] if matches!(message.kind, js::ExprKind::Str(_)) => (option, message.clone()),",
     replace: "        [option, message] => (option, message.clone()),",
@@ -312,15 +386,17 @@ export const mutations: Mutation[] = [
   },
   {
     name: "map-get-flatten-boxed",
-    breaks: "React's `cache.data.get(resourceType)` flattened is `$someValue($someGet(data, key))` (ADR 0950)",
+    breaks:
+      "React's `cache.data.get(resourceType)` flattened is `$someValue($someGet(data, key))` (ADR 0950)",
     file: "src/lower/std_types/option.rs",
-    find: "            && callee.helper_name() == Some(\"$someGet\")\n",
-    replace: "            && callee.helper_name() == Some(\"$someGot\")\n",
+    find: '            && callee.helper_name() == Some("$someGet")\n',
+    replace: '            && callee.helper_name() == Some("$someGot")\n',
     tests: ["test/lowering-collections.test.ts", "-t", "get flattened"],
   },
   {
     name: "map-fallback-coalesced",
-    breaks: "React's `foundWillMountName != null ? `\\n  ${..}` : \"\"` is `(.. ? .. : undefined) ?? \"\"`, a map's literal and its fallback two steps (ADR 0348, amended)",
+    breaks:
+      'React\'s `foundWillMountName != null ? `\\n  ${..}` : ""` is `(.. ? .. : undefined) ?? ""`, a map\'s literal and its fallback two steps (ADR 0348, amended)',
     file: "src/lower/std_types/option.rs",
     find: "        return Expr::cond((**test).clone(), (**value).clone(), fallback);\n",
     replace: "        return Expr::bin(Op::Coalesce, option, fallback);\n",
@@ -328,10 +404,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "this-binding-map-not-itself",
-    breaks: "a map by a binding that's its argument, `map(js::unknown)`, isn't the option to what a nullable place stores, which is `?? null` (rd94)",
+    breaks:
+      "a map by a binding that's its argument, `map(js::unknown)`, isn't the option to what a nullable place stores, which is `?? null` (rd94)",
     file: "src/lower/std_types/option.rs",
     find: "        (itself || self.gives_its_argument(self.callee(function, args).0))\n",
-    replace: "        (self.gives_its_argument(self.callee(function, args).0))\n",
+    replace:
+      "        (self.gives_its_argument(self.callee(function, args).0))\n",
     tests: ["test/js-constructors.test.ts", "-t", "identity map"],
   },
 ];

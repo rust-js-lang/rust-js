@@ -1175,6 +1175,95 @@ export function contains(scope: ScopeInstance, fiber: Fiber): boolean;
   by value; a method named as a field; and the attribute on one of the
   struct and its impl alone.
 
+## Module namespaces
+
+A unit struct and its impl marked `#[cfg_attr(rust_js,
+rust_js::namespace)]` are the module they're in: its `&self` methods are
+the module's exported functions, and its value is the module's
+namespace, `import * as M`. React's noop renderer is given the
+reconciler's namespace, a Jest instance of the module, and calls through
+it, `NoopRenderer.createContainer(..)`; React DOM imports the function
+([ADR 1037](../../decisions/1037-a-module-namespace-is-a-unit-struct-of-its-functions.md)):
+
+```rust
+pub mod reconciler {
+    #[cfg_attr(rust_js, rust_js::namespace)]
+    pub struct Reconciler;
+
+    unsafe impl js::Defined for Reconciler {}
+
+    #[cfg_attr(rust_js, rust_js::namespace)]
+    impl Reconciler {
+        pub fn create_container(&self, tag: u32) -> u32 {
+            self.update_container(tag) + 1
+        }
+
+        pub fn update_container(&self, n: u32) -> u32 {
+            n * 2
+        }
+    }
+}
+
+use reconciler::Reconciler;
+
+pub fn dom() -> u32 {
+    Reconciler.create_container(3)
+}
+
+pub fn noop(renderer: &Reconciler) -> u32 {
+    renderer.create_container(4)
+}
+
+pub fn namespace() -> &'static Reconciler {
+    &Reconciler
+}
+```
+
+```js
+// src/lib.js
+import { createContainer } from "./reconciler.js";
+import * as Reconciler from "./reconciler.js";
+
+export function dom() {
+  return createContainer(3);
+}
+
+export function noop(renderer) {
+  return renderer.createContainer(4);
+}
+
+export function namespace() {
+  return Reconciler;
+}
+```
+
+```js
+// src/reconciler.js
+export function createContainer(tag) {
+  return (updateContainer(tag) + 1) >>> 0;
+}
+
+export function updateContainer(n) {
+  return (n * 2) >>> 0;
+}
+```
+
+- **Its methods are its module's functions**, `export function
+  createContainer(tag)`, of no `self`, declared so in its `.d.ts`.
+- **A call on the namespace as Rust names it**, `Reconciler.f(..)`, or
+  on a method's own `self`, is the function's, `createContainer(3)`,
+  imported by its name; **a call on a value** is through it,
+  `renderer.createContainer(4)`, the instance JS gave. As a value, a
+  method is the arrow of that call.
+- **Its value is the module's namespace**, `import * as Reconciler`, a
+  library's too, and its type `typeof Reconciler`, imported so: `import
+  type * as Reconciler from "./reconciler.js"`.
+- **Refused, each with what to write**: a struct with fields or type
+  parameters; one that's a `#[rust_js::class]` or `#[rust_js::object]`
+  too; an impl in another module than its struct's; an item that's no
+  method of `&self`; a method that reads `self` but to call another; and
+  the attribute on one of the struct and its impl alone.
+
 ## Constants, statics and thread-locals
 
 ```rust

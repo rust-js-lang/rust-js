@@ -107,6 +107,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (foreign.compiles(def_id) || (foreign.item(def_id).is_some() && self.krate.copying.copies(def_id)))
     }
 
+    /// The value of `adt`, a `#[rust_js::namespace]`: its module's
+    /// namespace, `import * as ReactFiberReconciler from
+    /// "./ReactFiberReconciler.js"`, a library's from where it imports the
+    /// namespace's functions (ADR 1037). An item, which a call of one of its
+    /// methods on it calls by its name (`crate_called_copy`); `None` of a
+    /// library's this module imports none of.
+    pub(super) fn namespace_value(&self, adt: DefId) -> Option<Expr> {
+        let Some(adt) = adt.as_local() else {
+            let method = (self.tcx.inherent_impls(adt).iter())
+                .flat_map(|&imp| self.tcx.associated_item_def_ids(imp).iter().copied())
+                .find(|&item| self.krate.foreign.item(item).is_some())?;
+            let namespace = (self.krate.foreign.item(method)?.from.clone(), js::NAMESPACE.to_string());
+            let local = self.krate.imports[&self.module].get(&namespace)?.clone();
+            (self.dependencies.borrow_mut().package_uses).insert((self.module, namespace));
+            return Some(Expr::var(&local).item());
+        };
+        let module = self.tcx.parent_module_from_def_id(adt);
+        self.dependencies.borrow_mut().reexporters.insert((self.module, module));
+        let namespace = Expr {
+            facts: js::Facts::NONE,
+            kind: js::ExprKind::Symbol(super::module_symbol(module, js::NAMESPACE)),
+            span: js::Span::NONE,
+        };
+        Some(namespace.item())
+    }
+
     /// The crate's function, `const` or `static` `def_id` where the path at
     /// `named` names it, a call's or the path's own, as `fn_ref` names it,
     /// or by its index a copy, as `own_fn_ref` does; but through the module

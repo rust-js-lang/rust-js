@@ -2,12 +2,17 @@
 import type { Mutation } from "../../../mutations";
 
 const adapters = ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"];
-const extensions = ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$"];
+const extensions = [
+  "test/corpus.test.ts",
+  "-t",
+  "^given_iterator_extensions.rs$",
+];
 
 export const mutations: Mutation[] = [
   {
     name: "kept-default-assoc-unstepped",
-    breaks: "a trait's default that steps `Self::Iter`, kept by `impl<I: Iterator> Trait for I` with `type Iter = I`, isn't seen to step `I`: a range given to it is `.reduce`d as if a JS iterator, `TypeError` (ADR 0977)",
+    breaks:
+      "a trait's default that steps `Self::Iter`, kept by `impl<I: Iterator> Trait for I` with `type Iter = I`, isn't seen to step `I`: a range given to it is `.reduce`d as if a JS iterator, `TypeError` (ADR 0977)",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                        stepped.insert((imp, param.index, by));\n",
     replace: "",
@@ -15,15 +20,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "std-body-callee-steps-unpassed",
-    breaks: "std's `Skip::rfold`, compiled, calls `self.try_rfold(..)`, which steps `I` from its back, but isn't given `I`'s `DoubleEndedIterator`: std's bodies don't compile (ADR 0927)",
+    breaks:
+      "std's `Skip::rfold`, compiled, calls `self.try_rfold(..)`, which steps `I` from its back, but isn't given `I`'s `DoubleEndedIterator`: std's bodies don't compile (ADR 0927)",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                                if fns.contains_key(&instance.def_id()) {\n                                    pass_on(&mut passed, instance.def_id(), instance.args);\n                                } else if foreign.item(instance.def_id()).is_some() {\n",
-    replace: "                                if false {\n                                    pass_on(&mut passed, instance.def_id(), instance.args);\n                                } else if foreign.item(instance.def_id()).is_some() {\n",
+    replace:
+      "                                if false {\n                                    pass_on(&mut passed, instance.def_id(), instance.args);\n                                } else if foreign.item(instance.def_id()).is_some() {\n",
     tests: ["test/std-package.test.ts"],
   },
   {
     name: "stepped-param-unseen",
-    breaks: "an adapter's `next`, which steps its `I`, is given no dictionary for it",
+    breaks:
+      "an adapter's `next`, which steps its `I`, is given no dictionary for it",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                    stepped.extend(by.iter().map(|&by| (caller, param.index, by)));\n",
     replace: "",
@@ -31,7 +39,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "stepped-through-impl-unseen",
-    breaks: "`skip_one`, which steps a `Doubled<I>` by its impl's `next`, is given no dictionary for `I`",
+    breaks:
+      "`skip_one`, which steps a `Doubled<I>` by its impl's `next`, is given no dictionary for `I`",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                    pass_on(&mut passed, instance.def_id(), instance.args);\n                }\n                continue;\n",
     replace: "                }\n                continue;\n",
@@ -39,15 +48,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "stepped-passed-on-unseen",
-    breaks: "a function that passes its `I` to one that steps it is given no dictionary for it",
+    breaks:
+      "a function that passes its `I` to one that steps it is given no dictionary for it",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                if stepped.insert((from.0, from.1, by)) {\n",
-    replace: "                if false && stepped.insert((from.0, from.1, by)) {\n",
+    replace:
+      "                if false && stepped.insert((from.0, from.1, by)) {\n",
     tests: adapters,
   },
   {
     name: "stepped-all-given",
-    breaks: "every function of an `I` given as it is takes its dictionary, `doubled(inner, IIterator)`, stepped or not",
+    breaks:
+      "every function of an `I` given as it is takes its dictionary, `doubled(inner, IIterator)`, stepped or not",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                    given_as_it_is(tcx, id, ty::ParamTy::new(param.index, param.name))\n",
     replace: "                    true\n",
@@ -56,7 +68,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "stepped-given-adapter-unseen",
-    breaks: "`chain(iter)` of an `I` given as it is gives no dictionary for it, and spreads its value as a JS iterator",
+    breaks:
+      "`chain(iter)` of an `I` given as it is gives no dictionary for it, and spreads its value as a JS iterator",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                        stepped.insert((caller, param.index, iterator));\n",
     replace: "",
@@ -64,7 +77,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "stepped-asked-extension-unseen",
-    breaks: "`rev()` of an `I` given as it is, whose `Self: DoubleEndedIterator` it asks, is given no `DoubleEndedIterator` dictionary",
+    breaks:
+      "`rev()` of an `I` given as it is, whose `Self: DoubleEndedIterator` it asks, is given no `DoubleEndedIterator` dictionary",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                        .filter(|p| p.self_ty().skip_binder() == self_param && is_iterator_extension(tcx, p.def_id()))\n",
     replace: "                        .filter(|_| false)\n",
@@ -72,15 +86,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "stepped-extension-unseen",
-    breaks: "`next_back(&mut it)` of an `I` given as it is is given no `DoubleEndedIterator` dictionary",
+    breaks:
+      "`next_back(&mut it)` of an `I` given as it is is given no `DoubleEndedIterator` dictionary",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                Some(tr) if is_iterator_extension(tcx, tr) => match is_extension_entry(tcx, callee) {\n",
-    replace: "                Some(tr) if false => match is_extension_entry(tcx, callee) {\n",
+    replace:
+      "                Some(tr) if false => match is_extension_entry(tcx, callee) {\n",
     tests: extensions,
   },
   {
     name: "stepped-as-js-iterator-unseen",
-    breaks: "an `I` given as it is passed to `last<K: DoubleEndedIterator>` is given no dictionary for its back",
+    breaks:
+      "an `I` given as it is passed to `last<K: DoubleEndedIterator>` is given no dictionary for its back",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                .chain(as_js_iterator(to))\n",
     replace: "",
@@ -88,7 +105,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "stepped-by-every-trait",
-    breaks: "`back(ends)`, which only steps its `I` from its back, is given its `Iterator` dictionary too",
+    breaks:
+      "`back(ends)`, which only steps its `I` from its back, is given its `Iterator` dictionary too",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                    true => vec![tr],\n",
     replace: "                    true => vec![tr, iterator],\n",
@@ -97,7 +115,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "stepped-extension-method-no-iterator",
-    breaks: "`nth_back` of an `I` given as it is, run on a JS iterator made of it, is given no `Iterator` dictionary",
+    breaks:
+      "`nth_back` of an `I` given as it is, run on a JS iterator made of it, is given no `Iterator` dictionary",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                    false => vec![tr, iterator],\n",
     replace: "                    false => vec![tr],\n",
@@ -105,7 +124,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "stepped-adapter-unseen",
-    breaks: "`rfold` of a `map` of an `I` given as it is gives no `DoubleEndedIterator` dictionary for it",
+    breaks:
+      "`rfold` of a `map` of an `I` given as it is gives no `DoubleEndedIterator` dictionary for it",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                    for &by in by.iter().filter(|&&by| by != iterator) {\n",
     replace: "                    for &by in by.iter().filter(|_| false) {\n",
@@ -113,7 +133,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "kept-default-steps-unseen",
-    breaks: "a blanket impl that keeps a default stepping its `Self` is given no `Iterator` dictionary for its `T`",
+    breaks:
+      "a blanket impl that keeps a default stepping its `Self` is given no `Iterator` dictionary for its `T`",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                        passed.push(((imp, param.index), default));\n",
     replace: "",
@@ -121,7 +142,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "kept-default-holder-unseen",
-    breaks: "an impl for `Holder<I>` that keeps a default stepping its `Self` is given no `Iterator` dictionary for `I`",
+    breaks:
+      "an impl for `Holder<I>` that keeps a default stepping its `Self` is given no `Iterator` dictionary for `I`",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                                kept_through.push((default, ((imp, param.index), (instance.def_id(), at as u32))));\n",
     replace: "",
@@ -129,7 +151,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "kept-default-holder-unconditional",
-    breaks: "an impl for `Holder<I>` whose kept defaults don't step its `Self` is given `I`'s `Iterator` dictionary anyway",
+    breaks:
+      "an impl for `Holder<I>` whose kept defaults don't step its `Self` is given `I`'s `Iterator` dictionary anyway",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "            if stepped.iter().any(|&(id, index, _)| (id, index) == default) && !passed.contains(&edge) {\n",
     replace: "            if !passed.contains(&edge) {\n",
@@ -138,15 +161,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "associated-iterator-unstepped",
-    breaks: "an impl whose associated type is an iterator holding its type parameter isn't given that parameter's dictionary, and a library's is refused",
+    breaks:
+      "an impl whose associated type is an iterator holding its type parameter isn't given that parameter's dictionary, and a library's is refused",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                if !iterates || !fns.contains_key(&instance.def_id()) {\n",
-    replace: "                if true || !iterates || !fns.contains_key(&instance.def_id()) {\n",
+    replace:
+      "                if true || !iterates || !fns.contains_key(&instance.def_id()) {\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_steps.rs$"],
   },
   {
     name: "associated-iterator-param-unpassed",
-    breaks: "an impl's `IntoIter` holding its type parameter as it is isn't given that parameter's dictionary",
+    breaks:
+      "an impl's `IntoIter` holding its type parameter as it is isn't given that parameter's dictionary",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                        ty::Param(param) => passed.push(((imp, param.index), (instance.def_id(), at as u32))),\n",
     replace: "                        ty::Param(_) => {}\n",
@@ -154,15 +180,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "associated-iterator-adapter-unstepped",
-    breaks: "an impl's associated iterator holding a std adapter of its type parameter, `Fuse<I>`, isn't given that parameter's dictionary",
+    breaks:
+      "an impl's associated iterator holding a std adapter of its type parameter, `Fuse<I>`, isn't given that parameter's dictionary",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                        _ => stepped.extend(held.walk().filter_map(|part| match part.as_type()?.kind() {\n",
-    replace: "                        _ => stepped.extend(held.walk().filter(|_| false).filter_map(|part| match part.as_type()?.kind() {\n",
+    replace:
+      "                        _ => stepped.extend(held.walk().filter(|_| false).filter_map(|part| match part.as_type()?.kind() {\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_steps.rs$"],
   },
   {
     name: "dictionary-call-passes-nothing",
-    breaks: "what a trait's method called through a dictionary is given isn't passed on, so `&mut Self` goes as it is where a JS iterator goes",
+    breaks:
+      "what a trait's method called through a dictionary is given isn't passed on, so `&mut Self` goes as it is where a JS iterator goes",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                    pass_on(&mut passed, callee, args);\n                    continue;\n",
     replace: "                    continue;\n",
@@ -170,15 +199,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "passed-reference-not-peeled",
-    breaks: "a reference to a parameter, `&mut Self`, isn't passed on as the parameter",
+    breaks:
+      "a reference to a parameter, `&mut Self`, isn't passed on as the parameter",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                    && let ty::Param(param) = ty.peel_refs().kind()\n                    && !given_by_its_trait",
-    replace: "                    && let ty::Param(param) = ty.kind()\n                    && !given_by_its_trait",
+    replace:
+      "                    && let ty::Param(param) = ty.kind()\n                    && !given_by_its_trait",
     tests: ["test/corpus.test.ts", "-t", "^self_given_on_as_into_iter.rs$"],
   },
   {
     name: "passed-as-trait-takes",
-    breaks: "a trait's own `Self` passed to its method through a dictionary is taken for one made a JS iterator, and a dictionary nothing reads is given",
+    breaks:
+      "a trait's own `Self` passed to its method through a dictionary is taken for one made a JS iterator, and a dictionary nothing reads is given",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                    && !given_by_its_trait(tcx, callee, index as u32)\n",
     replace: "",
@@ -187,7 +219,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "into-iterator-not-iterating",
-    breaks: "an `IntoIterator` parameter isn't one given a JS iterator, so what's given on to it takes no dictionary",
+    breaks:
+      "an `IntoIterator` parameter isn't one given a JS iterator, so what's given on to it takes no dictionary",
     file: "src/lower/analysis/iterator_steps.rs",
     find: " || is_std_def(tcx, tr, StdItem::IntoIterator));",
     replace: ");",
@@ -195,15 +228,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "std-held-parameter-not-stepped",
-    breaks: "a parameter a std body holds in a struct whose impl steps it, `peekable`'s `Self`, isn't stepped, so `@rust-js/std` steps what its callers give as they give it",
+    breaks:
+      "a parameter a std body holds in a struct whose impl steps it, `peekable`'s `Self`, isn't stepped, so `@rust-js/std` steps what its callers give as they give it",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "        for held in body_aggregates(tcx, body) {\n",
-    replace: "        for held in body_aggregates(tcx, body).into_iter().take(0) {\n",
+    replace:
+      "        for held in body_aggregates(tcx, body).into_iter().take(0) {\n",
     tests: ["test/std-package.test.ts"],
   },
   {
     name: "library-supertrait-not-stepped",
-    breaks: "a parameter given to a library function whose manifest says it steps it by a supertrait of its bound, `Iterator` of an `I: DoubleEndedIterator`, isn't stepped by it, so `rfold` of a held `Fuse` is refused",
+    breaks:
+      "a parameter given to a library function whose manifest says it steps it by a supertrait of its bound, `Iterator` of an `I: DoubleEndedIterator`, isn't stepped by it, so `rfold` of a held `Fuse` is refused",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                        for by in rustc_middle::ty::elaborate::supertrait_def_ids(tcx, bound.def_id()) {\n",
     replace: "                        for by in [bound.def_id()] {\n",
@@ -211,15 +247,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fused-specialization-not-stepped",
-    breaks: "a std body's call of a std-private trait's method whose impl the caller's type picks, `FuseImpl::next`, steps nothing, so the impls' methods aren't given `I`'s dictionary",
+    breaks:
+      "a std body's call of a std-private trait's method whose impl the caller's type picks, `FuseImpl::next`, steps nothing, so the impls' methods aren't given `I`'s dictionary",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "            if let Some(spec) = crate::lower::recognition::fact_specialization(tcx, typing_env, callee, args) {\n",
-    replace: "            if let Some(spec) = crate::lower::recognition::fact_specialization(tcx, typing_env, callee, args).filter(|_| false) {\n",
+    replace:
+      "            if let Some(spec) = crate::lower::recognition::fact_specialization(tcx, typing_env, callee, args).filter(|_| false) {\n",
     tests: ["test/std-package.test.ts"],
   },
   {
     name: "held-struct-hint-unstepped",
-    breaks: "what a compiled std struct's `size_hint` steps isn't seen, so std's `rev()` can't be compiled, its `Self` stepped by `Iterator` for its hint",
+    breaks:
+      "what a compiled std struct's `size_hint` steps isn't seen, so std's `rev()` can't be compiled, its `Self` stepped by `Iterator` for its hint",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "            for method in [next, size_hint] {\n",
     replace: "            for method in [next] {\n",
@@ -227,7 +266,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "compiled-back-hooks-unstepped",
-    breaks: "what a held compiled iterator's back steps, which `rev()` of it asks, isn't seen, so `I`'s dictionaries aren't given",
+    breaks:
+      "what a held compiled iterator's back steps, which `rev()` of it asks, isn't seen, so `I`'s dictionaries aren't given",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                                && crate::lower::recognition::is_double_ended(tcx, by)\n",
     replace: "                                && false\n",
@@ -235,7 +275,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "held-adapter-bounds-unasked",
-    breaks: "what a std adapter given to a picked impl asks of its source, `Map<I, F>`'s `I: DoubleEndedIterator` in `FlatMap`'s back, isn't asked, and std's compile refuses stepping `I`",
+    breaks:
+      "what a std adapter given to a picked impl asks of its source, `Map<I, F>`'s `I: DoubleEndedIterator` in `FlatMap`'s back, isn't asked, and std's compile refuses stepping `I`",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                        if matches!(held.kind(), ty::Adt(..)) && is_iterator_extension(tcx, bound.def_id()) {\n",
     replace: "                        if false {\n",
@@ -243,10 +284,16 @@ export const mutations: Mutation[] = [
   },
   {
     name: "no-iterator-made-unstepped",
-    breaks: "`step_by` isn't given its `Self`'s dictionary for the `StepBy` it makes an iterator of, so it's refused (ADR 0917)",
+    breaks:
+      "`step_by` isn't given its `Self`'s dictionary for the `StepBy` it makes an iterator of, so it's refused (ADR 0917)",
     file: "src/lower/analysis/iterator_steps.rs",
     find: "                .is_some_and(|(callee, _)| crate::lower::recognition::makes_no_iterator(tcx, callee))\n",
-    replace: "                .is_some_and(|(callee, _)| false && crate::lower::recognition::makes_no_iterator(tcx, callee))\n",
-    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+    replace:
+      "                .is_some_and(|(callee, _)| false && crate::lower::recognition::makes_no_iterator(tcx, callee))\n",
+    tests: [
+      "test/std-package.test.ts",
+      "-t",
+      "the committed @rust-js/std is std's bodies",
+    ],
   },
 ];

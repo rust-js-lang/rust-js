@@ -4,23 +4,27 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "library-default-type-imported-by-name",
-    breaks: "a consumer's declarations import a library's default class by its name, `import type { Complex }`, which its module doesn't export (ADR 0210, amended)",
+    breaks:
+      "a consumer's declarations import a library's default class by its name, `import type { Complex }`, which its module doesn't export (ADR 0210, amended)",
     file: "src/lower/library.rs",
-    find: "            default: super::default_exports::exported_as(tcx, id, tcx.item_name(id).as_str()) == \"default\",\n",
+    find: '            default: super::default_exports::exported_as(tcx, id, tcx.item_name(id).as_str()) == "default",\n',
     replace: "            default: false,\n",
     tests: ["test/declarations-libraries.test.ts", "-t", "default class"],
   },
   {
     name: "library-type-rcs-counted-for-unseen-consumers",
-    breaks: "a library generic over another library's type counts its `Rc`s for consumers it can't see, though that library counts none, so React's reconciler, a library, is refused for `react`'s context (ADR 0852, amended)",
+    breaks:
+      "a library generic over another library's type counts its `Rc`s for consumers it can't see, though that library counts none, so React's reconciler, a library, is refused for `react`'s context (ADR 0852, amended)",
     file: "src/lower/library.rs",
     find: "                !adt.did().is_local() && self.is_library(krate) && !self.counts_rc(krate, pointee)\n",
-    replace: "                !adt.did().is_local() && self.is_library(krate) && !self.counts_rc(krate, pointee) && false\n",
+    replace:
+      "                !adt.did().is_local() && self.is_library(krate) && !self.counts_rc(krate, pointee) && false\n",
     tests: ["test/crates.test.ts", "-t", "counts another library"],
   },
   {
     name: "uncounted-library-rcs-unseen",
-    breaks: "a crate counting an `Rc` a library that counts none of hands it isn't refused, and the two read it apart (ADRs 0844, 0852)",
+    breaks:
+      "a crate counting an `Rc` a library that counts none of hands it isn't refused, and the two read it apart (ADRs 0844, 0852)",
     file: "src/lower/library.rs",
     find: "                false => reached\n                    .uncounted_rcs\n                    .push((pointee, tcx.crate_name(of.krate).to_string())),\n",
     replace: "                false => {}\n",
@@ -28,26 +32,32 @@ export const mutations: Mutation[] = [
   },
   {
     name: "held-unlisted",
-    breaks: "a library's manifest says nothing of the bindings its modules hold, so a consumer reads each in place",
+    breaks:
+      "a library's manifest says nothing of the bindings its modules hold, so a consumer reads each in place",
     file: "src/lower/library.rs",
     find: "                export: binding.import()?.to_string(),\n",
-    replace: "                export: binding.import().filter(|_| false)?.to_string(),\n",
+    replace:
+      "                export: binding.import().filter(|_| false)?.to_string(),\n",
     tests: ["test/cargo-link.test.ts", "-t", "holds a binding"],
   },
   {
     name: "library-crate-hash-unchecked",
-    breaks: "a library's manifest is taken beside the metadata of another build of it",
+    breaks:
+      "a library's manifest is taken beside the metadata of another build of it",
     file: "src/lower/library.rs",
     find: "            if let Some(library) = self.dependencies.libraries.get(name.as_str())\n",
-    replace: "            if let Some(library) = self.dependencies.libraries.get(name.as_str()).filter(|_| false)\n",
+    replace:
+      "            if let Some(library) = self.dependencies.libraries.get(name.as_str()).filter(|_| false)\n",
     tests: ["test/crates.test.ts", "-t", "another build"],
   },
   {
     name: "library-dictionary-fails-unlisted",
-    breaks: "a library's dictionary of a writer that may fail, which its consumer calls through it, `hourDisplay.fmt(hour)`, is listed as one that never does, so its error escapes the consumer's `write!` (ADR 0914, amended)",
+    breaks:
+      "a library's dictionary of a writer that may fail, which its consumer calls through it, `hourDisplay.fmt(hour)`, is listed as one that never does, so its error escapes the consumer's `write!` (ADR 0914, amended)",
     file: "src/lower/library.rs",
     find: "                                && (tcx.associated_item_def_ids(id).iter()).any(|method| failing.contains(method))),\n",
-    replace: "                                && (tcx.associated_item_def_ids(id).iter()).any(|_| false)),\n",
+    replace:
+      "                                && (tcx.associated_item_def_ids(id).iter()).any(|_| false)),\n",
     tests: ["test/crates.test.ts", "-t", "may fail is one its consumer"],
   },
   {
@@ -55,20 +65,27 @@ export const mutations: Mutation[] = [
     breaks: "a library's writer that may fail is listed as one that never does",
     file: "src/lower/library.rs",
     find: "                        failing.contains(&id)\n                            || (matches!",
-    replace: "                        false && failing.contains(&id)\n                            || (matches!",
-    tests: ["test/crates.test.ts","-t","may fail is one its consumer"],
+    replace:
+      "                        false && failing.contains(&id)\n                            || (matches!",
+    tests: ["test/crates.test.ts", "-t", "may fail is one its consumer"],
   },
   {
     name: "library-drops-unlisted",
-    breaks: "a library's manifest says none of its functions takes a drop, so a consumer compiles its own copy of `second`, which takes one, not calling the library's",
+    breaks:
+      "a library's manifest says none of its functions takes a drop, so a consumer compiles its own copy of `second`, which takes one, not calling the library's",
     file: "src/lower/library.rs",
     find: "        param(&mut params, index).marks.insert(ParamFact::Drop);\n",
     replace: "        param(&mut params, index);\n",
-    tests: ["test/crates.test.ts", "-t", "a library's generic function that takes a drop is called with the consumer's"],
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "a library's generic function that takes a drop is called with the consumer's",
+    ],
   },
   {
     name: "library-facts-unsaid",
-    breaks: "a library's manifest doesn't say what its functions ask of their type parameters",
+    breaks:
+      "a library's manifest doesn't say what its functions ask of their type parameters",
     file: "src/lower/library.rs",
     find: "        param(&mut params, index).facts.push(fact.word().to_string());\n",
     replace: "        let _ = (param(&mut params, index), fact);\n",
@@ -76,7 +93,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "manifest-capacity-unsaid",
-    breaks: "a library's manifest doesn't say it keeps capacity, so its consumers don't",
+    breaks:
+      "a library's manifest doesn't say it keeps capacity, so its consumers don't",
     file: "src/lower/library.rs",
     find: "        keeps_capacity: *keeps_capacity,\n",
     replace: "        keeps_capacity: false,\n",
@@ -84,23 +102,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-location-unexported",
-    breaks: "a library's function that takes its caller's location says it doesn't, and its consumers give it none",
+    breaks:
+      "a library's function that takes its caller's location says it doesn't, and its consumers give it none",
     file: "src/lower/library.rs",
     find: "                    (ItemFact::TakesLocation, caller_locations.contains(&id)),\n",
-    replace: "                    (ItemFact::TakesLocation, false && caller_locations.contains(&id)),\n",
+    replace:
+      "                    (ItemFact::TakesLocation, false && caller_locations.contains(&id)),\n",
     tests: ["test/crates.test.ts", "-t", "two crates: track_caller"],
   },
   {
     name: "library-location-unread",
-    breaks: "a consumer reads no library function as taking its caller's location, and gives it none",
+    breaks:
+      "a consumer reads no library function as taking its caller's location, and gives it none",
     file: "src/lower/library.rs",
     find: "        self.item(id)\n            .is_some_and(|item| item.calling.has(ItemFact::TakesLocation))\n",
-    replace: "        self.item(id)\n            .is_some_and(|item| false && item.calling.has(ItemFact::TakesLocation))\n",
+    replace:
+      "        self.item(id)\n            .is_some_and(|item| false && item.calling.has(ItemFact::TakesLocation))\n",
     tests: ["test/crates.test.ts", "-t", "two crates: track_caller"],
   },
   {
     name: "private-trait-impl-unexported",
-    breaks: "a library's private type's impl its generic code asks a consumer for isn't exported",
+    breaks:
+      "a library's private type's impl its generic code asks a consumer for isn't exported",
     file: "src/lower/library.rs",
     find: "    matches!(tcx.def_kind(id), rustc_hir::def::DefKind::Impl { of_trait: true })\n        || id\n",
     replace: "    id\n",
@@ -116,47 +139,74 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-closure-unreached",
-    breaks: "a library's `impl FnMut` of a value with a destructor, made a crate's `dyn FnMut`, is taken to drop nothing",
+    breaks:
+      "a library's `impl FnMut` of a value with a destructor, made a crate's `dyn FnMut`, is taken to drop nothing",
     file: "src/lower/library.rs",
     find: "            ) => reached.functions |= library(def_id),\n",
     replace: "            ) => {}\n",
-    tests: ["test/cargo-link.test.ts", "-t", "a library gives a crate's dyn Fns a drop only through its own functions"],
+    tests: [
+      "test/cargo-link.test.ts",
+      "-t",
+      "a library gives a crate's dyn Fns a drop only through its own functions",
+    ],
   },
   {
     name: "library-dyn-unreached",
-    breaks: "a `Box<dyn FnMut>` a library's function gives, of its own closure with a destructor, is taken to drop nothing",
+    breaks:
+      "a `Box<dyn FnMut>` a library's function gives, of its own closure with a destructor, is taken to drop nothing",
     file: "src/lower/library.rs",
     find: "                reached.fn_dyns_of.insert(tcx.crate_name(krate).to_string());\n",
     replace: "",
-    tests: ["test/cargo-link.test.ts", "-t", "a library gives a crate's dyn Fns a drop only through its own functions"],
+    tests: [
+      "test/cargo-link.test.ts",
+      "-t",
+      "a library gives a crate's dyn Fns a drop only through its own functions",
+    ],
   },
   {
     name: "library-reached-any",
-    breaks: "a crate using a library of plain items, a `bool`'s, takes each `dyn Fn` to drop and each `Rc` to be counted, and refuses React's scheduler",
+    breaks:
+      "a crate using a library of plain items, a `bool`'s, takes each `dyn Fn` to drop and each `Rc` to be counted, and refuses React's scheduler",
     file: "src/lower/library.rs",
     find: "        let mut reached = Reached::default();\n        if !self.any() {\n            return reached;\n        }\n",
-    replace: "        let mut reached = Reached::default();\n        if self.any() {\n            return Reached { functions: true, fn_dyns_of: self.dependencies.libraries.keys().cloned().collect(), ..Reached::default() };\n        }\n",
-    tests: ["test/cargo-link.test.ts", "-t", "a library gives a crate's dyn Fns a drop only through its own functions"],
+    replace:
+      "        let mut reached = Reached::default();\n        if self.any() {\n            return Reached { functions: true, fn_dyns_of: self.dependencies.libraries.keys().cloned().collect(), ..Reached::default() };\n        }\n",
+    tests: [
+      "test/cargo-link.test.ts",
+      "-t",
+      "a library gives a crate's dyn Fns a drop only through its own functions",
+    ],
   },
   {
     name: "crate-closure-taken-for-the-librarys",
-    breaks: "what a closure of the crate's given to a library's generic binding holds, an `Rc<RefCell<Vec<&dyn Fn(..)>>>`, is taken for a `dyn Fn` the library hands it, so every `dyn Fn` drops and an unrelated `Rc<RefCell<Vec<Rc<dyn Fn()>>>>` is counted, `{ value, strong, weak }` (ADR 0626, amended)",
+    breaks:
+      "what a closure of the crate's given to a library's generic binding holds, an `Rc<RefCell<Vec<&dyn Fn(..)>>>`, is taken for a `dyn Fn` the library hands it, so every `dyn Fn` drops and an unrelated `Rc<RefCell<Vec<Rc<dyn Fn()>>>>` is counted, `{ value, strong, weak }` (ADR 0626, amended)",
     file: "src/lower/library.rs",
     find: "                        && id.is_local()\n",
     replace: "                        && false\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "a crate's closure given to a library's binding hands the crate nothing"],
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "a crate's closure given to a library's binding hands the crate nothing",
+    ],
   },
   {
     name: "library-rc-unreached",
-    breaks: "an `Rc` a library hands a crate isn't counted, though the library counts it",
+    breaks:
+      "an `Rc` a library hands a crate isn't counted, though the library counts it",
     file: "src/lower/library.rs",
     find: "                true => reached.counted_rcs.push(pointee),\n",
     replace: "                true => {}\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: rc_per_type|three crates: rc_generic"],
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "two crates: rc_per_type|three crates: rc_generic",
+    ],
   },
   {
     name: "library-shape-any",
-    breaks: "a library's contract read as counting every type of its `Rc`s, so its consumer counts its context, which it hands as the value itself (ADR 0852)",
+    breaks:
+      "a library's contract read as counting every type of its `Rc`s, so its consumer counts its context, which it hands as the value itself (ADR 0852)",
     file: "src/lower/library.rs",
     find: "        (Some(of), Some((head, args))) => {\n            *of == head_key(tcx, &head)\n",
     replace: "        (Some(of), Some((head, args))) => {\n            true\n",
@@ -164,7 +214,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-rest-unlisted",
-    breaks: "a library's manifest says no function takes rest arguments, so a consumer gives its slice whole",
+    breaks:
+      "a library's manifest says no function takes rest arguments, so a consumer gives its slice whole",
     file: "src/lower/library.rs",
     find: "                    (ItemFact::Rest, super::bindings::takes_rest(tcx, id)),\n",
     replace: "                    (ItemFact::Rest, false),\n",
@@ -172,31 +223,49 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-default-listed-by-name",
-    breaks: "a library's manifest lists a module's default by its name, which a consumer imports and the module doesn't export",
+    breaks:
+      "a library's manifest lists a module's default by its name, which a consumer imports and the module doesn't export",
     file: "src/lower/library.rs",
     find: "                .then(|| super::default_exports::exported_as(tcx, id, info.exported()))\n",
-    replace: "                .then(|| super::default_exports::exported_as(tcx, id, info.exported()))\n                .filter(|exported| exported != \"default\")\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
+    replace:
+      '                .then(|| super::default_exports::exported_as(tcx, id, info.exported()))\n                .filter(|exported| exported != "default")\n',
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "default export is imported as its default",
+    ],
   },
   {
     name: "library-dropping-anys-unsaid",
-    breaks: "a library that resumes an unwind of a guard says it makes no `dyn Any` of what drops, so its consumer's `catch_unwind` never drops the guard it caught",
+    breaks:
+      "a library that resumes an unwind of a guard says it makes no `dyn Any` of what drops, so its consumer's `catch_unwind` never drops the guard it caught",
     file: "src/lower/library.rs",
     find: "        makes_dropping_anys: *makes_dropping_anys,\n",
     replace: "        makes_dropping_anys: false,\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "where the library makes one of what drops"],
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "where the library makes one of what drops",
+    ],
   },
   {
     name: "library-alias-listed-by-name",
-    breaks: "a library's manifest lists an item its module exports as `unstable_now` alone by its name, which a consumer imports and the module doesn't export (ADR 0596, amended)",
+    breaks:
+      "a library's manifest lists an item its module exports as `unstable_now` alone by its name, which a consumer imports and the module doesn't export (ADR 0596, amended)",
     file: "src/lower/library.rs",
     find: "                .then(|| super::default_exports::exported_as(tcx, id, info.exported()))\n",
-    replace: "                .then(|| super::default_exports::exported_as(tcx, id, info.exported()))\n                .filter(|exported| exported == \"default\")\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "a library's item its module exports by another name is imported by that"],
+    replace:
+      '                .then(|| super::default_exports::exported_as(tcx, id, info.exported()))\n                .filter(|exported| exported == "default")\n',
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "a library's item its module exports by another name is imported by that",
+    ],
   },
   {
     name: "contract-ref-cells-unwritten",
-    breaks: "a library's contract says nothing of its `RefCell`s, so its consumer reads its plain field as a `{ value }` (ADR 0863)",
+    breaks:
+      "a library's contract says nothing of its `RefCell`s, so its consumer reads its plain field as a `{ value }` (ADR 0863)",
     file: "src/lower/library.rs",
     find: "        ref_cells: contracts.ref_cells.clone(),\n",
     replace: "        ref_cells: Default::default(),\n",
@@ -204,39 +273,62 @@ export const mutations: Mutation[] = [
   },
   {
     name: "contract-variable-unsaid",
-    breaks: "a library's manifest doesn't say its exported cell is its module's variable, so a consumer reads its `value` (ADR 0270, amended)",
+    breaks:
+      "a library's manifest doesn't say its exported cell is its module's variable, so a consumer reads its `value` (ADR 0270, amended)",
     file: "src/lower/library.rs",
     find: "                    (ItemFact::Variable, variables.contains(&id)),\n",
     replace: "                    (ItemFact::Variable, false),\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a library's exported cell"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a library's exported cell",
+    ],
   },
   {
     name: "library-identities-unlisted",
-    breaks: "a library's contract lists none of its types equal only to themselves, and its consumer refuses a set of one",
+    breaks:
+      "a library's contract lists none of its types equal only to themselves, and its consumer refuses a set of one",
     file: "src/lower/library.rs",
     find: "            let mut keys: Vec<String> = (identities.iter())\n                .filter(|&&id| reachable(tcx, id))\n",
-    replace: "            let mut keys: Vec<String> = (identities.iter())\n                .filter(|_| false)\n",
-    tests: ["test/crates.test.ts", "-t", "equal only to itself keys its consumer"],
+    replace:
+      "            let mut keys: Vec<String> = (identities.iter())\n                .filter(|_| false)\n",
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "equal only to itself keys its consumer",
+    ],
   },
   {
     name: "instance-imported",
-    breaks: "a library's function the crate compiles itself is still the library's item, imported where it's called, `import { createContext }`, so its own is never called (ADR 0914)",
+    breaks:
+      "a library's function the crate compiles itself is still the library's item, imported where it's called, `import { createContext }`, so its own is never called (ADR 0914)",
     file: "src/lower/library.rs",
     find: "        if id.is_local() || self.is_instance(id) || super::recognition::not_compiled_for_build(self.tcx, id) {\n",
-    replace: "        if id.is_local() || super::recognition::not_compiled_for_build(self.tcx, id) {\n",
-    tests: ["test/crates.test.ts", "-t", "Copy bound takes a copy only where one is given"],
+    replace:
+      "        if id.is_local() || super::recognition::not_compiled_for_build(self.tcx, id) {\n",
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "Copy bound takes a copy only where one is given",
+    ],
   },
   {
     name: "library-copy-unlisted",
-    breaks: "a library's contract says none of its functions takes a copy, so its consumer compiles its own `twice`, which its library's takes (ADR 0914)",
+    breaks:
+      "a library's contract says none of its functions takes a copy, so its consumer compiles its own `twice`, which its library's takes (ADR 0914)",
     file: "src/lower/library.rs",
     find: "        param(&mut params, index).marks.insert(ParamFact::Copy);\n",
     replace: "        let _ = (&mut params, index);\n",
-    tests: ["test/crates.test.ts", "-t", "is its program's, alone or a dependency"],
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "is its program's, alone or a dependency",
+    ],
   },
   {
     name: "library-lists-unexported",
-    breaks: "a library's manifest lists what its JS doesn't export, an impl's method, which its consumer then imports (ADR 0914, amended)",
+    breaks:
+      "a library's manifest lists what its JS doesn't export, an impl's method, which its consumer then imports (ADR 0914, amended)",
     file: "src/lower/library.rs",
     find: "            own(tcx, id) && reachable(tcx, id) && exported.contains(&(module_path(tcx, info.module), name.clone()))\n",
     replace: "            own(tcx, id) && reachable(tcx, id)\n",
@@ -244,7 +336,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-impl-not-compiled",
-    breaks: "a library's impl its JS doesn't make, `Key`'s `Hash`, isn't compiled by its consumer, which then has no dictionary to give `hash_of` (ADR 0914, amended)",
+    breaks:
+      "a library's impl its JS doesn't make, `Key`'s `Hash`, isn't compiled by its consumer, which then has no dictionary to give `hash_of` (ADR 0914, amended)",
     file: "src/lower/library.rs",
     find: "                DefKind::Impl { of_trait: true } => own(id),\n",
     replace: "                DefKind::Impl { of_trait: true } => false,\n",
@@ -252,7 +345,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-exported-impl-method-compiled",
-    breaks: "the method of an impl whose dictionary a library exports is compiled by its consumer, not called through the dictionary (ADR 0914, amended)",
+    breaks:
+      "the method of an impl whose dictionary a library exports is compiled by its consumer, not called through the dictionary (ADR 0914, amended)",
     file: "src/lower/library.rs",
     find: "                        Some(imp) => own(imp),\n",
     replace: "                        Some(imp) => self.has_impl(imp),\n",
@@ -260,7 +354,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-dictionary-entry-unseen",
-    breaks: "a library's impl's method its JS reaches only through its exported dictionary is called as one it doesn't export, and refused (ADR 0914, amended)",
+    breaks:
+      "a library's impl's method its JS reaches only through its exported dictionary is called as one it doesn't export, and refused (ADR 0914, amended)",
     file: "src/lower/library.rs",
     find: "        (!id.is_local() && !self.is_instance(id) && self.item(id).is_none() && self.item(imp).is_some()).then_some(imp)\n",
     replace: "        (false && !id.is_local()).then_some(imp)\n",
@@ -268,15 +363,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-fn-dyns-unwritten",
-    breaks: "a library's contract says it makes no `dyn Fn` of what drops, though it does, so its consumer drops the one it's handed as nothing (ADR 0626, amended)",
+    breaks:
+      "a library's contract says it makes no `dyn Fn` of what drops, though it does, so its consumer drops the one it's handed as nothing (ADR 0626, amended)",
     file: "src/lower/library.rs",
     find: "        makes_dropping_fn_dyns: *makes_dropping_fn_dyns,\n",
     replace: "        makes_dropping_fn_dyns: false,\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "a library's dyn Fn of what drops is dropped"],
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "a library's dyn Fn of what drops is dropped",
+    ],
   },
   {
     name: "library-clone-unwritten",
-    breaks: "a library's contract says no export takes a `TClone`, so its consumer gives `dup` none where it takes one (ADR 0914, amended)",
+    breaks:
+      "a library's contract says no export takes a `TClone`, so its consumer gives `dup` none where it takes one (ADR 0914, amended)",
     file: "src/lower/library.rs",
     find: "        param(&mut params, index).marks.insert(ParamFact::Clone);\n",
     replace: "",
@@ -284,15 +385,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cell-shape-dyn-anywhere",
-    breaks: "a library's checked `RefCell<Vec<Rc<dyn Fn()>>>` is taken to be any `RefCell<Vec<Rc<_>>>`, so its consumer's `RefCell<Vec<Rc<Node>>>` is checked, `$borrowMut(siblings, true)` (#374, ADR 0960)",
+    breaks:
+      "a library's checked `RefCell<Vec<Rc<dyn Fn()>>>` is taken to be any `RefCell<Vec<Rc<_>>>`, so its consumer's `RefCell<Vec<Rc<Node>>>` is checked, `$borrowMut(siblings, true)` (#374, ADR 0960)",
     file: "src/lower/library.rs",
     find: "        _ if dyn_shape && unsized_here => true,\n",
     replace: "        _ if dyn_shape => true,\n",
-    tests: ["test/crates.test.ts", "-t", "a library's checked cell of a Vec of dyn Fns"],
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "a library's checked cell of a Vec of dyn Fns",
+    ],
   },
   {
     name: "library-unboxed-unwritten",
-    breaks: "a library's contract says none of its type parameters is unboxed, so a consumer that gives `flush_sync` a `()` calls the export, whose `Some(())` is `undefined` (ADR 0051, amended)",
+    breaks:
+      "a library's contract says none of its type parameters is unboxed, so a consumer that gives `flush_sync` a `()` calls the export, whose `Some(())` is `undefined` (ADR 0051, amended)",
     file: "src/lower/library.rs",
     find: "        param(&mut params, index).marks.insert(ParamFact::Unboxed);\n",
     replace: "",
@@ -300,7 +407,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "package-root-path-unread",
-    breaks: "an item a module names through its library's root, `kids::bump`, is imported by its module's file, where its package's entry re-exports it, `import {Children} from 'react'` (ADR 1008, amended)",
+    breaks:
+      "an item a module names through its library's root, `kids::bump`, is imported by its module's file, where its package's entry re-exports it, `import {Children} from 'react'` (ADR 1008, amended)",
     file: "src/lower/library.rs",
     find: "            Some(by_package) if rooted() => by_package.clone(),\n",
     replace: "            Some(by_package) if false => by_package.clone(),\n",
@@ -308,7 +416,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "package-root-path-of-the-crate",
-    breaks: "an item one module names through its library's root is imported by the package's name in every module, one naming its module's path too, where each module's import follows its own `use` (the user's decision, ADR 1008, amended)",
+    breaks:
+      "an item one module names through its library's root is imported by the package's name in every module, one naming its module's path too, where each module's import follows its own `use` (the user's decision, ADR 1008, amended)",
     file: "src/lower/library.rs",
     find: ".contains(&(module, id))",
     replace: ".iter().any(|&(_, rooted)| rooted == id)",
@@ -316,47 +425,74 @@ export const mutations: Mutation[] = [
   },
   {
     name: "gives-argument-unlisted",
-    breaks: "a library's contract lists none of its functions that give what they're given, so a consumer calls `eventPriorityFromI32_from(p)`",
+    breaks:
+      "a library's contract lists none of its functions that give what they're given, so a consumer calls `eventPriorityFromI32_from(p)`",
     file: "src/lower/library.rs",
     find: "            let mut keys: Vec<String> = (gives_argument.iter())\n",
-    replace: "            let mut keys: Vec<String> = (gives_argument.iter().take(0))\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "transparent struct's From"],
+    replace:
+      "            let mut keys: Vec<String> = (gives_argument.iter().take(0))\n",
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "transparent struct's From",
+    ],
   },
   {
     name: "library-eq-by-address-unlisted",
-    breaks: "a library's contract lists no type whose `PartialEq` alone is `ptr::eq`, so its consumer compiles the library's `updatePartialEq_eq` again and calls it, where `===` is its `==` (ADR 0864, amended)",
+    breaks:
+      "a library's contract lists no type whose `PartialEq` alone is `ptr::eq`, so its consumer compiles the library's `updatePartialEq_eq` again and calls it, where `===` is its `==` (ADR 0864, amended)",
     file: "src/lower/library.rs",
     find: "            let mut keys: Vec<String> = (eq_by_address.iter())\n",
-    replace: "            let mut keys: Vec<String> = (eq_by_address.iter().take(0))\n",
+    replace:
+      "            let mut keys: Vec<String> = (eq_by_address.iter().take(0))\n",
     tests: ["test/crates.test.ts", "-t", "never \\$eq"],
   },
   {
     name: "export-named-apart-contract-apart",
-    breaks: "another crate imports an export named apart by its module's name for it, `delete$`, which its JS doesn't export (#338)",
+    breaks:
+      "another crate imports an export named apart by its module's name for it, `delete$`, which its JS doesn't export (#338)",
     file: "src/lower/library.rs",
     find: "                .then(|| super::default_exports::exported_as(tcx, id, info.exported()))\n",
-    replace: "                .then(|| super::default_exports::exported_as(tcx, id, &info.name))\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "an export its module names apart is exported by its own name"],
+    replace:
+      "                .then(|| super::default_exports::exported_as(tcx, id, &info.name))\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "an export its module names apart is exported by its own name",
+    ],
   },
   {
     name: "library-built-unwritten",
-    breaks: "a library's contract leaves out the structs its code makes, so its consumer takes the reconciler's fiber, which React DOM casts a node's key to, for JS's, `const old = fiber.return;` (rd221)",
+    breaks:
+      "a library's contract leaves out the structs its code makes, so its consumer takes the reconciler's fiber, which React DOM casts a node's key to, for JS's, `const old = fiber.return;` (rd221)",
     file: "src/lower/library.rs",
     find: "            let mut keys: Vec<String> = built.iter().map(|&id| key(tcx, id)).collect();\n",
-    replace: "            let mut keys: Vec<String> = built.iter().take(0).map(|&id| key(tcx, id)).collect();\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "a struct a library builds is the program's own data"],
+    replace:
+      "            let mut keys: Vec<String> = built.iter().take(0).map(|&id| key(tcx, id)).collect();\n",
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "a struct a library builds is the program's own data",
+    ],
   },
   {
     name: "library-built-unread",
-    breaks: "a consumer reads no library's structs it makes, taking the reconciler's fiber for JS's (rd221)",
+    breaks:
+      "a consumer reads no library's structs it makes, taking the reconciler's fiber for JS's (rd221)",
     file: "src/lower/library.rs",
     find: "        (self.dependencies.libraries.values()).any(|library| library.built.contains(&key))\n",
-    replace: "        (self.dependencies.libraries.values()).any(|library| library.built.contains(&key) && false)\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "a struct a library builds is the program's own data"],
+    replace:
+      "        (self.dependencies.libraries.values()).any(|library| library.built.contains(&key) && false)\n",
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "a struct a library builds is the program's own data",
+    ],
   },
   {
     name: "std-keyed-by-hash",
-    breaks: "std's items are keyed by their `DefPathHash`, which a program's session, on the shipped std, finds none of in `@rust-js/std` built of a `core` built to unwind (#424)",
+    breaks:
+      "std's items are keyed by their `DefPathHash`, which a program's session, on the shipped std, finds none of in `@rust-js/std` built of a `core` built to unwind (#424)",
     file: "src/lower/library.rs",
     find: "    match super::recognition::is_std_crate(tcx, id) {",
     replace: "    match false && super::recognition::is_std_crate(tcx, id) {",

@@ -903,6 +903,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             | classes::Member::Method
                             | classes::Member::Getter
                             | classes::Member::Own
+                            | classes::Member::Namespace
                     )
                 )
                 || self.converts_arguments(def_id, args, span)?

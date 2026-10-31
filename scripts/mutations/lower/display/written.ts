@@ -6,9 +6,9 @@ export const mutations: Mutation[] = [
     name: "debug-non-exhaustive-closed",
     breaks: "`finish_non_exhaustive()` leaves out its `..`",
     file: "src/lower/display/written.rs",
-    find: "        let rest = non_exhaustive.then_some(\"..\");",
+    find: '        let rest = non_exhaustive.then_some("..");',
     replace: "        let rest = None::<&str>;",
-    tests: ["test/corpus.test.ts","-t","std_methods"],
+    tests: ["test/corpus.test.ts", "-t", "std_methods"],
   },
   {
     name: "debug-entries-empty-comma",
@@ -16,23 +16,25 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/written.rs",
     find: "            if parts.iter().all(|p| matches!(p, Part::One(_))) {",
     replace: "            if true {",
-    tests: ["test/corpus.test.ts","-t","std_methods"],
+    tests: ["test/corpus.test.ts", "-t", "std_methods"],
   },
   {
     name: "debug-dyn-twice",
     breaks: "a builder's `&dyn Debug` field is shown twice, quoted twice",
     file: "src/lower/display/written.rs",
     find: "                true => Ok(value),",
-    replace: "                true => this.debug_string(value, this.tcx.types.str_, span),",
-    tests: ["test/corpus.test.ts","-t","std_methods"],
+    replace:
+      "                true => this.debug_string(value, this.tcx.types.str_, span),",
+    tests: ["test/corpus.test.ts", "-t", "std_methods"],
   },
   {
     name: "delegated-debug-plain",
     breaks: "`self.0.fmt(f)` in a pretty `fmt` shows its value plain",
     file: "src/lower/display/written.rs",
     find: "                self.debug_string_with(values.remove(0), ty, span, &pretty)?",
-    replace: "                self.debug_string_with(values.remove(0), ty, span, &Pretty::Plain)?",
-    tests: ["test/corpus.test.ts","-t","pretty_debug"],
+    replace:
+      "                self.debug_string_with(values.remove(0), ty, span, &Pretty::Plain)?",
+    tests: ["test/corpus.test.ts", "-t", "pretty_debug"],
   },
   {
     name: "pretty-non-exhaustive-comma",
@@ -40,19 +42,21 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/written.rs",
     find: "                if non_exhaustive {\n                    list.push(Expr::bool(true));\n                }",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","pretty_debug"],
+    tests: ["test/corpus.test.ts", "-t", "pretty_debug"],
   },
   {
     name: "dyn-options-dropped",
     breaks: "a `dyn Display` given a width shows its value unpadded",
     file: "src/lower/display/written.rs",
     find: "        let options = self.options_arg(pretty);\n        if let Some(shown) = self.dyn_written(",
-    replace: "        let options = None;\n        if let Some(shown) = self.dyn_written(",
+    replace:
+      "        let options = None;\n        if let Some(shown) = self.dyn_written(",
     tests: ["test/corpus.test.ts", "-t", "options_handed_on"],
   },
   {
     name: "pad-unpadded",
-    breaks: "`f.pad(s)` writes `s` as it is, where a placeholder's width pads it",
+    breaks:
+      "`f.pad(s)` writes `s` as it is, where a placeholder's width pads it",
     file: "src/lower/display/written.rs",
     find: "                self.formatted(text.clone(), (Std::FmtDisplay, str_ty), &pretty)\n                    .unwrap_or(text)",
     replace: "                text",
@@ -60,55 +64,64 @@ export const mutations: Mutation[] = [
   },
   {
     name: "std-radix-call-refused",
-    breaks: "`LowerHex::fmt(&self.0, f)` of a number, bitflags' macro's, is an error",
+    breaks:
+      "`LowerHex::fmt(&self.0, f)` of a number, bitflags' macro's, is an error",
     file: "src/lower/display/written.rs",
     find: "                } else if let Some((num, radix)) = std_radix {",
-    replace: "                } else if let Some((num, radix)) = std_radix.filter(|_| false) {",
-    tests: ["test/corpus.test.ts","-t","user_fmt_traits"],
+    replace:
+      "                } else if let Some((num, radix)) = std_radix.filter(|_| false) {",
+    tests: ["test/corpus.test.ts", "-t", "user_fmt_traits"],
   },
   {
     name: "format-arguments-display-refused",
-    breaks: "`Display::fmt(&format_args!(..), f)`, strum's derive's, is an error",
+    breaks:
+      "`Display::fmt(&format_args!(..), f)`, strum's derive's, is an error",
     file: "src/lower/display/written.rs",
     find: "        if self.is_lang_adt(ty, LangItem::FormatArguments) {",
-    replace: "        if false && self.is_lang_adt(ty, LangItem::FormatArguments) {",
-    tests: ["test/corpus.test.ts","-t","user_fmt_traits"],
+    replace:
+      "        if false && self.is_lang_adt(ty, LangItem::FormatArguments) {",
+    tests: ["test/corpus.test.ts", "-t", "user_fmt_traits"],
   },
   {
     name: "rc-debug-box",
     breaks: "`{:?}` of a counted `Rc` shows its counts",
     file: "src/lower/display/written.rs",
     find: "        let (value, ty) = self.shown_through(value, ty);\n        let ty = self.shown_type(ty);\n",
-    replace: "        let (value, ty) = self.through_refs(value, ty);\n        let ty = self.shown_type(ty);\n",
+    replace:
+      "        let (value, ty) = self.through_refs(value, ty);\n        let ty = self.shown_type(ty);\n",
     tests: ["test/corpus.test.ts", "-t", "rc_counts"],
   },
   {
     name: "try-lock-error-display",
     breaks: "a `TryLockError` shows as poisoned",
     file: "src/lower/display/written.rs",
-    find: "                Expr::str(\"try_lock failed because the operation would block\"),",
-    replace: "                Expr::str(\"poisoned lock: another task failed inside\"),",
-    tests: ["test/corpus.test.ts","-t","try_lock"],
+    find: '                Expr::str("try_lock failed because the operation would block"),',
+    replace:
+      '                Expr::str("poisoned lock: another task failed inside"),',
+    tests: ["test/corpus.test.ts", "-t", "try_lock"],
   },
   {
     name: "var-error-display-as-debug",
-    breaks: "a `VarError`'s `{}` is its `{:?}`, `NotPresent`, not \"environment variable not found\"",
+    breaks:
+      'a `VarError`\'s `{}` is its `{:?}`, `NotPresent`, not "environment variable not found"',
     file: "src/lower/display/written.rs",
-    find: "                \"environment variable not found\",\n",
-    replace: "                \"NotPresent\",\n",
+    find: '                "environment variable not found",\n',
+    replace: '                "NotPresent",\n',
     tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
   },
   {
     name: "strip-prefix-error-shown-as-debug",
-    breaks: "`{}` of a `StripPrefixError` is its `{:?}`, where std shows `prefix not found`",
+    breaks:
+      "`{}` of a `StripPrefixError` is its `{:?}`, where std shows `prefix not found`",
     file: "src/lower/display/written.rs",
-    find: "            return Ok(Expr::str(\"prefix not found\"));\n",
-    replace: "            return Ok(Expr::str(\"StripPrefixError(())\"));\n",
+    find: '            return Ok(Expr::str("prefix not found"));\n',
+    replace: '            return Ok(Expr::str("StripPrefixError(())"));\n',
     tests: ["test/corpus.test.ts", "-t", "^path_methods.rs$"],
   },
   {
     name: "dyn-to-string-unshown",
-    breaks: "`to_string()` of a `dyn ToString` is a `{}` of it, which it has none of",
+    breaks:
+      "`to_string()` of a `dyn ToString` is a `{}` of it, which it has none of",
     file: "src/lower/display/written.rs",
     find: "        if self.dynamic_trait(ty) == self.to_string_trait() && self.to_string_trait().is_some() {\n",
     replace: "        if false {\n",
@@ -118,24 +131,27 @@ export const mutations: Mutation[] = [
     name: "system-time-error-message",
     breaks: "a `SystemTimeError`'s `Display` isn't std's message",
     file: "src/lower/display/written.rs",
-    find: "Ok(Expr::str(\"second time provided was later than self\"))",
-    replace: "Ok(Expr::str(\"later\"))",
+    find: 'Ok(Expr::str("second time provided was later than self"))',
+    replace: 'Ok(Expr::str("later"))',
     tests: ["test/corpus.test.ts", "-t", "^clock.rs$"],
   },
   {
     name: "pad-integral-unsigned",
-    breaks: "`f.pad_integral(false, ..)` of a negative number, without options, writes no `-`",
+    breaks:
+      "`f.pad_integral(false, ..)` of a negative number, without options, writes no `-`",
     file: "src/lower/display/written.rs",
-    find: "                        let sign = Expr::cond(non_negative, Expr::str(\"\"), Expr::str(\"-\"));\n",
-    replace: "                        let sign = Expr::str(\"\");\n",
+    find: '                        let sign = Expr::cond(non_negative, Expr::str(""), Expr::str("-"));\n',
+    replace: '                        let sign = Expr::str("");\n',
     tests: ["test/corpus.test.ts", "-t", "^pad_integral_plain.rs$"],
   },
   {
     name: "case-mapping-rest-joined",
-    breaks: "`{}` of a case mapping stepped joins the iterator, `upper.join(\"\")`, which has no `join`",
+    breaks:
+      '`{}` of a case mapping stepped joins the iterator, `upper.join("")`, which has no `join`',
     file: "src/lower/display/written.rs",
-    find: "                false => Expr::call(Expr::helper(\"$restStr\"), vec![value]),\n",
-    replace: "                false => Expr::call(Expr::member(value, \"join\"), vec![Expr::str(\"\")]),\n",
+    find: '                false => Expr::call(Expr::helper("$restStr"), vec![value]),\n',
+    replace:
+      '                false => Expr::call(Expr::member(value, "join"), vec![Expr::str("")]),\n',
     tests: ["test/corpus.test.ts", "-t", "^writer_callables.rs$"],
   },
   {
@@ -143,22 +159,25 @@ export const mutations: Mutation[] = [
     breaks: "`LowerExp::fmt(&self.0, f)` of a number is refused",
     file: "src/lower/display/written.rs",
     find: "                let std_exp = (!self.has_user_impl(trait_id, ty))\n                    .then(|| Num::of(ty).zip(self.exp_trait(trait_id)))\n",
-    replace: "                let std_exp = (!self.has_user_impl(trait_id, ty))\n                    .then(|| Num::of(ty).zip(self.exp_trait(trait_id).filter(|_| false)))\n",
+    replace:
+      "                let std_exp = (!self.has_user_impl(trait_id, ty))\n                    .then(|| Num::of(ty).zip(self.exp_trait(trait_id).filter(|_| false)))\n",
     tests: ["test/corpus.test.ts", "-t", "^exp_forwarded.rs$"],
   },
   {
     name: "number-exp-call-unpadded",
-    breaks: "a number's `{:e}` given a width through its type's `LowerExp` isn't padded",
+    breaks:
+      "a number's `{:e}` given a width through its type's `LowerExp` isn't padded",
     file: "src/lower/display/written.rs",
-    find: "                            Expr::call(\n                                Expr::helper(\"$formatted\"),\n                                vec![text, options.clone(), Expr::bool(true)],\n                            )\n",
+    find: '                            Expr::call(\n                                Expr::helper("$formatted"),\n                                vec![text, options.clone(), Expr::bool(true)],\n                            )\n',
     replace: "                            text\n",
     tests: ["test/corpus.test.ts", "-t", "^exp_forwarded.rs$"],
   },
   {
     name: "number-exp-call-precision-dropped",
-    breaks: "`{:.1e}` of a type whose `LowerExp` gives its number's prints every digit",
+    breaks:
+      "`{:.1e}` of a type whose `LowerExp` gives its number's prints every digit",
     file: "src/lower/display/written.rs",
-    find: "                            let precision = Expr::optional_member(options.clone(), \"precision\");\n",
+    find: '                            let precision = Expr::optional_member(options.clone(), "precision");\n',
     replace: "                            let precision = Expr::undefined();\n",
     tests: ["test/corpus.test.ts", "-t", "^exp_precision.rs$"],
   },
@@ -172,7 +191,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "debug-entries-raw",
-    breaks: "a `Debug` builder's `entries` of an `Option` or a range shows nothing",
+    breaks:
+      "a `Debug` builder's `entries` of an `Option` or a range shows nothing",
     file: "src/lower/display/written.rs",
     find: "                let items = self.iterable_items(items, iterable, span, out)?;\n",
     replace: "",
@@ -180,7 +200,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dyn-to-string-of-read-pair-refused",
-    breaks: "`to_string()` of a struct's `dyn ToString` last field is refused as made where it's shown",
+    breaks:
+      "`to_string()` of a struct's `dyn ToString` last field is refused as made where it's shown",
     file: "src/lower/display/written.rs",
     find: "            if !value.parts_read_same() {\n",
     replace: "            if !value.reads_same() {\n",
@@ -206,13 +227,14 @@ export const mutations: Mutation[] = [
     name: "fmt-error-display-lost",
     breaks: "fmt::Error displays std's text",
     file: "src/lower/display/written.rs",
-    find: "return Ok(Expr::str(\"an error occurred when formatting an argument\"));",
-    replace: "return Ok(Expr::str(\"an error\"));",
+    find: 'return Ok(Expr::str("an error occurred when formatting an argument"));',
+    replace: 'return Ok(Expr::str("an error"));',
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
   },
   {
     name: "shown-displayed-as-itself",
-    breaks: "`js::shown(n).to_string()`, and a `T: Display` given it, is `n`, a number, not its text, `${n}`",
+    breaks:
+      "`js::shown(n).to_string()`, and a `T: Display` given it, is `n`, a number, not its text, `${n}`",
     file: "src/lower/display/written.rs",
     find: "            return Ok(shown_text(value));\n",
     replace: "            return Ok(value);\n",
@@ -220,7 +242,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "whole-display-unknown",
-    breaks: "`{}` of a WebIDL integer is `$displayF64(response.status)`, not JS's text of it",
+    breaks:
+      "`{}` of a WebIDL integer is `$displayF64(response.status)`, not JS's text of it",
     file: "src/lower/display/written.rs",
     find: "        let whole = Num::of(ty) == Some(Num::F64) && value.facts.has(js::Known::Whole);\n",
     replace: "        let whole = false;\n",
@@ -228,7 +251,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "whole-display-any-float",
-    breaks: "`{}` of any `f64` is JS's text of it, `${response.status / 8}`, where Rust's is `50.5`... and `1e21`'s isn't",
+    breaks:
+      "`{}` of any `f64` is JS's text of it, `${response.status / 8}`, where Rust's is `50.5`... and `1e21`'s isn't",
     file: "src/lower/display/written.rs",
     find: "        let whole = Num::of(ty) == Some(Num::F64) && value.facts.has(js::Known::Whole);\n",
     replace: "        let whole = Num::of(ty) == Some(Num::F64);\n",

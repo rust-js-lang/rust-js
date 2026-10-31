@@ -4,23 +4,34 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "any-pair-of-a-conditional-kept",
-    breaks: "a `map` of an `Option` to a `&dyn Any` given to a binding is the pair it made, `o != null ? { value: o, impl } : null`, so JS gets `{value, impl}` (rd170)",
+    breaks:
+      "a `map` of an `Option` to a `&dyn Any` given to a binding is the pair it made, `o != null ? { value: o, impl } : null`, so JS gets `{value, impl}` (rd170)",
     file: "src/lower/std_types/any.rs",
     find: "                    Some(Expr::cond((**test).clone(), then, otherwise))\n",
     replace: "                    None\n",
-    tests: ["test/corpus.test.ts", "-t", "^any_given_to_a_nullable_parameter.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^any_given_to_a_nullable_parameter.rs$",
+    ],
   },
   {
     name: "any-none-null-read",
-    breaks: "a `None` given as `null` to a binding's `Option<&dyn Any>` is read for its value, `null?.value`, `undefined` (rd170)",
+    breaks:
+      "a `None` given as `null` to a binding's `Option<&dyn Any>` is read for its value, `null?.value`, `undefined` (rd170)",
     file: "src/lower/std_types/any.rs",
     find: "                js::ExprKind::Undefined | js::ExprKind::Null => value,\n",
     replace: "                js::ExprKind::Undefined => value,\n",
-    tests: ["test/corpus.test.ts", "-t", "^any_given_to_a_nullable_parameter.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^any_given_to_a_nullable_parameter.rs$",
+    ],
   },
   {
     name: "js-error-downcast-of-panic-unseen",
-    breaks: "a downcast to `&JsError` of a `dyn Any` an unwind's payload was widened to finds none",
+    breaks:
+      "a downcast to `&JsError` of a `dyn Any` an unwind's payload was widened to finds none",
     file: "src/lower/std_types/any.rs",
     find: "        if thrown && op != AnyOp::DowncastMut {\n",
     replace: "        if false && thrown && op != AnyOp::DowncastMut {\n",
@@ -28,7 +39,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "js-error-is-of-panic-unseen",
-    breaks: "`is::<&JsError>()` of a `dyn Any` an unwind's payload was widened to is `false`, where its downcast finds it",
+    breaks:
+      "`is::<&JsError>()` of a `dyn Any` an unwind's payload was widened to is `false`, where its downcast finds it",
     file: "src/lower/std_types/any.rs",
     find: "                AnyOp::Is => Expr::bin(Op::Or, is, panicked),\n",
     replace: "                AnyOp::Is => is,\n",
@@ -36,7 +48,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "js-error-box-downcast-of-panic-unseen",
-    breaks: "`Box::downcast::<&JsError>()` of a `dyn Any` an unwind's payload was widened to is its `Err`, where its `downcast_ref` finds it",
+    breaks:
+      "`Box::downcast::<&JsError>()` of a `dyn Any` an unwind's payload was widened to is its `Err`, where its `downcast_ref` finds it",
     file: "src/lower/std_types/any.rs",
     find: "                    Expr::cond(panicked, result::ok(error), result::err(pair)),\n",
     replace: "                    result::err(pair),\n",
@@ -44,7 +57,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "downcast-ref-unboxed",
-    breaks: "`downcast_ref::<Option<u16>>()` of a `None`-looking value isn't boxed",
+    breaks:
+      "`downcast_ref::<Option<u16>>()` of a `None`-looking value isn't boxed",
     file: "src/lower/std_types/any.rs",
     find: "                let some = if self.boxed_payload(of) {",
     replace: "                let some = if false {",
@@ -63,7 +77,8 @@ export const mutations: Mutation[] = [
     breaks: "a failed `downcast` gives the value, not the `Box<dyn Any>`",
     file: "src/lower/std_types/any.rs",
     find: "                Expr::cond(is, result::ok(found), result::err(pair))\n",
-    replace: "                Expr::cond(is, result::ok(found), result::err(Expr::held(pair)))\n",
+    replace:
+      "                Expr::cond(is, result::ok(found), result::err(Expr::held(pair)))\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
   },
   {
@@ -85,7 +100,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "higher-ranked-by-name",
-    breaks: "`dyn for<'a> T<'a, 'a>` and `.. T<'a, 'static>` share a `TypeId`, their name",
+    breaks:
+      "`dyn for<'a> T<'a, 'a>` and `.. T<'a, 'static>` share a `TypeId`, their name",
     file: "src/lower/std_types/any.rs",
     find: "                ty::FnPtr(..) | ty::Dynamic(..) => true,\n",
     replace: "",
@@ -101,7 +117,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "marker-dyn-given-as-pair",
-    breaks: "a union's `&dyn IntoX` given to JS is its pair, `{ value: q, impl }`, not its value",
+    breaks:
+      "a union's `&dyn IntoX` given to JS is its pair, `{ value: q, impl }`, not its value",
     file: "src/lower/std_types/any.rs",
     find: "        marker || self.recognition().is_dyn_any(ty)\n",
     replace: "        self.recognition().is_dyn_any(ty)\n",
@@ -109,7 +126,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "optional-marker-dyn-given-as-pair",
-    breaks: "an `Option<&dyn IntoX>` passed on to JS is its pair, not its value",
+    breaks:
+      "an `Option<&dyn IntoX>` passed on to JS is its pair, not its value",
     file: "src/lower/std_types/any.rs",
     find: "                _ => made(&value).unwrap_or_else(|| Expr::optional_member(value, js::HELD)),\n",
     replace: "                _ => made(&value).unwrap_or(value),\n",
@@ -125,23 +143,31 @@ export const mutations: Mutation[] = [
   },
   {
     name: "panic-message-not-a-string",
-    breaks: "a panic's message isn't a `String`, so `downcast::<String>()` of a formatted panic's payload fails",
+    breaks:
+      "a panic's message isn't a `String`, so `downcast::<String>()` of a formatted panic's payload fails",
     file: "src/lower/std_types/any.rs",
     find: "        let is = match self.is_lang_adt(of, rustc_hir::attrs::lang_items::LangItem::String) {\n",
     replace: "        let is = match false {\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "a payload is a panic's message"],
+    tests: [
+      "test/lowering-unwinds.test.ts",
+      "-t",
+      "a payload is a panic's message",
+    ],
   },
   {
     name: "thrown-of-any-send-unseen",
-    breaks: "a downcast of an unwind's payload to `&JsError` tests its type, so its `catch` isn't of what was thrown",
+    breaks:
+      "a downcast of an unwind's payload to `&JsError` tests its type, so its `catch` isn't of what was thrown",
     file: "src/lower/std_types/any.rs",
     find: "        if op != AnyOp::DowncastMut && self.finds_thrown(self.pointee_of(any), of) {\n",
-    replace: "        if false && op != AnyOp::DowncastMut && self.finds_thrown(self.pointee_of(any), of) {\n",
+    replace:
+      "        if false && op != AnyOp::DowncastMut && self.finds_thrown(self.pointee_of(any), of) {\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
   },
   {
     name: "thrown-is-false",
-    breaks: "`is::<&JsError>()` of an unwind's payload is `false`, where its downcast finds what was thrown",
+    breaks:
+      "`is::<&JsError>()` of an unwind's payload is `false`, where its downcast finds what was thrown",
     file: "src/lower/std_types/any.rs",
     find: "                AnyOp::Is => Expr::bool(true),\n",
     replace: "                AnyOp::Is => Expr::bool(false),\n",
@@ -157,7 +183,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "thrown-of-any-dyn",
-    breaks: "a `dyn Any`'s `&JsError` is what was thrown, so one of the program's own isn't found",
+    breaks:
+      "a `dyn Any`'s `&JsError` is what was thrown, so one of the program's own isn't found",
     file: "src/lower/std_types/any.rs",
     find: "            && self.recognition().is_dyn_any_send(any)\n",
     replace: "            && self.recognition().is_dyn_any(any)\n",

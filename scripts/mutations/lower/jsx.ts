@@ -4,47 +4,70 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "base-prop-read-after-children",
-    breaks: "a prop `{..base}` gives after children that change it, `n={base.n}` of `{bump(&mut base)}`, is read before them, as JSX's attributes are",
+    breaks:
+      "a prop `{..base}` gives after children that change it, `n={base.n}` of `{bump(&mut base)}`, is read before them, as JSX's attributes are",
     file: "src/lower/jsx.rs",
     find: "                    || children.has_effects() && !value.is_constant() && !self.reads_unchanging(value, out)\n",
     replace: "",
-    tests: ["test/jsx-props.test.ts", "-t", "children that change the base first"],
+    tests: [
+      "test/jsx-props.test.ts",
+      "-t",
+      "children that change the base first",
+    ],
   },
   {
     name: "jsx-flattened-attrs-by-place",
-    breaks: "a flattened struct's attributes are found by their place in its object, which lists them as written, so a field written before the flattened one is spread",
+    breaks:
+      "a flattened struct's attributes are found by their place in its object, which lists them as written, so a field written before the flattened one is spread",
     file: "src/lower/jsx.rs",
     find: "        for prop in props {\n            match prop {\n                Prop::Field(name, value) if let Some(i) = flattened(&name) => {\n",
-    replace: "        for (i, prop) in props.into_iter().enumerate() {\n            match prop {\n                Prop::Field(_, value) if { let _ = &flattened; super::bindings::is_flatten_field(self.tcx, ty, i) } => {\n",
-    tests: ["test/jsx-props.test.ts", "-t", "flattened props with a field of them set"],
+    replace:
+      "        for (i, prop) in props.into_iter().enumerate() {\n            match prop {\n                Prop::Field(_, value) if { let _ = &flattened; super::bindings::is_flatten_field(self.tcx, ty, i) } => {\n",
+    tests: [
+      "test/jsx-props.test.ts",
+      "-t",
+      "flattened props with a field of them set",
+    ],
   },
   {
     name: "undefined-children-written",
-    breaks: "\`<Frame {..Default::default()} />\` is \`<Frame>{undefined}</Frame>\`",
+    breaks:
+      "\`<Frame {..Default::default()} />\` is \`<Frame>{undefined}</Frame>\`",
     file: "src/lower/jsx.rs",
-    find: "                Prop::Field(name, value) if name == \"children\" && matches!(value.kind, js::ExprKind::Undefined) => {}",
-    replace: "                Prop::Field(name, value) if name == \"children\" && false && matches!(value.kind, js::ExprKind::Undefined) => {}",
-    tests: ["test/jsx-props.test.ts", "-t", "named props and the rest from a base"],
+    find: '                Prop::Field(name, value) if name == "children" && matches!(value.kind, js::ExprKind::Undefined) => {}',
+    replace:
+      '                Prop::Field(name, value) if name == "children" && false && matches!(value.kind, js::ExprKind::Undefined) => {}',
+    tests: [
+      "test/jsx-props.test.ts",
+      "-t",
+      "named props and the rest from a base",
+    ],
   },
   {
     name: "rest-field-not-spread",
     breaks: "a `Rest` a component passes on is a `rest` prop, not `{...rest}`",
     file: "src/lower/jsx.rs",
     find: "                _ => vec![Prop::Spread(value)],",
-    replace: "                _ => vec![Prop::Field(\"rest\".into(), value)],",
+    replace: '                _ => vec![Prop::Field("rest".into(), value)],',
     tests: ["test/jsx-props.test.ts", "-t", "doesn't name as ...rest"],
   },
   {
     name: "component-props-unplaced",
-    breaks: "a component's prop MIR's value says no place of is given none, so a `key` written after it goes before it",
+    breaks:
+      "a component's prop MIR's value says no place of is given none, so a `key` written after it goes before it",
     file: "src/lower/jsx.rs",
     find: "                        value.span = self.js_span(self.frame.thir[f.expr].span);\n",
     replace: "",
-    tests: ["test/jsx-evaluation-order.test.ts", "-t", "a shared capture of a let reads alike, past an element.s key"],
+    tests: [
+      "test/jsx-evaluation-order.test.ts",
+      "-t",
+      "a shared capture of a let reads alike, past an element.s key",
+    ],
   },
   {
     name: "props-read-before-constant-base",
-    breaks: "a component's props are read into `const`s before its children where only a base's constant comes after them",
+    breaks:
+      "a component's props are read into `const`s before its children where only a base's constant comes after them",
     file: "src/lower/jsx.rs",
     find: "                value.has_effects() && !self.reads_unchanging(children, out)\n",
     replace: "                true\n",
@@ -52,23 +75,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "flattened-literal-spread",
-    breaks: "a flattened struct made in JSX is spread, `{...{ href: \"/learn\" }}`, not its fields as attributes",
+    breaks:
+      'a flattened struct made in JSX is spread, `{...{ href: "/learn" }}`, not its fields as attributes',
     file: "src/lower/jsx.rs",
     find: "        let js::ExprKind::Object(props, ..) = value.kind else {\n",
-    replace: "        if matches!(value.kind, js::ExprKind::Object(..)) {\n            return Ok(vec![Prop::Spread(value)]);\n        }\n        let js::ExprKind::Object(props, ..) = value.kind else {\n",
+    replace:
+      "        if matches!(value.kind, js::ExprKind::Object(..)) {\n            return Ok(vec![Prop::Spread(value)]);\n        }\n        let js::ExprKind::Object(props, ..) = value.kind else {\n",
     tests: ["test/jsx-props.test.ts", "-t", "flattened struct"],
   },
   {
     name: "flattened-chain-not-inlined",
-    breaks: "a flattened struct's own flattened field is a prop, `html={..}`, not its fields",
+    breaks:
+      "a flattened struct's own flattened field is a prop, `html={..}`, not its fields",
     file: "src/lower/jsx.rs",
     find: "                    for attr in self.flattened_attrs(types[i].1, value, &shadowing, span)? {",
-    replace: "                    attrs.push(Prop::Field(types[i].0.clone(), value));\n                    for attr in Vec::<Prop>::new() {",
+    replace:
+      "                    attrs.push(Prop::Field(types[i].0.clone(), value));\n                    for attr in Vec::<Prop>::new() {",
     tests: ["test/jsx-props.test.ts", "-t", "chain of flattened"],
   },
   {
     name: "shadowed-name-given-silently",
-    breaks: "a Rust caller's `href` of flattened props the props have too is dropped, not refused",
+    breaks:
+      "a Rust caller's `href` of flattened props the props have too is dropped, not refused",
     file: "src/lower/jsx.rs",
     find: "                    if !matches!(value.kind, js::ExprKind::Undefined) {",
     replace: "                    if false {",
@@ -76,7 +104,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "props-in-companion-order",
-    breaks: "a component's props are in its struct's order, not as they're written",
+    breaks:
+      "a component's props are in its struct's order, not as they're written",
     file: "src/lower/jsx.rs",
     find: "        let sorted = order(&attrs);",
     replace: "        let sorted: Vec<usize> = (0..attrs.len()).collect();",
@@ -84,7 +113,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "reordered-effects-not-read-first",
-    breaks: "props that do something, reordered as written, are made in that order, not Rust's",
+    breaks:
+      "props that do something, reordered as written, are made in that order, not Rust's",
     file: "src/lower/jsx.rs",
     find: "            if attrs.iter().filter(|attr| effects(attr)).count() > 1 {",
     replace: "            if false {",
@@ -92,103 +122,161 @@ export const mutations: Mutation[] = [
   },
   {
     name: "prop-written-in-macro",
-    breaks: "a prop made by a macro, `vec![..]`, is placed by where that macro is defined",
+    breaks:
+      "a prop made by a macro, `vec![..]`, is placed by where that macro is defined",
     file: "src/lower/jsx.rs",
     find: "                .or_insert(self.frame.thir[field.expr].span.source_callsite().lo());",
-    replace: "                .or_insert(self.frame.thir[field.expr].span.lo());",
+    replace:
+      "                .or_insert(self.frame.thir[field.expr].span.lo());",
     tests: ["test/jsx-props.test.ts", "-t", "no dictionary"],
   },
   {
     name: "jsx-null-test-captured",
-    breaks: "an element shown where a number's `Option` is there, `height != null && ..`, has its test in a `const condition` before the JSX",
+    breaks:
+      "an element shown where a number's `Option` is there, `height != null && ..`, has its test in a `const condition` before the JSX",
     file: "src/lower/jsx.rs",
     find: "            js::ExprKind::Binary(..) if let Some(a) = js::null_test(value, true).or(js::null_test(value, false)) => {\n                self.reads_alike(a, out)\n            }\n",
     replace: "",
-    tests: ["test/lowering-option-truth.test.ts", "-t", "JSX tests a number's Option against null in place"],
+    tests: [
+      "test/lowering-option-truth.test.ts",
+      "-t",
+      "JSX tests a number's Option against null in place",
+    ],
   },
   {
     name: "tag-as-children",
-    breaks: "`react::tag(Comp)` is read as a DOM element taking `Comp` as children",
+    breaks:
+      "`react::tag(Comp)` is read as a DOM element taking `Comp` as children",
     file: "src/lower/jsx.rs",
-    find: "            (\"$\", 1) => match args.next().expect(\"one\") {\n",
-    replace: "            (\"$$\", 1) => match args.next().expect(\"one\") {\n",
+    find: '            ("$", 1) => match args.next().expect("one") {\n',
+    replace: '            ("$$", 1) => match args.next().expect("one") {\n',
     tests: ["test/jsx-types.test.ts", "-t", "tag that.s a value"],
   },
   {
     name: "unchanging-children-read-first",
-    breaks: "a component's children that read only a state's value, declared first, make every prop a `const` before the JSX, beside a computed `className`",
+    breaks:
+      "a component's children that read only a state's value, declared first, make every prop a `const` before the JSX, beside a computed `className`",
     file: "src/lower/jsx.rs",
     find: "                value.has_effects() && !self.reads_unchanging(children, out)\n",
     replace: "                value.has_effects()\n",
-    tests: ["test/jsx-props.test.ts", "-t", "flattened props where they're written, none given left out"],
+    tests: [
+      "test/jsx-props.test.ts",
+      "-t",
+      "flattened props where they're written, none given left out",
+    ],
   },
   {
     name: "field-read-hoisted",
-    breaks: "a field of a plain Rust value nothing writes again is read into a `const` before a later child's statement, `const width = p.size === \"S\" ? ..`, where it stays in place",
+    breaks:
+      'a field of a plain Rust value nothing writes again is read into a `const` before a later child\'s statement, `const width = p.size === "S" ? ..`, where it stays in place',
     file: "src/lower/jsx.rs",
     find: "            js::ExprKind::Member(object, _) => {\n",
     replace: "            js::ExprKind::Member(object, _) if false => {\n",
-    tests: ["test/jsx-evaluation-order.test.ts", "-t", "field of what never changes in place"]
+    tests: [
+      "test/jsx-evaluation-order.test.ts",
+      "-t",
+      "field of what never changes in place",
+    ],
   },
   {
     name: "getter-in-place",
-    breaks: "a JS object's getter, `n.textContent`, is read after what writes it",
+    breaks:
+      "a JS object's getter, `n.textContent`, is read after what writes it",
     file: "src/lower/jsx.rs",
     find: "                        ty::GenericArgKind::Type(t) => !self.refers_mutably(t) && !self.is_js_object(t),\n",
-    replace: "                        ty::GenericArgKind::Type(t) => !self.refers_mutably(t),\n",
-    tests: ["test/jsx-props.test.ts", "-t", "spreads a struct through a reference as the struct"],
+    replace:
+      "                        ty::GenericArgKind::Type(t) => !self.refers_mutably(t),\n",
+    tests: [
+      "test/jsx-props.test.ts",
+      "-t",
+      "spreads a struct through a reference as the struct",
+    ],
   },
   {
     name: "rest-base-each-field",
-    breaks: "an update of a props pattern's rest, `..props`, gives each of its fields, the props' own `href` among them, where it's `{...props}`",
+    breaks:
+      "an update of a props pattern's rest, `..props`, gives each of its fields, the props' own `href` among them, where it's `{...props}`",
     file: "src/lower/jsx.rs",
     find: "                    rest = Some(*object);\n",
-    replace: "                    attrs.push(Prop::Field(name, Expr::member(*object, \"_\")));\n",
-    tests: ["test/jsx-props.test.ts", "-t", "flattened props with a field of them set"]
+    replace:
+      '                    attrs.push(Prop::Field(name, Expr::member(*object, "_")));\n',
+    tests: [
+      "test/jsx-props.test.ts",
+      "-t",
+      "flattened props with a field of them set",
+    ],
   },
   {
     name: "rest-spread-after-update",
-    breaks: "a rest spread is after what the update gives, `className=\"link\" {...props}`, so the caller's `className` holds where the update's should",
+    breaks:
+      "a rest spread is after what the update gives, `className=\"link\" {...props}`, so the caller's `className` holds where the update's should",
     file: "src/lower/jsx.rs",
     find: "                            Prop::Spread(_) => written.get(&name).copied().or(first),\n",
-    replace: "                            Prop::Spread(_) => written.get(&name).copied(),\n",
-    tests: ["test/jsx-props.test.ts", "-t", "flattened props with a field of them set"]
+    replace:
+      "                            Prop::Spread(_) => written.get(&name).copied(),\n",
+    tests: [
+      "test/jsx-props.test.ts",
+      "-t",
+      "flattened props with a field of them set",
+    ],
   },
   {
     name: "rest-spread-twice",
-    breaks: "a rest a nested flattened struct's base gives too, `..props.html`, is spread again, `{...props} {...props}`",
+    breaks:
+      "a rest a nested flattened struct's base gives too, `..props.html`, is spread again, `{...props} {...props}`",
     file: "src/lower/jsx.rs",
     find: "                                rest = Some(value)\n",
-    replace: "                                attrs.push(Prop::Spread(value))\n",
-    tests: ["test/jsx-props.test.ts", "-t", "flattened props with a field of them set"]
+    replace:
+      "                                attrs.push(Prop::Spread(value))\n",
+    tests: [
+      "test/jsx-props.test.ts",
+      "-t",
+      "flattened props with a field of them set",
+    ],
   },
   {
     name: "children-and-unmade",
-    breaks: "`(level == 1).then(|| jsx! { <b /> })` is `level === 1 ? <b /> : undefined`, not `level === 1 && <b />`",
+    breaks:
+      "`(level == 1).then(|| jsx! { <b /> })` is `level === 1 ? <b /> : undefined`, not `level === 1 && <b />`",
     file: "src/lower/jsx.rs",
     find: "if !matches!(none.kind, js::ExprKind::Undefined) {",
     replace: "if true {",
-    tests: ["test/jsx-react-dev.test.ts", "-t", "react.dev's NavigationBar shows its options in place"],
+    tests: [
+      "test/jsx-react-dev.test.ts",
+      "-t",
+      "react.dev's NavigationBar shows its options in place",
+    ],
   },
   {
     name: "children-tuple-not-recursed",
-    breaks: "only a first child, of the tuple of tuples `jsx!` makes, is `test && ..`: the next keep `? .. : undefined`",
+    breaks:
+      "only a first child, of the tuple of tuples `jsx!` makes, is `test && ..`: the next keep `? .. : undefined`",
     file: "src/lower/jsx.rs",
     find: ".map(|(item, &field)| self.shown_if(field, item))",
     replace: ".map(|(item, _)| item)",
-    tests: ["test/jsx-react-dev.test.ts", "-t", "react.dev's NavigationBar shows its options in place"],
+    tests: [
+      "test/jsx-react-dev.test.ts",
+      "-t",
+      "react.dev's NavigationBar shows its options in place",
+    ],
   },
   {
     name: "base-spread-last",
-    breaks: "a base's spread is after what it's updated with, `<Panel wide {...props} />`, which then wins",
+    breaks:
+      "a base's spread is after what it's updated with, `<Panel wide {...props} />`, which then wins",
     file: "src/lower/jsx.rs",
     find: "                        Prop::Spread(_) => Some(BytePos(0)),",
     replace: "                        Prop::Spread(_) => None,",
-    tests: ["test/jsx-props.test.ts", "-t", "updated from a reference are spread"],
+    tests: [
+      "test/jsx-props.test.ts",
+      "-t",
+      "updated from a reference are spread",
+    ],
   },
   {
     name: "unknown-props-unspread",
-    breaks: "props that are a JS value of any shape, `{...props}` of a `js::Unknown`, are refused",
+    breaks:
+      "props that are a JS value of any shape, `{...props}` of a `js::Unknown`, are refused",
     file: "src/lower/jsx.rs",
     find: "            && !js_object(spread)\n",
     replace: "",
@@ -196,7 +284,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "spread-of-none-refused",
-    breaks: "JSX props spread of an \`Option\` of a JS value, \`undefined\` where it's none, is refused",
+    breaks:
+      "JSX props spread of an \`Option\` of a JS value, \`undefined\` where it's none, is refused",
     file: "src/lower/jsx.rs",
     find: "            && !self.option_of(spread).is_some_and(js_object)\n",
     replace: "",
@@ -204,135 +293,211 @@ export const mutations: Mutation[] = [
   },
   {
     name: "captured-import-spilled",
-    breaks: "an import jsx! captures for a key that might do something is spilled, `const match = Fragment`, where it reads the same in place",
+    breaks:
+      "an import jsx! captures for a key that might do something is spilled, `const match = Fragment`, where it reads the same in place",
     file: "src/lower/jsx.rs",
     find: "                    || self.krate.imports[&self.module].values().any(|alias| alias == name)\n",
     replace: "",
-    tests: ["test/jsx-react-dev.test.ts", "-t", "react.dev.s Page tests its home and blog index in place"],
+    tests: [
+      "test/jsx-react-dev.test.ts",
+      "-t",
+      "react.dev.s Page tests its home and blog index in place",
+    ],
   },
   {
     name: "binding-callback-returned",
-    breaks: "a component's callback of a binding that may give a value returns it, `onRecord={() => globalThis.record(5)}`",
+    breaks:
+      "a component's callback of a binding that may give a value returns it, `onRecord={() => globalThis.record(5)}`",
     file: "src/lower/jsx.rs",
     find: "            _ if super::bindings::is_binding(self.tcx, def_id) => super::bindings::returns_undefined(self.tcx, def_id),\n",
     replace: "",
-    tests: ["test/lowering-bindings.test.ts", "-t", "callback returns a call that gives undefined"],
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "-t",
+      "callback returns a call that gives undefined",
+    ],
   },
   {
     name: "rust-callback-kept",
-    breaks: "a component's callback of a function of the crate's keeps its call a statement, `onSubmit={() => { submit(false); }}`",
+    breaks:
+      "a component's callback of a function of the crate's keeps its call a statement, `onSubmit={() => { submit(false); }}`",
     file: "src/lower/jsx.rs",
     find: "            _ => def_id.is_local(),\n",
     replace: "            _ => false,\n",
-    tests: ["test/lowering-bindings.test.ts", "-t", "callback returns a call that gives undefined"],
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "-t",
+      "callback returns a call that gives undefined",
+    ],
   },
   {
     name: "closure-callback-kept",
-    breaks: "a component's callback of a closure of the crate's keeps its call a statement, `onNext={() => { next(); }}`",
+    breaks:
+      "a component's callback of a closure of the crate's keeps its call a statement, `onNext={() => { next(); }}`",
     file: "src/lower/jsx.rs",
     find: "                matches!(thir[args[0]].ty.peel_refs().kind(), ty::Closure(..))\n",
     replace: "                false\n",
-    tests: ["test/lowering-bindings.test.ts", "-t", "callback returns a call that gives undefined"],
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "-t",
+      "callback returns a call that gives undefined",
+    ],
   },
   {
     name: "jsx-shown-if-ternary",
-    breaks: "a child shown only if a test holds, `Option::map` to an element, is `t != null ? <p /> : undefined`, not the `t != null && <p />` a person writes",
+    breaks:
+      "a child shown only if a test holds, `Option::map` to an element, is `t != null ? <p /> : undefined`, not the `t != null && <p />` a person writes",
     file: "src/lower/jsx.rs",
     find: "        if !matches!(none.kind, js::ExprKind::Undefined) {\n            return value;\n        }",
-    replace: "        if !matches!(none.kind, js::ExprKind::Undefined) || child == child {\n            return value;\n        }",
-    tests: ["test/jsx-react-dev.test.ts", "-t", "react.dev's NavigationBar shows its options in place"],
+    replace:
+      "        if !matches!(none.kind, js::ExprKind::Undefined) || child == child {\n            return value;\n        }",
+    tests: [
+      "test/jsx-react-dev.test.ts",
+      "-t",
+      "react.dev's NavigationBar shows its options in place",
+    ],
   },
   {
     name: "component-child-shown-ternary",
-    breaks: "a component's child shown only if a test holds is `test ? <el /> : undefined`, where an element's is `test && <el />`",
+    breaks:
+      "a component's child shown only if a test holds is `test ? <el /> : undefined`, where an element's is `test && <el />`",
     file: "src/lower/jsx.rs",
     find: "                            self.shown_if(child, value)\n",
     replace: "                            value\n",
-    tests: ["test/jsx-react-dev.test.ts", "-t", "react.dev.s NavigationBar shows its options in place"],
+    tests: [
+      "test/jsx-react-dev.test.ts",
+      "-t",
+      "react.dev.s NavigationBar shows its options in place",
+    ],
   },
   {
     name: "key-last",
-    breaks: "a component's `key` is last, not where it was written, `<Item value={path} key={path} />`",
+    breaks:
+      "a component's `key` is last, not where it was written, `<Item value={path} key={path} />`",
     file: "src/lower/jsx.rs",
-    find: "            \"key\" => {\n",
-    replace: "            \"key\" if false => {\n",
+    find: '            "key" => {\n',
+    replace: '            "key" if false => {\n',
     tests: ["test/jsx-children.test.ts", "-t", "a key is where it was written"],
   },
   {
     name: "key-after-base",
-    breaks: "a `key` written before `{..base}` follows its spread, `<Panel {...props} key={match} wide />`",
+    breaks:
+      "a `key` written before `{..base}` follows its spread, `<Panel {...props} key={match} wide />`",
     file: "src/lower/jsx.rs",
     find: "                    Prop::Spread(v) if v.span.is_none() => true,\n",
-    replace: "                    Prop::Spread(v) if v.span.is_none() => false,\n",
-    tests: ["test/jsx-props.test.ts", "-t", "props updated from a reference are spread"],
+    replace:
+      "                    Prop::Spread(v) if v.span.is_none() => false,\n",
+    tests: [
+      "test/jsx-props.test.ts",
+      "-t",
+      "props updated from a reference are spread",
+    ],
   },
   {
-    "name": "jsx-spread-reference-refused",
-    "breaks": "a struct spread through a reference, `{...&rest}`, is refused as a spread of a non-struct",
-    "file": "src/lower/jsx.rs",
-    "find": "        let spread = ty.peel_refs();",
-    "replace": "        let spread = ty;",
-    "tests": ["test/jsx-props.test.ts", "-t", "spreads a struct through a reference"]
+    name: "jsx-spread-reference-refused",
+    breaks:
+      "a struct spread through a reference, `{...&rest}`, is refused as a spread of a non-struct",
+    file: "src/lower/jsx.rs",
+    find: "        let spread = ty.peel_refs();",
+    replace: "        let spread = ty;",
+    tests: [
+      "test/jsx-props.test.ts",
+      "-t",
+      "spreads a struct through a reference",
+    ],
   },
   {
-    "name": "jsx-key-alike-moves-children",
-    "breaks": "a component's key that reads the same anywhere puts its children in `const`s first",
-    "file": "src/lower/jsx.rs",
-    "find": "        if !simple {",
-    "replace": "        if true {",
-    "tests": ["test/jsx-children.test.ts", "-t", "a key that reads alike keeps"]
+    name: "jsx-key-alike-moves-children",
+    breaks:
+      "a component's key that reads the same anywhere puts its children in `const`s first",
+    file: "src/lower/jsx.rs",
+    find: "        if !simple {",
+    replace: "        if true {",
+    tests: ["test/jsx-children.test.ts", "-t", "a key that reads alike keeps"],
   },
   {
-    "name": "referred-children-unspread",
-    "breaks": "children given by reference are one array child, `{[a, b]}`, not each a child",
-    "file": "src/lower/jsx.rs",
-    "find": "                            let child = self.referred_children(child);",
-    "replace": "                            let child = self.strip(child);",
-    "tests": ["test/jsx-types.test.ts", "-t", "children declared any node"]
+    name: "referred-children-unspread",
+    breaks:
+      "children given by reference are one array child, `{[a, b]}`, not each a child",
+    file: "src/lower/jsx.rs",
+    find: "                            let child = self.referred_children(child);",
+    replace: "                            let child = self.strip(child);",
+    tests: ["test/jsx-types.test.ts", "-t", "children declared any node"],
   },
   {
     name: "mir-alike-unknown",
-    breaks: "what MIR says reads alike doesn't, so JSX reads each attribute into a `const` first",
+    breaks:
+      "what MIR says reads alike doesn't, so JSX reads each attribute into a `const` first",
     file: "src/lower/jsx.rs",
     find: "                self.alike_local(name)\n",
     replace: "                false\n",
-    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
-    "name": "jsx-mir-field-unplaced",
-    "breaks": "a component's `key` from MIR goes last, `<Tag variant={tag} key={tag} />`, its fields' values placed nowhere",
-    "file": "src/lower/jsx.rs",
-    "find": "                        value.span = self.js_span(self.frame.thir[f.expr].span);\n",
-    "replace": "",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    name: "jsx-mir-field-unplaced",
+    breaks:
+      "a component's `key` from MIR goes last, `<Tag variant={tag} key={tag} />`, its fields' values placed nowhere",
+    file: "src/lower/jsx.rs",
+    find: "                        value.span = self.js_span(self.frame.thir[f.expr].span);\n",
+    replace: "",
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
-    "name": "attribute-value-unmapped",
-    "breaks": "an attribute's value MIR gives no span, a `concat!`'s, maps to no Rust line, `alt=` the line of what's before it in the source map",
-    "file": "src/lower/jsx.rs",
-    "find": "let mut value = value.or_at(at);",
-    "replace": "let mut value = value;",
-    "tests": ["test/jsx-evaluation-order.test.ts", "-t", "a tag broken onto lines keeps its mappings in order"]
+    name: "attribute-value-unmapped",
+    breaks:
+      "an attribute's value MIR gives no span, a `concat!`'s, maps to no Rust line, `alt=` the line of what's before it in the source map",
+    file: "src/lower/jsx.rs",
+    find: "let mut value = value.or_at(at);",
+    replace: "let mut value = value;",
+    tests: [
+      "test/jsx-evaluation-order.test.ts",
+      "-t",
+      "a tag broken onto lines keeps its mappings in order",
+    ],
   },
   {
     name: "held-prop-at-its-block",
-    breaks: "a prop held from a block is where the block starts, before its loop: a `let title` the loop's way out sets, not a `const title` after the loop (#434)",
+    breaks:
+      "a prop held from a block is where the block starts, before its loop: a `let title` the loop's way out sets, not a `const title` after the loop (#434)",
     file: "src/lower/jsx.rs",
     find: "self.js_span(self.frame.thir[super::body_queries::tail(self.frame.thir, e)].span)",
     replace: "self.js_span(self.frame.thir[e].span)",
-    tests: ["test/jsx-react-dev.test.ts", "-t", "a value held for a prop is named after it"],
+    tests: [
+      "test/jsx-react-dev.test.ts",
+      "-t",
+      "a value held for a prop is named after it",
+    ],
   },
   {
     name: "props-read-in-jsx-order",
-    breaks: "props written out of the struct's order are made in the JSX's, not Rust's: `t` logged before `h`",
+    breaks:
+      "props written out of the struct's order are made in the JSX's, not Rust's: `t` logged before `h`",
     file: "src/lower/jsx.rs",
     find: "        if !value.is_constant() {\n            let old = std::mem::replace(value, Expr::undefined());\n",
-    replace: "        if false {\n            let old = std::mem::replace(value, Expr::undefined());\n",
+    replace:
+      "        if false {\n            let old = std::mem::replace(value, Expr::undefined());\n",
     tests: ["test/jsx-props.test.ts", "-t", "flattened props where they"],
   },
   {
     name: "one-call-statement-unsaid",
-    breaks: "`|| { f(); }` is told as written `|| f()`, so a closure of a statement is `() => f()` (ADR 0883)",
+    breaks:
+      "`|| { f(); }` is told as written `|| f()`, so a closure of a statement is `() => f()` (ADR 0883)",
     file: "src/lower/jsx.rs",
     find: "                        written = OneCall::Statement;\n",
     replace: "",

@@ -4,28 +4,37 @@ import type { Mutation } from "../../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "min-chain-nested",
-    breaks: "`a.min(b).min(c)` is `Math.min(Math.min(a, b), c)`, not `Math.min(a, b, c)`",
+    breaks:
+      "`a.min(b).min(c)` is `Math.min(Math.min(a, b), c)`, not `Math.min(a, b, c)`",
     file: "src/lower/std_types/number/generic.rs",
     find: "                    js::ExprKind::Call(inner, args) if math && js::same_path(&inner, &callee) => args,\n",
-    replace: "                    js::ExprKind::Call(inner, args) if false && js::same_path(&inner, &callee) => args,\n",
+    replace:
+      "                    js::ExprKind::Call(inner, args) if false && js::same_path(&inner, &callee) => args,\n",
     tests: ["test/corpus.test.ts", "-t", "^min_max_chains.rs$"],
     snapshots: true,
   },
   {
     name: "min-chain-of-a-helper-flattened",
-    breaks: "`a.min(b).min(c)` of floats splices `$f64Min`'s arguments into another `$f64Min`, which takes two",
+    breaks:
+      "`a.min(b).min(c)` of floats splices `$f64Min`'s arguments into another `$f64Min`, which takes two",
     file: "src/lower/std_types/number/generic.rs",
     find: "                    js::ExprKind::Call(inner, args) if math && js::same_path(&inner, &callee) => args,\n",
-    replace: "                    js::ExprKind::Call(inner, args) if js::same_path(&inner, &callee) => args,\n",
+    replace:
+      "                    js::ExprKind::Call(inner, args) if js::same_path(&inner, &callee) => args,\n",
     tests: ["test/corpus.test.ts", "-t", "^min_max_chains.rs$"],
   },
   {
     name: "array-of-slice-aliased",
-    breaks: "`<[T; N]>::try_from(&v[..])` is `v`, which a write to `v` after changes",
+    breaks:
+      "`<[T; N]>::try_from(&v[..])` is `v`, which a write to `v` after changes",
     file: "src/lower/std_types/number/generic.rs",
     find: "                let value = match target.is_ref() || owned || (fresh && !self.needs_clone(item)) {",
     replace: "                let value = match true {",
-    tests: ["test/lowering-collections.test.ts", "-t", "array made of a whole slice"],
+    tests: [
+      "test/lowering-collections.test.ts",
+      "-t",
+      "array made of a whole slice",
+    ],
   },
   {
     name: "array-of-part-copied-twice",
@@ -41,12 +50,14 @@ export const mutations: Mutation[] = [
     breaks: "`align_of` is the type's size",
     file: "src/lower/std_types/number/generic.rs",
     find: "        let bytes = if fact == TypeFact::Align {\n            layout.align.abi.bytes()",
-    replace: "        let bytes = if fact == TypeFact::Align {\n            layout.size.bytes()",
+    replace:
+      "        let bytes = if fact == TypeFact::Align {\n            layout.size.bytes()",
     tests: ["test/corpus.test.ts", "-t", "size_of\\.rs"],
   },
   {
     name: "type-name-unerased",
-    breaks: "`type_name` names the type as written, `Vec<Option<&str>>`, not rustc's paths",
+    breaks:
+      "`type_name` names the type as written, `Vec<Option<&str>>`, not rustc's paths",
     file: "src/lower/std_types/number/generic.rs",
     find: "            _ => rustc_const_eval::util::type_name(self.tcx, of),",
     replace: "            _ => of.to_string(),",
@@ -54,27 +65,29 @@ export const mutations: Mutation[] = [
   },
   {
     name: "duration-subsec-whole",
-    breaks: "`subsec_nanos()` is all of a `Duration`'s nanoseconds, not those under a second",
+    breaks:
+      "`subsec_nanos()` is all of a `Duration`'s nanoseconds, not those under a second",
     file: "src/lower/std_types/number/generic.rs",
     find: "                        let part = Expr::bin(Op::Rem, arg(), nanos(1_000_000_000));",
     replace: "                        let part = arg();",
-    tests: ["test/corpus.test.ts","-t","duration"],
+    tests: ["test/corpus.test.ts", "-t", "duration"],
   },
   {
     name: "slice-to-array-any-length",
     breaks: "a slice into an array of another length is `Ok`",
     file: "src/lower/std_types/number/generic.rs",
-    find: "                let fits = Expr::bin(Op::Eq, Expr::member(slice.clone(), \"length\"), Expr::int(len as i128));",
+    find: '                let fits = Expr::bin(Op::Eq, Expr::member(slice.clone(), "length"), Expr::int(len as i128));',
     replace: "                let fits = Expr::bool(true || len > 0);",
-    tests: ["test/corpus.test.ts","-t","slice_to_array"],
+    tests: ["test/corpus.test.ts", "-t", "slice_to_array"],
   },
   {
     name: "non-zero-try-from-kind",
-    breaks: "`NonZeroU8::try_from(0u8)`'s error is its kind, `Zero`, which `{:?}` can't show, where each parse error is its message",
+    breaks:
+      "`NonZeroU8::try_from(0u8)`'s error is its kind, `Zero`, which `{:?}` can't show, where each parse error is its message",
     file: "src/lower/std_types/number/generic.rs",
     find: "number would be zero for non-zero type",
     replace: "Zero",
-    tests: ["test/corpus.test.ts","-t","nonzero"],
+    tests: ["test/corpus.test.ts", "-t", "nonzero"],
   },
   {
     name: "needs-drop-inverted",
@@ -86,7 +99,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "assoc-fact-not-read",
-    breaks: "`size_of::<A::Item>()` isn't read from `A: Array`'s dictionary, and is refused",
+    breaks:
+      "`size_of::<A::Item>()` isn't read from `A: Array`'s dictionary, and is refused",
     file: "src/lower/std_types/number/generic.rs",
     find: "                .is_some_and(|facts| facts.iter().any(|&(_, f)| f == fact))\n",
     replace: "                .is_some_and(|_| false)\n",
@@ -104,16 +118,17 @@ export const mutations: Mutation[] = [
     name: "checked-ilog-unchecked",
     breaks: "`checked_ilog10()` is `ilog10()`, which panics of zero",
     file: "src/lower/std_types/number/generic.rs",
-    find: "    if checked {\n        given.push(Expr::bool(true));\n    }\n    Expr::call_helper(\"$ilog\", given)\n",
-    replace: "    let _ = checked;\n    Expr::call_helper(\"$ilog\", given)\n",
+    find: '    if checked {\n        given.push(Expr::bool(true));\n    }\n    Expr::call_helper("$ilog", given)\n',
+    replace: '    let _ = checked;\n    Expr::call_helper("$ilog", given)\n',
     tests: ["test/corpus.test.ts", "-t", "^number_methods.rs$"],
   },
   {
     name: "sort-fact-one-kind",
-    breaks: "every caller gives `TSort` the small sort of a `Copy` item of 8 bytes, which leaves a wider one's ties where std's doesn't",
+    breaks:
+      "every caller gives `TSort` the small sort of a `Copy` item of 8 bytes, which leaves a wider one's ties where std's doesn't",
     file: "src/lower/std_types/number/generic.rs",
     find: "            return Ok(Expr::str(self.sort_kind(of, span)?));\n",
-    replace: "            return Ok(Expr::str(\"network\"));\n",
+    replace: '            return Ok(Expr::str("network"));\n',
     tests: ["test/corpus.test.ts", "-t", "^generic_unstable_sorts.rs$"],
   },
   {
@@ -121,67 +136,77 @@ export const mutations: Mutation[] = [
     breaks: "a type parameter's `Fused` no caller says is refused, not `false`",
     file: "src/lower/std_types/number/generic.rs",
     find: "                return Ok(self.fused_fact(param.index).unwrap_or_else(|| Expr::bool(false)));\n",
-    replace: "                return self.fused_fact(param.index).ok_or_else(|| self.unsupported(span, \"Fused\"));\n",
+    replace:
+      '                return self.fused_fact(param.index).ok_or_else(|| self.unsupported(span, "Fused"));\n',
     tests: ["test/corpus.test.ts", "-t", "^fuse_size_hint.rs$"],
   },
   {
     name: "vec-to-array-err-empty",
-    breaks: "a `Vec` refused as an array gives back nothing in its `Err`, not the `Vec`",
+    breaks:
+      "a `Vec` refused as an array gives back nothing in its `Err`, not the `Vec`",
     file: "src/lower/std_types/number/generic.rs",
     find: "                    true => slice.clone(),\n                    false => Expr::undefined(),",
-    replace: "                    true => Expr::undefined(),\n                    false => Expr::undefined(),",
+    replace:
+      "                    true => Expr::undefined(),\n                    false => Expr::undefined(),",
     tests: ["test/corpus.test.ts", "-t", "^vec_into_array.rs$"],
   },
   {
     name: "vec-to-array-copied",
-    breaks: "a `Vec` moved into an array is copied first, `v.slice()`, as nothing else has it",
+    breaks:
+      "a `Vec` moved into an array is copied first, `v.slice()`, as nothing else has it",
     file: "src/lower/std_types/number/generic.rs",
     find: "                let value = match target.is_ref() || owned || (fresh && !self.needs_clone(item)) {",
-    replace: "                let value = match target.is_ref() || (fresh && !self.needs_clone(item)) {",
+    replace:
+      "                let value = match target.is_ref() || (fresh && !self.needs_clone(item)) {",
     tests: ["test/corpus.test.ts", "-t", "^vec_into_array.rs$"],
     snapshots: true,
   },
   {
     name: "slice-to-array-items-shared",
-    breaks: "an array made of a slice of `Copy` structs, `try_into()`, holds the slice's objects, so changing one changes the slice",
+    breaks:
+      "an array made of a slice of `Copy` structs, `try_into()`, holds the slice's objects, so changing one changes the slice",
     file: "src/lower/std_types/number/generic.rs",
     find: "                    false => self.clone_items(slice.clone(), item, span)?,",
-    replace: "                    false => Expr::call(Expr::member(slice.clone(), \"slice\"), vec![]),",
+    replace:
+      '                    false => Expr::call(Expr::member(slice.clone(), "slice"), vec![]),',
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
   },
   {
     name: "one-shot-never",
-    breaks: "no type is a `OneShot`, so a held flatten of `Option`s steps by the general impl, its hint `(0, None)`",
+    breaks:
+      "no type is a `OneShot`, so a held flatten of `Option`s steps by the general impl, its hint `(0, None)`",
     file: "src/lower/std_types/number/generic.rs",
     find: "            return Ok(Expr::bool(holds));\n",
-    replace: "            return Ok(Expr::bool(holds && fact != TypeFact::OneShot));\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^std_flatten.rs$"
-    ]
+    replace:
+      "            return Ok(Expr::bool(holds && fact != TypeFact::OneShot));\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_flatten.rs$"],
   },
   {
     name: "tried-int-below-unchecked",
-    breaks: "`usize::try_from(-1)` only tested is `Ok`, as the bound below wasn't tested (#366)",
+    breaks:
+      "`usize::try_from(-1)` only tested is `Ok`, as the bound below wasn't tested (#366)",
     file: "src/lower/std_types/number/generic.rs",
     find: "    let below = (from_lo < lo).then(|| compared(Op::Lt, lo));\n",
-    replace: "    let below = (from_lo < lo && false).then(|| compared(Op::Lt, lo));\n",
+    replace:
+      "    let below = (from_lo < lo && false).then(|| compared(Op::Lt, lo));\n",
     tests: ["test/corpus.test.ts", "-t", "^try_from_int_tested.rs$"],
   },
   {
     name: "tried-int-above-unchecked",
-    breaks: "`u8::try_from(256)` only tested is `Ok`, as the bound above wasn't tested (#366)",
+    breaks:
+      "`u8::try_from(256)` only tested is `Ok`, as the bound above wasn't tested (#366)",
     file: "src/lower/std_types/number/generic.rs",
     find: "    let above = (from_hi > hi).then(|| compared(Op::Gt, hi as i128));\n",
-    replace: "    let above = (from_hi > hi && false).then(|| compared(Op::Gt, hi as i128));\n",
+    replace:
+      "    let above = (from_hi > hi && false).then(|| compared(Op::Gt, hi as i128));\n",
     tests: ["test/corpus.test.ts", "-t", "^try_from_int_tested.rs$"],
   },
   {
     name: "tried-int-not-made-big",
-    breaks: "`i64::try_from(n)` of a `u32` only tested is the number, not its BigInt, so `wide + 1n` throws (#366)",
+    breaks:
+      "`i64::try_from(n)` of a `u32` only tested is the number, not its BigInt, so `wide + 1n` throws (#366)",
     file: "src/lower/std_types/number/generic.rs",
-    find: "        (false, true) => Expr::call(Expr::var(\"BigInt\"), vec![n]),\n",
+    find: '        (false, true) => Expr::call(Expr::var("BigInt"), vec![n]),\n',
     replace: "        (false, true) => n,\n",
     tests: ["test/corpus.test.ts", "-t", "^try_from_int_tested.rs$"],
   },

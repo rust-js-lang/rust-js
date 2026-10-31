@@ -12,10 +12,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "concrete-nullish-unboxed",
-    breaks: "`Some(None)` of a concrete `Option<Option<i32>>` is `undefined`, and reads as `None`",
+    breaks:
+      "`Some(None)` of a concrete `Option<Option<i32>>` is `undefined`, and reads as `None`",
     file: "src/lower/representation/options.rs",
     find: "        (self.is_unknown(payload) && !self.defined_by_its_bounds(payload)) || self.can_be_nullish(ty)\n",
-    replace: "        (self.is_unknown(payload) && !self.defined_by_its_bounds(payload))\n",
+    replace:
+      "        (self.is_unknown(payload) && !self.defined_by_its_bounds(payload))\n",
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
   },
   {
@@ -28,16 +30,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "option-of-cell-payload-boxed",
-    breaks: "an `Option<&mut T>` of a generic `T` is boxed as a `T`'s is, `$someValue(value)` read of its handle, which is never `None`",
+    breaks:
+      "an `Option<&mut T>` of a generic `T` is boxed as a `T`'s is, `$someValue(value)` read of its handle, which is never `None`",
     file: "src/lower/representation/options.rs",
     find: "                _ if self.is_cell(ty) => return ty,\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(map_values_like_none|ref_mut_of_mut_payload).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(map_values_like_none|ref_mut_of_mut_payload).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "callable-param-some-boxed",
-    breaks: "an `Option` of a type parameter bound by `FnOnce` is read through `$someValue(f)`, though a function is never `undefined`",
+    breaks:
+      "an `Option` of a type parameter bound by `FnOnce` is read through `$someValue(f)`, though a function is never `undefined`",
     file: "src/lower/representation/options.rs",
     find: "        self.read_by_its_bounds(ty) || self.is_callable(ty) || unboxed\n",
     replace: "        self.read_by_its_bounds(ty) || unboxed\n",
@@ -46,15 +54,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "binding-bound-some-boxed",
-    breaks: "`Some` of a type parameter a binding of its bound reads is `$some(x)`, though it's never `undefined`",
+    breaks:
+      "`Some` of a type parameter a binding of its bound reads is `$some(x)`, though it's never `undefined`",
     file: "src/lower/representation/options.rs",
     find: "        (self.is_unknown(payload) && !self.defined_by_its_bounds(payload)) || self.can_be_nullish(ty)\n",
     replace: "        self.is_unknown(payload) || self.can_be_nullish(ty)\n",
-    tests: ["test/bindings.test.ts", "-t", "a nullable function's None is null"],
+    tests: [
+      "test/bindings.test.ts",
+      "-t",
+      "a nullable function's None is null",
+    ],
   },
   {
     name: "param-ref-given-unboxed",
-    breaks: "a reference to a type parameter given is taken never to look like `None`, so `by_ref(&())`'s `wrap_ref` makes `Some(&())` `undefined`, `None` (ADR 0051, amended)",
+    breaks:
+      "a reference to a type parameter given is taken never to look like `None`, so `by_ref(&())`'s `wrap_ref` makes `Some(&())` `undefined`, `None` (ADR 0051, amended)",
     file: "src/lower/representation/options.rs",
     find: "    super::super::recognition::known_by_bounds(ty)\n        || super::super::recognition::weak_pointee",
     replace: "    super::super::recognition::weak_pointee",
@@ -62,7 +76,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "js-given-not-nullish",
-    breaks: "what JS gives a function it calls is taken as never `undefined`, so `sortWith([2, undefined, 1], ..)` sorts with JS's `sort`, which leaves `undefined` last without comparing it",
+    breaks:
+      "what JS gives a function it calls is taken as never `undefined`, so `sortWith([2, undefined, 1], ..)` sorts with JS's `sort`, which leaves `undefined` last without comparing it",
     file: "src/lower/representation/options.rs",
     find: "        self.js_given(ty)\n            || (super::super::recognition::known_by_bounds(ty)",
     replace: "        (super::super::recognition::known_by_bounds(ty)",
@@ -70,7 +85,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "js-given-boxed",
-    breaks: "a `Some` of what JS gives is boxed, so `pick(undefined, true)` gives JS `{ $someNone: 0 }`",
+    breaks:
+      "a `Some` of what JS gives is boxed, so `pick(undefined, true)` gives JS `{ $someNone: 0 }`",
     file: "src/lower/representation/options.rs",
     find: "        if self.js_given(payload) {\n            return false;\n        }\n",
     replace: "",

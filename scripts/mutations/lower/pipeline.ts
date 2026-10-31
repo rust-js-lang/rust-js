@@ -4,47 +4,68 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "type-reexport-an-import",
-    breaks: "every re-export rustc lists, a type's too, which has no JS, is an import in the load-order graph, as fdec315a7 had it, so a `pub` thread-local made of the re-exporting module's function is refused as in an import cycle (rd116)",
+    breaks:
+      "every re-export rustc lists, a type's too, which has no JS, is an import in the load-order graph, as fdec315a7 had it, so a `pub` thread-local made of the re-exporting module's function is refused as in an import cycle (rd116)",
     file: "src/lower/pipeline.rs",
     find: "        .flat_map(|(&module, (_, reexports))| reexports.iter().map(move |r| (module, r.from.clone())))\n",
-    replace: "        .flat_map(|(&module, _)| (tcx.module_children_local(module.to_local_def_id()).iter()).filter(|c| !c.reexport_chain.is_empty()).filter_map(|c| c.res.opt_def_id()?.as_local()).filter_map(|id| Some((module, js::ImportFrom::Module(paths.get(&tcx.parent_module_from_def_id(id))?.clone())))).collect::<Vec<_>>())\n",
+    replace:
+      "        .flat_map(|(&module, _)| (tcx.module_children_local(module.to_local_def_id()).iter()).filter(|c| !c.reexport_chain.is_empty()).filter_map(|c| c.res.opt_def_id()?.as_local()).filter_map(|id| Some((module, js::ImportFrom::Module(paths.get(&tcx.parent_module_from_def_id(id))?.clone())))).collect::<Vec<_>>())\n",
     tests: ["test/corpus.test.ts", "-t", "^type_reexport_in_no_load_cycle.rs$"],
   },
   {
     name: "types-only-root-unwritten",
-    breaks: "a crate whose root has no JS, `pub trait Marker {} impl Marker for u32 {}`, writes no `lib.js`, the entry a host and a package import (ADR 1005)",
+    breaks:
+      "a crate whose root has no JS, `pub trait Marker {} impl Marker for u32 {}`, writes no `lib.js`, the entry a host and a package import (ADR 1005)",
     file: "src/lower/pipeline.rs",
     find: "            lowered.types_only = module != CRATE_MOD_ID\n",
     replace: "            lowered.types_only = true\n",
-    tests: ["test/traits.test.ts", "-t", "an empty trait implementation needs no function body"],
+    tests: [
+      "test/traits.test.ts",
+      "-t",
+      "an empty trait implementation needs no function body",
+    ],
   },
   {
     name: "types-only-module-written-as-js",
-    breaks: "a module of types alone writes a JS file of nothing and its map beside its `.d.ts`, where the user decided it's Rust and a `.d.ts` (ADR 1005)",
+    breaks:
+      "a module of types alone writes a JS file of nothing and its map beside its `.d.ts`, where the user decided it's Rust and a `.d.ts` (ADR 1005)",
     file: "src/lower/pipeline.rs",
     find: "            lowered.types_only = module != CRATE_MOD_ID\n                && lowered.items.is_empty()\n",
-    replace: "            lowered.types_only = false\n                && lowered.items.is_empty()\n",
+    replace:
+      "            lowered.types_only = false\n                && lowered.items.is_empty()\n",
     tests: ["test/cargo-in-source.test.ts", "-t", "declarations in source"],
   },
   {
     name: "default-class-exported-by-name",
-    breaks: "a class that's its module's default is `export function Complex` too",
+    breaks:
+      "a class that's its module's default is `export function Complex` too",
     file: "src/lower/pipeline.rs",
     find: "                    class.export = false;\n",
     replace: "",
-    tests: ["test/classes.test.ts", "-t", "a class is its module's default export"],
+    tests: [
+      "test/classes.test.ts",
+      "-t",
+      "a class is its module's default export",
+    ],
   },
   {
     name: "default-class-imported-by-name",
-    breaks: "a module that uses another's default class imports `{ Complex }`, which isn't exported",
+    breaks:
+      "a module that uses another's default class imports `{ Complex }`, which isn't exported",
     file: "src/lower/pipeline.rs",
     find: "            Some(_) if let Some(class) = super::classes::class_of(tcx, id) => (\n",
-    replace: "            Some(_) if let Some(class) = super::classes::class_of(tcx, id).filter(|_| false) => (\n",
-    tests: ["test/classes.test.ts", "-t", "a class is its module's default export"],
+    replace:
+      "            Some(_) if let Some(class) = super::classes::class_of(tcx, id).filter(|_| false) => (\n",
+    tests: [
+      "test/classes.test.ts",
+      "-t",
+      "a class is its module's default export",
+    ],
   },
   {
     name: "static-lock-refused",
-    breaks: "a static `Mutex`, `RwLock` or atomic is refused where it's one JS cell (#330)",
+    breaks:
+      "a static `Mutex`, `RwLock` or atomic is refused where it's one JS cell (#330)",
     file: "src/lower/pipeline.rs",
     find: "                super::recognition::StdItem::Mutex,\n                super::recognition::StdItem::RwLock,\n                super::recognition::StdItem::Atomic,\n",
     replace: "",
@@ -52,87 +73,127 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unread-library-item-imported",
-    breaks: "a module imports a library's item it doesn't read, a numbered enum's variant whose test an exhaustive `match` needn't write, `import { Pending, Resolved, Uninitialized }`",
+    breaks:
+      "a module imports a library's item it doesn't read, a numbered enum's variant whose test an exhaustive `match` needn't write, `import { Pending, Resolved, Uninitialized }`",
     file: "src/lower/pipeline.rs",
     find: "                (package.named).retain(|(export, local)| read.contains(local) || analyzed(&package.from, export));\n",
     replace: "",
-    tests: ["test/cross-crate-items.test.ts", "-t", "a library's repr enum's variant is imported by its name"],
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "a library's repr enum's variant is imported by its name",
+    ],
   },
   {
     name: "numbered-variant-const-undeclared",
-    breaks: "a numbered enum's variant read in its own module has no `const Pending = 0;`, so the read is of a name JS hasn't, a `ReferenceError`",
+    breaks:
+      "a numbered enum's variant read in its own module has no `const Pending = 0;`, so the read is of a name JS hasn't, a `ReferenceError`",
     file: "src/lower/pipeline.rs",
     find: "        if !export && !reached.contains(&id) {\n",
     replace: "        if !export {\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variants are its module's consts"],
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "a repr enum's variants are its module's consts",
+    ],
   },
   {
     name: "numbered-variant-const-unexported",
-    breaks: "a numbered enum's variant another module reads isn't exported, so its import, `import { Dark } from \"./theme.js\"`, finds nothing",
+    breaks:
+      "a numbered enum's variant another module reads isn't exported, so its import, `import { Dark } from \"./theme.js\"`, finds nothing",
     file: "src/lower/pipeline.rs",
     find: "            tcx.visibility(id).is_public() || called_from_elsewhere.contains(&id) || read_elsewhere.contains(&id);\n",
-    replace: "            tcx.visibility(id).is_public() || called_from_elsewhere.contains(&id);\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variants are its module's consts"],
+    replace:
+      "            tcx.visibility(id).is_public() || called_from_elsewhere.contains(&id);\n",
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "a repr enum's variants are its module's consts",
+    ],
   },
   {
     name: "class-declared-nowhere",
-    breaks: "a class's struct isn't where it's declared, so its `///` doc isn't its constructor function's (ADR 0761)",
+    breaks:
+      "a class's struct isn't where it's declared, so its `///` doc isn't its constructor function's (ADR 0761)",
     file: "src/lower/pipeline.rs",
     find: "                                    .map_or(js::Span::NONE, |adt| sources.item_span(tcx, adt)),\n",
-    replace: "                                    .map_or(js::Span::NONE, |_| js::Span::NONE),\n",
+    replace:
+      "                                    .map_or(js::Span::NONE, |_| js::Span::NONE),\n",
     tests: ["test/classes.test.ts", "-t", "doc is its constructor function's"],
   },
   {
     name: "default-constant-read-undeclared",
-    breaks: "a constant `js::export_default!` holds, read by its name in its own module, is only `export default \"19.3.0\";`, so the read is of a name JS hasn't, a `ReferenceError`",
+    breaks:
+      'a constant `js::export_default!` holds, read by its name in its own module, is only `export default "19.3.0";`, so the read is of a name JS hasn\'t, a `ReferenceError`',
     file: "src/lower/pipeline.rs",
     find: "                default_declared: default_declared && read_default.is_none(),\n",
     replace: "                default_declared,\n",
-    tests: ["test/modules.test.ts", "-t", "a default constant its own module reads"],
+    tests: [
+      "test/modules.test.ts",
+      "-t",
+      "a default constant its own module reads",
+    ],
   },
   {
     name: "default-constant-read-exported",
-    breaks: "a `pub` constant the default holds, read in its own module, is exported by its name too, where it's the default alone",
+    breaks:
+      "a `pub` constant the default holds, read in its own module, is exported by its name too, where it's the default alone",
     file: "src/lower/pipeline.rs",
     find: "                    constant.export = false;\n",
     replace: "                    let _ = &mut constant.export;\n",
-    tests: ["test/modules.test.ts", "-t", "a default constant its own module reads"],
+    tests: [
+      "test/modules.test.ts",
+      "-t",
+      "a default constant its own module reads",
+    ],
   },
   {
     name: "own-alias-dropped",
-    breaks: "`pub use self::current_time as unstable_now` exports nothing by `unstable_now`",
+    breaks:
+      "`pub use self::current_time as unstable_now` exports nothing by `unstable_now`",
     file: "src/lower/pipeline.rs",
     find: "            Some((alias.item, (info.name.clone(), alias.exported.clone())))\n",
-    replace: "            Some((alias.item, (info.name.clone(), alias.exported.clone()))).filter(|_| false)\n",
+    replace:
+      "            Some((alias.item, (info.name.clone(), alias.exported.clone()))).filter(|_| false)\n",
     tests: ["test/modules.test.ts", "-t", "another name of the module's own"],
   },
   {
     name: "own-alias-exported-by-name",
-    breaks: "a function its module exports as `unstable_now` is `export function getCurrentTime` too (ADR 0596, amended)",
+    breaks:
+      "a function its module exports as `unstable_now` is `export function getCurrentTime` too (ADR 0596, amended)",
     file: "src/lower/pipeline.rs",
     find: "                    js::Item::Function(function) if aliased(&function.name) => function.export = false,\n",
-    replace: "                    js::Item::Function(function) if false && aliased(&function.name) => function.export = false,\n",
+    replace:
+      "                    js::Item::Function(function) if false && aliased(&function.name) => function.export = false,\n",
     tests: ["test/modules.test.ts", "-t", "another name of the module's own"],
   },
   {
     name: "own-alias-constant-exported-by-name",
-    breaks: "a constant its module exports as `MAX_LIMIT` is `export const LIMIT` too (ADR 0596, amended)",
+    breaks:
+      "a constant its module exports as `MAX_LIMIT` is `export const LIMIT` too (ADR 0596, amended)",
     file: "src/lower/pipeline.rs",
     find: "                    js::Item::Const(constant) if aliased(&constant.name) => constant.export = false,\n",
-    replace: "                    js::Item::Const(constant) if false && aliased(&constant.name) => constant.export = false,\n",
+    replace:
+      "                    js::Item::Const(constant) if false && aliased(&constant.name) => constant.export = false,\n",
     tests: ["test/modules.test.ts", "-t", "another name of the module's own"],
   },
   {
     name: "own-import-sorted-by-local",
-    breaks: "an import lists what it imports by the items' own names, `{ MAX as LIMIT, unstable_now, toArray }`",
+    breaks:
+      "an import lists what it imports by the items' own names, `{ MAX as LIMIT, unstable_now, toArray }`",
     file: "src/lower/pipeline.rs",
     find: "(&paths[a], ae, an).cmp(&(&paths[b], be, bn))",
     replace: "(&paths[a], an, ae).cmp(&(&paths[b], bn, be))",
-    tests: ["test/modules.test.ts", "-t", "a module's own item a pub use renames is imported by that name"],
+    tests: [
+      "test/modules.test.ts",
+      "-t",
+      "a module's own item a pub use renames is imported by that name",
+    ],
   },
   {
     name: "block-directive-allowed",
-    breaks: "an `async` block's `js::directive!` is written nowhere, without an error",
+    breaks:
+      "an `async` block's `js::directive!` is written nowhere, without an error",
     file: "src/lower/pipeline.rs",
     find: "                if !owned\n",
     replace: "                if false && !owned\n",
@@ -140,39 +201,61 @@ export const mutations: Mutation[] = [
   },
   {
     name: "on-load-earlier-names-unreserved",
-    breaks: "two `on_load!` bodies that bind one name declare it twice at the module's top, which JS won't load",
+    breaks:
+      "two `on_load!` bodies that bind one name declare it twice at the module's top, which JS won't load",
     file: "src/lower/pipeline.rs",
     find: "        if super::bindings::is_on_load(tcx, def_id) {",
     replace: "        if false {",
-    tests: ["test/lowering-bindings.test.ts", "-t", "on_load bodies that bind one name"],
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "-t",
+      "on_load bodies that bind one name",
+    ],
   },
   {
     name: "on-load-names-of-any-module",
-    breaks: "an `on_load!` body's names are renamed for another module's body, `x$1` where `x` is free",
+    breaks:
+      "an `on_load!` body's names are renamed for another module's body, `x$1` where `x` is free",
     file: "src/lower/pipeline.rs",
     find: ".filter(|(id, _)| super::bindings::is_on_load(tcx, *id) && fns[id].module == module);",
     replace: ".filter(|(id, _)| super::bindings::is_on_load(tcx, *id));",
-    tests: ["test/lowering-bindings.test.ts", "-t", "on_load bodies that bind one name"],
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "-t",
+      "on_load bodies that bind one name",
+    ],
   },
   {
     name: "on-load-destructured-names-unreserved",
-    breaks: "a name an earlier `on_load!` body destructures is declared again by a later one",
+    breaks:
+      "a name an earlier `on_load!` body destructures is declared again by a later one",
     file: "src/lower/pipeline.rs",
     find: "        StmtKind::Destructure { pattern, .. } => pattern.names().into_iter().map(str::to_owned).collect(),\n",
     replace: "",
-    tests: ["test/lowering-bindings.test.ts", "-t", "on_load bodies that bind one name"],
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "-t",
+      "on_load bodies that bind one name",
+    ],
   },
   {
     name: "library-codec-unused",
-    breaks: "a library lowers only the codecs it uses itself, so its consumers can't read its types",
+    breaks:
+      "a library lowers only the codecs it uses itself, so its consumers can't read its types",
     file: "src/lower/pipeline.rs",
     find: "                    (used.contains(&id) || (export_library && super::library::reachable(tcx, id))) && queued.insert(id)\n",
     replace: "                    used.contains(&id) && queued.insert(id)\n",
-    tests: ["test/crates.test.ts", "test/cargo-workspace.test.ts", "-t", "prints what native"],
+    tests: [
+      "test/crates.test.ts",
+      "test/cargo-workspace.test.ts",
+      "-t",
+      "prints what native",
+    ],
   },
   {
     name: "library-derive-pruned",
-    breaks: "`@rust-js/std` leaves out a derived impl only its consumers reach, a std adapter's `Clone` (ADR 0561)",
+    breaks:
+      "`@rust-js/std` leaves out a derived impl only its consumers reach, a std adapter's `Clone` (ADR 0561)",
     file: "src/lower/pipeline.rs",
     find: "                .filter(|&id| exports_reachable && super::library::reachable(tcx, id)),\n",
     replace: "                .filter(|_| false),\n",
@@ -180,23 +263,27 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-derive-kept-for-consumers",
-    breaks: "a library writes a derived impl only its consumers reach, `tagDebug`, which its program doesn't, so its JS changes when another crate uses it (ADR 0914, amended)",
+    breaks:
+      "a library writes a derived impl only its consumers reach, `tagDebug`, which its program doesn't, so its JS changes when another crate uses it (ADR 0914, amended)",
     file: "src/lower/pipeline.rs",
     find: "                .filter(|&id| exports_reachable && super::library::reachable(tcx, id)),\n",
-    replace: "                .filter(|&id| export_library && super::library::reachable(tcx, id)),\n",
+    replace:
+      "                .filter(|&id| export_library && super::library::reachable(tcx, id)),\n",
     tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
     name: "js-import-unread",
-    breaks: "`js::import!(\"./app.css\");` imports nothing",
+    breaks: '`js::import!("./app.css");` imports nothing',
     file: "src/lower/pipeline.rs",
-    find: "            for attr in super::bindings::marks(tcx, module, \"import\") {\n",
-    replace: "            for attr in super::bindings::marks(tcx, module, \"none\") {\n",
+    find: '            for attr in super::bindings::marks(tcx, module, "import") {\n',
+    replace:
+      '            for attr in super::bindings::marks(tcx, module, "none") {\n',
     tests: ["test/modules.test.ts", "-t", "js::import"],
   },
   {
     name: "initializer-reads-statics",
-    breaks: "a static's initializer that reads another is lowered, which JS may read before it's made",
+    breaks:
+      "a static's initializer that reads another is lowered, which JS may read before it's made",
     file: "src/lower/pipeline.rs",
     find: "                && !super::body_queries::reads_statics(tcx, &body.thir, tcx.parent_module_from_def_id(def_id))",
     replace: "",
@@ -212,15 +299,17 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-defaults-unexported",
-    breaks: "a library's trait's default its consumer's impl calls, compiled there, isn't lowered, and its dictionary calls a function that isn't there (ADRs 0185, 0914, amended)",
+    breaks:
+      "a library's trait's default its consumer's impl calls, compiled there, isn't lowered, and its dictionary calls a function that isn't there (ADRs 0185, 0914, amended)",
     file: "src/lower/pipeline.rs",
     find: "            tcx.trait_of_assoc(id).is_none()\n                || foreign.is_instance(id)\n",
     replace: "            tcx.trait_of_assoc(id).is_none()\n",
-    tests: ["test/crates.test.ts","-t","defaults are what"],
+    tests: ["test/crates.test.ts", "-t", "defaults are what"],
   },
   {
     name: "directive-unwritten",
-    breaks: "a client component's module has no \`\"use client\";\`, and Next.js renders it as a Server Component",
+    breaks:
+      'a client component\'s module has no \`"use client";\`, and Next.js renders it as a Server Component',
     file: "src/lower/pipeline.rs",
     find: "                    Some(directive) => directives.push(directive.to_string()),",
     replace: "                    Some(_) => {}",
@@ -228,23 +317,35 @@ export const mutations: Mutation[] = [
   },
   {
     name: "default-imported-by-name",
-    breaks: "a module's default export is imported by its name, `import { Memoized as Label }`",
+    breaks:
+      "a module's default export is imported by its name, `import { Memoized as Label }`",
     file: "src/lower/pipeline.rs",
     find: "                super::default_exports::exported_as(tcx, id, info.exported()),\n",
     replace: "                name.clone(),\n",
-    tests: ["test/declarations.test.ts","-t","default export is imported as one"],
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "default export is imported as one",
+    ],
   },
   {
     name: "default-import-unrenamed",
-    breaks: "a default import is named as its item is, `import Memoized`, not as the importer's `use .. as Label` names it",
+    breaks:
+      "a default import is named as its item is, `import Memoized`, not as the importer's `use .. as Label` names it",
     file: "src/lower/pipeline.rs",
     find: "                renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone()),",
-    replace: "                defaulted.contains(&id).then(|| name.clone()).unwrap_or_else(|| renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone())),",
-    tests: ["test/declarations.test.ts","-t","default export is imported as one"],
+    replace:
+      "                defaulted.contains(&id).then(|| name.clone()).unwrap_or_else(|| renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone())),",
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "default export is imported as one",
+    ],
   },
   {
     name: "on-load-a-function",
-    breaks: "`js::on_load!`'s body is a function nothing calls, `function on_load()`, not what the module runs when it's loaded",
+    breaks:
+      "`js::on_load!`'s body is a function nothing calls, `function on_load()`, not what the module runs when it's loaded",
     file: "src/lower/pipeline.rs",
     find: "None if super::bindings::is_on_load(tcx, def_id) =>",
     replace: "None if false && super::bindings::is_on_load(tcx, def_id) =>",
@@ -252,7 +353,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "path-module-unseen",
-    breaks: "a `#[path]` module isn't told apart, its JS where its module path says",
+    breaks:
+      "a `#[path]` module isn't told apart, its JS where its module path says",
     file: "src/lower/pipeline.rs",
     find: "                located: located(tcx, module),\n",
     replace: "                located: false,\n",
@@ -260,50 +362,78 @@ export const mutations: Mutation[] = [
   },
   {
     name: "const-thread-local-own-name",
-    breaks: "a `const { .. }` thread-local's value is named by std's `const`, not the thread-local",
+    breaks:
+      "a `const { .. }` thread-local's value is named by std's `const`, not the thread-local",
     file: "src/lower/pipeline.rs",
     find: "        let key = thread_local_inits.get(&def_id).copied();\n",
-    replace: "        let key = thread_local_inits.get(&def_id).copied().filter(|_| false);\n",
-    tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
+    replace:
+      "        let key = thread_local_inits.get(&def_id).copied().filter(|_| false);\n",
+    tests: [
+      "test/modules.test.ts",
+      "-t",
+      "only read and set is the module's let",
+    ],
   },
   {
     name: "unshown-debug-kept",
-    breaks: "a derived `Debug` nothing shows is in the JS anyway, a function no one calls",
+    breaks:
+      "a derived `Debug` nothing shows is in the JS anyway, a function no one calls",
     file: "src/lower/pipeline.rs",
     find: "        .filter(|(id, _)| !derived.contains(id) || reached.contains(id))",
-    replace: "        .filter(|(id, _)| true || !derived.contains(id) || reached.contains(id))",
-    tests: ["test/compiler.test.ts", "-t", "a derived Debug is a function, left out unless something shows the type"],
+    replace:
+      "        .filter(|(id, _)| true || !derived.contains(id) || reached.contains(id))",
+    tests: [
+      "test/compiler.test.ts",
+      "-t",
+      "a derived Debug is a function, left out unless something shows the type",
+    ],
   },
   {
     name: "private-type-object-exported",
-    breaks: "a type's object is exported though none of its methods is, `export const Tally`, where only its module uses it",
+    breaks:
+      "a type's object is exported though none of its methods is, `export const Tally`, where only its module uses it",
     file: "src/lower/pipeline.rs",
     find: "                        namespace.export |= lowered.function.export;\n",
     replace: "                        namespace.export = true;\n",
-    tests: ["test/modules.test.ts", "-t", "methods across modules and in a thread-local, by their names in JS"],
+    tests: [
+      "test/modules.test.ts",
+      "-t",
+      "methods across modules and in a thread-local, by their names in JS",
+    ],
   },
   {
     name: "dictionary-jsx-unmarked",
-    breaks: "an impl whose copied default renders JSX is written to a `.js` file, which a JS tool won't parse",
+    breaks:
+      "an impl whose copied default renders JSX is written to a `.js` file, which a JS tool won't parse",
     file: "src/lower/pipeline.rs",
     find: "                 jsx: cx.jsx",
     replace: "                 jsx: false",
-    tests: ["test/traits.test.ts", "-t", "copied JSX defaults select the implementation module's JSX extension"],
+    tests: [
+      "test/traits.test.ts",
+      "-t",
+      "copied JSX defaults select the implementation module's JSX extension",
+    ],
   },
   {
     name: "named-expression-shadows",
-    breaks: "a named function expression reading what's named as it is reads itself: `<Count>` in `Count` renders the unmemoized function",
+    breaks:
+      "a named function expression reading what's named as it is reads itself: `<Count>` in `Count` renders the unmemoized function",
     file: "src/lower/pipeline.rs",
     find: "                        function.name = super::fresh_in(&mut read, &function.name);\n",
     replace: "",
-    tests: ["test/jsx-children.test.ts", "-t", "a function a block makes and gives"],
+    tests: [
+      "test/jsx-children.test.ts",
+      "-t",
+      "a function a block makes and gives",
+    ],
   },
   {
     name: "once-static-refused",
     breaks: "a `static` `OnceLock` is refused",
     file: "src/lower/pipeline.rs",
     find: "            (mutable || constant || super::copies::shareable(tcx, ty) || once)\n",
-    replace: "            (mutable || constant || super::copies::shareable(tcx, ty))\n",
+    replace:
+      "            (mutable || constant || super::copies::shareable(tcx, ty))\n",
     tests: ["test/corpus.test.ts", "-t", "once_cells"],
   },
   {
@@ -320,55 +450,71 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "            (DefKind::AnonConst, Some(body)) => body.thir[body.expr].ty,\n",
     replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "a const block of a static's dyn"],
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "a const block of a static's dyn",
+    ],
   },
   {
     name: "anon-const-visibility",
-    breaks: "a `const { .. }` block's visibility is asked, which it has none of",
+    breaks:
+      "a `const { .. }` block's visibility is asked, which it has none of",
     file: "src/lower/pipeline.rs",
     find: "                    export: (tcx.def_kind(key) != DefKind::AnonConst && tcx.visibility(key).is_public())",
     replace: "                    export: (tcx.visibility(key).is_public())",
-    tests: ["test/corpus.test.ts","-t","slice_uninit"],
+    tests: ["test/corpus.test.ts", "-t", "slice_uninit"],
   },
   {
-    "name": "named-import-alias-dropped",
-    "breaks": "a `use` that renames another module's function imports it by its own name",
-    "file": "src/lower/pipeline.rs",
-    "find": "                renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone()),",
-    "replace": "                (!defaulted.contains(&id)).then(|| name.clone()).unwrap_or_else(|| renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone())),",
-    "tests": [
-      "test/modules.test.ts",
-      "-t",
-      "renames another module's function"
-    ]
+    name: "named-import-alias-dropped",
+    breaks:
+      "a `use` that renames another module's function imports it by its own name",
+    file: "src/lower/pipeline.rs",
+    find: "                renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone()),",
+    replace:
+      "                (!defaulted.contains(&id)).then(|| name.clone()).unwrap_or_else(|| renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone())),",
+    tests: ["test/modules.test.ts", "-t", "renames another module's function"],
   },
   {
     name: "mir-statics-boxed",
     breaks: "a thread-local only its module reads and sets stays `{ value }`",
     file: "src/lower/pipeline.rs",
     find: "            let (made, boxed) = super::std_types::cell::plain_statics(\n                &mut lowered.items,\n",
-    replace: "            let (made, boxed) = super::std_types::cell::plain_statics(\n                &mut Vec::new(),\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "thread-local only its module"],
+    replace:
+      "            let (made, boxed) = super::std_types::cell::plain_statics(\n                &mut Vec::new(),\n",
+    tests: [
+      "test/lowering-cells.test.ts",
+      "-t",
+      "thread-local only its module",
+    ],
   },
   {
     name: "exported-box-unrefused",
-    breaks: "a `pub` thread-local whose module hands on the `&mut` of its `Option` is `export const depth = {}`, which a JS importer reads as the box, never what it holds (ADR 0270, amended)",
+    breaks:
+      "a `pub` thread-local whose module hands on the `&mut` of its `Option` is `export const depth = {}`, which a JS importer reads as the box, never what it holds (ADR 0270, amended)",
     file: "src/lower/pipeline.rs",
     find: "            for name in boxed {\n",
     replace: "            for name in boxed.into_iter().filter(|_| false) {\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "an exported cell its module needs the cell of is refused"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "an exported cell its module needs the cell of is refused",
+    ],
   },
   {
     name: "static-mut-initializer-refused",
-    breaks: "a `static mut` of a function, whose value rustc can't say, is refused, not its initializer's in its cell",
+    breaks:
+      "a `static mut` of a function, whose value rustc can't say, is refused, not its initializer's in its cell",
     file: "src/lower/pipeline.rs",
     find: "            (mutable || constant || super::copies::shareable(tcx, ty) || once)\n",
-    replace: "            (constant || super::copies::shareable(tcx, ty) || once)\n",
+    replace:
+      "            (constant || super::copies::shareable(tcx, ty) || once)\n",
     tests: ["test/corpus.test.ts", "-t", "^static_mut_fns.rs$"],
   },
   {
     name: "static-mut-initializer-unboxed",
-    breaks: "a `static mut` of a function is its initializer's value, not its `{ value }`, which its module's variable is made of (ADR 0096, amended)",
+    breaks:
+      "a `static mut` of a function is its initializer's value, not its `{ value }`, which its module's variable is made of (ADR 0096, amended)",
     file: "src/lower/pipeline.rs",
     find: "                    Some(mutability) if mutability.is_mut() => Expr::object(vec![Prop::Field(js::HELD.into(), value)]),\n",
     replace: "",
@@ -376,15 +522,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unshareable-const-refused",
-    breaks: "a constant whose value rustc can't say and isn't shareable, `const EMPTY: Vec<i32>`, is refused",
+    breaks:
+      "a constant whose value rustc can't say and isn't shareable, `const EMPTY: Vec<i32>`, is refused",
     file: "src/lower/pipeline.rs",
     find: "            (mutable || constant || super::copies::shareable(tcx, ty) || once)\n",
-    replace: "            (mutable || super::copies::shareable(tcx, ty) || once)\n",
+    replace:
+      "            (mutable || super::copies::shareable(tcx, ty) || once)\n",
     tests: ["test/corpus.test.ts", "-t", "^const_block_vec.rs$"],
   },
   {
     name: "impl-const-not-namespaced",
-    breaks: "an inherent impl's constant is a constant of its module, where `S.ID` reads its type's object",
+    breaks:
+      "an inherent impl's constant is a constant of its module, where `S.ID` reads its type's object",
     file: "src/lower/pipeline.rs",
     find: "        let Some(owner) = &info.owner else { continue };\n",
     replace: "        let Some(owner) = None::<&String> else { continue };\n",
@@ -392,7 +541,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "consumer-keeps-no-capacity",
-    breaks: "a consumer of a library that asks capacity keeps none, so what it gives the library has its length's",
+    breaks:
+      "a consumer of a library that asks capacity keeps none, so what it gives the library has its length's",
     file: "src/lower/pipeline.rs",
     find: "    let keeps_capacity = asks_capacity || foreign.keeps_capacity();\n",
     replace: "    let keeps_capacity = asks_capacity;\n",
@@ -400,23 +550,32 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-tracked-method-unrefused",
-    breaks: "a library's trait method without a default whose entries take its caller's location is exported, which its manifest can't say",
+    breaks:
+      "a library's trait method without a default whose entries take its caller's location is exported, which its manifest can't say",
     file: "src/lower/pipeline.rs",
     find: "            .filter(|&&id| tcx.trait_of_assoc(id).is_some() && !fns.contains_key(&id))\n",
-    replace: "            .filter(|&&id| false && tcx.trait_of_assoc(id).is_some() && !fns.contains_key(&id))\n",
-    tests: ["test/crates.test.ts", "-t", "tracked trait method without a default"],
+    replace:
+      "            .filter(|&&id| false && tcx.trait_of_assoc(id).is_some() && !fns.contains_key(&id))\n",
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "tracked trait method without a default",
+    ],
   },
   {
     name: "any-function-inlined",
-    breaks: "a function of the crate's called once, not a `Drop`'s, is inlined where it's called",
+    breaks:
+      "a function of the crate's called once, not a `Drop`'s, is inlined where it's called",
     file: "src/lower/pipeline.rs",
     find: "                                .is_some_and(|imp| tcx.impl_opt_trait_id(imp) == Some(t))\n",
-    replace: "                                .is_none_or(|imp| tcx.impl_opt_trait_id(imp) == Some(t))\n",
+    replace:
+      "                                .is_none_or(|imp| tcx.impl_opt_trait_id(imp) == Some(t))\n",
     tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
   },
   {
     name: "drop-called-elsewhere-inlined",
-    breaks: "a `Drop` dropped once in its module and once in another is inlined in its own, and the other imports a function that's gone",
+    breaks:
+      "a `Drop` dropped once in its module and once in another is inlined in its own, and the other imports a function that's gone",
     file: "src/lower/pipeline.rs",
     find: "                        && !called_elsewhere.contains(&id)\n",
     replace: "",
@@ -428,7 +587,11 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "                consts.push(constant(cache_of[&def_id].clone(), cache, false));\n",
     replace: "                let _ = cache;\n",
-    tests: ["test/lowering-dictionaries.test.ts", "-t", "a dictionary that takes nothing"],
+    tests: [
+      "test/lowering-dictionaries.test.ts",
+      "-t",
+      "a dictionary that takes nothing",
+    ],
   },
   {
     name: "const-number-unplaced",
@@ -436,7 +599,11 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline.rs",
     find: "                value.or_at(sources.span(body.value.span))\n",
     replace: "                value\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a number literal keeps its base and its exponent"],
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a number literal keeps its base and its exponent",
+    ],
   },
   {
     name: "drops-observed-dropped",
@@ -448,31 +615,48 @@ export const mutations: Mutation[] = [
   },
   {
     name: "named-default-exported-by-name",
-    breaks: "a `pub fn` `js::export_default!(page)` names is `export function page` as well as the default, two exports of one item",
+    breaks:
+      "a `pub fn` `js::export_default!(page)` names is `export function page` as well as the default, two exports of one item",
     file: "src/lower/pipeline.rs",
     find: ".filter(|f| f.name == name) {\n                    function.export = false;\n",
     replace: ".filter(|f| f.name == name) {\n",
-    tests: ["test/declarations.test.ts", "-t", "naming form names as the default alone"],
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "naming form names as the default alone",
+    ],
   },
   {
     name: "named-default-constant-exported-by-name",
-    breaks: "a `pub` thread-local `js::export_default!(REPORT_GLOBAL_ERROR)` names is `export const reportGlobalError = ..;` as well as `export default reportGlobalError;`, where upstream has the default alone",
+    breaks:
+      "a `pub` thread-local `js::export_default!(REPORT_GLOBAL_ERROR)` names is `export const reportGlobalError = ..;` as well as `export default reportGlobalError;`, where upstream has the default alone",
     file: "src/lower/pipeline.rs",
     find: "            if let Some(own) = default_export.filter(|&own| super::bindings::held_path(tcx, own).is_none()) {\n",
-    replace: "            if let Some(own) = default_export.filter(|&own| super::bindings::held_path(tcx, own).is_none() && default_declared) {\n",
-    tests: ["test/declarations.test.ts", "-t", "naming form names as the default alone"],
+    replace:
+      "            if let Some(own) = default_export.filter(|&own| super::bindings::held_path(tcx, own).is_none() && default_declared) {\n",
+    tests: [
+      "test/declarations.test.ts",
+      "-t",
+      "naming form names as the default alone",
+    ],
   },
   {
     name: "aliased-default-undeclared",
-    breaks: "a default constant its module's `pub use` names by another name isn't declared, so `export { VERSION as RELEASE }` names nothing",
+    breaks:
+      "a default constant its module's `pub use` names by another name isn't declared, so `export { VERSION as RELEASE }` names nothing",
     file: "src/lower/pipeline.rs",
     find: " && (read_at_home.contains(&held) || aliased(held))",
     replace: " && read_at_home.contains(&held)",
-    tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "default export is imported as its default",
+    ],
   },
   {
     name: "lazy-local-runs-at-load",
-    breaks: "a thread-local made where it's first used is taken as code its module's load runs, so what it reads of another module's `const`s is their value, not their name",
+    breaks:
+      "a thread-local made where it's first used is taken as code its module's load runs, so what it reads of another module's `const`s is their value, not their name",
     file: "src/lower/pipeline.rs",
     find: "        .filter(|(_, key)| !lazy_locals.contains(key))\n",
     replace: "",
@@ -481,79 +665,131 @@ export const mutations: Mutation[] = [
   },
   {
     name: "math-written-constant-literal",
-    breaks: "`const LN2: f64 = std::f64::consts::LN_2` is its number, `0.6931471805599453`, not `Math.LN2`",
+    breaks:
+      "`const LN2: f64 = std::f64::consts::LN_2` is its number, `0.6931471805599453`, not `Math.LN2`",
     file: "src/lower/pipeline.rs",
     find: "                    .and_then(|body| super::std_types::number::math::written_constant(tcx, &body.thir, body.expr))\n",
     replace: "                    .and_then(|_| None)\n",
-    tests: ["test/lowering-math.test.ts", "-t", "a std function that's Math's is its function, and is_defined asks of it"],
+    tests: [
+      "test/lowering-math.test.ts",
+      "-t",
+      "a std function that's Math's is its function, and is_defined asks of it",
+    ],
   },
   {
     name: "library-variable-read-as-cell",
-    breaks: "a consumer reads a library's variable's `value`, `hasBadMapPolyfill.value`, of a boolean (ADR 0270, amended)",
+    breaks:
+      "a consumer reads a library's variable's `value`, `hasBadMapPolyfill.value`, of a boolean (ADR 0270, amended)",
     file: "src/lower/pipeline.rs",
     find: "                .filter(|item| item.calling.has(crate::library::ItemFact::Variable) && item.member.is_none())\n",
-    replace: "                .filter(|item| item.calling.has(crate::library::ItemFact::Variable) && item.member.is_some())\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a library's exported cell"],
+    replace:
+      "                .filter(|item| item.calling.has(crate::library::ItemFact::Variable) && item.member.is_some())\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a library's exported cell",
+    ],
   },
   {
     name: "const-of-consts-folded",
-    breaks: "a const written of other consts, `SyncLane | InputContinuousLane | DefaultLane`, is rustc's value of it, `42`, its names lost",
+    breaks:
+      "a const written of other consts, `SyncLane | InputContinuousLane | DefaultLane`, is rustc's value of it, `42`, its names lost",
     file: "src/lower/pipeline.rs",
     find: "            && super::body_queries::written_of_constants(&body.thir, &by_name, &in_place)\n",
     replace: "            && false\n",
-    tests: ["test/lowering-constants.test.ts", "-t", "a const written of other consts is as it's written"],
+    tests: [
+      "test/lowering-constants.test.ts",
+      "-t",
+      "a const written of other consts is as it's written",
+    ],
   },
   {
     name: "const-of-library-consts-folded",
-    breaks: "a const written of a library's feature flag is rustc's value of it, the flag's answer baked in, not imported",
+    breaks:
+      "a const written of a library's feature flag is rustc's value of it, the flag's answer baked in, not imported",
     file: "src/lower/pipeline.rs",
     find: "fns.contains_key(&id) || foreign.item(id).is_some();",
     replace: "fns.contains_key(&id);",
-    tests: ["test/cross-crate-items.test.ts", "-t", "a const written of a library's consts imports them by name"],
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "a const written of a library's consts imports them by name",
+    ],
   },
   {
     name: "load-relowered-twice",
-    breaks: "a body lowered again, its values read, is a second item beside the first",
+    breaks:
+      "a body lowered again, its values read, is a second item beside the first",
     file: "src/lower/pipeline.rs",
     find: "                    Some(earlier) => earlier.1 = lowered,\n",
-    replace: "                    Some(_) => lowered_items.push((def_id, lowered)),\n",
-    tests: ["test/lowering-constants.test.ts", "-t", "read by its name where its module loads first"],
+    replace:
+      "                    Some(_) => lowered_items.push((def_id, lowered)),\n",
+    tests: [
+      "test/lowering-constants.test.ts",
+      "-t",
+      "read by its name where its module loads first",
+    ],
   },
   {
     name: "nullable-local-made-undefined",
-    breaks: "a nullable `const { .. }` thread-local's `None` is made `undefined`, `export let current;`, where React's is `null` (ADR 0586, amended)",
+    breaks:
+      "a nullable `const { .. }` thread-local's `None` is made `undefined`, `export let current;`, where React's is `null` (ADR 0586, amended)",
     file: "src/lower/pipeline.rs",
     find: "            Some(key) if nullable(key) => super::std_types::cell::nullable_made(value),\n",
-    replace: "            Some(key) if false && nullable(key) => super::std_types::cell::nullable_made(value),\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "nullable thread-local's None is null"],
+    replace:
+      "            Some(key) if false && nullable(key) => super::std_types::cell::nullable_made(value),\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "nullable thread-local's None is null",
+    ],
   },
   {
     name: "nullable-const-made-undefined",
-    breaks: "a nullable `const`'s `None` is made `undefined`, `export const NoTransition = undefined;`, where React's is `null` (ADR 0586, amended)",
+    breaks:
+      "a nullable `const`'s `None` is made `undefined`, `export const NoTransition = undefined;`, where React's is `null` (ADR 0586, amended)",
     file: "src/lower/pipeline.rs",
     find: "            None if nullable(def_id) => js::Storage::NullForNone.written(value, false),\n",
-    replace: "            None if false && nullable(def_id) => js::Storage::NullForNone.written(value, false),\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a nullable const's None is null"],
+    replace:
+      "            None if false && nullable(def_id) => js::Storage::NullForNone.written(value, false),\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a nullable const's None is null",
+    ],
   },
   {
     name: "static-mut-exported-boxed",
-    breaks: "a `pub static mut` isn't one of its module's variables to `plain_statics`, so it stays its `{ value }` and is refused (ADR 0096, amended)",
+    breaks:
+      "a `pub static mut` isn't one of its module's variables to `plain_statics`, so it stays its `{ value }` and is refused (ADR 0096, amended)",
     file: "src/lower/pipeline.rs",
     find: "                .chain(&statics)\n                .map(|key| fns[&key.to_def_id()].name.as_str())\n",
-    replace: "                .map(|key| fns[&key.to_def_id()].name.as_str())\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a pub static mut its module alone writes"],
+    replace:
+      "                .map(|key| fns[&key.to_def_id()].name.as_str())\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a pub static mut its module alone writes",
+    ],
   },
   {
     name: "static-mut-pointer-export-unrefused",
-    breaks: "a `pub static mut` a pointer to is given on is `export const TOTAL = { value: 0 }`, which a JS importer reads as the box (ADR 0096, amended)",
+    breaks:
+      "a `pub static mut` a pointer to is given on is `export const TOTAL = { value: 0 }`, which a JS importer reads as the box (ADR 0096, amended)",
     file: "src/lower/pipeline.rs",
     find: "                .chain(&statics)\n                .filter_map(|&key| Some((fns.get(&key.to_def_id())?.name.as_str(), key)))\n",
-    replace: "                .filter_map(|&key| Some((fns.get(&key.to_def_id())?.name.as_str(), key)))\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a static mut a pointer to is given on"],
+    replace:
+      "                .filter_map(|&key| Some((fns.get(&key.to_def_id())?.name.as_str(), key)))\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a static mut a pointer to is given on",
+    ],
   },
   {
     name: "static-mut-variable-unsaid",
-    breaks: "a `static mut` that's its module's `export let` isn't one of its variables to its importers, which read its `.value`, nor to its `.d.ts` or its library's contract (ADR 0096, amended)",
+    breaks:
+      "a `static mut` that's its module's `export let` isn't one of its variables to its importers, which read its `.value`, nor to its `.d.ts` or its library's contract (ADR 0096, amended)",
     file: "src/lower/pipeline.rs",
     find: "                .chain(&statics)\n                .filter_map(|key| {\n",
     replace: "                .filter_map(|key| {\n",
@@ -561,31 +797,42 @@ export const mutations: Mutation[] = [
   },
   {
     name: "consumers-dictionary-refused-in-cycle",
-    breaks: "a dictionary no code of its crate reads, `updateDisplay`, is refused in an import cycle of its modules, which can't reach it",
+    breaks:
+      "a dictionary no code of its crate reads, `updateDisplay`, is refused in an import cycle of its modules, which can't reach it",
     file: "src/lower/pipeline.rs",
     find: "            if reached_here.contains(&def_id) {\n                pass.dictionary_consts.push((module, def_id));\n",
-    replace: "            if true {\n                pass.dictionary_consts.push((module, def_id));\n",
+    replace:
+      "            if true {\n                pass.dictionary_consts.push((module, def_id));\n",
     tests: ["test/lowering-dictionaries.test.ts", "-t", "identity PartialEq"],
   },
   {
     name: "asked-instances-ignored",
-    breaks: "what a consumer's lowering asks it to compile isn't, and the placeholder it gave a reference is its JS (ADR 0914, amended)",
+    breaks:
+      "what a consumer's lowering asks it to compile isn't, and the placeholder it gave a reference is its JS (ADR 0914, amended)",
     file: "src/lower/pipeline.rs",
     find: "    if !asked.is_empty() && tcx.dcx().has_errors().is_none() {\n",
-    replace: "    if false && !asked.is_empty() && tcx.dcx().has_errors().is_none() {\n",
+    replace:
+      "    if false && !asked.is_empty() && tcx.dcx().has_errors().is_none() {\n",
     tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
     name: "js-null-constant-by-value",
-    breaks: "a constant written of `js::null()` is rustc's value of it, whose `None` is left out, `export const EMPTY = {}` (ADR 0935, amended)",
+    breaks:
+      "a constant written of `js::null()` is rustc's value of it, whose `None` is left out, `export const EMPTY = {}` (ADR 0935, amended)",
     file: "src/lower/pipeline.rs",
     find: "        let in_place = |id: DefId| super::bindings::is_js_null(tcx, id);\n",
-    replace: "        let in_place = |id: DefId| super::bindings::is_js_null(tcx, id) && false;\n",
-    tests: ["test/lowering-nullable-constants.test.ts", "-t", "js::null\\(\\) is null where it's written"],
+    replace:
+      "        let in_place = |id: DefId| super::bindings::is_js_null(tcx, id) && false;\n",
+    tests: [
+      "test/lowering-nullable-constants.test.ts",
+      "-t",
+      "js::null\\(\\) is null where it's written",
+    ],
   },
   {
     name: "js-given-copy-unimported",
-    breaks: "a copy of another module's function a module calls by the name its `use` gives isn't imported, so `relay_named`'s `wrappedUnboxed` has no import, and the case fails",
+    breaks:
+      "a copy of another module's function a module calls by the name its `use` gives isn't imported, so `relay_named`'s `wrappedUnboxed` has no import, and the case fails",
     file: "src/lower/pipeline.rs",
     find: "        targets.entry(from).or_default().insert(target);",
     replace: "        let _ = (from, target);",
@@ -593,37 +840,58 @@ export const mutations: Mutation[] = [
   },
   {
     name: "namespaced-library-variable-held",
-    breaks: "a library's thread-local read through its namespace, `dep::NAME.with_borrow(..)`, is read as its cell, `Dep.name.value`, where it's the library's variable (rd114a, ADR 1018)",
+    breaks:
+      "a library's thread-local read through its namespace, `dep::NAME.with_borrow(..)`, is read as its cell, `Dep.name.value`, where it's the library's variable (rd114a, ADR 1018)",
     file: "src/lower/pipeline.rs",
     find: "                        js::ExprKind::Var(namespace) if namespaced.contains(&(namespace.as_str(), export)))\n",
-    replace: "                        js::ExprKind::Var(namespace) if false && namespaced.contains(&(namespace.as_str(), export)))\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "library's exported cell"],
+    replace:
+      "                        js::ExprKind::Var(namespace) if false && namespaced.contains(&(namespace.as_str(), export)))\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "library's exported cell",
+    ],
   },
   {
     name: "export-named-apart-unaliased",
-    breaks: "an export named apart, `delete$`, is never written `export { delete$ as delete }`, so its module exports nothing by `delete` (#338)",
+    breaks:
+      "an export named apart, `delete$`, is never written `export { delete$ as delete }`, so its module exports nothing by `delete` (#338)",
     file: "src/lower/pipeline.rs",
     find: "        .filter_map(|(&id, info)| Some((id, (info.name.clone(), info.export.clone()?))))\n",
-    replace: "        .filter_map(|(&id, info)| Some((id, (info.name.clone(), info.export.clone().filter(|_| false)?))))\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "an export its module names apart is exported by its own name"],
+    replace:
+      "        .filter_map(|(&id, info)| Some((id, (info.name.clone(), info.export.clone().filter(|_| false)?))))\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "an export its module names apart is exported by its own name",
+    ],
   },
   {
     name: "export-named-apart-imported-apart",
-    breaks: "another module of the crate imports an export named apart by its module's name for it, `import { delete$ }`, which its module doesn't export (#338)",
+    breaks:
+      "another module of the crate imports an export named apart by its module's name for it, `import { delete$ }`, which its module doesn't export (#338)",
     file: "src/lower/pipeline.rs",
     find: "                super::default_exports::exported_as(tcx, id, info.exported()),\n",
-    replace: "                super::default_exports::exported_as(tcx, id, &name),\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "an export its module names apart is exported by its own name"],
+    replace:
+      "                super::default_exports::exported_as(tcx, id, &name),\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "an export its module names apart is exported by its own name",
+    ],
   },
   {
     name: "reexporter-namespace-unimported",
-    breaks: "a module that reads a function only through a module that re-exports it, `Plugins.doubled(2)`, isn't offered that module's namespace import, and the linker panics (rd137)",
+    breaks:
+      "a module that reads a function only through a module that re-exports it, `Plugins.doubled(2)`, isn't offered that module's namespace import, and the linker panics (rd137)",
     file: "src/lower/pipeline.rs",
     find: "let targets = imports.iter().map(|&(target, ..)| target).chain(reexporters);\n",
-    replace: "let targets = imports.iter().map(|&(target, ..)| target).chain(reexporters.take(0));\n",
-    tests: ["test/modules.test.ts", "-t", "a function called through its module is read through its namespace"],
+    replace:
+      "let targets = imports.iter().map(|&(target, ..)| target).chain(reexporters.take(0));\n",
+    tests: [
+      "test/modules.test.ts",
+      "-t",
+      "a function called through its module is read through its namespace",
+    ],
   },
-
-
-
 ];

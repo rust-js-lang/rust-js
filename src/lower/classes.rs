@@ -43,6 +43,13 @@ pub(crate) enum Member {
     /// { .. }`, each literal of the struct's own property, `{ containsNode
     /// }`, called `scope.containsNode(..)` (ADR 0943).
     Own,
+    /// A method of `&self` of a `#[rust_js::namespace]`'s impl: its module's
+    /// function, `export function createContainer(..) { .. }`, `self` no
+    /// parameter; called by its name where the namespace is named,
+    /// `ReactFiberReconciler.create_container(..)`'s `createContainer(..)`,
+    /// else through the value, `NoopRenderer.createContainer(..)` (rd292,
+    /// ADR 1037).
+    Namespace,
 }
 
 fn marked(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
@@ -55,6 +62,28 @@ fn marked_object(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), Symbol::intern("object")])
         .next()
         .is_some()
+}
+
+fn marked_namespace(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    tcx.get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), Symbol::intern("namespace")])
+        .next()
+        .is_some()
+}
+
+/// Is `adt` a module's namespace, a unit struct marked
+/// `#[rust_js::namespace]`, whose value is its module's namespace, `import *
+/// as ReactFiberReconciler`, and whose impl's methods are the module's
+/// functions (rd292, ADR 1037)?
+pub(crate) fn is_namespace(tcx: TyCtxt<'_>, adt: DefId) -> bool {
+    tcx.def_kind(adt) == DefKind::Struct && marked_namespace(tcx, adt)
+}
+
+/// The namespace an impl is of, if it's one's.
+fn namespace_of_impl(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
+    match tcx.type_of(imp).instantiate_identity().skip_normalization().kind() {
+        ty::Adt(adt, _) if is_namespace(tcx, adt.did()) => Some(adt.did()),
+        _ => None,
+    }
 }
 
 /// Is `adt` an object of methods, a struct marked `#[rust_js::object]`,
@@ -210,6 +239,11 @@ pub(crate) fn member(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Member> {
     if object_of_impl(tcx, imp).is_some() {
         let method = tcx.def_kind(def_id) == DefKind::AssocFn && tcx.associated_item(def_id).is_method();
         return method.then_some(Member::Own);
+    }
+    // A namespace's method, its module's function (rd292, ADR 1037).
+    if namespace_of_impl(tcx, imp).is_some() {
+        let method = tcx.def_kind(def_id) == DefKind::AssocFn && tcx.associated_item(def_id).is_method();
+        return method.then_some(Member::Namespace);
     }
     class_of_impl(tcx, imp)?;
     Some(match tcx.def_kind(def_id) {
@@ -599,7 +633,8 @@ pub(super) fn reject_misuse<'tcx>(
             }
         }
     }
-    reject_object_misuse(tcx) && valid
+    let objects = reject_object_misuse(tcx);
+    reject_namespace_misuse(tcx) && objects && valid
 }
 
 /// Report each constructor held as a value of any shape, which a `Class`
@@ -781,6 +816,80 @@ fn reject_object_misuse(tcx: TyCtxt<'_>) -> bool {
     valid
 }
 
+/// Report what a crate does with a module's namespace that rust-js
+/// refuses (rd292, ADR 1037). False if there was one.
+fn reject_namespace_misuse(tcx: TyCtxt<'_>) -> bool {
+    let mut valid = true;
+    let mut refuse = |span, what: &str| {
+        tcx.dcx()
+            .span_err(span, format!("rust-js: a `#[rust_js::namespace]` {what} (ADR 1037)"));
+        valid = false;
+    };
+    for def_id in tcx.hir_crate_items(()).definitions() {
+        let id = def_id.to_def_id();
+        let span = tcx.def_span(def_id);
+        match tcx.def_kind(def_id) {
+            DefKind::Struct if marked_namespace(tcx, id) => {
+                let variant = tcx.adt_def(id).non_enum_variant();
+                let generic = (tcx.generics_of(id).own_params.iter()).any(|param| param.kind.is_ty_or_const());
+                if variant.ctor_kind() != Some(rustc_hir::def::CtorKind::Const) || generic {
+                    refuse(
+                        span,
+                        "is a unit struct, `pub struct ReactFiberReconciler;`: its value is its module, which holds nothing else",
+                    );
+                }
+                if marked(tcx, id) || marked_object(tcx, id) {
+                    refuse(
+                        span,
+                        "isn't a `#[rust_js::class]` or `#[rust_js::object]` too: its value is its module's namespace",
+                    );
+                }
+            }
+            DefKind::Enum | DefKind::Union | DefKind::Fn | DefKind::Trait if marked_namespace(tcx, id) => {
+                refuse(
+                    span,
+                    "is a unit struct and its impl, `pub struct ReactFiberReconciler;`",
+                );
+            }
+            DefKind::Impl { of_trait: false } => {
+                let of_namespace = namespace_of_impl(tcx, id);
+                match (of_namespace.is_some(), marked_namespace(tcx, id)) {
+                    (true, false) => refuse(span, "struct's impl is marked `#[rust_js::namespace]` too"),
+                    (false, true) => refuse(span, "impl is of a struct marked `#[rust_js::namespace]`"),
+                    _ => {}
+                }
+                let Some(namespace) = of_namespace else {
+                    continue;
+                };
+                // Its functions are its module's: written where its value is.
+                if namespace.as_local().map(|adt| tcx.parent_module_from_def_id(adt))
+                    != Some(tcx.parent_module_from_def_id(def_id))
+                {
+                    refuse(span, "impl is in its struct's module, whose functions its methods are");
+                }
+                for &item in tcx.associated_item_def_ids(id) {
+                    let by_ref = member(tcx, item) == Some(Member::Namespace) && {
+                        let sig = tcx
+                            .fn_sig(item)
+                            .instantiate_identity()
+                            .skip_normalization()
+                            .skip_binder();
+                        matches!(sig.inputs()[0].kind(), ty::Ref(_, _, ty::Mutability::Not))
+                    };
+                    if !by_ref {
+                        refuse(
+                            tcx.def_span(item),
+                            "has methods of `&self` alone, its module's functions, `pub fn create_container(&self, ..)`",
+                        );
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    valid
+}
+
 /// `function` (ADR 0761) of a class's member, lowered as its impl's
 /// function: a constructor's `return { props, .. }` its `this`'s fields
 /// set, `this.props = props;`. A method's `self` is `this` already, made
@@ -812,7 +921,7 @@ pub(super) fn as_member(
             function.export = false;
             Ok(())
         }
-        Member::Static | Member::Const => Ok(()),
+        Member::Static | Member::Const | Member::Namespace => Ok(()),
     }
 }
 
@@ -824,7 +933,7 @@ pub(super) fn place(member: Member, class: &mut js::Class, name: &str) {
         Member::Constructor => class.constructor = name.to_owned(),
         Member::Method => class.prototype.push(name.to_owned()),
         Member::Getter => class.getters.push(name.to_owned()),
-        Member::Static | Member::Const | Member::Own => {}
+        Member::Static | Member::Const | Member::Own | Member::Namespace => {}
     }
 }
 
@@ -874,6 +983,22 @@ pub(super) fn receiver_as_this(
     body: &mut Vec<Stmt>,
     booleans: &mut std::collections::HashSet<String>,
 ) -> Result<(), &'static str> {
+    // A namespace's method has no `self`: what it calls through it is called
+    // by its name (rd292, ADR 1037), and nothing else reads it.
+    if member(tcx, function) == Some(Member::Namespace) {
+        let Some(Pattern::Name(receiver)) = params.first() else {
+            return Err("a method whose `self` is no parameter");
+        };
+        let mut read = false;
+        js::visit_stmts(body, &mut |name| read |= name == receiver);
+        if read {
+            return Err(
+                "`#[rust_js::namespace]` method that reads `self` only to call its functions, `self.update_container(..)`: its module has no value of its own (ADR 1037)",
+            );
+        }
+        params.remove(0);
+        return Ok(());
+    }
     if !matches!(
         member(tcx, function),
         Some(Member::Method | Member::Getter | Member::Own)

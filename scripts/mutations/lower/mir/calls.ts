@@ -1,7 +1,11 @@
 // Mutations of src/lower/mir/calls.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
-const isFunctionValue = ["test/lowering-is-function.test.ts", "-t", "value of a function's type"];
+const isFunctionValue = [
+  "test/lowering-is-function.test.ts",
+  "-t",
+  "value of a function's type",
+];
 
 export const mutations: Mutation[] = [
   {
@@ -10,87 +14,141 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/calls.rs",
     find: "                    .is_some_and(|payload| bindings::holds_none_as_null(tcx, payload)) =>\n",
     replace: "                    .is_some() =>\n",
-    tests: ["test/js-collections.test.ts", "-t", "a Map of any value holds undefined as it is"],
+    tests: [
+      "test/js-collections.test.ts",
+      "-t",
+      "a Map of any value holds undefined as it is",
+    ],
   },
   {
     name: "any-value-entries-nulled",
-    breaks: "a map of any value's entries written where they're given write a `None` `null`, `new Map([[\"none\", null]])` (#443)",
+    breaks:
+      "a map of any value's entries written where they're given write a `None` `null`, `new Map([[\"none\", null]])` (#443)",
     file: "src/lower/mir/calls.rs",
     find: "                    !self.boxed_payload(payload) && crate::lower::bindings::holds_none_as_null(self.tcx, payload)\n",
     replace: "                    !self.boxed_payload(payload)\n",
-    tests: ["test/js-collections.test.ts", "-t", "a Map of any value holds undefined as it is"],
+    tests: [
+      "test/js-collections.test.ts",
+      "-t",
+      "a Map of any value holds undefined as it is",
+    ],
   },
   {
     name: "nullable-any-given-its-pair",
-    breaks: "a `Some(&frames)` given to a binding's `#[rust_js::nullable]` `Option<&dyn Any>`, webapi's `animate`'s, is the pair that downcasts it, `{value, impl}`, not `frames` (rd170)",
+    breaks:
+      "a `Some(&frames)` given to a binding's `#[rust_js::nullable]` `Option<&dyn Any>`, webapi's `animate`'s, is the pair that downcasts it, `{value, impl}`, not `frames` (rd170)",
     file: "src/lower/mir/calls.rs",
     find: "                js::Storage::NullForNone.written(self.any_given_to_js(value, ty), nulled)\n",
-    replace: "                js::Storage::NullForNone.written(value, nulled)\n",
-    tests: ["test/corpus.test.ts", "-t", "^any_given_to_a_nullable_parameter.rs$"],
+    replace:
+      "                js::Storage::NullForNone.written(value, nulled)\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^any_given_to_a_nullable_parameter.rs$",
+    ],
   },
   {
     name: "bool-assign-by-ref-refused",
-    breaks: "a `bool`'s `op=` given a `&bool` from MIR, `*s ^= c`, is refused (#319)",
+    breaks:
+      "a `bool`'s `op=` given a `&bool` from MIR, `*s ^= c`, is refused (#319)",
     file: "src/lower/mir/calls.rs",
     find: "            } else if crate::lower::recognition::has_number_arithmetic(ty) || ty.is_bool() {\n",
-    replace: "            } else if crate::lower::recognition::has_number_arithmetic(ty) {\n",
+    replace:
+      "            } else if crate::lower::recognition::has_number_arithmetic(ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^bool_ops_by_ref.rs$"],
   },
   {
     name: "class-constructor-called",
-    breaks: "a class's `Component::new(..)` is `Component(..)`, called, not constructed, so its `this` is `undefined` (ADR 0761)",
+    breaks:
+      "a class's `Component::new(..)` is `Component(..)`, called, not constructed, so its `this` is `undefined` (ADR 0761)",
     file: "src/lower/mir/calls.rs",
     find: "                Expr::new_(*class, args)\n",
     replace: "                Expr::call(*class, args)\n",
-    tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
+    tests: [
+      "test/classes.test.ts",
+      "-t",
+      "React's Component is a constructor function",
+    ],
   },
   {
     name: "class-method-called-as-a-function",
-    breaks: "a class's `component.force_update(..)` is `Component.forceUpdate(component, ..)`, of a method the constructor doesn't have (ADR 0761)",
+    breaks:
+      "a class's `component.force_update(..)` is `Component.forceUpdate(component, ..)`, of a method the constructor doesn't have (ADR 0761)",
     file: "src/lower/mir/calls.rs",
     find: "            (Some(crate::lower::classes::Member::Method), js::ExprKind::Member(_, name)) if !args.is_empty() => {\n",
-    replace: "            (Some(crate::lower::classes::Member::Method), js::ExprKind::Member(_, name)) if false => {\n",
-    tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
+    replace:
+      "            (Some(crate::lower::classes::Member::Method), js::ExprKind::Member(_, name)) if false => {\n",
+    tests: [
+      "test/classes.test.ts",
+      "-t",
+      "React's Component is a constructor function",
+    ],
   },
   {
     name: "held-call-named-at-call",
-    breaks: "a binding's call is asked where it's read by the call's span, not its path's, so one named through the module that holds it is read in place",
+    breaks:
+      "a binding's call is asked where it's read by the call's span, not its path's, so one named through the module that holds it is read in place",
     file: "src/lower/mir/calls.rs",
     find: "            false => (self.thir_call(def_id, span)).map_or(span, |(fun, _)| self.frame.thir[fun].span),\n",
-    replace: "            false => (self.thir_call(def_id, span)).map_or(span, |_| span),\n",
+    replace:
+      "            false => (self.thir_call(def_id, span)).map_or(span, |_| span),\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "named through the module"],
   },
   {
     name: "defined-member-refused",
-    breaks: "`js::is_defined(Clock::now)` of a method of a global's type is refused",
+    breaks:
+      "`js::is_defined(Clock::now)` of a method of a global's type is refused",
     file: "src/lower/mir/calls.rs",
     find: "bindings::is_method(tcx, f) => self.member_of_global(f),\n",
     replace: "bindings::is_method(tcx, f) => None,\n",
-    tests: ["test/lowering-bindings.test.ts", "test/lowering.test.ts", "-t", "js::is_defined"],
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "test/lowering.test.ts",
+      "-t",
+      "js::is_defined",
+    ],
   },
   {
     name: "defined-path-last-only",
-    breaks: "`js::is_defined(tool_hook)` is `typeof rustJsTools.hook`, which throws where the host lacks `rustJsTools`",
+    breaks:
+      "`js::is_defined(tool_hook)` is `typeof rustJsTools.hook`, which throws where the host lacks `rustJsTools`",
     file: "src/lower/mir/calls.rs",
     find: "            .reduce(|a, b| Expr::bin(Op::And, a, b).or_at(at)))\n",
     replace: "            .last())\n",
-    tests: ["test/lowering-bindings.test.ts", "test/lowering.test.ts", "-t", "js::is_defined"],
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "test/lowering.test.ts",
+      "-t",
+      "js::is_defined",
+    ],
   },
   {
     name: "defined-member-of-either",
     breaks: "a method of a type two globals hold asks of the first",
     file: "src/lower/mir/calls.rs",
     find: "        let [global] = statics.as_slice() else { return None };\n",
-    replace: "        let [global, ..] = statics.as_slice() else { return None };\n",
-    tests: ["test/lowering-bindings.test.ts", "test/lowering.test.ts", "-t", "js::is_defined"],
+    replace:
+      "        let [global, ..] = statics.as_slice() else { return None };\n",
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "test/lowering.test.ts",
+      "-t",
+      "js::is_defined",
+    ],
   },
   {
     name: "defined-of-own-function",
-    breaks: "`js::is_defined(helper)` of the crate's own function is a `typeof` of it, which is always there",
+    breaks:
+      "`js::is_defined(helper)` of the crate's own function is a `typeof` of it, which is always there",
     file: "src/lower/mir/calls.rs",
     find: "            ty::FnDef(f, _) if bindings::is_binding(tcx, f) => bindings::js_path(tcx, f),\n",
     replace: "            ty::FnDef(f, _) => bindings::js_path(tcx, f),\n",
-    tests: ["test/lowering-bindings.test.ts", "test/lowering.test.ts", "-t", "js::is_defined"],
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "test/lowering.test.ts",
+      "-t",
+      "js::is_defined",
+    ],
   },
   {
     name: "defined-of-any-name",
@@ -98,51 +156,92 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/calls.rs",
     find: "            crate::names::is_identifier(first).then(|| {\n",
     replace: "            true.then(|| {\n",
-    tests: ["test/lowering-bindings.test.ts", "test/lowering.test.ts", "-t", "js::is_defined"],
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "test/lowering.test.ts",
+      "-t",
+      "js::is_defined",
+    ],
   },
   {
     name: "defined-static-unfollowed",
-    breaks: "`js::is_defined(&js::symbol::iterator)`, a reference to a static, is refused as no global's, not as the static's other spelling",
+    breaks:
+      "`js::is_defined(&js::symbol::iterator)`, a reference to a static, is refused as no global's, not as the static's other spelling",
     file: "src/lower/mir/calls.rs",
     find: "                if matches!(place.projection.as_slice(), [PlaceElem::Deref]) =>\n",
-    replace: "                if false && matches!(place.projection.as_slice(), [PlaceElem::Deref]) =>\n",
-    tests: ["test/lowering-bindings.test.ts", "test/lowering.test.ts", "-t", "js::is_defined"],
+    replace:
+      "                if false && matches!(place.projection.as_slice(), [PlaceElem::Deref]) =>\n",
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "test/lowering.test.ts",
+      "-t",
+      "js::is_defined",
+    ],
   },
   {
     name: "defined-static-value-unread",
-    breaks: "`js::is_defined(js::symbol::to_string_tag)`, a static given as itself, is refused",
+    breaks:
+      "`js::is_defined(js::symbol::to_string_tag)`, a static given as itself, is refused",
     file: "src/lower/mir/calls.rs",
     find: "                [PlaceElem::Deref] => return self.static_given(body, &Operand::Copy(Place::from(place.local))),\n",
     replace: "",
-    tests: ["test/lowering-bindings.test.ts", "test/lowering.test.ts", "-t", "js::is_defined"],
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "test/lowering.test.ts",
+      "-t",
+      "js::is_defined",
+    ],
   },
   {
     name: "defined-static-reference-accepted",
-    breaks: "`js::is_defined(&js::symbol::iterator)` is accepted beside the static itself, two spellings",
+    breaks:
+      "`js::is_defined(&js::symbol::iterator)` is accepted beside the static itself, two spellings",
     file: "src/lower/mir/calls.rs",
     find: "                Some(s) if refs(given) > refs(tcx.type_of(s).instantiate_identity().skip_normalization()) => {\n",
-    replace: "                Some(s) if false && refs(given) > refs(tcx.type_of(s).instantiate_identity().skip_normalization()) => {\n",
-    tests: ["test/lowering-bindings.test.ts", "test/lowering.test.ts", "-t", "js::is_defined"],
+    replace:
+      "                Some(s) if false && refs(given) > refs(tcx.type_of(s).instantiate_identity().skip_normalization()) => {\n",
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "test/lowering.test.ts",
+      "-t",
+      "js::is_defined",
+    ],
   },
   {
     name: "defined-of-own-static",
-    breaks: "`js::is_defined(LIMIT)` of the crate's own static is a `typeof` of it, which is there",
+    breaks:
+      "`js::is_defined(LIMIT)` of the crate's own static is a `typeof` of it, which is there",
     file: "src/lower/mir/calls.rs",
     find: "            _ => match self.static_given(body, &arg.node).filter(|&s| tcx.is_foreign_item(s)) {\n",
     replace: "            _ => match self.static_given(body, &arg.node) {\n",
-    tests: ["test/lowering-bindings.test.ts", "test/lowering.test.ts", "-t", "js::is_defined"],
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "test/lowering.test.ts",
+      "-t",
+      "js::is_defined",
+    ],
   },
   {
     name: "mir-binding-component-called",
-    breaks: "a component a JS module exports is its binding's value, not the tag JSX imports",
+    breaks:
+      "a component a JS module exports is its binding's value, not the tag JSX imports",
     file: "src/lower/mir/calls.rs",
     find: "                        ty::FnDef(id, _) => cx.binding_component_of(id),\n",
     replace: "                        ty::FnDef(..) => None,\n",
-    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
     name: "mir-generic-result-boxed",
-    breaks: "MIR's `pick(..).n += 5`, a generic `&mut T` of an object, reads the box's `n`",
+    breaks:
+      "MIR's `pick(..).n += 5`, a generic `&mut T` of an object, reads the box's `n`",
     file: "src/lower/mir/calls.rs",
     find: "        let called = self.generic_result_values((def_id, generic_args), called, span)?;\n",
     replace: "",
@@ -150,7 +249,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-closure-tuple-refused",
-    breaks: "MIR's `f(x)` of a generic `F: Fn`, its arguments a tuple made before, is refused",
+    breaks:
+      "MIR's `f(x)` of a generic `F: Fn`, its arguments a tuple made before, is refused",
     file: "src/lower/mir/calls.rs",
     find: "                if tuple.reads_same()\n",
     replace: "                if false && tuple.reads_same()\n",
@@ -158,11 +258,17 @@ export const mutations: Mutation[] = [
   },
   {
     name: "nullable-param-some-coalesced",
-    breaks: "a `Some(..)` given to a binding's nullable parameter is `value ?? null`, `Object.create(Object.prototype ?? null)`, a function's `(e) => .. ?? null`",
+    breaks:
+      "a `Some(..)` given to a binding's nullable parameter is `value ?? null`, `Object.create(Object.prototype ?? null)`, a function's `(e) => .. ?? null`",
     file: "src/lower/mir/calls.rs",
     find: "                js::Storage::NullForNone.written(self.any_given_to_js(value, ty), nulled)\n            }\n            // Entries written where they're given",
-    replace: "                js::Storage::NullForNone.written(self.any_given_to_js(value, ty), false)\n            }\n            // Entries written where they're given",
-    tests: ["test/lowering-options.test.ts", "-t", "a binding's nullable parameter's None is null"],
+    replace:
+      "                js::Storage::NullForNone.written(self.any_given_to_js(value, ty), false)\n            }\n            // Entries written where they're given",
+    tests: [
+      "test/lowering-options.test.ts",
+      "-t",
+      "a binding's nullable parameter's None is null",
+    ],
   },
   {
     name: "mir-assign-shift-amount-bigint",
@@ -170,11 +276,12 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/calls.rs",
     find: "            let rhs = crate::lower::std_types::number::shift_amount_of(op, rhs, ty, arg_tys[1]);\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","generic_bitwise_operators"],
+    tests: ["test/corpus.test.ts", "-t", "generic_bitwise_operators"],
   },
   {
     name: "own-assign-through-place-refused",
-    breaks: "`a.0 += b` of the crate's own type through a place is refused, not its impl's",
+    breaks:
+      "`a.0 += b` of the crate's own type through a place is refused, not its impl's",
     file: "src/lower/mir/calls.rs",
     find: "            && (self.is_lang_adt(ty, LangItem::String)\n                || crate::lower::representation::Num::of(ty).is_some()\n                || ty.is_bool())\n",
     replace: "",
@@ -182,7 +289,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unit-argument-given",
-    breaks: "a `()` given a function value is an argument, `resolve(undefined)` of `resolve(())`",
+    breaks:
+      "a `()` given a function value is an argument, `resolve(undefined)` of `resolve(())`",
     file: "src/lower/mir/calls.rs",
     find: "            crate::lower::calls::left_out(self.tcx, &mut exprs, &tys, &[]);\n",
     replace: "            let _ = tys;\n",
@@ -191,24 +299,29 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unit-given-binding-array",
-    breaks: "a `()` given a binding as any value is its tuple's `[]`, never `===` anything: `x === []` of `js::strict_equals(x, ())` (ADR 0775)",
+    breaks:
+      "a `()` given a binding as any value is its tuple's `[]`, never `===` anything: `x === []` of `js::strict_equals(x, ())` (ADR 0775)",
     file: "src/lower/mir/calls.rs",
     find: "                    .unwrap_or(value)\n            }\n",
-    replace: "                    .unwrap_or(Expr::array(Vec::new()))\n            }\n",
+    replace:
+      "                    .unwrap_or(Expr::array(Vec::new()))\n            }\n",
     tests: ["test/corpus.test.ts", "-t", "^unit_given_to_js.rs$"],
     snapshots: true,
   },
   {
     name: "duration-assign-number",
-    breaks: "a `Duration`'s `-=` is its number's `-`, which doesn't panic past zero as std's does",
+    breaks:
+      "a `Duration`'s `-=` is its number's `-`, which doesn't panic past zero as std's does",
     file: "src/lower/mir/calls.rs",
     find: "            } else if crate::lower::recognition::has_number_arithmetic(ty) || ty.is_bool() {",
-    replace: "            } else if crate::lower::representation::Num::of(ty).is_some() || ty.is_bool() {",
+    replace:
+      "            } else if crate::lower::representation::Num::of(ty).is_some() || ty.is_bool() {",
     tests: ["test/corpus.test.ts", "-t", "^duration_sub_assign_panic.rs$"],
   },
   {
     name: "writer-callable-given-formatter",
-    breaks: "a writer callable is given the `Formatter`'s text, which it doesn't take",
+    breaks:
+      "a writer callable is given the `Formatter`'s text, which it doesn't take",
     file: "src/lower/mir/calls.rs",
     find: "        let given = |i: &usize| Some(*i) != writes;\n",
     replace: "        let given = |_: &usize| true;\n",
@@ -216,7 +329,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "writer-callable-no-options",
-    breaks: "a writer callable isn't given the `Formatter`'s options: a closure's `f.pad(w)` pads nothing",
+    breaks:
+      "a writer callable isn't given the `Formatter`'s options: a closure's `f.pad(w)` pads nothing",
     file: "src/lower/mir/calls.rs",
     find: "        if writes.is_some() {\n            exprs.extend(self.given_to_writer(None));\n        }\n",
     replace: "",
@@ -224,15 +338,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "lazy-never-its-value",
-    breaks: "`use_state(|| 0)` is `useState(() => 0)`, the closure, where it's `useState(0)`",
+    breaks:
+      "`use_state(|| 0)` is `useState(() => 0)`, the closure, where it's `useState(0)`",
     file: "src/lower/mir/calls.rs",
     find: "            () if named(bindings::lazy_params(tcx, def_id)) => self.lazy_value(value, ty),\n",
-    replace: "            () if named(bindings::lazy_params(tcx, def_id)) => value,\n",
+    replace:
+      "            () if named(bindings::lazy_params(tcx, def_id)) => value,\n",
     tests: ["test/react.test.ts", "-t", "use_state's first state"],
   },
   {
     name: "lazy-call-its-value",
-    breaks: "`use_state(|| load().len())` is `useState(load().length)`, which calls `load` every render",
+    breaks:
+      "`use_state(|| load().len())` is `useState(load().length)`, which calls `load` every render",
     file: "src/lower/mir/calls.rs",
     find: "                    ] if !given.has_effects() => given.clone(),\n",
     replace: "                    ] => given.clone(),\n",
@@ -240,31 +357,45 @@ export const mutations: Mutation[] = [
   },
   {
     name: "lazy-function-its-value",
-    breaks: "state that's a function, `use_state(|| |n| n + 1)`, is `useState((n) => ..)`, which React calls for the state",
+    breaks:
+      "state that's a function, `use_state(|| |n| n + 1)`, is `useState((n) => ..)`, which React calls for the state",
     file: "src/lower/mir/calls.rs",
     find: "                if params.is_empty() && !self.is_callable(gives) && !self.is_unknown(gives) =>\n",
-    replace: "                if params.is_empty() && !self.is_unknown(gives) =>\n",
+    replace:
+      "                if params.is_empty() && !self.is_unknown(gives) =>\n",
     tests: ["test/react.test.ts", "-t", "use_state's first state"],
   },
   {
     name: "defined-path-unread",
-    breaks: "`js::is_defined((Page::doc, Doc::make))`, a path of bindings, is refused as no global's binding",
+    breaks:
+      "`js::is_defined((Page::doc, Doc::make))`, a path of bindings, is refused as no global's binding",
     file: "src/lower/mir/calls.rs",
     find: "            && let ty::Tuple(steps) = *arg.node.ty(&body.local_decls, tcx).kind()\n            && !steps.is_empty()\n",
-    replace: "            && let ty::Tuple(steps) = *arg.node.ty(&body.local_decls, tcx).kind()\n            && steps.is_empty()\n",
-    tests: ["test/lowering-bindings.test.ts", "-t", "js::is_defined of a path of bindings"],
+    replace:
+      "            && let ty::Tuple(steps) = *arg.node.ty(&body.local_decls, tcx).kind()\n            && steps.is_empty()\n",
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "-t",
+      "js::is_defined of a path of bindings",
+    ],
   },
   {
     name: "defined-path-step-unchecked",
-    breaks: "a path whose step is no method of what the one before gives, `(Doc::make, Page::doc)`, is asked as if it were",
+    breaks:
+      "a path whose step is no method of what the one before gives, `(Doc::make, Page::doc)`, is asked as if it were",
     file: "src/lower/mir/calls.rs",
     find: "                    if !bindings::is_method(tcx, f) || (of != Some(before.peel_refs()) && !any && !extends) {\n",
     replace: "                    if !bindings::is_method(tcx, f) {\n",
-    tests: ["test/lowering-bindings.test.ts", "-t", "js::is_defined of a path of bindings"],
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "-t",
+      "js::is_defined of a path of bindings",
+    ],
   },
   {
     name: "assign-impl-on-number-skipped",
-    breaks: "the crate's `impl AddAssign<Cents> for i32` is skipped, `t += Cents(5)` the number's `+` of the newtype's array",
+    breaks:
+      "the crate's `impl AddAssign<Cents> for i32` is skipped, `t += Cents(5)` the number's `+` of the newtype's array",
     file: "src/lower/mir/calls.rs",
     find: "            && !self.resolves_to_crate(def_id, generic_args)?\n",
     replace: "",
@@ -272,23 +403,34 @@ export const mutations: Mutation[] = [
   },
   {
     name: "registered-read-unchecked",
-    breaks: "a value read as the registry's symbol whose `Some` the program tells is the value itself, so a string is its `Some`",
+    breaks:
+      "a value read as the registry's symbol whose `Some` the program tells is the value itself, so a string is its `Some`",
     file: "src/lower/mir/calls.rs",
     find: "            return Ok(match self.frame.facts.registered_reads.contains(&span) {\n",
     replace: "            return Ok(match true {\n",
-    tests: ["test/lowering-symbols.test.ts", "-t", "a read of one it tells is checked"],
+    tests: [
+      "test/lowering-symbols.test.ts",
+      "-t",
+      "a read of one it tells is checked",
+    ],
   },
   {
     name: "registered-read-checked",
-    breaks: "a value read as the registry's symbol only tested against them is checked, `switch ($symbolFor(type))`, not the value",
+    breaks:
+      "a value read as the registry's symbol only tested against them is checked, `switch ($symbolFor(type))`, not the value",
     file: "src/lower/mir/calls.rs",
     find: "            return Ok(match self.frame.facts.registered_reads.contains(&span) {\n",
     replace: "            return Ok(match false {\n",
-    tests: ["test/lowering-symbols.test.ts", "-t", "a match of the registry's symbols"],
+    tests: [
+      "test/lowering-symbols.test.ts",
+      "-t",
+      "a match of the registry's symbols",
+    ],
   },
   {
     name: "throwing-fn-called-plain",
-    breaks: "a throwing function's call is its value, `testStringCoercion(value).TAG`, not a throwing call",
+    breaks:
+      "a throwing function's call is its value, `testStringCoercion(value).TAG`, not a throwing call",
     file: "src/lower/mir/calls.rs",
     find: "        Ok(Value::Expr(self.catching(def_id, generic_args, called)))\n",
     replace: "        Ok(Value::Expr(called))\n",
@@ -296,87 +438,135 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rest-variable-called-as-js",
-    breaks: "a variable of a function whose last parameter is `#[rust_js::rest]` is called as the variable, the arrow that spreads it, `named([x])`, where the function reads as written, `total(x)`",
+    breaks:
+      "a variable of a function whose last parameter is `#[rust_js::rest]` is called as the variable, the arrow that spreads it, `named([x])`, where the function reads as written, `total(x)`",
     file: "src/lower/mir/calls.rs",
     find: "            && !self.takes_rest(def_id)\n",
     replace: "",
-    tests: ["test/rest-parameters.test.ts", "-t", "rest slice is JS's rest parameter"],
+    tests: [
+      "test/rest-parameters.test.ts",
+      "-t",
+      "rest slice is JS's rest parameter",
+    ],
   },
   {
     name: "rest-value-closure-call-unspread",
-    breaks: "a call of a closure or a `dyn Fn` of rest arguments as a value gives them as one array, `count([1, 2])`",
+    breaks:
+      "a call of a closure or a `dyn Fn` of rest arguments as a value gives them as one array, `count([1, 2])`",
     file: "src/lower/mir/calls.rs",
     find: "                .is_some_and(|&ty| crate::lower::bindings::is_rest_value(self.tcx, ty))\n",
-    replace: "                .is_some_and(|&ty| crate::lower::bindings::is_rest_value(self.tcx, ty) && false)\n",
-    tests: ["test/rest-parameters.test.ts", "-t", "spreads them, through any type"],
+    replace:
+      "                .is_some_and(|&ty| crate::lower::bindings::is_rest_value(self.tcx, ty) && false)\n",
+    tests: [
+      "test/rest-parameters.test.ts",
+      "-t",
+      "spreads them, through any type",
+    ],
   },
   {
     name: "math-defined-refused",
-    breaks: "`js::is_defined(u32::leading_zeros)` is refused as no global's binding, where it's `typeof Math.clz32 !== \"undefined\"`",
+    breaks:
+      "`js::is_defined(u32::leading_zeros)` is refused as no global's binding, where it's `typeof Math.clz32 !== \"undefined\"`",
     file: "src/lower/mir/calls.rs",
     find: "            && let Some(function) = self.math_function(f, f_args)\n",
-    replace: "            && let Some(function) = self.math_function(f, f_args).filter(|_| false)\n",
-    tests: ["test/lowering-math.test.ts", "-t", "a std function that's Math's is its function, and is_defined asks of it"],
+    replace:
+      "            && let Some(function) = self.math_function(f, f_args).filter(|_| false)\n",
+    tests: [
+      "test/lowering-math.test.ts",
+      "-t",
+      "a std function that's Math's is its function, and is_defined asks of it",
+    ],
   },
   {
     name: "defined-of-a-windows-constructor-refused",
-    breaks: "`js::is_defined(Window::new_error_event)` is refused, so React's `reportGlobalError` can't ask `typeof window.ErrorEvent` (ADR 0891)",
+    breaks:
+      "`js::is_defined(Window::new_error_event)` is refused, so React's `reportGlobalError` can't ask `typeof window.ErrorEvent` (ADR 0891)",
     file: "src/lower/mir/calls.rs",
     find: "        bindings::JsForm::Call(name) | bindings::JsForm::Get(name) | bindings::JsForm::New(name) => Some(name),\n",
-    replace: "        bindings::JsForm::Call(name) | bindings::JsForm::Get(name) => Some(name),\n",
-    tests: ["test/webapi-bindings.test.ts", "-t", "a window's constructor is the window's"],
+    replace:
+      "        bindings::JsForm::Call(name) | bindings::JsForm::Get(name) => Some(name),\n",
+    tests: [
+      "test/webapi-bindings.test.ts",
+      "-t",
+      "a window's constructor is the window's",
+    ],
   },
   {
     name: "defined-path-read-past-a-constructor",
-    breaks: "`js::is_defined((Window::new_error_event, ErrorEvent::message))` asks `window.ErrorEvent.message`, a property of the class, not of what it makes (ADR 0891)",
+    breaks:
+      "`js::is_defined((Window::new_error_event, ErrorEvent::message))` asks `window.ErrorEvent.message`, a property of the class, not of what it makes (ADR 0891)",
     file: "src/lower/mir/calls.rs",
     find: "            if !bindings::is_binding(tcx, f) || (constructs && k + 1 < steps.len()) {\n",
-    replace: "            if !bindings::is_binding(tcx, f) || (constructs && k + 1 < steps.len() && false) {\n",
-    tests: ["test/webapi-bindings.test.ts", "-t", "a window's constructor is the window's"],
+    replace:
+      "            if !bindings::is_binding(tcx, f) || (constructs && k + 1 < steps.len() && false) {\n",
+    tests: [
+      "test/webapi-bindings.test.ts",
+      "-t",
+      "a window's constructor is the window's",
+    ],
   },
   {
     name: "nullable-type-parameter-of-any",
-    breaks: "a binding's nullable type parameter given an `Option` is given `undefined` for `None`, `createCursor(undefined)`, and any other value `?? null` (ADR 0586, amended)",
+    breaks:
+      "a binding's nullable type parameter given an `Option` is given `undefined` for `None`, `createCursor(undefined)`, and any other value `?? null` (ADR 0586, amended)",
     file: "src/lower/mir/calls.rs",
     find: "                    .option_of(ty)\n                    .is_some_and(|payload| bindings::holds_none_as_null(tcx, payload)) =>\n",
-    replace: "                    .option_of(ty)\n                    .is_none() =>\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "nullable type parameter"],
+    replace:
+      "                    .option_of(ty)\n                    .is_none() =>\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "nullable type parameter",
+    ],
   },
   {
     name: "getter-called",
-    breaks: "a class's getter's Rust call is a call, `a.leftDiagonal()` of a property that's its value (#357)",
+    breaks:
+      "a class's getter's Rust call is a call, `a.leftDiagonal()` of a property that's its value (#357)",
     file: "src/lower/mir/calls.rs",
     find: "            (Some(crate::lower::classes::Member::Getter), js::ExprKind::Member(_, name)) if args.len() == 1 => {\n",
-    replace: "            (Some(crate::lower::classes::Member::Getter), js::ExprKind::Member(_, name)) if false => {\n",
+    replace:
+      "            (Some(crate::lower::classes::Member::Getter), js::ExprKind::Member(_, name)) if false => {\n",
     tests: ["test/classes.test.ts", "-t", "getter is its prototype"],
   },
   {
     name: "is-function-asks-defined",
-    breaks: "`js::is_function(callable)` is `typeof rustJsCallable !== \"undefined\"`, true of a number (ADR 0942)",
+    breaks:
+      '`js::is_function(callable)` is `typeof rustJsCallable !== "undefined"`, true of a number (ADR 0942)',
     file: "src/lower/mir/calls.rs",
     find: "            if let Some(kind) = asked.type_of() {\n",
-    replace: "            if let Some(kind) = asked.type_of().filter(|_| false) {\n",
+    replace:
+      "            if let Some(kind) = asked.type_of().filter(|_| false) {\n",
     tests: ["test/lowering-is-function.test.ts"],
   },
   {
     name: "is-function-asks-each-part",
-    breaks: "`js::is_function(Performance::get_entries_by_type)` is `typeof performance !== \"undefined\" && ..`, false where upstream's `typeof performance.getEntriesByType === 'function'` throws (ADR 0942, amended)",
+    breaks:
+      "`js::is_function(Performance::get_entries_by_type)` is `typeof performance !== \"undefined\" && ..`, false where upstream's `typeof performance.getEntriesByType === 'function'` throws (ADR 0942, amended)",
     file: "src/lower/mir/calls.rs",
     find: "            if let Some(kind) = asked.type_of() {\n                if k + 1 == parts.len() {\n",
-    replace: "            if let Some(kind) = asked.type_of()\n                && k + 1 == parts.len()\n            {\n                {\n",
-    tests: ["test/lowering-is-function.test.ts", "-t", "is whether a binding's global is a function"],
+    replace:
+      "            if let Some(kind) = asked.type_of()\n                && k + 1 == parts.len()\n            {\n                {\n",
+    tests: [
+      "test/lowering-is-function.test.ts",
+      "-t",
+      "is whether a binding's global is a function",
+    ],
   },
   {
     name: "fn-pointer-step-unnamed",
-    breaks: "`js::is_function((style, CSSStyleDeclaration::set_property as fn(..)))`, a method no turbofish names, is refused as a step of no method (rd154)",
+    breaks:
+      "`js::is_function((style, CSSStyleDeclaration::set_property as fn(..)))`, a method no turbofish names, is refused as a step of no method (rd154)",
     file: "src/lower/mir/calls.rs",
     find: "                ty::FnPtr(..) => cast_from(k).unwrap_or(step),\n",
-    replace: "                ty::FnPtr(..) if false => cast_from(k).unwrap_or(step),\n",
+    replace:
+      "                ty::FnPtr(..) if false => cast_from(k).unwrap_or(step),\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "path from a value"],
   },
   {
     name: "fn-pointer-step-copy-unfollowed",
-    breaks: "a step's `fn` pointer MIR copies, `_5 = copy _6`, isn't followed to its cast, so hideInstance's test is refused (rd154)",
+    breaks:
+      "a step's `fn` pointer MIR copies, `_5 = copy _6`, isn't followed to its cast, so hideInstance's test is refused (rd154)",
     file: "src/lower/mir/calls.rs",
     find: "                    Rvalue::Use(copied, _) => item = copied,\n",
     replace: "                    Rvalue::Use(..) => return None,\n",
@@ -384,119 +574,182 @@ export const mutations: Mutation[] = [
   },
   {
     name: "is-number-of-a-function-asked",
-    breaks: "`js::is_number(callable)`, a function's binding, is `typeof rustJsCallable === \"number\"`, always false, not refused (rd195)",
+    breaks:
+      '`js::is_number(callable)`, a function\'s binding, is `typeof rustJsCallable === "number"`, always false, not refused (rd195)',
     file: "src/lower/mir/calls.rs",
-    find: "            Asked::Number => (number(read) || payload.is_some_and(number), \"a number\"),\n",
-    replace: "            Asked::Number => (true, \"a number\"),\n",
-    tests: ["test/lowering-is-function.test.ts", "-t", "is_number of what's no number"],
+    find: '            Asked::Number => (number(read) || payload.is_some_and(number), "a number"),\n',
+    replace: '            Asked::Number => (true, "a number"),\n',
+    tests: [
+      "test/lowering-is-function.test.ts",
+      "-t",
+      "is_number of what's no number",
+    ],
   },
   {
     name: "is-number-of-an-option-refused",
-    breaks: "`js::is_number(RATIO)` of an `Option<f64>` static is refused, though it may be a number (rd195)",
+    breaks:
+      "`js::is_number(RATIO)` of an `Option<f64>` static is refused, though it may be a number (rd195)",
     file: "src/lower/mir/calls.rs",
-    find: "            Asked::Number => (number(read) || payload.is_some_and(number), \"a number\"),\n",
-    replace: "            Asked::Number => (number(read), \"a number\"),\n",
+    find: '            Asked::Number => (number(read) || payload.is_some_and(number), "a number"),\n',
+    replace: '            Asked::Number => (number(read), "a number"),\n',
     tests: ["test/lowering-is-function.test.ts", "-t", "is_number is whether"],
   },
   {
     name: "is-number-of-a-getter-refused",
-    breaks: "`js::is_number(width)` of a getter's binding asks of the function, no number, so it's refused (rd195)",
+    breaks:
+      "`js::is_number(width)` of a getter's binding asks of the function, no number, so it's refused (rd195)",
     file: "src/lower/mir/calls.rs",
     find: "        bindings::JsForm::Get(_) => tcx\n            .fn_sig(f)\n",
-    replace: "        bindings::JsForm::Get(_) if false => tcx\n            .fn_sig(f)\n",
+    replace:
+      "        bindings::JsForm::Get(_) if false => tcx\n            .fn_sig(f)\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "is_number is whether"],
   },
   {
     name: "every-host-has-asked",
-    breaks: "a path through ECMAScript's `Object` asks `typeof Object !== \"undefined\"`, where React writes `typeof Object.preventExtensions === 'function'` (ADR 0942)",
+    breaks:
+      "a path through ECMAScript's `Object` asks `typeof Object !== \"undefined\"`, where React writes `typeof Object.preventExtensions === 'function'` (ADR 0942)",
     file: "src/lower/mir/calls.rs",
     find: "            } else if k + 1 == parts.len() || from_value || !(k == 0 && every_host_has(first)) {\n",
     replace: "            } else {\n",
-    tests: ["test/lowering-is-function.test.ts", "test/lowering-math.test.ts", "-t", "is_defined asks|is_function is whether"],
+    tests: [
+      "test/lowering-is-function.test.ts",
+      "test/lowering-math.test.ts",
+      "-t",
+      "is_defined asks|is_function is whether",
+    ],
   },
   {
     name: "every-host-has-unasked-whole",
-    breaks: "`js::is_defined(js::date::new)` asks nothing of `Date`, so it's a call of the binding, not a test (ADR 0942)",
+    breaks:
+      "`js::is_defined(js::date::new)` asks nothing of `Date`, so it's a call of the binding, not a test (ADR 0942)",
     file: "src/lower/mir/calls.rs",
     find: "            } else if k + 1 == parts.len() || from_value || !(k == 0 && every_host_has(first)) {\n",
-    replace: "            } else if from_value || !(k == 0 && every_host_has(first)) {\n",
-    tests: ["test/lowering-is-function.test.ts", "-t", "is_function is whether"],
+    replace:
+      "            } else if from_value || !(k == 0 && every_host_has(first)) {\n",
+    tests: [
+      "test/lowering-is-function.test.ts",
+      "-t",
+      "is_function is whether",
+    ],
   },
   {
     name: "object-method-called-as-a-function",
-    breaks: "a call of an object's method is a call of its module's function, `containsNode(scope, fiber)`, whose `this` is then nothing (ADR 0943)",
+    breaks:
+      "a call of an object's method is a call of its module's function, `containsNode(scope, fiber)`, whose `this` is then nothing (ADR 0943)",
     file: "src/lower/mir/calls.rs",
     find: "            (Some(crate::lower::classes::Member::Own), _) if !args.is_empty() => {\n",
-    replace: "            (Some(crate::lower::classes::Member::Own), _) if false => {\n",
-    tests: ["test/classes.test.ts", "-t", "an object's methods are its literal's own"],
+    replace:
+      "            (Some(crate::lower::classes::Member::Own), _) if false => {\n",
+    tests: [
+      "test/classes.test.ts",
+      "-t",
+      "an object's methods are its literal's own",
+    ],
   },
   {
     name: "symbol-for-not-a-global",
-    breaks: "`js::is_function(js::SymbolFor)` is refused, as of no global's binding, so React's `typeof Symbol === 'function' && Symbol.for` can't be written (ADR 0964)",
+    breaks:
+      "`js::is_function(js::SymbolFor)` is refused, as of no global's binding, so React's `typeof Symbol === 'function' && Symbol.for` can't be written (ADR 0964)",
     file: "src/lower/mir/calls.rs",
     find: "            ty::FnDef(f, _) if crate::lower::recognition::is_symbol_for_constructor(tcx, f) => {\n",
-    replace: "            ty::FnDef(f, _) if false && crate::lower::recognition::is_symbol_for_constructor(tcx, f) => {\n",
-    tests: ["test/lowering-is-function.test.ts", "-t", "js::SymbolFor is Symbol.for"],
+    replace:
+      "            ty::FnDef(f, _) if false && crate::lower::recognition::is_symbol_for_constructor(tcx, f) => {\n",
+    tests: [
+      "test/lowering-is-function.test.ts",
+      "-t",
+      "js::SymbolFor is Symbol.for",
+    ],
   },
   {
     name: "symbol-for-held-not-called",
-    breaks: "`js::SymbolFor` a variable holds is called as `Symbol.for(..)`, not as the variable, React's `symbolFor('selector.component')` (ADR 0964)",
+    breaks:
+      "`js::SymbolFor` a variable holds is called as `Symbol.for(..)`, not as the variable, React's `symbolFor('selector.component')` (ADR 0964)",
     file: "src/lower/mir/calls.rs",
     find: "        if crate::lower::recognition::is_symbol_for_constructor(self.tcx, def_id) {\n            return true;\n        }\n",
     replace: "",
-    tests: ["test/lowering-is-function.test.ts", "-t", "js::SymbolFor is Symbol.for"],
+    tests: [
+      "test/lowering-is-function.test.ts",
+      "-t",
+      "js::SymbolFor is Symbol.for",
+    ],
   },
   {
     name: "object-binding-spread-a-field",
-    breaks: "`js::object::spread(obj)` is `{ \"...\": obj }`, an object of one field, not `{ ...obj }` (ADR 0967)",
+    breaks:
+      '`js::object::spread(obj)` is `{ "...": obj }`, an object of one field, not `{ ...obj }` (ADR 0967)',
     file: "src/lower/mir/calls.rs",
-    find: "                        \"...\" => self.spread_into(value, ty, span, out, &mut fields)?,\n",
-    replace: "                        \"...\" => fields.push(Prop::Field(key, self.value_expr(value, span)?)),\n",
+    find: '                        "..." => self.spread_into(value, ty, span, out, &mut fields)?,\n',
+    replace:
+      '                        "..." => fields.push(Prop::Field(key, self.value_expr(value, span)?)),\n',
     tests: ["test/js-object.test.ts", "-t", "an object spread, a splice"],
   },
   {
     name: "object-spread-tuple-whole",
-    breaks: "`js::object::spread((a, b))` is `{ ...[a, b] }`, an object of the tuple's indexes, not `{ ...a, ...b }` (ADR 0967, amended)",
+    breaks:
+      "`js::object::spread((a, b))` is `{ ...[a, b] }`, an object of the tuple's indexes, not `{ ...a, ...b }` (ADR 0967, amended)",
     file: "src/lower/mir/calls.rs",
     find: "        let ty::Tuple(tys) = *ty.kind() else {\n",
-    replace: "        let (true, ty::Tuple(tys)) = (false, *ty.kind()) else {\n",
-    tests: ["test/js-collections.test.ts", "-t", "a Dict spread before more of it"],
+    replace:
+      "        let (true, ty::Tuple(tys)) = (false, *ty.kind()) else {\n",
+    tests: [
+      "test/js-collections.test.ts",
+      "-t",
+      "a Dict spread before more of it",
+    ],
   },
   {
     name: "object-spread-parts-made-in-place",
-    breaks: "`js::object::spread((base, changed(base)))` spreads `base` before `changed(base)` sets it, where Rust makes the tuple first (ADR 0967, amended)",
+    breaks:
+      "`js::object::spread((base, changed(base)))` spreads `base` before `changed(base)` sets it, where Rust makes the tuple first (ADR 0967, amended)",
     file: "src/lower/mir/calls.rs",
     find: "        if parts.iter().skip(1).any(runs_code) {\n",
     replace: "        if false && parts.iter().skip(1).any(runs_code) {\n",
-    tests: ["test/js-collections.test.ts", "-t", "a Dict spread before more of it"],
+    tests: [
+      "test/js-collections.test.ts",
+      "-t",
+      "a Dict spread before more of it",
+    ],
   },
   {
     name: "object-spread-written-out-held",
-    breaks: "React's `UIEventInterface` is `const spread = { view: 0, detail: 0 }; const UIEventInterface = { ...EventInterface, ...spread };`, though a `Dict` written out runs none of the program's code (ADR 0967, amended)",
+    breaks:
+      "React's `UIEventInterface` is `const spread = { view: 0, detail: 0 }; const UIEventInterface = { ...EventInterface, ...spread };`, though a `Dict` written out runs none of the program's code (ADR 0967, amended)",
     file: "src/lower/mir/calls.rs",
     find: "        let runs_code = |part: &Expr| part.has_effects() && !part.facts.has(js::Known::RunsNothing);\n",
     replace: "        let runs_code = |part: &Expr| part.has_effects();\n",
-    tests: ["test/js-collections.test.ts", "-t", "a Dict spread before more of it"],
+    tests: [
+      "test/js-collections.test.ts",
+      "-t",
+      "a Dict spread before more of it",
+    ],
   },
   {
     name: "crate-once-callback-kept",
-    breaks: "React's runWithFiberInDEV(fiber, commitCallbacks, ..) is given `(queue, instance) => commitCallbacks(queue, instance)`, a closure of the crate's own function's `FnOnce` kept",
+    breaks:
+      "React's runWithFiberInDEV(fiber, commitCallbacks, ..) is given `(queue, instance) => commitCallbacks(queue, instance)`, a closure of the crate's own function's `FnOnce` kept",
     file: "src/lower/mir/calls.rs",
     find: "                    && let Some(callee) = crate::lower::passed_on::passed_on(expr, taker, self.forwarding())\n",
-    replace: "                    && let Some(callee) = crate::lower::passed_on::passed_on(expr, taker, self.forwarding()).filter(|_| false)\n",
+    replace:
+      "                    && let Some(callee) = crate::lower::passed_on::passed_on(expr, taker, self.forwarding()).filter(|_| false)\n",
     tests: ["test/lowering-passed-on.test.ts", "-t", "crate's FnOnce"],
   },
   {
     name: "defined-test-unplaced",
-    breaks: "`js::is_function(..)`'s test has no place of its own, so a comment written before it is lost, React's `// In DEV we also rely on performance.measure`",
+    breaks:
+      "`js::is_function(..)`'s test has no place of its own, so a comment written before it is lost, React's `// In DEV we also rely on performance.measure`",
     file: "src/lower/mir/calls.rs",
     find: "            .map(|test| test.or_at(at))\n",
     replace: "",
-    tests: ["test/lowering-is-function.test.ts", "-t", "a thread-local bool of another"],
+    tests: [
+      "test/lowering-is-function.test.ts",
+      "-t",
+      "a thread-local bool of another",
+    ],
   },
   {
     name: "is-function-of-no-value",
-    breaks: "SchedulerMock's `js::is_function(&callback)` is refused as of no global's binding, so nothing can write `typeof callback === 'function'`",
+    breaks:
+      "SchedulerMock's `js::is_function(&callback)` is refused as of no global's binding, so nothing can write `typeof callback === 'function'`",
     file: "src/lower/mir/calls.rs",
     find: "        if self.asks_of_value(body, def_id, args) {\n",
     replace: "        if false && self.asks_of_value(body, def_id, args) {\n",
@@ -504,7 +757,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "is-function-value-of-an-option-refused",
-    breaks: "`js::is_function(&Option<Callback>)` is refused: an `Option` of a function isn't one JS may give",
+    breaks:
+      "`js::is_function(&Option<Callback>)` is refused: an `Option` of a function isn't one JS may give",
     file: "src/lower/mir/calls.rs",
     find: "            return self.option_of(payload.peel_refs()).is_none() && self.function_given(payload);\n",
     replace: "            return false;\n",
@@ -512,15 +766,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "is-function-value-of-a-transparent-struct-refused",
-    breaks: "SchedulerMock's `Callback(Box<dyn FnMut ..>)`, a transparent struct of a function, isn't one JS may give, so its `js::is_function` is refused",
+    breaks:
+      "SchedulerMock's `Callback(Box<dyn FnMut ..>)`, a transparent struct of a function, isn't one JS may give, so its `js::is_function` is refused",
     file: "src/lower/mir/calls.rs",
     find: "            ty::Adt(adt, args) => crate::lower::recognition::transparent_field(tcx, adt).is_some_and(|i| {\n",
-    replace: "            ty::Adt(adt, args) => crate::lower::recognition::transparent_field(tcx, adt).is_some_and(|i| false && {\n",
+    replace:
+      "            ty::Adt(adt, args) => crate::lower::recognition::transparent_field(tcx, adt).is_some_and(|i| false && {\n",
     tests: isFunctionValue,
   },
   {
     name: "is-function-value-of-the-crates-function",
-    breaks: "`js::is_function(helper)` of the crate's function, or of a closure, which only Rust makes, is `typeof helper === \"function\"`, always true, not refused",
+    breaks:
+      '`js::is_function(helper)` of the crate\'s function, or of a closure, which only Rust makes, is `typeof helper === "function"`, always true, not refused',
     file: "src/lower/mir/calls.rs",
     find: "            ty::Closure(..) | ty::FnDef(..) => false,\n",
     replace: "            ty::Closure(..) | ty::FnDef(..) => true,\n",
@@ -528,15 +785,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "value-path-refused",
-    breaks: "ReactDOMSelection's `js::is_function((selection, Selection::extend))` is refused as a path whose first step is no binding, so `typeof selection.extend` can't be written",
+    breaks:
+      "ReactDOMSelection's `js::is_function((selection, Selection::extend))` is refused as a path whose first step is no binding, so `typeof selection.extend` can't be written",
     file: "src/lower/mir/calls.rs",
     find: "    (steps.len() > 1 && crate::lower::fn_def(first).is_none()).then_some(first)\n",
-    replace: "    (false && steps.len() > 1 && crate::lower::fn_def(first).is_none()).then_some(first)\n",
+    replace:
+      "    (false && steps.len() > 1 && crate::lower::fn_def(first).is_none()).then_some(first)\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "path from a value"],
   },
   {
     name: "value-path-member-unread",
-    breaks: "`js::is_function((selection, Selection::extend))` is `typeof selection === \"function\"`, the value asked, not its member",
+    breaks:
+      '`js::is_function((selection, Selection::extend))` is `typeof selection === "function"`, the value asked, not its member',
     file: "src/lower/mir/calls.rs",
     find: "            if k > 0 || from_value {\n",
     replace: "            if k > 0 {\n",
@@ -544,15 +804,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "js-given-call-unrouted",
-    breaks: "a call of a function JS calls calls its own JS whatever it gives, so `relay(())`, which needs the box, is `None`",
+    breaks:
+      "a call of a function JS calls calls its own JS whatever it gives, so `relay(())`, which needs the box, is `None`",
     file: "src/lower/mir/calls.rs",
     find: "        let copy = self.called_copy((def_id, generic_args), span)?;",
-    replace: "        let copy = self.called_copy((def_id, generic_args), span).map(|_| None)?;",
+    replace:
+      "        let copy = self.called_copy((def_id, generic_args), span).map(|_| None)?;",
     tests: ["test/corpus.test.ts", "-t", "js_given_copies"],
   },
   {
     name: "add-assign-text-unjoined",
-    breaks: "`s += &js::concat_text(n)` of a `String` is `s += \"\" + n`, its `String` not known text (ADR 0639, amended)",
+    breaks:
+      '`s += &js::concat_text(n)` of a `String` is `s += "" + n`, its `String` not known text (ADR 0639, amended)',
     file: "src/lower/mir/calls.rs",
     find: "                Expr::text_joined(place.clone(), rhs)\n",
     replace: "                Expr::bin(Op::Add, place.clone(), rhs)\n",
@@ -560,7 +823,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-assign-op-call-place-twice",
-    breaks: "`*first(&mut v) += &five` is `first(v).value = (first(v).value + five) | 0`: the call that gives the place runs twice, a wrong answer",
+    breaks:
+      "`*first(&mut v) += &five` is `first(v).value = (first(v).value + five) | 0`: the call that gives the place runs twice, a wrong answer",
     file: "src/lower/mir/calls.rs",
     find: "            let place = match !super::queries::fixed_place(place) && place.has_effects() {\n",
     replace: "            let place = match false {\n",
@@ -568,48 +832,71 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unbound-member-called-on",
-    breaks: "`(s.f)()` of a `dyn Fn` is `s.f()`, which gives a with_this function `s` as its `this`, where Rust gives it `None` (#402)",
+    breaks:
+      "`(s.f)()` of a `dyn Fn` is `s.f()`, which gives a with_this function `s` as its `this`, where Rust gives it `None` (#402)",
     file: "src/lower/mir/calls.rs",
     find: "            js::ExprKind::Member(_, property) | js::ExprKind::OptionalMember(_, property) => property.clone(),\n",
     replace: "",
-    tests: ["test/js-functions.test.ts", "-t", "a dyn Fn a field or an item holds is called with no this"],
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a dyn Fn a field or an item holds is called with no this",
+    ],
   },
   {
     name: "unbound-item-called-on",
-    breaks: "`fs[0]()` of a `dyn Fn` an array holds gives it the array as its `this` (#402)",
+    breaks:
+      "`fs[0]()` of a `dyn Fn` an array holds gives it the array as its `this` (#402)",
     file: "src/lower/mir/calls.rs",
-    find: "            js::ExprKind::Index(..) => \"f\".to_string(),\n",
+    find: '            js::ExprKind::Index(..) => "f".to_string(),\n',
     replace: "",
-    tests: ["test/js-functions.test.ts", "-t", "a dyn Fn a field or an item holds is called with no this"],
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a dyn Fn a field or an item holds is called with no this",
+    ],
   },
   {
     name: "dyn-fn-call-bound",
-    breaks: "a `dyn Fn`'s or a generic `F`'s call through a field is `p[0]()`, giving it `p` as its `this` (#402)",
+    breaks:
+      "a `dyn Fn`'s or a generic `F`'s call through a field is `p[0]()`, giving it `p` as its `this` (#402)",
     file: "src/lower/mir/calls.rs",
     find: "            Some((state, out, output)) if !own => {\n                self.called_unbound(state, (call, Called::Function(arg_tys[1], output)), out)\n            }\n",
     replace: "",
-    tests: ["test/js-functions.test.ts", "-t", "a dyn Fn a field or an item holds is called with no this"],
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a dyn Fn a field or an item holds is called with no this",
+    ],
   },
   {
     name: "crate-closure-call-unbound",
-    breaks: "a closure of the crate's a tuple holds is held first to be called, `const f = p[0]; f()`, though it never reads its `this` (#402)",
+    breaks:
+      "a closure of the crate's a tuple holds is held first to be called, `const f = p[0]; f()`, though it never reads its `this` (#402)",
     file: "src/lower/mir/calls.rs",
     find: "            Some((state, out, output)) if !own => {\n",
     replace: "            Some((state, out, output)) => {\n",
-    tests: ["test/js-functions.test.ts", "-t", "a dyn Fn a field or an item holds is called with no this"],
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a dyn Fn a field or an item holds is called with no this",
+    ],
   },
   {
     name: "this-read-anywhere",
-    breaks: "a program that calls no binding, gives JS no function value, holds each call through a field first, `const f = s.f; f()`, though nothing it calls reads its `this` (#402)",
+    breaks:
+      "a program that calls no binding, gives JS no function value, holds each call through a field first, `const f = s.f; f()`, though nothing it calls reads its `this` (#402)",
     file: "src/lower/mir/calls.rs",
     find: "        if !pointers.may_read_this(self.tcx, called, field) {\n",
-    replace: "        if false && !pointers.may_read_this(self.tcx, called, field) {\n",
+    replace:
+      "        if false && !pointers.may_read_this(self.tcx, called, field) {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_listeners_momentary.rs$"],
     snapshots: true,
   },
   {
     name: "method-path-any-value-refused",
-    breaks: "`js::method((js::class::<HTMLElement>().prototype(), HTMLElement::focus))`, a path from any value, is refused as a step of no method of it (rd181)",
+    breaks:
+      "`js::method((js::class::<HTMLElement>().prototype(), HTMLElement::focus))`, a path from any value, is refused as a step of no method of it (rd181)",
     file: "src/lower/mir/calls.rs",
     find: "(of != Some(before.peel_refs()) && !any && !extends)",
     replace: "(of != Some(before.peel_refs()) && !extends)",
@@ -617,7 +904,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "method-path-step-unread",
-    breaks: "`js::method((element, HTMLElement::focus))` is `element`, its method's step never read (rd181)",
+    breaks:
+      "`js::method((element, HTMLElement::focus))` is `element`, its method's step never read (rd181)",
     file: "src/lower/mir/calls.rs",
     find: "        let method = path.split('.').fold(value, Expr::member);\n",
     replace: "        let method = value;\n",
@@ -625,23 +913,35 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cell-get-field-unseen",
-    breaks: "a `Cell<fn()>` field's value called, `(hooks.flush.get())()`, isn't seen as its field's, so one the crate fills with its own is held first (#427)",
+    breaks:
+      "a `Cell<fn()>` field's value called, `(hooks.flush.get())()`, isn't seen as its field's, so one the crate fills with its own is held first (#427)",
     file: "src/lower/mir/calls.rs",
     find: "                                == Some(crate::lower::recognition::CellMethod::Get) =>\n",
-    replace: "                                == Some(crate::lower::recognition::CellMethod::Other) =>\n",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host function is held first"],
+    replace:
+      "                                == Some(crate::lower::recognition::CellMethod::Other) =>\n",
+    tests: [
+      "test/lowering-passed-on.test.ts",
+      "-t",
+      "may hold a host function is held first",
+    ],
   },
   {
     name: "host-fn-temporary-unheld",
-    breaks: "a host function's field read MIR holds in a temporary, `_3 = CONFIG.schedule`, is read in place by tidy, `CONFIG.schedule(..)`, its `this` the config (#427)",
+    breaks:
+      "a host function's field read MIR holds in a temporary, `_3 = CONFIG.schedule`, is read in place by tidy, `CONFIG.schedule(..)`, its `this` the config (#427)",
     file: "src/lower/mir/calls.rs",
     find: "                if super::tidy::is_temporary(name)\n",
     replace: "                if super::tidy::is_temporary(name) && false\n",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "may hold a host function is held first"],
+    tests: [
+      "test/lowering-passed-on.test.ts",
+      "-t",
+      "may hold a host function is held first",
+    ],
   },
   {
     name: "path-step-superclass-refused",
-    breaks: "`js::is_function((style, CSSStyleDeclaration::set_property as fn(..)))` of an element's `CSSStyleProperties`, which extends it, is refused (rd232)",
+    breaks:
+      "`js::is_function((style, CSSStyleDeclaration::set_property as fn(..)))` of an element's `CSSStyleProperties`, which extends it, is refused (rd232)",
     file: "src/lower/mir/calls.rs",
     find: "&& !any && !extends)",
     replace: "&& !any)",
@@ -649,7 +949,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "path-value-held-refused",
-    breaks: "`js::method((element, HTMLElement::focus))` while a guard with a drop is live, its tuple held before the guard's `try`, is refused (rd233)",
+    breaks:
+      "`js::method((element, HTMLElement::focus))` while a guard with a drop is live, its tuple held before the guard's `try`, is refused (rd233)",
     file: "src/lower/mir/calls.rs",
     find: "            js::ExprKind::Var(_) => {\n",
     replace: "            js::ExprKind::Var(_) if false => {\n",
@@ -657,15 +958,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "is-function-of-a-class-refused",
-    breaks: "`js::is_function(js::class::<Promise<()>>)`, React's `typeof Promise === 'function'`, is refused (rd235)",
+    breaks:
+      "`js::is_function(js::class::<Promise<()>>)`, React's `typeof Promise === 'function'`, is refused (rd235)",
     file: "src/lower/mir/calls.rs",
     find: "                    .and_then(|ty| self.recognition().class_value(ty))\n            }\n",
     replace: "                    .and_then(|_| None)\n            }\n",
-    tests: ["test/lowering-is-function.test.ts", "-t", "a class held as a value"],
+    tests: [
+      "test/lowering-is-function.test.ts",
+      "-t",
+      "a class held as a value",
+    ],
   },
   {
     name: "spread-of-none-written",
-    breaks: "`js::object::spread(None)`, a new object of nothing, is `{ ...undefined }`, not `{}` (rd210)",
+    breaks:
+      "`js::object::spread(None)`, a new object of nothing, is `{ ...undefined }`, not `{}` (rd210)",
     file: "src/lower/mir/calls.rs",
     find: "            if !matches!(value.kind, js::ExprKind::Undefined | js::ExprKind::Null) {\n                fields.push(Prop::Spread(value));\n            }\n",
     replace: "            fields.push(Prop::Spread(value));\n",
@@ -673,23 +980,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "nullable-entries-undefined",
-    breaks: "entries written where they're given of a map of `Option` values keep `undefined` for `None`, `new Map([[\"none\", undefined]])`, which `get` reads as a key it lacks (ADR 0884, amended)",
+    breaks:
+      'entries written where they\'re given of a map of `Option` values keep `undefined` for `None`, `new Map([["none", undefined]])`, which `get` reads as a key it lacks (ADR 0884, amended)',
     file: "src/lower/mir/calls.rs",
     find: "            () if bindings::takes_nullable_entries(tcx, def_id, i) && self.entries_of_options(ty) => {",
-    replace: "            () if false && bindings::takes_nullable_entries(tcx, def_id, i) && self.entries_of_options(ty) => {",
+    replace:
+      "            () if false && bindings::takes_nullable_entries(tcx, def_id, i) && self.entries_of_options(ty) => {",
     tests: ["test/js-collections.test.ts", "-t", "a Map's value is any value"],
   },
   {
     name: "asked-quoted-key-named",
-    breaks: "`js::is_number` of `window['$RN']` asks `typeof window.$RN`, which Closure may rename",
+    breaks:
+      "`js::is_number` of `window['$RN']` asks `typeof window.$RN`, which Closure may rename",
     file: "src/lower/mir/calls.rs",
     find: "                read = part.of(read);\n",
-    replace: "                read = match part {\n                    bindings::Step::Named(name) | bindings::Step::Quoted(name) => Expr::member(read, name),\n                };\n",
+    replace:
+      "                read = match part {\n                    bindings::Step::Named(name) | bindings::Step::Quoted(name) => Expr::member(read, name),\n                };\n",
     tests: ["test/lowering-binding-paths.test.ts"],
   },
   {
     name: "own-call-none-given",
-    breaks: "the crate's own function's trailing `None` is given, `shown(undefined)`, where a binding's and a function value's leave it out (ADR 0443)",
+    breaks:
+      "the crate's own function's trailing `None` is given, `shown(undefined)`, where a binding's and a function value's leave it out (ADR 0443)",
     file: "src/lower/mir/calls.rs",
     find: "        if evidence.is_empty() && exprs.len() == arg_tys.len() && declared.inputs().len() == arg_tys.len() {\n",
     replace: "        if false {\n",
@@ -698,26 +1010,81 @@ export const mutations: Mutation[] = [
   },
   {
     name: "own-call-none-before-dictionary-left-out",
-    breaks: "a trailing `None` before a dictionary is left out too, so the dictionary is given as the `Option`, `labelled(u32Label)`, a wrong answer",
+    breaks:
+      "a trailing `None` before a dictionary is left out too, so the dictionary is given as the `Option`, `labelled(u32Label)`, a wrong answer",
     file: "src/lower/mir/calls.rs",
     find: "        if evidence.is_empty() && exprs.len() == arg_tys.len() && declared.inputs().len() == arg_tys.len() {\n",
-    replace: "        if exprs.len() == arg_tys.len() && declared.inputs().len() == arg_tys.len() {\n",
+    replace:
+      "        if exprs.len() == arg_tys.len() && declared.inputs().len() == arg_tys.len() {\n",
     tests: ["test/corpus.test.ts", "-t", "^option_arguments.rs$"],
   },
   {
     name: "own-call-type-parameter-left-out",
-    breaks: "a `None` given a type parameter's value, React's `createCursor(undefined)`, is left out, `createCursor()`, where TypeScript's parameter isn't optional",
+    breaks:
+      "a `None` given a type parameter's value, React's `createCursor(undefined)`, is left out, `createCursor()`, where TypeScript's parameter isn't optional",
     file: "src/lower/mir/calls.rs",
     find: "            crate::lower::calls::left_out(self.tcx, &mut exprs, declared.inputs(), &[]);\n",
-    replace: "            crate::lower::calls::left_out(self.tcx, &mut exprs, arg_tys, &[]);\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a nullable thread-local a generic constructor makes"],
+    replace:
+      "            crate::lower::calls::left_out(self.tcx, &mut exprs, arg_tys, &[]);\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a nullable thread-local a generic constructor makes",
+    ],
   },
   {
     name: "asked-object-any-kind",
-    breaks: "`js::is_object` of a number's binding, always false, compiles, not refused",
+    breaks:
+      "`js::is_object` of a number's binding, always false, compiles, not refused",
     file: "src/lower/mir/calls.rs",
-    find: "                (object(payload.unwrap_or(read)), \"an object\")\n",
-    replace: "                (true || object(payload.unwrap_or(read)), \"an object\")\n",
-    tests: ["test/lowering-is-function.test.ts", "-t", "js::is_object is whether"],
+    find: '                (object(payload.unwrap_or(read)), "an object")\n',
+    replace:
+      '                (true || object(payload.unwrap_or(read)), "an object")\n',
+    tests: [
+      "test/lowering-is-function.test.ts",
+      "-t",
+      "js::is_object is whether",
+    ],
+  },
+  {
+    name: "namespace-value-called-by-name",
+    breaks:
+      "a namespace's method called through a value JS gives, another instance of the module, calls the module's own function, `createContainer(4)` (ADR 1037)",
+    file: "src/lower/mir/calls.rs",
+    find: "                js::ExprKind::Symbol(_) | js::ExprKind::Var(_) => receiver.facts.has(js::Known::Item),\n",
+    replace:
+      "                js::ExprKind::Symbol(_) | js::ExprKind::Var(_) => true,\n",
+    tests: [
+      "test/namespaces.test.ts",
+      "-t",
+      "a namespace's methods are its module's functions",
+    ],
+  },
+  {
+    name: "namespace-named-called-through",
+    breaks:
+      "a namespace's method called on the namespace named, `Reconciler.create_container(3)`, is `Reconciler.createContainer(3)`, not React DOM's `createContainer(3)` (ADR 1037)",
+    file: "src/lower/mir/calls.rs",
+    find: "                js::ExprKind::Symbol(_) | js::ExprKind::Var(_) => receiver.facts.has(js::Known::Item),\n",
+    replace:
+      "                js::ExprKind::Symbol(_) | js::ExprKind::Var(_) => false,\n",
+    tests: [
+      "test/namespaces.test.ts",
+      "-t",
+      "a namespace's methods are its module's functions",
+    ],
+  },
+  {
+    name: "namespace-own-self-kept",
+    breaks:
+      "a namespace's method calling another on its `self` reads the `self` it has none of, refused (ADR 1037)",
+    file: "src/lower/mir/calls.rs",
+    find: "            *receiver = Expr::undefined();\n",
+    replace: "            let _ = receiver;\n",
+    tests: [
+      "test/namespaces.test.ts",
+      "-t",
+      "a namespace's methods are its module's functions",
+    ],
   },
 ];

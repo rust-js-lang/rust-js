@@ -4,7 +4,8 @@ import type { Mutation } from "../../../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "exit-after-held-unwritten",
-    breaks: "a block MIR made, no span of its own, at an inner loop's way out isn't taken as written after the loop, though what it holds is: `while (true) { .. if (!found) { .. } break bb31; }` stays, not `while ((c = xs[k]) != null) { .. }` and the `if` after it (rd141c)",
+    breaks:
+      "a block MIR made, no span of its own, at an inner loop's way out isn't taken as written after the loop, though what it holds is: `while (true) { .. if (!found) { .. } break bb31; }` stays, not `while ((c = xs[k]) != null) { .. }` and the `if` after it (rd141c)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "(list[k..].iter()).any(|s| (!at(s).is_none() && at(s).lo >= end) || held(s).iter().any(|t| t.lo >= end));",
     replace: "(list[k..].iter()).any(|s| !at(s).is_none() && at(s).lo >= end);",
@@ -13,7 +14,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "exit-after-nested-loops-unsought",
-    breaks: "a labeled loop left from a loop inside it, `break 'outer`, keeps the function's tail in that inner loop, `while (true) { if (node !== root) { .. continue outer; } .. return count; }`, not `break outer;` and the tail after the outer loop (rd148)",
+    breaks:
+      "a labeled loop left from a loop inside it, `break 'outer`, keeps the function's tail in that inner loop, `while (true) { if (node !== root) { .. continue outer; } .. return count; }`, not `break outer;` and the tail after the outer loop (rd148)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "    sites(body, &mut Vec::new(), &mut found, &at, written.is_some());\n",
     replace: "    sites(body, &mut Vec::new(), &mut found, &at, false);\n",
@@ -22,25 +24,33 @@ export const mutations: Mutation[] = [
   },
   {
     name: "exit-after-loop-value-unhoisted",
-    breaks: "`let doubled = loop { .. break n * 2; };` keeps what follows the loop at its `break`, `const doubled = n * 2; console.log(..); return ..;` inside it, not `let doubled;` before it and `doubled = n * 2; break;` (rd148)",
+    breaks:
+      "`let doubled = loop { .. break n * 2; };` keeps what follows the loop at its `break`, `const doubled = n * 2; console.log(..); return ..;` inside it, not `let doubled;` before it and `doubled = n * 2; break;` (rd148)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "        if !given_at_break(&mut kept, &path, name) {\n",
     replace: "        if true {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(loop_value_then_tail|loop_values).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(loop_value_then_tail|loop_values).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "exit-after-nested-break-unplaced",
-    breaks: "the `break outer;` left in an inner loop has no place, so the comment written above `break 'outer` is before the inner loop, not before the `break` (rd148)",
+    breaks:
+      "the `break outer;` left in an inner loop has no place, so the comment written above `break 'outer` is before the inner loop, not before the `break` (rd148)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "            StmtKind::Break(written).at(written_at.map_or(js::Span::NONE, |(_, at)| *at))\n",
-    replace: "            StmtKind::Break(written).at(written_at.map_or(js::Span::NONE, |_| js::Span::NONE))\n",
+    replace:
+      "            StmtKind::Break(written).at(written_at.map_or(js::Span::NONE, |_| js::Span::NONE))\n",
     tests: ["test/corpus.test.ts", "-t", "^loop_value_then_tail.rs$"],
     snapshots: true,
   },
   {
     name: "exit-after-of-leaving-if-unmoved",
-    breaks: "an inner loop's way out of an `if` each branch of which leaves, `i = j; if (total > 10) { break bb18; } else { continue bb1; }`, stays inside it, with a `bb1:` label, not after it as written (ADR 0702, amended)",
+    breaks:
+      "an inner loop's way out of an `if` each branch of which leaves, `i = j; if (total > 10) { break bb18; } else { continue bb1; }`, stays inside it, with a `bb1:` label, not after it as written (ADR 0702, amended)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "        let last = list.last().filter(|s| leaving(s, &leaves))?;\n",
     replace: "        let last = list.last().filter(|s| leaves(s))?;\n",
@@ -52,41 +62,55 @@ export const mutations: Mutation[] = [
     breaks: "a `for` loop's label nothing names stays",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "        | StmtKind::For { label, body, .. } = &mut stmts[i].kind\n",
-    replace: "        | StmtKind::For { label, body, .. } = &mut stmts[i].kind\n            && false\n",
+    replace:
+      "        | StmtKind::For { label, body, .. } = &mut stmts[i].kind\n            && false\n",
     tests: ["test/lowering-loops.test.ts", "-t", "loops from MIR read"],
   },
   {
-    "name": "mir-loop-exit-written-return",
-    "breaks": "a `return` the program wrote in a loop, or a `break` that gives a `loop` its value, becomes a `break`, the `return` after the loop",
-    "file": "src/lower/mir/tidy/jumps/labels.rs",
-    "find": "        (written && after(last)).then_some(k)\n",
-    "replace": "        Some(k)\n",
-    "tests": [
+    name: "mir-loop-exit-written-return",
+    breaks:
+      "a `return` the program wrote in a loop, or a `break` that gives a `loop` its value, becomes a `break`, the `return` after the loop",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "        (written && after(last)).then_some(k)\n",
+    replace: "        Some(k)\n",
+    tests: [
       "test/corpus.test.ts",
       "-t",
-      "^(loop_exits|returns_in_place|loop_exit_moves|interpreter).rs$"
+      "^(loop_exits|returns_in_place|loop_exit_moves|interpreter).rs$",
     ],
-    "snapshots": true
+    snapshots: true,
   },
   {
     name: "mir-tidy-writer-branches-appended",
-    breaks: "MIR's writer writing once in each branch appends to `f` in each, not `return s`",
+    breaks:
+      "MIR's writer writing once in each branch appends to `f` in each, not `return s`",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "                returned_unwritten(then, name);\n",
     replace: "",
-    tests: ["test/lowering-strings.test.ts", "-t", "a writer from its MIR returns the string it writes"],
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "a writer from its MIR returns the string it writes",
+    ],
   },
   {
     name: "mir-tidy-writer-branches-unreturned",
-    breaks: "MIR's writer writing once in an `if` and its `else` appends to `f` in each, then returns it",
+    breaks:
+      "MIR's writer writing once in an `if` and its `else` appends to `f` in each, then returns it",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "StmtKind::If(_, then, Some(els)) if returned && let Some(back) = next => {",
-    replace: "StmtKind::If(_, then, Some(els)) if false && let Some(back) = next => {",
-    tests: ["test/lowering-strings.test.ts", "-t", "a writer's Debug builder from its MIR is the string its chain writes"],
+    replace:
+      "StmtKind::If(_, then, Some(els)) if false && let Some(back) = next => {",
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "a writer's Debug builder from its MIR is the string its chain writes",
+    ],
   },
   {
     name: "exits-after-inner-ways-out",
-    breaks: "a way out inside what moves is a way out of its own, so neither moves",
+    breaks:
+      "a way out inside what moves is a way out of its own, so neither moves",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "            end = k;\n",
     replace: "",
@@ -95,16 +119,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "exits-after-return-unplaced",
-    breaks: "a `return` MIR made of the value written after the loop isn't seen as written there, so it stays in the loop's way out",
+    breaks:
+      "a `return` MIR made of the value written after the loop isn't seen as written there, so it stays in the loop's way out",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "            StmtKind::Return(Some(value)) if s.span.is_none() => {\n",
     replace: "            StmtKind::Return(Some(value)) if false => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(associated_types|channels|str_bytes|generic_operators).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(associated_types|channels|str_bytes|generic_operators).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "exits-after-tuple-unplaced",
-    breaks: "a `return` MIR made of a tuple written after the loop, `(i, n)`, whose parts alone say where they're written, stays in the loop's way out: `while (true) { if (i < codes.length) { ..; continue; } return [i, n]; }` (#389c)",
+    breaks:
+      "a `return` MIR made of a tuple written after the loop, `(i, n)`, whose parts alone say where they're written, stays in the loop's way out: `while (true) { if (i < codes.length) { ..; continue; } return [i, n]; }` (#389c)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "                    if at.is_none() {\n",
     replace: "                    if false {\n",
@@ -113,34 +143,48 @@ export const mutations: Mutation[] = [
   },
   {
     name: "exits-after-inner-label-moves",
-    breaks: "a statement that jumps to a block inside the loop moves after it, out of that block, loop_value_after_loop's `break bb22` outside `bb22`, which tidy's contract refuses",
+    breaks:
+      "a statement that jumps to a block inside the loop moves after it, out of that block, loop_value_after_loop's `break bb22` outside `bb22`, which tidy's contract refuses",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "        !jumps.iter().any(|l| inner.contains(l) && !own.contains(l))\n",
     replace: "        true\n",
-    tests: ["test/corpus.test.ts", "-t", "^(lazy_effects|labeled_blocks|loop_exit_moves|iter_mut_kept|interpreter|loop_value_after_loop).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(lazy_effects|labeled_blocks|loop_exit_moves|iter_mut_kept|interpreter|loop_value_after_loop).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "exits-after-only-simple",
-    breaks: "only what does nothing but go on moves after a loop, so code after a loop with a loop of its own stays in its way out",
+    breaks:
+      "only what does nothing but go on moves after a loop, so code after a loop with a loop of its own stays in its way out",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "        !jumps.iter().any(|l| inner.contains(l) && !own.contains(l))\n",
-    replace: "        !jumps.iter().any(|l| inner.contains(l) && !own.contains(l)) && !matches!(s.kind, StmtKind::While { .. } | StmtKind::ForOf { .. } | StmtKind::For { .. } | StmtKind::If(..))\n",
-    tests: ["test/corpus.test.ts", "-t", "^(lazy_effects|labeled_blocks|loop_exit_moves|iter_mut_kept|interpreter).rs$"],
+    replace:
+      "        !jumps.iter().any(|l| inner.contains(l) && !own.contains(l)) && !matches!(s.kind, StmtKind::While { .. } | StmtKind::ForOf { .. } | StmtKind::For { .. } | StmtKind::If(..))\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(lazy_effects|labeled_blocks|loop_exit_moves|iter_mut_kept|interpreter).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "unbroken-loop-goes-on",
-    breaks: "a loop's way out that ends in the program's next loop, which nothing `break`s, is taken to go on, and that loop stays inside the first",
+    breaks:
+      "a loop's way out that ends in the program's next loop, which nothing `break`s, is taken to go on, and that loop stays inside the first",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref()) && stays(s)\n",
-    replace: "            false && !breaks(body, label.as_deref()) && stays(s)\n",
+    replace:
+      "            false && !breaks(body, label.as_deref()) && stays(s)\n",
     tests: ["test/corpus.test.ts", "-t", "^(loop_drops|range_values).rs$"],
     snapshots: true,
   },
   {
     name: "leaving-loop-jumps-inside",
-    breaks: "a loop that breaks to a block inside the loop it's in is taken as leaving it, moved out, and its `break bb22` names no label",
+    breaks:
+      "a loop that breaks to a block inside the loop it's in is taken as leaving it, moved out, and its `break bb22` names no label",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: " && !breaks(body, label.as_deref()) && stays(s)\n",
     replace: " && !breaks(body, label.as_deref())\n",
@@ -148,15 +192,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-tidy-labeled-block-unnamed",
-    breaks: "a block the program labeled keeps MIR's label, `bb41`, not its own (ADR 0742)",
+    breaks:
+      "a block the program labeled keeps MIR's label, `bb41`, not its own (ADR 0742)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "                && taken.get(&to) == Some(&1)\n",
     replace: "                && taken.get(&to) == Some(&7)\n",
-    tests: ["test/lowering-labels.test.ts", "-t", "a block the program labeled keeps its label"],
+    tests: [
+      "test/lowering-labels.test.ts",
+      "-t",
+      "a block the program labeled keeps its label",
+    ],
   },
   {
     name: "empty-if-kept",
-    breaks: "an `if` of nothing either way, a drop flag's whose branch dropped nothing, stays, which `settled`'s contract refuses (ADR 0659, amended)",
+    breaks:
+      "an `if` of nothing either way, a drop flag's whose branch dropped nothing, stays, which `settled`'s contract refuses (ADR 0659, amended)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "            } else if then.is_empty() && els.as_ref().is_none_or(|els| els.is_empty()) {\n",
     replace: "            } else if false {\n",
@@ -164,24 +214,32 @@ export const mutations: Mutation[] = [
   },
   {
     name: "never-taken-true-kept",
-    breaks: "an or-pattern of a constant first field leaves `if (true)`, and tidy's `settled` stage panics: the compiler crashes (#247)",
+    breaks:
+      "an or-pattern of a constant first field leaves `if (true)`, and tidy's `settled` stage panics: the compiler crashes (#247)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "            } else if matches!(test.kind, ExprKind::Bool(true)) && fits(then) {\n",
     replace: "            } else if false && fits(then) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^or_pattern_constant_alternative.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^or_pattern_constant_alternative.rs$",
+    ],
   },
   {
     name: "exit-after-break-at-the-moved-code",
-    breaks: "the `break` left where what's after a loop was is where that code is written, so its comment, `// Append the end.`, is in the loop's `break`",
+    breaks:
+      "the `break` left where what's after a loop was is where that code is written, so its comment, `// Append the end.`, is in the loop's `break`",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "        false => StmtKind::Break(None).at(at),\n",
-    replace: "        false => StmtKind::Break(None).at(if at.is_none() { at } else { moved[0].span }),\n",
+    replace:
+      "        false => StmtKind::Break(None).at(if at.is_none() { at } else { moved[0].span }),\n",
     tests: ["test/corpus.test.ts", "-t", "^(loop_drops|scope_temporaries).rs$"],
     snapshots: true,
   },
   {
     name: "labeled-switch-of-a-case-break",
-    breaks: "a block the program labeled around an inner `switch`, followed by the case's `break;`, labels nothing: `bbN:` blocks are left in `default:` (ADR 0944)",
+    breaks:
+      "a block the program labeled around an inner `switch`, followed by the case's `break;`, labels nothing: `bbN:` blocks are left in `default:` (ADR 0944)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "        (Some(StmtKind::Break(None)), _) => true,\n",
     replace: "        (Some(StmtKind::Break(None)), _) => false,\n",
@@ -189,23 +247,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "labeled-switch-of-a-block-break",
-    breaks: "a block the program labeled followed by a `break` of a block the `switch` ends, getTag's in an `else`, labels nothing (ADR 0944)",
+    breaks:
+      "a block the program labeled followed by a `break` of a block the `switch` ends, getTag's in an `else`, labels nothing (ADR 0944)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "        (Some(StmtKind::Break(Some(to))), _) => leaving.contains(to),\n",
-    replace: "        (Some(StmtKind::Break(Some(to))), _) => leaving.is_empty() && to.is_empty(),\n",
+    replace:
+      "        (Some(StmtKind::Break(Some(to))), _) => leaving.is_empty() && to.is_empty(),\n",
     tests: ["test/lowering-labels.test.ts", "-t", "inner switch leaves"],
   },
   {
     name: "labeled-switch-of-a-returned-copy",
-    breaks: "a block the program labeled followed by MIR's copy of the `return` after the `switch` labels nothing (ADR 0944)",
+    breaks:
+      "a block the program labeled followed by MIR's copy of the `return` after the `switch` labels nothing (ADR 0944)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "        (Some(StmtKind::Return(Some(value))), Some(Some(after))) => super::super::switches::alike(value, after),\n",
-    replace: "        (Some(StmtKind::Return(Some(value))), Some(Some(after))) => false && super::super::switches::alike(value, after),\n",
+    replace:
+      "        (Some(StmtKind::Return(Some(value))), Some(Some(after))) => false && super::super::switches::alike(value, after),\n",
     tests: ["test/lowering-labels.test.ts", "-t", "inner switch leaves"],
   },
   {
     name: "labeled-switch-jump-kept",
-    breaks: "the jump after an unwrapped block that never goes on to it is kept, a `break;` past a `switch` whose cases all leave (ADR 0944)",
+    breaks:
+      "the jump after an unwrapped block that never goes on to it is kept, a `break;` past a `switch` whose cases all leave (ADR 0944)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "                    let goes_on = body.last().is_none_or(|last| !never_goes_on(last));\n",
     replace: "                    let goes_on = true;\n",
@@ -213,26 +276,29 @@ export const mutations: Mutation[] = [
   },
   {
     name: "never-goes-on-past-a-label",
-    breaks: "a `switch` whose cases `break getTag` is taken to go on, the jump after it kept, and a block MIR made left around it (ADR 0944)",
+    breaks:
+      "a `switch` whose cases `break getTag` is taken to go on, the jump after it kept, and a block MIR made left around it (ADR 0944)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "            StmtKind::Break(Some(_)) | StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Continue(_)\n",
-    replace: "            StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Continue(_)\n",
+    replace:
+      "            StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Continue(_)\n",
     tests: ["test/lowering-labels.test.ts", "-t", "inner switch leaves"],
   },
 
   {
     name: "labeled-switch-returns-kept",
-    breaks: "a case of a labeled `switch` ends with MIR's copy of the `return` after it, not the case's end (ADR 0944)",
+    breaks:
+      "a case of a labeled `switch` ends with MIR's copy of the `return` after it, not the case's end (ADR 0944)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "        super::super::switches::returns_broken(case, value.as_ref(), *written);\n",
     replace: "",
     tests: ["test/lowering-labels.test.ts", "-t", "inner switch leaves"],
   },
 
-
   {
     name: "loop-end-return-kept",
-    breaks: "a `while let` that ends its function stays `while (true) { if (parent != null) { .. } return; }`, its `break` an `else`'s `continue`, not React's `while (parent != null) { if (..) { ..; break; } parent = parent.return; }` (ADR 0702, amended)",
+    breaks:
+      "a `while let` that ends its function stays `while (true) { if (parent != null) { .. } return; }`, its `break` an `else`'s `continue`, not React's `while (parent != null) { if (..) { ..; break; } parent = parent.return; }` (ADR 0702, amended)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "        last.kind = StmtKind::Break(Some(label.clone()));\n",
     replace: "",
@@ -241,7 +307,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "written-loop-label-dropped-in-tidy",
-    breaks: "tidy drops a loop label the program wrote that nothing names yet, `'outer: loop`'s, so a closure's `return` in a `switch` can't be the loop's `break outer` and the `try` keeps its closure (the user's decision, wl4)",
+    breaks:
+      "tidy drops a loop label the program wrote that nothing names yet, `'outer: loop`'s, so a closure's `return` in a `switch` can't be the loop's `break outer` and the `try` keeps its closure (the user's decision, wl4)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "                .is_some_and(|l| crate::lower::mir::is_block_label(l) && !js::names_jump(body, l))\n",
     replace: "                .is_some_and(|l| !js::names_jump(body, l))\n",
@@ -250,7 +317,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "exit-after-try-not-leaving",
-    breaks: "a loop's way out that ends with a borrow's `try { .. return content; } finally { $unborrow(tail); }` isn't taken for one that leaves, and the loop stays `while (true) { if (t) { ..; continue; } ..the rest.. }` (rd302)",
+    breaks:
+      "a loop's way out that ends with a borrow's `try { .. return content; } finally { $unborrow(tail); }` isn't taken for one that leaves, and the loop stays `while (true) { if (t) { ..; continue; } ..the rest.. }` (rd302)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "            || matches!(&s.kind, StmtKind::Try(body, _) if body.last().is_some_and(|s| leaving(s, leaves)))\n",
     replace: "",

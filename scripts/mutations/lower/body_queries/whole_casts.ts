@@ -12,7 +12,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "whole-int-unknown",
-    breaks: "an integer `as f64` isn't known to be a whole number, so `x as u8` keeps `$f64ToInt`",
+    breaks:
+      "an integer `as f64` isn't known to be a whole number, so `x as u8` keeps `$f64ToInt`",
     file: "src/lower/body_queries/whole_casts.rs",
     find: "        ExprKind::Cast { source } => int_range(thir[source].ty),\n",
     replace: "        ExprKind::Cast { source } => None,\n",
@@ -20,7 +21,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "whole-position-unknown",
-    breaks: "what `indexOf` gives isn't known to be a whole number, so `index as u32` keeps `$f64ToInt`",
+    breaks:
+      "what `indexOf` gives isn't known to be a whole number, so `index as u32` keeps `$f64ToInt`",
     file: "src/lower/body_queries/whole_casts.rs",
     find: "        ExprKind::Call { .. } => whole_call(e),\n",
     replace: "        ExprKind::Call { .. } => None,\n",
@@ -28,15 +30,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "whole-call-cast-unknown",
-    breaks: "a cast of what a WebIDL integer's binding gives keeps `$f64ToInt`, `$f64ToInt(options.length, 0, 4294967295)`",
+    breaks:
+      "a cast of what a WebIDL integer's binding gives keeps `$f64ToInt`, `$f64ToInt(options.length, 0, 4294967295)`",
     file: "src/lower/body_queries/whole_casts.rs",
     find: "                (tlo <= lo && hi <= thi).then_some(id)\n",
-    replace: "                (tlo <= lo && hi <= thi && false).then_some(id)\n",
+    replace:
+      "                (tlo <= lo && hi <= thi && false).then_some(id)\n",
     tests: ["test/webapi-bindings.test.ts", "-t", "WebIDL integer"],
   },
   {
     name: "whole-call-cast-unranged",
-    breaks: "a cast of a WebIDL integer into an integer that doesn't hold it all is the number as it is, `response.status as u8` 404",
+    breaks:
+      "a cast of a WebIDL integer into an integer that doesn't hold it all is the number as it is, `response.status as u8` 404",
     file: "src/lower/body_queries/whole_casts.rs",
     find: "                (tlo <= lo && hi <= thi).then_some(id)\n",
     replace: "                (tlo <= lo || hi <= thi).then_some(id)\n",
@@ -44,7 +49,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "whole-other-changes",
-    breaks: "a variable changed by `-=` is taken as only its `=`s give it values",
+    breaks:
+      "a variable changed by `-=` is taken as only its `=`s give it values",
     file: "src/lower/body_queries/whole_casts.rs",
     find: "        let only_set = bound.contains(&var) && changes == sets.get(&var).copied().unwrap_or(0);\n",
     replace: "        let only_set = bound.contains(&var);\n",
@@ -68,7 +74,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "whole-cast-some-binding-unranged",
-    breaks: "`end as u32` of the `Some` a `let .. else` binds of a nullable WebIDL integer is `$f64ToInt(end, 0, 4294967295)`, not `end` (ADR 0994, amended)",
+    breaks:
+      "`end as u32` of the `Some` a `let .. else` binds of a nullable WebIDL integer is `$f64ToInt(end, 0, 4294967295)`, not `end` (ADR 0994, amended)",
     file: "src/lower/body_queries/whole_casts.rs",
     find: "            bound.insert(var);\n            join(&mut values, var, Some(range));\n",
     replace: "            let _ = (var, range);\n",

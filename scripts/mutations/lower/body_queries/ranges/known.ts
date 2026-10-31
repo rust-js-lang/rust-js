@@ -4,39 +4,54 @@ import type { Mutation } from "../../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "value-joined-with-none",
-    breaks: "a counter of no bound joined with one below `n` is at most `n`, a bound that never settles round a loop, so `while i + 1 < n { i += 1 }` of a `u8` wraps",
+    breaks:
+      "a counter of no bound joined with one below `n` is at most `n`, a bound that never settles round a loop, so `while i + 1 < n { i += 1 }` of a `u8` wraps",
     file: "src/lower/body_queries/ranges/known.rs",
     find: "            _ if by_value(slice) => None,\n",
     replace: "",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a counter below a JS string's length"],
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a counter below a JS string's length",
+    ],
   },
   {
     name: "cells-changed-forgets-nothing",
-    breaks: "a call that empties the queue between its loop's test and `queue.borrow()[i]` is no change, and the index read unchecked, `undefined` where Rust panics",
+    breaks:
+      "a call that empties the queue between its loop's test and `queue.borrow()[i]` is no change, and the index read unchecked, `undefined` where Rust panics",
     file: "src/lower/body_queries/ranges/known.rs",
     find: "        self.lengths.retain(|s, _| !celled(s));\n",
-    replace: "        return;\n        #[allow(unreachable_code)]\n        self.lengths.retain(|s, _| !celled(s));\n",
+    replace:
+      "        return;\n        #[allow(unreachable_code)]\n        self.lengths.retain(|s, _| !celled(s));\n",
     tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
   },
   {
     name: "knows-cells-never",
-    breaks: "a scope that drops what empties the queue is asked nothing, so `queue.borrow()[0]` after it is read unchecked",
+    breaks:
+      "a scope that drops what empties the queue is asked nothing, so `queue.borrow()[0]` after it is read unchecked",
     file: "src/lower/body_queries/ranges/known.rs",
     find: "        self.lengths.keys().any(|s| s.0.contains(&CELL))\n",
-    replace: "        false && self.lengths.keys().any(|s| s.0.contains(&CELL))\n",
+    replace:
+      "        false && self.lengths.keys().any(|s| s.0.contains(&CELL))\n",
     tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
   },
   {
     name: "join-unbound-forgets",
-    breaks: "a range bound by no length, `let mut s = 0`'s, joined with one below `xs.len()` forgets the bound, so a counter past its loop isn't known below the length",
+    breaks:
+      "a range bound by no length, `let mut s = 0`'s, joined with one below `xs.len()` forgets the bound, so a counter past its loop isn't known below the length",
     file: "src/lower/body_queries/ranges/known.rs",
     find: "            _ => Some(Below { c: 0, b: self.hi, s: 0 }),\n",
     replace: "            _ => None,\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a signed index tested not negative"],
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a signed index tested not negative",
+    ],
   },
   {
     name: "ranges-within-loose",
-    breaks: "an index at most the length is taken below it, so `items[i]` where `i <= items.len()` reads `undefined`",
+    breaks:
+      "an index at most the length is taken below it, so `items[i]` where `i <= items.len()` reads `undefined`",
     file: "src/lower/body_queries/ranges/known.rs",
     find: "        self.c <= 1 << self.s && self.b <= -(1 << self.s)",
     replace: "        self.c <= 1 << self.s && self.b <= 0",
@@ -44,7 +59,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "pop-as-push",
-    breaks: "a `pop` is taken as one more item, so `v[n - 1]` of the length before it reads `undefined`",
+    breaks:
+      "a `pop` is taken as one more item, so `v[n - 1]` of the length before it reads `undefined`",
     file: "src/lower/body_queries/ranges/known.rs",
     find: "                bound.b -= bound.c * by;",
     replace: "                bound.b -= bound.c * by.abs();",
@@ -52,15 +68,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "bound-never-lowest",
-    breaks: "a bound is never made over its least denominator, so a loop that halves `siftUp`'s index never settles and `heap[index]` is checked",
+    breaks:
+      "a bound is never made over its least denominator, so a loop that halves `siftUp`'s index never settles and `heap[index]` is checked",
     file: "src/lower/body_queries/ranges/known.rs",
     find: "        while self.s > 0 && self.c % 2 == 0 && self.b % 2 == 0 {",
-    replace: "        while false && self.s > 0 && self.c % 2 == 0 && self.b % 2 == 0 {",
+    replace:
+      "        while false && self.s > 0 && self.c % 2 == 0 && self.b % 2 == 0 {",
     tests: ["test/lowering-functions.test.ts", "-t", "only calls reach"],
   },
   {
     name: "product-negative-zero-exact",
-    breaks: "a product the ranges show in range is JS's own `*` though it can be `-4 * 0`, JS's `-0`, which an `f64` made of it shows",
+    breaks:
+      "a product the ranges show in range is JS's own `*` though it can be `-4 * 0`, JS's `-0`, which an `f64` made of it shows",
     file: "src/lower/body_queries/ranges/known.rs",
     find: "        zero(self) && other.lo < 0 || zero(other) && self.lo < 0\n",
     replace: "        false\n",
@@ -68,23 +87,34 @@ export const mutations: Mutation[] = [
   },
   {
     name: "push-of-unknown-length-unknown",
-    breaks: "a `push` of a `Vec` whose length isn't known leaves it unknown, so the length read after it may be 0, and `properties[prevLength - 1]` is `$index(properties, (prevLength - 1) >>> 0)`",
+    breaks:
+      "a `push` of a `Vec` whose length isn't known leaves it unknown, so the length read after it may be 0, and `properties[prevLength - 1]` is `$index(properties, (prevLength - 1) >>> 0)`",
     file: "src/lower/body_queries/ranges/known.rs",
     find: "            None if by > 0 => _ = self.lengths.insert(slice.clone(), by),\n",
     replace: "            None if by > 0 => {}\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a length held in a variable"],
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a length held in a variable",
+    ],
   },
   {
     name: "at-least-one-short",
-    breaks: "a value at least 1 and at most a length shows nothing of the length, so `keys[0]` past `length === 1` keeps `$index`",
+    breaks:
+      "a value at least 1 and at most a length shows nothing of the length, so `keys[0]` past `length === 1` keeps `$index`",
     file: "src/lower/body_queries/ranges/known.rs",
     find: "        if least > 0 {\n",
     replace: "        if least > 1 {\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a length held in a variable"],
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a length held in a variable",
+    ],
   },
   {
     name: "test-kept-past-grown",
-    breaks: "a test held in a `bool` stays one of a `Vec` a `pop` made shorter, so `&items[..3]` of two items is two, where Rust panics (ADR 0806)",
+    breaks:
+      "a test held in a `bool` stays one of a `Vec` a `pop` made shorter, so `&items[..3]` of two items is two, where Rust panics (ADR 0806)",
     file: "src/lower/body_queries/ranges/known.rs",
     find: "        self.tests.retain(|_, (_, reads)| !reads.contains(&slice.1));\n",
     replace: "",
@@ -92,7 +122,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "test-kept-past-change",
-    breaks: "a test held in a `bool` stays one of what a `&mut` changed, `truncate(1)`, so `&items[..3]` of one item is one, where Rust panics (ADR 0806)",
+    breaks:
+      "a test held in a `bool` stays one of what a `&mut` changed, `truncate(1)`, so `&items[..3]` of one item is one, where Rust panics (ADR 0806)",
     file: "src/lower/body_queries/ranges/known.rs",
     find: "            .retain(|held, (_, reads)| *held != var && !reads.contains(&var));\n",
     replace: "            .retain(|held, _| *held != var);\n",
@@ -100,7 +131,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "test-kept-past-set",
-    breaks: "a `bool` set again still holds the test it was made of, `truncated = true`, so `&items[..3]` of one item is one, where Rust panics (ADR 0806)",
+    breaks:
+      "a `bool` set again still holds the test it was made of, `truncated = true`, so `&items[..3]` of one item is one, where Rust panics (ADR 0806)",
     file: "src/lower/body_queries/ranges/known.rs",
     find: "            .retain(|held, (_, reads)| *held != var && !reads.contains(&var));\n",
     replace: "            .retain(|_, (_, reads)| !reads.contains(&var));\n",
@@ -108,15 +140,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "test-joined-from-one-path",
-    breaks: "where two paths meet, a test either holds is held, so `if truncated` set on the other shows `items.len() > 3` and `&items[..3]` of one item is one (ADR 0806)",
+    breaks:
+      "where two paths meet, a test either holds is held, so `if truncated` set on the other shows `items.len() > 3` and `&items[..3]` of one item is one (ADR 0806)",
     file: "src/lower/body_queries/ranges/known.rs",
     find: "            .filter(|&(v, t)| other.tests.get(v) == Some(t))\n",
-    replace: "            .filter(|&(v, t)| other.tests.get(v).is_none_or(|o| o == t))\n",
+    replace:
+      "            .filter(|&(v, t)| other.tests.get(v).is_none_or(|o| o == t))\n",
     tests: ["test/corpus.test.ts", "-t", "slice_range_joined_panic"],
   },
   {
     name: "range-end-past-length-up-to",
-    breaks: "a range's end one past the length is taken as at most it, so `&items[..items.len() + 1]` is all of them, where Rust panics (ADR 0806)",
+    breaks:
+      "a range's end one past the length is taken as at most it, so `&items[..items.len() + 1]` is all of them, where Rust panics (ADR 0806)",
     file: "src/lower/body_queries/ranges/known.rs",
     find: "        self.c <= 1 << self.s && self.b <= 0\n",
     replace: "        self.c <= 1 << self.s && self.b <= 1\n",
@@ -124,7 +159,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "same-length-joined-either",
-    breaks: "a table one branch shrinks is still known as long as its base past the branch, `levels[i]` out of bounds read as `undefined` (#362)",
+    breaks:
+      "a table one branch shrinks is still known as long as its base past the branch, `levels[i]` out of bounds read as `undefined` (#362)",
     file: "src/lower/body_queries/ranges/known.rs",
     find: "            .filter(|&(s, base)| other.same.get(s) == Some(base))\n",
     replace: "            .filter(|_| true)\n",
@@ -132,7 +168,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "same-length-kept-grown",
-    breaks: "a table `pop`ped, or a base `push`ed, is still known as long as the other, `levels[i]` unchecked (#362)",
+    breaks:
+      "a table `pop`ped, or a base `push`ed, is still known as long as the other, `levels[i]` unchecked (#362)",
     file: "src/lower/body_queries/ranges/known.rs",
     find: "        self.same.retain(|s, base| s != slice && base != slice);\n",
     replace: "",
@@ -140,7 +177,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "same-length-kept-celled",
-    breaks: "a table as long as a `RefCell`'s `Vec` is still known so after a call that may change it (#362)",
+    breaks:
+      "a table as long as a `RefCell`'s `Vec` is still known so after a call that may change it (#362)",
     file: "src/lower/body_queries/ranges/known.rs",
     find: "        self.same.retain(|s, base| !celled(s) && !celled(base));\n",
     replace: "",
@@ -148,7 +186,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "same-length-kept-changed",
-    breaks: "a table as long as `count` is still known so after `count += 1` (#362)",
+    breaks:
+      "a table as long as `count` is still known so after `count += 1` (#362)",
     file: "src/lower/body_queries/ranges/known.rs",
     find: "        self.same.retain(|(_, v), (_, of)| *v != var && *of != var);\n",
     replace: "",
@@ -156,7 +195,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rows-least-kept",
-    breaks: "a row cleared leaves the rows known at least their count long, `board[0][1]` of an empty row unchecked (#370)",
+    breaks:
+      "a row cleared leaves the rows known at least their count long, `board[0][1]` of an empty row unchecked (#370)",
     file: "src/lower/body_queries/ranges/known.rs",
     find: "        self.lengths.retain(|s, _| !rows(s));\n",
     replace: "",

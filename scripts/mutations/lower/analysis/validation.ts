@@ -4,7 +4,8 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "flattened-variant-field-allowed",
-    breaks: "an enum variant's flattened field is made nested, without an error",
+    breaks:
+      "an enum variant's flattened field is made nested, without an error",
     file: "src/lower/analysis/validation.rs",
     find: "        if tcx.def_kind(id) == DefKind::Enum {",
     replace: "        if false && tcx.def_kind(id) == DefKind::Enum {",
@@ -12,19 +13,29 @@ export const mutations: Mutation[] = [
   },
   {
     name: "flattened-base-refused",
-    breaks: "a flattened field read whole as an update's base, `..props.html`, is refused, where it's the object its parent is",
+    breaks:
+      "a flattened field read whole as an update's base, `..props.html`, is refused, where it's the object its parent is",
     file: "src/lower/analysis/validation.rs",
     find: "                        && !bases.contains(&e) =>",
     replace: "                        && true =>",
-    tests: ["test/jsx-props.test.ts", "-t", "flattened props with a field of them set"],
+    tests: [
+      "test/jsx-props.test.ts",
+      "-t",
+      "flattened props with a field of them set",
+    ],
   },
   {
     name: "init-of-nested-function",
-    breaks: "a function a thread-local's `init` makes is taken for the `init`, its value the thread-local's",
+    breaks:
+      "a function a thread-local's `init` makes is taken for the `init`, its value the thread-local's",
     file: "src/lower/analysis/validation.rs",
     find: "        if matches!(tcx.def_kind(p), DefKind::Fn | DefKind::AssocFn | DefKind::Closure) {\n            return None;\n        }\n",
     replace: "",
-    tests: ["test/jsx-children.test.ts", "-t", "a function a block makes and gives"],
+    tests: [
+      "test/jsx-children.test.ts",
+      "-t",
+      "a function a block makes and gives",
+    ],
   },
   {
     name: "flattened-reference-refused",
@@ -32,22 +43,34 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/validation.rs",
     find: "            let object = match ty.peel_refs().kind() {",
     replace: "            let object = match ty.kind() {",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "flattened field made outside JSX"],
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "flattened field made outside JSX",
+    ],
   },
   {
     name: "flattened-read-through-deref",
-    breaks: "reading through a flattened reference, `report.item.line`, is refused as a read of it whole",
+    breaks:
+      "reading through a flattened reference, `report.item.line`, is refused as a read of it whole",
     file: "src/lower/analysis/validation.rs",
     find: "                    while let ExprKind::Deref { arg } = thir[lhs].kind {\n",
-    replace: "                    while let ExprKind::Deref { arg } = thir[lhs].kind && false {\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "flattened field made outside JSX"],
+    replace:
+      "                    while let ExprKind::Deref { arg } = thir[lhs].kind && false {\n",
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "flattened field made outside JSX",
+    ],
   },
   {
     name: "mixed-read-through",
-    breaks: "a struct of two rests is read through one of them, whose keys JS mixed",
+    breaks:
+      "a struct of two rests is read through one of them, whose keys JS mixed",
     file: "src/lower/analysis/validation.rs",
     find: "                    if is_mixed(thir[lhs].ty) && bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize()) =>",
-    replace: "                    if false && bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize()) =>",
+    replace:
+      "                    if false && bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize()) =>",
     tests: ["test/jsx-props.test.ts", "-t", "two flattened fields"],
   },
   {
@@ -71,20 +94,24 @@ export const mutations: Mutation[] = [
     breaks: "a flattened `Dict` is refused, whose keys spread",
     file: "src/lower/analysis/validation.rs",
     find: "                    adt.is_struct() && adt.non_enum_variant().ctor.is_none() || marks_js_object(tcx, *adt, args)",
-    replace: "                    adt.is_struct() && adt.non_enum_variant().ctor.is_none()",
+    replace:
+      "                    adt.is_struct() && adt.non_enum_variant().ctor.is_none()",
     tests: ["test/jsx-props.test.ts", "-t", "two flattened fields"],
   },
   {
     name: "extern-fn-declared-accepted",
-    breaks: "a function in an `extern` block, a second form of a binding, is accepted where it's declared (ADR 0373)",
+    breaks:
+      "a function in an `extern` block, a second form of a binding, is accepted where it's declared (ADR 0373)",
     file: "src/lower/analysis/validation.rs",
     find: "                if tcx.is_foreign_item(def_id)\n                    && tcx.fn_sig(def_id).skip_binder().abi() == rustc_abi::ExternAbi::Rust =>\n",
-    replace: "                if false && tcx.is_foreign_item(def_id)\n                    && tcx.fn_sig(def_id).skip_binder().abi() == rustc_abi::ExternAbi::Rust =>\n",
+    replace:
+      "                if false && tcx.is_foreign_item(def_id)\n                    && tcx.fn_sig(def_id).skip_binder().abi() == rustc_abi::ExternAbi::Rust =>\n",
     tests: ["test/diagnostics.test.ts", "-t", "a function in an extern block"],
   },
   {
     name: "extern-type-accepted",
-    breaks: "an `extern` type, a second form of a JS type, is accepted (ADR 0373)",
+    breaks:
+      "an `extern` type, a second form of a JS type, is accepted (ADR 0373)",
     file: "src/lower/analysis/validation.rs",
     find: "            DefKind::ForeignTy => {\n",
     replace: "            DefKind::ForeignTy if false => {\n",
@@ -92,47 +119,70 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rest-of-closure-allowed",
-    breaks: "a closure's parameter marked `#[rust_js::rest]` is gathered, though what calls it gives what its type says",
+    breaks:
+      "a closure's parameter marked `#[rust_js::rest]` is gathered, though what calls it gives what its type says",
     file: "src/lower/analysis/validation.rs",
     find: "            let refused = if tcx.is_closure_like(def_id) {\n",
     replace: "            let refused = if false {\n",
-    tests: ["test/rest-parameters.test.ts", "-t", "refused: a closure's parameter"],
+    tests: [
+      "test/rest-parameters.test.ts",
+      "-t",
+      "refused: a closure's parameter",
+    ],
   },
   {
     name: "rest-of-trait-method-allowed",
-    breaks: "a trait method's parameter marked `#[rust_js::rest]` is gathered by one impl, though a call through its trait gives the slice whole",
+    breaks:
+      "a trait method's parameter marked `#[rust_js::rest]` is gathered by one impl, though a call through its trait gives the slice whole",
     file: "src/lower/analysis/validation.rs",
     find: "            } else if tcx.trait_impl_of_assoc(def_id).is_some()\n                || tcx\n                    .trait_of_assoc(def_id)\n                    .is_some_and(|t| !crate::lower::classes::is_class_trait(tcx, t))\n            {\n",
     replace: "            } else if false {\n",
-    tests: ["test/rest-parameters.test.ts", "-t", "refused: a trait method's parameter"],
+    tests: [
+      "test/rest-parameters.test.ts",
+      "-t",
+      "refused: a trait method's parameter",
+    ],
   },
   {
     name: "rest-of-component-allowed",
-    breaks: "a component's props marked `#[rust_js::rest]` are gathered, though React gives it one object",
+    breaks:
+      "a component's props marked `#[rust_js::rest]` are gathered, though React gives it one object",
     file: "src/lower/analysis/validation.rs",
     find: "            } else if bindings::is_component(tcx, def_id) {\n",
     replace: "            } else if false {\n",
-    tests: ["test/rest-parameters.test.ts", "-t", "refused: a component's props"],
+    tests: [
+      "test/rest-parameters.test.ts",
+      "-t",
+      "refused: a component's props",
+    ],
   },
   {
     name: "rest-not-last-allowed",
-    breaks: "a parameter marked `#[rust_js::rest]` before another is allowed, which JS's rest parameter can't be",
+    breaks:
+      "a parameter marked `#[rust_js::rest]` before another is allowed, which JS's rest parameter can't be",
     file: "src/lower/analysis/validation.rs",
     find: "            } else if index + 1 != count {\n",
     replace: "            } else if false {\n",
-    tests: ["test/rest-parameters.test.ts", "-t", "refused: not the last parameter"],
+    tests: [
+      "test/rest-parameters.test.ts",
+      "-t",
+      "refused: not the last parameter",
+    ],
   },
   {
     name: "rest-of-no-slice-allowed",
-    breaks: "a `Vec` marked `#[rust_js::rest]` is allowed, its call given the `Vec` whole",
+    breaks:
+      "a `Vec` marked `#[rust_js::rest]` is allowed, its call given the `Vec` whole",
     file: "src/lower/analysis/validation.rs",
     find: "            } else if !matches!(ty.kind(), ty::Ref(_, slice, rustc_hir::Mutability::Not) if slice.is_slice()) {\n",
-    replace: "            } else if !matches!(ty.kind(), ty::Ref(_, slice, _) if slice.is_slice()) {\n",
+    replace:
+      "            } else if !matches!(ty.kind(), ty::Ref(_, slice, _) if slice.is_slice()) {\n",
     tests: ["test/rest-parameters.test.ts", "-t", "refused: a slice of &mut"],
   },
   {
     name: "rest-pattern-allowed",
-    breaks: "a slice taken apart where it's given and marked `#[rust_js::rest]` is allowed, gathered as no name",
+    breaks:
+      "a slice taken apart where it's given and marked `#[rust_js::rest]` is allowed, gathered as no name",
     file: "src/lower/analysis/validation.rs",
     find: "            } else if name.is_none() {\n",
     replace: "            } else if false {\n",
@@ -140,63 +190,98 @@ export const mutations: Mutation[] = [
   },
   {
     name: "parameter-name-repeat-allowed",
-    breaks: "a parameter's `#[rust_js::name]` that repeats its camelCase name, a second way to write it, is no error",
+    breaks:
+      "a parameter's `#[rust_js::name]` that repeats its camelCase name, a second way to write it, is no error",
     file: "src/lower/analysis/validation.rs",
     find: "    } else if given.as_str() == default {\n",
     replace: "    } else if false {\n",
-    tests: ["test/bindings.test.ts", "-t", "a parameter's rust_js::name is its JS name"],
+    tests: [
+      "test/bindings.test.ts",
+      "-t",
+      "a parameter's rust_js::name is its JS name",
+    ],
   },
   {
     name: "parameter-name-any-text",
-    breaks: "a parameter's `#[rust_js::name = \"my-name\"]`, no JS name, is written as it is, a syntax error",
+    breaks:
+      'a parameter\'s `#[rust_js::name = "my-name"]`, no JS name, is written as it is, a syntax error',
     file: "src/lower/analysis/validation.rs",
     find: "    if !crate::names::is_identifier(given.as_str()) || crate::names::kept_word(given.as_str()) {\n",
     replace: "    if false {\n",
-    tests: ["test/bindings.test.ts", "-t", "a parameter's rust_js::name is its JS name"],
+    tests: [
+      "test/bindings.test.ts",
+      "-t",
+      "a parameter's rust_js::name is its JS name",
+    ],
   },
   {
     name: "static-mut-pointer-refused",
-    breaks: "a raw pointer to a `static mut`, `&raw mut TOTAL`, is refused as an address, not a handle on its place (ADR 0096, amended)",
+    breaks:
+      "a raw pointer to a `static mut`, `&raw mut TOTAL`, is refused as an address, not a handle on its place (ADR 0096, amended)",
     file: "src/lower/analysis/validation.rs",
     find: "                Some(_) if raw => continue,\n",
-    replace: "                Some(_) if raw => Refused::Memory(\"raw addresses of statics\"),\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a static mut a pointer to is given on"],
+    replace:
+      '                Some(_) if raw => Refused::Memory("raw addresses of statics"),\n',
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a static mut a pointer to is given on",
+    ],
   },
   {
     name: "static-pointer-unrefused",
-    breaks: "a raw pointer to an immutable `static`, `&raw const LIMIT`, compiles, which rust-js has no place of (ADR 0096)",
+    breaks:
+      "a raw pointer to an immutable `static`, `&raw const LIMIT`, compiles, which rust-js has no place of (ADR 0096)",
     file: "src/lower/analysis/validation.rs",
-    find: "                Some(d) if raw && !tcx.is_mutable_static(d) => Refused::Memory(\"raw addresses of statics\"),\n",
+    find: '                Some(d) if raw && !tcx.is_mutable_static(d) => Refused::Memory("raw addresses of statics"),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^static_raw_address.rs$"],
   },
   {
     name: "let-name-of-pattern-allowed",
-    breaks: "a `let (x, y)`'s `#[rust_js::name]`, which names neither, is ignored, not refused (ADR 0855, amended)",
+    breaks:
+      "a `let (x, y)`'s `#[rust_js::name]`, which names neither, is ignored, not refused (ADR 0855, amended)",
     file: "src/lower/analysis/validation.rs",
     find: "            let rustc_hir::PatKind::Binding(_, _, ident, None) = local.pat.kind else {\n",
-    replace: "            let rustc_hir::PatKind::Binding(_, _, ident, None) = local.pat.kind else {\n                continue;\n            };\n            if false {\n",
-    tests: ["test/lowering-symbols.test.ts", "-t", "a let's rust_js::name is its JS name"],
+    replace:
+      "            let rustc_hir::PatKind::Binding(_, _, ident, None) = local.pat.kind else {\n                continue;\n            };\n            if false {\n",
+    tests: [
+      "test/lowering-symbols.test.ts",
+      "-t",
+      "a let's rust_js::name is its JS name",
+    ],
   },
   {
     name: "let-name-unchecked",
-    breaks: "a `let`'s `#[rust_js::name]` that's no string, no JS name or the name it has anyway is not refused (ADR 0855, amended)",
+    breaks:
+      "a `let`'s `#[rust_js::name]` that's no string, no JS name or the name it has anyway is not refused (ADR 0855, amended)",
     file: "src/lower/analysis/validation.rs",
     find: "        for (local, attr) in bindings::named_lets(tcx, owner) {\n",
-    replace: "        for (local, attr) in bindings::named_lets(tcx, owner).into_iter().filter(|_| false) {\n",
-    tests: ["test/lowering-symbols.test.ts", "-t", "a let's rust_js::name is its JS name"],
+    replace:
+      "        for (local, attr) in bindings::named_lets(tcx, owner).into_iter().filter(|_| false) {\n",
+    tests: [
+      "test/lowering-symbols.test.ts",
+      "-t",
+      "a let's rust_js::name is its JS name",
+    ],
   },
   {
     name: "let-name-same-allowed",
-    breaks: "`#[rust_js::name = \"value\"] let value`, a second way to write its name, is not refused (ADR 0855, amended)",
+    breaks:
+      '`#[rust_js::name = "value"] let value`, a second way to write its name, is not refused (ADR 0855, amended)',
     file: "src/lower/analysis/validation.rs",
     find: "            let default = crate::lower::camel_case(ident.name.as_str());\n",
     replace: "            let default = String::new();\n",
-    tests: ["test/lowering-symbols.test.ts", "-t", "a let's rust_js::name is its JS name"],
+    tests: [
+      "test/lowering-symbols.test.ts",
+      "-t",
+      "a let's rust_js::name is its JS name",
+    ],
   },
   {
     name: "rest-of-class-trait-refused",
-    breaks: "a trait of classes' default's `#[rust_js::rest]` is refused, where each class's prototype's method takes rest arguments (rd283)",
+    breaks:
+      "a trait of classes' default's `#[rust_js::rest]` is refused, where each class's prototype's method takes rest arguments (rd283)",
     file: "src/lower/analysis/validation.rs",
     find: "                    .is_some_and(|t| !crate::lower::classes::is_class_trait(tcx, t))\n",
     replace: "                    .is_some_and(|_| true)\n",

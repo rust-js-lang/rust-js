@@ -1,22 +1,36 @@
 // Mutations of src/lower/mir/tidy/decisions.rs (ADR 0364).
 import type { Mutation } from "../../../../mutations";
 
-const chain = ["test/lowering-matches.test.ts", "-t", "arms of more than one pattern"];
+const chain = [
+  "test/lowering-matches.test.ts",
+  "-t",
+  "arms of more than one pattern",
+];
 
-const CALLS = ["test/corpus.test.ts", "-t", "^(default_value_exits|guards_that_call|guarded_arm_chains).rs$"];
+const CALLS = [
+  "test/corpus.test.ts",
+  "-t",
+  "^(default_value_exits|guards_that_call|guarded_arm_chains).rs$",
+];
 
 export const mutations: Mutation[] = [
   {
     name: "empty-arm-else-only",
-    breaks: "a match's arm that does nothing between guarded arms, `\"C\" => {}`, is the chain's `else` or none, so `kinds` keeps MIR's `bb39:` block (bb39)",
+    breaks:
+      "a match's arm that does nothing between guarded arms, `\"C\" => {}`, is the chain's `else` or none, so `kinds` keeps MIR's `bb39:` block (bb39)",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "            let goes_on = *only != longest && !after.is_empty();\n",
     replace: "            let goes_on = false;\n",
-    tests: ["test/lowering-labels.test.ts", "-t", "an arm that does nothing between"],
+    tests: [
+      "test/lowering-labels.test.ts",
+      "-t",
+      "an arm that does nothing between",
+    ],
   },
   {
     name: "empty-arm-of-a-turn-negated",
-    breaks: "an arm that does nothing at a loop turn's end is a negated test, `else if (name !== \"SCRIPT\" && ..)`, not upstream's `switch` of `continue`s (rd184)",
+    breaks:
+      "an arm that does nothing at a loop turn's end is a negated test, `else if (name !== \"SCRIPT\" && ..)`, not upstream's `switch` of `continue`s (rd184)",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "            let goes_on = *only != longest && !after.is_empty();\n",
     replace: "            let goes_on = *only != longest;\n",
@@ -25,7 +39,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "present-said-past-the-block-unseen",
-    breaks: "a symbol match whose `_`, after MIR's inner block, breaks the loop keeps the block's `!= null` tests, `stopped`'s `bb25:` (#412)",
+    breaks:
+      "a symbol match whose `_`, after MIR's inner block, breaks the loop keeps the block's `!= null` tests, `stopped`'s `bb25:` (#412)",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "    for s in arms_and_after.chain(after) {\n",
     replace: "    for s in arms_and_after {\n",
@@ -33,15 +48,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "present-said-of-any-tree",
-    breaks: "a tree a `switch` takes, React's resolveThenable's inner `match`, is a chain first, what follows the outer `match` its `default`, `default: throw thenable;` (#412)",
+    breaks:
+      "a tree a `switch` takes, React's resolveThenable's inner `match`, is a chain first, what follows the outer `match` its `default`, `default: throw thenable;` (#412)",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "    let valued = |e: &Expr| breaking && valued(e);\n",
     replace: "    let valued = |e: &Expr| valued(e);\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "resolveThenable is upstream"],
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "resolveThenable is upstream",
+    ],
   },
   {
     name: "present-unsaid",
-    breaks: "a symbol match's chain tests `symbolFor != null` in each arm, beside `symbolFor === C`, more tests than MIR's tree, so its labeled block stays (#412)",
+    breaks:
+      "a symbol match's chain tests `symbolFor != null` in each arm, beside `symbolFor === C`, more tests than MIR's tree, so its labeled block stays (#412)",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "                tests.iter().any(|other| says(subject, other, valued))\n",
     replace: "                false\n",
@@ -49,7 +70,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "present-unsaid-past-a-failure",
-    breaks: "an arm's path whose earlier arm's failure is left out keeps its `!= null`, `symbolFor != null && symbolFor === C`, the labeled block staying (#412)",
+    breaks:
+      "an arm's path whose earlier arm's failure is left out keeps its `!= null`, `symbolFor != null && symbolFor === C`, the labeled block staying (#412)",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "                .map(|path| Some(present_said(simplified(path)?, &valued)))\n",
     replace: "                .map(|path| simplified(path))\n",
@@ -57,7 +79,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "negated-alternative-kept",
-    breaks: "an or-pattern of symbols MIR tests apart is `s === A || (s !== A && s === B)`, not `s === A || s === B` (#412)",
+    breaks:
+      "an or-pattern of symbols MIR tests apart is `s === A || (s !== A && s === B)`, not `s === A || s === B` (#412)",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "            }) || negated.iter().any(|n| n.written_alike(t))\n",
     replace: "            })\n",
@@ -65,7 +88,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "decisions-guard-call-a-leaf",
-    breaks: "a guard that calls, `[n, ..] if below(*n)`, is no test of the tree, so `guarded_rows` keeps MIR's `bb25:` block each arm breaks out of (#221)",
+    breaks:
+      "a guard that calls, `[n, ..] if below(*n)`, is no test of the tree, so `guarded_rows` keeps MIR's `bb25:` block each arm breaks out of (#221)",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "                pure(part)\n                    || !span.is_none() && (self.told.guards.iter()).any(|g| within(*span, g.span) && !switched(g))\n",
     replace: "                pure(part)\n",
@@ -74,16 +98,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "decisions-guard-binding-not-given",
-    breaks: "a guard's `const n = row[0];` is what an arm does, not given in the guard's place, `below(row[0])`, so `guarded_rows` keeps its block (#221)",
+    breaks:
+      "a guard's `const n = row[0];` is what an arm does, not given in the guard's place, `below(row[0])`, so `guarded_rows` keeps its block (#221)",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "            StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => (name, value, true),\n",
-    replace: "            StmtKind::Const(..) | StmtKind::Let(..) => return None,\n",
+    replace:
+      "            StmtKind::Const(..) | StmtKind::Let(..) => return None,\n",
     tests: CALLS,
     snapshots: true,
   },
   {
     name: "decisions-switch-guard-chained",
-    breaks: "a `match` of constants whose guard calls, React's finishConcurrentRender's `case 4: if (!onlyTransitions(lanes) && ..) { break; }`, is an `if` chain, not its `switch` (#221, ADR 0629)",
+    breaks:
+      "a `match` of constants whose guard calls, React's finishConcurrentRender's `case 4: if (!onlyTransitions(lanes) && ..) { break; }`, is an `if` chain, not its `switch` (#221, ADR 0629)",
     file: "src/lower/mir/tidy/decisions.rs",
     find: " && !switched(g))\n",
     replace: ")\n",
@@ -92,7 +119,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "decisions-call-tree-tests-repeated",
-    breaks: "a chain of a tree that calls counts `row.length >= 1` of each arm that reads it, more than the tree's, so `guarded_rows` keeps its block (#221)",
+    breaks:
+      "a chain of a tree that calls counts `row.length >= 1` of each arm that reads it, more than the tree's, so `guarded_rows` keeps its block (#221)",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "        Some(_) => distinct(tests),\n",
     replace: "        Some(_) => tests.map(atoms).sum::<usize>(),\n",
@@ -101,7 +129,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "decisions-failed-arm-kept",
-    breaks: "a path past an arm before it in the chain keeps that arm's failing, `row.length >= 1 && !(a || b) && row.length === 2`, more tests than the tree's, so a slice pattern's `match` keeps MIR's `bb11:` block (#221)",
+    breaks:
+      "a path past an arm before it in the chain keeps that arm's failing, `row.length >= 1 && !(a || b) && row.length === 2`, more tests than the tree's, so a slice pattern's `match` keeps MIR's `bb11:` block (#221)",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "                    if !prefix.is_empty()\n",
     replace: "                    if false && !prefix.is_empty()\n",
@@ -110,7 +139,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "decisions-shared-tests-repeated",
-    breaks: "an arm's paths that test alike first repeat it, `n >= 1 && a === 1 || n >= 1 && b === 1`, more tests than the tree's, so `observed_rows` keeps MIR's `bb22:` block (#221)",
+    breaks:
+      "an arm's paths that test alike first repeat it, `n >= 1 && a === 1 || n >= 1 && b === 1`, more tests than the tree's, so `observed_rows` keeps MIR's `bb22:` block (#221)",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "    let before: Vec<Expr> = paths.first().map(|path| path[..shared].to_vec()).unwrap_or_default();\n",
     replace: "    let before: Vec<Expr> = Vec::new();\n    let shared = 0;\n",
@@ -119,7 +149,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "decisions-tail-copied",
-    breaks: "what the program wrote after a `match`, an `if`, is copied into the arm that goes on to it, and the `else` of the leaves its tests make, `case 1: ..; if (x > 5) { .. } break; default: if (x > 5) { .. }`, not once after the `switch` (kj-switch)",
+    breaks:
+      "what the program wrote after a `match`, an `if`, is copied into the arm that goes on to it, and the `else` of the leaves its tests make, `case 1: ..; if (x > 5) { .. } break; default: if (x > 5) { .. }`, not once after the `switch` (kj-switch)",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "    if copied {\n",
     replace: "    if false && copied {\n",
@@ -128,15 +159,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "decisions-shared-assign-copied",
-    breaks: "an arm's shared assignment, `r.value *= 10`, is copied into each arm",
+    breaks:
+      "an arm's shared assignment, `r.value *= 10`, is copied into each arm",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "    if shared.len() > SHARED || !shared.iter().all(|s| ends(s) && size(s) == 1) {\n",
     replace: "    if shared.len() > SHARED {\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "an or-pattern's arm that changes what it binds"],
+    tests: [
+      "test/lowering-matches.test.ts",
+      "-t",
+      "an or-pattern's arm that changes what it binds",
+    ],
   },
   {
     name: "decisions-longer-tests-kept",
-    breaks: "a chain whose tests are longer than the tree's, `value[0] != null` twice, is written",
+    breaks:
+      "a chain whose tests are longer than the tree's, `value[0] != null` twice, is written",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "    if tests_made > written {\n",
     replace: "    if false {\n",
@@ -144,7 +181,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "decisions-impossible-path-kept",
-    breaks: "a path no value takes, `c < \"0\" && c >= \"A\"`, is one of an arm's tests",
+    breaks:
+      'a path no value takes, `c < "0" && c >= "A"`, is one of an arm\'s tests',
     file: "src/lower/mir/tidy/decisions.rs",
     find: "        if now.is_empty() {\n            return None;\n        }\n",
     replace: "",
@@ -152,7 +190,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "decisions-arms-in-tree-order",
-    breaks: "the chain's arms are in the order MIR tests them, not the order written",
+    breaks:
+      "the chain's arms are in the order MIR tests them, not the order written",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "    order.sort_by_key(|&i| (written(i), i));\n",
     replace: "",
@@ -163,12 +202,14 @@ export const mutations: Mutation[] = [
     breaks: "`'0'..='9' | '.'` is tested `c === \".\" || ..`, the `.` first",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "            (holds, tests.last().and_then(written_at).unwrap_or(u32::MAX))\n",
-    replace: "            (false, tests.last().and_then(written_at).unwrap_or(u32::MAX))\n",
+    replace:
+      "            (false, tests.last().and_then(written_at).unwrap_or(u32::MAX))\n",
     tests: chain,
   },
   {
     name: "decisions-rest-after-chain",
-    breaks: "what follows the block stays after the chain though one arm alone goes on to it: an empty arm",
+    breaks:
+      "what follows the block stays after the chain though one arm alone goes on to it: an empty arm",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "    let takes_rest = going_on.len() == 1 && !after.is_empty();\n",
     replace: "    let takes_rest = false;\n",
@@ -176,16 +217,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "decisions-loop-exit-kept",
-    breaks: "an arm ending in a loop that leaves the match keeps the match a labeled block",
+    breaks:
+      "an arm ending in a loop that leaves the match keeps the match a labeled block",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "                    if !loop_breaks(body, label) {\n",
     replace: "                    if true {\n",
     snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^(else_break_ends_loop|signed_counter)\\.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(else_break_ends_loop|signed_counter)\\.rs$",
+    ],
   },
   {
     name: "decisions-returned-block-taken",
-    breaks: "a block a `return` of what it makes follows is a chain, `result = \"Nothing\"` in one arm, not `return \"Nothing\"`",
+    breaks:
+      'a block a `return` of what it makes follows is a chain, `result = "Nothing"` in one arm, not `return "Nothing"`',
     file: "src/lower/mir/tidy/decisions.rs",
     find: "        && matches!(value.kind, ExprKind::Var(_))\n",
     replace: "        && false\n",
@@ -194,7 +241,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "decisions-alternative-not-first",
-    breaks: "`(1, _) | (_, 1)` is tried as `(a !== 1 && b === 1) || a === 1`, longer than the tree, which stays",
+    breaks:
+      "`(1, _) | (_, 1)` is tried as `(a !== 1 && b === 1) || a === 1`, longer than the tree, which stays",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "        if paths[i..j].iter().any(|p| says(p)) {\n",
     replace: "        if false {\n",
@@ -203,7 +251,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "decisions-alternative-not-absorbed",
-    breaks: "`(1, _) | (_, 1)` is `a === 1 || (a !== 1 && b === 1)`, longer than the tree, which stays",
+    breaks:
+      "`(1, _) | (_, 1)` is `a === 1 || (a !== 1 && b === 1)`, longer than the tree, which stays",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "            tests.retain(|t| !said(t));\n",
     replace: "",
@@ -212,7 +261,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "decisions-stronger-test-not-first",
-    breaks: "`(2, 2)`'s path is `a !== 1 && b === 2 && a === 2`, longer than the tree, which stays",
+    breaks:
+      "`(2, 2)`'s path is `a !== 1 && b === 2 && a === 2`, longer than the tree, which stays",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "            Some(j) => out[i] = out.remove(j),\n",
     replace: "            Some(_) => i += 1,\n",
@@ -221,15 +271,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "decision-chain-at-first-arm",
-    breaks: "the `if (a || b)` a tree makes is where its first arm's code is, past its `{`, so the comment before it is lost, describeNativeComponentFrame's",
+    breaks:
+      "the `if (a || b)` a tree makes is where its first arm's code is, past its `{`, so the comment before it is lost, describeNativeComponentFrame's",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "            0 => made_where(block, tree),\n",
     replace: "",
-    tests: ["test/lowering-comments.test.ts", "-t", "an if a decision tree makes is where its first if is"],
+    tests: [
+      "test/lowering-comments.test.ts",
+      "-t",
+      "an if a decision tree makes is where its first if is",
+    ],
   },
   {
     name: "decision-integer-converse-apart",
-    breaks: "an integer comparison's converse, `row.length < 1`, is a set apart from `row.length >= 1`'s complement, so a slice pattern's tree, whose NaN neither passes, stays labeled blocks, not a conditional (ADR 0978, amended)",
+    breaks:
+      "an integer comparison's converse, `row.length < 1`, is a set apart from `row.length >= 1`'s complement, so a slice pattern's tree, whose NaN neither passes, stays labeled blocks, not a conditional (ADR 0978, amended)",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "        ExprKind::Binary(Op::Lt | Op::Le, ..) if e.facts.has(js::Known::Integers) => {",
     replace: "        ExprKind::Binary(Op::Lt | Op::Le, ..) if false => {",
@@ -238,23 +294,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "alike-whole-kept",
-    breaks: "a `match` of an untagged enum whose arms are alike in JS keeps its test, `observer instanceof IntersectionObserver`, which throws where the host has none, around the one call (rd238, ADR 1032)",
+    breaks:
+      "a `match` of an untagged enum whose arms are alike in JS keeps its test, `observer instanceof IntersectionObserver`, which throws where the host has none, around the one call (rd238, ADR 1032)",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "            && then.iter().zip(otherwise).all(|(a, b)| same_stmt(a, b))\n            && !test.has_effects()\n",
-    replace: "            && then.iter().zip(otherwise).all(|(a, b)| same_stmt(a, b))\n            && !test.has_effects()\n            && false\n",
+    replace:
+      "            && then.iter().zip(otherwise).all(|(a, b)| same_stmt(a, b))\n            && !test.has_effects()\n            && false\n",
     tests: ["test/lowering-switches.test.ts", "-t", "arms are alike"],
   },
   {
     name: "alike-whole-test-dropped",
-    breaks: "an `if` whose branches are alike drops a test that does something, `ready()` of `if (ready()) { f(); } else { f(); }` (ADR 1032)",
+    breaks:
+      "an `if` whose branches are alike drops a test that does something, `ready()` of `if (ready()) { f(); } else { f(); }` (ADR 1032)",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "            && then.iter().zip(otherwise).all(|(a, b)| same_stmt(a, b))\n            && !test.has_effects()\n",
-    replace: "            && then.iter().zip(otherwise).all(|(a, b)| same_stmt(a, b))\n",
+    replace:
+      "            && then.iter().zip(otherwise).all(|(a, b)| same_stmt(a, b))\n",
     tests: ["test/lowering-switches.test.ts", "-t", "arms are alike"],
   },
   {
     name: "alike-whole-first-statement",
-    breaks: "branches alike in their first statement alone are taken for alike whole (ADR 1032)",
+    breaks:
+      "branches alike in their first statement alone are taken for alike whole (ADR 1032)",
     file: "src/lower/mir/tidy/decisions.rs",
     find: "            && then.len() == otherwise.len()\n            && then.iter().zip(otherwise)",
     replace: "            && then.iter().zip(otherwise)",

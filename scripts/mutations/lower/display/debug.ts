@@ -4,27 +4,42 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "numbered-debug-table",
-    breaks: "a numbered enum's `{:?}` reads a table keyed by number, `{ 0: \"Empty\", .. }[kind]`, where they count from 0 and an array is the table",
+    breaks:
+      'a numbered enum\'s `{:?}` reads a table keyed by number, `{ 0: "Empty", .. }[kind]`, where they count from 0 and an array is the table',
     file: "src/lower/display/debug.rs",
     find: "        if counting {\n",
     replace: "        if false && counting {\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variant is its number"],
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "a repr enum's variant is its number",
+    ],
   },
   {
     name: "renamed-variant-debug-local",
-    breaks: "the crate's fieldless enum's `{:?}` is a renamed variant's JS name, not its Rust one",
+    breaks:
+      "the crate's fieldless enum's `{:?}` is a renamed variant's JS name, not its Rust one",
     file: "src/lower/display/debug.rs",
     find: "            return Ok(self.variant_debug(*adt, value));",
     replace: "            return Ok(value);",
-    tests: ["test/lowering-names.test.ts", "-t", "a renamed variant is shown by its Rust name"],
+    tests: [
+      "test/lowering-names.test.ts",
+      "-t",
+      "a renamed variant is shown by its Rust name",
+    ],
   },
   {
     name: "renamed-variant-debug-foreign",
-    breaks: "another crate's fieldless enum's `{:?}` is a renamed variant's JS name, not its Rust one",
+    breaks:
+      "another crate's fieldless enum's `{:?}` is a renamed variant's JS name, not its Rust one",
     file: "src/lower/display/debug.rs",
     find: "                Ok(self.variant_debug(*adt, value))",
     replace: "                Ok(value)",
-    tests: ["test/lowering-names.test.ts", "-t", "a renamed variant is shown by its Rust name"],
+    tests: [
+      "test/lowering-names.test.ts",
+      "-t",
+      "a renamed variant is shown by its Rust name",
+    ],
   },
   {
     name: "renamed-variant-debug-tag-unread",
@@ -32,7 +47,11 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/debug.rs",
     find: "            Some(key) => Expr::member(value, key),",
     replace: "            Some(_) => value,",
-    tests: ["test/lowering-names.test.ts", "-t", "a renamed variant is shown by its Rust name"],
+    tests: [
+      "test/lowering-names.test.ts",
+      "-t",
+      "a renamed variant is shown by its Rust name",
+    ],
   },
   {
     name: "renamed-variant-debug-no-table",
@@ -40,27 +59,34 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/debug.rs",
     find: "        if names.iter().all(|(js, rust)| js == rust) {",
     replace: "        if true {",
-    tests: ["test/lowering-names.test.ts", "-t", "a renamed variant is shown by its Rust name"],
+    tests: [
+      "test/lowering-names.test.ts",
+      "-t",
+      "a renamed variant is shown by its Rust name",
+    ],
   },
   {
     name: "phantom-debug-unnamed",
     breaks: "`{:?}` of a `PhantomData<u8>` leaves out its type's name",
     file: "src/lower/display/debug.rs",
-    find: "Expr::str(\"PhantomData<\"), name, Expr::str(\">\")",
-    replace: "Expr::str(\"PhantomData<\"), Expr::str(\"\"), Expr::str(\">\")",
-    tests: ["test/corpus.test.ts","-t","std_odds"],
+    find: 'Expr::str("PhantomData<"), name, Expr::str(">")',
+    replace: 'Expr::str("PhantomData<"), Expr::str(""), Expr::str(">")',
+    tests: ["test/corpus.test.ts", "-t", "std_odds"],
   },
   {
     name: "debug-leaf-ignores-options",
-    breaks: "a part of a `{:?}` ignores the options it's given, so `{:5?}` of `Some(1)` pads nothing",
+    breaks:
+      "a part of a `{:?}` ignores the options it's given, so `{:5?}` of `Some(1)` pads nothing",
     file: "src/lower/display/debug.rs",
     find: "        if self.writing.options.is_some() && self.is_debug_leaf(ty) {",
-    replace: "        if false && self.writing.options.is_some() && self.is_debug_leaf(ty) {",
+    replace:
+      "        if false && self.writing.options.is_some() && self.is_debug_leaf(ty) {",
     tests: ["test/corpus.test.ts", "-t", "debug_options"],
   },
   {
     name: "uninhabited-debug-refused",
-    breaks: "`{:?}` of `Infallible`, which never runs, is an error, and `String`'s `FromStr` in generic code with it",
+    breaks:
+      "`{:?}` of `Infallible`, which never runs, is an error, and `String`'s `FromStr` in generic code with it",
     file: "src/lower/display/debug.rs",
     find: "            && adt.variants().is_empty()",
     replace: "            && adt.variants().is_empty()\n            && false",
@@ -71,7 +97,8 @@ export const mutations: Mutation[] = [
     breaks: "`{:?}` of std's `IntErrorKind`, a name, is an error",
     file: "src/lower/display/debug.rs",
     find: "                if representation::is_fieldless_enum(*adt)\n                    && !adt.did().is_local()\n",
-    replace: "                if false && representation::is_fieldless_enum(*adt)\n                    && !adt.did().is_local()\n",
+    replace:
+      "                if false && representation::is_fieldless_enum(*adt)\n                    && !adt.did().is_local()\n",
     tests: ["test/corpus.test.ts", "-t", "int_error_kind"],
   },
   {
@@ -79,47 +106,59 @@ export const mutations: Mutation[] = [
     breaks: "`{:?}` of a path shows its text bare, not quoted",
     file: "src/lower/display/debug.rs",
     find: "        // A path shows its text as a string does (ADR 0173).\n        if self.recognition().is_path_like(ty) {",
-    replace: "        // A path shows its text as a string does (ADR 0173).\n        if self.recognition().is_path_like(ty) && false {",
+    replace:
+      "        // A path shows its text as a string does (ADR 0173).\n        if self.recognition().is_path_like(ty) && false {",
     tests: ["test/corpus.test.ts", "-t", "path_text"],
   },
   {
     name: "fmt-result-debug-ok",
     breaks: "`{:?}` of a `fmt::Result` that may be an `Err` is `Ok(())`",
     file: "src/lower/display/debug.rs",
-    find: "                Expr::str(\"Err(Error)\"),\n",
-    replace: "                Expr::str(\"Ok(())\"),\n",
-    tests: ["test/corpus.test.ts","-t","fmt_error_write"],
+    find: '                Expr::str("Err(Error)"),\n',
+    replace: '                Expr::str("Ok(())"),\n',
+    tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
   },
   {
     name: "try-from-slice-error-debug",
     breaks: "`{:?}` of a `TryFromSliceError` isn't std's",
     file: "src/lower/display/debug.rs",
-    find: "            return Ok(Expr::str(\"TryFromSliceError(())\"));",
-    replace: "            return Ok(Expr::str(\"TryFromSliceError\"));",
-    tests: ["test/corpus.test.ts","-t","slice_to_array"],
+    find: '            return Ok(Expr::str("TryFromSliceError(())"));',
+    replace: '            return Ok(Expr::str("TryFromSliceError"));',
+    tests: ["test/corpus.test.ts", "-t", "slice_to_array"],
   },
   {
     name: "js-error-debug-unknown",
-    breaks: "`{:?}` of a `js::JsError`, as an `unwrap`'s panic shows it, is refused",
+    breaks:
+      "`{:?}` of a `js::JsError`, as an `unwrap`'s panic shows it, is refused",
     file: "src/lower/display/debug.rs",
     find: "        if self.recognition().is_js_error(ty) {\n",
     replace: "        if false && self.recognition().is_js_error(ty) {\n",
-    tests: ["test/js-builtins.test.ts", "-t", "a JS error is shown as JS shows it"],
+    tests: [
+      "test/js-builtins.test.ts",
+      "-t",
+      "a JS error is shown as JS shows it",
+    ],
   },
   {
     name: "char-debug-double-quoted",
     breaks: "`{:?}` of a `char` is `\"b\"`, quoted as a string is, not `'b'`",
     file: "src/lower/display/debug.rs",
-    find: "            return Ok(Expr::call(Expr::helper(\"$debugStr\"), vec![value, Expr::str(\"'\")]));",
-    replace: "            return Ok(Expr::call(Expr::helper(\"$debugStr\"), vec![value]));",
-    tests: ["test/compiler.test.ts", "-t", "the calculator's JS is what a person would write"],
+    find: '            return Ok(Expr::call(Expr::helper("$debugStr"), vec![value, Expr::str("\'")]));',
+    replace:
+      '            return Ok(Expr::call(Expr::helper("$debugStr"), vec![value]));',
+    tests: [
+      "test/compiler.test.ts",
+      "-t",
+      "the calculator's JS is what a person would write",
+    ],
   },
   {
     name: "once-debug-boxed",
     breaks: "a `OnceCell<Option<u8>>`'s `{:?}` shows `Some`'s box",
     file: "src/lower/display/debug.rs",
-    find: "                let inside = if self.boxed_payload(item) {\n                    self.some_value(Expr::var(\"value\"))\n                } else {\n                    Expr::var(\"value\")\n                };\n                let shown = self.debug_string_with(inside, item, span, pretty)?;\n                let none = Expr::bin(Op::LooseEq, Expr::var(\"value\"), Expr::null());\n                let shown = Expr::cond(none, Expr::str(\"<uninit>\"), shown);\n",
-    replace: "                let inside = Expr::var(\"value\");\n                let shown = self.debug_string_with(inside, item, span, pretty)?;\n                let none = Expr::bin(Op::LooseEq, Expr::var(\"value\"), Expr::null());\n                let shown = Expr::cond(none, Expr::str(\"<uninit>\"), shown);\n",
+    find: '                let inside = if self.boxed_payload(item) {\n                    self.some_value(Expr::var("value"))\n                } else {\n                    Expr::var("value")\n                };\n                let shown = self.debug_string_with(inside, item, span, pretty)?;\n                let none = Expr::bin(Op::LooseEq, Expr::var("value"), Expr::null());\n                let shown = Expr::cond(none, Expr::str("<uninit>"), shown);\n',
+    replace:
+      '                let inside = Expr::var("value");\n                let shown = self.debug_string_with(inside, item, span, pretty)?;\n                let none = Expr::bin(Op::LooseEq, Expr::var("value"), Expr::null());\n                let shown = Expr::cond(none, Expr::str("<uninit>"), shown);\n',
     tests: ["test/corpus.test.ts", "-t", "once_cells"],
   },
   {
@@ -132,7 +171,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "refcell-debug-unchecked",
-    breaks: "`{:?}` of a mutably borrowed `RefCell` shows its value, where it's `<borrowed>`",
+    breaks:
+      "`{:?}` of a mutably borrowed `RefCell` shows its value, where it's `<borrowed>`",
     file: "src/lower/display/debug.rs",
     find: "                let shown = match std(StdItem::RefCell) {",
     replace: "                let shown = match false {",
@@ -140,17 +180,23 @@ export const mutations: Mutation[] = [
   },
   {
     name: "type-id-debug-shown",
-    breaks: "`{:?}` of a `TypeId` shows something, where Rust shows its hash, which rust-js doesn't keep",
+    breaks:
+      "`{:?}` of a `TypeId` shows something, where Rust shows its hash, which rust-js doesn't keep",
     file: "src/lower/display/debug.rs",
     find: "        if self.recognition().is_type_id(ty) {\n            return Ok",
     replace: "        if false {\n            return Ok",
-    tests: ["test/runtime-package.test.ts", "-t", "a pointer's address is shown"],
+    tests: [
+      "test/runtime-package.test.ts",
+      "-t",
+      "a pointer's address is shown",
+    ],
   },
   {
     name: "uninit-debug-full-name",
-    breaks: "`{:?}` of a `MaybeUninit` shows its path, where std shows from `MaybeUninit`",
+    breaks:
+      "`{:?}` of a `MaybeUninit` shows its path, where std shows from `MaybeUninit`",
     file: "src/lower/display/debug.rs",
-    find: "            return Ok(Expr::str(&name[name.find(\"MaybeUninit\").unwrap_or(0)..]));",
+    find: '            return Ok(Expr::str(&name[name.find("MaybeUninit").unwrap_or(0)..]));',
     replace: "            return Ok(Expr::str(&name));",
     tests: ["test/corpus.test.ts", "-t", "box_uninit"],
   },
@@ -158,15 +204,15 @@ export const mutations: Mutation[] = [
     name: "debug-any-unrun",
     breaks: "`{:?}` of a `dyn Any` made where it's shown skips what made it",
     file: "src/lower/display/debug.rs",
-    find: "                return Ok(Expr::call(Expr::helper(\"$debugAny\"), vec![value]));",
-    replace: "                return Ok(Expr::str(\"Any { .. }\"));",
+    find: '                return Ok(Expr::call(Expr::helper("$debugAny"), vec![value]));',
+    replace: '                return Ok(Expr::str("Any { .. }"));',
     tests: ["test/corpus.test.ts", "-t", "dyn_any_generic"],
   },
   {
     name: "peek-mut-debug-heap",
     breaks: "`{:?}` of a `PeekMut` shows its heap",
     file: "src/lower/display/debug.rs",
-    find: "            return Ok(join(vec![Expr::str(\"PeekMut(\"), shown, Expr::str(\")\")]));",
+    find: '            return Ok(join(vec![Expr::str("PeekMut("), shown, Expr::str(")")]));',
     replace: "            return Ok(shown);",
     tests: ["test/corpus.test.ts", "-t", "heap_peek_mut"],
   },
@@ -174,15 +220,16 @@ export const mutations: Mutation[] = [
     name: "try-lock-error-debug-unquoted",
     breaks: "a `TryLockError`'s `{:?}` isn't quoted",
     file: "src/lower/display/debug.rs",
-    find: "                Expr::str(\"\\\"WouldBlock\\\"\"),",
-    replace: "                Expr::str(\"WouldBlock\"),",
-    tests: ["test/corpus.test.ts","-t","try_lock"],
+    find: '                Expr::str("\\"WouldBlock\\""),',
+    replace: '                Expr::str("WouldBlock"),',
+    tests: ["test/corpus.test.ts", "-t", "try_lock"],
   },
   {
     name: "discriminant-debug-bare",
-    breaks: "a `Discriminant`'s `{:?}` is its number alone, not `Discriminant(1)`",
+    breaks:
+      "a `Discriminant`'s `{:?}` is its number alone, not `Discriminant(1)`",
     file: "src/lower/display/debug.rs",
-    find: "            return Ok(join(vec![Expr::str(\"Discriminant(\"), value, Expr::str(\")\")]));\n",
+    find: '            return Ok(join(vec![Expr::str("Discriminant("), value, Expr::str(")")]));\n',
     replace: "            return Ok(value);\n",
     tests: ["test/corpus.test.ts", "-t", "^enum_discriminant.rs$"],
   },
@@ -191,7 +238,8 @@ export const mutations: Mutation[] = [
     breaks: "`{:?}` of a raw pointer is refused, even of a null one, `0x0`",
     file: "src/lower/display/debug.rs",
     find: "        if self.is_handle_pointer(ty) || matches!(ty.kind(), ty::FnPtr(..)) {\n            return self.pointer_shown(value, ty, span);\n",
-    replace: "        if matches!(ty.kind(), ty::FnPtr(..)) {\n            return self.pointer_shown(value, ty, span);\n",
+    replace:
+      "        if matches!(ty.kind(), ty::FnPtr(..)) {\n            return self.pointer_shown(value, ty, span);\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
   {
@@ -199,7 +247,8 @@ export const mutations: Mutation[] = [
     breaks: "`{:?}` of a `Layout` is refused",
     file: "src/lower/display/debug.rs",
     find: "        if let Some(layout) = self.recognition().layout(ty) {\n",
-    replace: "        if let Some(layout) = self.recognition().layout(ty).filter(|_| false) {\n",
+    replace:
+      "        if let Some(layout) = self.recognition().layout(ty).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^allocator.rs$"],
   },
   {
@@ -212,10 +261,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "std-tuple-enum-debug-tagless",
-    breaks: "`{:?}` of `Bound::Included(3)` reads its variant as the value, a fieldless one's",
+    breaks:
+      "`{:?}` of `Bound::Included(3)` reads its variant as the value, a fieldless one's",
     file: "src/lower/display/debug.rs",
     find: "                    (Expr::bin(Op::Eq, tag.clone(), Expr::str(&js_name)), this)\n",
-    replace: "                    (Expr::bin(Op::Eq, Expr::var(\"value\"), Expr::str(&js_name)), this)\n",
+    replace:
+      '                    (Expr::bin(Op::Eq, Expr::var("value"), Expr::str(&js_name)), this)\n',
     tests: ["test/corpus.test.ts", "-t", "^std_enum_debug.rs$"],
   },
   {
@@ -228,33 +279,46 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fn-pointer-debug-refused",
-    breaks: "`{:?}` of a function pointer, which only a failing `assert_eq!` shows, refuses the whole program",
+    breaks:
+      "`{:?}` of a function pointer, which only a failing `assert_eq!` shows, refuses the whole program",
     file: "src/lower/display/debug.rs",
     find: "        if self.is_handle_pointer(ty) || matches!(ty.kind(), ty::FnPtr(..)) {\n",
     replace: "        if self.is_handle_pointer(ty) {\n",
-    tests: ["test/runtime-package.test.ts", "-t", "a pointer's address is shown"],
+    tests: [
+      "test/runtime-package.test.ts",
+      "-t",
+      "a pointer's address is shown",
+    ],
   },
   {
     name: "type-id-debug-refused",
-    breaks: "`{:?}` of a `TypeId`, which only a failing `assert_eq!` shows, refuses the whole program",
+    breaks:
+      "`{:?}` of a `TypeId`, which only a failing `assert_eq!` shows, refuses the whole program",
     file: "src/lower/display/debug.rs",
-    find: "            return Ok(Expr::call(Expr::helper(\"$typeIdShown\"), vec![value]));\n",
-    replace: "            return Err(self.unsupported(span, \"`{:?}` of a `TypeId`, its hash\"));\n",
-    tests: ["test/runtime-package.test.ts", "-t", "a pointer's address is shown"],
+    find: '            return Ok(Expr::call(Expr::helper("$typeIdShown"), vec![value]));\n',
+    replace:
+      '            return Err(self.unsupported(span, "`{:?}` of a `TypeId`, its hash"));\n',
+    tests: [
+      "test/runtime-package.test.ts",
+      "-t",
+      "a pointer's address is shown",
+    ],
   },
   {
     name: "system-time-error-debug",
-    breaks: "a `SystemTimeError`'s `{:?}` is its `Duration`'s, without its name",
+    breaks:
+      "a `SystemTimeError`'s `{:?}` is its `Duration`'s, without its name",
     file: "src/lower/display/debug.rs",
-    find: "            return Ok(join(vec![Expr::str(\"SystemTimeError(\"), duration, Expr::str(\")\")]));",
+    find: '            return Ok(join(vec![Expr::str("SystemTimeError("), duration, Expr::str(")")]));',
     replace: "            return Ok(duration);",
     tests: ["test/corpus.test.ts", "-t", "^clock.rs$"],
   },
   {
     name: "phantom-debug-unwrapped",
-    breaks: "`{:?}` of a `PhantomData<u8>` is its type's name alone, not `PhantomData<u8>`",
+    breaks:
+      "`{:?}` of a `PhantomData<u8>` is its type's name alone, not `PhantomData<u8>`",
     file: "src/lower/display/debug.rs",
-    find: "            return Ok(join(vec![Expr::str(\"PhantomData<\"), name, Expr::str(\">\")]));\n",
+    find: '            return Ok(join(vec![Expr::str("PhantomData<"), name, Expr::str(">")]));\n',
     replace: "            return Ok(name);\n",
     tests: ["test/corpus.test.ts", "-t", "^phantom_debug.rs$"],
   },
@@ -262,7 +326,7 @@ export const mutations: Mutation[] = [
     name: "slice-iter-debug-unnamed",
     breaks: "`{:?}` of a slice's iterator is its items alone, not `Iter([..])`",
     file: "src/lower/display/debug.rs",
-    find: "            let shown = join(vec![Expr::str(\"Iter(\"), shown, Expr::str(\")\")]);\n",
+    find: '            let shown = join(vec![Expr::str("Iter("), shown, Expr::str(")")]);\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^slice_iter_debug.rs$"],
   },
@@ -272,27 +336,43 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/debug.rs",
     find: "        let mapped = match each_its_own {\n",
     replace: "        let mapped = match false {\n",
-    tests: ["test/lowering-iterators.test.ts", "-t", "no item is mapped to itself"],
+    tests: [
+      "test/lowering-iterators.test.ts",
+      "-t",
+      "no item is mapped to itself",
+    ],
   },
   {
     name: "debug-numbers-mapped",
-    breaks: "`{:?}` of a list of numbers maps each to `String(item)` before `join`",
+    breaks:
+      "`{:?}` of a list of numbers maps each to `String(item)` before `join`",
     file: "src/lower/display/debug.rs",
-    find: "        let each_its_own = is_var(&shown, \"item\")\n            || (pretty.known() == Some(false)\n",
-    replace: "        let each_its_own = is_var(&shown, \"item\")\n            || (false\n",
-    tests: ["test/lowering-iterators.test.ts", "-t", "no item is mapped to itself"],
+    find: '        let each_its_own = is_var(&shown, "item")\n            || (pretty.known() == Some(false)\n',
+    replace:
+      '        let each_its_own = is_var(&shown, "item")\n            || (false\n',
+    tests: [
+      "test/lowering-iterators.test.ts",
+      "-t",
+      "no item is mapped to itself",
+    ],
   },
   {
     name: "debug-numbers-pretty-unmapped",
-    breaks: "`{:#?}` of a list of numbers gives `$pretty` numbers, which it can't indent",
+    breaks:
+      "`{:#?}` of a list of numbers gives `$pretty` numbers, which it can't indent",
     file: "src/lower/display/debug.rs",
     find: "            || (pretty.known() == Some(false)\n",
     replace: "            || (true\n",
-    tests: ["test/corpus.test.ts", "-t", "^(pretty_debug|pretty_debug_derived|std_enum_debug|int_error_kind).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(pretty_debug|pretty_debug_derived|std_enum_debug|int_error_kind).rs$",
+    ],
   },
   {
     name: "given-debug-unread",
-    breaks: "a type's `Debug` a bound gives, `Peekable<Fuse<I>>: Debug`, isn't its dictionary's",
+    breaks:
+      "a type's `Debug` a bound gives, `Peekable<Fuse<I>>: Debug`, isn't its dictionary's",
     file: "src/lower/display/debug.rs",
     find: "        if self.is_unknown(ty) || given {\n",
     replace: "        if self.is_unknown(ty) {\n",
@@ -302,13 +382,14 @@ export const mutations: Mutation[] = [
     name: "empty-debug-refused",
     breaks: "an `iter::Empty`'s `Debug` is refused",
     file: "src/lower/display/debug.rs",
-    find: "            ty::Adt(..) if self.recognition().is_iter_empty(ty) => Ok(Expr::str(\"Empty\")),\n",
+    find: '            ty::Adt(..) if self.recognition().is_iter_empty(ty) => Ok(Expr::str("Empty")),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
   },
   {
     name: "slice-iter-debug-read-twice",
-    breaks: "`{:?}` of a slice's iterator a call gives calls it twice, once for its items and once for where it is",
+    breaks:
+      "`{:?}` of a slice's iterator a call gives calls it twice, once for its items and once for where it is",
     file: "src/lower/display/debug.rs",
     find: "            let in_place = value.reads_same() || crate::lower::iterators::fresh_iter_source(&value).is_some();\n",
     replace: "            let in_place = true;\n",
@@ -319,15 +400,18 @@ export const mutations: Mutation[] = [
     breaks: "a held `Cycle`'s `Debug` is refused",
     file: "src/lower/display/debug.rs",
     find: "                    && let Some(source) = crate::lower::recognition::cycled_source(self.tcx, ty) =>\n",
-    replace: "                    && let Some(source) = crate::lower::recognition::cycled_source(self.tcx, ty).filter(|_| false) =>\n",
+    replace:
+      "                    && let Some(source) = crate::lower::recognition::cycled_source(self.tcx, ty).filter(|_| false) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
   },
   {
     name: "debug-without-cells",
-    breaks: "`{:?}` of a `Vec<&mut i32>` shows each cell, not what it points at",
+    breaks:
+      "`{:?}` of a `Vec<&mut i32>` shows each cell, not what it points at",
     file: "src/lower/display/debug.rs",
     find: "    ) -> R<Expr> {\n        let (value, ty) = self.shown_through(value, ty);",
-    replace: "    ) -> R<Expr> {\n        let (value, ty) = self.through_boxes(value, ty.peel_refs());",
+    replace:
+      "    ) -> R<Expr> {\n        let (value, ty) = self.through_boxes(value, ty.peel_refs());",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_compare"],
   },
   {
@@ -335,36 +419,39 @@ export const mutations: Mutation[] = [
     breaks: "`{:#?}` of a `ParseIntError` is its one line",
     file: "src/lower/display/debug.rs",
     find: "            let mut list = vec![value, Expr::str(name.as_str())];\n            if pretty.known() != Some(false) {\n",
-    replace: "            let mut list = vec![value, Expr::str(name.as_str())];\n            if false {\n",
+    replace:
+      "            let mut list = vec![value, Expr::str(name.as_str())];\n            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^format_options_reached.rs$"],
   },
   {
     name: "weak-debug-refused",
-    breaks: "`{:?}` of a `Weak`, a struct's field's too, is refused, where std shows `(Weak)`",
+    breaks:
+      "`{:?}` of a `Weak`, a struct's field's too, is refused, where std shows `(Weak)`",
     file: "src/lower/display/debug.rs",
-    find: "            return Ok(Expr::str(\"(Weak)\"));\n",
-    replace: "            return Err(self.unsupported(span, \"\"));\n",
+    find: '            return Ok(Expr::str("(Weak)"));\n',
+    replace: '            return Err(self.unsupported(span, ""));\n',
     tests: ["test/corpus.test.ts", "-t", "^weak_debug.rs$"],
   },
   {
     name: "chars-debug-unnamed",
     breaks: "Chars' Debug names it",
     file: "src/lower/display/debug.rs",
-    find: "Expr::str(\"Chars(\"), shown,",
-    replace: "Expr::str(\"(\"), shown,",
+    find: 'Expr::str("Chars("), shown,',
+    replace: 'Expr::str("("), shown,',
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
   },
   {
     name: "drain-debug-unnamed",
     breaks: "a string Drain's Debug names it",
     file: "src/lower/display/debug.rs",
-    find: "Expr::str(\"Drain(\"), left,",
-    replace: "Expr::str(\"(\"), left,",
+    find: 'Expr::str("Drain("), left,',
+    replace: 'Expr::str("("), left,',
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
   },
   {
     name: "never-made-variant-shown",
-    breaks: "`{:?}` of a `Component` asks `PrefixComponent`'s, which is refused",
+    breaks:
+      "`{:?}` of a `Component` asks `PrefixComponent`'s, which is refused",
     file: "src/lower/display/debug.rs",
     find: "            if crate::lower::recognition::never_made(self.tcx, variant) {\n                continue;\n            }\n",
     replace: "",
@@ -380,7 +467,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "quiet-field-shown-borrowed",
-    breaks: "a derived `Debug` of a struct's quiet `RefCell` field borrows a handle on it, `$showBorrowed({ get value() .. })` (ADR 0863, amended)",
+    breaks:
+      "a derived `Debug` of a struct's quiet `RefCell` field borrows a handle on it, `$showBorrowed({ get value() .. })` (ADR 0863, amended)",
     file: "src/lower/display/debug.rs",
     find: "                    true if matches!(value.kind, js::ExprKind::Handle(..)) => {\n",
     replace: "                    true if false => {\n",

@@ -133,6 +133,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A value rustc computed, as a body writes it: `const_js`'s, each
     /// variant without fields `unit_variant`'s.
     pub(in crate::lower) fn const_value(&self, value: ty::Value<'tcx>) -> Option<Expr> {
+        // A module's namespace, `&ReactFiberReconciler` too (ADR 1037).
+        if let ty::Adt(adt, _) = value.ty.peel_refs().kind()
+            && super::classes::is_namespace(self.tcx, adt.did())
+        {
+            return self.namespace_value(adt.did());
+        }
         const_js_by(self.tcx, value, &|adt, variant| self.unit_variant(adt, variant))
     }
 

@@ -4,83 +4,114 @@ import type { Mutation } from "../../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "compiled-last-by-next",
-    breaks: "`last()` of std's struct, a zip's, steps it by `next()`, not by its `fold` as std's default `last` does: its closure runs once more (#380)",
+    breaks:
+      "`last()` of std's struct, a zip's, steps it by `next()`, not by its `fold` as std's default `last` does: its closure runs once more (#380)",
     file: "src/lower/mir/iter/closing.rs",
     find: "|| drops_none && self.compiled_struct_at(iter_ty, span) {",
-    replace: "|| false && drops_none && self.compiled_struct_at(iter_ty, span) {",
+    replace:
+      "|| false && drops_none && self.compiled_struct_at(iter_ty, span) {",
     tests: ["test/corpus.test.ts", "-t", "^zip_fold_steps_the_shorter.rs$"],
   },
   {
     name: "uncounted-eq-compared",
-    breaks: "`eq()` of two maps of unequal lengths, which rust-js can't count, steps and compares their items, running closures Rust's `SpecIterEq` never runs (ADR 0998)",
+    breaks:
+      "`eq()` of two maps of unequal lengths, which rust-js can't count, steps and compares their items, running closures Rust's `SpecIterEq` never runs (ADR 0998)",
     file: "src/lower/mir/iter/closing.rs",
     find: "        if lengths.is_none()\n            && trusted\n",
-    replace: "        if false\n            && lengths.is_none()\n            && trusted\n",
-    tests: ["test/diagnostics.test.ts", "-t", "eq of two maps of unequal lengths"],
+    replace:
+      "        if false\n            && lengths.is_none()\n            && trusted\n",
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "eq of two maps of unequal lengths",
+    ],
   },
   {
     name: "iter-eq-not-trusted",
-    breaks: "`eq()` of two `TrustedLen` iterators isn't given their lengths, and compares items std's `SpecIterEq` never steps (ADR 0992)",
+    breaks:
+      "`eq()` of two `TrustedLen` iterators isn't given their lengths, and compares items std's `SpecIterEq` never steps (ADR 0992)",
     file: "src/lower/mir/iter/closing.rs",
     find: "                (a.zip(b)).filter(|_| spilled.is_empty())\n",
-    replace: "                (a.zip(b)).filter(|_| false && spilled.is_empty())\n",
+    replace:
+      "                (a.zip(b)).filter(|_| false && spilled.is_empty())\n",
     tests: ["test/corpus.test.ts", "-t", "^eq_of_unequal_lengths.rs$"],
   },
   {
-    "name": "mir-user-by-ref-wrapped",
-    "breaks": "`by_ref()` of the crate's iterator from MIR is a JS iterator over it, which its own `next` doesn't step",
-    "file": "src/lower/mir/iter/closing.rs",
-    "find": "        if method == Some(IterMethod::ByRef) && self.is_user_iterator(iter_ty) {\n",
-    "replace": "        if false && method == Some(IterMethod::ByRef) && self.is_user_iterator(iter_ty) {\n",
-    "tests": ["test/lowering-iterators.test.ts", "-t", "stepped through by_ref from MIR"]
+    name: "mir-user-by-ref-wrapped",
+    breaks:
+      "`by_ref()` of the crate's iterator from MIR is a JS iterator over it, which its own `next` doesn't step",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "        if method == Some(IterMethod::ByRef) && self.is_user_iterator(iter_ty) {\n",
+    replace:
+      "        if false && method == Some(IterMethod::ByRef) && self.is_user_iterator(iter_ty) {\n",
+    tests: [
+      "test/lowering-iterators.test.ts",
+      "-t",
+      "stepped through by_ref from MIR",
+    ],
   },
   {
     name: "given-iterator-next-as-js",
-    breaks: "`next` of an adapter's `I` steps it as a JS iterator, not by its dictionary, which a range isn't",
+    breaks:
+      "`next` of an adapter's `I` steps it as a JS iterator, not by its dictionary, which a range isn't",
     file: "src/lower/mir/iter/closing.rs",
-    find: "            IterMethod::Next => (iterator, \"next\"),\n",
+    find: '            IterMethod::Next => (iterator, "next"),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
   {
     name: "given-iterator-into-iter-as-js",
-    breaks: "a `for` over an adapter's `I`, or `by_ref()` of it, makes a JS iterator of it, `Iterator.from` of a range",
+    breaks:
+      "a `for` over an adapter's `I`, or `by_ref()` of it, makes a JS iterator of it, `Iterator.from` of a range",
     file: "src/lower/mir/iter/closing.rs",
     find: "            IterMethod::ByRef | IterMethod::IntoIter => {\n",
-    replace: "            IterMethod::ByRef | IterMethod::IntoIter if false => {\n",
+    replace:
+      "            IterMethod::ByRef | IterMethod::IntoIter if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
   {
     name: "last-of-destructors-uncounted",
-    breaks: "`last()` of items with a destructor collects them, and drops none it passes",
+    breaks:
+      "`last()` of items with a destructor collects them, and drops none it passes",
     file: "src/lower/mir/iter/closing.rs",
     find: "            Some(drop) => {\n                let mut given = vec![it, drop];\n",
-    replace: "            Some(_) if true => Ok(self.last_of(Expr::call(Expr::member(it, \"toArray\"), Vec::new()), item, made)),\n            Some(drop) => {\n                let mut given = vec![it, drop];\n",
+    replace:
+      '            Some(_) if true => Ok(self.last_of(Expr::call(Expr::member(it, "toArray"), Vec::new()), item, made)),\n            Some(drop) => {\n                let mut given = vec![it, drop];\n',
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
   },
   {
     name: "take-of-owned-refused",
-    breaks: "`take` of an iterator that owns items with a destructor is refused",
+    breaks:
+      "`take` of an iterator that owns items with a destructor is refused",
     file: "src/lower/mir/iter/closing.rs",
     find: "        if method.is_some_and(IterMethod::holds_its_source) {\n",
-    replace: "        if false && method.is_some_and(IterMethod::holds_its_source) {\n",
+    replace:
+      "        if false && method.is_some_and(IterMethod::holds_its_source) {\n",
     tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
   },
   {
     name: "take-of-lent-refused",
-    breaks: "`by_ref().take(n)` of items with a destructor is refused, where what it hasn't given is its lender's",
+    breaks:
+      "`by_ref().take(n)` of items with a destructor is refused, where what it hasn't given is its lender's",
     file: "src/lower/mir/iter/closing.rs",
     find: "                true => Ok(it),\n                false => self.closing(it, iter_ty, span),\n",
-    replace: "                true => Err(self.unsupported(span, \"a lent adapter\")),\n                false => self.closing(it, iter_ty, span),\n",
+    replace:
+      '                true => Err(self.unsupported(span, "a lent adapter")),\n                false => self.closing(it, iter_ty, span),\n',
     tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
   },
   {
     name: "skip-of-owned-unskipped",
-    breaks: "`skip` of an iterator that owns items with a destructor is JS's `drop`, which drops none it skips",
+    breaks:
+      "`skip` of an iterator that owns items with a destructor is JS's `drop`, which drops none it skips",
     file: "src/lower/mir/iter/closing.rs",
-    find: "                Expr::call_helper(\"$skipping\", vec![it, n, drop])\n",
-    replace: "                {\n                    let _ = drop;\n                    Expr::call(Expr::member(it, \"drop\"), vec![n])\n                }\n",
-    tests: ["test/corpus.test.ts", "-t", "^(chain_sides_own_steps|step_by_compiled_source_nth).rs$"],
+    find: '                Expr::call_helper("$skipping", vec![it, n, drop])\n',
+    replace:
+      '                {\n                    let _ = drop;\n                    Expr::call(Expr::member(it, "drop"), vec![n])\n                }\n',
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(chain_sides_own_steps|step_by_compiled_source_nth).rs$",
+    ],
   },
   {
     name: "nth-dropping-refused",
@@ -92,15 +123,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "try-fold-leaves-items-refused",
-    breaks: "`try_fold` of items with a destructor is refused, though it hands each to its closure and leaves the rest to the iterator",
+    breaks:
+      "`try_fold` of items with a destructor is refused, though it hands each to its closure and leaves the rest to the iterator",
     file: "src/lower/mir/iter/closing.rs",
     find: "                    | IterMethod::TryFold\n                    | IterMethod::TryForEach\n                    | IterMethod::Collect\n",
-    replace: "                    | IterMethod::TryForEach\n                    | IterMethod::Collect\n",
+    replace:
+      "                    | IterMethod::TryForEach\n                    | IterMethod::Collect\n",
     tests: ["test/corpus.test.ts", "-t", "^try_fold.rs$"],
   },
   {
     name: "max-min-leave-drops",
-    breaks: "`max()` and `min()` of items with a destructor are refused, though they drop each they pass over",
+    breaks:
+      "`max()` and `min()` of items with a destructor are refused, though they drop each they pass over",
     file: "src/lower/mir/iter/closing.rs",
     find: "                    | IterMethod::Max\n                    | IterMethod::Min\n",
     replace: "",
@@ -108,7 +142,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "crate-iterator-unclosed",
-    breaks: "a crate's iterator with a destructor an adapter holds isn't closed by its own drop",
+    breaks:
+      "a crate's iterator with a destructor an adapter holds isn't closed by its own drop",
     file: "src/lower/mir/iter/closing.rs",
     find: "                    || self.is_user_iterator(ty) && self.drops(ty) != crate::lower::drops::Drops::Nothing",
     replace: "",
@@ -116,7 +151,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "eq-other-not-closing",
-    breaks: "`eq`'s other side that owns items with a destructor isn't closed to drop what's left",
+    breaks:
+      "`eq`'s other side that owns items with a destructor isn't closed to drop what's left",
     file: "src/lower/mir/iter/closing.rs",
     find: "            Some(drop) => {\n                let it = self.js_iterator(other);\n                self.closed_by(it, drop, other_ty)\n            }\n",
     replace: "            Some(_) => other,\n",
@@ -124,15 +160,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "held-source-own-drop-unclosed",
-    breaks: "an adapter of the crate's iterator with a `Drop`, whose items have none, never closes it, so it's never dropped",
+    breaks:
+      "an adapter of the crate's iterator with a `Drop`, whose items have none, never closes it, so it's never dropped",
     file: "src/lower/mir/iter/closing.rs",
     find: "        if method.is_some_and(IterMethod::holds_its_source) {\n",
-    replace: "        if dropping.is_some() && method.is_some_and(IterMethod::holds_its_source) {\n",
+    replace:
+      "        if dropping.is_some() && method.is_some_and(IterMethod::holds_its_source) {\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_source_drops.rs$"],
   },
   {
     name: "reduce-of-drops-refused",
-    breaks: "`reduce` of items with a destructor is refused, though it moves each into its function",
+    breaks:
+      "`reduce` of items with a destructor is refused, though it moves each into its function",
     file: "src/lower/mir/iter/closing.rs",
     find: "                    | IterMethod::Reduce\n",
     replace: "",
@@ -156,15 +195,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "given-iterator-closed-as-wrapper",
-    breaks: "an adapter of a type parameter given as it is drops the JS iterator stepping it, not the value",
+    breaks:
+      "an adapter of a type parameter given as it is drops the JS iterator stepping it, not the value",
     file: "src/lower/mir/iter/closing.rs",
     find: "                let stepped = self.is_user_iterator(ty) || self.iterator_given_as_it_is(ty);\n",
     replace: "                let stepped = self.is_user_iterator(ty);\n",
-    tests: ["test/corpus.test.ts", "-t", "^(generic_adapter_source_drops|adapter_of_a_value_given_as_it_is).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(generic_adapter_source_drops|adapter_of_a_value_given_as_it_is).rs$",
+    ],
   },
   {
     name: "iter-partial-cmp-total",
-    breaks: "`partial_cmp` of two iterators compares by `cmp`, giving an `Ordering` of a NaN",
+    breaks:
+      "`partial_cmp` of two iterators compares by `cmp`, giving an `Ordering` of a NaN",
     file: "src/lower/mir/iter/closing.rs",
     find: "        let compare = self.cmp_fn(item, method != IterMethod::Cmp, span)?;\n",
     replace: "        let compare = self.cmp_fn(item, false, span)?;\n",
@@ -188,23 +233,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "last-dropping-unboxed",
-    breaks: "`last()` of `Option`s with a destructor whose last is `None` is `None`, not `Some(None)`: `$lastDropping`'s item unboxed (#204)",
+    breaks:
+      "`last()` of `Option`s with a destructor whose last is `None` is `None`, not `Some(None)`: `$lastDropping`'s item unboxed (#204)",
     file: "src/lower/mir/iter/closing.rs",
     find: "                if item.is_some_and(|item| self.boxed_payload(item)) {\n                    given.push(Expr::bool(true));\n",
-    replace: "                if false {\n                    given.push(Expr::bool(true));\n",
+    replace:
+      "                if false {\n                    given.push(Expr::bool(true));\n",
     tests: ["test/corpus.test.ts", "-t", "^last_option_drops.rs$"],
   },
   {
     name: "drain-passed-as-slice",
-    breaks: "a `Drain`'s `nth_back(k)` drops the `k` it passes as one slice, front to back, where std's drops each as it's passed (#234)",
+    breaks:
+      "a `Drain`'s `nth_back(k)` drops the `k` it passes as one slice, front to back, where std's drops each as it's passed (#234)",
     file: "src/lower/mir/iter/closing.rs",
     find: "        self.array_source(ty.peel_refs()) == Some(true) && !self.recognition().drops_passed_as_slice(ty)\n",
-    replace: "        false && self.array_source(ty.peel_refs()) == Some(true) && !self.recognition().drops_passed_as_slice(ty)\n",
+    replace:
+      "        false && self.array_source(ty.peel_refs()) == Some(true) && !self.recognition().drops_passed_as_slice(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
   },
   {
     name: "consumer-source-unclosed",
-    breaks: "a consumer that takes each item of an owning source, `for_each`, `fold`, is given it unclosed, so a panic in its closure drops none of what's left (#422)",
+    breaks:
+      "a consumer that takes each item of an owning source, `for_each`, `fold`, is given it unclosed, so a panic in its closure drops none of what's left (#422)",
     file: "src/lower/mir/iter/closing.rs",
     find: "            false => self.closing(it, iter_ty, span),\n        }\n    }\n",
     replace: "            false => Ok(it),\n        }\n    }\n",

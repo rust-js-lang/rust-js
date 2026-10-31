@@ -4,7 +4,8 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "counted-rc-of-boxed-dyn-nested",
-    breaks: "`Rc::from(b)` of a `Box<dyn T>`, counted, holds the box whole, `{ value: b, strong: 1 }`, so a call reads `r.impl` of nothing: `TypeError` (#399)",
+    breaks:
+      "`Rc::from(b)` of a `Box<dyn T>`, counted, holds the box whole, `{ value: b, strong: 1 }`, so a call reads `r.impl` of nothing: `TypeError` (#399)",
     file: "src/lower/std_types/rc.rs",
     find: "            true if pair => Self::new_counted_pair(value),\n",
     replace: "",
@@ -12,7 +13,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "weak-every-counted",
-    breaks: "a `Weak` nothing upgrades is lowered counted, `$downgrade`, while its `Rc` is the object itself (ADR 0843)",
+    breaks:
+      "a `Weak` nothing upgrades is lowered counted, `$downgrade`, while its `Rc` is the object itself (ADR 0843)",
     file: "src/lower/std_types/rc.rs",
     find: "        weak_pointee(self.tcx, ty).filter(|&pointee| self.krate.counted.counts(self.tcx, pointee))\n",
     replace: "        weak_pointee(self.tcx, ty)\n",
@@ -21,15 +23,17 @@ export const mutations: Mutation[] = [
   },
   {
     name: "downgrade-uncounted-unknown",
-    breaks: "`Rc::downgrade` of an uncounted `Rc` isn't the `Rc` itself, and fails to compile (ADR 0843)",
+    breaks:
+      "`Rc::downgrade` of an uncounted `Rc` isn't the `Rc` itself, and fails to compile (ADR 0843)",
     file: "src/lower/std_types/rc.rs",
-    find: "            RcOp::Downgrade if self.uncounted_weak(output).is_some() => values.next().expect(\"an `Rc`\"),\n",
+    find: '            RcOp::Downgrade if self.uncounted_weak(output).is_some() => values.next().expect("an `Rc`"),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^weak_cycle_set_after.rs$"],
   },
   {
     name: "weak-new-uncounted-fresh",
-    breaks: "an uncounted `Weak::new()` is a new object, so two aren't `Weak::ptr_eq` (ADR 0843)",
+    breaks:
+      "an uncounted `Weak::new()` is a new object, so two aren't `Weak::ptr_eq` (ADR 0843)",
     file: "src/lower/std_types/rc.rs",
     find: "            None => Expr::null(),\n",
     replace: "            None => Expr::object(Vec::new()),\n",
@@ -37,10 +41,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "weak-new-counted-fresh",
-    breaks: "a counted `Weak::new()` is a new `{ strong: 0, weak: 0 }`, so two aren't `Weak::ptr_eq`, as std's are (ADR 0843)",
+    breaks:
+      "a counted `Weak::new()` is a new `{ strong: 0, weak: 0 }`, so two aren't `Weak::ptr_eq`, as std's are (ADR 0843)",
     file: "src/lower/std_types/rc.rs",
-    find: "            Some(_) => Expr::helper(\"$weakNone\"),\n",
-    replace: "            Some(_) => Expr::object(vec![Prop::Field(\"strong\".into(), Expr::int(0)), Prop::Field(\"weak\".into(), Expr::int(0))]),\n",
+    find: '            Some(_) => Expr::helper("$weakNone"),\n',
+    replace:
+      '            Some(_) => Expr::object(vec![Prop::Field("strong".into(), Expr::int(0)), Prop::Field("weak".into(), Expr::int(0))]),\n',
     tests: ["test/corpus.test.ts", "-t", "^weak_debug.rs$"],
   },
   {
@@ -48,7 +54,8 @@ export const mutations: Mutation[] = [
     breaks: "`get_mut` gives a `&mut` while others point at it",
     file: "src/lower/std_types/rc.rs",
     find: "                        Expr::cond(only, given, Expr::undefined())\n",
-    replace: "                        Expr::cond(Expr::bool(true), given, Expr::undefined())\n",
+    replace:
+      "                        Expr::cond(Expr::bool(true), given, Expr::undefined())\n",
     tests: ["test/corpus.test.ts", "-t", "rc_counts"],
   },
   {
@@ -72,76 +79,97 @@ export const mutations: Mutation[] = [
     breaks: "`{}` of a pinned `&mut` to a number shows its box",
     file: "src/lower/std_types/rc.rs",
     find: "            if let Some(pointer) = self.recognition().pinned(ty) {",
-    replace: "            if let Some(pointer) = self.recognition().pinned(ty).filter(|_| false) {",
+    replace:
+      "            if let Some(pointer) = self.recognition().pinned(ty).filter(|_| false) {",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
   },
   {
     name: "make-mut-drop-unknown",
-    breaks: "`make_mut` that drops the last `Rc` leaves what it points at undropped",
+    breaks:
+      "`make_mut` that drops the last `Rc` leaves what it points at undropped",
     file: "src/lower/std_types/rc.rs",
     find: "        let mut given = vec![place.clone(), self.clone_arg(item, span)?];\n        given.extend(self.drop_function(item, span)?);\n",
-    replace: "        let given = vec![place.clone(), self.clone_arg(item, span)?];\n",
+    replace:
+      "        let given = vec![place.clone(), self.clone_arg(item, span)?];\n",
     tests: ["test/corpus.test.ts", "-t", "rc_clone_sees_owners"],
   },
   {
     name: "unwrap-or-clone-drop-unknown",
-    breaks: "`unwrap_or_clone` that drops the last `Rc` leaves what it points at undropped",
+    breaks:
+      "`unwrap_or_clone` that drops the last `Rc` leaves what it points at undropped",
     file: "src/lower/std_types/rc.rs",
     find: "                        let mut given = vec![rc, self.clone_arg(item, span)?];\n                        given.extend(self.drop_function(item, span)?);\n",
-    replace: "                        let given = vec![rc, self.clone_arg(item, span)?];\n",
+    replace:
+      "                        let given = vec![rc, self.clone_arg(item, span)?];\n",
     tests: ["test/corpus.test.ts", "-t", "rc_clone_sees_owners"],
   },
   {
     name: "counted-dyn-pointee-held",
-    breaks: "what a counted `Rc<dyn T>` points at is read as its `value`, not its pair",
+    breaks:
+      "what a counted `Rc<dyn T>` points at is read as its `value`, not its pair",
     file: "src/lower/std_types/rc.rs",
     find: "            ty::Dynamic(predicates, ..) if self.recognition().is_pair_dyn(predicates) => rc,\n",
-    replace: "            ty::Dynamic(predicates, ..) if false && self.recognition().is_pair_dyn(predicates) => rc,\n",
-    tests: ["test/corpus.test.ts", "-t", "^(dyn_any_counted_rc|rc_dyn_destructors).rs$"],
+    replace:
+      "            ty::Dynamic(predicates, ..) if false && self.recognition().is_pair_dyn(predicates) => rc,\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(dyn_any_counted_rc|rc_dyn_destructors).rs$",
+    ],
   },
   {
     name: "rc-op-of-mut-box",
     breaks: "an `Rc`'s op given a `&mut` to one reads its box, not the `Rc`",
     file: "src/lower/std_types/rc.rs",
     find: "                    Some(ty::Ref(_, _, ty::Mutability::Mut)) => Expr::held(rc),\n",
-    replace: "                    Some(ty::Ref(_, _, ty::Mutability::Mut)) => rc,\n",
+    replace:
+      "                    Some(ty::Ref(_, _, ty::Mutability::Mut)) => rc,\n",
     tests: ["test/crates.test.ts", "-t", "three crates: rc_generic"],
   },
   {
     name: "format-without-cells",
-    breaks: "`println!(\"{y}\")` of a `&mut` to a number prints its cell, `[object Object]`, not what it points at",
+    breaks:
+      '`println!("{y}")` of a `&mut` to a number prints its cell, `[object Object]`, not what it points at',
     file: "src/lower/std_types/rc.rs",
     find: "        let (value, ty) = self.through_refs(value, ty);\n        self.through_boxes(value, ty)\n",
-    replace: "        let ty = ty.peel_refs();\n        self.through_boxes(value, ty)\n",
+    replace:
+      "        let ty = ty.peel_refs();\n        self.through_boxes(value, ty)\n",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_local"],
   },
   {
     name: "box-of-mut-ref-shown-as-handle",
-    breaks: "`{}` of a `Box<&mut u32>` or an `Rc<&mut u32>` is its handle, `[object Object]`, not what it borrows (#197)",
+    breaks:
+      "`{}` of a `Box<&mut u32>` or an `Rc<&mut u32>` is its handle, `[object Object]`, not what it borrows (#197)",
     file: "src/lower/std_types/rc.rs",
     find: "                    None if self.shows_inside(ty) => {\n",
-    replace: "                    None if false && self.shows_inside(ty) => {\n",
+    replace:
+      "                    None if false && self.shows_inside(ty) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_mut_ref_shown.rs$"],
   },
   {
     name: "counted-rc-given-to-js",
-    breaks: "a counted `Rc` a `WeakMap` holds is compiled: what its `get` gives back is dropped uncounted, its destructor run while the map holds it",
+    breaks:
+      "a counted `Rc` a `WeakMap` holds is compiled: what its `get` gives back is dropped uncounted, its destructor run while the map holds it",
     file: "src/lower/std_types/rc.rs",
     find: "        if !crate::lower::bindings::is_binding(self.tcx, def_id) {\n            return Ok(());\n        }\n        let refused",
-    replace: "        if true {\n            return Ok(());\n        }\n        let refused",
+    replace:
+      "        if true {\n            return Ok(());\n        }\n        let refused",
     tests: ["test/js-builtins.test.ts", "-t", "uncounted Rc a WeakMap holds"],
   },
   {
     name: "uncounted-rc-given-to-js-refused",
-    breaks: "an uncounted `Rc`, the value itself, a `WeakMap` holds is refused, React's cache nodes",
+    breaks:
+      "an uncounted `Rc`, the value itself, a `WeakMap` holds is refused, React's cache nodes",
     file: "src/lower/std_types/rc.rs",
     find: "            .find(|&part| self.counted_rc(part).is_some() || self.counted_weak(part).is_some());\n",
-    replace: "            .find(|&part| crate::lower::recognition::rc_pointee(self.tcx, part).is_some() || self.counted_weak(part).is_some());\n",
+    replace:
+      "            .find(|&part| crate::lower::recognition::rc_pointee(self.tcx, part).is_some() || self.counted_weak(part).is_some());\n",
     tests: ["test/js-builtins.test.ts", "-t", "uncounted Rc a WeakMap holds"],
   },
   {
     name: "value-cell-guard-shown-value",
-    breaks: "`{:?}` of a guard of a `RefCell` of an object shows its `value`, `undefined`",
+    breaks:
+      "`{:?}` of a guard of a `RefCell` of an object shows its `value`, `undefined`",
     file: "src/lower/std_types/rc.rs",
     find: "                true if self.guards_value_cell(ty) => value,\n",
     replace: "",
@@ -149,26 +177,38 @@ export const mutations: Mutation[] = [
   },
   {
     name: "boxed-refcell-given-to-js",
-    breaks: "a `RefCell<u32>`, its `{ value }` box, is given to JS as `js::unknown_of`'s value, which JS reads as the box, not the number (ADR 0962)",
+    breaks:
+      "a `RefCell<u32>`, its `{ value }` box, is given to JS as `js::unknown_of`'s value, which JS reads as the box, not the number (ADR 0962)",
     file: "src/lower/std_types/rc.rs",
     find: "                        ) && !self.is_value_cell(part) =>\n",
     replace: "                        ) && false =>\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "a RefCell of an array given to JS"],
+    tests: [
+      "test/lowering-cell-borrows.test.ts",
+      "-t",
+      "a RefCell of an array given to JS",
+    ],
   },
   {
     name: "value-refcell-given-to-js-refused",
-    breaks: "a `RefCell` of an array, the array itself, is refused where it's given to JS, so React's view transitions can't store the array they fill (ADR 0962)",
+    breaks:
+      "a `RefCell` of an array, the array itself, is refused where it's given to JS, so React's view transitions can't store the array they fill (ADR 0962)",
     file: "src/lower/std_types/rc.rs",
     find: "                        ) && !self.is_value_cell(part) =>\n",
     replace: "                        ) && true =>\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "a RefCell of an array given to JS"],
+    tests: [
+      "test/lowering-cell-borrows.test.ts",
+      "-t",
+      "a RefCell of an array given to JS",
+    ],
   },
   {
     name: "refcell-a-closure-captures-given-to-js",
-    breaks: "a `RefCell<u32>` a closure given to JS captures is taken to be given itself, so a listener counting its calls is refused (ADR 0962)",
+    breaks:
+      "a `RefCell<u32>` a closure given to JS captures is taken to be given itself, so a listener counting its calls is refused (ADR 0962)",
     file: "src/lower/std_types/rc.rs",
     find: "                    ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..) | ty::Dynamic(..) | ty::Coroutine(..) => {\n",
-    replace: "                    ty::FnDef(..) | ty::FnPtr(..) | ty::Dynamic(..) | ty::Coroutine(..) => {\n",
+    replace:
+      "                    ty::FnDef(..) | ty::FnPtr(..) | ty::Dynamic(..) | ty::Coroutine(..) => {\n",
     tests: ["test/snapshots.test.ts", "-t", "async"],
   },
 ];

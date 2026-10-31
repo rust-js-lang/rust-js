@@ -4,183 +4,275 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "nullable-result-not-nulled",
-    breaks: "a nullable getter's result kept in a `let`, `prevTransition`, is written to a nullable setter `?? null`, as if it may be `undefined` (ADR 0841, amended)",
+    breaks:
+      "a nullable getter's result kept in a `let`, `prevTransition`, is written to a nullable setter `?? null`, as if it may be `undefined` (ADR 0841, amended)",
     file: "src/lower/mir/rvalues.rs",
     find: "            && crate::lower::calls::gives_null_for_none(self.tcx, def_id)\n        {\n            return Given::Nulled;\n",
-    replace: "            && false\n        {\n            return Given::Nulled;\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "result is written to a nullable place"],
+    replace:
+      "            && false\n        {\n            return Given::Nulled;\n",
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "result is written to a nullable place",
+    ],
   },
   {
     name: "aggregate-nulled-unmarked",
-    breaks: "a `Drop` guard's field made of a nullable getter's result is written where it's dropped `?? null`, `internals.T = prevTransition ?? null` (ADR 0841, amended)",
+    breaks:
+      "a `Drop` guard's field made of a nullable getter's result is written where it's dropped `?? null`, `internals.T = prevTransition ?? null` (ADR 0841, amended)",
     file: "src/lower/mir/rvalues.rs",
     find: "                        true => self.value_expr(v, span).map(Expr::defined),\n",
     replace: "                        true => self.value_expr(v, span),\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "result is written to a nullable place"],
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "result is written to a nullable place",
+    ],
   },
   {
     name: "spread-fields-as-declared",
-    breaks: "an update's fields after its base's spread are listed as declared, `{ ...logs, log: 2, warn: 1 }` of `Logs { warn: .., log: .., ..logs }`",
+    breaks:
+      "an update's fields after its base's spread are listed as declared, `{ ...logs, log: 2, warn: 1 }` of `Logs { warn: .., log: .., ..logs }`",
     file: "src/lower/mir/rvalues.rs",
     find: "            let given: Vec<usize> = order\n                .into_iter()\n",
-    replace: "            let given: Vec<usize> = { let mut o = order; o.sort(); o }\n                .into_iter()\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "a struct literal's keys are in the order written"],
+    replace:
+      "            let given: Vec<usize> = { let mut o = order; o.sort(); o }\n                .into_iter()\n",
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "a struct literal's keys are in the order written",
+    ],
   },
   {
     name: "held-fn-pointer-in-place",
-    breaks: "a binding taken as a `fn` through the module that holds it is read in place, `Object.assign(target, ...sources)`",
+    breaks:
+      "a binding taken as a `fn` through the module that holds it is read in place, `Object.assign(target, ...sources)`",
     file: "src/lower/mir/rvalues.rs",
     find: "                                Operand::Constant(c) => c.span,\n",
-    replace: "                                Operand::Constant(_) => rustc_span::DUMMY_SP,\n",
+    replace:
+      "                                Operand::Constant(_) => rustc_span::DUMMY_SP,\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "named through the module"],
   },
   {
     name: "binding-reified-as-arrow",
-    breaks: "a binding taken as a `fn` is its arrow, which reads the global at each call",
+    breaks:
+      "a binding taken as a `fn` is its arrow, which reads the global at each call",
     file: "src/lower/mir/rvalues.rs",
     find: "                            && bindings::is_binding(tcx, def_id)\n                        {\n",
-    replace: "                            && false\n                        {\n",
+    replace:
+      "                            && false\n                        {\n",
     tests: ["test/lowering-functions.test.ts", "-t", "a binding taken as a fn"],
   },
   {
     name: "mir-shared-temporary-a-place",
-    breaks: "a shared reference to a temporary's read of a static is read where it's used, after what changes the static",
+    breaks:
+      "a shared reference to a temporary's read of a static is read where it's used, after what changes the static",
     file: "src/lower/mir/rvalues.rs",
     find: "                            if e.reads_same() && movable(state, &Value::Expr(e.clone())) =>\n",
     replace: "                            if e.reads_same() =>\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "a nested pattern of a captured item from MIR"],
+    tests: [
+      "test/lowering-matches.test.ts",
+      "-t",
+      "a nested pattern of a captured item from MIR",
+    ],
   },
   {
     name: "mir-unsize-unchecked",
-    breaks: "a `Box` of a struct whose last field is a `dyn`, unsized, is compiled, with no `impl` for its field",
+    breaks:
+      "a `Box` of a struct whose last field is a `dyn`, unsized, is compiled, with no `impl` for its field",
     file: "src/lower/mir/rvalues.rs",
     find: "                            self.check_unsize(*to, span)?;\n",
     replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "a raw pointer to a struct of a dyn last field"],
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "a raw pointer to a struct of a dyn last field",
+    ],
   },
   {
     name: "mir-rc-dyn-unpaired",
-    breaks: "`Rc<dyn Any>` made from MIR is the value, not its pair with its dictionary",
+    breaks:
+      "`Rc<dyn Any>` made from MIR is the value, not its pair with its dictionary",
     file: "src/lower/mir/rvalues.rs",
     find: "let to_dyn = matches!(self.pointee(*to).kind(), ty::Dynamic(..))",
-    replace: "let to_dyn = to.builtin_deref(true).is_some_and(|p| matches!(p.kind(), ty::Dynamic(..)))",
-    tests: ["test/corpus.test.ts","-t","dyn_any_generic"],
+    replace:
+      "let to_dyn = to.builtin_deref(true).is_some_and(|p| matches!(p.kind(), ty::Dynamic(..)))",
+    tests: ["test/corpus.test.ts", "-t", "dyn_any_generic"],
   },
   {
     name: "mir-dyn-debug-made-early",
-    breaks: "`{:#?}` of a `&dyn Debug` shows it as `{:?}` does, made before its spec is known",
+    breaks:
+      "`{:#?}` of a `&dyn Debug` shows it as `{:?}` does, made before its spec is known",
     file: "src/lower/mir/rvalues.rs",
     find: "                        if self.is_dyn_debug(*to) && !self.is_dyn_debug(from) {\n",
-    replace: "                        if false && self.is_dyn_debug(*to) && !self.is_dyn_debug(from) {\n",
-    tests: ["test/corpus.test.ts","-t","pretty_debug"],
+    replace:
+      "                        if false && self.is_dyn_debug(*to) && !self.is_dyn_debug(from) {\n",
+    tests: ["test/corpus.test.ts", "-t", "pretty_debug"],
   },
   {
     name: "mir-mut-subslice-copied",
     breaks: "a `&mut` to a slice pattern's rest writes a copy, not the slice",
     file: "src/lower/mir/rvalues.rs",
     find: "                        .any(|elem| matches!(elem, PlaceElem::Subslice { .. }))\n",
-    replace: "                        .any(|elem| false && matches!(elem, PlaceElem::Subslice { .. }))\n",
-    tests: ["test/corpus.test.ts","-t","^slice_pattern_mut_rest.rs$"],
+    replace:
+      "                        .any(|elem| false && matches!(elem, PlaceElem::Subslice { .. }))\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_pattern_mut_rest.rs$"],
   },
   {
-    "name": "mir-nullable-field-coalesced",
-    "breaks": "a `#[rust_js::nullable]` field moved into another, `p.code`, is `p.code ?? null`",
-    "file": "src/lower/mir/rvalues.rs",
-    "find": "                Some(field) if bindings::null_where_made(self.tcx, field) => Given::Nulled,\n",
-    "replace": "                Some(field) if false && bindings::null_where_made(self.tcx, field) => Given::Nulled,\n",
-    "tests": ["test/lowering-options.test.ts", "-t", "a nullable field's None is null"]
+    name: "mir-nullable-field-coalesced",
+    breaks:
+      "a `#[rust_js::nullable]` field moved into another, `p.code`, is `p.code ?? null`",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                Some(field) if bindings::null_where_made(self.tcx, field) => Given::Nulled,\n",
+    replace:
+      "                Some(field) if false && bindings::null_where_made(self.tcx, field) => Given::Nulled,\n",
+    tests: [
+      "test/lowering-options.test.ts",
+      "-t",
+      "a nullable field's None is null",
+    ],
   },
   {
     name: "optional-field-read-nulled",
-    breaks: "an optional nullable field's value, `undefined` where it's absent, is given to a nullable field as it is, not `null` (ADR 0810)",
+    breaks:
+      "an optional nullable field's value, `undefined` where it's absent, is given to a nullable field as it is, not `null` (ADR 0810)",
     file: "src/lower/mir/rvalues.rs",
     find: "                Some(field) if bindings::null_where_made(self.tcx, field) => Given::Nulled,\n",
-    replace: "                Some(field) if bindings::is_nullable(self.tcx, field) => Given::Nulled,\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "an optional nullable field"],
+    replace:
+      "                Some(field) if bindings::is_nullable(self.tcx, field) => Given::Nulled,\n",
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "an optional nullable field",
+    ],
   },
   {
     name: "optional-read-coalesced",
-    breaks: "an optional nullable field's value given another optional nullable field is `abort.name ?? null`, `null` where upstream's copy is `undefined` (ADR 0810, amended)",
+    breaks:
+      "an optional nullable field's value given another optional nullable field is `abort.name ?? null`, `null` where upstream's copy is `undefined` (ADR 0810, amended)",
     file: "src/lower/mir/rvalues.rs",
     find: "                Some(field) if bindings::is_optional(self.tcx, field) => Given::Optional,\n",
-    replace: "                Some(field) if bindings::is_optional(self.tcx, field) => Given::Unknown,\n",
-    tests: ["test/lowering-optional-fields.test.ts", "-t", "an optional nullable field given another's value"],
+    replace:
+      "                Some(field) if bindings::is_optional(self.tcx, field) => Given::Unknown,\n",
+    tests: [
+      "test/lowering-optional-fields.test.ts",
+      "-t",
+      "an optional nullable field given another's value",
+    ],
   },
   {
-    "name": "mir-nullable-moved-through-unseen",
-    "breaks": "a field's value moved through a temporary, as MIR moves it, is `?? null` again",
-    "file": "src/lower/mir/rvalues.rs",
-    "find": "            Some(Rvalue::Use(operand, _)) => self.stored_given(state, operand),\n",
-    "replace": "            Some(Rvalue::Use(..)) => Given::Unknown,\n",
-    "tests": ["test/lowering-options.test.ts", "-t", "a nullable field's None is null"]
+    name: "mir-nullable-moved-through-unseen",
+    breaks:
+      "a field's value moved through a temporary, as MIR moves it, is `?? null` again",
+    file: "src/lower/mir/rvalues.rs",
+    find: "            Some(Rvalue::Use(operand, _)) => self.stored_given(state, operand),\n",
+    replace: "            Some(Rvalue::Use(..)) => Given::Unknown,\n",
+    tests: [
+      "test/lowering-options.test.ts",
+      "-t",
+      "a nullable field's None is null",
+    ],
   },
   {
-    "name": "mir-nullable-some-coalesced",
-    "breaks": "a `Some(..)` given to a `#[rust_js::nullable]` field is `?? null` too",
-    "file": "src/lower/mir/rvalues.rs",
-    "find": "                if fields.len() == 1\n",
-    "replace": "                if fields.len() == 0\n",
-    "tests": ["test/lowering-nullable.test.ts", "-t", "a nullable field is written what's never undefined as it is"]
+    name: "mir-nullable-some-coalesced",
+    breaks:
+      "a `Some(..)` given to a `#[rust_js::nullable]` field is `?? null` too",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                if fields.len() == 1\n",
+    replace: "                if fields.len() == 0\n",
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "a nullable field is written what's never undefined as it is",
+    ],
   },
   {
-    "name": "mir-null-none-coalesced",
-    "breaks": "a nullable field of an `Option` made `null` where it's `None` is `?? null` again",
-    "file": "src/lower/mir/rvalues.rs",
-    "find": "        if state.facts.options().null_nones.contains(&place.local) {\n",
-    "replace": "        if false {\n",
-    "tests": ["test/lowering-options.test.ts", "-t", "a nullable field of Some or None by a branch"]
+    name: "mir-null-none-coalesced",
+    breaks:
+      "a nullable field of an `Option` made `null` where it's `None` is `?? null` again",
+    file: "src/lower/mir/rvalues.rs",
+    find: "        if state.facts.options().null_nones.contains(&place.local) {\n",
+    replace: "        if false {\n",
+    tests: [
+      "test/lowering-options.test.ts",
+      "-t",
+      "a nullable field of Some or None by a branch",
+    ],
   },
   {
-    "name": "mir-nullable-clone-renulled",
-    "breaks": "a clone of a nullable field given to one from MIR is `m.rule_id ?? null`",
-    "file": "src/lower/mir/rvalues.rs",
-    "find": "        if itself\n",
-    "replace": "        if false\n",
-    "tests": ["test/lowering-options.test.ts", "-t", "nullable field's clone"]
+    name: "mir-nullable-clone-renulled",
+    breaks:
+      "a clone of a nullable field given to one from MIR is `m.rule_id ?? null`",
+    file: "src/lower/mir/rvalues.rs",
+    find: "        if itself\n",
+    replace: "        if false\n",
+    tests: ["test/lowering-options.test.ts", "-t", "nullable field's clone"],
   },
   {
-    "name": "mir-unread-base-dropped",
-    "breaks": "a struct update giving every field from MIR drops its base, `{ url }`, losing what JS's object held besides",
-    "file": "src/lower/mir/rvalues.rs",
-    "find": "            && let Some(spread) = self.written_base(state, ty, operands, span)\n",
-    "replace": "            && let Some(spread) = None::<Place<'tcx>>\n",
-    "tests": ["test/lowering-structs-enums.test.ts", "-t", "giving every field spreads its base"]
+    name: "mir-unread-base-dropped",
+    breaks:
+      "a struct update giving every field from MIR drops its base, `{ url }`, losing what JS's object held besides",
+    file: "src/lower/mir/rvalues.rs",
+    find: "            && let Some(spread) = self.written_base(state, ty, operands, span)\n",
+    replace: "            && let Some(spread) = None::<Place<'tcx>>\n",
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "giving every field spreads its base",
+    ],
   },
   {
-    "name": "mir-whole-cast-wrapped",
-    "breaks": "a float THIR knows whole and in range, cast, is `$f64ToInt(index, ..)` from MIR, not `index`",
-    "file": "src/lower/mir/rvalues.rs",
-    "find": "                } else if self.kept_cast_at(span) {",
-    "replace": "                } else if false {",
-    "tests": ["test/lowering-numbers.test.ts", "-t", "a whole float's cast is the float from MIR too"]
+    name: "mir-whole-cast-wrapped",
+    breaks:
+      "a float THIR knows whole and in range, cast, is `$f64ToInt(index, ..)` from MIR, not `index`",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                } else if self.kept_cast_at(span) {",
+    replace: "                } else if false {",
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a whole float's cast is the float from MIR too",
+    ],
   },
   {
-    "name": "mir-range-bound-first",
-    "breaks": "a range pattern's test from MIR reads its bound first, `2 <= k`",
-    "file": "src/lower/mir/rvalues.rs",
-    "find": "&& state.facts.tested().iter().any(|pattern| pattern.contains(span))",
-    "replace": "&& false",
-    "tests": ["test/lowering-matches.test.ts", "-t", "a range pattern's tests from MIR"]
+    name: "mir-range-bound-first",
+    breaks: "a range pattern's test from MIR reads its bound first, `2 <= k`",
+    file: "src/lower/mir/rvalues.rs",
+    find: "&& state.facts.tested().iter().any(|pattern| pattern.contains(span))",
+    replace: "&& false",
+    tests: [
+      "test/lowering-matches.test.ts",
+      "-t",
+      "a range pattern's tests from MIR",
+    ],
   },
   {
-    "name": "mir-enum-cast-refused",
-    "breaks": "`ordering as i32` from MIR, and an enum's `as`, is a test of each variant, `cmp === -1 ? -1 : ..`, not its discriminant",
-    "file": "src/lower/mir/rvalues.rs",
-    "find": "                    Value::Discriminant(value, enum_ty, _) => {\n                        return Ok(Value::Expr(self.cast(value, enum_ty, *to, span)?));\n                    }\n",
-    "replace": "",
-    "tests": ["test/lowering-numbers.test.ts", "-t", "an enum cast to a number from MIR"]
+    name: "mir-enum-cast-refused",
+    breaks:
+      "`ordering as i32` from MIR, and an enum's `as`, is a test of each variant, `cmp === -1 ? -1 : ..`, not its discriminant",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                    Value::Discriminant(value, enum_ty, _) => {\n                        return Ok(Value::Expr(self.cast(value, enum_ty, *to, span)?));\n                    }\n",
+    replace: "",
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "an enum cast to a number from MIR",
+    ],
   },
   {
     name: "mir-reborrow-cell-folded",
-    breaks: "MIR's `&mut *s` of `leak()`'s cell is its text, `\"cd\"`, not the cell",
+    breaks:
+      "MIR's `&mut *s` of `leak()`'s cell is its text, `\"cd\"`, not the cell",
     file: "src/lower/mir/rvalues.rs",
-    find: "                                    let kind = js::ExprKind::Member(Box::new(cell), \"value\".into());\n                                    Expr {\n                                        kind,\n                                        ..Expr::undefined()\n                                    }\n",
-    replace: "                                    Expr::member(cell, \"value\")\n",
+    find: '                                    let kind = js::ExprKind::Member(Box::new(cell), "value".into());\n                                    Expr {\n                                        kind,\n                                        ..Expr::undefined()\n                                    }\n',
+    replace:
+      '                                    Expr::member(cell, "value")\n',
     tests: ["test/corpus.test.ts", "-t", "leaked_string_written"],
   },
   {
     name: "mir-through-alias-handle",
-    breaks: "MIR's `&mut outer[0]` through `outer`, a `&mut` to `list`, indexes a handle on `list`",
+    breaks:
+      "MIR's `&mut outer[0]` through `outer`, a `&mut` to `list`, indexes a handle on `list`",
     file: "src/lower/mir/rvalues.rs",
     find: "                        (_, Value::Ref(e)) if !place.projection.is_empty() && !self.is_cell_pointee(pointee) => {\n",
     replace: "                        (_, Value::Ref(e)) if false => {\n",
@@ -188,18 +280,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-borrow-root-unheld",
-    breaks: "MIR's `&mut list.value` of a `list` moved on later reads `list` where it's used",
+    breaks:
+      "MIR's `&mut list.value` of a `list` moved on later reads `list` where it's used",
     file: "src/lower/mir/rvalues.rs",
     find: "                        && state.body.local_decls[place.local].ty.is_ref();\n                    let target = match root {\n",
-    replace: "                        && false;\n                    let target = match root {\n",
+    replace:
+      "                        && false;\n                    let target = match root {\n",
     tests: ["test/corpus.test.ts", "-t", "generic_mut_ref_kept"],
   },
   {
     name: "mir-dyn-drops-lost",
-    breaks: "MIR's `Box<dyn Debug>` of a value with a destructor, the string it shows, never drops it",
+    breaks:
+      "MIR's `Box<dyn Debug>` of a value with a destructor, the string it shows, never drops it",
     file: "src/lower/mir/rvalues.rs",
     find: "                        if self\n                            .drop_query()\n                            .dyn_drop_lost(",
-    replace: "                        if false\n                            && self\n                            .drop_query()\n                            .dyn_drop_lost(",
+    replace:
+      "                        if false\n                            && self\n                            .drop_query()\n                            .dyn_drop_lost(",
     tests: ["test/lowering.test.ts", "-t", "MIR refuses a Box<dyn Debug>"],
   },
   {
@@ -207,20 +303,27 @@ export const mutations: Mutation[] = [
     breaks: "MIR's division by a named constant that can't panic is `$div`",
     file: "src/lower/mir/rvalues.rs",
     find: "                    _ => self.binary(*op, l, r, known, ty, span)?,\n",
-    replace: "                    _ => self.binary(*op, l, r, None.or(known.filter(|_| false)), ty, span)?,\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a division by a named constant"],
+    replace:
+      "                    _ => self.binary(*op, l, r, None.or(known.filter(|_| false)), ty, span)?,\n",
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a division by a named constant",
+    ],
   },
   {
     name: "mir-raw-ptr-object-refused",
     breaks: "MIR's pointer to a JS object, `ptr::eq`'s, is refused",
     file: "src/lower/mir/rvalues.rs",
     find: "            Rvalue::RawPtr(_, place) if self.is_js_object(place.ty(decls, tcx).ty) => {\n",
-    replace: "            Rvalue::RawPtr(_, place) if false && self.is_js_object(place.ty(decls, tcx).ty) => {\n",
+    replace:
+      "            Rvalue::RawPtr(_, place) if false && self.is_js_object(place.ty(decls, tcx).ty) => {\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "ptr::eq of JS objects"],
   },
   {
     name: "mir-cell-handle-root-followed",
-    breaks: "MIR's handle on a `Cell` field reads the field of what its reference is set to after",
+    breaks:
+      "MIR's handle on a `Cell` field reads the field of what its reference is set to after",
     file: "src/lower/mir/rvalues.rs",
     find: "                    && (self.is_std_type(pointee, StdItem::Cell)\n                        || self\n                            .place_field(state, *place)\n                            .is_some_and(|field| self.property_cell(Some(field), pointee).is_some()))\n",
     replace: "                    && false\n",
@@ -232,14 +335,20 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/rvalues.rs",
     find: "                            if state.writer.is_some() {\n",
     replace: "                            if false {\n",
-    tests: ["test/lowering-strings.test.ts", "-t", "a writer from its MIR takes its Formatter's options"],
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "a writer from its MIR takes its Formatter's options",
+    ],
   },
   {
     name: "raw-pointer-through-mut-unrefused",
-    breaks: "a raw pointer to what a `&mut` refers to is the handle's place, which another pointer to it isn't",
+    breaks:
+      "a raw pointer to what a `&mut` refers to is the handle's place, which another pointer to it isn't",
     file: "src/lower/mir/rvalues.rs",
     find: "                    if js::same_path(&target, &Expr::held(reference)) {\n",
-    replace: "                    if false && js::same_path(&target, &Expr::held(reference)) {\n",
+    replace:
+      "                    if false && js::same_path(&target, &Expr::held(reference)) {\n",
     tests: ["test/diagnostics.test.ts", "-t", "a pointer through a &mut"],
   },
   {
@@ -252,7 +361,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dyn-tail-cast-unsized",
-    breaks: "a coercion to `&Fat<dyn T>` keeps the struct without its last field's `impl`",
+    breaks:
+      "a coercion to `&Fat<dyn T>` keeps the struct without its last field's `impl`",
     file: "src/lower/mir/rvalues.rs",
     find: "                    || self.dyn_tail(operand.ty(decls, tcx), *to).is_some();\n",
     replace: ";\n",
@@ -260,23 +370,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dyn-field-ref-plain",
-    breaks: "a reference to a struct's `dyn` last field is its value, with no `impl` to call through",
+    breaks:
+      "a reference to a struct's `dyn` last field is its value, with no `impl` to call through",
     file: "src/lower/mir/rvalues.rs",
     find: "                    && matches!(self.unwrapped(place.ty(decls, tcx).ty).kind(), ty::Dynamic(..))\n                {\n                    let base_ty",
-    replace: "                    && false\n                {\n                    let base_ty",
+    replace:
+      "                    && false\n                {\n                    let base_ty",
     tests: ["test/corpus.test.ts", "-t", "^dyn_struct_tails.rs$"],
   },
   {
     name: "dyn-field-mut-ref-copied",
-    breaks: "a `&mut` to a struct's `dyn` last field, a number, is a pair of its value, whose method's write is lost",
+    breaks:
+      "a `&mut` to a struct's `dyn` last field, a number, is a pair of its value, whose method's write is lost",
     file: "src/lower/mir/rvalues.rs",
     find: "                        BorrowKind::Mut { .. } => Expr::pair(value, dictionary),\n",
-    replace: "                        BorrowKind::Mut { .. } if false => Expr::pair(value, dictionary),\n",
+    replace:
+      "                        BorrowKind::Mut { .. } if false => Expr::pair(value, dictionary),\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_struct_tails.rs$"],
   },
   {
     name: "union-field-borrow-unrefused",
-    breaks: "a `&mut` to a union's field is taken, whose write would change which it holds unsaid",
+    breaks:
+      "a `&mut` to a union's field is taken, whose write would change which it holds unsaid",
     file: "src/lower/mir/rvalues.rs",
     find: "                    && self.is_union(base.ty(decls, tcx).ty)\n",
     replace: "                    && false\n",
@@ -284,7 +399,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "reborrowed-pointer-new-handle",
-    breaks: "`&raw const *p` of a pointer is a handle on its `value`, not the pointer: two pointers to one place differ",
+    breaks:
+      "`&raw const *p` of a pointer is a handle on its `value`, not the pointer: two pointers to one place differ",
     file: "src/lower/mir/rvalues.rs",
     find: "                    && self.is_handle_pointer(decls[place.local].ty)\n",
     replace: "                    && false\n",
@@ -292,7 +408,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "pointer-of-reference-refused",
-    breaks: "`&x as *const _` through a reference to a whole local is refused, where it's a pointer to that local",
+    breaks:
+      "`&x as *const _` through a reference to a whole local is refused, where it's a pointer to that local",
     file: "src/lower/mir/rvalues.rs",
     find: "                    && let Some(&local) = state.facts.pointed().refs.get(&place.local)\n",
     replace: "                    && let Some(&local) = None::<&Local>\n",
@@ -303,20 +420,27 @@ export const mutations: Mutation[] = [
     breaks: "`&arr as *const T` points to the array, not its first item",
     file: "src/lower/mir/rvalues.rs",
     find: "                    PointerCoercion::ArrayToPointer if self.is_handle_pointer(*to) => {\n",
-    replace: "                    PointerCoercion::ArrayToPointer if false => {\n",
+    replace:
+      "                    PointerCoercion::ArrayToPointer if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
   {
     name: "slice-item-pointer-unchecked",
-    breaks: "a pointer into a subslice's copy is taken, its place not the array's",
+    breaks:
+      "a pointer into a subslice's copy is taken, its place not the array's",
     file: "src/lower/mir/rvalues.rs",
     find: "                self.check_slice_item_pointer((state.body, &state.facts.pointed().copies), *place, span)?;\n",
     replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "a pointer into a subslice's copy"],
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "a pointer into a subslice's copy",
+    ],
   },
   {
     name: "raw-const-of-shared-a-place",
-    breaks: "a `*const` of what a shared reference refers to is taken as a place's, refused where JS names none, arrayvec's `elt as *const _`",
+    breaks:
+      "a `*const` of what a shared reference refers to is taken as a place's, refused where JS names none, arrayvec's `elt as *const _`",
     file: "src/lower/mir/rvalues.rs",
     find: "                    && state.facts.pointed().read_only.contains(&place.local)\n",
     replace: "                    && false\n",
@@ -324,7 +448,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-fake-raw-refused",
-    breaks: "a bounds check's borrow for a subslice's length is taken as a pointer into the copy JS holds of it, and refused",
+    breaks:
+      "a bounds check's borrow for a subslice's length is taken as a pointer into the copy JS holds of it, and refused",
     file: "src/lower/mir/rvalues.rs",
     find: "            Rvalue::RawPtr(mir::RawPtrKind::FakeForPtrMetadata, place) => self.mir_place(state, *place, span, out)?,\n",
     replace: "",
@@ -332,7 +457,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "crate-future-made-dyn",
-    breaks: "a future of the crate's made a `dyn Future`, a promise, is the value itself",
+    breaks:
+      "a future of the crate's made a `dyn Future`, a promise, is the value itself",
     file: "src/lower/mir/rvalues.rs",
     find: "                    return Err(self.unlowered_future_awaited(future, span));\n",
     replace: "                    let _ = future;\n",
@@ -340,15 +466,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dyn-double-ended-made-forgetting-its-back",
-    breaks: "a range made a `dyn DoubleEndedIterator` is a JS iterator with no back",
+    breaks:
+      "a range made a `dyn DoubleEndedIterator` is a JS iterator with no back",
     file: "src/lower/mir/rvalues.rs",
     find: "                                true => self.as_double_ended(value, iterator, span)?,\n",
-    replace: "                                true => self.as_js_iterator(value, iterator, span)?,\n",
+    replace:
+      "                                true => self.as_js_iterator(value, iterator, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
   },
   {
     name: "reborrowed-cell-place-unkept",
-    breaks: "a reborrow of a cell a place holds, `&mut **u`, is a new handle on its `value`, not the cell, `return o.value`",
+    breaks:
+      "a reborrow of a cell a place holds, `&mut **u`, is a new handle on its `value`, not the cell, `return o.value`",
     file: "src/lower/mir/rvalues.rs",
     find: "                        self.locals.mir.cells.push((**cell).clone());\n",
     replace: "",
@@ -357,7 +486,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "raw-pointer-unsized-as-handle",
-    breaks: "a raw pointer unsized to a `dyn` is a pair of the handle, not of its place's value",
+    breaks:
+      "a raw pointer unsized to a `dyn` is a pair of the handle, not of its place's value",
     file: "src/lower/mir/rvalues.rs",
     find: "                            let place = match self.has_no_place(self.pointee(from)) {\n                                true => Expr::undefined(),\n                                false => self.pointee_place(value),\n                            };\n",
     replace: "                            let place = value;\n",
@@ -365,26 +495,32 @@ export const mutations: Mutation[] = [
   },
   {
     name: "clone-steps-afresh",
-    breaks: "a compiled std iterator's `Clone`, which has no `I: Iterator`, makes its struct's `next` of its own dictionaries, which it hasn't, and is refused",
+    breaks:
+      "a compiled std iterator's `Clone`, which has no `I: Iterator`, makes its struct's `next` of its own dictionaries, which it hasn't, and is refused",
     file: "src/lower/mir/rvalues.rs",
-    find: "                        true => Expr::member(Expr::var(&state.locals.names[Local::from_u32(1)]), \"$steps\"),\n",
-    replace: "                        true => self.std_iterator_steps(ty, span)?,\n",
+    find: '                        true => Expr::member(Expr::var(&state.locals.names[Local::from_u32(1)]), "$steps"),\n',
+    replace:
+      "                        true => self.std_iterator_steps(ty, span)?,\n",
     tests: ["test/std-package.test.ts"],
   },
   {
     name: "discriminant-compared-as-a-value",
-    breaks: "an inlined `is_some()`'s discriminant compared with a variant's, in a std body, is read as a value, not as the variant's test",
+    breaks:
+      "an inlined `is_some()`'s discriminant compared with a variant's, in a std body, is read as a value, not as the variant's test",
     file: "src/lower/mir/rvalues.rs",
     find: "                if let BinOp::Eq | BinOp::Ne = op\n",
-    replace: "                if let BinOp::Eq | BinOp::Ne = op\n                    && false\n",
+    replace:
+      "                if let BinOp::Eq | BinOp::Ne = op\n                    && false\n",
     tests: ["test/std-package.test.ts"],
   },
   {
     name: "dyn-field-through-wrapper",
-    breaks: "a borrow of a struct's `ManuallyDrop<dyn T>` last field isn't its value and the struct's `impl`",
+    breaks:
+      "a borrow of a struct's `ManuallyDrop<dyn T>` last field isn't its value and the struct's `impl`",
     file: "src/lower/mir/rvalues.rs",
     find: "                    && matches!(self.unwrapped(place.ty(decls, tcx).ty).kind(), ty::Dynamic(..))\n",
-    replace: "                    && matches!(place.ty(decls, tcx).ty.kind(), ty::Dynamic(..))\n",
+    replace:
+      "                    && matches!(place.ty(decls, tcx).ty.kind(), ty::Dynamic(..))\n",
     tests: ["test/corpus.test.ts", "-t", "manually_drop_unsized"],
   },
   {
@@ -397,15 +533,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "slice-pointer-cast-numeric",
-    breaks: "a cast of a slice's raw pointer is taken for a number's, and refused",
+    breaks:
+      "a cast of a slice's raw pointer is taken for a number's, and refused",
     file: "src/lower/mir/rvalues.rs",
     find: "                if crate::lower::pointers::raw_pointee(tcx, operand.ty(decls, tcx)).is_some()\n                    || crate::lower::pointers::raw_pointee(tcx, *to).is_some() =>\n",
-    replace: "                if self.is_handle_pointer(operand.ty(decls, tcx)) || self.is_handle_pointer(*to) =>\n",
+    replace:
+      "                if self.is_handle_pointer(operand.ty(decls, tcx)) || self.is_handle_pointer(*to) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^uninit_slice_cast.rs$"],
   },
   {
     name: "std-struct-not-a-js-iterator",
-    breaks: "a compiled std iterator's struct, `Peekable { iter, peeked }`, is made with no `next` of its own, so stepping it as the JS iterator it is fails",
+    breaks:
+      "a compiled std iterator's struct, `Peekable { iter, peeked }`, is made with no `next` of its own, so stepping it as the JS iterator it is fails",
     file: "src/lower/mir/rvalues.rs",
     find: "                    && (cloning || crate::lower::recognition::std_struct_steps_in(self.tcx, self.typing_env, ty))\n",
     replace: "                    && false\n",
@@ -413,15 +552,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "ptr-eq-by-identity",
-    breaks: "`p == q` of raw pointers is `===`, so two pointers with no place at one address differ",
+    breaks:
+      "`p == q` of raw pointers is `===`, so two pointers with no place at one address differ",
     file: "src/lower/mir/rvalues.rs",
     find: "                if self.compared_by_address(ty)\n                    && let Some((pointee, _)) = crate::lower::pointers::raw_pointee(tcx, ty)\n                {\n                    let same",
-    replace: "                if false\n                    && let Some((pointee, _)) = crate::lower::pointers::raw_pointee(tcx, ty)\n                {\n                    let same",
+    replace:
+      "                if false\n                    && let Some((pointee, _)) = crate::lower::pointers::raw_pointee(tcx, ty)\n                {\n                    let same",
     tests: ["test/corpus.test.ts", "-t", "^pointer_addresses.rs$"],
   },
   {
     name: "pointer-of-slot-reference-slot",
-    breaks: "a pointer to what a reference read from a slot refers to is a handle on that slot, `$ptr(refs, 0)`, not on the object, so `ptr::eq` of it and the object's own slot is false",
+    breaks:
+      "a pointer to what a reference read from a slot refers to is a handle on that slot, `$ptr(refs, 0)`, not on the object, so `ptr::eq` of it and the object's own slot is false",
     file: "src/lower/mir/rvalues.rs",
     find: "                    && !base.projection.is_empty()\n",
     replace: "                    && false\n",
@@ -429,23 +571,32 @@ export const mutations: Mutation[] = [
   },
   {
     name: "registered-read-some-unknown",
-    breaks: "a value read as the registry's symbol, only tested against them, is tested for its `Some`, `if (ty != null) { switch (ty) { .. } }`",
+    breaks:
+      "a value read as the registry's symbol, only tested against them, is tested for its `Some`, `if (ty != null) { switch (ty) { .. } }`",
     file: "src/lower/mir/rvalues.rs",
     find: "                if place.projection.is_empty() && state.facts.options().registered.contains(&place.local) =>\n",
-    replace: "                if place.projection.is_empty() && state.facts.options().registered.contains(&place.local) && false =>\n",
-    tests: ["test/lowering-symbols.test.ts", "-t", "a match of the registry's symbols"],
+    replace:
+      "                if place.projection.is_empty() && state.facts.options().registered.contains(&place.local) && false =>\n",
+    tests: [
+      "test/lowering-symbols.test.ts",
+      "-t",
+      "a match of the registry's symbols",
+    ],
   },
   {
     name: "place-stepped-in-bytes",
-    breaks: "a place in units stepped past a literal by its length in bytes, `at + 2` past an `é`, one unit",
+    breaks:
+      "a place in units stepped past a literal by its length in bytes, `at + 2` past an `é`, one unit",
     file: "src/lower/mir/rvalues.rs",
     find: "                            (Operand::Constant(_), Some(units)) => Expr::int(units as i128),",
-    replace: "                            (Operand::Constant(_), Some(_)) => self.value_expr(part, span)?,",
+    replace:
+      "                            (Operand::Constant(_), Some(_)) => self.value_expr(part, span)?,",
     tests: ["test/lowering-string-places.test.ts", "-t", "stepped past"],
   },
   {
     name: "dyn-iterator-as-made",
-    breaks: "a `dyn Iterator` of the crate's iterator keeps its own `fold`, which std's `Box` doesn't give it",
+    breaks:
+      "a `dyn Iterator` of the crate's iterator keeps its own `fold`, which std's `Box` doesn't give it",
     file: "src/lower/mir/rvalues.rs",
     find: "                            return Ok(Value::Expr(crate::lower::iterators::behind_a_dyn(it)));\n",
     replace: "                            return Ok(Value::Expr(it));\n",
@@ -453,7 +604,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dyn-debug-pair-unheld",
-    breaks: "a pair upcast to a dyn Debug where it's made by a call is held once",
+    breaks:
+      "a pair upcast to a dyn Debug where it's made by a call is held once",
     file: "src/lower/mir/rvalues.rs",
     find: "                            let value = match self.is_pair_dyn(from) && !value.parts_read_same() {",
     replace: "                            let value = match false {",
@@ -461,15 +613,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "thrown-tested-none",
-    breaks: "a downcast of an unwind's payload to `&JsError` is `None` where what was thrown is falsy",
+    breaks:
+      "a downcast of an unwind's payload to `&JsError` is `None` where what was thrown is falsy",
     file: "src/lower/mir/rvalues.rs",
     find: "                    && let Some(&discriminant) = state.facts.options().thrown.get(&place.local) =>\n",
-    replace: "                    && let Some(&discriminant) = state.facts.options().thrown.get(&place.local).filter(|_| false) =>\n",
+    replace:
+      "                    && let Some(&discriminant) = state.facts.options().thrown.get(&place.local).filter(|_| false) =>\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
   },
   {
     name: "cell-handle-place-reread",
-    breaks: "a handle on `get(&c).value` calls `get` each time it's read or written",
+    breaks:
+      "a handle on `get(&c).value` calls `get` each time it's read or written",
     file: "src/lower/mir/rvalues.rs",
     find: "                    && !fixed_place(on)\n",
     replace: "                    && false\n",
@@ -477,7 +632,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cell-read-before-written-held",
-    breaks: "a `Cell` read by `get` through a reference set again after, `node.s.get()` in a loop that moves `node` on, is `const node$1 = node; node$1.s`, not `node.s`",
+    breaks:
+      "a `Cell` read by `get` through a reference set again after, `node.s.get()` in a loop that moves `node` on, is `const node$1 = node; node$1.s`, not `node.s`",
     file: "src/lower/mir/rvalues.rs",
     find: "                    && !(self.is_std_type(pointee, StdItem::Cell)\n",
     replace: "                    && !(false\n",
@@ -486,63 +642,95 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cell-kept-by-any-call",
-    breaks: "a `Cell` given to a function that keeps it, `hold(&node.v)`, then `node = a`, reads `a`'s, not the node it was made of",
+    breaks:
+      "a `Cell` given to a function that keeps it, `hold(&node.v)`, then `node = a`, reads `a`'s, not the node it was made of",
     file: "src/lower/mir/rvalues.rs",
     find: "            && matches!(\n                self.recognition().classify(def_id, generic_args),\n",
-    replace: "            && !matches!(\n                self.recognition().classify(def_id, generic_args),\n",
+    replace:
+      "            && !matches!(\n                self.recognition().classify(def_id, generic_args),\n",
     tests: ["test/corpus.test.ts", "-t", "^given_last_unwinds.rs$"],
   },
   {
     name: "written-none-of-two-writes",
-    breaks: "a temporary written `Some(..)` or `None`, `S { title: if c { Some(t) } else { None } }`'s, is taken for the literal's `None`: left out where it's `Some` (ADR 0810, amended)",
+    breaks:
+      "a temporary written `Some(..)` or `None`, `S { title: if c { Some(t) } else { None } }`'s, is taken for the literal's `None`: left out where it's `Some` (ADR 0810, amended)",
     file: "src/lower/mir/rvalues.rs",
     find: "        if !place.projection.is_empty() || locals.writes[place.local] != 1 {\n",
     replace: "        if !place.projection.is_empty() {\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "an optional nullable field"],
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "an optional nullable field",
+    ],
   },
   {
     name: "written-none-cell-unasked",
-    breaks: "an optional nullable field's `Cell::new(None)`, a temporary MIR makes where it has drop glue, isn't the literal's `None`, so it's there, `queue: null`, not left out (ADR 0810, amended)",
+    breaks:
+      "an optional nullable field's `Cell::new(None)`, a temporary MIR makes where it has drop glue, isn't the literal's `None`, so it's there, `queue: null`, not left out (ADR 0810, amended)",
     file: "src/lower/mir/rvalues.rs",
     find: "                }) && matches!(&args[..], [arg] if self.written_none(body, locals, &arg.node));\n",
     replace: "                }) && false;\n",
-    tests: ["test/lowering-nullable-constants.test.ts", "-t", "an optional nullable Cell of what drops is left out where it's made"],
+    tests: [
+      "test/lowering-nullable-constants.test.ts",
+      "-t",
+      "an optional nullable Cell of what drops is left out where it's made",
+    ],
   },
   {
     name: "inlined-closure-identity-captures",
-    breaks: "a closure std's MIR inlines, `map_fold`'s in `Map`'s `rfold`, drops what it took by its maker's type parameters, `F` by the `rfold`'s `Acc`",
+    breaks:
+      "a closure std's MIR inlines, `map_fold`'s in `Map`'s `rfold`, drops what it took by its maker's type parameters, `F` by the `rfold`'s `Acc`",
     file: "src/lower/mir/rvalues.rs",
     find: "                let ty = ty::Ty::new_closure(self.tcx, *def_id, args);\n",
-    replace: "                let ty = self.tcx.type_of(*def_id).instantiate_identity().skip_normalization();\n",
+    replace:
+      "                let ty = self.tcx.type_of(*def_id).instantiate_identity().skip_normalization();\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std"],
   },
   {
     name: "math-pointer-arrow",
-    breaks: "`u32::leading_zeros` taken as a `fn` is the arrow of its call, `(n) => Math.clz32(n)`, not `Math.clz32`, which the program's polyfill captures",
+    breaks:
+      "`u32::leading_zeros` taken as a `fn` is the arrow of its call, `(n) => Math.clz32(n)`, not `Math.clz32`, which the program's polyfill captures",
     file: "src/lower/mir/rvalues.rs",
     find: "                            && let Some(function) = self.math_function(def_id, args)\n                        {\n                            return Ok(Value::Expr(function));\n",
-    replace: "                            && let Some(function) = self.math_function(def_id, args).filter(|_| false)\n                        {\n                            return Ok(Value::Expr(function));\n",
-    tests: ["test/lowering-math.test.ts", "-t", "a std function that's Math's is its function, and is_defined asks of it"],
+    replace:
+      "                            && let Some(function) = self.math_function(def_id, args).filter(|_| false)\n                        {\n                            return Ok(Value::Expr(function));\n",
+    tests: [
+      "test/lowering-math.test.ts",
+      "-t",
+      "a std function that's Math's is its function, and is_defined asks of it",
+    ],
   },
   {
     name: "from-fn-a-tuple",
-    breaks: "`FromFn(f)` inlined into std's `StepBy::fold` is a one-item array, not the `$fromFn(f)` iterator `iter::from_fn` makes, so a held `step_by()` throws folding (ADR 0917)",
+    breaks:
+      "`FromFn(f)` inlined into std's `StepBy::fold` is a one-item array, not the `$fromFn(f)` iterator `iter::from_fn` makes, so a held `step_by()` throws folding (ADR 0917)",
     file: "src/lower/mir/rvalues.rs",
     find: "                if crate::lower::recognition::is_from_fn(self.tcx, ty)\n",
-    replace: "                if false && crate::lower::recognition::is_from_fn(self.tcx, ty)\n",
-    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+    replace:
+      "                if false && crate::lower::recognition::is_from_fn(self.tcx, ty)\n",
+    tests: [
+      "test/std-package.test.ts",
+      "-t",
+      "the committed @rust-js/std is std's bodies",
+    ],
   },
   {
     name: "own-nullable-param-maybe-undefined",
-    breaks: "a `#[rust_js::nullable(..)]` parameter given on is `nearest ?? null`, though it's `Fiber | null` as declared (ADR 0861, amended)",
+    breaks:
+      "a `#[rust_js::nullable(..)]` parameter given on is `nearest ?? null`, though it's `Fiber | null` as declared (ADR 0861, amended)",
     file: "src/lower/mir/rvalues.rs",
     find: "        if self.own_nullable_param(state, place) {\n            return Given::Nulled;\n        }\n",
     replace: "",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable parameter, a nullable thread-local"],
+    tests: [
+      "test/lowering-nullable-reads.test.ts",
+      "-t",
+      "a nullable parameter, a nullable thread-local",
+    ],
   },
   {
     name: "stored-given-of-a-parameter",
-    breaks: "what a parameter assigned once stores is asked of that assignment alone, though it holds its caller's value too, and `x = x;` is followed forever: the compiler's stack overflows (rustc's nll/issue-50461-used-mut-from-moves)",
+    breaks:
+      "what a parameter assigned once stores is asked of that assignment alone, though it holds its caller's value too, and `x = x;` is followed forever: the compiler's stack overflows (rustc's nll/issue-50461-used-mut-from-moves)",
     file: "src/lower/mir/rvalues.rs",
     find: "        if place.local.as_usize() <= state.body.arg_count || state.locals.writes[place.local] != 1 {\n",
     replace: "        if state.locals.writes[place.local] != 1 {\n",
@@ -550,31 +738,41 @@ export const mutations: Mutation[] = [
   },
   {
     name: "closure-fn-pointer-kept-arrow",
-    breaks: "a closure as a `fn` that only calls the crate's function is an arrow of it, React's `ContextOnlyDispatcher`'s `useCallback() { throwInvalidHookError(); }` (ADR 0605, amended)",
+    breaks:
+      "a closure as a `fn` that only calls the crate's function is an arrow of it, React's `ContextOnlyDispatcher`'s `useCallback() { throwInvalidHookError(); }` (ADR 0605, amended)",
     file: "src/lower/mir/rvalues.rs",
     find: "                        if matches!(coercion, PointerCoercion::ClosureFnPointer(_))\n",
     replace: "                        if false\n",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "a closure as a fn that only calls"],
+    tests: [
+      "test/lowering-passed-on.test.ts",
+      "-t",
+      "a closure as a fn that only calls",
+    ],
   },
   {
     name: "cell-new-of-some-unknown",
-    breaks: "a `Cell::new(Some(reducer))` of a nullable field is taken to maybe be `undefined`, `lastRenderedReducer: reducer ?? null` (ADR 0841, amended)",
+    breaks:
+      "a `Cell::new(Some(reducer))` of a nullable field is taken to maybe be `undefined`, `lastRenderedReducer: reducer ?? null` (ADR 0841, amended)",
     file: "src/lower/mir/rvalues.rs",
     find: "            return self.stored_given(state, &arg.node);\n        }\n        if itself\n",
-    replace: "            return Given::Unknown;\n        }\n        if itself\n",
+    replace:
+      "            return Given::Unknown;\n        }\n        if itself\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "stored as they are"],
   },
   {
     name: "owned-dyn-closure-passed-on",
-    breaks: "a closure an `Rc` owns as a `dyn Fn` is the function it adapts, so two `Rc`s of two closures are `Rc::ptr_eq` (ADR 0605, amended)",
+    breaks:
+      "a closure an `Rc` owns as a `dyn Fn` is the function it adapts, so two `Rc`s of two closures are `Rc::ptr_eq` (ADR 0605, amended)",
     file: "src/lower/mir/rvalues.rs",
     find: "                        if from.is_ref()\n                            && matches!(self.pointee(from).kind(), ty::Closure(..))\n",
-    replace: "                        if true\n                            && matches!(self.pointee(from).kind(), ty::Closure(..))\n",
+    replace:
+      "                        if true\n                            && matches!(self.pointee(from).kind(), ty::Closure(..))\n",
     tests: ["test/lowering-passed-on.test.ts", "-t", "lent as a dyn Fn"],
   },
   {
     name: "lent-dyn-closure-kept-arrow",
-    breaks: "a closure lent as a `&dyn Fn` that only adapts the crate's function stays an arrow, a new component each render (ADR 0605, amended)",
+    breaks:
+      "a closure lent as a `&dyn Fn` that only adapts the crate's function stays an arrow, a new component each render (ADR 0605, amended)",
     file: "src/lower/mir/rvalues.rs",
     find: "                            && matches!(self.pointee(from).kind(), ty::Closure(..))\n",
     replace: "                            && false\n",
@@ -582,15 +780,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "optional-cell-get-unknown",
-    breaks: "an optional nullable cell field's `get()` given another is `?? null`, `d._debugThenableState ?? null` (ADR 0810, amended)",
+    breaks:
+      "an optional nullable cell field's `get()` given another is `?? null`, `d._debugThenableState ?? null` (ADR 0810, amended)",
     file: "src/lower/mir/rvalues.rs",
     find: "            && self.recognition().classify(def_id, generic_args) == Some(crate::lower::Std::CellGet)\n",
-    replace: "            && self.recognition().classify(def_id, generic_args) == Some(crate::lower::Std::CellGet) && false\n",
-    tests: ["test/lowering-optional-fields.test.ts", "-t", "optional nullable cell field given"],
+    replace:
+      "            && self.recognition().classify(def_id, generic_args) == Some(crate::lower::Std::CellGet) && false\n",
+    tests: [
+      "test/lowering-optional-fields.test.ts",
+      "-t",
+      "optional nullable cell field given",
+    ],
   },
   {
     name: "nullable-field-taken-undefined",
-    breaks: "a `#[rust_js::nullable]` field taken, `root.pending.take()`, is left `undefined`, not its `None`, `null`",
+    breaks:
+      "a `#[rust_js::nullable]` field taken, `root.pending.take()`, is left `undefined`, not its `None`, `null`",
     file: "src/lower/mir/rvalues.rs",
     find: "            || (self.place_field(state, item)).is_some_and(|field| bindings::is_nullable(self.tcx, field))\n",
     replace: "",
@@ -598,31 +803,38 @@ export const mutations: Mutation[] = [
   },
   {
     name: "nullable-reborrow-unfollowed",
-    breaks: "`mem::take(&mut root.pending)`, whose MIR reborrows the field, leaves a nullable field `undefined`",
+    breaks:
+      "`mem::take(&mut root.pending)`, whose MIR reborrows the field, leaves a nullable field `undefined`",
     file: "src/lower/mir/rvalues.rs",
     find: "                (None, [PlaceElem::Deref]) => match reborrowed(Place::from(item.local)) {\n",
-    replace: "                (None, [PlaceElem::Deref]) if false => match reborrowed(Place::from(item.local)) {\n",
+    replace:
+      "                (None, [PlaceElem::Deref]) if false => match reborrowed(Place::from(item.local)) {\n",
     tests: ["test/lowering-takes.test.ts", "-t", "an Option taken then tested"],
   },
   {
     name: "identity-map-stored-unknown",
-    breaks: "a nullable parameter's `map(js::unknown)`, its own value, is stored `?? null`, not as given, `this.target = nativeEventTarget;` (rd94)",
+    breaks:
+      "a nullable parameter's `map(js::unknown)`, its own value, is stored `?? null`, not as given, `this.target = nativeEventTarget;` (rd94)",
     file: "src/lower/mir/rvalues.rs",
     find: "            && self.recognition().classify(def_id, generic_args) == Some(crate::lower::Std::OptionMap)\n",
-    replace: "            && self.recognition().classify(def_id, generic_args) == Some(crate::lower::Std::OptionMap) && false\n",
+    replace:
+      "            && self.recognition().classify(def_id, generic_args) == Some(crate::lower::Std::OptionMap) && false\n",
     tests: ["test/js-constructors.test.ts", "-t", "identity map"],
   },
   {
     name: "nested-option-test-loose",
-    breaks: "a held `Option` of an `Option` is tested `!= null`, so its `Some(None)`, `null`, is `None` (ADR 1017)",
+    breaks:
+      "a held `Option` of an `Option` is tested `!= null`, so its `Some(None)`, `null`, is `None` (ADR 1017)",
     file: "src/lower/mir/rvalues.rs",
     find: "                return Ok(Value::Tested(Expr::bin(Op::Ne, held, Expr::undefined())));\n",
-    replace: "                return Ok(Value::Tested(Expr::bin(Op::LooseNe, held, Expr::null())));\n",
+    replace:
+      "                return Ok(Value::Tested(Expr::bin(Op::LooseNe, held, Expr::null())));\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
   },
   {
     name: "shared-ref-given-unknown",
-    breaks: "a shared reference to a nullable field is read as of what may be `undefined`, `previousInstance = instance ?? null` (ADR 1017)",
+    breaks:
+      "a shared reference to a nullable field is read as of what may be `undefined`, `previousInstance = instance ?? null` (ADR 1017)",
     file: "src/lower/mir/rvalues.rs",
     find: "            Some(Rvalue::Ref(_, BorrowKind::Shared, of)) => self.stored_given(state, &Operand::Copy(*of)),\n",
     replace: "",
@@ -631,7 +843,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "reborrow-given-unknown",
-    breaks: "a reborrow of a reference to a nullable field, `&*instance`, is read as of what may be `undefined` (ADR 1017)",
+    breaks:
+      "a reborrow of a reference to a nullable field, `&*instance`, is read as of what may be `undefined` (ADR 1017)",
     file: "src/lower/mir/rvalues.rs",
     find: "            return self.stored_given(state, &Operand::Copy(Place::from(place.local)));\n",
     replace: "            return Given::Unknown;\n",
@@ -640,27 +853,40 @@ export const mutations: Mutation[] = [
   },
   {
     name: "reborrow-argument-unplaced",
-    breaks: "an argument given by reference, `&*form`, has no place in the source map, so a block comment before it is printed after it, `.r(form /* requestFormReset */)` (rd205)",
+    breaks:
+      "an argument given by reference, `&*form`, has no place in the source map, so a block comment before it is printed after it, `.r(form /* requestFormReset */)` (rd205)",
     file: "src/lower/mir/rvalues.rs",
     find: "                            match reborrow && given_to_call(state) {\n",
-    replace: "                            match reborrow && false && given_to_call(state) {\n",
-    tests: ["test/lowering-comments-inside.test.ts", "-t", "argument given by reference"],
+    replace:
+      "                            match reborrow && false && given_to_call(state) {\n",
+    tests: [
+      "test/lowering-comments-inside.test.ts",
+      "-t",
+      "argument given by reference",
+    ],
   },
   {
     name: "binding-lent-as-dyn-arrow",
-    breaks: "a binding's function lent as a `&dyn Fn` is a new arrow each time, `() => defaultIndicator()`, so React's registerDefaultIndicator sees another indicator per root (rd289)",
+    breaks:
+      "a binding's function lent as a `&dyn Fn` is a new arrow each time, `() => defaultIndicator()`, so React's registerDefaultIndicator sees another indicator per root (rd289)",
     file: "src/lower/mir/rvalues.rs",
     find: "                            && bindings::is_binding(self.tcx, def_id)\n",
-    replace: "                            && bindings::is_binding(self.tcx, def_id) && false\n",
+    replace:
+      "                            && bindings::is_binding(self.tcx, def_id) && false\n",
     tests: ["test/js-functions.test.ts", "-t", "lent as a dyn Fn"],
   },
   {
     name: "constant-pattern-test-constant-first",
-    breaks: "a float's constant pattern, tested by MIR constant first, reads `1 === a`, not `a === 1`",
+    breaks:
+      "a float's constant pattern, tested by MIR constant first, reads `1 === a`, not `a === 1`",
     file: "src/lower/mir/rvalues.rs",
     find: "                    BinOp::Eq | BinOp::Ne => Some(*op),\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(default_value_exits|presence_said_by_chain).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(default_value_exits|presence_said_by_chain).rs$",
+    ],
     snapshots: true,
   },
 ];

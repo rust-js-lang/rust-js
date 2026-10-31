@@ -4,34 +4,41 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "let-else-present-index-unknown",
-    breaks: "past `let Some(&n) = counts.get(i) else { break };` the index isn't known below a length, so `i += 1` wraps, `i = (i + 1) >>> 0`, where a `while let`'s is `i++` (ADR 0881)",
+    breaks:
+      "past `let Some(&n) = counts.get(i) else { break };` the index isn't known below a length, so `i += 1` wraps, `i = (i + 1) >>> 0`, where a `while let`'s is `i++` (ADR 0881)",
     file: "src/lower/body_queries/ranges.rs",
     find: "                    if let Some(init) = initializer\n                        && present::some_pattern(self.tcx, pattern)\n",
-    replace: "                    if let Some(init) = initializer\n                        && false\n",
+    replace:
+      "                    if let Some(init) = initializer\n                        && false\n",
     tests: ["test/corpus.test.ts", "-t", "^present_index_counts.rs$"],
     snapshots: true,
   },
   {
     name: "insert-index-below-length",
-    breaks: "an `insert` at the length, `targets.insert(n, 9)` of `n = targets.len()`, is checked, `$insertAt`, as if it had to be below it (rd103)",
+    breaks:
+      "an `insert` at the length, `targets.insert(n, 9)` of `n = targets.len()`, is checked, `$insertAt`, as if it had to be below it (rd103)",
     file: "src/lower/body_queries/ranges.rs",
     find: "                && ((index.below.as_ref()).is_some_and(|(s, b)| k.same_length(s, &slice) && b.up_to())\n",
-    replace: "                && ((index.below.as_ref()).is_some_and(|(s, b)| k.same_length(s, &slice) && b.within())\n",
+    replace:
+      "                && ((index.below.as_ref()).is_some_and(|(s, b)| k.same_length(s, &slice) && b.within())\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_remove_insert_in_bounds.rs$"],
     snapshots: true,
   },
   {
     name: "insert-index-past-least",
-    breaks: "an `insert` past what the test shows of the length is taken in bounds, `splice` where `$insertAt` panics as Rust's does",
+    breaks:
+      "an `insert` past what the test shows of the length is taken in bounds, `splice` where `$insertAt` panics as Rust's does",
     file: "src/lower/body_queries/ranges.rs",
     find: "                    || k.lengths.get(&slice).is_some_and(|&least| index.hi <= least))\n",
-    replace: "                    || k.lengths.get(&slice).is_some_and(|&least| index.hi <= least + 9))\n",
+    replace:
+      "                    || k.lengths.get(&slice).is_some_and(|&least| index.hi <= least + 9))\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_remove_insert_in_bounds.rs$"],
     snapshots: true,
   },
   {
     name: "rev-for-unranged",
-    breaks: "`for i in (0..v.len()).rev()` gives `i` no range, so `v[i]` is `$index(v, i)` (#356)",
+    breaks:
+      "`for i in (0..v.len()).rev()` gives `i` no range, so `v[i]` is `$index(v, i)` (#356)",
     file: "src/lower/body_queries/ranges.rs",
     find: "            && is_iterator_rev(self.tcx, def_id)\n",
     replace: "            && !is_iterator_rev(self.tcx, def_id)\n",
@@ -39,7 +46,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "inclusive-for-unranged",
-    breaks: "`for k in 1..=n` gives `k` no range, so `k - 1` keeps its wrap (#337)",
+    breaks:
+      "`for k in 1..=n` gives `k` no range, so `k - 1` keeps its wrap (#337)",
     file: "src/lower/body_queries/ranges.rs",
     find: "                Some((start, end, 0))\n",
     replace: "                None\n",
@@ -47,7 +55,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "inclusive-for-past-its-end",
-    breaks: "`for k in 1..=n` is taken to reach `n + 1`, so `n - k` keeps its wrap",
+    breaks:
+      "`for k in 1..=n` is taken to reach `n + 1`, so `n - k` keeps its wrap",
     file: "src/lower/body_queries/ranges.rs",
     find: "                Some((start, end, 0))\n",
     replace: "                Some((start, end, -1))\n",
@@ -55,23 +64,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "value-difference-unbounded",
-    breaks: "`n - k` of a `k < n` isn't known at least 1, so `n - k - 1` keeps its wrap",
+    breaks:
+      "`n - k` of a `k < n` isn't known at least 1, so `n - k - 1` keeps its wrap",
     file: "src/lower/body_queries/ranges.rs",
     find: "                    (Some(n), Some((base, x))) if base == n && x.c == 1 && x.s == 0 => -x.b,\n",
-    replace: "                    (Some(n), Some((base, x))) if base == n && x.c == 1 && x.s == 0 => i128::MIN,\n",
+    replace:
+      "                    (Some(n), Some((base, x))) if base == n && x.c == 1 && x.s == 0 => i128::MIN,\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "another's value"],
   },
   {
     name: "value-difference-past-bound",
-    breaks: "`n - k` of a `k ≤ n + 1` is taken as at least 0, so `n - k` of `k = n + 1` is -1, not `u32::MAX`",
+    breaks:
+      "`n - k` of a `k ≤ n + 1` is taken as at least 0, so `n - k` of `k = n + 1` is -1, not `u32::MAX`",
     file: "src/lower/body_queries/ranges.rs",
     find: "                    (Some(n), Some((base, x))) if base == n && x.c == 1 && x.s == 0 => -x.b,\n",
-    replace: "                    (Some(n), Some((base, x))) if base == n && x.c == 1 && x.s == 0 => 0,\n",
+    replace:
+      "                    (Some(n), Some((base, x))) if base == n && x.c == 1 && x.s == 0 => 0,\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "another's value"],
   },
   {
     name: "value-wrapped-sum-forgets",
-    breaks: "`line + 1`, which may wrap, isn't known at most `line + 1`, so `line - k + 1` of a `k < size` keeps its wraps",
+    breaks:
+      "`line + 1`, which may wrap, isn't known at most `line + 1`, so `line - k + 1` of a `k < size` keeps its wraps",
     file: "src/lower/body_queries/ranges.rs",
     find: "            (None, Some(made)) if op == BinOp::Add && (l.lo >= 0 || r.lo >= 0) => Range {\n",
     replace: "            (None, Some(made)) if false => Range {\n",
@@ -79,7 +93,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "value-assigned-keeps-own-bound",
-    breaks: "`n -= 1` keeps `n ≤ n - 1`, its bound by the `n` it was, so `k < n` puts `k` two below `n` and `n - k - 1 - 1` doesn't wrap where it should",
+    breaks:
+      "`n -= 1` keeps `n ≤ n - 1`, its bound by the `n` it was, so `k < n` puts `k` two below `n` and `n - k - 1 - 1` doesn't wrap where it should",
     file: "src/lower/body_queries/ranges.rs",
     find: "                if value.below.as_ref().is_some_and(|((_, v), _)| *v == var) {\n",
     replace: "                if false {\n",
@@ -87,7 +102,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "value-range-end-unbounded",
-    breaks: "`for k in 0..n` doesn't put `k` below `n`, so `n - k - 1` keeps its wrap",
+    breaks:
+      "`for k in 0..n` doesn't put `k` below `n`, so `n - k - 1` keeps its wrap",
     file: "src/lower/body_queries/ranges.rs",
     find: "                let end = end.map(|r| self.bounded_by_itself(r, end_at));\n",
     replace: "",
@@ -95,7 +111,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "call-keeps-cells",
-    breaks: "a call between a loop's test and `queue.borrow()[i]`, which may empty the queue, leaves its length known, and the index read unchecked",
+    breaks:
+      "a call between a loop's test and `queue.borrow()[i]`, which may empty the queue, leaves its length known, and the index read unchecked",
     file: "src/lower/body_queries/ranges.rs",
     find: "        if !views && let Some(k) = known.as_mut() {\n",
     replace: "        if false && !views && let Some(k) = known.as_mut() {\n",
@@ -103,7 +120,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "assign-drop-keeps-cells",
-    breaks: "`slots.borrow_mut()[0] = other`, whose old value's drop empties the queue, leaves the queue's length known, and `queue.borrow()[0]` read unchecked",
+    breaks:
+      "`slots.borrow_mut()[0] = other`, whose old value's drop empties the queue, leaves the queue's length known, and `queue.borrow()[0]` read unchecked",
     file: "src/lower/body_queries/ranges.rs",
     find: "                    && cells::drop_may_change_cells(self.tcx, self.typing_env, thir[lhs].ty)\n",
     replace: "                    && false\n",
@@ -111,7 +129,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "held-test-of-a-cell",
-    breaks: "`let there = !queue.borrow().is_empty();` is held past a call that empties the queue, and `queue.borrow()[0]` read unchecked",
+    breaks:
+      "`let there = !queue.borrow().is_empty();` is held past a call that empties the queue, and `queue.borrow()[0]` read unchecked",
     file: "src/lower/body_queries/ranges.rs",
     find: "        if reads_a_cell(self.tcx, thir, test) {\n",
     replace: "        if false && reads_a_cell(self.tcx, thir, test) {\n",
@@ -119,7 +138,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "drain-range-unjudged",
-    breaks: "`queue.drain(0..i)` below the loop's `i < queue.len()` is `$drain(queue, 0, i)`, not React's `queue.splice(0, i)`",
+    breaks:
+      "`queue.drain(0..i)` below the loop's `i < queue.len()` is `$drain(queue, 0, i)`, not React's `queue.splice(0, i)`",
     file: "src/lower/body_queries/ranges.rs",
     find: "            Some((SliceLength::Range | SliceLength::Drain, items)) => {\n",
     replace: "            Some((SliceLength::Range, items)) => {\n",
@@ -128,95 +148,156 @@ export const mutations: Mutation[] = [
   },
   {
     name: "labeled-block-not-a-target",
-    breaks: "a labeled block's `break 'desc` is a jump the walk can't follow, so nothing its body's ranges show holds, and `indent + 1` of `indent < 3` is `(indent + 1) >>> 0`",
+    breaks:
+      "a labeled block's `break 'desc` is a jump the walk can't follow, so nothing its body's ranges show holds, and `indent + 1` of `indent < 3` is `(indent + 1) >>> 0`",
     file: "src/lower/body_queries/ranges.rs",
     find: "        if !block.targeted_by_break {\n            return walk(self, known);\n",
     replace: "        if true {\n            return walk(self, known);\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a labeled block and a named constant"],
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a labeled block and a named constant",
+    ],
   },
   {
     name: "labeled-block-breaks-unjoined",
-    breaks: "what a `break` knows doesn't go past the scope it leaves, a labeled block's, so after one of `indent >= 3`, `indent + 1` is taken as below 3's, unwrapped, and 4294967295's is 4294967296",
+    breaks:
+      "what a `break` knows doesn't go past the scope it leaves, a labeled block's, so after one of `indent >= 3`, `indent + 1` is taken as below 3's, unwrapped, and 4294967295's is 4294967296",
     file: "src/lower/body_queries/ranges.rs",
     find: "            Some(broken) => {\n                *known = either(known.take(), Some(broken));\n                top\n            }\n",
     replace: "            Some(_) => top,\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a labeled block and a named constant"],
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a labeled block and a named constant",
+    ],
   },
   {
     name: "named-constant-unknown",
-    breaks: "a `const` of an integer is any value its type holds, so a counter tested `> LIMIT` adds one with a wrap, `(seen + 1) >>> 0`, where one tested `> 100` is `seen++`",
+    breaks:
+      "a `const` of an integer is any value its type holds, so a counter tested `> LIMIT` adds one with a wrap, `(seen + 1) >>> 0`, where one tested `> 100` is `seen++`",
     file: "src/lower/body_queries/ranges.rs",
     find: "            ExprKind::NamedConst { def_id, args, .. } if ty_range.is_some() => constant_integer(self.tcx, def_id, args)\n",
-    replace: "            ExprKind::NamedConst { def_id, args, .. } if ty_range.is_some() => None::<i128>.filter(|_| constant_integer(self.tcx, def_id, args).is_some())\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a labeled block and a named constant"],
+    replace:
+      "            ExprKind::NamedConst { def_id, args, .. } if ty_range.is_some() => None::<i128>.filter(|_| constant_integer(self.tcx, def_id, args).is_some())\n",
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a labeled block and a named constant",
+    ],
   },
   {
     name: "named-constants-judged",
-    breaks: "an operator of constants alone, one named, is judged exact, so `usize::BITS - 1` is written `32 - 1`, where its wrap folds it to `31`",
+    breaks:
+      "an operator of constants alone, one named, is judged exact, so `usize::BITS - 1` is written `32 - 1`, where its wrap folds it to `31`",
     file: "src/lower/body_queries/ranges.rs",
     find: "        if matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul) && !constant {\n",
-    replace: "        if matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul) {\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a labeled block and a named constant"],
+    replace:
+      "        if matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul) {\n",
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a labeled block and a named constant",
+    ],
   },
   {
     name: "cast-kept-out-of-range",
-    breaks: "an `as` of an integer that may be outside its target's range is taken as its operand, so `-1 as usize` reads `items[-1]`, `undefined`, where Rust panics",
+    breaks:
+      "an `as` of an integer that may be outside its target's range is taken as its operand, so `-1 as usize` reads `items[-1]`, `undefined`, where Rust panics",
     file: "src/lower/body_queries/ranges.rs",
     find: "                let kept = value.filter(|v| ty_range.is_some_and(|(lo, hi)| lo <= v.lo && v.hi <= hi));\n",
     replace: "                let kept = value;\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a signed index tested not negative"],
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a signed index tested not negative",
+    ],
   },
   {
     name: "sized-length-of-zero-sized",
-    breaks: "a slice of `()`'s length is taken as at most `isize`'s most, so `len() as isize - 1` of one longer is written without its wraps",
+    breaks:
+      "a slice of `()`'s length is taken as at most `isize`'s most, so `len() as isize - 1` of one longer is written without its wraps",
     file: "src/lower/body_queries/ranges.rs",
     find: "            .is_ok_and(|layout| !layout.is_zst())\n",
     replace: "            .is_ok()\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a signed index tested not negative"],
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a signed index tested not negative",
+    ],
   },
   {
     name: "sized-length-any-u32",
-    breaks: "a slice's length of sized items may be `u32::MAX`, so `len() as isize - 1` keeps `((length | 0) - 1) | 0`",
+    breaks:
+      "a slice's length of sized items may be `u32::MAX`, so `len() as isize - 1` keeps `((length | 0) - 1) | 0`",
     file: "src/lower/body_queries/ranges.rs",
     find: "            true => SIZED_SLICE_LENGTH_MOST,\n",
     replace: "            true => u32::MAX as i128,\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a signed index tested not negative"],
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a signed index tested not negative",
+    ],
   },
   {
     name: "widened-counter-forgets-bound",
-    breaks: "a counter widened round a loop forgets the length it's below, so `s as isize` past the loop keeps its `| 0`",
+    breaks:
+      "a counter widened round a loop forgets the length it's below, so `s as isize` past the loop keeps its `| 0`",
     file: "src/lower/body_queries/ranges.rs",
     find: "                            (Some((s, x)), Some((t, y))) if s == t && x.join(*y) == *x => Some((s.clone(), *x)),\n",
-    replace: "                            (Some((s, x)), Some((t, y))) if false && s == t && x.join(*y) == *x => Some((s.clone(), *x)),\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a signed index tested not negative"],
+    replace:
+      "                            (Some((s, x)), Some((t, y))) if false && s == t && x.join(*y) == *x => Some((s.clone(), *x)),\n",
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a signed index tested not negative",
+    ],
   },
   {
     name: "widened-counter-past-bound",
-    breaks: "a counter widened round a loop keeps its bound by a length, but not the most that bound is, so a later round finds it past it and forgets it",
+    breaks:
+      "a counter widened round a loop keeps its bound by a length, but not the most that bound is, so a later round finds it past it and forgets it",
     file: "src/lower/body_queries/ranges.rs",
     find: "                            Some((s, x)) => type_most.min(x.most(base_most(s).unwrap_or(u32::MAX as i128))),\n",
     replace: "                            Some(_) => type_most - 1,\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a signed index tested not negative"],
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a signed index tested not negative",
+    ],
   },
   {
     name: "widened-length-counter-below-type-most",
-    breaks: "a counter bound by a length is widened to one below its type's most, so an `isize` below `len() as isize`, whose `+ 1` reaches `isize`'s most, is forgotten and `lines[s as usize]` keeps `$index(lines, s >>> 0)`",
+    breaks:
+      "a counter bound by a length is widened to one below its type's most, so an `isize` below `len() as isize`, whose `+ 1` reaches `isize`'s most, is forgotten and `lines[s as usize]` keeps `$index(lines, s >>> 0)`",
     file: "src/lower/body_queries/ranges.rs",
     find: "                            Some((s, x)) => type_most.min(x.most(base_most(s).unwrap_or(u32::MAX as i128))),\n",
-    replace: "                            Some((s, x)) => (type_most - 1).min(x.most(base_most(s).unwrap_or(u32::MAX as i128))),\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a signed counter below a length"],
+    replace:
+      "                            Some((s, x)) => (type_most - 1).min(x.most(base_most(s).unwrap_or(u32::MAX as i128))),\n",
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a signed counter below a length",
+    ],
   },
   {
     name: "assigned-operator-span-off",
-    breaks: "an exact operator an assignment is of, `s = n - 1`, is known only by its own span, which MIR doesn't write it at, so it keeps its wrap",
+    breaks:
+      "an exact operator an assignment is of, `s = n - 1`, is known only by its own span, which MIR doesn't write it at, so it keeps its wrap",
     file: "src/lower/body_queries/ranges.rs",
     find: "            for span in [Some(thir[id].span), assigned.get(&id).copied()].into_iter().flatten() {\n",
-    replace: "            for span in [Some(thir[id].span)].into_iter().flatten() {\n",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a signed index tested not negative"],
+    replace:
+      "            for span in [Some(thir[id].span)].into_iter().flatten() {\n",
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a signed index tested not negative",
+    ],
   },
   {
     name: "string-length-any-u32",
-    breaks: "a JS string's `length` may be `u32::MAX`, so a counter two steps below it wraps, `(i + 1) >>> 0 < formatString.length`",
+    breaks:
+      "a JS string's `length` may be `u32::MAX`, so a counter two steps below it wraps, `(i + 1) >>> 0 < formatString.length`",
     file: "src/lower/body_queries/ranges.rs",
     find: "                .map(|_| Range::of(0, STRING_LENGTH_MOST)),\n",
     replace: "                .map(|_| Range::of(0, u32::MAX as i128)),\n",
@@ -224,7 +305,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "string-length-past-int32",
-    breaks: "a JS string's `length` may be `2^31`, past every engine's, so the sum of two may wrap, `(str.length + substr.length) >>> 0 < 40`",
+    breaks:
+      "a JS string's `length` may be `2^31`, past every engine's, so the sum of two may wrap, `(str.length + substr.length) >>> 0 < 40`",
     file: "src/lower/body_queries/ranges.rs",
     find: "const STRING_LENGTH_MOST: i128 = (1 << 31) - 1;\n",
     replace: "const STRING_LENGTH_MOST: i128 = 1 << 31;\n",
@@ -232,7 +314,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "string-length-below-engines",
-    breaks: "a JS string's `length` is taken as at most `2^30 - 1`, below JavaScriptCore's, so three lengths add without the wrap they need",
+    breaks:
+      "a JS string's `length` is taken as at most `2^30 - 1`, below JavaScriptCore's, so three lengths add without the wrap they need",
     file: "src/lower/body_queries/ranges.rs",
     find: "const STRING_LENGTH_MOST: i128 = (1 << 31) - 1;\n",
     replace: "const STRING_LENGTH_MOST: i128 = (1 << 30) - 1;\n",
@@ -240,7 +323,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "widened-counter-within-forgotten",
-    breaks: "a widened counter found within what it was taken as is anything, so a counter below a string's length keeps its wrap, `(i + 1) >>> 0 < formatString.length`",
+    breaks:
+      "a widened counter found within what it was taken as is anything, so a counter below a string's length keeps its wrap, `(i + 1) >>> 0 < formatString.length`",
     file: "src/lower/body_queries/ranges.rs",
     find: "                        if was.join(&r) == *was {\n",
     replace: "                        if *was == r {\n",
@@ -248,23 +332,31 @@ export const mutations: Mutation[] = [
   },
   {
     name: "growing-counter-forgotten",
-    breaks: "a counter still growing is anything at once, so `i + 1 < formatString.length` keeps its wrap",
+    breaks:
+      "a counter still growing is anything at once, so `i + 1 < formatString.length` keeps its wrap",
     file: "src/lower/body_queries/ranges.rs",
     find: "                        (was.hi < hi && r.hi <= hi && r.lo >= was.lo).then(|| {\n",
-    replace: "                        (false && was.hi < hi && r.hi <= hi && r.lo >= was.lo).then(|| {\n",
+    replace:
+      "                        (false && was.hi < hi && r.hi <= hi && r.lo >= was.lo).then(|| {\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "below a JS string"],
   },
   {
     name: "ranges-for-unknown",
-    breaks: "`for i in 0..xs.len()` shows nothing of `i`, so `items[i]` is checked",
+    breaks:
+      "`for i in 0..xs.len()` shows nothing of `i`, so `items[i]` is checked",
     file: "src/lower/body_queries/ranges.rs",
     find: "                    below: (end.below).and_then(|(slice, b)| Some((self.unchanged_in(body, slice)?, b.offset(-past)))),",
     replace: "                    below: None,",
-    tests: ["test/lowering-numbers.test.ts", "-t", "an index a condition shows"],
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "an index a condition shows",
+    ],
   },
   {
     name: "ranges-for-changed-kept",
-    breaks: "a range loop's end holds of a slice its body pops, so `items[i]` past its length reads `undefined`",
+    breaks:
+      "a range loop's end holds of a slice its body pops, so `items[i]` past its length reads `undefined`",
     file: "src/lower/body_queries/ranges.rs",
     find: "        (!changed).then_some(slice)",
     replace: "        Some(slice)",
@@ -272,63 +364,92 @@ export const mutations: Mutation[] = [
   },
   {
     name: "ranges-return-goes-on",
-    breaks: "what's known where an `if` returns goes on after it, so `items[1]` after `len < 2` returns is checked",
+    breaks:
+      "what's known where an `if` returns goes on after it, so `items[1]` after `len < 2` returns is checked",
     file: "src/lower/body_queries/ranges.rs",
     find: "                    self.expr(value, known);\n                }\n                *known = None;\n                None\n            }\n            ExprKind::Become",
-    replace: "                    self.expr(value, known);\n                }\n                None\n            }\n            ExprKind::Become",
-    tests: ["test/lowering-numbers.test.ts", "-t", "an index a condition shows"],
+    replace:
+      "                    self.expr(value, known);\n                }\n                None\n            }\n            ExprKind::Become",
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "an index a condition shows",
+    ],
   },
   {
     name: "ranges-if-else-only",
-    breaks: "what follows any `if` is what its `else` shows, so `items[0]` after `if items.is_empty() { n = 1; }` reads `undefined`",
+    breaks:
+      "what follows any `if` is what its `else` shows, so `items[0]` after `if items.is_empty() { n = 1; }` reads `undefined`",
     file: "src/lower/body_queries/ranges.rs",
     find: "                *known = either(yes, no);",
     replace: "                *known = no;",
-    tests: ["test/lowering-numbers.test.ts", "-t", "an index a condition shows"],
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "an index a condition shows",
+    ],
   },
   {
     name: "ranges-resize-kept",
-    breaks: "a `&mut Vec` given to a call keeps its length, so `items[0]` after `items.clear()` reads `undefined`",
+    breaks:
+      "a `&mut Vec` given to a call keeps its length, so `items[0]` after `items.clear()` reads `undefined`",
     file: "src/lower/body_queries/ranges.rs",
     find: "                    false => k.changed(var),",
     replace: "                    false => _ = k.vars.remove(&var),",
-    tests: ["test/lowering-numbers.test.ts", "-t", "an index a condition shows"],
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "an index a condition shows",
+    ],
   },
   {
     name: "ranges-vec-index-unknown",
-    breaks: "a `Vec`'s `v[i]` is never known in bounds, so `items[1]` of a `&Vec` is checked",
+    breaks:
+      "a `Vec`'s `v[i]` is never known in bounds, so `items[1]` of a `&Vec` is checked",
     file: "src/lower/body_queries/ranges.rs",
     find: "            Some((SliceLength::Index | SliceLength::Swap | SliceLength::SwapRemove | SliceLength::Remove, items)) => {",
-    replace: "            Some((SliceLength::Swap | SliceLength::SwapRemove | SliceLength::Remove, items)) => {",
-    tests: ["test/lowering-numbers.test.ts", "-t", "an index a condition shows"],
+    replace:
+      "            Some((SliceLength::Swap | SliceLength::SwapRemove | SliceLength::Remove, items)) => {",
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "an index a condition shows",
+    ],
   },
   {
     name: "ranges-loop-entry-only",
-    breaks: "a loop's start is only what's known as it's entered, so `steps += 1` in a `loop` doesn't wrap",
+    breaks:
+      "a loop's start is only what's known as it's entered, so `steps += 1` in a `loop` doesn't wrap",
     file: "src/lower/body_queries/ranges.rs",
     find: "            let mut next = either(entry.clone(), either(here, continued));",
-    replace: "            let mut next = {\n                let _ = (here, continued);\n                entry.clone()\n            };",
+    replace:
+      "            let mut next = {\n                let _ = (here, continued);\n                entry.clone()\n            };",
     tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "ranges-continue-dropped",
-    breaks: "what's known at a `continue` doesn't go round again, so `k + 1` of a `k` set to `n` before it doesn't wrap",
+    breaks:
+      "what's known at a `continue` doesn't go round again, so `k + 1` of a `k` set to `n` before it doesn't wrap",
     file: "src/lower/body_queries/ranges.rs",
     find: "            let continued = scope.and_then(|at| self.targets[at].continues.take());",
-    replace: "            let continued = scope.and_then(|at| self.targets[at].continues.take()).and(None);",
+    replace:
+      "            let continued = scope.and_then(|at| self.targets[at].continues.take()).and(None);",
     tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "ranges-break-dropped",
-    breaks: "what's known at a `break` isn't known past its loop, so `n + 100` after a loop left by one wraps",
+    breaks:
+      "what's known at a `break` isn't known past its loop, so `n + 100` after a loop left by one wraps",
     file: "src/lower/body_queries/ranges.rs",
     find: "                *known = either(known.take(), Some(broken));",
-    replace: "                *known = {\n                    let _ = broken;\n                    known.take()\n                };",
+    replace:
+      "                *known = {\n                    let _ = broken;\n                    known.take()\n                };",
     tests: ["test/lowering-loops.test.ts", "-t", "while. loop from MIR tests"],
   },
   {
     name: "ranges-wrap-unbounded",
-    breaks: "what can pass its type's largest doesn't wrap, so `n + 1` of a `u32` is `n + 1`",
+    breaks:
+      "what can pass its type's largest doesn't wrap, so `n + 1` of a `u32` is `n + 1`",
     file: "src/lower/body_queries/ranges.rs",
     find: "        let within = made.clone().filter(|m| m.lo >= lo && m.hi <= hi);",
     replace: "        let within = made.clone().filter(|m| m.lo >= lo);",
@@ -336,31 +457,38 @@ export const mutations: Mutation[] = [
   },
   {
     name: "ranges-shift-unscaled",
-    breaks: "`length >> 1` is taken at most the length, so `heap[leftIndex]` is checked",
+    breaks:
+      "`length >> 1` is taken at most the length, so `heap[leftIndex]` is checked",
     file: "src/lower/body_queries/ranges.rs",
     find: "                    below: bound(l, &|x| Below { s: x.s + k as u32, ..x }.lowest()).filter(|(_, x)| x.s <= 64),",
-    replace: "                    below: bound(l, &|x| Below { s: x.s, ..x }.lowest()).filter(|(_, x)| x.s <= 64),",
+    replace:
+      "                    below: bound(l, &|x| Below { s: x.s, ..x }.lowest()).filter(|(_, x)| x.s <= 64),",
     tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "ranges-swap-unjudged",
-    breaks: "a `swap`'s indexes aren't judged, so `heap.swap(index, rightIndex)` is `$swap`",
+    breaks:
+      "a `swap`'s indexes aren't judged, so `heap.swap(index, rightIndex)` is `$swap`",
     file: "src/lower/body_queries/ranges.rs",
     find: "                for index in ranges.into_iter().skip(1) {",
-    replace: "                for index in ranges.into_iter().skip(1).filter(|_| false) {",
+    replace:
+      "                for index in ranges.into_iter().skip(1).filter(|_| false) {",
     tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "callee-untold",
-    breaks: "a call tells its function nothing, so `items[i]` of an index its caller tested is checked",
+    breaks:
+      "a call tells its function nothing, so `items[i]` of an index its caller tested is checked",
     file: "src/lower/body_queries/ranges.rs",
     find: "        let Some(params) = self.callees.get(&callee) else {",
-    replace: "        let Some(params) = self.callees.get(&callee).filter(|_| false) else {",
+    replace:
+      "        let Some(params) = self.callees.get(&callee).filter(|_| false) else {",
     tests: ["test/lowering-functions.test.ts", "-t", "only calls reach"],
   },
   {
     name: "callee-bound-unmapped",
-    breaks: "an index's bound by the slice its caller gives isn't the parameter's, so `siftUp`'s `heap[index]` is checked",
+    breaks:
+      "an index's bound by the slice its caller gives isn't the parameter's, so `siftUp`'s `heap[index]` is checked",
     file: "src/lower/body_queries/ranges.rs",
     find: "Some((theirs(slice)?, *bound))",
     replace: "Some((theirs(slice).filter(|_| false)?, *bound))",
@@ -368,15 +496,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "utf16-count-any-usize",
-    breaks: "`s.encode_utf16().count()` is any `usize` to the ranges, so a counter below it keeps its wrap, `(i + 1) >>> 0 < s.length`",
+    breaks:
+      "`s.encode_utf16().count()` is any `usize` to the ranges, so a counter below it keeps its wrap, `(i + 1) >>> 0 < s.length`",
     file: "src/lower/body_queries/ranges.rs",
     find: "                    reads_string_length(self.tcx, def_id) || reads_utf16_length(self.tcx, def_id, generic_args)\n",
     replace: "                    reads_string_length(self.tcx, def_id)\n",
-    tests: ["test/lowering-strings.test.ts", "-t", "a string's count of UTF-16 units is its length"],
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "a string's count of UTF-16 units is its length",
+    ],
   },
   {
     name: "range-unjudged",
-    breaks: "a slice's range is never judged, so `&v[..3]` past `v.len() > 3` keeps `$slice` (ADR 0806)",
+    breaks:
+      "a slice's range is never judged, so `&v[..3]` past `v.len() > 3` keeps `$slice` (ADR 0806)",
     file: "src/lower/body_queries/ranges.rs",
     find: "                self.judge_range(fun, items, args[1], &before);\n",
     replace: "",
@@ -385,15 +519,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "range-end-unchecked",
-    breaks: "a range's end is taken as at most the length whatever it is, so `&items[..3]` of two items is two, where Rust panics (ADR 0806)",
+    breaks:
+      "a range's end is taken as at most the length whatever it is, so `&items[..3]` of two items is two, where Rust panics (ADR 0806)",
     file: "src/lower/body_queries/ranges.rs",
     find: ".is_some_and(|end| up_to(&end) && start.lo >= 0 && start.hi <= end.lo),",
     replace: ".is_some_and(|end| start.lo >= 0 && start.hi <= end.lo),",
-    tests: ["test/corpus.test.ts", "-t", "slice_range_tested_panic|slice_range_past_length_panic"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "slice_range_tested_panic|slice_range_past_length_panic",
+    ],
   },
   {
     name: "range-start-past-end",
-    breaks: "a range whose start may pass its end is in bounds, so `&items[3..1]` is empty, where Rust panics (ADR 0806)",
+    breaks:
+      "a range whose start may pass its end is in bounds, so `&items[3..1]` is empty, where Rust panics (ADR 0806)",
     file: "src/lower/body_queries/ranges.rs",
     find: " && start.lo >= 0 && start.hi <= end.lo),",
     replace: " && start.lo >= 0),",
@@ -401,7 +541,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "range-from-unchecked",
-    breaks: "a range from a start to the end is in bounds whatever the start, so `&items[5..]` of three items is empty, where Rust panics (ADR 0806)",
+    breaks:
+      "a range from a start to the end is in bounds whatever the start, so `&items[5..]` of three items is empty, where Rust panics (ADR 0806)",
     file: "src/lower/body_queries/ranges.rs",
     find: "                    (Some(start), None) => up_to(&start),\n",
     replace: "                    (Some(_), None) => true,\n",
@@ -409,24 +550,32 @@ export const mutations: Mutation[] = [
   },
   {
     name: "range-of-array-unknown",
-    breaks: "an array's length, which its type says, shows no range of it in bounds, so `&items[..2]` of `[u32; 5]` keeps `$slice` (ADR 0806)",
+    breaks:
+      "an array's length, which its type says, shows no range of it in bounds, so `&items[..2]` of `[u32; 5]` keeps `$slice` (ADR 0806)",
     file: "src/lower/body_queries/ranges.rs",
     find: "                            || fixed.is_some_and(|n| r.hi <= n))\n",
-    replace: "                            || fixed.is_some_and(|n| r.hi <= n && false))\n",
+    replace:
+      "                            || fixed.is_some_and(|n| r.hi <= n && false))\n",
     tests: ["test/corpus.test.ts", "-t", "slice_ranges_known"],
     snapshots: true,
   },
   {
     name: "test-not-held",
-    breaks: "a `bool` made of a test holds nothing, so `&array[..LIMIT]` past `if truncated` keeps `$slice` (ADR 0806)",
+    breaks:
+      "a `bool` made of a test holds nothing, so `&array[..LIMIT]` past `if truncated` keeps `$slice` (ADR 0806)",
     file: "src/lower/body_queries/ranges.rs",
     find: "                        k.tests.insert(var, (test, reads));\n",
     replace: "                        let _ = (test, reads);\n",
-    tests: ["test/port-performance-track.test.ts", "-t", "slices a truncated array"],
+    tests: [
+      "test/port-performance-track.test.ts",
+      "-t",
+      "slices a truncated array",
+    ],
   },
   {
     name: "once-set-leaves-empty",
-    breaks: "a `OnceCell` known empty is still known empty after it's set, so a second `set` is assigned and `Ok`, where Rust's is `Err`",
+    breaks:
+      "a `OnceCell` known empty is still known empty after it's set, so a second `set` is assigned and `Ok`, where Rust's is `Err`",
     file: "src/lower/body_queries/ranges.rs",
     find: "                    let empty = k.empty.remove(&cell);\n",
     replace: "                    let empty = k.empty.contains(&cell);\n",
@@ -434,7 +583,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "once-set-through-holder-unforgotten",
-    breaks: "a `set` of a cell through a clone of its `Rc` a struct holds leaves it known empty, so its own `set` after is assigned and `Ok`",
+    breaks:
+      "a `set` of a cell through a clone of its `Rc` a struct holds leaves it known empty, so its own `set` after is assigned and `Ok`",
     file: "src/lower/body_queries/ranges.rs",
     find: "                    if !empty {\n                        k.escaped(cell.1);\n                    }\n",
     replace: "",
@@ -442,7 +592,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "once-set-judged-once",
-    breaks: "a `set` is judged empty where it's ever empty, not every time it's reached, so one in a loop of a cell made before it is assigned each turn",
+    breaks:
+      "a `set` is judged empty where it's ever empty, not every time it's reached, so one in a loop of a cell made before it is assigned each turn",
     file: "src/lower/body_queries/ranges.rs",
     find: "            *self.sets.entry(fun).or_insert(true) &= empty;\n",
     replace: "            *self.sets.entry(fun).or_insert(false) |= empty;\n",
@@ -450,15 +601,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "once-mention-quiet",
-    breaks: "a read of a variable that reaches a cell gives nothing its cells, so one given to `fill(&given)` is still known empty after",
+    breaks:
+      "a read of a variable that reaches a cell gives nothing its cells, so one given to `fill(&given)` is still known empty after",
     file: "src/lower/body_queries/ranges.rs",
     find: "        if !self.quiet.contains(&e)\n            && let Some(k) = known.as_mut()\n        {\n            k.escaped(var);\n",
-    replace: "        if !self.quiet.contains(&e)\n            && let Some(k) = known.as_mut()\n        {\n            let _ = (k, var);\n",
+    replace:
+      "        if !self.quiet.contains(&e)\n            && let Some(k) = known.as_mut()\n        {\n            let _ = (k, var);\n",
     tests: ["test/corpus.test.ts", "-t", "^once_cell_known_empty.rs$"],
   },
   {
     name: "once-place-unmentioned",
-    breaks: "a variable borrowed, `&given`, isn't read, so a cell given to a call by reference is still known empty after",
+    breaks:
+      "a variable borrowed, `&given`, isn't read, so a cell given to a call by reference is still known empty after",
     file: "src/lower/body_queries/ranges.rs",
     find: "            Some(var) => self.mention(strip(self.thir, e), var, known),\n",
     replace: "            Some(_) => {}\n",
@@ -466,7 +620,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "once-holder-reaches-nothing",
-    breaks: "a struct made of a clone of an `Rc` reaches none of its cells, so one given to a call through it is still known empty",
+    breaks:
+      "a struct made of a clone of an `Rc` reaches none of its cells, so one given to a call through it is still known empty",
     file: "src/lower/body_queries/ranges.rs",
     find: "                false => k.reaches.entry(var).or_default().extend(of),\n",
     replace: "                false => {}\n",
@@ -474,15 +629,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "once-raw-borrow-unread",
-    breaks: "a raw pointer to a struct that reaches a cell gives it nothing, so one set through the pointer is still known empty",
+    breaks:
+      "a raw pointer to a struct that reaches a cell gives it nothing, so one set through the pointer is still known empty",
     file: "src/lower/body_queries/ranges.rs",
     find: "            ExprKind::RawBorrow { arg, .. } => {\n                self.place(arg, known);\n",
-    replace: "            ExprKind::RawBorrow { arg, .. } => {\n                let _ = arg;\n",
+    replace:
+      "            ExprKind::RawBorrow { arg, .. } => {\n                let _ = arg;\n",
     tests: ["test/corpus.test.ts", "-t", "^once_cell_known_empty.rs$"],
   },
   {
     name: "once-made-unknown",
-    breaks: "a `OnceCell` a body makes isn't known empty, so React's `payload._ioInfo = ioInfo` is `if (payload._ioInfo === undefined) ..`",
+    breaks:
+      "a `OnceCell` a body makes isn't known empty, so React's `payload._ioInfo = ioInfo` is `if (payload._ioInfo === undefined) ..`",
     file: "src/lower/body_queries/ranges.rs",
     find: "            k.empty.extend(made.into_iter().map(|path| (path, var)));\n",
     replace: "            let _ = made;\n",
@@ -491,7 +649,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "const-pointer-of-shared-volatile",
-    breaks: "a `*const` of what a shared reference refers to makes its variable volatile, so `ptr::eq(&node.children[0], skip)` leaves `node.children[diffIdx]` below its length `$index`",
+    breaks:
+      "a `*const` of what a shared reference refers to makes its variable volatile, so `ptr::eq(&node.children[0], skip)` leaves `node.children[diffIdx]` below its length `$index`",
     file: "src/lower/body_queries/ranges.rs",
     find: "            } if through_shared(thir, arg) => None,\n",
     replace: "            } if false => None,\n",
@@ -500,10 +659,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "same-length-unread",
-    breaks: "a table made `vec![0.0; terraces.len()]` is indexed `$index(levels, i)`, not as `terraces` is (#362)",
+    breaks:
+      "a table made `vec![0.0; terraces.len()]` is indexed `$index(levels, i)`, not as `terraces` is (#362)",
     file: "src/lower/body_queries/ranges.rs",
     find: "                    .is_some_and(|(s, b)| k.same_length(s, &slice) && b.within())\n",
-    replace: "                    .is_some_and(|(s, b)| *s == slice && b.within())\n",
+    replace:
+      "                    .is_some_and(|(s, b)| *s == slice && b.within())\n",
     tests: ["test/lowering-collections.test.ts", "-t", "as long as another"],
   },
   {
@@ -516,15 +677,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "enumerate-index-unranged",
-    breaks: "`for (i, t) in terraces.iter().enumerate()` gives `i` no bound, `$index(levels, i)` (#363)",
+    breaks:
+      "`for (i, t) in terraces.iter().enumerate()` gives `i` no bound, `$index(levels, i)` (#363)",
     file: "src/lower/body_queries/ranges.rs",
     find: "                    && is_iterator_enumerate(self.tcx, def_id)\n",
-    replace: "                    && !is_iterator_enumerate(self.tcx, def_id)\n",
+    replace:
+      "                    && !is_iterator_enumerate(self.tcx, def_id)\n",
     tests: ["test/lowering-collections.test.ts", "-t", "enumerate's index"],
   },
   {
     name: "enumerate-of-any-slice-fn",
-    breaks: "an `enumerate()` of any function of a slice, one yielding more than its items, bounds its index by the slice, `xs[i]` read as `undefined` (#363)",
+    breaks:
+      "an `enumerate()` of any function of a slice, one yielding more than its items, bounds its index by the slice, `xs[i]` read as `undefined` (#363)",
     file: "src/lower/body_queries/ranges.rs",
     find: "                    && is_slice_items(self.tcx, items_def)\n",
     replace: "",
@@ -532,23 +696,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "enumerate-slice-rebound-kept",
-    breaks: "an `enumerate()`'s index stays below a slice variable the body points elsewhere, `xs[i]` of a shorter one unchecked (#363)",
+    breaks:
+      "an `enumerate()`'s index stays below a slice variable the body points elsewhere, `xs[i]` of a shorter one unchecked (#363)",
     file: "src/lower/body_queries/ranges.rs",
     find: "                        .unchanged_in(body, slice)\n",
-    replace: "                        .unchanged_in(rustc_span::DUMMY_SP, slice)\n",
+    replace:
+      "                        .unchanged_in(rustc_span::DUMMY_SP, slice)\n",
     tests: ["test/lowering-collections.test.ts", "-t", "enumerate's index"],
   },
   {
     name: "enumerate-index-field-missed",
-    breaks: "the index of an `enumerate()`'s `(i, x)` isn't bound, its item is looked for (#363)",
+    breaks:
+      "the index of an `enumerate()`'s `(i, x)` isn't bound, its item is looked for (#363)",
     file: "src/lower/body_queries/ranges.rs",
     find: "                        .find(|field| field.field.index() == 0)\n",
-    replace: "                        .find(|field| field.field.index() == 1)\n",
+    replace:
+      "                        .find(|field| field.field.index() == 1)\n",
     tests: ["test/lowering-collections.test.ts", "-t", "enumerate's index"],
   },
   {
     name: "table-least-unrecorded",
-    breaks: "`vec![0.0; n.max(2) + 1]` isn't known at least 3 long, `steps[$at(steps, 1)] = 1` (#367)",
+    breaks:
+      "`vec![0.0; n.max(2) + 1]` isn't known at least 3 long, `steps[$at(steps, 1)] = 1` (#367)",
     file: "src/lower/body_queries/ranges.rs",
     find: "                            k.lengths.insert((path, var), count.lo);\n",
     replace: "",
@@ -556,18 +725,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "min-max-unranged",
-    breaks: "an integer's `max` or `min` has no range, `n.max(2) + 1` no least (#367)",
+    breaks:
+      "an integer's `max` or `min` has no range, `n.max(2) + 1` no least (#367)",
     file: "src/lower/body_queries/ranges.rs",
     find: "            && let Some(larger) = ord_max_or_min(self.tcx, def_id)\n",
-    replace: "            && let Some(larger) = ord_max_or_min(self.tcx, def_id).filter(|_| false)\n",
+    replace:
+      "            && let Some(larger) = ord_max_or_min(self.tcx, def_id).filter(|_| false)\n",
     tests: ["test/lowering-collections.test.ts", "-t", "as long as another"],
   },
   {
     name: "table-rows-unmade",
-    breaks: "`vec![vec![1.0; width]; height]`'s rows aren't known `width` long, `$index(board[r], c)` (#370)",
+    breaks:
+      "`vec![vec![1.0; width]; height]`'s rows aren't known `width` long, `$index(board[r], c)` (#370)",
     file: "src/lower/body_queries/ranges.rs",
     find: "                        .chain(rows.map(|(base, count)| (vec![ITEM], base, count)))\n",
-    replace: "                        .chain(rows.filter(|_| false).map(|(base, count)| (vec![ITEM], base, count)))\n",
+    replace:
+      "                        .chain(rows.filter(|_| false).map(|(base, count)| (vec![ITEM], base, count)))\n",
     tests: ["test/lowering-collections.test.ts", "-t", "rows are as long"],
   },
   {
@@ -580,7 +753,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "row-assigned-kept",
-    breaks: "`board[0] = Vec::new()` leaves the rows known `width` long, `board[r][c]` past an empty row read as `undefined` (#370)",
+    breaks:
+      "`board[0] = Vec::new()` leaves the rows known `width` long, `board[r][c]` past an empty row read as `undefined` (#370)",
     file: "src/lower/body_queries/ranges.rs",
     find: "                self.row_reached(lhs, known);\n",
     replace: "",
@@ -588,7 +762,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "row-borrowed-kept",
-    breaks: "`let row = &mut board[0]; row.pop()` leaves the rows known `width` long (#370)",
+    breaks:
+      "`let row = &mut board[0]; row.pop()` leaves the rows known `width` long (#370)",
     file: "src/lower/body_queries/ranges.rs",
     find: "                    self.row_reached(arg, known);\n",
     replace: "",
@@ -604,7 +779,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rows-lent-kept",
-    breaks: "`board.iter_mut()`, whose rows may be resized, leaves them known `width` long (#370)",
+    breaks:
+      "`board.iter_mut()`, whose rows may be resized, leaves them known `width` long (#370)",
     file: "src/lower/body_queries/ranges.rs",
     find: "                    k.rows_changed(var);\n",
     replace: "",
@@ -612,7 +788,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rows-kept-never",
-    breaks: "a table's `iter_mut()` loop that only writes its cells forgets its rows' lengths, so `board[r - 1][c]` after it is `$index(..)` (#372)",
+    breaks:
+      "a table's `iter_mut()` loop that only writes its cells forgets its rows' lengths, so `board[r - 1][c]` after it is `$index(..)` (#372)",
     file: "src/lower/body_queries/ranges.rs",
     find: "                let viewed = self.vec_view(fun).is_some() && self.rows_kept(arg);\n",
     replace: "                let viewed = false;\n",

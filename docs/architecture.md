@@ -212,7 +212,7 @@ assumptions; rustc lang items remain available through rustc's identity API.
 | Formatting | `display.rs`, `display/`, `format_args.rs`, `format_spec.rs` |
 | Serde and supported external crate APIs | `serde.rs`, `serde/`, `shipped.rs` |
 | JSX, JS bindings, untagged values and JS-visible uses | `jsx.rs`, `jsx_api.rs`, `bindings.rs`, `bindings/`, `binding_calls.rs`, `untagged.rs`, `liveness.rs` |
-| JS classes, `#[rust_js::class]`, and objects of methods, `#[rust_js::object]` (ADR 0943) | `classes.rs` |
+| JS classes, `#[rust_js::class]`, objects of methods, `#[rust_js::object]` (ADR 0943), and module namespaces, `#[rust_js::namespace]` (ADR 1037) | `classes.rs` |
 | Exported TypeScript declaration model, and the reader of `#[rust_js::types]` | `declarations.rs`, `declarations/` |
 
 MIR determines execution order. `mir/cfg.rs` structures blocks;
@@ -308,7 +308,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Which types a module's declarations declare, another module's or a library's consumer importing them, and a library's type's `.d.ts` and name, its contract's (ADR 0210, amended) | `declarations.rs`; `library.rs` | `declares_type`; `declared_type` |
 | A string's count of UTF-16 units, its `length`; and a comparison of two strings' units, which a closure that sorts by is JS's `sort()` (ADR 0945) | `recognition/types.rs`; `body_queries.rs` | `counts_utf16_units`, `compares_utf16_units`; `orders_by_utf16_units` |
 | Which plain `Option` fields a `js::null()` is written to, so declared `| null` (ADR 0935, amended) | `body_queries.rs` | `null_written_fields` |
-| Whether a type is a JS class, what each item of its impl is of it, and the module it is in, its constructor's (ADR 0761, amended); whether a trait is a trait of classes, its methods each class's prototype's (ADR 1035); whether one is an object of methods, which they are and the property each is of its literals (ADR 0943) | `classes.rs` | `is_class`, `member`, `constructor_of`, `home`; `is_class_trait`, `trait_impl_class`, `trait_member_class`; `is_object`, `own_methods`, `object_of`, `property` |
+| Whether a type is a JS class, what each item of its impl is of it, and the module it is in, its constructor's (ADR 0761, amended); whether a trait is a trait of classes, its methods each class's prototype's (ADR 1035); whether one is an object of methods, which they are and the property each is of its literals (ADR 0943); whether one is a module's namespace, its methods the module's functions, its value the module's, `FnCx::namespace_value` (ADR 1037) | `classes.rs`; `items.rs` | `is_class`, `member`, `constructor_of`, `home`; `is_class_trait`, `trait_impl_class`, `trait_member_class`; `is_object`, `own_methods`, `object_of`, `property`; `is_namespace`; `namespace_value` |
 | Which closures are written in place where a value JS finds by identity among those given before is given, a `#[rust_js::given_before]` trait's, removal's listener, refused (ADR 1021, amended) | `bindings/given_before.rs` | `reject_made_in_place` |
 | Whether a constructor the program writes is held as a `js::Class`, `Class::of(f)`, and not as a value of any shape, constructed or its prototype read, which is refused (ADR 1009) | `classes.rs` | `reject_constructors_as_values` |
 | The class a binding's type is as a value, the one `instanceof` tests it by where TypeScript names it so (ADR 0911) | `untagged.rs` | `class_value` |

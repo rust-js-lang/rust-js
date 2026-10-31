@@ -20,11 +20,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "leak-not-cell",
-    breaks: "`let r = Box::leak(b)` is an error, its `&mut` not the call's own cell",
+    breaks:
+      "`let r = Box::leak(b)` is an error, its `&mut` not the call's own cell",
     file: "src/lower/recognition.rs",
     find: "                | Std::Leak\n                | Std::OptionIterMut",
     replace: "                | Std::OptionIterMut",
-    tests: ["test/corpus.test.ts","-t","leaked_string_written"],
+    tests: ["test/corpus.test.ts", "-t", "leaked_string_written"],
   },
   {
     name: "from-utf8-mut-not-cell",
@@ -32,7 +33,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition.rs",
     find: "                        | TextOp::FromUtf8Mut { .. }\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","str_mut"],
+    tests: ["test/corpus.test.ts", "-t", "str_mut"],
   },
   {
     name: "split-end-mut-not-cell",
@@ -40,7 +41,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition.rs",
     find: "                        | SliceOp::SplitEndMut { .. }\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","slice_views"],
+    tests: ["test/corpus.test.ts", "-t", "slice_views"],
   },
   {
     name: "split-off-mut-not-cell",
@@ -48,7 +49,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition.rs",
     find: "                        | SliceOp::SplitOff { mutable: true, .. }\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","slice_split_off"],
+    tests: ["test/corpus.test.ts", "-t", "slice_split_off"],
   },
   {
     name: "disjoint-not-cell",
@@ -56,7 +57,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition.rs",
     find: " | SliceOp::GetDisjointMut { .. }",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","slice_disjoint"],
+    tests: ["test/corpus.test.ts", "-t", "slice_disjoint"],
   },
   {
     name: "select-not-cell",
@@ -64,7 +65,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition.rs",
     find: "                        | SliceOp::SelectNth { .. }\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
+    tests: ["test/corpus.test.ts", "-t", "sort_unstable_ties"],
   },
   {
     name: "deque-insert-mut-not-cell",
@@ -72,7 +73,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition.rs",
     find: "                        | SliceOp::DequeInsert { mutable: true }\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","deque_push_mut"],
+    tests: ["test/corpus.test.ts", "-t", "deque_push_mut"],
   },
   {
     name: "option-iter-mut-not-cell",
@@ -80,7 +81,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition.rs",
     find: "                | Std::OptionIterMut\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","option_result_mut"],
+    tests: ["test/corpus.test.ts", "-t", "option_result_mut"],
   },
   {
     name: "range-mut-not-cell",
@@ -88,7 +89,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition.rs",
     find: " | MapOp::TreeRange { mutable: true }\n",
     replace: "\n",
-    tests: ["test/corpus.test.ts","-t","btree_range_mut"],
+    tests: ["test/corpus.test.ts", "-t", "btree_range_mut"],
   },
   {
     name: "deque-range-mut-not-cell",
@@ -96,7 +97,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition.rs",
     find: "                | Std::Slice(SliceOp::DequeRangeMut)\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","deque_range_mut"],
+    tests: ["test/corpus.test.ts", "-t", "deque_range_mut"],
   },
   {
     name: "pointer-as-mut-not-cell",
@@ -108,7 +109,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "generic-index-mut-not-a-cell",
-    breaks: "`&mut v[i]` of an `I: SliceIndex<[T]>`, its dictionary's handle, is taken as no cell, and refused",
+    breaks:
+      "`&mut v[i]` of an `I: SliceIndex<[T]>`, its dictionary's handle, is taken as no cell, and refused",
     file: "src/lower/recognition.rs",
     find: "                | Std::Slice(SliceOp::GenericIndex { mutable: true })\n",
     replace: "",

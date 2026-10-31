@@ -4,39 +4,59 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "key-set-of-any-cell",
-    breaks: "a thread-local's `set` asks whether any cell of its type is counted, not its own, so a hook's `HOOKS.set(..)` while its hooks run doesn't panic as Rust's does (ADR 0960, amended)",
+    breaks:
+      "a thread-local's `set` asks whether any cell of its type is counted, not its own, so a hook's `HOOKS.set(..)` while its hooks run doesn't panic as Rust's does (ADR 0960, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "ref_cell.is_some_and(|ref_cell| !self.quiet_ref_cell(ref_cell, true));\n",
-    replace: "ref_cell.is_some_and(|ref_cell| !self.quiet_ref_cell(ref_cell, false));\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "checks no other cell of its type"],
+    replace:
+      "ref_cell.is_some_and(|ref_cell| !self.quiet_ref_cell(ref_cell, false));\n",
+    tests: [
+      "test/lowering-cell-borrows.test.ts",
+      "-t",
+      "checks no other cell of its type",
+    ],
   },
   {
     name: "key-take-of-any-cell",
-    breaks: "a thread-local's `take` asks whether any cell of its type is counted, not its own, so a hook's `HOOKS.take()` while its hooks run doesn't panic as Rust's does (ADR 0960, amended)",
+    breaks:
+      "a thread-local's `take` asks whether any cell of its type is counted, not its own, so a hook's `HOOKS.take()` while its hooks run doesn't panic as Rust's does (ADR 0960, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "                let of_key = self.is_std_type(tys[0].peel_refs(), StdItem::LocalKey);\n",
     replace: "                let of_key = false;\n",
-    tests: ["test/lowering-cell-borrows.test.ts", "-t", "checks no other cell of its type"],
+    tests: [
+      "test/lowering-cell-borrows.test.ts",
+      "-t",
+      "checks no other cell of its type",
+    ],
   },
   {
     name: "quiet-with-borrow-called-late",
-    breaks: "this module's quiet thread-local's `with_borrow(Clone::clone)` is `$withBorrow(..)` where tidy reads it, a call, so an `if let`'s binding of it stays a copy (ADR 0866, amended)",
+    breaks:
+      "this module's quiet thread-local's `with_borrow(Clone::clone)` is `$withBorrow(..)` where tidy reads it, a call, so an `if let`'s binding of it stays a copy (ADR 0866, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "                if call.quiet {\n                    let [key, f] =",
     replace: "                if false {\n                    let [key, f] =",
-    tests: ["test/lowering-shadows.test.ts", "test/modules.test.ts", "-t", "thread-local only its test|thread-local only read and set"],
+    tests: [
+      "test/lowering-shadows.test.ts",
+      "test/modules.test.ts",
+      "-t",
+      "thread-local only its test|thread-local only read and set",
+    ],
   },
   {
     name: "atomic-fetch-new-value",
-    breaks: "an atomic's `fetch_add` and the like give the new value, not the old",
+    breaks:
+      "an atomic's `fetch_add` and the like give the new value, not the old",
     file: "src/lower/std_types/cell.rs",
     find: "                out.push(StmtKind::Assign(slot, next).at(js_span));\n                previous\n",
-    replace: "                out.push(StmtKind::Assign(slot.clone(), next).at(js_span));\n                slot\n",
+    replace:
+      "                out.push(StmtKind::Assign(slot.clone(), next).at(js_span));\n                slot\n",
     tests: ["test/corpus.test.ts", "-t", "atomics"],
   },
   {
     name: "cell-take-undefined",
-    breaks: "`Cell::take()` of a number leaves `undefined`, not its default, `0`",
+    breaks:
+      "`Cell::take()` of a number leaves `undefined`, not its default, `0`",
     file: "src/lower/std_types/cell.rs",
     find: "                    _ => self.default_value(item, span)?,",
     replace: "                    _ => Expr::undefined(),",
@@ -44,7 +64,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "replace-with-unboxed",
-    breaks: "`replace_with` of a `String` gives its closure the string, which reads it as a box's `value`",
+    breaks:
+      "`replace_with` of a `String` gives its closure the string, which reads it as a box's `value`",
     file: "src/lower/std_types/cell.rs",
     find: "                } else if !self.is_object(item) {",
     replace: "                } else if false {",
@@ -52,10 +73,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cell-get-mut-copy",
-    breaks: "a number `Cell`'s `get_mut` gives the number, so a write through it is lost",
+    breaks:
+      "a number `Cell`'s `get_mut` gives the number, so a write through it is lost",
     file: "src/lower/std_types/cell.rs",
     find: "                true => arg(),\n                false => Expr::held(arg()),\n",
-    replace: "                true => Expr::held(arg()),\n                false => Expr::held(arg()),\n",
+    replace:
+      "                true => Expr::held(arg()),\n                false => Expr::held(arg()),\n",
     tests: ["test/corpus.test.ts", "-t", "cell_deque_char_methods"],
   },
   {
@@ -84,32 +107,49 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-statics-closure-set-unseen",
-    breaks: "a thread-local a closure sets is a `const`, which the closure can't set",
+    breaks:
+      "a thread-local a closure sets is a `const`, which the closure can't set",
     file: "src/lower/std_types/cell.rs",
     find: "        js::each_item_block_mut(items, &mut |stmts| {\n            for stmt in stmts.iter() {\n                if let StmtKind::Assign(target, _) = &stmt.kind\n",
-    replace: "        js::each_item_block_mut(&mut [], &mut |stmts| {\n            for stmt in stmts.iter() {\n                if let StmtKind::Assign(target, _) = &stmt.kind\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "thread-local only its module"],
+    replace:
+      "        js::each_item_block_mut(&mut [], &mut |stmts| {\n            for stmt in stmts.iter() {\n                if let StmtKind::Assign(target, _) = &stmt.kind\n",
+    tests: [
+      "test/lowering-cells.test.ts",
+      "-t",
+      "thread-local only its module",
+    ],
   },
   {
     name: "mir-quiet-box-kept",
-    breaks: "a `with_borrow_mut` given a thread-local's `{ value }`, the box its `&mut` to a number or an `Option` is, keeps it, so React's exported `entangledTransitionTypes` is `{ value: null }`, which its JS importer tests `!== null` (ADR 0270, amended)",
+    breaks:
+      "a `with_borrow_mut` given a thread-local's `{ value }`, the box its `&mut` to a number or an `Option` is, keeps it, so React's exported `entangledTransitionTypes` is `{ value: null }`, which its JS importer tests `!== null` (ADR 0270, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "                    let given = match itself || mutable && !self.is_object(generic_args.type_at(0)) {\n",
     replace: "                    let given = match itself {\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a with_borrow_mut fills in place"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a with_borrow_mut fills in place",
+    ],
   },
   {
     name: "mir-quiet-local-borrow-not-inlined",
     breaks: "MIR's quiet thread-local's borrow stays a called arrow",
     file: "src/lower/std_types/cell.rs",
     find: "                    return Ok(Some(read(crate::lower::calls::apply(f, vec![given]))));\n",
-    replace: "                    return Ok(Some(read(Expr::call(f, vec![given]))));\n",
-    tests: ["test/corpus.test.ts", "-t", "^thread_local_set_in_const_closure.rs$"],
+    replace:
+      "                    return Ok(Some(read(Expr::call(f, vec![given]))));\n",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^thread_local_set_in_const_closure.rs$",
+    ],
     snapshots: true,
   },
   {
     name: "dyn-cell-guard-value",
-    breaks: "a `RefCell<dyn T>`'s guard derefs to its `value`, not the pair it is",
+    breaks:
+      "a `RefCell<dyn T>`'s guard derefs to its `value`, not the pair it is",
     file: "src/lower/std_types/cell.rs",
     find: "        match self.cell_dyn_trait(guarded).is_some() || (mutable",
     replace: "        match false || (mutable",
@@ -117,24 +157,28 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cell-from-mut-of-object-unwrapped",
-    breaks: "`Cell::from_mut` of a `&mut` to an array is the array, so `set` writes a `value` property on it, not the array",
+    breaks:
+      "`Cell::from_mut` of a `&mut` to an array is the array, so `set` writes a `value` property on it, not the array",
     file: "src/lower/std_types/cell.rs",
-    find: "                false => Expr::call(Expr::helper(\"$cellOf\"), vec![arg()]),\n",
+    find: '                false => Expr::call(Expr::helper("$cellOf"), vec![arg()]),\n',
     replace: "                false => arg(),\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_from_mut.rs$"],
   },
   {
     name: "cell-items-through-cell-of",
-    breaks: "`as_slice_of_cells()` of a `Cell::from_mut` reads the object back through its cell, `$mutItems($cellOf(slice).value)`",
+    breaks:
+      "`as_slice_of_cells()` of a `Cell::from_mut` reads the object back through its cell, `$mutItems($cellOf(slice).value)`",
     file: "src/lower/std_types/cell.rs",
-    find: "            Std::CellItems => Expr::call(Expr::helper(\"$mutItems\"), vec![cell_contents(arg())]),\n",
-    replace: "            Std::CellItems => Expr::call(Expr::helper(\"$mutItems\"), vec![Expr::held(arg())]),\n",
+    find: '            Std::CellItems => Expr::call(Expr::helper("$mutItems"), vec![cell_contents(arg())]),\n',
+    replace:
+      '            Std::CellItems => Expr::call(Expr::helper("$mutItems"), vec![Expr::held(arg())]),\n',
     tests: ["test/corpus.test.ts", "-t", "^cell_from_mut.rs$"],
     snapshots: true,
   },
   {
     name: "poison-data-unread",
-    breaks: "a `PoisonError`'s `into_inner()` is the error, not the guard it holds",
+    breaks:
+      "a `PoisonError`'s `into_inner()` is the error, not the guard it holds",
     file: "src/lower/std_types/cell.rs",
     find: "            Std::PoisonData => self.project(arg(), tys[0].peel_refs(), 0),\n",
     replace: "            Std::PoisonData => arg(),\n",
@@ -146,28 +190,41 @@ export const mutations: Mutation[] = [
     breaks: "a `Cell`'s `set` drops none of the value it replaces",
     file: "src/lower/std_types/cell.rs",
     find: "                        out_set.push(StmtKind::Assign(Expr::held(cell), value).at(js_span));\n                        self.drop_value(old, item, span, out_set)?;\n",
-    replace: "                        out_set.push(StmtKind::Assign(Expr::held(cell), value).at(js_span));\n                        let _ = old;\n",
+    replace:
+      "                        out_set.push(StmtKind::Assign(Expr::held(cell), value).at(js_span));\n                        let _ = old;\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_drops.rs$"],
   },
   {
     name: "applied-block-kept",
-    breaks: "a plain thread-local's closure called as a statement stays `((timerQueue) => { .. })(timerQueue)`",
+    breaks:
+      "a plain thread-local's closure called as a statement stays `((timerQueue) => { .. })(timerQueue)`",
     file: "src/lower/std_types/cell.rs",
     find: "            js::applied_blocks(&mut function.body, true);\n",
     replace: "",
-    tests: ["test/lowering-cells.test.ts", "-t", "closure called as a statement is its body"],
+    tests: [
+      "test/lowering-cells.test.ts",
+      "-t",
+      "closure called as a statement is its body",
+    ],
   },
   {
     name: "plain-replace-borrowed",
-    breaks: "a `replace` of a struct's `RefCell` field no borrow of which can meet another borrows a handle on it, `$cellReplace($borrowMut({ get value() .. }))` (ADR 0863, amended)",
+    breaks:
+      "a `replace` of a struct's `RefCell` field no borrow of which can meet another borrows a handle on it, `$cellReplace($borrowMut({ get value() .. }))` (ADR 0863, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "                if self.is_std_type(held, StdItem::RefCell) && !unchecked && !self.quiet_ref_cell(held, of_key) {\n",
-    replace: "                if self.is_std_type(held, StdItem::RefCell) && !self.quiet_ref_cell(held, of_key) {\n",
-    tests: ["test/lowering-field-cells.test.ts", "-t", "whatever else has its type"],
+    replace:
+      "                if self.is_std_type(held, StdItem::RefCell) && !self.quiet_ref_cell(held, of_key) {\n",
+    tests: [
+      "test/lowering-field-cells.test.ts",
+      "-t",
+      "whatever else has its type",
+    ],
   },
   {
     name: "guard-of-type-parameter-held",
-    breaks: "a `RefMut` of a type parameter derefs to its cell's `value`, which a `&mut` of the type parameter is read through again, `guard.value.value`",
+    breaks:
+      "a `RefMut` of a type parameter derefs to its cell's `value`, which a `&mut` of the type parameter is read through again, `guard.value.value`",
     file: "src/lower/std_types/cell.rs",
     find: "(mutable && self.handles_mut(guarded))",
     replace: "(mutable && self.is_boxable(guarded))",
@@ -183,23 +240,34 @@ export const mutations: Mutation[] = [
   },
   {
     name: "nullable-cell-set-undefined",
-    breaks: "a nullable `Cell` field's `set(None)`, `take()` and `replace(..)` write `undefined`, where it's made `null`",
+    breaks:
+      "a nullable `Cell` field's `set(None)`, `take()` and `replace(..)` write `undefined`, where it's made `null`",
     file: "src/lower/std_types/cell.rs",
     find: "            js::ExprKind::Handle(_, storage) => storage.written(value, given_nulled),\n",
     replace: "            js::ExprKind::Handle(_, _) => value,\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "nullable Cell field's None is null"],
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "nullable Cell field's None is null",
+    ],
   },
   {
     name: "nullable-cell-some-coalesced",
-    breaks: "a nullable `Cell` field's `set(Some(r))` is `r ?? null`, of a value that's never `undefined`",
+    breaks:
+      "a nullable `Cell` field's `set(Some(r))` is `r ?? null`, of a value that's never `undefined`",
     file: "src/lower/std_types/cell.rs",
     find: "        let given_nulled = call.nulled.get(1) == Some(&true);\n",
     replace: "        let given_nulled = false;\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "where it's made and where it's written"],
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "where it's made and where it's written",
+    ],
   },
   {
     name: "cell-replace-place-twice",
-    breaks: "`value_of(&c).replace(3)` of a `Cell` a call returns calls it twice, reading and writing",
+    breaks:
+      "`value_of(&c).replace(3)` of a `Cell` a call returns calls it twice, reading and writing",
     file: "src/lower/std_types/cell.rs",
     find: "                    false => self.fixed_place_of(Expr::held(cell), out),\n",
     replace: "                    false => Expr::held(cell),\n",
@@ -207,7 +275,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "applied-loaded-kept",
-    breaks: "what a module runs when it's loaded keeps a thread-local's `with` a closure called, `((internals) => { .. })(Internals)`",
+    breaks:
+      "what a module runs when it's loaded keeps a thread-local's `with` a closure called, `((internals) => { .. })(Internals)`",
     file: "src/lower/std_types/cell.rs",
     find: "            js::Item::Statements(stmts) => js::applied_blocks(stmts, false),\n",
     replace: "            js::Item::Statements(_) => {}\n",
@@ -215,23 +284,31 @@ export const mutations: Mutation[] = [
   },
   {
     name: "applied-loaded-tail-return",
-    breaks: "what a module runs when it's loaded takes a closure's `return;` as its own, a module's `return`, which JS refuses",
+    breaks:
+      "what a module runs when it's loaded takes a closure's `return;` as its own, a module's `return`, which JS refuses",
     file: "src/lower/std_types/cell.rs",
     find: "            js::Item::Statements(stmts) => js::applied_blocks(stmts, false),\n",
-    replace: "            js::Item::Statements(stmts) => js::applied_blocks(stmts, true),\n",
+    replace:
+      "            js::Item::Statements(stmts) => js::applied_blocks(stmts, true),\n",
     tests: ["test/lowering-cells.test.ts", "-t", "with is its closure's body"],
   },
   {
     name: "cell-variable-nulled-unmarked",
-    breaks: "a `Some(..)` set through a variable holding a nullable field's handle is `?? null` where tidy writes the field, `context.Consumer = consumerOf(context) ?? null`",
+    breaks:
+      "a `Some(..)` set through a variable holding a nullable field's handle is `?? null` where tidy writes the field, `context.Consumer = consumerOf(context) ?? null`",
     file: "src/lower/std_types/cell.rs",
     find: "            _ if given_nulled && !matches!(value.kind, js::ExprKind::Undefined) => value.defined(),\n",
     replace: "",
-    tests: ["test/lowering-nullable.test.ts", "-t", "what's never undefined as it is"],
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "what's never undefined as it is",
+    ],
   },
   {
     name: "quiet-borrow-checked",
-    breaks: "a `RefCell` no borrow of which can meet another is checked anyway, `$borrow(types, true)`, as nothing can find it borrowed (ADR 0863)",
+    breaks:
+      "a `RefCell` no borrow of which can meet another is checked anyway, `$borrow(types, true)`, as nothing can find it borrowed (ADR 0863)",
     file: "src/lower/std_types/cell.rs",
     find: "            Std::Borrow { lock: false, .. } if unchecked || self.quiet_ref_cell(tys[0].peel_refs(), false) => {\n",
     replace: "            Std::Borrow { lock: false, .. } if unchecked => {\n",
@@ -240,7 +317,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "value-cell-new-boxed",
-    breaks: "a `RefCell` of an object is made a `{ value }`, which the rest reads as the object it isn't",
+    breaks:
+      "a `RefCell` of an object is made a `{ value }`, which the rest reads as the object it isn't",
     file: "src/lower/std_types/cell.rs",
     find: "            Std::CellNew if self.is_value_cell(self.owner_of(call.def_id, generic_args)) => arg(),\n",
     replace: "",
@@ -248,7 +326,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "value-cell-guard-held",
-    breaks: "a guard of a `RefCell` of an object derefs to its `value`, `undefined`",
+    breaks:
+      "a guard of a `RefCell` of an object derefs to its `value`, `undefined`",
     file: "src/lower/std_types/cell.rs",
     find: "        if self.guards_value_cell(ty.peel_refs()) {\n            return guard;\n        }\n",
     replace: "",
@@ -256,10 +335,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "value-cell-replaced-whole",
-    breaks: "a `RefCell` of an object's `replace` sets its `value`, the old one not taken out of the object every name of it sees",
+    breaks:
+      "a `RefCell` of an object's `replace` sets its `value`, the old one not taken out of the object every name of it sees",
     file: "src/lower/std_types/cell.rs",
     find: "                    return Ok(Some(taken(cell, next)));\n",
-    replace: "                    return Ok(Some(Expr::call(Expr::helper(\"$cellReplace\"), vec![cell, next])));\n",
+    replace:
+      '                    return Ok(Some(Expr::call(Expr::helper("$cellReplace"), vec![cell, next])));\n',
     tests: ["test/corpus.test.ts", "-t", "^refcell_objects.rs$"],
   },
   {
@@ -274,13 +355,15 @@ export const mutations: Mutation[] = [
     name: "value-cell-swapped-values",
     breaks: "two `RefCell`s of objects swap their `value`s, which they haven't",
     file: "src/lower/std_types/cell.rs",
-    find: "                if self.is_value_cell(tys[0].peel_refs()) {\n                    given.push(Expr::bool(true));\n                }\n                Expr::call(Expr::helper(\"$refCellSwap\"), given)\n",
-    replace: "                Expr::call(Expr::helper(\"$refCellSwap\"), given)\n",
+    find: '                if self.is_value_cell(tys[0].peel_refs()) {\n                    given.push(Expr::bool(true));\n                }\n                Expr::call(Expr::helper("$refCellSwap"), given)\n',
+    replace:
+      '                Expr::call(Expr::helper("$refCellSwap"), given)\n',
     tests: ["test/corpus.test.ts", "-t", "^refcell_objects.rs$"],
   },
   {
     name: "value-cell-into-inner-held",
-    breaks: "a `RefCell` of an object's `into_inner` is its `value`, `undefined`",
+    breaks:
+      "a `RefCell` of an object's `into_inner` is its `value`, `undefined`",
     file: "src/lower/std_types/cell.rs",
     find: "            Std::CellGet if self.is_value_cell(tys[0]) => arg(),\n",
     replace: "",
@@ -288,31 +371,42 @@ export const mutations: Mutation[] = [
   },
   {
     name: "value-static-given-value",
-    breaks: "a thread-local `RefCell` of an object, its module's variable, gives `with_borrow`'s closure its `value`, `undefined`",
+    breaks:
+      "a thread-local `RefCell` of an object, its module's variable, gives `with_borrow`'s closure its `value`, `undefined`",
     file: "src/lower/std_types/cell.rs",
     find: "                    let given = match itself || mutable && !self.is_object(generic_args.type_at(0)) {\n",
-    replace: "                    let given = match mutable && !self.is_object(generic_args.type_at(0)) {\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "closures call only what can't borrow"],
+    replace:
+      "                    let given = match mutable && !self.is_object(generic_args.type_at(0)) {\n",
+    tests: [
+      "test/lowering-cells.test.ts",
+      "-t",
+      "closures call only what can't borrow",
+    ],
   },
   {
     name: "lazy-set-runs-init",
-    breaks: "`LocalKey::set` of a thread-local not made yet runs its initializer and drops what it made",
+    breaks:
+      "`LocalKey::set` of a thread-local not made yet runs its initializer and drops what it made",
     file: "src/lower/std_types/cell.rs",
     find: "                let unmade = match FnCx::lazy_key_getter(&cell).cloned() {",
-    replace: "                let unmade = match FnCx::lazy_key_getter(&cell).cloned().filter(|_| false) {",
+    replace:
+      "                let unmade = match FnCx::lazy_key_getter(&cell).cloned().filter(|_| false) {",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_set_before_use.rs$"],
   },
   {
     name: "lazy-cell-before-given",
-    breaks: "a lazy thread-local's call is made before what it's given, `replace(made(9))` its initializer first",
+    breaks:
+      "a lazy thread-local's call is made before what it's given, `replace(made(9))` its initializer first",
     file: "src/lower/std_types/cell.rs",
     find: "        if let Some(key) = values.as_slice().first().and_then(FnCx::lazy_key_getter)\n",
-    replace: "        if let Some(key) = values.as_slice().first().and_then(FnCx::lazy_key_getter).filter(|_| false)\n",
+    replace:
+      "        if let Some(key) = values.as_slice().first().and_then(FnCx::lazy_key_getter).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_set_before_use.rs$"],
   },
   {
     name: "local-refcell-set-of-a-box",
-    breaks: "a thread-local `RefCell` that's the array it holds is `set` as a `{ value }`, `ports.value = [1, 0]`, and the next read sees the old array (issue #249)",
+    breaks:
+      "a thread-local `RefCell` that's the array it holds is `set` as a `{ value }`, `ports.value = [1, 0]`, and the next read sees the old array (issue #249)",
     file: "src/lower/std_types/cell.rs",
     find: "                let itself = ref_cell.is_some_and(|ref_cell| self.is_value_cell(ref_cell));\n",
     replace: "                let itself = false;\n",
@@ -320,15 +414,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "local-refcell-set-unchecked",
-    breaks: "a thread-local `RefCell`'s `set` while a borrow of it is held replaces what the borrow reads, where std's panics `already borrowed` (issue #249)",
+    breaks:
+      "a thread-local `RefCell`'s `set` while a borrow of it is held replaces what the borrow reads, where std's panics `already borrowed` (issue #249)",
     file: "src/lower/std_types/cell.rs",
     find: "                let checked = !call.quiet && ref_cell.is_some_and(|ref_cell| !self.quiet_ref_cell(ref_cell, true));\n",
     replace: "                let checked = ref_cell.is_some_and(|_| false);\n",
-    tests: ["test/corpus.test.ts", "-t", "^thread_local_refcell_set_borrowed.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^thread_local_refcell_set_borrowed.rs$",
+    ],
   },
   {
     name: "local-refcell-set-old-undropped",
-    breaks: "a thread-local `RefCell`'s `set` of what has a destructor never drops what it held (issue #249)",
+    breaks:
+      "a thread-local `RefCell`'s `set` of what has a destructor never drops what it held (issue #249)",
     file: "src/lower/std_types/cell.rs",
     find: "                    Some(replaced) if drops => {\n",
     replace: "                    Some(replaced) if false => {\n",
@@ -336,7 +436,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "lazy-set-made-a-box",
-    breaks: "a lazy thread-local `RefCell` that's the array it holds, set before its first use, is made `{ value: [..] }`, where its reads read the array (issues #249, #252)",
+    breaks:
+      "a lazy thread-local `RefCell` that's the array it holds, set before its first use, is made `{ value: [..] }`, where its reads read the array (issues #249, #252)",
     file: "src/lower/std_types/cell.rs",
     find: "                        let made = match itself {\n",
     replace: "                        let made = match false {\n",
@@ -344,71 +445,114 @@ export const mutations: Mutation[] = [
   },
   {
     name: "exported-cell-boxed",
-    breaks: "a `pub` thread-local's cell only its module sets is `export const enabled = { value: false }`, which a JS importer reads as an object (ADR 0270, amended)",
+    breaks:
+      "a `pub` thread-local's cell only its module sets is `export const enabled = { value: false }`, which a JS importer reads as an object (ADR 0270, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "            js::Item::Const(c) if (!c.export || quiet.contains(c.name.as_str())) && is_box(&c.value) => {\n",
-    replace: "            js::Item::Const(c) if !c.export && is_box(&c.value) => {\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "an exported cell its module alone sets"],
+    replace:
+      "            js::Item::Const(c) if !c.export && is_box(&c.value) => {\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "an exported cell its module alone sets",
+    ],
   },
   {
     name: "kept-box-refused",
-    breaks: "a thread-local its module keeps, whose `&mut` it hands on, is refused as an exported one is, though no JS module imports it (ADR 0270, amended)",
+    breaks:
+      "a thread-local its module keeps, whose `&mut` it hands on, is refused as an exported one is, though no JS module imports it (ADR 0270, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "            js::Item::Const(c) if c.export && held_values.contains(c.name.as_str()) && is_box(&c.value) => {\n",
-    replace: "            js::Item::Const(c) if held_values.contains(c.name.as_str()) && is_box(&c.value) => {\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "an exported cell its module needs the cell of is refused"],
+    replace:
+      "            js::Item::Const(c) if held_values.contains(c.name.as_str()) && is_box(&c.value) => {\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "an exported cell its module needs the cell of is refused",
+    ],
   },
   {
     name: "importer-reads-value",
-    breaks: "another module reads an exported variable's `value`, `enabled.value`, of a boolean (ADR 0270, amended)",
+    breaks:
+      "another module reads an exported variable's `value`, `enabled.value`, of a boolean (ADR 0270, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "        js::ExprKind::Member(of, key) if key == js::HELD && variable(of) => {\n",
-    replace: "        js::ExprKind::Member(of, key) if key == js::HELD && variable(of) && false => {\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "an exported cell its module alone sets"],
+    replace:
+      "        js::ExprKind::Member(of, key) if key == js::HELD && variable(of) && false => {\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "an exported cell its module alone sets",
+    ],
   },
   {
     name: "importer-borrow-kept",
-    breaks: "another module's `with_borrow` of an exported variable stays `$withBorrow(label, ..)`, which counts borrows of a string (ADR 0270, amended)",
+    breaks:
+      "another module's `with_borrow` of an exported variable stays `$withBorrow(label, ..)`, which counts borrows of a string (ADR 0270, amended)",
     file: "src/lower/std_types/cell.rs",
-    find: "            if callee.helper_name() == Some(\"$withBorrow\") && matches!(args.as_slice(), [key, _] if variable(key)) =>\n",
-    replace: "            if callee.helper_name() == Some(\"$withBorrow\") && matches!(args.as_slice(), [key, _] if variable(key) && false) =>\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "an exported cell its module alone sets"],
+    find: '            if callee.helper_name() == Some("$withBorrow") && matches!(args.as_slice(), [key, _] if variable(key)) =>\n',
+    replace:
+      '            if callee.helper_name() == Some("$withBorrow") && matches!(args.as_slice(), [key, _] if variable(key) && false) =>\n',
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "an exported cell its module alone sets",
+    ],
   },
   {
     name: "importer-read-fixed",
-    breaks: "an importer's read of another module's variable is taken for one of a function, which nothing sets, so `const rendering = isRendering` is read where it's used, after its module set it again (ADR 0270, amended)",
+    breaks:
+      "an importer's read of another module's variable is taken for one of a function, which nothing sets, so `const rendering = isRendering` is read where it's used, after its module set it again (ADR 0270, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "                facts: js::Facts::of(js::Known::Live),\n                ..read\n",
-    replace: "                facts: js::Facts::of(js::Known::Item),\n                ..read\n",
+    replace:
+      "                facts: js::Facts::of(js::Known::Item),\n                ..read\n",
     tests: ["test/corpus.test.ts", "-t", "^exported_cells.rs$"],
   },
   {
     name: "quiet-field-call-checked",
-    breaks: "a borrow of a struct's field no borrow of which can meet another, of an object, is checked by its type's borrows elsewhere, `$borrowMut(root.times, true)` (ADR 0863, amended)",
+    breaks:
+      "a borrow of a struct's field no borrow of which can meet another, of an object, is checked by its type's borrows elsewhere, `$borrowMut(root.times, true)` (ADR 0863, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "            call.quiet || (values.as_slice().first()).is_some_and(|cell| matches!(cell.kind, js::ExprKind::Handle(..)));\n",
-    replace: "            (values.as_slice().first()).is_some_and(|cell| matches!(cell.kind, js::ExprKind::Handle(..)));\n",
-    tests: ["test/lowering-field-cells.test.ts", "-t", "whatever else has its type"],
+    replace:
+      "            (values.as_slice().first()).is_some_and(|cell| matches!(cell.kind, js::ExprKind::Handle(..)));\n",
+    tests: [
+      "test/lowering-field-cells.test.ts",
+      "-t",
+      "whatever else has its type",
+    ],
   },
   {
     name: "quiet-field-replaced-in-place",
-    breaks: "a `replace` of a struct's field of an object no borrow of which can meet another moves its contents in place, `$take(slot.items, [4])`, where the field is replaced (ADR 0863, amended)",
+    breaks:
+      "a `replace` of a struct's field of an object no borrow of which can meet another moves its contents in place, `$take(slot.items, [4])`, where the field is replaced (ADR 0863, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "                if self.is_value_cell(held) && !(call.quiet && a_place) {\n",
     replace: "                if self.is_value_cell(held) {\n",
-    tests: ["test/lowering-field-cells.test.ts", "-t", "whatever else has its type"],
+    tests: [
+      "test/lowering-field-cells.test.ts",
+      "-t",
+      "whatever else has its type",
+    ],
   },
   {
     name: "quiet-guard-drop-unborrows",
-    breaks: "`drop(guard)` of a quiet field's guard, which counted nothing, unborrows it",
+    breaks:
+      "`drop(guard)` of a quiet field's guard, which counted nothing, unborrows it",
     file: "src/lower/std_types/cell.rs",
     find: "            Std::Drop if call.quiet => {\n",
     replace: "            Std::Drop if false => {\n",
-    tests: ["test/lowering-field-cells.test.ts", "-t", "whatever else has its type"],
+    tests: [
+      "test/lowering-field-cells.test.ts",
+      "-t",
+      "whatever else has its type",
+    ],
   },
   {
     name: "kept-cell-borrowed-uncounted-kept",
-    breaks: "a field's kept cell borrowed where nothing's counted is its guard, `$fieldCell(wrap, \"n\")` spilled, not the property (ADR 0863, amended)",
+    breaks:
+      "a field's kept cell borrowed where nothing's counted is its guard, `$fieldCell(wrap, \"n\")` spilled, not the property (ADR 0863, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "                self.uncounted(cell)\n",
     replace: "                cell\n",
@@ -417,55 +561,89 @@ export const mutations: Mutation[] = [
   },
   {
     name: "local-variable-set-checked",
-    breaks: "a thread-local that's its module's variable is set through `$borrowMut(current)`, so it stays a cell, `export const current = {}`, where it's `export let current` (ADR 0270, amended)",
+    breaks:
+      "a thread-local that's its module's variable is set through `$borrowMut(current)`, so it stays a cell, `export const current = {}`, where it's `export let current` (ADR 0270, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "                let checked = !call.quiet && ref_cell.is_some_and(|ref_cell| !self.quiet_ref_cell(ref_cell, true));\n",
-    replace: "                let checked = ref_cell.is_some_and(|ref_cell| !self.quiet_ref_cell(ref_cell, true));\n",
-    tests: ["test/lowering-field-cells.test.ts", "-t", "whatever else has its type"],
+    replace:
+      "                let checked = ref_cell.is_some_and(|ref_cell| !self.quiet_ref_cell(ref_cell, true));\n",
+    tests: [
+      "test/lowering-field-cells.test.ts",
+      "-t",
+      "whatever else has its type",
+    ],
   },
   {
     name: "nullable-local-set-undefined",
-    breaks: "a nullable thread-local set `None` is `undefined`, `current = undefined`, where React's is `null` (ADR 0586, amended)",
+    breaks:
+      "a nullable thread-local set `None` is `undefined`, `current = undefined`, where React's is `null` (ADR 0586, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "            _ if null_for_none => js::Storage::NullForNone.written(value, given_nulled),\n",
     replace: "",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "nullable thread-local's None is null"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "nullable thread-local's None is null",
+    ],
   },
   {
     name: "nullable-made-as-given",
-    breaks: "a nullable thread-local's cell is made of what it's given, `undefined`, not `null` (ADR 0586, amended)",
+    breaks:
+      "a nullable thread-local's cell is made of what it's given, `undefined`, not `null` (ADR 0586, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "                *value = js::Storage::NullForNone.written(std::mem::replace(value, Expr::undefined()), false);\n",
     replace: "",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "nullable thread-local's None is null"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "nullable thread-local's None is null",
+    ],
   },
   {
     name: "module-array-set-in-place",
-    breaks: "a thread-local of an array its module sets whole is written in place, `$assign(callbacks, [])`, where React's `callbacks = []` gives the variable the new one (ADR 0270, amended)",
+    breaks:
+      "a thread-local of an array its module sets whole is written in place, `$assign(callbacks, [])`, where React's `callbacks = []` gives the variable the new one (ADR 0270, amended)",
     file: "src/lower/std_types/cell.rs",
-    find: "                    && callee.helper_name() == Some(\"$assign\")\n",
-    replace: "                    && callee.helper_name() == Some(\"$assign \")\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a thread-local of an array its module sets"],
+    find: '                    && callee.helper_name() == Some("$assign")\n',
+    replace:
+      '                    && callee.helper_name() == Some("$assign ")\n',
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a thread-local of an array its module sets",
+    ],
   },
   {
     name: "module-array-set-const",
-    breaks: "a thread-local of an array its module gives a new one stays `const`, and JS throws assigning it (ADR 0270, amended)",
+    breaks:
+      "a thread-local of an array its module gives a new one stays `const`, and JS throws assigning it (ADR 0270, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "                c.mutable = true;\n                if c.export {\n                    exported.push((name.clone(), true));\n",
-    replace: "                if c.export {\n                    exported.push((name.clone(), true));\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a thread-local of an array its module sets"],
+    replace:
+      "                if c.export {\n                    exported.push((name.clone(), true));\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a thread-local of an array its module sets",
+    ],
   },
   {
     name: "module-array-set-unexported",
-    breaks: "a thread-local of an array its module gives a new one is declared `export const`, which its importers' TypeScript says can't change (ADR 0270, amended)",
+    breaks:
+      "a thread-local of an array its module gives a new one is declared `export const`, which its importers' TypeScript says can't change (ADR 0270, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "                    exported.push((name.clone(), true));\n",
     replace: "",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a thread-local of an array its module sets"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a thread-local of an array its module sets",
+    ],
   },
   {
     name: "quiet-replace-through-a-reference",
-    breaks: "a quiet field's `RefCell` of an object replaced through a reference to it, a variable, assigns the variable, `replaced = [8]`, not the field (ADR 0863, amended)",
+    breaks:
+      "a quiet field's `RefCell` of an object replaced through a reference to it, a variable, assigns the variable, `replaced = [8]`, not the field (ADR 0863, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "                let a_place = matches!(cell.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..));\n",
     replace: "                let a_place = true;\n",
@@ -473,7 +651,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "thread-local-take-of-key",
-    breaks: "a thread-local `RefCell`'s `take` is the key's, not its cell's, so the array is read as a `{ value }`",
+    breaks:
+      "a thread-local `RefCell`'s `take` is the key's, not its cell's, so the array is read as a `{ value }`",
     file: "src/lower/std_types/cell.rs",
     find: "                let held = crate::lower::recognition::cell_of_key(self.tcx, tys[0].peel_refs());\n",
     replace: "                let held = tys[0].peel_refs();\n",
@@ -481,15 +660,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "nullable-cell-taken-unknown",
-    breaks: "what a nullable thread-local's `take()` gives may be `undefined`, so a nullable function returns it `old ?? null`",
+    breaks:
+      "what a nullable thread-local's `take()` gives may be `undefined`, so a nullable function returns it `old ?? null`",
     file: "src/lower/std_types/cell.rs",
     find: "                match stores_null {\n                    true => old.defined(),\n",
-    replace: "                match false {\n                    true => old.defined(),\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a nullable thread-local of an Option is null where it's made"],
+    replace:
+      "                match false {\n                    true => old.defined(),\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a nullable thread-local of an Option is null where it's made",
+    ],
   },
   {
     name: "nullable-cell-get-undefined",
-    breaks: "a nullable thread-local's read may be `undefined`, `return CURRENT ?? null;` (ADR 0949)",
+    breaks:
+      "a nullable thread-local's read may be `undefined`, `return CURRENT ?? null;` (ADR 0949)",
     file: "src/lower/std_types/cell.rs",
     find: "                    facts: read.facts.with(js::Known::Defined),\n",
     replace: "                    facts: read.facts,\n",
@@ -497,23 +683,34 @@ export const mutations: Mutation[] = [
   },
   {
     name: "nullable-local-clone-maybe-undefined",
-    breaks: "what a nullable thread-local's `with_borrow(Clone::clone)` gives isn't known never `undefined`, `return searchTarget ?? null`",
+    breaks:
+      "what a nullable thread-local's `with_borrow(Clone::clone)` gives isn't known never `undefined`, `return searchTarget ?? null`",
     file: "src/lower/std_types/cell.rs",
     find: "                        facts: e.facts.with(js::Known::Defined),\n",
     replace: "                        facts: e.facts,\n",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable parameter, a nullable thread-local"],
+    tests: [
+      "test/lowering-nullable-reads.test.ts",
+      "-t",
+      "a nullable parameter, a nullable thread-local",
+    ],
   },
   {
     name: "constant-closure-with-applied-kept",
-    breaks: "a thread-local's `with` in a closure of a constant's value, React's DEV dispatchers', stays `((dispatcher) => { .. })(nested)` (ADR 0581, amended)",
+    breaks:
+      "a thread-local's `with` in a closure of a constant's value, React's DEV dispatchers', stays `((dispatcher) => { .. })(nested)` (ADR 0581, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "            js::Item::Const(constant) => js::applied_closures(&mut constant.value),\n",
     replace: "            js::Item::Const(_) => {}\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a thread-local's with in a closure of a constant's value is its body"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a thread-local's with in a closure of a constant's value is its body",
+    ],
   },
   {
     name: "applied-stored-again-skipped",
-    breaks: "a closure put in its place keeps a nullable store's `?? null` of what it's now given, never `undefined` (ADR 0841, amended)",
+    breaks:
+      "a closure put in its place keeps a nullable store's `?? null` of what it's now given, never `undefined` (ADR 0841, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "    js::each_item_expr_mut(items, &mut js::Expr::store_again);\n",
     replace: "",
@@ -521,15 +718,22 @@ export const mutations: Mutation[] = [
   },
   {
     name: "local-with-bool-unknown",
-    breaks: "a `bool` thread-local's value a `with` lends isn't known a `bool`, so React's `supportsUserTiming` is `!!(enableProfilerTimer && typeof console !== \"undefined\") && ..`",
+    breaks:
+      "a `bool` thread-local's value a `with` lends isn't known a `bool`, so React's `supportsUserTiming` is `!!(enableProfilerTimer && typeof console !== \"undefined\") && ..`",
     file: "src/lower/std_types/cell.rs",
     find: "                if generic_args.type_at(0).is_bool() {\n                    key.facts = key.facts.with(js::Known::Boolean);\n",
-    replace: "                if false {\n                    key.facts = key.facts.with(js::Known::Boolean);\n",
-    tests: ["test/lowering-is-function.test.ts", "-t", "a thread-local bool of another"],
+    replace:
+      "                if false {\n                    key.facts = key.facts.with(js::Known::Boolean);\n",
+    tests: [
+      "test/lowering-is-function.test.ts",
+      "-t",
+      "a thread-local bool of another",
+    ],
   },
   {
     name: "taken-whole-in-place",
-    breaks: "a thread-local array taken first in its statement is emptied in place, `for (const id of $take(pending, []))`, not React's `const old = pending; pending = [];` (ADR 0270, amended)",
+    breaks:
+      "a thread-local array taken first in its statement is emptied in place, `for (const id of $take(pending, []))`, not React's `const old = pending; pending = [];` (ADR 0270, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "            sets += taken_whole(stmts, &name);\n",
     replace: "",
@@ -538,7 +742,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "taken-unread-read",
-    breaks: "a take whose value is unread reads the old array into a statement of its own, `const old = pending; pending = []; old;` (ADR 0270, amended)",
+    breaks:
+      "a take whose value is unread reads the old array into a statement of its own, `const old = pending; pending = []; old;` (ADR 0270, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "        if let StmtKind::Expr(_) = &stmts[i].kind {\n            stmts[i] = set;\n",
     replace: "        if false {\n            stmts[i] = set;\n",
@@ -547,7 +752,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "taken-let-of-old",
-    breaks: "a `let` of a take is a `const` of an `old` it reads, `const old = pending; pending = [7, 8]; const before = old;`, not `const before = pending;` (ADR 0270, amended)",
+    breaks:
+      "a `let` of a take is a `const` of an `old` it reads, `const old = pending; pending = [7, 8]; const before = old;`, not `const before = pending;` (ADR 0270, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "        if let StmtKind::Const(..) | StmtKind::Let(..) = &stmts[i].kind {\n",
     replace: "        if false {\n",
@@ -556,15 +762,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cell-take-unmarked",
-    breaks: "a `Cell` field's `take()` then tested keeps its take first, `const cancel = root.cancel; root.cancel = undefined; if (cancel != null)` (ADR 0996)",
+    breaks:
+      "a `Cell` field's `take()` then tested keeps its take first, `const cancel = root.cancel; root.cancel = undefined; if (cancel != null)` (ADR 0996)",
     file: "src/lower/std_types/cell.rs",
     find: "                let next = match known == Std::CellTake && self.option_of(item).is_some() && js::taken_place(&place) {\n",
-    replace: "                let next = match false && js::taken_place(&place) {\n",
+    replace:
+      "                let next = match false && js::taken_place(&place) {\n",
     tests: ["test/lowering-takes.test.ts", "-t", "an Option taken then tested"],
   },
   {
     name: "namespaced-variable-held",
-    breaks: "another module's thread-local read through its module's namespace, `fiber::IS_RENDERING.get()`, is read as its cell, `Fiber.isRendering.value`, where it's its module's variable, `Fiber.isRendering`, which has no `value` (rd114a, ADR 1018)",
+    breaks:
+      "another module's thread-local read through its module's namespace, `fiber::IS_RENDERING.get()`, is read as its cell, `Fiber.isRendering.value`, where it's its module's variable, `Fiber.isRendering`, which has no `value` (rd114a, ADR 1018)",
     file: "src/lower/std_types/cell.rs",
     find: "if namespace.export == js::NAMESPACE\n",
     replace: "if namespace.export == js::NAMESPACE && false\n",
@@ -572,15 +781,21 @@ export const mutations: Mutation[] = [
   },
   {
     name: "crate-variable-read-as-cell",
-    breaks: "another of the crate's modules reads an exported variable's `value`, `enabled.value` (ADR 0270, amended)",
+    breaks:
+      "another of the crate's modules reads an exported variable's `value`, `enabled.value` (ADR 0270, amended)",
     file: "src/lower/std_types/cell.rs",
     find: "    if named.is_empty() {\n        return;\n",
     replace: "    if !named.is_empty() {\n        return;\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "an exported cell its module alone sets"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "an exported cell its module alone sets",
+    ],
   },
   {
     name: "placed-read-catch-kept",
-    breaks: "a library's thread-local read as its `export let`, `previous = current`, keeps the `try` its `$withBorrow(..)` had, `catch (error) { dropA0?.(arg0); throw error; }` (#408)",
+    breaks:
+      "a library's thread-local read as its `export let`, `previous = current`, keeps the `try` its `$withBorrow(..)` had, `catch (error) { dropA0?.(arg0); throw error; }` (#408)",
     file: "src/lower/std_types/cell.rs",
     find: "            crate::lower::mir::settle_unthrown_catches(&mut function.body);\n",
     replace: "",
@@ -588,7 +803,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "momentary-borrow-counted",
-    breaks: "a momentary borrow of a counted `RefCell` is counted though its guard's drop releases nothing, so the cell stays borrowed and the next borrow panics `RefCell already borrowed` (rd218)",
+    breaks:
+      "a momentary borrow of a counted `RefCell` is counted though its guard's drop releases nothing, so the cell stays borrowed and the next borrow panics `RefCell already borrowed` (rd218)",
     file: "src/lower/std_types/cell.rs",
     find: "                if !call.momentary || lock {\n",
     replace: "                if true {\n",
@@ -596,10 +812,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "taken-array-copied",
-    breaks: "an array taken, `queue.take()` of a `RefCell<Vec<_>>`, is `$take(queue, [])`, a copy and a helper, not `queue.splice(0)` (rd264)",
+    breaks:
+      "an array taken, `queue.take()` of a `RefCell<Vec<_>>`, is `$take(queue, [])`, a copy and a helper, not `queue.splice(0)` (rd264)",
     file: "src/lower/std_types/cell.rs",
     find: "        js::ExprKind::Array(items) if items.is_empty() => {\n",
-    replace: "        js::ExprKind::Array(items) if items.is_empty() && false => {\n",
+    replace:
+      "        js::ExprKind::Array(items) if items.is_empty() && false => {\n",
     tests: ["test/lowering-cell-borrows.test.ts", "-t", "an array taken"],
   },
 ];

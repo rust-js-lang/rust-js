@@ -4,7 +4,8 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "boxed-some-dropped-boxed",
-    breaks: "a generic `Option<T>`'s boxed `Some` is given to `T`'s drop as the box",
+    breaks:
+      "a generic `Option<T>`'s boxed `Some` is given to `T`'s drop as the box",
     file: "src/lower/drops/parts.rs",
     find: "                        true => self.some_value(value.clone()),",
     replace: "                        true => value.clone(),",
@@ -20,31 +21,39 @@ export const mutations: Mutation[] = [
   },
   {
     name: "btree-drops-unsorted",
-    breaks: "a `BTreeMap` JS gives drops its values in the order they went in (the crate's own are kept in order, ADR 0404, amended)",
+    breaks:
+      "a `BTreeMap` JS gives drops its values in the order they went in (the crate's own are kept in order, ADR 0404, amended)",
     file: "src/lower/drops/parts.rs",
     find: "                        true => self.in_order_of(value, ty, span)?,\n",
     replace: "                        true => value,\n",
-    tests: ["test/lowering-collections.test.ts", "-t", "a B-tree JS gives is dropped in its keys' order"],
+    tests: [
+      "test/lowering-collections.test.ts",
+      "-t",
+      "a B-tree JS gives is dropped in its keys' order",
+    ],
   },
   {
     name: "guard-drop-unrun",
     breaks: "a guard dropped leaves its cell borrowed",
     file: "src/lower/drops/parts.rs",
-    find: "                out.push(StmtKind::Expr(Expr::call(Expr::helper(\"$unborrow\"), vec![value])).at(js_span));\n",
+    find: '                out.push(StmtKind::Expr(Expr::call(Expr::helper("$unborrow"), vec![value])).at(js_span));\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "refcell_borrows"],
   },
   {
     name: "owned-iter-left-undropped",
-    breaks: "what a `vec::IntoIter` hasn't given yet isn't dropped when a loop leaves early",
+    breaks:
+      "what a `vec::IntoIter` hasn't given yet isn't dropped when a loop leaves early",
     file: "src/lower/drops/parts.rs",
     find: "            ty::Adt(..) if let Some(item) = self.recognition().owned_items(ty) => {\n",
-    replace: "            ty::Adt(..) if let Some(item) = self.recognition().owned_items(ty).filter(|_| false) => {\n",
+    replace:
+      "            ty::Adt(..) if let Some(item) = self.recognition().owned_items(ty).filter(|_| false) => {\n",
     tests: ["test/corpus.test.ts", "-t", "loop_drops"],
   },
   {
     name: "closure-problems-unfiltered",
-    breaks: "a body lowered from its MIR is refused what THIR's facts refuse of more than its closures, moving part of a value with a destructor that MIR's drops handle",
+    breaks:
+      "a body lowered from its MIR is refused what THIR's facts refuse of more than its closures, moving part of a value with a destructor that MIR's drops handle",
     file: "src/lower/drops/parts.rs",
     find: "        for (span, what, _) in facts.problems.iter().filter(|(.., closure)| *closure) {\n",
     replace: "        for (span, what, _) in facts.problems.iter() {\n",
@@ -52,10 +61,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dyn-cell-drop-of-value",
-    breaks: "a `RefCell<dyn T>` dropped drops its `value` as the pair, not the cell it is",
+    breaks:
+      "a `RefCell<dyn T>` dropped drops its `value` as the pair, not the cell it is",
     file: "src/lower/drops/parts.rs",
     find: "                let value = match self.cell_dyn_trait(inner).is_some() || self.is_value_cell(ty) {\n                    true => value,\n",
-    replace: "                let value = match self.is_value_cell(ty) {\n                    true => value,\n",
+    replace:
+      "                let value = match self.is_value_cell(ty) {\n                    true => value,\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cell_drop.rs$"],
   },
   {
@@ -84,7 +95,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "lock-value-undropped",
-    breaks: "a `Mutex` or an `RwLock` holding a value with a destructor crashes the compiler, its fields asked of a cell",
+    breaks:
+      "a `Mutex` or an `RwLock` holding a value with a destructor crashes the compiler, its fields asked of a cell",
     file: "src/lower/drops/parts.rs",
     find: "                if [StdItem::RefCell, StdItem::Mutex, StdItem::RwLock, StdItem::Cell]\n",
     replace: "                if [StdItem::RefCell, StdItem::Cell]\n",
@@ -92,26 +104,32 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dyn-tail-dropped-as-pair",
-    breaks: "a struct's `dyn` last field is dropped as a pair, `fat.inner.impl.$drop`, not through the struct's `impl`, and throws",
+    breaks:
+      "a struct's `dyn` last field is dropped as a pair, `fat.inner.impl.$drop`, not through the struct's `impl`, and throws",
     file: "src/lower/drops/parts.rs",
     find: "                        if let ty::Dynamic(..) = field.kind() {\n",
-    replace: "                        if false && let ty::Dynamic(..) = field.kind() {\n",
+    replace:
+      "                        if false && let ty::Dynamic(..) = field.kind() {\n",
     tests: ["test/corpus.test.ts", "-t", "^unsized_struct_dyn.rs$"],
   },
   {
     name: "map-keys-undropped",
-    breaks: "dropping a map of keys and values with destructors drops its values alone",
+    breaks:
+      "dropping a map of keys and values with destructors drops its values alone",
     file: "src/lower/drops/parts.rs",
     find: "                            let mut value_dropped = Vec::new();\n                            self.drop_in(Expr::var(&key), key_ty, span, made, &mut body)?;\n",
-    replace: "                            let mut value_dropped = Vec::new();\n",
+    replace:
+      "                            let mut value_dropped = Vec::new();\n",
     tests: ["test/corpus.test.ts", "-t", "^map_key_drops.rs$"],
   },
   {
     name: "returned-closure-drop-refused",
-    breaks: "a closure made elsewhere that carries its drop is refused where it's dropped",
+    breaks:
+      "a closure made elsewhere that carries its drop is refused where it's dropped",
     file: "src/lower/drops/parts.rs",
     find: "                if self.frame.owner != *def_id && self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) =>\n",
-    replace: "                if false && self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) =>\n",
+    replace:
+      "                if false && self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^returned_closure_drops.rs$"],
   },
   {
@@ -119,7 +137,8 @@ export const mutations: Mutation[] = [
     breaks: "a `Cell` dropped drops none of its value",
     file: "src/lower/drops/parts.rs",
     find: "                if [StdItem::RefCell, StdItem::Mutex, StdItem::RwLock, StdItem::Cell]\n",
-    replace: "                if [StdItem::RefCell, StdItem::Mutex, StdItem::RwLock]\n",
+    replace:
+      "                if [StdItem::RefCell, StdItem::Mutex, StdItem::RwLock]\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_drops.rs$"],
   },
   {
@@ -127,15 +146,18 @@ export const mutations: Mutation[] = [
     breaks: "a `OnceCell` dropped drops none of its value",
     file: "src/lower/drops/parts.rs",
     find: "            ty::Adt(_, args) if self.is_std_type(ty, StdItem::OnceCell) => {\n",
-    replace: "            ty::Adt(_, args) if false && self.is_std_type(ty, StdItem::OnceCell) => {\n",
+    replace:
+      "            ty::Adt(_, args) if false && self.is_std_type(ty, StdItem::OnceCell) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_drops.rs$"],
   },
   {
     name: "carried-dropped-by-places",
-    breaks: "a closure that carries its drop is dropped by its maker's variables where it's made, once for each clone",
+    breaks:
+      "a closure that carries its drop is dropped by its maker's variables where it's made, once for each clone",
     file: "src/lower/drops/parts.rs",
-    find: "                out.push(StmtKind::Expr(Expr::call_helper(\"$dispose\", vec![value])).at(js_span));\n            }\n            ty::Closure(def_id, _) | ty::CoroutineClosure(def_id, _) => self.drop_taken",
-    replace: "                self.drop_taken(*def_id, span, made, out)?;\n            }\n            ty::Closure(def_id, _) | ty::CoroutineClosure(def_id, _) => self.drop_taken",
+    find: '                out.push(StmtKind::Expr(Expr::call_helper("$dispose", vec![value])).at(js_span));\n            }\n            ty::Closure(def_id, _) | ty::CoroutineClosure(def_id, _) => self.drop_taken',
+    replace:
+      "                self.drop_taken(*def_id, span, made, out)?;\n            }\n            ty::Closure(def_id, _) | ty::CoroutineClosure(def_id, _) => self.drop_taken",
     tests: ["test/corpus.test.ts", "-t", "^closure_clone_counted.rs$"],
   },
   {
@@ -143,36 +165,48 @@ export const mutations: Mutation[] = [
     breaks: "a `dyn Fn` is dropped by a dictionary it doesn't have",
     file: "src/lower/drops/parts.rs",
     find: "            ty::Dynamic(predicates, ..) if crate::lower::recognition::is_fn_dyn(self.tcx, predicates) => {\n                out.push(",
-    replace: "            ty::Dynamic(predicates, ..) if false && crate::lower::recognition::is_fn_dyn(self.tcx, predicates) => {\n                out.push(",
+    replace:
+      "            ty::Dynamic(predicates, ..) if false && crate::lower::recognition::is_fn_dyn(self.tcx, predicates) => {\n                out.push(",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_drops.rs$"],
   },
   {
     name: "future-dropped-again",
-    breaks: "an `async` block's future, dropped after its body has run, drops what it took again",
+    breaks:
+      "an `async` block's future, dropped after its body has run, drops what it took again",
     file: "src/lower/drops/parts.rs",
     find: "            ty::Coroutine(..) => {}\n",
-    replace: "            ty::Coroutine(def_id, _) => self.drop_taken(*def_id, span, made, out)?,\n",
-    tests: ["test/lowering-functions.test.ts", "-t", "an async block or closure drops what it took"],
+    replace:
+      "            ty::Coroutine(def_id, _) => self.drop_taken(*def_id, span, made, out)?,\n",
+    tests: [
+      "test/lowering-functions.test.ts",
+      "-t",
+      "an async block or closure drops what it took",
+    ],
   },
   {
     name: "value-cell-drops-value",
-    breaks: "a `RefCell` of an object dropped drops its `value`, `undefined`, not the object, its items' destructors unrun",
+    breaks:
+      "a `RefCell` of an object dropped drops its `value`, `undefined`, not the object, its items' destructors unrun",
     file: "src/lower/drops/parts.rs",
     find: "                let value = match self.cell_dyn_trait(inner).is_some() || self.is_value_cell(ty) {\n",
-    replace: "                let value = match self.cell_dyn_trait(inner).is_some() {\n",
+    replace:
+      "                let value = match self.cell_dyn_trait(inner).is_some() {\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_counts.rs$"],
   },
   {
     name: "fn-once-disposes-itself",
-    breaks: "a closure that carries its drop, called by `FnOnce`, drops itself in its own body by `$dispose` of a function that has no name there (ADR 0873)",
+    breaks:
+      "a closure that carries its drop, called by `FnOnce`, drops itself in its own body by `$dispose` of a function that has no name there (ADR 0873)",
     file: "src/lower/drops/parts.rs",
     find: "                if self.frame.owner != *def_id && self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) =>\n",
-    replace: "                if self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) =>\n",
+    replace:
+      "                if self.krate.closure_facts.carries_its_drop(self.tcx, *def_id) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_once_drops_itself.rs$"],
   },
   {
     name: "std-struct-dropped-by-parts",
-    breaks: "a `Peekable` std's compiled `fold` took is dropped again by its fields after, `drop e` twice (ADR 0913)",
+    breaks:
+      "a `Peekable` std's compiled `fold` took is dropped again by its fields after, `drop e` twice (ADR 0913)",
     file: "src/lower/drops/parts.rs",
     find: "            || (crate::lower::recognition::is_compiled_std_iterator(self.tcx, self.reveal(ty))\n                && !crate::lower::recognition::is_held_compiled(self.tcx, self.reveal(ty)))",
     replace: "",
@@ -180,7 +214,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "drop-parts-unchained",
-    breaks: "a struct's, a tuple's or a variant's parts after one whose destructor panics are never dropped, its throw past them (#416)",
+    breaks:
+      "a struct's, a tuple's or a variant's parts after one whose destructor panics are never dropped, its throw past them (#416)",
     file: "src/lower/drops/parts.rs",
     find: "            false => vec![StmtKind::Try(part, rest).at(js_span)],\n",
     replace: "            false => part.into_iter().chain(rest).collect(),\n",
@@ -188,7 +223,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "drop-items-unchained",
-    breaks: "an array's or a `Vec`'s items after one whose destructor panics are never dropped, a `for…of` left by its throw (#416)",
+    breaks:
+      "an array's or a `Vec`'s items after one whose destructor panics are never dropped, a `for…of` left by its throw (#416)",
     file: "src/lower/drops/parts.rs",
     find: "    if !may_throw(&body) {\n        return StmtKind::ForOf {\n",
     replace: "    if true {\n        return StmtKind::ForOf {\n",

@@ -4,7 +4,8 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "self-handle-counted-lowered",
-    breaks: "a closure's handle on itself whose `Rc` the program counts, `Rc::strong_count`, is written as no JS too, its upgrade its own name, where its counts must be kept",
+    breaks:
+      "a closure's handle on itself whose `Rc` the program counts, `Rc::strong_count`, is written as no JS too, its upgrade its own name, where its counts must be kept",
     file: "src/lower/analysis.rs",
     find: "    self_handles.uncounted(|pointee| counted.counts(tcx, pointee));\n",
     replace: "",
@@ -12,41 +13,59 @@ export const mutations: Mutation[] = [
   },
   {
     name: "types-only-module-unlisted",
-    breaks: "a module of only `pub type`s and structs writes no `.d.ts`, so TypeScript importing its types finds no module (ADR 1005)",
+    breaks:
+      "a module of only `pub type`s and structs writes no `.d.ts`, so TypeScript importing its types finds no module (ADR 1005)",
     file: "src/lower/analysis.rs",
     find: "        if types && seen_modules.insert(module) {\n",
     replace: "        if false && types && seen_modules.insert(module) {\n",
     tests: ["test/cargo-in-source.test.ts", "-t", "declarations in source"],
   },
 
-
   {
     name: "untagged-counted-rc-unrefused",
-    breaks: "an untagged enum's variant of an `Rc` the crate counts, `{ value, strong, weak }`, is tested `Array.isArray`, which it never is (ADR 0214, amended)",
+    breaks:
+      "an untagged enum's variant of an `Rc` the crate counts, `{ value, strong, weak }`, is tested `Array.isArray`, which it never is (ADR 0214, amended)",
     file: "src/lower/analysis.rs",
     find: "        if let Some(pointee) = super::recognition::rc_pointee(tcx, held)\n            && counted.counts(tcx, pointee)\n",
-    replace: "        if let Some(pointee) = super::recognition::rc_pointee(tcx, held)\n            && counted.counts(tcx, pointee) && false\n",
-    tests: ["test/diagnostics.test.ts", "-t", "variant of an Rc the crate counts"],
+    replace:
+      "        if let Some(pointee) = super::recognition::rc_pointee(tcx, held)\n            && counted.counts(tcx, pointee) && false\n",
+    tests: [
+      "test/diagnostics.test.ts",
+      "-t",
+      "variant of an Rc the crate counts",
+    ],
   },
   {
     name: "initializer-imports-unnamed",
-    breaks: "a static of a module's binding, `static NOTIFY: fn() -> f64 = toast`, names no import, and lowering it panics",
+    breaks:
+      "a static of a module's binding, `static NOTIFY: fn() -> f64 = toast`, names no import, and lowering it panics",
     file: "src/lower/analysis.rs",
     find: "all_bodies.iter().copied().chain(initializers).collect();",
     replace: "all_bodies.to_vec();",
-    tests: ["test/lowering-bindings.test.ts", "-t", "a static of a module's binding imports it"],
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "-t",
+      "a static of a module's binding imports it",
+    ],
   },
   {
     name: "numbered-variants-unnamed",
-    breaks: "a numbered enum's variants are no module's `const`s, each read as its number, `payload._status = 0`, not `Pending`",
+    breaks:
+      "a numbered enum's variants are no module's `const`s, each read as its number, `payload._status = 0`, not `Pending`",
     file: "src/lower/analysis.rs",
     find: "        .filter(|&d| tcx.def_kind(d) == DefKind::Enum && bindings::numbered(tcx, tcx.adt_def(d)))\n",
-    replace: "        .filter(|&d| tcx.def_kind(d) == DefKind::Enum && bindings::numbered(tcx, tcx.adt_def(d)) && false)\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "a library's repr enum's variant is imported by its name"],
+    replace:
+      "        .filter(|&d| tcx.def_kind(d) == DefKind::Enum && bindings::numbered(tcx, tcx.adt_def(d)) && false)\n",
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "a library's repr enum's variant is imported by its name",
+    ],
   },
   {
     name: "const-reexport-dropped",
-    breaks: "`pub use priorities::IDLE` re-exports nothing, so `IDLE` isn't the module's",
+    breaks:
+      "`pub use priorities::IDLE` re-exports nothing, so `IDLE` isn't the module's",
     file: "src/lower/analysis.rs",
     find: "DefKind::Fn | DefKind::Const { .. }, _)) => true,",
     replace: "DefKind::Fn, _)) => true,",
@@ -54,7 +73,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "thread-local-storage-static",
-    breaks: "std's storage for a `thread_local!` is taken as a static of the crate's, and rejected",
+    breaks:
+      "std's storage for a `thread_local!` is taken as a static of the crate's, and rejected",
     file: "src/lower/analysis.rs",
     find: "            DefKind::Static { .. } => !tcx.is_foreign_item(d) && in_thread_local(tcx, d).is_none(),",
     replace: "            DefKind::Static { .. } => !tcx.is_foreign_item(d),",
@@ -70,15 +90,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "pretty-flag-off",
-    breaks: "a crate that shows a value with `{:#?}` gives its `Debug`s no `alternate`, and they're plain",
+    breaks:
+      "a crate that shows a value with `{:#?}` gives its `Debug`s no `alternate`, and they're plain",
     file: "src/lower/analysis.rs",
     find: "    let pretty_debug = std_bodies || uses_pretty_debug(tcx, all_bodies);",
-    replace: "    let pretty_debug = std_bodies || (false && uses_pretty_debug(tcx, all_bodies));",
-    tests: ["test/corpus.test.ts","-t","pretty_debug"],
+    replace:
+      "    let pretty_debug = std_bodies || (false && uses_pretty_debug(tcx, all_bodies));",
+    tests: ["test/corpus.test.ts", "-t", "pretty_debug"],
   },
   {
     name: "user-hash-lowered",
-    breaks: "a type's own `Hash`'s `hash`, and its `Future`'s `poll`, are lowered, and what they call refused, though nothing calls them",
+    breaks:
+      "a type's own `Hash`'s `hash`, and its `Future`'s `poll`, are lowered, and what they call refused, though nothing calls them",
     file: "src/lower/analysis.rs",
     find: "                    && !is_unlowered_impl(tcx, parent)\n",
     replace: "",
@@ -86,27 +109,40 @@ export const mutations: Mutation[] = [
   },
   {
     name: "js-object-deref-lowered",
-    breaks: "a JS class's `Deref` to the class it extends is lowered, a function making a pointer to nothing",
+    breaks:
+      "a JS class's `Deref` to the class it extends is lowered, a function making a pointer to nothing",
     file: "src/lower/analysis.rs",
     find: "                    && !is_js_object_deref(tcx, parent)\n",
     replace: "",
-    tests: ["test/js-class-deref.test.ts", "-t", "a JS class's Deref to the class it extends is no JS"],
+    tests: [
+      "test/js-class-deref.test.ts",
+      "-t",
+      "a JS class's Deref to the class it extends is no JS",
+    ],
   },
   {
     name: "reexport-only-module-unwritten",
-    breaks: "a module of only `pub use`s, Sidebar/index, gets no file, and what imports it finds nothing",
+    breaks:
+      "a module of only `pub use`s, Sidebar/index, gets no file, and what imports it finds nothing",
     file: "src/lower/analysis.rs",
     find: "if (reexports || defaulted()) && seen_modules.insert(module)",
-    replace: "if (false && reexports || defaulted()) && seen_modules.insert(module)",
+    replace:
+      "if (false && reexports || defaulted()) && seen_modules.insert(module)",
     tests: ["test/modules.test.ts", "-t", "only pub uses"],
   },
   {
     name: "const-thread-local-init-unseen",
-    breaks: "a `const { .. }` thread-local's value is a `const` of std's name, `__RUST_STD_INTERNAL_INIT`, which nothing reads",
+    breaks:
+      "a `const { .. }` thread-local's value is a `const` of std's name, `__RUST_STD_INTERNAL_INIT`, which nothing reads",
     file: "src/lower/analysis.rs",
     find: "                .filter(|&d| matches!(tcx.def_kind(d), DefKind::Const { .. })),\n",
-    replace: "                .filter(|&d| matches!(tcx.def_kind(d), DefKind::Const { .. }) && false),\n",
-    tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
+    replace:
+      "                .filter(|&d| matches!(tcx.def_kind(d), DefKind::Const { .. }) && false),\n",
+    tests: [
+      "test/modules.test.ts",
+      "-t",
+      "only read and set is the module's let",
+    ],
   },
   {
     name: "default-only-module-fileless",
@@ -122,86 +158,116 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis.rs",
     find: "        .chain(coded_inline_consts(tcx, all_bodies))\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","slice_uninit"],
+    tests: ["test/corpus.test.ts", "-t", "slice_uninit"],
     snapshots: true,
   },
   {
     name: "coded-inline-consts-every",
-    breaks: "every `const { .. }` block is a module constant, one rustc's value says too",
+    breaks:
+      "every `const { .. }` block is a module constant, one rustc's value says too",
     file: "src/lower/analysis.rs",
     find: "                .is_none()\n            {\n                coded.push(local);",
-    replace: "                .is_none_or(|_| true)\n            {\n                coded.push(local);",
-    tests: ["test/corpus.test.ts","-t","const_blocks_and_let_guards"],
+    replace:
+      "                .is_none_or(|_| true)\n            {\n                coded.push(local);",
+    tests: ["test/corpus.test.ts", "-t", "const_blocks_and_let_guards"],
     snapshots: true,
   },
   {
     name: "trait-default-const-unread",
-    breaks: "a trait's default constant's initializer isn't read, so a library's dictionary can't copy it in",
+    breaks:
+      "a trait's default constant's initializer isn't read, so a library's dictionary can't copy it in",
     file: "src/lower/analysis.rs",
     find: "\n                    || tcx.trait_of_assoc(def_id.to_def_id()).is_some())",
     replace: ")",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "default constant of Self"],
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "default constant of Self",
+    ],
   },
   {
-    "name": "trait-default-reads-generic",
-    "breaks": "a trait default's `Self::B` counts as generic code reading `B`, so `()`'s defaults of each other are computed, a cycle",
-    "file": "src/lower/analysis.rs",
-    "find": "            !(matches!(tcx.def_kind(body.def_id), DefKind::AssocConst { .. })",
-    "replace": "            true || !(matches!(tcx.def_kind(body.def_id), DefKind::AssocConst { .. })",
-    "tests": ["test/lowering-structs-enums.test.ts", "-t", "defaulting to each other"]
+    name: "trait-default-reads-generic",
+    breaks:
+      "a trait default's `Self::B` counts as generic code reading `B`, so `()`'s defaults of each other are computed, a cycle",
+    file: "src/lower/analysis.rs",
+    find: "            !(matches!(tcx.def_kind(body.def_id), DefKind::AssocConst { .. })",
+    replace:
+      "            true || !(matches!(tcx.def_kind(body.def_id), DefKind::AssocConst { .. })",
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "defaulting to each other",
+    ],
   },
   {
     name: "mir-quiet-locals-none",
-    breaks: "MIR knows no quiet thread-local, each borrowed through `$withBorrow`",
+    breaks:
+      "MIR knows no quiet thread-local, each borrowed through `$withBorrow`",
     file: "src/lower/analysis.rs",
     find: "    let quiet_locals = plain_locals::plain_thread_locals(\n        tcx,\n        all_bodies,\n        (thread_local_inits.values().copied()).filter(|key| !lazy_locals.contains(key)),\n        &quiet,\n    );\n",
     replace: "    let quiet_locals: HashSet<_> = HashSet::new();\n",
-    tests: ["test/modules.test.ts","-t","thread-local only read and set"],
+    tests: ["test/modules.test.ts", "-t", "thread-local only read and set"],
   },
   {
     name: "mir-evaluated-body-lost",
     breaks: "a \`const fn\` a pattern's constant evaluates has no MIR, refused",
     file: "src/lower/analysis.rs",
     find: "        body.mir = match (built.is_stolen() || promoted.is_stolen(), evaluated(local)) {\n",
-    replace: "        body.mir = match (built.is_stolen() || promoted.is_stolen(), false) {\n",
+    replace:
+      "        body.mir = match (built.is_stolen() || promoted.is_stolen(), false) {\n",
     tests: ["test/corpus.test.ts", "-t", "const_fn_in_patterns"],
   },
   {
     name: "analysis-root-always-a-file",
-    breaks: "a crate root of `mod`s alone, an app's list of its files, writes an empty JS file of its own, `src/lib.js`",
+    breaks:
+      "a crate root of `mod`s alone, an app's list of its files, writes an empty JS file of its own, `src/lib.js`",
     file: "src/lower/analysis.rs",
     find: "    let mut modules = Vec::new();\n    let mut seen_modules = HashSet::new();\n",
-    replace: "    let mut modules = vec![rustc_span::def_id::CRATE_MOD_ID];\n    let mut seen_modules = HashSet::from([rustc_span::def_id::CRATE_MOD_ID]);\n",
+    replace:
+      "    let mut modules = vec![rustc_span::def_id::CRATE_MOD_ID];\n    let mut seen_modules = HashSet::from([rustc_span::def_id::CRATE_MOD_ID]);\n",
     tests: ["test/modules.test.ts", "-t", "a root of modules alone"],
   },
   {
     name: "analysis-import-alone-no-file",
-    breaks: "a module whose only item is a `js::import!` gets no file, and what it imports is lost",
+    breaks:
+      "a module whose only item is a `js::import!` gets no file, and what it imports is lost",
     file: "src/lower/analysis.rs",
-    find: "        if bindings::marks(tcx, module, \"import\").next().is_some() && seen_modules.insert(module) {",
+    find: '        if bindings::marks(tcx, module, "import").next().is_some() && seen_modules.insert(module) {',
     replace: "        if false && seen_modules.insert(module) {",
-    tests: ["test/modules.test.ts", "-t", "a root of modules alone|js::import! imports a module"],
+    tests: [
+      "test/modules.test.ts",
+      "-t",
+      "a root of modules alone|js::import! imports a module",
+    ],
   },
   {
     name: "js-object-deref-dictionary",
-    breaks: "a JS object's `Deref` to the class it extends is given a dictionary, whose `deref` is never lowered",
+    breaks:
+      "a JS object's `Deref` to the class it extends is given a dictionary, whose `deref` is never lowered",
     file: "src/lower/analysis.rs",
     find: "        .filter(|&id| !is_js_object_deref(tcx, id))\n",
     replace: "",
-    tests: ["test/compiler.test.ts", "-t", "an untagged enum is its payload, told apart"],
+    tests: [
+      "test/compiler.test.ts",
+      "-t",
+      "an untagged enum is its payload, told apart",
+    ],
   },
   {
     name: "impl-const-any-type",
-    breaks: "an impl's constant of a number is lowered as code, `S.ZERO`, not its value, `0`",
+    breaks:
+      "an impl's constant of a number is lowered as code, `S.ZERO`, not its value, `0`",
     file: "src/lower/analysis.rs",
     find: "    coded\n        && (tcx.trait_impl_of_assoc(def_id).is_none()\n",
-    replace: "    true\n        && (tcx.trait_impl_of_assoc(def_id).is_none()\n",
+    replace:
+      "    true\n        && (tcx.trait_impl_of_assoc(def_id).is_none()\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_fn_consts.rs$"],
     snapshots: true,
   },
   {
     name: "impl-const-generic-trait-impl",
-    breaks: "a generic trait impl's constant, of its parameters' evidence, is lowered once as a constant of its module, which has none",
+    breaks:
+      "a generic trait impl's constant, of its parameters' evidence, is lowered once as a constant of its module, which has none",
     file: "src/lower/analysis.rs",
     find: "    coded\n        && (tcx.trait_impl_of_assoc(def_id).is_none()\n",
     replace: "    coded\n        && (true\n",
@@ -209,7 +275,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "uninit-const-block-coded",
-    breaks: "a `const { MaybeUninit::uninit() }` block is a constant of its module, made as code, not `undefined` where it's used",
+    breaks:
+      "a `const { MaybeUninit::uninit() }` block is a constant of its module, made as code, not `undefined` where it's used",
     file: "src/lower/analysis.rs",
     find: "                && super::representation::const_value_js(\n",
     replace: "                && super::eval_const(\n",
@@ -218,23 +285,31 @@ export const mutations: Mutation[] = [
   },
   {
     name: "static-reexport-fileless",
-    breaks: "a module of only a `pub use` of a binding's static has no file, and its re-export is lost",
+    breaks:
+      "a module of only a `pub use` of a binding's static has no file, and its re-export is lost",
     file: "src/lower/analysis.rs",
     find: "            Some(rustc_hir::def::Res::Def(DefKind::Static { .. }, id)) => is_binding(tcx, id),\n",
-    replace: "            Some(rustc_hir::def::Res::Def(DefKind::Static { .. }, _)) => false,\n",
+    replace:
+      "            Some(rustc_hir::def::Res::Def(DefKind::Static { .. }, _)) => false,\n",
     tests: ["test/modules.test.ts", "-t", "JS module's binding is re-exported"],
   },
   {
     name: "reexport-private-use",
-    breaks: "a private `use` of another module's function is re-exported, though Rust exports it nowhere",
+    breaks:
+      "a private `use` of another module's function is re-exported, though Rust exports it nowhere",
     file: "src/lower/analysis.rs",
     find: "    tcx.visibility(item.owner_id).is_public()\n        && (match path.res.value_ns {\n",
     replace: "    true\n        && (match path.res.value_ns {\n",
-    tests: ["test/modules.test.ts", "-t", "a use that renames another module's function imports it as that"],
+    tests: [
+      "test/modules.test.ts",
+      "-t",
+      "a use that renames another module's function imports it as that",
+    ],
   },
   {
     name: "drop-runs-asked-crate-wide",
-    breaks: "a type a caller gives on, naming its const parameter, `Buffer<SIZE>`, is asked about where that parameter isn't, and rustc crashes",
+    breaks:
+      "a type a caller gives on, naming its const parameter, `Buffer<SIZE>`, is asked about where that parameter isn't, and rustc crashes",
     file: "src/lower/analysis.rs",
     find: "            true => ty::TypingEnv::non_body_analysis(tcx, owner),\n",
     replace: "            true => ty::TypingEnv::fully_monomorphized(),\n",
@@ -242,7 +317,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "hand-written-serde-as-derived",
-    breaks: "a hand-written serde impl is written as a derived codec too, two functions of one name",
+    breaks:
+      "a hand-written serde impl is written as a derived codec too, two functions of one name",
     file: "src/lower/analysis.rs",
     find: "        .filter(|&&id| serde_impl(tcx, id).is_some() && serde_derived(tcx, id))\n",
     replace: "        .filter(|&&id| serde_impl(tcx, id).is_some())\n",
@@ -250,7 +326,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unlowered-helpers-lowered",
-    breaks: "a private function only a type's own `io::Read` calls is lowered, and its `read` of the delegate refused",
+    breaks:
+      "a private function only a type's own `io::Read` calls is lowered, and its `read` of the delegate refused",
     file: "src/lower/analysis.rs",
     find: "        if found.is_empty() {\n            return unreached;\n",
     replace: "        if true {\n            return unreached;\n",
@@ -266,39 +343,59 @@ export const mutations: Mutation[] = [
   },
   {
     name: "consumer-rcs-uncounted",
-    breaks: "a crate using a library counts only the `Rc`s it reads, though the library counts ones it shares (ADR 0852)",
+    breaks:
+      "a crate using a library counts only the `Rc`s it reads, though the library counts ones it shares (ADR 0852)",
     file: "src/lower/analysis.rs",
     find: "                (params_may_drop, &reached.counted_rcs, &|owner, index, pointee| {\n",
-    replace: "                (params_may_drop, &[], &|owner, index, pointee| {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: rc_per_type|three crates: rc_generic"],
+    replace:
+      "                (params_may_drop, &[], &|owner, index, pointee| {\n",
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "two crates: rc_per_type|three crates: rc_generic",
+    ],
   },
   {
     name: "library-rcs-uncounted",
-    breaks: "a library's type parameters are taken to have no destructor, so it counts no generic `Rc` of what its consumers' may drop, and drops nothing of an associated type its consumers' may give one (ADRs 0844, 0852)",
+    breaks:
+      "a library's type parameters are taken to have no destructor, so it counts no generic `Rc` of what its consumers' may drop, and drops nothing of an associated type its consumers' may give one (ADRs 0844, 0852)",
     file: "src/lower/analysis.rs",
     find: "    let params_may_drop = crate::lower::traits::may_have_destructors(tcx, (&foreign, library));\n    let reached = foreign.reached(all_bodies);\n",
-    replace: "    let params_may_drop = crate::lower::traits::may_have_destructors(tcx, (&foreign, false));\n    let reached = foreign.reached(all_bodies);\n",
-    tests: ["test/crates.test.ts", "-t", "reads no count|two crates: assoc_drop"],
+    replace:
+      "    let params_may_drop = crate::lower::traits::may_have_destructors(tcx, (&foreign, false));\n    let reached = foreign.reached(all_bodies);\n",
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "reads no count|two crates: assoc_drop",
+    ],
   },
   {
     name: "fn-given-always-quiet",
-    breaks: "a function given to `with_borrow` that borrows its own key mutably is taken as borrowing nothing, so its `with_borrow_mut` doesn't throw where Rust panics",
+    breaks:
+      "a function given to `with_borrow` that borrows its own key mutably is taken as borrowing nothing, so its `with_borrow_mut` doesn't throw where Rust panics",
     file: "src/lower/analysis.rs",
     find: "            plain_locals::Given::Fn(f, args) => !cell_borrows.call_asks(\n",
-    replace: "            plain_locals::Given::Fn(f, args) => true || !cell_borrows.call_asks(\n",
+    replace:
+      "            plain_locals::Given::Fn(f, args) => true || !cell_borrows.call_asks(\n",
     tests: ["test/lowering-cells.test.ts", "-t", "given a function to run"],
   },
   {
     name: "impl-const-body-dropped",
-    breaks: "a trait impl's constant keeps no initializer, so a generic impl's, `Wrapping(T::ZERO)`, or one rustc can't say, `String::new()`, is refused",
+    breaks:
+      "a trait impl's constant keeps no initializer, so a generic impl's, `Wrapping(T::ZERO)`, or one rustc can't say, `String::new()`, is refused",
     file: "src/lower/analysis.rs",
     find: "                (tcx.trait_impl_of_assoc(def_id.to_def_id()).is_some()\n",
     replace: "                (false\n",
-    tests: ["test/corpus.test.ts", "-t", "^(impl_const_string|generic_impl_consts)\\.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(impl_const_string|generic_impl_consts)\\.rs$",
+    ],
   },
   {
     name: "impl-const-without-body",
-    breaks: "an impl's `type const`, which has no body, is lowered, and rustc crashes asking for one",
+    breaks:
+      "an impl's `type const`, which has no body, is lowered, and rustc crashes asking for one",
     file: "src/lower/analysis.rs",
     find: "\n                    && tcx.hir_maybe_body_owned_by(def_id).is_some()\n",
     replace: "\n",
@@ -306,23 +403,31 @@ export const mutations: Mutation[] = [
   },
   {
     name: "changed-vecs-without-lists",
-    breaks: "a clone of a `LinkedList` changed after is the same array, as only a `Vec`'s change is seen",
+    breaks:
+      "a clone of a `LinkedList` changed after is the same array, as only a `Vec`'s change is seen",
     file: "src/lower/analysis.rs",
     find: "                && matches!(ty.kind(), ty::Adt(adt, _) if super::recognition::is_vec_like_def(tcx, adt.did()))",
-    replace: "                && matches!(ty.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Vec))",
+    replace:
+      "                && matches!(ty.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Vec))",
     tests: ["test/corpus.test.ts", "-t", "^linked_list_clone.rs$"],
   },
   {
     name: "library-default-named-after-file",
-    breaks: "a library's module's default is imported named after the module's file, `import version`, not its item, `import VERSION`",
+    breaks:
+      "a library's module's default is imported named after the module's file, `import version`, not its item, `import VERSION`",
     file: "src/lower/analysis.rs",
     find: "        uses.named.insert(export, imported.name.clone());\n",
     replace: "",
-    tests: ["test/cross-crate-items.test.ts", "-t", "default export is imported as its default"],
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "default export is imported as its default",
+    ],
   },
   {
     name: "any-drops-of-any-library",
-    breaks: "a crate whose library has destructors but makes no `dyn Any` of one drops what its `catch_unwind` caught, `error.impl.$drop?.(error.value)`, as React's react crate did of shared's guards",
+    breaks:
+      "a crate whose library has destructors but makes no `dyn Any` of one drops what its `catch_unwind` caught, `error.impl.$drop?.(error.value)`, as React's react crate did of shared's guards",
     file: "src/lower/analysis.rs",
     find: "(params_may_drop, foreign.makes_dropping_anys())",
     replace: "(params_may_drop, foreign.any())",
@@ -330,7 +435,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "enumerate-explicit-too",
-    breaks: "a held `Enumerate` is also an explicit adapter beside std's struct, which code asking `explicit_adapter` relies on it never is: the debug build's check of it panics",
+    breaks:
+      "a held `Enumerate` is also an explicit adapter beside std's struct, which code asking `explicit_adapter` relies on it never is: the debug build's check of it panics",
     file: "src/lower/analysis.rs",
     find: "    explicit_adapters.retain(|&id| !super::recognition::is_held_compiled_def(tcx, id));\n",
     replace: "",
@@ -339,7 +445,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "std-iterators-ignored",
-    breaks: "`--std-iterators` builds as a plain build does, adapters made in place, so the differential job checks the recognizers' forms, not std's structs",
+    breaks:
+      "`--std-iterators` builds as a plain build does, adapters made in place, so the differential job checks the recognizers' forms, not std's structs",
     file: "src/lower/analysis.rs",
     find: "    if std_iterators {\n",
     replace: "    if false && std_iterators {\n",
@@ -347,7 +454,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "class-display-dictionary-emitted",
-    breaks: "a class's `impl Display` is emitted as a dictionary too, `queenPositionDisplay`, besides its `toString` (#358)",
+    breaks:
+      "a class's `impl Display` is emitted as a dictionary too, `queenPositionDisplay`, besides its `toString` (#358)",
     file: "src/lower/analysis.rs",
     find: "        .filter(|&id| super::classes::displayed_class(tcx, id).is_none())\n",
     replace: "",
@@ -355,47 +463,73 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-fn-dyns-always-drop",
-    breaks: "a `dyn Fn` a library hands the crate drops though no library makes one of what drops, so the crate's own `Rc<dyn Fn()>` listeners are `{ value, strong, weak }` (ADR 0626, amended)",
+    breaks:
+      "a `dyn Fn` a library hands the crate drops though no library makes one of what drops, so the crate's own `Rc<dyn Fn()>` listeners are `{ value, strong, weak }` (ADR 0626, amended)",
     file: "src/lower/analysis.rs",
     find: "    let drops = (reached.fn_dyns_of.iter()).any(|name| foreign.drops_fn_dyns(name))\n",
     replace: "    let drops = !reached.fn_dyns_of.is_empty()\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "a library's dyn Fn drops in its consumer only where"],
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "a library's dyn Fn drops in its consumer only where",
+    ],
   },
   {
     name: "library-fn-dyns-never-drop",
-    breaks: "a `dyn Fn` a library makes of a closure holding a value with a destructor, handed to the crate, is dropped as nothing (ADR 0626, amended)",
+    breaks:
+      "a `dyn Fn` a library makes of a closure holding a value with a destructor, handed to the crate, is dropped as nothing (ADR 0626, amended)",
     file: "src/lower/analysis.rs",
     find: "    let drops = (reached.fn_dyns_of.iter()).any(|name| foreign.drops_fn_dyns(name))\n",
-    replace: "    let drops = false && (reached.fn_dyns_of.iter()).any(|name| foreign.drops_fn_dyns(name))\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "a library's dyn Fn of what drops is dropped"],
+    replace:
+      "    let drops = false && (reached.fn_dyns_of.iter()).any(|name| foreign.drops_fn_dyns(name))\n",
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "a library's dyn Fn of what drops is dropped",
+    ],
   },
   {
     name: "dropping-dyn-fn-given-unrefused",
-    breaks: "a crate whose `dyn Fn`s may hold what drops isn't refused using a library whose `dyn Fn`s drop nothing, which drops nothing of the one it's given (ADR 0626, amended)",
+    breaks:
+      "a crate whose `dyn Fn`s may hold what drops isn't refused using a library whose `dyn Fn`s drop nothing, which drops nothing of the one it's given (ADR 0626, amended)",
     file: "src/lower/analysis.rs",
     find: "    if drops && let Some(name) = (reached.fn_dyns_of.iter()).find(|name| !foreign.drops_fn_dyns(name)) {\n",
-    replace: "    if drops && let Some(name) = (reached.fn_dyns_of.iter()).find(|name| !foreign.drops_fn_dyns(name) && false) {\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "and refuses one it would drop nothing of"],
+    replace:
+      "    if drops && let Some(name) = (reached.fn_dyns_of.iter()).find(|name| !foreign.drops_fn_dyns(name) && false) {\n",
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "and refuses one it would drop nothing of",
+    ],
   },
   {
     name: "dropping-dyn-fn-library-refused",
-    breaks: "a crate whose `dyn Fn`s may hold what drops is refused using a library whose `dyn Fn`s drop too, so one that drops what it's given is refused (ADR 0626, amended)",
+    breaks:
+      "a crate whose `dyn Fn`s may hold what drops is refused using a library whose `dyn Fn`s drop too, so one that drops what it's given is refused (ADR 0626, amended)",
     file: "src/lower/analysis.rs",
     find: "    if drops && let Some(name) = (reached.fn_dyns_of.iter()).find(|name| !foreign.drops_fn_dyns(name)) {\n",
-    replace: "    if drops && let Some(name) = (reached.fn_dyns_of.iter()).next() {\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "and refuses one it would drop nothing of"],
+    replace:
+      "    if drops && let Some(name) = (reached.fn_dyns_of.iter()).next() {\n",
+    tests: [
+      "test/cross-crate-items.test.ts",
+      "-t",
+      "and refuses one it would drop nothing of",
+    ],
   },
   {
     name: "library-rcs-of-own-calls-unsettled",
-    breaks: "a library takes no drop its own calls give a type parameter, so where it reads another library's context of a `Loud`, which that library counts none of, it's not refused and its last clone drops nothing (ADR 0852, amended)",
+    breaks:
+      "a library takes no drop its own calls give a type parameter, so where it reads another library's context of a `Loud`, which that library counts none of, it's not refused and its last clone drops nothing (ADR 0852, amended)",
     file: "src/lower/analysis.rs",
     find: "            let runs = |ty, owner| runs_where(closure_facts, &counted, ty, owner);\n",
-    replace: "            if library {\n                return counted;\n            }\n            let runs = |ty, owner| runs_where(closure_facts, &counted, ty, owner);\n",
+    replace:
+      "            if library {\n                return counted;\n            }\n            let runs = |ty, owner| runs_where(closure_facts, &counted, ty, owner);\n",
     tests: ["test/crates.test.ts", "-t", "counts another library"],
   },
   {
     name: "rc-drop-params-unsettled",
-    breaks: "the `Rc`s counted are taken before any type parameter is given a drop, so `keep`'s `Rc<Slot<Loud>>` isn't counted and its first clone's drop drops its `Loud` (ADR 0914, amended)",
+    breaks:
+      "the `Rc`s counted are taken before any type parameter is given a drop, so `keep`'s `Rc<Slot<Loud>>` isn't counted and its first clone's drop drops its `Loud` (ADR 0914, amended)",
     file: "src/lower/analysis.rs",
     find: "            if more.is_subset(&given) {\n",
     replace: "            if true {\n",
@@ -403,10 +537,30 @@ export const mutations: Mutation[] = [
   },
   {
     name: "inlined-closures-unfound",
-    breaks: "a closure only a local of a std body holds, `sum`'s in `Filter::count` of a `core` built to unwind, is never collected, so the body is refused (#424)",
+    breaks:
+      "a closure only a local of a std body holds, `sum`'s in `Filter::count` of a `core` built to unwind, is never collected, so the body is refused (#424)",
     file: "src/lower/analysis.rs",
     find: "                if let rustc_middle::ty::Closure(closure, _) = *part.kind() {\n                    closures.0.push(closure);\n",
-    replace: "                if let rustc_middle::ty::Closure(closure, _) = *part.kind() {\n                    let _ = closure;\n",
-    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+    replace:
+      "                if let rustc_middle::ty::Closure(closure, _) = *part.kind() {\n                    let _ = closure;\n",
+    tests: [
+      "test/std-package.test.ts",
+      "-t",
+      "the committed @rust-js/std is std",
+    ],
+  },
+  {
+    name: "namespace-library-not-imported",
+    breaks:
+      "a library's namespace a body names isn't imported, refused as a value (ADR 1037)",
+    file: "src/lower/analysis.rs",
+    find: "            .next()\n        {\n            let export = (from, crate::js::NAMESPACE.to_string());\n",
+    replace:
+      "            .find(|_| false)\n        {\n            let export = (from, crate::js::NAMESPACE.to_string());\n",
+    tests: [
+      "test/namespaces.test.ts",
+      "-t",
+      "a library's namespace is called by name",
+    ],
   },
 ];

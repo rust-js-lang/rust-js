@@ -4,26 +4,31 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "held-static-in-place",
-    breaks: "a binding's static named through the module that holds it is read in place, `react.__CLIENT_INTERNALS..`",
+    breaks:
+      "a binding's static named through the module that holds it is read in place, `react.__CLIENT_INTERNALS..`",
     file: "src/lower/mir/operands.rs",
     find: "        let read = self.binding_ref(&bindings::js_name(self.tcx, def_id), named);\n",
-    replace: "        let read = self.js_ref(&bindings::js_name(self.tcx, def_id));\n",
+    replace:
+      "        let read = self.js_ref(&bindings::js_name(self.tcx, def_id));\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "named through the module"],
   },
   {
     name: "mir-const-param-unread",
-    breaks: "a const generic parameter is a constant MIR can't name, not its caller's value",
+    breaks:
+      "a const generic parameter is a constant MIR can't name, not its caller's value",
     file: "src/lower/mir/operands.rs",
     find: "                ty::ConstKind::Param(_) => return self.const_arg(ct, c.span),\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","const_generic_values"],
+    tests: ["test/corpus.test.ts", "-t", "const_generic_values"],
   },
   {
     name: "mir-static-mut-not-a-place",
-    breaks: "a pointer to a `static mut` is a handle on another place than its `{ value }`'s, so writes to it are lost",
+    breaks:
+      "a pointer to a `static mut` is a handle on another place than its `{ value }`'s, so writes to it are lost",
     file: "src/lower/mir/operands.rs",
     find: "                            self.named_fn_ref(def_id, None, c.span),\n                            Expr::str(js::HELD),\n",
-    replace: "                            self.named_fn_ref(def_id, None, c.span),\n                            Expr::str(\"held\"),\n",
+    replace:
+      '                            self.named_fn_ref(def_id, None, c.span),\n                            Expr::str("held"),\n',
     tests: ["test/corpus.test.ts", "-t", "static_mut_shared"],
   },
   {
@@ -31,24 +36,27 @@ export const mutations: Mutation[] = [
     breaks: "a function as a value from MIR is `undefined`, not the function",
     file: "src/lower/mir/operands.rs",
     find: "                    Some(f) => Ok(Value::Expr(f)),\n",
-    replace: "                    Some(_) => Ok(Value::Expr(Expr::undefined())),\n",
+    replace:
+      "                    Some(_) => Ok(Value::Expr(Expr::undefined())),\n",
     tests: ["test/corpus.test.ts", "-t", "fn_items_as_values"],
   },
   {
     name: "mir-copy-shared",
-    breaks: "a `Copy` struct read from a variable is the same JS object, so a change to the copy changes it",
+    breaks:
+      "a `Copy` struct read from a variable is the same JS object, so a change to the copy changes it",
     file: "src/lower/mir/operands.rs",
     find: "            Value::Expr(e) if copied => {\n",
     replace: "            Value::Expr(e) if false && copied => {\n",
-    tests: ["test/corpus.test.ts","-t","array_map"],
+    tests: ["test/corpus.test.ts", "-t", "array_map"],
   },
   {
     name: "mir-copied-closure-shared",
-    breaks: "a closure that changes what it captured, copied, shares its captures, as a JS function does",
+    breaks:
+      "a closure that changes what it captured, copied, shares its captures, as a JS function does",
     file: "src/lower/mir/operands.rs",
     find: "            && state.locals.reads[place.local] > 1\n",
     replace: "            && false\n",
-    tests: ["test/corpus.test.ts","-t","copied_closure"],
+    tests: ["test/corpus.test.ts", "-t", "copied_closure"],
   },
   {
     name: "mir-static-copy-shared",
@@ -56,15 +64,16 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/operands.rs",
     find: "if (place.is_indirect() || !state.pending",
     replace: "if (!state.pending",
-    tests: ["test/corpus.test.ts","-t","statics"],
+    tests: ["test/corpus.test.ts", "-t", "statics"],
   },
   {
     name: "mir-take-field-reordered",
-    breaks: "a tuple's call taken before its later calls lets a flush run them first",
+    breaks:
+      "a tuple's call taken before its later calls lets a flush run them first",
     file: "src/lower/mir/operands.rs",
     find: "            && (movable(state, &items[field]) || items[field + 1..].iter().all(|item| movable(state, item)));\n",
     replace: "            && true;\n",
-    tests: ["test/corpus.test.ts","-t","byte_strings|statics"],
+    tests: ["test/corpus.test.ts", "-t", "byte_strings|statics"],
   },
   {
     name: "mir-out-of-order-fields-undeclared",
@@ -72,116 +81,173 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/operands.rs",
     find: "                let rest = state.pending.split_off(at + 1);\n                self.flush(state, out)?;\n                state.pending = rest;\n",
     replace: "                let _ = at;\n",
-    tests: ["test/corpus.test.ts","-t","range_inclusive_next_back"],
+    tests: ["test/corpus.test.ts", "-t", "range_inclusive_next_back"],
   },
   {
     name: "mir-foreign-static-by-pointer",
-    breaks: "a JS global a foreign static names, which MIR reads through a raw pointer, isn't its global",
+    breaks:
+      "a JS global a foreign static names, which MIR reads through a raw pointer, isn't its global",
     file: "src/lower/mir/operands.rs",
     find: "            || pointer.is_some_and(|(_, mutability)| mutability.is_not()))\n",
     replace: "            || false)\n",
-    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
     name: "mir-fn-item-referenced-undefined",
-    breaks: "a function given by reference, `&hello`, a promoted constant, is `undefined`",
+    breaks:
+      "a function given by reference, `&hello`, a promoted constant, is `undefined`",
     file: "src/lower/mir/operands.rs",
     find: "                    && fn_def(referred.ty()).is_some() =>\n",
-    replace: "                    && fn_def(referred.ty()).is_some() && false =>\n",
-    tests: ["test/corpus.test.ts","-t","fn_item_referenced"],
+    replace:
+      "                    && fn_def(referred.ty()).is_some() && false =>\n",
+    tests: ["test/corpus.test.ts", "-t", "fn_item_referenced"],
   },
   {
     name: "mir-format-args-array",
-    breaks: "a `format!`'s arguments read out of order are an array, `${_26[1]}:${_26[0]}`",
+    breaks:
+      "a `format!`'s arguments read out of order are an array, `${_26[1]}:${_26[0]}`",
     file: "src/lower/mir/operands.rs",
     find: "        if !in_order && !acting.is_empty() && !state.taken.contains(&place.local) {\n",
-    replace: "        if false && !in_order && !acting.is_empty() && !state.taken.contains(&place.local) {\n",
-    tests: ["test/lowering-strings.test.ts", "-t", "arguments read out of order"],
+    replace:
+      "        if false && !in_order && !acting.is_empty() && !state.taken.contains(&place.local) {\n",
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "arguments read out of order",
+    ],
   },
   {
     name: "mir-promoted-functions-refused",
-    breaks: "MIR refuses a promoted value of functions, `&[(\"double\", double)]`",
+    breaks:
+      'MIR refuses a promoted value of functions, `&[("double", double)]`',
     file: "src/lower/mir/operands.rs",
     find: "            None if let Const::Unevaluated(uv, _) = c.const_\n",
-    replace: "            None if false && let Const::Unevaluated(uv, _) = c.const_\n",
-    tests: ["test/corpus.test.ts","-t","static_fns"],
+    replace:
+      "            None if false && let Const::Unevaluated(uv, _) = c.const_\n",
+    tests: ["test/corpus.test.ts", "-t", "static_fns"],
   },
   {
     name: "static-pointer-unhandled",
-    breaks: "a pointer to an immutable static is the static, which `*p` reads `value` of",
+    breaks:
+      "a pointer to an immutable static is the static, which `*p` reads `value` of",
     file: "src/lower/mir/operands.rs",
     find: "                    Some((pointee, _)) if self.is_handle_pointer(ty) => {\n",
-    replace: "                    Some((pointee, _)) if false && self.is_handle_pointer(ty) => {\n",
+    replace:
+      "                    Some((pointee, _)) if false && self.is_handle_pointer(ty) => {\n",
     tests: ["test/snapshots.test.ts", "-t", "counter"],
   },
   {
     name: "mir-literal-unwritten",
-    breaks: "a string MIR's constant has is one literal, though its source writes it across lines or as `concat!`'s pieces",
+    breaks:
+      "a string MIR's constant has is one literal, though its source writes it across lines or as `concat!`'s pieces",
     file: "src/lower/mir/operands.rs",
     find: "            js::ExprKind::Str(text) => {\n                crate::lower::literals::string_literal(tcx, text, c.span, &|span| self.js_span(span)).or_at(value.span)\n            }\n",
     replace: "",
-    tests: ["test/lowering-strings.test.ts", "-t", "a string written across lines keeps its lines|a concat! of literals is its pieces joined by"],
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "a string written across lines keeps its lines|a concat! of literals is its pieces joined by",
+    ],
   },
   {
     name: "constant-number-unplaced",
-    breaks: "a number operand isn't where its literal is, so `n & 0xff` is `n & 255`",
+    breaks:
+      "a number operand isn't where its literal is, so `n & 0xff` is `n & 255`",
     file: "src/lower/mir/operands.rs",
     find: "            js::ExprKind::Num(_) => value.or_at(self.js_span(c.span)),\n",
     replace: "",
-    tests: ["test/lowering-numbers.test.ts", "-t", "a number literal keeps its base and its exponent"],
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a number literal keeps its base and its exponent",
+    ],
   },
   {
     name: "promoted-some-unnamed",
-    breaks: "a promoted `&Some(C)` of a named `const` is its value, `Symbol.for(\"react.memo\")`, where `C` is read by its name everywhere else",
+    breaks:
+      'a promoted `&Some(C)` of a named `const` is its value, `Symbol.for("react.memo")`, where `C` is read by its name everywhere else',
     file: "src/lower/mir/operands.rs",
     find: "            && matches!(tcx.def_kind(named.def), DefKind::Const { .. })\n            && self.is_rust_fn(named.def)\n        {\n",
-    replace: "            && matches!(tcx.def_kind(named.def), DefKind::Const { .. })\n            && false\n        {\n",
-    tests: ["test/lowering-symbols.test.ts", "-t", "an == of a value read as the registry's symbol"],
+    replace:
+      "            && matches!(tcx.def_kind(named.def), DefKind::Const { .. })\n            && false\n        {\n",
+    tests: [
+      "test/lowering-symbols.test.ts",
+      "-t",
+      "an == of a value read as the registry's symbol",
+    ],
   },
   {
     name: "whole-cell-moved-as-handle",
-    breaks: "a whole cell moved out of a field that's the property it holds is a handle on the field, which the field written again changes",
+    breaks:
+      "a whole cell moved out of a field that's the property it holds is a handle on the field, which the field written again changes",
     file: "src/lower/mir/operands.rs",
     find: "            Operand::Copy(place) | Operand::Move(place) if self.whole_property_cell(state, *place) => {\n",
-    replace: "            Operand::Copy(place) | Operand::Move(place) if false && self.whole_property_cell(state, *place) => {\n",
+    replace:
+      "            Operand::Copy(place) | Operand::Move(place) if false && self.whole_property_cell(state, *place) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_field_places.rs$"],
   },
   {
     name: "library-static-mut-unread",
-    breaks: "a consumer's read of a library's `static mut`, `dep::LINES`, its `export let`, is refused as a constant it can't make (ADR 0096, amended)",
+    breaks:
+      "a consumer's read of a library's `static mut`, `dep::LINES`, its `export let`, is refused as a constant it can't make (ADR 0096, amended)",
     file: "src/lower/mir/operands.rs",
     find: "                    && self.is_rust_fn(def_id) =>\n",
     replace: "                    && self.krate.fns.contains_key(&def_id) =>\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "a library's static mut"],
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "a library's static mut",
+    ],
   },
   {
     name: "captured-place-copied-as-box",
-    breaks: "a `&mut` of a number a closure captured as its place, copied into a local by optimized MIR, is read as a box, `take.n.value`, in std's `Take::try_fold` (ADR 0913)",
+    breaks:
+      "a `&mut` of a number a closure captured as its place, copied into a local by optimized MIR, is read as a box, `take.n.value`, in std's `Take::try_fold` (ADR 0913)",
     file: "src/lower/mir/operands.rs",
     find: "        (closure && is_place).then_some(capture)\n",
     replace: "        (closure && is_place && false).then_some(capture)\n",
-    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+    tests: [
+      "test/std-package.test.ts",
+      "-t",
+      "the committed @rust-js/std is std's bodies",
+    ],
   },
   {
     name: "bool-binding-static-not-boolean",
-    breaks: "a `bool` binding's static in `&&` is `!!supportsSingletons && ..` (ADR 0953)",
+    breaks:
+      "a `bool` binding's static in `&&` is `!!supportsSingletons && ..` (ADR 0953)",
     file: "src/lower/mir/operands.rs",
     find: "            .is_bool()\n",
     replace: "            .is_bool()\n            && false\n",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "last \\|\\| of an if"],
+    tests: [
+      "test/lowering-written-branches.test.ts",
+      "-t",
+      "last \\|\\| of an if",
+    ],
   },
   {
     name: "static-read-by-name-through-its-module",
-    breaks: "a `static` read through its module's path, `plugin::LIMIT`, is its named import, `import { LIMIT }`, beside the module's namespace (rd114a, ADR 1018)",
+    breaks:
+      "a `static` read through its module's path, `plugin::LIMIT`, is its named import, `import { LIMIT }`, beside the module's namespace (rd114a, ADR 1018)",
     file: "src/lower/mir/operands.rs",
     find: "                false => (self.is_rust_fn(def_id)).then(|| self.named_fn_ref(def_id, None, c.span)),\n",
-    replace: "                false => (self.is_rust_fn(def_id)).then(|| self.fn_ref(def_id)),\n",
+    replace:
+      "                false => (self.is_rust_fn(def_id)).then(|| self.fn_ref(def_id)),\n",
     tests: ["test/corpus.test.ts", "-t", "^module_path_namespace.rs$"],
     snapshots: true,
   },
   {
     name: "nested-constant-any-some",
-    breaks: "a constant `Some(Some(2))` is read as `Some(None)`, `last === null`, a wrong answer",
+    breaks:
+      "a constant `Some(Some(2))` is read as `Some(None)`, `last === null`, a wrong answer",
     file: "src/lower/mir/operands.rs",
     find: "        matches!(variant(inner)?, (0, None)).then_some(())\n",
     replace: "        variant(inner).map(|_| ())\n",
@@ -189,7 +255,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "owned-item-copied",
-    breaks: "an item an owning iterator gives, nothing else holding it, is copied, `const p = [value[0], value[1]];` in a `while` over `$next(iter)`, not `for (const p of ..)` (#141)",
+    breaks:
+      "an item an owning iterator gives, nothing else holding it, is copied, `const p = [value[0], value[1]];` in a `while` over `$next(iter)`, not `for (const p of ..)` (#141)",
     file: "src/lower/mir/operands.rs",
     find: "                && !self.owned_item(state, place));",
     replace: ");",
@@ -198,7 +265,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "owned-item-through-a-reference",
-    breaks: "what a reference an owning iterator gives points at, `for &(mut p) in refs`, is taken uncopied, so changing `p` changes what it's of (#141)",
+    breaks:
+      "what a reference an owning iterator gives points at, `for &(mut p) in refs`, is taken uncopied, so changing `p` changes what it's of (#141)",
     file: "src/lower/mir/operands.rs",
     find: "        if !parts.iter().all(|part| matches!(part, PlaceElem::Field(..))) {\n",
     replace: "        if false {\n",
@@ -206,18 +274,29 @@ export const mutations: Mutation[] = [
   },
   {
     name: "constant-unplaced",
-    breaks: "a constant has no place in the map, so a line comment after a call's last argument, `true, // why`, is lost (rd220)",
+    breaks:
+      "a constant has no place in the map, so a line comment after a call's last argument, `true, // why`, is lost (rd220)",
     file: "src/lower/mir/operands.rs",
     find: "                if made.span.is_none() && !c.span.from_expansion() && state.argument_spans.contains(&c.span) {\n",
-    replace: "                if false && made.span.is_none() && !c.span.from_expansion() && state.argument_spans.contains(&c.span) {\n",
-    tests: ["test/lowering-comments-ends.test.ts", "-t", "a comment after a call's last argument, a constant"],
+    replace:
+      "                if false && made.span.is_none() && !c.span.from_expansion() && state.argument_spans.contains(&c.span) {\n",
+    tests: [
+      "test/lowering-comments-ends.test.ts",
+      "-t",
+      "a comment after a call's last argument, a constant",
+    ],
   },
   {
     name: "constant-placed-anywhere",
-    breaks: "every constant has a place in the map, so a comment before a tail tuple with one is inside its array, `return [ // why\n s, false ]` (rd220's follow-up)",
+    breaks:
+      "every constant has a place in the map, so a comment before a tail tuple with one is inside its array, `return [ // why\n s, false ]` (rd220's follow-up)",
     file: "src/lower/mir/operands.rs",
     find: " && state.argument_spans.contains(&c.span) {\n",
     replace: " {\n",
-    tests: ["test/lowering-comments-ends.test.ts", "-t", "a comment before a tail tuple"],
+    tests: [
+      "test/lowering-comments-ends.test.ts",
+      "-t",
+      "a comment before a tail tuple",
+    ],
   },
 ];

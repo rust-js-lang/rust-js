@@ -4,7 +4,8 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "removed-item-dropped",
-    breaks: "a `remove(i)` in bounds whose item is read gives the array it spliced, `[3]`, not the item, `3`",
+    breaks:
+      "a `remove(i)` in bounds whose item is read gives the array it spliced, `[3]`, not the item, `3`",
     file: "src/lower/mir/bounds.rs",
     find: "                    (false, true) => Expr::index(spliced(i), Expr::int(0)),\n",
     replace: "                    (false, true) => spliced(i),\n",
@@ -12,16 +13,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "removed-item-unread-indexed",
-    breaks: "a `remove(i)` in bounds whose item nothing reads is `v.splice(i, 1)[0];`, reading what it removed for nothing",
+    breaks:
+      "a `remove(i)` in bounds whose item nothing reads is `v.splice(i, 1)[0];`, reading what it removed for nothing",
     file: "src/lower/mir/bounds.rs",
     find: "                    (false, false) => spliced(i),\n",
-    replace: "                    (false, false) => Expr::index(spliced(i), Expr::int(0)),\n",
+    replace:
+      "                    (false, false) => Expr::index(spliced(i), Expr::int(0)),\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_remove_insert_in_bounds.rs$"],
     snapshots: true,
   },
   {
     name: "removed-first-spliced",
-    breaks: "`remove(0)` shown in bounds is `targets.splice(0, 1)[0]`, not `targets.shift()` (rd103)",
+    breaks:
+      "`remove(0)` shown in bounds is `targets.splice(0, 1)[0]`, not `targets.shift()` (rd103)",
     file: "src/lower/mir/bounds.rs",
     find: "        let first = |index: &Expr| index.as_int() == Some(0);\n",
     replace: "        let first = |_: &Expr| false;\n",
@@ -30,7 +34,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "remove-insert-in-bounds-checked",
-    breaks: "a `remove` or an `insert` the body's ranges show in bounds is checked, `$removeAt`, `$insertAt` (rd103)",
+    breaks:
+      "a `remove` or an `insert` the body's ranges show in bounds is checked, `$removeAt`, `$insertAt` (rd103)",
     file: "src/lower/mir/bounds.rs",
     find: "            Std::Comb(Comb::Swap | Comb::SwapRemove | Comb::Remove | Comb::Insert) => true,\n",
     replace: "            Std::Comb(Comb::Swap | Comb::SwapRemove) => true,\n",
@@ -39,7 +44,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "vec-item-written-in-place",
-    breaks: "`points[i] = p` of a `Vec` of objects is `$assign($index(points, i), p)`, not `points[$at(points, i)] = p`",
+    breaks:
+      "`points[i] = p` of a `Vec` of objects is `$assign($index(points, i), p)`, not `points[$at(points, i)] = p`",
     file: "src/lower/mir/bounds.rs",
     find: "                if self.is_cell_pointee(*item) || written_through_at_once(state.body, state.at))\n",
     replace: "                if self.is_cell_pointee(*item))\n",
@@ -48,7 +54,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "vec-item-dropped-then-written-in-place",
-    breaks: "`names[0] = first` of a `Vec` whose items drop is `$assign`, as the old value's drop between was taken for something run",
+    breaks:
+      "`names[0] = first` of a `Vec` whose items drop is `$assign`, as the old value's drop between was taken for something run",
     file: "src/lower/mir/bounds.rs",
     find: "        && uses.1 == 2 + usize::from(dropped.is_some())\n",
     replace: "        && uses.1 == 2\n",
@@ -57,7 +64,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "written-at-once-cleanup-counted",
-    breaks: "the cleanup's write of `*r` where the drop unwinds is counted a use, so `names[0] = first` is `$assign`",
+    breaks:
+      "the cleanup's write of `*r` where the drop unwinds is counted a use, so `names[0] = first` is `$assign`",
     file: "src/lower/mir/bounds.rs",
     find: "            if !data.is_cleanup {\n",
     replace: "            if true {\n",
@@ -66,16 +74,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "written-at-once-never",
-    breaks: "`queue.borrow_mut()[i] = item` of a variable `i` spills it, `const index = i; queue[index] = item;`, though nothing runs before the write",
+    breaks:
+      "`queue.borrow_mut()[i] = item` of a variable `i` spills it, `const index = i; queue[index] = item;`, though nothing runs before the write",
     file: "src/lower/mir/bounds.rs",
     find: "            let at_once = written_through_at_once(state.body, state.at);\n",
-    replace: "            let at_once = false && written_through_at_once(state.body, state.at);\n",
+    replace:
+      "            let at_once = false && written_through_at_once(state.body, state.at);\n",
     tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
     snapshots: true,
   },
   {
     name: "written-at-once-of-an-operation-held",
-    breaks: "`table[i] = prefix + 1` holds its index, `const index = i; table[index] = ..`, as an operation of values made before was taken for something run (#353)",
+    breaks:
+      "`table[i] = prefix + 1` holds its index, `const index = i; table[index] = ..`, as an operation of values made before was taken for something run (#353)",
     file: "src/lower/mir/bounds.rs",
     find: "        mir::Rvalue::BinaryOp(_, operands) => read(&operands.0) && read(&operands.1),\n",
     replace: "        mir::Rvalue::BinaryOp(..) => false,\n",
@@ -84,33 +95,44 @@ export const mutations: Mutation[] = [
   },
   {
     name: "written-at-once-of-a-negation-held",
-    breaks: "`signs[i] = -n` holds its index, `const index = i;`, as a negation of a value made before was taken for something run (#353)",
+    breaks:
+      "`signs[i] = -n` holds its index, `const index = i;`, as a negation of a value made before was taken for something run (#353)",
     file: "src/lower/mir/bounds.rs",
     find: "        mir::Rvalue::Use(o, _) | mir::Rvalue::UnaryOp(_, o) | mir::Rvalue::Cast(_, o, _) => read(o),\n",
-    replace: "        mir::Rvalue::Use(o, _) | mir::Rvalue::Cast(_, o, _) => read(o),\n",
+    replace:
+      "        mir::Rvalue::Use(o, _) | mir::Rvalue::Cast(_, o, _) => read(o),\n",
     tests: ["test/corpus.test.ts", "-t", "^index_written_by_an_operation.rs$"],
     snapshots: true,
   },
   {
     name: "written-at-once-of-a-cast-held",
-    breaks: "`bytes[k] = wide as u8` holds its index, `const index = k;`, as a cast of a value made before was taken for something run (#353)",
+    breaks:
+      "`bytes[k] = wide as u8` holds its index, `const index = k;`, as a cast of a value made before was taken for something run (#353)",
     file: "src/lower/mir/bounds.rs",
     find: "        mir::Rvalue::Use(o, _) | mir::Rvalue::UnaryOp(_, o) | mir::Rvalue::Cast(_, o, _) => read(o),\n",
-    replace: "        mir::Rvalue::Use(o, _) | mir::Rvalue::UnaryOp(_, o) => read(o),\n",
+    replace:
+      "        mir::Rvalue::Use(o, _) | mir::Rvalue::UnaryOp(_, o) => read(o),\n",
     tests: ["test/corpus.test.ts", "-t", "^index_written_by_an_operation.rs$"],
     snapshots: true,
   },
   {
     name: "mir-known-bounds-checked",
-    breaks: "`args[i]` of `0..args.len()` THIR's facts know is in bounds is checked, `if (!(i < args.length)) throw`",
+    breaks:
+      "`args[i]` of `0..args.len()` THIR's facts know is in bounds is checked, `if (!(i < args.length)) throw`",
     file: "src/lower/mir/bounds.rs",
     find: "        matches!(msg, mir::AssertKind::BoundsCheck { .. })\n",
-    replace: "        false && matches!(msg, mir::AssertKind::BoundsCheck { .. })\n",
-    tests: ["test/lowering-loops.test.ts", "-t", "early returns and index loops from MIR"],
+    replace:
+      "        false && matches!(msg, mir::AssertKind::BoundsCheck { .. })\n",
+    tests: [
+      "test/lowering-loops.test.ts",
+      "-t",
+      "early returns and index loops from MIR",
+    ],
   },
   {
     name: "mir-in-bounds-checked",
-    breaks: "a call whose indexes the body's ranges show in bounds is checked, `$index(heap, leftIndex)` and `$swap`",
+    breaks:
+      "a call whose indexes the body's ranges show in bounds is checked, `$index(heap, leftIndex)` and `$swap`",
     file: "src/lower/mir/bounds.rs",
     find: "(self.thir_call(def_id, span)).is_some_and(|(fun, _)| self.frame.facts.in_bounds.contains(&fun))",
     replace: "(self.thir_call(def_id, span)).is_some_and(|_| false)",
@@ -118,50 +140,70 @@ export const mutations: Mutation[] = [
   },
   {
     name: "swap-remove-shifted",
-    breaks: "`swap_remove`'s item is taken from the front, so a heap's `pop` gives its second item",
+    breaks:
+      "`swap_remove`'s item is taken from the front, so a heap's `pop` gives its second item",
     file: "src/lower/mir/bounds.rs",
-    find: "            _ => Expr::call(Expr::member(items, \"pop\"), Vec::new()),",
-    replace: "            _ => Expr::call(Expr::member(items, \"shift\"), Vec::new()),",
+    find: '            _ => Expr::call(Expr::member(items, "pop"), Vec::new()),',
+    replace:
+      '            _ => Expr::call(Expr::member(items, "shift"), Vec::new()),',
     tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "swap-remove-last-unswapped",
-    breaks: "`swap_remove(i)` swaps `i` with itself, so a heap's `pop` gives its last item",
+    breaks:
+      "`swap_remove(i)` swaps `i` with itself, so a heap's `pop` gives its last item",
     file: "src/lower/mir/bounds.rs",
-    find: "                let last = Expr::bin(Op::Sub, Expr::member(items.clone(), \"length\"), Expr::int(1));\n                (exprs.remove(0), last)",
-    replace: "                let _ = Expr::bin(Op::Sub, Expr::member(items.clone(), \"length\"), Expr::int(1));\n                let i = exprs.remove(0);\n                (i.clone(), i)",
+    find: '                let last = Expr::bin(Op::Sub, Expr::member(items.clone(), "length"), Expr::int(1));\n                (exprs.remove(0), last)',
+    replace:
+      '                let _ = Expr::bin(Op::Sub, Expr::member(items.clone(), "length"), Expr::int(1));\n                let i = exprs.remove(0);\n                (i.clone(), i)',
     tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
     name: "mir-index-mut-a-value",
-    breaks: "`v[i] += 1` of numbers through `index_mut` changes a copy of the element",
+    breaks:
+      "`v[i] += 1` of numbers through `index_mut` changes a copy of the element",
     file: "src/lower/mir/bounds.rs",
     find: "            return Ok(Value::Ref(Expr::index(items, index)));\n",
     replace: "            return Ok(Value::Expr(Expr::index(items, index)));\n",
-    tests: ["test/corpus.test.ts","-t","compound_assignment_order"],
+    tests: ["test/corpus.test.ts", "-t", "compound_assignment_order"],
   },
   {
-    "name": "mir-checked-index-copied",
-    "breaks": "a parameter MIR checks an element's place at is copied first, `const index = i;`, and the item a handle, where what's lent there is used after more runs (`at_once` the rest, ADR 0881, amended)",
-    "file": "src/lower/mir/bounds.rs",
-    "find": "js::ExprKind::Var(v) if at_once || self.locals.mir.alike.contains(v));\n",
-    "replace": "js::ExprKind::Var(v) if at_once);\n",
-    "tests": ["test/lowering-collections.test.ts", "-t", "an item lent at a parameter's index is read and written there"]
+    name: "mir-checked-index-copied",
+    breaks:
+      "a parameter MIR checks an element's place at is copied first, `const index = i;`, and the item a handle, where what's lent there is used after more runs (`at_once` the rest, ADR 0881, amended)",
+    file: "src/lower/mir/bounds.rs",
+    find: "js::ExprKind::Var(v) if at_once || self.locals.mir.alike.contains(v));\n",
+    replace: "js::ExprKind::Var(v) if at_once);\n",
+    tests: [
+      "test/lowering-collections.test.ts",
+      "-t",
+      "an item lent at a parameter's index is read and written there",
+    ],
   },
   {
     name: "index-mut-known-checked",
-    breaks: "an item's place through `index_mut` the ranges show in bounds is checked, `$index(heap, 0);` before `heap[0] = last`",
+    breaks:
+      "an item's place through `index_mut` the ranges show in bounds is checked, `$index(heap, 0);` before `heap[0] = last`",
     file: "src/lower/mir/bounds.rs",
     find: "            if checked {\n",
     replace: "            if true || checked {\n",
-    tests: ["test/lowering-options.test.ts", "-t", "nullable result is written"],
+    tests: [
+      "test/lowering-options.test.ts",
+      "-t",
+      "nullable result is written",
+    ],
   },
   {
     name: "const-index-spilled",
-    breaks: "a `const` index, `SYNC_LANE_INDEX`, is held in a variable of its own, its element a getter and a setter (ADR 0894, amended)",
+    breaks:
+      "a `const` index, `SYNC_LANE_INDEX`, is held in a variable of its own, its element a getter and a setter (ADR 0894, amended)",
     file: "src/lower/mir/bounds.rs",
     find: "            let index_kept = index.is_fixed()\n",
     replace: "            let index_kept = index.is_constant()\n",
-    tests: ["test/lowering-bits.test.ts", "-t", "an item.s bitwise assignment is its compound"],
+    tests: [
+      "test/lowering-bits.test.ts",
+      "-t",
+      "an item.s bitwise assignment is its compound",
+    ],
   },
 ];

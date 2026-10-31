@@ -4,15 +4,18 @@ import type { Mutation } from "../../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "alike-branches-of-a-call-assigned",
-    breaks: "an assigned `if` of alike values whose test calls is `level = mark(n) ? 5 : 5;`, not as written",
+    breaks:
+      "an assigned `if` of alike values whose test calls is `level = mark(n) ? 5 : 5;`, not as written",
     file: "src/lower/mir/tidy/branches.rs",
     find: "        && !(super::logicals::alike_branches(yes, no) && test.has_effects())\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^guards_that_call.rs$"],
     snapshots: true,
-  },  {
+  },
+  {
     name: "switch-arm-going-on-tail-shared",
-    breaks: "React's unwindWork's arm that goes on to its `return null` shares it with `_`'s after the `switch`, no `default` (ADR 0956, amended)",
+    breaks:
+      "React's unwindWork's arm that goes on to its `return null` shares it with `_`'s after the `switch`, no `default` (ADR 0956, amended)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                    || shared != rest.len()\n                    || super::switches::switched(test, stmts[i].span, switches)\n",
     replace: "                    || shared != rest.len()\n",
@@ -20,7 +23,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "flag-given-first",
-    breaks: "a `matches!` of a guard's flag is `let tmp = false; if (t) { tmp = true; }`, not `const value = t;` (ADR 0929)",
+    breaks:
+      "a `matches!` of a guard's flag is `let tmp = false; if (t) { tmp = true; }`, not `const value = t;` (ADR 0929)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "            && yes != no\n",
     replace: "            && yes == no\n",
@@ -29,7 +33,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "known-boolean-unread",
-    breaks: "what lowering knows is a `bool`, a `bool` constant's read, is coerced, `!!(LOGGED && !quiet) || TRACED` (ADR 0031, amended)",
+    breaks:
+      "what lowering knows is a `bool`, a `bool` constant's read, is coerced, `!!(LOGGED && !quiet) || TRACED` (ADR 0031, amended)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "        _ if e.facts.has(js::Known::Boolean) => true,\n",
     replace: "",
@@ -37,7 +42,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "same-test-strict-null-undefined",
-    breaks: "`x === null` is taken for `x === undefined`, so a `match`'s `Kind::Null` arm after `Kind::Undefined`'s is dropped",
+    breaks:
+      "`x === null` is taken for `x === undefined`, so a `match`'s `Kind::Null` arm after `Kind::Undefined`'s is dropped",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                        matches!(p, Op::LooseEq | Op::LooseNe) || k.kind == l.kind\n",
     replace: "                        true\n",
@@ -45,34 +51,48 @@ export const mutations: Mutation[] = [
   },
   {
     name: "typeof-implies-object-too",
-    breaks: "`typeof x === \"object\"` is taken to imply `x != null`, which `null` isn't",
+    breaks:
+      '`typeof x === "object"` is taken to imply `x != null`, which `null` isn\'t',
     file: "src/lower/mir/tidy/branches.rs",
-    find: "            js::same_path(x, y) && matches!(&name.kind, ExprKind::Str(t) if t != \"object\" && t != \"undefined\")\n",
-    replace: "            js::same_path(x, y) && matches!(&name.kind, ExprKind::Str(_))\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "a match arm's pattern of parts"],
+    find: '            js::same_path(x, y) && matches!(&name.kind, ExprKind::Str(t) if t != "object" && t != "undefined")\n',
+    replace:
+      "            js::same_path(x, y) && matches!(&name.kind, ExprKind::Str(_))\n",
+    tests: [
+      "test/lowering-matches.test.ts",
+      "-t",
+      "a match arm's pattern of parts",
+    ],
   },
   {
     name: "coerced-branches-kept",
-    breaks: "`let tmp; if (now) { tmp = () => 1; } else { .. } return tmp;`, where each branch returns",
+    breaks:
+      "`let tmp; if (now) { tmp = () => 1; } else { .. } return tmp;`, where each branch returns",
     file: "src/lower/mir/tidy/branches.rs",
     find: "    if returned != result && !is_temporary(returned) {\n",
     replace: "    if returned != result {\n",
-    tests: ["test/lowering-branches.test.ts", "-t", "coerced to the result are returned"],
+    tests: [
+      "test/lowering-branches.test.ts",
+      "-t",
+      "coerced to the result are returned",
+    ],
   },
   {
     name: "mir-tidy-empty-then-kept",
     breaks: "`if (c) {} else { s }` stays, not `if (!c) { s }`",
     file: "src/lower/mir/tidy/branches.rs",
     find: "        (true, Some(otherwise)) if !otherwise.is_empty() => Some(StmtKind::If(test.negated_test(), otherwise, None)),\n",
-    replace: "        (true, Some(otherwise)) if !otherwise.is_empty() => Some(StmtKind::If(test, Vec::new(), Some(otherwise))),\n",
+    replace:
+      "        (true, Some(otherwise)) if !otherwise.is_empty() => Some(StmtKind::If(test, Vec::new(), Some(otherwise))),\n",
     tests: ["test/lowering-branches.test.ts", "-t", "branches from MIR read"],
   },
   {
     name: "mir-tidy-or-chain-kept",
-    breaks: "`l: { if (!a) { if (!b) { s; break l; } } t }` stays, not `if (a || b) { t } else { s }`",
+    breaks:
+      "`l: { if (!a) { if (!b) { s; break l; } } t }` stays, not `if (a || b) { t } else { s }`",
     file: "src/lower/mir/tidy/branches.rs",
     find: "            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label) => {\n",
-    replace: "            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label).filter(|_| false) => {\n",
+    replace:
+      "            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label).filter(|_| false) => {\n",
     tests: [
       "test/lowering-matches.test.ts",
       "test/lowering-written-branches.test.ts",
@@ -82,47 +102,79 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-tidy-temporary-ternary-kept",
-    breaks: "an `if` the program wrote as a value, of an element, stays a `let` assigned in branches, not a conditional child",
+    breaks:
+      "an `if` the program wrote as a value, of an element, stays a `let` assigned in branches, not a conditional child",
     file: "src/lower/mir/tidy/branches.rs",
     find: "        && ((small(yes) && small(no)) || is_temporary(x))\n",
     replace: "        && small(yes) && small(no)\n",
-    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
     name: "mir-tidy-boolean-variable-unknown",
-    breaks: "a variable of `booleans` isn't a `bool` to `conditional`, `!!expanded`",
+    breaks:
+      "a variable of `booleans` isn't a `bool` to `conditional`, `!!expanded`",
     file: "src/lower/mir/tidy/branches.rs",
     find: "        ExprKind::Var(name) => booleans.contains(name),\n",
     replace: "",
-    tests: ["test/lowering-branches.test.ts", "-t", "a function.s match of two arms and its if of two values"],
+    tests: [
+      "test/lowering-branches.test.ts",
+      "-t",
+      "a function.s match of two arms and its if of two values",
+    ],
   },
   {
     name: "mir-tidy-implied-guard-kept",
-    breaks: "`if (x != null) { if (x === \"a\") { s } }` keeps the guard its chain says",
+    breaks:
+      '`if (x != null) { if (x === "a") { s } }` keeps the guard its chain says',
     file: "src/lower/mir/tidy/branches.rs",
     find: "            StmtKind::If(test, then, None) if !then.is_empty() && then.iter().all(|s| guarded_chain(s, test)) => {\n",
-    replace: "            StmtKind::If(test, then, None) if false && !then.is_empty() && then.iter().all(|s| guarded_chain(s, test)) => {\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "leaves its None arm the default"],
+    replace:
+      "            StmtKind::If(test, then, None) if false && !then.is_empty() && then.iter().all(|s| guarded_chain(s, test)) => {\n",
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "leaves its None arm the default",
+    ],
   },
   {
     name: "mir-tidy-implied-by-or-unread",
-    breaks: "`a || b` doesn't say what both its sides say, `x != null` of `x === \"d\" || x === \"i\"`",
+    breaks:
+      '`a || b` doesn\'t say what both its sides say, `x != null` of `x === "d" || x === "i"`',
     file: "src/lower/mir/tidy/branches.rs",
     find: "        (_, ExprKind::Binary(Op::Or, a, b)) => implies(a, test) && implies(b, test),\n",
     replace: "",
-    tests: ["test/lowering-switches.test.ts", "-t", "leaves its None arm the default"],
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "leaves its None arm the default",
+    ],
   },
   {
     name: "mir-tidy-guarded-chain-else",
-    breaks: "a chain with a last `else` drops its guard, its `else` then run where the guard fails",
+    breaks:
+      "a chain with a last `else` drops its guard, its `else` then run where the guard fails",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                && (otherwise.as_deref()).is_none_or(|rest| matches!(rest, [next] if guarded_chain(next, guard)))\n        }\n        _ => false,\n",
-    replace: "                && (otherwise.as_deref()).is_none_or(|rest| matches!(rest, [next] if guarded_chain(next, guard)))\n        }\n        _ => true,\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "leaves its None arm the default"],
+    replace:
+      "                && (otherwise.as_deref()).is_none_or(|rest| matches!(rest, [next] if guarded_chain(next, guard)))\n        }\n        _ => true,\n",
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "leaves its None arm the default",
+    ],
   },
   {
     name: "mir-tidy-filtered-guard-kept",
-    breaks: "a let-else of what `filter` keeps tests `const h = x ? x : undefined` for `null`, not `!x`",
+    breaks:
+      "a let-else of what `filter` keeps tests `const h = x ? x : undefined` for `null`, not `!x`",
     file: "src/lower/mir/tidy/branches.rs",
     find: "            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_in(then, h) == 0,\n",
     replace: "            Op::LooseEq => false,\n",
@@ -130,144 +182,214 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-tidy-filtered-or-unkept",
-    breaks: "a let-else of what `filter` by truth keeps, `const h = x || undefined`, tests `h == null`, not `!x`",
+    breaks:
+      "a let-else of what `filter` by truth keeps, `const h = x || undefined`, tests `h == null`, not `!x`",
     file: "src/lower/mir/tidy/branches.rs",
     find: "        ExprKind::Binary(Op::Or, x, no) if matches!(no.kind, ExprKind::Undefined) => Some(x),\n",
     replace: "",
-    tests: ["test/lowering-branches.test.ts", "-t", "branches assign is returned from each"],
+    tests: [
+      "test/lowering-branches.test.ts",
+      "-t",
+      "branches assign is returned from each",
+    ],
   },
   {
     name: "mir-tidy-filtered-some-kept",
-    breaks: "`if (h != null) { s }` of what `filter` keeps stays, `h` and its binding `const href = h`",
+    breaks:
+      "`if (h != null) { s }` of what `filter` keeps stays, `h` and its binding `const href = h`",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                otherwise.as_deref().is_none_or(|o| js::mentions_in(o, h) == 0)\n                    && js::mentions_in(&stmts[i + 1..], h) == 0\n",
     replace: "                false\n",
-    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
     name: "mir-tidy-else-after-return-kept",
-    breaks: "`if (c) { return a; } else { s }`, its `else` kept, the let-else not a guard",
+    breaks:
+      "`if (c) { return a; } else { s }`, its `else` kept, the let-else not a guard",
     file: "src/lower/mir/tidy/branches.rs",
     find: "        StmtKind::If(test, then, Some(otherwise)) if then.last().is_some_and(ends) => {\n",
-    replace: "        StmtKind::If(test, then, Some(otherwise)) if false && then.last().is_some_and(ends) => {\n",
+    replace:
+      "        StmtKind::If(test, then, Some(otherwise)) if false && then.last().is_some_and(ends) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^range_bounds_generic.rs$"],
     snapshots: true,
   },
   {
-    "name": "table-reads-off",
-    "breaks": "a `match` reading a table is MIR's tests of each variant, not `MAP[kind]`",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "    let within = |s: js::Span| table_of(s).is_some();",
-    "replace": "    let within = |s: js::Span| false && table_of(s).is_some();",
-    "tests": ["test/lowering.test.ts", "-t", "a match reading a table from MIR"]
+    name: "table-reads-off",
+    breaks:
+      "a `match` reading a table is MIR's tests of each variant, not `MAP[kind]`",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "    let within = |s: js::Span| table_of(s).is_some();",
+    replace: "    let within = |s: js::Span| false && table_of(s).is_some();",
+    tests: ["test/lowering.test.ts", "-t", "a match reading a table from MIR"],
   },
   {
-    "name": "table-reads-returns-kept",
-    "breaks": "a `match` of returns, each its variant's own name, stays a return for each, not `return kind;`",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "                stmts.splice(i..=i + returned, [StmtKind::Return(Some(read)).at(span)]);\n",
-    "replace": "                let _ = (read, span);\n",
-    "tests": ["test/lowering.test.ts", "-t", "a match reading a table from MIR"]
+    name: "table-reads-returns-kept",
+    breaks:
+      "a `match` of returns, each its variant's own name, stays a return for each, not `return kind;`",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                stmts.splice(i..=i + returned, [StmtKind::Return(Some(read)).at(span)]);\n",
+    replace: "                let _ = (read, span);\n",
+    tests: ["test/lowering.test.ts", "-t", "a match reading a table from MIR"],
   },
   {
-    "name": "table-read-own-names-off",
-    "breaks": "a `match` giving each variant's own name isn't what's matched",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "        None if names == arms.len() => Some((**key).clone()),\n",
-    "replace": "",
-    "tests": ["test/lowering.test.ts", "-t", "a match reading a table from MIR"]
+    name: "table-read-own-names-off",
+    breaks: "a `match` giving each variant's own name isn't what's matched",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        None if names == arms.len() => Some((**key).clone()),\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "a match reading a table from MIR"],
   },
   {
-    "name": "table-read-mixed-arms",
-    "breaks": "a `match` of a table's fields and a literal reads the table for the literal's variant too",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "        Some(table) if fields.len() == arms.len() =>",
-    "replace": "        Some(table) =>",
-    "tests": ["test/lowering.test.ts", "-t", "a match reading a table from MIR"]
+    name: "table-read-mixed-arms",
+    breaks:
+      "a `match` of a table's fields and a literal reads the table for the literal's variant too",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        Some(table) if fields.len() == arms.len() =>",
+    replace: "        Some(table) =>",
+    tests: ["test/lowering.test.ts", "-t", "a match reading a table from MIR"],
   },
   {
-    "name": "block-returns-kept",
-    "breaks": "returns MIR jumps out of a block for stay `result = x; break l;` and one `return result;`",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "    returned_from_block(stmts, result);\n",
-    "replace": "",
-    "tests": ["test/lowering-branches.test.ts", "-t", "written returns MIR jumps out of a block"]
+    name: "block-returns-kept",
+    breaks:
+      "returns MIR jumps out of a block for stay `result = x; break l;` and one `return result;`",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "    returned_from_block(stmts, result);\n",
+    replace: "",
+    tests: [
+      "test/lowering-branches.test.ts",
+      "-t",
+      "written returns MIR jumps out of a block",
+    ],
   },
   {
-    "name": "or-branches-reversed",
-    "breaks": "`if a || b { x } else { y }` from MIR is `!a && !b ? y : x`",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "                    true => conditional(test.negated_test(), one.no, one.yes, booleans, written_if),\n",
-    "replace": "                    true => conditional(test, one.yes, one.no, booleans, written_if),\n",
-    "tests": ["test/lowering-branches.test.ts", "-t", "an if of an or from MIR keeps its branches"]
+    name: "or-branches-reversed",
+    breaks: "`if a || b { x } else { y }` from MIR is `!a && !b ? y : x`",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                    true => conditional(test.negated_test(), one.no, one.yes, booleans, written_if),\n",
+    replace:
+      "                    true => conditional(test, one.yes, one.no, booleans, written_if),\n",
+    tests: [
+      "test/lowering-branches.test.ts",
+      "-t",
+      "an if of an or from MIR keeps its branches",
+    ],
   },
   {
-    "name": "mir-tidy-bool-field-unknown",
-    "breaks": "a `bool` field from MIR isn't known as one, `!!(element.editable || ..)`",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "        ExprKind::Member(..) => field_path(e).is_some_and(|path| booleans.contains(&path)),\n",
-    "replace": "",
-    "tests": ["test/lowering-branches.test.ts", "-t", "or chain from MIR is written as one"]
+    name: "mir-tidy-bool-field-unknown",
+    breaks:
+      "a `bool` field from MIR isn't known as one, `!!(element.editable || ..)`",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        ExprKind::Member(..) => field_path(e).is_some_and(|path| booleans.contains(&path)),\n",
+    replace: "",
+    tests: [
+      "test/lowering-branches.test.ts",
+      "-t",
+      "or chain from MIR is written as one",
+    ],
   },
   {
-    "name": "mir-tidy-chain-first",
-    "breaks": "a match's arms as values from MIR chain with the rest first, `variant !== \"foundation\" ? .. : [\"Foundation\", ..]`",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "        (None, false, true) => false,\n",
-    "replace": "        (None, false, true) => true,\n",
-    "tests": ["test/lowering-matches.test.ts", "-t", "arms as values chain in written order"]
+    name: "mir-tidy-chain-first",
+    breaks:
+      'a match\'s arms as values from MIR chain with the rest first, `variant !== "foundation" ? .. : ["Foundation", ..]`',
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        (None, false, true) => false,\n",
+    replace: "        (None, false, true) => true,\n",
+    tests: [
+      "test/lowering-matches.test.ts",
+      "-t",
+      "arms as values chain in written order",
+    ],
   },
   {
-    "name": "mir-tidy-or-pattern-blocks",
-    "breaks": "an or-pattern's matches! from MIR tests its first pattern alone",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "                StmtKind::If(or_all(a, b), then, None)\n",
-    "replace": "                StmtKind::If(a, then, None)\n",
-    "tests": ["test/lowering-matches.test.ts", "-t", "or-pattern's matches is an or"]
+    name: "mir-tidy-or-pattern-blocks",
+    breaks: "an or-pattern's matches! from MIR tests its first pattern alone",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                StmtKind::If(or_all(a, b), then, None)\n",
+    replace: "                StmtKind::If(a, then, None)\n",
+    tests: [
+      "test/lowering-matches.test.ts",
+      "-t",
+      "or-pattern's matches is an or",
+    ],
   },
   {
-    "name": "mir-tidy-bool-call-unknown",
-    "breaks": "a call giving a `bool` isn't one in a test, `!!isItem(item) && ..`",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "        ExprKind::Call(..) if call_path(e).is_some_and(|path| booleans.contains(&path)) => true,\n",
-    "replace": "",
-    "tests": ["test/lowering-branches.test.ts", "-t", "call giving a bool is one in a test"]
+    name: "mir-tidy-bool-call-unknown",
+    breaks:
+      "a call giving a `bool` isn't one in a test, `!!isItem(item) && ..`",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        ExprKind::Call(..) if call_path(e).is_some_and(|path| booleans.contains(&path)) => true,\n",
+    replace: "",
+    tests: [
+      "test/lowering-branches.test.ts",
+      "-t",
+      "call giving a bool is one in a test",
+    ],
   },
   {
-    "name": "element-branch-not-small",
-    "breaks": "a small element chosen, `busy ? <span>\u2026</span> : <b>Save</b>`, stays `let label; if (busy) ..`",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "        ExprKind::Jsx(_) => levels(e) <= 2,\n",
-    "replace": "        ExprKind::Jsx(_) => false,\n",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    name: "element-branch-not-small",
+    breaks:
+      "a small element chosen, `busy ? <span>\u2026</span> : <b>Save</b>`, stays `let label; if (busy) ..`",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        ExprKind::Jsx(_) => levels(e) <= 2,\n",
+    replace: "        ExprKind::Jsx(_) => false,\n",
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
-    "name": "mir-chain-tail-folded",
-    "breaks": "a variable's value of three arms from MIR has its last two folded, `else { counted = w ? 0 : n; }`",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "                    && let Some((y, folded)) = assigned_only(otherwise).or_else(|| assigned_through(otherwise))\n",
-    "replace": "                    && let Some((y, folded)) = assigned_only(otherwise).filter(|_| false)\n",
-    "tests": ["test/lowering-written-branches.test.ts", "-t", "a variable's value of three arms from MIR"]
+    name: "mir-chain-tail-folded",
+    breaks:
+      "a variable's value of three arms from MIR has its last two folded, `else { counted = w ? 0 : n; }`",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                    && let Some((y, folded)) = assigned_only(otherwise).or_else(|| assigned_through(otherwise))\n",
+    replace:
+      "                    && let Some((y, folded)) = assigned_only(otherwise).filter(|_| false)\n",
+    tests: [
+      "test/lowering-written-branches.test.ts",
+      "-t",
+      "a variable's value of three arms from MIR",
+    ],
   },
   {
-    "name": "mir-temp-chain-half-folded",
-    "breaks": "a value MIR holds of three branches, its first doing more, is `else { tmp = b ? q : r; }`",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": " || is_temporary(x) && then.len() > 1)",
-    "replace": ")",
-    "tests": ["test/lowering-written-branches.test.ts", "-t", "a variable's value of three arms from MIR"]
+    name: "mir-temp-chain-half-folded",
+    breaks:
+      "a value MIR holds of three branches, its first doing more, is `else { tmp = b ? q : r; }`",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: " || is_temporary(x) && then.len() > 1)",
+    replace: ")",
+    tests: [
+      "test/lowering-written-branches.test.ts",
+      "-t",
+      "a variable's value of three arms from MIR",
+    ],
   },
   {
-    "name": "mir-tidy-table-taken-apart-unread",
-    "breaks": "a `match` reading a table, taken apart, `let Look { name, classes } = match ..`, stays a conditional of every variant from MIR, not `LOOKS[kind]`",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "            | StmtKind::Return(Some(e))\n            | StmtKind::Destructure { value: e, .. } => {\n",
-    "replace": "            | StmtKind::Return(Some(e)) => {\n",
-    "tests": ["test/lowering.test.ts", "-t", "a match reading a table from MIR"]
+    name: "mir-tidy-table-taken-apart-unread",
+    breaks:
+      "a `match` reading a table, taken apart, `let Look { name, classes } = match ..`, stays a conditional of every variant from MIR, not `LOOKS[kind]`",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "            | StmtKind::Return(Some(e))\n            | StmtKind::Destructure { value: e, .. } => {\n",
+    replace: "            | StmtKind::Return(Some(e)) => {\n",
+    tests: ["test/lowering.test.ts", "-t", "a match reading a table from MIR"],
   },
   {
     name: "mir-tidy-updates-folded",
-    breaks: "MIR's branches each adding to a variable are `x = c ? x + a : x + b`",
+    breaks:
+      "MIR's branches each adding to a variable are `x = c ? x + a : x + b`",
     file: "src/lower/mir/tidy/branches.rs",
     find: "        && !(updates(x, yes) || updates(x, no))\n",
     replace: "        && !((updates(x, yes) || updates(x, no)) && false)\n",
@@ -275,23 +397,34 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-tidy-table-last-arm-unchecked",
-    breaks: "MIR's last arm of a match on an enum's names is taken as its own name, whatever it gives",
+    breaks:
+      "MIR's last arm of a match on an enum's names is taken as its own name, whatever it gives",
     file: "src/lower/mir/tidy/branches.rs",
     find: "            None => Some(left.as_str()),\n",
     replace: "            None => None,\n",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "an enum's own names are the enum"],
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "an enum's own names are the enum",
+    ],
   },
   {
     name: "written-if-decided-away",
-    breaks: "an `if` the program wrote that an earlier test decides is folded to its branch, React's `// $FlowFixMe[constant-condition]` lost with its `if (enableGestureTransition)`",
+    breaks:
+      "an `if` the program wrote that an earlier test decides is folded to its branch, React's `// $FlowFixMe[constant-condition]` lost with its `if (enableGestureTransition)`",
     file: "src/lower/mir/tidy/branches.rs",
     find: "    let wrote = |t: &Expr| !t.span.is_none() && written.iter().any(|c| c.lo < t.span.hi && t.span.lo < c.hi);\n",
     replace: "    let wrote = |_: &Expr| written.is_empty() && false;\n",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "earlier test decides"],
+    tests: [
+      "test/lowering-written-branches.test.ts",
+      "-t",
+      "earlier test decides",
+    ],
   },
   {
     name: "decided-tests-kept",
-    breaks: "a test an earlier one decided stays, `if (option != null) { return option; } .. if (option != null) { drop }` (ADR 0564)",
+    breaks:
+      "a test an earlier one decided stays, `if (option != null) { return option; } .. if (option != null) { drop }` (ADR 0564)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "        if !decidable(test, changing) {\n",
     replace: "        if !decidable(test, changing) || true {\n",
@@ -299,7 +432,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "decided-test-past-a-call",
-    breaks: "a test that reads through a field is taken as decided past a call, which may have changed it",
+    breaks:
+      "a test that reads through a field is taken as decided past a call, which may have changed it",
     file: "src/lower/mir/tidy/branches.rs",
     find: "    !test.reads_only_vars() && e.has_effects()\n",
     replace: "    false && !test.reads_only_vars() && e.has_effects()\n",
@@ -307,33 +441,49 @@ export const mutations: Mutation[] = [
   },
   {
     name: "shared-tails-kept",
-    breaks: "a tail both branches end with stays written twice, `result = undefined` in each (ADR 0564)",
+    breaks:
+      "a tail both branches end with stays written twice, `result = undefined` in each (ADR 0564)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                let shared = shared_tail(then, otherwise);\n",
     replace: "                let shared = 0 * shared_tail(then, otherwise);\n",
-    tests: ["test/corpus.test.ts", "-t", "^(question_drops|or_pattern_part_moves).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(question_drops|or_pattern_part_moves).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "shared-tails-take-a-let-elses-exit",
-    breaks: "a `let … else`'s `return` goes as a copy of the function's tail it's alike, and its guard is never first (ADR 0879, amended)",
+    breaks:
+      "a `let … else`'s `return` goes as a copy of the function's tail it's alike, and its guard is never first (ADR 0879, amended)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                    || guards(&then[kept.len()..])\n",
     replace: "",
-    tests: ["test/lowering-early-exits.test.ts", "-t", "a let else before a return is a guard first"],
+    tests: [
+      "test/lowering-early-exits.test.ts",
+      "-t",
+      "a let else before a return is a guard first",
+    ],
   },
   {
     name: "shared-leaving-tail-hoisted",
-    breaks: "a `return` both branches end with is written once after them, and a guard clause is nested instead",
+    breaks:
+      "a `return` both branches end with is written once after them, and a guard clause is nested instead",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                    || tail.last().is_some_and(ends)\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(drop_scopes|scope_temporaries).rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(drop_scopes|scope_temporaries).rs$",
+    ],
     snapshots: true,
   },
   {
     name: "emptied-if-kept-as-test",
-    breaks: "`if (c) {}` of a test that does nothing stays as the test, `c;`, not nothing",
+    breaks:
+      "`if (c) {}` of a test that does nothing stays as the test, `c;`, not nothing",
     file: "src/lower/mir/tidy/branches.rs",
     find: "        (true, _) if !test.has_effects() => None,\n",
     replace: "        (true, _) if false && !test.has_effects() => None,\n",
@@ -342,23 +492,34 @@ export const mutations: Mutation[] = [
   },
   {
     name: "undefined-branch-made-conditional",
-    breaks: "a tail `if` whose branch gives nothing is `return c ? x : undefined`, not its guard",
+    breaks:
+      "a tail `if` whose branch gives nothing is `return c ? x : undefined`, not its guard",
     file: "src/lower/mir/tidy/branches.rs",
     find: "    (!undefined(yes) && !undefined(no)) || (undefined(yes) && null(no)) || (null(yes) && undefined(no))\n",
     replace: "    true\n",
-    tests: ["test/lowering-branches.test.ts", "-t", "an if written with an else keeps it"],
+    tests: [
+      "test/lowering-branches.test.ts",
+      "-t",
+      "an if written with an else keeps it",
+    ],
   },
   {
     name: "conditional-branch-unmapped",
-    breaks: "a conditional's branch of no place of its own, `(fib(a) + fib(b)) >>> 0`, maps to its neighbor's Rust",
+    breaks:
+      "a conditional's branch of no place of its own, `(fib(a) + fib(b)) >>> 0`, maps to its neighbor's Rust",
     file: "src/lower/mir/tidy/branches.rs",
     find: "    if first.span.is_none() {\n        first.span = placed;\n    }\n",
     replace: "",
-    tests: ["test/emission.test.ts", "-t", "source map points from fib.js back into fib.rs"],
+    tests: [
+      "test/emission.test.ts",
+      "-t",
+      "source map points from fib.js back into fib.rs",
+    ],
   },
   {
     name: "present-coalesce-kept",
-    breaks: "`return x ?? null` stays where a test it's under says `x` is there, `typeof x === \"function\"`",
+    breaks:
+      '`return x ?? null` stays where a test it\'s under says `x` is there, `typeof x === "function"`',
     file: "src/lower/mir/tidy/branches.rs",
     find: "                    present_in(&mut stmts[j], test, holds, false);\n",
     replace: "",
@@ -374,151 +535,241 @@ export const mutations: Mutation[] = [
   },
   {
     name: "switch-arms-folded",
-    breaks: "a `match` of constants' arms of a value are folded into a `?:`, `const label = len === 0 ? 10 : ..`, not a `switch`",
+    breaks:
+      "a `match` of constants' arms of a value are folded into a `?:`, `const label = len === 0 ? 10 : ..`, not a `switch`",
     file: "src/lower/mir/tidy/branches.rs",
     find: "        && !switched(test, span, switches);\n",
     replace: "        ;\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
+    tests: [
+      "test/lowering-matches.test.ts",
+      "-t",
+      "a match of constants is a switch",
+    ],
   },
   {
     name: "function-not-small",
-    breaks: "a function isn't a conditional's branch, so `const pick = c ? f : (n) => ..` is a `let` each branch sets",
+    breaks:
+      "a function isn't a conditional's branch, so `const pick = c ? f : (n) => ..` is a `let` each branch sets",
     file: "src/lower/mir/tidy/branches.rs",
     find: "        _ => !matches!(e.kind, ExprKind::Cond(..)),\n",
-    replace: "        _ => !matches!(e.kind, ExprKind::Cond(..) | ExprKind::Arrow(..)),\n",
-    tests: ["test/lowering-branches.test.ts", "-t", "a function.s too, is a conditional"],
+    replace:
+      "        _ => !matches!(e.kind, ExprKind::Cond(..) | ExprKind::Arrow(..)),\n",
+    tests: [
+      "test/lowering-branches.test.ts",
+      "-t",
+      "a function.s too, is a conditional",
+    ],
   },
   {
     name: "mir-tidy-decided-part-kept",
-    breaks: "a part of a chain an earlier test decides is tested again, `.. || Array.isArray(value)` in its `else` (ADR 0743)",
+    breaks:
+      "a part of a chain an earlier test decides is tested again, `.. || Array.isArray(value)` in its `else` (ADR 0743)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "    changed.then_some(folded)\n",
     replace: "    changed.then_some(folded).filter(|_| false)\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "a part of a chain an earlier test decides is left out"],
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "a part of a chain an earlier test decides is left out",
+    ],
   },
   {
     name: "mir-tidy-decided-part-past-the-if",
-    breaks: "a part of a chain is left out past the `if` that decides it, where a `switch` of a `match`'s arms reads each test whole (ADR 0743)",
+    breaks:
+      "a part of a chain is left out past the `if` that decides it, where a `switch` of a `match`'s arms reads each test whole (ADR 0743)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "            StmtKind::If(t, ..) if parts && let Some(folded) = decided_part(t, test, holds) => {\n",
-    replace: "            StmtKind::If(t, ..) if let Some(folded) = decided_part(t, test, holds) => {\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is tells undefined and null"],
+    replace:
+      "            StmtKind::If(t, ..) if let Some(folded) = decided_part(t, test, holds) => {\n",
+    tests: [
+      "test/lowering-switches.test.ts",
+      "-t",
+      "a match of what a value is tells undefined and null",
+    ],
   },
   {
-    "name": "mir-tidy-same-test-truth",
-    "breaks": "`!!label` isn't the same test as `label`, so a prop under a child's truth test is `label ? \"x\" : undefined`, not `\"x\"`",
-    "file": "src/lower/mir/tidy/branches.rs",
-    "find": "    let (a, b) = (truth(a), truth(b));\n",
-    "replace": "",
-    "tests": ["test/jsx-children.test.ts", "-t", "a prop under a child's truth test is its value there"]
+    name: "mir-tidy-same-test-truth",
+    breaks:
+      '`!!label` isn\'t the same test as `label`, so a prop under a child\'s truth test is `label ? "x" : undefined`, not `"x"`',
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "    let (a, b) = (truth(a), truth(b));\n",
+    replace: "",
+    tests: [
+      "test/jsx-children.test.ts",
+      "-t",
+      "a prop under a child's truth test is its value there",
+    ],
   },
   {
     name: "labeled-chain-unplaced",
-    breaks: "an `if let` chain MIR made a labeled block of is at the next statement's start, so the blank line before that is before the chain, ReactForwardRef's",
+    breaks:
+      "an `if let` chain MIR made a labeled block of is at the next statement's start, so the blank line before that is before the chain, ReactForwardRef's",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                span = made_where(span, &body);\n",
     replace: "",
-    tests: ["test/lowering-comments.test.ts", "-t", "an if let chain made of a labeled block"],
+    tests: [
+      "test/lowering-comments.test.ts",
+      "-t",
+      "an if let chain made of a labeled block",
+    ],
   },
   {
     name: "field-test-undecided-where-its-variable-changes",
-    breaks: "a test through a field of a variable the loop assigns is never decided, so `$unwrap(node.sibling)` stays where `node.sibling != null` holds",
+    breaks:
+      "a test through a field of a variable the loop assigns is never decided, so `$unwrap(node.sibling)` stays where `node.sibling != null` holds",
     file: "src/lower/mir/tidy/branches.rs",
     find: "    if test.reads_only_vars() {\n        test.visit_vars(&mut |v| stable &= !changing.contains(v));\n",
-    replace: "    if true {\n        test.visit_vars(&mut |v| stable &= !changing.contains(v));\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "an unwrap of a field a test says is there"],
+    replace:
+      "    if true {\n        test.visit_vars(&mut |v| stable &= !changing.contains(v));\n",
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "an unwrap of a field a test says is there",
+    ],
   },
   {
     name: "unwrap-of-tested-kept",
     breaks: "an `$unwrap(p)` where the test says `p` is there stays",
     file: "src/lower/mir/tidy/branches.rs",
     find: "            Some((_, option, _)) if option.reads_same() && there(option) => *e = option.clone().or_at(e.span),\n",
-    replace: "            Some((_, option, _)) if false && there(option) => *e = option.clone().or_at(e.span),\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "an unwrap of a field a test says is there"],
+    replace:
+      "            Some((_, option, _)) if false && there(option) => *e = option.clone().or_at(e.span),\n",
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "an unwrap of a field a test says is there",
+    ],
   },
   {
     name: "unwrap-past-a-call",
-    breaks: "an `$unwrap(p)` after a call that may change `p` is `p`, though the call cleared it",
+    breaks:
+      "an `$unwrap(p)` after a call that may change `p` is `p`, though the call cleared it",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                    present_in(&mut stmts[j], test, holds, true);\n                    return;\n",
-    replace: "                    present_in(&mut stmts[j], test, holds, true);\n                    j += 1;\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "an unwrap of a field a test says is there"],
+    replace:
+      "                    present_in(&mut stmts[j], test, holds, true);\n                    j += 1;\n",
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "an unwrap of a field a test says is there",
+    ],
   },
   {
     name: "written-returns-made-a-conditional",
-    breaks: "`if let Some(p) = parent { return f(&p); } return None;` is `return parent != null ? f(parent) : null;`, not the `if` of `return`s written (ADR 0657, amended)",
+    breaks:
+      "`if let Some(p) = parent { return f(&p); } return None;` is `return parent != null ? f(parent) : null;`, not the `if` of `return`s written (ADR 0657, amended)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                    && !(one.target == result && written_returns((then, otherwise), returns, span))\n                    // Not an `if` the program wrote as a statement",
-    replace: "                    && true\n                    // Not an `if` the program wrote as a statement",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "an if of returns the program wrote stays an if"],
+    replace:
+      "                    && true\n                    // Not an `if` the program wrote as a statement",
+    tests: [
+      "test/lowering-written-branches.test.ts",
+      "-t",
+      "an if of returns the program wrote stays an if",
+    ],
   },
   {
     name: "implies-given-none-a-literal",
-    breaks: "`x === undefined` of a `None` given, `strict_equals(x, None)`, is read as a literal's test that says `x` is there, and a nullable result's `x ?? null` there is `x`, `undefined` (ADR 0620, amended)",
+    breaks:
+      "`x === undefined` of a `None` given, `strict_equals(x, None)`, is read as a literal's test that says `x` is there, and a nullable result's `x ?? null` there is `x`, `undefined` (ADR 0620, amended)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                    ExprKind::Null | ExprKind::Undefined | ExprKind::GivenUndefined\n",
     replace: "                    ExprKind::Null | ExprKind::Undefined\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "a nullable result tested equal to a None given is null"],
+    tests: [
+      "test/lowering-nullable.test.ts",
+      "-t",
+      "a nullable result tested equal to a None given is null",
+    ],
   },
   {
     name: "written-returns-of-a-returned-if",
-    breaks: "`if __DEV__ { ..; return if c { a } else { None }; } None`, whose branches MIR assigns the function's value, stays `if (c) { return a; }` and the tail's `return null;`, not the conditional returned (ADR 0657, amended)",
+    breaks:
+      "`if __DEV__ { ..; return if c { a } else { None }; } None`, whose branches MIR assigns the function's value, stays `if (c) { return a; }` and the tail's `return null;`, not the conditional returned (ADR 0657, amended)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "    let in_branch = |s: &Stmt| returns.iter().any(|r| within(r, s.span) && !within(r, span));\n",
-    replace: "    let in_branch = |s: &Stmt| returns.iter().any(|r| within(r, s.span) && !within(r, js::Span::NONE));\n",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "an if of returns the program wrote stays an if"],
+    replace:
+      "    let in_branch = |s: &Stmt| returns.iter().any(|r| within(r, s.span) && !within(r, js::Span::NONE));\n",
+    tests: [
+      "test/lowering-written-branches.test.ts",
+      "-t",
+      "an if of returns the program wrote stays an if",
+    ],
   },
   {
     name: "mir-tidy-filtered-read-kept",
-    breaks: "a let-else of what `filter` by truth keeps of a read, `const contextTypes = type.contextTypes || undefined`, tests `== null`, not `!contextTypes`",
+    breaks:
+      "a let-else of what `filter` by truth keeps of a read, `const contextTypes = type.contextTypes || undefined`, tests `== null`, not `!contextTypes`",
     file: "src/lower/mir/tidy/branches.rs",
     find: "            ExprKind::Var(x) => Some(x.clone()),\n            _ => None,\n",
-    replace: "            ExprKind::Var(x) => Some(x.clone()),\n            _ => continue,\n",
-    tests: ["test/lowering-option-truth.test.ts", "-t", "a let-else of a read kept by its truth"],
+    replace:
+      "            ExprKind::Var(x) => Some(x.clone()),\n            _ => continue,\n",
+    tests: [
+      "test/lowering-option-truth.test.ts",
+      "-t",
+      "a let-else of a read kept by its truth",
+    ],
   },
   {
     name: "mir-tidy-filtered-exit-reads-kept",
-    breaks: "a let-else's exit that reads the `Option` it kept, `None`, is given what was filtered, `\"\"`, `Some(\"\")` where Rust says `None`",
+    breaks:
+      'a let-else\'s exit that reads the `Option` it kept, `None`, is given what was filtered, `""`, `Some("")` where Rust says `None`',
     file: "src/lower/mir/tidy/branches.rs",
     find: "            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_in(then, h) == 0,\n",
-    replace: "            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends),\n",
+    replace:
+      "            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends),\n",
     tests: ["test/corpus.test.ts", "-t", "^let_else_read_truth.rs$"],
   },
   {
     name: "branch-value-placed-nowhere",
-    breaks: "an `if`'s branches made one conditional, read in a struct literal's field, are placed nowhere, so the comment before the field is before the `return {` (ADR 0708, amended)",
+    breaks:
+      "an `if`'s branches made one conditional, read in a struct literal's field, are placed nowhere, so the comment before the field is before the `return {` (ADR 0708, amended)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                if value.span.is_none() {\n                    value.span = span;\n",
-    replace: "                if false {\n                    value.span = span;\n",
-    tests: ["test/lowering-comment-fields.test.ts", "-t", "a comment before a field of an if's value"],
+    replace:
+      "                if false {\n                    value.span = span;\n",
+    tests: [
+      "test/lowering-comment-fields.test.ts",
+      "-t",
+      "a comment before a field of an if's value",
+    ],
   },
   {
     name: "branch-adding-made-conditional",
-    breaks: "React's `if (className == null) { className = m; } else { className += .. }` is `className = className == null ? m : className + ..` (ADR 0657, amended)",
+    breaks:
+      "React's `if (className == null) { className = m; } else { className += .. }` is `className = className == null ? m : className + ..` (ADR 0657, amended)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "        && !(updates(x, yes) || updates(x, no))\n",
     replace: "        && !(updates(x, yes) && updates(x, no))\n",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "adds to its variable"],
+    tests: [
+      "test/lowering-written-branches.test.ts",
+      "-t",
+      "adds to its variable",
+    ],
   },
   {
     name: "switch-arms-tail-shared",
-    breaks: "React's commitAttachRef's Fragment and default arms share their tail after a smaller `switch`, an `if` chain before it (ADR 0956)",
+    breaks:
+      "React's commitAttachRef's Fragment and default arms share their tail after a smaller `switch`, an `if` chain before it (ADR 0956)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                    || apart\n                    || super::switches::switched(test, stmts[i].span, switches)\n",
-    replace: "                    || apart\n                    || false && super::switches::switched(test, stmts[i].span, switches)\n",
+    replace:
+      "                    || apart\n                    || false && super::switches::switched(test, stmts[i].span, switches)\n",
     tests: ["test/lowering-switches.test.ts", "-t", "end alike"],
   },
   {
     name: "chain-through-temporary-unseen",
-    breaks: "a variable's value of four arms MIR gives through a temporary is its first arm a statement and the rest a conditional, `else { color = a ? .. : b ? .. : .. }`",
+    breaks:
+      "a variable's value of four arms MIR gives through a temporary is its first arm a statement and the rest a conditional, `else { color = a ? .. : b ? .. : .. }`",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                    && let Some((y, folded)) = assigned_only(otherwise).or_else(|| assigned_through(otherwise))\n",
-    replace: "                    && let Some((y, folded)) = assigned_only(otherwise)\n",
+    replace:
+      "                    && let Some((y, folded)) = assigned_only(otherwise)\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "four arms"],
   },
   {
     name: "plain-chain-written-order-ignored",
-    breaks: "a value whose `then` is a chain of plain values, `if c { if d { a } else { b } } else { e }`, is `!c ? e : d ? a : b`, its test turned, not `c ? (d ? a : b) : e` as written (ADR 0969, amended)",
+    breaks:
+      "a value whose `then` is a chain of plain values, `if c { if d { a } else { b } } else { e }`, is `!c ? e : d ? a : b`, its test turned, not `c ? (d ? a : b) : e` as written (ADR 0969, amended)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                        written_order(span, then, otherwise, elses),\n",
     replace: "                        None,\n",
@@ -527,23 +778,35 @@ export const mutations: Mutation[] = [
   },
   {
     name: "one-assignment-written-order-ignored",
-    breaks: "a temporary's value whose `then` is a conditional, a pair's part, is `!c ? e : ..`, its test turned, not `c ? (..) : e` as written (ADR 0969, amended)",
+    breaks:
+      "a temporary's value whose `then` is a conditional, a pair's part, is `!c ? e : ..`, its test turned, not `c ? (..) : e` as written (ADR 0969, amended)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "        written_order(span, then, otherwise, elses),\n        matches!(yes.kind, ExprKind::Cond(..)),\n",
-    replace: "        None::<bool>,\n        matches!(yes.kind, ExprKind::Cond(..)),\n",
-    tests: ["test/lowering-moves.test.ts", "-t", "a call's value is read in a method's arguments"],
+    replace:
+      "        None::<bool>,\n        matches!(yes.kind, ExprKind::Cond(..)),\n",
+    tests: [
+      "test/lowering-moves.test.ts",
+      "-t",
+      "a call's value is read in a method's arguments",
+    ],
   },
   {
     name: "one-assignment-through-temporary-unseen",
-    breaks: "a value's chain of five plain arms, each after the first MIR's temporary given through the next, is `if (u > 5) { c = \"o\"; } else if (t < 1) { c = \"x\"; } else { c = t > 9 ? .. }`, half a chain, not one conditional (#436, ADR 0969, amended)",
+    breaks:
+      'a value\'s chain of five plain arms, each after the first MIR\'s temporary given through the next, is `if (u > 5) { c = "o"; } else if (t < 1) { c = "x"; } else { c = t > 9 ? .. }`, half a chain, not one conditional (#436, ADR 0969, amended)',
     file: "src/lower/mir/tidy/branches.rs",
     find: "    let (y, no) = assigned_only(otherwise).or_else(|| assigned_through(otherwise))?;\n",
     replace: "    let (y, no) = assigned_only(otherwise)?;\n",
-    tests: ["test/lowering-returned-chains.test.ts", "-t", "chain of five arms or more"],
+    tests: [
+      "test/lowering-returned-chains.test.ts",
+      "-t",
+      "chain of five arms or more",
+    ],
   },
   {
     name: "plain-chain-statement-folded",
-    breaks: "a late `let`'s `if` the program wrote as a statement, its `then` a value's conditional, is one conditional, `const level = c ? (m ? 3 : 2) : 1;`, not as written (rd187, ADR 0969, amended)",
+    breaks:
+      "a late `let`'s `if` the program wrote as a statement, its `then` a value's conditional, is one conditional, `const level = c ? (m ? 3 : 2) : 1;`, not as written (rd187, ADR 0969, amended)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                    && !written_as_statement(test, span, program)\n                    && let Some(value) = plain_chain_of(\n",
     replace: "                    && let Some(value) = plain_chain_of(\n",
@@ -552,7 +815,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "unlabeled-chain-not-a-value",
-    breaks: "a labeled block of an `||` that becomes `if (a || b) { x = null; } else { x = v; }` stays that `if`, `let unknown; if ..`, inside a borrow's `try`, not the conditional (#413, ADR 0683, amended)",
+    breaks:
+      "a labeled block of an `||` that becomes `if (a || b) { x = null; } else { x = v; }` stays that `if`, `let unknown; if ..`, inside a borrow's `try`, not the conditional (#413, ADR 0683, amended)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "    if unlabeled {\n",
     replace: "    if false && unlabeled {\n",
@@ -561,15 +825,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "plain-chain-kept",
-    breaks: "a value's chain of four arms each a plain value stays `let color; if (..) { color = .. } else if ..`, not upstream's `const color = a ? .. : b ? .. : ..` (ADR 0969, amended)",
+    breaks:
+      "a value's chain of four arms each a plain value stays `let color; if (..) { color = .. } else if ..`, not upstream's `const color = a ? .. : b ? .. : ..` (ADR 0969, amended)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                    && !written_as_statement(test, span, program)\n                    && let Some(value) = plain_chain_of(\n",
-    replace: "                    && false\n                    && let Some(value) = plain_chain_of(\n",
+    replace:
+      "                    && false\n                    && let Some(value) = plain_chain_of(\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "arms from MIR"],
   },
   {
     name: "held-block-left-labeled",
-    breaks: "a block whose `break`s are `return`s now keeps its label, `bb24: { .. }`, which nothing names (ADR 0432, amended)",
+    breaks:
+      "a block whose `break`s are `return`s now keeps its label, `bb24: { .. }`, which nothing names (ADR 0432, amended)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "    js::statement_lists(&mut made, &mut unlabeled);\n",
     replace: "",
@@ -578,32 +845,48 @@ export const mutations: Mutation[] = [
   },
   {
     name: "arrow-called-in-place-small",
-    breaks: "a `with`'s closure that throws, an arrow called in place, is a branch's value, `return done ? 1 : ((exception) => { throw exception; })(exception);`, not `if (done) { return 1; } throw exception;` (ADR 0237, amended)",
+    breaks:
+      "a `with`'s closure that throws, an arrow called in place, is a branch's value, `return done ? 1 : ((exception) => { throw exception; })(exception);`, not `if (done) { return 1; } throw exception;` (ADR 0237, amended)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "        ExprKind::Call(callee, _) if matches!(callee.kind, ExprKind::Arrow(..)) => false,\n",
     replace: "",
-    tests: ["test/lowering-throws.test.ts", "-t", "a with whose closure throws"],
+    tests: [
+      "test/lowering-throws.test.ts",
+      "-t",
+      "a with whose closure throws",
+    ],
   },
   {
     name: "written-tails-shared",
-    breaks: "a tail the program wrote in each branch of an `if` it wrote with an `else` is written once after it, `if (..) { .. } else { .. } newLast = clone;`, and wl6's `panicOnRootError(..); return;` merges, keeping throwAndUnwindWorkLoop a `$catchUnwind` (the user's decision, wl6)",
+    breaks:
+      "a tail the program wrote in each branch of an `if` it wrote with an `else` is written once after it, `if (..) { .. } else { .. } newLast = clone;`, and wl6's `panicOnRootError(..); return;` merges, keeping throwAndUnwindWorkLoop a `$catchUnwind` (the user's decision, wl6)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                    || apart\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^assignments_chained.rs$|^written_tails_apart.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^assignments_chained.rs$|^written_tails_apart.rs$",
+    ],
     snapshots: true,
   },
   {
     name: "chained-checks-of-written-ifs",
-    breaks: "React's markRef, a match's last arm of two `if`s written apart, the first a `panic!`, is `} else if (..) { throw .. } else if (..) {`, the check a link of the chain (ADR 0237, amended)",
+    breaks:
+      "React's markRef, a match's last arm of two `if`s written apart, the first a `panic!`, is `} else if (..) { throw .. } else if (..) {`, the check a link of the chain (ADR 0237, amended)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "            || written(check)\n",
     replace: "",
-    tests: ["test/lowering-written-elses.test.ts", "-t", "stays an if of its own"],
+    tests: [
+      "test/lowering-written-elses.test.ts",
+      "-t",
+      "stays an if of its own",
+    ],
   },
   {
     name: "shared-tails-of-a-then-and-after",
-    breaks: "ReactDOMUnknownPropertyHook's `if (prefix === 'data-' || ..) { return true; } ..; return true;` merges its two written `return true`s, the rest inside the negated test (rd48, ADR 0564, amended)",
+    breaks:
+      "ReactDOMUnknownPropertyHook's `if (prefix === 'data-' || ..) { return true; } ..; return true;` merges its two written `return true`s, the rest inside the negated test (rd48, ADR 0564, amended)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                    || then_and_after(stmts[i].span, (tail, other), thens);\n",
     replace: "                    ;\n",
@@ -612,7 +895,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "or-tests-rest-not-again",
-    breaks: "an or-pattern's arm made of what follows it keeps its own or-pattern as MIR tests it, `if (tag !== \"tr\") { if (tag !== \"style\") { .. } } return true;` (rd95)",
+    breaks:
+      'an or-pattern\'s arm made of what follows it keeps its own or-pattern as MIR tests it, `if (tag !== "tr") { if (tag !== "style") { .. } } return true;` (rd95)',
     file: "src/lower/mir/tidy/branches.rs",
     find: "            or_tests(&mut rest);\n",
     replace: "",
@@ -621,43 +905,63 @@ export const mutations: Mutation[] = [
   },
   {
     name: "undefined-or-null-guarded",
-    breaks: "a returned `if` of `None` and `js::null()` is a guard, `if (expected === undefined) { return; } return null;`, not upstream's `return expected === undefined ? undefined : null;` (rd69)",
+    breaks:
+      "a returned `if` of `None` and `js::null()` is a guard, `if (expected === undefined) { return; } return null;`, not upstream's `return expected === undefined ? undefined : null;` (rd69)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "    (!undefined(yes) && !undefined(no)) || (undefined(yes) && null(no)) || (null(yes) && undefined(no))\n",
     replace: "    !undefined(yes) && !undefined(no)\n",
-    tests: ["test/lowering-nullable-constants.test.ts", "-t", "undefined and null"],
+    tests: [
+      "test/lowering-nullable-constants.test.ts",
+      "-t",
+      "undefined and null",
+    ],
   },
 
   {
     name: "null-then-undefined-guarded",
-    breaks: "a returned `if` of `js::null()` first and `None` after is a guard, `return expected !== undefined ? null : undefined;` not made (rd69)",
+    breaks:
+      "a returned `if` of `js::null()` first and `None` after is a guard, `return expected !== undefined ? null : undefined;` not made (rd69)",
     file: "src/lower/mir/tidy/branches.rs",
     find: " || (null(yes) && undefined(no))\n",
     replace: "\n",
-    tests: ["test/lowering-nullable-constants.test.ts", "-t", "undefined and null"],
+    tests: [
+      "test/lowering-nullable-constants.test.ts",
+      "-t",
+      "undefined and null",
+    ],
   },
   {
     name: "statement-if-made-a-conditional",
-    breaks: "a late `let` the program assigns in an `if` it wrote, `let n; if flag { n = 1 } else { n = 2 }`, is `const n = flag ? 1 : 2;`, not as it's written (rd187)",
+    breaks:
+      "a late `let` the program assigns in an `if` it wrote, `let n; if flag { n = 1 } else { n = 2 }`, is `const n = flag ? 1 : 2;`, not as it's written (rd187)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                    && (is_temporary(&one.target) || !written_as_statement(&test, span, program)) =>",
-    replace: "                    && (true || !written_as_statement(&test, span, program)) =>",
+    replace:
+      "                    && (true || !written_as_statement(&test, span, program)) =>",
     tests: ["test/lowering-names.test.ts", "-t", "nothing sets again"],
   },
   {
     name: "statement-if-of-a-temporary-kept",
-    breaks: "a temporary's `if` MIR makes inside a written `if`'s condition, a `matches!`'s, stays `let tmp; if (..) { tmp = true; } else { tmp = false; }`, not its test (rd187)",
+    breaks:
+      "a temporary's `if` MIR makes inside a written `if`'s condition, a `matches!`'s, stays `let tmp; if (..) { tmp = true; } else { tmp = false; }`, not its test (rd187)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                    && (is_temporary(&one.target) || !written_as_statement(&test, span, program)) =>",
-    replace: "                    && (false || !written_as_statement(&test, span, program)) =>",
+    replace:
+      "                    && (false || !written_as_statement(&test, span, program)) =>",
     tests: ["test/port-performance-track.test.ts", "-t", "holds no temporary"],
   },
   {
     name: "mir-tidy-filtered-first-alone",
-    breaks: "a list's `filter`s by truth after its first stay `stack = stack || undefined; if (stack != null)`, not `if (stack)` (React DOM's clientRenderBoundary)",
+    breaks:
+      "a list's `filter`s by truth after its first stay `stack = stack || undefined; if (stack != null)`, not `if (stack)` (React DOM's clientRenderBoundary)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                    ..Expr::var(&x)\n                };\n            }\n        });\n    }\n}",
-    replace: "                    ..Expr::var(&x)\n                };\n            }\n        });\n        break;\n    }\n}",
-    tests: ["test/lowering-option-truth.test.ts", "-t", "each text a list filters"],
+    replace:
+      "                    ..Expr::var(&x)\n                };\n            }\n        });\n        break;\n    }\n}",
+    tests: [
+      "test/lowering-option-truth.test.ts",
+      "-t",
+      "each text a list filters",
+    ],
   },
 ];

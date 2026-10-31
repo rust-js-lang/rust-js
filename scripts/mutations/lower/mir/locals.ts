@@ -4,7 +4,8 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "parameter-named-as-a-variable",
-    breaks: "a parameter is named as any variable, its `_` kept, where its declaration drops it",
+    breaks:
+      "a parameter is named as any variable, its `_` kept, where its declaration drops it",
     file: "src/lower/mir/locals.rs",
     find: "                    LocalKind::Arg => crate::lower::parameter_name(self.tcx, body.source.def_id(), &name),\n",
     replace: "",
@@ -16,59 +17,82 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/locals.rs",
     find: "                            locals.changed[borrowed.local] = true;\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","assignment_order"],
+    tests: ["test/corpus.test.ts", "-t", "assignment_order"],
   },
   {
     name: "mir-whole-mut-borrow-unwritten",
-    breaks: "`Box::new_uninit()`, written through `write`, is a `const` assigned again",
+    breaks:
+      "`Box::new_uninit()`, written through `write`, is a `const` assigned again",
     file: "src/lower/mir/locals.rs",
     find: "                            locals.writes[borrowed.local] += 1;\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","box_uninit"],
+    tests: ["test/corpus.test.ts", "-t", "box_uninit"],
   },
   {
     name: "mir-pattern-names-renamed",
-    breaks: "what a parameter's pattern binds is named again, unlike its pattern's names",
+    breaks:
+      "what a parameter's pattern binds is named again, unlike its pattern's names",
     file: "src/lower/mir/locals.rs",
     find: "            if let Some((_, name)) = named.iter().find(|(l, _)| *l == local) {\n",
-    replace: "            if let Some((_, name)) = named.iter().find(|(l, _)| *l == local).filter(|_| false) {\n",
-    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
+    replace:
+      "            if let Some((_, name)) = named.iter().find(|(l, _)| *l == local).filter(|_| false) {\n",
+    tests: [
+      "test/jsx-children.test.ts",
+      "test/jsx-evaluation-order.test.ts",
+      "test/jsx-events.test.ts",
+      "test/jsx-props.test.ts",
+      "test/jsx-react-dev.test.ts",
+      "test/jsx-types.test.ts",
+      "test/jsx.test.ts",
+    ],
   },
   {
     name: "mir-await-result-named",
-    breaks: "what `.await` gives is a variable of the desugaring's name, `result`",
+    breaks:
+      "what `.await` gives is a variable of the desugaring's name, `result`",
     file: "src/lower/mir/locals.rs",
     find: "                && !info.source_info.span.is_desugaring(rustc_span::DesugaringKind::Await)\n",
     replace: "",
-    tests: ["test/compiler.test.ts","-t","async code becomes"],
+    tests: ["test/compiler.test.ts", "-t", "async code becomes"],
   },
   {
     name: "mir-patterned-folded",
-    breaks: "a temporary a `let` pattern of one field takes apart is folded, `const getProps = f().get_props`",
+    breaks:
+      "a temporary a `let` pattern of one field takes apart is folded, `const getProps = f().get_props`",
     file: "src/lower/mir/locals.rs",
     find: "            && !state.facts.patterned().contains(&local)\n",
     replace: "",
     tests: ["test/lowering-matches.test.ts", "-t", "pattern of one field"],
   },
   {
-    "name": "mir-self-named-self",
-    "breaks": "a method's `self` from MIR is named `self`, not after its type",
-    "file": "src/lower/mir/locals.rs",
-    "find": "ty::Adt(adt, _) if info.name.as_str() == \"self\" =>",
-    "replace": "ty::Adt(adt, _) if false =>",
-    "tests": ["test/lowering-mir-lets.test.ts", "-t", "a method's self from MIR is named after its type"]
+    name: "mir-self-named-self",
+    breaks: "a method's `self` from MIR is named `self`, not after its type",
+    file: "src/lower/mir/locals.rs",
+    find: 'ty::Adt(adt, _) if info.name.as_str() == "self" =>',
+    replace: "ty::Adt(adt, _) if false =>",
+    tests: [
+      "test/lowering-mir-lets.test.ts",
+      "-t",
+      "a method's self from MIR is named after its type",
+    ],
   },
   {
     name: "mir-derived-params-unnamed",
     breaks: "MIR's derived impl's parameters are `_1`, not `point`",
     file: "src/lower/mir/locals.rs",
     find: "                && (!info.source_info.span.in_external_macro(sm) || body.local_kind(place.local) == LocalKind::Arg)\n",
-    replace: "                && !info.source_info.span.in_external_macro(sm)\n",
-    tests: ["test/lowering-strings.test.ts", "-t", "a writer from its MIR returns the string it writes"],
+    replace:
+      "                && !info.source_info.span.in_external_macro(sm)\n",
+    tests: [
+      "test/lowering-strings.test.ts",
+      "-t",
+      "a writer from its MIR returns the string it writes",
+    ],
   },
   {
     name: "pin-macro-unnamed",
-    breaks: "what `pin!` pins is named after its type, not the binding its `Pin` is",
+    breaks:
+      "what `pin!` pins is named after its type, not the binding its `Pin` is",
     file: "src/lower/mir/locals.rs",
     find: "                user[pinned] = user[pin].clone();\n",
     replace: "",
@@ -76,7 +100,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "guard-deref-writes-guard",
-    breaks: "a `&mut guard` given to `deref_mut` is a write of the guard, so a temporary's guard of a `RefCell` that's its object is named, `const lanes = root.lanes`",
+    breaks:
+      "a `&mut guard` given to `deref_mut` is a write of the guard, so a temporary's guard of a `RefCell` that's its object is named, `const lanes = root.lanes`",
     file: "src/lower/mir/locals.rs",
     find: "                        let itself = derefed\n",
     replace: "                        let itself = false\n",
@@ -85,7 +110,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cleanup-flag-unread",
-    breaks: "the drop flag optimized MIR's cleanup tests isn't counted a read, so its writes are left out and a panic drops nothing of what a library's function its consumer compiles was given (ADR 0914)",
+    breaks:
+      "the drop flag optimized MIR's cleanup tests isn't counted a read, so its writes are left out and a panic drops nothing of what a library's function its consumer compiles was given (ADR 0914)",
     file: "src/lower/mir/locals.rs",
     find: "                if let TerminatorKind::SwitchInt { discr, .. } = &data.terminator().kind {\n                    count_operand(&mut locals, discr);\n                }\n",
     replace: "",
@@ -93,26 +119,38 @@ export const mutations: Mutation[] = [
   },
   {
     name: "let-name-ignored",
-    breaks: "a `let`'s `#[rust_js::name = \"$$typeof\"]` is silently ignored, `const typeof$` (ADR 0855, amended)",
+    breaks:
+      'a `let`\'s `#[rust_js::name = "$$typeof"]` is silently ignored, `const typeof$` (ADR 0855, amended)',
     file: "src/lower/mir/locals.rs",
     find: "                let named = given.iter().find(|(span, _)| *span == info.source_info.span);\n",
     replace: "                let named = given.iter().find(|_| false);\n",
-    tests: ["test/lowering-symbols.test.ts", "-t", "a let's rust_js::name is its JS name"],
+    tests: [
+      "test/lowering-symbols.test.ts",
+      "-t",
+      "a let's rust_js::name is its JS name",
+    ],
   },
   {
     name: "given-let-names-unsaid",
-    breaks: "which locals a `let`'s `#[rust_js::name]` names isn't said to tidy, so an alias of one takes the alias's name",
+    breaks:
+      "which locals a `let`'s `#[rust_js::name]` names isn't said to tidy, so an alias of one takes the alias's name",
     file: "src/lower/mir/locals.rs",
     find: "                        locals.given_name[place.local] = true;\n",
     replace: "",
-    tests: ["test/js-constructors.test.ts", "-t", "a factory makes a constructor function closed over"],
+    tests: [
+      "test/js-constructors.test.ts",
+      "-t",
+      "a factory makes a constructor function closed over",
+    ],
   },
   {
     name: "fresh-ranges-none",
-    breaks: "a `let` not `mut` of `a..=b`, which no step can leave exhausted, reads its bounds wrapped, `inclusive.start | 0`, and tested exhausted (#418)",
+    breaks:
+      "a `let` not `mut` of `a..=b`, which no step can leave exhausted, reads its bounds wrapped, `inclusive.start | 0`, and tested exhausted (#418)",
     file: "src/lower/mir/locals.rs",
     find: "                decl.mutability == mir::Mutability::Not\n",
-    replace: "                decl.mutability == mir::Mutability::Not && false\n",
+    replace:
+      "                decl.mutability == mir::Mutability::Not && false\n",
     tests: ["test/corpus.test.ts", "-t", "^range_values.rs$"],
     snapshots: true,
   },

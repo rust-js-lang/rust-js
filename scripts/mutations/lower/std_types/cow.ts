@@ -12,7 +12,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cow-into-owned-shares",
-    breaks: "`into_owned()` of a borrowed slice is the slice, which a push then changes",
+    breaks:
+      "`into_owned()` of a borrowed slice is the slice, which a push then changes",
     file: "src/lower/std_types/cow.rs",
     find: "            return Ok(Expr::cond(borrowed, clone, value));\n",
     replace: "            return Ok(value);\n",
@@ -20,7 +21,8 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cow-side-through-refs-unread",
-    breaks: "`&cow == &\"a\"`, a `Cow` behind a reference, compares the reference's `_0`",
+    breaks:
+      '`&cow == &"a"`, a `Cow` behind a reference, compares the reference\'s `_0`',
     file: "src/lower/std_types/cow.rs",
     find: "        let (inner, inner_ty) = self.through_refs(value.clone(), ty);\n",
     replace: "        let (inner, inner_ty) = (value.clone(), ty);\n",
@@ -28,10 +30,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cow-from-variant-swapped",
-    breaks: "`Cow::from` of a reference is `Owned`, and of what owns `Borrowed`",
+    breaks:
+      "`Cow::from` of a reference is `Owned`, and of what owns `Borrowed`",
     file: "src/lower/std_types/cow.rs",
     find: "            let variant = rustc_abi::VariantIdx::from_usize(usize::from(owned));\n",
-    replace: "            let variant = rustc_abi::VariantIdx::from_usize(usize::from(!owned));\n",
+    replace:
+      "            let variant = rustc_abi::VariantIdx::from_usize(usize::from(!owned));\n",
     tests: ["test/corpus.test.ts", "-t", "^std_conversions.rs$"],
   },
 ];
