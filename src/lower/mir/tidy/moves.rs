@@ -594,6 +594,58 @@ pub(super) fn read_again(stmts: &mut Vec<Stmt>, at: usize) -> bool {
     true
 }
 
+/// `const L = internals.d.L; const s = options.integrity; L(href, s);`:
+/// a function a field holds, read ahead of what its call is given where
+/// that needs statements, so called from a variable, with no `this`. Its
+/// object is held instead, `const d = internals.d; .. d.L(href, s);`, or
+/// read in place where it's a variable, `d.L(href, s)`: the method call
+/// it is where nothing comes between, `internals.d.L(href)`, its object
+/// JS's `this` either way, as upstream's (rd285). Only a field
+/// Rust can't change while the body runs (`js::Known::Lasting`): one of a
+/// struct JS made, which a getter may answer, is read after what's given
+/// where Rust reads it first, ADR 0262's exception, the user's
+/// (2026-10-31).
+pub(super) fn held_receivers(stmts: &mut Vec<Stmt>) {
+    // From the last, so a `const` taken out moves none still to come.
+    for i in (0..stmts.len()).rev() {
+        let StmtKind::Const(name, value) = &stmts[i].kind else {
+            continue;
+        };
+        let ExprKind::Member(object, property) = &value.kind else {
+            continue;
+        };
+        if !is_temporary(name) || !value.facts.has(js::Known::Lasting) || js::mentions_in(&stmts[i + 1..], name) != 1 {
+            continue;
+        }
+        let (name, object, property) = (name.clone(), (**object).clone(), property.clone());
+        let Some(at) = (i + 1..stmts.len()).find(|&j| js::mentions_in(&stmts[j..=j], &name) == 1) else {
+            continue;
+        };
+        // A variable is read in place: it's a lasting reference's, which
+        // nothing assigns again.
+        let in_place = matches!(object.kind, ExprKind::Var(_));
+        let callee = match &mut stmts[at].kind {
+            StmtKind::Expr(e) | StmtKind::Const(_, e) | StmtKind::Return(Some(e)) => match &mut e.kind {
+                ExprKind::Call(f, _) if matches!(&f.kind, ExprKind::Var(v) if *v == name) => f,
+                _ => continue,
+            },
+            _ => continue,
+        };
+        let held = match in_place {
+            true => object.clone(),
+            false => Expr::var(&name),
+        };
+        **callee = Expr {
+            span: callee.span,
+            ..Expr::member(held, property)
+        };
+        match in_place {
+            true => _ = stmts.remove(i),
+            false => stmts[i].kind = StmtKind::Const(name, object),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -689,57 +741,5 @@ mod tests {
             stmt(StmtKind::Expr(call("g", vec![Expr::var("name")]))),
         ];
         assert_eq!(decided(&body), None);
-    }
-}
-
-/// `const L = internals.d.L; const s = options.integrity; L(href, s);`:
-/// a function a field holds, read ahead of what its call is given where
-/// that needs statements, so called from a variable, with no `this`. Its
-/// object is held instead, `const d = internals.d; .. d.L(href, s);`, or
-/// read in place where it's a variable, `d.L(href, s)`: the method call
-/// it is where nothing comes between, `internals.d.L(href)`, its object
-/// JS's `this` either way, as upstream's (rd285). Only a field
-/// Rust can't change while the body runs (`js::Known::Lasting`): one of a
-/// struct JS made, which a getter may answer, is read after what's given
-/// where Rust reads it first, ADR 0262's exception, the user's
-/// (2026-10-31).
-pub(super) fn held_receivers(stmts: &mut Vec<Stmt>) {
-    // From the last, so a `const` taken out moves none still to come.
-    for i in (0..stmts.len()).rev() {
-        let StmtKind::Const(name, value) = &stmts[i].kind else {
-            continue;
-        };
-        let ExprKind::Member(object, property) = &value.kind else {
-            continue;
-        };
-        if !is_temporary(name) || !value.facts.has(js::Known::Lasting) || js::mentions_in(&stmts[i + 1..], name) != 1 {
-            continue;
-        }
-        let (name, object, property) = (name.clone(), (**object).clone(), property.clone());
-        let Some(at) = (i + 1..stmts.len()).find(|&j| js::mentions_in(&stmts[j..=j], &name) == 1) else {
-            continue;
-        };
-        // A variable is read in place: it's a lasting reference's, which
-        // nothing assigns again.
-        let in_place = matches!(object.kind, ExprKind::Var(_));
-        let callee = match &mut stmts[at].kind {
-            StmtKind::Expr(e) | StmtKind::Const(_, e) | StmtKind::Return(Some(e)) => match &mut e.kind {
-                ExprKind::Call(f, _) if matches!(&f.kind, ExprKind::Var(v) if *v == name) => f,
-                _ => continue,
-            },
-            _ => continue,
-        };
-        let held = match in_place {
-            true => object.clone(),
-            false => Expr::var(&name),
-        };
-        **callee = Expr {
-            span: callee.span,
-            ..Expr::member(held, property)
-        };
-        match in_place {
-            true => _ = stmts.remove(i),
-            false => stmts[i].kind = StmtKind::Const(name, object),
-        }
     }
 }

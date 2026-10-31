@@ -1078,6 +1078,16 @@ fn unswitched(h: &Hints) -> Vec<(js::Span, js::Span, js::Span)> {
         .collect()
 }
 
+/// Where each statement of `body` that has a place is written, however
+/// deep: what `returns_past_blocks` reads a block's end by.
+fn statement_starts(body: &[Stmt]) -> Vec<u32> {
+    let mut starts = Vec::new();
+    js::each_list(body, &mut |list| {
+        starts.extend((list.iter()).filter(|s| !s.span.is_none()).map(|s| s.span.lo));
+    });
+    starts
+}
+
 #[cfg(test)]
 mod tests {
     /// Each pass's name, `stage/pass`, is its own, as `--tidy-until` names it.
@@ -1087,14 +1097,4 @@ mod tests {
         let unique: std::collections::HashSet<_> = names.iter().collect();
         assert_eq!(unique.len(), names.len());
     }
-}
-
-/// Where each statement of `body` that has a place is written, however
-/// deep: what `returns_past_blocks` reads a block's end by.
-fn statement_starts(body: &[Stmt]) -> Vec<u32> {
-    let mut starts = Vec::new();
-    js::each_list(body, &mut |list| {
-        starts.extend((list.iter()).filter(|s| !s.span.is_none()).map(|s| s.span.lo));
-    });
-    starts
 }

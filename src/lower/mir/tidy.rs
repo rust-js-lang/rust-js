@@ -560,6 +560,38 @@ fn changing(body: &mut Vec<Stmt>) -> HashSet<String> {
     changing
 }
 
+/// Of each `break` or `continue` the program wrote with comments before it,
+/// `i += 3; // Skip it.\n continue;` (`Hints::commented_jumps`), the
+/// comments where it's written, after what's before it, `i += 3;`: there
+/// where tidy took the jump, the branch's end, as a block's that ends in
+/// comments (ADR 0753); before the jump where it's kept, which they're
+/// printed before anyway (rd109). Of an `if let`'s, `tail_if_comments`'
+/// `if` to its value's end, the `if` its test is in, which MIR tests
+/// where its pattern is, `Some(href)` (rd288).
+fn commented_jumps(body: &mut Vec<Stmt>, jumps: &[(js::Span, js::Span)]) {
+    for &(done, jump) in jumps {
+        let mut placed = false;
+        js::statement_lists(body, &mut |list| {
+            if let Some(at) = list.iter().position(|s| s.span == done) {
+                list.insert(at + 1, StmtKind::Comments.at(jump));
+                placed = true;
+            }
+        });
+        if placed {
+            continue;
+        }
+        let within = |s: &Stmt| {
+            matches!(s.kind, StmtKind::If(..)) && !s.span.is_none() && done.lo <= s.span.lo && s.span.hi <= done.hi
+        };
+        js::statement_lists(body, &mut |list| {
+            if !placed && let Some(at) = list.iter().rposition(within) {
+                list.insert(at + 1, StmtKind::Comments.at(jump));
+                placed = true;
+            }
+        });
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
@@ -1066,37 +1098,5 @@ mod tests {
         )];
         super::bottom_up(&mut body, &mut never_taken);
         assert!(body.is_empty());
-    }
-}
-
-/// Of each `break` or `continue` the program wrote with comments before it,
-/// `i += 3; // Skip it.\n continue;` (`Hints::commented_jumps`), the
-/// comments where it's written, after what's before it, `i += 3;`: there
-/// where tidy took the jump, the branch's end, as a block's that ends in
-/// comments (ADR 0753); before the jump where it's kept, which they're
-/// printed before anyway (rd109). Of an `if let`'s, `tail_if_comments`'
-/// `if` to its value's end, the `if` its test is in, which MIR tests
-/// where its pattern is, `Some(href)` (rd288).
-fn commented_jumps(body: &mut Vec<Stmt>, jumps: &[(js::Span, js::Span)]) {
-    for &(done, jump) in jumps {
-        let mut placed = false;
-        js::statement_lists(body, &mut |list| {
-            if let Some(at) = list.iter().position(|s| s.span == done) {
-                list.insert(at + 1, StmtKind::Comments.at(jump));
-                placed = true;
-            }
-        });
-        if placed {
-            continue;
-        }
-        let within = |s: &Stmt| {
-            matches!(s.kind, StmtKind::If(..)) && !s.span.is_none() && done.lo <= s.span.lo && s.span.hi <= done.hi
-        };
-        js::statement_lists(body, &mut |list| {
-            if !placed && let Some(at) = list.iter().rposition(within) {
-                list.insert(at + 1, StmtKind::Comments.at(jump));
-                placed = true;
-            }
-        });
     }
 }
