@@ -287,4 +287,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_loops.rs$"],
     snapshots: true,
   },
+  {
+    name: "ended-returns-of-the-last-only",
+    breaks: "once a unit function's last `return;` goes, the `if` then last keeps its branches' `return;`s MIR joined, `if (inner > 3) { ..; return; } else { ..; return; }`, as React's completeBoundary printed (rd262)",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "            stmts.pop();\n            ended_returns(stmts, returns);\n",
+    replace: "            stmts.pop();\n",
+    tests: ["test/corpus.test.ts", "-t", "^let_else_returns_at_end.rs$"],
+    snapshots: true,
+  },
 ];

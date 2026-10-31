@@ -840,3 +840,31 @@ leaves no return at its end" still holds rd73's decision. `copied`,
 `returns_at` and the mutation go.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): None, as above.
+
+## Amendment: once the last `return;` MIR made goes, what's then last ends the function too (2026-10-31, rd262)
+
+React's completeBoundary returns early from two `let … else`s, then ends
+with `if (window.$RB.length === 2) { if (typeof shellTime === "number")
+{ ..; setTimeout(reveal, ms); } else { ..; requestAnimationFrame(..); } }`.
+The port printed a `return;` at the end of each branch: `let else first`
+takes the `let … else`s first, leaving the rest's `if (..) { ..; return; }
+return;`, and `ended_returns` dropped the trailing `return;` but not those
+of the `if` that then ended the function.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): None. Where a function
+of no value ends, falling off it and `return;` both give `undefined`.
+
+- **Once `ended_returns` drops a list's last `return;` MIR made, it tidies
+  what's then last, which ends the function as well**: an `if`'s branches'
+  `return;`s MIR made go as the one after it did. A `return` the program
+  wrote stays (`written`).
+
+Held by `test/corpus/let_else_returns_at_end.rs`, run against native
+Rust, and mutation `ended-returns-of-the-last-only`
+(`tidy/jumps.ts`). No other generated JS changed.
+
+The branch order rd262 also names, `if let Kind::Number(t) = .. { a } else
+{ b }` printing `if (typeof t === "number") { a } else { b }` where
+upstream tests `!== 'number'` first, is the order the Rust wrote, as this
+ADR keeps every `if`: the port writes upstream's order with a `let …
+else`, whose guard returns first.

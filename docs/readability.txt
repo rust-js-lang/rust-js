@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1373
-lines	135900
+files	1376
+lines	136081
 temporaries	1	0.1
 labeled blocks	14	1
 while (true)	120	8.8
-$iter	1177	86.6
+$iter	1178	86.6
 Iterator.from	116	8.5
-return;	143	10.5
-renamed x$1	8562	630
+return;	145	10.7
+renamed x$1	8567	629.6
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1977	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	206	0	0	0	6	0	0	35
@@ -230,6 +230,7 @@ test/corpus/copy_param_no_drop.js	30	0	0	0	0	0	0	0
 test/corpus/counted_adapters_given.js	247	0	0	0	7	0	0	15
 test/corpus/counted_rc_borrow.js	40	0	0	0	0	0	0	0
 test/corpus/counted_rc_of_boxed_dyn.js	96	0	0	0	0	0	0	0
+test/corpus/counter_shown_as_js_text.js	56	0	0	0	1	0	0	0
 test/corpus/cow_compare.js	60	0	0	0	0	0	0	7
 test/corpus/cow_keys.js	86	0	0	0	1	0	0	7
 test/corpus/cows.js	51	0	0	0	0	0	0	0
@@ -646,6 +647,7 @@ test/corpus/let_chain_values.js	212	0	0	0	0	0	0	4
 test/corpus/let_else_guard_released.js	76	0	0	0	0	0	2	4
 test/corpus/let_else_guard_returns.js	60	0	0	0	0	0	0	0
 test/corpus/let_else_read_truth.js	70	0	0	0	0	0	0	0
+test/corpus/let_else_returns_at_end.js	50	0	0	0	0	0	2	0
 test/corpus/linked_list_clone.js	29	0	0	0	0	0	0	0
 test/corpus/linked_list_into_iter.js	86	0	0	0	3	0	0	3
 test/corpus/linked_lists.js	47	0	0	0	0	0	0	2
@@ -787,6 +789,7 @@ test/corpus/option_insert_given_drops.js	103	0	0	0	0	0	0	28
 test/corpus/option_map_drops.js	213	0	0	0	0	0	0	24
 test/corpus/option_match_leaves_loop.js	49	0	0	0	0	0	0	0
 test/corpus/option_none_kinds.js	74	0	0	0	0	0	0	5
+test/corpus/option_of_a_ref_as_deref.js	65	0	0	0	0	0	0	5
 test/corpus/option_rest_pattern.js	22	0	0	0	0	0	0	0
 test/corpus/option_result_methods.js	232	0	0	0	0	0	0	38
 test/corpus/option_result_mut.js	207	0	0	0	0	0	0	9
@@ -1379,6 +1382,6 @@ test/snapshots/traits/traits.js	63	0	0	0	0	0	0	0
 test/snapshots/values/values.js	263	0	0	0	0	0	4	25
 test/snapshots/versions/versions.js	215	0	0	0	3	0	2	4
 test/snapshots/web_forms/web_forms.js	289	0	0	0	0	2	0	6
-test/snapshots/webapi_events/webapi-events.js	240	0	0	0	0	0	0	3
+test/snapshots/webapi_events/webapi-events.js	250	0	0	0	0	0	0	3
 test/snapshots/wide/wide.js	248	0	0	0	0	0	0	7
 test/snapshots/wire/wire.js	539	0	0	0	0	0	0	2

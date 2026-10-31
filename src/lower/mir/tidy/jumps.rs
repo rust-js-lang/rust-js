@@ -505,7 +505,8 @@ pub(super) fn tail_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
 /// The `return;` MIR made at the end of each way through `stmts`, a body's
 /// last statement's, where the function ends: nothing, as `tail_returns`
 /// has it, of a body whose shape a `let … else` taken first changed since:
-/// its `then`'s end now the function's (rd98).
+/// its `then`'s end now the function's (rd98); and once one goes, of what
+/// is last then, which ends the function too, an `if`'s branches' (rd262).
 pub(super) fn ended_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
     match stmts.last_mut() {
         Some(
@@ -515,6 +516,7 @@ pub(super) fn ended_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
             },
         ) if !written(returns, last.span) => {
             stmts.pop();
+            ended_returns(stmts, returns);
         }
         Some(Stmt {
             kind: StmtKind::If(_, then, otherwise),
