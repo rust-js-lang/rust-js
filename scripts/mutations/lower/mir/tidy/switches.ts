@@ -34,6 +34,15 @@ const someSwitch = [
 ];
 export const mutations: Mutation[] = [
   {
+    name: "negated-kind-test-no-case",
+    breaks:
+      "a guarded arm of a `match` of `js::classify` that MIR tests first, its `if` turned to `typeof expected !== \"boolean\"`, makes no `switch (typeof expected)`, an `if`/`else` chain (rd70, DOMPropertyOperations)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "if negated { t.clone().negated_test() }",
+    replace: "if false { t.clone().negated_test() }",
+    tests: ["test/lowering-switches.test.ts", "-t", "a guarded arm of a typeof switch tested first is its case"],
+  },
+  {
     name: "past-the-turn-refused",
     breaks:
       "a chain whose `_ => {}` holds what's written past the `match`, React DOM's clearContainerSparingly's, stays an `if` chain, not `switch (nodeName) { .. } container.removeChild(node);` (rd184, ADR 0636, amended)",

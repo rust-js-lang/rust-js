@@ -278,3 +278,20 @@ request != null && typeof request === "object"
   array is typeof object", run in Node, with "a match of what a value is is
   a switch of its typeof"; and the mutations `union-keeps-whole-exclusions`,
   `union-keeps-arrays`, `or-pattern-tests-each` and `or-pattern-cases-each`.
+
+## Amended (2026-10-31): a guarded arm MIR tests first (rd70)
+
+DOMPropertyOperations' custom-component check writes `switch (typeof
+expected) { case 'symbol': case 'object': return expected; case
+'function': return expected; case 'boolean': if (expected === false) {
+return expected; } }`. The port's `match js::classify(expected)` with a
+last guarded arm, `Kind::Bool(_) if js::strict_equals(expected, false) =>
+return expected`, printed an `if`/`else` chain: MIR tests the guarded arm
+first, and tidy's written chains turned that `if` so its branches are in
+the order written, `if (typeof expected !== "boolean") { .. } else if
+(expected === false) { .. }`, whose negated kind `values_of` refused, as
+MIR never negates one. **A negated kind's test is its case where tidy
+turned it**: each `!==` read as the `===` it negates, the kinds then told
+as before. Case N: the same tests, each once, in the order written. Held
+by lowering-switches' `a guarded arm of a typeof switch tested first is
+its case` (run in Node) and the mutation `negated-kind-test-no-case`.

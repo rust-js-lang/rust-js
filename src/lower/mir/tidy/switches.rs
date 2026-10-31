@@ -1147,13 +1147,12 @@ fn values_of(test: &Expr, constants: &[Constant], negated: bool, discriminant: &
     if tests.len() != constants.len() {
         return None;
     }
-    // Variants of an untagged enum, which MIR tests as they are, each by
-    // its kind, never negated (ADR 0668).
+    // Variants of an untagged enum, each tested by its kind (ADR 0668), or
+    // negated where tidy turned its `if` to the order written (rd70).
     if constants.iter().any(|c| matches!(c, Constant::Kind(_))) {
-        return match negated {
-            true => None,
-            false => kinds_of(&tests, constants, discriminant),
-        };
+        let kind = |&t: &&Expr| if negated { t.clone().negated_test() } else { t.clone() };
+        let turned: Vec<Expr> = tests.iter().map(kind).collect();
+        return kinds_of(&turned.iter().collect::<Vec<_>>(), constants, discriminant);
     }
     let mut values = Vec::new();
     for (test, constant) in tests.into_iter().zip(constants) {

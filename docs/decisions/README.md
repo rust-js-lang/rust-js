@@ -547,7 +547,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0664 A function's last slice marked `#[rust_js::rest]` is JS's rest parameter](0664-a-functions-rest-slice-is-jss-rest-parameter.md) *(amended by 0851: a closure's error names rest arguments as a value; amended by 1035: a trait of classes' default)*
 - [0666 The js crate binds `Object`'s reflection, a descriptor a dictionary](0666-the-js-crate-binds-objects-reflection.md) *(extended by 0719: `js::keys_in`, `for…in`'s keys; amended: a dictionary's keys written out are any text; amended: a setter is given a `'static` value; amended: three of `Object`'s statics take any value)*
 - [0667 `console` is a value, and a `fn` of rest arguments is the JS function](0667-console-is-a-value-and-rest-arguments-are-one.md) *(amended by 0851: a closure of them is JS's rest parameter, a `dyn Fn` of them called spread)*
-- [0668 A `match` of what a value is is a `switch` of its `typeof`](0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md) *(amended by 0676: `undefined` is `case "undefined"`, and `null` in `case "object"`)*
+- [0668 A `match` of what a value is is a `switch` of its `typeof`](0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md) *(amended by 0676: `undefined` is `case "undefined"`, and `null` in `case "object"`; amended: a guarded arm MIR tests first)*
 - [0673 A function is a JS value of any shape, whose property `js::set` writes](0673-a-function-is-a-value-of-any-shape.md) *(extended by 0965: an `Rc` of one)*
 - [0674 A struct literal's object lists its fields in the order written](0674-a-struct-literals-fields-are-in-the-order-written.md)
 - [0623 A copy std makes of a `Copy` value is a copy](0623-a-copy-std-makes-is-a-copy.md)

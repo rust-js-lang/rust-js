@@ -793,7 +793,9 @@ export function size(input) {
   that's one kind `typeof` tells, as `js::Kind::Object`'s `"object"`, it's
   tested as that kind. A `match` of three cases or more of kinds `typeof`
   tells is a `switch (typeof value)`, as a `match` of constants is a
-  `switch` ([ADR 0668](../../decisions/0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md)).
+  `switch`, a guarded arm's case testing its guard, `case "boolean": if
+  (expected === false) { return expected; }`, wherever it's written ([ADR
+  0668](../../decisions/0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md), amended).
   Two structs, each an object, are told apart by a member one declares,
   `#[rust_js::test]` on its field, of a kind JS tells: React's noop
   renderer's `Instance | TextInstance` by `children`, a `Vec`,

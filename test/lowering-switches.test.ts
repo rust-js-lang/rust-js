@@ -685,6 +685,58 @@ console.log(JSON.stringify(values.map(described)));
   expect(ran.stdout).toBe(`["","a","https://react.dev/learn","/learn","","hello","","fetchUser","42","7",""]\n`);
 });
 
+// ADR 0668, amended (rd70): a guarded arm MIR tests first, `Kind::Bool(_)
+// if ..`, written after the others, is turned by tidy to put its branches
+// in the order written, `if (typeof expected !== "boolean") { .. } else if
+// (..)`: its negated kind is the case's still. DOMPropertyOperations'
+// custom component's `switch (typeof expected) { .. case 'boolean': if
+// (expected === false) { return expected; } }`.
+test("a guarded arm of a typeof switch tested first is its case", () => {
+  const dir = fixture("typeof-switch-guard-first");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown};
+
+pub fn kept(expected: Option<&'static Unknown>) -> Option<&'static Unknown> {
+    match js::classify(expected) {
+        Kind::Symbol(_) | Kind::Object(_) | Kind::Array(_) | Kind::Null => {
+            // Symbols and objects are ignored.
+            return expected;
+        }
+        Kind::Function(_) => return expected,
+        Kind::Bool(_) if js::strict_equals(expected, false) => return expected,
+        _ => {}
+    }
+    js::null()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`export function kept(expected) {
+  switch (typeof expected) {
+    case "symbol":
+    case "object":
+      // Symbols and objects are ignored.
+      return expected;
+    case "function":
+      return expected;
+    case "boolean":
+      if (expected === false) {
+        return expected;
+      }
+  }
+  return null;
+}`);
+  installRuntime(dir);
+  writeFileSync(join(dir, "run.mjs"), `import { kept } from "./lib.js";
+const s = Symbol("s");
+function f() {}
+const values = [s, {}, [1], null, f, false, true, 3, "x", undefined];
+console.log(JSON.stringify(values.map((v) => kept(v) === v ? "kept" : String(kept(v)))));
+`);
+  const ran = runSync([node!, join(dir, "run.mjs")], root, 30_000);
+  expect(ran.stderr).toBe("");
+  expect(ran.stdout).toBe(`["kept","kept","kept","kept","kept","kept","null","null","null","null"]\n`);
+});
+
 // React's `getIODescription` (shared/ReactIODescription.js), its port whole,
 // is upstream's `switch (typeof value)`, its arms in the program's order:
 // its string case tests a length in UTF-16 units, `value.length` (ADR 0632),
