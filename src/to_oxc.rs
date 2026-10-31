@@ -439,7 +439,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
     // Where each `if` that's an `else`'s only statement starts, and ends.
     let else_ifs = else_if_starts(module);
     // And each `switch`'s case, which a comment before its arm is before.
-    let case_starts = cases::case_starts(module);
+    let case_starts = cases::case_starts(module, &sources.text);
     // And each value of a case of more than one, which a comment between
     // an arm's patterns is before (rd139), or above the arm (rd143).
     let pattern_starts = cases::pattern_starts(module);

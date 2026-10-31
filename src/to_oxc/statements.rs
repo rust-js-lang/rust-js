@@ -535,9 +535,18 @@ impl<'a> Cx<'a> {
                     // one before an arm of one value is its body's (ADR 0590).
                     let first = (!stacked.is_empty() && !case.values[0].span.is_none())
                         .then(|| Span::new(case.values[0].span.lo, case.values[0].span.lo));
+                    // Of one value whose arm opens a block, `"meta" => {`,
+                    // where its first statement is, so a comment above the
+                    // arm is before its `case`, as a `_`'s is before its
+                    // `default` (rd166, rd214).
+                    let opened = (stacked.is_empty())
+                        .then(|| super::cases::clause_start(self.source, &case.body))
+                        .flatten()
+                        .map(|lo| Span::new(lo, lo));
                     let mut at = super::fallen_to(cases, k)
                         .map(|lo| Span::new(lo, lo))
                         .or(first)
+                        .or(opened)
                         .unwrap_or(SPAN);
                     // Each value after the first where it's written, which a
                     // comment between an arm's patterns is before, `"mouseup"
@@ -569,9 +578,7 @@ impl<'a> Cx<'a> {
                     // a value, `_ => String::new()`, whose comment above it
                     // is its body's, there being no other (ADR 0590).
                     let at = (super::default_fallen_to(cases, Some(default)))
-                        .or_else(|| {
-                            super::cases::default_start(Some(default)).filter(|&lo| self.opens_block_default(lo))
-                        })
+                        .or_else(|| super::cases::clause_start(self.source, default))
                         .map_or(SPAN, |lo| Span::new(lo, lo));
                     let at = commented_clause(at, default);
                     clauses.push(SwitchCase::new(at, None, self.case_body(default, false, true), b));
@@ -847,23 +854,11 @@ fn commented_end(stmts: &[js::Stmt]) -> Span {
     end.map_or(SPAN, |end| Span::new(end, end + 1))
 }
 
-/// `a op= b`'s operator of `op`, a compound assignment preparation makes.
 /// The last clause's place, `at`, of one ending with comments of its own,
 /// `default: // ..` (`StmtKind::Comments`): where nothing follows them, no
 /// `break` nor a next clause, it ends past them, so oxc prints them in it,
 /// before its end, as a block's (ADR 0753, amended). Empty, so nothing is
 /// mapped there.
-impl Cx<'_> {
-    /// Whether the source before `lo`, a `default`'s first statement, is a
-    /// `_` arm's opening, `_ => {` (`cases::opens_default`).
-    fn opens_block_default(&self, lo: u32) -> bool {
-        let before = self.source.get(..lo as usize).unwrap_or("");
-        before
-            .rfind("_ =>")
-            .is_some_and(|at| super::cases::opens_default(&before[at..]))
-    }
-}
-
 fn commented_clause(at: Span, body: &[js::Stmt]) -> Span {
     // Its `break` left out, as the last clause's is (`case_body`), a guarded
     // fall-through's `default: // .. break;` too (rd138).
@@ -879,6 +874,7 @@ fn commented_clause(at: Span, body: &[js::Stmt]) -> Span {
     }
 }
 
+/// `a op= b`'s operator of `op`, a compound assignment preparation makes.
 fn compound_operator(op: Op) -> AssignmentOperator {
     match op {
         Op::Add => AssignmentOperator::Addition,

@@ -343,8 +343,18 @@ export const mutations: Mutation[] = [
     name: "block-default-comment-in-body",
     breaks: "a comment above a `_` arm that opens a block, `// The default is now forwards.`, is in its `default`'s body, not before its label (rd214)",
     file: "src/to_oxc/statements.rs",
-    find: "                            super::cases::default_start(Some(default)).filter(|&lo| self.opens_block_default(lo))\n",
-    replace: "                            super::cases::default_start(Some(default)).filter(|_| false)\n",
+    find: "                        .or_else(|| super::cases::clause_start(self.source, default))\n",
+    replace: "",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "_ arm that opens a block"],
+  },
+  {
+    name: "block-case-comment-in-body",
+    breaks:
+      "a comment above an arm of one pattern that opens a block, `// Track the input node that has focus.` above `\"focusin\" => {`, is in its case's body, not before its `case` (rd166)",
+    file: "src/to_oxc/statements.rs",
+    find: "                        .or(opened)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^switch_guard_skips_its_case.rs$"],
+    snapshots: true,
   },
 ];

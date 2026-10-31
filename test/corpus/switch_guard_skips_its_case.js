@@ -15,8 +15,8 @@ function construct(log, n) {
 
 function extract(name, n, log) {
   switch (name) {
+    // Track the input node that has focus.
     case "focusin":
-      // Track the input node that has focus.
       construct(log, 1);
       break;
     case "focusout":

@@ -29,14 +29,52 @@ pub(super) fn fallthroughs(
     }
 }
 
+/// Where a clause whose arm opens a block, of `body`, is printed: just past
+/// its `{` (`opened_at`). Not of an arm of only comments, `_ => { //
+/// Unknown event. }`, which are the clause's own where it ends
+/// (`commented_clause`).
+pub(crate) fn clause_start(source: &str, body: &[js::Stmt]) -> Option<u32> {
+    if matches!(body.first().map(|s| &s.kind), Some(StmtKind::Comments)) {
+        return None;
+    }
+    opened_at(source, default_start(Some(body))?)
+}
+
+/// Where the arm whose first statement starts at `lo` opens its block,
+/// `_ => {`, `"meta" => {`, of one pattern on its line: just past its `{`,
+/// past which what's on lines of their own before `lo` is comments only.
+pub(crate) fn opened_at(source: &str, lo: u32) -> Option<u32> {
+    let before = source.get(..lo as usize)?;
+    let mut end = before.len();
+    // Back past the block's own comments, each on a line of its own.
+    loop {
+        let code = before[..end].trim_end();
+        let line = code.rfind('\n').map_or(0, |i| i + 1);
+        match code[line..].trim_start().starts_with("//") {
+            true => end = line,
+            false => {
+                end = code.len();
+                break;
+            }
+        }
+    }
+    let code = &before[..end];
+    let line = code.rfind('\n').map_or(0, |i| i + 1);
+    opens_default(&code[line..]).then_some(end as u32)
+}
+
 /// Whether `between`, the code between a comment and the start it's
 /// before, is a `_` arm's opening, `_ => {`, and its first `if`'s: then
 /// the start is its `default`'s, which the comment is before where a case
-/// falls through to it (ADR 0905, amended).
+/// falls through to it (ADR 0905, amended); or an arm's of one pattern on
+/// its line, `"meta" => {`, its case's (rd166).
 pub(super) fn opens_default(between: &str) -> bool {
     let head = between.trim();
     let head = head.strip_suffix("if").map_or(head, str::trim_end);
-    head.strip_suffix('{').map(str::trim_end) == Some("_ =>")
+    head.strip_suffix('{')
+        .map(str::trim_end)
+        .and_then(|head| head.strip_suffix("=>"))
+        .is_some_and(|pattern| !pattern.trim().is_empty() && !pattern.contains(['\n', ';', '{', '}', '|']))
 }
 
 /// Whether a comment the program wrote says a case falls through, as
@@ -101,12 +139,20 @@ pub(crate) fn default_fallen_to(cases: &[js::Case], default: Option<&[js::Stmt]>
 /// pattern's other constants between, with its `FALLTHROUGH`, as React
 /// writes one (ADR 0905, amended). Another case's is its body's, as the
 /// scheduler's are (ADR 0590).
-pub(super) fn case_starts(module: &Module) -> Vec<u32> {
+pub(super) fn case_starts(module: &Module, source: &str) -> Vec<u32> {
     let mut starts = fallthrough_starts(module);
     // And each `default`'s, a comment above whose `_` arm is before it, as
     // above a case of the labels a `_` stands for, React's `// The default
     // is now forwards.` above `case 'forwards': default:` (rd214).
-    each_switch(module, &mut |_, default| starts.extend(default_start(default)));
+    // Where its arm opens a block, just past its `{`: what's in the block is
+    // its body's.
+    each_switch(module, &mut |cases, default| {
+        starts.extend(default.and_then(|default| clause_start(source, default)));
+        // And each case's of one value whose arm opens a block, `"meta" =>
+        // {`, a comment above which is before its `case` too (rd166).
+        let single = cases.iter().filter(|case| case.values.len() == 1);
+        starts.extend(single.filter_map(|case| clause_start(source, &case.body)));
+    });
     starts.sort_unstable();
     starts.dedup();
     starts

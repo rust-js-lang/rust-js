@@ -52,4 +52,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^switch_guard_skips_its_case.rs$"],
     snapshots: true,
   },
+  {
+    name: "block-case-start-unlisted",
+    breaks:
+      "a case of one pattern whose arm opens a block isn't a start a comment above its arm is before, and the comment stays in its body (rd166)",
+    file: "src/to_oxc/cases.rs",
+    find: "        starts.extend(single.filter_map(|case| clause_start(source, &case.body)));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^switch_guard_skips_its_case.rs$"],
+    snapshots: true,
+  },
 ];

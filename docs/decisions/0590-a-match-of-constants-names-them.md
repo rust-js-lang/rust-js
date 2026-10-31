@@ -152,3 +152,29 @@ one value keeps its comment in its body, the scheduler's. Held by
 `lowering-comments-inside`'s "a comment above a _ arm that opens a block
 is before its default" and the mutation `block-default-comment-in-body`
 (`to_oxc/statements.ts`); no corpus case changes.
+
+## Amendment: a comment above an arm of one pattern that opens a block is before its `case` (rd166, 2026-10-31)
+
+rd214 put a comment above a `_` arm that opens a block before its
+`default:`, as the program could have written it in the block and didn't;
+a case of one value kept its comment in its body. React DOM writes such
+comments above its cases, `// case 'title': //We assume all titles are
+matchable ..` above `case 'meta': {` (canHydrateInstance) and `// Track
+the input node that has focus.` above `case 'focusin':`, and their ports
+above the arm, `"meta" => {`; the port printed them after `case "meta":`,
+merged with the block's own first comment. **A comment above an arm of
+one pattern that opens a block is before its `case`**, by the same reading
+as the `_`'s; one inside the block, before its first statement, stays the
+body's, for both: the clause is printed just past the arm's `{`
+(`cases::clause_start`, `opened_at`, past the block's own comment lines),
+which the comment above is before and the one inside after. Before, a
+comment inside a `_` arm's block kept the one above it in the body too.
+The scheduler's arms are values, `IMMEDIATE_PRIORITY => -1.0`, whose
+comments stay their bodies'; and an arm of only comments, `_ => { //
+Unknown event. }`, keeps them in its clause. Case
+([0262](0262-when-rust-and-js-disagree.md)): N, comments. Held by the
+corpus case `switch_guard_skips_its_case` (`// Track the input node ..`),
+`lowering-comments-inside`'s "a comment above a _ arm that opens a block
+is before its default", and the mutations `block-case-comment-in-body`
+(`to_oxc/statements.ts`) and `block-case-start-unlisted`
+(`to_oxc/cases.ts`).
