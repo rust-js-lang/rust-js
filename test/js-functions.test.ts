@@ -698,3 +698,34 @@ pub fn shadowed() -> &'static dyn Fn(bool) -> f64 {
   expect(state.count).toBe(1);
   expect([lib.onDone.call(state), lib.nested().call({ count: 3 })]).toEqual([true, 6]);
 });
+
+// ADR 0602, amended (rd289): a binding's function lent as a `&dyn Fn` is
+// the JS function itself, as one taken as a `fn` is, so a caller that
+// compares functions, React's registerDefaultIndicator, sees one, where
+// it was a new arrow each time.
+test("a binding lent as a dyn Fn is the function itself", async () => {
+  const dir = fixture("binding-lent-as-dyn");
+  writeFileSync(join(dir, "indicator.js"), "export function defaultIndicator() {\n  return 'shown';\n}\n");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `#[cfg_attr(rust_js, rust_js::link_name = "./indicator.js#defaultIndicator")]
+fn default_indicator() -> Option<&'static js::Unknown> {
+    unreachable!()
+}
+
+pub fn indicator() -> &'static dyn Fn() -> Option<&'static js::Unknown> {
+    &default_indicator
+}
+
+pub fn shown() -> bool {
+    indicator()().is_some()
+}
+`,
+  );
+  const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs], root, 600_000);
+  expect(built.code, built.stderr).toBe(0);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("return defaultIndicator;");
+  const lib = await import(join(dir, "lib.js"));
+  const { defaultIndicator } = await import(join(dir, "indicator.js"));
+  expect([lib.indicator() === defaultIndicator, lib.shown()]).toEqual([true, true]);
+});

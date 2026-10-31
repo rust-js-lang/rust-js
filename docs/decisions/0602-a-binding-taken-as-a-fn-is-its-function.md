@@ -108,3 +108,26 @@ other method may write is called with no this", and mutations
 `cell-other-method-unwritten`, `cell-field-lent-unwritten`,
 `cell-new-not-own`, `binding-fn-def-own` (`analysis/fn_pointers.ts`) and
 `cell-get-field-unseen` (`mir/calls.ts`).
+
+## Amendment: one lent as a `&dyn Fn` is its function too (2026-10-31, rd289)
+
+React DOM's createRoot lends the default transition indicator, a JS
+module's function, as the root's `&'static dyn Fn()`, `&default_on_default_transition_indicator`,
+which printed a new arrow, `() => defaultOnDefaultTransitionIndicator()`,
+each time: the reconciler's registerDefaultIndicator compares indicators
+by identity, so each root would register another one, where upstream's
+`defaultOnDefaultTransitionIndicator` is one function. A function of the
+crate's lent so was itself already.
+
+**A binding's function lent as a `&dyn Fn` is the JS function itself**,
+as one taken as a `fn` is, `binding_fn_pointer`'s: where its arrow only
+passes its parameters on (a `#[rust_js::nullable]` one's `None`, say, is
+given as `null`, so stays an arrow). What a `dyn Fn` is called with is
+its signature's, the arguments Rust gives; a JS caller of it gives what
+the binding that takes it declares.
+
+Case: third ([0262](0262-when-rust-and-js-disagree.md)): a function's
+identity is what Rust's `ptr::addr_eq` compares, one function each time
+in Rust. Held by `test/js-functions.test.ts`' "a binding lent as a dyn Fn
+is the function itself" and mutation `binding-lent-as-dyn-arrow`
+(`mir/rvalues.ts`).

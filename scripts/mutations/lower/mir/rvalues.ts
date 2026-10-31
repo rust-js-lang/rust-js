@@ -568,8 +568,8 @@ export const mutations: Mutation[] = [
     name: "owned-dyn-closure-passed-on",
     breaks: "a closure an `Rc` owns as a `dyn Fn` is the function it adapts, so two `Rc`s of two closures are `Rc::ptr_eq` (ADR 0605, amended)",
     file: "src/lower/mir/rvalues.rs",
-    find: "                        if from.is_ref()\n",
-    replace: "                        if true\n",
+    find: "                        if from.is_ref()\n                            && matches!(self.pointee(from).kind(), ty::Closure(..))\n",
+    replace: "                        if true\n                            && matches!(self.pointee(from).kind(), ty::Closure(..))\n",
     tests: ["test/lowering-passed-on.test.ts", "-t", "lent as a dyn Fn"],
   },
   {
@@ -645,5 +645,13 @@ export const mutations: Mutation[] = [
     find: "                            match reborrow && given_to_call(state) {\n",
     replace: "                            match reborrow && false && given_to_call(state) {\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "argument given by reference"],
+  },
+  {
+    name: "binding-lent-as-dyn-arrow",
+    breaks: "a binding's function lent as a `&dyn Fn` is a new arrow each time, `() => defaultIndicator()`, so React's registerDefaultIndicator sees another indicator per root (rd289)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                            && bindings::is_binding(self.tcx, def_id)\n",
+    replace: "                            && bindings::is_binding(self.tcx, def_id) && false\n",
+    tests: ["test/js-functions.test.ts", "-t", "lent as a dyn Fn"],
   },
 ];

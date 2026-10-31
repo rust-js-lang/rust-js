@@ -408,6 +408,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         {
                             return Err(self.unsupported(span, "a `dyn` of a value with a destructor"));
                         }
+                        // A binding's function lent as a `&dyn Fn`, as one as
+                        // a `fn`: the JS function itself (ADR 0602, amended),
+                        // whose identity a caller may compare, React's
+                        // default transition indicator (rd289).
+                        if from.is_ref()
+                            && let ty::FnDef(def_id, args) = *self.pointee(from).kind()
+                            && bindings::is_binding(self.tcx, def_id)
+                        {
+                            let args = args.skip_binder();
+                            return Ok(Value::Expr(self.binding_fn_pointer(def_id, args, span, span)?));
+                        }
                         let value = self.mir_expr(state, operand, out)?;
                         // A raw pointer's: its place's value made the `dyn`,
                         // and a pointer to that again where the target is a

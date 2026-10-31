@@ -55,8 +55,9 @@ An `extern` block holds a global value, a `static`: see
 
 ### A binding as a value
 
-A binding taken as a `fn` is the JS function itself, read where it's taken,
-as a Rust `fn` is fixed once taken. Handed to a JS callback itself,
+A binding taken as a `fn`, or lent as a `&dyn Fn`, is the JS function
+itself, read where it's taken, as a Rust `fn` is fixed once taken, and one
+function each time, as a caller that compares them sees. Handed to a JS callback itself,
 `.map(encode)`, it's an arrow of its own parameters, so JS gives it no
 more than Rust does, no index
 ([ADR 0602](../../decisions/0602-a-binding-taken-as-a-fn-is-its-function.md)):
