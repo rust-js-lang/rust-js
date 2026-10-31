@@ -817,7 +817,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1033 A binding's path may quote a key, which a minifier keeps](1033-a-bindings-path-may-quote-a-key.md) *(rd273)*
 - [1034 A field's function called after statements keeps its object](1034-a-fields-function-called-after-statements-keeps-its-object.md) *(rd285, the user's decision)*
 - [1035 A trait of classes is each class's prototype's](1035-a-trait-of-classes-is-each-classs-prototypes.md) *(rd283; amended by 1038: a method that gives a field is that field)*
-- [1036 An untagged enum's struct is told apart by a member it declares](1036-an-untagged-enums-struct-is-told-by-a-member-it-declares.md) *(rd291)*
+- [1036 An untagged enum's struct is told apart by a member it declares](1036-an-untagged-enums-struct-is-told-by-a-member-it-declares.md) *(rd291; amended, rd315: a member of one literal)*
 - [1037 A module's namespace is a unit struct of its functions](1037-a-module-namespace-is-a-unit-struct-of-its-functions.md) *(rd292; amended: a method that only passes its parameters on is that function, re-exported; its import named by its `use`, rd292b)*
 - [1038 A trait of classes' method that gives a field is that field](1038-a-trait-of-classes-method-that-gives-a-field-is-that-field.md) *(rd304)*
 - [1039 An untagged enum's variant may hold another untagged enum](1039-an-untagged-enum-may-hold-another.md) *(rd305)*

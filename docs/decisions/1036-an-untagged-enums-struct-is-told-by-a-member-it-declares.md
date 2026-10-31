@@ -3,7 +3,8 @@
 Status: Accepted (rd291). Extends [0214](0214-untagged-enums.md): two
 structs, each an object, in one untagged enum. Extended by
 [1039](1039-an-untagged-enum-may-hold-another.md): of each of another
-untagged enum's structs a variant holds.
+untagged enum's structs a variant holds. Amended (rd315): a member of
+one literal tells structs whose members are other literals.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, the output's shape:
 each value the program makes of a variant has its member, and the others'
@@ -65,3 +66,22 @@ Refused: a member of a kind JS can't tell from an object, an object, an
   `untagged-objects-typeof-kept`, `untagged-shared-member-telling`,
   `untagged-member-left-in` and `untagged-member-of-an-object`
   (`untagged.ts`); `untagged-object-takes-arrays` amended.
+
+## Amendment: a member of one literal (rd315)
+
+react-test-renderer's host config types `Instance` and `TextInstance`
+each with a literal `tag`, `'INSTANCE'` and `'TEXT'`, and tells them by
+it, as TypeScript narrows a discriminated union. The port's `tag` fields
+are enums of one name, `#[rust_js::name = "INSTANCE"] Instance`, whose
+value is that string (ADR 0013); rust-js took each as any string, and a
+member both structs declare as telling nothing, so it refused the union.
+
+**An enum of one name is its literal**, `Kind::Literal`, not any string,
+and **a member another variant's struct declares too still tells this
+one apart where the two are different literals**: `inst.tag ===
+"INSTANCE"`, and of a `match`, `inst.tag === "INSTANCE" ? .. : ..`. A
+literal beside any string, or the same literal, tells nothing, as before.
+
+Held by `test/untagged-members.test.ts`'s "a member of one literal tells
+its struct by that literal", run; mutations
+`untagged-one-name-enum-any-string` and `untagged-member-literals-alike`.

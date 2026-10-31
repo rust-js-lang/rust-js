@@ -696,4 +696,22 @@ export const mutations: Mutation[] = [
     replace: "        && let Some((inner, inner_args)) = untagged_adt(tcx, ty).filter(|_| false)\n",
     tests: ["test/jsx-types.test.ts", "-t", "an untagged enum in an untagged enum"],
   },
+  {
+    name: "untagged-one-name-enum-any-string",
+    breaks:
+      "a member of a one-name enum, `tag: 'INSTANCE'`, is any string, so `Instance | TextInstance` told by their `tag`s is refused (rd315)",
+    file: "src/lower/untagged.rs",
+    find: "                    [only] => Kind::Literal(bindings::variant_name(self.tcx, only)),\n",
+    replace: "                    [_] => Kind::String,\n",
+    tests: ["test/untagged-members.test.ts", "-t", "a member of one literal"],
+  },
+  {
+    name: "untagged-member-literals-alike",
+    breaks:
+      "two structs whose `tag`s are different literals are taken as told by nothing, as a member both declare is, and refused (rd315)",
+    file: "src/lower/untagged.rs",
+    find: "                bindings::field_key(self.tcx, f) == key && !apart(f.ty(self.tcx, args).skip_normalization())\n",
+    replace: "                bindings::field_key(self.tcx, f) == key\n",
+    tests: ["test/untagged-members.test.ts", "-t", "a member of one literal"],
+  },
 ];

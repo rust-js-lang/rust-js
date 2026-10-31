@@ -396,11 +396,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 }
             }
             // A fieldless enum is its variant's name (ADR 0013), a string; a
-            // numbered one its number (ADR 0722).
+            // numbered one its number (ADR 0722). Of one name, that string
+            // alone, `'INSTANCE'`, a literal type's, which a member of it
+            // tells its struct by, TypeScript's discriminated union (rd315).
             ty::Adt(adt, _)
                 if is_string_enum(self.tcx, *adt) && !adt.variants().is_empty() && !self.is_std(adt.did()) =>
             {
-                Some(Kind::String)
+                Some(match adt.variants().iter().collect::<Vec<_>>()[..] {
+                    [only] => Kind::Literal(bindings::variant_name(self.tcx, only)),
+                    _ => Kind::String,
+                })
             }
             ty::Adt(adt, _) if bindings::numbered(self.tcx, *adt) => Some(Kind::Number),
             // Another untagged enum, what its variants are together; not
@@ -459,11 +464,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // so of each of another enum's kinds (rd305).
         let adt = self.tcx.adt_def(self.tcx.parent(variant.def_id));
         let told = |kind: Kind| match &kind {
-            Kind::Member(key, _)
+            Kind::Member(key, own)
                 if (adt.variants().iter()).any(|v| {
                     v.def_id != variant.def_id
                         && (v.fields.iter().next())
-                            .is_some_and(|f| self.has_member(f.ty(self.tcx, args).skip_normalization(), key))
+                            .is_some_and(|f| self.has_member(f.ty(self.tcx, args).skip_normalization(), key, own))
                 }) =>
             {
                 Kind::Object
@@ -486,10 +491,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// Whether a value of a payload of type `ty` may have the member `key`:
     /// a struct that declares it, or another untagged enum's that does.
-    fn has_member(&self, ty: Ty<'tcx>, key: &str) -> bool {
+    fn has_member(&self, ty: Ty<'tcx>, key: &str, own: &Kind) -> bool {
+        // Not one of another literal, `tag: 'TEXT'` beside `tag:
+        // 'INSTANCE'`, which tells the two apart (rd315).
+        let apart = |field: Ty<'tcx>| matches!((self.untagged_kind(field), own), (Some(Kind::Literal(theirs)), Kind::Literal(ours)) if theirs != *ours);
         let declares = |ty: Ty<'tcx>| {
-            matches!(*self.untagged_payload(ty).kind(), ty::Adt(s, _) if s.is_struct()
-                && s.non_enum_variant().fields.iter().any(|f| bindings::field_key(self.tcx, f) == key))
+            matches!(*self.untagged_payload(ty).kind(), ty::Adt(s, args) if s.is_struct()
+            && s.non_enum_variant().fields.iter().any(|f| {
+                bindings::field_key(self.tcx, f) == key && !apart(f.ty(self.tcx, args).skip_normalization())
+            }))
         };
         match *self.untagged_payload(ty).kind() {
             ty::Adt(e, args) if e.is_enum() && bindings::is_untagged(self.tcx, e.did()) => {

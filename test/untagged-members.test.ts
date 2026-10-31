@@ -58,6 +58,81 @@ pub fn id(child: &Child) -> f64 {
   expect([lib.isText({ children: [], id: 1 }), lib.isText({ text: "a", id: 2 }), lib.id({ text: "a", id: 2 })]).toEqual([false, true, 2]);
 });
 
+// rd315: react-test-renderer's `Instance | TextInstance`, each an object
+// of its own literal `tag`, `'INSTANCE'` or `'TEXT'`, as TypeScript's
+// discriminated union is told: a member of a one-name enum is that string,
+// compared by `===`.
+test("a member of one literal tells its struct by that literal", async () => {
+  const dir = fixture("untagged-members-literal");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::Cell;
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum InstanceTag {
+    #[cfg_attr(rust_js, rust_js::name = "INSTANCE")]
+    Instance,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum TextTag {
+    #[cfg_attr(rust_js, rust_js::name = "TEXT")]
+    Text,
+}
+
+pub struct Instance {
+    pub r#type: String,
+    pub is_hidden: Cell<bool>,
+    #[cfg_attr(rust_js, rust_js::test)]
+    pub tag: InstanceTag,
+}
+
+pub struct TextInstance {
+    pub text: String,
+    pub is_hidden: Cell<bool>,
+    #[cfg_attr(rust_js, rust_js::test)]
+    pub tag: TextTag,
+}
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Child<'a> {
+    Instance(&'a Instance),
+    Text(&'a TextInstance),
+}
+
+pub fn describe(child: Child) -> String {
+    match child {
+        Child::Instance(instance) => format!("<{}>", instance.r#type),
+        Child::Text(text) => text.text.clone(),
+    }
+}
+
+pub fn is_text(child: Child) -> bool {
+    matches!(child, Child::Text(_))
+}
+
+pub fn text(text: &str) -> TextInstance {
+    TextInstance { text: text.to_owned(), is_hidden: Cell::new(false), tag: TextTag::Text }
+}
+`,
+  );
+  run([compiler, ...flags(dir)]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return child.tag === "INSTANCE" ? `<${child.type}>` : child.text;');
+  expect(js).toContain('return child.tag === "TEXT";');
+  expect(js).toContain('tag: "TEXT"');
+  const lib = await import(join(dir, "lib.js"));
+  const instance = { type: "div", isHidden: false, tag: "INSTANCE" };
+  expect([lib.describe(instance), lib.describe(lib.text("hi")), lib.isText(instance), lib.isText(lib.text("a"))]).toEqual([
+    "<div>",
+    "hi",
+    false,
+    true,
+  ]);
+});
+
 test("a member that tells a struct apart is of a kind JS tells", () => {
   const dir = fixture("untagged-members-object");
   writeFileSync(

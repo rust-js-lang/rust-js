@@ -805,8 +805,11 @@ export function size(input) {
   variant's struct has too is told as what the others aren't, as that
   `Instance` beside a `Container` is; of an enum of structs alone, a
   plain one's test is only what the others aren't, `!Array.isArray(child
-  .children)`
-  ([ADR 1036](../../decisions/1036-an-untagged-enums-struct-is-told-by-a-member-it-declares.md)).
+  .children)`. A member whose type is an enum of one name is that string,
+  a literal type's: structs whose `tag`s are different literals,
+  react-test-renderer's `tag: 'INSTANCE'` and `tag: 'TEXT'`, are told by
+  it, `inst.tag === "INSTANCE"`, TypeScript's discriminated union
+  ([ADR 1036](../../decisions/1036-an-untagged-enums-struct-is-told-by-a-member-it-declares.md), amended).
   A variant may hold another untagged enum, one of its variants' payloads:
   React's childToJSX's `Instance | TextInstance | Array<Instance |
   TextInstance>` is `enum JsxChild { Child(Child), Children(Vec<Child>) }`,
