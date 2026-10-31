@@ -195,6 +195,16 @@ react.dev's TopNav passes the same closure instead.
   one Rust can change between is read where Rust reads it. Held by
   `test/lowering-held-receivers.test.ts`. Listed in the guide's
   differences (`semantics.md`, 35).
+- **`js::is_function` of a path guards each part before the last**, the
+  second case's, which the user accepted (2026-10-31, rd320): ADR 0942's
+  `typeof performance !== "undefined" && typeof
+  performance.getEntriesByType === "function"` gives `false` on a host
+  without `performance`, as Rust is told, where upstream's bare `typeof
+  performance.getEntriesByType === "function"`, React DOM's
+  estimateBandwidth's, throws a `ReferenceError` as its module or call
+  runs. Only such a host tells them apart, and there the port goes on
+  where upstream would stop. Listed in the guide's differences
+  (`semantics.md`, 36) and global values (`interop/global-scope.md`).
 - **A global `static` tested again inside the `if` that tested it is
   decided there**, the first case's, which the user accepted (2026-10-28,
   gap pt6): React's `if (__DEV__) { .. if (__DEV__ && debugTask) { .. } }`

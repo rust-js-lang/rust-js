@@ -261,7 +261,12 @@ there, `typeof performance !== "undefined" && typeof performance.now ===
 `typeof performance === "object" && typeof performance.now ===
 "function"`, the global asked once
 ([ADR 0942](../../decisions/0942-whether-a-global-is-a-function-is-is-function.md),
-amended).
+amended). Where upstream writes the bare `typeof
+performance.getEntriesByType === "function"`, which throws a
+`ReferenceError` on a host without `performance`, the guarded test gives
+`false`: an accepted difference
+([ADR 0262](../../decisions/0262-when-rust-and-js-disagree.md), the
+user's decision).
 It's its own question, false of a global that's there but isn't a
 function, as React asks:
 

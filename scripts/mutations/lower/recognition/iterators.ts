@@ -926,13 +926,4 @@ export const mutations: Mutation[] = [
       "^collection_taken_drops_what_is_left.rs$",
     ],
   },
-  {
-    name: "found-index-of-iter-mut",
-    breaks:
-      "a slice's `iter_mut()`, whose items are places, is searched as its array, `xs.findIndex((y) => y.value === x)`, which finds none",
-    file: "src/lower/recognition/iterators.rs",
-    find: "    is_slice_items(tcx, method) && tcx.item_name(method).as_str() == \"iter\"\n",
-    replace: "    is_slice_items(tcx, method)\n",
-    tests: ["test/corpus.test.ts", "-t", "^position_index_of.rs$"],
-  },
 ];

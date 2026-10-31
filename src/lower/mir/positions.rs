@@ -12,7 +12,7 @@
 //! reads its `-1` (ADR 0262's first case).
 
 use super::*;
-use crate::lower::recognition::{is_iterator_position, is_slice_iter};
+use crate::lower::recognition::{is_iterator_position, is_slice_items};
 
 /// Of a body: each block whose call is a `position` `found_index` lowers,
 /// and the `Option` each gives.
@@ -107,7 +107,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let made = body.basic_blocks.iter_enumerated().find_map(|(block, data)| {
             matches!(&data.terminator().kind, TerminatorKind::Call { func, destination, .. }
                 if destination.local == it && destination.projection.is_empty()
-                    && fn_def(func.ty(&body.local_decls, self.tcx)).is_some_and(|(def_id, _)| is_slice_iter(self.tcx, def_id)))
+                    && fn_def(func.ty(&body.local_decls, self.tcx)).is_some_and(|(def_id, _)| is_slice_items(self.tcx, def_id)))
             .then_some(block)
         });
         // Its write and the borrow alone.

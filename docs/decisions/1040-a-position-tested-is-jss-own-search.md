@@ -39,7 +39,7 @@ fails later, at `push` (gap rd316, P1).
 tested and its index read, is JS's own search of the array, and its
 `None` is `-1`** (`mir/positions.rs`, a body fact `LocalFacts` keeps):
 
-- **Which**: a `position` of a slice's `iter()` made for it, stepped by
+- **Which**: a `position` of a slice's `iter()` or `iter_mut()` made for it, stepped by
   nothing else, whose `Option` is written there alone and read only by its
   discriminant and its `Some`'s index (`queries::tested_and_taken`, the
   one rule an integer's `try_from` asks too, #366). The array is then the
@@ -54,7 +54,8 @@ tested and its index read, is JS's own search of the array, and its
 - **An `Option` that leaves the function**, given back, passed on or
   held whole, keeps `$position`'s, `undefined` its `None`, as Rust's
   callers read it; so does a `position` of another iterator, a held one
-  stepped before, an `iter_mut()`'s places, or a chain.
+  stepped before, or a chain. An `iter_mut()`'s, of numbers, searches the
+  array of its places, `$mutItems(xs).findIndex((y) => y.value === x)`.
 
 **The index found is below the slice's length till the slice changes**
 (`body_queries/ranges/found.rs`): the range of the `Option` a slice's
@@ -81,12 +82,12 @@ can't follow forgets it (ADR 0576). So `remove(index)` is `splice(index,
   meets `indexOf is not a function` as upstream does.
 - Held by the corpus's `position_index_of`, against native Rust: identity
   and other tests, `match`, `if let`, `let .. else` and a held `Option`;
-  floats with `NaN`; an `Option` given back; an iterator stepped first and
-  an `iter_mut()`'s, kept; and a `pop()` between the search and `remove`,
+  floats with `NaN`; an `Option` given back; an iterator stepped first,
+  kept; an `iter_mut()`'s places searched; and a `pop()` between the search and `remove`,
   `$removeAt`, which panics as Rust's does. `rc_fn_ptr_eq` and
   `rc_fn_ptr_eq_of_moved` are `indexOf` now. Mutations
   `found-index-not-fresh`, `found-index-escaping`,
-  `found-index-never-index-of` (`positions.ts`), `found-index-of-iter-mut`,
+  `found-index-never-index-of` (`positions.ts`),
   `found-index-none-null`, `found-index-items-stepped`,
   `found-index-unbound`, `found-index-at-most-the-length`,
   `found-index-of-a-match-unbound`, `found-index-of-an-if-let-unbound`,
@@ -94,3 +95,10 @@ can't follow forgets it (ADR 0576). So `remove(index)` is `splice(index,
   `tested-and-taken-returned`, `tested-and-taken-let-mention-unknown` and
   `tested-and-taken-other-variant-read`, #366's, the rule moved to
   `queries.rs`.
+
+## Amendment: an `iter_mut()`'s places too
+
+The mutation that let `iter_mut()` in survived main's check: the array
+of its places, `$mutItems(xs)`, is searched as rightly, so it's taken
+too, one recognizer, a slice's items.
+

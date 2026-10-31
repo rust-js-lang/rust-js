@@ -1115,3 +1115,10 @@ React and JSX are [their own pages](README.md#react).
     a getter that answers the field, of a struct JS made, sees the
     difference; a field Rust could change between, of a `&mut`'s struct
     or a cell, is read first (ADR 1034, the user's decision, rd285).
+36. `js::is_function` of a path asks each part before the last whether
+    it's there, `typeof performance !== "undefined" && typeof
+    performance.getEntriesByType === "function"`, so a host without
+    `performance` gives `false`, as Rust is told; upstream's bare `typeof
+    performance.getEntriesByType === "function"`, React DOM's
+    estimateBandwidth's, throws a `ReferenceError` there (ADR 0942,
+    amended; ADR 0262, the user's decision, 2026-10-31).

@@ -927,12 +927,6 @@ pub(in crate::lower) fn is_iterator_position(tcx: TyCtxt<'_>, method: DefId) -> 
         && tcx.item_name(method).as_str() == "position"
 }
 
-/// Is `method` a slice's `iter()`, an iterator of each of its items by
-/// reference, as the array has them (rd316)?
-pub(in crate::lower) fn is_slice_iter(tcx: TyCtxt<'_>, method: DefId) -> bool {
-    is_slice_items(tcx, method) && tcx.item_name(method).as_str() == "iter"
-}
-
 /// Is `method` a slice's `iter()` or `iter_mut()`, an iterator of each of
 /// its items, no more (#363)?
 pub(in crate::lower) fn is_slice_items(tcx: TyCtxt<'_>, method: DefId) -> bool {

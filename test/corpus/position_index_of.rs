@@ -84,7 +84,7 @@ fn after_first(xs: &[u32], x: u32) -> String {
     }
 }
 
-// Of `iter_mut()`'s items, each a place: no array's search.
+// Of `iter_mut()`'s items, each a place, the array of them searched.
 fn bump(xs: &mut [u32], x: u32) {
     if let Some(i) = xs.iter_mut().position(|y| *y == x) {
         xs[i] += 10;

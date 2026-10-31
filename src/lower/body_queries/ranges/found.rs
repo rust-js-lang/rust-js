@@ -6,7 +6,7 @@
 //! `i` to it: `xs.remove(i)` is then `xs.splice(i, 1)`.
 
 use super::*;
-use crate::lower::recognition::{is_iterator_position, is_slice_iter};
+use crate::lower::recognition::{is_iterator_position, is_slice_items};
 
 /// The slice whose index `e`, an `Option`, holds where it's `Some`: of
 /// `xs.iter().position(f)`, the first item `f` finds, `xs`.
@@ -25,7 +25,7 @@ fn found_index_of(tcx: TyCtxt<'_>, thir: &Thir<'_>, e: ExprId) -> Option<ExprId>
         return None;
     };
     let (def_id, _) = fn_def(thir[strip(thir, fun)].ty)?;
-    is_slice_iter(tcx, def_id).then_some(*args.first()?)
+    is_slice_items(tcx, def_id).then_some(*args.first()?)
 }
 
 impl<'tcx> Walk<'_, 'tcx> {
