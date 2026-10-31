@@ -150,7 +150,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .filter(|(i, _)| given(i))
                 .map(|(_, t)| t)
                 .collect();
-            crate::lower::calls::units_left_out(&mut exprs, &tys);
+            crate::lower::calls::left_out(self.tcx, &mut exprs, &tys, &[]);
             // Rest arguments as a value, its last, spread (ADR 0851): what
             // takes them is JS's rest parameter, a closure's or a binding's.
             if tys

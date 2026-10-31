@@ -676,7 +676,11 @@ pub fn type_id() -> String {
 // A `None` given to JS is `undefined` given, never left out: a JS function
 // may count its arguments, as `Math.max` does (ADR 0330). Not a binding's
 // optional parameter's, an `Option`, which is left out, `Math.max(1)` of
-// `max(1.0, None)` (ADR 0443); one of any value, `B`, is given.
+// `max(1.0, None)` (ADR 0443); one of any value, `B`, is given, through a
+// pointer the crate makes of it too. A function value's `Option` parameter's
+// is left out, `f(1)`, the user's exception (ADR 0443, amended, rd271): a
+// JS function given from outside that counts its arguments, `Math.max`,
+// sees one fewer, `Math.max(1)`.
 test("an undefined given to JS is an argument, never left out", () => {
   const dir = fixture("given-undefined");
   writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "Math.max")] #[allow(unused_variables)] fn math_max<B>(a: f64, b: B) -> f64 { unreachable!() }
@@ -705,14 +709,21 @@ pub fn closed(n: f64) -> f64 {
     add(1.0, None) + add(2.0, Some(1.0))
 }
 
+pub struct Marker;
+
 pub struct Dispatcher {
     pub use_state: fn(f64, Option<f64>) -> f64,
+    pub marked: fn(f64, Marker) -> f64,
 }
 
-static DISPATCHER: Dispatcher = Dispatcher { use_state: own };
+fn marked(a: f64, _: Marker) -> f64 {
+    a
+}
+
+static DISPATCHER: Dispatcher = Dispatcher { use_state: own, marked };
 
 pub fn dispatched() -> f64 {
-    (DISPATCHER.use_state)(1.0, None)
+    (DISPATCHER.use_state)(1.0, None) + (DISPATCHER.marked)(1.0, Marker)
 }
 
 pub fn picked(js: bool) -> f64 {
@@ -748,23 +759,23 @@ pub fn walked_by(f: fn(f64, &dyn Fn(f64) -> f64, Option<u8>) -> f64) -> f64 {
   run([compiler, join(dir, "lib.rs"), "-o", out]);
   const js = readFileSync(out, "utf8");
   expect(js).toContain("Math.max(1, undefined)");
-  expect(js).toContain("f(1, undefined)");
+  expect(js).toContain("return f(1);");
   // The crate's own function takes it as missing: `own(1)`, as a person writes it.
   expect(js).toContain("own(1)");
   expect(js).toContain("add(1)");
   // A fn pointer that may only be the crate's function is called as it is
   // (ADR 0330, amended); one that may be a binding's, or JS's, is given it.
   expect(js).toContain("DISPATCHER.useState(1)");
+  expect(js).toContain("DISPATCHER.marked(1)");
   expect(js).toContain("max(1, undefined)");
-  expect(js).toContain("f(1, undefined)");
   expect(js).toContain("CHILDREN.forEach(1, (x) => x * 2)");
-  expect(js).toContain("f(1, (x) => x, undefined)");
+  expect(js).toContain("return f(1, (x) => x);");
   const call = (expression: string) =>
     run([node ?? "node", "--input-type=module", "--eval", `const m = await import(${JSON.stringify(out)}); console.log(${expression});`]);
   expect(call("m.bound()")).toBe("NaN\n");
-  expect(call("m.given(Math.max)")).toBe("NaN\n");
+  expect(call("m.given(Math.max)")).toBe("1\n");
   expect(call("m.called()")).toBe("1\n");
   expect(call("m.closed(3)")).toBe("14\n");
-  expect(call("[m.dispatched(), m.picked(true), m.picked(false), m.pointed(Math.max)].join()")).toBe("1,NaN,1,NaN\n");
+  expect(call("[m.dispatched(), m.picked(true), m.picked(false), m.pointed(Math.max)].join()")).toBe("2,NaN,1,1\n");
   expect(call("[m.walked(), m.walkedBy((a, f, b) => f(a) + (b === undefined ? 3 : 0))].join()")).toBe("2,4\n");
 });

@@ -600,3 +600,24 @@ pub fn lent() -> bool {
   expect(js).toContain("  const g$1 = l.g;\n  return g$1();\n");
   expect([lib.stop(lib.tracker(2)), lib.held(), lib.lent()]).toEqual([true, false, false]);
 });
+
+// React's `callback()`: a trailing `None` given a function value, a `dyn Fn`,
+// a pointer or one `function::bind` makes, is no argument, as a person
+// leaves an optional one out (ADR 0443, amended). The user's exception, ADR
+// 0262's second case: a JS function that counts its arguments sees none.
+test("a trailing None given a function value is no argument", async () => {
+  const { js, lib } = await compiled("none-left-out", `use js::{Unknown, function};
+
+pub fn called(cb: &dyn Fn(Option<&Unknown>) -> f64, pointer: fn(f64, Option<f64>) -> f64) -> f64 {
+    cb(None) + pointer(1.0, None)
+}
+
+pub fn bound(f: &'static dyn Fn(Option<f64>) -> f64) -> f64 {
+    function::bind(f, None, ())(None)
+}
+`);
+  expect(js).toContain("return cb() + pointer(1);");
+  expect(js).toContain("return f.bind()();");
+  const count = (...args: unknown[]) => args.length;
+  expect([lib.called(count, count), lib.bound(count)]).toEqual([1, 0]);
+});

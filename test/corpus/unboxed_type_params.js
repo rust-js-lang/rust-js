@@ -84,7 +84,7 @@ function main() {
   const numbers = { items: [7] };
   show("number pop", Stack.pop(numbers), debug);
   const pointer = wrap;
-  show("pointer", pointer(undefined), optionDebug$1);
+  show("pointer", pointer(), optionDebug$1);
   show("closure", throughClosure(undefined), optionDebug);
   show("closure some", throughClosure("a"), optionDebug);
   show("trait", keeperKept_kept(undefined), unitDebug);

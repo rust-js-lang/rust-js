@@ -3,6 +3,23 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "pointer-binding-none-left-out",
+    breaks: "a trailing `None` given a pointer the crate makes of a binding's function, whose parameter isn't optional, is left out, `max(1)` of `Math.max`'s, which gives `1`, not `NaN` (ADR 0330)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            .filter(|&f| bindings::is_binding(self.tcx, f))\n",
+    replace: "            .filter(|_| false)\n",
+    tests: ["test/runtime-package.test.ts", "-t", "an undefined given to JS is an argument"],
+  },
+  {
+    name: "pointer-arguments-given",
+    breaks: "a trailing `()` or `None` given a function pointer is an argument, `finish(undefined)` of `finish(())` (ADRs 0441, 0443)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "        crate::lower::calls::left_out(self.tcx, &mut exprs, sig.skip_binder().inputs(), &bindings);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^option_arguments.rs$"],
+    snapshots: true,
+  },
+  {
     name: "as-mut-through-a-handle-refused",
     breaks: "`as_mut()` of an `Option` a call gave a `&mut` to, a handle, is refused, its `value` not taken for the place (#323)",
     file: "src/lower/mir/dispatch.rs",
@@ -626,10 +643,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "own-pointer-given-undefined",
-    breaks: "a fn pointer that may only be the crate's function is given a trailing `undefined`, `DISPATCHER.useState(1, undefined)`, not React's `dispatcher.useState()`",
+    breaks: "a fn pointer that may only be the crate's function is given a trailing `undefined`, `DISPATCHER.marked(1, undefined)` of a unit struct, not React's `dispatcher.useState()`",
     file: "src/lower/mir/dispatch.rs",
-    find: "        if !self.krate.cell_borrows.pointers().rust_only(self.tcx, fn_ptr) {\n",
-    replace: "        if true || !self.krate.cell_borrows.pointers().rust_only(self.tcx, fn_ptr) {\n",
+    find: "        if !pointers.rust_only(self.tcx, fn_ptr) {\n",
+    replace: "        if true || !pointers.rust_only(self.tcx, fn_ptr) {\n",
     tests: ["test/runtime-package.test.ts", "-t", "an undefined given to JS is an argument"],
   },
 

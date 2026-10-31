@@ -162,6 +162,20 @@ react.dev's TopNav passes the same closure instead.
   `test/webapi-bindings.test.ts`'s "startViewTransition given a copy of
   the transition types". Listed in the guide's differences
   (`semantics.md`, 33).
+- **A trailing `None` given a function value is no argument**, the
+  second case's, which the user decided (2026-10-31, gap rd271, ADR 0443,
+  amended): React's `callback()`, where the port writes `callback(None)`
+  of a `dyn Fn(Option<..>)`, as a binding's trailing `None` is left out.
+  A `dyn Fn`'s, a pointer's, a closure's or one `function::bind` makes.
+  Only a JS function that counts its arguments, `arguments.length` or a
+  rest parameter, tells `cb()` from `cb(undefined)`; no Rust function
+  reads either. One that reads them so gives what it gives of what it's
+  given: `Math.max` given from JS as a `dyn Fn(f64, Option<f64>)` and
+  called `f(1.0, None)` gives `1`, `Math.max(1)`, where it gave `NaN`. A
+  pointer the crate makes of a binding's function, whose parameter isn't
+  optional, is still given its `undefined`. Held by the corpus's `option_arguments` and
+  `test/js-functions.test.ts`'s "a trailing None given a function value
+  is no argument". Listed in the guide's differences (`semantics.md`, 34).
 - **A global `static` tested again inside the `if` that tested it is
   decided there**, the first case's, which the user accepted (2026-10-28,
   gap pt6): React's `if (__DEV__) { .. if (__DEV__ && debugTask) { .. } }`

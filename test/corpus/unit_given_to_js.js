@@ -25,6 +25,6 @@ function main() {
   console.log(`${typeof held.value}`);
   console.log(`${typeof undefined}`);
   const typed = (arg0) => typeof arg0;
-  console.log(`${typed(undefined)}`);
+  console.log(`${typed()}`);
 }
 //# sourceMappingURL=case.js.map

@@ -21,9 +21,13 @@ crate's `Promise` (ADR 0440).
 
 **A trailing argument of type `()` given a function value, a closure, a
 `dyn Fn` or a generic `F: Fn`, is left out**: `resolve()`, `f()`, `g(1)`
-of `g(1, ())`. A `None` alone is still `undefined`, a value. One whose
-making does something is still made, first: `k(noted())` is `noted();
-k();`. `calls::units_left_out` says which, of the call's argument types.
+of `g(1, ())`. A `None` alone is still `undefined`, a value (amended by
+[0443](0443-a-value-a-caller-may-leave-out-is-an-option.md)'s last
+amendment: a trailing `None` given a function value is no argument too,
+the user's decision, and a pointer's `()` is left out as a closure's).
+One whose making does something is still made, first: `k(noted())` is
+`noted(); k();`. `calls::left_out` says which, of the call's argument
+types.
 
 ## Why
 

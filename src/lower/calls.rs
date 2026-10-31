@@ -63,15 +63,23 @@ pub(super) fn given_to_js(args: &mut [Expr]) {
     }
 }
 
-/// A call's arguments, each of type `tys`: a trailing `()`, which is no value,
-/// is no argument, `resolve()` of `resolve(())`, as JS leaves one out; only
-/// `arguments.length` tells (ADR 0441). One that does something to make is
-/// kept, so it's still made.
-pub(super) fn units_left_out(args: &mut Vec<Expr>, tys: &[ty::Ty<'_>]) {
+/// A function value's call's arguments, each of type `tys`: a trailing `()`,
+/// which is no value, is no argument, `resolve()` of `resolve(())`, as JS
+/// leaves one out (ADR 0441); and a trailing `None` of an `Option`, `cb()` of
+/// `cb(None)`, as a person leaves an optional one out (ADR 0443, amended,
+/// ADR 0262's second case), but of a pointer that may be one of `bindings`,
+/// whose parameter there isn't optional, which is given it, `max(1,
+/// undefined)` of `Math.max`'s (ADR 0330). Only `arguments.length` tells.
+/// One that does something to make is kept, so it's still made.
+pub(super) fn left_out(tcx: ty::TyCtxt<'_>, args: &mut Vec<Expr>, tys: &[Ty<'_>], bindings: &[DefId]) {
+    let optional = |i: usize| {
+        matches!(tys[i].kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option))
+            && bindings.iter().all(|&f| super::bindings::is_optional_param(tcx, f, i))
+    };
     while args.len() <= tys.len()
         && let Some(last) = args.last()
-        && tys[args.len() - 1].is_unit()
-        && !last.has_effects()
+        && let i = args.len() - 1
+        && ((tys[i].is_unit() && !last.has_effects()) || (optional(i) && matches!(last.kind, js::ExprKind::Undefined)))
     {
         args.pop();
     }

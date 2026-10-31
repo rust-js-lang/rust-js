@@ -1860,6 +1860,13 @@ export function each(items, f) {
   function**, an arrow where it's made. One JS gives is a `&'static dyn
   Fn` of its signature, and `std::ptr::eq` of two is `===`
   ([ADR 0653](../../decisions/0653-a-js-function-value-is-a-dyn-fn-of-its-signature.md)).
+- **A call of one leaves out a trailing `()` or `None`**, as a person
+  leaves an optional argument out: `f(())` is `f()`, `cb(None)` is
+  `cb()`, `g(1, None)` is `g(1)`. Only a JS function that counts its
+  arguments sees one fewer
+  ([ADR 0441](../../decisions/0441-a-unit-is-no-argument.md),
+  [ADR 0443](../../decisions/0443-a-value-a-caller-may-leave-out-is-an-option.md),
+  amended; [the differences](../semantics.md#differences-from-native-rust-in-one-list), 34).
 - **A `dyn Trait` is `{ value, impl }`**: the value, and its impl's
   dictionary of methods ([ADR 0049](../../decisions/0049-traits-and-generics.md)).
 

@@ -36,6 +36,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|v| self.value_expr(v, span))
             .collect::<R<Vec<_>>>()?;
         let callee = exprs.remove(0);
+        // Of a pointer the crate makes of a binding's function, what its
+        // parameter takes (ADR 0443, amended).
+        let fn_ptr = func.ty(&state.body.local_decls, self.tcx);
+        let pointers = self.krate.cell_borrows.pointers();
+        let bindings: Vec<rustc_span::def_id::DefId> = (pointers.may_be(self.tcx, fn_ptr).into_iter().flatten())
+            .map(|&(f, _)| f)
+            .filter(|&f| bindings::is_binding(self.tcx, f))
+            .collect();
+        crate::lower::calls::left_out(self.tcx, &mut exprs, sig.skip_binder().inputs(), &bindings);
         if rest {
             crate::lower::calls::spread_rest(&mut exprs);
         }
@@ -45,8 +54,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // or come from JS, is given what JS is (ADR 0330, amended).
         // A with_this function, a `Box<dyn Fn>`, is never one, so it's
         // called through what holds it, `t.g()`, as JS calls it (#404).
-        let fn_ptr = func.ty(&state.body.local_decls, self.tcx);
-        if !self.krate.cell_borrows.pointers().rust_only(self.tcx, fn_ptr) {
+        if !pointers.rust_only(self.tcx, fn_ptr) {
             crate::lower::calls::given_to_js(&mut exprs);
         }
         // One that may be a binding's JS function, called through what holds

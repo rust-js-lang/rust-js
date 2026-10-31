@@ -1090,3 +1090,9 @@ React and JSX are [their own pages](README.md#react).
     differs, the same strings in a new array, which only a replacement of
     the function that keeps the array and compares it, or watches it
     change, sees (ADR 0262, amended, the user's decision, rd246).
+34. A trailing `None` given a function value, a `dyn Fn`'s, a pointer's
+    or a closure's `Option` parameter, is no argument, `cb()` of
+    `cb(None)`, as a binding's is. Only a JS function that counts its
+    arguments, `arguments.length` or a rest parameter, sees one fewer:
+    `Math.max` given from JS and called `f(1.0, None)` gives `1`, not
+    `NaN` (ADR 0443, amended, the user's decision, rd271).

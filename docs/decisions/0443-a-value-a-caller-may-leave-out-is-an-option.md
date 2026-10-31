@@ -199,3 +199,31 @@ repository are migrated: the guide, `examples/countdown.rs`, the playground's
 stays as upstream writes it, `Some(0.0)`. Held by `test/compiler.test.ts`,
 "the builtins crate's timers run a closure", whose `soon` is
 `setTimeout(done);`, run.
+
+## Amendment: a trailing `None` given a function value
+
+A function value's `Option` parameter, a `dyn Fn`'s, a pointer's, a
+closure's or one `function::bind` makes, was given its trailing `None` as
+`undefined` (ADR 0330): React's `callback()` printed `callback(undefined)`
+where the port wrote `callback(None)` (gap rd271). Decided by the user
+(2026-10-31): **a trailing `None` given a function value is no argument,
+as a binding's is**, `cb()`, `g(1)` of `g(1, None)`. Of its type's
+parameter, an `Option`, so a unit struct's `undefined`, a value, is still
+given, and a `None` before a given argument stays. A pointer the crate
+makes of a binding's function, whose parameter there isn't optional, is
+given it as the binding is, `max(1, undefined)` of `Math.max`'s, which the
+pointer analysis says (ADR 0907). Case B, ADR 0262's second, listed in its
+Consequences: only a JS function that counts its arguments,
+`arguments.length` or a rest parameter, sees one fewer; no Rust function
+reads either. One given from outside that reads its arguments so gives
+what it gives of them: `Math.max` given as a `dyn Fn(f64, Option<f64>)`
+and called `f(1.0, None)` is `Math.max(1)`, `1`, where it was
+`Math.max(1, undefined)`, `NaN`. `calls::left_out` says which, with ADR 0441's
+`()`, at each call of a function value, a pointer's too, which was given
+its `()` before. Held by the corpus's `option_arguments`, compared with
+native Rust, `test/js-functions.test.ts`'s "a trailing None given a
+function value is no argument", whose JS function counts what it's given,
+and `test/runtime-package.test.ts`'s "an undefined given to JS is an
+argument, never left out", whose `Math.max` given from JS gives `1` and
+whose pointer of it `NaN`.
+

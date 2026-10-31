@@ -3,6 +3,23 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "none-argument-given",
+    breaks: "a trailing `None` given a function value is an argument, `cb(undefined)` of `cb(None)`, where a person writes `cb()` (rd271, ADR 0443, amended)",
+    file: "src/lower/calls.rs",
+    find: "(optional(i) && matches!(last.kind, js::ExprKind::Undefined))",
+    replace: "(optional(i) && matches!(last.kind, js::ExprKind::Null))",
+    tests: ["test/js-functions.test.ts", "-t", "a trailing None given a function value"],
+  },
+  {
+    name: "none-argument-any-undefined",
+    breaks: "a trailing `undefined` given a function value is left out whatever its type, so a `Some(())` given an `Option<()>` would be too",
+    file: "src/lower/calls.rs",
+    find: "        matches!(tys[i].kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option))\n",
+    replace: "        true\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_arguments.rs$"],
+    snapshots: true,
+  },
+  {
     name: "bool-call-result-unknown",
     breaks: "a call of another module's function that gives a `bool` isn't known one, so `ready && isSupported(name) && (..)` is `!!(ready && isSupported(name)) && (..)` (rd145)",
     file: "src/lower/calls.rs",

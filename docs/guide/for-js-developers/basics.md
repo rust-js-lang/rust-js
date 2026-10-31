@@ -835,12 +835,16 @@ export function repeat(text, times) {
 `greeting(None)` or `greeting(Some("Ada"))`.
 
 A trailing `None` after another argument, given to the crate's own
-function, is left out, `repeat("ab")`, and so is one given through a `fn`
-pointer that may only be Rust functions: the crate's functions and
-closures, a dispatcher's, or a library's own, of a field its contract says
-holds only those, React's `Children.forEach(children, fn)`. Given to what
-may be JS's, a binding's, a `dyn Fn`'s, or a pointer JS may have made,
-it's `undefined`, as a JS function may count its arguments
+function, is left out, `repeat("ab")`, and so is one given a function
+value, a `fn` pointer, a closure or a `dyn Fn`, alone too, `cb()`, as a
+binding's optional argument is. Only a JS function that counts its
+arguments sees one fewer
+([ADR 0443](../../decisions/0443-a-value-a-caller-may-leave-out-is-an-option.md),
+amended; [the differences](../semantics.md#differences-from-native-rust-in-one-list), 34).
+Another `undefined` given what may be JS's, a binding's, a `dyn Fn`'s, or
+a pointer JS may have made, is given, as a JS function may count its
+arguments; given a pointer that may only be Rust functions, the crate's,
+a dispatcher's or a library's own, it's left out
 ([ADR 0330](../../decisions/0330-undefined-given-to-js.md), amended;
 [ADR 1007](../../decisions/1007-a-libraries-own-fn-pointers-are-rust-functions.md)):
 
@@ -871,7 +875,7 @@ export function twice() {
 }
 
 export function twiceBy(repeat) {
-  return repeat("ab", undefined);
+  return repeat("ab");
 }
 export function repeat(text, times) {
   return text.repeat(times ?? 1);
