@@ -156,6 +156,48 @@ test("js::is_number of what's no number is refused", () => {
   expect(refused("pub fn ask() -> bool {\n    js::is_number(js::symbol::iterator)\n}\n")).toEqual([false, message]);
 });
 
+// React DOM's defaultOnDefaultTransitionIndicator: `if (typeof navigation
+// !== 'object') { return; }`. `js::is_object` asks it of a global a getter
+// or a static reads, as `js::is_number` asks whether it's a number (rd282).
+// What's no object in Rust, a number, text or a function, is refused: it
+// would be false.
+test("js::is_object is whether a global a binding reads is an object", async () => {
+  const dir = fixture("is-object");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+#[cfg_attr(rust_js, rust_js::link_name = "get rustJsNavigation")]
+pub fn navigation() -> &'static Unknown {
+    unreachable!()
+}
+
+pub fn listened() -> bool {
+    if !js::is_object(navigation) {
+        return false;
+    }
+    js::get(navigation(), "listening").is_some()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('if (typeof rustJsNavigation !== "object") {');
+  const global = globalThis as Record<string, unknown>;
+  const lib = await import(join(dir, "lib.js"));
+  expect(() => lib.listened()).not.toThrow();
+  global.rustJsNavigation = "navigation";
+  expect(lib.listened()).toBe(false);
+  global.rustJsNavigation = { listening: true };
+  expect(lib.listened()).toBe(true);
+  delete global.rustJsNavigation;
+  const refused = (code: string) => {
+    writeFileSync(join(dir, "wrong.rs"), code);
+    const p = runSync([compiler, join(dir, "wrong.rs"), "-o", join(dir, "wrong.js"), ...withJs], root, 60_000);
+    return [p.code === 0, p.stderr];
+  };
+  const message = expect.stringContaining("`js::is_object` of what isn't an object in Rust");
+  const width = '#[cfg_attr(rust_js, rust_js::link_name = "get rustJsWidth")]\npub fn width() -> f64 {\n    unreachable!()\n}\n\n';
+  expect(refused(`${width}pub fn ask() -> bool {\n    js::is_object(width)\n}\n`)).toEqual([false, message]);
+});
+
 // What isn't a global's binding is refused, naming `js::is_function`.
 test("js::is_function of what isn't a global's binding is refused", () => {
   const dir = fixture("is-function-refused");

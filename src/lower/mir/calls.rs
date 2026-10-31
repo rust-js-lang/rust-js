@@ -911,21 +911,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `js::is_number` of what's a number in Rust, `f64`, or an `Option`
-    /// of one, as a getter's or a static's is (rd195): of what isn't, a
-    /// function's binding, it would be false, so it's refused.
+    /// of one, as a getter's or a static's is (rd195); `js::is_object` of
+    /// what's no number, text, `bool` or function (rd282): of what isn't,
+    /// a function's binding, it would be false, so it's refused.
     fn asked_of_number(&self, asked: Asked, read: Ty<'tcx>, span: Span) -> R<()> {
         let number = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Float(_) | ty::Int(_) | ty::Uint(_));
         let read = read.peel_refs();
-        if asked != Asked::Number
-            || number(read)
-            || self.option_of(read).is_some_and(|payload| number(payload.peel_refs()))
-        {
+        let payload = self.option_of(read).map(|payload| payload.peel_refs());
+        let (asks, of) = match asked {
+            Asked::Number => (number(read) || payload.is_some_and(number), "a number"),
+            Asked::Object => {
+                let recognition = self.recognition();
+                let object = |ty: Ty<'tcx>| {
+                    !number(ty)
+                        && !ty.is_bool()
+                        && !recognition.is_string_like(ty)
+                        && !matches!(
+                            ty.kind(),
+                            ty::FnDef(..) | ty::FnPtr(..) | ty::Closure(..) | ty::Dynamic(..)
+                        )
+                };
+                (object(payload.unwrap_or(read)), "an object")
+            }
+            Asked::Defined | Asked::Function => return Ok(()),
+        };
+        if asks {
             return Ok(());
         }
+        let function = asked.function();
         Err(self.tcx.dcx().span_err(
             span,
-            "`js::is_number` of what isn't a number in Rust is false: it's asked of a getter's or \
-             a static's binding of one, `js::is_number(webapi::window_global::device_pixel_ratio)`",
+            format!(
+                "`{function}` of what isn't {of} in Rust is false: it's asked of a getter's or a \
+                 static's binding of one, `js::is_number(webapi::window_global::device_pixel_ratio)`, \
+                 `js::is_object(webapi::window_global::navigation)`"
+            ),
         ))
     }
 

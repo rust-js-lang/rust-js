@@ -380,3 +380,26 @@ Held by `test/lowering-is-function.test.ts`'s "js::is_function of a path
 from a value asks its member" (`hide`, run of a style with and without
 `setProperty`); mutations `fn-pointer-step-unnamed` and
 `fn-pointer-step-copy-unfollowed` (`mir/calls.ts`).
+
+## Amendment: whether a global is an object is `js::is_object` (2026-10-31, rd282)
+
+React DOM's defaultOnDefaultTransitionIndicator returns where the host
+has no Navigation API, `if (typeof navigation !== 'object') { return; }`.
+`js::is_defined(navigation)` is true of a `navigation` that's there but
+no object, a string say, where upstream returns and the port went on to
+call its `addEventListener`.
+
+**`js::is_object(binding)` is `typeof X === "object"`**, of what
+`js::is_number` is given, a getter's or a static's binding, or a path of
+them, its last part alone: the fourth of the `Asks` forms, `Asked::Object`,
+its link name `typeof === "object"`. Of what's no object in Rust, a
+number, text, a `bool` or a function, it would be false, so it's refused,
+as `is_number` of what's no number is (`asked_of_number`). `null` is an
+object to `typeof`, as upstream's test has it.
+
+Case: N ([0262](0262-when-rust-and-js-disagree.md)): JS's `typeof`, as
+upstream asks it. Held by `test/lowering-is-function.test.ts`' "js::is_object
+is whether a global a binding reads is an object" and mutations
+`asked-object-unrecognized` (`bindings/forms.ts`) and
+`asked-object-any-kind` (`mir/calls.ts`). The guide's
+`global-scope.md` example.

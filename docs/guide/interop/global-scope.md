@@ -299,6 +299,25 @@ export function pixelRatio() {
 }
 ```
 
+Whether it's an object is `js::is_object(binding)`, `typeof X ===
+"object"`, `null` too, as JS's `typeof` says, as React DOM asks whether
+the host has the Navigation API; of what's no object in Rust, a number,
+text or a function, it's an error (rd282, [ADR
+0942](../../decisions/0942-whether-a-global-is-a-function-is-is-function.md),
+amended):
+
+```rust
+pub fn has_navigation() -> bool {
+    js::is_object(webapi::window_global::navigation)
+}
+```
+
+```js
+export function hasNavigation() {
+  return typeof navigation === "object";
+}
+```
+
 A path may start from a value, its next step a method of it:
 `js::is_function((selection, Selection::extend))` is `typeof
 selection.extend === "function"`, as React feature-tests a selection, and

@@ -106,4 +106,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-is-function.test.ts", "-t", "a class held as a value"],
   },
+  {
+    name: "asked-object-unrecognized",
+    breaks: "`js::is_object(navigation)` is a call of a binding named `typeof === \"object\"`, not React DOM's `typeof navigation === \"object\"`",
+    file: "src/lower/bindings/forms.rs",
+    find: "        \"typeof === \\\"object\\\"\" => return JsForm::Asks(Asked::Object),\n",
+    replace: "",
+    tests: ["test/lowering-is-function.test.ts", "-t", "js::is_object is whether"],
+  },
 ];

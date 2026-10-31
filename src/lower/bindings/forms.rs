@@ -54,9 +54,9 @@ pub(in crate::lower) enum JsForm {
     LooseEquals,
     /// `typeof`: `typeof this`, what it is, as text (ADR 0310).
     TypeOf,
-    /// `typeof !== "undefined"`, `typeof === "function"` or `typeof ===
-    /// "number"`: what's asked of the global of the binding given (ADRs
-    /// 0597, 0942, 0269).
+    /// `typeof !== "undefined"`, `typeof === "function"`, `typeof ===
+    /// "number"` or `typeof === "object"`: what's asked of the global of the
+    /// binding given (ADRs 0597, 0942, 0269; rd282).
     Asks(Asked),
     /// `"" +`: `"" + this`, any value as JS's `+` makes it text (ADRs 0310,
     /// 0639).
@@ -102,13 +102,15 @@ pub(in crate::lower) enum JsForm {
 /// What `js::is_defined`, `js::is_function` or `js::is_number` asks of a
 /// binding's global: whether the host has it, `typeof MessageChannel !==
 /// "undefined"` (ADR 0597), whether it's a function, `typeof setTimeout ===
-/// "function"` (ADR 0942), or a number, `typeof devicePixelRatio ===
-/// "number"` (ADR 0269).
+/// "function"` (ADR 0942), a number, `typeof devicePixelRatio ===
+/// "number"` (ADR 0269), or an object, `typeof navigation === "object"`
+/// (rd282).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(in crate::lower) enum Asked {
     Defined,
     Function,
     Number,
+    Object,
 }
 
 impl Asked {
@@ -118,6 +120,7 @@ impl Asked {
             Asked::Defined => "js::is_defined",
             Asked::Function => "js::is_function",
             Asked::Number => "js::is_number",
+            Asked::Object => "js::is_object",
         }
     }
 
@@ -128,6 +131,7 @@ impl Asked {
             Asked::Defined => None,
             Asked::Function => Some("function"),
             Asked::Number => Some("number"),
+            Asked::Object => Some("object"),
         }
     }
 }
@@ -150,6 +154,7 @@ pub(in crate::lower) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "typeof !== \"undefined\"" => return JsForm::Asks(Asked::Defined),
         "typeof === \"function\"" => return JsForm::Asks(Asked::Function),
         "typeof === \"number\"" => return JsForm::Asks(Asked::Number),
+        "typeof === \"object\"" => return JsForm::Asks(Asked::Object),
         "\"\" +" => return JsForm::Text,
         "set []" => return JsForm::SetIndex,
         "import()" => return JsForm::Import { module: false },

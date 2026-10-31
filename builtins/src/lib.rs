@@ -821,6 +821,18 @@ pub fn is_number<B: Copy>(binding: B) -> bool {
     unreachable!()
 }
 
+/// [`typeof X === "object"`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/typeof):
+/// whether the global a getter's or a static's binding reads is an object,
+/// `null` too, as JS's `typeof` says, `is_object(webapi::window_global::navigation)`,
+/// React DOM's `typeof navigation !== 'object'`, of what [`is_number`] is
+/// given (rd282). Rust is told nothing: the binding is still there to
+/// read, which gives what the host has.
+#[cfg_attr(rust_js, rust_js::link_name = "typeof === \"object\"")]
+#[allow(unused_variables)]
+pub fn is_object<B: Copy>(binding: B) -> bool {
+    unreachable!()
+}
+
 /// [`object.method`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/Property_accessors):
 /// the method a path from a value names, read as a value, the JS function
 /// itself, whose `this` its call gives, as [`function::with_this`]'s is: of

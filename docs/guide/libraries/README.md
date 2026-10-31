@@ -129,7 +129,7 @@ What it has:
   !== "undefined"`: `is_defined(set_immediate)`, which a browser hasn't;
   whether it's a function, `is_function(binding)`, `typeof X ===
   "function"`; whether it's a number, `is_number(binding)`, `typeof X ===
-  "number"`
+  "number"`; an object, `is_object(binding)`, `typeof X === "object"`
   ([Access to the global scope](../interop/global-scope.md#a-global-some-hosts-lack)).
 - **A promise is a `Promise<T>`, to `.await`;** `settle(p).await` is a
   `Result` of what it fulfils or rejects with, `spawn` starts a future no
