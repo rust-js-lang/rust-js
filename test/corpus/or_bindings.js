@@ -51,13 +51,13 @@ function pick(p) {
 
 function firstSome(o) {
   let x;
-  if (o[0] == null) {
+  if (o[0] != null) {
+    x = o[0];
+  } else {
     if (o[1] == null) {
       return;
     }
     x = o[1];
-  } else {
-    x = o[0];
   }
   return x;
 }

@@ -25,16 +25,16 @@ function describe(s, seen) {
     }
     return "square";
   }
-  if (!(size(s) > 10)) {
-    if (s.TAG === "Rect") {
-      const half = (s.w / 2) | 0;
-      if (half > 0) {
-        return "wide rect";
-      }
-    }
-    return "other";
+  if (size(s) > 10) {
+    return "big";
   }
-  return "big";
+  if (s.TAG === "Rect") {
+    const half = (s.w / 2) | 0;
+    if (half > 0) {
+      return "wide rect";
+    }
+  }
+  return "other";
 }
 
 function main() {

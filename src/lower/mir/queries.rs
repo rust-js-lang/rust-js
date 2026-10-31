@@ -605,6 +605,10 @@ pub(super) fn written_past_gotos(body: &mir::Body<'_>, mut block: BasicBlock) ->
 /// not the `match` its test is spanned by; `depth` such tests at most.
 fn written_within(body: &mir::Body<'_>, block: BasicBlock, depth: usize) -> Option<rustc_span::BytePos> {
     let data = &body.basic_blocks[block];
+    // A read of an enum's variant, for a `match` to test, is spanned by the
+    // `match`'s subject, not an arm: the next arm's test, a failed guard's
+    // way on, `_ if size(s) > 10 => "big", Shape::Rect { .. } => ..`'s, is
+    // written where that arm is.
     let first = (data.statements.iter()).find(|s| {
         !matches!(
             s.kind,
@@ -613,7 +617,7 @@ fn written_within(body: &mir::Body<'_>, block: BasicBlock, depth: usize) -> Opti
                 | StatementKind::StorageDead(_)
                 | StatementKind::Nop
                 | StatementKind::PlaceMention(_)
-        )
+        ) && !matches!(&s.kind, StatementKind::Assign(assign) if matches!(assign.1, Rvalue::Discriminant(_)))
     });
     if first.is_none()
         && depth > 0

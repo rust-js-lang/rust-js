@@ -71,10 +71,12 @@ function main() {
   for (const key of ["none", "zero", "absent"]) {
     const n = counts.get(key);
     let read;
-    if (n !== undefined) {
-      read = n == null ? "none" : String(n);
-    } else {
+    if (n === undefined) {
       read = "absent";
+    } else if (n == null) {
+      read = "none";
+    } else {
+      read = String(n);
     }
     console.log(`${key} is ${read}`);
     const arg = $someGet(counts, key);

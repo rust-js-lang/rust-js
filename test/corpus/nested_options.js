@@ -34,17 +34,17 @@ function lookup(table, i) {
 }
 
 function depth(o) {
-  if (o != null) {
-    if ($someValue(o) != null) {
-      if ($someValue($someValue(o)) == null) {
-        return 2;
-      }
-      const n = $someValue($someValue(o));
-      return (3 + n) & 255;
-    }
+  if (o == null) {
+    return 0;
+  }
+  if ($someValue(o) == null) {
     return 1;
   }
-  return 0;
+  if ($someValue($someValue(o)) == null) {
+    return 2;
+  }
+  const n = $someValue($someValue(o));
+  return (3 + n) & 255;
 }
 
 function describe(o) {

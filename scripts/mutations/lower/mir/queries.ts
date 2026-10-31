@@ -385,6 +385,20 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "variant-read-taken-for-written",
+    breaks:
+      'a block that reads an enum\'s variant to test it is taken for written at the `match`\'s subject, before the arms, and a failed guard\'s way on goes first: `if (!(size(s) > 10)) { .. return "other"; } return "big";`',
+    file: "src/lower/mir/queries.rs",
+    find: "StatementKind::Assign(assign) if matches!(assign.1, Rvalue::Discriminant(_)))",
+    replace: "StatementKind::Assign(assign) if matches!(assign.1, Rvalue::Discriminant(_)) && false)",
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(guard_statements|nested_options|tuple_scrutinee_calls).rs$",
+    ],
+    snapshots: true,
+  },
+  {
     name: "guard-failure-at-its-goto",
     breaks:
       'a guard that fails, `_ if name == "HTML" => 2`, is taken for written where MIR spans its `goto`, before the arm it goes on to, and the arms are turned, `if (name !== "HTML") { return 3; } return 2;`',

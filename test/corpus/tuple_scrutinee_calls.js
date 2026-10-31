@@ -62,13 +62,13 @@ function bumped(v) {
     x = (x + 10) >>> 0;
     return false;
   }
-  if (!value()) {
-    if (b != null) {
-      return (((((a * 100) >>> 0) + b) >>> 0) + x) >>> 0;
-    }
-    return (a + x) >>> 0;
+  if (value()) {
+    return 0;
   }
-  return 0;
+  if (b != null) {
+    return (((((a * 100) >>> 0) + b) >>> 0) + x) >>> 0;
+  }
+  return (a + x) >>> 0;
 }
 
 function guardedParam(v, x) {
@@ -92,7 +92,7 @@ function bumpedByRef(v, first) {
   const b = v.pop();
   const a = x;
   if (
-    !bump(
+    bump(
       first
         ? {
             get value() {
@@ -112,12 +112,12 @@ function bumpedByRef(v, first) {
           },
     )
   ) {
-    if (b != null) {
-      return (((((((a * 100) >>> 0) + b) >>> 0) + x) >>> 0) + y) >>> 0;
-    }
-    return (((a + x) >>> 0) + y) >>> 0;
+    return 0;
   }
-  return 0;
+  if (b != null) {
+    return (((((((a * 100) >>> 0) + b) >>> 0) + x) >>> 0) + y) >>> 0;
+  }
+  return (((a + x) >>> 0) + y) >>> 0;
 }
 
 function main() {

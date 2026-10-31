@@ -51,10 +51,12 @@ function lookups(values, wanted) {
     }
   }
   let shown;
-  if (last !== undefined) {
-    shown = last == null ? "a none" : String(last);
-  } else {
+  if (last === undefined) {
     shown = "nothing";
+  } else if (last == null) {
+    shown = "a none";
+  } else {
+    shown = String(last);
   }
   const inner = last != null;
   return `${shown} ${seen} ${inner}`;

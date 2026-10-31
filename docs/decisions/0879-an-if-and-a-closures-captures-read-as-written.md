@@ -926,7 +926,25 @@ Held by the corpus cases `untagged_enums`, `guard_statements`,
 `presence_said_by_chain`, each run against native Rust, and the mutations
 `guard-failure-at-its-goto`, `guard-goto-of-nowhere-followed`
 (`lower/mir/structure.ts`) and `constant-pattern-test-constant-first`
-(`lower/mir/rvalues.ts`). Left: an integer comparison MIR's branch
-negates where its arms aren't turned, `!(size(s) > 10)`, whose converse a
-pass after tidy would make but for the conditionals preparation turns
-when their test is negated.
+(`lower/mir/rvalues.ts`).
+
+**Amended: a failed guard that goes on to the next arm's variant test.**
+`match s { Shape::Square(_) => "square", _ if size(s) > 10 => "big",
+Shape::Rect { w, .. } if w > 1 => "wide rect", _ => "other" }` was `if
+(!(size(s) > 10)) { if (s.TAG === "Rect" && s.w > 1) { return "wide
+rect"; } return "other"; } return "big";`: the guard's way on starts by
+reading `s`'s variant for the next arm's test, a statement rustc spans at
+the `match`'s subject, before the guard's own arm, so that arm was taken
+for written later and the branches stayed MIR's, `false` first. A read of
+a variant for a `match` to test is no more where a block is written than
+a `goto` is (`queries::written_within`): the block is written where the
+arms it tests are, and the guard reads as written, `if (size(s) > 10) {
+return "big"; } if (s.TAG === "Rect" && s.w > 1) { return "wide rect"; }
+return "other";`. Written order, not a converse of the comparison: the
+same holds for a `bool` guard, `_ if big(s)`, and for the arms of a
+nested `Option`'s `match`, `None => 0, Some(None) => 1, ..`, now `if (o ==
+null) { return 0; } if ($someValue(o) == null) { return 1; } ..` in the
+order written, not `if (o != null) { if (..) {..} return 1; } return 0;`
+(corpus `guard_statements`, `nested_options`, `tuple_scrutinee_calls`,
+`or_bindings`, `map_none_held_as_null`, `nested_option_held_as_payload`;
+mutation `variant-read-taken-for-written`, `lower/mir/queries.ts`).

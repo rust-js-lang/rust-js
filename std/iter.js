@@ -6509,32 +6509,32 @@ export function chainIterator_sizeHint(
   dropB,
   dropAItem,
 ) {
-  if (chain.a == null) {
+  if (chain.a != null) {
     if (chain.b != null) {
+      const a = $someValue(chain.a);
       const b = $someValue(chain.b);
-      return $sizeHint(b, BIterator);
+      const [aLower, aUpper] = $sizeHint(a, AIterator);
+      const [bLower, bUpper] = $sizeHint(b, BIterator);
+      const lower = Math.min(aLower + bLower, 4294967295);
+      let upper;
+      if (aUpper != null && bUpper != null) {
+        const y = bUpper;
+        upper = !$overflowing((aUpper + y) >>> 0, aUpper + y, 0, 4294967295)[1]
+          ? (aUpper + y) >>> 0
+          : undefined;
+      } else {
+        upper = undefined;
+      }
+      return [lower, upper];
     }
-    return [0, 0];
+    const a = $someValue(chain.a);
+    return $sizeHint(a, AIterator);
   }
   if (chain.b != null) {
-    const a = $someValue(chain.a);
     const b = $someValue(chain.b);
-    const [aLower, aUpper] = $sizeHint(a, AIterator);
-    const [bLower, bUpper] = $sizeHint(b, BIterator);
-    const lower = Math.min(aLower + bLower, 4294967295);
-    let upper;
-    if (aUpper != null && bUpper != null) {
-      const y = bUpper;
-      upper = !$overflowing((aUpper + y) >>> 0, aUpper + y, 0, 4294967295)[1]
-        ? (aUpper + y) >>> 0
-        : undefined;
-    } else {
-      upper = undefined;
-    }
-    return [lower, upper];
+    return $sizeHint(b, BIterator);
   }
-  const a = $someValue(chain.a);
-  return $sizeHint(a, AIterator);
+  return [0, 0];
 }
 
 export function chainIterator_count(
@@ -10483,14 +10483,16 @@ export function zipZipImplAB_sizeHint(
   const [aLower, aUpper] = $sizeHint(zip.a, AIterator);
   let [bLower, bUpper] = $sizeHint(zip.b, BIterator);
   const lower = Math.min(aLower, bLower);
-  if (aUpper == null) {
-    bUpper ??= undefined;
-  } else if (bUpper != null) {
-    const x = aUpper;
-    const y = bUpper;
-    bUpper = Math.min(x, y);
+  if (aUpper != null) {
+    if (bUpper != null) {
+      const x = aUpper;
+      const y = bUpper;
+      bUpper = Math.min(x, y);
+    } else {
+      bUpper = aUpper;
+    }
   } else {
-    bUpper = aUpper;
+    bUpper ??= undefined;
   }
   return [lower, bUpper];
 }
