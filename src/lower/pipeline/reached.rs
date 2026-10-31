@@ -86,3 +86,19 @@ pub(super) fn written_where_reached<'tcx>(
         .collect();
     (identities, derived)
 }
+
+/// Whether `id`, a body of the crate's, is lowered as a function of its
+/// own. Not a trait's default, copied into each impl (ADR 0049), but a
+/// library's, which a consumer's impl of its trait calls, a function over
+/// `Self`, the consumer's own (ADRs 0185, 0914, amended), and std's,
+/// compiled into `@rust-js/std`, its own too (ADR 0561); nor a trait of
+/// classes' method that gives a field, which is that field, read in place
+/// wherever it's called (rd304, ADR 1038).
+pub(super) fn lowered_here(tcx: TyCtxt<'_>, foreign: &Foreign<'_, '_>, exports_reachable: bool, id: DefId) -> bool {
+    if super::super::classes::field_accessor(tcx, id).is_some() {
+        return false;
+    }
+    tcx.trait_of_assoc(id).is_none()
+        || foreign.is_instance(id)
+        || (exports_reachable && super::super::library::reachable(tcx, id))
+}

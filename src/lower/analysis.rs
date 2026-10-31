@@ -394,6 +394,15 @@ pub fn collect_mir<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [Body<'tcx>]) {
             (true, false) => None,
         };
     }
+    // A call of a method of a trait of classes that gives a field, that
+    // field read in place (rd304, ADR 1035 amended): in each body whose
+    // calls resolve to one, a default's once its `Self` is known.
+    for body in bodies.iter_mut().filter(|body| body.def_id.is_local()) {
+        let typing_env = ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(body.def_id));
+        if let Some(mir) = &mut body.mir {
+            mir.read_fields(tcx, typing_env);
+        }
+    }
 }
 
 /// The `const { .. }` blocks of functions that aren't generic, whose

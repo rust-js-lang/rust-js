@@ -298,15 +298,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "static_fns"],
   },
   {
-    name: "library-defaults-unexported",
-    breaks:
-      "a library's trait's default its consumer's impl calls, compiled there, isn't lowered, and its dictionary calls a function that isn't there (ADRs 0185, 0914, amended)",
-    file: "src/lower/pipeline.rs",
-    find: "            tcx.trait_of_assoc(id).is_none()\n                || foreign.is_instance(id)\n",
-    replace: "            tcx.trait_of_assoc(id).is_none()\n",
-    tests: ["test/crates.test.ts", "-t", "defaults are what"],
-  },
-  {
     name: "directive-unwritten",
     breaks:
       'a client component\'s module has no \`"use client";\`, and Next.js renders it as a Server Component',

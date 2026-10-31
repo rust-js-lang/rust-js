@@ -475,16 +475,7 @@ pub fn lower_crate<'tcx>(
     let mut cache_values: HashMap<DefId, Expr> = HashMap::new();
     let mut work: Vec<(DefId, Option<&Body<'tcx>>, Option<usize>)> = bodies
         .iter()
-        // A trait's default is copied into each impl (ADR 0049); a library's,
-        // which a consumer's impl of its trait calls, a function over `Self`,
-        // the consumer's own (ADRs 0185, 0914, amended); std's, compiled
-        // into `@rust-js/std`, its own too (ADR 0561).
-        .filter(|b| {
-            let id = b.def_id;
-            tcx.trait_of_assoc(id).is_none()
-                || foreign.is_instance(id)
-                || (exports_reachable && super::library::reachable(tcx, id))
-        })
+        .filter(|b| reached::lowered_here(tcx, &foreign, exports_reachable, b.def_id))
         // Each copy its callers need besides, after it (ADR 0051, amended).
         .flat_map(|b| {
             let copies = js_given.copies(b.def_id).map(|(at, _)| Some(at));

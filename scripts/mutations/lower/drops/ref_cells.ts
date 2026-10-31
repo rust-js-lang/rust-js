@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a field lent whole, `&x.f`, whose borrows the callee counts, is taken for one never checked",
     file: "src/lower/drops/ref_cells.rs",
-    find: "                    uses.entry(field.did).or_insert(expr.span);\n",
+    find: "                    uses.entry(field).or_insert(expr.span);\n",
     replace: "                    let _ = uses;\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_field_lent_held.rs$"],
   },
@@ -406,5 +406,32 @@ export const mutations: Mutation[] = [
       "-t",
       "two crates: thread_local_ref_cell_read",
     ],
+  },
+  {
+    name: "field-accessor-lends-its-field",
+    breaks:
+      "a trait of classes' method's own `&self.internal_root`, which every call reads in place, lends the field, so its borrows are counted, `$fieldCell(this, ..)` (rd304)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "                    ExprKind::Field { .. } if !accessor && self.is_std_type(expr.ty, StdItem::RefCell) => {\n",
+    replace: "                    ExprKind::Field { .. } if self.is_std_type(expr.ty, StdItem::RefCell) => {\n",
+    tests: ["test/classes-traits.test.ts", "-t", "prototype's"],
+  },
+  {
+    name: "field-accessor-call-lends-nothing",
+    breaks:
+      "a call of a trait of classes' method that gives a field, held elsewhere, `fill(holder.slot(), ..)`, lends nothing, so the field's own borrow is never checked and doesn't panic as std's does (rd304)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "                        fields_given(&recognition, thir, id)\n",
+    replace: "                        Vec::new()\n",
+    tests: ["test/corpus.test.ts", "-t", "^class_trait_field_lent.rs$"],
+  },
+  {
+    name: "field-accessor-borrow-of-no-field",
+    breaks:
+      "a counted borrow through a trait of classes' method that gives a field, `self.slot().try_borrow_mut()`, counts no field, so the field's own borrows go unchecked and `try_borrow_mut` finds it free (rd304)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "                        ExprKind::Call { .. } => fields_given(recognition, thir, lent),\n",
+    replace: "                        ExprKind::Call { .. } => Vec::new(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^class_trait_field_borrows.rs$"],
   },
 ];

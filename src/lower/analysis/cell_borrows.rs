@@ -222,6 +222,9 @@ impl<'tcx> CellBorrows<'tcx> {
             Called::Nothing => false,
             Called::Cell(theirs) => asks(tcx, &self.closed, theirs, held),
             Called::Body(body, args) => self.runs_asks(tcx, body, Some(args), held, drops),
+            Called::Bodies(bodies) => {
+                (bodies.into_iter()).any(|(body, args)| self.runs_asks(tcx, body, Some(args), held, drops))
+            }
             Called::Std(id, args) => {
                 let given = std_given(recognition, &self.impls, id, args);
                 (given.any && self.anything_asks(tcx, held))
@@ -315,6 +318,7 @@ impl<'tcx> CellBorrows<'tcx> {
         match called(recognition, def_id, args, None, &itself) {
             Called::Nothing | Called::Cell(_) => false,
             Called::Body(body, _) => !summarized(&body),
+            Called::Bodies(bodies) => !bodies.iter().all(|(body, _)| summarized(body)),
             Called::Std(id, args) => {
                 let given = std_given(recognition, &self.impls, id, args);
                 given.any || !given.bodies.iter().all(|(body, _)| summarized(body))
@@ -485,6 +489,9 @@ enum Called<'tcx> {
     Cell(Borrow<'tcx>),
     /// A body of the crate's, of these generic arguments.
     Body(DefId, ty::GenericArgsRef<'tcx>),
+    /// One of these bodies of the crate's, of their generic arguments: a
+    /// trait of classes' method, of a `Self` not known (rd304).
+    Bodies(Vec<(DefId, ty::GenericArgsRef<'tcx>)>),
     /// A function of std's, of these generic arguments, which runs what its
     /// bounds say of them (`std_given`).
     Std(DefId, ty::GenericArgsRef<'tcx>),
@@ -602,8 +609,14 @@ fn called<'tcx>(
     if !tcx.is_closure_like(def_id) && binding_call_runs_nothing(recognition, def_id, args) {
         return Called::Nothing;
     }
-    let Ok(Some(instance)) = crate::lower::items::resolve_instance_in(tcx, recognition.typing_env, def_id, args) else {
-        return Called::Any;
+    let instance = match crate::lower::items::resolve_instance_in(tcx, recognition.typing_env, def_id, args) {
+        Ok(Some(instance)) => instance,
+        // A trait of classes' method of a `Self` not known, a default's:
+        // what one of its classes' does, as it has no impls but theirs (rd304).
+        Ok(None) if let Some(may_be) = crate::lower::classes::implementations(tcx, def_id) => {
+            return Called::Bodies(may_be);
+        }
+        _ => return Called::Any,
     };
     // An intrinsic, the compiler's own, runs only what it's given: a
     // function by a bound, `const_eval_select`'s, as std's code does; and
@@ -997,6 +1010,9 @@ fn direct<'tcx>(
         Called::Nothing => {}
         Called::Cell(cell) => _ = found.own.cells.insert(cell),
         Called::Body(body, args) => found.runs.push((body, Some(args))),
+        Called::Bodies(bodies) => found
+            .runs
+            .extend(bodies.into_iter().map(|(body, args)| (body, Some(args)))),
         Called::Std(id, args) => {
             let given = std_given(recognition, impls, id, args);
             found.any |= given.any;

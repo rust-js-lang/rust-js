@@ -342,7 +342,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 if found.counted && !own {
                     counted.insert(found.cell);
-                    if let Some(field) = found.field {
+                    for &field in &found.fields {
                         counted_fields.entry(field).or_insert(found.span);
                     }
                     if !found.seen {
@@ -356,30 +356,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `x.f.get_mut()`, whose borrows `counted_in` says are counted
             // or not. Any other use, lent, `&x.f`, or moved, makes a
             // reference to it or a cell of it elsewhere.
+            // A call of a trait of classes' method that gives a field is
+            // that field, `self.internal_root()` of `self.internal_root()
+            // .borrow()` (rd304); and the method's own `&self.internal_root`
+            // no lending of it.
             let mut borrowed_there = HashSet::new();
             for expr in thir.exprs.iter() {
                 if let ExprKind::Call { fun, ref args, .. } = expr.kind
                     && crate::lower::fn_def(thir[fun].ty)
                         .is_some_and(|(id, args)| borrows_its_cell(&recognition, id, args))
                     && let Some(&lent) = args.first()
-                    && let ExprKind::Borrow { arg, .. } = thir[crate::lower::body_queries::strip(thir, lent)].kind
                 {
-                    borrowed_there.insert(crate::lower::body_queries::strip(thir, arg));
+                    borrowed_there.insert(cell_lent(thir, lent));
                 }
             }
             let derive = (tcx.trait_impl_of_assoc(body.def_id))
                 .is_some_and(|imp| crate::lower::recognition::known_derive(tcx, imp));
+            let accessor = crate::lower::classes::field_accessor(tcx, body.def_id).is_some();
             for (id, expr) in thir.exprs.iter_enumerated() {
-                if let ExprKind::Field { .. } = expr.kind
-                    && self.is_std_type(expr.ty, StdItem::RefCell)
-                    && let Some(field) = field_of(thir, id)
-                    && !borrowed_there.contains(&id)
-                {
+                let fields = match expr.kind {
+                    ExprKind::Field { .. } if !accessor && self.is_std_type(expr.ty, StdItem::RefCell) => {
+                        field_of(thir, id).map(|field| field.did).into_iter().collect()
+                    }
+                    ExprKind::Call { .. } if self.is_std_type(expr.ty.peel_refs(), StdItem::RefCell) => {
+                        fields_given(&recognition, thir, id)
+                    }
+                    _ => Vec::new(),
+                };
+                if borrowed_there.contains(&id) {
+                    continue;
+                }
+                for field in fields {
                     let uses = match derive {
                         true => &mut derived,
                         false => &mut lent,
                     };
-                    uses.entry(field.did).or_insert(expr.span);
+                    uses.entry(field).or_insert(expr.span);
                 }
             }
             // One bound by a pattern is a value of its own, lent.
@@ -813,22 +825,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             let borrow = crate::lower::analysis::borrowed(recognition, thir, id);
             if a_borrow && let Some(cell) = borrow.and_then(cell_of) {
-                // Of a struct's field, `x.f` of `x.f.borrow()`.
-                let field =
-                    args.first()
-                        .and_then(|&lent| match thir[crate::lower::body_queries::strip(thir, lent)].kind {
-                            ExprKind::Borrow { arg, .. } => {
-                                field_of(thir, crate::lower::body_queries::strip(thir, arg))
-                            }
-                            _ => None,
-                        });
+                // Of a struct's field, `x.f` of `x.f.borrow()`, or of what a
+                // call that gives one may, `self.internal_root()` (rd304).
+                let fields = match args.first().map(|&lent| cell_lent(thir, lent)) {
+                    Some(lent) => match thir[lent].kind {
+                        ExprKind::Call { .. } => fields_given(recognition, thir, lent),
+                        _ => field_of(thir, lent).map(|field| field.did).into_iter().collect(),
+                    },
+                    None => Vec::new(),
+                };
                 found.push(Found {
                     cell,
                     key: borrow.and_then(|borrow| match borrow.cell {
                         Cell::Key(key) => Some(key),
                         Cell::Type(_) => None,
                     }),
-                    field: field.map(|field| field.did),
+                    fields,
                     counted: held,
                     seen: matches!(kind, Some(Std::Borrow { .. })) && facts.held_while_seen.contains(&fun),
                     span: expr.span,
@@ -850,7 +862,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         tcx.mk_args(&[held.into()]),
                     ),
                     key: None,
-                    field: None,
+                    fields: Vec::new(),
                     counted: true,
                     seen: false,
                     span: expr.span,
@@ -868,7 +880,8 @@ struct Found<'tcx> {
     cell: Ty<'tcx>,
     /// Of a thread-local's own cell, borrowed by its key, the key.
     key: Option<DefId>,
-    field: Option<DefId>,
+    /// Of a struct's field, or of what a call that gives one may be.
+    fields: Vec<DefId>,
     counted: bool,
     seen: bool,
     span: rustc_span::Span,
@@ -948,6 +961,37 @@ pub(in crate::lower) fn struct_field(tcx: TyCtxt<'_>, field: DefId) -> bool {
     let owner = tcx.parent(field);
     matches!(tcx.def_kind(owner), DefKind::Struct)
         && crate::lower::recognition::transparent_field(tcx, tcx.adt_def(owner)).is_none()
+}
+
+/// The cell `lent`, a `RefCell`'s method's receiver, is: `x.f` of
+/// `&x.f`, a call of `&*c()`, else itself.
+fn cell_lent(thir: &rustc_middle::thir::Thir<'_>, lent: rustc_middle::thir::ExprId) -> rustc_middle::thir::ExprId {
+    use crate::lower::body_queries::strip;
+    let lent = strip(thir, lent);
+    let ExprKind::Borrow { arg, .. } = thir[lent].kind else {
+        return lent;
+    };
+    let arg = strip(thir, arg);
+    match thir[arg].kind {
+        ExprKind::Deref { arg: of } if matches!(thir[strip(thir, of)].kind, ExprKind::Call { .. }) => strip(thir, of),
+        _ => arg,
+    }
+}
+
+/// The fields `call`, a call that may give one in place, may give
+/// (`classes::fields_given`, rd304).
+fn fields_given<'tcx>(
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    thir: &rustc_middle::thir::Thir<'tcx>,
+    call: rustc_middle::thir::ExprId,
+) -> Vec<DefId> {
+    let ExprKind::Call { fun, .. } = thir[call].kind else {
+        return Vec::new();
+    };
+    match crate::lower::fn_def(thir[fun].ty) {
+        Some(called) => crate::lower::classes::fields_given(recognition.tcx, recognition.typing_env, called),
+        None => Vec::new(),
+    }
 }
 
 /// The struct's field `expr` reads, `x.f`, if it's one.

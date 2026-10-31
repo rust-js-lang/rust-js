@@ -918,8 +918,12 @@ export function createFiber(tag: number, dev: boolean): FiberNode;
 - **The crate's trait each impl of which is a class's is each class's
   prototype's**, as React DOM's two roots share `render`: each method,
   the impl's or the trait's default, is a prototype method, a default
-  compiled for each class with `Self` known, where a method its impl
-  gives only a reference to a field is read as that field. Where two
+  compiled for each class with `Self` known. A method its impl gives
+  only a reference to a field of `self` with, `fn counter(&self) ->
+  &Cell<u32> { &self.count }`, is that field: read in place wherever
+  it's called, its borrows the field's own, checked only where one may
+  meet another, as an inherent method's are, and no method of its own,
+  so it may be named as the field. Where two
   classes' copies print alike, one function is assigned to both, the
   later first. A Rust call is a call on the value, `root.render(..)`;
   each class declares the trait's methods. A default may take rest
@@ -981,18 +985,6 @@ export function Clicks() {
   this.count = 0;
 }
 
-Clicks.prototype.counter = function () {
-  const clicks = this;
-  return {
-    get value() {
-      return clicks.count;
-    },
-    set value(value) {
-      clicks.count = value;
-    },
-  };
-};
-
 Keys.prototype.step = Clicks.prototype.step = function (by) {
   this.count = (this.count + by) >>> 0;
   return this.count;
@@ -1001,26 +993,15 @@ Keys.prototype.step = Clicks.prototype.step = function (by) {
 export function Keys() {
   this.count = 0;
 }
-
-Keys.prototype.counter = function () {
-  const keys = this;
-  return {
-    get value() {
-      return keys.count;
-    },
-    set value(value) {
-      keys.count = value;
-    },
-  };
-};
 ```
 
   Refused, each saying what to write: such a trait bounding a type
   parameter or a `dyn`'s, which no dictionary is made for; of type
   parameters, supertraits, or items that aren't methods of `&self` or
-  `&mut self`; a method named as a field; an impl outside its class's
-  module; and an impl's own method of a default that takes rest
-  arguments.
+  `&mut self`; a method named as a field, but one that gives it; one
+  that gives a field held as a function, which it's no function JS has;
+  an impl outside its class's module; and an impl's own method of a
+  default that takes rest arguments.
 - **Its `PartialEq` of `std::ptr::eq` and `Hash` of `std::ptr::hash`**,
   equal only to itself, as React's fibers in a `Set` are, have no JS of
   their own: `a == b` is `a === b`, and a `HashSet` of them a `Set` of

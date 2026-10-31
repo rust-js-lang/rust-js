@@ -110,4 +110,13 @@ export const mutations: Mutation[] = [
     replace: "            if true {\n",
     tests: ["test/classes-traits.test.ts"],
   },
+  {
+    name: "class-trait-field-method-declared",
+    breaks:
+      "a class's `.d.ts` declares a trait of classes' method that gives a field, `internalRoot()`, which its prototype hasn't (rd304)",
+    file: "src/lower/declarations/functions.rs",
+    find: "                if given.is_some_and(|own| crate::lower::classes::field_accessor(self.tcx, own).is_some()) {\n",
+    replace: "                if given.is_some_and(|own| crate::lower::classes::field_accessor(self.tcx, own).is_none()) {\n",
+    tests: ["test/classes-traits.test.ts", "-t", "prototype's"],
+  },
 ];

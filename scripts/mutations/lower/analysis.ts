@@ -563,4 +563,13 @@ export const mutations: Mutation[] = [
       "a library's namespace is called by name",
     ],
   },
+  {
+    name: "class-trait-field-calls-unread",
+    breaks:
+      "a call of a trait of classes' method that gives a field, outside its defaults, calls a method that isn't, `this.items()`, not the field (rd304)",
+    file: "src/lower/analysis.rs",
+    find: "            mir.read_fields(tcx, typing_env);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^class_trait_field_borrows.rs$"],
+  },
 ];

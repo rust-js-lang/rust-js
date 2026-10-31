@@ -542,4 +542,22 @@ export const mutations: Mutation[] = [
       "a pub thread-local is made of a factory of constructors",
     ],
   },
+  {
+    name: "class-trait-call-runs-anything",
+    breaks:
+      "a default's call of a trait of classes' method, of a `Self` not known, may run anything, so its borrow of the field another method gives, `self.internal_root().borrow()`, is counted, `$borrow($fieldCell(this, ..))` (rd304)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "            return Called::Bodies(may_be);\n",
+    replace: "            return Called::Any;\n",
+    tests: ["test/classes-traits.test.ts", "-t", "prototype's"],
+  },
+  {
+    name: "class-trait-call-asks-nothing",
+    breaks:
+      "a default's call of a trait of classes' method, of a `Self` not known, asks nothing of a borrow held across it, though one class's borrows its cell, which then doesn't panic as std's does (rd304)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "                (bodies.into_iter()).any(|(body, args)| self.runs_asks(tcx, body, Some(args), held, drops))\n",
+    replace: "                bodies.is_empty()\n",
+    tests: ["test/corpus.test.ts", "-t", "^class_trait_field_held.rs$"],
+  },
 ];

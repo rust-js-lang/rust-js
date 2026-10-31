@@ -19,7 +19,9 @@ place's by that place, a struct's field by its declaration, and a
 thread-local and a field made where its struct is each its own, below).
 Amended by [0897](0897-an-element-a-guard-reaches-is-its-place.md): a
 guard a temporary holds is its object where it's read, as `&mut guard`
-given to `deref_mut` writes only what it guards.
+given to `deref_mut` writes only what it guards. Amended by
+[1038](1038-a-trait-of-classes-method-that-gives-a-field-is-that-field.md):
+a call of a trait of classes' method that gives a field is that field.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A, decided by the user
 (2026-10-25). A `RefCell` of an object being the object changes no run:
@@ -819,3 +821,12 @@ reads.
 Held by `test/corpus/option_of_a_ref_as_deref.rs` (against native Rust);
 mutations `as-deref-of-a-guard-refused` (`combinators/values.ts`) and
 `as-deref-of-an-object-guard-tested` (`combinators.ts`).
+
+## Amendment: a trait of classes' method that gives a field (rd304)
+
+A call of an impl's method of a trait of classes that only gives a
+reference to a field of its `self` is that field: its own `&self.f`
+lends nothing, a borrow through its call is the field's, and its call
+held elsewhere lends the field. A default's call of a trait of classes'
+method, of a `Self` not known, runs what one of its classes' does
+([ADR 1038](1038-a-trait-of-classes-method-that-gives-a-field-is-that-field.md)).

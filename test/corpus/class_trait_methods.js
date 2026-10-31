@@ -11,18 +11,6 @@ function Clicks() {
   this.log = [];
 }
 
-Clicks.prototype.counter = function () {
-  const clicks = this;
-  return {
-    get value() {
-      return clicks.count;
-    },
-    set value(value) {
-      clicks.count = value;
-    },
-  };
-};
-
 Clicks.prototype.label = function () {
   return "clicks";
 };
@@ -40,18 +28,6 @@ Keys.prototype.describe = Clicks.prototype.describe = function () {
 function Keys(start) {
   this.count = start;
 }
-
-Keys.prototype.counter = function () {
-  const keys = this;
-  return {
-    get value() {
-      return keys.count;
-    },
-    set value(value) {
-      keys.count = value;
-    },
-  };
-};
 
 Keys.prototype.label = function () {
   return "keys from 1";

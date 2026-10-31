@@ -101,4 +101,23 @@ export const mutations: Mutation[] = [
       "an enum's own names of the crate alone, called, are written nowhere",
     ],
   },
+  {
+    name: "class-trait-field-method-printed",
+    breaks:
+      "a trait of classes' method that gives a field is printed as its prototype's method, a handle on the field, `Clicks.prototype.counter = function () { .. }`, though every call reads the field (rd304)",
+    file: "src/lower/pipeline/reached.rs",
+    find: "    if super::super::classes::field_accessor(tcx, id).is_some() {\n        return false;\n    }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^class_trait_methods.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "library-defaults-unexported",
+    breaks:
+      "a library's trait's default its consumer's impl calls, compiled there, isn't lowered, and its dictionary calls a function that isn't there (ADRs 0185, 0914, amended)",
+    file: "src/lower/pipeline/reached.rs",
+    find: "    tcx.trait_of_assoc(id).is_none()\n        || foreign.is_instance(id)\n",
+    replace: "    tcx.trait_of_assoc(id).is_none()\n",
+    tests: ["test/crates.test.ts", "-t", "defaults are what"],
+  },
 ];

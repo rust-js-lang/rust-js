@@ -215,6 +215,116 @@ pub(crate) fn trait_member_class(tcx: TyCtxt<'_>, def_id: DefId) -> Option<DefId
         .flatten()
 }
 
+/// Of `method`, a trait of classes' method, what each class's call of it
+/// runs, its impl's own or the trait's default of its `Self`: what a call of
+/// it whose `Self` isn't known, a default's, may be, as it has no impls but
+/// these (rd304). `None` of any other.
+pub(crate) fn implementations<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    method: DefId,
+) -> Option<Vec<(DefId, ty::GenericArgsRef<'tcx>)>> {
+    let trait_id = tcx.trait_of_assoc(method)?;
+    if !is_class_trait(tcx, trait_id) {
+        return None;
+    }
+    let found = tcx
+        .all_impls(trait_id)
+        .map(|imp| match tcx.impl_item_implementor_ids(imp).get(&method) {
+            Some(&own) => (own, ty::GenericArgs::identity_for_item(tcx, own)),
+            None => {
+                let of = tcx.type_of(imp).instantiate_identity().skip_normalization();
+                let args = ty::GenericArgs::for_item(tcx, method, |param, _| match param.index {
+                    0 => of.into(),
+                    _ => tcx.mk_param_from_def(param),
+                });
+                (method, args)
+            }
+        });
+    Some(found.collect())
+}
+
+/// Of `def_id`, an impl's method of a trait of classes that only gives a
+/// reference to a field of its `&self`, `fn internal_root(&self) ->
+/// &RefCell<..> { &self.internal_root }`: that field, by the path of fields
+/// to it and each one's own, read in place wherever it's called, no method
+/// of its prototype (rd304, ADR 1035 amended). `None` of any other.
+pub(crate) fn field_accessor(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Vec<(rustc_abi::FieldIdx, DefId)>> {
+    use rustc_middle::ty::adjustment::{Adjust, DerefAdjustKind};
+    trait_member_class(tcx, def_id)?;
+    let local = def_id.as_local()?;
+    let body = tcx.hir_body_owned_by(local);
+    let [this, ..] = body.params else { return None };
+    let typeck = tcx.typeck(local);
+    let given = body.value.peel_blocks();
+    let rustc_hir::ExprKind::AddrOf(rustc_hir::BorrowKind::Ref, rustc_hir::Mutability::Not, mut place) = given.kind
+    else {
+        return None;
+    };
+    // Of none, or the reborrow of what it gives back, `&*&self.f`.
+    use rustc_middle::ty::adjustment::{AutoBorrow, AutoBorrowMutability};
+    match typeck.expr_adjustments(given) {
+        [] => {}
+        [deref, borrow]
+            if matches!(deref.kind, Adjust::Deref(DerefAdjustKind::Builtin))
+                && matches!(borrow.kind, Adjust::Borrow(AutoBorrow::Ref(AutoBorrowMutability::Not))) => {}
+        _ => return None,
+    }
+    // Of `self.a.b`, `b` then `a`: each base of a field the struct itself
+    // but `self`, of which only a reference's own deref.
+    let mut fields = Vec::new();
+    loop {
+        match place.kind {
+            rustc_hir::ExprKind::Field(base, _) => {
+                let derefs = typeck.expr_adjustments(base);
+                let is_self = matches!(base.kind, rustc_hir::ExprKind::Path(rustc_hir::QPath::Resolved(None, path))
+                    if path.res == rustc_hir::def::Res::Local(this.pat.hir_id));
+                let adjusted = match derefs {
+                    [] => false,
+                    [deref] if is_self && matches!(deref.kind, Adjust::Deref(DerefAdjustKind::Builtin)) => true,
+                    _ => return None,
+                };
+                let ty::Adt(adt, _) = typeck.expr_ty_adjusted(base).kind() else {
+                    return None;
+                };
+                if !adt.is_struct() {
+                    return None;
+                }
+                let index = typeck.field_index(place.hir_id);
+                fields.push((index, adt.non_enum_variant().fields[index].did));
+                if is_self {
+                    return adjusted.then(|| fields.into_iter().rev().collect());
+                }
+                place = base;
+            }
+            _ => return None,
+        }
+    }
+}
+
+/// The fields a call of `callee`, of `args` in `typing_env`, may give in
+/// place, each the last of a `field_accessor`'s path: of the one method it
+/// is, or of a `Self` not known, a default's, each of its classes' that
+/// gives one (rd304). Empty of any other call.
+pub(crate) fn fields_given<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+) -> Vec<DefId> {
+    if !(tcx.trait_of_assoc(callee)).is_some_and(|of| is_class_trait(tcx, of)) {
+        return Vec::new();
+    }
+    let may_be = match ty::Instance::try_resolve(tcx, typing_env, callee, args) {
+        Ok(Some(instance)) => vec![instance.def_id()],
+        Ok(None) => (implementations(tcx, callee).into_iter().flatten())
+            .map(|(own, _)| own)
+            .collect(),
+        Err(_) => Vec::new(),
+    };
+    (may_be.into_iter())
+        .filter_map(|own| field_accessor(tcx, own)?.last().map(|&(_, field)| field))
+        .collect()
+}
+
 /// The class an impl is of, if it's a class's.
 fn class_of_impl(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
     match tcx.type_of(imp).instantiate_identity().skip_normalization().kind() {
@@ -445,13 +555,15 @@ pub(super) fn reject_misuse<'tcx>(
                     );
                 }
                 // An instance's own property hides its prototype's: a
-                // method named as a field is never called.
+                // method named as a field is never called. Not one that
+                // gives a field, which is that field, no method (rd304).
                 let fields: Vec<String> = (tcx.adt_def(class).non_enum_variant().fields.iter())
                     .map(|field| crate::lower::bindings::field_key(tcx, field))
                     .collect();
                 for &item in tcx.associated_item_def_ids(tcx.impl_trait_id(id)) {
                     let named = crate::lower::bindings::fn_name(tcx, item);
-                    if fields.contains(&named) {
+                    let own = tcx.impl_item_implementor_ids(id).get(&item).copied();
+                    if fields.contains(&named) && !own.is_some_and(|own| field_accessor(tcx, own).is_some()) {
                         refuse(
                             span,
                             &format!(
@@ -609,6 +721,33 @@ pub(super) fn reject_misuse<'tcx>(
                     ),
                 );
                 break;
+            }
+        }
+    }
+    // A method of a trait of classes that gives a field is that field,
+    // read where it's called: no function of its own to hold (rd304).
+    for body in bodies {
+        let thir = &body.thir;
+        let typing_env = ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(body.def_id));
+        let called: std::collections::HashSet<thir::ExprId> = (thir.exprs.iter())
+            .filter_map(|expr| match expr.kind {
+                thir::ExprKind::Call { fun, .. } => Some(fun),
+                _ => None,
+            })
+            .collect();
+        for (id, expr) in thir.exprs.iter_enumerated() {
+            if let Some((method, args)) = crate::lower::fn_def(expr.ty)
+                && !called.contains(&id)
+                && matches!(expr.kind, thir::ExprKind::ZstLiteral { .. })
+                && !fields_given(tcx, typing_env, (method, args)).is_empty()
+            {
+                let name = tcx.item_name(method);
+                refuse(
+                    expr.span,
+                    &format!(
+                        "method that gives its field, `{name}`, is that field, read where it's called, `x.{name}()`: no function to hold"
+                    ),
+                );
             }
         }
     }

@@ -111,9 +111,16 @@ pub fn render_both(a: &ReactDOMRoot, b: &ReactDOMHydrationRoot) -> f64 {
   // One function each default prints alike, assigned to both; the one an
   // impl writes its own, each class's.
   expect(js).toContain("ReactDOMHydrationRoot.prototype.render = ReactDOMRoot.prototype.render = function (\n  children,\n  ...args\n) {");
-  expect(js).toContain("ReactDOMRoot.prototype.unmount = function () {");
-  expect(js).toContain("ReactDOMHydrationRoot.prototype.unmount = function () {");
+  expect(js).toContain("ReactDOMRoot.prototype.unmount = function () {\n  this._internalRoot = null;\n};");
+  expect(js).toContain("ReactDOMHydrationRoot.prototype.unmount = function () {\n  this._internalRoot = 0;\n};");
   expect(js).not.toContain("RootType");
+  // The method that gives a field is that field, read in place, no
+  // method of its own, its borrows never checked where none can meet
+  // another, as an inherent method's (rd304).
+  expect(js).toContain("{\n  const root = this._internalRoot;\n  if (root == null) {");
+  expect(js).not.toMatch(/\binternalRoot\b/);
+  expect(js).not.toContain("$fieldCell");
+  expect(ts).not.toMatch(/\binternalRoot\b/);
   expect(js).toContain("return a.render(1) + b.render(2, 3);");
   expect(ts).toMatch(/class ReactDOMRoot \{[^}]*render\(children: number, \.\.\.args: number\[\]\): number;[^}]*unmount\(\): void;/);
   expect(ts).toMatch(/class ReactDOMHydrationRoot \{[^}]*render\(children: number, \.\.\.args: number\[\]\): number;/);
@@ -160,7 +167,7 @@ pub fn rendered(root: &ReactDOMRoot) -> f64 {
   // Its method named as a field, which the instance's own property hides.
   const hidden = refused(
     "class-traits-hidden",
-    roots.replaceAll("internal_root(&self)", "count(&self)").replaceAll("self.internal_root()", "self.count()").replace(
+    roots.replaceAll("unmount", "count").replace(
       "pub struct ReactDOMRoot {\n",
       "pub struct ReactDOMRoot {\n    pub count: u32,\n",
     ).replace("ReactDOMRoot {\n            internal_root", "ReactDOMRoot {\n            count: 0,\n            internal_root"),
@@ -183,4 +190,15 @@ impl RootType for Plain {
 `,
   );
   expect(mixed).toContain("implements no trait but a marker's, of no items, not `RootType`");
+  // The method that gives a field is no function to hold (rd304).
+  const held = refused(
+    "class-traits-accessor-held",
+    `${roots}
+pub fn roots(root: &ReactDOMRoot) -> bool {
+    let given = <ReactDOMRoot as RootType>::internal_root;
+    given(root).borrow().is_some()
+}
+`,
+  );
+  expect(held).toContain("method that gives its field, `internal_root`, is that field, read where it's called, `x.internal_root()`: no function to hold");
 });

@@ -1,6 +1,9 @@
 # 1035. A trait of classes is each class's prototype's
 
-Status: Accepted (rd283). Amends
+Status: Accepted (rd283); amended by
+[1038](1038-a-trait-of-classes-method-that-gives-a-field-is-that-field.md)
+(a method that gives a field is that field, read in place in every body,
+no prototype method). Amends
 [0761](0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md)
 and [0664](0664-a-functions-rest-slice-is-jss-rest-parameter.md): a class implements the crate's trait
 each impl of which is a class's, and such a trait's default may take rest
@@ -84,13 +87,10 @@ before.
 - The port writes React DOM's `RootType` as a trait with `internal_root`,
   `render` and `unmount`, each root `impl RootType for ..` with
   `internal_root` alone.
-- Not yet upstream's: the impl's `internal_root` stays a prototype method,
-  a cell's handle `$fieldCell(this, "_internalRoot", true)`, and a
-  default's borrow of the field is checked, `$borrow(..)`, as the cell's
-  field is lent by that method (ADR 0863's quiet fields count it lent).
-  Reading `this._internalRoot` as the class's inherent methods do needs
-  the field's borrows counted through the defaults that read it in place:
-  a follow-up.
+- ~~Not yet upstream's: the impl's `internal_root` stays a prototype
+  method, a cell's handle, and a default's borrow of the field is
+  checked.~~ Done by ADR 1038: the method is the field, read in place,
+  `this._internalRoot`, its borrows the field's own.
 - Held by `test/classes-traits.test.ts`: the shared and own methods, a
   call, rest arguments, the `.d.ts`, run in JS; each refusal. The corpus's
   `class_trait_methods`, against native Rust. Mutations

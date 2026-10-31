@@ -798,15 +798,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let class_default = (body.mir.as_ref())
             .filter(|_| crate::lower::classes::is_class_trait(self.tcx, self.tcx.parent(id)))
             .map(|mir| {
-                let tcx = self.tcx;
-                let bodies = &self.krate.bodies;
-                mir.instantiated(tcx, args).fields_read(tcx, &|callee, generic_args| {
-                    let instance =
-                        ty::Instance::try_resolve(tcx, ty::TypingEnv::fully_monomorphized(), callee, generic_args)
-                            .ok()??;
-                    crate::lower::classes::trait_member_class(tcx, instance.def_id())?;
-                    bodies.get(&instance.def_id())?.mir.as_ref()?.field_given()
-                })
+                let mut mir = mir.instantiated(self.tcx, args);
+                mir.read_fields(self.tcx, ty::TypingEnv::fully_monomorphized());
+                mir
             });
         let ((signature, used), hoisted) = self.lowered_in(body, id, nested, |cx| {
             let signature = match class_default.as_ref().or(body.mir.as_ref()) {

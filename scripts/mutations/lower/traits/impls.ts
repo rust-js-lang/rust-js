@@ -585,9 +585,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a trait default on a class's prototype calls the method that gives a field, `this.counter().value`, not the field (rd283)",
     file: "src/lower/traits/impls.rs",
-    find: "                    bodies.get(&instance.def_id())?.mir.as_ref()?.field_given()\n",
-    replace:
-      "                    bodies.get(&instance.def_id())?.mir.as_ref()?.field_given().filter(|_| false)\n",
+    find: "                mir.read_fields(self.tcx, ty::TypingEnv::fully_monomorphized());\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^class_trait_methods.rs$"],
     snapshots: true,
   },

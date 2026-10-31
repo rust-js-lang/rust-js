@@ -111,6 +111,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 continue;
             }
             for &item in self.tcx.associated_item_def_ids(trait_id) {
+                // One its impl gives a field with is that field (rd304).
+                let given = self.tcx.impl_item_implementor_ids(imp).get(&item).copied();
+                if given.is_some_and(|own| crate::lower::classes::field_accessor(self.tcx, own).is_some()) {
+                    continue;
+                }
                 let function = self.function(item);
                 let mut params = function["params"].as_array().cloned().unwrap_or_default();
                 if !params.is_empty() {
