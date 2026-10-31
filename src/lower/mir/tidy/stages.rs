@@ -120,7 +120,8 @@ pub(super) const STAGES: &[Stage] = &[
             // assigned each time, read by nothing else.
             pass("loops", |b, h| {
                 let mut taken = mentions(b);
-                bottom_up(b, &mut |stmts| loops(stmts, &mut taken, h.numbers));
+                let captured = bindings::captured(b);
+                bottom_up(b, &mut |stmts| loops(stmts, &mut taken, h.numbers, &captured));
                 loop_bound_lets(b);
             }),
             // What the program wrote after a loop, MIR moved into its way out.
@@ -1014,9 +1015,10 @@ fn branch_values_of(body: &mut Vec<Stmt>, hints: &Hints) {
 fn looped_drops_of_made(body: &mut Vec<Stmt>, hints: &Hints, for_made: bool) -> bool {
     let mut looped = false;
     let mut taken = mentions(body);
+    let captured = bindings::captured(body);
     let mut tidied = |run: &mut Vec<Stmt>| {
         bindings::declarations(run);
-        bottom_up(run, &mut |stmts| loops(stmts, &mut taken, hints.numbers));
+        bottom_up(run, &mut |stmts| loops(stmts, &mut taken, hints.numbers, &captured));
     };
     js::statement_lists(body, &mut |stmts| {
         looped |= unwinds::looped_drops(stmts, for_made, &mut tidied)

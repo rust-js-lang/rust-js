@@ -10,12 +10,17 @@ use super::*;
 /// reads the iterator, and only its end leaves the loop. MIR's other shape,
 /// `if (t != null) { const x = t; body } exit`, is `for (const x of xs) {
 /// body; break; } exit`, its body going on to the exit where it ends.
-pub(super) fn loops(stmts: &mut Vec<Stmt>, mentions: &mut HashMap<String, usize>, numbers: &HashSet<String>) {
+pub(super) fn loops(
+    stmts: &mut Vec<Stmt>,
+    mentions: &mut HashMap<String, usize>,
+    numbers: &HashSet<String>,
+    captured: &HashSet<String>,
+) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         // A range whose end is held first, in a `try` of its own: its
         // statements before the loop's.
-        let held = held_end(&stmts[i], mentions)
+        let held = held_end(&stmts[i], mentions, captured)
             .and_then(|(held, range)| Some((held, for_of(&range, &stmts[i + 1], &stmts[i + 2..], mentions, numbers)?)));
         let (held, made) = match held {
             Some((held, made)) => (held, Some(made)),
@@ -46,9 +51,11 @@ pub(super) fn loops(stmts: &mut Vec<Stmt>, mentions: &mut HashMap<String, usize>
 /// end held first in that `try`, `let end; try { end = id(n); } catch ..`,
 /// and the range of it, `iter = { start: 0, end }`, which `for_of` makes a
 /// `for (let k = 0; k < end; k++)` of. The statements that hold it, and the
-/// range. Of a constant start, which reads the same after the end as
-/// before, where Rust reads it.
-fn held_end(stmt: &Stmt, mentions: &HashMap<String, usize>) -> Option<(Vec<Stmt>, Stmt)> {
+/// range. Of a start that reads the same after the end as before, where
+/// Rust reads it: a constant, or a variable nothing the end runs can set,
+/// one no closure, function or `&mut`'s handle of the body names
+/// (`captured`).
+fn held_end(stmt: &Stmt, mentions: &HashMap<String, usize>, captured: &HashSet<String>) -> Option<(Vec<Stmt>, Stmt)> {
     let StmtKind::TryCatch(body, error, handler) = &stmt.kind else {
         return None;
     };
@@ -65,7 +72,8 @@ fn held_end(stmt: &Stmt, mentions: &HashMap<String, usize>) -> Option<(Vec<Stmt>
     let [js::Prop::Field(start_key, start), js::Prop::Field(end_key, end)] = props.as_mut_slice() else {
         return None;
     };
-    if start_key != "start" || end_key != "end" || !start.is_constant() || !end.has_effects() {
+    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(v) if !captured.contains(v));
+    if start_key != "start" || end_key != "end" || !same || !end.has_effects() {
         return None;
     }
     let name = std::iter::once("end".to_string())

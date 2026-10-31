@@ -239,3 +239,20 @@ no `try` of its own either. No observable difference (ADR 0262, case A).
 Held by the corpus case `drop_reassigned_in_inner_loop`, run against
 native Rust, and the mutations `held-range-end-kept`,
 `held-range-end-named-end` and `inclusive-range-step-may-throw`.
+
+## Amendment: a held end beside a variable start
+
+`for k in s..id(n)` where a value is held whose drop runs if `id(n)`
+panics kept MIR's `try { iter = { start: s, end: id(n) }; } catch ..`
+and `while ((k = $rangeNext(iter)) != null)`, as the held end above was of
+a constant start only. A variable's reads the same after the end as
+before where nothing the end runs can set it: one no closure, function or
+`&mut`'s handle of the body names (`tidy::bindings::captured`), JS's only
+ways for a call to set a variable of the caller's. Such a start is held
+beside the end too, `let end; try { end = id(n); } catch ..` then `for
+(let k = s; k < end; k++)`; one a closure may set, `let mut bump = || s
++= 1;`, keeps MIR's range, read where Rust reads it. No observable
+difference (ADR 0262, case N). Held by the corpus case
+`drop_reassigned_in_inner_loop` (`from_start`, an empty range too;
+`from_bumped`) and the mutations `held-end-of-captured-start` and
+`held-end-of-variable-start-unmade` (`mir/tidy/loops.ts`).

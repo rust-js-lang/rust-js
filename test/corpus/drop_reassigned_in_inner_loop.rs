@@ -62,10 +62,37 @@ fn beside_an_end(n: u32) -> u32 {
     sum + end
 }
 
+// Its start a variable: the end held first too, the start read after it,
+// as nothing the end runs can set it; one a closure sets keeps MIR's range.
+fn from_start(s: u32, n: u32) -> u32 {
+    let mut d = D(id(5u32));
+    let mut sum = 0;
+    for k in s..id(n) {
+        d = D(id(k));
+        sum += k + d.0;
+    }
+    sum
+}
+
+fn from_bumped(n: u32) -> u32 {
+    let mut d = D(id(5u32));
+    let mut s = 1;
+    let mut bump = || s += 1;
+    bump();
+    let mut sum = 0;
+    for k in s..id(n) {
+        d = D(id(k));
+        sum += k + d.0;
+    }
+    sum
+}
+
 fn main() {
     println!("{}", fixed());
     generated();
     println!("{}", nested(3));
     println!("{}", nested(0));
     println!("{}", beside_an_end(4));
+    println!("{} {}", from_start(2, 5), from_start(6, 5));
+    println!("{}", from_bumped(4));
 }

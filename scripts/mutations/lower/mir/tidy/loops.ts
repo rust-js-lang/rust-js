@@ -560,7 +560,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a range whose end is a call that may panic, made in a `try` of its own, stays `while ((k = $rangeNext(iter)) != null)`, not `let end; try { end = id(n); } catch ..` then `for (let k = 0; k < end; k++)`",
     file: "src/lower/mir/tidy/loops.rs",
-    find: '    if start_key != "start" || end_key != "end" || !start.is_constant() || !end.has_effects() {\n',
+    find: '    if start_key != "start" || end_key != "end" || !same || !end.has_effects() {\n',
     replace: "    if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_reassigned_in_inner_loop.rs$"],
     snapshots: true,
@@ -574,6 +574,26 @@ export const mutations: Mutation[] = [
     replace:
       '        .find(|_| true)\n        .expect("a name");\n    let read = ',
     tests: ["test/corpus.test.ts", "-t", "^drop_reassigned_in_inner_loop.rs$"],
+  },
+  {
+    name: "held-end-of-captured-start",
+    breaks:
+      "a range's start a closure may set is read after its end's call, `for (let k = s; k < end; k++)` once `end = id(n)` has run, where Rust read it before",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(v) if !captured.contains(v));\n",
+    replace: "    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(_));\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_reassigned_in_inner_loop.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "held-end-of-variable-start-unmade",
+    breaks:
+      "a range's end that may throw, its start a variable, stays MIR's `try { iter = { start: s, end: id(n) }; } catch ..` and `while ((k = $rangeNext(iter)) != null)`",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(v) if !captured.contains(v));\n",
+    replace: "    let same = start.is_constant();\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_reassigned_in_inner_loop.rs$"],
+    snapshots: true,
   },
   {
     name: "range-from-loop-unmade",
