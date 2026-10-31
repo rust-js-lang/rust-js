@@ -246,6 +246,11 @@ refused, as its JS would read `Some(None)` as `None`.
 (`classes::names_namespace`, of the MIR: the unit struct's constant,
 through what holds it, or the namespace's own method's `self`), which
 both the lowering and which library functions the crate compiles read.
+The lowering's own reading of the receiver's JS, an item's fact or the
+`undefined` of its own method's `self`, is gone; a call no MIR gives, a
+method's as a `fn`, `(a, b) => a.updateContainer(b)`, is of its
+parameter, a value (mutations `namespace-fn-shim-by-name` and
+`namespace-value-called-by-name`, `mir/calls.ts`).
 
 Held by `test/namespaces.test.ts`'s "a library's namespace method
 through a value is its library's, exact where its result is flattened"

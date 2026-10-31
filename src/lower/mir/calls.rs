@@ -459,13 +459,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
         let mut exprs = self.boxed_args(state, (def_id, generic_args), values, span, out)?;
-        // A namespace's method called in one of its own on its `self`, its
-        // module's: by its name, as on the namespace named (ADR 1037).
-        if let Some(receiver) = exprs.first_mut()
-            && super::queries::namespace_self(self.tcx, state, def_id, receiver)
-        {
-            *receiver = Expr::undefined();
-        }
         // A callback it calls once, `impl FnOnce(A0, A1) -> T`, an arrow that
         // only passes on what it's given: the function it passes on to,
         // React's `runWithFiberInDEV(fiber, commitCallbacks, queue, instance)`,
@@ -560,14 +553,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> Expr {
         // A namespace's method (ADR 1037): through the value it's called on,
         // `NoopRenderer.createContainer(..)`, one JS may have made of
-        // another instance of its module; of the namespace named, the item
-        // (`namespace_value`), or `undefined`, its own method's `self` left
-        // out, the function itself, `createContainer(..)`.
+        // another instance of its module; of the namespace named, or its own
+        // method's `self` (`classes::names_namespace`), its `self` left out,
+        // the function itself, `createContainer(..)`. One whose MIR no call
+        // gives, a method's as a `fn`, `(a, b) => a.updateContainer(b)`, is
+        // of its parameter, a value.
         if crate::lower::classes::member(self.tcx, def_id) == Some(crate::lower::classes::Member::Namespace)
             && !args.is_empty()
         {
+            let (by_name, flattened) = receiver_named.unwrap_or((false, false));
             let receiver = args.remove(0);
-            let (by_name, flattened) = receiver_named.unwrap_or_else(|| (namespace_named(&receiver), false));
             if !by_name {
                 // Of a copy its call needs, the value's function, the
                 // module's own JS, only where that copy is alike it
@@ -1404,16 +1399,5 @@ fn refs(ty: Ty<'_>) -> usize {
     match *ty.kind() {
         ty::Ref(_, inner, _) => 1 + refs(inner),
         _ => 0,
-    }
-}
-
-/// Whether `receiver`, of a namespace's method's call, is the namespace as
-/// Rust names it, the item (`FnCx::namespace_value`), or its own method's
-/// `self`, `undefined`: the function itself, not the value's (ADR 1037).
-fn namespace_named(receiver: &Expr) -> bool {
-    match &receiver.kind {
-        js::ExprKind::Undefined => true,
-        js::ExprKind::Symbol(_) | js::ExprKind::Var(_) => receiver.facts.has(js::Known::Item),
-        _ => false,
     }
 }

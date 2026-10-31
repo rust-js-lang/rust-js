@@ -1047,47 +1047,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "namespace-value-called-by-name",
-    breaks:
-      "a namespace's method called through a value JS gives, another instance of the module, calls the module's own function, `createContainer(4)` (ADR 1037)",
-    file: "src/lower/mir/calls.rs",
-    find: "        js::ExprKind::Symbol(_) | js::ExprKind::Var(_) => receiver.facts.has(js::Known::Item),\n",
-    replace:
-      "        js::ExprKind::Symbol(_) | js::ExprKind::Var(_) => true,\n",
-    tests: [
-      "test/namespaces.test.ts",
-      "-t",
-      "a namespace's methods are its module's functions",
-    ],
-  },
-  {
-    name: "namespace-named-called-through",
-    breaks:
-      "a namespace's method called on the namespace named, `Reconciler.create_container(3)`, is `Reconciler.createContainer(3)`, not React DOM's `createContainer(3)` (ADR 1037)",
-    file: "src/lower/mir/calls.rs",
-    find: "        js::ExprKind::Symbol(_) | js::ExprKind::Var(_) => receiver.facts.has(js::Known::Item),\n",
-    replace:
-      "        js::ExprKind::Symbol(_) | js::ExprKind::Var(_) => false,\n",
-    tests: [
-      "test/namespaces.test.ts",
-      "-t",
-      "a namespace's methods are its module's functions",
-    ],
-  },
-  {
-    name: "namespace-own-self-kept",
-    breaks:
-      "a namespace's method calling another on its `self` reads the `self` it has none of, refused (ADR 1037)",
-    file: "src/lower/mir/calls.rs",
-    find: "            *receiver = Expr::undefined();\n",
-    replace: "            let _ = receiver;\n",
-    tests: [
-      "test/namespaces.test.ts",
-      "-t",
-      "a namespace's methods are its module's functions",
-    ],
-  },
-  {
     name: "forwarded-called-in-its-module-by-its-name",
     breaks:
       "a namespace's own module calls its method that's another module's function by the method's name, which that module re-exports but doesn't declare (rd292b)",
@@ -1113,5 +1072,23 @@ export const mutations: Mutation[] = [
     find: "        copied.js.is_subset(&own.js)\n",
     replace: "        copied.js == own.js\n",
     tests: ["test/namespaces.test.ts", "-t", "unlike its own JS"],
+  },
+  {
+    name: "namespace-fn-shim-by-name",
+    breaks:
+      "a namespace's method as a `fn`, whose `self` is its parameter, calls the module's own function, `(a, b) => updateContainer(a, b)`, not `a.updateContainer(b)` (ADR 1037)",
+    file: "src/lower/mir/calls.rs",
+    find: "            let (by_name, flattened) = receiver_named.unwrap_or((false, false));\n",
+    replace: "            let (by_name, flattened) = receiver_named.unwrap_or((true, false));\n",
+    tests: ["test/namespaces.test.ts", "-t", "a namespace's methods are its module's functions"],
+  },
+  {
+    name: "namespace-value-called-by-name",
+    breaks:
+      "a namespace's method called through a value JS gives, another instance of the module, calls the module's own function, `createContainer(4)` (ADR 1037)",
+    file: "src/lower/mir/calls.rs",
+    find: "            if !by_name {\n",
+    replace: "            if false {\n",
+    tests: ["test/namespaces.test.ts", "-t", "a namespace's methods are its module's functions"],
   },
 ];

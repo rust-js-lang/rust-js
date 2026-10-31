@@ -638,7 +638,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/dispatch.rs",
     find: "            true => (operands.iter())\n",
     replace: "            true => Vec::new().into_iter()\n",
-    tests: ["test/js-object.test.ts", "-t", "Object's statics are JS's"],
+    tests: ["test/lowering-nullable.test.ts", "-t", "a nullable Cell field's None is null where it's made"],
   },
   {
     name: "thrown-given-tested",
