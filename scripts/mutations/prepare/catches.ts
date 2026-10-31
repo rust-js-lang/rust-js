@@ -441,4 +441,20 @@ export const mutations: Mutation[] = [
     replace: "        return Some((vec![caught(vec![held.at(span)])], taken));\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "catch_unwind closure's value"],
   },
+  {
+    name: "unwind-try-at-ok-arm",
+    breaks: "a `try` of a `match` of `catch_unwind` is where its `Ok` arm is, so the comments above the `match` are in the `try` (rd156)",
+    file: "src/prepare/catches.rs",
+    find: "    let span = match value.span.is_none() || (!made.span.is_none() && made.span.lo <= value.span.lo) {\n",
+    replace: "    let span = match true {\n",
+    tests: ["test/lowering-unwind-arms.test.ts", "-t", "comments around a match of catch_unwind"],
+  },
+  {
+    name: "unwind-comment-only-err-after",
+    breaks: "an `Err` arm of only comments is after the `try`, not the `catch`'s (rd156)",
+    file: "src/prepare/catches.rs",
+    find: "        (true, None) if leaves(then) && rest.first().is_some_and(|s| matches!(s.kind, StmtKind::Comments)) => {\n",
+    replace: "        (true, None) if false => {\n",
+    tests: ["test/lowering-unwind-arms.test.ts", "-t", "comments around a match of catch_unwind"],
+  },
 ];

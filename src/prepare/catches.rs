@@ -403,6 +403,13 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
         // and what's after it after the `try`, which runs where the call
         // threw as it ran after the `match` (ADR 0637, amended).
         (true, None) if let Some(n) = caught_run(result, rest) => (then, &rest[..n], n),
+        // An `Err` arm of only comments, `Err(_) => { // .. }`, whose block
+        // MIR's `else` held, tidy put after the `if` (ADR 0753): the
+        // `catch`'s, as commitMount's `} catch (x) { // If
+        // URL.createObjectURL() errors .. }` (rd156).
+        (true, None) if leaves(then) && rest.first().is_some_and(|s| matches!(s.kind, StmtKind::Comments)) => {
+            (then, &rest[..1], 1)
+        }
         (true, None) => (then, &[], 0),
     };
     let after = &rest[taken..];
@@ -494,7 +501,17 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
         }
         false => err,
     };
-    let span = made.span;
+    // Where the `match` is, of what's written first of it, the call it
+    // tests, `catch_unwind(..)`, not where its `Ok` arm is, which a
+    // temporary MIR made has: the comments above the `match` are above the
+    // `try` (rd156).
+    let span = match value.span.is_none() || (!made.span.is_none() && made.span.lo <= value.span.lo) {
+        true => made.span,
+        false => js::Span {
+            lo: value.span.lo,
+            hi: made.span.hi.max(value.span.hi),
+        },
+    };
     // What unwound is the payload `$unwound` makes of what was thrown: the
     // `Err`'s binding, of the `catch`'s, `thrown` (ADR 0660).
     let (binding, in_catch) = match (caught, &error) {

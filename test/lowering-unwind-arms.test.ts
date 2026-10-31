@@ -201,3 +201,54 @@ export function probe(n) { log.push(n); if (n > 2) throw new Error("no"); }
   // Not called where what's asked first is false.
   expect(host.log).toEqual([1, 3]);
 });
+
+// React DOM's commitMount: `// For object src, .. \n try { setSrcObject(..);
+// return; } catch (x) { // If URL.createObjectURL() errors, .. }`. The
+// comments above the `match` are above the `try`, one in the closure is in
+// it, and an `Err` arm of only comments is the `catch`'s (rd156).
+test("comments around a match of catch_unwind are where they're written", async () => {
+  const { js, dir } = compiled(
+    "unwind-arm-comments",
+    `use std::panic::{AssertUnwindSafe, catch_unwind};
+
+fn risky(n: i32) {
+    if n > 2 {
+        panic!("big");
+    }
+}
+
+pub fn mount(n: i32, out: &mut Vec<i32>) {
+    if n > 0 {
+        // Try the fast way first.
+        match catch_unwind(AssertUnwindSafe(|| {
+            // In the try.
+            risky(n)
+        })) {
+            Ok(()) => return,
+            Err(_) => {
+                // It threw: fall through to the normal
+                // path.
+            }
+        }
+        out.push(n);
+    }
+}
+`,
+  );
+  expect(js).toContain(`  if (n > 0) {
+    // Try the fast way first.
+    try {
+      // In the try.
+      risky(n);
+      return;
+    } catch {
+      // It threw: fall through to the normal
+      // path.
+    }
+    out.push(n);
+  }`);
+  const lib = await import(join(dir, "lib.js"));
+  const out: number[] = [];
+  for (const n of [1, 5, 0]) lib.mount(n, out);
+  expect(out).toEqual([5]);
+});

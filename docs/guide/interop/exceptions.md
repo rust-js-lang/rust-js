@@ -785,6 +785,9 @@ export function described(value) {
   A `return` inside the closure, in a loop, is the function's own where
   the `try` ends the function, as nothing runs after it but its
   `finally` ([ADR 0660](../../decisions/0660-catch-unwind-catches-what-js-throws.md#amended-2026-10-25-a-return-in-the-closure-of-a-try-that-ends-the-function)).
+  A comment above the `match` is above the `try`, and an `Err` arm of
+  only comments, `Err(_) => { // .. }`, is the `catch`'s, `} catch { //
+  .. }`, as React DOM's commitMount writes them (ADR 0660, amended).
 - **A flag the closure gives to return from its function is the `try` it
   returns from**: a closure can't return from its function, so the flag
   comes out, `if let Ok(true) = r { return false; }`; that's `try { ..;

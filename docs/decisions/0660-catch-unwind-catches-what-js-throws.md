@@ -430,3 +430,22 @@ lines, by `tried_loop_jumps.rs`'s `kept`: the `return;` its closure
 writes, inside the closure that stays where the loop has no label. It's
 the program's own `return`, as it writes it; the closure around it is
 what the user's decision keeps, no label the program didn't write.
+
+## Amended (2026-10-31): the comments around a `match` of it (rd156)
+
+React DOM's commitMount writes `// For object src, .. // TODO: ..` above
+`try { setSrcObject(domElement, type, src); return; } catch (x) { // If
+URL.createObjectURL() errors, .. }`. Its port's `match catch_unwind(..) {
+Ok(()) => return, Err(_) => { // If .. } }` printed the comments above
+the `match` inside the `try`, before the call, and the `Err` arm's after
+the `catch {}`. The `try` was where the `Result`'s temporary is, which MIR
+gives its `Ok` arm's place, past the call; it's now where the call to
+`catch_unwind` is, where the `match` is written, so what's above the
+`match` is above the `try`, and a comment in the closure, before what it
+calls, still in it (ADR 0444, amended). And an `Err` arm of only
+comments, the comment-only block tidy puts after the `if` of an `Ok` arm
+that leaves (ADR 0753), is the `catch`'s: `} catch { // If .. }`. Case
+([0262](0262-when-rust-and-js-disagree.md)): N, comments' places. Held by
+`test/lowering-unwind-arms.test.ts`' "comments around a match of
+catch_unwind are where they're written", run in JS, and the mutations
+`unwind-try-at-ok-arm` and `unwind-comment-only-err-after`.
