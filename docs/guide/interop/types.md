@@ -791,6 +791,11 @@ export function size(input) {
   tested as that kind. A `match` of three cases or more of kinds `typeof`
   tells is a `switch (typeof value)`, as a `match` of constants is a
   `switch` ([ADR 0668](../../decisions/0668-a-match-of-what-a-value-is-is-a-switch-of-its-typeof.md)).
+  A `match` whose arms are alike in JS, each calling its member's method
+  of the same name, is that one call, no test: an `IntersectionObserver |
+  ResizeObserver`'s `Observer::Intersection(o) => o.observe(child),
+  Observer::Resize(o) => o.observe(child, None)` is `observer.observe(child)`
+  ([ADR 1032](../../decisions/1032-an-if-whose-branches-are-alike-is-its-branch.md)).
   A `&mut` to one is a place, as a `&mut f64` is: `*r = v` writes where
   the value is, as no payload can become another's in place
   ([ADR 0214](../../decisions/0214-untagged-enums.md)).

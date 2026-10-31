@@ -1347,3 +1347,70 @@ pub fn fiber(tag: u8, parent: Option<Rc<Fiber>>) -> Rc<Fiber> {
   lib.skip(lib.fiber(0, null), log);
   expect(log).toEqual([1, 1, 1, 1, 2, 2, 3, 3]);
 });
+
+// React port gap rd238: FragmentInstance's observers are `IntersectionObserver
+// | ResizeObserver`, an untagged enum, each arm calling its member's method.
+// Its arms alike in JS, the `match` is the one call upstream writes, and its
+// test, which reads a global a host may lack, goes; a test that does
+// something stays.
+test("a match of an untagged enum whose arms are alike in JS is the one call", async () => {
+  const withWeb = ["--", "--edition", "2024", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-alike-arms");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{Element, IntersectionObserver, ResizeObserver};
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
+pub enum Observer {
+    Intersection(&'static IntersectionObserver),
+    Resize(&'static ResizeObserver),
+}
+
+pub fn observe_all(observers: &[Observer], child: &Element) {
+    for observer in observers {
+        match observer {
+            Observer::Intersection(observer) => observer.observe(child),
+            Observer::Resize(observer) => observer.observe(child, None),
+        }
+    }
+}
+
+pub fn disconnected(observer: Observer, ready: fn() -> bool) {
+    #[allow(clippy::if_same_then_else)]
+    if ready() { observer_disconnect(observer) } else { observer_disconnect(observer) }
+}
+
+fn observer_disconnect(observer: Observer) {
+    match observer {
+        Observer::Intersection(observer) => observer.disconnect(),
+        Observer::Resize(observer) => observer.disconnect(),
+    }
+}
+
+pub fn watched(observers: &[Observer], child: &Element) {
+    for observer in observers {
+        match observer {
+            Observer::Intersection(observer) => observer.observe(child),
+            Observer::Resize(observer) => {
+                observer.observe(child, None);
+                observer.disconnect();
+            }
+        }
+        observe_all(observers, child);
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  for (const observer of observers) {\n    observer.observe(child);\n  }\n");
+  expect(js).toContain("function observerDisconnect(observer) {\n  observer.disconnect();\n}");
+  expect(js).toContain("if (ready()) {");
+  // Arms alike only in part keep their test.
+  expect(js.match(/instanceof/g)).toEqual(["instanceof"]);
+  const lib = await import(join(dir, "lib.js"));
+  const seen: string[] = [];
+  const observer = (name: string) => ({ observe: (child: string) => void seen.push(`${name} ${child}`), disconnect: () => void seen.push(`${name} off`) });
+  lib.observeAll([observer("a"), observer("b")], "c");
+  let asked = 0;
+  lib.disconnected(observer("d"), () => ++asked > 0);
+  expect([seen, asked]).toEqual([["a c", "b c", "d off"], 1]);
+});

@@ -777,6 +777,34 @@ fn same_body(a: &[&Stmt], b: &[&Stmt]) -> bool {
     a.len() == b.len() && a.iter().zip(b).all(|(x, y)| std::ptr::eq(*x, *y) || same_stmt(x, y))
 }
 
+/// An `if` whose two branches are alike whole, of a test that does
+/// nothing: the branch alone, as the test decides nothing. Rust's types
+/// make them two, a `match` of an untagged enum each arm of which calls its
+/// member's method, `observer.observe(child)` of an `IntersectionObserver |
+/// ResizeObserver` (rd238); JS's call is one, as upstream's is. A program
+/// writes no other: clippy's `if_same_then_else` says so of an `if`, and a
+/// `match`'s arms of one type are one, `A(o) | B(o)`.
+pub(super) fn alike_whole(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        if let StmtKind::If(test, then, Some(otherwise)) = &stmts[i].kind
+            && !then.is_empty()
+            && then.len() == otherwise.len()
+            && then.iter().zip(otherwise).all(|(a, b)| same_stmt(a, b))
+            && !test.has_effects()
+        {
+            let StmtKind::If(_, then, _) = std::mem::replace(&mut stmts[i].kind, StmtKind::Break(None)) else {
+                unreachable!("matched")
+            };
+            let taken = then.len();
+            stmts.splice(i..i + 1, then);
+            i += taken;
+            continue;
+        }
+        i += 1;
+    }
+}
+
 /// Whether `a` and `b` do the same: written alike, each part.
 pub(super) fn same_stmt(a: &Stmt, b: &Stmt) -> bool {
     match (&a.kind, &b.kind) {

@@ -236,4 +236,28 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^default_value_exits.rs$"],
     snapshots: true,
   },
+  {
+    name: "alike-whole-kept",
+    breaks: "a `match` of an untagged enum whose arms are alike in JS keeps its test, `observer instanceof IntersectionObserver`, which throws where the host has none, around the one call (rd238, ADR 1032)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "            && then.iter().zip(otherwise).all(|(a, b)| same_stmt(a, b))\n            && !test.has_effects()\n",
+    replace: "            && then.iter().zip(otherwise).all(|(a, b)| same_stmt(a, b))\n            && !test.has_effects()\n            && false\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "arms are alike"],
+  },
+  {
+    name: "alike-whole-test-dropped",
+    breaks: "an `if` whose branches are alike drops a test that does something, `ready()` of `if (ready()) { f(); } else { f(); }` (ADR 1032)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "            && then.iter().zip(otherwise).all(|(a, b)| same_stmt(a, b))\n            && !test.has_effects()\n",
+    replace: "            && then.iter().zip(otherwise).all(|(a, b)| same_stmt(a, b))\n",
+    tests: ["test/lowering-switches.test.ts", "-t", "arms are alike"],
+  },
+  {
+    name: "alike-whole-first-statement",
+    breaks: "branches alike in their first statement alone are taken for alike whole (ADR 1032)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "            && then.len() == otherwise.len()\n            && then.iter().zip(otherwise)",
+    replace: "            && then.iter().zip(otherwise)",
+    tests: ["test/lowering-switches.test.ts", "-t", "arms are alike"],
+  },
 ];

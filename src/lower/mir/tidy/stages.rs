@@ -436,6 +436,10 @@ pub(super) const STAGES: &[Stage] = &[
             pass("written elses", |b, h| {
                 js::statement_lists(b, &mut |s| written_elses(s, h.written, h.returns))
             }),
+            // An `if` whose branches are alike whole, the arms of a `match`
+            // of an untagged enum each calling its member's method: the
+            // branch alone (rd238).
+            pass("alike branches", |b, _| bottom_up(b, &mut decisions::alike_whole)),
             // And one it wrote without an `else`, its body in it, of a body
             // too that goes on to the function's end, the `return;` `returns
             // past blocks` gave it (ADR 0879, amended).
