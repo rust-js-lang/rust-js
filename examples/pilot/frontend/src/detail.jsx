@@ -13,7 +13,9 @@ export function ContactPage({ id }) {
     setLoaded("Loading");
     (async () => {
       const value = await Api.contact(id, signal);
-      if (value.TAG === "Err") {
+      if (value.TAG === "Ok") {
+        setLoaded({ TAG: "Contact", _0: value._0 });
+      } else {
         if (value._0 === "Aborted") {
           return;
         }
@@ -22,8 +24,6 @@ export function ContactPage({ id }) {
           return;
         }
         setLoaded({ TAG: "Failed", _0: Failure.message(value._0) });
-      } else {
-        setLoaded({ TAG: "Contact", _0: value._0 });
       }
     })();
     return () => controller.abort();

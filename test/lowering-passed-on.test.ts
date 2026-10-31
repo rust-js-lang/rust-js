@@ -399,6 +399,16 @@ pub fn render_held() -> u32 {
     render(component)
 }
 
+pub fn first(a: u32) -> u32 {
+    a * 10
+}
+
+// One that adapts what it's given, not the function where it's made (ADR
+// 0605's eta rule is a namespace's only), is where it's lent.
+pub fn render_first() -> u32 {
+    render(&|a, _| first(a))
+}
+
 pub fn owned_apart() -> bool {
     let a: Rc<Component> = Rc::new(|_, _| transition_aware_host_component());
     let b: Rc<Component> = Rc::new(|_, _| transition_aware_host_component());
@@ -411,7 +421,8 @@ pub fn owned_apart() -> bool {
   // Held by a `let`, the function where the variable is read (rd284).
   expect(js).toContain("export function renderHeld() {\n  return render(transitionAwareHostComponent);\n}");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.renderTransitionAware(), lib.renderHeld()]).toEqual([7, 7]);
+  expect(js).toContain("export function renderFirst() {\n  return render(first);\n}");
+  expect([lib.renderTransitionAware(), lib.renderHeld(), lib.renderFirst()]).toEqual([7, 7, 10]);
   expect(lib.ownedApart()).toBe(false);
 });
 

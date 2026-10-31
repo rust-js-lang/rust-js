@@ -16,7 +16,7 @@ export function ContactList() {
     setLoaded("Loading");
     (async () => {
       const value = await Api.contacts(query, signal);
-      if (value.TAG !== "Err") {
+      if (value.TAG === "Ok") {
         setLoaded({ TAG: "Contacts", _0: value._0 });
       } else if (value._0 !== "Aborted") {
         setLoaded({ TAG: "Failed", _0: Failure.message(value._0) });

@@ -47,7 +47,7 @@ export function NewContactForm() {
     setSending(true);
     (async () => {
       const value = await Api.create(new$);
-      if (value.TAG !== "Err") {
+      if (value.TAG === "Ok") {
         toast(`Added ${value._0.name}`);
         go(`#/contacts/${value._0.id}`);
       } else if (value._0.TAG === "Refused" && value._0._1.errors.length !== 0) {

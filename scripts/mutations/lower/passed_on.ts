@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/passed_on.rs",
     find: "            let fact = (forwarding.iter()).find(|fact| !f.span.is_none() && fact.span == f.span)?;\n",
     replace:
-      "            let fact = (forwarding.iter()).find(|fact| !f.span.is_none() && fact.span == f.span).copied().unwrap_or(Forwarding { span: f.span, callee: Callee::Own, adapts: true, item: false, binds: false, ignores: false });\n",
+      "            let fact = (forwarding.iter()).find(|fact| !f.span.is_none() && fact.span == f.span).copied().unwrap_or(Forwarding { span: f.span, callee: Callee::Own, adapts: true, item: false, binds: false, ignores: false, eta: false });\n",
     tests: ["test/corpus.test.ts", "-t", "^array_map.rs$"],
   },
   {
