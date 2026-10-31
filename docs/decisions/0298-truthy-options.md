@@ -19,6 +19,11 @@ one output form** (below, "One form: an `Option` is tested against
 **Amended by the user again (2026-10-28): the test says the `None` it can
 be, `=== undefined` or `=== null` where it's only one** (below, "A test
 says the `None` it can be").
+**Amended by the user (2026-10-31): an `Option<bool>` compared with
+`Some(true)` or `Some(false)`, or matched against one, is that value
+exactly, `o === true`** (below, "An `Option<bool>` compared with one is
+that value"); its truth stays where the program asks for its truth,
+`unwrap_or(false)` and `is_some_and(|&w| w)`.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -572,3 +577,41 @@ React's `owner ? getComponentNameFromOwner(owner) : null`. Held by
 optional chain" (run, with `None` given as `null` and as `undefined`) and
 the mutation `and-then-binding-null`.
 
+## Amendment (2026-10-31, the user's decision): an `Option<bool>` compared with one is that value
+
+React's createRoot tests `options.unstable_strictMode === true`, and the
+port's `options.unstable_strict_mode == Some(true)` printed `!!o`, a
+test of its truth, `if (o)`: a JS caller's `unstable_strictMode: 1` was
+strict where upstream's isn't. The user decided: **an explicit `o ==
+Some(true)` or `o == Some(false)`, `!=` too, of an `Option<bool>` is
+`o === true` or `o === false`, and so is a pattern of one, `if let
+Some(true) = o`, `matches!(o, Some(false))` and a `match`'s arm, `o ===
+true`.** The forms that ask for its truth keep it: `o.unwrap_or(false)`
+is `o` in a test, `is_some_and(|&w| w)` `!!o`. Case
+([0262](0262-when-rust-and-js-disagree.md)): none for Rust's values,
+whose `Some(true)` is `true` and nothing else; a JS caller's value is
+read as upstream reads it, exactly where the program compares.
+
+- **`==` and `!=`** (`std_impls.rs`, of `Option<bool>`'s `PartialEq`):
+  `o === true`, `o !== false`.
+- **A pattern** (`mir/structure.rs::switch_test`, of the place an
+  `Option<bool>`'s `Some`'s value is, `body_queries::pattern_places`):
+  `o === false` where a pattern there writes `Some(false)`, else `o !==
+  true`; of a `Some(true)` written first, its branch's test is `o ===
+  true`. The test that it's there is then left out, as of any constant
+  (`x != null && x === true` is `x === true`). Which values the patterns
+  write is `ConstantPatterns`', which reads a `bool`'s now
+  (`body_queries::constant_patterns`, `tests`).
+
+Migrated: `test/lowering-options.test.ts`'s truthy-options (`f === true
+? 1 : 0`) and optional chain (`files[name]?.active === true`),
+`test/lowering-matches.test.ts`'s and `test/lowering-branches.test.ts`'s
+react.dev Console (`message.firstLoad === true`, as `first_load:
+Some(true)` asks), `test/lowering-drop-guards.test.ts` (its name, #444),
+the corpus's `option_bool_tested` and `option_constants_switch`, the
+playground's `report.ran === true`; `test/js-builtins.test.ts`'s
+iterator protocol and ADR 0860's example now ask for the truth,
+`step.done.unwrap_or(false)`, React's `!step.done`. Held by
+`test/corpus/option_bool_exact.rs` against native Rust and the
+mutations `option-bool-eq-truth`, `option-bool-pattern-truth`,
+`option-bool-false-unwritten` and `option-bool-true-unswapped`.

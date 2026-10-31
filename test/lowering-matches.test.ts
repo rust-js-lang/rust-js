@@ -696,7 +696,7 @@ pub fn listener(setLogs: &'static dyn Fn(Vec<String>)) -> Box<dyn Fn(&'static Sa
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain('    if ((message.type === "start" && message.firstLoad) || message.type === "refresh") {\n      setLogs([]);\n    }\n');
+  expect(js).toContain('    if ((message.type === "start" && message.firstLoad === true) || message.type === "refresh") {\n      setLogs([]);\n    }\n');
   expect(js).not.toContain("const value");
   const lib = await import(join(dir, "mir.js"));
   const set: string[][] = [];

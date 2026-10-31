@@ -913,7 +913,7 @@ pub fn tail(message: &Message, out: &mut Vec<u32>) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  const test = '  if ((message.TAG === "Start" && message.firstLoad) || message === "Refresh") {\n    out.push(1);\n  }\n';
+  const test = '  if ((message.TAG === "Start" && message.firstLoad === true) || message === "Refresh") {\n    out.push(1);\n  }\n';
   expect(js).toContain(`export function starts(message, out) {\n${test}  out.push(2);\n}`);
   expect(js).toContain(`export function tail(message, out) {\n${test}}`);
   const lib = await import(join(dir, "mir.js"));

@@ -1376,7 +1376,8 @@ pub fn thrown_again(node: &Node) {
 // `IteratorResult<T>`'s `done` is left out of a step that isn't the end, as
 // React's `mapIntoArray` steps what an iterable's `@@iterator` gives, one
 // with no `[Symbol.iterator]` of its own too; the loop that makes the step
-// its test reads, `while (!(step = iterator.next()).done)`; and a number's
+// its test reads, `while (!(step = iterator.next()).done)`, of its truth,
+// `step.done.unwrap_or(false)` (ADR 0298); and a number's
 // string in a radix, `index.toString(36)`.
 test("an iterator is stepped by its next, and a number written in a radix", async () => {
   const dir = fixture("js-iterator-protocol");
@@ -1387,7 +1388,7 @@ pub fn keys(iterator: &js::Iterator<Option<&'static Unknown>>, prefix: &str) -> 
     let mut ii = 0;
     loop {
         let step = iterator.next();
-        if step.done == Some(true) {
+        if step.done.unwrap_or(false) {
             break;
         }
         let child = step.value;
@@ -1400,7 +1401,7 @@ pub fn keys(iterator: &js::Iterator<Option<&'static Unknown>>, prefix: &str) -> 
 pub fn read(iterator: &js::Iterator<f64>) -> Vec<f64> {
     let mut read = Vec::new();
     let mut step = iterator.next();
-    while step.done != Some(true) {
+    while !step.done.unwrap_or(false) {
         read.push(step.value);
         step = iterator.next();
     }

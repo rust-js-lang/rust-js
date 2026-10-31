@@ -495,4 +495,34 @@ export const mutations: Mutation[] = [
     replace: "                        Value::Expr(e)\n",
     tests: ["test/corpus.test.ts", "-t", "^map_none_held_as_null.rs$"],
   },
+  {
+    name: "option-bool-pattern-truth",
+    breaks:
+      "an `Option<bool>`'s pattern `Some(true)` is its truth, `if (flag)`, not `flag === true` (ADR 0298, the user's decision)",
+    file: "src/lower/mir/structure.rs",
+    find: "                if ty.is_bool() && self.option_bool_payload(tested) {\n",
+    replace: "                if false && ty.is_bool() && self.option_bool_payload(tested) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_bool_exact.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "option-bool-false-unwritten",
+    breaks:
+      "an `Option<bool>`'s `matches!(o, Some(false))` is `o != null && o !== true`, not `o === false` (ADR 0298, the user's decision)",
+    file: "src/lower/mir/structure.rs",
+    find: "                        value != 0 || (self.frame.facts.constant_patterns).tests(self.tcx, &value_of, span, tested);\n",
+    replace: "                        value != 0;\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_bool_exact.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "option-bool-true-unswapped",
+    breaks:
+      "an `Option<bool>`'s `if let Some(true)` is `o !== false`, the negation of `Some(false)`'s test, not `o === true` (ADR 0298, the user's decision)",
+    file: "src/lower/mir/structure.rs",
+    find: "                            Expr::bin(Op::Eq, *payload, Expr::bool(true))\n",
+    replace: "                            Expr::bin(Op::Ne, *payload, Expr::bool(false))\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_bool_exact.rs$"],
+    snapshots: true,
+  },
 ];

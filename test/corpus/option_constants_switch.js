@@ -46,10 +46,10 @@ function apart(n) {
   return "none";
 }
 
-// Of a `bool`, which JS tests by its truth, `!b`, which `None` passes: its
-// test that it's there first.
+// Of a `bool`, its value exactly, `b === false`, which no `None` passes
+// (ADR 0298, the user's decision).
 function flag(b) {
-  return b != null && !b ? 1 : 0;
+  return b === false ? 1 : 0;
 }
 
 const ENABLE_A = false;

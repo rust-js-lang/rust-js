@@ -91,23 +91,49 @@ impl<'tcx> ConstantPatterns<'tcx> {
         at: Span,
         places: Option<&[(ty::Ty<'tcx>, Vec<PatternStep>)]>,
     ) -> Option<DefId> {
-        // Where the program writes it, of a macro's, `matches!`'s, its call.
-        let at = at.source_callsite();
-        let (_, matched, tested) = (self.matched.iter())
-            .filter(|(written, ..)| written.contains(at))
-            .min_by_key(|(written, ..)| written.hi() - written.lo())?;
-        let alike = |a: ty::Ty<'tcx>, b: ty::Ty<'tcx>| {
-            tcx.erase_and_anonymize_regions(a.peel_refs()) == tcx.erase_and_anonymize_regions(b.peel_refs())
-        };
-        let mut named = (tested.iter())
-            .filter(|(tested, path, _)| {
-                tested == value
-                    && places
-                        .is_none_or(|places| places.iter().any(|(ty, steps)| alike(*ty, *matched) && steps == path))
-            })
-            .map(|&(_, _, named)| named);
+        let mut named = self.written(tcx, value, at, places);
         let first = named.next()??;
         named.all(|named| named == Some(first)).then_some(first)
+    }
+
+    /// Whether a pattern of the `match` or `let` written around `at` tests
+    /// `value` at `places`, as `named` finds it: `Some(false)`'s `false`.
+    pub(in crate::lower) fn tests(
+        &self,
+        tcx: TyCtxt<'tcx>,
+        value: &PatternValue<'tcx>,
+        at: Span,
+        places: Option<&[(ty::Ty<'tcx>, Vec<PatternStep>)]>,
+    ) -> bool {
+        self.written(tcx, value, at, places).next().is_some()
+    }
+
+    /// Of each pattern of the `match` or `let` written around `at` that
+    /// tests `value` at `places`, the `const` it names it by, if one.
+    fn written<'s>(
+        &'s self,
+        tcx: TyCtxt<'tcx>,
+        value: &'s PatternValue<'tcx>,
+        at: Span,
+        places: Option<&'s [(ty::Ty<'tcx>, Vec<PatternStep>)]>,
+    ) -> impl Iterator<Item = Option<DefId>> + 's {
+        // Where the program writes it, of a macro's, `matches!`'s, its call.
+        let at = at.source_callsite();
+        let found = (self.matched.iter())
+            .filter(|(written, ..)| written.contains(at))
+            .min_by_key(|(written, ..)| written.hi() - written.lo());
+        let alike = move |a: ty::Ty<'tcx>, b: ty::Ty<'tcx>| {
+            tcx.erase_and_anonymize_regions(a.peel_refs()) == tcx.erase_and_anonymize_regions(b.peel_refs())
+        };
+        (found.into_iter()).flat_map(move |(_, matched, tested)| {
+            (tested.iter())
+                .filter(move |(tested, path, _)| {
+                    tested == value
+                        && places
+                            .is_none_or(|places| places.iter().any(|(ty, steps)| alike(*ty, *matched) && steps == path))
+                })
+                .map(|&(_, _, named)| named)
+        })
     }
 }
 
@@ -204,7 +230,7 @@ fn tested_constants<'tcx>(
 /// pattern is (`PatternValue`).
 pub(in crate::lower) fn pattern_value<'tcx>(tcx: TyCtxt<'tcx>, pat: &Pat<'tcx>) -> Option<PatternValue<'tcx>> {
     match &pat.kind {
-        PatKind::Constant { value } if pat.ty.is_integral() || pat.ty.is_char() => value
+        PatKind::Constant { value } if pat.ty.is_integral() || pat.ty.is_char() || pat.ty.is_bool() => value
             .valtree
             .try_to_leaf()
             .map(|leaf| PatternValue::Bits(pat.ty, leaf.to_bits_unchecked())),

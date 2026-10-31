@@ -355,7 +355,7 @@ pub fn dashed(file: Option<&Unknown>) -> bool {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return !file?.visible;");
   expect(js).toContain('return !files["/styles.css"]?.visible;');
-  expect(js).toContain("return !!files[name]?.active;");
+  expect(js).toContain("return files[name]?.active === true;");
   expect(js).toContain('counts[name] ??= code.split("\\n").length;');
   expect(js).toContain('return !!file?.["a-b"];');
   const { visible, dashed, styled, active, counted } = await import(join(dir, "lib.js"));
@@ -692,8 +692,8 @@ pub fn guarded() -> u32 {
 
 // ADR 0298, amended by the user: an Option is tested against null,
 // whatever it holds, an object's, a number's and a string's alike; `o ==
-// Some(true)` of an `Option<bool>`, the value's truth, is `o` in a test,
-// `if (message.firstLoad)`.
+// Some(true)` of an `Option<bool>` is that value exactly, `o === true` (the
+// user's decision).
 test("an Option of an object is tested against null, as of any value", async () => {
   const dir = fixture("truthy-options");
   writeFileSync(join(dir, "lib.rs"), `pub struct Failure {
@@ -744,7 +744,7 @@ pub fn first_value(f: Option<bool>) -> bool {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   for (const written of ["return error != null;", "return error == null;", "return error != null ? 1 : 0;", "if (error != null && error.message === \"x\") {",
-    "return error != null ? $byteLen(error.message) : undefined;", "return n != null;", "return s == null;", "return f ? 1 : 0;", "return !!f;"]) {
+    "return error != null ? $byteLen(error.message) : undefined;", "return n != null;", "return s == null;", "return f === true ? 1 : 0;", "return f === true;"]) {
     expect(js).toContain(written);
   }
   const lib = await import(join(dir, "lib.js"));

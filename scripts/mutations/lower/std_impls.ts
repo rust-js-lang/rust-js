@@ -1076,4 +1076,14 @@ export const mutations: Mutation[] = [
       '                Ok(Expr::object(vec![Prop::Field("start".into(), Expr::member(place.clone(), "start")), Prop::Field("end".into(), Expr::member(place, "end"))]))\n',
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
   },
+  {
+    name: "option-bool-eq-truth",
+    breaks:
+      "an `Option<bool>`'s `== Some(true)` is its truth, `!!options.strictMode`, not `options.strictMode === true`, which a JS caller's `1` passes (ADR 0298, the user's decision)",
+    file: "src/lower/std_impls.rs",
+    find: "                (_, js::ExprKind::Bool(_)) => return Ok(Expr::bin(Op::Eq, a, b)),\n",
+    replace: "                (_, js::ExprKind::Bool(_)) => return Ok(Expr::unary(js::UnaryOp::Not, Expr::unary(js::UnaryOp::Not, a))),\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_bool_exact.rs$"],
+    snapshots: true,
+  },
 ];

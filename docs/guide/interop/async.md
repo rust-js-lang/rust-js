@@ -542,7 +542,7 @@ export async function countChunks(url) {
   }
   const reader = new ReadableStreamDefaultReader(body);
   let chunks = 0;
-  while (!(await reader.read()).done) {
+  while ((await reader.read()).done !== true) {
     chunks = (chunks + 1) >>> 0;
   }
   return chunks;

@@ -1,8 +1,9 @@
-// An `Option<bool>` that's `Some(true)`, written `is_some_and(|&w| w)`,
-// `== Some(true)` or `unwrap_or(false)`, is tested by its value's truth,
-// as JS tests a flag that may be missing: `if (warned[key])`; where it's
-// a value, a `bool`, `!!o` (ADR 0298, amended). And what a `!` turns, or a
-// `while` tests, is read as an `if`'s test is.
+// An `Option<bool>` that's `Some(true)`, written `is_some_and(|&w| w)` or
+// `unwrap_or(false)`, is tested by its value's truth, as JS tests a flag
+// that may be missing: `if (warned[key])`; where it's a value, a `bool`,
+// `!!o` (ADR 0298, amended). `== Some(true)` is that value exactly, `o ===
+// true` (the user's decision). And what a `!` turns, or a `while` tests,
+// is read as an `if`'s test is.
 use std::collections::HashMap;
 
 fn warned(seen: &HashMap<&str, bool>, key: &str) -> bool {

@@ -482,8 +482,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && let [(test, target)] = cases.as_mut_slice()
                     && let Some(yes) = otherwise
                     && !matches!((written_past_gotos(state.body, *target), written_past_gotos(state.body, yes)), (Some(no), Some(yes)) if no < yes)
+                    // Not an `Option<bool>`'s `Some(false)` alone, `o === false`.
+                    && (!self.option_bool_payload(tested.as_deref())
+                        || !matches!(&test.kind, js::ExprKind::Binary(Op::Eq, ..))
+                        || (self.frame.facts.constant_patterns).tests(
+                            self.tcx,
+                            &crate::lower::body_queries::PatternValue::Bits(ty, 1),
+                            span,
+                            tested.as_deref(),
+                        ))
                 {
-                    *test = std::mem::replace(test, Expr::undefined()).negated_test();
+                    // Of an `Option<bool>`'s `Some(false)`, `o === false`, its
+                    // `Some(true)`'s, that value exactly, `o === true`.
+                    *test = match std::mem::replace(test, Expr::undefined()) {
+                        Expr {
+                            kind: js::ExprKind::Binary(Op::Eq, payload, _),
+                            ..
+                        } if self.option_bool_payload(tested.as_deref()) => {
+                            Expr::bin(Op::Eq, *payload, Expr::bool(true))
+                        }
+                        test => test.negated_test(),
+                    };
                     otherwise = Some(std::mem::replace(target, yes));
                 }
                 let mut chain_panics = otherwise.is_some_and(|b| panics(state.body, b));
@@ -738,6 +757,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => {
                 let subject = self.value_expr(subject.clone(), span)?;
+                // An `Option<bool>`'s `Some(true)` or `Some(false)`, as a
+                // pattern tests it: that value exactly, `o === true`, as
+                // `o == Some(true)` is (the user's decision, ADR 0298).
+                // Of `false`, `o === false` where a pattern there writes
+                // `Some(false)`, else `o !== true`, which a `Some(true)`'s
+                // branch negates.
+                if ty.is_bool() && self.option_bool_payload(tested) {
+                    let value_of = crate::lower::body_queries::PatternValue::Bits(ty, 0);
+                    let written_false =
+                        value != 0 || (self.frame.facts.constant_patterns).tests(self.tcx, &value_of, span, tested);
+                    return Ok(match written_false {
+                        true => Expr::bin(Op::Eq, subject, Expr::bool(value != 0)),
+                        false => Expr::bin(Op::Ne, subject, Expr::bool(true)),
+                    });
+                }
                 if ty.is_bool() {
                     return Ok(match value {
                         0 => Expr::unary(js::UnaryOp::Not, subject),
@@ -767,6 +801,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(Expr::bin(Op::Eq, subject, literal))
             }
         }
+    }
+
+    /// Whether what a pattern tests at `tested` (`body_queries::pattern_places`)
+    /// is an `Option<bool>`'s `Some`'s value.
+    fn option_bool_payload(&self, tested: Option<&[(Ty<'tcx>, Vec<crate::lower::body_queries::PatternStep>)]>) -> bool {
+        use crate::lower::body_queries::PatternStep;
+        tested.is_some_and(|places| {
+            places.iter().any(|(of, steps)| {
+                self.option_of(*of).is_some_and(|inner| inner.is_bool())
+                    && matches!(steps[..], [PatternStep::Variant(v), PatternStep::Field(f)] if v.as_u32() == 1 && f.as_u32() == 0)
+            })
+        })
     }
 
     /// Whether what `?` tried returns early; a write's never does (ADRs

@@ -691,11 +691,12 @@ pub fn described() -> f64 {
     total
 }
 `);
+  // `descriptorOf`, not `descriptor`, is #444's.
   expect(js).toContain(`  REENTRY = true;
   try {
     let total = globalThis.work(1);
-    const descriptor = globalThis.descriptorOf(name);
-    if (descriptor != null && descriptor.configurable) {
+    const descriptorOf = globalThis.descriptorOf(name);
+    if (descriptorOf != null && descriptorOf.configurable === true) {
       total += globalThis.work(2);
     }
     return total + globalThis.work(3);

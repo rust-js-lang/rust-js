@@ -222,7 +222,7 @@ export function outcome(report) {
   const error = report.error;
   if (error != null) {
     return { TAG: "Failed", _0: error };
-  } else if (report.ran) {
+  } else if (report.ran === true) {
     return "Ran";
   } else {
     const tested = report.tested;

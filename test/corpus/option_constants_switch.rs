@@ -41,8 +41,8 @@ fn apart(n: Option<i32>) -> &'static str {
     }
 }
 
-// Of a `bool`, which JS tests by its truth, `!b`, which `None` passes: its
-// test that it's there first.
+// Of a `bool`, its value exactly, `b === false`, which no `None` passes
+// (ADR 0298, the user's decision).
 fn flag(b: Option<bool>) -> u8 {
     match b {
         Some(false) => 1,

@@ -33,9 +33,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a value one pattern names by a `const` and another writes as a literal is tested by the `const`'s name in both",
     file: "src/lower/body_queries/constants.rs",
-    find: "            .map(|&(_, _, named)| named);\n        let first = named.next()??;\n        named.all(|named| named == Some(first)).then_some(first)\n",
-    replace:
-      "            .filter_map(|&(_, _, named)| named);\n        named.next()\n",
+    find: "        let first = named.next()??;\n        named.all(|named| named == Some(first)).then_some(first)\n",
+    replace: "        named.flatten().next()\n",
     tests: ["test/lowering-constants.test.ts", "-t", "constants of one value"],
   },
   {
@@ -43,9 +42,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a value two constants name, 5, is named in an inner `match` by the outer's constant, `tag === SuspendedOnInstanceAndReadyToContinue`, not `case HostComponent:` (ADR 0590, amended)",
     file: "src/lower/body_queries/constants.rs",
-    find: "            .min_by_key(|(written, ..)| written.hi() - written.lo())?;\n",
+    find: "            .min_by_key(|(written, ..)| written.hi() - written.lo());\n",
     replace:
-      "            .max_by_key(|(written, ..)| written.hi() - written.lo())?;\n",
+      "            .max_by_key(|(written, ..)| written.hi() - written.lo());\n",
     tests: ["test/lowering-constants.test.ts", "-t", "constants of one value"],
   },
   {

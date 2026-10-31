@@ -49,7 +49,7 @@ out.
 let iterator: &js::Iterator<Option<&'static Unknown>> = ..;
 loop {
     let step = iterator.next();
-    if step.done == Some(true) {
+    if step.done.unwrap_or(false) {
         break;
     }
     let child = step.value;
@@ -68,8 +68,10 @@ while (!(step = iterator.next()).done) {
 ```
 
 - **A step's `done` is left out until the end**, `IteratorYieldResult`'s
-  `done?: false`: an `Option`, whose test, `step.done == Some(true)`, is
-  JS's, `if (step.done)`, as the protocol reads it.
+  `done?: false`: an `Option`, whose test of its truth,
+  `step.done.unwrap_or(false)`, is JS's, `if (step.done)`, as the protocol
+  reads it. (Amended, ADR 0298, the user's decision: `step.done ==
+  Some(true)` is that value exactly, `step.done === true`.)
 - **The end's `value` is its return value**, TypeScript's `TReturn`, any
   value: read a step's only before its end.
 - **Only the protocol**: what's iterable is a `Vec` or an iterator's

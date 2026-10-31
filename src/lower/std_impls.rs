@@ -5,7 +5,7 @@
 use super::recognition::{StdItem, std_item};
 use super::representation::Num;
 use super::{FnCx, R, Shape, lower_first};
-use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
+use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use rustc_hir as hir;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::{DefKind, Res};
@@ -1118,12 +1118,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => break,
             }
         }
-        // `o == Some(true)` of an `Option<bool>`: `!!o`, which a test reads
-        // as `o`, as JS tests a flag that may be missing (ADR 0298).
+        // `o == Some(true)` of an `Option<bool>`: that value exactly, `o ===
+        // true`, as React tests an option a caller gives (the user's
+        // decision, ADR 0298).
         if self.option_of(ty).is_some_and(|inner| inner.is_bool()) {
             match (&a.kind, &b.kind) {
-                (_, js::ExprKind::Bool(true)) => return Ok(Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, a))),
-                (js::ExprKind::Bool(true), _) => return Ok(Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, b))),
+                (_, js::ExprKind::Bool(_)) => return Ok(Expr::bin(Op::Eq, a, b)),
+                (js::ExprKind::Bool(_), _) => return Ok(Expr::bin(Op::Eq, b, a)),
                 _ => {}
             }
         }

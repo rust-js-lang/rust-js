@@ -2882,10 +2882,13 @@ export function isAdult(p) {
   ([ADR 0996](../../decisions/0996-a-take-then-tested-is-the-place-tested.md)).
 - rustc won't let you use an `Option<u32>` as a `u32`: you can't forget the
   missing case.
-- An `Option<bool>` that's `Some(true)`, `flag.is_some_and(|&on| on)`,
-  `flag == Some(true)` or `flag.unwrap_or(false)`, is tested by its truth,
-  as JS tests a flag that may be missing: `if (warned[key])`. As a value
-  it's a `bool`, `!!flag`
+- An `Option<bool>` that's `Some(true)`, `flag.is_some_and(|&on| on)` or
+  `flag.unwrap_or(false)`, is tested by its truth, as JS tests a flag that
+  may be missing: `if (warned[key])`. As a value it's a `bool`, `!!flag`.
+  Compared with one, `flag == Some(true)` or `flag != Some(false)`, or
+  matched, `if let Some(true) = flag`, it's that value exactly, `flag ===
+  true`, as React tests an option a caller gives,
+  `options.unstable_strictMode === true`
   ([ADR 0298](../../decisions/0298-truthy-options.md)).
 
 JS's `||` falls back on any falsy value, `""` and `0` too, where `??` falls
