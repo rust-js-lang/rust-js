@@ -281,4 +281,12 @@ export const mutations: Mutation[] = [
     replace: "    if false {\n        bindings::declarations(body);\n",
     tests: ["test/crates.test.ts", "-t", "settles its cleanup"],
   },
+  {
+    name: "tail-if-let-comments-dropped",
+    breaks: "a comment after a function's last `if let`, React DOM's Float's `// We don't error because ..`, is dropped: its JS `if` is where the pattern is, not the `if` to its value's end (rd288)",
+    file: "src/lower/mir/tidy.rs",
+    find: "            matches!(s.kind, StmtKind::If(..)) && !s.span.is_none() && done.lo <= s.span.lo && s.span.hi <= done.hi\n",
+    replace: "            matches!(s.kind, StmtKind::If(..)) && !s.span.is_none() && done.lo == s.span.lo && s.span.hi <= done.hi\n",
+    tests: ["test/lowering-comments-ends.test.ts", "-t", "last if is at its end"],
+  },
 ];

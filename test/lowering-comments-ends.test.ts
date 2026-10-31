@@ -356,3 +356,47 @@ test("a comment before a tail tuple with a constant is never inside its array", 
   expect(js).toContain("return [s, false];");
   expect(lib.rerender(1 as never)).toEqual([2, false]);
 });
+
+// React DOM's Float ends each of its six hints with why it doesn't throw,
+// `// We don't error because preconnect needs to be resilient ..`, after
+// its last `if`: at the function's end, as React's is (rd288).
+test("a comment after a function's last if is at its end", async () => {
+  const { js, lib } = await compiled("comment-after-last-if", `pub fn hint(href: Option<&str>, out: &mut Vec<String>) {
+    if let Some(href) = href {
+        out.push(href.to_string());
+    }
+    // We don't error because preconnect needs to be resilient to being called in a variety of scopes
+    // and the runtime may not be capable of responding.
+}
+
+pub fn counted(n: u32, out: &mut Vec<u32>) {
+    if n > 1 {
+        out.push(n);
+    } else {
+        out.push(0);
+    }
+    // Either way, one.
+}
+
+pub fn each(items: &[Option<u32>], out: &mut Vec<u32>) {
+    for item in items {
+        if let Some(n) = item {
+            out.push(*n);
+        }
+        // None is skipped.
+    }
+}
+`);
+  expect(js).toContain(
+    "    out.push(href);\n  }\n  // We don't error because preconnect needs to be resilient to being called in a variety of scopes\n  // and the runtime may not be capable of responding.\n}\n",
+  );
+  expect(js).toContain("    out.push(0);\n  }\n  // Either way, one.\n}\n");
+  expect(js).toContain("      out.push(item);\n    }\n    // None is skipped.\n  }\n}\n");
+  const out: unknown[] = [];
+  lib.hint("a" as never, out as never);
+  lib.hint(undefined as never, out as never);
+  lib.counted(2 as never, out as never);
+  lib.counted(1 as never, out as never);
+  lib.each([1, undefined, 3] as never, out as never);
+  expect(out).toEqual(["a", 2, 0, 1, 3]);
+});

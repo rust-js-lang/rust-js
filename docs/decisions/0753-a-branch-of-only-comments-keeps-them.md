@@ -5,7 +5,7 @@ a comment with no statement after it in its block is printed there.
 Supersedes its consequence that an `else` of only comments is no `else`.
 Amended: a branch a function's end empties is no branch either (below). Extended by
 [0862](0862-a-comment-at-a-bodys-end-is-there.md): a block's comments after its last
-code, and a function's before the `None` it gives at its end. Amended: a `break;` rust-js writes after them is after them.
+code, and a function's before the `None` it gives at its end. Amended: a `break;` rust-js writes after them is after them; a block's last `if let`'s too (rd288).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: comments, which
 nothing runs.
@@ -216,3 +216,18 @@ that `if` (`commented_jumps`, rd109). A loop's body is such a block, as an
 `if`'s is. Held by `lowering-comments-ends.test.ts`'s "a comment ending a
 loop's body after an if/else is at its end" and the mutation
 `tail-if-comments-unseen` (`lower/sources.ts`).
+
+## Amendment: after a last `if let` too (2026-10-31, rd288)
+
+React DOM's Float ends each of its six hints with why it doesn't throw,
+`// We don't error because preconnect needs to be resilient ..`, after its
+last `if let`: the comment was dropped. An `if let`'s JS `if` is spanned
+where MIR tests it, its pattern, `Some(href)`, not its keyword to its
+test's end, so `commented_jumps` found no `if` at the span
+`tail_if_comments` gave. Now, where no statement is at that span, the
+comments go after the last `if` inside it: the `if` whose test is the
+`if let`'s, as a loop's body's and a function's are. The `if`'s own span
+stays its pattern's, which what's before the statement and the source map
+read. Held by `lowering-comments-ends.test.ts`'s "a comment after a
+function's last if is at its end" and the mutation
+`tail-if-let-comments-dropped` (`lower/mir/tidy.ts`).
