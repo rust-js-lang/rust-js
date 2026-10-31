@@ -615,6 +615,7 @@ mod tests {
             set: &none,
             plain: &none,
             captured: &none,
+            fixed: &none,
             paired: &none,
         };
         moved(&body[0], &body[1..], &facts).map(|(_, why)| why)
