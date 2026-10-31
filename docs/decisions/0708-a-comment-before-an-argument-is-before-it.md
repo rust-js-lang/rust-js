@@ -264,3 +264,67 @@ snapshot, JSX, port, compiler and tidy-stage suites: `keyed`'s `// The
 key, when there's one.` is before `(key != null ? key + "/" : "")` either
 way. The test is gone with its mutation; `branch-value-placed-nowhere`
 holds the placing.
+
+## Amendment: a field is where its literal writes it, and a closure's lone tail's comment is its body's (2026-10-31, rd296)
+
+React's noop renderer's host configs are struct literals of some seventy
+fields, a comment or a blank line before many, their values constants,
+closures and blocks:
+
+```rust
+Config {
+    supports_microtasks: true,
+
+    may_suspend_commit: |r#type| {
+        // Asks whether it's possible for this combination of type and props
+        // to ever need to suspend.
+        r#type == "suspensey-thing"
+    },
+
+    // A comment before a field whose value is a block.
+    create_instance: Box::new({
+        let counter = Rc::clone(&counter);
+        move || { .. }
+    }),
+
+    is_primary_renderer: true,
+
+    get_instance_from_node: || panic!("Not yet implemented."),
+    ..
+}
+```
+
+Of its JS, the comment before `createInstance` was before `return {`, the
+blank lines before it, before `isPrimaryRenderer` and before
+`getInstanceFromNode` were lost, and `maySuspendCommit`'s comment was
+before `return {` too. A field's place was its JS value's: of a block, the
+closure inside it, past the `let` before it; of a constant, `true`,
+nowhere; and a closure's that throws on its line, `getInstanceFromNode() {
+throw .. }`, its comments given the `throw` printed first there.
+
+- **A field is where its literal writes it** (`WrittenFields::starts`,
+  `aggregates::field_starts`): its value's start in the struct literal,
+  `Box::new(`'s, `true`'s, which its object's property is placed at, and
+  `part_starts` and `field_docs` read. Its comments and the blank line
+  before it are its own there, not a statement's its value holds on its
+  line.
+- **A closure's lone tail, `|t| { // c\n t.len() > 3 }`**, is its arrow's
+  value, after its `=>`, where a comment before it is, though a call's
+  argument starts there too, `$byteLen(t)`'s `t`; of a method, an
+  object's, `maySuspendCommit(type) { return ..; }`, its `return`
+  statement's, before it in the body.
+
+The corpus is otherwise as before; React's port gains the comment
+`ReactElement`'s Rust writes before `owner`, `// Record the component
+responsible for creating this element.` before `_owner`, as upstream.
+
+Not yet: a comment after a closure's parameter, `|blocked_callback, //
+Profiling-only`, whose arrow keeps no parameter's place.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, a comment's and a
+blank line's place.
+
+Held by the corpus case `object_field_comments` and the mutations
+`field-starts-unwritten` (`lower/aggregates.ts`),
+`field-comment-to-printed-first`, `arrow-value-taken-by-a-part` and
+`method-return-no-statement` (`to_oxc.ts`).

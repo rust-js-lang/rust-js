@@ -905,17 +905,38 @@ pub struct ObjectLayout {
     /// kept only where no key after it is, the comment's place then (ADR
     /// 0280, amended again).
     pub led: Vec<String>,
-    /// Each key's JSDoc, its struct's field's doc comment, where the crate
-    /// writes one literal of the struct, the one object it describes (ADR
-    /// 0444, amended): printed before the field. Boxed, as few objects
-    /// have any, so an expression is no larger.
-    pub docs: Option<Box<FieldDocs>>,
+    /// What its literal writes of each field, where it does: boxed, as
+    /// few objects are a literal's, so an expression is no larger.
+    pub fields: Option<Box<WrittenFields>>,
 }
 
-/// Each key's JSDoc, of an object a struct's one literal makes
-/// (`ObjectLayout::docs`).
+impl ObjectLayout {
+    /// Where `key`'s field is written, of those its literal says.
+    pub fn start(&self, key: &str) -> Option<u32> {
+        let fields = self.fields.as_deref()?;
+        fields.starts.iter().find(|(k, _)| k == key).map(|&(_, at)| at)
+    }
+
+    /// `key`'s JSDoc, of those its literal's struct documents.
+    pub fn doc(&self, key: &str) -> Option<&str> {
+        let fields = self.fields.as_deref()?;
+        fields.docs.iter().find(|(k, _)| k == key).map(|(_, doc)| doc.as_str())
+    }
+}
+
+/// What a struct literal writes of its fields (`ObjectLayout::fields`).
 #[derive(Clone, PartialEq, Eq, Default)]
-pub struct FieldDocs(pub Vec<(String, String)>);
+pub struct WrittenFields {
+    /// Each key's JSDoc, its struct's field's doc comment, where the crate
+    /// writes one literal of the struct, the one object it describes (ADR
+    /// 0444, amended): printed before the field.
+    pub docs: Vec<(String, String)>,
+    /// Where each key's field is written in its literal, its value's start,
+    /// `create_instance: Box::new({ .. })`'s `Box::new`, not where the JS
+    /// value's own place is, inside it: what a comment and a blank line
+    /// before the field are before (ADR 0708, amended).
+    pub starts: Vec<(String, u32)>,
+}
 
 /// A piece of a template as its format string is written, `concat!`'s
 /// (`Expr::template_pieces`): its texts and values, as `Expr::template`

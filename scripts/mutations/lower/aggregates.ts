@@ -422,12 +422,21 @@ export const mutations: Mutation[] = [
     breaks:
       "React's prototype object's `isPersistent` is printed without upstream's `/** Checks if this event should be released back into the pool. */` its struct's field documents (ADR 0444, amended)",
     file: "src/lower/aggregates.rs",
-    find: "                docs: (written && !docs.is_empty()).then(|| Box::new(js::FieldDocs(docs))),\n",
-    replace: "                docs: None,\n",
+    find: "            let fields = js::WrittenFields { docs, starts };\n",
+    replace: "            let fields = js::WrittenFields { docs: { let _ = docs; Vec::new() }, starts };\n",
     tests: [
       "test/lowering-comment-fields.test.ts",
       "-t",
       "doc comment is before it",
     ],
+  },
+  {
+    name: "field-starts-unwritten",
+    breaks: "an object's field is placed where its JS value is, not where its literal writes it: the comment before `create_instance: Box::new({ .. })` is before `return {`, and the blank lines before it and `isPrimaryRenderer` are lost (rd296)",
+    file: "src/lower/aggregates.rs",
+    find: "            let fields = js::WrittenFields { docs, starts };\n",
+    replace: "            let fields = js::WrittenFields { docs, starts: { let _ = starts; Vec::new() } };\n",
+    tests: ["test/corpus.test.ts", "-t", "^object_field_comments.rs$"],
+    snapshots: true,
   },
 ];

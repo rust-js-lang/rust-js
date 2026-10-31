@@ -136,7 +136,7 @@ impl<'a> Cx<'a> {
                 Expression::new_array_expression(sp, ArenaVec::from_iter_in(items, b), b)
             }
             ExprKind::Object(props, layout) => {
-                let props = props.iter().map(|prop| self.property(prop));
+                let props = props.iter().map(|prop| self.property(prop, layout));
                 let object = Expression::new_object_expression(sp, ArenaVec::from_iter_in(props, b), b);
                 // Across lines as its source is, which the formatter's told.
                 if let (true, Expression::ObjectExpression(made)) = (layout.lines, &object) {
@@ -504,8 +504,13 @@ impl<'a> Cx<'a> {
         ObjectPropertyKind::new_object_property(at, kind, key, value, method, false, false, b)
     }
 
-    fn property(&self, prop: &Prop) -> ObjectPropertyKind<'a> {
+    fn property(&self, prop: &Prop, layout: &js::ObjectLayout) -> ObjectPropertyKind<'a> {
         let b = &self.b;
+        // Where its field is written, its literal's, or its value's place.
+        let written = |name: &str, value: &js::Expr| match layout.start(name) {
+            Some(at) => js::Span { lo: at, hi: at },
+            None => value.span,
+        };
         match prop {
             Prop::Setter(name, value) => match &value.kind {
                 ExprKind::Arrow(params, body) => {
@@ -528,17 +533,18 @@ impl<'a> Cx<'a> {
             },
             Prop::Method(name, value) => match &value.kind {
                 ExprKind::Arrow(params, body) => {
-                    self.accessor(PropertyKind::Init, name, params, body, false, value.span)
+                    self.accessor(PropertyKind::Init, name, params, body, false, written(name, value))
                 }
                 ExprKind::AsyncArrow(params, body) => {
-                    self.accessor(PropertyKind::Init, name, params, body, true, value.span)
+                    self.accessor(PropertyKind::Init, name, params, body, true, written(name, value))
                 }
                 _ => unreachable!("a method is an arrow"),
             },
             Prop::Field(name, value) => {
-                // Where its value starts, which a comment before the field
-                // is attached to (ADR 0708).
-                let at = Span::new(value.span.lo, value.span.lo);
+                // Where its field is written, which a comment before the
+                // field is attached to (ADR 0708, amended).
+                let at = written(name, value);
+                let at = Span::new(at.lo, at.lo);
                 let value = self.expr(value);
                 // `{ x: x }` reads better as `{ x }`.
                 let shorthand = matches!(&value, Expression::Identifier(id) if id.name == name.as_str());

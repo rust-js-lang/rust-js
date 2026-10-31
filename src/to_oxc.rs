@@ -701,8 +701,11 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     && (
                         // Not a part of what starts after it, a call the
                         // comment is before, not inside: `// c\n f(x);`'s is
-                        // the statement's.
+                        // the statement's; but an arrow's value that starts
+                        // there, `|t| { // c\n t.len() > 3 }`'s, is the
+                        // arrow's (rd296).
                         parts.get(&at).is_some_and(|&(whole, _)| whole > c.lo)
+                            && !arms.get(&at).is_some_and(|arm| arm.operator == "=>")
                         // A binary's right operand's only where only its
                         // operator is between, as rustfmt writes it first,
                         // `// c\n + &(x)`: not a match arm's, `None => given`
@@ -1014,8 +1017,12 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                 _ => {}
             }
             let case = case_starts.binary_search(&at).is_ok().then_some(at);
+            // An object's field's, its own: not a statement its value holds
+            // on its line, `getInstanceFromNode() { throw .. }` (rd296).
+            let field = (parts.get(&at)).is_some_and(|&(_, field)| field).then_some(at);
             let attached_to = (classes.get(&at).copied())
                 .or(case)
+                .or(field)
                 .unwrap_or_else(|| printed_first(at));
             if let Some(first) = own.first() {
                 let top = tops.entry(attached_to).or_insert(first.lo);
@@ -1186,10 +1193,16 @@ fn part_starts(module: &Module) -> std::collections::HashMap<u32, (u32, bool)> {
         js::each_expr_mut(&mut stmts, &mut |e| {
             let (spans, field): (Vec<js::Span>, bool) = match &e.kind {
                 ExprKind::Call(_, args) | ExprKind::New(_, args) => (args.iter().map(|arg| arg.span).collect(), false),
-                ExprKind::Object(props, ..) => {
+                ExprKind::Object(props, layout) => {
                     let values = props.iter().filter_map(|prop| match prop {
-                        // A method's too, its arrow's (ADR 0882, amended).
-                        js::Prop::Field(_, value) | js::Prop::Method(_, value) => Some(value.span),
+                        // A method's too, its arrow's (ADR 0882, amended);
+                        // where its literal writes its field (rd296).
+                        js::Prop::Field(key, value) | js::Prop::Method(key, value) => {
+                            Some(layout.start(key).map_or(value.span, |at| js::Span {
+                                lo: at,
+                                hi: value.span.hi.max(at + 1),
+                            }))
+                        }
                         _ => None,
                     });
                     (values.collect(), true)
@@ -1227,15 +1240,12 @@ fn field_docs(module: &Module) -> std::collections::HashMap<u32, String> {
                 return;
             };
             for prop in props {
+                let at = |key: &str, value: &js::Expr| layout.start(key).unwrap_or(value.span.lo);
                 if let js::Prop::Field(key, value) | js::Prop::Method(key, value) = prop
-                    && !value.span.is_none()
-                    && let Some((_, jsdoc)) = layout
-                        .docs
-                        .iter()
-                        .flat_map(|docs| docs.0.iter())
-                        .find(|(k, _)| k == key)
+                    && (layout.start(key).is_some() || !value.span.is_none())
+                    && let Some(jsdoc) = layout.doc(key)
                 {
-                    docs.entry(value.span.lo).or_insert_with(|| jsdoc.clone());
+                    docs.entry(at(key, value)).or_insert_with(|| jsdoc.to_string());
                 }
             }
         });
@@ -1332,10 +1342,18 @@ fn statement_spans(module: &Module) -> (Vec<(u32, u32)>, std::collections::HashS
                 }
             }
         });
+        // An object's methods, each printed with its statements, its value's
+        // `return` too, `maySuspendCommit(type) { return ..; }` (rd296).
+        let mut methods = Vec::new();
         js::each_expr_mut(&mut copy, &mut |e| match &mut e.kind {
+            ExprKind::Object(props, _) => methods.extend(props.iter().filter_map(|prop| match prop {
+                js::Prop::Method(_, value) => Some(value.span).filter(|s| !s.is_none()),
+                _ => None,
+            })),
             // One whose body is its value, `() => f()`, has no statement:
             // what's before the value is its arm's (`arm_starts`).
-            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) if expressions::arrow_value(body).is_some() => {}
+            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body)
+                if expressions::arrow_value(body).is_some() && !methods.contains(&e.span) => {}
             ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => {
                 js::statement_lists(body, &mut |stmts| list(stmts, starts));
             }

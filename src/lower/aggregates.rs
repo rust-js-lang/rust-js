@@ -173,6 +173,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// of their own is right before, which heads what follows: a `None`'s
     /// key is left out, the comment before the next key, but where none is
     /// (ADR 0280, amended again).
+    /// Where each field of the struct literal written at `span` is written,
+    /// its value's start, by its declared index (`WrittenFields::starts`):
+    /// none of a macro's literal.
+    fn field_starts(&self, adt: &ty::AdtDef<'tcx>, variant_index: VariantIdx, span: Span) -> Vec<(usize, u32)> {
+        if span.from_expansion() || adt.variant(variant_index).ctor_kind().is_some() {
+            return Vec::new();
+        }
+        let Some(made) = (self.frame.thir.exprs.iter()).find_map(|e| match &e.kind {
+            thir::ExprKind::Adt(made)
+                if e.span == span && made.adt_def == *adt && made.variant_index == variant_index =>
+            {
+                Some(made)
+            }
+            _ => None,
+        }) else {
+            return Vec::new();
+        };
+        (made.fields.iter())
+            .map(|f| (f.name.as_usize(), self.frame.thir[f.expr].span))
+            .filter(|&(_, s)| !s.from_expansion() && span.contains(s))
+            .map(|(i, s)| (i, self.js_span(s)))
+            .filter(|(_, s)| !s.is_none())
+            .map(|(i, s)| (i, s.lo))
+            .collect()
+    }
+
     fn commented_fields(
         &self,
         adt: &ty::AdtDef<'tcx>,
@@ -397,7 +423,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // The keys whose `undefined`, a `None`'s, is kept: one a comment is
         // written on, the comment's place (ADR 0280, amended).
-        let (mut kept, mut led, mut docs) = (Vec::new(), Vec::new(), Vec::new());
+        let (mut kept, mut led, mut docs, mut starts) = (Vec::new(), Vec::new(), Vec::new(), Vec::new());
         let (shape, items) = match shape {
             // A `Cell` in an object's field is what it holds (ADR 0288).
             Shape::Object(names) => {
@@ -409,6 +435,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 kept = keys(on);
                 led = keys(before);
+                // Where each field is written, what's before it is before.
+                starts = (self.field_starts(&adt_def, variant_index, span).into_iter())
+                    .filter_map(|(i, at)| Some((names.get(i)?.0.clone(), at)))
+                    .collect();
                 // Its fields' doc comments, where it's the struct's one
                 // literal (ADR 0444, amended).
                 if adt_def.is_struct() && self.krate.struct_literals.get(&adt_def.did()) == Some(&1) {
@@ -452,11 +482,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         if let js::ExprKind::Object(_, layout) = &mut made.kind {
-            let written = self.written_literal(&adt_def, variant_index, span);
+            if !self.written_literal(&adt_def, variant_index, span) {
+                docs.clear();
+            }
+            let fields = js::WrittenFields { docs, starts };
             *layout = js::ObjectLayout {
                 kept,
                 led,
-                docs: (written && !docs.is_empty()).then(|| Box::new(js::FieldDocs(docs))),
+                fields: (fields != js::WrittenFields::default()).then(|| Box::new(fields)),
                 ..self.object_layout(&adt_def, variant_index, span)
             };
         }
