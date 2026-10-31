@@ -127,3 +127,31 @@ pub fn settled<T: Thenable>(thenable: &T) -> bool {
   const thenable = { get state() { reads += 1; return reads; } };
   expect([lib.settled(thenable), reads]).toEqual([true, 1]);
 });
+
+// React DOM's updateInput: two `!matches!(js::classify(..), Kind::Function(_)
+// | Kind::Symbol(_) | Kind::Bool(_))` in one function, `type`'s and
+// `name`'s, each `typeof v !== "function" && .. "symbol" && .. "boolean"`,
+// as written: a macro's `match`es are all where its definition is, so the
+// second's arm is its own, not the first's (rd88).
+test("a second matches! of the same pattern is tested in the order written too", async () => {
+  const { js, dir } = compiled(
+    "or-pattern-order-twice",
+    `use js::{Kind, Unknown};
+
+pub fn kinds(a: Option<&Unknown>, b: Option<&Unknown>) -> (bool, bool) {
+    let a = a.is_some() && !matches!(js::classify(a), Kind::Function(_) | Kind::Symbol(_) | Kind::Bool(_));
+    let b = b.is_some() && !matches!(js::classify(b), Kind::Function(_) | Kind::Symbol(_) | Kind::Bool(_));
+    (a, b)
+}
+`,
+  );
+  const order = (v: string) => `typeof ${v} !== "function" && typeof ${v} !== "symbol" && typeof ${v} !== "boolean"`;
+  expect(js).toContain(order("a"));
+  expect(js).toContain(order("b"));
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.kinds(1, () => 0), lib.kinds(true, "x"), lib.kinds(undefined, Symbol())]).toEqual([
+    [true, false],
+    [false, true],
+    [false, false],
+  ]);
+});

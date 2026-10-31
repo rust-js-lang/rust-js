@@ -265,12 +265,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         at: rustc_span::BytePos,
         written: impl Fn(&thir::Arm<'tcx>) -> Span,
     ) -> Option<&thir::Arm<'tcx>> {
-        let arms = (self.frame.thir.exprs.iter()).find_map(|e| match &e.kind {
-            thir::ExprKind::Match { arms, .. } if e.span.lo() == span.lo() && e.span.contains(span) => Some(arms),
-            _ => None,
-        })?;
-        arms.iter()
-            .map(|&arm| &self.frame.thir[arm])
+        // Of each `match` there: a macro's, `matches!`'s, are all where its
+        // definition is, so the one of the arm written at `at`, not the
+        // first of them (rd88).
+        (self.frame.thir.exprs.iter())
+            .filter_map(|e| match &e.kind {
+                thir::ExprKind::Match { arms, .. } if e.span.lo() == span.lo() && e.span.contains(span) => Some(arms),
+                _ => None,
+            })
+            .flat_map(|arms| arms.iter().map(|&arm| &self.frame.thir[arm]))
             .find(|arm| written(arm).lo() <= at && at < written(arm).hi())
     }
 

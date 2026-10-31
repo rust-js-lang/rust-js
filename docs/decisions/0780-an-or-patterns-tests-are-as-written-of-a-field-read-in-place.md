@@ -98,3 +98,19 @@ the enum's order already; a `Kind::Number(_) | Kind::String(_)` is
 `test/lowering-comments.test.ts`, "a comment before an or-pattern's
 alternative", and the mutations `if-let-alternatives-unwritten` and
 `deref-alternatives-unwritten` (`mir/temporaries.ts`).
+
+## Amended (2026-10-31): a second `matches!` of one pattern (rd88)
+
+React DOM's updateInput tests `type` and then `name` with the same
+`!matches!(js::classify(..), Kind::Function(_) | Kind::Symbol(_) |
+Kind::Bool(_))`. The first printed `typeof type !== "function" && ..
+"symbol" && .. "boolean"`, as written; the second `typeof name !==
+"boolean" && .. "symbol" && .. "function"`, the enum's order. A macro's
+`match` is where its definition is, so each `matches!` of a function has
+the same span, and `written_arm` took the first `match` there and looked
+for the second's arm in it, finding none. It now looks in each `match`
+there for the arm written where the test goes, its own. Case
+([0262](0262-when-rust-and-js-disagree.md)): N, `typeof` tests in another
+order give the same answer. Held by `test/lowering-or-patterns.test.ts`'
+"a second matches! of the same pattern is tested in the order written
+too", run in JS, and the mutation `macro-match-first-of-them`.

@@ -30,6 +30,15 @@ export const mutations: Mutation[] = [
     ],
   },
   {
+    name: "macro-match-first-of-them",
+    breaks:
+      "a second `matches!` of one pattern in a function finds the first's `match`, where its definition is, not its own arm, so its variants are tested in the enum's order (rd88)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "            .flat_map(|arms| arms.iter().map(|&arm| &self.frame.thir[arm]))\n",
+    replace: "            .take(1)\n            .flat_map(|arms| arms.iter().map(|&arm| &self.frame.thir[arm]))\n",
+    tests: ["test/lowering-or-patterns.test.ts", "-t", "a second matches! of the same pattern"],
+  },
+  {
     name: "or-pattern-macro-arm-unfound",
     breaks:
       "`matches!`'s or-pattern isn't found where its call is, so its variants are tested in the enum's order (ADR 0780)",
