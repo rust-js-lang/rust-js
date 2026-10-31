@@ -63,11 +63,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             let positioned = fn_def(func.ty(&body.local_decls, self.tcx))
                 .is_some_and(|(def_id, _)| is_iterator_position(self.tcx, def_id));
-            let fresh = (args.first().and_then(|receiver| receiver.node.place()))
-                .filter(|receiver| receiver.projection.is_empty())
-                .and_then(|receiver| self.fresh_slice_items(body, receiver.local));
+            // Asked of a `position` alone: it walks the whole body, which
+            // of each call of a long one is its square (`a long function is
+            // lowered block by block`).
+            let fresh = || {
+                (args.first().and_then(|receiver| receiver.node.place()))
+                    .filter(|receiver| receiver.projection.is_empty())
+                    .and_then(|receiver| self.fresh_slice_items(body, receiver.local))
+            };
             if positioned
-                && let Some(items) = fresh
+                && let Some(items) = fresh()
                 && destination.projection.is_empty()
                 && tested_and_taken(body, destination.local, 1)
             {

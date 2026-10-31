@@ -334,15 +334,15 @@ export const mutations: Mutation[] = [
   {
     name: "written-first-of-a-switch",
     breaks:
-      'an arm of a `switch (typeof value)` MIR tests first, whose case returns early, is turned `if (typeof value !== "string")` and the `match` stays an `if` chain',
+      "an arm of a `match` of constants MIR tests first, written after one that leaves, is turned before `switches` reads the chain, which then reads it otherwise",
     file: "src/lower/mir/tidy.rs",
     find: "        if switched(test, first.span, switches) {\n            continue;\n        }\n",
     replace: "",
-    tests: [
-      "test/lowering-switches.test.ts",
-      "-t",
-      "an arm that returns early is still its case",
-    ],
+    // A turned kind's test is its case now too (rd70), so the typeof
+    // switch's test holds it no more; a `match` of a `flatten`'s states
+    // does.
+    tests: ["test/corpus.test.ts", "-t", "^flatten_from_its_back.rs$"],
+    snapshots: true,
   },
   {
     name: "again-stages-not-run",
