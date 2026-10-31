@@ -1251,6 +1251,10 @@ export function updateContainer(n) {
   types the function's, its generic parameters given as they are, its
   caller's location and its bounds' dictionaries alike, and no copy its
   callers need; else it's a function of its own.
+- **A call through a value of a method given what may look like `None`**,
+  a type parameter's `Option`, is refused where the copy that call needs
+  isn't the function's own JS, which the value has and which reads
+  `Some(None)` as `None`: call it on the namespace as Rust names it.
 - **Refused, each with what to write**: a struct with fields or type
   parameters; one that's a `#[rust_js::class]` or `#[rust_js::object]`
   too; an impl in another module than its struct's; an item that's no

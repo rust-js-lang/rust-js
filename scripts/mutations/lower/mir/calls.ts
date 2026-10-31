@@ -1051,9 +1051,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a namespace's method called through a value JS gives, another instance of the module, calls the module's own function, `createContainer(4)` (ADR 1037)",
     file: "src/lower/mir/calls.rs",
-    find: "                js::ExprKind::Symbol(_) | js::ExprKind::Var(_) => receiver.facts.has(js::Known::Item),\n",
+    find: "        js::ExprKind::Symbol(_) | js::ExprKind::Var(_) => receiver.facts.has(js::Known::Item),\n",
     replace:
-      "                js::ExprKind::Symbol(_) | js::ExprKind::Var(_) => true,\n",
+      "        js::ExprKind::Symbol(_) | js::ExprKind::Var(_) => true,\n",
     tests: [
       "test/namespaces.test.ts",
       "-t",
@@ -1065,9 +1065,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a namespace's method called on the namespace named, `Reconciler.create_container(3)`, is `Reconciler.createContainer(3)`, not React DOM's `createContainer(3)` (ADR 1037)",
     file: "src/lower/mir/calls.rs",
-    find: "                js::ExprKind::Symbol(_) | js::ExprKind::Var(_) => receiver.facts.has(js::Known::Item),\n",
+    find: "        js::ExprKind::Symbol(_) | js::ExprKind::Var(_) => receiver.facts.has(js::Known::Item),\n",
     replace:
-      "                js::ExprKind::Symbol(_) | js::ExprKind::Var(_) => false,\n",
+      "        js::ExprKind::Symbol(_) | js::ExprKind::Var(_) => false,\n",
     tests: [
       "test/namespaces.test.ts",
       "-t",

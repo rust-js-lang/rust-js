@@ -636,3 +636,57 @@ pub fn make(renderer: &'static Reconciler) -> Api {
   expect([mocked.batchedUpdates(() => 0, 0), mocked.updateContainer(5)]).toEqual([100, 4]);
 });
 
+
+// A call through a namespace's value is the value's function, the module's
+// own JS, which takes its type parameters as JS gives them (ADR 0051): one
+// given what may look like `None` is refused where the copy that call needs
+// isn't alike that function, as `Some(None)` would read `None` (rd311).
+const flushing = `pub mod reconciler {
+    #[cfg_attr(rust_js, rust_js::namespace)]
+    pub struct Reconciler;
+
+    unsafe impl js::Defined for Reconciler {}
+
+    #[cfg_attr(rust_js, rust_js::namespace)]
+    impl Reconciler {
+        pub fn flush_sync<R>(&self, f: Option<impl FnOnce() -> R>) -> Option<R> {
+            f.map(|f| f())
+        }
+
+        pub fn batched_updates<A, R>(&self, f: impl FnOnce(A) -> R, a: A) -> R {
+            f(a)
+        }
+    }
+}
+
+use reconciler::Reconciler;
+
+pub fn batched(renderer: &Reconciler) -> bool {
+    renderer.batched_updates(|a: Option<u32>| a.is_none(), None)
+}
+`;
+
+test("a namespace's method through a value whose call needs a copy unlike its own JS is refused", async () => {
+  const dir = fixture("namespace-through-copy");
+  writeFileSync(join(dir, "lib.rs"), flushing);
+  run([compiler, ...flags(dir)]);
+  const lib = await import(join(dir, "lib.js"));
+  const namespace = await import(join(dir, "reconciler.js"));
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("renderer.batchedUpdates(");
+  expect(lib.batched(namespace)).toBe(true);
+  const refused = fixture("namespace-through-copy-refused");
+  writeFileSync(
+    join(refused, "lib.rs"),
+    `${flushing}
+pub fn flushed(renderer: &Reconciler) -> bool {
+    let inner: &dyn Fn() -> Option<u32> = &|| None;
+    renderer.flush_sync(Some(inner)).is_some()
+}
+`,
+  );
+  const ran = runSync([compiler, ...flags(refused)], root, 60_000);
+  expect(ran.code).not.toBe(0);
+  expect(ran.stderr).toContain(
+    "`reconciler::Reconciler::flush_sync` is called through a namespace's value, the module's own function, which takes its type parameters as JS gives them, but this call gives one what may look like `None`",
+  );
+});

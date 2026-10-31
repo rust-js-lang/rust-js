@@ -504,12 +504,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !args.is_empty()
         {
             let receiver = args.remove(0);
-            let named = match &receiver.kind {
-                js::ExprKind::Undefined => true,
-                js::ExprKind::Symbol(_) | js::ExprKind::Var(_) => receiver.facts.has(js::Known::Item),
-                _ => false,
-            };
-            if !named {
+            if !namespace_named(&receiver) {
+                // Of a copy its call needs, the value's function, the
+                // module's own JS, only where that copy is alike it
+                // (`pipeline::copies::settle`, rd311).
+                if let (Some(at), Some(span)) = (copy, named) {
+                    (self.dependencies.borrow_mut().through_copies).push((def_id, at, span));
+                }
                 return Expr::call(
                     Expr::member(receiver, crate::lower::classes::property(self.tcx, def_id)),
                     args,
@@ -1338,5 +1339,16 @@ fn refs(ty: Ty<'_>) -> usize {
     match *ty.kind() {
         ty::Ref(_, inner, _) => 1 + refs(inner),
         _ => 0,
+    }
+}
+
+/// Whether `receiver`, of a namespace's method's call, is the namespace as
+/// Rust names it, the item (`FnCx::namespace_value`), or its own method's
+/// `self`, `undefined`: the function itself, not the value's (ADR 1037).
+fn namespace_named(receiver: &Expr) -> bool {
+    match &receiver.kind {
+        js::ExprKind::Undefined => true,
+        js::ExprKind::Symbol(_) | js::ExprKind::Var(_) => receiver.facts.has(js::Known::Item),
+        _ => false,
     }
 }

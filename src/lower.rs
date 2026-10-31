@@ -481,6 +481,10 @@ struct Dependencies {
     /// Each copy of a function another module's calls name, by its index
     /// (ADR 0051, amended).
     copy_references: HashSet<(LocalModId, DefId, usize)>,
+    /// Each call of a namespace's method through a value whose call needs a
+    /// copy of it, which calls the value's function, the module's own JS:
+    /// refused where that copy isn't alike it (rd311, ADRs 0051, 1037).
+    through_copies: Vec<(DefId, usize, rustc_span::Span)>,
     package_uses: HashSet<(LocalModId, Export)>,
     uses: Vec<(DefId, DefId)>,
     /// Each binding a module reads through another of the crate's that

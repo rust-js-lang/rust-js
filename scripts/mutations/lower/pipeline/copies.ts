@@ -33,4 +33,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^js_given_copies.rs$"],
     snapshots: true,
   },
+  {
+    name: "through-copy-unlike-allowed",
+    breaks:
+      "a namespace's method called through a value whose call needs a copy unlike the module's own JS calls that JS, which reads `Some(None)` as `None` (rd311)",
+    file: "src/lower/pipeline/copies.rs",
+    find: "        if !alike.contains(&(id, at)) {\n",
+    replace: "        if false {\n",
+    tests: ["test/namespaces.test.ts", "-t", "unlike its own JS"],
+  },
+  {
+    name: "through-copy-alike-refused",
+    breaks:
+      "a namespace's method called through a value whose call needs a copy alike the module's own JS, `batchedUpdates`, is refused (rd311)",
+    file: "src/lower/pipeline/copies.rs",
+    find: "        if !alike.contains(&(id, at)) {\n",
+    replace: "        if true {\n",
+    tests: ["test/namespaces.test.ts", "-t", "unlike its own JS"],
+  },
 ];

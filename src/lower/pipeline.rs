@@ -642,7 +642,13 @@ pub fn lower_crate<'tcx>(
     drops_observed.keep(&takes_used_drops, &mut drop_params, lowered);
     // The copies made alike another left out, each call of one calling that
     // one (ADR 0051, amended).
-    let mut copies_of = copies::settle(&js_given, &fns, &mut lowered_items, lowered_copies);
+    let through = (lowered_items
+        .iter()
+        .map(|(_, item)| item)
+        .chain(lowered_copies.iter().map(|(_, item)| item)))
+    .flat_map(|item| item.dependencies.through_copies.iter().copied())
+    .collect::<Vec<_>>();
+    let mut copies_of = copies::settle(&js_given, &fns, &mut lowered_items, lowered_copies, (tcx, &through));
 
     // What's written only where it's reached (`reached.rs`), and the types
     // equal only to themselves, its contract's (ADR 0864, amended).

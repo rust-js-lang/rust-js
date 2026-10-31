@@ -186,3 +186,29 @@ isn't one, run; a library's consumer's call; the import named by its
 `reexported-names-unlisted` (`library.ts`) and
 `namespace-import-unrenamed` (`analysis/namespaces.ts`).
 
+## Amendment: a call through a value of a copy unlike the module's own JS is refused (rd311)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change,
+refused. A call through a namespace's value is the value's function,
+the module's own JS, which takes its type parameters as JS gives them
+(ADR 0051): a `Some` of one is the value. A call that gives one what may
+look like `None`, `flush_sync::<Option<u32>>`, needs a copy of the
+function that boxes it; where that copy's JS isn't the function's own,
+`$some(f())` beside `f()`, the value's function reads `Some(None)` as
+`None`, and `renderer.flush_sync(Some(inner)).is_some()` was `false`, a
+wrong answer. Each such call is now refused, saying to call it on the
+namespace as Rust names it or give it what's no `Option`
+(`pipeline::copies::settle`, of the copies it finds
+alike the function's own JS); one whose copy is alike it,
+`batchedUpdates`, which only passes the value on, is called through the
+value as before. Held by `test/namespaces.test.ts`'s "a namespace's
+method through a value whose call needs a copy unlike its own JS is
+refused" (run) and mutations `through-copy-unlike-allowed` and
+`through-copy-alike-refused` (`pipeline/copies.ts`).
+
+Open (rd311): a library's such method, called through a value in a
+consumer, is still compiled into the consumer (ADR 0914), and refused
+there for its library's private state; it should be called through the
+value where its library's copy is alike its own JS, and refused as above
+where it isn't, which the library's contract must say.
+

@@ -14,6 +14,10 @@ use crate::js::{self, Expr, ExprKind};
 /// methods if it's a method, and its name.
 type Named = (LocalModId, Option<String>, String);
 
+/// A call of a namespace's method through a value whose call needs a copy:
+/// the method, the copy's index, and where it's called (rd311).
+pub(super) type ThroughCopy = (DefId, usize, rustc_span::Span);
+
 /// Of `copies`, each lowered, those made alike another left out, and what
 /// calls them, in `items` and the rest, calling that one: the copies kept,
 /// each function's in the order they're numbered.
@@ -22,6 +26,7 @@ pub(super) fn settle(
     fns: &HashMap<DefId, FnInfo>,
     items: &mut [(DefId, LoweredFn)],
     copies: Vec<((DefId, usize), LoweredFn)>,
+    (tcx, through): (rustc_middle::ty::TyCtxt<'_>, &[ThroughCopy]),
 ) -> HashMap<DefId, Vec<LoweredFn>> {
     let named = |id: DefId, copy: Option<usize>| -> Named {
         let info = &fns[&id];
@@ -101,7 +106,31 @@ pub(super) fn settle(
     for (id, copy) in made {
         kept.entry(id).or_default().push(copy);
     }
+    let alike_own: HashSet<(DefId, usize)> = (same.keys())
+        .filter(|&&(id, at)| settled(&same, id, Some(at)).is_none())
+        .copied()
+        .collect();
+    refuse_through_unlike(tcx, through, &alike_own);
     kept
+}
+
+/// Each call of a namespace's method through a value whose call needs a
+/// copy of it (`through`), which calls the value's function, the module's
+/// own JS: refused where that copy isn't `alike` it, as the value has no
+/// other, and what the call gives that function, what may look like `None`,
+/// it would read as `None` (rd311, ADRs 0051, 1037).
+fn refuse_through_unlike(tcx: rustc_middle::ty::TyCtxt<'_>, through: &[ThroughCopy], alike: &HashSet<(DefId, usize)>) {
+    for &(id, at, span) in through {
+        if !alike.contains(&(id, at)) {
+            tcx.dcx().span_err(
+                span,
+                format!(
+                    "rust-js: `{}` is called through a namespace's value, the module's own function, which takes its type parameters as JS gives them, but this call gives one what may look like `None`, an `Option`, which that function reads apart from Rust's (ADRs 0051, 1037): call it on the namespace as Rust names it, or give it what's no `Option`",
+                    tcx.def_path_str(id)
+                ),
+            );
+        }
+    }
 }
 
 /// `function` as it reads apart from its name and its export, of a module's
