@@ -6,7 +6,7 @@ use js::{PropertyDescriptor, function, object};
 use webapi::{
     AddEventListenerOptions, Event, EventListenerObject, EventListenerOptions, EventListenerOrEventListenerObject, EventTargetExt,
     EventOrStr, HTMLButtonElement, HTMLImageElement, HTMLLinkElement,
-    KeyboardEvent, PointerEvent, abort_controller, listener,
+    KeyboardEvent, MediaQueryList, MediaQueryListEvent, PointerEvent, abort_controller, listener,
 };
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")]
@@ -245,4 +245,18 @@ pub fn restored() {
     if let Some(saved) = saved {
         window.set_onerror(Some(&saved));
     }
+}
+
+// A media query list's legacy listener methods take a listener as
+// `addEventListener` does: the one kept, added and removed (#439).
+pub fn media_listened(list: &MediaQueryList) {
+    let changed = listener(|e: &MediaQueryListEvent| record(if e.matches() { 1 } else { 0 }));
+    list.add_listener(changed);
+    list.remove_listener(changed);
+    list.add_listener(on_custom_media);
+    list.remove_listener(on_custom_media);
+}
+
+fn on_custom_media(_: &MediaQueryListEvent) {
+    record(2);
 }

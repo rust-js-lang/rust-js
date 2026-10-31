@@ -22,6 +22,8 @@ test("event methods and reusable listeners emit direct JavaScript", () => {
   expect(js).toContain('button.removeEventListener("click", listener, true);');
   // A named `fn` is the function itself, added and removed.
   expect(js).toContain('button.addEventListener("custom", onCustom);\n  button.removeEventListener("custom", onCustom);');
+  // A media query list's legacy listener methods, the one kept (#439).
+  expect(js).toContain("  list.addListener(changed);\n  list.removeListener(changed);\n  list.addListener(onCustomMedia);\n  list.removeListener(onCustomMedia);");
   expect(js).not.toMatch(/unreachable|\.add_event_listener|\.client_x|\.prevent_default/);
   // A listener JS gave is passed as it is, and called as JS would (rd185).
   expect(js).toContain('export function givenRemoved(button, given) {\n  button.addEventListener("custom", given);\n  button.removeEventListener("custom", given);\n}');
@@ -82,6 +84,9 @@ test("event methods keep target types and retained callback lifetimes", () => {
     ['button.remove_event_listener_named("custom", &|e: &Event| e.prevent_default(), Some(&true));', 'hold the function `webapi::listener(..)` makes, or pass a named `fn`'],
     ['button.remove_event_listener_named("custom", webapi::EventListenerOrEventListenerObject::EventListener(&|_| {}), None);', 'a closure written in place is a new function'],
     ['fn off(button: &HTMLButtonElement, l: impl webapi::IntoAddedEventListener<Event>) { button.remove_event_listener_named("custom", l, None); } off(button, &|_: &Event| {});', 'a closure written in place is a new function'],
+    // A media query list's legacy `removeListener` too (#439).
+    ['webapi::window.match_media("(min-width: 1px)").remove_listener(&|_: &webapi::MediaQueryListEvent| {});', 'a closure written in place is a new function, which `remove_listener` never finds'],
+    ['webapi::window.match_media("(min-width: 1px)").add_listener(|e| record(e.matches() as i32));', 'type annotations needed'],
     // An event handler property's setter takes the same union, a handler
     // borrowed, which JS keeps: a closure owning what it would drop isn't
     // one, and a JS function of another argument isn't either (rd192).

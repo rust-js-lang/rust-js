@@ -280,3 +280,15 @@ listeners" with Chromium's run (`namedFnRemoved`: a named `fn` added and
 removed, `onCustom` both, nothing called). Mutations in
 `scripts/mutations/lower/bindings/given_before.ts`. No caller in rust-js or
 react-in-rust wrote one: each removes what it holds.
+
+A media query list's legacy `addListener(callback)` and
+`removeListener(callback)` took a new `Box<dyn FnMut(&Event)>` each, so
+removal never found the listener added, and no other form compiled
+(#439). They take a listener as `add_event_listener` and
+`remove_event_listener` do, `impl IntoEventListener<MediaQueryListEvent>`
+and `impl IntoAddedEventListener<MediaQueryListEvent>`
+(`webapi/generate.ts`'s `LEGACY_LISTENERS`): the one kept, `listener(..)`'s
+or a named `fn`, `list.addListener(changed); list.removeListener(changed);`,
+and a closure written in place for removal is refused. `null`, which each
+ignores, isn't taken. Held by `test/webapi-events.test.ts`
+(`media_listened`, and the refusal of `remove_listener(&|_| {})`).

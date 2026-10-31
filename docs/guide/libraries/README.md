@@ -360,7 +360,8 @@ How WebIDL maps to Rust, one rule for each:
   of the event JS keeps. Removal finds the one added by its identity, so a
   closure written in place, `remove_event_listener(Click, &|e: &PointerEvent|
   ..)`, a new function, is refused: hold `listener(..)`'s, or name a `fn`,
-  and give the same one to add and remove. A function of its `this` kept to add and
+  and give the same one to add and remove. A media query list's legacy
+  `add_listener` and `remove_listener` take a listener the same way. A function of its `this` kept to add and
   remove is `function::with_this`'s as it is, `EventListener(function::with_this(move
   |this, (event,): (&'static Event,)| ..))`, the function itself
   ([ADR 1021](../../decisions/1021-a-listener-is-a-closure-or-one-js-gave.md), amended).

@@ -34506,26 +34506,6 @@ impl MediaQueryList {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaQueryList/addListener)
-    #[cfg_attr(rust_js, rust_js::link_name = "addListener")]
-    #[cfg_attr(rust_js, rust_js::nullable(callback))]
-    #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn add_listener(&self, callback: Option<Box<dyn FnMut(&Event)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaQueryList/removeListener)
-    #[cfg_attr(rust_js, rust_js::link_name = "removeListener")]
-    #[cfg_attr(rust_js, rust_js::nullable(callback))]
-    #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn remove_listener(&self, callback: Option<Box<dyn FnMut(&Event)>>) {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaQueryList/onchange)
     #[cfg_attr(rust_js, rust_js::link_name = "get onchange")]
     #[cfg_attr(rust_js, rust_js::nullable)]
@@ -34542,6 +34522,24 @@ impl MediaQueryList {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_onchange(&self, value: Option<&dyn IntoEventHandler<MediaQueryListEvent>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaQueryList/addListener): `callback` called of each change, as
+    /// `add_event_listener(Change, callback, None)` calls it.
+    #[cfg_attr(rust_js, rust_js::link_name = "addListener")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn add_listener(&self, callback: impl IntoEventListener<MediaQueryListEvent>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaQueryList/removeListener): `callback`, added before, gone: the one
+    /// added, `listener(..)`'s or a named `fn`.
+    #[cfg_attr(rust_js, rust_js::link_name = "removeListener")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn remove_listener(&self, callback: impl IntoAddedEventListener<MediaQueryListEvent>) {
         unreachable!()
     }
 

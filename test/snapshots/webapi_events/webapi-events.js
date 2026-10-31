@@ -246,4 +246,20 @@ export function restored() {
     window.onerror = saved;
   }
 }
+
+// A media query list's legacy listener methods take a listener as
+// `addEventListener` does: the one kept, added and removed (#439).
+export function mediaListened(list) {
+  function changed(e) {
+    globalThis.record(e.matches ? 1 : 0);
+  }
+  list.addListener(changed);
+  list.removeListener(changed);
+  list.addListener(onCustomMedia);
+  list.removeListener(onCustomMedia);
+}
+
+function onCustomMedia() {
+  globalThis.record(2);
+}
 //# sourceMappingURL=webapi-events.js.map

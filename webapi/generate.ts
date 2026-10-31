@@ -1558,6 +1558,12 @@ function functionsOf(declared: Interface): Fn[] {
         skip("a timer, the js crate's");
         continue;
       }
+      // A media query list's legacy listener methods take a listener as
+      // `addEventListener` does, `LEGACY_LISTENERS`' (#439).
+      if (i.name === "MediaQueryList" && ["addListener", "removeListener"].includes(m.name)) {
+        skip("a legacy listener method, typed");
+        continue;
+      }
       // A static method is the class's, `URL.createObjectURL(blob)`, in its
       // module, beside an instance's method of its name, `Response.json`.
       const isStatic = m.special === "static";
@@ -1749,7 +1755,18 @@ const TIMERS_GONE = [
   gone("an interval is `js::set_interval(callback, ms)`'s.", "set_interval<G: TimerGone>(&self, handler: G, timeout: Option<f64>, arguments: impl Rest<dyn IntoUnknown>) -> f64"),
   gone("an interval is cleared by `js::clear_interval(id)`.", "clear_interval<G: TimerGone>(&self, id: G)"),
 ];
+// A media query list's legacy `addListener(callback)` and
+// `removeListener(callback)`, each a listener as `addEventListener`'s and
+// `removeEventListener`'s is (ADR 1021, amended; #439): one added is kept,
+// `listener(..)`'s or a named `fn`, so removal finds it, and a closure
+// written in place for removal, a new function, is refused. `null`, which
+// each ignores, isn't taken.
+const LEGACY_LISTENERS = [
+  typed([`[MDN](${mdn("MediaQueryList", "addListener")}): \`callback\` called of each change, as`, "`add_event_listener(Change, callback, None)` calls it."], "addListener", "add_listener(&self, callback: impl IntoEventListener<MediaQueryListEvent>)"),
+  typed([`[MDN](${mdn("MediaQueryList", "removeListener")}): \`callback\`, added before, gone: the one`, "added, `listener(..)`'s or a named `fn`."], "removeListener", "remove_listener(&self, callback: impl IntoAddedEventListener<MediaQueryListEvent>)"),
+];
 const TYPED: Record<string, string[]> = {
+  MediaQueryList: LEGACY_LISTENERS,
   Window: TIMERS_GONE,
   Document: [
     typed([`[MDN](${mdn("Document", "createElement")}): the element a tag is (ADR 0223),`, "`document.create_element(Button)` an `HTMLButtonElement`. Another name is", "`create_element_named`'s, an `Element`."], "createElement", `create_element<T: Tag>(&self, tag: T) -> &'static <T as Tag>::Element`),
