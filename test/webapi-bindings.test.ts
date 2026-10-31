@@ -1442,3 +1442,28 @@ pub fn detach(target: &EventTarget, listener: &Listener) {
   lib.detach(element, kept);
   expect(calls).toEqual([["load", kept.listener, { capture: true }], ["load", kept.listener, { capture: true }]]);
 });
+
+// React's SchedulerPostTask holds `const scheduler = global.scheduler;` at
+// load: the global object's property, `undefined` where the host lacks it,
+// where the bare `scheduler` throws as the module loads (rd319).
+test("a global read as the global object's property is undefined where the host lacks it", async () => {
+  const dir = fixture("webapi-global-this");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{Scheduler, global_this};
+
+pub fn post_task_scheduler() -> &'static Scheduler {
+    global_this.scheduler()
+}
+
+pub fn bare_scheduler() -> &'static Scheduler {
+    webapi::global::scheduler()
+}
+`);
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function postTaskScheduler() {\n  return globalThis.scheduler;\n}");
+  expect(js).toContain("export function bareScheduler() {\n  return scheduler;\n}");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.postTaskScheduler()).toBeUndefined();
+  expect(() => lib.bareScheduler()).toThrow(ReferenceError);
+});

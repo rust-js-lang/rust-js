@@ -95,3 +95,30 @@ closure of the event or one JS gave (ADR 1021). Case
 names. Held by `webapi-bindings.test.ts`'s "a window's listener functions
 are called bare, typed by its events", run in Node.
 
+## Amendment (2026-10-31): a global read as the global object's property (rd319)
+
+React's SchedulerPostTask holds the postTask scheduler at load, `const
+scheduler = global.scheduler;`, a property of the global object, which is
+`undefined` where the host lacks it, Node, Safari. Its port's
+`webapi::global::scheduler()` reads the bare `scheduler`, which throws a
+`ReferenceError` as the module loads there: the module held where
+upstream's loads.
+
+**`webapi::global_this` is the `globalThis` global, the global object, a
+`GlobalThis` of a window's members through its `Deref`, as TypeScript's
+`typeof globalThis` has them**: its getters read the global as its
+property, `global_this.scheduler()`'s `globalThis.scheduler`. A type of
+its own, not a `Window`, so `js::is_defined(Window::new_error_event)`'s
+global is still `window`'s, the one static of a `Window`. The one form of a property read of the global
+object, a static at the crate root beside `window`, which the generator
+writes (`GLOBALS`); a bare read stays `webapi::global`'s. `globalThis`,
+not Node's `global`, as every host has it. Case
+([0262](0262-when-rust-and-js-disagree.md)): N, the read upstream writes,
+`undefined` where the host lacks it, as TypeScript types it.
+
+Held by `test/webapi-bindings.test.ts`'s "a global read as the global
+object's property is undefined where the host lacks it", run in a host
+without `scheduler`, the bare read throwing beside it; and
+`test/webapi-coverage.test.ts`, which holds the crate to what the
+generator writes.
+

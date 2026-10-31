@@ -135,7 +135,14 @@ export function banner() {
 ```
 
 A global is read by its name, as JS reads it. `globalThis` is for what JS
-writes on it, a global you set, `set globalThis.appReady`.
+writes on it, a global you set, `set globalThis.appReady`; and for a global
+read as the global object's property, as React's SchedulerPostTask holds
+`global.scheduler` at load, `webapi::global_this.scheduler()`,
+`globalThis.scheduler`, `undefined` where the host lacks it, where the bare
+`webapi::global::scheduler()`, `scheduler`, throws a `ReferenceError`.
+`webapi::global_this` is the global object, a `GlobalThis` of a window's
+members through its `Deref`, as TypeScript's `typeof globalThis` is (rd319, [ADR
+0269](../../decisions/0269-global-scope.md), amended).
 
 The crates bind the standard ones, called bare:
 

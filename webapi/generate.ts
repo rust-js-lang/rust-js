@@ -268,11 +268,15 @@ function throwing(i: Interface, f: Fn): Fn {
 const FIELD_TYPES: Record<string, string> = { "RequestInit.headers": "&'a Headers", "PromiseRejectionEventInit.promise": "&'a dyn IntoUnknown" };
 
 // The globals at the crate root: `document`, `window`, `performance`, which
-// a worker has too, `navigator`, and `history`, the page's; and `console`,
-// a namespace's value (ADR 0667).
+// a worker has too, `navigator`, and `history`, the page's; `console`,
+// a namespace's value (ADR 0667); and `globalThis`, `global_this`, the
+// global object, `GlobalThis`, a `Window` through its `Deref`, as
+// TypeScript's `typeof globalThis` has a window's members: its getter reads
+// a global as its property, `undefined` where the host lacks it (rd319). A
+// type of its own, so a `Window` method's global is `window`'s alone.
 const GLOBALS: [string, string][] = [
   ["document", "Document"], ["window", "Window"], ["performance", "Performance"], ["navigator", "Navigator"], ["history", "History"],
-  ["console", "Console"],
+  ["console", "Console"], ["globalThis", "GlobalThis"],
 ];
 
 // ── Reading the IDL ─────────────────────────────────────────────────────
@@ -1814,8 +1818,30 @@ line(`unsafe extern "Rust" {`);
 GLOBALS.forEach(([name, type], k) => {
   if (k > 0) line();
   line(`    /// The \`${name}\` global.`);
-  line(`    pub safe static ${name}: &'static ${type};`);
+  if (name === "globalThis") {
+    line(`    /// The global object, its globals its properties: \`global_this.scheduler()\` is`);
+    line(`    /// \`globalThis.scheduler\`, \`undefined\` where the host lacks it, where the bare`);
+    line(`    /// \`scheduler\` of [\`global::scheduler\`] throws (rd319).`);
+    line(`    #[link_name = "globalThis"]`);
+  }
+  line(`    pub safe static ${snake(name)}: &'static ${type};`);
 });
+line(`}`);
+line();
+line(`/// The global object, \`globalThis\`, of a window's members through its \`Deref\`, as`);
+line(`/// TypeScript's \`typeof globalThis\` has them (rd319).`);
+line(`#[cfg_attr(rust_js, rust_js::types = "Window")]`);
+line(`pub struct GlobalThis(PhantomData<JsObject>);`);
+line();
+line(`unsafe impl Defined for GlobalThis {}`);
+line();
+line(`impl Deref for GlobalThis {`);
+line(`    type Target = Window;`);
+line();
+line(`    fn deref(&self) -> &Window {`);
+line(`        // Never runs: rust-js compiles this \`Deref\` to the object itself.`);
+line(`        unsafe { &*(self as *const Self as *const Window) }`);
+line(`    }`);
 line(`}`);
 
 let count = 0;

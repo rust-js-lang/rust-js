@@ -32,6 +32,29 @@ unsafe extern "Rust" {
 
     /// The `console` global.
     pub safe static console: &'static Console;
+
+    /// The `globalThis` global.
+    /// The global object, its globals its properties: `global_this.scheduler()` is
+    /// `globalThis.scheduler`, `undefined` where the host lacks it, where the bare
+    /// `scheduler` of [`global::scheduler`] throws (rd319).
+    #[link_name = "globalThis"]
+    pub safe static global_this: &'static GlobalThis;
+}
+
+/// The global object, `globalThis`, of a window's members through its `Deref`, as
+/// TypeScript's `typeof globalThis` has them (rd319).
+#[cfg_attr(rust_js, rust_js::types = "Window")]
+pub struct GlobalThis(PhantomData<JsObject>);
+
+unsafe impl Defined for GlobalThis {}
+
+impl Deref for GlobalThis {
+    type Target = Window;
+
+    fn deref(&self) -> &Window {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const Window) }
+    }
 }
 
 /// [`EventTarget`](https://developer.mozilla.org/docs/Web/API/EventTarget)
