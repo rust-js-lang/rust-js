@@ -457,9 +457,9 @@ export const mutations: Mutation[] = [
     breaks:
       '`Kind::Object(_) | Kind::Array(_)` tests an object that\'s no array or an array, `Array.isArray(v) || (typeof v === "object" && !Array.isArray(v))`, not `typeof v === "object"`',
     file: "src/lower/untagged.rs",
-    find: "            .map(|(own, narrower)| (own, narrower.into_iter().filter(|kind| !whole.contains(kind)).collect()))\n",
+    find: "                    narrower.into_iter().filter(|kind| !whole.contains(kind)).collect(),\n",
     replace:
-      "            .map(|(own, narrower)| (own, narrower.into_iter().filter(|kind| !whole.contains(kind) || true).collect()))\n",
+      "                    narrower.into_iter().filter(|kind| !whole.contains(kind) || true).collect(),\n",
     tests: [
       "test/lowering-switches.test.ts",
       "-t",
@@ -471,9 +471,8 @@ export const mutations: Mutation[] = [
     breaks:
       '`Kind::Object(_) | Kind::Array(_)` tests an array too, `Array.isArray(v) || typeof v === "object"`, which an object is anyway',
     file: "src/lower/untagged.rs",
-    find: "            .filter(|(_, (own, _))| !(arrays && *own == Kind::Array || nulls && *own == Kind::Null))\n",
-    replace:
-      "            .filter(|(_, (own, _))| !(false && *own == Kind::Array || nulls && *own == Kind::Null))\n",
+    find: "            Kind::Array => objects(own),\n",
+    replace: "            Kind::Array => false,\n",
     tests: [
       "test/lowering-switches.test.ts",
       "-t",
@@ -485,9 +484,8 @@ export const mutations: Mutation[] = [
     breaks:
       '`Kind::Null | Kind::Object(_) | Kind::Array(_)` tests `null` too, `typeof value === "object" || value === null`, which an object\'s `typeof` is anyway',
     file: "src/lower/untagged.rs",
-    find: "            .filter(|(_, (own, _))| !(arrays && *own == Kind::Array || nulls && *own == Kind::Null))\n",
-    replace:
-      "            .filter(|(_, (own, _))| !(arrays && *own == Kind::Array || false && *own == Kind::Null))\n",
+    find: "            Kind::Null => objects(own),\n",
+    replace: "            Kind::Null => false,\n",
     tests: [
       "test/lowering-switches.test.ts",
       "-t",
@@ -609,8 +607,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a member another variant has too tells its variant apart, so a `Container`, which has `children` too, is taken for an `Instance` (rd291)",
     file: "src/lower/untagged.rs",
-    find: "            true => Some(Kind::Object),\n",
-    replace: "            true => Some(kind),\n",
+    find: "                Kind::Object\n            }\n            _ => kind,\n",
+    replace: "                kind\n            }\n            _ => kind,\n",
     tests: ["test/corpus.test.ts", "-t", "^untagged_told_by_members.rs$"],
   },
   {
@@ -631,5 +629,71 @@ export const mutations: Mutation[] = [
     find: "                if matches!(*told, Kind::Object | Kind::Member(..) | Kind::Null | Kind::Undefined) {\n",
     replace: "                if false {\n",
     tests: ["test/untagged-members.test.ts"],
+  },
+  {
+    name: "untagged-in-untagged-refused",
+    breaks:
+      "another untagged enum a variant holds is refused, JS can't tell it, where its variants together tell it (rd305)",
+    file: "src/lower/untagged.rs",
+    find: "                Some(Kind::Union(parts))\n",
+    replace: "                None\n",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_in_untagged.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "untagged-in-untagged-overlaps-none",
+    breaks:
+      "another untagged enum's kinds overlap no other variant's, so a number beside a number or a word isn't refused (rd305)",
+    file: "src/lower/untagged.rs",
+    find: "            (Kind::Union(parts), other) | (other, Kind::Union(parts)) => parts.iter().any(|part| part.overlaps(other)),\n",
+    replace: "            (Kind::Union(_), _) | (_, Kind::Union(_)) => false,\n",
+    tests: ["test/untagged-members.test.ts", "-t", "an untagged enum in another is refused"],
+  },
+  {
+    name: "untagged-in-untagged-member-kept",
+    breaks:
+      "another untagged enum's struct told by a member another variant's struct has too is told by it all the same, so a container whose `children` is an array is taken for an item (rd305)",
+    file: "src/lower/untagged.rs",
+    find: "                for part in parts.into_iter().map(told) {\n",
+    replace: "                for part in parts.into_iter() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_in_untagged.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "untagged-member-in-an-enum-unseen",
+    breaks:
+      "a member another variant's untagged enum's struct has too tells a struct apart all the same, so a root and a node are told by `children` (rd305)",
+    file: "src/lower/untagged.rs",
+    find: "            ty::Adt(e, args) if e.is_enum() && bindings::is_untagged(self.tcx, e.did()) => {\n",
+    replace: "            ty::Adt(e, args) if false && e.is_enum() && bindings::is_untagged(self.tcx, e.did()) => {\n",
+    tests: ["test/untagged-members.test.ts", "-t", "an untagged enum in another is refused"],
+  },
+  {
+    name: "untagged-in-untagged-in-untagged",
+    breaks:
+      "an untagged enum that holds another in turn, itself in a box, is told by what it holds, which never ends (rd305)",
+    file: "src/lower/untagged.rs",
+    find: "                            .is_some_and(|f| self.untagged_enum(f.ty(self.tcx, args).skip_normalization()))\n",
+    replace: "                            .is_some_and(|_| false)\n",
+    tests: ["test/untagged-members.test.ts", "-t", "an untagged enum in another is refused"],
+  },
+  {
+    name: "untagged-in-untagged-member-tested",
+    breaks:
+      "another untagged enum's object told by a member is tested beside its plain object, `Array.isArray(child.children) || (typeof child === \"object\" ..)`, which is that object already (rd305)",
+    file: "src/lower/untagged.rs",
+    find: "            Kind::Member(..) | Kind::Class(..) | Kind::Test(_) => objects(own) && variants.len() == 1,\n",
+    replace: "            Kind::Member(..) | Kind::Class(..) | Kind::Test(_) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_in_untagged.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "untagged-in-untagged-test-unimported",
+    breaks:
+      "another untagged enum's variant's test function, `isValidElement`, isn't imported where only the outer's pattern tests it (rd305)",
+    file: "src/lower/untagged.rs",
+    find: "        && let Some((inner, inner_args)) = untagged_adt(tcx, ty)\n",
+    replace: "        && let Some((inner, inner_args)) = untagged_adt(tcx, ty).filter(|_| false)\n",
+    tests: ["test/jsx-types.test.ts", "-t", "an untagged enum in an untagged enum"],
   },
 ];

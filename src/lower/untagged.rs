@@ -43,15 +43,28 @@ pub(super) enum Kind {
     /// or `null`, `#[rust_js::null]` (ADR 0676).
     Undefined,
     Null,
+    /// Another untagged enum, what its variants are together, React's
+    /// `Instance | TextInstance` in childToJSX's `Instance | TextInstance
+    /// | Array<Instance | TextInstance>` (rd305): never one of these.
+    Union(Vec<Kind>),
 }
 
 impl Kind {
     /// Whether a value of one could be one of `other`'s too: a literal
-    /// is a string, and the same literal.
+    /// is a string, and the same literal; another enum's, one of its.
     fn overlaps(&self, other: &Kind) -> bool {
         match (self, other) {
+            (Kind::Union(parts), other) | (other, Kind::Union(parts)) => parts.iter().any(|part| part.overlaps(other)),
             (Kind::Literal(_), Kind::String) | (Kind::String, Kind::Literal(_)) => true,
             (a, b) => a == b,
+        }
+    }
+
+    /// The kinds it is one of: another enum's, each of its; else itself.
+    fn parts(&self) -> &[Kind] {
+        match self {
+            Kind::Union(parts) => parts,
+            one => std::slice::from_ref(one),
         }
     }
 
@@ -68,7 +81,7 @@ impl Kind {
             Kind::Object => Some("object"),
             Kind::Literal(_) => Some("string"),
             Kind::Undefined => Some("undefined"),
-            Kind::Array | Kind::Class(..) | Kind::Test(_) | Kind::Member(..) | Kind::Null => None,
+            Kind::Array | Kind::Class(..) | Kind::Test(_) | Kind::Member(..) | Kind::Null | Kind::Union(_) => None,
         }
     }
 
@@ -91,6 +104,10 @@ impl Kind {
             Kind::Literal(name) => format!("the string {name:?}"),
             Kind::Null => "`null`".into(),
             Kind::Undefined => "`undefined`".into(),
+            Kind::Union(parts) => {
+                let parts: Vec<String> = parts.iter().map(Kind::describe).collect();
+                parts.join(" or ")
+            }
             _ => format!("a `{}`", self.type_of().expect("a `typeof` kind")),
         }
     }
@@ -148,11 +165,39 @@ pub(super) fn tests_of<'tcx>(
         return vec![own];
     }
     // A struct of fields is an object, whose test leaves out a tested one's.
-    let object = payload(variant).is_some_and(|ty| {
+    let object = |ty: Ty<'tcx>| {
         matches!(ty.kind(), ty::Adt(s, own) if s.is_struct() && s.non_enum_variant().ctor_kind().is_none()
             && !s.non_enum_variant().fields.iter().next().is_some_and(|f| f.ty(tcx, own).skip_normalization().is_phantom_data()))
-    });
-    if bindings::is_otherwise(tcx, variant.def_id) || object {
+    };
+    // Another untagged enum's, each of its variants' (rd305): its own, and
+    // of an object, the others'.
+    if let Some(ty) = payload(variant)
+        && let Some((inner, inner_args)) = untagged_adt(tcx, ty)
+    {
+        let mut tests: Vec<String> = Vec::new();
+        for v in inner.variants() {
+            let ty = v
+                .fields
+                .iter()
+                .next()
+                .map(|f| f.ty(tcx, inner_args).skip_normalization().peel_refs());
+            let own = match ty.map(|ty| *ty.kind()) {
+                Some(ty::Adt(payload, _)) => bindings::test_of(tcx, payload.did()).into_iter().collect(),
+                _ => Vec::new(),
+            };
+            let others = match ty.is_some_and(object) {
+                true => adt.variants().iter().filter_map(test).collect(),
+                false => Vec::new(),
+            };
+            for test in own.into_iter().chain(others) {
+                if !tests.contains(&test) {
+                    tests.push(test);
+                }
+            }
+        }
+        return tests;
+    }
+    if bindings::is_otherwise(tcx, variant.def_id) || payload(variant).is_some_and(object) {
         return adt.variants().iter().filter_map(test).collect();
     }
     Vec::new()
@@ -358,6 +403,30 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 Some(Kind::String)
             }
             ty::Adt(adt, _) if bindings::numbered(self.tcx, *adt) => Some(Kind::Number),
+            // Another untagged enum, what its variants are together; not
+            // one with an `otherwise`, nor `undefined` or `null`, nor one
+            // that holds another in turn (rd305).
+            ty::Adt(adt, args) if adt.is_enum() && bindings::is_untagged(self.tcx, adt.did()) => {
+                let mut parts: Vec<Kind> = Vec::new();
+                for variant in adt.variants() {
+                    if bindings::is_otherwise(self.tcx, variant.def_id)
+                        || (variant.fields.iter().next())
+                            .is_some_and(|f| self.untagged_enum(f.ty(self.tcx, args).skip_normalization()))
+                    {
+                        return None;
+                    }
+                    let kind = self.untagged_variant_kind(variant, args)?;
+                    for part in kind.parts() {
+                        if matches!(part, Kind::Null | Kind::Undefined) {
+                            return None;
+                        }
+                        if !parts.contains(part) {
+                            parts.push(part.clone());
+                        }
+                    }
+                }
+                Some(Kind::Union(parts))
+            }
             _ => None,
         }
     }
@@ -386,22 +455,54 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let kind = self.untagged_kind(variant.fields.iter().next()?.ty(self.tcx, args).skip_normalization())?;
         // A member another variant's object has too tells nothing apart
         // here: it's an object, what the others aren't, React's `Container
-        // | Instance` an instance where its `rootID` isn't a string (rd291).
-        let Kind::Member(key, _) = &kind else { return Some(kind) };
+        // | Instance` an instance where its `rootID` isn't a string (rd291);
+        // so of each of another enum's kinds (rd305).
         let adt = self.tcx.adt_def(self.tcx.parent(variant.def_id));
-        let has_key = |v: &VariantDef| {
-            let payload = v
-                .fields
-                .iter()
-                .next()
-                .map(|f| self.untagged_payload(f.ty(self.tcx, args).skip_normalization()));
-            matches!(payload.map(|ty| *ty.kind()), Some(ty::Adt(s, _)) if s.is_struct()
-                && s.non_enum_variant().fields.iter().any(|f| bindings::field_key(self.tcx, f) == *key))
+        let told = |kind: Kind| match &kind {
+            Kind::Member(key, _)
+                if (adt.variants().iter()).any(|v| {
+                    v.def_id != variant.def_id
+                        && (v.fields.iter().next())
+                            .is_some_and(|f| self.has_member(f.ty(self.tcx, args).skip_normalization(), key))
+                }) =>
+            {
+                Kind::Object
+            }
+            _ => kind,
         };
-        match adt.variants().iter().any(|v| v.def_id != variant.def_id && has_key(v)) {
-            true => Some(Kind::Object),
-            false => Some(kind),
+        Some(match kind {
+            Kind::Union(parts) => {
+                let mut told_parts: Vec<Kind> = Vec::new();
+                for part in parts.into_iter().map(told) {
+                    if !told_parts.contains(&part) {
+                        told_parts.push(part);
+                    }
+                }
+                Kind::Union(told_parts)
+            }
+            kind => told(kind),
+        })
+    }
+
+    /// Whether a value of a payload of type `ty` may have the member `key`:
+    /// a struct that declares it, or another untagged enum's that does.
+    fn has_member(&self, ty: Ty<'tcx>, key: &str) -> bool {
+        let declares = |ty: Ty<'tcx>| {
+            matches!(*self.untagged_payload(ty).kind(), ty::Adt(s, _) if s.is_struct()
+                && s.non_enum_variant().fields.iter().any(|f| bindings::field_key(self.tcx, f) == key))
+        };
+        match *self.untagged_payload(ty).kind() {
+            ty::Adt(e, args) if e.is_enum() && bindings::is_untagged(self.tcx, e.did()) => {
+                (e.variants().iter().filter_map(|v| v.fields.iter().next()))
+                    .any(|f| declares(f.ty(self.tcx, args).skip_normalization()))
+            }
+            _ => declares(ty),
         }
+    }
+
+    /// Whether a payload of type `ty` is another untagged enum's value.
+    fn untagged_enum(&self, ty: Ty<'tcx>) -> bool {
+        untagged_adt(self.tcx, self.untagged_payload(ty)).is_some()
     }
 
     /// A `From` into an untagged enum, or `into()` to one: the trait's method,
@@ -540,24 +641,35 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         variants: &[&VariantDef],
         present: bool,
     ) -> Vec<(usize, Kind, Vec<Kind>)> {
-        let parts: Vec<(Kind, Vec<Kind>)> = (variants.iter())
-            .map(|v| self.untagged_parts(adt, args, v, present))
+        let parts: Vec<(usize, Kind, Vec<Kind>)> = (variants.iter().enumerate())
+            .flat_map(|(i, v)| {
+                (self.untagged_parts(adt, args, v, present).into_iter()).map(move |(own, narrower)| (i, own, narrower))
+            })
             .collect();
         let whole: Vec<Kind> = (parts.iter())
-            .filter(|(_, narrower)| narrower.is_empty())
-            .map(|(own, _)| own.clone())
+            .filter(|(_, _, narrower)| narrower.is_empty())
+            .map(|(_, own, _)| own.clone())
             .collect();
-        let parts: Vec<(Kind, Vec<Kind>)> = (parts.into_iter())
-            .map(|(own, narrower)| (own, narrower.into_iter().filter(|kind| !whole.contains(kind)).collect()))
+        let parts: Vec<(usize, Kind, Vec<Kind>)> = (parts.into_iter())
+            .map(|(i, own, narrower)| {
+                (
+                    i,
+                    own,
+                    narrower.into_iter().filter(|kind| !whole.contains(kind)).collect(),
+                )
+            })
             .collect();
-        // Whether an object of these may be `kind`, an array or `null`.
+        // Whether an object of these may be `kind`, an array or `null`, or
+        // what another enum's object is beside it (rd305).
         let objects =
-            |kind: &Kind| (parts.iter()).any(|(own, narrower)| *own == Kind::Object && !narrower.contains(kind));
-        let (arrays, nulls) = (objects(&Kind::Array), objects(&Kind::Null));
-        (parts.into_iter().enumerate())
-            .filter(|(_, (own, _))| !(arrays && *own == Kind::Array || nulls && *own == Kind::Null))
-            .map(|(i, (own, narrower))| (i, own, narrower))
-            .collect()
+            |kind: &Kind| (parts.iter()).any(|(_, own, narrower)| *own == Kind::Object && !narrower.contains(kind));
+        let taken_in = |own: &Kind| match own {
+            Kind::Array => objects(own),
+            Kind::Null => objects(own),
+            Kind::Member(..) | Kind::Class(..) | Kind::Test(_) => objects(own) && variants.len() == 1,
+            _ => false,
+        };
+        (parts.iter()).filter(|(_, own, _)| !taken_in(own)).cloned().collect()
     }
 
     /// What `typeof` says is the value of an `otherwise` variant of `adt`,
@@ -593,19 +705,29 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         args: GenericArgsRef<'tcx>,
         variant: &VariantDef,
         present: bool,
-    ) -> (Kind, Vec<Kind>) {
+    ) -> Vec<(Kind, Vec<Kind>)> {
         let otherwise = |v: &VariantDef| bindings::is_otherwise(self.tcx, v.def_id);
+        // Each variant's kinds, each of another enum's (rd305).
         let kinds: Vec<Kind> = adt
             .variants()
             .iter()
             .filter(|v| !otherwise(v))
             .filter_map(|v| self.untagged_variant_kind(v, args))
+            .flat_map(|kind| kind.parts().to_vec())
             .collect();
         let own = match otherwise(variant) {
             true => self.otherwise_kind(adt, args),
             false => self.untagged_variant_kind(variant, args),
         };
         let own = own.expect("an untagged enum's variant has a kind, as its declaration was checked");
+        (own.parts().iter())
+            .map(|own| self.narrower_than(own.clone(), &kinds, present))
+            .collect()
+    }
+
+    /// `own`'s kind and what of `kinds`, the other variants', its test
+    /// leaves out (`untagged_parts`).
+    fn narrower_than(&self, own: Kind, kinds: &[Kind], present: bool) -> (Kind, Vec<Kind>) {
         let narrower: Vec<&Kind> = kinds
             .iter()
             .filter(|kind| match (&own, kind) {

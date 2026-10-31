@@ -1112,3 +1112,32 @@ pub fn Diagram<C: ReactNode>(DiagramProps { children }: DiagramProps<C>) -> JSX:
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(lib.Diagram, null, createElement("img"), "text", createElement("b")))).toBe("<section><img/></section>");
 });
+
+// An untagged enum another's variant holds, an element or text beside a list
+// of them (rd305): the variant's test is the inner's variants' together,
+// `isValidElement(nodes) || typeof nodes === "string"`, its test function
+// imported where only the outer's pattern tests it.
+test("an untagged enum in an untagged enum is told by its variants together", async () => {
+  const { dir, args } = compile(`use react::ReactElement;
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Node<'a> {
+    Element(&'a ReactElement),
+    Text(&'a str),
+}
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Nodes<'a> {
+    One(Node<'a>),
+    Many(Vec<Node<'a>>),
+    Count(f64),
+}
+pub fn is_one(nodes: Nodes<'_>) -> bool {
+    matches!(nodes, Nodes::One(_))
+}
+`);
+  run(args);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('import { isValidElement } from "react";\n');
+  expect(js).toContain('return isValidElement(nodes) || typeof nodes === "string";');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.isOne(createElement("b")), lib.isOne("a"), lib.isOne([]), lib.isOne(1), lib.isOne({})]).toEqual([true, true, false, false, false]);
+});

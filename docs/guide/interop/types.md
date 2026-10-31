@@ -805,6 +805,15 @@ export function size(input) {
   plain one's test is only what the others aren't, `!Array.isArray(child
   .children)`
   ([ADR 1036](../../decisions/1036-an-untagged-enums-struct-is-told-by-a-member-it-declares.md)).
+  A variant may hold another untagged enum, one of its variants' payloads:
+  React's childToJSX's `Instance | TextInstance | Array<Instance |
+  TextInstance>` is `enum JsxChild { Child(Child), Children(Vec<Child>) }`,
+  its `Child` an object no array is, `typeof child === "object" &&
+  !Array.isArray(child)`, and then the inner enum's variant told as it is
+  alone, `Array.isArray(child.children)`. An inner enum with an
+  `otherwise`, an `undefined` or a `null`, or that holds a third in turn,
+  is an error
+  ([ADR 1039](../../decisions/1039-an-untagged-enum-may-hold-another.md)).
   A `match` whose arms are alike in JS, each calling its member's method
   of the same name, is that one call, no test: an `IntersectionObserver |
   ResizeObserver`'s `Observer::Intersection(o) => o.observe(child),

@@ -1,7 +1,9 @@
 # 1036. An untagged enum's struct is told apart by a member it declares
 
 Status: Accepted (rd291). Extends [0214](0214-untagged-enums.md): two
-structs, each an object, in one untagged enum.
+structs, each an object, in one untagged enum. Extended by
+[1039](1039-an-untagged-enum-may-hold-another.md): of each of another
+untagged enum's structs a variant holds.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, the output's shape:
 each value the program makes of a variant has its member, and the others'

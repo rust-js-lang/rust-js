@@ -69,3 +69,93 @@ test("a member that tells a struct apart is of a kind JS tells", () => {
   expect(ran.code).not.toBe(0);
   expect(ran.stderr).toContain("is told apart by its `children`, `#[rust_js::test]`, which holds a string, a number, a `bool`, an array or a class");
 });
+
+// Another untagged enum a variant holds is each of its kinds (rd305): one
+// another variant's value may be, a container whose `children` tells it as
+// an instance's does, or a number beside a number or a word, is refused,
+// where it's dropped or compared, or where a `match` tells them apart.
+test("an untagged enum in another is refused where its kinds are another variant's", () => {
+  const dir = fixture("untagged-members-nested");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `${children}
+pub struct Container {
+    #[cfg_attr(rust_js, rust_js::test)]
+    pub children: RefCell<Vec<Child>>,
+}
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Parent {
+    Container(Rc<Container>),
+    Child(Child),
+}
+`,
+  );
+  const dropped = runSync([compiler, ...flags(dir)], root, 60_000);
+  expect(dropped.code).not.toBe(0);
+  expect(dropped.stderr).toContain("`Child` and `Container` both hold an object whose `children` is an array or an object, which JS can't tell apart in an untagged enum (ADR 0214)");
+  const source = `pub struct Leaf<'a> {
+    #[cfg_attr(rust_js, rust_js::test)]
+    pub children: &'a [Node<'a>],
+}
+
+pub struct Text {
+    pub id: f64,
+}
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Node<'a> {
+    Leaf(&'a Leaf<'a>),
+    Text(&'a Text),
+}
+
+pub struct Root<'a> {
+    #[cfg_attr(rust_js, rust_js::test)]
+    pub children: &'a [Node<'a>],
+}
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Tree<'a> {
+    Root(&'a Root<'a>),
+    Node(Node<'a>),
+}
+
+pub fn is_root(tree: &Tree<'_>) -> bool {
+    matches!(tree, Tree::Root(_))
+}
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Key {
+    Index(f64),
+    Name(&'static str),
+}
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Keyed {
+    One(Key),
+    Count(u32),
+}
+
+pub fn is_count(keyed: &Keyed) -> bool {
+    matches!(keyed, Keyed::Count(_))
+}
+`;
+  // One that holds itself, or another that holds a third, isn't told so.
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Deep {
+    Inner(Box<Deep>),
+    Leaf(f64),
+}
+`,
+  );
+  const deep = runSync([compiler, ...flags(dir)], root, 60_000);
+  expect(deep.code).not.toBe(0);
+  expect(deep.stderr).toContain("JS can't tell a `std::boxed::Box<Deep>` from another variant's value");
+  writeFileSync(join(dir, "lib.rs"), source);
+  const ran = runSync([compiler, ...flags(dir)], root, 60_000);
+  expect(ran.code).not.toBe(0);
+  expect(ran.stderr).toContain("`Root` and `Node` hold values of one kind, which JS can't tell apart in an untagged enum (ADR 0214)");
+  expect(ran.stderr).toContain("`Count` and `One` hold values of one kind, which JS can't tell apart in an untagged enum (ADR 0214)");
+});

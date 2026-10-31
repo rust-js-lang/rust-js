@@ -233,7 +233,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0211 `Option::as_deref` of a `String` or a `Vec` is the option](0211-option-as-deref.md)
 - [0212 A props field's default is where JS takes them apart](0212-props-defaults.md)
 - [0213 A component's props are given as one flat list](0213-props-as-written.md)
-- [0214 An untagged enum is its payload: TS's `string | Blob`](0214-untagged-enums.md) *(amended by 0668: an `otherwise` of one `typeof` kind is tested as it; by 0676: a variant without fields may be `undefined` or `null`; amended: a `RefCell` of an object is the object, an `Rc` what it points at; a `SymbolFor` is a symbol, and `==` of primitives `===`; extended by 1036: a struct told by a member it declares)*
+- [0214 An untagged enum is its payload: TS's `string | Blob`](0214-untagged-enums.md) *(amended by 0668: an `otherwise` of one `typeof` kind is tested as it; by 0676: a variant without fields may be `undefined` or `null`; amended: a `RefCell` of an object is the object, an `Rc` what it points at; a `SymbolFor` is a symbol, and `==` of primitives `===`; extended by 1036: a struct told by a member it declares; by 1039: a variant may hold another untagged enum)*
 - [0215 The webapi crate's unions are untagged enums](0215-webapi-unions.md)
 - [0216 A slice's `concat` of parts written out is an array of them, spread](0216-concat-spread.md)
 - [0217 `enumerate()` then a callback's method is the method, given each index](0217-enumerate-index.md)
@@ -820,6 +820,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1036 An untagged enum's struct is told apart by a member it declares](1036-an-untagged-enums-struct-is-told-by-a-member-it-declares.md) *(rd291)*
 - [1037 A module's namespace is a unit struct of its functions](1037-a-module-namespace-is-a-unit-struct-of-its-functions.md) *(rd292; amended: a method that only passes its parameters on is that function, re-exported; its import named by its `use`, rd292b)*
 - [1038 A trait of classes' method that gives a field is that field](1038-a-trait-of-classes-method-that-gives-a-field-is-that-field.md) *(rd304)*
+- [1039 An untagged enum's variant may hold another untagged enum](1039-an-untagged-enum-may-hold-another.md) *(rd305)*
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md) *(amended: a closure's handle on itself is its own name)*
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
