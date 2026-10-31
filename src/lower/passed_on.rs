@@ -63,6 +63,11 @@ pub(in crate::lower) enum Taker {
     /// the function it calls, as any taker's is (rd196, rd212, ADR 0262's
     /// exception, the user's decision).
     Callback,
+    /// A closure where it's made, wherever its value goes, a `let`'s, a
+    /// field's, a box's: only one that's the function it calls whoever
+    /// takes it, that ignores what it's given (`Forwarding`'s `ignores`) or
+    /// passes it all on (`eta`).
+    Closure,
 }
 
 /// What a closure MIR makes passes its call on to, where it's written: its
@@ -94,6 +99,19 @@ pub(in crate::lower) struct Forwarding {
     /// user's decision): only its `.length` and its identity tell them
     /// apart.
     pub(in crate::lower) ignores: bool,
+    /// Whether it passes all it's given, in order, to a namespace's
+    /// function through the value it's called on, which reads no `this`
+    /// (ADR 1037), and gives back what that gives: `move |f, a|
+    /// renderer.batched_updates(f, a)`, which Rust can name no other way.
+    /// Then it's that function wherever it's made, `renderer.batchedUpdates`,
+    /// read there, as Rust's `move` closure holds that value (the user's
+    /// decision, 2026-10-31, ADR 0262's exception, as `ignores`): only its
+    /// `.length`, its identity and what more a JS caller gives, which that
+    /// function never reads, tell them apart. Not one of a function Rust
+    /// could have named there, which the program wrote to be a function of
+    /// its own, React's DEV dispatchers' `readContext(context) { return
+    /// readContext(context); }` (ADR 0605, amended).
+    pub(in crate::lower) eta: bool,
 }
 
 /// What a closure's one call calls.
@@ -164,7 +182,7 @@ impl Taker {
             Taker::Handler => callee != Callee::Host,
             Taker::OnceCallback => callee == Callee::Own,
             Taker::FnPointer => matches!(callee, Callee::Own | Callee::Host),
-            Taker::Made | Taker::FnValue | Taker::Callback => false,
+            Taker::Made | Taker::FnValue | Taker::Callback | Taker::Closure => false,
         }
     }
 }
@@ -182,13 +200,16 @@ pub(in crate::lower) fn passed_on(f: &Expr, taker: Taker, forwarding: &[Forwardi
     // what the arrow gives, or where `g` is the crate's or a closure, of
     // which MIR writes a statement only of a call that gives `()`, whose
     // JS gives `undefined` as the arrow does, or `!`, which never returns.
+    let mut eta = false;
     let statement = match taker {
         Taker::Made | Taker::FnValue => false,
         _ => {
             let fact = (forwarding.iter()).find(|fact| !f.span.is_none() && fact.span == f.span)?;
-            // One that ignores what it's given is the function it calls,
-            // whoever takes it (rd196, rd212).
-            if !taker.takes(fact.callee) && !fact.ignores {
+            // One that ignores what it's given, or passes it all on, is the
+            // function it calls, whoever takes it (rd196, rd212, the user's
+            // decisions).
+            eta = fact.eta;
+            if !taker.takes(fact.callee) && !fact.ignores && !fact.eta {
                 return None;
             }
             // A closure as a `fn` of a function Rust could have named there
@@ -198,14 +219,24 @@ pub(in crate::lower) fn passed_on(f: &Expr, taker: Taker, forwarding: &[Forwardi
             }
             matches!(
                 taker,
-                Taker::Handler | Taker::OnceCallback | Taker::FnPointer | Taker::Callback
+                Taker::Handler | Taker::OnceCallback | Taker::FnPointer | Taker::Callback | Taker::Closure
             )
         }
     };
     let (callee, arity) = passed_to(f, statement)?;
-    let named = callee.is_named();
+    // Of one that passes it all on, a namespace's function through the
+    // value it's called on, `renderer.batchedUpdates`, read where it's made,
+    // as Rust's `move` closure holds that value.
+    let named = callee.is_named()
+        || eta
+            && matches!(&callee.kind, js::ExprKind::Member(of, _) if matches!(of.kind, js::ExprKind::Var(_) | js::ExprKind::Symbol(_)));
     let takes = match taker {
-        Taker::ArrayMethod | Taker::Handler | Taker::OnceCallback | Taker::FnPointer | Taker::Callback => named,
+        Taker::ArrayMethod
+        | Taker::Handler
+        | Taker::OnceCallback
+        | Taker::FnPointer
+        | Taker::Callback
+        | Taker::Closure => named,
         Taker::Made => named || matches!(callee.kind, js::ExprKind::Member(..)),
         Taker::FnValue => match &callee.kind {
             js::ExprKind::Var(_) => callee.helper_name().is_none(),
@@ -224,8 +255,6 @@ pub(in crate::lower) fn passed_on(f: &Expr, taker: Taker, forwarding: &[Forwardi
     })
 }
 
-/// Whether `e`, a call's argument, is one its JS leaves out where it's
-/// last (ADRs 0443, 0441): a `None` or a `()`.
 /// Of `method`, a `#[rust_js::namespace]`'s method (ADR 1037), whose body
 /// is `thir`: the function of another of the crate's modules that it only
 /// passes its parameters on to, past its `self`, in order, each as it is,
@@ -269,6 +298,40 @@ pub(in crate::lower) fn forwarded_function<'tcx>(
     (mine.inputs().get(1..) == Some(theirs.inputs())).then_some((target, args))
 }
 
+/// In `body`, `const onSuccess = handleNavigateComplete;` of a closure
+/// that's the function of the program's it calls where it's made, one that
+/// ignores what it's given (`Forwarding`'s `ignores`):
+/// the function, read where the variable is, the variable gone, as a `let`
+/// names nothing more (rd284, ADR 0605, amended). A function of the
+/// program's, a declaration or an import, is never assigned.
+pub(in crate::lower) fn held_functions(body: &mut Vec<Stmt>, forwarding: &[Forwarding]) {
+    js::statement_lists(body, &mut |stmts| {
+        let mut i = 0;
+        while i < stmts.len() {
+            if let StmtKind::Const(name, value) = &stmts[i].kind
+                && matches!(value.kind, js::ExprKind::Var(_) | js::ExprKind::Symbol(_))
+                && value.facts.has(js::Known::Item)
+                && (forwarding.iter()).any(|fact| !value.span.is_none() && fact.span == value.span)
+            {
+                let (name, value) = (name.clone(), value.clone());
+                stmts.remove(i);
+                js::each_expr_mut(&mut stmts[i..], &mut |e| {
+                    if matches!(&e.kind, js::ExprKind::Var(v) if *v == name) {
+                        *e = Expr {
+                            span: e.span,
+                            ..value.clone()
+                        };
+                    }
+                });
+                continue;
+            }
+            i += 1;
+        }
+    });
+}
+
+/// Whether `e`, a call's argument, is one its JS leaves out where it's
+/// last (ADRs 0443, 0441): a `None` or a `()`.
 fn left_out(tcx: TyCtxt<'_>, thir: &rustc_middle::thir::Thir<'_>, e: rustc_middle::thir::ExprId) -> bool {
     match thir[super::body_queries::strip(thir, e)].kind {
         ExprKind::Tuple { ref fields } => fields.is_empty(),
@@ -406,6 +469,31 @@ fn optional_handler(value: &Expr) -> Option<Expr> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether the closure written at `span` is made an `Rc`'s or an
+    /// `Arc`'s, `Rc::new(|| one())`, whose pointer `Rc::ptr_eq` compares
+    /// (ADR 0959): a function of its own wherever it's made, as two such are
+    /// two `Rc`s to Rust.
+    pub(in crate::lower) fn counted_closure(&self, span: rustc_span::Span) -> bool {
+        use crate::lower::recognition::StdItem;
+        let thir = self.frame.thir;
+        thir.exprs.iter().any(|e| {
+            let ExprKind::Call { fun, ref args, .. } = e.kind else {
+                return false;
+            };
+            let counted = fn_def(thir[fun].ty)
+                .and_then(|(id, _)| self.tcx.impl_of_assoc(id))
+                .is_some_and(|imp| {
+                    let of = self.tcx.type_of(imp).instantiate_identity().skip_normalization();
+                    self.is_std_type(of, StdItem::Rc) || self.is_std_type(of, StdItem::Arc)
+                });
+            counted
+                && args.iter().any(|&a| {
+                    let made = &thir[super::body_queries::strip(thir, a)];
+                    matches!(made.kind, ExprKind::Closure(..)) && made.span == span
+                })
+        })
+    }
+
     /// What a closure's body, one call, calls, where it's a function of the
     /// crate's, a closure, a generic `impl Fn`'s or a `dyn Fn`'s: its
     /// `Forwarding`'s callee. `None` of a binding's, whose JS function
@@ -444,6 +532,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 item: false,
                 binds: false,
                 ignores: true,
+                eta: false,
             });
         }
         let (def_id, generic_args) = fn_def(thir[fun].ty)?;
@@ -487,6 +576,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     item: false,
                     binds: false,
                     ignores: callee == Callee::Own && given && captured.is_some(),
+                    eta: false,
                 })
             }
             // A binding's global function, JS's own, called as a function,
@@ -503,6 +593,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 item: false,
                 binds: false,
                 ignores: false,
+                eta: false,
             }),
             // The crate's, or a library's, whose JS rust-js compiled from
             // its Rust as it compiles the crate's (ADR 0605, amended). One
@@ -519,6 +610,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 item: true,
                 binds: false,
                 ignores: args.is_empty(),
+                eta: super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Namespace),
             }),
         }
     }

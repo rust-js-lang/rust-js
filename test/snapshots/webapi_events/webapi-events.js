@@ -262,4 +262,18 @@ export function mediaListened(list) {
 function onCustomMedia() {
   globalThis.record(2);
 }
+
+function handleNavigateComplete() {
+  globalThis.record(7);
+}
+
+// React DOM's default transition indicator: one handler, added and removed
+// for two events of two types, each a listener that ignores its event
+// (rd284).
+export function navigationListeners(button) {
+  button.addEventListener("click", handleNavigateComplete);
+  button.addEventListener("keydown", handleNavigateComplete);
+  button.removeEventListener("click", handleNavigateComplete);
+  button.removeEventListener("keydown", handleNavigateComplete);
+}
 //# sourceMappingURL=webapi-events.js.map

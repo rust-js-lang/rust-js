@@ -22,6 +22,10 @@ test("event methods and reusable listeners emit direct JavaScript", () => {
   expect(js).toContain('button.removeEventListener("click", listener, true);');
   // A named `fn` is the function itself, added and removed.
   expect(js).toContain('button.addEventListener("custom", onCustom);\n  button.removeEventListener("custom", onCustom);');
+  // Two listeners of one function, held, each a closure that ignores its
+  // event: that function, added and removed, as upstream's
+  // ReactDOMDefaultTransitionIndicator (rd284).
+  expect(js).toContain('export function navigationListeners(button) {\n  button.addEventListener("click", handleNavigateComplete);\n  button.addEventListener("keydown", handleNavigateComplete);\n  button.removeEventListener("click", handleNavigateComplete);\n  button.removeEventListener("keydown", handleNavigateComplete);\n}');
   // A media query list's legacy listener methods, the one kept (#439).
   expect(js).toContain("  list.addListener(changed);\n  list.removeListener(changed);\n  list.addListener(onCustomMedia);\n  list.removeListener(onCustomMedia);");
   expect(js).not.toMatch(/unreachable|\.add_event_listener|\.client_x|\.prevent_default/);

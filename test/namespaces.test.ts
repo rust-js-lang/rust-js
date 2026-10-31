@@ -590,3 +590,49 @@ pub fn direct() -> u32 {
   expect(js).toContain("  return { ...DefaultConfig };\n");
   expect(js).toContain("  return updateContainer(2);\n");
 });
+
+// createReactNoop's `batchedUpdates: NoopRenderer.batchedUpdates`: a closure
+// that passes all it's given on to a namespace's function through the value
+// it's called on is that function, read where it's made (the user's
+// decision, ADR 0605 amended).
+test("a closure that passes all it's given to a namespace's function through a value is that function", async () => {
+  const dir = fixture("namespace-eta");
+  writeFileSync(join(dir, "reconciler.rs"), forwarding);
+  writeFileSync(join(dir, "work_loop.rs"), workLoop);
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `pub mod reconciler;
+pub mod work_loop;
+
+use reconciler::Reconciler;
+
+pub struct Api {
+    pub batched_updates: Box<dyn Fn(&dyn Fn(u32) -> u32, u32) -> u32>,
+    pub discrete_updates: Box<dyn Fn(u32, u32) -> u32>,
+    pub update_container: Box<dyn Fn(u32) -> u32>,
+}
+
+pub fn make(renderer: &'static Reconciler) -> Api {
+    Api {
+        batched_updates: Box::new(move |f, a| renderer.batched_updates(f, a)),
+        discrete_updates: Box::new(move |a, b| renderer.discrete_updates(a, b)),
+        // Not all it's given: a function of its own.
+        update_container: Box::new(move |n| renderer.discrete_updates(n, 1)),
+    }
+}
+`,
+  );
+  run([compiler, ...flags(dir)]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(
+    "  return {\n    batchedUpdates: renderer.batchedUpdates,\n    discreteUpdates: renderer.discreteUpdates,\n    // Not all it's given: a function of its own.\n    updateContainer: (n) => renderer.discreteUpdates(n, 1),\n  };\n",
+  );
+  const lib = await import(join(dir, "lib.js"));
+  const namespace = await import(join(dir, "reconciler.js"));
+  const api = lib.make(namespace);
+  expect([api.batchedUpdates((n: number) => n + 1, 2), api.discreteUpdates(3, 4), api.updateContainer(5)]).toEqual([3, 43, 15]);
+  // Another instance's, as Jest's mock gives.
+  const mocked = lib.make({ batchedUpdates: () => 100, discreteUpdates: (a: number, b: number) => a - b });
+  expect([mocked.batchedUpdates(() => 0, 0), mocked.updateContainer(5)]).toEqual([100, 4]);
+});
+

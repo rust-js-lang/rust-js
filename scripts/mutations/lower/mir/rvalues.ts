@@ -889,4 +889,22 @@ export const mutations: Mutation[] = [
     ],
     snapshots: true,
   },
+  {
+    name: "closure-kept-where-made",
+    breaks:
+      "a closure that's the function it calls is an arrow where it's made, a field's or a box's, `batchedUpdates: (f, a) => renderer.batchedUpdates(f, a)` (ADR 0605, amended)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                let made = (!self.counted_closure(span))\n",
+    replace: "                let made = (false)\n",
+    tests: ["test/namespaces.test.ts", "-t", "passes all it's given"],
+  },
+  {
+    name: "counted-closure-made-function",
+    breaks:
+      "a closure an `Rc` is made of, `Rc::new(|| one())`, is the function it calls, so two `Rc`s of two are `Rc::ptr_eq` (ADR 0959)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                let made = (!self.counted_closure(span))\n",
+    replace: "                let made = (true)\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_fn_ptr_eq.rs$"],
+  },
 ];

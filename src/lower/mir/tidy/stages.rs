@@ -81,6 +81,14 @@ pub(super) const STAGES: &[Stage] = &[
             pass("aliases", |b, h| {
                 aliases(b, h.captured, (&h.params.borrow(), h.kept), (h.clones, &h.named.given))
             }),
+            // A `let` of a closure that's the function it calls, the program's
+            // own, `const onSuccess = handleNavigateComplete;`: that function,
+            // read where the variable is, as upstream adds and removes it,
+            // `addEventListener("navigatesuccess", handleNavigateComplete)`
+            // (rd284, ADR 0605, amended).
+            pass("held functions", |b, h| {
+                crate::lower::passed_on::held_functions(b, h.forwarding)
+            }),
             // A test an earlier one decided, `if (x != null) { return x; } ..
             // if (x != null)`, where nothing between changes what it reads:
             // its branch; and a tail MIR wrote into both branches, once,

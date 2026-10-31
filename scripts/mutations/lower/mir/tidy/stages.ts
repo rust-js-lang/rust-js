@@ -1080,4 +1080,13 @@ export const mutations: Mutation[] = [
     ],
     snapshots: true,
   },
+  {
+    name: "held-functions-kept",
+    breaks:
+      "a `let` of a closure that's the function it calls is a `const` of it, `const onSuccess = handleNavigateComplete;`, not the function read where it's read (rd284)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "                crate::lower::passed_on::held_functions(b, h.forwarding)\n",
+    replace: "                let _ = (b, h);\n",
+    tests: ["test/webapi-events.test.ts", "-t", "reusable listeners"],
+  },
 ];

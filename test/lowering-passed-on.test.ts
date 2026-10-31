@@ -408,7 +408,8 @@ pub fn owned_apart() -> bool {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return render(transitionAwareHostComponent);");
-  expect(js).toContain("const component = transitionAwareHostComponent;");
+  // Held by a `let`, the function where the variable is read (rd284).
+  expect(js).toContain("export function renderHeld() {\n  return render(transitionAwareHostComponent);\n}");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.renderTransitionAware(), lib.renderHeld()]).toEqual([7, 7]);
   expect(lib.ownedApart()).toBe(false);

@@ -1,6 +1,6 @@
 # 0605. Whether an arrow only passes on what it's given has one owner
 
-Status: Accepted. Amends [0198](0198-optional-handlers.md) and
+Status: Accepted; amended (2026-10-31, the user's eta rule, rd284). Amends [0198](0198-optional-handlers.md) and
 [0279](0279-callbacks-passed-on.md). Amended below: `passed_on.rs` owns
 the question with each position's rule, and a binding's `FnOnce` callback
 is one ([0262](0262-when-rust-and-js-disagree.md), amended); and a
@@ -448,3 +448,52 @@ binding's FnOnce callback .." (`listenEvery(count)`, `keepAny(count)`);
 mutations `ignoring-listener-kept`, `ignoring-not-taken`,
 `ignoring-item-given`, `bound-own-dyn`, `bound-host-own` and
 `bound-with-this-not-own` (`passed_on.ts`).
+
+## Amendment: where it's made, held by a `let`, and passing all on to a namespace's function (rd284, the user's eta decision)
+
+The user's decision (2026-10-31, ADR 0262's exception, as rd196's):
+**a closure that only passes all its arguments, in order, to a function
+and gives back its result is that function.** Case
+([0262](0262-when-rust-and-js-disagree.md)): rare and harmless, the
+user's: only its `.length`, its identity and what more a JS caller gives
+tell them apart.
+
+- **Where it's made**, a closure that's the function it calls whoever
+  takes it, one that ignores what it's given (rd196) or one of the eta
+  rule's, is that function, `Taker::Closure` at the closure's aggregate
+  (`mir/rvalues.rs`): a box's, a field's, a `let`'s value, not only a
+  taker's. Not one an `Rc` or an `Arc` is made of, `Rc::new(|| one())`
+  (`FnCx::counted_closure`): two such are two `Rc`s that `Rc::ptr_eq`
+  tells apart, a result Rust's program reads (ADR 0959), which the
+  exception doesn't take.
+- **Held by a `let`**, it's that function where the variable is read
+  (`held_functions`, a tidy pass after `aliases`): React DOM's default
+  transition indicator's `let on_success = listener(|_: &Event|
+  handle_navigate_complete());` is upstream's
+  `navigation.addEventListener('navigatesuccess', handleNavigateComplete)`
+  and its removal (rd284).
+- **One that passes all it's given, in order, to a namespace's function
+  through the value it's called on**, `move |f, a|
+  noop_renderer.batched_updates(f, a)`, is that function, read where it's
+  made, `batchedUpdates: NoopRenderer.batchedUpdates`, as createReactNoop
+  writes it (`Forwarding::eta`): a namespace's function reads no `this`
+  (ADR 1037), and reading the member once, where the closure's made, is
+  Rust's: its `move` closure holds that value.
+
+The eta rule is narrower than the user's statement where an earlier
+decision of this ADR holds: a closure of a function Rust could have
+named there is one the program wrote to be a function of its own, React's
+DEV dispatchers' `readContext(context) { return readContext(context); }`
+(the amendment on `fn`s above), so a closure of the crate's own function
+passing all on keeps its arrow outside a taker that takes it; and a
+trait's method, a dictionary's, or a class's, which reads its `this`,
+keeps it everywhere. Recorded for the user in the run's notes.
+
+Held by `test/namespaces.test.ts`'s "a closure that passes all it's
+given to a namespace's function through a value is that function" (run,
+a fresh instance's too), `test/webapi-events.test.ts` (both listeners
+`handleNavigateComplete`) and the corpus's `rc_fn_ptr_eq`. Mutations
+`eta-namespace-unseen`, `eta-member-unnamed` (`passed_on.ts`),
+`closure-kept-where-made`, `counted-closure-made-function`
+(`mir/rvalues.ts`) and `held-functions-kept` (`mir/tidy/stages.ts`).
+

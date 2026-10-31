@@ -867,9 +867,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Ok(Value::Expr(value))
             }
+            // A closure that's the function it calls, where it's made, that
+            // function (`passed_on`, ADR 0605, amended); but an `Rc`'s, whose
+            // pointer is its own (ADR 0959).
             AggregateKind::Closure(def_id, args) => {
                 let ty = ty::Ty::new_closure(self.tcx, *def_id, args);
-                Ok(Value::Expr(self.mir_closure(state, ty, values, span, out)?))
+                let arrow = self.mir_closure(state, ty, values, span, out)?;
+                let taker = crate::lower::passed_on::Taker::Closure;
+                let made = (!self.counted_closure(span))
+                    .then(|| crate::lower::passed_on::passed_on(&arrow, taker, self.forwarding()))
+                    .flatten();
+                Ok(Value::Expr(made.unwrap_or(arrow)))
             }
             // An `async` body, what it holds as a closure's environment.
             AggregateKind::Coroutine(def_id, args) if self.tcx.coroutine_is_async(*def_id) => {

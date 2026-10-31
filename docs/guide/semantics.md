@@ -1051,6 +1051,16 @@ React and JSX are [their own pages](README.md#react).
     closure is the function itself, so adding it twice to one target and
     event makes one listener, where two closures were two (ADR 0262,
     amended, the user's decision, rd196, rd212, accepted 2026-10-31).
+    Held by a `let`, it's that function where the variable is read,
+    `addEventListener("navigatesuccess", handleNavigateComplete)` (rd284).
+    And a closure that passes all it's given, in order, to a namespace's
+    function through the value it's called on, `move |f, a|
+    renderer.batched_updates(f, a)`, is that function, read where the
+    closure is made, `renderer.batchedUpdates` (ADR 0605, amended, the
+    user's decision, 2026-10-31). Not a closure an `Rc` is made of,
+    `Rc::new(|| ping())`, whose pointer `Rc::ptr_eq` compares; nor one of
+    a function Rust could have named there, which the program wrote to be
+    a function of its own.
 28. A `RegExp`'s `test` and `reg_exp::replace` take text, as TypeScript
     types them, so a port of code that gives them any value converts it
     first, `pattern.test(&js::string(value))`, `pattern.test(String(value))`:

@@ -260,3 +260,19 @@ pub fn media_listened(list: &MediaQueryList) {
 fn on_custom_media(_: &MediaQueryListEvent) {
     record(2);
 }
+
+fn handle_navigate_complete() {
+    record(7);
+}
+
+// React DOM's default transition indicator: one handler, added and removed
+// for two events of two types, each a listener that ignores its event
+// (rd284).
+pub fn navigation_listeners(button: &HTMLButtonElement) {
+    let on_success = listener(|_: &PointerEvent| handle_navigate_complete());
+    let on_error = listener(|_: &KeyboardEvent| handle_navigate_complete());
+    button.add_event_listener(Click, on_success, None);
+    button.add_event_listener(Keydown, on_error, None);
+    button.remove_event_listener(Click, on_success, None);
+    button.remove_event_listener(Keydown, on_error, None);
+}

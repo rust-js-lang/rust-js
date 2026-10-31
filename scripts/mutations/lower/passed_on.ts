@@ -231,9 +231,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure as a `fn` whose call never returns, `|_, _| throw_invalid_hook_error()`, keeps its arrow, as its JS is a statement (ADR 0605, amended)",
     file: "src/lower/passed_on.rs",
-    find: "                Taker::Handler | Taker::OnceCallback | Taker::FnPointer | Taker::Callback\n            )\n",
-    replace:
-      "                Taker::Handler | Taker::OnceCallback | Taker::Callback\n            )\n",
+    find: "                Taker::Handler | Taker::OnceCallback | Taker::FnPointer | Taker::Callback | Taker::Closure\n",
+    replace: "                Taker::Handler | Taker::OnceCallback | Taker::Callback\n",
     tests: [
       "test/lowering-passed-on.test.ts",
       "-t",
@@ -399,8 +398,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a callback taker takes no closure that ignores what it's given, a listener's arrow kept (rd212)",
     file: "src/lower/passed_on.rs",
-    find: "            if !taker.takes(fact.callee) && !fact.ignores {\n",
-    replace: "            if !taker.takes(fact.callee) {\n",
+    find: "            if !taker.takes(fact.callee) && !fact.ignores && !fact.eta {\n",
+    replace: "            if !taker.takes(fact.callee) && !fact.eta {\n",
     tests: ["test/lowering-passed-on.test.ts", "-t", "ignores what it's given"],
   },
   {
@@ -493,5 +492,23 @@ export const mutations: Mutation[] = [
     find: "    (mine.inputs().get(1..) == Some(theirs.inputs())).then_some((target, args))\n",
     replace: "    Some((target, args))\n",
     tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
+  },
+  {
+    name: "eta-namespace-unseen",
+    breaks:
+      "a closure that passes all it's given to a namespace's function through a value, `move |f, a| renderer.batched_updates(f, a)`, keeps its arrow, not `renderer.batchedUpdates` (the user's decision)",
+    file: "src/lower/passed_on.rs",
+    find: "                eta: super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Namespace),\n",
+    replace: "                eta: false,\n",
+    tests: ["test/namespaces.test.ts", "-t", "passes all it's given"],
+  },
+  {
+    name: "eta-member-unnamed",
+    breaks:
+      "a closure that passes all it's given to a namespace's function through a value is no function of a name, so its arrow is kept (the user's decision)",
+    file: "src/lower/passed_on.rs",
+    find: "        || eta\n",
+    replace: "        || false\n",
+    tests: ["test/namespaces.test.ts", "-t", "passes all it's given"],
   },
 ];
