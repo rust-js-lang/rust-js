@@ -793,3 +793,54 @@ pub fn margin_of(style: &Unknown, props: &Unknown) {
   lib.keptMargin(style as never, lib.kept("1px" as never) as never);
   expect(style.margin).toBe("1px");
 });
+
+// React DOM's canHydrateInstance compares `element.getAttribute('href')`
+// to a choice of `anyProps.href`, its props a struct the port reads by
+// name: the call is made first, as Rust makes it, then the props read,
+// whose getter may do something the call sees, or see what it did. The
+// call isn't read past that read, `const unknown = anyProps.href == null
+// .. ; if (element.getAttribute("href") === unknown && ..)`, but where it's
+// written, in the `||` chain (rd178).
+test("a call isn't read past a getter's read made after it", async () => {
+  const { js, lib } = await compiled("call-past-getter", `use js::Unknown;
+
+pub struct Props {
+    pub src: Option<&'static Unknown>,
+}
+
+pub fn differs(attr: &dyn Fn(&str) -> Option<String>, props: &Props) -> bool {
+    !js::strict_equals(attr("rel"), js::get(props, "rel"))
+        || !js::strict_equals(
+            attr("href"),
+            if js::get(props, "href").is_none() || js::strict_equals(js::get(props, "href"), "") {
+                js::null()
+            } else {
+                js::get(props, "href")
+            },
+        )
+        || !js::strict_equals(attr("title"), js::get(props, "title").or(js::null()))
+}
+`);
+  expect(js).toContain(`    attr("href") !== (props.href == null || props.href === "" ? null : props.href) ||`);
+  expect(js).not.toContain("const unknown");
+  const log: string[] = [];
+  const attrs: Record<string, string> = { rel: "a", href: "h", title: "t" };
+  const attr = (name: string) => {
+    log.push(`attr ${name}`);
+    return attrs[name];
+  };
+  const props = {
+    get rel() {
+      log.push("rel");
+      return "a";
+    },
+    get href() {
+      log.push("href");
+      attrs.href = "changed";
+      return "h";
+    },
+    title: "t",
+  };
+  expect(lib.differs(attr as never, props as never)).toBe(false);
+  expect(log).toEqual(["attr rel", "rel", "attr href", "href", "href", "href", "attr title"]);
+});

@@ -213,3 +213,32 @@ only.
   and a value the `finally` drops, run natively), and the mutations
   `try-not-entered`, `try-entered-of-what-throws` and
   `try-entered-read-in-catch`.
+
+## Amendment: a call isn't read past a getter's read (rd178, 2026-10-31)
+
+React DOM's canHydrateInstance, as its port writes it, compares
+`element.getAttribute("href")` to a choice of `js::get(any_props,
+"href")`, `any_props` a struct of its own. MIR holds the call, then the
+choice, `const _127 = element.getAttribute("href"); const _131 = .. ;
+if (_127 === _131)`, and `moved` read the call where it's tested, past
+the choice's `const`: a field of plain data reads the same past a call
+(`read_past_calls`), so the choice passed it. But `js::get`'s read of a
+name the struct doesn't declare is a getter's, which does something
+(`has_effects`, #188): the getter ran first, and the call saw what it did.
+`const unknown = anyProps.href == null || .. ; if (element.getAttribute(
+'href') === unknown && ..)`, the `||` chain split around it, was the port's
+JS; a getter that changes the attribute gave `true` where Rust's order
+gives `false`.
+
+**What does something isn't read past a `const` of what does something
+too**: each may see what the other did. The choice stays after the call,
+and is read where it's tested in turn, so the chain is as written:
+`rel !== anyProps.rel || element.getAttribute("href") !== (anyProps.href
+== null || anyProps.href === "" ? null : anyProps.href) || ..`. What
+does nothing still passes a call where the call can't change it. Case
+([0262](0262-when-rust-and-js-disagree.md)): C, results change. Held by
+`test/lowering-moves.test.ts`' "a call isn't read past a getter's read
+made after it", run with a getter that changes what the call reads, and
+the mutation `call-moved-past-a-getters-read` (`mir/tidy/moves.ts`). No
+corpus case's JS changes: a getter is JS's, which a native program has
+none of.

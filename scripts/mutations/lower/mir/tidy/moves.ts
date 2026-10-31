@@ -4,6 +4,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "call-moved-past-a-getters-read",
+    breaks:
+      "a call's value is read past a `const` of a getter's read made after it, `const unknown = props.href == null ..; if (attr(\"href\") === unknown)`, so the getter runs first and the call sees what it did (rd178)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "        .all(|s| matches!(&s.kind, StmtKind::Const(_, v) if passes(v) && !(acts && v.has_effects())))\n",
+    replace: "        .all(|s| matches!(&s.kind, StmtKind::Const(_, v) if passes(v)))\n",
+    tests: ["test/lowering-moves.test.ts", "-t", "a call isn't read past a getter's read"],
+  },
+  {
     name: "try-not-entered",
     breaks:
       "a value that can't throw made before a guard's `try` stays held there, `const focus = element.focus; try { (focus || ..).call(..) }`, not read in the `try` where its call is (rd233)",

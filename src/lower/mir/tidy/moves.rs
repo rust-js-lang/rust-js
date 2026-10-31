@@ -182,7 +182,11 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     let at = (rest.iter()).position(|s| js::mentions_in(std::slice::from_ref(s), name) > 0)?;
     let mut reads = Vec::new();
     value.visit_vars(&mut |v| reads.push(v.to_string()));
-    let past = (rest[..at].iter()).all(|s| matches!(&s.kind, StmtKind::Const(_, v) if passes(v)))
+    // Of what does something, past what does nothing: a `const` of a
+    // getter's read, `anyProps.href`, does something too, which the value
+    // moved past it, `element.getAttribute("href")`, could see, or it see.
+    let past = (rest[..at].iter())
+        .all(|s| matches!(&s.kind, StmtKind::Const(_, v) if passes(v) && !(acts && v.has_effects())))
         || (unchanged_by_calls && reads.iter().all(|v| !assigns(&rest[..at], v)));
     if !past {
         return None;
