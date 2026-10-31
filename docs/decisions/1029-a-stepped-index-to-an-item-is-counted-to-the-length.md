@@ -93,3 +93,24 @@ the `let`'s, not the JS's shape.
 - Left: `for i in 0..` with the same `let`, a `while` of `$rangeFromNext`,
   and `(0..v.len()).step_by(n)`, `$lazyRange(0, v.length, n)` read by
   `$index`, are not counting `for`s yet.
+
+## Amendment: an item that's a reference is a pointer's size (2026-10-31)
+
+React's own batch, the port's `RefCell<Vec<&Element>>`, still printed
+`for (const i of $stepBy($iterator({ start: 0 }, $rangeFromStep(..)),
+2))`: `present_item_of_sized` took the item of `get`'s `Option<&&Element>`
+by peeling every reference, `Element`, which has no size in Rust (a JS
+value's type), so the item was taken to be of no size, which a slice may
+hold more of than `usize`'s most.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, as above.
+
+- **The item is `get`'s `Option<&T>`'s `T`, one reference peeled**, of
+  `copied()`'s `Option<T>` too, which leaves out only a reference to what
+  has no size: `&Element` is a pointer's size, whatever it refers to, so
+  `for (let i = 0; i < batch.length; i += 2) { const suspenseIdNode =
+  batch[i]; .. }`, as upstream.
+
+Held by `test/lowering-written-loops.test.ts`' "a stepped index to a slice
+of references is counted to its length" and mutation
+`present-item-peeled-whole` (`body_queries/ranges/present.ts`).

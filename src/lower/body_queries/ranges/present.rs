@@ -96,7 +96,13 @@ pub(in crate::lower) fn present_item_of_sized<'tcx>(
     let rustc_middle::ty::Adt(_, args) = thir[init].ty.kind() else {
         return false;
     };
-    let item = args.types().next().map(|t| t.peel_refs());
+    // The slice's item: `get`'s `Option<&T>`'s `T`, which may be a
+    // reference itself, `&Element` of a `Vec<&Element>`; one reference of
+    // `copied()`'s too, which only leaves out one of no size.
+    let item = args.types().next().map(|t| match t.kind() {
+        rustc_middle::ty::Ref(_, item, _) => *item,
+        _ => t,
+    });
     let sized = item.filter(|item| !item.has_param()).is_some_and(|item| {
         (tcx.layout_of(rustc_middle::ty::TypingEnv::fully_monomorphized().as_query_input(item)))
             .is_ok_and(|layout| !layout.is_zst())

@@ -679,3 +679,33 @@ pub fn wide(batch: &[u32]) -> u32 {
   expect(js).toContain(stepped(2, "k"));
   expect(js).toContain(stepped(2147483649, "i"));
 });
+
+// rd260, of React's batch itself, `RefCell<Vec<&Element>>`: an item that's
+// a reference to what has no size in Rust, a JS value, is a pointer's size.
+test("a stepped index to a slice of references is counted to its length", () => {
+  const dir = fixture("counted-to-length-of-references");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::RefCell;
+
+use js::Unknown;
+
+pub fn pairs(batch: &RefCell<Vec<&'static Unknown>>) -> usize {
+    let mut total = 0;
+    for i in (0..).step_by(2) {
+        let Some(&id) = batch.borrow().get(i) else {
+            break;
+        };
+        if js::truthy(Some(id)) {
+            total += 1;
+        }
+    }
+    total
+}
+`,
+  );
+  const node = buildNode();
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  for (let i = 0; i < batch.length; i += 2) {\n    const id = batch[i];\n");
+});

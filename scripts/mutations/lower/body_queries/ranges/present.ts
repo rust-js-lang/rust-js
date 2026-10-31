@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "                hi: current.hi.min(MOST),\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "an index an item is there at counts on without its wrap"],
   },
+  {
+    name: "present-item-peeled-whole",
+    breaks: "a slice's item that's a reference, `&Element` of React's batch, is taken as what it refers to, of no size, so `for i in (0..).step_by(2)` keeps `$stepBy($iterator(..))` (rd260)",
+    file: "src/lower/body_queries/ranges/present.rs",
+    find: "        rustc_middle::ty::Ref(_, item, _) => *item,\n",
+    replace: "        _ => t.peel_refs(),\n",
+    tests: ["test/lowering-written-loops.test.ts", "-t", "a stepped index to a slice of references is counted to its length"],
+  },
 ];
