@@ -1192,11 +1192,15 @@ pub(in crate::lower::mir::tidy) fn returned_branches(
     // `if (a) { if (b) { return t; } } return f;`, last: `return a && b ? t : f;`.
     if let [.., last_if, last] = stmts.as_slice()
         && let StmtKind::Return(Some(no)) = &last.kind
-        && let StmtKind::If(_, then, _) = &last_if.kind
+        && let StmtKind::If(first, then, _) = &last_if.kind
         && let Some((tests, yes)) = returned_chain(std::slice::from_ref(last_if))
         && small(&yes)
         && small(no)
         && boolean_branch(&yes, no)
+        // Not a `match` of constants the program wrote, a `switch` whose
+        // arms give `true` and `false`, React DOM's isCustomElement's
+        // (ADR 0629, amended, rd15).
+        && !switched(first, last_if.span, &program.switches)
         // Not where the program wrote `return`, an early one.
         && !written(returns, last.span)
         && !writes_return(std::slice::from_ref(last_if), returns)

@@ -1602,7 +1602,11 @@ where it'd go on, the case's own where it's left for what follows the
 `switch` ([ADR 0731](../../decisions/0731-a-cases-break-past-the-switch-is-its-own.md)),
 or for the function's end or the one `return` after the `match`, not a
 copy of that `return` ([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md), amended),
-in a block `{ .. }` where it declares a name. An arm with
+in a block `{ .. }` where it declares a name. One whose arms give `true`
+and `false` is a `switch` too, `case "annotation-xml": .. return false;
+default: return true;`, as React DOM's isCustomElement writes it; a
+`matches!` is the one boolean it's written as ([ADR
+0629](../../decisions/0629-a-match-of-constants-is-a-switch.md), amended). An arm with
 a guard is a case that tests it, where what Rust tries when the guard
 fails does nothing: each later arm that could match its constants is a
 `_ => {}`, as below; or where it's the next arm, which names each of its

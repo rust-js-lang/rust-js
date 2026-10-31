@@ -920,3 +920,20 @@ which payloads it may. The mutation `payload-test-of-a-bool`, which
 folded a `bool`'s while its test was `!b`, survived (main's Check) and
 is gone; `option_constants_switch.rs`'s `flag` still holds the output,
 `b === false ? 1 : 0`, against native Rust.
+
+## Amended (2026-10-31): a `switch` whose arms give `true` and `false` (rd15)
+
+React DOM's isCustomElement writes `switch (tagName) { case
+'annotation-xml': .. case 'missing-glyph': return false; default: return
+true; }`. The port's `match tag_name { "annotation-xml" | .. => false, _ =>
+true }` printed one boolean, `return tagName !== "annotation-xml" && ..`:
+tidy's `returned_branches` folded MIR's `if`s of the arms' tests, each
+leaving with a `bool`, into `&&`, before `switches` saw them, as it folds
+an `&&` the program wrote that MIR made branches of. **A returned `if`
+chain whose first test is a written `switch`'s arm (`switched`) isn't
+folded**: the `match` is the `switch` this ADR makes of any `match` of
+constants, whatever its arms give. A `matches!`, which `written_switches`
+never counts (its `match` is from the macro's expansion), stays the
+boolean it's written as. Case N: the same tests, in the same order, give
+the same value. Held by `match_of_strings_to_bools_is_a_switch.rs`
+(native-compared) and the mutation `switch-of-booleans-folded`.

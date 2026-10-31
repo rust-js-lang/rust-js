@@ -3,6 +3,16 @@ import type { Mutation } from "../../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "switch-of-booleans-folded",
+    breaks:
+      "a `match` of strings the program wrote whose arms give `false` and `true` is one boolean, `return tagName !== \"annotation-xml\" && ..`, not its `switch` (rd15, isCustomElement)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "        && !switched(first, last_if.span, &program.switches)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^match_of_strings_to_bools_is_a_switch.rs$"],
+    snapshots: true,
+  },
+  {
     name: "alike-branches-of-a-call-returned",
     breaks:
       "a returned `if` of alike values whose test calls is `return mark(n) ? 5 : 5;`, not as written",

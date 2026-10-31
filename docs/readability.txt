@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1400
-lines	138101
+files	1401
+lines	138148
 temporaries	1	0.1
 labeled blocks	14	1
 while (true)	124	9
-$iter	1176	85.2
+$iter	1176	85.1
 Iterator.from	116	8.4
 return;	149	10.8
-renamed x$1	8580	621.3
+renamed x$1	8582	621.2
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1977	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	206	0	0	0	6	0	0	35
@@ -715,6 +715,7 @@ test/corpus/match_breaks_its_loop.js	197	0	0	1	0	0	0	0
 test/corpus/match_call_once.js	71	0	0	0	0	0	0	2
 test/corpus/match_index.js	73	0	0	0	0	0	0	0
 test/corpus/match_last_arm_else.js	87	0	0	0	0	0	0	0
+test/corpus/match_of_strings_to_bools_is_a_switch.js	47	0	0	0	0	0	0	2
 test/corpus/match_trait_const.js	40	0	0	0	0	0	0	0
 test/corpus/matches_by_predicate.js	40	0	0	0	0	2	0	0
 test/corpus/math_values.js	154	0	0	0	0	0	0	2
