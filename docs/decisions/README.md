@@ -281,7 +281,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0259 A module's constant element, and an image's title](0259-constant-elements.md)
 - [0260 A binding's callback parameter, and IntersectionObserver](0260-webapi-callbacks.md) *(amended by 0653: a function JS gives is a `dyn Fn`; amended by 0869: one the API calls once is an `FnOnce`)*
 - [0261 Defaults that do nothing don't move what's made beside them](0261-defaults-made-in-place.md)
-- [0262 When Rust and JS disagree, what the program can observe decides](0262-when-rust-and-js-disagree.md) *(amended: a string's `repeat` past the engine's length is its `RangeError`; a once-callback that passes its call on is the function, and one that ignores what it's given, wherever it's given (rd196/rd212); a `RegExp`'s `test` and `replace` take text)*
+- [0262 When Rust and JS disagree, what the program can observe decides](0262-when-rust-and-js-disagree.md) *(amended: a string's `repeat` past the engine's length is its `RangeError`; a once-callback that passes its call on is the function, and one that ignores what it's given, wherever it's given (rd196/rd212); a `RegExp`'s `test` and `replace` take text; a field's function called after statements keeps its object, rd285)*
 - [0263 next/router's withRouter, and a flattened struct taken apart](0263-with-router.md)
 - [0264 A variant's own name is the variant](0264-enum-own-names.md) *(amended: a transparent struct's `From` gives what it's given too)*
 - [0265 A component a thread_local! holds takes props of any lifetime](0265-held-component-lifetimes.md)
@@ -815,6 +815,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1028 A dictionary or a union of `Copy` values is `Copy`, and a narrower union is one of a wider](1028-a-dictionary-of-copy-values-is-copy.md) *(rd208)*
 - [1029 A stepped index to an item is counted to the length](1029-a-stepped-index-to-an-item-is-counted-to-the-length.md) *(rd260)*
 - [1033 A binding's path may quote a key, which a minifier keeps](1033-a-bindings-path-may-quote-a-key.md) *(rd273)*
+- [1034 A field's function called after statements keeps its object](1034-a-fields-function-called-after-statements-keeps-its-object.md) *(rd285, the user's decision)*
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md) *(amended: a closure's handle on itself is its own name)*
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

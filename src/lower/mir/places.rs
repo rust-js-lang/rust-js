@@ -13,6 +13,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let mut e = self.place_expr(state, place, span, out)?;
+        // A field Rust can't change while the body runs, of a struct a
+        // lasting reference is to; or what a reference it holds is to, a
+        // `dyn Fn` called (rd285). Not a cell, which its methods change:
+        // only what they're given is its place, never a value read by copy
+        // to call, so no program's call tells it, but the fact says so.
+        let read = match place.projection.as_slice() {
+            [read @ .., PlaceElem::Deref] => read,
+            read => read,
+        };
+        if let [PlaceElem::Deref, fields @ ..] = read
+            && !fields.is_empty()
+            && fields.iter().all(|elem| matches!(elem, PlaceElem::Field(..)))
+            && state.facts.lasting(place.local)
+            && let js::ExprKind::Member(..) = e.kind
+            && (Place::ty_from(place.local, read, state.body, self.tcx).ty).is_freeze(self.tcx, self.typing_env)
+        {
+            e.facts = e.facts.with(js::Known::Lasting);
+        }
         // An `Option` whose `None` is only one of `undefined` and `null`,
         // its own or through a reference to it: its read says which (ADR
         // 0298, amended).

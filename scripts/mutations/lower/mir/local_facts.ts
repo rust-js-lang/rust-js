@@ -169,4 +169,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^counter_shown_as_js_text.rs$"],
     snapshots: true,
   },
+  {
+    name: "lasting-of-any-call",
+    breaks: "a reference any call gives is lasting, so a field a borrow of a local gives, `(outer.inner().f)({ outer.inner.f = triple; n })`, is read after what's given (rd285)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                    && matches!(output.kind(), ty::Ref(region, ..) if region.is_static())\n",
+    replace: "                    && matches!(output.kind(), ty::Ref(..))\n",
+    tests: ["test/corpus.test.ts", "-t", "^field_functions_called_after_arguments.rs$"],
+  },
+  {
+    name: "lasting-parameter-rebound",
+    breaks: "a `&T` parameter the body assigns again is lasting, so `(hooks.f)({ hooks = other; n })` calls `other`'s (rd285)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "            .filter(|&local| shared(body.local_decls[local].ty) && written(local) == 0);\n",
+    replace: "            .filter(|&local| shared(body.local_decls[local].ty));\n",
+    tests: ["test/corpus.test.ts", "-t", "^field_functions_called_after_arguments.rs$"],
+  },
 ];

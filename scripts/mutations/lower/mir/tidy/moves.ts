@@ -284,4 +284,20 @@ export const mutations: Mutation[] = [
     replace: "                    js::Prop::Spread(v) => std::borrow::Cow::Borrowed(v),\n",
     tests: ["test/js-collections.test.ts", "-t", "a Dict spread before more of it"],
   },
+  {
+    name: "held-receivers-off",
+    breaks: "a field's function called with what needs statements is called from a variable, `const L = internals.d.L; ..; L(href, s)`, with no `this` (rd285)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "        if !is_temporary(name) || !value.facts.has(js::Known::Lasting) || js::mentions_in(&stmts[i + 1..], name) != 1 {\n",
+    replace: "        if true {\n",
+    tests: ["test/lowering-held-receivers.test.ts"],
+  },
+  {
+    name: "held-receivers-of-any-field",
+    breaks: "a field Rust changes between is read after what's given, so `(inner.f)({ inner.f = triple; n })` calls `triple` (rd285)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "        if !is_temporary(name) || !value.facts.has(js::Known::Lasting) || js::mentions_in(&stmts[i + 1..], name) != 1 {\n",
+    replace: "        if !is_temporary(name) || js::mentions_in(&stmts[i + 1..], name) != 1 {\n",
+    tests: ["test/corpus.test.ts", "-t", "^field_functions_called_after_arguments.rs$"],
+  },
 ];

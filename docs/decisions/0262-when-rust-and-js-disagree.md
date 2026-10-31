@@ -176,6 +176,19 @@ react.dev's TopNav passes the same closure instead.
   optional, is still given its `undefined`. Held by the corpus's `option_arguments` and
   `test/js-functions.test.ts`'s "a trailing None given a function value
   is no argument". Listed in the guide's differences (`semantics.md`, 34).
+- **A field's function called with arguments that need statements is
+  called through its object**, the second case's, which the user decided
+  (2026-10-31, gap rd285, ADR 1034): React DOM's Float,
+  `(REACT_DOM_SHARED_INTERNALS.d().preload)(href, .., options read
+  apart)`, is `const d = ReactDOMSharedInternals.d; ..; d.L(href, ..)`, as
+  upstream writes it, its `this` `d` as the plain call's is. Its `L` is
+  read after the argument statements, where Rust reads it first: only a
+  getter that answers `L`, of a struct JS made, with effects that meet
+  theirs tells. Limited to a field Rust can't change while the body runs,
+  of what a `&T` parameter or a `&'static T` a call gives is to, no cell;
+  one Rust can change between is read where Rust reads it. Held by
+  `test/lowering-held-receivers.test.ts`. Listed in the guide's
+  differences (`semantics.md`, 35).
 - **A global `static` tested again inside the `if` that tested it is
   decided there**, the first case's, which the user accepted (2026-10-28,
   gap pt6): React's `if (__DEV__) { .. if (__DEV__ && debugTask) { .. } }`

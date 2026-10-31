@@ -331,6 +331,11 @@ pub(super) const STAGES: &[Stage] = &[
             pass("branch values", branch_values_of),
             pass("declarations", |b, _| declarations(b)),
             pass("inlined in values", inlined_of),
+            // A function a field holds, called after what it's given needs
+            // statements: its object held, the method call kept (rd285).
+            pass("held receivers", |b, _| {
+                js::statement_lists(b, &mut |s| moves::held_receivers(s))
+            }),
             // A `return a || b` the program wrote of reads in place now, a
             // getter's, `instance.data === "$!" || (..)`, which MIR's
             // temporaries held apart from its `if (a) { return true; }`

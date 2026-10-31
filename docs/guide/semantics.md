@@ -1096,3 +1096,10 @@ React and JSX are [their own pages](README.md#react).
     arguments, `arguments.length` or a rest parameter, sees one fewer:
     `Math.max` given from JS and called `f(1.0, None)` gives `1`, not
     `NaN` (ADR 0443, amended, the user's decision, rd271).
+35. A function a field holds, called with arguments that need
+    statements, is called through its object, `const d = internals.d;
+    ..; d.L(href, ..)`, so its `this` is `d` as the plain call's is; its
+    field is read after those statements, where Rust reads it first. Only
+    a getter that answers the field, of a struct JS made, sees the
+    difference; a field Rust could change between, of a `&mut`'s struct
+    or a cell, is read first (ADR 1034, the user's decision, rd285).

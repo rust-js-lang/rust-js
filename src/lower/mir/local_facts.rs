@@ -76,6 +76,9 @@ pub(super) struct LocalFacts<'m, 'tcx> {
     /// Each block whose call is an integer's `try_from` whose `Result` is
     /// only tested and its `Ok` taken (`mir_tried_ints`).
     tried_ints: HashSet<BasicBlock>,
+    /// Each shared reference whose referent Rust can't change while the
+    /// body runs (`mir_lasting`).
+    lasting: HashSet<Local>,
 }
 
 /// Of a body's calls of a `RefCell`'s, those of a place no borrow of which
@@ -201,6 +204,16 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
         self.made_pointers.contains(&local)
     }
 
+    /// Whether `local` is a shared reference whose referent Rust can't
+    /// change while the body runs: a `&T` parameter, which its caller's
+    /// borrow freezes until the body returns, or a `&'static T` a call
+    /// gives, which nothing can borrow `&mut` again; each written nowhere
+    /// else. A field of what it's to that's no cell reads the same all the
+    /// body long, as Rust has it (`js::Known::Lasting`, rd285).
+    pub(super) fn lasting(&self, local: Local) -> bool {
+        self.lasting.contains(&local)
+    }
+
     /// `local`'s variable, `name`, read: of one whose number a
     /// `#[rust_js::whole]` binding gave (`mir_wholes`), known whole, its
     /// `{}` JS's text of it (ADR 0994, amended).
@@ -301,8 +314,48 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             wholes: self.mir_wholes(body, locals),
             made_pointers: self.mir_made_pointers(body),
             tried_ints: self.mir_tried_ints(body),
+            lasting: self.mir_lasting(body),
         };
         (facts, bindings)
+    }
+
+    /// The locals `LocalFacts::lasting` says: each `&T` parameter MIR
+    /// writes nowhere, and each local a call whose signature gives a
+    /// `&'static T` writes, and nothing else; none borrowed `&mut` or
+    /// pointed to, which could write it.
+    fn mir_lasting(&self, body: &mir::Body<'tcx>) -> HashSet<Local> {
+        let shared = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Ref(_, _, rustc_ast::Mutability::Not));
+        let mut writes: HashMap<Local, usize> = HashMap::new();
+        let mut given: HashSet<Local> = HashSet::new();
+        for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
+            let StatementKind::Assign(assign) = &statement.kind else {
+                continue;
+            };
+            *writes.entry(assign.0.local).or_default() += 1;
+            if let Rvalue::RawPtr(_, of) | Rvalue::Ref(_, BorrowKind::Mut { .. }, of) = &assign.1 {
+                *writes.entry(of.local).or_default() += 1;
+            }
+        }
+        for block in body.basic_blocks.iter() {
+            if let TerminatorKind::Call { func, destination, .. } = &block.terminator().kind {
+                *writes.entry(destination.local).or_default() += 1;
+                let output = func.ty(body, self.tcx).fn_sig(self.tcx).output().skip_binder();
+                if destination.projection.is_empty()
+                    && shared(output)
+                    && matches!(output.kind(), ty::Ref(region, ..) if region.is_static())
+                {
+                    given.insert(destination.local);
+                }
+            }
+        }
+        let written = |local: Local| writes.get(&local).copied().unwrap_or(0);
+        let parameters = (1..=body.arg_count)
+            .map(Local::from_usize)
+            .filter(|&local| shared(body.local_decls[local].ty) && written(local) == 0);
+        (given.iter().copied())
+            .filter(|&local| written(local) == 1)
+            .chain(parameters)
+            .collect()
     }
 
     /// The locals `LocalFacts::made_pointer` says: each written only by a

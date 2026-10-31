@@ -651,6 +651,11 @@ pub enum Known {
     /// throw too, so the write never only makes a value (ADR 0660,
     /// amended).
     Setter,
+    /// A read of a field Rust can't change while the body runs: of a
+    /// struct a `&T` parameter is to, or a `&'static T` a call gives, the
+    /// field no cell (`LocalFacts::lasting`). Only JS can give another
+    /// value of it, a getter's (`Getter`) of a struct JS made (rd285).
+    Lasting,
     /// A slice's items in a range the body's ranges show in bounds,
     /// `items.slice(a, b)`: an array made here, which nothing else holds,
     /// as `$slice(..)` is (ADR 0806).

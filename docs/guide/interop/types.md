@@ -2472,7 +2472,9 @@ export function logMeasure(task, name, start, end) {
   gives it none: `const f = s.f; f()`, not `s.f()`, whose `this` is `s`,
   where a `with_this` function the crate makes, of that call's signature,
   may be it. A JS function of another is called through its object,
-  `handle.play()`, which is its `this`, as JS calls it. React's error
+  `handle.play()`, which is its `this`, as JS calls it, also where its
+  arguments need statements first: `const d = internals.d; ..; d.L(..)`
+  ([ADR 1034](../../decisions/1034-a-fields-function-called-after-statements-keeps-its-object.md)). React's error
   boundary callback, called on the instance:
 
 ```rust
