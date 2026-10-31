@@ -1,7 +1,7 @@
 # 0433. What's written after a loop is after it
 
 Status: Accepted. Extends [0370](0370-loop-exits-first.md) and
-[0432](0432-a-return-is-written-where-its-value-is-made.md).
+[0432](0432-a-return-is-written-where-its-value-is-made.md). Amended: a way out that ends in a borrow's `try` (rd302).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)): where a statement
 that runs once a loop is left is written changes nothing a program can
@@ -110,3 +110,19 @@ codes.length) { ..; continue; } return [i, n]; }`. Its parts' spans say
 where it's written: `while (i < codes.length) { .. } return [i, n];`
 (`test/corpus/loop_exit_tuple.rs`, mutation `exits-after-tuple-unplaced`;
 ADR 0629's #389c amendment).
+
+## Amendment: a way out that ends in a borrow's `try` (rd302, 2026-10-31)
+
+React's describeNode walks its children with `while (childFiber &&
+diffIdx < node.children.length) { .. }`, then, past the loop, holds a
+`RefCell`'s borrow for a `for` over it and returns. Since #442 the early
+"drop scopes" stage makes that borrow's `try { for (..) { .. } return
+content; } finally { $unborrow(tail); }` before `jumps`, so the loop's way
+out, which MIR moved into it, ended in a `try`, and `exits_after` didn't
+take it for one that leaves: the loop stayed `while (true) { if (..) {
+..; continue; } ..the rest.. }`. **A `try` whose body leaves leaves**,
+its `finally` a drop's, run on the way out, which leaves too if it
+throws: the way out goes after the loop, `while (childFiber != null &&
+idx < node.children.length) { .. }`, then the `try`, as written. Held by
+the corpus case `while_before_borrowed_tail`, against native Rust, and
+the mutation `exit-after-try-not-leaving` (`tidy/jumps/labels.ts`).

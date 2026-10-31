@@ -146,11 +146,15 @@ pub(super) fn exit_after(
         }
     }
     // An `if` each of whose branches leaves so, `if (total > 10) { break
-    // bb18; } else { continue bb1; }`, leaves too.
+    // bb18; } else { continue bb1; }`, leaves too; and a `try` whose body
+    // does, its `finally` a drop's, run on the way out, which leaves too if
+    // it throws, `try { for (..) { .. } return content; } finally {
+    // $unborrow(tail); }` (rd302).
     fn leaving(s: &Stmt, leaves: &dyn Fn(&Stmt) -> bool) -> bool {
         leaves(s)
             || matches!(&s.kind, StmtKind::If(_, then, Some(otherwise))
                 if [then, otherwise].iter().all(|b| b.last().is_some_and(|s| leaving(s, leaves))))
+            || matches!(&s.kind, StmtKind::Try(body, _) if body.last().is_some_and(|s| leaving(s, leaves)))
     }
     let at = |list: &[Stmt]| -> Option<usize> {
         let last = list.last().filter(|s| leaving(s, &leaves))?;

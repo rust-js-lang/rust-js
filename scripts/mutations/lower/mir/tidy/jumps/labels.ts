@@ -248,4 +248,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^tried_loop_jumps.rs$"],
     snapshots: true,
   },
+  {
+    name: "exit-after-try-not-leaving",
+    breaks: "a loop's way out that ends with a borrow's `try { .. return content; } finally { $unborrow(tail); }` isn't taken for one that leaves, and the loop stays `while (true) { if (t) { ..; continue; } ..the rest.. }` (rd302)",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "            || matches!(&s.kind, StmtKind::Try(body, _) if body.last().is_some_and(|s| leaving(s, leaves)))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^while_before_borrowed_tail.rs$"],
+    snapshots: true,
+  },
 ];
