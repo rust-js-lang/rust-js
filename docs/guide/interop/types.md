@@ -906,6 +906,10 @@ export function ratio(a, b) {
 - **`Some(x)` is `x`, and `None` is `undefined`.** A `None` field is left
   out of the object. Reading one, rust-js tests `== null`, so a JS caller
   may pass `null` too ([ADR 0030](../../decisions/0030-option.md)).
+  `as_deref()` of one is what its `Some` derefs to: of a `String`, the
+  text; of a `RefCell`'s guard, `Option<Ref<'_, Vec<String>>>`, what it
+  guards, the array itself, `types?.length`, and of a number's cell its
+  `value` ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md), amended).
 - **`#[rust_js::nullable]` makes a `None` `null`**: on a field, on a
   function for its result, or on a function for a parameter it names,
   `#[rust_js::nullable(range)]`, a binding's or the crate's own

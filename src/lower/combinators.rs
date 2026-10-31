@@ -916,12 +916,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Option<Expr>> {
         let subject_ty = tys[0].peel_refs();
         // `as_deref` of an `Rc` that isn't counted, which is what it points
-        // at (ADR 0023): the subject as it is, read where it's read, with
+        // at (ADR 0023), or of a `RefCell`'s guard of an object, which is the
+        // object (ADR 0863): the subject as it is, read where it's read, with
         // no `const` of it, `$index(stack, i) !== fiber`.
         if comb == Comb::AsDeref
             && let Some(inner) = self.dereffed(subject_ty)
-            && self.is_rc(inner)
-            && self.counted_rc(inner).is_none()
+            && ((self.is_rc(inner) && self.counted_rc(inner).is_none()) || self.guards_value_cell(inner))
         {
             return Ok(Some(subject.clone()));
         }

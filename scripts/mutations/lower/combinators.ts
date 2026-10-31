@@ -230,8 +230,8 @@ export const mutations: Mutation[] = [
     name: "as-deref-rc-rebuilt",
     breaks: "`as_deref()` of an `Rc` that isn't counted is refused",
     file: "src/lower/combinators.rs",
-    find: "            && self.is_rc(inner)\n            && self.counted_rc(inner).is_none()\n",
-    replace: "            && false\n",
+    find: "(self.is_rc(inner) && self.counted_rc(inner).is_none()) || ",
+    replace: "",
     tests: ["test/corpus.test.ts","-t","^as_deref\\.rs"],
   },
   {
@@ -578,8 +578,8 @@ export const mutations: Mutation[] = [
     name: "as-deref-counted-rc-in-place",
     breaks: "`as_deref()` of an `Option` of a counted `Rc`, `{ value, count }`, is the `Rc` itself, not what it points at",
     file: "src/lower/combinators.rs",
-    find: "            && self.is_rc(inner)\n            && self.counted_rc(inner).is_none()\n        {\n            return Ok(Some(subject.clone()));",
-    replace: "            && self.is_rc(inner)\n        {\n            return Ok(Some(subject.clone()));",
+    find: "(self.is_rc(inner) && self.counted_rc(inner).is_none())",
+    replace: "self.is_rc(inner)",
     tests: ["test/corpus.test.ts", "-t", "as_deref_counted"],
   },
   {
@@ -598,5 +598,14 @@ export const mutations: Mutation[] = [
     find: "            return Ok(Some(Expr::cond(kept, then, none)));\n",
     replace: "            return Ok(Some(Expr::cond(kept, then, Expr::undefined())));\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "an and_then of a nullable function is stored as it is"],
+  },
+  {
+    name: "as-deref-of-an-object-guard-tested",
+    breaks: "`as_deref()` of an `Option` of a guard of an object's cell, the object, is `types != null ? types : undefined`",
+    file: "src/lower/combinators.rs",
+    find: " || self.guards_value_cell(inner))",
+    replace: ")",
+    tests: ["test/corpus.test.ts", "-t", "^option_of_a_ref_as_deref.rs$"],
+    snapshots: true,
   },
 ];

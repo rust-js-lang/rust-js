@@ -11,6 +11,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(pointee) = self.counted_rc(ty) {
             return Ok(self.counted_pointee(value, pointee));
         }
+        // A `RefCell`'s guard's, what it guards (`guard_value`): `as_deref`
+        // borrows it, so as a `Ref` does.
+        if crate::lower::recognition::is_cell_guard(self.tcx, ty) {
+            return Ok(self.guard_value(value, ty, false));
+        }
         let deref = self.tcx.require_lang_item(LangItem::Deref, span);
         if self.has_user_impl(deref, ty) {
             let method = trait_method(self.tcx, deref, "deref");

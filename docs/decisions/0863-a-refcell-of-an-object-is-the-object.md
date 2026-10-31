@@ -1,6 +1,6 @@
 # 0863. A `RefCell` of an object is the object, and one no borrow of which can meet another is never checked
 
-Status: Accepted. Amends [0328](0328-refcell-borrow-counts.md) (what a
+Status: Accepted; amended below (`as_deref` of an `Option` of a guard). Amends [0328](0328-refcell-borrow-counts.md) (what a
 `RefCell` is, and which of its borrows are counted),
 [0362](0362-refcell-fields-never-counted.md) (a field's plain cell, a
 library's too), [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md)
@@ -799,3 +799,23 @@ calling the library's `push`, which `with` lends its cell, is refused; and
 mutations `quiet-library-key-counted` (`drops/ref_cells.rs`),
 `assigned-value-held` (`drops/facts.rs`) and `quiet-library-key-unasked`
 (`analysis/plain_locals.rs`).
+
+## Amendment: `as_deref` of an `Option` of a guard
+
+clippy's `option_as_ref_deref` asks for `types.as_deref()` of an
+`Option<Ref<'_, Vec<String>>>` where a port wrote `types.as_ref().map(|t|
+t.as_slice())`, which rust-js refused ("`as_deref` of a `Ref`").
+
+**`as_deref` of an `Option` or a `Result` of a `RefCell`'s guard is what
+the guard derefs to, `guard_value`'s** (`combinators/values.rs`'s
+`deref_value`): of a cell of an object, the object, so the subject as it
+is, read in place, `types?.length`, as an uncounted `Rc`'s is; of a
+number's cell, its `value`, `count?.value`. It borrows the guard, as
+Rust's does; the guard is given back where Rust drops it.
+
+Case (ADR 0262): N, no difference: the value is what Rust's `&*guard`
+reads.
+
+Held by `test/corpus/option_of_a_ref_as_deref.rs` (against native Rust);
+mutations `as-deref-of-a-guard-refused` (`combinators/values.ts`) and
+`as-deref-of-an-object-guard-tested` (`combinators.ts`).

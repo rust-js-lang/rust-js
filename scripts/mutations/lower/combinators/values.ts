@@ -122,4 +122,12 @@ export const mutations: Mutation[] = [
     replace: "            let mut list = vec![item, n, Expr::int(0), Expr::arrow(vec![name.into()], body)];\n",
     tests: ["test/runtime-package.test.ts", "-t", "room past"],
   },
+  {
+    name: "as-deref-of-a-guard-refused",
+    breaks: "`as_deref()` of an `Option<Ref<u32>>`, which clippy's `option_as_ref_deref` asks for, is refused",
+    file: "src/lower/combinators/values.rs",
+    find: "        if crate::lower::recognition::is_cell_guard(self.tcx, ty) {\n            return Ok(self.guard_value(value, ty, false));\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^option_of_a_ref_as_deref.rs$"],
+  },
 ];
