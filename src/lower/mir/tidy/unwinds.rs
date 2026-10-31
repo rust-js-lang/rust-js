@@ -570,21 +570,12 @@ pub(super) fn looped_drops(stmts: &mut Vec<Stmt>, for_made: bool, tidied: &mut d
                 list.truncate(at + 1);
             }
         });
-        // Its own label, MIR's `bb5: while (true)`: its `break bb5` is a way
-        // out, its `continue bb5` a turn's, as unlabeled.
-        if let Some(own) = &own {
-            js::statement_lists(body, &mut |list| {
-                for stmt in list.iter_mut() {
-                    match &stmt.kind {
-                        StmtKind::Break(Some(l)) if l == own => stmt.kind = StmtKind::Break(None),
-                        StmtKind::Continue(Some(l)) if l == own => stmt.kind = StmtKind::Continue(None),
-                        _ => {}
-                    }
-                }
-            });
-        }
-        if !dropped_at_each_exit(&mut run, &drop, (0, false, &[]))
-            || !dropped_at_each_exit(body, &drop, (0, false, &labels))
+        let inside = Inside {
+            labels: &labels,
+            own: own.as_deref(),
+        };
+        if !dropped_at_each_exit(&mut run, &drop, (0, false, Inside::default()))
+            || !dropped_at_each_exit(body, &drop, (0, false, inside))
         {
             k += 1;
             continue;
@@ -670,12 +661,22 @@ fn dropping_catch<'s>(stmt: &'s Stmt, drop: &Stmt) -> Option<&'s Vec<Stmt>> {
     }
 }
 
+/// What a loop's jumps go on in: the blocks and loops it labels, whose
+/// `break`s and `continue`s go on in it, and its own label, `own`, MIR's
+/// `bb5: while (true)`, whose `continue bb5` is a turn, in a loop in it
+/// too, and whose `break bb5` a way out (rd200, #440).
+#[derive(Clone, Copy, Default)]
+struct Inside<'a> {
+    labels: &'a [String],
+    own: Option<&'a str>,
+}
+
 /// `stmts`, `depth` loops into the loop that drops `drop` before each way
 /// out of it, with each of those drops gone and each `try` that drops it
 /// only as it throws its body; whether each way out dropped it, each
 /// `return`, `throw` and `break` of the loop, and nothing else may throw,
 /// but in such a `try`, `caught`, or drop it, nor leave it by a label.
-fn dropped_at_each_exit(stmts: &mut Vec<Stmt>, drop: &Stmt, (depth, caught, labels): (usize, bool, &[String])) -> bool {
+fn dropped_at_each_exit(stmts: &mut Vec<Stmt>, drop: &Stmt, (depth, caught, inside): (usize, bool, Inside)) -> bool {
     let mut out = Vec::with_capacity(stmts.len());
     let mut dropped = false;
     for mut stmt in std::mem::take(stmts) {
@@ -693,7 +694,7 @@ fn dropped_at_each_exit(stmts: &mut Vec<Stmt>, drop: &Stmt, (depth, caught, labe
             if leaves(&inner, depth) || js::stmts_alike(&inner, std::slice::from_ref(drop)) {
                 return false;
             }
-            if !dropped_at_each_exit(&mut inner, drop, (depth, true, labels)) {
+            if !dropped_at_each_exit(&mut inner, drop, (depth, true, inside)) {
                 return false;
             }
             if dropped {
@@ -709,7 +710,10 @@ fn dropped_at_each_exit(stmts: &mut Vec<Stmt>, drop: &Stmt, (depth, caught, labe
             // it, as a loop's in it does, `continue bb10;`; another label's
             // leaves it, as a `return` does, the program's `break
             // 'get_instance` out of the block the loop's in (rd200).
-            StmtKind::Break(Some(label)) | StmtKind::Continue(Some(label)) => !labels.contains(label),
+            StmtKind::Break(Some(label)) => !inside.labels.contains(label),
+            // The loop's own `continue bb5`, in a loop in it too, is a turn
+            // (#440).
+            StmtKind::Continue(Some(label)) => !inside.labels.contains(label) && inside.own != Some(label.as_str()),
             _ => false,
         };
         if exit {
@@ -727,17 +731,17 @@ fn dropped_at_each_exit(stmts: &mut Vec<Stmt>, drop: &Stmt, (depth, caught, labe
         let ok = match &mut stmt.kind {
             StmtKind::If(test, a, b) => {
                 (caught || !test.may_throw())
-                    && dropped_at_each_exit(a, drop, (depth, caught, labels))
+                    && dropped_at_each_exit(a, drop, (depth, caught, inside))
                     && b.as_mut()
-                        .is_none_or(|b| dropped_at_each_exit(b, drop, (depth, caught, labels)))
+                        .is_none_or(|b| dropped_at_each_exit(b, drop, (depth, caught, inside)))
             }
             StmtKind::While { cond, body, .. } => {
-                (caught || !cond.may_throw()) && dropped_at_each_exit(body, drop, (depth + 1, caught, labels))
+                (caught || !cond.may_throw()) && dropped_at_each_exit(body, drop, (depth + 1, caught, inside))
             }
             // What goes on in it, a block's own `break`, a turn's `continue`.
             StmtKind::Break(_) | StmtKind::Continue(_) => true,
-            StmtKind::Labeled(label, body) if labels.contains(label) => {
-                dropped_at_each_exit(body, drop, (depth, caught, labels))
+            StmtKind::Labeled(label, body) if inside.labels.contains(label) => {
+                dropped_at_each_exit(body, drop, (depth, caught, inside))
             }
             StmtKind::Labeled(..)
             | StmtKind::Switch { .. }

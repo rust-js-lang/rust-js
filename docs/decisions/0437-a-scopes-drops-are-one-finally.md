@@ -157,3 +157,19 @@ goes on to the block's end anyway. Held by `refcell_borrow_loops.rs`'s
 `take_or_push` and the mutations `looped-drops-outer-break-refused`
 (`mir/tidy/unwinds.ts`) and `try-tail-break-kept`
 (`mir/tidy/jumps/tails.ts`).
+
+**Amended (#440, P0).** 3aa30746a (ADR 0659, amended) made the labels of
+the loops inside the loop its own, so an inner loop's `continue bb10` is
+no way out of it. The loop's own label was still made no label everywhere
+in it, `break bb5` and `continue bb5` made `break` and `continue`, in a
+loop inside it too, where `continue` is that loop's: `'outer: for &x in
+items.borrow().iter() { while j < 3 { if j == x { continue 'outer; } ..
+} }` became one `try` whose inner `while (true)` went on with itself on
+`continue`, never ending. **A loop's jumps are read where they are, none
+rewritten**: its own label's `continue` is a turn, at any depth, its
+`break` a way out, as another label's is. Case "Results change": the loop
+goes on where Rust's does. Held by `looped_drops_jumps.rs`, against
+native Rust (one loop, `while`s, early `break`s, an inner `continue`,
+`continue 'outer`, and a borrow's loop with one), and the mutation
+`looped-drops-own-continue-leaves` (`mir/tidy/unwinds.ts`);
+`looped-drops-own-label-unread` went with the rewrite it held.
