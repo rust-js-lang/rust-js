@@ -180,12 +180,16 @@ pub(super) fn returned_through_finally(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i + 2 < stmts.len() {
         let found = match (&stmts[i].kind, &stmts[i + 1].kind, &stmts[i + 2].kind) {
-            (StmtKind::Let(name, None), StmtKind::Try(body, finally), StmtKind::Return(Some(value))) => matches!(&value.kind, ExprKind::Var(v) if v == name)
-                && body.last().is_some_and(
-                    |s| matches!(&s.kind, StmtKind::Assign(t, _) if matches!(&t.kind, ExprKind::Var(v) if v == name)),
-                )
-                && js::mentions_in(body, name) == 1
-                && js::mentions_in(finally, name) == 0,
+            (StmtKind::Let(name, None), StmtKind::Try(body, finally), StmtKind::Return(Some(value))) => {
+                matches!(&value.kind, ExprKind::Var(v) if v == name)
+                    && js::mentions_in(finally, name) == 0
+                    && body.last().is_some_and(|last| {
+                        let mut returned = last.clone();
+                        given_returned(&mut returned, name)
+                            && js::mentions_in(std::slice::from_ref(&returned), name) == 0
+                            && js::mentions_in(&body[..body.len() - 1], name) == 0
+                    })
+            }
             _ => false,
         };
         if found {
@@ -194,16 +198,37 @@ pub(super) fn returned_through_finally(stmts: &mut Vec<Stmt>) {
             let StmtKind::Try(body, _) = &mut stmts[i].kind else {
                 unreachable!("matched")
             };
-            let last = body.pop().expect("matched");
-            let StmtKind::Assign(_, value) = last.kind else {
-                unreachable!("matched")
-            };
-            match value.is_fixed() {
-                true => stmts.insert(i + 1, StmtKind::Return(Some(value)).at(last.span)),
-                false => body.push(StmtKind::Return(Some(value)).at(last.span)),
+            let mut last = body.pop().expect("matched");
+            match last.kind {
+                StmtKind::Assign(_, value) if value.is_fixed() => {
+                    stmts.insert(i + 1, StmtKind::Return(Some(value)).at(last.span))
+                }
+                _ => {
+                    given_returned(&mut last, "");
+                    body.push(last);
+                }
             }
         }
         i += 1;
+    }
+}
+
+/// `name = e` at each end of `stmt`, one assignment or an `if` each of
+/// whose branches ends with one, `return e`, React's flushSync's `if (fn)
+/// { return fn(); } else { return undefined; }` (rd286): whether each end
+/// was. Of `name` empty, each assignment's, as `returned_through_finally`
+/// has found them.
+fn given_returned(stmt: &mut Stmt, name: &str) -> bool {
+    match &mut stmt.kind {
+        StmtKind::Assign(target, value) if name.is_empty() || matches!(&target.kind, ExprKind::Var(v) if v == name) => {
+            stmt.kind = StmtKind::Return(Some(std::mem::replace(value, Expr::undefined())));
+            true
+        }
+        StmtKind::If(_, then, Some(otherwise)) => {
+            let ended = |branch: &mut Vec<Stmt>| branch.last_mut().is_some_and(|last| given_returned(last, name));
+            ended(then) & ended(otherwise)
+        }
+        _ => false,
     }
 }
 

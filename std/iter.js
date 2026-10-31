@@ -3858,7 +3858,6 @@ export function mapWhileIterator_tryFold(
   dropIItem,
 ) {
   const { iter, predicate } = mapWhile;
-  let result;
   try {
     const tryFold = $tryFoldInto(
       $given(iter, IIterator, true),
@@ -3884,11 +3883,13 @@ export function mapWhileIterator_tryFold(
       $controlFlowTry,
       dropAcc,
     );
-    result = tryFold.TAG === "Continue" ? RTry.fromOutput(tryFold._0) : tryFold._0;
+    if (tryFold.TAG === "Continue") {
+      return RTry.fromOutput(tryFold._0);
+    }
+    return tryFold._0;
   } finally {
     dropFold?.(fold);
   }
-  return result;
 }
 
 export function mapWhileIterator_fold(

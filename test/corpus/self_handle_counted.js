@@ -47,15 +47,15 @@ function counted(step) {
           throw new Error("called `Option::unwrap()` on a `None` value");
         }
         const countdown = andThen;
-        let result;
         try {
           $unborrow(borrow);
-          result =
-            n < step ? BigInt(countdown.strong) : countdown.value(BigInt.asUintN(64, n - step));
+          if (n < step) {
+            return BigInt(countdown.strong);
+          }
+          return countdown.value(BigInt.asUintN(64, n - step));
         } finally {
           $rcDrop(countdown, $dispose);
         }
-        return result;
       },
       () => {
         $rcDrop(this$$1, (value) => {

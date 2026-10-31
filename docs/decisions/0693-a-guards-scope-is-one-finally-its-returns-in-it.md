@@ -271,3 +271,32 @@ Held by `test/lowering-drop-guards.test.ts`'s "a field read of what JS
 made in a guard's scope is in its one try" (both shapes, run, a throwing
 call each); mutations `js-made-field-read-throws` (`js/expr_walk.ts`) and
 `js-made-field-read-may-panic` (`lower/representation.ts`).
+
+## Amendment: a scope's value of an `if` returns in each branch (rd286)
+
+`returns through finally` took a scope's value given last, `let result;
+try { ..; result = e; } finally { .. } return result;`, only of one
+assignment, so React DOM's flushSync, whose guard's scope ends `if let
+Some(f) = f { f() } else { None }`, was `let result; try { .. if (fn !=
+null) { result = fn(); } else { result = undefined; } } finally { .. }
+return result;` where upstream returns in the `try`. **A value given at
+each end of the `try`'s last statement, an assignment or an `if` each of
+whose branches ends with one, is each branch's `return`** (`unwinds.rs`'
+`given_returned`): `try { if (f != null) { return f(); } } finally { ..
+}`, the `return undefined;` a function ends with anyway left out (ADR
+0237). Only where nothing else in the `try` or its `finally` names it.
+One assignment of a value the same whenever it's made goes after the
+`try`, as above.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the value made
+before the `finally` runs, as Rust drops the guard after its scope's
+value is made, then returned.
+
+A function's value of an `if` whose arm is more than a plain value is
+each arm's `return`, as ADR 0969's rd23 amendment has it: the corpus's
+`option_of_a_ref_as_deref` and `self_handle_counted`, and std's
+`mapWhileIterator_tryFold`, were `result = t ? a() : b;` after the `try`.
+
+Held by `test/corpus/guard_value_of_branches.rs` against native Rust,
+its closure reading what the guard puts back, and the mutation
+`branches-given-unreturned` (`tidy/unwinds.ts`).

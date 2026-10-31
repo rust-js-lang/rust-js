@@ -22,15 +22,16 @@ function typesOf(transition) {
 
 function shown(transition) {
   const types = typesOf(transition);
-  let result;
   try {
-    result = types != null ? types.join(",") : "none";
+    if (types != null) {
+      return types.join(",");
+    }
+    return "none";
   } finally {
     if (types != null) {
       $unborrow(types);
     }
   }
-  return result;
 }
 
 function main() {
