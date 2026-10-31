@@ -875,3 +875,38 @@ The guard went with its mutation. `test/lowering-switch-symbols.test.ts`'s
 both shapes against native Rust.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N.
+
+## Amendment: an untagged enum's variant of a constant is that constant (2026-10-31, rd242)
+
+React's processLink writes `switch (rel) { case 'preload': .. case
+'modulepreload': .. case 'stylesheet': .. }`. Its port matches
+`js::classify(rel)`, `Kind::String("preload") => ..`, which printed an
+`if` chain of `rel === "preload"`: `constants_of` named a `Some` of
+constants and an untagged variant whose value is bound or not, but not an
+untagged variant whose value is a constant.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. An untagged
+variant's value is the value itself (ADR 0668), so `rel === "preload"`
+holds exactly where `Kind::String("preload")` matches, and a `switch`'s
+`case` is that `===`.
+
+- **A variant of an untagged enum told by its kind, of one field whose
+  pattern is a constant, names that constant** (`hints/constants.rs`,
+  moved out of `hints.rs` whole): `switch (rel) { case "preload": .. }`.
+  A number's `switch` stays in its `typeof v === "number"` test, which
+  nothing removes as `===` of a string's literal does; arms of constants
+  beside an arm of a kind, `Kind::Number(_)`, stay the `if` chain of
+  `typeof`s, as before.
+
+React's addValueToProperties writes its Promise case as `if (value.status
+=== 'fulfilled') { .. } else if (value.status === 'rejected') { .. }`, of
+two strings and the rest, three cases: its port's `match` of them is now
+a `switch`, so `test/ports/performance-track-properties` and
+`lowering-labels`' "a block MIR made followed by a return" write upstream's
+`if` as an `if let` chain of one `let status = js::classify(..)`, which
+reads `const status = value.status; if (status === "fulfilled")`.
+
+Held by `test/lowering-strict-switches.test.ts`' "a match of an untagged
+enum's constants is a switch of the value", run in JS, and mutation
+`untagged-constant-no-case` (`mir/hints/constants.ts`, where the three
+mutations of the moved code went too).

@@ -13,14 +13,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-switch-symbols.test.ts", "-t", "a match of symbols give is given"],
   },
   {
-    name: "transparent-constant-no-case",
-    breaks: "a `match` of a `#[repr(transparent)]` struct's constants is no `switch`, an `if` chain of its tests (ADR 0590, amended)",
-    file: "src/lower/mir/hints.rs",
-    find: "                    && let thir::PatKind::Constant { .. } = field.kind\n",
-    replace: "                    && let thir::PatKind::Never = field.kind\n",
-    tests: ["test/lowering-constants.test.ts", "-t", "transparent struct's constants"],
-  },
-  {
     name: "guard-before-its-constants-unjoined",
     breaks: "a guarded arm that does nothing before an arm of its constants alone, `I if legacy_off => {}` then `I => { .. }`, makes no `switch` of its `match`, React's completeWork an `if` chain in labeled blocks (ADR 0905, amended)",
     file: "src/lower/mir/hints.rs",
@@ -290,22 +282,6 @@ export const mutations: Mutation[] = [
     find: "                .filter(|c| !matches!(c, Constant::Kind(TypeofCase::Tested(_) | TypeofCase::Inside(..))))\n",
     replace: "",
     tests: ["test/lowering-switches.test.ts", "-t", "a match of what a value is"],
-  },
-  {
-    name: "switch-of-somes-unseen",
-    breaks: "a `match` of a `Some`'s constants, `Some(\"s\")`, isn't a `switch`, but an `if` chain",
-    file: "src/lower/mir/hints.rs",
-    find: "                && !self.boxed_payload(some.pattern.ty) =>\n",
-    replace: "                && !self.boxed_payload(some.pattern.ty)\n                && false =>\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
-  },
-  {
-    name: "switch-of-registered-symbols-unseen",
-    breaks: "a `match` of the registry's symbols isn't a `switch`, but an `if` chain",
-    file: "src/lower/mir/hints.rs",
-    find: "            thir::PatKind::Leaf { .. } if self.recognition().is_symbol_for(pattern.ty) => {\n",
-    replace: "            thir::PatKind::Leaf { .. } if self.recognition().is_symbol_for(pattern.ty) && false => {\n",
-    tests: ["test/lowering-symbols.test.ts", "-t", "a match of the registry's symbols"],
   },
   {
     name: "range-arm-tests-apart",

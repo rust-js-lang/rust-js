@@ -300,3 +300,60 @@ pub fn guarded(s: &'static Unknown, a: &'static Unknown, b: &'static Unknown) ->
   expect([lib.called(9, 9, 3), lib.valued(5, 1, 6), lib.valued(5, 1, 5)]).toEqual([3, 4, 2]);
   expect([lib.looped([1, 3, 1, 2, 1], 1, 2), lib.guarded(1, 1, 2), lib.guarded(2, 1, 2), lib.guarded(5, 1, 2), logged]).toEqual([12, 1, 2, 3, [3]]);
 });
+
+// React's processLink writes `switch (rel) { case 'preload': .. case
+// 'modulepreload': .. case 'stylesheet': .. }`; its port matches
+// `js::classify(rel)`'s `Kind::String("preload")`, which printed an `if`
+// chain of `rel === "preload"`. A variant of an untagged enum whose value is
+// a constant is that constant, the value itself, as a `Some`'s is: a case of
+// the `switch`, in its `typeof` test where `===` doesn't say it, a
+// number's. Arms of a constant and of a kind, `Kind::Number(_)`, stay an
+// `if` chain of `typeof`s (rd242; ADR 0629, amended).
+test("a match of an untagged enum's constants is a switch of the value", () => {
+  const dir = fixture("untagged-constant-switches");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use js::{Kind, Unknown};
+
+pub fn rel(v: Option<&Unknown>, log: &mut Vec<u32>) {
+    match js::classify(v) {
+        Kind::String("preload") => log.push(1),
+        Kind::String("modulepreload") => log.push(2),
+        Kind::String("stylesheet") => log.push(3),
+        _ => {}
+    }
+}
+
+pub fn counted(v: Option<&Unknown>) -> u32 {
+    match js::classify(v) {
+        Kind::Number(0.0) => 1,
+        Kind::Number(2.0) => 2,
+        _ => 0,
+    }
+}
+
+pub fn mixed(v: Option<&Unknown>) -> u32 {
+    match js::classify(v) {
+        Kind::String("a") => 1,
+        Kind::String("b") => 2,
+        Kind::Number(_) => 3,
+        _ => 0,
+    }
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  switch (v) {\n    case "preload":\n      log.push(1);\n      break;\n    case "modulepreload":\n');
+  expect(js).toContain('  if (typeof v === "number") {\n    switch (v) {\n      case 0:\n        return 1;\n      case 2:\n        return 2;\n    }\n  }\n  return 0;\n');
+  expect(js).toContain('  if (typeof v === "string") {\n');
+  const lib = require(join(dir, "lib.js"));
+  const rel = (v: unknown) => {
+    const log: number[] = [];
+    lib.rel(v, log);
+    return log;
+  };
+  expect([rel("preload"), rel("stylesheet"), rel("other"), rel(1), rel(undefined)]).toEqual([[1], [3], [], [], []]);
+  expect([lib.counted(0), lib.counted(-0), lib.counted(2), lib.counted("2"), lib.counted(NaN)]).toEqual([1, 1, 2, 0, 0]);
+  expect([lib.mixed("a"), lib.mixed("b"), lib.mixed(7), lib.mixed("c"), lib.mixed(null)]).toEqual([1, 2, 3, 0, 0]);
+});

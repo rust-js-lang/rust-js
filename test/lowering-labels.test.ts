@@ -169,7 +169,9 @@ pub fn get_kind(array: &[Option<&Unknown>]) -> u32 {
 // `return`s, past a `String`'s drop, are one block MIR made that's followed
 // by `return;`: each `break` of it that `return;`, and the chain of the
 // status's strings is the chain alone, no `typeof status === "string"`
-// around it, which no string literal's `===` needs (ADR 0755).
+// around it, which no string literal's `===` needs (ADR 0755). Its `if let`
+// chain is upstream's `if`; a `match` of the strings would be a `switch`
+// (ADR 0629, amended).
 test("a block MIR made followed by a return is each break's return", async () => {
   const dir = fixture("labeled-block-returns");
   writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown};
@@ -196,24 +198,21 @@ pub fn describe(value: Option<&Unknown>, name: &str, out: &mut Vec<String>) {
                 }
             }
             if object_name == "Promise" {
-                match js::classify(js::get(value, "status")) {
-                    Kind::String("fulfilled") => {
-                        let idx = out.len();
-                        describe(js::get(value, "value"), "value", out);
-                        if out.len() > idx {
-                            out[idx] = "Promise<".to_string() + &out[idx] + ">";
-                            return;
-                        }
+                let status = js::classify(js::get(value, "status"));
+                if let Kind::String("fulfilled") = status {
+                    let idx = out.len();
+                    describe(js::get(value, "value"), "value", out);
+                    if out.len() > idx {
+                        out[idx] = "Promise<".to_string() + &out[idx] + ">";
+                        return;
                     }
-                    Kind::String("rejected") => {
-                        let idx = out.len();
-                        describe(js::get(value, "reason"), "reason", out);
-                        if out.len() > idx {
-                            out[idx] = "Rejected<".to_string() + &out[idx] + ">";
-                            return;
-                        }
+                } else if let Kind::String("rejected") = status {
+                    let idx = out.len();
+                    describe(js::get(value, "reason"), "reason", out);
+                    if out.len() > idx {
+                        out[idx] = "Rejected<".to_string() + &out[idx] + ">";
+                        return;
                     }
-                    _ => {}
                 }
                 out.push("Promise".to_string());
                 return;
