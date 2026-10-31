@@ -27,7 +27,7 @@ export function entry() {
 function flakyIterator_next(flaky) {
   flaky.n = (flaky.n + 1) >>> 0;
   if (flaky.n !== 3 && flaky.n !== 7) {
-    if (!(flaky.n > 10)) {
+    if (flaky.n <= 10) {
       return flaky.n;
     }
   }
@@ -157,7 +157,7 @@ function main() {
   const from = Iterator.from(
     $fromFn(() => {
       n$1 = (n$1 + 1) >>> 0;
-      if (n$1 % 3 !== 0 && !(n$1 > 8)) {
+      if (n$1 % 3 !== 0 && n$1 <= 8) {
         return n$1;
       }
     }),

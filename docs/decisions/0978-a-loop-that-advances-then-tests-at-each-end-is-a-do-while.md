@@ -1,7 +1,8 @@
 # 0978. A `loop` that advances, then tests, at each way's end is a `do … while`
 
 Status: Accepted. Amended below: an advance inside a way, and one past
-the loop's last test, are advances too.
+the loop's last test, are advances too; a `loop` that ends testing
+whether to leave is a `do` of that test.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
 difference, under the conditions below: each turn runs what's before its
@@ -103,3 +104,65 @@ Rust, with `skipping_once` (another `continue`) and `skipping_low`
 (another test) staying `while (true)`; mutations
 `do-while-end-unturned`, `do-while-inner-advance-unturned` and
 `do-while-inner-advance-continued` (`prepare/do_whiles.ts`).
+
+## Amendment: a `loop` that ends testing whether to leave (2026-10-31)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
+difference: each turn runs the body, then the test, in both forms; a
+comparison of integers is never of a `NaN`, so its negation and its
+converse hold of the same values.
+
+Rust has no `do … while`; it writes one as a `loop` whose last statement
+tests whether to leave. React's revealCompletedBoundaries walks a
+boundary's nodes so, `do { .. node = nextNode; } while (node);`, and its
+port's `loop { ..; node = next_node; if node.is_none() { break; } }`
+printed `while (true) { ..; if (node === null) { break; } }` (rd261). ADR
+0702 kept a written `loop` a `while (true)`, as JS's tree had no `do …
+while` then.
+
+**A `while (true)` whose last statement is `if (done) { break; }`, its
+own, is `do { .. } while (!done);`** (`do_whiles::tested_last`). Only
+where:
+
+- **no `continue` of the loop is in it**, which in a `do` goes on to its
+  test, not its start (`skipping_odd`, `rows`' `continue 'rows` stay);
+- **the test reads nothing the body declares**, which is out of a `do`'s
+  test's scope, `const square = ..; } while (square <= limit)` a
+  ReferenceError (`squares_past` stays).
+
+Comments above the `if`, or before its `break`, are the body's last, above
+the test (`StmtKind::Comments`, ADR 0753): `i++; // Past the end. }
+while (i <= n);`, not before the `do`.
+
+**A comparison of integers is known as one** (`Known::Integers`, which
+#366 gave a range test): the lowering gives it to each comparison of
+integral operands, so its negation is its converse, `n > limit`'s `n <=
+limit`, not `!(n > limit)`, the `do`'s test as a person writes it; the
+decision trees' sets read `n < 1` as `n >= 1`'s complement
+(`decisions::atom`), as they read the `!(n >= 1)` it was, so a tree whose
+arms test a slice's `length` both ways is still one conditional. Elsewhere
+a guard MIR turned reads as written too, `if (skip.n <= 0)`, `if (upper
+== null || upper >= take.n)` in std's iterators, where tidy's
+`comparisons::turned` (ADR 0371) couldn't tell a field or a call is never
+`NaN`.
+
+The describeNativeComponentFrame loop ADR 0702 kept is upstream's `do {
+s--; c--; .. } while (s >= 1 && c >= 0);` (`signed_counter`,
+`signed_index`).
+
+Alternatives:
+
+- **The `do` only where the test is an `Option`'s**: one form of a
+  construct by what it tests; a counter's loop reads as well.
+- **Every negation of integers' comparison its converse at its making,
+  `Expr::unary` too**: tidy reads a guard MIR turned by its `!`, the
+  initializers' (rd234) too, which then put it the other way round.
+
+Consequences: `docs/readability.txt`, `while (true)` 9 to 8.8 in 10,000
+lines; fewer lines make `renamed x$1`'s share no larger (630.3 to 630).
+Held by `test/corpus/do_while_tested_last.rs` against native Rust,
+`test/lowering-comments.test.ts`' comment before a loop's break, mutations
+`do-while-tested-last-never`, `-continued`, `-declared`,
+`-comments-lost` (`prepare/do_whiles.ts`), `integer-comparison-unknown`
+(`number/operators.ts`) and `decision-integer-converse-apart`
+(`tidy/decisions.ts`); the guide (Loops) shows it.

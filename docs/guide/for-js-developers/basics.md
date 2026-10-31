@@ -2662,6 +2662,56 @@ path falling to the loop's last advance, is `update = update.next;
 continue;` in the `do`, whose `continue` goes on to its test, as React's
 updateReducerImpl skips an update (ADR 0978, amended).
 
+Rust has no `do … while`: a `loop` whose last statement is `if done {
+break; }` runs its body, then tests, and is `do { .. } while (!done)`, as
+React walks a boundary's nodes. Not where a `continue` is in it, which in
+a `do` goes on to the test, not the start; nor where the test reads what
+the body declares. A comparison of integers is never of a `NaN`, so its
+negation is its converse, `n === 0`'s `n !== 0`, `n < 0`'s `n >= 0`
+(ADR 0978, amended):
+
+```rust
+pub fn digits(mut n: u32) -> u32 {
+    let mut count = 0;
+    loop {
+        count += 1;
+        n /= 10;
+        if n == 0 {
+            break;
+        }
+    }
+    count
+}
+
+pub fn below_zero(mut n: i32, by: i32) -> i32 {
+    loop {
+        n -= by;
+        if n < 0 {
+            break;
+        }
+    }
+    n
+}
+```
+
+```js
+export function digits(n) {
+  let count = 0;
+  do {
+    count = (count + 1) >>> 0;
+    n = (n / 10) >>> 0;
+  } while (n !== 0);
+  return count;
+}
+
+export function belowZero(n, by) {
+  do {
+    n = (n - by) | 0;
+  } while (n >= 0);
+  return n;
+}
+```
+
 ## `null` and `undefined`: `Option`
 
 Rust has no `null`. A value that may be missing is an `Option<T>`: `Some(v)`

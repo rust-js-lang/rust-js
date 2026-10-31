@@ -62,7 +62,7 @@ function rising(first) {
   while (true) {
     steps = (steps + 1) >>> 0;
     const next = update.next;
-    if (next == null || !(next.lane > update.lane)) {
+    if (next == null || next.lane <= update.lane) {
       break;
     }
     update = next;

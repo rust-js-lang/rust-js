@@ -91,7 +91,7 @@ function firstLarge(v) {
   let n = 0;
   while (true) {
     const t = v.pop();
-    if (t == null || !(t < 5)) {
+    if (t == null || t >= 5) {
       return t != null ? (t + n) >>> 0 : undefined;
     }
     n = (n + t) >>> 0;

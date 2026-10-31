@@ -881,7 +881,7 @@ pub fn start(tags: Vec<u32>) {
     WORK.set(next);
 }
 `);
-  expect(js).toContain("    } while (work$1 != null && !(log.length >= until));\n  }\n}\n");
+  expect(js).toContain("    } while (work$1 != null && log.length < until);\n  }\n}\n");
   const log: number[] = [];
   lib.workLoop(2 as never, log as never);
   lib.start([1, 2, 3, 4, 5] as never);

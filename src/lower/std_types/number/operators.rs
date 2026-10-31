@@ -42,7 +42,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(self.text_compare(js_op, l, r));
         }
         if let Some(js_op) = comparison {
-            return Ok(Expr::bin(js_op, without_zero_sign(l), without_zero_sign(r)));
+            let mut compared = Expr::bin(js_op, without_zero_sign(l), without_zero_sign(r));
+            // Of integers, never a NaN: its negation is its converse, `!(n
+            // > limit)` is `n <= limit` (`Expr::negated_test`, #366).
+            if ty.is_integral() {
+                compared.facts = compared.facts.with(js::Known::Integers);
+            }
+            return Ok(compared);
         }
 
         if ty.is_bool() {

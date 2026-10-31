@@ -5875,7 +5875,7 @@ export function takeIterator_sizeHint(take, IIterator = { next: $next }, dropI, 
   }
   let [lower, upper] = $sizeHint(take.iter, IIterator);
   lower = Math.min(lower, take.n);
-  if (upper == null || !(upper < take.n)) {
+  if (upper == null || upper >= take.n) {
     upper = take.n;
   }
   return [lower, upper];
@@ -10568,7 +10568,7 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_nth(
   const delta = Math.min(n, (zip.len$ - zip.index) >>> 0);
   const end = (zip.index + delta) >>> 0;
   while (true) {
-    if (!(zip.index < end)) {
+    if (zip.index >= end) {
       return Zip.superNth(
         zip,
         (n - delta) >>> 0,

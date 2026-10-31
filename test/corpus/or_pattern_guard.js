@@ -11,7 +11,7 @@ export function f(p) {
     a = p[0];
   } else {
     a$1 = p[1];
-    if (!(a$1 > 10)) {
+    if (a$1 <= 10) {
       return 0;
     }
     a = p[1];

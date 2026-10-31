@@ -106,12 +106,9 @@ function reshadowed(limit) {
   let label = limit * 2;
   console.log(`label ${label}`);
   let n = 0;
-  while (true) {
+  do {
     n = (n + 3) >>> 0;
-    if (n > limit) {
-      break;
-    }
-  }
+  } while (n <= limit);
   label = `n=${n}`;
   return label;
 }

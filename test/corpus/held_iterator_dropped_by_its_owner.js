@@ -25,7 +25,7 @@ function dDrop_drop(d) {
 
 function restartIterator_next(restart) {
   restart.n = (restart.n + 1) >>> 0;
-  if (restart.n !== 2 && !(restart.n >= 5)) {
+  if (restart.n !== 2 && restart.n < 5) {
     return restart.n;
   }
 }

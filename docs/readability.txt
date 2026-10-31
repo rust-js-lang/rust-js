@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1372
-lines	135802
+files	1373
+lines	135900
 temporaries	1	0.1
 labeled blocks	14	1
-while (true)	122	9
-$iter	1177	86.7
+while (true)	120	8.8
+$iter	1177	86.6
 Iterator.from	116	8.5
 return;	143	10.5
-renamed x$1	8560	630.3
+renamed x$1	8562	630
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1977	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	206	0	0	0	6	0	0	35
@@ -269,6 +269,7 @@ test/corpus/dictionary_helper_names.js	34	0	0	0	0	0	0	2
 test/corpus/display_options_handed_on.js	45	0	0	0	0	0	0	0
 test/corpus/division_check_order.js	44	0	0	0	0	0	0	14
 test/corpus/do_while_advances.js	265	0	0	8	0	0	0	0
+test/corpus/do_while_tested_last.js	110	0	0	2	0	0	0	2
 test/corpus/double_ended_iterators.js	55	0	0	0	0	0	2	2
 test/corpus/drain_destructors.js	94	0	0	1	3	0	0	2
 test/corpus/drain_from_past_len.js	15	0	0	0	0	0	0	0
@@ -663,7 +664,7 @@ test/corpus/loop_ending_branch_loop.js	153	0	0	0	0	0	0	0
 test/corpus/loop_ends_branch.js	78	0	0	1	0	0	0	3
 test/corpus/loop_ends_in_its_break.js	67	0	0	0	0	0	0	0
 test/corpus/loop_exit_code_after.js	94	0	0	1	0	0	0	2
-test/corpus/loop_exit_moves.js	177	0	1	8	1	0	0	0
+test/corpus/loop_exit_moves.js	174	0	1	7	1	0	0	0
 test/corpus/loop_exit_tuple.js	84	0	0	0	0	0	0	0
 test/corpus/loop_exits.js	156	0	0	2	1	0	2	5
 test/corpus/loop_over_a_thread_local.js	71	0	0	0	0	0	0	0
@@ -928,7 +929,7 @@ test/corpus/ref_mut_bindings_copied.js	58	0	0	0	1	0	0	3
 test/corpus/ref_mut_of_mut_payload.js	139	0	0	0	0	0	0	19
 test/corpus/refcell_borrow_in_std_clone.js	34	0	0	0	0	0	0	0
 test/corpus/refcell_borrow_in_std_closure.js	28	0	0	0	0	0	0	0
-test/corpus/refcell_borrow_loops.js	144	0	0	1	0	0	0	4
+test/corpus/refcell_borrow_loops.js	141	0	0	0	0	0	0	4
 test/corpus/refcell_borrow_while_mut.js	24	0	0	0	0	0	0	0
 test/corpus/refcell_borrows.js	253	0	0	0	0	0	0	22
 test/corpus/refcell_bound_field_held.js	31	0	0	0	0	0	0	0
@@ -1040,8 +1041,8 @@ test/corpus/shadow_made_where_none.js	28	0	0	0	0	0	0	0
 test/corpus/shadow_of_module_variable.js	51	0	0	0	0	0	0	5
 test/corpus/shadow_of_module_variable_in_try.js	96	0	0	0	0	0	0	10
 test/corpus/shadow_set_in_cases.js	173	0	0	0	0	0	0	11
-test/corpus/signed_counter.js	75	0	0	1	0	0	0	0
-test/corpus/signed_index.js	73	0	0	1	0	0	0	0
+test/corpus/signed_counter.js	72	0	0	0	0	0	0	0
+test/corpus/signed_index.js	70	0	0	0	0	0	0	0
 test/corpus/size_hint.js	81	0	0	0	6	0	2	13
 test/corpus/size_hint_into_iter.js	27	0	0	0	0	1	0	3
 test/corpus/size_hints_made_in_place.js	27	0	0	0	1	0	0	11

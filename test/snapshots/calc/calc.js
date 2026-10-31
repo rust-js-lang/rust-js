@@ -75,7 +75,7 @@ export function toRpn(tokens) {
     } else if (t.TAG === "Op") {
       while (true) {
         const last = stack.at(-1);
-        if (last == null || last.TAG !== "Op" || !(prec(last._0) >= prec(t._0))) {
+        if (last == null || last.TAG !== "Op" || prec(last._0) < prec(t._0)) {
           break;
         }
         out.push($unwrap(stack.pop()));

@@ -762,7 +762,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0975 std's `Zip` is compiled, its impl picked by its sides' facts](0975-std-s-zip-is-compiled-its-impl-picked-by-its-sides-facts.md)
 - [0976 An `IntoIterator` parameter is held as it is, never in a box](0976-an-into-iterator-parameter-is-held-as-it-is.md)
 - [0977 A kept default steps what its impl says `Self::Iter` is](0977-a-kept-default-steps-what-its-impl-says-self-iter-is.md)
-- [0978 A `loop` that advances, then tests, at each way's end is a `do … while`](0978-a-loop-that-advances-then-tests-at-each-end-is-a-do-while.md)
+- [0978 A `loop` that advances, then tests, at each way's end is a `do … while`](0978-a-loop-that-advances-then-tests-at-each-end-is-a-do-while.md) *(amended: a `loop` that ends testing whether to leave, rd261)*
 - [0979 A dictionary a body writes twice is declared once at its top](0979-a-dictionary-a-body-writes-twice-is-declared-once.md)
 - [0980 std's struct given to std's `rev()` is given as it is](0980-std-s-struct-given-to-rev-is-given-as-it-is.md)
 - [0981 A held struct's `rfold` is std's compiled one where it reaches the crate's own](0981-a-held-struct-s-rfold-is-std-s-compiled-one.md)

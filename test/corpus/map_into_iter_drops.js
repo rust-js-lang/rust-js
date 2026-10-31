@@ -31,7 +31,7 @@ function firstOver(map, limit) {
     while ((value$1 = $next(iter)) != null) {
       const key = value$1[0];
       const value = value$1[1];
-      if (!(value[0] > limit)) {
+      if (value[0] <= limit) {
         loudDrop_drop(value);
         continue;
       }

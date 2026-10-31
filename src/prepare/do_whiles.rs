@@ -1,5 +1,6 @@
 //! A `while (true)` each of whose turns ends giving its variable its next
-//! value and testing it, as a `do { .. } while (test)` (ADR 0978).
+//! value and testing it, or ends testing whether to leave, as a `do { .. }
+//! while (test)` (ADR 0978).
 
 use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
 
@@ -46,6 +47,9 @@ fn do_while(before: &[Stmt], looped: &Stmt, after: &[Stmt]) -> Option<StmtKind> 
         return None;
     }
     let ours = |l: &Option<String>| l.is_none() || l == label;
+    if let Some(looped) = tested_last(label, body, looped.span) {
+        return Some(looped);
+    }
     let mut body = body.clone();
     ended_by_advance(&mut body, label.as_deref());
     let (last, turn) = body.split_last()?;
@@ -91,6 +95,43 @@ fn do_while(before: &[Stmt], looped: &Stmt, after: &[Stmt]) -> Option<StmtKind> 
         label: label.clone(),
         body: turn,
         cond: first.test.clone(),
+    })
+}
+
+/// `while (true) { ..; if (done) { break; } }`, a body that ends testing
+/// whether to leave: `do { .. } while (!done);` (ADR 0978, amended). Each
+/// turn runs the same, its statements, then the test. Only where no other
+/// `continue` of the loop is in it, which in a `do` would go on to its
+/// test, not its start; and the test reads nothing the body declares,
+/// which is out of the `do`'s test's scope. Comments above the `if`, or
+/// before its `break`, are the body's last, above the test, `// Past the
+/// end.\n } while (..)`, as a block that ends in comments (ADR 0753).
+fn tested_last(label: &Option<String>, body: &[Stmt], looped: js::Span) -> Option<StmtKind> {
+    let ours = |l: &Option<String>| l.is_none() || l == label;
+    let (last, turn) = body.split_last()?;
+    let StmtKind::If(done, then, None) = &last.kind else {
+        return None;
+    };
+    if !matches!(&then[..], [Stmt { kind: StmtKind::Break(l), .. }] if ours(l))
+        || js::continues(turn, label.as_deref())
+        || js::declared_names(turn).iter().any(|name| done.mentions_var(name))
+    {
+        return None;
+    }
+    let mut body = turn.to_vec();
+    // Where the `if` and its `break` were, in the loop, past what's before:
+    // the comments before each, there.
+    let past = (turn.iter().filter(|s| !s.span.is_none()).map(|s| s.span.lo)).max();
+    let within = |s: &js::Span| !s.is_none() && s.lo > looped.lo && s.lo < looped.hi && past.is_none_or(|p| s.lo > p);
+    let ends = [last.span]
+        .into_iter()
+        .chain(then.iter().map(|s| s.span))
+        .filter(within);
+    body.extend(ends.map(|s| StmtKind::Comments.at(js::Span { lo: s.lo, hi: s.lo + 1 })));
+    Some(StmtKind::DoWhile {
+        label: label.clone(),
+        body,
+        cond: done.clone().negated_test(),
     })
 }
 

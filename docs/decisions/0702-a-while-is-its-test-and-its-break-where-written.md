@@ -95,7 +95,8 @@ while (s >= 1 && c >= 0) {
 A `loop` the program wrote stays `while (true)`, its `break` where it's
 written: upstream's `do { .. } while (s >= 1 && c >= 0)` is the port's
 `loop { ..; if !(s >= 1 && c >= 0) { break; } }`, which JS's tree has no
-`do … while` for yet.
+`do … while` for yet. (Since ADR 0978's amendment of 2026-10-31, a `loop`
+that ends so is that `do`.)
 
 ## Why
 

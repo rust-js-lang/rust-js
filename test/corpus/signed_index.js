@@ -27,16 +27,13 @@ function frame(sampleStack, controlStack) {
   while (s >= 1 && c >= 0) {
     if (sampleLines[s] !== controlLines[c]) {
       if (s !== 1 || c !== 1) {
-        while (true) {
+        do {
           s--;
           c--;
           if (c < 0 || sampleLines[s] !== controlLines[c]) {
             return sampleLines[s].replace(" at new ", " at ");
           }
-          if (!(s >= 1 && c >= 0)) {
-            break;
-          }
-        }
+        } while (s >= 1 && c >= 0);
       }
       break;
     }

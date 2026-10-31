@@ -81,7 +81,7 @@ const Stack = {
 
   push(stack, value, CAP, TSize, dropT) {
     let value$live = true;
-    if (!(stack.len < CAP)) {
+    if (stack.len >= CAP) {
       dropT?.(value);
       throw new Error("assertion failed: self.len < CAP");
     }
@@ -110,7 +110,7 @@ const Stack = {
   },
 
   remove(stack, index, CAP) {
-    if (!(index < stack.len)) {
+    if (index >= stack.len) {
       throw new Error("assertion failed: index < self.len");
     }
     const p = $ptrAdd(Stack.asMutPtr(stack, CAP), index);
@@ -125,7 +125,7 @@ const Stack = {
    * slice's pointer.
    */
   extendFromSlice(stack, other, CAP) {
-    if (!((stack.len + other.length) >>> 0 <= CAP)) {
+    if ((stack.len + other.length) >>> 0 > CAP) {
       throw new Error("assertion failed: self.len + other.len() <= CAP");
     }
     $ptrCopy(

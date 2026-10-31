@@ -60,7 +60,7 @@ let MADE = 0;
 function made(i) {
   const previous = MADE;
   MADE = (previous + 1) >>> 0;
-  if (!(previous < 20)) {
+  if (previous >= 20) {
     throw new Error("ran on");
   }
   console.log(`made ${i}`);
@@ -152,7 +152,7 @@ function main() {
     Array.from(
       cycled$7.filter((i) => {
         seen$1 = (seen$1 + 1) | 0;
-        if (!(seen$1 < 6)) {
+        if (seen$1 >= 6) {
           throw new Error("ran on");
         }
         return i === 2;
@@ -165,7 +165,7 @@ function main() {
   const cycled$8 = $cycleOf(
     makeFilter($iter(items), (i) => {
       stepped = (stepped + 1) | 0;
-      if (!(stepped < 6)) {
+      if (stepped >= 6) {
         throw new Error("ran on");
       }
       return i === 2;

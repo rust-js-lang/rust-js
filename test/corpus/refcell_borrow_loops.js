@@ -85,15 +85,12 @@ const List = {
 function keptOrDropped(stop) {
   let n = 0;
   const held = [stop];
-  while (true) {
+  do {
     n++;
     if (n === stop) {
       return held;
     }
-    if (n > 3) {
-      break;
-    }
-  }
+  } while (n <= 3);
   console.log(`drop ${held[0]}`);
   console.log(`after ${n}`);
 }

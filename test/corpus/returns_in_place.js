@@ -120,7 +120,7 @@ function findPair(grid, want) {
         found = [r, c];
         break rows;
       }
-      if (!(v > want * 10)) {
+      if (v <= want * 10) {
         continue;
       }
       break;
