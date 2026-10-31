@@ -7,6 +7,7 @@ use std::collections::HashSet;
 
 use crate::js::{self, Expr, ExprKind, JsxTag, Op, Prop, Stmt, StmtKind, UnaryOp};
 
+mod assigned_breaks;
 mod catches;
 mod do_whiles;
 mod initializers;
@@ -39,6 +40,7 @@ pub fn module(module: &mut js::Module) {
     js::each_item_block_mut(&mut module.items, &mut |stmts| labels::loops(stmts));
     js::each_item_slotted_block_mut(&mut module.items, &mut |stmts, slot| unelsed(stmts, slot));
     js::each_item_block_mut(&mut module.items, &mut tested_assignments);
+    js::each_item_block_mut(&mut module.items, &mut |stmts| assigned_breaks::assigned_breaks(stmts));
     reclaim::module(module);
     compound(module);
     js::each_item_block_mut(&mut module.items, &mut stepped_whiles::stepped_whiles);

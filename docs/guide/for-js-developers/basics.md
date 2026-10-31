@@ -2234,8 +2234,10 @@ A variant with unnamed fields, `Text(String)`, keeps them as `_0`, `_1`:
 `for ... of` is `for ... in`. `while` is `while`. `loop` is
 `while (true)`, and its `break` can carry a value out: `let square = loop
 { .. break v; }` is `let square;` before the loop, `square = v; break;`
-in it, and what follows after it; a `break 'outer` from a loop inside
-is `break outer;`, as written
+in it, and what follows after it; where that `break` gives what an `if
+let` tested, `if let Some(next) = node.next.clone() { break next; }`, the
+test gives it, `if ((next = node.next) != null) { break; }`; a `break
+'outer` from a loop inside is `break outer;`, as written
 ([ADR 0702](../../decisions/0702-a-while-is-its-test-and-its-break-where-written.md)).
 
 ```js

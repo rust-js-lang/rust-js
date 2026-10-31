@@ -1019,3 +1019,31 @@ path. Both are removed, with `while_tests`' `written_breaks`. The tests
 that held them, "a while's test is its own, an if of a break the program
 wrote its if" and "React's findFirstSuspended's loops are upstream's",
 pass as before.
+
+## Amendment: a loop's value given in the test that leaves it (2026-10-31, rd148)
+
+React's getModernOffsetsFromPoints leaves its inner walk with `if ((next
+= node.nextSibling) !== null) { break; }`. Its port's `let next = loop {
+.. if let Some(next) = node.next_sibling() { break next; } .. }` printed
+`let next;` before the loop, as this ADR's rd148 amendment has it, and
+`const nextSibling = node.nextSibling; if (nextSibling !== null) { next =
+nextSibling; break; }` at the way out.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Each turn reads the
+value once, where it did, and tests it the same; the variable is also
+given the value the test refuses, which nothing reads: rustc reads it only
+where Rust's `break` gave it.
+
+- **`let v; while (true) { ..; const t = e; if (T(t)) { v = t; break; }
+  .. }`, in the loop's body or its `if`s' branches: `if (T((v = e))) {
+  break; }`** (`prepare/assigned_breaks.rs`, after `tested_assignments`,
+  ADR 0860's form of a test made at a loop's start). Only where `v` is a
+  `let` of no value before the loop that nothing else in the loop names,
+  and `T` reads `t` first and once, `t` read nowhere after: not `next !=
+  null && next.value > 1`, nor `v > Math.min(limit, v)`, which would read
+  the value twice.
+
+Held by `test/corpus/loop_value_given_in_its_test.rs` against native Rust,
+and mutations `assigned-break-never` and `assigned-break-read-twice`
+(`prepare/assigned_breaks.ts`); a `let` with a value, or one the loop
+names elsewhere, no Rust `let … = loop` reaches.
