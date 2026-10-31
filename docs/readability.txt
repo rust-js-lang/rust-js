@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1379
-lines	136451
+files	1380
+lines	136571
 temporaries	1	0.1
 labeled blocks	15	1.1
 while (true)	125	9.2
 $iter	1178	86.3
 Iterator.from	116	8.5
 return;	145	10.6
-renamed x$1	8573	628.3
+renamed x$1	8579	628.2
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1977	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	206	0	0	0	6	0	0	35
@@ -298,8 +298,9 @@ test/corpus/drop_operand_panic.js	41	0	0	0	0	0	0	3
 test/corpus/drop_params.js	49	0	0	0	0	0	0	0
 test/corpus/drop_partial.js	104	0	0	0	0	0	0	4
 test/corpus/drop_parts_past_a_panic.js	530	0	0	0	3	0	0	0
+test/corpus/drop_reassigned_in_inner_loop.js	106	0	0	0	0	0	0	6
 test/corpus/drop_replace_panics.js	35	0	0	0	0	0	0	0
-test/corpus/drop_scope_empty_if.js	32	0	0	0	0	0	0	0
+test/corpus/drop_scope_empty_if.js	30	0	0	0	0	0	0	0
 test/corpus/drop_scopes.js	260	0	0	0	1	0	0	5
 test/corpus/drop_skipped_items.js	32	0	0	0	1	0	0	0
 test/corpus/drop_temporaries.js	57	0	0	0	0	0	0	6
@@ -1385,6 +1386,6 @@ test/snapshots/traits/traits.js	63	0	0	0	0	0	0	0
 test/snapshots/values/values.js	263	0	0	0	0	0	4	25
 test/snapshots/versions/versions.js	215	0	0	0	3	0	2	4
 test/snapshots/web_forms/web_forms.js	289	0	0	0	0	2	0	6
-test/snapshots/webapi_events/webapi-events.js	250	0	0	0	0	0	0	3
+test/snapshots/webapi_events/webapi-events.js	266	0	0	0	0	0	0	3
 test/snapshots/wide/wide.js	248	0	0	0	0	0	0	7
 test/snapshots/wire/wire.js	539	0	0	0	0	0	0	2

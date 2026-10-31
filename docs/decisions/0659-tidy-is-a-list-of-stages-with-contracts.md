@@ -371,3 +371,40 @@ It ensures nothing follows a jump; it doesn't ensure each label is named,
 as `flags` doesn't: MIR's blocks are `jumps`' to settle. The tidy unit
 test `drop_scopes_come_before_what_reads_them` holds its place, and
 `test/tidy-stages.test.ts` runs the corpus to its end.
+
+## Amendment: an inner loop's jumps are no way out of the loop that drops (2026-10-31, P0)
+
+The nightly's generated program 12454574 differed from native Rust:
+
+```rust
+let mut d23 = D(id(24u32));
+for _k27 in 0..id(3u32) {
+    for _k28 in 0..id(3u32) {
+        d23 = D(id(29u32));
+    }
+}
+```
+
+dropped `d23` once, at the end, where Rust drops each value it's given
+again too, and `let d = [24]` landed inside the `try` whose `finally`
+read it, out of its scope. "drop scopes"' `looped_drops` took the drop
+before `d = tmp` in the inner loop for one before a way out of the outer
+loop: MIR's inner loop is `bb10: while (true)`, and its `continue bb10` was
+counted a way out, as any labeled `continue` was.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): a wrong answer, fixed.
+
+- **A loop's labels inside the loop that drops, `while`'s, `for`'s and
+  `do`'s, are its own, as its labeled blocks' are**: their `break`s and
+  `continue`s go on in it (`dropped_at_each_exit`); a labeled `continue`
+  leaves only where its label is outside. The program is now each drop
+  where Rust makes it, its ranges' `iter`s kept as MIR walks them (a
+  call's end, `id(3)`, may throw, dropping `d` first).
+
+`drop_scope_empty_if.rs`, whose inner loop's `break bb10` read as a way
+out too and kept MIR's `while ((i = $rangeNext(iter)) != null)`s, is one
+`try` of `for` loops now.
+
+Held by `test/corpus/drop_reassigned_in_inner_loop.rs` against native
+Rust, and mutations `looped-drop-inner-continue-leaves` and
+`looped-drop-inner-loop-labels-unseen` (`tidy/unwinds.ts`).
