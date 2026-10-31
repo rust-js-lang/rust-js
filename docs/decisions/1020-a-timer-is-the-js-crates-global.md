@@ -1,6 +1,6 @@
 # 1020. A timer is the js crate's global, which takes a function as it is
 
-Status: Accepted (the user's decision, rd10; amended, rd10's follow-up: a closure the timer calls once drops what it took). Amends
+Status: Accepted (the user's decision, rd10; amended, rd10's follow-up: a closure the timer calls once drops what it took; amended, rd314, the user's decision: a window's `setTimeout` read as a value). Amends
 [0102](0102-js-and-webapi.md) (timers are the builtins crate's): a
 timeout's handler is TypeScript's `TimerHandler`, and a window's timers
 are gone; [0229](0229-union-parameters.md) (a union parameter takes each
@@ -168,3 +168,33 @@ in the order it took them, and as it unwinds.
   `scripts/mutations/lower/passed_on.ts`, and the `called-once-*` ones in
   `analysis/closures.ts`, `mir.ts`, `drops/facts.ts` and
   `combinators/callbacks.ts`.
+
+## Amended: a window's `setTimeout` read as a value (rd314, the user's decision)
+
+React's SchedulerPostTask holds the window's timer at load, `const
+setTimeout = window.setTimeout;`, and its test replaces `global.window`
+with its own, whose `setTimeout` logs the error a task threw: the
+global's isn't the window's there. Case
+([0262](0262-when-rust-and-js-disagree.md)): results change, so the
+window's is kept. **Webapi's `Window::set_timeout` is back as a method
+read as a value alone, `js::method((window, Window::set_timeout))`,
+`window.setTimeout`, a `&'static dyn Fn(Box<dyn FnOnce()>, Option<f64>)
+-> &'static TimeoutId`.** Its handler is a `G: TimerGone<fn()>`, which
+only `Box<dyn FnOnce()>` is, so a call of it as a method,
+`window.set_timeout(|| .., ms)` or of text, is the error naming
+`js::set_timeout` still, one way to set a timer; its value, held, is
+called as any function value is. `clear_timeout` and the intervals stay
+gone (nothing reads them). A call given a `Box<dyn FnOnce()>` that's
+already one, `window.set_timeout(task, ms)` of a `task: Box<dyn
+FnOnce()>`, type-checks and is `window.setTimeout(task)`, the window's,
+as its value's call is: rustc can't tell it from the value's, and
+refusing it in rust-js would need a second form of the error (recorded
+for the user). `TimerGone` takes what it's a handler of,
+`TimerGone<Of = ()>`, so no other timer takes a box.
+
+Held by `test/js-timers.test.ts`'s "a window's setTimeout is read as a
+value, the window's own" (run: a `window` of the test's own given the
+handler) and "webapi's window.set_timeout is gone, an error naming
+js::set_timeout" (a closure's call too). No mutation: a binding's
+signature, read by `js::method` as every method is.
+

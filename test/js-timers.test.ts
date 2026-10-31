@@ -137,7 +137,7 @@ pub fn later(task: Box<dyn FnOnce()>) {
 
 // One way: a window's timers were a second, of text only (ADR 1020).
 test("webapi's window.set_timeout is gone, an error naming js::set_timeout", () => {
-  for (const call of [`webapi::window.set_timeout("tick()", None, ())`, `webapi::window.clear_timeout(Some(1.0))`, `webapi::window.set_interval("tick()", None, ())`]) {
+  for (const call of [`webapi::window.set_timeout("tick()", None)`, `webapi::window.set_timeout(|| (), None)`, `webapi::window.clear_timeout(Some(1.0))`, `webapi::window.set_interval("tick()", None, ())`]) {
     const { code, stderr } = compiled("window-timers-gone", `pub fn later() {
     ${call};
 }
@@ -188,3 +188,34 @@ pub fn lease(name: &'static str) -> Lease {
   }
   expect(logged).toEqual(["holding desk note", "released note", "released desk"]);
 });
+
+// React's SchedulerPostTask holds the window's own `setTimeout` at load,
+// `const setTimeout = window.setTimeout;`, which its test replaces with a
+// `window` of its own: read as a value alone, `js::method((window,
+// Window::set_timeout))`, it's the window's; a call stays the js crate's
+// (ADR 1020, amended, rd314, the user's decision).
+test("a window's setTimeout is read as a value, the window's own", async () => {
+  const { code, stderr, dir, js } = compiled("window-set-timeout-value", `use webapi::{Window, window};
+
+thread_local! {
+    static SET_TIMEOUT: &'static dyn Fn(Box<dyn FnOnce()>, Option<f64>) -> &'static js::TimeoutId =
+        js::method((window, Window::set_timeout));
+}
+
+pub fn report(message: String) {
+    SET_TIMEOUT.with(|set_timeout| set_timeout(Box::new(move || println!("{message}")), None));
+}
+`);
+  expect([code, stderr]).toEqual([0, ""]);
+  expect(js).toContain("window.setTimeout");
+  const handlers: (() => void)[] = [];
+  (globalThis as any).window = { setTimeout: (handler: () => void) => handlers.push(handler) };
+  try {
+    const lib = await import(join(dir, "lib.js"));
+    lib.report("Oops!");
+    expect(handlers.length).toBe(1);
+  } finally {
+    delete (globalThis as any).window;
+  }
+});
+

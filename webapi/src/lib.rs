@@ -23316,9 +23316,13 @@ impl Window {
         unreachable!()
     }
 
-    /// Gone (ADR 1020): a timeout is `js::set_timeout(handler, ms)`'s.
+    /// Gone (ADR 1020): a timeout is `js::set_timeout(handler, ms)`'s. Read as a value alone,
+    /// `js::method((window, Window::set_timeout))`, `window.setTimeout`, the
+    /// window's own, as React's SchedulerPostTask holds it at load (rd314):
+    /// called, of a `Box<dyn FnOnce()>`, the handler that's a `TimerGone`.
+    #[cfg_attr(rust_js, rust_js::link_name = "setTimeout")]
     #[allow(unused_variables)]
-    pub fn set_timeout<G: TimerGone>(&self, handler: G, timeout: Option<f64>, arguments: impl Rest<dyn IntoUnknown>) -> f64 {
+    pub fn set_timeout<G: TimerGone<fn()>>(&self, handler: G, timeout: Option<f64>) -> &'static js::TimeoutId {
         unreachable!()
     }
 
@@ -121664,7 +121668,11 @@ pub trait Listen<E> {
     message = "a window's timers are gone: a timer is the js crate's global, `js::set_timeout(handler, ms)`, `js::clear_timeout(id)`, `js::set_interval(callback, ms)` and `js::clear_interval(id)`, which take a function as it is (ADR 1020)",
     label = "write the js crate's timer, `js::set_timeout`, `js::clear_timeout`, `js::set_interval` or `js::clear_interval`"
 )]
-pub trait TimerGone {}
+pub trait TimerGone<Of: ?Sized = ()> {}
+
+/// The handler of a window's `setTimeout` read as a value,
+/// `js::method((window, Window::set_timeout))`'s, a function (ADR 1020, amended, rd314).
+impl TimerGone<fn()> for Box<dyn FnOnce()> {}
 
 /// The element a tag makes, from `@webref/elements` (ADR 0223): `Button`'s is an `HTMLButtonElement`.
 pub trait Tag {

@@ -1747,10 +1747,21 @@ const shared = "impl IntoAddedEventListener<<Self as Listen<E>>::Event>";
 // which takes a function as it is, where these took text alone. Each takes
 // what it did, of a type that's never a `TimerGone`, so a call is the error
 // that says what to write.
-const gone = (doc: string, signature: string) =>
-  [`    /// Gone (ADR 1020): ${doc}`, "    #[allow(unused_variables)]", `    pub fn ${signature} {`, `        unreachable!()`, `    }`].join("\n");
+const gone = (doc: string, signature: string, read?: string) =>
+  [
+    `    /// Gone (ADR 1020): ${doc}`,
+    ...(read ? [`    #[cfg_attr(rust_js, rust_js::link_name = "${read}")]`] : []),
+    "    #[allow(unused_variables)]",
+    `    pub fn ${signature} {`,
+    `        unreachable!()`,
+    `    }`,
+  ].join("\n");
 const TIMERS_GONE = [
-  gone("a timeout is `js::set_timeout(handler, ms)`'s.", "set_timeout<G: TimerGone>(&self, handler: G, timeout: Option<f64>, arguments: impl Rest<dyn IntoUnknown>) -> f64"),
+  gone(
+    "a timeout is `js::set_timeout(handler, ms)`'s. Read as a value alone,\n    /// `js::method((window, Window::set_timeout))`, `window.setTimeout`, the\n    /// window's own, as React's SchedulerPostTask holds it at load (rd314):\n    /// called, of a `Box<dyn FnOnce()>`, the handler that's a `TimerGone`.",
+    "set_timeout<G: TimerGone<fn()>>(&self, handler: G, timeout: Option<f64>) -> &'static js::TimeoutId",
+    "setTimeout",
+  ),
   gone("a timeout is cleared by `js::clear_timeout(id)`.", "clear_timeout<G: TimerGone>(&self, id: G)"),
   gone("an interval is `js::set_interval(callback, ms)`'s.", "set_interval<G: TimerGone>(&self, handler: G, timeout: Option<f64>, arguments: impl Rest<dyn IntoUnknown>) -> f64"),
   gone("an interval is cleared by `js::clear_interval(id)`.", "clear_interval<G: TimerGone>(&self, id: G)"),
@@ -2516,7 +2527,11 @@ line(`#[diagnostic::on_unimplemented(`);
 line(`    message = "a window's timers are gone: a timer is the js crate's global, \`js::set_timeout(handler, ms)\`, \`js::clear_timeout(id)\`, \`js::set_interval(callback, ms)\` and \`js::clear_interval(id)\`, which take a function as it is (ADR 1020)",`);
 line(`    label = "write the js crate's timer, \`js::set_timeout\`, \`js::clear_timeout\`, \`js::set_interval\` or \`js::clear_interval\`"`);
 line(`)]`);
-line(`pub trait TimerGone {}`);
+line(`pub trait TimerGone<Of: ?Sized = ()> {}`);
+line();
+line(`/// The handler of a window's \`setTimeout\` read as a value,`);
+line(`/// \`js::method((window, Window::set_timeout))\`'s, a function (ADR 1020, amended, rd314).`);
+line(`impl TimerGone<fn()> for Box<dyn FnOnce()> {}`);
 line();
 line(`/// The element a tag makes, from \`@webref/elements\` (ADR 0223): \`Button\`'s is an \`HTMLButtonElement\`.`);
 line(`pub trait Tag {`);
