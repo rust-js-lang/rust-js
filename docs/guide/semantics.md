@@ -1047,9 +1047,10 @@ React and JSX are [their own pages](README.md#react).
     more, the crate's or one bound, wherever it's given, a listener's too,
     `addEventListener("load", ping)` of `move |_| ping()`: its `.length`
     and its identity tell them apart, as a JS caller of an exported value
-    sees one function where Rust made a closure each time, and
-    `addEventListener` given it twice for one event keeps one listener
-    (ADR 0262, amended, the user's decision, rd196, rd212).
+    sees one function where Rust made a closure each time. A forwarding
+    closure is the function itself, so adding it twice to one target and
+    event makes one listener, where two closures were two (ADR 0262,
+    amended, the user's decision, rd196, rd212, accepted 2026-10-31).
 28. A `RegExp`'s `test` and `reg_exp::replace` take text, as TypeScript
     types them, so a port of code that gives them any value converts it
     first, `pattern.test(&js::string(value))`, `pattern.test(String(value))`:
@@ -1081,3 +1082,11 @@ React and JSX are [their own pages](README.md#react).
     id, where the closure gave `undefined`; and it may give it more, a
     delay, which the closure would drop and setTimeout reads (ADR 0605,
     amended, the user's decision).
+33. Where a `RefCell`'s borrow can't be held across a JS call (ADR 0863),
+    the program gives the call a copy, `types.borrow().clone()`,
+    `transitionTypes?.slice()`, where upstream gives the shared array:
+    React's startViewTransition, which may run `update` at once, and the
+    commit it runs may borrow the types. Only the array's identity
+    differs, the same strings in a new array, which only a replacement of
+    the function that keeps the array and compares it, or watches it
+    change, sees (ADR 0262, amended, the user's decision, rd246).

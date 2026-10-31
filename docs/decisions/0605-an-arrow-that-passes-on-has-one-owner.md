@@ -432,11 +432,12 @@ taker takes, a binding's `Fn` or `FnMut` callback's too, now
 A JS caller may call that function with any `this` and arguments, as it
 would the closure; the closure gives what it gives. Only its `.length`
 and its identity tell them apart: a JS caller of an exported value sees
-one function where Rust made a closure each time, and `addEventListener`
-given it twice for one event and target keeps one listener where two
-closures were two, as `removeEventListener` given it removes the one
-added (the identity a listener's taker was kept for, which the user's
-rule takes). A binding's JS function bound, which may read what it's
+one function where Rust made a closure each time. A forwarding closure
+is the function itself, so adding it twice to one target and event makes
+one listener, where two closures were two, as `removeEventListener` given
+it removes the one added (the identity a listener's taker was kept for,
+which the user's rule takes). The user accepted this as part of ADR
+0262's exception (2026-10-31). A binding's JS function bound, which may read what it's
 given, keeps its arrow, and so does a `with_this` function unbound,
 which reads the `this` it's called with.
 

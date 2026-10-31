@@ -1360,6 +1360,44 @@ pub fn locked(locks: &LockManager) -> Promise<Option<&'static Unknown>> {
   expect(await lib.locked({ request: (_: string, f: (lock: unknown) => unknown) => Promise.resolve(f(null)) })).toBe(false);
 });
 
+// React port gap rd246, an exception of ADR 0262's (the user's decision,
+// 2026-10-31): where a `RefCell`'s borrow can't be held across the call
+// (ADR 0863), React's TransitionTypes a library's, as startViewTransition
+// may run `update` at once, the port gives a copy of the types,
+// `transitionTypes?.slice()`, where upstream gives the shared array. Only
+// the array's identity differs: the same strings, a new array.
+test("startViewTransition given a copy of the transition types", async () => {
+  const withWeb = ["--", "--edition", "2024", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-copied-types");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+use webapi::{Document, StartViewTransitionOptions};
+
+pub fn start(document: &Document, transition_types: Option<Rc<RefCell<Vec<String>>>>, mutation_callback: fn()) {
+    let types = transition_types.as_ref().map(|types| types.borrow().clone());
+    document.start_view_transition(Some(&StartViewTransitionOptions {
+        update: Some(&mutation_callback),
+        types: types.as_deref(),
+    }));
+}
+
+// React's addTransitionType, which changes the shared array.
+pub fn add_type(transition_types: &RefCell<Vec<String>>, kind: &str) {
+    transition_types.borrow_mut().push(kind.to_string());
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const types = transitionTypes?.slice();");
+  const lib = await import(join(dir, "lib.js"));
+  const given: { types?: unknown }[] = [];
+  const types = ["navigation"];
+  lib.start({ startViewTransition: (options: { types?: unknown }) => void given.push(options) }, types, () => {});
+  expect(given[0].types).toEqual(types);
+  expect(given[0].types).not.toBe(types);
+});
+
 // React port gap rd208 (ADR 1028): FragmentInstance keeps the listener
 // options it was given and hands the same ones to addEventListener and
 // removeEventListener, upstream's \`optionsOrUseCapture\`. A dictionary or a

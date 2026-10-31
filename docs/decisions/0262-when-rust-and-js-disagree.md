@@ -93,9 +93,11 @@ react.dev's TopNav passes the same closure instead.
   or one bound, is that function wherever it's given, a listener's too,
   `addEventListener("load", ping)`. Its `.length` and its identity tell
   them apart: a JS caller of an exported value sees one function where
-  Rust made a closure each time, and `addEventListener` given it twice
-  for one event and target keeps one listener where two closures were
-  two.
+  Rust made a closure each time. A forwarding closure is the function
+  itself, so adding it twice to one target and event makes one
+  listener, where two closures were two: the user accepted this as part
+  of the exception (2026-10-31). A closure written in place for removal
+  is refused, as it removes nothing (ADR 1021, amended).
 - **A `RegExp`'s `test` and `replace` take text, as TypeScript types
   them**, the second case's, which the user decided (2026-10-28, gap rd33):
   React's warnValidStyle tests `badStyleValueWithSemicolonPattern.test(value)`
@@ -144,6 +146,22 @@ react.dev's TopNav passes the same closure instead.
   setTimeout's id where the closure gave `undefined`; and it may give it
   more than the closure takes, setTimeout's delay, which the host
   function reads. Listed in the guide's differences (`semantics.md`, 32).
+- **A copy given where a borrow can't be held across a JS call**, the
+  second case's, which the user decided (2026-10-31, gap rd246): React's
+  startViewTransition and startGestureTransition give the browser the
+  transition's shared types array, `{update, types: transitionTypes}`.
+  The port can't hold the `RefCell`'s borrow of it across the call (ADR
+  0863), rightly: a startViewTransition may call `update` at once, and
+  the commit it runs may borrow the types. So it gives a copy,
+  `transition_types.as_ref().map(|types| types.borrow().clone())`,
+  `transitionTypes?.slice()`. Only the array's identity differs, the same
+  strings in a new array. Only a replacement of startViewTransition that
+  keeps the array and compares it, or watches it change, tells them
+  apart; the browser copies `types` into the ViewTransition's set. No
+  compiler change: it's the Rust the program writes. Held by
+  `test/webapi-bindings.test.ts`'s "startViewTransition given a copy of
+  the transition types". Listed in the guide's differences
+  (`semantics.md`, 33).
 - **A global `static` tested again inside the `if` that tested it is
   decided there**, the first case's, which the user accepted (2026-10-28,
   gap pt6): React's `if (__DEV__) { .. if (__DEV__ && debugTask) { .. } }`
@@ -251,7 +269,10 @@ with what it isn't (ADR 0605, amended):
 - **An `Fn` or `FnMut` parameter's, a listener's, keeps its arrow**, as
   does a closure stored: JS may keep a listener and compare it,
   `removeEventListener`'s, as this decision's two closures given to
-  `addEventListener` and `removeEventListener` are two.
+  `addEventListener` and `removeEventListener` are two. (Widened since,
+  the user's decision, 2026-10-30, rd196, rd212: a closure that ignores
+  what it's given is the function it calls, a listener's too, in
+  Consequences above.)
 
 Held by `test/lowering-passed-on.test.ts` and the corpus's
 `once_callback_passed_on.rs`, against native Rust, and
