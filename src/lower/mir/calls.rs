@@ -421,6 +421,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(())
     }
 
+    /// Of a call of `def_id`, a namespace's method's (ADR 1037), what its
+    /// lowering reads (`State::namespace_call`): whether its `self` names
+    /// the namespace, and of one through a value whose result only
+    /// `.flatten()` reads, that result flattened where its function makes
+    /// and returns it (rd311). `None` of any other call.
+    pub(super) fn namespace_call(
+        &self,
+        state: &mut State<'_, 'tcx>,
+        (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        receiver: Option<&rustc_middle::mir::Operand<'tcx>>,
+        destination: rustc_middle::mir::Place<'tcx>,
+    ) {
+        state.flattened.namespace_call = (crate::lower::classes::member(self.tcx, def_id)
+            == Some(crate::lower::classes::Member::Namespace))
+        .then(|| {
+            let named =
+                receiver.is_some_and(|receiver| crate::lower::classes::names_namespace(self.tcx, state.body, receiver));
+            let flattened = (!named && destination.projection.is_empty())
+                .then(|| crate::lower::analysis::flattened_alike(&self.recognition(), (def_id, generic_args)))
+                .flatten()
+                .filter(|_| {
+                    crate::lower::analysis::read_by_flatten(&self.recognition(), state.body, destination.local)
+                });
+            (named, flattened.map(|p| (destination.local, p)))
+        });
+    }
+
     /// The crate's own function called, given its dictionaries (ADR 0049).
     pub(super) fn mir_crate_call(
         &mut self,
@@ -470,7 +497,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // The copy of it, where JS calls it too, that takes what this call
         // gives as it gives it (ADR 0051, amended).
         let copy = self.called_copy((def_id, generic_args), span)?;
-        let called = self.crate_called_copy((def_id, copy, Some(span)), exprs);
+        // A namespace's method's through a value, the module's own JS:
+        // where the call's result only `.flatten()` reads, of one that makes
+        // and returns it, that JS's result is it flattened, where its JS
+        // leaves out the `Some` of what the call gives alone (rd311).
+        let namespace_call = state.flattened.namespace_call.take();
+        if let Some((false, Some((local, p)))) = namespace_call
+            && self.leaves_out_some_alone((def_id, copy), p)
+        {
+            state.flattened.locals.insert(local);
+        }
+        let named = namespace_call.map(|(named, flattened)| {
+            (
+                named,
+                flattened.is_some_and(|(local, _)| state.flattened.locals.contains(&local)),
+            )
+        });
+        let called = self.crate_called_copy((def_id, copy, Some(span)), named, exprs);
         // A generic `&mut T`'s box, of an object `T` here: what's in it.
         let called = self.generic_result_values((def_id, generic_args), called, span)?;
         let called = self.fmt_result_value(def_id, generic_args, called);
@@ -484,7 +527,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// method, its own property's, `scope.containsNode(..)` (ADR 0943); of
     /// any other, `f(..)`.
     pub(in crate::lower) fn crate_called(&self, def_id: rustc_span::def_id::DefId, args: Vec<Expr>) -> Expr {
-        self.crate_called_copy((def_id, None, None), args)
+        self.crate_called_copy((def_id, None, None), None, args)
+    }
+
+    /// Whether the JS a namespace's method's value has of `def_id`, its own,
+    /// leaves out the `Some` of `p` where a call of it needs `copy` of it,
+    /// and of no other: of the crate's, `copy` takes its type parameters as
+    /// its own JS does, which takes any JS gives, but `p` boxed; of a
+    /// library's, its export takes `p` as JS gives it, and the crate
+    /// compiles none of it for another (rd311, ADRs 0051, 0914).
+    fn leaves_out_some_alone(&self, (def_id, copy): (rustc_span::def_id::DefId, Option<usize>), p: u32) -> bool {
+        if !def_id.is_local() {
+            return (self.krate.foreign.item(def_id).and_then(|item| item.calling.param(p)))
+                .is_some_and(|param| param.has(crate::library::ParamFact::Unboxed));
+        }
+        let Some(at) = copy else { return false };
+        let given = &self.krate.given.js_given;
+        let (own, copied) = (given.main(self.tcx, def_id), given.params(self.tcx, def_id, Some(at)));
+        copied.js.is_subset(&own.js)
+            && copied.unboxed.is_subset(&own.unboxed)
+            && own.unboxed.difference(&copied.unboxed).eq([&p])
     }
 
     /// `crate_called`'s, of its own JS or of a copy its callers need (ADR
@@ -493,6 +555,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn crate_called_copy(
         &self,
         (def_id, copy, named): (rustc_span::def_id::DefId, Option<usize>, Option<Span>),
+        receiver_named: Option<(bool, bool)>,
         mut args: Vec<Expr>,
     ) -> Expr {
         // A namespace's method (ADR 1037): through the value it's called on,
@@ -504,11 +567,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !args.is_empty()
         {
             let receiver = args.remove(0);
-            if !namespace_named(&receiver) {
+            let (by_name, flattened) = receiver_named.unwrap_or_else(|| (namespace_named(&receiver), false));
+            if !by_name {
                 // Of a copy its call needs, the value's function, the
                 // module's own JS, only where that copy is alike it
-                // (`pipeline::copies::settle`, rd311).
-                if let (Some(at), Some(span)) = (copy, named) {
+                // (`pipeline::copies::settle`), or its result is that JS's
+                // flattened (rd311).
+                if let (Some(at), Some(span), false) = (copy, named, flattened) {
                     (self.dependencies.borrow_mut().through_copies).push((def_id, at, span));
                 }
                 return Expr::call(

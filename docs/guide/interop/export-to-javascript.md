@@ -1251,10 +1251,17 @@ export function updateContainer(n) {
   types the function's, its generic parameters given as they are, its
   caller's location and its bounds' dictionaries alike, and no copy its
   callers need; else it's a function of its own.
-- **A call through a value of a method given what may look like `None`**,
-  a type parameter's `Option`, is refused where the copy that call needs
-  isn't the function's own JS, which the value has and which reads
-  `Some(None)` as `None`: call it on the namespace as Rust names it.
+- **A call through a value is the value's function**, the module's own
+  JS, a library's too, which its consumer never compiles of its own. One
+  given what may look like `None`, a type parameter's `Option`, is
+  refused where the copy that call needs isn't that JS, which reads
+  `Some(None)` as `None`, and so is one given a value to copy or drop that
+  a library's export takes nothing for: call it on the namespace as Rust
+  names it. But its result that only `.flatten()` reads, of a function
+  that makes its `Option` of what it's given and returns it, reading it
+  nowhere, is exact, both `None`s one:
+  `noop_renderer.flush_sync_from_reconciler(f).flatten()` is
+  `NoopRenderer.flushSyncFromReconciler(fn)`.
 - **Refused, each with what to write**: a struct with fields or type
   parameters; one that's a `#[rust_js::class]` or `#[rust_js::object]`
   too; an impl in another module than its struct's; an item that's no

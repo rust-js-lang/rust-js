@@ -154,9 +154,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a consumer that gives a library's unboxed type parameter a `()` calls the export, whose `Some(())` is `undefined`, `None` (ADR 0051, amended)",
     file: "src/lower/instances.rs",
-    find: "            || (nullish\n                && takes(index, ParamFact::Unboxed)\n",
-    replace:
-      "            || (false\n                && takes(index, ParamFact::Unboxed)\n",
+    find: "            || (nullish\n                && counted(index)\n",
+    replace: "            || (false\n                && counted(index)\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "unboxed function"],
   },
   {
@@ -213,5 +212,32 @@ export const mutations: Mutation[] = [
     find: "if sets && let Some(&key)",
     replace: "if false && sets && let Some(&key)",
     tests: ["test/crates.test.ts", "-t", "private state"],
+  },
+  {
+    name: "through-library-compiled",
+    breaks:
+      "a library's namespace's method called through a value is compiled into the consumer (ADR 0914), and refused there for its library's private state (rd311)",
+    file: "src/lower/instances.rs",
+    find: "                through.then_some((callee, generic, *fn_span, destination.local))\n",
+    replace: "                through.then_some((callee, generic, *fn_span, destination.local)).filter(|_| false)\n",
+    tests: ["test/namespaces.test.ts", "-t", "exact where its result is flattened"],
+  },
+  {
+    name: "through-library-unrefused",
+    breaks:
+      "a library's namespace's method through a value whose call gives what may look like `None` and isn't flattened is called, its `Some(None)` read as `None` (rd311)",
+    file: "src/lower/instances.rs",
+    find: "                super::classes::refuse_through(tcx, callee, span, !other);\n",
+    replace: "                let _ = (span, other);\n",
+    tests: ["test/namespaces.test.ts", "-t", "refused unless its result is flattened"],
+  },
+  {
+    name: "through-library-flattened-refused",
+    breaks:
+      "a library's namespace's method through a value whose result only `.flatten()` reads is refused (rd311)",
+    file: "src/lower/instances.rs",
+    find: "            if gives_more(&calls, given, &|index| Some(index) != flattened, &mut may_drop) {\n",
+    replace: "            if gives_more(&calls, given, &|_| true, &mut may_drop) {\n",
+    tests: ["test/namespaces.test.ts", "-t", "exact where its result is flattened"],
   },
 ];

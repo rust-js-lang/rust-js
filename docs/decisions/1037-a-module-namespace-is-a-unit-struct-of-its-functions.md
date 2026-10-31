@@ -2,7 +2,9 @@
 
 Status: Accepted (the user's decision, rd292, option A); amended below
 (rd292b, the user's decision: a method that only passes its parameters
-on is the function it calls; its import named by a `use`). Extends
+on is the function it calls; its import named by a `use`; rd311: a
+library's method through a value is its library's, and a flattened
+result exact). Extends
 [0943](0943-an-object-of-methods-reading-this.md) (an object of methods,
 whose `&self` methods are its module's functions too) and
 [1018](1018-a-function-called-through-its-module-is-read-through-its-namespace.md)
@@ -206,9 +208,57 @@ method through a value whose call needs a copy unlike its own JS is
 refused" (run) and mutations `through-copy-unlike-allowed` and
 `through-copy-alike-refused` (`pipeline/copies.ts`).
 
-Open (rd311): a library's such method, called through a value in a
-consumer, is still compiled into the consumer (ADR 0914), and refused
-there for its library's private state; it should be called through the
-value where its library's copy is alike its own JS, and refused as above
-where it isn't, which the library's contract must say.
+## Amendment: a library's method through a value is its library's; a flattened result is exact (rd311, the user's decision)
+
+**A library's namespace method called through a value in another crate
+is the value's function, its library's JS: the consumer compiles none of
+it (amends [0914](0914-a-librarys-generic-function-is-its-programs.md)).**
+React's noop renderer's `noop_renderer.flush_sync_from_reconciler(f)` was
+compiled into the renderer, as its call gives `R` an `Option`, and
+refused there for the reconciler's private state; one compiled there
+wouldn't be the instance JS gave either. Its library's contract says
+which calls it takes as given: a call that gives it what its export takes
+nothing for, a value to copy or drop, or what may look like `None` of a
+type parameter its export takes as JS gives it (`Unboxed`), is refused,
+saying to call it on the namespace as Rust names it
+(`instances::needed`, `classes::refuse_through`).
+
+**Its result, an `Option<P>`, that only `.flatten()` reads is exact**
+(the user's decision, 2026-10-31; case
+([0262](0262-when-rust-and-js-disagree.md)): none, as the result reads
+the same): where the function makes that `Option` of `None` or a `Some`
+of a `P` and returns it, reading it nowhere, its JS gives `p` for
+`Some(p)` and `undefined` for `None`, which is the result flattened, as
+`Some(None)` and `None` both flatten to `None`. So the call is its
+library's, flattened where it's made, `return
+NoopRenderer.flushSyncFromReconciler(fn);`, upstream's; and so is the
+crate's own namespace's, whose copy then is its JS but for that `Some`
+(`FnCx::leaves_out_some_alone`). The function's body is checked
+(`analysis::flattened_alike`): it gives a `P` only to what takes it as
+given, a closure, a `dyn Fn`'s or a fn pointer's, a binding, or a
+function of its crate or library that reads no `Option` of one either,
+never std's, whose JS may read one apart (an iterator's `undefined` its
+end); its `Option<P>` only to its return; std's `Option::map` makes one
+of a closure's `P`. One whose function reads it, `if made.is_none()`, is
+refused, as its JS would read `Some(None)` as `None`.
+
+**Whether a call's `self` names the namespace is one answer**
+(`classes::names_namespace`, of the MIR: the unit struct's constant,
+through what holds it, or the namespace's own method's `self`), which
+both the lowering and which library functions the crate compiles read.
+
+Held by `test/namespaces.test.ts`'s "a library's namespace method
+through a value is its library's, exact where its result is flattened"
+(run: `Some(None)`, `Some(Some(1))` and `None` of a nested `Option`, the
+library's own state counted), "a library's namespace method through a
+value whose call needs a copy is refused unless its result is flattened"
+and the crate's own "a namespace's method through a value whose call
+needs a copy unlike its own JS is refused" (its flattened call run).
+Mutations `flattened-alike-read`, `flattened-alike-callee-read`,
+`flattened-read-otherwise` (`analysis/js_given.ts`),
+`through-library-compiled`, `through-library-unrefused`,
+`through-library-flattened-refused` (`instances.ts`),
+`namespace-constant-a-value`, `namespace-own-self-a-value`
+(`classes.ts`), `through-flattened-unmarked` and
+`through-flattened-js-alike` (`mir/calls.ts`).
 

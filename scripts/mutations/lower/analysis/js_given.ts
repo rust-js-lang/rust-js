@@ -53,4 +53,31 @@ export const mutations: Mutation[] = [
       "Copy bound takes a copy only where one is given",
     ],
   },
+  {
+    name: "flattened-alike-read",
+    breaks:
+      "a namespace's method whose function reads the `Option` it makes, `made.is_none()`, is called through a value where its result is flattened, which reads `Some(None)` as `None` (rd311)",
+    file: "src/lower/analysis/js_given.rs",
+    find: "        && made_and_returned(recognition, (callee, p), true, &mut HashSet::new()))\n",
+    replace: "        && true)\n",
+    tests: ["test/namespaces.test.ts", "-t", "refused unless its result is flattened"],
+  },
+  {
+    name: "flattened-alike-callee-read",
+    breaks:
+      "a function that gives its `Option` of what it's given from a function that reads it, `check(f)`, is taken as one that only makes and returns it (rd311)",
+    file: "src/lower/analysis/js_given.rs",
+    find: "                                        && made_and_returned(recognition, (callee, q), into_slot, seen)\n",
+    replace: "                                        && true\n",
+    tests: ["test/namespaces.test.ts", "-t", "refused unless its result is flattened"],
+  },
+  {
+    name: "flattened-read-otherwise",
+    breaks:
+      "a namespace's method through a value whose result `.is_some()` reads, not `.flatten()`, is taken as flattened, `Some(None)` read as `None` (rd311)",
+    file: "src/lower/analysis/js_given.rs",
+    find: "    reads.1 == 1\n        && body.basic_blocks",
+    replace: "    reads.1 == 1\n        || body.basic_blocks",
+    tests: ["test/namespaces.test.ts", "-t", "refused unless its result is flattened"],
+  },
 ];

@@ -139,8 +139,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             return Ok(Value::Expr(self.dynamic_import_of(item, module, span)?));
         }
-        let arg_tys: Vec<Ty<'tcx>> = args.iter().map(|a| a.node.ty(decls, self.tcx)).collect();
-        let output = destination.ty(decls, self.tcx).ty;
+        let tys: Vec<Ty<'tcx>> = args.iter().map(|a| a.node.ty(decls, self.tcx)).collect();
         let operands: Vec<&Operand<'tcx>> = args.iter().map(|a| &a.node).collect();
         let known = self.recognition().classify(def_id, generic_args);
         // A read of items that may be `None` whose `Option` only `.flatten()`
@@ -154,7 +153,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .into_iter()
                 .map(|v| self.value_expr(v, span))
                 .collect::<R<Vec<_>>>()?;
-            state.flattened.insert(destination.local);
+            state.flattened.locals.insert(destination.local);
             return Ok(Value::Expr(crate::lower::std_types::vec::flattened_read_values(
                 known, values,
             )));
@@ -162,7 +161,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.reads_through(state, known, &operands, destination) {
             return Ok(self.take_operands(state, &operands, out)?.remove(0));
         }
-        self.mir_call_operands(state, (def_id, generic_args), (&operands, &arg_tys), output, span, out)
+        self.mir_call_operands(state, (def_id, generic_args), (&operands, &tys), destination, span, out)
     }
 
     /// Whether a call's value is its one argument, as it's read: `flatten()`
@@ -184,8 +183,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return false;
         }
         match known {
-            Some(Std::OptionFlatten | Std::OptionCloned) if state.flattened.contains(&read.local) => {
-                state.flattened.insert(destination.local);
+            Some(Std::OptionFlatten | Std::OptionCloned) if state.flattened.locals.contains(&read.local) => {
+                state.flattened.locals.insert(destination.local);
                 true
             }
             Some(Std::UnwrapOk) => self.unwrapped_where_made(state, read.local),
@@ -444,10 +443,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         state: &mut State<'_, 'tcx>,
         callee: (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
         (operands, arg_tys): (&[&Operand<'tcx>], &[Ty<'tcx>]),
-        output: Ty<'tcx>,
+        destination: Place<'tcx>,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
+        let output = destination.ty(&state.body.local_decls, self.tcx).ty;
+        self.namespace_call(state, callee, operands.first().copied(), destination);
         if let Some(given) = self.mir_thrown_given(state, callee, operands, output, span, out)? {
             return Ok(given);
         }

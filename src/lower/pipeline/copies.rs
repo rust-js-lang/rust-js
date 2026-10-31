@@ -122,13 +122,7 @@ pub(super) fn settle(
 fn refuse_through_unlike(tcx: rustc_middle::ty::TyCtxt<'_>, through: &[ThroughCopy], alike: &HashSet<(DefId, usize)>) {
     for &(id, at, span) in through {
         if !alike.contains(&(id, at)) {
-            tcx.dcx().span_err(
-                span,
-                format!(
-                    "rust-js: `{}` is called through a namespace's value, the module's own function, which takes its type parameters as JS gives them, but this call gives one what may look like `None`, an `Option`, which that function reads apart from Rust's (ADRs 0051, 1037): call it on the namespace as Rust names it, or give it what's no `Option`",
-                    tcx.def_path_str(id)
-                ),
-            );
+            crate::lower::classes::refuse_through(tcx, id, span, true);
         }
     }
 }

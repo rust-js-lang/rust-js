@@ -480,6 +480,11 @@ tell them apart.
   (ADR 1037), and reading the member once, where the closure's made, is
   Rust's: its `move` closure holds that value.
 
+Two `Box<dyn Fn>`s of one forwarding closure that `ptr::eq` compares are
+one function, as two listeners are: the identity the user's exception
+takes (2026-10-31). An `Rc`'s or an `Arc`'s stays a function of its own,
+as above, as `Rc::ptr_eq` reads its allocation.
+
 The eta rule is narrower than the user's statement where an earlier
 decision of this ADR holds: a closure of a function Rust could have
 named there is one the program wrote to be a function of its own, React's
@@ -487,7 +492,10 @@ DEV dispatchers' `readContext(context) { return readContext(context); }`
 (the amendment on `fn`s above), so a closure of the crate's own function
 passing all on keeps its arrow outside a taker that takes it; and a
 trait's method, a dictionary's, or a class's, which reads its `this`,
-keeps it everywhere. Recorded for the user in the run's notes.
+keeps it everywhere. The user confirmed the narrow rule (2026-10-31): a
+wider one would lose the `this` and the extra arguments a dictionary's or
+a class's method reads, a result that changes, and collapse React's own
+explicit dispatcher wrappers, which upstream keeps.
 
 Held by `test/namespaces.test.ts`'s "a closure that passes all it's
 given to a namespace's function through a value is that function" (run,

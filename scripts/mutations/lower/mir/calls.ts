@@ -1096,4 +1096,22 @@ export const mutations: Mutation[] = [
     replace: "                    .is_some_and(|info| info.module == self.module && false) =>\n",
     tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
   },
+  {
+    name: "through-flattened-unmarked",
+    breaks:
+      "a namespace's method's result through a value that only `.flatten()` reads is flattened again, `$someValue(renderer.flushSync(f))`, a `Some(None)` it gives read as `None` (rd311)",
+    file: "src/lower/mir/calls.rs",
+    find: "            state.flattened.locals.insert(local);\n",
+    replace: "            let _ = local;\n",
+    tests: ["test/namespaces.test.ts", "-t", "exact where its result is flattened"],
+  },
+  {
+    name: "through-flattened-js-alike",
+    breaks:
+      "a copy that takes fewer of its type parameters as JS gives them than its function's own JS isn't taken as leaving out only a `Some`, so the crate's flattened call is refused (rd311)",
+    file: "src/lower/mir/calls.rs",
+    find: "        copied.js.is_subset(&own.js)\n",
+    replace: "        copied.js == own.js\n",
+    tests: ["test/namespaces.test.ts", "-t", "unlike its own JS"],
+  },
 ];

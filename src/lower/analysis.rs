@@ -17,7 +17,7 @@ pub(super) use fn_pointers::{Called, FnPointers};
 mod held_adapters;
 mod iterator_steps;
 mod js_given;
-pub(super) use js_given::{JsGiven, Params, js_facing};
+pub(super) use js_given::{JsGiven, Params, flattened_alike, js_facing, read_by_flatten};
 mod lazy_locals;
 mod mutation;
 mod namespaces;

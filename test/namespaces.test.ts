@@ -664,6 +664,13 @@ use reconciler::Reconciler;
 pub fn batched(renderer: &Reconciler) -> bool {
     renderer.batched_updates(|a: Option<u32>| a.is_none(), None)
 }
+
+// Flattened, its result is the function's own JS's (the user's decision).
+pub fn flattened(renderer: &Reconciler, given: u32) -> Option<u32> {
+    let inner = move || if given == 0 { None } else { Some(given) };
+    let f: Option<&dyn Fn() -> Option<u32>> = if given == 2 { None } else { Some(&inner) };
+    renderer.flush_sync(f).flatten()
+}
 `;
 
 test("a namespace's method through a value whose call needs a copy unlike its own JS is refused", async () => {
@@ -674,6 +681,12 @@ test("a namespace's method through a value whose call needs a copy unlike its ow
   const namespace = await import(join(dir, "reconciler.js"));
   expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("renderer.batchedUpdates(");
   expect(lib.batched(namespace)).toBe(true);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("  return renderer.flushSync(f);\n");
+  expect([lib.flattened(namespace, 0), lib.flattened(namespace, 1), lib.flattened(namespace, 2)]).toEqual([
+    undefined,
+    1,
+    undefined,
+  ]);
   const refused = fixture("namespace-through-copy-refused");
   writeFileSync(
     join(refused, "lib.rs"),
@@ -689,4 +702,158 @@ pub fn flushed(renderer: &Reconciler) -> bool {
   expect(ran.stderr).toContain(
     "`reconciler::Reconciler::flush_sync` is called through a namespace's value, the module's own function, which takes its type parameters as JS gives them, but this call gives one what may look like `None`",
   );
+});
+
+// A library's namespace method called through a value in another crate is
+// the value's function, its library's JS, never one the crate compiles of
+// it (ADR 0914), which would read its library's private state and not be
+// the instance JS gave. Its call that gives a type parameter what may look
+// like `None` is exact only where its result is `.flatten()`ed, both
+// `None`s one, and its function makes its `Option` of what it's given and
+// returns it, reading it nowhere; refused elsewhere (rd311, the user's
+// decision).
+const flushingLibrary = `use std::cell::Cell;
+
+thread_local! {
+    static DEPTH: Cell<u32> = const { Cell::new(0) };
+}
+
+#[cfg_attr(rust_js, rust_js::namespace)]
+pub struct Reconciler;
+
+unsafe impl js::Defined for Reconciler {}
+
+#[cfg_attr(rust_js, rust_js::namespace)]
+impl Reconciler {
+    pub fn flush_sync<R>(&self, f: Option<impl FnOnce() -> R>) -> Option<R> {
+        flush(f)
+    }
+
+    pub fn checked<R>(&self, f: impl FnOnce() -> R) -> Option<R> {
+        check(f)
+    }
+}
+
+fn check<R>(f: impl FnOnce() -> R) -> Option<R> {
+    let made = Some(f());
+    if made.is_none() {
+        DEPTH.set(100);
+    }
+    made
+}
+
+fn flush<R>(f: Option<impl FnOnce() -> R>) -> Option<R> {
+    DEPTH.set(DEPTH.get() + 1);
+    f.map(|f| f())
+}
+
+pub fn depth() -> u32 {
+    DEPTH.get()
+}
+`;
+
+/** `app`, a crate of `dep`, a library of `reconciler`: its JS, or its compiler's run where `refused`. */
+function libraryOf(name: string, reconcilerRs: string, app: string) {
+  const dir = fixture(name);
+  const js = ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  writeFileSync(join(dir, "dep.rs"), "pub mod reconciler;\n");
+  writeFileSync(join(dir, "reconciler.rs"), reconcilerRs);
+  run([
+    compiler,
+    join(dir, "dep.rs"),
+    "-o",
+    join(dir, "dep", "lib.js"),
+    "--library",
+    "--manifest",
+    join(dir, "dep", "lib.manifest.json"),
+    "--",
+    "--crate-name",
+    "dep",
+    `--emit=metadata=${join(dir, "libdep.rmeta")}`,
+    ...js,
+  ]);
+  writeFileSync(join(dir, "app.rs"), app);
+  const ran = runSync(
+    [
+      compiler,
+      join(dir, "app.rs"),
+      "-o",
+      join(dir, "app", "lib.js"),
+      "--dependency",
+      join(dir, "dep", "lib.manifest.json"),
+      "--",
+      "--crate-name",
+      "app",
+      "--extern",
+      `dep=${join(dir, "libdep.rmeta")}`,
+      "-L",
+      dir,
+      ...js,
+    ],
+    root,
+    60_000,
+  );
+  return { dir, ran };
+}
+
+test("a library's namespace method through a value is its library's, exact where its result is flattened", async () => {
+  const { dir, ran } = libraryOf(
+    "namespace-through-library",
+    flushingLibrary,
+    `use dep::reconciler::Reconciler;
+
+pub fn flushed(renderer: &Reconciler, given: u32) -> Option<u32> {
+    let inner = move || if given == 0 { None } else { Some(given) };
+    let f: Option<&dyn Fn() -> Option<u32>> = if given == 2 { None } else { Some(&inner) };
+    renderer.flush_sync(f).flatten()
+}
+
+pub fn nested(renderer: &Reconciler, given: u32) -> String {
+    let inner = move || match given {
+        0 => Some(None),
+        3 => None,
+        _ => Some(Some(given)),
+    };
+    let f: Option<&dyn Fn() -> Option<Option<u32>>> = if given == 2 { None } else { Some(&inner) };
+    format!("{:?}", renderer.flush_sync(f).flatten())
+}
+`,
+  );
+  expect(ran.stderr).toBe("");
+  const app = readFileSync(join(dir, "app", "lib.js"), "utf8");
+  expect(app).toContain("  return renderer.flushSync(f);\n");
+  expect(app).not.toContain("DEPTH");
+  const lib = await import(join(dir, "app", "lib.js"));
+  const namespace = await import(join(dir, "dep", "reconciler.js"));
+  expect([lib.flushed(namespace, 0), lib.flushed(namespace, 1), lib.flushed(namespace, 2)]).toEqual([
+    undefined,
+    1,
+    undefined,
+  ]);
+  expect([0, 1, 2, 3].map((given) => lib.nested(namespace, given))).toEqual([
+    "Some(None)",
+    "Some(Some(1))",
+    "None",
+    "None",
+  ]);
+  expect(namespace.depth()).toBe(7);
+});
+
+test("a library's namespace method through a value whose call needs a copy is refused unless its result is flattened", () => {
+  const app = (body: string) => `use dep::reconciler::Reconciler;
+
+pub fn flushed(renderer: &Reconciler) -> bool {
+    let inner = || None::<u32>;
+    ${body}
+}
+`;
+  const refusal =
+    "is called through a namespace's value, the module's own function, which takes its type parameters as JS gives them, but this call gives one what may look like `None`";
+  const kept = libraryOf("namespace-through-library-kept", flushingLibrary, app("renderer.flush_sync(Some(inner)).is_some()"));
+  expect(kept.ran.code).not.toBe(0);
+  expect(kept.ran.stderr).toContain(`\`dep::reconciler::Reconciler::flush_sync\` ${refusal}`);
+  // Flattened, but its function reads the `Option` it makes.
+  const read = libraryOf("namespace-through-library-read", flushingLibrary, app("renderer.checked(inner).flatten().is_some()"));
+  expect(read.ran.code).not.toBe(0);
+  expect(read.ran.stderr).toContain(`\`dep::reconciler::Reconciler::checked\` ${refusal}`);
 });

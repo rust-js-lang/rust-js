@@ -735,7 +735,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a copy of a flattened read, the item itself, isn't marked flattened, so the `flatten()` of it reads an `Option` of an `Option`",
     file: "src/lower/mir/dispatch.rs",
-    find: "                state.flattened.insert(destination.local);\n                true\n",
+    find: "                state.flattened.locals.insert(destination.local);\n                true\n",
     replace: "                true\n",
     tests: [
       "test/lowering-iterators.test.ts",

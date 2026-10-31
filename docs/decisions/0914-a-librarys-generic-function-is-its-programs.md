@@ -9,7 +9,10 @@ and amends [0100](0100-separate-crates.md) and
 [0185](0185-library-trait-defaults.md); and a consumer gives an export the
 copy functions its contract says it takes; and a `Clone` bound, and a
 program's `Rc` of a type parameter's value, are what its callers give;
-and a binding's result copies nothing; and a slice's `concat()` copies
+and a binding's result copies nothing; and a namespace's method called
+through a value is its library's, never compiled here
+([1037](1037-a-module-namespace-is-a-unit-struct-of-its-functions.md),
+amended, rd311); and a slice's `concat()` copies
 its items alone.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change for

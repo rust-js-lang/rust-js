@@ -625,6 +625,21 @@ struct OptionWrites {
     held: std::collections::HashSet<Span>,
 }
 
+/// What `.flatten()` reads as it is, the JS read itself.
+#[derive(Default)]
+struct Flattened {
+    /// Each local holding a read whose `Option` only `.flatten()` reads,
+    /// the JS read itself (ADR 0311), or a namespace's method's result
+    /// through a value its function makes and returns (rd311).
+    locals: std::collections::HashSet<Local>,
+    /// Of the namespace's method's call being lowered (ADR 1037): whether
+    /// its `self` is the namespace as Rust names it
+    /// (`classes::names_namespace`); and, of one through a value whose
+    /// result only `.flatten()` reads, that local and the type parameter its
+    /// function's JS leaves its `Some` out of then (rd311).
+    namespace_call: Option<(bool, Option<(Local, u32)>)>,
+}
+
 /// A body's lowering state.
 struct State<'m, 'tcx> {
     body: &'m mir::Body<'tcx>,
@@ -663,9 +678,9 @@ struct State<'m, 'tcx> {
     /// back to its place once the call returns (ADR 0074); an object's, in
     /// place, which each name for it sees (ADR 0147).
     copy_backs: Vec<(Expr, String, bool)>,
-    /// Each local holding a read whose `Option` only `.flatten()` reads,
-    /// the JS read itself (ADR 0311).
-    flattened: std::collections::HashSet<Local>,
+    /// What `.flatten()` reads as it is, and of the call being lowered, a
+    /// namespace's method's, what decides it (`Flattened`).
+    flattened: Flattened,
     /// Each local holding what `?`'s `Try::branch` made (`Value::Branch`).
     branches: std::collections::HashMap<Local, (Expr, Ty<'tcx>)>,
     /// Each local holding an update's derived `Default` base, its fields'

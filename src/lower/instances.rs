@@ -365,7 +365,29 @@ pub(super) fn needed<'tcx>(
         let Some(mir) = &body.mir else { continue };
         let caller = tcx.typeck_root_def_id(body.def_id);
         let instance = instances.contains(tcx, caller);
-        for (callee, args) in called(&mir.body) {
+        // A library's namespace's method called through a value: the
+        // value's function, its library's JS, none compiled here, which
+        // would be no instance JS gave; refused where the call gives it what
+        // its export takes nothing for, but where its result only
+        // `.flatten()` reads, of what it only makes and returns (rd311, ADRs
+        // 0914, 1037).
+        let (by_name, through) = called_through(tcx, &mir.body);
+        for (callee, args, span, destination) in through {
+            if !compiled_here(foreign, tcx, callee) {
+                continue;
+            }
+            let flattened = (super::analysis::flattened_alike(&calls.recognition, (callee, args))).filter(|&p| {
+                (foreign.item(callee).and_then(|item| item.calling.param(p)))
+                    .is_some_and(|param| param.has(crate::library::ParamFact::Unboxed))
+                    && super::analysis::read_by_flatten(&calls.recognition, &mir.body, destination)
+            });
+            let given = (caller, callee, args);
+            if gives_more(&calls, given, &|index| Some(index) != flattened, &mut may_drop) {
+                let other = gives_more(&calls, given, &|_| false, &mut may_drop);
+                super::classes::refuse_through(tcx, callee, span, !other);
+            }
+        }
+        for (callee, args) in by_name {
             if !compiled_here(foreign, tcx, callee)
                 || instances.contains(tcx, callee)
                 || more.iter().any(|&(id, _)| id == callee)
@@ -375,7 +397,7 @@ pub(super) fn needed<'tcx>(
             // An instance's call of what its library doesn't export, its own
             // too; else one given more than its export takes.
             let private = instance && foreign.item(callee).is_none();
-            if private || gives_more(&calls, (caller, callee, args), &mut may_drop) {
+            if private || gives_more(&calls, (caller, callee, args), &|_| true, &mut may_drop) {
                 more.push((callee, super::body_module(tcx, instances, body.def_id)));
             }
         }
@@ -421,6 +443,45 @@ pub(super) fn calls_of<'tcx>(body: &Body<'tcx>) -> Vec<(DefId, ty::GenericArgsRe
     called.0
 }
 
+/// A call of a namespace's method through a value: the method, its generic
+/// arguments, where it's called, and the local its result is.
+type ThroughCall<'tcx> = (DefId, ty::GenericArgsRef<'tcx>, rustc_span::Span, mir::Local);
+
+/// Each function `body` calls or names as a value, and its generic
+/// arguments there, but a namespace's method called through a value; and
+/// each of those.
+fn called_through<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    body: &mir::Body<'tcx>,
+) -> (Vec<(DefId, ty::GenericArgsRef<'tcx>)>, Vec<ThroughCall<'tcx>>) {
+    let through: Vec<_> = (body.basic_blocks.iter())
+        .filter_map(|data| match &data.terminator().kind {
+            TerminatorKind::Call {
+                func,
+                args,
+                destination,
+                fn_span,
+                ..
+            } => {
+                let (callee, generic) = func.const_fn_def()?;
+                let through = super::classes::member(tcx, callee) == Some(super::classes::Member::Namespace)
+                    && args
+                        .first()
+                        .is_some_and(|receiver| !super::classes::names_namespace(tcx, body, &receiver.node));
+                through.then_some((callee, generic, *fn_span, destination.local))
+            }
+            _ => None,
+        })
+        .collect();
+    let mut by_name = called(body);
+    for &(callee, generic, ..) in &through {
+        if let Some(at) = by_name.iter().position(|&named| named == (callee, generic)) {
+            by_name.remove(at);
+        }
+    }
+    (by_name, through)
+}
+
 /// Each function `body` calls or names as a value, and its generic
 /// arguments there.
 fn called<'tcx>(body: &mir::Body<'tcx>) -> Vec<(DefId, ty::GenericArgsRef<'tcx>)> {
@@ -457,6 +518,7 @@ fn compiled_here(foreign: &super::library::Foreign<'_, '_>, tcx: TyCtxt<'_>, id:
 fn gives_more<'tcx>(
     calls: &Calls<'_, 'tcx>,
     (caller, callee, args): (DefId, DefId, ty::GenericArgsRef<'tcx>),
+    counted: &dyn Fn(u32) -> bool,
     may_drop: &mut HashMap<(DefId, u32), bool>,
 ) -> bool {
     use crate::library::ParamFact;
@@ -496,6 +558,7 @@ fn gives_more<'tcx>(
         };
         (drops && !takes(index, ParamFact::Drop) && body_may_drop(calls, (callee, index), may_drop))
             || (nullish
+                && counted(index)
                 && takes(index, ParamFact::Unboxed)
                 && body_may_box(calls, (callee, index), &mut HashSet::new()))
             || (copies && copied.contains(&index) && !takes(index, ParamFact::Copy))
@@ -666,7 +729,7 @@ fn body_may_box<'tcx>(calls: &Calls<'_, 'tcx>, (id, index): (DefId, u32), seen: 
 /// whose values it holds none of unless it captures one, so React's
 /// `runWithFiberInDEV`'s `CURRENT.with_borrow(|current| current.clone())`
 /// gives std no `()` it's given (gap rd85).
-fn holds_param(ty: Ty<'_>, index: u32) -> bool {
+pub(in crate::lower) fn holds_param(ty: Ty<'_>, index: u32) -> bool {
     let mut walk = ty.walk();
     while let Some(arg) = walk.next() {
         let Some(ty) = arg.as_type() else { continue };

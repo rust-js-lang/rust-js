@@ -536,4 +536,22 @@ export const mutations: Mutation[] = [
     replace: "        Ok(None) => (implementations(tcx, callee).into_iter().flatten().filter(|_| false))\n",
     tests: ["test/corpus.test.ts", "-t", "^class_trait_field_borrows.rs$"],
   },
+  {
+    name: "namespace-constant-a-value",
+    breaks:
+      "a namespace named, `Reconciler.createContainer(3)`, is called as a value of it, not as its function, `createContainer(3)` (ADR 1037, rd311)",
+    file: "src/lower/classes.rs",
+    find: "            Operand::Constant(_) => return true,\n",
+    replace: "            Operand::Constant(_) => return false,\n",
+    tests: ["test/namespaces.test.ts", "-t", "called by name or through the value a binding gives"],
+  },
+  {
+    name: "namespace-own-self-a-value",
+    breaks:
+      "a namespace's own method's `self` is called as a value, `undefined.updateContainer(tag)` (ADR 1037, rd311)",
+    file: "src/lower/classes.rs",
+    find: "            return local.as_usize() == 1\n",
+    replace: "            return local.as_usize() == 0\n",
+    tests: ["test/namespaces.test.ts", "-t", "called through a value or by name"],
+  },
 ];

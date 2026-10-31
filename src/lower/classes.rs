@@ -78,6 +78,96 @@ pub(crate) fn is_namespace(tcx: TyCtxt<'_>, adt: DefId) -> bool {
     tcx.def_kind(adt) == DefKind::Struct && marked_namespace(tcx, adt)
 }
 
+/// Whether `receiver`, the `self` a call of a namespace's method in `body`
+/// gives it, is the namespace as Rust names it, whose call is the function
+/// itself, not a value of it JS may have made of another instance of its
+/// module, whose call is that value's (ADR 1037): the unit struct's
+/// constant, through what MIR holds it in, or the `self` of the namespace's
+/// own method `body` is. The one answer of both the lowering and which
+/// library functions the crate compiles (ADR 0914, rd311).
+pub(crate) fn names_namespace<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    body: &rustc_middle::mir::Body<'tcx>,
+    receiver: &rustc_middle::mir::Operand<'tcx>,
+) -> bool {
+    use rustc_middle::mir::{Operand, Rvalue, StatementKind};
+    let owner = body.source.def_id();
+    let mut operand = receiver.clone();
+    for _ in 0..body.local_decls.len() {
+        let local = match &operand {
+            Operand::Constant(_) => return true,
+            Operand::Copy(place) | Operand::Move(place) if place.projection.is_empty() => place.local,
+            _ => return false,
+        };
+        if local.as_usize() <= body.arg_count {
+            return local.as_usize() == 1
+                && !tcx.is_closure_like(owner)
+                && member(tcx, owner) == Some(Member::Namespace);
+        }
+        // Its one write.
+        let mut writes = (body.basic_blocks.iter())
+            .flat_map(|data| data.statements.iter())
+            .filter_map(|statement| match &statement.kind {
+                StatementKind::Assign(assign) if assign.0.local == local => Some(&assign.1),
+                _ => None,
+            });
+        let (Some(write), None) = (writes.next(), writes.next()) else {
+            return false;
+        };
+        let called = (body.basic_blocks.iter()).any(|data| {
+            matches!(&data.terminator().kind, rustc_middle::mir::TerminatorKind::Call { destination, .. }
+                if destination.local == local)
+        });
+        operand = match write {
+            _ if called => return false,
+            Rvalue::Use(operand, _) => operand.clone(),
+            Rvalue::CopyForDeref(place) => Operand::Copy(*place),
+            // A reborrow, `&*r`.
+            Rvalue::Ref(_, _, place) if matches!(place.projection[..], [rustc_middle::mir::PlaceElem::Deref]) => {
+                Operand::Copy(place.local.into())
+            }
+            // `&Reconciler` of the struct made where it's borrowed.
+            Rvalue::Ref(_, _, place) if place.projection.is_empty() => {
+                let made = (body.basic_blocks.iter())
+                    .flat_map(|data| data.statements.iter())
+                    .filter_map(|statement| match &statement.kind {
+                        StatementKind::Assign(assign) if assign.0.local == place.local => Some(&assign.1),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>();
+                return match made[..] {
+                    [Rvalue::Aggregate(kind, _)] => {
+                        matches!(**kind, rustc_middle::mir::AggregateKind::Adt(adt, ..) if is_namespace(tcx, adt))
+                    }
+                    [Rvalue::Use(Operand::Constant(_), _)] => true,
+                    _ => false,
+                };
+            }
+            _ => return false,
+        };
+    }
+    false
+}
+
+/// Refuses, at `span`, a call of `id`, a namespace's method, through a
+/// value, the module's own function, which takes its type parameters as JS
+/// gives them (ADR 0051) and nothing to copy or drop, where the call needs
+/// one apart: given what may look like `None` (`nullish`), whose `Some` it
+/// leaves out, or a value to copy or drop (ADRs 0914, 1037, rd311).
+pub(crate) fn refuse_through(tcx: TyCtxt<'_>, id: DefId, span: rustc_span::Span, nullish: bool) {
+    let message = match nullish {
+        true => format!(
+            "rust-js: `{}` is called through a namespace's value, the module's own function, which takes its type parameters as JS gives them, but this call gives one what may look like `None`, an `Option`, which that function reads apart from Rust's (ADRs 0051, 1037): call it on the namespace as Rust names it, give it what's no `Option`, or `.flatten()` its result where the function only makes its `Option` and returns it",
+            tcx.def_path_str(id)
+        ),
+        false => format!(
+            "rust-js: `{}` is called through a namespace's value, its library's own function, which takes nothing to copy or drop what this call gives it (ADRs 0914, 1037): call it on the namespace as Rust names it",
+            tcx.def_path_str(id)
+        ),
+    };
+    tcx.dcx().span_err(span, message);
+}
+
 /// The namespace an impl is of, if it's one's.
 fn namespace_of_impl(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
     match tcx.type_of(imp).instantiate_identity().skip_normalization().kind() {
