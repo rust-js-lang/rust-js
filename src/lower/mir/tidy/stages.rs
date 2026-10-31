@@ -1002,16 +1002,13 @@ fn branch_values_of(body: &mut Vec<Stmt>, hints: &Hints) {
 
 /// `looped_drops` of each of `body`'s lists, each loop's run made as MIR's
 /// would be once its steps' `try`s are gone, a `for` of what it steps, as
-/// `loops` makes one, and what that leaves after a jump gone, as the
-/// `unreachable` pass after `loops` takes it, the `break` to the exit after
-/// a `continue` (#441); whether it made any.
+/// `loops` makes one; whether it made any.
 fn looped_drops_of_made(body: &mut Vec<Stmt>, hints: &Hints, for_made: bool) -> bool {
     let mut looped = false;
     let mut taken = mentions(body);
     let mut tidied = |run: &mut Vec<Stmt>| {
         bindings::declarations(run);
         bottom_up(run, &mut |stmts| loops(stmts, &mut taken, hints.numbers));
-        js::statement_lists(run, &mut unreachable_after);
     };
     js::statement_lists(body, &mut |stmts| {
         looped |= unwinds::looped_drops(stmts, for_made, &mut tidied)

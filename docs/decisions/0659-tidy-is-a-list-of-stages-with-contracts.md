@@ -470,3 +470,18 @@ the todo snapshot, each a `for` or a `while` test where MIR's step was;
 Held by mutations `ended-exit-unmoved`, `run-reads-what-drop-reads`,
 `run-labels-unseen`, `wide-run-unextended`, `escapes-own-labels-unseen`,
 `leading-assignment-taken` (`tidy/unwinds.ts`) and `looped-drops-break-kept` (`tidy/loops.ts`).
+
+## Amendment: the run's `unreachable` step goes, dead since #442 (2026-10-31)
+
+#442's `continue outer` (`named_continues`) leaves the inner loop of a
+`for` over a borrow, as `borrow_loop_inner_break_outer` has it, by a
+`continue` of the outer loop where MIR's block went on to its exit, so
+`loops` no longer leaves a `break` after a `continue` in a looped drop's
+run, and #441's `unreachable` step after it removed nothing: the mutation
+`looped-drops-run-unreachable-kept` survived the whole corpus,
+`lowering-loops` and `tidy-stages` on CI, and React's port, its five
+packages built by a debug compiler with and without the step, gave the
+same JS and no contract refusal. **The step and its mutation are
+removed** (ADR 0093: a mutation no test can catch names no behavior). The
+stage's contract, nothing after a jump, still refuses in a debug build
+what would come back. The amendment above is superseded in that part.
