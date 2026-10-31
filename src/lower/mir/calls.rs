@@ -1117,9 +1117,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `typeof` of each part of `global`'s path, joined by `&&`: of
     /// `js::is_defined`, each whether the host has it; of `js::is_function`,
-    /// the last alone, whether it's a function, as upstream's `typeof
-    /// performance.getEntriesByType === 'function'` asks, which throws where
-    /// the host hasn't `performance` (ADR 0942, amended).
+    /// `is_number` or `is_object`, each before the last whether the host has
+    /// it and the last whether it's of that kind, so a host without
+    /// `performance` gives `false`, never a `ReferenceError` (rd320, ADR
+    /// 0942 amended); a test of the global the program wrote before it,
+    /// `typeof performance === "object" &&`, says the first already
+    /// (`prepare::typeofs`).
     /// Of a path from a value, `base`, each part is a member of it, the
     /// value itself no global, so not asked of.
     fn mir_defined_parts(
@@ -1160,12 +1163,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 read = part.of(read);
             }
             let typeof_ = Expr::unary(js::UnaryOp::Typeof, read.clone());
-            if let Some(kind) = asked.type_of() {
-                if k + 1 == parts.len() {
-                    tests.push(Expr::bin(Op::Eq, typeof_, Expr::str(kind)));
+            match asked.type_of() {
+                Some(kind) if k + 1 == parts.len() => tests.push(Expr::bin(Op::Eq, typeof_, Expr::str(kind))),
+                _ if k + 1 == parts.len() || from_value || !(k == 0 && every_host_has(first)) => {
+                    tests.push(Expr::bin(Op::Ne, typeof_, Expr::str("undefined")));
                 }
-            } else if k + 1 == parts.len() || from_value || !(k == 0 && every_host_has(first)) {
-                tests.push(Expr::bin(Op::Ne, typeof_, Expr::str("undefined")));
+                _ => {}
             }
         }
         // Where the call's written, a comment before it is before it

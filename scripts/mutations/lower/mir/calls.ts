@@ -534,19 +534,18 @@ export const mutations: Mutation[] = [
     breaks:
       '`js::is_function(callable)` is `typeof rustJsCallable !== "undefined"`, true of a number (ADR 0942)',
     file: "src/lower/mir/calls.rs",
-    find: "            if let Some(kind) = asked.type_of() {\n",
-    replace:
-      "            if let Some(kind) = asked.type_of().filter(|_| false) {\n",
+    find: "                Some(kind) if k + 1 == parts.len() => tests.push(Expr::bin(Op::Eq, typeof_, Expr::str(kind))),\n",
+    replace: "                Some(_) if false => {}\n",
     tests: ["test/lowering-is-function.test.ts"],
   },
   {
     name: "is-function-asks-each-part",
     breaks:
-      "`js::is_function(Performance::get_entries_by_type)` is `typeof performance !== \"undefined\" && ..`, false where upstream's `typeof performance.getEntriesByType === 'function'` throws (ADR 0942, amended)",
+      "`js::is_function(Performance::now)` asks its last part alone, `typeof performance.now === \"function\"`, which throws a `ReferenceError` where the host hasn't `performance`, where Rust is told `false` (rd320, ADR 0942 amended)",
     file: "src/lower/mir/calls.rs",
-    find: "            if let Some(kind) = asked.type_of() {\n                if k + 1 == parts.len() {\n",
+    find: "                _ if k + 1 == parts.len() || from_value || !(k == 0 && every_host_has(first)) => {\n",
     replace:
-      "            if let Some(kind) = asked.type_of()\n                && k + 1 == parts.len()\n            {\n                {\n",
+      "                _ if asked.type_of().is_some() => {}\n                _ if k + 1 == parts.len() || from_value || !(k == 0 && every_host_has(first)) => {\n",
     tests: [
       "test/lowering-is-function.test.ts",
       "-t",
@@ -609,8 +608,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a path through ECMAScript's `Object` asks `typeof Object !== \"undefined\"`, where React writes `typeof Object.preventExtensions === 'function'` (ADR 0942)",
     file: "src/lower/mir/calls.rs",
-    find: "            } else if k + 1 == parts.len() || from_value || !(k == 0 && every_host_has(first)) {\n",
-    replace: "            } else {\n",
+    find: "                _ if k + 1 == parts.len() || from_value || !(k == 0 && every_host_has(first)) => {\n",
+    replace: "                _ if true => {\n",
     tests: [
       "test/lowering-is-function.test.ts",
       "test/lowering-math.test.ts",
@@ -623,9 +622,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`js::is_defined(js::date::new)` asks nothing of `Date`, so it's a call of the binding, not a test (ADR 0942)",
     file: "src/lower/mir/calls.rs",
-    find: "            } else if k + 1 == parts.len() || from_value || !(k == 0 && every_host_has(first)) {\n",
-    replace:
-      "            } else if from_value || !(k == 0 && every_host_has(first)) {\n",
+    find: "                _ if k + 1 == parts.len() || from_value || !(k == 0 && every_host_has(first)) => {\n",
+    replace: "                _ if from_value || !(k == 0 && every_host_has(first)) => {\n",
     tests: [
       "test/lowering-is-function.test.ts",
       "-t",

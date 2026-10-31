@@ -30,6 +30,8 @@ pub fn kit_hook(n: f64) -> f64 {
 unsafe extern "Rust" {
     #[link_name = "rustJsValue"]
     pub safe static VALUE: &'static js::JsObject;
+    #[link_name = "rustJsKit"]
+    pub safe static KIT: &'static js::JsObject;
 }
 
 /// React's \`typeof Object.preventExtensions === 'function'\`.
@@ -54,9 +56,14 @@ pub fn hooked() -> bool {
     js::is_function(hook)
 }
 
-// Where the host may lack the global, the program asks so first.
 pub fn guarded() -> bool {
     js::is_defined(kit_hook) && js::is_function(kit_hook)
+}
+
+// The program asks of the global first, as upstream's \`typeof performance
+// === 'object' && typeof performance.now === 'function'\`: asked once.
+pub fn kit_object() -> bool {
+    js::is_object(KIT) && js::is_function(kit_hook)
 }
 
 pub fn tagged() -> bool {
@@ -74,17 +81,17 @@ pub fn dated() -> bool {
   expect(js).toContain('export function hasPreventExtensions() {\n  return typeof Object.preventExtensions !== "undefined";\n}');
   expect(js).toContain('typeof rustJsCallable === "function"');
   expect(js).toContain('return typeof rustJsValue === "function";');
-  // Only the member is asked, as upstream's `typeof performance.getEntriesByType
-  // === 'function'` is: it throws where the host hasn't the global before it.
-  expect(js).toContain('return typeof rustJsKit.hook === "function";');
+  // Each part before the last is asked whether it's there, so a host
+  // without the global gives false, never a ReferenceError (rd320).
+  expect(js).toContain('return typeof rustJsKit !== "undefined" && typeof rustJsKit.hook === "function";');
   expect(js).toContain('typeof rustJsKit !== "undefined" &&\n    typeof rustJsKit.hook !== "undefined" &&\n    typeof rustJsKit.hook === "function"\n');
-  expect(js).toContain('return typeof Symbol.toStringTag === "function";');
+  expect(js).toContain('return typeof rustJsKit === "object" && typeof rustJsKit.hook === "function";');
+  expect(js).toContain('return typeof Symbol !== "undefined" && typeof Symbol.toStringTag === "function";');
   expect(js).toContain('export function dated() {\n  return typeof Date !== "undefined";\n}');
   const global = globalThis as Record<string, unknown>;
   const lib = await import(join(dir, "lib.js"));
   expect([lib.canPreventExtensions(), lib.called(1), lib.valued(), lib.tagged(), lib.dated()]).toEqual([true, undefined, false, false, true]);
-  expect(() => lib.hooked()).toThrow(ReferenceError);
-  expect(lib.guarded()).toBe(false);
+  expect([lib.hooked(), lib.guarded(), lib.kitObject()]).toEqual([false, false, false]);
   global.rustJsCallable = 3;
   global.rustJsValue = {};
   global.rustJsKit = { hook: "no" };
@@ -92,7 +99,8 @@ pub fn dated() -> bool {
   global.rustJsCallable = (n: number) => n + 1;
   global.rustJsValue = () => {};
   global.rustJsKit = { hook: () => 0 };
-  expect([lib.called(1), lib.valued(), lib.hooked(), lib.guarded()]).toEqual([2, true, true, true]);
+  expect([lib.called(1), lib.valued(), lib.hooked(), lib.guarded(), lib.kitObject()]).toEqual([2, true, true, true, true]);
+  delete global.rustJsKit;
   const prevent = Object.preventExtensions;
   try {
     (Object as unknown as Record<string, unknown>).preventExtensions = 1;
@@ -105,7 +113,7 @@ pub fn dated() -> bool {
 // React DOM's estimateImageBytes: `typeof devicePixelRatio === 'number' ?
 // devicePixelRatio : 1`. `js::is_number` asks it of a global a getter or a
 // static reads, as `js::is_function` asks whether it's a function (rd195):
-// the last part of a path alone, as the others are. What's no number in
+// of a path, each part before the last whether it's there (rd320). What's no number in
 // Rust, a function's binding, is refused: it would be false.
 test("js::is_number is whether a global a binding reads is a number", async () => {
   const dir = fixture("is-number");
@@ -130,17 +138,17 @@ pub fn ratio() -> bool {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('return typeof rustJsWidth === "number" ? rustJsWidth : 1;');
-  expect(js).toContain('return typeof rustJsMeter.ratio === "number";');
+  expect(js).toContain('return typeof rustJsMeter !== "undefined" && typeof rustJsMeter.ratio === "number";');
   const global = globalThis as Record<string, unknown>;
   const lib = await import(join(dir, "lib.js"));
-  expect(lib.wide()).toBe(1);
-  expect(() => lib.ratio()).toThrow(ReferenceError);
+  expect([lib.wide(), lib.ratio()]).toEqual([1, false]);
   global.rustJsWidth = "3";
   global.rustJsMeter = { ratio: null };
   expect([lib.wide(), lib.ratio()]).toEqual([1, false]);
   global.rustJsWidth = 3;
   global.rustJsMeter = { ratio: 2 };
   expect([lib.wide(), lib.ratio()]).toEqual([3, true]);
+  delete global.rustJsMeter;
 });
 
 test("js::is_number of what's no number is refused", () => {
@@ -257,7 +265,7 @@ pub fn symbol_defines_for() -> bool {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('if (typeof Symbol === "function" && typeof Symbol.for === "function") {\n  const symbolFor = Symbol.for;\n  COMPONENT_TYPE = symbolFor("selector.component");\n}');
-  expect(js).toContain('export function hasSymbolFor() {\n  return typeof Symbol.for === "function";\n}');
+  expect(js).toContain('export function hasSymbolFor() {\n  return typeof Symbol !== "undefined" && typeof Symbol.for === "function";\n}');
   const lib = await import(join(dir, "lib.js"));
   expect(lib.componentType()).toBe(Symbol.for("selector.component"));
   expect(js).toContain('export function definesSymbolFor() {\n  return typeof Symbol !== "undefined" && typeof Symbol.for !== "undefined";\n}');

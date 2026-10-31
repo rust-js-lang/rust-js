@@ -679,7 +679,7 @@ pub fn measure(name: &str, start_time: f64, end_time: f64) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('if (typeof console.timeStamp === "function") {\n    console.timeStamp(name, startTime, endTime, "Components \u269B", undefined, color);\n  }');
+  expect(js).toContain('if (typeof console !== "undefined" && typeof console.timeStamp === "function") {\n    console.timeStamp(name, startTime, endTime, "Components \u269B", undefined, color);\n  }');
   expect(js).toContain("  const options = {\n    start: startTime,\n    end: endTime,\n  };\n  performance.measure(name, options);");
   const host = console as any;
   const stamped: unknown[][] = [];

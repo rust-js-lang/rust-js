@@ -403,3 +403,36 @@ is whether a global a binding reads is an object" and mutations
 `asked-object-unrecognized` (`bindings/forms.ts`) and
 `asked-object-any-kind` (`mir/calls.ts`). The guide's
 `global-scope.md` example.
+
+## Amendment (2026-10-31): each part before the last is asked whether it's there (rd320)
+
+The 2026-10-28 amendment asked a path's last part alone, `typeof
+performance.now === "function"`, to read as upstream's estimateBandwidth,
+which throws a `ReferenceError` where the host has no `performance`. But
+`js::is_function` gives a `bool` in Rust, as its doc says, "each part
+before the last asked whether it's there": a host without the global
+threw where the program is told `false`, a wrong answer (rd320, P0), of
+React's reportGlobalError's `Window::new_error_event` and
+`node::process::emit` too, which a browser asks without `process`.
+
+**`js::is_function`, `js::is_number` and `js::is_object` of a path ask
+each part before the last whether it's there, as `js::is_defined` does,
+and the last whether it's of their kind**: `typeof performance !==
+"undefined" && typeof performance.now === "function"`; a first part every
+host has, `Object`, isn't asked of, as before. Where the program asks of
+the global first, upstream's `typeof performance === 'object' && typeof
+performance.now === 'function'`, `js::is_object(webapi::performance) &&
+js::is_function(Performance::now)`, the global is asked once: a test of
+a `typeof` of any kind but `"undefined"` says it's there
+(`prepare::typeofs`, ADR 0964 widened from `=== "function"`). Case
+([0262](0262-when-rust-and-js-disagree.md)): the result changes, so
+Rust's, `false`, is kept; the guard a program that may run without the
+global writes is upstream's, written once.
+
+Held by `test/lowering-is-function.test.ts`'s "js::is_function is whether
+a binding's global is a function" (run without `rustJsKit`, with one
+that's no object, and with its hook) and "js::is_number is whether a
+global a binding reads is a number" (without `rustJsMeter`), and
+mutations `is-function-asks-each-part` (its find moved: the last part
+alone) and `typeof-of-a-kind-says-defined` (`prepare/typeofs.ts`).
+

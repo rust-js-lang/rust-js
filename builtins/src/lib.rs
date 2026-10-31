@@ -830,8 +830,8 @@ pub fn is_function<B: Copy>(binding: B) -> bool {
 /// [`typeof X === "number"`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/typeof):
 /// whether the global a getter's or a static's binding reads is a number,
 /// `is_number(webapi::window_global::device_pixel_ratio)`, of what
-/// [`is_defined`] is given, of a path of them its last part, as
-/// [`is_function`] asks. Rust is told nothing: the binding is still there
+/// [`is_defined`] is given, of a path of them its last part, each before
+/// it asked whether it's there, as [`is_function`] asks. Rust is told nothing: the binding is still there
 /// to read, which gives what the host has.
 #[cfg_attr(rust_js, rust_js::link_name = "typeof === \"number\"")]
 #[allow(unused_variables)]

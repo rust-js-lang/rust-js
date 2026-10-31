@@ -246,10 +246,13 @@ export function later(task) {
 
 Whether it's a function is `js::is_function(binding)`, `typeof X ===
 "function"`, of what `js::is_defined` is given: a binding, a static or a
-path of them. Of a path it asks the last part alone, `typeof
-performance.getEntriesByType === "function"`, which throws where the host
-hasn't `performance`, as JS's does; where it may not, ask that first,
-`js::is_defined(performance) && js::is_function(..)`
+path of them. Of a path it asks each part before the last whether it's
+there, `typeof performance !== "undefined" && typeof performance.now ===
+"function"`, so a host without `performance` gives `false`, never a
+`ReferenceError`; a test of the global written before it, upstream's
+`js::is_object(performance) && js::is_function(Performance::now)`, is
+`typeof performance === "object" && typeof performance.now ===
+"function"`, the global asked once
 ([ADR 0942](../../decisions/0942-whether-a-global-is-a-function-is-is-function.md),
 amended).
 It's its own question, false of a global that's there but isn't a
@@ -278,7 +281,8 @@ export function hasTimers() {
 Whether it's a number is `js::is_number(binding)`, `typeof X ===
 "number"`, of a getter's binding or a static's of a number, as React DOM
 reads a window's pixel ratio where there may be no window. Of a path it
-asks the last part alone, as `js::is_function` does; of what's no number
+asks each part before the last whether it's there, as `js::is_function`
+does; of what's no number
 in Rust, a function's binding, it's an error
 ([ADR 0942](../../decisions/0942-whether-a-global-is-a-function-is-is-function.md),
 amended):
@@ -474,7 +478,7 @@ pub fn log_render(name: &str, start: f64, end: f64) {
 
 ```js
 export function logRender(name, start, end) {
-  if (typeof console.timeStamp === "function") {
+  if (typeof console !== "undefined" && typeof console.timeStamp === "function") {
     console.timeStamp(name, start, end, "Components", undefined, "primary");
   }
 }

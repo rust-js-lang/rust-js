@@ -4,8 +4,8 @@
 use crate::js::{Expr, ExprKind, Op, UnaryOp};
 
 /// Of an `&&` chain, each `typeof p !== "undefined"` after a test of `p`'s
-/// `typeof`, `=== "function"` or `!== "undefined"`, which says it already,
-/// gone: `js::is_function(js::symbol::new) && js::is_function(SymbolFor)`'s
+/// `typeof`, `=== "function"`, `=== "object"`, any kind but `"undefined"`,
+/// or `!== "undefined"`, which says it already, gone: `js::is_function(js::symbol::new) && js::is_function(SymbolFor)`'s
 /// `typeof Symbol === "function" && typeof Symbol.for === "function"`, as
 /// React writes it, not with `typeof Symbol !== "undefined"` between. A
 /// `typeof` reads a name or a property and runs nothing, so a test gone
@@ -44,23 +44,25 @@ fn conjuncts(e: Expr, parts: &mut Vec<Expr>) {
 
 /// What `typeof x !== "undefined"` asks of, `x`.
 fn undefined_test(e: &Expr) -> Option<&Expr> {
-    typeof_test(e, Op::Ne, "undefined")
+    typeof_test(e, Op::Ne, &|kind| kind == "undefined")
 }
 
-/// Whether `earlier` says `asked` is defined: `typeof asked === "function"`
-/// or `typeof asked !== "undefined"`.
+/// Whether `earlier` says `asked` is defined: `typeof asked === "object"`,
+/// of any kind but `"undefined"`, or `typeof asked !== "undefined"`.
 fn says_defined(earlier: &Expr, asked: &Expr) -> bool {
-    [(Op::Eq, "function"), (Op::Ne, "undefined")]
+    let of_kind = |kind: &str| kind != "undefined";
+    let defined = |kind: &str| kind == "undefined";
+    [(Op::Eq, &of_kind as &dyn Fn(&str) -> bool), (Op::Ne, &defined)]
         .into_iter()
         .any(|(op, kind)| typeof_test(earlier, op, kind).is_some_and(|x| same_read(x, asked)))
 }
 
-/// What `typeof x <op> "<kind>"` reads, `x`.
-fn typeof_test<'e>(e: &'e Expr, op: Op, kind: &str) -> Option<&'e Expr> {
+/// What `typeof x <op> "<kind>"` reads, `x`, of a kind `kind` takes.
+fn typeof_test<'e>(e: &'e Expr, op: Op, kind: &dyn Fn(&str) -> bool) -> Option<&'e Expr> {
     let ExprKind::Binary(o, a, b) = &e.kind else {
         return None;
     };
-    if *o != op || !matches!(&b.kind, ExprKind::Str(s) if s == kind) {
+    if *o != op || !matches!(&b.kind, ExprKind::Str(s) if kind(s)) {
         return None;
     }
     match &a.kind {
