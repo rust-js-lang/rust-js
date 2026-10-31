@@ -205,10 +205,12 @@ pureComponentPrototype.constructor = PureComponent;
 // Avoid an extra prototype jump for these methods.
 Object.assign(pureComponentPrototype, Component.prototype);
 pureComponentPrototype.isPureReactComponent = true;`);
-  // A Rust call of its constructor is \`new\`, of its method a call of the prototype's.
+  // A Rust call of its constructor is \`new\`, of its method a call of the
+  // prototype's, its trailing \`None\` left out as the constructor's is (ADR
+  // 0443, amended).
   expect(js).toContain(`export function mounted(props) {
   const component = new Component(props);
-  component.forceUpdate(undefined);
+  component.forceUpdate();
   return component;
 }`);
   expect(js).toContain("const update = (a, b) => a.forceUpdate(b);");
