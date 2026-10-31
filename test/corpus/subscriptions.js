@@ -6,8 +6,6 @@ import {
   $cmp,
   $downgrade,
   $dropItems,
-  $iter,
-  $next,
   $rcDrop,
   $retain,
   $unborrow,
@@ -42,9 +40,7 @@ function publish(bus, msg) {
   try {
     const ids = Array.from(b.handlers.keys());
     ids.sort($cmp);
-    const iter = $iter(ids);
-    let id;
-    while ((id = $next(iter)) != null) {
+    for (const id of ids) {
       $unwrap(b.handlers.get(id), "no entry found for key")(msg);
     }
   } finally {

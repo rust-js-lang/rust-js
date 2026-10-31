@@ -154,3 +154,26 @@ Held by the architecture's table of owners, which names
 `jumps_into_branches`, and the mutation `jumps-into-branches-off`, whose
 tests are both rules' (`lowering-early-exits`' chain, the corpus's
 `continues_in_arms`, against its snapshot).
+
+## Amendment: a block's `break` in a loop inside it is the labeled loop's `continue` (#442)
+
+`jumps past blocks` makes each `break l` of a block MIR made the jump
+after it, `l: { .. break l; .. } continue;`, but not one in a loop inside
+the block, where `continue;` would go on with that loop. So `'outer: for
+&x in items { if !keep(x) { continue; } while j < 3 { if j == x {
+continue 'outer; } .. } total += 100; }` kept MIR's block and its
+`break`, `outer: for (..) { bb25: { if (keep(x)) { for (..) { if (j ===
+x) { break bb25; } .. } .. continue; } } continue; }`.
+
+**In the turn of a loop the program labeled, a block followed by its
+`continue` has each `break` of it in a loop inside it `continue outer`**
+(`continues.rs`' `named_continues`), which goes on from the same place:
+`if (!keep(x)) { continue; } for (..) { if (j === x) { continue outer; }
+.. } total += 100;`, as written. A loop the program didn't label has no
+name to give, and keeps the block. Case ([0262](0262-when-rust-and-js-disagree.md)):
+N, the same turn goes on, the same `finally`s run.
+
+Held by `test/corpus/continue_outer_past_block.rs` and
+`borrow_loop_inner_break_outer.rs` against native Rust, and mutations
+`named-continues-unseen` and `named-continue-unnamed`
+(`tidy/jumps/continues.ts`).

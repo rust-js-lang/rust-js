@@ -390,4 +390,12 @@ export const mutations: Mutation[] = [
     replace: "        || n < 0\n",
     tests: ["test/lowering-written-loops.test.ts", "-t", "counted to its length"],
   },
+  {
+    name: "looped-drops-break-kept",
+    breaks: "the `break` that left the loop, its exit, is kept after its `for`, at the `try`'s end, which then breaks what holds it, or no loop at all (rd191, #442)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "    {\n        exit.pop();\n    }\n",
+    replace: "    {}\n",
+    tests: ["test/corpus.test.ts", "-t", "^(refcell_borrow_loops|take_destructors|loop_drops).rs$"],
+  },
 ];

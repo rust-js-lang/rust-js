@@ -147,36 +147,21 @@ function matched() {
   } else {
     console.log("none");
   }
-  let take;
   try {
-    take = W.take(w);
-  } catch (error) {
-    if (w[0] != null) {
-      ddDrop_drop(w[0]);
+    const take = W.take(w);
+    if (take != null) {
+      console.log("took");
+    } else {
+      console.log("empty");
     }
-    throw error;
-  }
-  if (take != null) {
-    console.log("took");
-  } else {
-    console.log("empty");
-  }
-  try {
     if (take != null) {
       ddDrop_drop(take);
     }
-  } catch (error) {
-    if (w[0] != null) {
-      ddDrop_drop(w[0]);
+    if (W.r(w) != null) {
+      console.log("some");
+    } else {
+      console.log("none");
     }
-    throw error;
-  }
-  if (W.r(w) != null) {
-    console.log("some");
-  } else {
-    console.log("none");
-  }
-  try {
     for (let n = 0; n < 3; n++) {
       const e = pick(n);
       if (e.TAG === "A") {

@@ -204,18 +204,13 @@ function borrowed(items, seen) {
   const borrow = $borrow(items, true);
   try {
     outer: for (const x of borrow) {
-      let j = 0;
-      while (true) {
-        if (j >= 3) {
-          seen(x);
-          continue outer;
-        }
+      for (let j = 0; j < 3; j++) {
         if (j === x) {
           continue outer;
         }
         total = (total + j) >>> 0;
-        j++;
       }
+      seen(x);
     }
   } finally {
     $unborrow(borrow);

@@ -54,11 +54,8 @@ function main() {
       dDrop_drop,
     );
     try {
-      while (true) {
-        const d = $next(iter);
-        if (d == null) {
-          return;
-        }
+      let d;
+      while ((d = $next(iter)) != null) {
         console.log(`saw ${d[0]}`);
         dDrop_drop(d);
       }

@@ -16,11 +16,9 @@ function keyToCmp(key, KOrd, dropF) {
 }
 
 function smallest(items, cmp, dropF) {
-  let best;
   try {
-    const iter = items.values();
-    let item;
-    while ((item = iter.next().value) != null) {
+    let best;
+    for (const item of items) {
       if (best == null || cmp(item, best) === -1) {
         best = item;
       }

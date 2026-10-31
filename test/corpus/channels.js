@@ -6,7 +6,6 @@ import {
   $debugStr,
   $dropReceiver,
   $dropSender,
-  $rangeInclusiveNext,
   $recv,
   $send,
   $tryRecv,
@@ -18,10 +17,8 @@ export function entry() {
 }
 
 function produce(tx) {
-  const iter = { start: 1, end: 3 };
   try {
-    let id;
-    while ((id = $rangeInclusiveNext(iter)) != null) {
+    for (let id = 1; id <= 3; id++) {
       $unwrapOk($send(tx, { id, name: `job ${id}` }), undefined, (e) => "SendError { .. }");
     }
   } finally {

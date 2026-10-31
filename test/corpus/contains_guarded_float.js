@@ -10,7 +10,7 @@ function merge(values, into) {
   const borrow = $borrow(values, true);
   try {
     for (const v of borrow) {
-      if (!($borrow(into).indexOf(v) >= 0)) {
+      if ($borrow(into).indexOf(v) < 0) {
         $borrowMut(into).push(v);
       }
     }

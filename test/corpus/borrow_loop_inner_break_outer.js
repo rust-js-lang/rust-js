@@ -11,22 +11,19 @@ function borrowed(items, keep) {
   const borrow = $borrow(items, true);
   try {
     outer: for (const x of borrow) {
-      bb25: {
-        if (keep(x)) {
-          for (let j = 0; j < 3; j++) {
-            if (j === x) {
-              break bb25;
-            }
-            if ((j + x) >>> 0 > 8) {
-              break outer;
-            }
-            total = (total + j) >>> 0;
-          }
-          total = (total + 100) >>> 0;
-          continue;
-        }
+      if (!keep(x)) {
+        continue;
       }
-      continue;
+      for (let j = 0; j < 3; j++) {
+        if (j === x) {
+          continue outer;
+        }
+        if ((j + x) >>> 0 > 8) {
+          break outer;
+        }
+        total = (total + j) >>> 0;
+      }
+      total = (total + 100) >>> 0;
     }
   } finally {
     $unborrow(borrow);

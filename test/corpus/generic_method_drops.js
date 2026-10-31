@@ -42,11 +42,8 @@ function logStore_put(log, item, TDebug, dropT) {
 function logStore_putAll(log, items, dropI, dropIIntoIter) {
   const iter = $intoIter(items);
   try {
-    while (true) {
-      const item = $next(iter);
-      if (item == null) {
-        return;
-      }
+    let item;
+    while ((item = $next(iter)) != null) {
       log[0].push(item);
     }
   } finally {

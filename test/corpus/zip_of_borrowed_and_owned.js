@@ -26,11 +26,8 @@ function louds(items, by) {
   }
   const iter = $lazyZip(tmp, $closing($iter(by), $dropEach(loudDrop_drop)));
   try {
-    while (true) {
-      const value = $next(iter);
-      if (value == null) {
-        return;
-      }
+    let value;
+    while ((value = $next(iter)) != null) {
       const item = value[0];
       const other = value[1];
       item[0] = (item[0] + other[0]) >>> 0;

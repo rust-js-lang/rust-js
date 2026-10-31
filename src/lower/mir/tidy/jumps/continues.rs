@@ -383,34 +383,27 @@ fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>, written: &crate
 /// return;`, the `return` past a drop MIR shares, as it's written (ADR
 /// 0755).
 pub(in crate::lower::mir::tidy) fn jumps_past_blocks(stmts: &mut [Stmt]) {
-    fn rejump(stmts: &mut [Stmt], label: &str, jump: &StmtKind) {
-        // Nor a `return` in a loop, whose `break` of the block the loop's
-        // own way out may be (`blocks loops end`).
-        let unnamed = matches!(
-            jump,
-            StmtKind::Continue(None) | StmtKind::Break(None) | StmtKind::Return(_)
-        );
-        for stmt in stmts {
-            match &mut stmt.kind {
-                StmtKind::Break(Some(l)) if l == label => stmt.kind = jump.clone(),
-                StmtKind::If(_, a, b) => {
-                    rejump(a, label, jump);
-                    if let Some(b) = b {
-                        rejump(b, label, jump);
-                    }
-                }
-                StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. }
-                    if !unnamed =>
-                {
-                    rejump(body, label, jump)
-                }
-                StmtKind::Labeled(_, body) => rejump(body, label, jump),
-                StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
-                    rejump(a, label, jump);
-                    rejump(b, label, jump);
-                }
-                _ => {}
-            }
+    // A loop the program labeled: of a block in its turn, its `continue`
+    // after, each `break` of the block a loop inside it makes, `continue
+    // 'outer`'s, as written (#442).
+    for stmt in stmts.iter_mut() {
+        if let StmtKind::While {
+            label: Some(looped),
+            body,
+            ..
+        }
+        | StmtKind::ForOf {
+            label: Some(looped),
+            body,
+            ..
+        }
+        | StmtKind::For {
+            label: Some(looped),
+            body,
+            ..
+        } = &mut stmt.kind
+        {
+            named_continues(body, looped);
         }
     }
     for i in 0..stmts.len().saturating_sub(1) {
@@ -435,6 +428,96 @@ pub(in crate::lower::mir::tidy) fn jumps_past_blocks(stmts: &mut [Stmt]) {
                 drop_tail(body, &StmtKind::Break(Some(label.clone())));
             }
             rejump(body, &label, &jump);
+        }
+    }
+}
+
+/// Each `break label` of `stmts` the jump `jump`, `jumps_past_blocks`'.
+/// One of no label, or a `return`, not in a loop inside them, which it
+/// would leave, or whose `break` of the block the loop's own way out may be
+/// (`blocks loops end`).
+fn rejump(stmts: &mut [Stmt], label: &str, jump: &StmtKind) {
+    let unnamed = matches!(
+        jump,
+        StmtKind::Continue(None) | StmtKind::Break(None) | StmtKind::Return(_)
+    );
+    for stmt in stmts {
+        match &mut stmt.kind {
+            StmtKind::Break(Some(l)) if l == label => stmt.kind = jump.clone(),
+            StmtKind::If(_, a, b) => {
+                rejump(a, label, jump);
+                if let Some(b) = b {
+                    rejump(b, label, jump);
+                }
+            }
+            StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } if !unnamed => {
+                rejump(body, label, jump)
+            }
+            StmtKind::Labeled(_, body) => rejump(body, label, jump),
+            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                rejump(a, label, jump);
+                rejump(b, label, jump);
+            }
+            _ => {}
+        }
+    }
+}
+
+/// In the turn of loop `looped`, not a loop's inside it: each block MIR
+/// made followed by a `continue` of `looped`, `l: { .. for (..) { ..
+/// break l; } .. } continue;`, its `break l`s in a loop inside it
+/// `continue looped`, which goes on from the same place, as the program
+/// wrote `continue 'outer`; those of its own turn, `jumps_past_blocks`'
+/// `continue;` (#442).
+fn named_continues(stmts: &mut [Stmt], looped: &str) {
+    // Each loop in `stmts`, through what isn't one: its `break label`s,
+    // `continue looped`.
+    fn in_loops(stmts: &mut [Stmt], label: &str, looped: &str) {
+        for stmt in stmts {
+            match &mut stmt.kind {
+                StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
+                    rejump(body, label, &StmtKind::Continue(Some(looped.to_owned())))
+                }
+                StmtKind::If(_, a, b) => {
+                    in_loops(a, label, looped);
+                    if let Some(b) = b {
+                        in_loops(b, label, looped);
+                    }
+                }
+                StmtKind::Labeled(_, body) => in_loops(body, label, looped),
+                StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                    in_loops(a, label, looped);
+                    in_loops(b, label, looped);
+                }
+                _ => {}
+            }
+        }
+    }
+    for i in 0..stmts.len() {
+        let goes_on = matches!(
+            stmts.get(i + 1).map(|s| &s.kind),
+            Some(StmtKind::Continue(l)) if l.as_deref().is_none_or(|l| l == looped)
+        );
+        let written = !stmts[i].span.is_none();
+        match &mut stmts[i].kind {
+            StmtKind::Labeled(label, body) => {
+                if goes_on && !written && crate::lower::mir::is_block_label(label) {
+                    let label = label.clone();
+                    in_loops(body, &label, looped);
+                }
+                named_continues(body, looped);
+            }
+            StmtKind::If(_, a, b) => {
+                named_continues(a, looped);
+                if let Some(b) = b {
+                    named_continues(b, looped);
+                }
+            }
+            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                named_continues(a, looped);
+                named_continues(b, looped);
+            }
+            _ => {}
         }
     }
 }

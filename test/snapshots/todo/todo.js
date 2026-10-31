@@ -86,9 +86,7 @@ function render(state, view) {
   try {
     view.list.textContent = "";
     let left = 0;
-    const iter = s.todos.values();
-    let todo;
-    while ((todo = iter.next().value) != null) {
+    for (const todo of s.todos) {
       if (!todo.done) {
         left = (left + 1) | 0;
       }

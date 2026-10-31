@@ -134,7 +134,7 @@ pub(super) fn for_of(
     };
     // When it's done, the exit; else, the body, which in the other shape goes
     // on to the exit, out of the loop.
-    let (exit, mut inner, falls_out) = match &second.kind {
+    let (mut exit, mut inner, falls_out) = match &second.kind {
         StmtKind::If(test, then, None) if absent(test, item) && block.is_none() => (then.clone(), rest.to_vec(), false),
         StmtKind::If(test, then, Some(other)) if absent(test, item) && rest.is_empty() && block.is_none() => {
             (then.clone(), other.clone(), false)
@@ -144,6 +144,14 @@ pub(super) fn for_of(
     };
     if !exit.last().is_some_and(ends) || breaks(&inner, label.as_deref()) {
         return None;
+    }
+    // An exit that leaves by the loop's own `break`, `$unborrow(borrow);
+    // break;` once its drop is a `finally`'s: after the `for`, where it goes
+    // on anyway, no jump (#442).
+    if matches!(exit.last().map(|s| &s.kind), Some(StmtKind::Break(l)) if l.is_none() || l == label)
+        && !breaks(&exit[..exit.len() - 1], label.as_deref())
+    {
+        exit.pop();
     }
     // Going on to the exit where it ends: a `break`, which `unreachable`
     // drops after what leaves already, a `continue` say.

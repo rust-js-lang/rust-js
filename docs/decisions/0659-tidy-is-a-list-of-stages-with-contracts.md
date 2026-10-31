@@ -422,3 +422,51 @@ release's JS right. **The run is tidied as `loops` and then `unreachable`
 leave a body** (`looped_drops_of_made`), in both stages. Held by
 `test/corpus/borrow_loop_inner_break_outer.rs` against native Rust and
 the mutation `looped-drops-run-unreachable-kept` (`tidy/stages.ts`).
+
+## Amendment: the early "drop scopes" stage takes a loop MIR steps in a `try` (#442)
+
+The early stage takes only a loop whose step `loops` makes a `for` of
+(rd200). Its test read the loop after `dropped_at_each_exit` had made
+each `try { t = $next(iter); } catch (..) { drop; throw error; }` the
+assignment alone, and had no arm for that: every loop stepped by `$next`,
+`$rangeInclusiveNext` or an iterator's `next` was left to the late
+`scopes` stage, after `jumps` and `loops`, so its blocks stayed MIR's
+(`bb25:`) and its step `while ((x = $next(iter)) != null)`. **The step is
+read before, by `stepped`, of either form**, the one test of what the
+early stage takes. Taking those, three things had to hold as they did
+in the late stage:
+
+- **The loop's way out where it's done goes after the `try`** (`ended_exit`):
+  `$unborrow(borrow); return false;` as MIR leaves it is the loop's
+  `break` and, after the `try`, `return false;`, run after the drop as it
+  was, not `try { for (..) {..} return false; } finally { .. }`. Only a
+  way out that returns or throws, of no jump of its own, that reads
+  nothing the loop or the run declares.
+- **Its exit's own `break`, after the `for`, is nothing** (`loops.rs`'
+  `for_of`): the loop is left there anyway. Before, `looped_drops` popped
+  it after the run was tidied; now `loops` does wherever it makes a `for`,
+  the one place.
+- **What the run takes before it:** not an assignment the drop reads,
+  `iter = self` of `dropT?.(iter)`, which the `for` would take in; not,
+  first, what can't throw but the iterator, `let sum = 0;` stays before
+  the `try`; and early, back to the first `try` of the value's drop, past
+  what has no way out of its own (`escapes`), as MIR says it doesn't
+  unwind, its blocks' `break`s its own (`own_labels`): one `try` of the
+  scope, `try { $exchange(..); if (..) {..} for (..) {..} }
+  finally {..}`, the narrower run where that fails.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, each drop where it
+was, each value read where it was. Re-blessed: the corpus's
+`borrow_loop_inner_break_outer`, `channels`, `contains_guarded_float`,
+`dyn_fn_generic_drops`, `generic_method_drops`, `looped_drops_jumps`,
+`panic_in_std_bodies_drops`, `refused_drops_and_displays` (one `try` of
+`w`'s scope), `returned_closure_drops`, `slice_edit_drops`,
+`subscriptions`, `trait_param_drops`, `zip_of_borrowed_and_owned`, and
+the todo snapshot, each a `for` or a `while` test where MIR's step was;
+`test/lowering-drop-guards.test.ts`' guard's `for (const tail of tails)`.
+`docs/readability.txt` is blessed with them: `$iter` and
+`return;` fewer, no shape's share grown.
+
+Held by mutations `ended-exit-unmoved`, `run-reads-what-drop-reads`,
+`run-labels-unseen`, `wide-run-unextended`, `escapes-own-labels-unseen`,
+`leading-assignment-taken` (`tidy/unwinds.ts`) and `looped-drops-break-kept` (`tidy/loops.ts`).
