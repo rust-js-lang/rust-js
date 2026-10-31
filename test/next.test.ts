@@ -892,8 +892,9 @@ test("next build builds a Next.js app whose routes and components are Rust, rust
   expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain("handleClientScriptLoad(props(src));\n  initScriptLoader([props(src)]);");
   // next/web-vitals, next/offline, next/form and next/error.
   // next/navigation's router's experimental gesture push, where it has one.
-  // A function is never falsy: tested by its truth (ADR 0298).
-  expect(linkedJsx).toContain('const push = router.experimental_gesturePush;\n          if (push != null) {\n            push("/about", undefined);');
+  // A function is never falsy: tested by its truth (ADR 0298). Its trailing
+  // `None` is no argument, as a person leaves it out (ADR 0443, amended).
+  expect(linkedJsx).toContain('const push = router.experimental_gesturePush;\n          if (push != null) {\n            push("/about");');
   expect(linkedJsx).toContain("useReportWebVitals((metric) => {");
   expect(linkedJsx).toContain('<Form action="/search" className="search">\n      <input name="query" disabled={offline} />\n    </Form>');
   // Next.js's error page, `Error` as its docs import it, where the module reads no global `Error` (ADR 0352).
