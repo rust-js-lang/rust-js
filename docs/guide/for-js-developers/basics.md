@@ -1605,7 +1605,9 @@ copy of that `return` ([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-th
 in a block `{ .. }` where it declares a name. One whose arms give `true`
 and `false` is a `switch` too, `case "annotation-xml": .. return false;
 default: return true;`, as React DOM's isCustomElement writes it; a
-`matches!` is the one boolean it's written as ([ADR
+`matches!` is the one boolean it's written as; and one inside an `if`
+whose first arm does nothing, `"checked" => {}`, is `case "checked":
+break;`, its test not joined to the `if`'s ([ADR
 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md), amended). An arm with
 a guard is a case that tests it, where what Rust tries when the guard
 fails does nothing: each later arm that could match its constants is a

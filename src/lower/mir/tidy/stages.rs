@@ -431,7 +431,7 @@ pub(super) const STAGES: &[Stage] = &[
             // A chain's tests, where each is read in place now: `if (a) { if
             // (f(a)) { .. } }`, `if (a && f(a))`.
             pass("and tests", |b, h| {
-                bottom_up(b, &mut |s| and_tests(s, &h.written.conditions))
+                bottom_up(b, &mut |s| and_tests(s, &h.written.conditions, &h.written.switches))
             }),
             // A pattern's binding of a property by its name, read only by
             // the test after it and its first statement: read there (ADR

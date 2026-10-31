@@ -344,7 +344,7 @@ fn reads_a_getter(e: &Expr) -> bool {
 /// if (typeof url === "string") { return url; }` stays, but where its `s`
 /// breaks out to a label (`read_once_first`); nor where it would read a
 /// place twice that `a` doesn't test (`read_twice_apart`).
-pub(super) fn and_tests(stmts: &mut Vec<Stmt>, conditions: &[(js::Span, js::Span)]) {
+pub(super) fn and_tests(stmts: &mut Vec<Stmt>, conditions: &[(js::Span, js::Span)], switches: &[Switch]) {
     let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
     let mut first_reads = Vec::new();
     for (i, stmt) in stmts.iter_mut().enumerate() {
@@ -357,7 +357,10 @@ pub(super) fn and_tests(stmts: &mut Vec<Stmt>, conditions: &[(js::Span, js::Span
             continue;
         };
         let one = (conditions.iter()).any(|(first, then)| within(first, span) && within(then, inner.span));
-        if !one {
+        // Not a test of a `match` of constants, its `switch`'s, inside an
+        // `if` of its own, whose first arm does nothing, `case "checked":
+        // break;` (ADR 0629, rd133).
+        if !one || (switched(second, inner.span, switches) && !switched(test, span, switches)) {
             continue;
         }
         let again = |at: usize, name: &str| js::mentions_in(body, name) + js::mentions_in(&bound[at + 1..], name);

@@ -3,6 +3,25 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "switch-arm-test-joined-to-its-if",
+    breaks:
+      "a `match` of strings in an `if`, whose first arm does nothing, has that arm's test joined to the `if`'s, `&& key !== \"checked\"`, the rest an `if` chain, not its `switch` (rd133, updateProperties)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "        if !one || (switched(second, inner.span, switches) && !switched(test, span, switches)) {\n",
+    replace: "        if !one {\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_of_empty_first_arms_in_an_if.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "switch-arm-test-in-its-own-switch-kept-apart",
+    breaks:
+      "an `Option`'s presence test and its `switch`'s arm, both the `match`'s, are kept apart, a label of MIR's block left, `bb11:` (lowering-switch-symbols)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: " && !switched(test, span, switches)) {\n",
+    replace: ") {\n",
+    tests: ["test/lowering-switch-symbols.test.ts"],
+  },
+  {
     name: "alike-branches-conditional",
     breaks:
       'branches that give one value, of a test that does nothing, are a conditional of it twice, `n > 3 ? 1.5 : 1.5`, `r.TAG === "Ok" ? r._0 : r._0`',

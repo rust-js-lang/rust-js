@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1402
-lines	138290
+files	1403
+lines	138351
 temporaries	1	0.1
 labeled blocks	14	1
 while (true)	124	9
-$iter	1178	85.2
+$iter	1178	85.1
 Iterator.from	116	8.4
 return;	150	10.8
-renamed x$1	8571	619.8
+renamed x$1	8571	619.5
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1976	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	206	0	0	0	6	0	0	35
@@ -1187,6 +1187,7 @@ test/corpus/switch_guard_skips_its_case.js	62	0	0	0	0	0	0	0
 test/corpus/switch_guard_to_default.js	89	0	0	0	0	0	0	2
 test/corpus/switch_guards_apart.js	101	0	0	0	0	0	0	3
 test/corpus/switch_guards_fall_twice.js	92	0	0	0	0	0	0	2
+test/corpus/switch_of_empty_first_arms_in_an_if.js	61	0	0	0	0	0	0	0
 test/corpus/switch_option_text.js	67	0	0	0	0	0	0	0
 test/corpus/switch_tail_continues.js	31	0	0	0	0	0	0	0
 test/corpus/switch_text_guard_falls.js	81	0	0	0	0	0	0	0

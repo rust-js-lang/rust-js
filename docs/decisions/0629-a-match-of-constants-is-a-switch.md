@@ -937,3 +937,20 @@ never counts (its `match` is from the macro's expansion), stays the
 boolean it's written as. Case N: the same tests, in the same order, give
 the same value. Held by `match_of_strings_to_bools_is_a_switch.rs`
 (native-compared) and the mutation `switch-of-booleans-folded`.
+
+## Amended (2026-10-31): a `switch` inside an `if` whose first arm does nothing (rd133)
+
+React DOM's updateProperties writes, inside `if (hasOwnProperty.call(..)
+&& lastProp != null)`, `switch (propKey) { case 'checked': break; case
+'value': // .. break; case 'defaultValue': .. default: .. }`. The port's
+`match key.as_str() { "checked" => {}, .. }` printed `if (.. && last !=
+null && key !== "checked") { if (key === "value") { .. } else if .. }`:
+tidy's `and_tests` joined the first arm's test, which MIR nests in the
+`if`'s, to that `if`'s condition before `switches` saw the chain. **An
+`if`'s inner test that's a written `switch`'s arm (`switched`) isn't
+joined to an outer test that isn't one of its own**; one that is, an
+`Option`'s presence its `Some(A)` arm tests first, is joined as before.
+Case N: the same tests, in the same order. Held by
+`switch_of_empty_first_arms_in_an_if.rs` (native-compared) and the
+mutations `switch-arm-test-joined-to-its-if` and
+`switch-arm-test-in-its-own-switch-kept-apart`.

@@ -3,6 +3,7 @@
 import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
+
   {
     name: "in-place-logical-returns-off",
     breaks:
@@ -57,7 +58,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`if (a) { if (b) { s } }` of one condition stays nested, not `if (a && b)`",
     file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("and tests", |b, h| {\n                bottom_up(b, &mut |s| and_tests(s, &h.written.conditions))\n            }),\n',
+    find: '            pass("and tests", |b, h| {\n                bottom_up(b, &mut |s| and_tests(s, &h.written.conditions, &h.written.switches))\n            }),\n',
     replace: "",
     tests: [
       "test/lowering-branches.test.ts",
