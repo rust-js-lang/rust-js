@@ -589,14 +589,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 return Ok(Value::Branch(tried.clone(), *ty));
             }
-            // A place found, in units, whose `None` is `-1`; a strip's
-            // `Option` read as its test (ADR 0642).
+            // An index found, in a string's units or a slice's, whose `None`
+            // is `-1` (ADR 0642, rd316).
             Rvalue::Discriminant(place)
-                if place.projection.is_empty() && state.facts.offsets().in_units(place.local) =>
+                if place.projection.is_empty() && state.facts.none_is_minus_one(place.local) =>
             {
                 let found = self.mir_place(state, *place, span, out)?;
                 return Ok(Value::Tested(crate::lower::std_types::text::found(found)));
             }
+            // A strip's `Option` read as its test (ADR 0642).
             Rvalue::Discriminant(place)
                 if place.projection.is_empty()
                     && let Some((test, ..)) = state.cuts.get(&place.local) =>

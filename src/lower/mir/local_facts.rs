@@ -78,6 +78,9 @@ pub(super) struct LocalFacts<'m, 'tcx> {
     /// Each block whose call is an integer's `try_from` whose `Result` is
     /// only tested and its `Ok` taken (`mir_tried_ints`).
     tried_ints: HashSet<BasicBlock>,
+    /// Each slice's `position` whose `Option` is only tested and its index
+    /// taken, and that `Option` (`mir_found_indexes`, rd316).
+    found_indexes: positions::FoundIndexes,
     /// Each shared reference whose referent Rust can't change while the
     /// body runs (`mir_lasting`).
     lasting: HashSet<Local>,
@@ -155,6 +158,26 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
     /// it whole: its range test and the number, `if (n < 0)` (#366).
     pub(super) fn tried_int(&self, block: BasicBlock) -> bool {
         self.tried_ints.contains(&block)
+    }
+
+    /// Whether the call that ends `block` is a slice's `position` whose
+    /// `Option` is only tested and its index taken: JS's own search of
+    /// the array, `indexOf` or `findIndex` (rd316).
+    pub(super) fn found_index(&self, block: BasicBlock) -> bool {
+        self.found_indexes.call(block)
+    }
+
+    /// Whether the call that ends `block` is the `iter()` of a slice such
+    /// a `position` searches: the array itself (rd316).
+    pub(super) fn found_index_items(&self, block: BasicBlock) -> bool {
+        self.found_indexes.items(block)
+    }
+
+    /// Whether `local` is an `Option` of an index whose `None` is `-1`,
+    /// as JS's searches give it: a place found in a string, in its units
+    /// (ADR 0642), or a slice's `position`'s (rd316).
+    pub(super) fn none_is_minus_one(&self, local: Local) -> bool {
+        self.offsets.in_units(local) || self.found_indexes.holds(local)
     }
 
     pub(super) fn let_spans(&self) -> &HashMap<Local, js::Span> {
@@ -318,6 +341,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             wholes: self.mir_wholes(body, locals),
             made_pointers: self.mir_made_pointers(body),
             tried_ints: self.mir_tried_ints(body),
+            found_indexes: self.mir_found_indexes(body),
             lasting: self.mir_lasting(body),
         };
         (facts, bindings)

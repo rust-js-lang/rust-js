@@ -12,34 +12,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// an integer's `try_from` whose `Result`, written there alone, is read
     /// only by its discriminant and its `Ok`'s number.
     pub(super) fn mir_tried_ints(&self, body: &mir::Body<'tcx>) -> HashSet<BasicBlock> {
-        struct Reads(Local, bool);
-        impl<'tcx> Visitor<'tcx> for Reads {
-            fn visit_place(&mut self, place: &Place<'tcx>, context: PlaceContext, _: mir::Location) {
-                if place.local != self.0 {
-                    return;
-                }
-                self.1 &= match (context, place.projection.as_slice()) {
-                    (PlaceContext::NonUse(_) | PlaceContext::MutatingUse(MutatingUseContext::Call), _) => true,
-                    // Its discriminant, or a `let`'s mention of it.
-                    (
-                        PlaceContext::NonMutatingUse(
-                            NonMutatingUseContext::Inspect | NonMutatingUseContext::PlaceMention,
-                        ),
-                        [],
-                    ) => true,
-                    (
-                        PlaceContext::NonMutatingUse(NonMutatingUseContext::Copy | NonMutatingUseContext::Move),
-                        [PlaceElem::Downcast(_, variant), PlaceElem::Field(..)],
-                    ) => variant.as_u32() == 0,
-                    _ => false,
-                };
-            }
-        }
-        let calls = |local: Local| {
-            (body.basic_blocks.iter())
-                .filter(|data| matches!(&data.terminator().kind, TerminatorKind::Call { destination, .. } if destination.local == local))
-                .count()
-        };
         (body.basic_blocks.iter_enumerated())
             .filter(|(_, data)| {
                 let TerminatorKind::Call { func, destination, .. } = &data.terminator().kind else {
@@ -48,13 +20,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let tried = fn_def(func.ty(&body.local_decls, self.tcx))
                     .and_then(|(def_id, args)| self.recognition().classify(def_id, args))
                     .is_some_and(|known| matches!(known, Std::TryFromInt { .. }));
-                // Not the return place, which `return` reads whole.
-                let local = destination.local;
-                tried && destination.projection.is_empty() && local != mir::RETURN_PLACE && calls(local) == 1 && {
-                    let mut reads = Reads(local, true);
-                    reads.visit_body(body);
-                    reads.1
-                }
+                tried && destination.projection.is_empty() && tested_and_taken(body, destination.local, 0)
             })
             .map(|(block, _)| block)
             .collect()

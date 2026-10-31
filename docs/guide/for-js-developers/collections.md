@@ -140,6 +140,19 @@ pub fn position(items: &[Item], name: &str) -> Option<usize> {
     items.iter().position(|item| item.name == name)
 }
 
+pub fn remove_named(items: &mut Vec<Item>, name: &str) {
+    if let Some(index) = items.iter().position(|item| item.name == name) {
+        items.remove(index);
+    }
+}
+
+pub fn move_to_end(xs: &mut Vec<i32>, x: i32) {
+    if let Some(index) = xs.iter().position(|&y| y == x) {
+        xs.remove(index);
+    }
+    xs.push(x);
+}
+
 pub fn any_cheap(items: &[Item]) -> bool {
     items.iter().any(|item| item.price < 1.0)
 }
@@ -180,6 +193,21 @@ export function position(items, name) {
   return $position(items, (item) => item.name === name);
 }
 
+export function removeNamed(items, name) {
+  const index = items.findIndex((item) => item.name === name);
+  if (index !== -1) {
+    items.splice(index, 1);
+  }
+}
+
+export function moveToEnd(xs, x) {
+  const index = xs.indexOf(x);
+  if (index !== -1) {
+    xs.splice(index, 1);
+  }
+  xs.push(x);
+}
+
 export function anyCheap(items) {
   return items.some((item) => item.price < 1);
 }
@@ -203,7 +231,7 @@ export function hasFloat(xs, x) {
 | `filter` | `iter().filter(..).collect()` |
 | `reduce` | `iter().fold(init, ..)`; a total is `sum()` |
 | `find` | `iter().find(..)`, an `Option` |
-| `findIndex` | `iter().position(..)`, an `Option`, never `-1` |
+| `findIndex`, `indexOf` | `iter().position(..)`, an `Option`, never `-1`: where the function only tests it and reads its index, JS's own, `-1` its `None`, `indexOf(x)` of a test by `===`, `Rc::ptr_eq` too; one it gives back is `$position`'s, `undefined` its `None` ([ADR 1040](../../decisions/1040-a-position-tested-is-jss-own-search.md)) |
 | `some`, `every` | `iter().any(..)`, `iter().all(..)` |
 | `includes` | `contains(&x)`, of an object equal only to itself too, a DOM node's ([ADR 1016](../../decisions/1016-a-webapi-object-is-equal-only-to-itself.md)); of floats, which `==` finds no `NaN` of, `indexOf(x) >= 0` ([ADR 0966](../../decisions/0966-a-floats-order-is-its-comparison.md)) |
 | `flat` | `iter().flatten()` |
@@ -217,7 +245,8 @@ export function hasFloat(xs, x) {
 - `iter()` gives references to the items, `&Item`; `into_iter()` takes the
   `Vec` and gives the items themselves.
 - `find` and `position` give an `Option`, so there's no `undefined` or `-1`
-  to forget to check.
+  to forget to check. The index `position` finds is below the length
+  till the array changes, so `remove(index)` of it is `splice(index, 1)`.
 
 ## Changing an array
 

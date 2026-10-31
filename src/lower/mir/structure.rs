@@ -644,6 +644,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     {
                         Value::Expr(crate::lower::binding_calls::held_read(e))
                     }
+                    // A slice's `position` only tested, JS's own search of
+                    // the array, and that array, its `iter()`'s (ADR 1040).
+                    Value::Expr(e) if state.facts.found_index(block) => Value::Expr(self.found_index(e, *fn_span)?),
+                    Value::Expr(e) if state.facts.found_index_items(block) => {
+                        Value::Expr(self.found_index_items(e, *fn_span)?)
+                    }
                     // An iterator its owner drops, held (#206).
                     Value::Expr(e) if self.holds_dropped_iterator(state, *destination) => {
                         Value::Expr(Expr::call_helper("$held", vec![e]))

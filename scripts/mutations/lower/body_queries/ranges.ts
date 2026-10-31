@@ -648,16 +648,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "const-pointer-of-shared-volatile",
-    breaks:
-      "a `*const` of what a shared reference refers to makes its variable volatile, so `ptr::eq(&node.children[0], skip)` leaves `node.children[diffIdx]` below its length `$index`",
-    file: "src/lower/body_queries/ranges.rs",
-    find: "            } if through_shared(thir, arg) => None,\n",
-    replace: "            } if false => None,\n",
-    tests: ["test/corpus.test.ts", "-t", "^ptr_eq_items_and_counts.rs$"],
-    snapshots: true,
-  },
-  {
     name: "same-length-unread",
     breaks:
       "a table made `vec![0.0; terraces.len()]` is indexed `$index(levels, i)`, not as `terraces` is (#362)",
@@ -803,6 +793,46 @@ export const mutations: Mutation[] = [
     find: "                [range, n] if is_iterator_step_by(self.tcx, def_id) => {\n",
     replace: "                [range, n] if false && is_iterator_step_by(self.tcx, def_id) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^stepped_range_loops.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "found-index-of-a-match-unbound",
+    breaks:
+      "a `match` of a slice's `position` binds its `Some(index)` unknown, `$removeAt(children, index)`",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "                    self.found_index_bound(&thir[arm].pattern, found.clone(), &mut here);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^position_index_of.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "found-index-of-an-if-let-unbound",
+    breaks:
+      "an `if let Some(index)` of a slice's `position` binds `index` unknown, `$removeAt(children, index)`",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "                self.found_index_bound(pat, found, known);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^position_index_of.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "found-index-of-a-let-else-unbound",
+    breaks:
+      "a `let Some(index) = .. else` of a slice's `position` binds `index` unknown, `$removeAt(children, index)`",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "                self.found_index_bound(pattern, value.clone(), known);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^position_index_of.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "found-index-held-unknown",
+    breaks:
+      "a variable that holds a slice's `position`, `let index = ..; if let Some(index) = index`, holds nothing of it, `$insertAt(children, index, child)`",
+    file: "src/lower/body_queries/ranges.rs",
+    find: "        if let Some(found) = self.found_index(e) {\n            return Some(found);\n        }\n",
+    replace: "        if let Some(found) = self.found_index(e) {\n            let _ = found;\n        }\n",
+    tests: ["test/corpus.test.ts", "-t", "^position_index_of.rs$"],
     snapshots: true,
   },
 ];

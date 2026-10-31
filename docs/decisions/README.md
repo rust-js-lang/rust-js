@@ -458,7 +458,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0573 Every Rust name is camelCase in JS](0573-every-rust-name-is-camel-case-in-js.md) *(amended by 0678: a parameter's leading `_` isn't in its JS name; extended by 0855: a parameter's `#[rust_js::name]`)*
 - [0574 What React's scheduler heap asks: a nullable result, an object's `Some`, a runtime that loads anywhere](0574-what-reacts-scheduler-heap-asks.md) *(amended: a nullable result is declared `T | null`)*
 - [0575 An `if` keeps the `else` it's written with, and a tail `if` of two values is a conditional](0575-an-if-keeps-its-else-and-a-tail-if-is-a-conditional.md) *(amended: `undefined` beside `null` is a value, `t ? undefined : null`)*
-- [0576 What a body's integers can be: an index in bounds, an operator that can't wrap, a swap JS's own](0576-what-a-bodys-integers-can-be.md) *(extended by 0720: a labeled block's `break` and a named constant; extended by 0847: which `OnceCell` is still empty; amended: a `*const` of a shared reference's changes nothing, a `String`'s text is read; amended: a `Vec`'s `remove` and `insert` in bounds are JS's own)*
+- [0576 What a body's integers can be: an index in bounds, an operator that can't wrap, a swap JS's own](0576-what-a-bodys-integers-can-be.md) *(extended by 0720: a labeled block's `break` and a named constant; extended by 0847: which `OnceCell` is still empty; amended: a `*const` of a shared reference's changes nothing, a `String`'s text is read; amended: a `Vec`'s `remove` and `insert` in bounds are JS's own; extended by 1040: the index a `position` finds)*
 - [0577 A function only calls reach is what its calls give it; a `push` and a `pop` change a length by one](0577-a-function-only-calls-reach.md)
 - [0578 A nullable result is `null` where it's written; an item's place known in bounds is unchecked](0578-a-nullable-result-where-its-written.md) *(amended by 0638: a nullable function's call is `null` already)*
 - [0579 A thread-local is named as its module's variable](0579-a-thread-local-is-named-as-a-variable.md) *(amended by 0922: an exported one keeps its Rust name only beside another export)*
@@ -525,7 +525,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0639 `concat_text` of any value is what may throw; whether a call threw is `try`](0639-concat-text-of-any-value-may-throw.md) *(amended: its `"" +` goes after text joined already, and after a `String` appended to)*
 - [0640 A TypeScript rest parameter is a variadic binding of a tuple](0640-a-rest-parameter-is-a-tuple.md) *(extended by 0667: rest arguments as a value; by 0718: a typed array spread, and a rest of `number` of any JS number)*
 - [0641 A `concat!` of literals is its pieces joined by `+`](0641-concat-is-its-pieces-joined-by-plus.md) *(amended: a format argument written across lines may break its template's line after `${`)*
-- [0642 A place found in a string is JS's: `indexOf`, `slice`, `startsWith`](0642-a-place-found-in-a-string-is-js-units.md)
+- [0642 A place found in a string is JS's: `indexOf`, `slice`, `startsWith`](0642-a-place-found-in-a-string-is-js-units.md) *(extended by 1040: a slice's `position`, `-1` its `None`)*
 - [0643 `unwrap()` of a throwing JS call is the call](0643-unwrap-of-a-throwing-call-is-the-call.md) *(extended by 0747: of the call each branch makes)*
 - [0644 A function whose result is a throwing call's `Result` is a throwing function](0644-a-function-of-a-throwing-calls-result-throws.md)
 - [0645 `js::is_defined` of a static is given the static itself](0645-is-defined-of-a-static-is-of-the-static.md) *(amended by 0647: the static isn't read)*
@@ -750,7 +750,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0963 A host's extended method is the method, and a union's number is the wider of its name's](0963-a-hosts-extended-method-is-the-method.md) *(amended: `scheduler.yield(options)`, as Chrome first shipped it)*
 - [0964 `js::SymbolFor` itself is `Symbol.for`, a function a host may lack](0964-symbol-for-is-a-function-of-its-own.md)
 - [0965 A shared function, an `Rc<dyn Fn>`, is of any shape, the function itself](0965-a-shared-function-is-of-any-shape.md)
-- [0966 A float's `partial_cmp` against an `Ordering` is its comparison, and `contains` of floats `indexOf`](0966-a-floats-order-is-its-comparison.md)
+- [0966 A float's `partial_cmp` against an `Ordering` is its comparison, and `contains` of floats `indexOf`](0966-a-floats-order-is-its-comparison.md) *(its `position` decided by 1040)*
 - [0967 An object spread, a splice and a set by any key](0967-an-object-spread-a-splice-and-a-set-by-any-key.md) *(amended: `js::array::join` of any values; amended: `js::array::splice` takes numbers; amended: a `Dict` spread, and a tuple of them in order; amended: an `f64` is a key; amended: a spread of `None` written is `{}`, rd210)*
 - [0968 Two places set the same value are one assignment, `a = b = v`](0968-two-places-set-the-same-value-are-one-assignment.md) *(superseded: reverted, two statements as written)*
 - [0969 A variable's value of a chain of arms is the chain, every arm its own](0969-a-variables-value-of-a-chain-of-arms-is-the-chain.md)
@@ -821,6 +821,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1037 A module's namespace is a unit struct of its functions](1037-a-module-namespace-is-a-unit-struct-of-its-functions.md) *(rd292; amended: a method that only passes its parameters on is that function, re-exported; its import named by its `use`, rd292b)*
 - [1038 A trait of classes' method that gives a field is that field](1038-a-trait-of-classes-method-that-gives-a-field-is-that-field.md) *(rd304)*
 - [1039 An untagged enum's variant may hold another untagged enum](1039-an-untagged-enum-may-hold-another.md) *(rd305)*
+- [1040 A `position` only tested is JS's own search: `indexOf`, `findIndex`, `-1` its `None`](1040-a-position-tested-is-jss-own-search.md) *(rd316)*
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md) *(amended: a closure's handle on itself is its own name)*
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

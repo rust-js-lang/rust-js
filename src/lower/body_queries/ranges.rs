@@ -19,17 +19,20 @@ use rustc_middle::ty::TypeVisitableExt;
 
 mod cells;
 mod empty;
+mod found;
 mod known;
 mod narrowing;
 mod present;
 mod reads;
 mod tables;
+mod volatile;
 
 use cells::reads_a_cell;
 use known::{Below, ITEM, Known, Range, VALUE, by_value, either};
 pub(in crate::lower) use present::present_item_of_sized;
 use reads::{calls, pure, read_vars};
 use tables::chosen;
+use volatile::volatile;
 
 /// A `Vec` or a slice, by the variable it's in and the fields to it.
 type Slice = (Vec<usize>, LocalVarId);
@@ -281,38 +284,6 @@ impl Walk<'_, '_> {
                 .collect(),
             kept_casts: (self.casts.iter()).filter(|&(_, &ok)| ok).map(|(&id, _)| id).collect(),
             set_empty: (self.sets.iter()).filter(|&(_, &ok)| ok).map(|(&id, _)| id).collect(),
-        }
-    }
-}
-
-/// The variables a raw pointer is made of, which it may change where the
-/// walk doesn't see: not a `*const` to what a shared reference refers to,
-/// `ptr::eq(&node.children[0], skip)`'s, which nothing may change through it
-/// but a cell, whose change is a call the walk sees, `borrow_mut()`.
-fn volatile(thir: &Thir<'_>) -> HashSet<LocalVarId> {
-    (thir.exprs.iter())
-        .filter_map(|expr| match expr.kind {
-            ExprKind::RawBorrow {
-                mutability: ty::Mutability::Not,
-                arg,
-            } if through_shared(thir, arg) => None,
-            ExprKind::RawBorrow { arg, .. } => root_var(thir, arg),
-            _ => None,
-        })
-        .collect()
-}
-
-/// Whether a place is reached through a shared reference, `*r` of an `&T`,
-/// on the way to its variable.
-fn through_shared(thir: &Thir<'_>, mut e: ExprId) -> bool {
-    loop {
-        e = strip(thir, e);
-        match thir[e].kind {
-            ExprKind::Deref { arg } if matches!(thir[arg].ty.kind(), ty::Ref(_, _, ty::Mutability::Not)) => {
-                return true;
-            }
-            ExprKind::Field { lhs, .. } | ExprKind::Index { lhs, .. } | ExprKind::Deref { arg: lhs } => e = lhs,
-            _ => return false,
         }
     }
 }
@@ -617,11 +588,12 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                     self.walk_for(for_loop, known);
                     return None;
                 }
-                self.expr(scrutinee, known);
+                let found = self.expr(scrutinee, known);
                 let before = known.take();
                 for &arm in arms.iter() {
                     let mut here = before.clone();
                     self.forget_bound(&thir[arm].pattern, &mut here);
+                    self.found_index_bound(&thir[arm].pattern, found.clone(), &mut here);
                     if let Some(guard) = thir[arm].guard {
                         self.expr(guard, &mut here);
                     }
@@ -631,8 +603,9 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 top()
             }
             ExprKind::Let { expr, ref pat } => {
-                self.expr(expr, known);
+                let found = self.expr(expr, known);
                 self.forget_bound(pat, known);
+                self.found_index_bound(pat, found, known);
                 None
             }
             ExprKind::LogicalOp { op, lhs, rhs } => {
@@ -839,6 +812,10 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         if !views && let Some(k) = known.as_mut() {
             k.cells_changed(None);
         }
+        // A slice's `position`, of what it finds (rd316).
+        if let Some(found) = self.found_index(e) {
+            return Some(found);
+        }
         match asked {
             // Its indexes where it's called, the length as it was.
             Some((SliceLength::Index | SliceLength::Swap | SliceLength::SwapRemove | SliceLength::Remove, items)) => {
@@ -1041,6 +1018,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                     _ => Vec::new(),
                 };
                 self.forget_bound(pattern, known);
+                self.found_index_bound(pattern, value.clone(), known);
                 if let PatKind::Binding {
                     var,
                     ty,

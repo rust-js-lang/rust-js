@@ -3,6 +3,44 @@
 
 use super::*;
 
+/// Whether `local`, an enum, is written once, by the call that ends a
+/// block, and read only as its test and its `variant`'s payload: by its
+/// discriminant, a `let`'s mention of it, and a copy of the payload. Not
+/// the return place, which `return` reads whole. So JS may hold it as the
+/// call's own answer, an integer's `try_from`'s number (#366), a
+/// `position`'s index whose `None` is `-1` (rd316).
+pub(super) fn tested_and_taken(body: &mir::Body<'_>, local: Local, variant: u32) -> bool {
+    struct Reads(Local, u32, bool);
+    impl<'tcx> Visitor<'tcx> for Reads {
+        fn visit_place(&mut self, place: &Place<'tcx>, context: PlaceContext, _: mir::Location) {
+            if place.local != self.0 {
+                return;
+            }
+            self.2 &= match (context, place.projection.as_slice()) {
+                (PlaceContext::NonUse(_) | PlaceContext::MutatingUse(MutatingUseContext::Call), _) => true,
+                // Its discriminant, or a `let`'s mention of it.
+                (
+                    PlaceContext::NonMutatingUse(NonMutatingUseContext::Inspect | NonMutatingUseContext::PlaceMention),
+                    [],
+                ) => true,
+                (
+                    PlaceContext::NonMutatingUse(NonMutatingUseContext::Copy | NonMutatingUseContext::Move),
+                    [PlaceElem::Downcast(_, variant), PlaceElem::Field(..)],
+                ) => variant.as_u32() == self.1,
+                _ => false,
+            };
+        }
+    }
+    let calls = (body.basic_blocks.iter())
+        .filter(|data| matches!(&data.terminator().kind, TerminatorKind::Call { destination, .. } if destination.local == local))
+        .count();
+    local != mir::RETURN_PLACE && calls == 1 && {
+        let mut reads = Reads(local, variant, true);
+        reads.visit_body(body);
+        reads.2
+    }
+}
+
 /// Whether `local` is assigned once each way through `body`, as a `match`'s
 /// arms each assign what it gives: no assignment goes on to another, nor to
 /// itself again, as one in a loop would.

@@ -1,6 +1,6 @@
 # 0966. A float's `partial_cmp` against an `Ordering` is its comparison, and `contains` of floats `indexOf`
 
-Status: Accepted. Extends [0371](0371-tests-and-names-as-written.md)'s turned
+Status: Accepted; its `position` decided by [1040](1040-a-position-tested-is-jss-own-search.md). Extends [0371](0371-tests-and-names-as-written.md)'s turned
 comparisons and [0053](0053-partial-eq.md)'s `contains` to what
 React's test selectors write.
 
@@ -54,6 +54,7 @@ target)`.
 `position(|h| Rc::ptr_eq(h, x))` then `remove(index)` stays `$position`
 and `$removeAt`: upstream's `indexOf` gives `-1` where `position` gives
 `None`, `undefined`, and `$position`'s subject may be an iterator, not an
-array. A pair read from an array index, `stack[index][0]` and
+array. (Decided by [1040](1040-a-position-tested-is-jss-own-search.md):
+one only tested is `indexOf`, `-1` its `None`, and `splice`.) A pair read from an array index, `stack[index][0]` and
 `stack[index][1]`, where a `let (a, b) = stack[index].clone()` is
 destructured elsewhere, is left too.

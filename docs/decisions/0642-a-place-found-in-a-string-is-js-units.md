@@ -1,6 +1,6 @@
 # 0642. A place found in a string is JS's: `indexOf`, `slice`, `startsWith`
 
-Status: Accepted. Amends [0138](0138-string-byte-counts.md), whose `find`,
+Status: Accepted; extended by [1040](1040-a-position-tested-is-jss-own-search.md), a slice's `position` only tested, `-1` its `None` too. Amends [0138](0138-string-byte-counts.md), whose `find`,
 slices, `len()` and `strip_prefix` were helpers that count UTF-8 bytes
 wherever they're written, and [0247](0247-js-string-methods.md), whose
 `js::string` is now for JS's own indexes alone.

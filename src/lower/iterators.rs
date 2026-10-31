@@ -359,7 +359,7 @@ pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, p
 
 /// The value `(p) => p === value` or `(p) => value === p` looks for, if
 /// it doesn't depend on `p` and reads the same however often it's read.
-fn sought(test: &Expr) -> Option<Expr> {
+pub(in crate::lower) fn sought(test: &Expr) -> Option<Expr> {
     let js::ExprKind::Arrow(params, body) = &test.kind else {
         return None;
     };
@@ -717,7 +717,7 @@ pub(in crate::lower) fn keys_in_source(e: &Expr) -> Option<&Expr> {
 
 /// What `it`, an iterator made here of an array, `$iter(v)`, steps: `v`,
 /// all of it left.
-pub(super) fn fresh_iter_source(it: &Expr) -> Option<&Expr> {
+pub(in crate::lower) fn fresh_iter_source(it: &Expr) -> Option<&Expr> {
     match &it.kind {
         js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$iter") && args.len() == 1 => args.first(),
         _ => None,

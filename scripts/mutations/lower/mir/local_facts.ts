@@ -248,4 +248,13 @@ export const mutations: Mutation[] = [
       "^field_functions_called_after_arguments.rs$",
     ],
   },
+  {
+    name: "found-index-none-null",
+    breaks:
+      "a slice's `position` searched by `indexOf` is tested `index != null`, its `-1` taken for `Some`, so `children.splice(-1, 1)` removes the last",
+    file: "src/lower/mir/local_facts.rs",
+    find: "        self.offsets.in_units(local) || self.found_indexes.holds(local)\n",
+    replace: "        self.offsets.in_units(local)\n",
+    tests: ["test/corpus.test.ts", "-t", "^position_index_of.rs$"],
+  },
 ];

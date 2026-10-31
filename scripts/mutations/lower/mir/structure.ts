@@ -525,4 +525,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^option_bool_exact.rs$"],
     snapshots: true,
   },
+  {
+    name: "found-index-items-stepped",
+    breaks:
+      "the `iter()` a `position` searches is `$iter(children)`, which has no `indexOf`, a `TypeError`",
+    file: "src/lower/mir/structure.rs",
+    find: "                    Value::Expr(e) if state.facts.found_index_items(block) => {\n",
+    replace: "                    Value::Expr(e) if false && state.facts.found_index_items(block) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^position_index_of.rs$"],
+  },
 ];

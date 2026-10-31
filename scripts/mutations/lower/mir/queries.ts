@@ -3,6 +3,34 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "tested-and-taken-returned",
+    breaks:
+      "an `Option` or `Result` given back whole is taken for one only tested: a `try_from`'s `return result;` of nothing made (#366), a `position`'s `-1` given back as `None` (rd316)",
+    file: "src/lower/mir/queries.rs",
+    find: "    local != mir::RETURN_PLACE && calls == 1 && {\n",
+    replace: "    calls == 1 && {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(try_from_int_tested|position_index_of).rs$"],
+  },
+  {
+    name: "tested-and-taken-let-mention-unknown",
+    breaks:
+      "a `let Ok(n) = u8::try_from(i) else { .. }` is `$tryFromInt`, and a `let Some(i) = xs.iter().position(f) else { .. }` `$position`, as the `let`'s mention of its value was taken for a read of it whole (#366, rd316)",
+    file: "src/lower/mir/queries.rs",
+    find: "NonMutatingUseContext::Inspect | NonMutatingUseContext::PlaceMention",
+    replace: "NonMutatingUseContext::Inspect",
+    tests: ["test/corpus.test.ts", "-t", "^(try_from_int_tested|position_index_of).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "tested-and-taken-other-variant-read",
+    breaks:
+      'a `try_from` whose error is read, `Err(e) => format!("{e}")`, is taken for one only tested, its error never made (#366)',
+    file: "src/lower/mir/queries.rs",
+    find: "                ) => variant.as_u32() == self.1,\n",
+    replace: "                ) => true,\n",
+    tests: ["test/corpus.test.ts", "-t", "^try_from_int_tested.rs$"],
+  },
+  {
     name: "mir-promoted-const-unseen",
     breaks:
       "a promoted `&HEADERS` is the constant's whole value, written where it's read, not `HEADERS[0]`",
