@@ -10,7 +10,9 @@
 // which MIR turns `if (!c) { rest }`, as written, React's findAllNodes'
 // `if (isHiddenSubtree(node)) { continue; }`, of a rest that shadows a
 // name the arm declares before it too. Where a value's drop follows the `if`,
-// the `continue` stays MIR's: the turn doesn't end after the branch.
+// the `continue` stays MIR's: the turn doesn't end after the branch. A
+// loop a branch of the function's last `if` ends with, React DOM's
+// warnForBlockInsideInline's in its `if (__DEV__)`, keeps its `break`s too.
 struct Noisy(i32);
 
 impl Drop for Noisy {
@@ -139,6 +141,29 @@ fn dropped_after(xs: &[i32]) {
     }
 }
 
+fn in_dev(xs: &[i32], dev: bool, out: &mut Vec<i32>) {
+    if dev {
+        let mut next = xs.first().copied();
+        while let Some(x) = next {
+            if x > 3 {
+                out.push(x);
+                break;
+            }
+            if x < 0 {
+                break;
+            }
+            next = xs.get(x as usize).copied();
+        }
+    } else {
+        for &x in xs {
+            if x == 0 {
+                break;
+            }
+            out.push(-x);
+        }
+    }
+}
+
 fn main() {
     for queue in [vec![7, 1, 2, 3, -2, 0, 0, 8, -20, 9], vec![1, 0, 0, 6, -11, 5], vec![-1, 2, 3, 4]] {
         let (mut queue, mut log) = (queue, Vec::new());
@@ -156,4 +181,9 @@ fn main() {
     last_continue(&[2, 8], &mut out);
     println!("{out:?}");
     dropped_after(&[1, 5]);
+    let mut dev = Vec::new();
+    in_dev(&[1, 2, 5], true, &mut dev);
+    in_dev(&[2, 0, -1], true, &mut dev);
+    in_dev(&[3, 4, 0, 6], false, &mut dev);
+    println!("{dev:?}");
 }

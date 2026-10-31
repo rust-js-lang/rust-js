@@ -381,3 +381,23 @@ pass turns it back, and the check is what keeps it: without it, `if (!c)
 program wrote keeps its if" has such a loop now, `counted`, run, and
 catches the mutation. Case ([0262](0262-when-rust-and-js-disagree.md)):
 N, a comment's place.
+
+## Amendment: a loop's `break` where a branch of the function's last `if` ends with the loop (rd165, 2026-10-31)
+
+A loop's `break` the program wrote is `break;` in the loop a function ends
+with, where MIR has its `return;`. React DOM's warnForBlockInsideInline
+ends with `if (__DEV__) { .. while (nextNode != null) { .. if (..) { ..;
+break; } .. if (node === instance) { break; } .. } }`, its loop the last
+of the `if`'s branch, and its port printed both `break`s as `return;`:
+the function ends after that branch too, so MIR's jump there is the
+function's `return`, but `kept_jumps` looked at the function's last
+statement alone. It now looks through an `if` that ends the function, each
+branch whose last statement is a loop or another such `if` (`ending_loops`),
+and gives each `break` the program wrote there back: `if (dev) { while
+(next != null) { if (next > 3) { out.push(next); break; } .. } } else {
+for (const x of xs) { if (x === 0) { break; } .. } }`. Case
+([0262](0262-when-rust-and-js-disagree.md)): N, a `break` where nothing
+follows it but the function's end. Held by the corpus case
+`written_jumps_kept` (`in_dev`) and the mutations
+`kept-breaks-of-a-branchs-loop-unrun` and
+`kept-breaks-of-an-elses-loop-unrun`.

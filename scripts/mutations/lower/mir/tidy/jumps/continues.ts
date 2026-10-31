@@ -86,6 +86,25 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "tidy takes"],
   },
   {
+    name: "kept-breaks-of-a-branchs-loop-unrun",
+    breaks:
+      "a loop a branch of the function's last `if` ends with, React DOM's warnForBlockInsideInline's in its `if (__DEV__)`, has MIR's `return;` for each `break` it wrote",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                ending_loops(then, written);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^written_jumps_kept.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "kept-breaks-of-an-elses-loop-unrun",
+    breaks: "a loop the `else` of the function's last `if` ends with has MIR's `return;` for each `break` it wrote",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                    ending_loops(otherwise, written);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^written_jumps_kept.rs$"],
+    snapshots: true,
+  },
+  {
     name: "kept-continue-dropped",
     breaks:
       "a `continue` the program wrote where the turn ends anyway is gone, `if (inst != null) { ..; }` and the rest its `else`, not upstream's `continue;` (the user's decision, ADR 0684, amended)",

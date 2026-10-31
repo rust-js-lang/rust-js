@@ -118,22 +118,33 @@ pub(in crate::lower::mir::tidy) fn continues_written(stmts: &mut [Stmt], guards:
 /// it, as its `else`s and labels are (the user's decision, 2026-10-29; ADR
 /// 0684, amended): where the loop's turn ends anyway after the branch, the
 /// `continue` tidy took, given back; and in the loop a function ends with,
-/// the `return;` MIR made of a `break`, `break;`, as React DOM's
+/// or a branch of an `if` it ends with does, the `return;` MIR made of a
+/// `break`, `break;`, as React DOM's
 /// replayUnblockedFormActions writes them; not where an `if` the program
 /// wrote of a `return` ends so. Not in a loop or a `switch` inside the
 /// loop, whose own a jump of no label would be. What MIR then put in the `else` of an `if`
 /// the program wrote without one, which now never goes on, preparation's
 /// `unelsed` puts after it again (ADR 0237).
 pub(in crate::lower::mir::tidy) fn kept_jumps(body: &mut Vec<Stmt>, written: &crate::lower::mir::hints::Written) {
-    // The loop the function ends with: no `return;` of MIR's follows it
-    // here, as `tail returns` took it (#410).
-    if let Some(Stmt {
-        kind: StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. },
-        ..
-    }) = body.last_mut()
-    {
-        kept_in_turn(body, written, Kept::Breaks, true);
+    // The loop the function ends with, or a branch of an `if` it ends with
+    // does, React DOM's warnForBlockInsideInline's in its `if (__DEV__)`:
+    // no `return;` of MIR's follows it here, as `tail returns` took it
+    // (#410).
+    fn ending_loops(stmts: &mut [Stmt], written: &crate::lower::mir::hints::Written) {
+        match stmts.last_mut().map(|s| &mut s.kind) {
+            Some(StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. }) => {
+                kept_in_turn(body, written, Kept::Breaks, true);
+            }
+            Some(StmtKind::If(_, then, otherwise)) => {
+                ending_loops(then, written);
+                if let Some(otherwise) = otherwise {
+                    ending_loops(otherwise, written);
+                }
+            }
+            _ => {}
+        }
     }
+    ending_loops(body, written);
     js::statement_lists(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
             if let StmtKind::While { body, .. }

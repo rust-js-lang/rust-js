@@ -127,6 +127,29 @@ function droppedAfter(xs) {
   }
 }
 
+function inDev(xs, dev, out) {
+  if (dev) {
+    let next = xs[0];
+    while (next != null) {
+      if (next > 3) {
+        out.push(next);
+        break;
+      }
+      if (next < 0) {
+        break;
+      }
+      next = xs[next];
+    }
+  } else {
+    for (const x of xs) {
+      if (x === 0) {
+        break;
+      }
+      out.push(-x | 0);
+    }
+  }
+}
+
 function main() {
   const value = [7, 1, 2, 3, -2, 0, 0, 8, -20, 9];
   const value$1 = [1, 0, 0, 6, -11, 5];
@@ -152,5 +175,10 @@ function main() {
   lastContinue([2, 8], out);
   console.log(`[${out.join(", ")}]`);
   droppedAfter([1, 5]);
+  const dev = [];
+  inDev([1, 2, 5], true, dev);
+  inDev([2, 0, -1], true, dev);
+  inDev([3, 4, 0, 6], false, dev);
+  console.log(`[${dev.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map
