@@ -247,16 +247,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 // A range pattern's test, `2 <= k`: the value first, `k >= 2`;
                 // of a bound the type has anyway, `0 <= k` of a `u8`, none,
-                // as `binary` answers of every comparison (`at_bound`).
+                // as `binary` answers of every comparison (`at_bound`). And a
+                // constant pattern's that isn't a switch, a float's, `1 ==
+                // kind`: `kind === 1`.
                 let flipped = match op {
                     BinOp::Le => Some(BinOp::Ge),
                     BinOp::Lt => Some(BinOp::Gt),
+                    BinOp::Eq | BinOp::Ne => Some(*op),
                     _ => None,
                 };
                 if let Some(flipped) = flipped
                     && let Operand::Constant(_) = l
                     && !matches!(r, Operand::Constant(_))
-                    && state.facts.ranges().iter().any(|range| range.contains(span))
+                    && state.facts.tested().iter().any(|pattern| pattern.contains(span))
                 {
                     let [r, l]: [Value<'tcx>; 2] =
                         self.take_operands(state, &[r, l], out)?.try_into().ok().expect("two");

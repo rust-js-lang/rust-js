@@ -36,14 +36,14 @@ function chosen(values, flip) {
     const next = node(value);
     if (current == null) {
       current = next;
-    } else if (!flip) {
-      const held = current;
-      sum = (sum + held.value) | 0;
-      current = next;
-    } else {
+    } else if (flip) {
       const old = current;
       current = next;
       sum = (sum + old.value) | 0;
+    } else {
+      const held = current;
+      sum = (sum + held.value) | 0;
+      current = next;
     }
   }
   return sum;

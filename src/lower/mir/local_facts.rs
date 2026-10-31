@@ -23,9 +23,9 @@ pub(super) struct LocalFacts<'m, 'tcx> {
     /// The locals a raw pointer is taken to the whole of: cells, `{ value }`,
     /// whose `value` is the place it points to (ADR 0407).
     pointed: crate::lower::pointers::Pointed,
-    /// Where each range pattern is, `2..=5`, whose tests MIR writes bound
-    /// first, `2 <= k`.
-    ranges: Vec<Span>,
+    /// Where each range or constant pattern is, `2..=5` or `1.0`, whose
+    /// tests MIR writes bound or constant first, `2 <= k`, `1 == kind`.
+    tested: Vec<Span>,
     /// The jumps the program wrote, of the body THIR has: each `return`,
     /// and each labeled block's `break`s, and where the jumps of each leave.
     jumps: hints::Jumps,
@@ -124,8 +124,8 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
         &self.pointed
     }
 
-    pub(super) fn ranges(&self) -> &[Span] {
-        &self.ranges
+    pub(super) fn tested(&self) -> &[Span] {
+        &self.tested
     }
 
     pub(super) fn jumps(&self) -> &hints::Jumps {
@@ -296,7 +296,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .filter_map(|(local, rest)| rest.then_some(local))
                 .collect(),
             pointed: self.pointed_locals(body),
-            ranges: self.range_patterns(),
+            tested: self.tested_patterns(),
             jumps: self.written_jumps(),
             payloads: self.mir_payloads(body),
             patterned: self.mir_patterned(body),

@@ -345,7 +345,9 @@ pub fn mixed(v: Option<&Unknown>) -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('  switch (v) {\n    case "preload":\n      log.push(1);\n      break;\n    case "modulepreload":\n');
-  expect(js).toContain('  if (typeof v === "number") {\n    switch (v) {\n      case 0:\n        return 1;\n      case 2:\n        return 2;\n    }\n  }\n  return 0;\n');
+  // A switch's `===` tells a number from anything else: no `typeof v ===
+  // "number"` around it.
+  expect(js).toContain('  switch (v) {\n    case 0:\n      return 1;\n    case 2:\n      return 2;\n    default:\n      return 0;\n  }\n');
   expect(js).toContain('  if (typeof v === "string") {\n');
   const lib = require(join(dir, "lib.js"));
   const rel = (v: unknown) => {

@@ -71,10 +71,10 @@ function describe(value) {
     }
     return `at ${value.x},${value.y}`;
   }
-  if (!(value < 0)) {
-    return `count ${value}`;
+  if (value < 0) {
+    return `negative ${value}`;
   }
-  return `negative ${value}`;
+  return `count ${value}`;
 }
 
 function main() {

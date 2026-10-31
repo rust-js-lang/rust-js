@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     "name": "mir-range-bound-first",
     "breaks": "a range pattern's test from MIR reads its bound first, `2 <= k`",
     "file": "src/lower/mir/rvalues.rs",
-    "find": "&& state.facts.ranges().iter().any(|range| range.contains(span))",
+    "find": "&& state.facts.tested().iter().any(|pattern| pattern.contains(span))",
     "replace": "&& false",
     "tests": ["test/lowering-matches.test.ts", "-t", "a range pattern's tests from MIR"]
   },
@@ -653,5 +653,14 @@ export const mutations: Mutation[] = [
     find: "                            && bindings::is_binding(self.tcx, def_id)\n",
     replace: "                            && bindings::is_binding(self.tcx, def_id) && false\n",
     tests: ["test/js-functions.test.ts", "-t", "lent as a dyn Fn"],
+  },
+  {
+    name: "constant-pattern-test-constant-first",
+    breaks: "a float's constant pattern, tested by MIR constant first, reads `1 === a`, not `a === 1`",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                    BinOp::Eq | BinOp::Ne => Some(*op),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(default_value_exits|presence_said_by_chain).rs$"],
+    snapshots: true,
   },
 ];

@@ -61,7 +61,9 @@ export const Value = {
   pretty(value, indent, out) {
     const pad = " ".repeat(indent);
     if (value.TAG === "List") {
-      if (value._0.length !== 0) {
+      if (value._0.length === 0) {
+        out.value += "[]";
+      } else {
         out.value += "[\n";
         for (const [i, x] of value._0.entries()) {
           out.value += pad;
@@ -74,8 +76,6 @@ export const Value = {
         }
         out.value += pad;
         out.value += "]";
-      } else {
-        out.value += "[]";
       }
     } else if (value.TAG === "Obj") {
       out.value += "{";

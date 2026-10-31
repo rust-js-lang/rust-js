@@ -85,7 +85,7 @@ function halves(values) {
     bb10: {
       if (value != null) {
         let level;
-        if (1 === value) {
+        if (value === 1) {
           level = 10;
         } else if (!Number.isNaN(value)) {
           break bb10;

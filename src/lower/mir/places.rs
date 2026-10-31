@@ -376,13 +376,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// Where each range pattern of the body is, in a `match`'s arms, a
-    /// `let`'s or an `if let`'s.
-    pub(super) fn range_patterns(&self) -> Vec<Span> {
+    /// Where each range or constant pattern of the body is, in a `match`'s
+    /// arms, a `let`'s or an `if let`'s: what MIR tests with its bound or
+    /// constant first, `2 <= k`, `1 == kind` of a float's `1.0`.
+    pub(super) fn tested_patterns(&self) -> Vec<Span> {
         let mut ranges = Vec::new();
         let mut find = |pat: &thir::Pat<'tcx>| {
             pat.walk_always(|p| {
-                if let thir::PatKind::Range(_) = p.kind {
+                if let thir::PatKind::Range(_) | thir::PatKind::Constant { .. } = p.kind {
                     ranges.push(p.span);
                 }
             })

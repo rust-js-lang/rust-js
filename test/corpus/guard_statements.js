@@ -20,10 +20,10 @@ function describe(s, seen) {
       return "big square";
     }
     seen.value = (seen.value + 1) | 0;
-    if (!(seen.value > 2)) {
-      return "square";
+    if (seen.value > 2) {
+      return "square, seen often";
     }
-    return "square, seen often";
+    return "square";
   }
   if (!(size(s) > 10)) {
     if (s.TAG === "Rect") {

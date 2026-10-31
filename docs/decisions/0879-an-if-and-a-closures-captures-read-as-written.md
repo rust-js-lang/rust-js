@@ -6,7 +6,7 @@ Status: Accepted. Amends [0237](0237-no-else-after-leaving.md)'s scope (an
 is a conditional), [0607](0607-a-field-is-given-a-call-in-place.md) (a
 variable a closure captured is given a call's value in place) and extends
 [0846](0846-a-parameters-clone-is-read-by-its-name.md) (a clone of what a
-`move` closure captured is read by its name).
+`move` closure captured is read by its name). Amended: a guard's arms in the order written, and a float's constant pattern tested value first (below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N for each, which runs
 the same; each is a form the program wrote, which MIR's structure lost.
@@ -894,3 +894,39 @@ Held by `test/lowering-bool-ternaries.test.ts`' "a written negation of an
 if of a bool literal branch stays one", run in JS, and mutations
 `negation-of-an-if-and-unwritten`, `negation-of-an-if-or-unwritten`
 (`mir/hints.ts`) and `written-negation-of-an-if-unseen` (`tidy/logicals.ts`).
+
+## Amendment: a guard's arms as written, and a constant pattern's value first (2026-10-31)
+
+Two tests MIR writes otherwise than the program:
+
+- **A guard that fails goes on to the next arm through blocks that only
+  go on**, `goto`s rustc spans at the `match`, before the guard's own arm:
+  `match kind { 9 => 1, _ if name == "HTML" => 2, _ => 3 }` was `if (name
+  !== "HTML") { return 3; } return 2;`, its last arm first, and
+  `Value::Count(n) if *n < 0` was `if (!(value < 0)) { return "count
+  .."; }`. Where an `if`'s branches are is now read past such `goto`s
+  (`queries::written_past_gotos`), to the arm's own code: `if (name ===
+  "HTML") { return 2; } return 3;`, `if (value < 0)`. Not past a `goto`
+  rustc places nowhere, a `continue`'s back to its loop's start, which
+  would take the `continue` for written first, as React's
+  `performWorkOnRoot` has `if (exitStatus !== ROOT_ERRORED) { continue; }`.
+  A `match js::classify(v) { Kind::Number(0.0) => 1, Kind::Number(2.0) =>
+  2, _ => 0 }` is so one `switch (v) { case 0: .. case 2: .. default:
+  return 0; }`, no `if (typeof v === "number")` around it, as its `===`
+  tells a number from anything else (`lowering-strict-switches.test.ts`).
+- **A float's constant pattern, which MIR tests by `==` constant first**,
+  `match kind { 1.0 => 5, _ => 6 }`, was `1 === kind`, as a range
+  pattern's bound was `2 <= k`: the value first, `kind === 1`, as React's
+  `parentContainer.nodeType === DOCUMENT_NODE` (`facts.tested()`, of each
+  range or constant pattern's place; `===` the same either way round).
+
+Held by the corpus cases `untagged_enums`, `guard_statements`,
+`interpreter`, `binding_read_before_set`, `if_let_mut_else_assign`,
+`written_breaks_beside_an_else`, `default_value_exits` and
+`presence_said_by_chain`, each run against native Rust, and the mutations
+`guard-failure-at-its-goto`, `guard-goto-of-nowhere-followed`
+(`lower/mir/structure.ts`) and `constant-pattern-test-constant-first`
+(`lower/mir/rvalues.ts`). Left: an integer comparison MIR's branch
+negates where its arms aren't turned, `!(size(s) > 10)`, whose converse a
+pass after tidy would make but for the conditionals preparation turns
+when their test is negated.

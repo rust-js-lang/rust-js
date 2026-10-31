@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
     name: "mir-negated-if-flipped",
     breaks: "`if !c { a } else { b }`, which MIR tests as `c`, is `if (c) { b }`, its second branch first",
     file: "src/lower/mir/structure.rs",
-    find: "                    && !matches!((written_at(state.body, *target), written_at(state.body, yes)), (Some(no), Some(yes)) if no < yes)\n",
+    find: "                    && !matches!((written_past_gotos(state.body, *target), written_past_gotos(state.body, yes)), (Some(no), Some(yes)) if no < yes)\n",
     replace: "",
     // Its own case, `if !active { .. }`, reads as written again by tidy; a
     // loop's `if !descriptor.enumerable` doesn't.
@@ -342,4 +342,6 @@ export const mutations: Mutation[] = [
     replace: "                        Value::Expr(e)\n",
     tests: ["test/corpus.test.ts", "-t", "^map_none_held_as_null.rs$"],
   },
+
+
 ];

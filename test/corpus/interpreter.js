@@ -149,11 +149,11 @@ const Lexer = {
       } else if (c === ";") {
         token = "Semi";
       } else if (c === "=") {
-        if ($peek(lexer.chars) !== ">") {
-          token = "Eq";
-        } else {
+        if ($peek(lexer.chars) === ">") {
           Lexer.bump(lexer);
           token = "Arrow";
+        } else {
+          token = "Eq";
         }
       } else if (c === "+" || c === "-" || c === "*" || c === "/" || c === "<") {
         token = { TAG: "Op", _0: c };

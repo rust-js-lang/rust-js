@@ -82,10 +82,7 @@ function rematched(c) {
   };
   if (x.value != null) {
     const v = x.value;
-    if (!c) {
-      const v = x.value;
-      v.push(5);
-    } else {
+    if (c) {
       x = {
         get value() {
           return q;
@@ -96,6 +93,9 @@ function rematched(c) {
       };
       v.push(3);
       $unwrap(x.value).push(4);
+    } else {
+      const v = x.value;
+      v.push(5);
     }
   }
   return `${p == null ? "None" : `Some([${p.join(", ")}])`} ${q == null ? "None" : `Some([${q.join(", ")}])`}`;

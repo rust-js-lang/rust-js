@@ -179,9 +179,9 @@ function floats(pairs) {
   const seen = [];
   for (const [a, b] of pairs) {
     let level = 0;
-    if (1 === a || 1 === b) {
+    if (a === 1 || b === 1) {
       level = 1;
-    } else if (2 === a && 2 === b) {
+    } else if (a === 2 && b === 2) {
       level = 2;
     }
     seen.push(level);

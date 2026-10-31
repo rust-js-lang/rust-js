@@ -270,4 +270,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^settled_until_written.rs$"],
     snapshots: true,
   },
-];
+  {
+    name: "guard-goto-of-nowhere-followed",
+    breaks: "a `goto` rustc places nowhere, a `continue`'s back to its loop's start, is followed as a guard's failure is, and React's `if (exitStatus !== ROOT_ERRORED) { continue; }` is turned, its `else` first",
+    file: "src/lower/mir/queries.rs",
+    find: "TerminatorKind::Goto { target } if only_goes_on && !here.is_dummy() => block = target,",
+    replace: "TerminatorKind::Goto { target } if only_goes_on => block = target,",
+    tests: ["test/corpus.test.ts", "-t", "^written_breaks_beside_an_else.rs$"],
+    snapshots: true,
+  },  {
+    name: "guard-failure-at-its-goto",
+    breaks: "a guard that fails, `_ if name == \"HTML\" => 2`, is taken for written where MIR spans its `goto`, before the arm it goes on to, and the arms are turned, `if (name !== \"HTML\") { return 3; } return 2;`",
+    file: "src/lower/mir/queries.rs",
+    find: "    for _ in 0..8 {\n",
+    replace: "    for _ in 0..0 {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(untagged_enums|guard_statements|interpreter).rs$"],
+    snapshots: true,
+  },];

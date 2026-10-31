@@ -481,7 +481,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && targets.iter().all(|(value, _)| value == 0)
                     && let [(test, target)] = cases.as_mut_slice()
                     && let Some(yes) = otherwise
-                    && !matches!((written_at(state.body, *target), written_at(state.body, yes)), (Some(no), Some(yes)) if no < yes)
+                    && !matches!((written_past_gotos(state.body, *target), written_past_gotos(state.body, yes)), (Some(no), Some(yes)) if no < yes)
                 {
                     *test = std::mem::replace(test, Expr::undefined()).negated_test();
                     otherwise = Some(std::mem::replace(target, yes));
@@ -743,8 +743,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         0 => Expr::unary(js::UnaryOp::Not, subject),
                         _ => subject,
                     });
-                }
-                // A value the program's patterns name by a `const` where it's
+                } // A value the program's patterns name by a `const` where it's
                 // tested, as that reads (ADR 0590, amended): `priorityLevel
                 // === ImmediatePriority`.
                 let value_of = crate::lower::body_queries::PatternValue::Bits(ty, value);

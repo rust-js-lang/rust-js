@@ -572,6 +572,34 @@ pub(super) fn written_at(body: &mir::Body<'_>, block: BasicBlock) -> Option<rust
     written_within(body, block, 4)
 }
 
+/// `written_at` of what `block` goes on to past blocks that only go on, a
+/// guard's that fails, `_ if name == "HTML" => 2`'s, going on to the next
+/// arm's, `_ => 3`: that arm's, not where MIR spans its `goto`s (ADR 0879,
+/// amended). Only on from a `goto` written somewhere, not one rustc
+/// places nowhere, a `continue`'s back to its loop's start; at most `8`
+/// such blocks.
+pub(super) fn written_past_gotos(body: &mir::Body<'_>, mut block: BasicBlock) -> Option<rustc_span::BytePos> {
+    for _ in 0..8 {
+        let data = &body.basic_blocks[block];
+        let only_goes_on = data.statements.iter().all(|s| {
+            matches!(
+                s.kind,
+                StatementKind::FakeRead(_)
+                    | StatementKind::StorageLive(_)
+                    | StatementKind::StorageDead(_)
+                    | StatementKind::Nop
+                    | StatementKind::PlaceMention(_)
+            )
+        });
+        let here = data.terminator().source_info.span.source_callsite();
+        match data.terminator().kind {
+            TerminatorKind::Goto { target } if only_goes_on && !here.is_dummy() => block = target,
+            _ => break,
+        }
+    }
+    written_at(body, block)
+}
+
 /// `written_at`'s, of a block that only tests further, a pattern's field,
 /// `Done { ok: true }`'s: where the first of what it goes to is, its arms,
 /// not the `match` its test is spanned by; `depth` such tests at most.
