@@ -615,3 +615,18 @@ iterator protocol and ADR 0860's example now ask for the truth,
 `test/corpus/option_bool_exact.rs` against native Rust and the
 mutations `option-bool-eq-truth`, `option-bool-pattern-truth`,
 `option-bool-false-unwritten` and `option-bool-true-unswapped`.
+
+## Amendment (2026-10-31): `==` of an `Option<bool>` is no case of its own
+
+With the truth gone, `o == Some(true)` needs no rule of `std_impls.rs`':
+an `Option<bool>` is `true`, `false` or `undefined`, and `Some(true)` is
+`true`, so `==` of any `Option` of a value compared by `===` is `o ===
+true` already, `o !== false` of `!=`; the special case and its
+mutations `option-bool-eq-truth` and `some-true-compared` survived
+(main's Check) and are gone. Written the other way round, `Some(true) ==
+o` is `true === o`, in the order written, as every `==` is. A pattern
+is still `mir/structure.rs::switch_test`'s, and an `Option`'s payload
+test of a `bool`, `Some(false) => ..`, is now folded as a number's is
+(`mir/patterns.rs::mir_payload_tests`, ADR 0629 amended): its test is
+exact, so no `None` passes it. Case ([0262](0262-when-rust-and-js-disagree.md)):
+N, the same values compare equal.

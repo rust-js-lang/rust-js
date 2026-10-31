@@ -1118,16 +1118,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => break,
             }
         }
-        // `o == Some(true)` of an `Option<bool>`: that value exactly, `o ===
-        // true`, as React tests an option a caller gives (the user's
-        // decision, ADR 0298).
-        if self.option_of(ty).is_some_and(|inner| inner.is_bool()) {
-            match (&a.kind, &b.kind) {
-                (_, js::ExprKind::Bool(_)) => return Ok(Expr::bin(Op::Eq, a, b)),
-                (js::ExprKind::Bool(_), _) => return Ok(Expr::bin(Op::Eq, b, a)),
-                _ => {}
-            }
-        }
         // A raw pointer: the same place, or the same address (ADR 0562).
         if self.compared_by_address(ty)
             && let Some((pointee, _)) = super::pointers::raw_pointee(self.tcx, ty)

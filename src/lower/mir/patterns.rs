@@ -606,12 +606,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         arms
     }
 
-    /// Each block whose test is that an `Option` of a number, a `char` or
-    /// text, never boxed, is `Some`, `Some(7) => ..`, which goes on to a test of its
-    /// payload alone, and whose `None` goes where that test's `otherwise`
-    /// does: that test's block, whose test of the payload is the `Option`'s
-    /// own, `sub === 7`, which no `None` passes, as no `null` is `7`; no
-    /// `sub != null` before it, and its `otherwise` reached once.
+    /// Each block whose test is that an `Option` is `Some`, `Some(7) => ..`,
+    /// which goes on to a test of its payload alone, a number, a `bool` or a
+    /// `char` MIR switches on, and whose `None` goes where that test's
+    /// `otherwise` does: that test's block, whose test of the payload is the
+    /// `Option`'s own, `sub === 7` or `flag === false`, which no `None`
+    /// passes, as no `null` is `7` or `false` (a `bool`'s exactly, ADR 0298,
+    /// the user's decision); no `sub != null` before it, and its `otherwise`
+    /// reached once.
     pub(super) fn mir_payload_tests(&self, body: &mir::Body<'tcx>) -> HashMap<BasicBlock, BasicBlock> {
         let nothing = |statement: &mir::Statement<'tcx>| {
             matches!(
@@ -639,11 +641,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             };
             let option_ty = option.ty(&body.local_decls, self.tcx).ty;
-            let Some(payload_ty) = self.option_of(option_ty) else {
-                continue;
-            };
-            let told = payload_ty.is_integral() || payload_ty.is_char() || payload_ty.peel_refs().is_str();
-            if !told {
+            if self.option_of(option_ty).is_none() {
                 continue;
             }
             let (some, none) = (targets.target_for_value(1), targets.target_for_value(0));

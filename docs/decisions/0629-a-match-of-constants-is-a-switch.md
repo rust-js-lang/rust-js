@@ -910,3 +910,13 @@ Held by `test/lowering-strict-switches.test.ts`' "a match of an untagged
 enum's constants is a switch of the value", run in JS, and mutation
 `untagged-constant-no-case` (`mir/hints/constants.ts`, where the three
 mutations of the moved code went too).
+
+## Amended (2026-10-31): a `bool`'s payload test is folded too
+
+An `Option<bool>`'s `Some(false)` is tested `b === false` now, its value
+exactly (ADR 0298, the user's decision), which no `None` passes; so
+`mir_payload_tests` folds it as it folds a number's, and no longer asks
+which payloads it may. The mutation `payload-test-of-a-bool`, which
+folded a `bool`'s while its test was `!b`, survived (main's Check) and
+is gone; `option_constants_switch.rs`'s `flag` still holds the output,
+`b === false ? 1 : 0`, against native Rust.

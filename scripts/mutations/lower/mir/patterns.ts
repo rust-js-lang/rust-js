@@ -391,15 +391,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^option_constants_switch.rs$"],
   },
   {
-    name: "payload-test-of-a-bool",
-    breaks:
-      "an `Option<bool>`'s `Some(false)` is folded, `!b`, which `None` passes",
-    file: "src/lower/mir/patterns.rs",
-    find: "            if !told {\n",
-    replace: "            if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^option_constants_switch.rs$"],
-  },
-  {
     name: "nullable-return-not-a-nullable-read",
     breaks:
       "a `let` of `None` a nullable function returns isn't read by a nullable place, so it starts `undefined` and is returned `?? null`",

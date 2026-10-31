@@ -172,7 +172,11 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/stages.rs",
     find: '            pass("tail returns", |b, h| tail_returns(b, h.returns)),\n',
     replace: "",
-    tests: ["test/lowering-branches.test.ts", "-t", "of .matches!. from MIR"],
+    tests: [
+      "test/lowering-early-exits.test.ts",
+      "-t",
+      "a unit function's last if has no return MIR made at its end",
+    ],
   },
   {
     name: "late-while-tests-off",
