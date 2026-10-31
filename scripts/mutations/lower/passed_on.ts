@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/passed_on.rs",
     find: "            let fact = (forwarding.iter()).find(|fact| !f.span.is_none() && fact.span == f.span)?;\n",
     replace:
-      "            let fact = (forwarding.iter()).find(|fact| !f.span.is_none() && fact.span == f.span).copied().unwrap_or(Forwarding { span: f.span, callee: Callee::Own, adapts: true, item: false, binds: false, ignores: false, eta: false });\n",
+      "            let fact = (forwarding.iter()).find(|fact| !f.span.is_none() && fact.span == f.span).copied().unwrap_or(Forwarding { span: f.span, callee: Callee::Own, adapts: true, item: false, binds: false, ignores: false, eta: false, fixed: false });\n",
     tests: ["test/corpus.test.ts", "-t", "^array_map.rs$"],
   },
   {
@@ -510,5 +510,32 @@ export const mutations: Mutation[] = [
     find: "        || eta\n",
     replace: "        || false\n",
     tests: ["test/namespaces.test.ts", "-t", "passes all it's given"],
+  },
+  {
+    name: "fixed-local-function-unheld",
+    breaks:
+      "a listener that only calls a local function JS makes, `handleNavigateComplete`, is a function of its own, `function onSuccess() { handleNavigateComplete(); }` (rd284b)",
+    file: "src/lower/passed_on.rs",
+    find: "                    fixed: matches!(ty.kind(), ty::Dynamic(..)) && callee == Callee::Own,\n",
+    replace: "                    fixed: false,\n",
+    tests: ["test/webapi-events.test.ts", "-t", "event methods and reusable listeners"],
+  },
+  {
+    name: "with-this-reading-this-held",
+    breaks:
+      "a listener that calls a `with_this` function that reads its `this` is that function, whose `this` is then the target, not `undefined` (rd284b)",
+    file: "src/lower/passed_on.rs",
+    find: "            matches!(tcx.hir_body(closure.body).params.first(), Some(param) if matches!(param.pat.kind, hir::PatKind::Wild))\n",
+    replace: "            matches!(tcx.hir_body(closure.body).params.first(), Some(_))\n",
+    tests: ["test/webapi-events.test.ts", "-t", "event methods and reusable listeners"],
+  },
+  {
+    name: "with-this-never-own",
+    breaks:
+      "a function `function::with_this` makes of a closure that ignores its `this` isn't taken as one that reads none, so a listener calling it stays a function of its own (rd284b)",
+    file: "src/lower/passed_on.rs",
+    find: "                    ignores_this(self.tcx, target)\n",
+    replace: "                    false\n",
+    tests: ["test/webapi-events.test.ts", "-t", "event methods and reusable listeners"],
   },
 ];

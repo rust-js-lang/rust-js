@@ -26,6 +26,10 @@ test("event methods and reusable listeners emit direct JavaScript", () => {
   // event: that function, added and removed, as upstream's
   // ReactDOMDefaultTransitionIndicator (rd284).
   expect(js).toContain('export function navigationListeners(button) {\n  button.addEventListener("click", handleNavigateComplete);\n  button.addEventListener("keydown", handleNavigateComplete);\n  button.removeEventListener("click", handleNavigateComplete);\n  button.removeEventListener("keydown", handleNavigateComplete);\n}');
+  // Of a local function JS makes, which reads no `this` (rd284b).
+  expect(js).toContain('  button.addEventListener("click", () => {\n    named();\n  });\n');
+  expect(js).toContain('  button.addEventListener("click", handleNavigateComplete);\n  button.addEventListener("keydown", handleNavigateComplete);\n');
+  expect(js).toContain('  return function () {\n    isCancelled = true;\n    button.removeEventListener("click", handleNavigateComplete);\n    button.removeEventListener("keydown", handleNavigateComplete);\n  };');
   // A media query list's legacy listener methods, the one kept (#439).
   expect(js).toContain("  list.addListener(changed);\n  list.removeListener(changed);\n  list.addListener(onCustomMedia);\n  list.removeListener(onCustomMedia);");
   expect(js).not.toMatch(/unreachable|\.add_event_listener|\.client_x|\.prevent_default/);

@@ -112,6 +112,12 @@ pub(in crate::lower) struct Forwarding {
     /// its own, React's DEV dispatchers' `readContext(context) { return
     /// readContext(context); }` (ADR 0605, amended).
     pub(in crate::lower) eta: bool,
+    /// Whether what it calls is a variable that never changes, of a
+    /// function that reads no `this` (`bound_own`): a bound one, or a local
+    /// one `function::with_this` makes of a closure that ignores its `this`,
+    /// React's `handleNavigateComplete`, which a `let` of the closure reads
+    /// in its place (`held_functions`, rd284b).
+    pub(in crate::lower) fixed: bool,
 }
 
 /// What a closure's one call calls.
@@ -310,8 +316,9 @@ pub(in crate::lower) fn held_functions(body: &mut Vec<Stmt>, forwarding: &[Forwa
         while i < stmts.len() {
             if let StmtKind::Const(name, value) = &stmts[i].kind
                 && matches!(value.kind, js::ExprKind::Var(_) | js::ExprKind::Symbol(_))
-                && value.facts.has(js::Known::Item)
-                && (forwarding.iter()).any(|fact| !value.span.is_none() && fact.span == value.span)
+                && (forwarding.iter()).any(|fact| {
+                    !value.span.is_none() && fact.span == value.span && (fact.fixed || value.facts.has(js::Known::Item))
+                })
             {
                 let (name, value) = (name.clone(), value.clone());
                 stmts.remove(i);
@@ -533,6 +540,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 binds: false,
                 ignores: true,
                 eta: false,
+                fixed: false,
             });
         }
         let (def_id, generic_args) = fn_def(thir[fun].ty)?;
@@ -577,6 +585,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     binds: false,
                     ignores: callee == Callee::Own && given && captured.is_some(),
                     eta: false,
+                    fixed: matches!(ty.kind(), ty::Dynamic(..)) && callee == Callee::Own,
                 })
             }
             // A binding's global function, JS's own, called as a function,
@@ -594,6 +603,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 binds: false,
                 ignores: false,
                 eta: false,
+                fixed: false,
             }),
             // The crate's, or a library's, whose JS rust-js compiled from
             // its Rust as it compiles the crate's (ADR 0605, amended). One
@@ -611,6 +621,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 binds: false,
                 ignores: args.is_empty(),
                 eta: super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Namespace),
+                fixed: false,
             }),
         }
     }
@@ -659,6 +670,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             hir::ExprKind::Call(callee, [target, ..]) => match *results.expr_ty_adjusted(callee).kind() {
                 ty::FnDef(f, _) if super::recognition::is_function_bind(self.tcx, f) => {
                     self.own_target(target, depth + 1)
+                }
+                // A function `function::with_this` makes of a closure that
+                // ignores its `this`, `move |_, ()| ..`: one that reads none
+                // (rd284b).
+                ty::FnDef(f, _)
+                    if matches!(super::bindings::js_form(self.tcx, f), super::bindings::JsForm::WithThis) =>
+                {
+                    ignores_this(self.tcx, target)
                 }
                 _ => false,
             },
@@ -779,5 +798,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         inputs.len() != called.inputs().len()
             || (inputs.iter().zip(called.inputs())).any(|(&a, &b)| erased(a) != erased(b))
             || erased(theirs.output()) != erased(called.output())
+    }
+}
+
+/// Whether `e` is a closure, through the block that makes it, whose first
+/// parameter, a `with_this` function's `this`, is `_`.
+fn ignores_this(tcx: TyCtxt<'_>, e: &rustc_hir::Expr<'_>) -> bool {
+    use rustc_hir as hir;
+    match e.peel_drop_temps().kind {
+        hir::ExprKind::Block(block, _) => block.expr.is_some_and(|e| ignores_this(tcx, e)),
+        hir::ExprKind::Closure(closure) => {
+            matches!(tcx.hir_body(closure.body).params.first(), Some(param) if matches!(param.pat.kind, hir::PatKind::Wild))
+        }
+        _ => false,
     }
 }

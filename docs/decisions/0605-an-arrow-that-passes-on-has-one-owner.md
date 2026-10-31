@@ -505,3 +505,29 @@ a fresh instance's too), `test/webapi-events.test.ts` (both listeners
 `closure-kept-where-made`, `counted-closure-made-function`
 (`mir/rvalues.ts`) and `held-functions-kept` (`mir/tidy/stages.ts`).
 
+## Amendment: a local function `with_this` makes that reads no `this` (rd284b)
+
+React's ReactDOMDefaultTransitionIndicator's `handleNavigateComplete`
+captures its state, `isCancelled` and `pendingResolve`, so the port makes
+it a local function, `let handle_navigate_complete: &'static dyn Fn() =
+function::with_this(move |_, ()| ..)`, a nested `function
+handleNavigateComplete() {..}`. Its listeners, `listener(move |_: &Event|
+handle_navigate_complete())`, were functions of their own, `function
+onSuccess() { handleNavigateComplete(); }`, where upstream adds and
+removes `handleNavigateComplete` itself. **A function `with_this` makes
+of a closure whose `this` is `_` reads no `this` and nothing more than its
+tuple, as a bound one, so a closure that ignores what it's given and
+calls it with nothing, held by a variable that never changes, is that
+function (`bound_own`, `ignores_this`), and a `let` of the closure reads
+it in its place (`held_functions`, the fact `Forwarding::fixed`, where
+it asked for an item before).** One whose closure reads its `this` keeps
+its listener, which calls it of none, as Rust does. Case
+([0262](0262-when-rust-and-js-disagree.md)): the user's exception, as
+rd196's: only the listener's identity and `.length` tell them apart.
+
+Held by `test/webapi-events.test.ts`'s "event methods and reusable
+listeners emit direct JavaScript" (`localNavigationListeners`: added and
+removed as `handleNavigateComplete`; `named`, which reads its `this`,
+kept in its arrow). Mutations `fixed-local-function-unheld`,
+`with-this-reading-this-held` and `with-this-never-own` (`passed_on.ts`).
+

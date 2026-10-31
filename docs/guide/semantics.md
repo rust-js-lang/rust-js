@@ -1044,7 +1044,9 @@ React and JSX are [their own pages](README.md#react).
     identity tells them apart, which JS doesn't do to a callback it calls
     once (ADR 0262, amended). So is a closure that ignores what it's given
     and calls, with nothing, a function that reads no `this` and nothing
-    more, the crate's or one bound, wherever it's given, a listener's too,
+    more, the crate's, one bound, or a local one `function::with_this`
+    makes of a closure whose `this` is `_`, wherever it's given, a
+    listener's too,
     `addEventListener("load", ping)` of `move |_| ping()`: its `.length`
     and its identity tell them apart, as a JS caller of an exported value
     sees one function where Rust made a closure each time. A forwarding

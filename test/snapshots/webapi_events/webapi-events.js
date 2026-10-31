@@ -276,4 +276,29 @@ export function navigationListeners(button) {
   button.removeEventListener("click", handleNavigateComplete);
   button.removeEventListener("keydown", handleNavigateComplete);
 }
+
+// Of a local function JS makes, `function::with_this`'s of a closure that
+// reads no `this`, which captures its state: that function too (rd284b).
+export function localNavigationListeners(button) {
+  let isCancelled = false;
+  function handleNavigateComplete() {
+    if (!isCancelled) {
+      console.log("complete");
+    }
+  }
+  button.addEventListener("click", handleNavigateComplete);
+  button.addEventListener("keydown", handleNavigateComplete);
+  // One that reads its `this` keeps its listener, which calls it of none.
+  function named() {
+    console.log(this != null);
+  }
+  button.addEventListener("click", () => {
+    named();
+  });
+  return function () {
+    isCancelled = true;
+    button.removeEventListener("click", handleNavigateComplete);
+    button.removeEventListener("keydown", handleNavigateComplete);
+  };
+}
 //# sourceMappingURL=webapi-events.js.map

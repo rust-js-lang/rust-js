@@ -276,3 +276,31 @@ pub fn navigation_listeners(button: &HTMLButtonElement) {
     button.remove_event_listener(Click, on_success, None);
     button.remove_event_listener(Keydown, on_error, None);
 }
+
+// Of a local function JS makes, `function::with_this`'s of a closure that
+// reads no `this`, which captures its state: that function too (rd284b).
+pub fn local_navigation_listeners(button: &'static HTMLButtonElement) -> &'static dyn Fn() {
+    let is_cancelled = std::rc::Rc::new(Cell::new(false));
+    let handle_navigate_complete: &'static dyn Fn() = function::with_this({
+        let is_cancelled = std::rc::Rc::clone(&is_cancelled);
+        move |_, ()| {
+            if !is_cancelled.get() {
+                webapi::console::log(("complete",));
+            }
+        }
+    });
+    let on_success = listener(move |_: &PointerEvent| handle_navigate_complete());
+    let on_error = listener(move |_: &KeyboardEvent| handle_navigate_complete());
+    button.add_event_listener(Click, on_success, None);
+    button.add_event_listener(Keydown, on_error, None);
+    // One that reads its `this` keeps its listener, which calls it of none.
+    let named: &'static dyn Fn() = function::with_this(|this, ()| {
+        webapi::console::log((this.is_some(),));
+    });
+    button.add_event_listener(Click, listener(move |_: &PointerEvent| named()), None);
+    function::with_this(move |_, ()| {
+        is_cancelled.set(true);
+        button.remove_event_listener(Click, on_success, None);
+        button.remove_event_listener(Keydown, on_error, None);
+    })
+}
