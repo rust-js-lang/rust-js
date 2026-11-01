@@ -18,9 +18,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `insert` at the length, `targets.insert(n, 9)` of `n = targets.len()`, is checked, `$insertAt`, as if it had to be below it (rd103)",
     file: "src/lower/body_queries/ranges.rs",
-    find: "                && ((index.below.as_ref()).is_some_and(|(s, b)| k.same_length(s, &slice) && b.up_to())\n",
-    replace:
-      "                && ((index.below.as_ref()).is_some_and(|(s, b)| k.same_length(s, &slice) && b.within())\n",
+    find: "                && (index.below.any(|(s, b)| k.same_length(s, &slice) && b.up_to())\n",
+    replace: "                && (index.below.any(|(s, b)| k.same_length(s, &slice) && b.within())\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_remove_insert_in_bounds.rs$"],
     snapshots: true,
   },
@@ -67,9 +66,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`n - k` of a `k < n` isn't known at least 1, so `n - k - 1` keeps its wrap",
     file: "src/lower/body_queries/ranges.rs",
-    find: "                    (Some(n), Some((base, x))) if base == n && x.c == 1 && x.s == 0 => -x.b,\n",
-    replace:
-      "                    (Some(n), Some((base, x))) if base == n && x.c == 1 && x.s == 0 => i128::MIN,\n",
+    find: "                    .map_or(i128::MIN, |x| -x.b);\n",
+    replace: "                    .map_or(i128::MIN, |_| i128::MIN);\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "another's value"],
   },
   {
@@ -77,9 +75,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`n - k` of a `k ≤ n + 1` is taken as at least 0, so `n - k` of `k = n + 1` is -1, not `u32::MAX`",
     file: "src/lower/body_queries/ranges.rs",
-    find: "                    (Some(n), Some((base, x))) if base == n && x.c == 1 && x.s == 0 => -x.b,\n",
-    replace:
-      "                    (Some(n), Some((base, x))) if base == n && x.c == 1 && x.s == 0 => 0,\n",
+    find: "                    .map_or(i128::MIN, |x| -x.b);\n",
+    replace: "                    .map_or(i128::MIN, |_| 0);\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "another's value"],
   },
   {
@@ -96,8 +93,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`n -= 1` keeps `n ≤ n - 1`, its bound by the `n` it was, so `k < n` puts `k` two below `n` and `n - k - 1 - 1` doesn't wrap where it should",
     file: "src/lower/body_queries/ranges.rs",
-    find: "                if value.below.as_ref().is_some_and(|((_, v), _)| *v == var) {\n",
-    replace: "                if false {\n",
+    find: "                value.below.retain(|((_, v), _)| *v != var);\n",
+    replace: "",
     tests: ["test/lowering-numbers.test.ts", "-t", "another's value"],
   },
   {
@@ -244,9 +241,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a counter widened round a loop forgets the length it's below, so `s as isize` past the loop keeps its `| 0`",
     file: "src/lower/body_queries/ranges.rs",
-    find: "                            (Some((s, x)), Some((t, y))) if s == t && x.join(*y) == *x => Some((s.clone(), *x)),\n",
-    replace:
-      "                            (Some((s, x)), Some((t, y))) if false && s == t && x.join(*y) == *x => Some((s.clone(), *x)),\n",
+    find: "                            .filter_map(|s, x| r.below.get(s).filter(|&y| x.join(y) == x).map(|_| (s.clone(), x)));\n",
+    replace: "                            .filter_map(|s, x| r.below.get(s).filter(|&y| false && x.join(y) == x).map(|_| (s.clone(), x)));\n",
     tests: [
       "test/lowering-numbers.test.ts",
       "-t",
@@ -258,8 +254,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a counter widened round a loop keeps its bound by a length, but not the most that bound is, so a later round finds it past it and forgets it",
     file: "src/lower/body_queries/ranges.rs",
-    find: "                            Some((s, x)) => type_most.min(x.most(base_most(s).unwrap_or(u32::MAX as i128))),\n",
-    replace: "                            Some(_) => type_most - 1,\n",
+    find: "                            .map(|(s, x)| type_most.min(x.most(base_most(s).unwrap_or(u32::MAX as i128))))\n",
+    replace: "                            .map(|_| type_most - 1)\n",
     tests: [
       "test/lowering-numbers.test.ts",
       "-t",
@@ -271,9 +267,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a counter bound by a length is widened to one below its type's most, so an `isize` below `len() as isize`, whose `+ 1` reaches `isize`'s most, is forgotten and `lines[s as usize]` keeps `$index(lines, s >>> 0)`",
     file: "src/lower/body_queries/ranges.rs",
-    find: "                            Some((s, x)) => type_most.min(x.most(base_most(s).unwrap_or(u32::MAX as i128))),\n",
-    replace:
-      "                            Some((s, x)) => (type_most - 1).min(x.most(base_most(s).unwrap_or(u32::MAX as i128))),\n",
+    find: "                            .map(|(s, x)| type_most.min(x.most(base_most(s).unwrap_or(u32::MAX as i128))))\n",
+    replace: "                            .map(|(s, x)| (type_most - 1).min(x.most(base_most(s).unwrap_or(u32::MAX as i128))))\n",
     tests: [
       "test/lowering-numbers.test.ts",
       "-t",
@@ -345,8 +340,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`for i in 0..xs.len()` shows nothing of `i`, so `items[i]` is checked",
     file: "src/lower/body_queries/ranges.rs",
-    find: "                    below: (end.below).and_then(|(slice, b)| Some((self.unchanged_in(body, slice)?, b.offset(-past)))),",
-    replace: "                    below: None,",
+    find: "                    below: (end.below)\n                        .filter_map(|slice, b| Some((self.unchanged_in(body, slice.clone())?, b.offset(-past)))),\n",
+    replace: "                    below: Bounds::default(),\n",
     tests: [
       "test/lowering-numbers.test.ts",
       "-t",
@@ -460,9 +455,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`length >> 1` is taken at most the length, so `heap[leftIndex]` is checked",
     file: "src/lower/body_queries/ranges.rs",
-    find: "                    below: bound(l, &|x| Below { s: x.s + k as u32, ..x }.lowest()).filter(|(_, x)| x.s <= 64),",
-    replace:
-      "                    below: bound(l, &|x| Below { s: x.s, ..x }.lowest()).filter(|(_, x)| x.s <= 64),",
+    find: "Below { s: x.s + k as u32, ..x }.lowest()",
+    replace: "Below { s: x.s, ..x }.lowest()",
     tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
@@ -490,8 +484,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an index's bound by the slice its caller gives isn't the parameter's, so `siftUp`'s `heap[index]` is checked",
     file: "src/lower/body_queries/ranges.rs",
-    find: "Some((theirs(slice)?, *bound))",
-    replace: "Some((theirs(slice).filter(|_| false)?, *bound))",
+    find: "Some((theirs(slice)?, bound))",
+    replace: "Some((theirs(slice).filter(|_| false)?, bound))",
     tests: ["test/lowering-functions.test.ts", "-t", "only calls reach"],
   },
   {
@@ -652,9 +646,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a table made `vec![0.0; terraces.len()]` is indexed `$index(levels, i)`, not as `terraces` is (#362)",
     file: "src/lower/body_queries/ranges.rs",
-    find: "                    .is_some_and(|(s, b)| k.same_length(s, &slice) && b.within())\n",
-    replace:
-      "                    .is_some_and(|(s, b)| *s == slice && b.within())\n",
+    find: "                && (index.below.any(|(s, b)| k.same_length(s, &slice) && b.within())\n",
+    replace: "                && (index.below.any(|(s, b)| *s == slice && b.within())\n",
     tests: ["test/lowering-collections.test.ts", "-t", "as long as another"],
   },
   {
@@ -689,9 +682,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `enumerate()`'s index stays below a slice variable the body points elsewhere, `xs[i]` of a shorter one unchecked (#363)",
     file: "src/lower/body_queries/ranges.rs",
-    find: "                        .unchanged_in(body, slice)\n",
-    replace:
-      "                        .unchanged_in(rustc_span::DUMMY_SP, slice)\n",
+    find: "                    below: (self.unchanged_in(body, slice))\n",
+    replace: "                    below: (self.unchanged_in(rustc_span::DUMMY_SP, slice))\n",
     tests: ["test/lowering-collections.test.ts", "-t", "enumerate's index"],
   },
   {

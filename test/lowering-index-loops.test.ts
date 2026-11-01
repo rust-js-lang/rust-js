@@ -356,3 +356,42 @@ pub fn shrinking(v: &[u32]) -> u32 {
   expect([lib.known([1, 2, 3]), lib.known([1, 2]), lib.tail([1, 2, 3], 1), lib.tail([1, 2, 3], 3), lib.shrinking([1, 2, 3])]).toEqual([235, 0, 5, 0, 31]);
   expect(() => lib.tail([1, 2, 3], 5)).toThrow("range start index 5 out of range for slice of length 3");
 });
+
+// React's areHookInputsEqual: an index tested below two lengths, `i <
+// prev.len() && i < next.len()`, reads each slice as JS does, `prev[i]` and
+// `next[i]`, in a closure too, as Rust's borrows keep what it captures as
+// it was where it's made (rd423).
+test("an index below two lengths reads each in bounds, in a closure too", async () => {
+  const dir = fixture("index-below-two-lengths");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+thread_local! {
+    static CALLS: Cell<u32> = const { Cell::new(0) };
+}
+
+fn same(a: &u32, b: &u32) -> bool {
+    CALLS.set(CALLS.get() + 1);
+    a == b
+}
+
+pub fn equal(next: &[u32], prev: &[u32]) -> bool {
+    let mut i = 0;
+    while i < prev.len() && i < next.len() {
+        if CALLS.with(|_| same(&next[i], &prev[i])) {
+            i += 1;
+            continue;
+        }
+        return false;
+    }
+    true
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("same(next[i], prev[i])");
+  expect(js).not.toContain("$index");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.equal([1, 2, 3], [1, 2, 3])).toBe(true);
+  expect(lib.equal([1, 2], [1, 2, 3])).toBe(true);
+  expect(lib.equal([4, 2], [1, 2, 3])).toBe(false);
+});

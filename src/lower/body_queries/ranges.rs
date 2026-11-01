@@ -18,6 +18,7 @@ use rustc_middle::middle::region;
 use rustc_middle::ty::TypeVisitableExt;
 
 mod cells;
+mod closures;
 mod empty;
 mod found;
 mod known;
@@ -28,7 +29,7 @@ mod tables;
 mod volatile;
 
 use cells::reads_a_cell;
-use known::{Below, ITEM, Known, Range, VALUE, by_value, either};
+use known::{Below, Bounds, ITEM, Known, Range, VALUE, by_value, either};
 pub(in crate::lower) use present::present_item_of_sized;
 use reads::{calls, pure, read_vars};
 use tables::chosen;
@@ -107,6 +108,8 @@ struct Walk<'a, 'tcx> {
     /// is told of them where this body calls it.
     callees: &'a HashMap<DefId, Vec<Option<Param>>>,
     told: HashMap<DefId, Option<Known>>,
+    /// The closures told what's known where they're made (`closures`).
+    closures: &'a HashSet<DefId>,
     /// The body's root, and each scope's, whether what it drops where it
     /// ends may run code, once a scope's asked (`cells::scope_drops`).
     root: ExprId,
@@ -154,9 +157,10 @@ pub(in crate::lower) fn ranges<'tcx>(
             (def_id, params)
         })
         .collect();
-    // What each is told, `None` while no call of it is reached; each body's
-    // last walk, and what it told.
-    let mut entries: HashMap<DefId, Option<Known>> = callees.keys().map(|&f| (f, None)).collect();
+    let closures = closures::told_closures(bodies);
+    // What each is told, `None` while no call of it, or where a closure is
+    // made, is reached; each body's last walk, and what it told.
+    let mut entries: HashMap<DefId, Option<Known>> = (callees.keys().chain(&closures)).map(|&f| (f, None)).collect();
     let mut changed: HashMap<DefId, usize> = HashMap::new();
     let mut found: Vec<Ranges> = bodies.iter().map(|_| Ranges::default()).collect();
     let mut told: Vec<HashMap<DefId, Option<Known>>> = bodies.iter().map(|_| HashMap::new()).collect();
@@ -193,6 +197,7 @@ pub(in crate::lower) fn ranges<'tcx>(
             lost: false,
             callees: &callees,
             told: HashMap::new(),
+            closures: &closures,
             root,
             scope_drops: None,
             bodies: &all,
@@ -204,9 +209,11 @@ pub(in crate::lower) fn ranges<'tcx>(
         if known.is_some() {
             walk.expr(root, &mut known);
         }
-        // A jump not followed may hide a call: each it makes is told nothing.
+        // A jump not followed may hide a call: each it makes is told
+        // nothing, as is each closure it makes.
         let now = match walk.lost {
             true => (calls(thir).filter(|f| callees.contains_key(f)))
+                .chain(closures::made(thir).filter(|c| closures.contains(c)))
                 .map(|f| (f, Some(Known::default())))
                 .collect(),
             false => std::mem::take(&mut walk.told),
@@ -368,8 +375,10 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
 
     /// `range`, of `e`, at most `e`'s value where nothing else bounds it.
     fn bounded_by_itself(&self, mut range: Range, e: ExprId) -> Range {
-        if range.below.is_none() {
-            range.below = self.value_base(e).map(|base| (base, Below::LENGTH));
+        if range.below.is_empty()
+            && let Some(base) = self.value_base(e)
+        {
+            range.below = Bounds::of(base, Below::LENGTH);
         }
         range
     }
@@ -657,10 +666,14 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 }
                 None
             }
-            // What it captures by `&mut` it may change whenever it's called,
-            // and, as Rust's borrows have it, nothing else reads meanwhile:
-            // forgotten as it's made.
+            // What it captures that nothing changes while it lives, as
+            // known here, it's told (rd423): `closures::told` alone says
+            // what that is, before its captures are taken. What it captures
+            // by `&mut` it may change whenever it's called, and, as Rust's
+            // borrows have it, nothing else reads meanwhile: forgotten as
+            // it's made.
             ExprKind::Closure(ref closure) => {
+                self.tell_closure(closure.closure_id.to_def_id(), known);
                 for &upvar in closure.upvars.iter() {
                     self.expr(upvar, known);
                 }
@@ -847,7 +860,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 Range {
                     lo: least,
                     hi: most,
-                    below: Some((slice, Below::LENGTH)),
+                    below: Bounds::of(slice, Below::LENGTH),
                 }
             }),
             // A JS string's `length`, a binding's, or its count of UTF-16
@@ -885,7 +898,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         for ((param, range), slice) in params.iter().zip(ranges).zip(&slices) {
             let Some(param) = param else { continue };
             if let (true, Some(range)) = (param.integer, range) {
-                let below = (range.below.as_ref()).and_then(|(slice, bound)| Some((theirs(slice)?, *bound)));
+                let below = (range.below).filter_map(|slice, bound| Some((theirs(slice)?, bound)));
                 told.vars.insert(param.var, Range { below, ..range.clone() });
             }
             if let Some(least) = slice.as_ref().and_then(|slice| k.lengths.get(slice)) {
@@ -922,9 +935,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 && !self.volatile.contains(&var)
             {
                 // `i = i + 1`'s bound by the `i` it was is none of the new.
-                if value.below.as_ref().is_some_and(|((_, v), _)| *v == var) {
-                    value.below = None;
-                }
+                value.below.retain(|((_, v), _)| *v != var);
                 k.vars.insert(var, value);
             }
             return;
@@ -1155,10 +1166,8 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                         // Still at most what it was by a length, a counter
                         // below `xs.len()`: at most that, where the length
                         // is its most (ADR 0701).
-                        let below = match (&was.below, &r.below) {
-                            (Some((s, x)), Some((t, y))) if s == t && x.join(*y) == *x => Some((s.clone(), *x)),
-                            _ => None,
-                        };
+                        let below = (was.below)
+                            .filter_map(|s, x| r.below.get(s).filter(|&y| x.join(y) == x).map(|_| (s.clone(), x)));
                         // One bound by a length is at most what that bound
                         // is, up to its type's most: the length holds it,
                         // not a `+ 1` that can't wrap (ADR 0709).
@@ -1169,10 +1178,10 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                             true => most.get(&s.1).copied(),
                             false => length_most.get(s).copied(),
                         };
-                        let hi = match &below {
-                            Some((s, x)) => type_most.min(x.most(base_most(s).unwrap_or(u32::MAX as i128))),
-                            None => type_most - 1,
-                        };
+                        let hi = (below.iter())
+                            .map(|(s, x)| type_most.min(x.most(base_most(s).unwrap_or(u32::MAX as i128))))
+                            .min()
+                            .unwrap_or(type_most - 1);
                         (was.hi < hi && r.hi <= hi && r.lo >= was.lo).then(|| {
                             let widened = Range { lo: was.lo, hi, below };
                             (v, widened)
@@ -1265,7 +1274,8 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 start.zip(end).map(|(start, end)| Range {
                     lo: start.lo,
                     hi: end.hi - past,
-                    below: (end.below).and_then(|(slice, b)| Some((self.unchanged_in(body, slice)?, b.offset(-past)))),
+                    below: (end.below)
+                        .filter_map(|slice, b| Some((self.unchanged_in(body, slice.clone())?, b.offset(-past)))),
                 })
             }
             None => {
@@ -1273,9 +1283,9 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 enumerated.map(|(slice, most)| Range {
                     lo: 0,
                     hi: most - 1,
-                    below: self
-                        .unchanged_in(body, slice)
-                        .map(|slice| (slice, Below::LENGTH.offset(-1))),
+                    below: (self.unchanged_in(body, slice))
+                        .map(|slice| Bounds::of(slice, Below::LENGTH.offset(-1)))
+                        .unwrap_or_default(),
                 })
             }
         };
@@ -1309,29 +1319,34 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         (lo, hi): (i128, i128),
         of: (Option<Slice>, Option<Slice>),
     ) -> Range {
-        let bound = |r: &Range, by: &dyn Fn(Below) -> Below| r.below.as_ref().map(|(s, x)| (s.clone(), by(*x)));
-        let by_itself = |base: &Option<Slice>, by: i128| base.clone().map(|base| (base, Below::LENGTH.offset(by)));
+        let bound = |r: &Range, by: &dyn Fn(Below) -> Below| r.below.filter_map(|s, x| Some((s.clone(), by(x))));
+        let by_itself = |base: &Option<Slice>, by: i128| {
+            (base.clone())
+                .map(|base| Bounds::of(base, Below::LENGTH.offset(by)))
+                .unwrap_or_default()
+        };
         let made = match op {
+            // By each slice either is bound by: both bounds summed, or one
+            // and the other's most.
             BinOp::Add => Some(Range {
                 lo: l.lo + r.lo,
                 hi: l.hi + r.hi,
-                below: match (&l.below, &r.below) {
-                    (Some((s, x)), Some((t, y))) if s == t => Some((s.clone(), x.plus(*y))),
-                    (Some(_), _) => bound(l, &|x| x.offset(r.hi)),
-                    (None, Some(_)) => bound(r, &|y| y.offset(l.hi)),
-                    (None, None) => by_itself(&of.0, r.hi).or_else(|| by_itself(&of.1, l.hi)),
-                },
+                below: bound(l, &|x| x.offset(r.hi))
+                    .with(bound(r, &|y| y.offset(l.hi)))
+                    .with(l.below.filter_map(|s, x| Some((s.clone(), x.plus(r.below.get(s)?)))))
+                    .or(by_itself(&of.0, r.hi))
+                    .or(by_itself(&of.1, l.hi)),
             }),
             BinOp::Sub => {
                 // `n - i` of an `i` at most `n + b`: at least `-b`.
-                let floor = match (&of.0, &r.below) {
-                    (Some(n), Some((base, x))) if base == n && x.c == 1 && x.s == 0 => -x.b,
-                    _ => i128::MIN,
-                };
+                let floor = (of.0.as_ref())
+                    .and_then(|n| r.below.get(n))
+                    .filter(|x| x.c == 1 && x.s == 0)
+                    .map_or(i128::MIN, |x| -x.b);
                 Some(Range {
                     lo: (l.lo - r.hi).max(floor),
                     hi: l.hi - r.lo,
-                    below: bound(l, &|x| x.offset(-r.lo)).or_else(|| by_itself(&of.0, -r.lo)),
+                    below: bound(l, &|x| x.offset(-r.lo)).or(by_itself(&of.0, -r.lo)),
                 })
             }
             BinOp::Mul => {
@@ -1342,7 +1357,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                     below: match (r.constant(), l.constant()) {
                         (Some(k), _) if k >= 0 => bound(l, &|x| x.times(k)),
                         (_, Some(k)) if k >= 0 => bound(r, &|y| y.times(k)),
-                        _ => None,
+                        _ => Bounds::default(),
                     },
                 })
             }
@@ -1350,7 +1365,9 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 Some(k @ 0..32) => Range {
                     lo: l.lo >> k,
                     hi: l.hi >> k,
-                    below: bound(l, &|x| Below { s: x.s + k as u32, ..x }.lowest()).filter(|(_, x)| x.s <= 64),
+                    below: (l.below).filter_map(|s, x| {
+                        Some((s.clone(), Below { s: x.s + k as u32, ..x }.lowest())).filter(|(_, x)| x.s <= 64)
+                    }),
                 },
                 _ => Range::of(0, l.hi),
             }),
@@ -1408,7 +1425,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 // At most the length: by its bound, or below its least.
                 let up_to = |r: &Range| {
                     r.lo >= 0
-                        && (r.below.as_ref().is_some_and(|(s, b)| *s == slice && b.up_to())
+                        && (r.below.get(&slice).is_some_and(|b| b.up_to())
                             || k.lengths.get(&slice).is_some_and(|&least| r.hi <= least)
                             || fixed.is_some_and(|n| r.hi <= n))
                 };
@@ -1455,7 +1472,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         let Some(k) = known else { return };
         let ok = self.slice(items).zip(index).is_some_and(|(slice, index)| {
             index.lo >= 0
-                && ((index.below.as_ref()).is_some_and(|(s, b)| k.same_length(s, &slice) && b.up_to())
+                && (index.below.any(|(s, b)| k.same_length(s, &slice) && b.up_to())
                     || k.lengths.get(&slice).is_some_and(|&least| index.hi <= least))
         });
         *self.indexes.entry(site).or_insert(true) &= ok;
@@ -1466,10 +1483,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         let slice = self.slice(items).or_else(|| self.row_of(items));
         let ok = slice.zip(index).is_some_and(|(slice, index)| {
             index.lo >= 0
-                && (index
-                    .below
-                    .as_ref()
-                    .is_some_and(|(s, b)| k.same_length(s, &slice) && b.within())
+                && (index.below.any(|(s, b)| k.same_length(s, &slice) && b.within())
                     || k.lengths.get(&slice).is_some_and(|&least| index.hi < least))
         });
         *self.indexes.entry(site).or_insert(true) &= ok;

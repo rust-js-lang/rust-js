@@ -16,8 +16,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`i < n` of an `i` below `xs.len()` replaces that bound by `n`'s, so `xs[i]` is `$index(xs, i)`",
     file: "src/lower/body_queries/ranges/narrowing.rs",
-    find: "                (_, Some(own)) if !by_value(&own.0) => Some(own.clone()),\n",
-    replace: "",
+    find: "            current.below.clone().with(theirs)\n",
+    replace: "            theirs.or(current.below.clone())\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "another's value"],
   },
   {
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`s != xs.len()` of an `s` at most the length shows nothing, so `xs[s]` after it is checked",
     file: "src/lower/body_queries/ranges/narrowing.rs",
-    find: "            range.below = Some((slice, Below::LENGTH.offset(-1)));\n",
+    find: "            range.below.set(slice, Below::LENGTH.offset(-1));\n",
     replace: "",
     tests: [
       "test/lowering-numbers.test.ts",
@@ -78,8 +78,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`s != xs.len()` puts any `s` below the length, one at most the length plus one too",
     file: "src/lower/body_queries/ranges/narrowing.rs",
-    find: "            && range.below == Some((slice.clone(), Below::LENGTH))\n",
-    replace: "            && range.below.is_some()\n",
+    find: "            && range.below.get(&slice) == Some(Below::LENGTH)\n",
+    replace: "            && !range.below.is_empty()\n",
     tests: [
       "test/lowering-numbers.test.ts",
       "-t",

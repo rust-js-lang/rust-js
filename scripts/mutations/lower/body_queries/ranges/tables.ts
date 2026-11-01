@@ -33,8 +33,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an integer's `min` keeps neither's bound, `xs[i.min(xs.len() - 1)]` checked (#367)",
     file: "src/lower/body_queries/ranges/tables.rs",
-    find: "            below: a.below.clone().or_else(|| b.below.clone()),\n",
-    replace: "            below: None,\n",
+    find: "            below: a.below.clone().with(b.below.clone()),\n",
+    replace: "            below: Default::default(),\n",
     tests: ["test/lowering-collections.test.ts", "-t", "as long as another"],
   },
   {
@@ -42,8 +42,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an integer's `max` of two indexes below a length keeps no bound, `xs[i.max(j)]` checked (#367)",
     file: "src/lower/body_queries/ranges/tables.rs",
-    find: "                (Some((s, x)), Some((t, y))) if s == t => Some((s.clone(), x.join(*y))),\n",
-    replace: "",
+    find: "            below: (a.below).filter_map(|s, x| Some((s.clone(), x.join(b.below.get(s)?)))),\n",
+    replace: "            below: Default::default(),\n",
     tests: ["test/lowering-collections.test.ts", "-t", "as long as another"],
   },
   {

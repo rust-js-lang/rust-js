@@ -233,8 +233,6 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         }
         let range = k.vars.entry(var).or_insert_with(|| Range::of(lo, hi));
         range.lo = range.lo.max(0);
-        if range.below.as_ref().is_none_or(|(s, _)| *s == slice) {
-            range.below = Some((slice, Below::LENGTH.offset(-1)));
-        }
+        range.below.set(slice, Below::LENGTH.offset(-1));
     }
 }

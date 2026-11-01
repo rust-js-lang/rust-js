@@ -18,15 +18,12 @@ pub(super) fn chosen(a: &Range, b: &Range, larger: bool) -> Range {
         true => Range {
             lo: a.lo.max(b.lo),
             hi: a.hi.max(b.hi),
-            below: match (&a.below, &b.below) {
-                (Some((s, x)), Some((t, y))) if s == t => Some((s.clone(), x.join(*y))),
-                _ => None,
-            },
+            below: (a.below).filter_map(|s, x| Some((s.clone(), x.join(b.below.get(s)?)))),
         },
         false => Range {
             lo: a.lo.min(b.lo),
             hi: a.hi.min(b.hi),
-            below: a.below.clone().or_else(|| b.below.clone()),
+            below: a.below.clone().with(b.below.clone()),
         },
     }
 }

@@ -123,18 +123,104 @@ impl Below {
     }
 }
 
-/// What an integer can be: from `lo` to `hi`, and at most `below` by a
-/// slice's length.
+/// Each bound of an integer by a slice's length, or by another integer's
+/// value, at most one of each: `i` of `i < prev.len() && i < next.len()`
+/// is below either length, so an index of each (rd423). As a set: the
+/// order they're found in says nothing, and a loop's rounds settle on the
+/// same ones.
+#[derive(Clone, Default, Debug)]
+pub(super) struct Bounds(Vec<(Slice, Below)>);
+
+impl PartialEq for Bounds {
+    fn eq(&self, other: &Bounds) -> bool {
+        self.0.len() == other.0.len() && self.0.iter().all(|(s, x)| other.get(s) == Some(*x))
+    }
+}
+
+impl Bounds {
+    /// The one bound, of `slice`.
+    pub(super) fn of(slice: Slice, below: Below) -> Bounds {
+        Bounds(vec![(slice, below)])
+    }
+
+    /// Its bound by `slice`, if it has one.
+    pub(super) fn get(&self, slice: &Slice) -> Option<Below> {
+        self.0.iter().find(|(s, _)| s == slice).map(|&(_, x)| x)
+    }
+
+    pub(super) fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    pub(super) fn iter(&self) -> impl Iterator<Item = &(Slice, Below)> {
+        self.0.iter()
+    }
+
+    pub(super) fn iter_mut(&mut self) -> impl Iterator<Item = &mut (Slice, Below)> {
+        self.0.iter_mut()
+    }
+
+    /// `slice`'s bound `below`, in place of one it had.
+    pub(super) fn set(&mut self, slice: Slice, below: Below) {
+        match self.0.iter_mut().find(|(s, _)| *s == slice) {
+            Some(bound) => bound.1 = below,
+            None => self.0.push((slice, below)),
+        }
+    }
+
+    pub(super) fn retain(&mut self, keep: impl FnMut(&(Slice, Below)) -> bool) {
+        self.0.retain(keep);
+    }
+
+    pub(super) fn any(&self, holds: impl FnMut(&(Slice, Below)) -> bool) -> bool {
+        self.0.iter().any(holds)
+    }
+
+    /// Each bound `made` makes of one of these.
+    pub(super) fn filter_map(&self, mut made: impl FnMut(&Slice, Below) -> Option<(Slice, Below)>) -> Bounds {
+        let mut bounds = Bounds::default();
+        for (slice, below) in &self.0 {
+            if let Some((slice, below)) = made(slice, *below) {
+                bounds.set(slice, below);
+            }
+        }
+        bounds
+    }
+
+    /// These, or `other` where there are none.
+    pub(super) fn or(self, other: Bounds) -> Bounds {
+        match self.is_empty() {
+            true => other,
+            false => self,
+        }
+    }
+
+    /// These and `other`'s, each of `other`'s in place of one of the same
+    /// slice: each holds.
+    pub(super) fn with(mut self, other: Bounds) -> Bounds {
+        for (slice, below) in other.0 {
+            self.set(slice, below);
+        }
+        self
+    }
+}
+
+/// What an integer can be: from `lo` to `hi`, and at most each of `below`
+/// by a slice's length or another's value.
 #[derive(Clone, PartialEq, Debug)]
 pub(super) struct Range {
     pub(super) lo: i128,
     pub(super) hi: i128,
-    pub(super) below: Option<(Slice, Below)>,
+    pub(super) below: Bounds,
 }
 
 impl Range {
     pub(super) fn of(lo: i128, hi: i128) -> Self {
-        Range { lo, hi, below: None }
+        Range {
+            lo,
+            hi,
+            below: Bounds::default(),
+        }
     }
 
     pub(super) fn constant(&self) -> Option<i128> {
@@ -155,28 +241,29 @@ impl Range {
     /// of no bound joined with one by `n`'s value is of none, or a loop's
     /// counter would never settle.
     pub(super) fn below_of(&self, slice: &Slice) -> Option<Below> {
-        match &self.below {
-            Some((s, x)) if s == slice => Some(*x),
-            _ if by_value(slice) => None,
-            Some((s, _)) if !by_value(s) => None,
-            _ => Some(Below { c: 0, b: self.hi, s: 0 }),
+        match self.below.get(slice) {
+            Some(x) => Some(x),
+            None if by_value(slice) => None,
+            None if self.below.any(|(s, _)| !by_value(s)) => None,
+            None => Some(Below { c: 0, b: self.hi, s: 0 }),
         }
     }
 
     /// A range either is in: of `0` and of an index below `xs.len()`, one
-    /// still at most the length.
+    /// still at most the length; by each slice either is bound by.
     pub(super) fn join(&self, other: &Range) -> Range {
-        // A slice's length first, which an index is judged by.
-        let slice = (self.below.as_ref())
-            .filter(|(s, _)| !by_value(s))
-            .or(other.below.as_ref().filter(|(s, _)| !by_value(s)))
-            .or(self.below.as_ref())
-            .or(other.below.as_ref())
-            .map(|(s, _)| s);
+        let mut below = Bounds::default();
+        for (slice, _) in self.below.iter().chain(other.below.iter()) {
+            if below.get(slice).is_none()
+                && let (Some(x), Some(y)) = (self.below_of(slice), other.below_of(slice))
+            {
+                below.set(slice.clone(), x.join(y));
+            }
+        }
         Range {
             lo: self.lo.min(other.lo),
             hi: self.hi.max(other.hi),
-            below: slice.and_then(|slice| Some((slice.clone(), self.below_of(slice)?.join(other.below_of(slice)?)))),
+            below,
         }
     }
 }
@@ -261,11 +348,11 @@ impl Known {
             None => {}
         }
         for range in self.vars.values_mut() {
-            if let Some((at, bound)) = &mut range.below
-                && at == slice
-            {
-                bound.b -= bound.c * by;
-                *bound = bound.lowest();
+            for (at, bound) in range.below.iter_mut() {
+                if at == slice {
+                    bound.b -= bound.c * by;
+                    *bound = bound.lowest();
+                }
             }
         }
     }
@@ -293,16 +380,14 @@ impl Known {
         self.lengths.retain(|s, _| !celled(s));
         self.same.retain(|s, base| !celled(s) && !celled(base));
         for range in self.vars.values_mut() {
-            if range.below.as_ref().is_some_and(|(s, _)| celled(s)) {
-                range.below = None;
-            }
+            range.below.retain(|(s, _)| !celled(s));
         }
     }
 
     /// Whether anything is known of a slice in a `RefCell`.
     pub(super) fn knows_cells(&self) -> bool {
         self.lengths.keys().any(|s| s.0.contains(&CELL))
-            || (self.vars.values()).any(|r| r.below.as_ref().is_some_and(|(s, _)| s.0.contains(&CELL)))
+            || (self.vars.values()).any(|r| r.below.any(|(s, _)| s.0.contains(&CELL)))
     }
 
     /// What's known after `var` may have changed, as an integer or as what
@@ -315,9 +400,7 @@ impl Known {
         self.tests
             .retain(|held, (_, reads)| *held != var && !reads.contains(&var));
         for range in self.vars.values_mut() {
-            if range.below.as_ref().is_some_and(|((_, v), _)| *v == var) {
-                range.below = None;
-            }
+            range.below.retain(|((_, v), _)| *v != var);
         }
     }
 }

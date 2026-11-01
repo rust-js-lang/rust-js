@@ -1,6 +1,6 @@
 # 0576. What a body's integers can be: an index in bounds, an operator that can't wrap, a swap JS's own
 
-Status: Accepted; amended below (rd103): a `Vec`'s `remove` and `insert` in bounds are JS's own; extended by [1040](1040-a-position-tested-is-jss-own-search.md), the index a slice's `position` finds below its length; by [0720](0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md),
+Status: Accepted; amended below (rd103): a `Vec`'s `remove` and `insert` in bounds are JS's own; extended by [1047](1047-an-index-is-bound-by-each-length-its-tested-below.md), an index bound by each length it's tested below, and a closure told what's known where it's made; by [1040](1040-a-position-tested-is-jss-own-search.md), the index a slice's `position` finds below its length; by [0720](0720-a-labeled-block-and-a-named-constant-in-a-bodys-ranges.md),
 which follows a labeled block's `break` and reads a named constant's value; by [0577](0577-a-function-only-calls-reach.md),
 whose functions are given what their calls give them, and by
 [0632](0632-a-js-strings-length-is-below-u32-max.md), a JS string's

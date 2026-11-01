@@ -96,7 +96,7 @@ function main() {
   );
   caught(
     "divide",
-    $catchUnwind(() => halve(n, (n - 7) | 0)),
+    $catchUnwind(() => halve(n, n - 7)),
     debug,
   );
 

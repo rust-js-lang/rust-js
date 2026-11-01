@@ -45,7 +45,7 @@ function oddSquares(limit) {
 function counters(n) {
   const made = [];
   for (let i = -2; i <= n; i++) {
-    made.push(() => (i * 10) | 0);
+    made.push(() => i * 10);
   }
   return made;
 }

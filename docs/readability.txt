@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1415
-lines	139501
+files	1417
+lines	139741
 temporaries	1	0.1
 labeled blocks	14	1
 while (true)	123	8.8
-$iter	1172	84
+$iter	1172	83.9
 Iterator.from	116	8.3
-return;	150	10.8
-renamed x$1	8627	618.4
+return;	151	10.8
+renamed x$1	8630	617.6
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1976	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	206	0	0	0	6	0	0	35
@@ -579,6 +579,7 @@ test/corpus/impl_type_facts.js	36	0	0	0	0	0	0	0
 test/corpus/impl_type_facts_through_trait.js	117	0	0	0	2	0	0	0
 test/corpus/inclusive_range_loops.js	92	0	0	0	0	0	0	0
 test/corpus/index_bound_generic.js	75	0	0	0	0	0	0	3
+test/corpus/index_bounds_closures.js	159	0	0	0	0	0	2	3
 test/corpus/index_compound_assign.js	44	0	0	0	0	0	0	0
 test/corpus/index_out_of_bounds.js	16	0	0	0	0	0	0	0
 test/corpus/index_written_by_an_operation.js	71	0	0	0	0	0	0	0
@@ -825,11 +826,12 @@ test/corpus/option_switch_default.js	77	0	0	0	0	0	0	0
 test/corpus/optional_callbacks.js	68	0	0	0	0	0	0	0
 test/corpus/options_handed_on.js	101	0	0	0	0	0	0	9
 test/corpus/or_before_a_returning_loop.js	45	0	0	1	0	0	0	0
-test/corpus/or_bindings.js	178	0	2	0	0	0	1	12
+test/corpus/or_bindings.js	149	0	2	0	0	0	1	12
 test/corpus/or_guard_written_first.js	48	0	0	0	0	0	0	0
 test/corpus/or_pattern_constant_alternative.js	34	0	0	0	0	0	0	3
 test/corpus/or_pattern_guard.js	32	0	0	0	0	0	0	4
 test/corpus/or_pattern_moved_part.js	70	0	1	0	0	0	0	6
+test/corpus/or_pattern_one_place.js	132	0	0	0	0	0	0	3
 test/corpus/or_pattern_part_moves.js	201	0	2	0	0	0	0	18
 test/corpus/or_pattern_ref_mut.js	45	0	0	0	0	0	1	0
 test/corpus/ordered_searches.js	27	0	0	0	0	0	0	2
@@ -1143,7 +1145,7 @@ test/corpus/std_iterator_clones.js	117	0	0	0	18	0	0	8
 test/corpus/std_map.js	261	0	0	0	6	0	0	13
 test/corpus/std_map_const.js	40	0	0	0	0	0	0	0
 test/corpus/std_methods.js	181	0	0	0	0	0	0	24
-test/corpus/std_mixed_enum_mut.js	72	0	0	0	0	0	1	17
+test/corpus/std_mixed_enum_mut.js	50	0	0	0	0	0	0	14
 test/corpus/std_mut_items.js	132	0	0	0	0	0	0	0
 test/corpus/std_odds.js	49	0	0	0	0	0	0	0
 test/corpus/std_peekable.js	115	0	0	0	6	0	0	12

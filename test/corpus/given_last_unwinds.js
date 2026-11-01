@@ -53,7 +53,7 @@ function replaced(keys) {
 function caught(k) {
   let x = 1;
   const unwound = $catchUnwind(() => {
-    const x$1 = (k * 10) >>> 0;
+    const x$1 = k * 10;
     check(k);
     x = x$1;
   });

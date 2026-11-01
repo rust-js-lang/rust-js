@@ -2,7 +2,7 @@
 //! compares narrowed, `i < n` putting `i` below `n`'s value or a slice's
 //! length, and a slice's length at least what it's compared with.
 
-use super::known::{Below, Known, Range, by_value};
+use super::known::{Below, Known, Range};
 use super::reads::pure;
 use super::*;
 
@@ -137,9 +137,9 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             return;
         };
         if let Some(range) = known.as_mut().and_then(|k| k.vars.get_mut(&var))
-            && range.below == Some((slice.clone(), Below::LENGTH))
+            && range.below.get(&slice) == Some(Below::LENGTH)
         {
-            range.below = Some((slice, Below::LENGTH.offset(-1)));
+            range.below.set(slice, Below::LENGTH.offset(-1));
         }
     }
 
@@ -166,7 +166,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                     let less = Range {
                         lo: other.lo - k,
                         hi: other.hi - k,
-                        below: (other.below.as_ref()).map(|(s, b)| (s.clone(), b.offset(-k))),
+                        below: other.below.filter_map(|s, b| Some((s.clone(), b.offset(-k)))),
                     };
                     self.narrow(term, op, &less, known);
                 }
@@ -183,17 +183,12 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         }
         let Some(k) = known.as_mut() else { return };
         let current = k.vars.get(&var).cloned().unwrap_or(Range::of(lo, hi));
-        // A slice's length first, which an index is judged by; never its
-        // own value, `i < i + 1`.
+        // Each it had, and each of `other`'s, which it's now below too, of
+        // the same slice in place of its own; never its own value, `i < i
+        // + 1` (rd423).
         let below = |by: i128| {
-            let theirs = (other.below.as_ref())
-                .filter(|((_, v), _)| *v != var)
-                .map(|(s, x)| (s.clone(), x.offset(by)));
-            match (theirs, &current.below) {
-                (Some(theirs), _) if !by_value(&theirs.0) => Some(theirs),
-                (_, Some(own)) if !by_value(&own.0) => Some(own.clone()),
-                (theirs, own) => theirs.or(own.clone()),
-            }
+            let theirs = (other.below).filter_map(|s, x| (s.1 != var).then(|| (s.clone(), x.offset(by))));
+            current.below.clone().with(theirs)
         };
         let narrowed = match op {
             BinOp::Lt => Range {
@@ -234,7 +229,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             return;
         }
         // At least so much, and at most a length: the slice at least so long.
-        if let Some(below) = &narrowed.below {
+        for below in narrowed.below.iter() {
             k.at_least(below, narrowed.lo);
         }
         k.vars.insert(var, narrowed);

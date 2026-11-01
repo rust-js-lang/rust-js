@@ -74,7 +74,13 @@ may change it: a call but its reads, or a drop of what runs code. Where
 is `i++`, no wrap
 ([ADR 0292](../../decisions/0292-known-bounds.md),
 [ADR 0746](../../decisions/0746-a-length-held-in-a-variable-shows-the-slice-so-long.md),
-[ADR 0881](../../decisions/0881-a-refcells-vec-is-indexed-by-its-tests.md)):
+[ADR 0881](../../decisions/0881-a-refcells-vec-is-indexed-by-its-tests.md)).
+An index tested below two lengths, `i < prev.len() && i < next.len()`,
+is below each, `prev[i]` and `next[i]`; and so in a closure made there,
+`KEY.with(|_| same(&next[i], &prev[i]))`, of what it captures by shared
+reference, or takes by value and never changes. One the closure changes,
+or a `RefCell`'s, stays checked
+([ADR 1047](../../decisions/1047-an-index-is-bound-by-each-length-its-tested-below.md)):
 
 ```rust
 pub fn only_children(keys: &[String]) -> bool {

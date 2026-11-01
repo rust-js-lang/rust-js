@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a counter of no bound joined with one below `n` is at most `n`, a bound that never settles round a loop, so `while i + 1 < n { i += 1 }` of a `u8` wraps",
     file: "src/lower/body_queries/ranges/known.rs",
-    find: "            _ if by_value(slice) => None,\n",
+    find: "            None if by_value(slice) => None,\n",
     replace: "",
     tests: [
       "test/lowering-numbers.test.ts",
@@ -40,8 +40,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a range bound by no length, `let mut s = 0`'s, joined with one below `xs.len()` forgets the bound, so a counter past its loop isn't known below the length",
     file: "src/lower/body_queries/ranges/known.rs",
-    find: "            _ => Some(Below { c: 0, b: self.hi, s: 0 }),\n",
-    replace: "            _ => None,\n",
+    find: "            None => Some(Below { c: 0, b: self.hi, s: 0 }),\n",
+    replace: "            None => None,\n",
     tests: [
       "test/lowering-numbers.test.ts",
       "-t",
@@ -201,5 +201,15 @@ export const mutations: Mutation[] = [
     find: "        self.lengths.retain(|s, _| !rows(s));\n",
     replace: "",
     tests: ["test/lowering-collections.test.ts", "-t", "rows are as long"],
+  },
+  {
+    name: "join-one-bound",
+    breaks:
+      "where two paths meet an index keeps one of the lengths it's below, so areHookInputsEqual's `prev[i]` past `i < prev.len() && i < next.len()` round its loop is `$index(prev, i)` (rd423)",
+    file: "src/lower/body_queries/ranges/known.rs",
+    find: "            if below.get(slice).is_none()\n",
+    replace: "            if below.is_empty()\n",
+    tests: ["test/corpus.test.ts", "-t", "^index_bounds_closures\\.rs$"],
+    snapshots: true,
   },
 ];

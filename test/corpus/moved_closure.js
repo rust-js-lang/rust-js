@@ -14,7 +14,7 @@ function main() {
   g();
   console.log(`${g()}`);
   const k = 41;
-  const h = () => (k + 1) | 0;
+  const h = () => k + 1;
   const h2 = h;
   console.log(`${h()} ${h2()}`);
 }

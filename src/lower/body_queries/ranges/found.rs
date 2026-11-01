@@ -38,7 +38,7 @@ impl<'tcx> Walk<'_, 'tcx> {
         Some(Range {
             lo: 0,
             hi: below.most(u32::MAX as i128),
-            below: Some((slice, below)),
+            below: Bounds::of(slice, below),
         })
     }
 
