@@ -393,7 +393,7 @@ function readMember(node, text) {
       const [parameter] = node.parameters;
       return {
         kind: "index",
-        readonly: (node.modifiers ?? []).some((m) => m.kind === SyntaxKind.ReadonlyKeyword),
+        ...((node.modifiers ?? []).some((m) => m.kind === SyntaxKind.ReadonlyKeyword) ? { readonly: true } : {}),
         parameter: sourceOf(parameter.name, text),
         key: readType(parameter.type, text),
         type: readType(node.type, text),

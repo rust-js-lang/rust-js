@@ -204,7 +204,7 @@ pub(super) const STAGES: &[Stage] = &[
         name: "names",
         passes: &[
             pass("alias variables", |b, h| alias_variables(b, &h.made.fixed)),
-            pass("read handles", |b, _| read_handles(b)),
+            pass("read handles", |b, _| read_handles(b, false)),
             pass("plain reads", |b, h| {
                 js::statement_lists(b, &mut |s| plain_reads(s, h.plain, &h.made.captured))
             }),
@@ -264,7 +264,7 @@ pub(super) const STAGES: &[Stage] = &[
             // A handle those made a `const`, a let chain's `borrow_mut()`
             // of a flattened state, declared before its `if` and written in
             // it: its place, where its `value` is read (rd533).
-            pass("declared handles", |b, _| read_handles(b)),
+            pass("declared handles", |b, _| read_handles(b, true)),
             // A temporary of a variable those made a `const`, `const _42 =
             // queue;` of a `borrow_mut()` of an object's `RefCell`, which is
             // the object: the variable, where it's read (ADR 0883).

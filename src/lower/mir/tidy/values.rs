@@ -622,13 +622,18 @@ fn its_place(place: &Expr) -> bool {
 /// read (ADR 0287); else `o.f` where its `value` is, the `o` it was made
 /// of, as MIR holds a reference written again before it's made, and where
 /// it's written through, a closure's `h.value = 5` too (#192).
-pub(super) fn read_handles(body: &mut Vec<Stmt>) {
+///
+/// Of a flattened state's alone, `in_place`: one a let chain's guard is,
+/// which MIR declares before its `if`, a `const` only once `declarations`
+/// made it one (rd533); a field's others are their place later, in place
+/// (`handles_in_place`), where what's made before them is read into them.
+pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool) {
     let mut handles: Vec<(String, Expr, bool, js::Storage)> = Vec::new();
     js::each_list(body, &mut |stmts| {
         for (k, stmt) in stmts.iter().enumerate() {
             if let StmtKind::Const(name, value) = &stmt.kind
                 && let ExprKind::Handle(place, storage) = &value.kind
-                && (matches!(place.kind, ExprKind::Member(..))
+                && (matches!(place.kind, ExprKind::Member(..)) && !in_place
                     || matches!(storage, js::Storage::InPlace(_)) && place.reads_same())
             {
                 handles.push((name.clone(), (**place).clone(), read_at_once(stmts, k, name), *storage));

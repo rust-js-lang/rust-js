@@ -207,7 +207,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a cell field a pattern binds, only read, is a handle, `{ get value() { .. } }`",
     file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("read handles", |b, _| read_handles(b)),\n',
+    find: '            pass("read handles", |b, _| read_handles(b, false)),\n',
     replace: "",
     tests: [
       "test/lowering-cells.test.ts",
@@ -1119,7 +1119,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a let chain's `borrow_mut()` of a flattened state, `const borrowMut = { get value() .., set value(value) .. }`, kept, one write through it aliased and the other not, where each is the chunk's key (rd533)",
     file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("declared handles", |b, _| read_handles(b)),\n',
+    find: '            pass("declared handles", |b, _| read_handles(b, true)),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell.rs$"],
     snapshots: true,
