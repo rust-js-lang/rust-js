@@ -27,11 +27,47 @@ export function replay(owner, root) {
         return;
       }
     }
+    if (root != null) {
+      run(root);
+      return;
+    }
+    run(0);
+  } finally {
+    depth = restore;
+  }
+}
+
+export function replayElse(owner, root) {
+  const restore = depth;
+  depth = 8;
+  try {
+    if (owner != null && owner > 3) {
+      run(owner);
+      return;
+    }
+    if (root != null) {
+      run(root);
+    } else {
+      run(0);
+    }
+  } finally {
+    depth = restore;
+  }
+}
+
+export function replayLetElse(owner, root) {
+  const restore = depth;
+  depth = 9;
+  try {
+    if (owner != null && owner > 3) {
+      run(owner);
+      return;
+    }
     if (root == null) {
       run(0);
-    } else {
-      run(root);
+      return;
     }
+    run(root);
   } finally {
     depth = restore;
   }
@@ -41,6 +77,12 @@ function main() {
   replay(5);
   replay(1, 3);
   replay();
+  replayElse(5);
+  replayElse(1, 3);
+  replayElse();
+  replayLetElse(5);
+  replayLetElse(1, 3);
+  replayLetElse();
   console.log(`depth ${depth}`);
 }
 //# sourceMappingURL=case.js.map

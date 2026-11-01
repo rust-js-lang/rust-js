@@ -377,7 +377,10 @@ that panics while another panic unwinds replaces that panic, where Rust
 aborts.
 
 A scope's `if`s, loops and `return`s from inside them are in its `try`,
-`if (wrap) { return callback(); }` too, whose `finally` drops what it
+`if (wrap) { return callback(); }` too, each `return` where it's written,
+a function's last `if let Some(root) = root { run(root); return; } run(0);`
+as that, not an `if .. else`
+([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md), amended), whose `finally` drops what it
 holds however it's left, after what's returned is made: a guard whose
 `Drop` restores state is a `finally` ([ADR 0693](../../decisions/0693-a-guards-scope-is-one-finally-its-returns-in-it.md)),
 one `try`, `catch` and `finally` around a `catch_unwind`'s `catch`, a

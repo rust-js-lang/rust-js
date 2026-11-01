@@ -393,5 +393,9 @@ them, its statements the `try`'s. A `return;` in the `try` runs the
 either way. Case N (ADR 0262): the same jumps, as written.
 
 Held by the corpus case `drop_guard_early_returns`, against native Rust,
-and the mutations `returns-past-blocks-in-try-skipped` and
-`returns-past-blocks-in-try-end-kept` (`tidy/jumps/tails.ts`).
+and the mutation `returns-past-blocks-in-try-skipped`
+(`tidy/jumps/tails.ts`). The `return;` the `try` is given for its end
+stays there, unplaced: `tail_returns` takes it away as it does any unwritten
+`return;` that ends the function. Taking it away here too was dead code,
+which no corpus case's JS showed, once ADR 0879's amendment of 2026-11-02
+read the `if` before it as written.

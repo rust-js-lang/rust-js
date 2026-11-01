@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`if (!c) { return; } else { s; return; }`, a macro's function's `if let`, is `if (!c) {} else { s }`, not `if (c) { s }`",
     file: "src/lower/mir/tidy/jumps.rs",
-    find: "            if let Some(kind) = emptied_branch(last.kind) {\n                stmts.push(kind.at(last.span));\n            }\n",
+    find: "            if let Some(kind) = emptied_branch(last.kind) {\n                stmts.extend(returned_apart(kind.at(last.span), returns));\n            }\n",
     replace: "            stmts.push(last);\n",
     tests: [
       "test/lowering-module-variables.test.ts",
@@ -366,6 +366,46 @@ export const mutations: Mutation[] = [
     find: "            stmts.pop();\n            ended_returns(stmts, returns);\n",
     replace: "            stmts.pop();\n",
     tests: ["test/corpus.test.ts", "-t", "^let_else_returns_at_end.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "returned-apart-unread",
+    breaks:
+      "a guard function's last `if let`'s `return`, which MIR joined with the `try`'s end, prints `if (root == null) { run(0); } else { run(root); }`, not as written, `if (root != null) { run(root); return; } run(0);` (rd502)",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "            .find(|r| written && end <= r.lo && r.hi <= start)\n",
+    replace: "            .find(|_| written && false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_guard_early_returns.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "returned-apart-any-before",
+    breaks:
+      "an earlier `return` the program wrote is taken for one between an `if`'s branches, so its written `else` prints `if (root != null) { run(root); return; } run(0);` (rd502)",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "            .find(|r| written && end <= r.lo && r.hi <= start)\n",
+    replace: "            .find(|r| written && end > 0 && r.hi <= start)\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_guard_early_returns.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "returned-apart-of-the-then-only",
+    breaks:
+      "an `if … else` that ends a guard function whose `else` the program wrote first, before its `return`, stays MIR's, `if (root == null) { run(0); } else { run(root); }` (rd502)",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "match (between(&then, &otherwise), between(&otherwise, &then)) {",
+    replace: "match (between(&then, &otherwise), None::<js::Span>) {",
+    tests: ["test/corpus.test.ts", "-t", "^drop_guard_early_returns.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "returned-apart-of-an-unplaced-branch",
+    breaks:
+      "a branch none of whose statements is placed is taken for written anywhere, so any `return` before or after the other branch is taken for one between them (rd502)",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "        let written = lo <= end && start <= hi;\n",
+    replace: "        let written = (lo, hi) != (1, 1);\n",
+    tests: ["test/corpus.test.ts", "-t", "^decided_tests_past_a_call.rs$"],
     snapshots: true,
   },
 ];

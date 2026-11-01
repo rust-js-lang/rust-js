@@ -649,7 +649,7 @@ fn ending_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span], branch: bool) {
             }
             let last = stmts.pop().expect("matched");
             if let Some(kind) = emptied_branch(last.kind) {
-                stmts.push(kind.at(last.span));
+                stmts.extend(returned_apart(kind.at(last.span), returns));
             }
         }
         Some(StmtKind::Labeled(_, body)) => ending_returns(body, returns, branch),
@@ -659,6 +659,41 @@ fn ending_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span], branch: bool) {
         Some(StmtKind::Try(body, _)) => ending_returns(body, returns, true),
         _ => {}
     }
+}
+
+/// `if (c) { a } else { b }` that ends the function, of `if c { a; return;
+/// } b` the program wrote, whose `return` MIR joined with the function's
+/// end, the end of a `try` whose `finally` is a guard's drop (rd502): as
+/// written, `if (c) { a; return; } b`, by that `return`, written after `a`
+/// and before `b`; and of `b` written first, `if let Some(root) = root {
+/// run(root); return; } run(0);`, `if (!c) { b; return; } a`. Each way
+/// runs as it did, `a` or `b` and then the function's end; `b`'s names
+/// are its own in the function (`contracts::DECLARED_ONCE`). Not an `if`
+/// of an `else` the program wrote, of no `return` between its branches.
+fn returned_apart(stmt: Stmt, returns: &[js::Span]) -> Vec<Stmt> {
+    let Stmt {
+        kind: StmtKind::If(test, then, Some(otherwise)),
+        span,
+    } = stmt
+    else {
+        return vec![stmt];
+    };
+    let between = |first: &[Stmt], after: &[Stmt]| {
+        let ((lo, end), (start, hi)) = (placed(first), placed(after));
+        let written = lo <= end && start <= hi;
+        (returns.iter())
+            .find(|r| written && end <= r.lo && r.hi <= start)
+            .copied()
+    };
+    let (test, mut first, after, place) = match (between(&then, &otherwise), between(&otherwise, &then)) {
+        (Some(place), _) => (test, then, otherwise, place),
+        (None, Some(place)) => (test.negated_test(), otherwise, then, place),
+        (None, None) => return vec![StmtKind::If(test, then, Some(otherwise)).at(span)],
+    };
+    first.push(StmtKind::Return(None).at(place));
+    let mut stmts = vec![StmtKind::If(test, first, None).at(span)];
+    stmts.extend(after);
+    stmts
 }
 
 /// Whether `stmts` hold a `return` the program wrote, of `returns`.

@@ -6,7 +6,7 @@ Status: Accepted. Amends [0237](0237-no-else-after-leaving.md)'s scope (an
 is a conditional), [0607](0607-a-field-is-given-a-call-in-place.md) (a
 variable a closure captured is given a call's value in place) and extends
 [0846](0846-a-parameters-clone-is-read-by-its-name.md) (a clone of what a
-`move` closure captured is read by its name). Amended: a guard's arms in the order written, and a float's constant pattern tested value first (below).
+`move` closure captured is read by its name). Amended: a guard's arms in the order written, and a float's constant pattern tested value first; and an `if` that ends a guard's function keeps the `return` written between its branches (below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N for each, which runs
 the same; each is a form the program wrote, which MIR's structure lost.
@@ -948,3 +948,36 @@ order written, not `if (o != null) { if (..) {..} return 1; } return 0;`
 (corpus `guard_statements`, `nested_options`, `tuple_scrutinee_calls`,
 `or_bindings`, `map_none_held_as_null`, `nested_option_held_as_payload`;
 mutation `variant-read-taken-for-written`, `lower/mir/queries.ts`).
+
+## Amendment: an `if` that ends a guard's function keeps its written `return` (2026-11-02, rd502)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Both forms run the
+same: a branch, then the function's end. Only which form prints changes.
+
+A function whose `Drop` guard is its `try { .. } finally { .. }` (ADR
+0693) ends `if let Some(root) = root { run(root); return; } run(0);`.
+That printed `if (root == null) { run(0); } else { run(root); }`, the
+order flipped and the `return` gone. The cause is MIR: it joins that
+`return` with the function's own, so in the JS the `try`'s end is where
+both meet. With no guard, the `return` stays in its branch and the `if`
+prints as written. The same thing happened to `let Some(root) = root else
+{ run(0); return; }; run(root);` after an early `return`: the first `if`'s
+`return` went too, and an `else` wrapped the rest.
+
+**An `if .. else` that ends the function, where the program wrote a
+`return` between its two branches, prints as written: the branch written
+first, that `return`, then the other branch after the `if`**
+(`jumps::returned_apart`, at `tail_returns`' end). That gives `if (c) { a;
+return; } b`, or `if (!c) { b; return; } a` when `b` was written first.
+Only a `return` that lies after one branch's last written statement and
+before the other's first counts. An `if` whose `else` the program wrote has
+no `return` there, so it stays an `if .. else`: `if let Some(root) = root
+{ run(root) } else { run(0) }` is unchanged. The branch that moves out
+declares nothing that clashes, because each name is declared once in its
+function (`contracts::DECLARED_ONCE`).
+
+React's Flight client's replayConsoleWithCallStack ends this way. Held by
+the corpus case `drop_guard_early_returns` (`replay`, `replay_else` and
+`replay_let_else`) against native Rust, and the mutations
+`returned-apart-unread`, `returned-apart-any-before` and
+`returned-apart-of-the-then-only` (`lower/mir/tidy/jumps.ts`).

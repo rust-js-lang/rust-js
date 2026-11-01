@@ -189,14 +189,10 @@ pub(in crate::lower::mir::tidy) fn returns_past_blocks_in_try(
     if !matches!(tried.last().map(|s| &s.kind), Some(StmtKind::Labeled(..))) {
         return;
     }
+    // The `return;` it ends with then, of no place, is the function's end,
+    // which `tail_returns` takes away as it does any it ends with.
     tried.push(StmtKind::Return(None).at(js::Span::NONE));
     returns_past_blocks(tried, written, returns, starts);
-    if tried
-        .last()
-        .is_some_and(|s| matches!(s.kind, StmtKind::Return(None)) && s.span.is_none())
-    {
-        tried.pop();
-    }
 }
 
 /// The `return`s the program wrote in `body`, a block MIR made that a
@@ -246,7 +242,7 @@ fn joined_returns(body: &[Stmt], label: &str, returns: &[js::Span], starts: &[u3
 }
 
 /// Where `stmts` are written, from the first written to the furthest.
-fn placed(stmts: &[Stmt]) -> (u32, u32) {
+pub(in crate::lower::mir::tidy) fn placed(stmts: &[Stmt]) -> (u32, u32) {
     let (mut lo, mut hi) = (u32::MAX, 0);
     js::each_list(stmts, &mut |list| {
         for stmt in list.iter().filter(|s| !s.span.is_none()) {

@@ -893,13 +893,4 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^drop_guard_early_returns\\.rs$"],
     snapshots: true,
   },
-  {
-    name: "returns-past-blocks-in-try-end-kept",
-    breaks: "the `return;` a drop guard's `try` was given for its block's end stays, `run(root); return; } finally`",
-    file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "        tried.pop();\n    }\n}\n",
-    replace: "    }\n}\n",
-    tests: ["test/corpus.test.ts", "-t", "^drop_guard_early_returns\\.rs$"],
-    snapshots: true,
-  },
 ];
