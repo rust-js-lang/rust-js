@@ -132,11 +132,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "thrown-shadowed",
-    breaks: "a `catch_unwind`'s `catch (thrown)` hides a `thrown` its `Err` arm reads",
+    breaks: "a `catch_unwind`'s `catch (thrown)` hides a `thrown` its `Err` arm reads, React's renderNode's `let thrown;` (rd551)",
     file: "src/prepare/catches.rs",
-    find: "            if payload == THROWN || js::mentions_in(err, THROWN) > 0 {\n",
-    replace: "            if payload == THROWN {\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "a payload is a panic's message"],
+    find: "    js::names_in(handler, &mut taken);\n",
+    replace: "",
+    tests: ["test/lowering-unwind-arms.test.ts", "-t", "a catch_unwind whose arm reads a thrown of its own"],
+  },
+  {
+    name: "tail-try-return-kept",
+    breaks: "a `try` that ends its function keeps the `return;` of a `let Err(x) = catch_unwind(..) else { return; }` as its last statement",
+    file: "src/prepare/catches.rs",
+    find: "            if tried.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(None))) {\n",
+    replace: "            if false {\n",
+    tests: ["test/lowering-unwind-arms.test.ts", "-t", "a catch_unwind whose arm reads a thrown of its own"],
   },
   {
     name: "ok-arm-leaving-alone-kept",

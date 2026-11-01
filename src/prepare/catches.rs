@@ -7,8 +7,15 @@ use std::collections::HashSet;
 use crate::js::{self, Expr, ExprKind, Pattern, Stmt, StmtKind};
 
 /// What a `catch` of an unwind names what it caught, where it reads the
-/// payload `$unwound` makes of it.
-const THROWN: &str = "thrown";
+/// payload `$unwound` makes of it: `thrown`, or a name given apart,
+/// `thrown$1`, where the `catch`'s `payload` is `thrown` or its `handler`
+/// reads or declares one, React's renderNode's `let thrown;` it sets
+/// (rd551): a name of the program's own never keeps it a `$catchUnwind`.
+fn thrown_name(payload: &str, handler: &[Stmt]) -> String {
+    let mut taken = HashSet::from([payload.to_string()]);
+    js::names_in(handler, &mut taken);
+    crate::names::fresh_apart(&mut taken, "thrown")
+}
 
 /// Of `body`, which `ends` a function or doesn't: where it ends, the
 /// function returns.
@@ -524,19 +531,14 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     // `Err`'s binding, of the `catch`'s, `thrown` (ADR 0660).
     let (binding, in_catch) = match (caught, &error) {
         (js::Caught::Unwound, Some(payload)) => {
-            if payload == THROWN || js::mentions_in(err, THROWN) > 0 {
-                return None;
-            }
-            let unwound = Expr::call_helper("$unwound", vec![Expr::var(THROWN)]);
+            let thrown = thrown_name(payload, err);
+            let unwound = Expr::call_helper("$unwound", vec![Expr::var(&thrown)]);
             let made = match set_again {
                 true => StmtKind::Let(payload.clone(), Some(unwound)),
                 false => StmtKind::Const(payload.clone(), unwound),
             }
             .at(span);
-            (
-                Some(THROWN.to_string()),
-                std::iter::once(made).chain(err.iter().cloned()).collect(),
-            )
+            (Some(thrown), std::iter::once(made).chain(err.iter().cloned()).collect())
         }
         _ => (error.clone(), err.to_vec()),
     };
@@ -617,6 +619,11 @@ pub(super) fn tail_tries(body: &mut [Stmt]) {
                 && js::returns(inner) == (true, false)
             {
                 *tried = inner.clone();
+            }
+            // Its last `return;`, `let Err(x) = catch_unwind(..) else {
+            // return; }`'s, falls off the function's end as it does (rd551).
+            if tried.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(None))) {
+                tried.pop();
             }
         }
         _ => {}
@@ -745,7 +752,7 @@ fn unwound_let(before: &[Stmt], stmt: &Stmt, rest: &[Stmt]) -> Option<(Stmt, usi
         if params.is_empty()
             && !js::returns(body).0
             && matches!(body.last().map(|s| &s.kind), Some(StmtKind::Throw(_)))));
-    if key != "_0" || !never_returns || payload == THROWN || js::mentions_in(rest, THROWN) > 0 {
+    if key != "_0" || !never_returns {
         return None;
     }
     let caught = caught_run(payload, rest)?;
@@ -757,7 +764,8 @@ fn unwound_let(before: &[Stmt], stmt: &Stmt, rest: &[Stmt]) -> Option<(Stmt, usi
     if hoisted {
         return None;
     }
-    let unwound = Expr::call_helper("$unwound", vec![Expr::var(THROWN)]);
+    let thrown = thrown_name(payload, &rest[..caught]);
+    let unwound = Expr::call_helper("$unwound", vec![Expr::var(&thrown)]);
     let made = if mutable {
         StmtKind::Let(payload.clone(), Some(unwound))
     } else {
@@ -766,7 +774,7 @@ fn unwound_let(before: &[Stmt], stmt: &Stmt, rest: &[Stmt]) -> Option<(Stmt, usi
     let mut handler = vec![made.at(stmt.span)];
     handler.extend(rest[..caught].iter().cloned());
     let tried = js::applied_tried(vec![StmtKind::Expr(call).at(stmt.span)]);
-    let (binding, handler) = read_as_thrown(Some(THROWN.to_string()), handler);
+    let (binding, handler) = read_as_thrown(Some(thrown), handler);
     Some((
         StmtKind::TryCatch(tried, binding, handler).at(stmt.span),
         skipped + caught,

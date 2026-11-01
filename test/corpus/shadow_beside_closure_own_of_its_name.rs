@@ -36,7 +36,16 @@ fn resolve(value: &'static Option<u32>, id: u32, log: &'static RefCell<Vec<Strin
             Ok(part) => log.borrow_mut().push(part),
             Err(reason) => log.borrow_mut().push(format!("rejected {}", thrown(&*reason))),
         };
-        then(&retry, &retry);
+        // One whose `Err` arm goes on, after an `Ok` arm that may throw,
+        // stays `$catchUnwind`, its result `value$1`.
+        let counted = move || {
+            match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| serialize(value, id))) {
+                Ok(part) => log.borrow_mut().push(part),
+                Err(reason) => log.borrow_mut().push(format!("rejected {}", thrown(&*reason))),
+            }
+            log.borrow_mut().push(format!("counted {id}"));
+        };
+        then(&retry, &counted);
         return;
     }
     let value: &Option<u32> = value;

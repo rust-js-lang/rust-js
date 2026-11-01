@@ -288,8 +288,9 @@ pub fn rethrown(value: Option<&Unknown>) -> String {
     return String(v);
   } catch (thrown) {
     const payload = $unwound(thrown);`);
-  // Where the `Err` arm reads a `thrown` of its own, its `Result`'s.
-  expect(js).toContain("export function named(n, thrown) {\n  const catchUnwind = $catchUnwind(() => work(n));");
+  // Where the `Err` arm reads a `thrown` of its own, the `catch`'s is
+  // given apart from it (rd551).
+  expect(js).toContain("  } catch (thrown$1) {\n    const payload = $unwound(thrown$1);\n    return `${");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.named(3, 7), lib.named(1, 7)]).toEqual(["3", "one 7"]);
   // A closure's `switch` each of whose cases returns is its body's end.

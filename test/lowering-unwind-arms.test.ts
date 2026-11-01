@@ -424,3 +424,154 @@ message threw true big 5 6
 changed true big 7!
 `);
 });
+
+// React's Fizz renderNode keeps what each arm caught in a `let thrown;` of
+// its own, `thrown = thrown_value;`, and restores its task in the `catch`
+// before anything else: where the stack is spent, rendering very deep
+// trees, `$catchUnwind(() => ..)`'s two frames, and its `$unwound` before
+// the arm's first statement, throw again before the arm writes. A
+// `catch`'s binding is `thrown`, or given apart from what the `catch`
+// reads, `thrown$1`, so a name of the program's never keeps the helper
+// (rd551).
+test("a catch_unwind whose arm reads a thrown of its own is a try", () => {
+  const { js, dir } = compiled("unwind-thrown-named", `use std::cell::Cell;
+use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
+
+/// renderNode's: each arm a \`let Err(..) = catch_unwind(..) else { return; }\`
+/// that writes first, then keeps what it caught in the function's \`thrown\`.
+pub fn render_node(d: u32, entered: &Cell<u32>, wrote: &Cell<u32>, segment: Option<u32>) {
+    if d == 0 {
+        return;
+    }
+    entered.set(entered.get() + 1);
+    let thrown;
+    match segment {
+        None => {
+            let Err(thrown_value) = catch_unwind(AssertUnwindSafe(|| render_node(d - 1, entered, wrote, None))) else {
+                return;
+            };
+            wrote.set(wrote.get() + 1);
+            thrown = thrown_value;
+        }
+        Some(step) => {
+            let Err(thrown_value) =
+                catch_unwind(AssertUnwindSafe(|| render_node(d - 1, entered, wrote, Some(step)))) else {
+                return;
+            };
+            wrote.set(wrote.get() + step);
+            thrown = thrown_value;
+        }
+    }
+    resume_unwind(thrown);
+}
+
+/// A \`Result\` named, then matched, its \`Err\` arm restoring by a \`thrown\`
+/// it's given.
+pub fn restored(d: u32, entered: &Cell<u32>, wrote: &Cell<u32>, thrown: u32) {
+    if d == 0 {
+        return;
+    }
+    entered.set(entered.get() + 1);
+    let result = catch_unwind(AssertUnwindSafe(|| restored(d - 1, entered, wrote, thrown)));
+    match result {
+        Ok(()) => {}
+        Err(x) => {
+            wrote.set(wrote.get() + thrown);
+            resume_unwind(x)
+        }
+    }
+}
+
+/// A \`let Err(..) else\` at a function's top whose arm reads \`thrown\`.
+pub fn guarded(d: u32, entered: &Cell<u32>, wrote: &Cell<u32>, thrown: u32) {
+    if d == 0 {
+        return;
+    }
+    entered.set(entered.get() + 1);
+    let Err(x) = catch_unwind(AssertUnwindSafe(|| guarded(d - 1, entered, wrote, thrown))) else {
+        return;
+    };
+    wrote.set(wrote.get() + thrown);
+    resume_unwind(x);
+}
+
+fn big(n: u32) -> u32 {
+    if n > 2 {
+        panic!("big {n}");
+    }
+    n
+}
+
+/// The payload itself named \`thrown\`, read as a message.
+pub fn named(n: u32) -> String {
+    match catch_unwind(|| big(n)) {
+        Ok(v) => v.to_string(),
+        Err(thrown) => thrown.downcast_ref::<String>().cloned().unwrap_or_default(),
+    }
+}
+`);
+  expect(js).not.toContain("$catchUnwind");
+  expect(js).toContain(`  let thrown;
+  if (segment == null) {
+    try {
+      renderNode(d - 1, entered, wrote);
+      return;
+    } catch (thrown$1) {
+      wrote.value = (wrote.value + 1) >>> 0;
+      const thrownValue = $unwound(thrown$1);
+      thrown = thrownValue;
+    }
+  } else {`);
+  expect(js).toContain(`  try {
+    restored(d - 1, entered, wrote, thrown);
+  } catch (x) {
+    wrote.value = (wrote.value + thrown) >>> 0;
+    throw x;
+  }`);
+  expect(js).toContain(`  try {
+    guarded(d - 1, entered, wrote, thrown);
+  } catch (x) {
+    wrote.value = (wrote.value + thrown) >>> 0;
+    throw x;
+  }`);
+  expect(js).toContain(`  try {
+    const v = big(n);
+    return String(v);
+  } catch (thrown$1) {
+    const thrown = $unwound(thrown$1);
+`);
+  writeFileSync(join(dir, "run.mjs"), `import * as lib from "./lib.js";
+const cell = () => ({ value: 0 });
+const outcome = (f) => {
+  try {
+    return ["returned", f()];
+  } catch (e) {
+    return ["threw", e];
+  }
+};
+for (const [name, run] of [
+  ["renderNode", (e, w) => lib.renderNode(1e6, e, w, undefined)],
+  ["renderNode", (e, w) => lib.renderNode(1e6, e, w, 1)],
+  ["restored", (e, w) => lib.restored(1e6, e, w, 1)],
+  ["guarded", (e, w) => lib.guarded(1e6, e, w, 1)],
+]) {
+  const [entered, wrote] = [cell(), cell()];
+  const [how, error] = outcome(() => run(entered, wrote));
+  console.log(name, how, error.constructor.name, entered.value > 1000, entered.value === wrote.value);
+}
+const [entered, wrote] = [cell(), cell()];
+console.log("shallow", JSON.stringify(outcome(() => lib.renderNode(3, entered, wrote, 2))), entered.value, wrote.value);
+console.log("named", lib.named(1), lib.named(5));
+`);
+  const ran = runSync([node!, join(dir, "run.mjs")], root, 60_000);
+  expect(ran.stderr).toBe("");
+  // Every level that entered its \`try\` wrote in its \`catch\`, where the
+  // helper's left some unwritten.
+  expect(ran.stdout).toBe(`renderNode threw RangeError true true
+renderNode threw RangeError true true
+restored threw RangeError true true
+guarded threw RangeError true true
+shallow ["returned",null] 3 0
+named 1 big 5
+`);
+});

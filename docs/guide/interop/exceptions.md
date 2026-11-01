@@ -671,6 +671,14 @@ export function text(value) {
   the payload where it first reads it, after what it does first, so a
   write it makes first runs before any call, where JS's stack is spent
   too ([ADR 0706](../../decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md), amended).
+- **The `catch` names what it caught `thrown`**, or `thrown$1` where the
+  `catch` reads or declares a `thrown` of your own, a `let thrown;` an
+  arm sets, a parameter or a function: a name of yours never keeps a
+  `catch_unwind` a `$catchUnwind(() => ..)`, whose call and closure are
+  two more frames where JS's stack is spent. A `try` that ends its
+  function has no `return;` last, and a closure of statements whose
+  value an arm keeps, `Ok(v) => result = v`, is its statements in the
+  `try`, then `result = v;` ([ADR 0706](../../decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md), amended).
 - **`panic!` is the one way to throw a new `Error`**, `panic!("")` a `new
   Error()`: a JS value isn't `Send`, so rustc refuses `resume_unwind`
   and `panic_any` of a `&JsError`; a value JS already has is thrown by

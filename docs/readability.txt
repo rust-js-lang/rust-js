@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1439
-lines	141817
+files	1440
+lines	142012
 temporaries	1	0.1
 labeled blocks	14	1
 while (true)	123	8.7
-$iter	1172	82.6
+$iter	1172	82.5
 Iterator.from	116	8.2
-return;	178	12.6
-renamed x$1	8688	612.6
+return;	181	12.7
+renamed x$1	8713	613.5
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1976	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	206	0	0	0	6	0	0	35
@@ -127,6 +127,7 @@ test/corpus/catch_unwind_payloads.js	166	0	0	0	0	0	0	3
 test/corpus/catch_unwind_resumed.js	31	0	0	0	0	0	0	0
 test/corpus/catch_unwind_rethrown.js	59	0	0	0	0	0	0	0
 test/corpus/catch_unwind_tested_last.js	94	0	0	0	0	0	0	4
+test/corpus/catch_unwind_thrown_named.js	171	0	0	0	0	0	2	18
 test/corpus/catch_unwind_typed_payloads.js	82	0	0	0	0	0	0	2
 test/corpus/cell_alias_in_a_closure.js	41	0	0	0	0	0	0	0
 test/corpus/cell_clone_read_in_place.js	49	0	0	0	0	0	0	0
@@ -675,7 +676,7 @@ test/corpus/let_else_guard_released.js	77	0	0	0	0	0	2	4
 test/corpus/let_else_guard_returns.js	61	0	0	0	0	0	0	0
 test/corpus/let_else_read_truth.js	71	0	0	0	0	0	0	0
 test/corpus/let_else_returns_at_end.js	50	0	0	0	0	0	2	0
-test/corpus/let_else_returns_in_arms.js	234	0	0	0	0	0	17	0
+test/corpus/let_else_returns_in_arms.js	244	0	0	0	0	0	17	4
 test/corpus/let_else_tuple_guard.js	78	0	0	0	0	0	1	0
 test/corpus/linked_list_clone.js	29	0	0	0	0	0	0	0
 test/corpus/linked_list_into_iter.js	86	0	0	0	3	0	0	3
@@ -1091,7 +1092,7 @@ test/corpus/set_field_drops_in_a_cycle.js	71	0	0	0	0	0	0	0
 test/corpus/set_for_each.js	81	0	0	0	0	0	0	0
 test/corpus/set_operators.js	46	0	0	0	0	0	0	3
 test/corpus/settled_until_written.js	67	0	0	0	0	0	0	0
-test/corpus/shadow_beside_closure_own_of_its_name.js	77	0	0	0	0	0	2	8
+test/corpus/shadow_beside_closure_own_of_its_name.js	91	0	0	0	0	0	3	11
 test/corpus/shadow_made_where_none.js	28	0	0	0	0	0	0	0
 test/corpus/shadow_of_module_variable.js	51	0	0	0	0	0	0	5
 test/corpus/shadow_of_module_variable_in_try.js	96	0	0	0	0	0	0	10

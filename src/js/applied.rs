@@ -477,7 +477,17 @@ pub fn applied_tried(mut tried: Vec<Stmt>) -> Vec<Stmt> {
         // })();`, of a body that returns only at its end: its body, then
         // `const value = v;`, as what follows reads it, what the body
         // declares named apart from the rest as above (ADR 0660, amended).
-        Some(StmtKind::Const(name, value)) => match body_of(value) {
+        // So is a variable set, `result = (() => { ..; return v; })();`,
+        // `result = v;`, React's createChildReconciler's (rd551).
+        Some(
+            StmtKind::Const(_, value)
+            | StmtKind::Assign(
+                Expr {
+                    kind: ExprKind::Var(_), ..
+                },
+                value,
+            ),
+        ) => match body_of(value) {
             Some(mut body)
                 if body.split_last().is_some_and(|(last, before)| {
                     !returns(before).0 && matches!(last.kind, StmtKind::Return(Some(_)))
@@ -487,7 +497,14 @@ pub fn applied_tried(mut tried: Vec<Stmt>) -> Vec<Stmt> {
                 let StmtKind::Return(Some(value)) = last.kind else {
                     unreachable!("matched above")
                 };
-                body.push(StmtKind::Const(name.clone(), value).at(tried[0].span));
+                let kept = match &tried[0].kind {
+                    StmtKind::Const(name, _) => StmtKind::Const(name.clone(), value),
+                    StmtKind::Assign(to, _) => StmtKind::Assign(to.clone(), value),
+                    _ => unreachable!("matched above"),
+                };
+                // Where the `return` was, after what's said before it.
+                let span = if last.span.is_none() { tried[0].span } else { last.span };
+                body.push(kept.at(span));
                 tried.splice(0..1, body);
                 tried
             }

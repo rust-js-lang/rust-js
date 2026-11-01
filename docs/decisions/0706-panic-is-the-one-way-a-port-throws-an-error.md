@@ -15,7 +15,8 @@ the `catch` of a `let Err(x)` is what follows that reads `x` or what that
 declares, with no `let` before the `try`; and below (rd550): the payload
 is made where the `catch` first reads it, and resumed as what was thrown
 where nothing writes through it, as lowering says, not where it's only
-read as JS shows.
+read as JS shows; and below (rd551): the `catch`'s binding is given apart
+from a `thrown` of the program's, which no longer keeps the helper.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A where what's read is
 the same value, `$unwinding($unwound(e))` being `e`; for `new Error()`,
@@ -351,3 +352,92 @@ moved to the new rule), `as-given-lent-unseen`, `as-given-of-a-shared-borrow`,
 `as-given-coerced-unseen`
 (`body_queries.rs`), `resumed-as-given-unmarked` (`std_types/unwind.rs`),
 `holds-dyn-any-never` (`recognition/types.rs`).
+
+## Amendment (2026-11-02): a name of the program's never keeps a `catch_unwind` a `$catchUnwind` (rd551)
+
+React's Fizz `renderNode` keeps what each arm caught in a `let thrown;`
+of its own, which it throws after it restores its task:
+
+```rust
+let thrown;
+match segment {
+    None => {
+        let Err(thrown_value) = catch_unwind(AssertUnwindSafe(|| {
+            render_node_destructive(request, task, node, child_index)
+        })) else {
+            return;
+        };
+        reset_hooks_state();
+        ..
+        thrown = thrown_value;
+        ..
+    }
+    ..
+}
+```
+
+It printed `const value = $catchUnwind(() => renderNodeDestructive(..));
+if (value.TAG !== "Err") { return; } const thrownValue = value._0; ..`,
+where upstream writes `try { renderNodeDestructive(..) } catch (x) { ..
+}`. A `catch` of an unwind was always `catch (thrown)`, so one whose arm
+read or declared a `thrown` of the program's own, which it would hide,
+stayed the helper: renderNode's two arms, React's createChildReconciler
+(`const thrown = x.error`), the Flight client's `thrown(error)`. Rendering
+very deep trees ("can recover from very deep trees during resume"), the
+helper's call and its closure are two frames more where JS's stack is
+spent, and its `catch` runs `$unwound` before the arm's first statement,
+so a restore the arm makes first is lost when that call throws a
+`RangeError` again.
+
+**The `catch`'s binding is `thrown`, or a name given apart, `thrown$1`,
+from what its statements read or declare and from the payload's binding**
+(`prepare::catches::thrown_name`, `names::fresh_apart`'s), in a `match`'s
+`try` and a `let Err(x)`'s alike. Where the `catch` is of the payload,
+`catch (x)`, the name is never written.
+
+Two forms the `try` now meets often read as JS's:
+
+- **A `try` that ends its function has no `return;` last**, the `return;`
+  a `let Err(x) = catch_unwind(..) else { return; }` put there: it falls
+  off the end, as the function would (`tail_tries`).
+- **A closure of statements whose value a variable is set to, `result =
+  (() => { ..; return v; })();`, is its statements, then `result = v;`**,
+  as `const value = (() => ..)()` already was (`js::applied_tried`), the
+  `result = v;` where the `return` was written, after a comment before it.
+  Its names are apart from the function's, as lowering gives them, so one
+  of the same name is `name$1` where reclaiming can't take it back, the
+  variable set beside it: React's throwAndUnwindWorkLoop's `const
+  didFatal$1 = throwException(..); .. didFatal = didFatal$1;`, where it was
+  an arrow called.
+
+`$catchUnwind` stays where the `Result` is a value: held past what's
+done between, `let r = catch_unwind(f); restore(); match r { .. }`, whose
+restore runs on both paths; given or stored; or tested where its `Ok` arm
+may throw and its `Err` goes on, ReactDOMComponent's `if
+(catchUnwind(..).TAG === "Ok") { trackHostMutation(); return; }`, which
+a `try` could write only with a label or a flag.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The same program:
+the `catch`'s binding is a name nothing else in it reads, and the JS's
+`try` is the `match` ADR 0660 makes one; it calls nothing where the
+helper called `$catchUnwind`, its closure and `$unwound` first.
+The readability baseline's `x$1` names grow (8,688 to 8,713, 612.6 to
+613.5 in 10,000 lines), the `catch`'s `thrown$1` where the JS was the
+helper, most of them the new corpus case's, which names `thrown` on
+purpose.
+
+Held by `test/lowering-unwind-arms.test.ts`, "a catch_unwind whose arm
+reads a thrown of its own is a try", run in Node: renderNode's two arms,
+a `Result` named then matched and a `let Err(..) else` at a function's
+top, each reading a `thrown`, recursing until the stack is spent; every
+level that entered its `try` writes in its `catch`, where the helper's
+form, main's before, left levels unwritten in each of the four, on each
+of three runs on the Mac. Corpus case `catch_unwind_thrown_named` against
+native Rust: renderNode's shape with a guard dropped as its arm unwinds,
+a parameter, a closure and a payload named `thrown`, a `let Err(..)
+else` ending its function, a closure's value kept by an arm with a guard
+after; `let_else_returns_in_arms` and
+`shadow_beside_closure_own_of_its_name`, which printed `$catchUnwind`,
+are `try`s. Mutations `thrown-shadowed`, `tail-try-return-kept`
+(`prepare/catches.rs`), `tried-assigned-kept-applied`,
+`tried-kept-where-made` (`js/applied.rs`).
