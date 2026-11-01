@@ -1084,4 +1084,12 @@ export const mutations: Mutation[] = [
       "each field is its own symbol's"
     ]
   },
+  {
+    name: "option-eq-one-none-loose",
+    breaks: "two `Option`s a getter gives, each `T | null`, compare by `==`, `node.firstChild == node.lastChild`, where upstream writes `===` (rd117)",
+    file: "src/lower/std_impls.rs",
+    find: "                    false if a.facts.same_none(b.facts) => Expr::bin(Op::Eq, a, b),\n",
+    replace: "",
+    tests: ["test/webapi-bindings.test.ts", "-t", "equal only to itself"],
+  },
 ];

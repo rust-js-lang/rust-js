@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1435
-lines	141105
+files	1438
+lines	141698
 temporaries	1	0.1
 labeled blocks	14	1
 while (true)	123	8.7
-$iter	1172	83.1
+$iter	1172	82.7
 Iterator.from	116	8.2
-return;	161	11.4
-renamed x$1	8659	613.7
+return;	178	12.6
+renamed x$1	8684	612.9
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1976	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	206	0	0	0	6	0	0	35
@@ -122,6 +122,7 @@ test/corpus/catch_unwind_irrefutable.js	263	0	0	0	0	0	0	4
 test/corpus/catch_unwind_message_changed.js	64	0	0	0	0	0	0	3
 test/corpus/catch_unwind_nested_ok.js	109	0	0	0	0	0	0	2
 test/corpus/catch_unwind_ok_returns.js	65	0	0	0	0	0	1	0
+test/corpus/catch_unwind_payload_where_read.js	250	0	0	0	0	0	0	25
 test/corpus/catch_unwind_payloads.js	166	0	0	0	0	0	0	3
 test/corpus/catch_unwind_resumed.js	31	0	0	0	0	0	0	0
 test/corpus/catch_unwind_rethrown.js	59	0	0	0	0	0	0	0
@@ -590,6 +591,7 @@ test/corpus/index_compound_assign.js	44	0	0	0	0	0	0	0
 test/corpus/index_out_of_bounds.js	16	0	0	0	0	0	0	0
 test/corpus/index_written_by_an_operation.js	71	0	0	0	0	0	0	0
 test/corpus/initializer_chains.js	56	0	0	0	0	0	0	0
+test/corpus/inner_while_exit_in_catch.js	109	0	0	0	0	0	0	0
 test/corpus/inner_while_then_break.js	35	0	0	0	0	0	0	0
 test/corpus/inspect_from_back.js	70	0	0	0	0	0	0	10
 test/corpus/int_div_sign_methods.js	36	0	0	0	0	0	0	3
@@ -672,6 +674,7 @@ test/corpus/let_else_guard_released.js	77	0	0	0	0	0	2	4
 test/corpus/let_else_guard_returns.js	61	0	0	0	0	0	0	0
 test/corpus/let_else_read_truth.js	71	0	0	0	0	0	0	0
 test/corpus/let_else_returns_at_end.js	50	0	0	0	0	0	2	0
+test/corpus/let_else_returns_in_arms.js	234	0	0	0	0	0	17	0
 test/corpus/let_else_tuple_guard.js	78	0	0	0	0	0	1	0
 test/corpus/linked_list_clone.js	29	0	0	0	0	0	0	0
 test/corpus/linked_list_into_iter.js	86	0	0	0	3	0	0	3

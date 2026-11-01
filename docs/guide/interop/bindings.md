@@ -621,6 +621,10 @@ pub fn listened(targets: &[&EventTarget], target: &EventTarget) -> bool {
 pub fn same(a: Option<&Node>, b: Option<&Node>) -> bool {
     a == b
 }
+
+pub fn only_child(node: &Node) -> bool {
+    node.first_child() == node.last_child()
+}
 ```
 
 ```js
@@ -631,7 +635,15 @@ export function listened(targets, target) {
 export function same(a, b) {
   return a == b;
 }
+
+export function onlyChild(node) {
+  return node.firstChild === node.lastChild;
+}
 ```
+
+Two `Option`s, `None` and `None` equal, are `==`, which takes `null` and
+`undefined` alike; two whose `None` is one, a getter's `T | null` each,
+are `===`, which answers the same there, as upstream writes it.
 
 The program's own type says it by its `ptr::eq` alone, which rust-js reads
 ([ADR 0864](../../decisions/0864-a-type-equal-only-to-itself-keys-a-set-by-itself.md)).

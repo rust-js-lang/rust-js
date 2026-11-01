@@ -682,6 +682,14 @@ impl Facts {
         Facts(self.0 & (Facts::of(Known::NoneUndefined).0 | Facts::of(Known::NoneNull).0))
     }
 
+    /// Whether two `Option`s' `None` is one and the same, each only `null`,
+    /// a WebIDL getter's `T | null`, or each only `undefined`: where `===`
+    /// answers as `==` does, `node.firstChild === node.lastChild` (rd117).
+    pub fn same_none(self, other: Facts) -> bool {
+        let none = self.of_presence();
+        none == other.of_presence() && (none == Facts::of(Known::NoneNull) || none == Facts::of(Known::NoneUndefined))
+    }
+
     /// What a test says of its `if`, not of its value: a written `else`
     /// (`Known::Else`) and a guard (`Known::Guard`), which a test made again
     /// of the same truth keeps, `flags & 4` of `(flags & 4) !== 0`.

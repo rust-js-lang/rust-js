@@ -813,7 +813,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1013 A value the DOM makes text of takes any value](1013-a-value-the-dom-makes-text-of-takes-any-value.md) *(the user's decision; amended: an input's `type` and `name`; a select's `size` and an image's `src`)*
 - [1014 Generic code's `eq` of `TrustedLen` iterators is refused at its caller](1014-generic-eq-of-trusted-len-is-refused-at-its-caller.md) *(amended: a zip folded or stepped)*
 - [1015 What holds an object `===` compares is never `$eq` of it](1015-what-holds-an-identity-is-never-eq-of-its-contents.md) *(amended: a key that holds one finds it by itself too)*
-- [1016 A webapi object is equal only to itself](1016-a-webapi-object-is-equal-only-to-itself.md)
+- [1016 A webapi object is equal only to itself](1016-a-webapi-object-is-equal-only-to-itself.md) *(amended: two `Option`s whose `None` is one are `===`, rd117)*
 - [1017 An `Option` of an `Option` held where it's made is its payload](1017-an-option-of-an-option-held-where-its-made-is-its-payload.md) *(the user's representation; amended: `Some(None)` is `=== null`; amended: the inner `Option` given on keeps the box)*
 - [1018 A function called through its module is read through its namespace](1018-a-function-called-through-its-module-is-read-through-its-namespace.md) *(the user's decision; amended: one a module re-exports, through that module, rd137; extended by 1037: a unit struct's value)*
 - [1019 A loop over an array's `&mut` items is over its indices](1019-a-loop-over-an-arrays-mut-items-is-over-its-indices.md)

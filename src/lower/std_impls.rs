@@ -1226,8 +1226,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // makes `"1"` of `1` (ADR 0612, amended).
                 // Of an untagged enum's, too, whose `==` would make `"7"` of
                 // a number's `7` (ADR 0214, amended).
+                // Of two whose `None` is one, a getter's `T | null` each, `===` (rd117).
                 return Ok(match self.any_shape(inner) || self.untagged(inner).is_some() {
                     true => js::nullish_equal(a, b),
+                    false if a.facts.same_none(b.facts) => Expr::bin(Op::Eq, a, b),
                     false => Expr::bin(Op::LooseEq, a, b),
                 });
             }

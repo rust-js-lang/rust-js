@@ -1121,6 +1121,14 @@ pub fn differ(a: Option<&Node>, b: Option<&Node>) -> bool {
     a != b
 }
 
+pub fn only_child(node: &Node) -> bool {
+    node.first_child() == node.last_child()
+}
+
+pub fn same_parent(a: &Node, b: Option<&Node>) -> bool {
+    a.parent_node() == b
+}
+
 #[derive(PartialEq)]
 pub struct Pair {
     pub node: &'static Node,
@@ -1144,6 +1152,10 @@ pub fn place(nodes: &[&Node], node: &Node) -> usize {
   expect(js).toContain("export function has(targets, target) {\n  return targets.includes(target);\n}");
   expect(js).toContain("export function same(a, b) {\n  return a === b;\n}");
   expect(js).toContain("export function differ(a, b) {\n  return a != b;\n}");
+  // Two a getter gives, each \`T | null\`, whose \`None\` is one: \`===\`,
+  // as upstream writes it (rd117); one of the crate's, maybe \`undefined\`, \`==\`.
+  expect(js).toContain("return node.firstChild === node.lastChild;");
+  expect(js).toContain("return a.parentNode == b;");
   expect(js).toContain("return a.node === b.node && a.name === b.name;");
   expect(js).not.toContain("$eq");
   const lib = await import(join(dir, "lib.js"));
@@ -1151,6 +1163,8 @@ pub fn place(nodes: &[&Node], node: &Node) -> usize {
   expect([lib.has([x], x), lib.has([x], y), lib.same(x, x), lib.same(x, y), lib.differ(x, undefined), lib.differ(undefined, null), lib.differ(x, y)]).toEqual([true, false, true, false, true, false, true]);
   expect([lib.samePair({ node: x, name: "a" }, { node: x, name: "a" }), lib.samePair({ node: x, name: "a" }, { node: y, name: "a" })]).toEqual([true, false]);
   expect([lib.place([y, x], x), lib.place([y], x)]).toEqual([1, 1]);
+  expect([lib.onlyChild({ firstChild: x, lastChild: x }), lib.onlyChild({ firstChild: null, lastChild: null }), lib.onlyChild({ firstChild: x, lastChild: y })]).toEqual([true, true, false]);
+  expect([lib.sameParent({ parentNode: null }, undefined), lib.sameParent({ parentNode: x }, x), lib.sameParent({ parentNode: x }, undefined)]).toEqual([true, true, false]);
   expect([lib.sameNodes([x], [x]), lib.sameNodes([x], [y])]).toEqual([true, false]);
   // A binding crate's own \`ne\`, whose JS no binding names, is refused,
   // as an \`eq\` bound to other JS than \`===\` is.

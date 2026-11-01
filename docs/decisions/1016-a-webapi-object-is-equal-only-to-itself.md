@@ -106,3 +106,22 @@ nodes.iter().position(|&n| n == node)
 - Mutations `webapi-eq-binding-unread`, `eq-by-address-of-references-unseen`,
   `contains-of-identity-index-of`, `bound-eq-own-ne-trusted`,
   `bound-eq-form-unchecked`.
+
+## Amendment: two `Option`s whose `None` is one are `===` (rd117)
+
+React DOM's restoreControlledInputState, ported, writes `other_node.form()
+!= root_node.form()`, and printed `otherNode.form != rootNode.form` where
+upstream writes `!==`. An `Option`'s `==` is JS's `==` so that a `None` of
+`null` and one of `undefined` are equal; a WebIDL getter's `T | null`
+gives only `null` (`Known::NoneNull`, `calls::none_given_by`).
+
+**Of two whose `None` is the same one, each `Known::NoneNull`, or each
+`Known::NoneUndefined`, `==` is `===`**: `node.firstChild ===
+node.lastChild`. One of the crate's own, whose `None` is `undefined`, beside
+a getter's, stays `==`: `a.parentNode == b`.
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): `===` and `==` answer
+alike of two objects or `null`s. Held by the test above, run with `null`s and
+the same and other objects, and its `a.parentNode == b` of a `None`; the
+mutations `option-eq-one-none-loose` (`lower/std_impls.ts`) and
+`option-eq-one-side-none` (`js.ts`), of `Facts::same_none`.
