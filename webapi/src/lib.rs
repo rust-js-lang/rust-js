@@ -27861,6 +27861,7 @@ pub mod form_data {
 impl FormData {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/append)
     #[cfg_attr(rust_js, rust_js::link_name = "append")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn append(&self, name: &str, value: &str) {
         unreachable!()
@@ -27868,6 +27869,7 @@ impl FormData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/append)
     #[cfg_attr(rust_js, rust_js::link_name = "append")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn append_with_blob(&self, name: &str, blob_value: &Blob, filename: Option<&str>) {
         unreachable!()
@@ -27875,6 +27877,7 @@ impl FormData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/delete)
     #[cfg_attr(rust_js, rust_js::link_name = "delete")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn delete(&self, name: &str) {
         unreachable!()
@@ -27901,6 +27904,7 @@ impl FormData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/set)
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set(&self, name: &str, value: &str) {
         unreachable!()
@@ -27908,6 +27912,7 @@ impl FormData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/set)
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_with_blob(&self, name: &str, blob_value: &Blob, filename: Option<&str>) {
         unreachable!()

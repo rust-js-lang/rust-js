@@ -1064,3 +1064,37 @@ pub fn mark(marks: &Marks) {
   expect(() => lib.tallySize(lib.tally())).toThrow("RefCell already mutably borrowed");
   expect(() => lib.mark(lib.marks())).toThrow("RefCell already mutably borrowed");
 });
+
+// rd442: a webapi operation that runs no code but its own, \`FormData\`'s
+// \`append\`, holds no counted borrow while it runs, React's Fizz
+// \`formData.append('$ACTION_KEY', nextPostbackStateKey)\` of a key a cell
+// keeps (ADR 0867, amended): \`QUIET\` in webapi/generate.ts names each.
+test("a borrow held while FormData appends isn't counted", async () => {
+  const dir = fixture("form-data-quiet");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+use webapi::FormData;
+
+pub fn keyed(form_data: &FormData, key: &Rc<RefCell<Option<String>>>, made: impl Fn() -> String) {
+    if key.borrow().is_none() {
+        key.replace(Some(made()));
+    }
+    form_data.append("$ACTION_KEY", key.borrow().as_deref().unwrap());
+}
+
+pub fn forget(key: &Rc<RefCell<Option<String>>>) {
+    key.borrow_mut().take();
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  key.value ??= made();\n  formData.append(\"$ACTION_KEY\", $unwrap(key.value));\n}");
+  expect(js).not.toContain("$borrow");
+  const lib = await import(join(dir, "lib.js"));
+  const form = new FormData();
+  const key = { value: undefined };
+  lib.keyed(form, key, () => "k1");
+  lib.keyed(form, key, () => "k2");
+  expect(form.getAll("$ACTION_KEY")).toEqual(["k1", "k1"]);
+});

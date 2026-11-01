@@ -1046,6 +1046,15 @@ function restItem(type: string): string {
   throw new Error(`a rest parameter of \`${type}\`: no \`Takes\` says what it takes`);
 }
 
+// Operations that run no code but their own, given what they're typed to
+// take, `#[rust_js::runs_nothing]` (ADR 0867): a borrow may be held across
+// one, React's Fizz `formData.append('$ACTION_KEY', key)` of a key a cell
+// holds (rd442). Not of every method of primitives: a \`Range\`'s, of a
+// node's tree, runs custom elements' reactions before it returns. Each
+// spec's algorithm says it: a \`FormData\` keeps its entries, a string's or
+// a blob's, and calls nothing, nor fires any event.
+const QUIET = new Set(["FormData.append", "FormData.delete", "FormData.set"]);
+
 // Operations that call each callback they're given once at most, a request
 // for one later call or for one answer: each a `Box<dyn FnOnce(..)>`, as
 // the js crate's `setTimeout` takes, so it may move what it holds out
@@ -1624,7 +1633,8 @@ function functionsOf(declared: Interface): Fn[] {
       const jsName = isStatic ? `${i.name}.${m.name}` : member(m.name);
       const params = CALLED_ONCE.has(`${i.name}.${m.name}`) ? v.params.map(once) : v.params;
       const given = orNull(result, m.idlType!);
-      fns.push({ name: v.name, jsName, params: isStatic ? params : [...self, ...params], result: given, doc, variadic: v.variadic, none: noneOf(m.idlType!, given), whole: wholeOf(m.idlType!, given), ...nulled(sig.nulls) });
+      const quiet = QUIET.has(`${i.name}.${m.name}`) ? { runsNothing: true } : {};
+      fns.push({ name: v.name, jsName, params: isStatic ? params : [...self, ...params], result: given, doc, variadic: v.variadic, none: noneOf(m.idlType!, given), whole: wholeOf(m.idlType!, given), ...nulled(sig.nulls), ...quiet });
     }
   }
 

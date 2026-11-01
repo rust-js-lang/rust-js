@@ -156,3 +156,23 @@ binding of a JSX element or `typeof` doesn't: `binding_runs_nothing`
 says so. Held by `test/lowering-cell-borrows.test.ts`'s "js::null() made
 while a borrow is held runs nothing"; mutation `null-binding-runs-code`.
 
+
+## Amended (2026-11-01): a webapi operation that runs nothing (rd442)
+
+React's Fizz useActionState keeps its postback key in a cell its closure
+shares, and `formData.append('$ACTION_KEY', nextPostbackStateKey)` reads
+it. `append` is a binding, so a borrow held while it ran was counted,
+`$borrow(key, true)` around it in a `try`. Within the same crate graph,
+react-in-rust's react-server, it was refused, since another library may
+borrow unchecked. Only an event handler's setter was marked. **A webapi
+operation whose spec's algorithm runs no code but its own, given what it's
+typed to take, is `#[rust_js::runs_nothing]` too: each one is named in
+`QUIET` in `webapi/generate.ts`, which writes the attribute: `FormData`'s
+`append`, `delete` and `set`, which keep an entry, a string's or a blob's,
+and call nothing and fire no event.** That doesn't hold of every operation
+given only primitives. A `Range`'s operations change a node's tree, and
+custom elements' reactions run before they return. So each operation is
+named only when its algorithm is read. Case
+([0262](0262-when-rust-and-js-disagree.md)): N, the call is as it was.
+Held by `test/lowering-cell-borrows.test.ts` ("a borrow held while FormData
+appends isn't counted").
