@@ -338,8 +338,8 @@ export const mutations: Mutation[] = [
     name: "handle-in-place-write-unstored",
     breaks: "a nullable field's handle put in place and written, `(handle).value = undefined`, is its place written `undefined`, where its handle stores `null`",
     file: "src/lower/mir/tidy/values.rs",
-    find: "        ExprKind::Handle(place, storage) if place.reads_same() => Some(*storage),\n",
-    replace: "        ExprKind::Handle(place, storage) if place.reads_same() && false => Some(*storage),\n",
+    find: "        ExprKind::Handle(place, storage) if its_place(place) => Some(*storage),\n",
+    replace: "        ExprKind::Handle(place, storage) if its_place(place) && false => Some(*storage),\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "written through its guard in a branch"],
   },
   {
@@ -349,5 +349,13 @@ export const mutations: Mutation[] = [
     find: "                && let Some(sets) = storage.written_in_place(",
     replace: "                && false\n                && let Some(sets) = storage.written_in_place(",
     tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
+  },
+  {
+    name: "handle-of-a-getters-object-kept",
+    breaks: "a write through a field of a struct a getter may answer, in a block, keeps its handle, whose accessors read `this` as their own (#449)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "    place.reads_same() || matches!(&place.kind, ExprKind::Member(of, _) if of.reads_same())\n",
+    replace: "    place.reads_same()\n",
+    tests: ["test/js-constructors.test.ts", "-t", "RefCell field sets"],
   },
 ];

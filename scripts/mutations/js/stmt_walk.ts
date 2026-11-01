@@ -313,4 +313,12 @@ export const mutations: Mutation[] = [
     replace: "        f if f == Facts::of(Known::NoneUndefined) => Expr::null(),\n        f if f == Facts::of(Known::NoneNull) => Expr::undefined(),\n",
     tests: ["test/lowering-option-truth.test.ts", "-t", "None it can be"],
   },
+  {
+    name: "class-handle-this-unnamed",
+    breaks: "a handle a class's method hands on, `bump(&self.reads)`, reads `this` in its accessors, the handle's own, so the field is never set (#359, #449)",
+    file: "src/js/stmt_walk.rs",
+    find: "        if let ExprKind::Handle(place, _) | ExprKind::Pair(place, _) = &mut e.kind {\n            place.each_mut(&mut |part| {\n",
+    replace: "        if let ExprKind::Handle(place, _) | ExprKind::Pair(place, _) = &mut e.kind\n            && false\n        {\n            place.each_mut(&mut |part| {\n",
+    tests: ["test/classes.test.ts", "-t", "Cell fields"],
+  },
 ];

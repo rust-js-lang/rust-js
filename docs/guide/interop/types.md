@@ -2522,7 +2522,11 @@ export function bindToConsole(methodName, args) {
   listener, a property's value or a constructor as it is. It's a closure,
   so rustc checks what it captures. Stored as a property it's named as it,
   a `let` of it is declared, and a function nested in it reads its
-  `this` through a `const`; an arrow in it reads it as it is. Its tuple's
+  `this` through a `const`; an arrow in it reads it as it is. A write
+  through a field of its `this`, `*this._held.borrow_mut() = v`, is
+  `this._held = v`; a place of it lent, `bump(&mut this.count.borrow_mut())`,
+  reads `this` through `const this$ = this;` too, outside the getter and
+  setter JS writes of it (#449). Its tuple's
   last item of rest arguments as a value, `&'static dyn Rest<T>`, is JS's
   rest parameter, `function (...args)`, as React's `wrapCallback` gives
   `callback.apply(this, args)`

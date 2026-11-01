@@ -16,6 +16,7 @@ mod objects;
 mod reclaim;
 mod shadows;
 mod stepped_whiles;
+mod this_handles;
 mod typeofs;
 
 /// A closure's parameter given its name back, preparation's, which a body
@@ -745,6 +746,7 @@ fn declares_underscore(body: &[Stmt]) -> bool {
 /// A function's body, a closure's too: its last `return;` isn't written, as it falls off its end
 /// there, as a person ends one (ADR 0299); and its parameters' patterns (`left_out_params`).
 fn function_body(params: &mut [js::Pattern], body: &mut Vec<Stmt>) {
+    this_handles::this_read_apart(body);
     block(body, true);
     left_out_params(params, body);
     catches::tail_tries(body);

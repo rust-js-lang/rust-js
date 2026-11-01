@@ -4,7 +4,7 @@ Status: Accepted (the user's decision, 2026-10-27, th1). Amends
 [0761](0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md)'s
 `self` as `this`, which a function made in a method now reads through a
 `const`. Amended: its last parameter of rest arguments as a value is JS's
-rest parameter (below). Amended by
+rest parameter (below); amended (#449): a place of its `this` is never read in a handle's accessors (below). Amended by
 [1009](1009-a-constructor-is-held-as-a-typed-class.md): held by
 `Class::of`, its function is a constructor closed over what it captures.
 Amended: it takes as many parameters as a function, sixteen (rd400).
@@ -344,3 +344,47 @@ declaration's limit, rustc's to check. Held by
 parameters as a function", which constructs one of 14 from Rust and from
 JS. No mutation: the change is the js crate's declarations, which rustc
 checks, not a compiler source's.
+
+## Amendment: a place of its `this` is never read in a handle's accessors (#449)
+
+A P0, found by React's Flight client's `ResponseInstance`: a write
+through a `RefCell` field of the constructor's `this`, in a block,
+
+```rust
+if __DEV__ {
+    *this._weak_response.borrow_mut() = Some(Rc::new(WeakResponse { .. }));
+}
+```
+
+printed `({ get value() { return this._weakResponse; }, set value(value)
+{ this._weakResponse = value; } }).value = { .. };`, the place's handle,
+whose getter and setter read `this` as their own, the handle object: the
+response never had `_weakResponse`, and 82 of the client's 95 tests
+failed. A struct whose fields a getter may answer, a JS object cast to
+it, kept the handle, as a place that may not read the same twice can't
+be its own: tidy's `handles_in_place` took one of a variable alone.
+
+Two changes, each by its owner:
+
+- **A handle made to read or write its place there is the place** where
+  that place is a property of what reads the same, a getter or a setter
+  of it called by either alike, its object read first either way
+  (`its_place`, `tidy/values.rs`). So the write is
+  `this._weakResponse = { .. };`, as upstream writes it.
+- **A handle kept on a place of `this`**, one lent, `bump(&mut
+  this.count.borrow_mut())`, reads `this` through `const this$ = this;`
+  before its getter and setter, as a function nested in a `with_this`
+  function reads it: `js::this_outside_accessors`, one rule, which
+  0761's class members (#359) name after their class, `const counted =
+  this;`, and preparation (`prepare/this_handles.rs`) applies to every
+  other function's body. A function nested in it, whose `this` is its
+  own, is left as it is.
+
+Case: results changed (0262's third): Rust's, the instance's field set,
+is kept. Held by `test/js-constructors.test.ts`'s "a constructor's write
+through its this's RefCell field sets the instance's", run in Node; a
+sweep of the corpus's, the guide's and the React ports' JS found no
+other accessor reading `this`. Mutations `handle-of-a-getters-object-kept` (`tidy/values.rs`),
+`this-handles-not-read-apart` (`prepare.rs`) and #359's
+`class-handle-this-unnamed`, now `js/stmt_walk.rs`'s.
+

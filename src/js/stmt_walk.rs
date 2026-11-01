@@ -575,6 +575,59 @@ pub fn read_as_this(stmts: &mut [Stmt], name: &str) -> bool {
     nested
 }
 
+/// Of a function's `body`: each handle on a place of its `this`,
+/// `this.reads`, which preparation writes as an object whose getter and
+/// setter read the place, `{ get value() { return this.reads; }, .. }`,
+/// whose `this` would be that object, reads the function's through a
+/// `const` of it before them, `const counted = this;`, named `name` or
+/// apart from what the body names (#359, #449). Not a function nested in
+/// it, whose `this` is its own. Whether one did.
+pub fn this_outside_accessors(body: &mut Vec<Stmt>, name: &str) -> bool {
+    let mut taken = HashSet::new();
+    names_in(body, &mut taken);
+    // Each nested function's body set aside, a mark of which in its place,
+    // then put back where its mark is.
+    let mark = |k: usize| StmtKind::Expr(Expr::var(&format!("\u{0}nested{k}"))).at(Span::NONE);
+    let mut nested: Vec<Vec<Stmt>> = Vec::new();
+    each_expr_mut(body, &mut |e| {
+        if let ExprKind::Function(function) = &mut e.kind {
+            let marked = vec![mark(nested.len())];
+            nested.push(std::mem::replace(&mut function.body, marked));
+        }
+    });
+    let instance = crate::names::fresh_in(&mut taken, name);
+    let mut kept = false;
+    each_expr_mut(body, &mut |e| {
+        if let ExprKind::Handle(place, _) | ExprKind::Pair(place, _) = &mut e.kind {
+            place.each_mut(&mut |part| {
+                if matches!(part.kind, ExprKind::This) {
+                    part.kind = ExprKind::Var(instance.clone());
+                    kept = true;
+                }
+            });
+        }
+    });
+    let mut nested: Vec<Option<Vec<Stmt>>> = nested.into_iter().map(Some).collect();
+    each_expr_mut(body, &mut |e| {
+        if let ExprKind::Function(function) = &mut e.kind
+            && let [
+                Stmt {
+                    kind: StmtKind::Expr(marked),
+                    ..
+                },
+            ] = function.body.as_slice()
+            && let ExprKind::Var(marked) = &marked.kind
+            && let Some(k) = marked.strip_prefix("\u{0}nested").and_then(|k| k.parse::<usize>().ok())
+        {
+            function.body = nested[k].take().expect("each nested function's body, put back once");
+        }
+    });
+    if kept {
+        body.insert(0, StmtKind::Const(instance, Expr::this()).at(Span::NONE));
+    }
+    kept
+}
+
 /// Whether `stmts` read their function's `this`: in them, or in an arrow
 /// in them, not in a function made in them, whose `this` is its own.
 pub fn reads_this(stmts: &[Stmt]) -> bool {

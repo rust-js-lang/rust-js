@@ -812,4 +812,12 @@ export const mutations: Mutation[] = [
     replace: "            vec![StmtKind::Assign((**place).clone(), written).at(place.span)],",
     tests: ["test/corpus.test.ts", "-t", "flattened_state_cell"],
   },
+  {
+    name: "this-handles-not-read-apart",
+    breaks: "a handle kept on a place of a `with_this` function's `this` reads `this` in its own getter and setter, the handle object (#449)",
+    file: "src/prepare.rs",
+    find: "    this_handles::this_read_apart(body);\n",
+    replace: "",
+    tests: ["test/js-constructors.test.ts", "-t", "RefCell field sets"],
+  },
 ];

@@ -600,3 +600,84 @@ pub fn made(ctor: &'static ResponseClass) -> f64 {
   expect(lib.made(lib.create())).toBe(expected);
   expect(new (lib.create())(...names.map(() => 1)).sum).toBe(names.reduce((sum, _, i) => sum + i + 1, 0));
 });
+
+// #449 (P0): a constructor's write through a `RefCell` field of its
+// `this`, in a block, `*this._held.borrow_mut() = Some(..)`, as React's
+// Flight client's ResponseInstance sets `this._weakResponse` in DEV, sets
+// the instance's field, `this._held = ..`. A handle on a place of `this`
+// that stays one, `&mut` lent, `bump(&mut this._count.borrow_mut())`,
+// reads it through `const this$ = this;`: its object's getter and setter
+// read their own `this`, that object, and the instance never had it.
+test("a constructor's write through its this's RefCell field sets the instance's", async () => {
+  const { js, lib } = await compiled("constructor-this-cell-write", `use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+use js::function;
+
+pub struct Holder {
+    pub n: f64,
+    pub weak: &'static js::WeakRef<Instance>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub me: Cell<Option<&'static Instance>>,
+}
+
+unsafe impl js::Defined for Holder {}
+
+pub struct Instance {
+    #[cfg_attr(rust_js, rust_js::optional)]
+    pub _held: RefCell<Option<Rc<Holder>>>,
+    pub _name: RefCell<Option<String>>,
+    pub _count: RefCell<f64>,
+}
+
+fn bump(count: &mut f64) {
+    *count += 1.0;
+}
+
+unsafe impl js::Defined for Instance {}
+unsafe impl js::WeakKey for Instance {}
+
+type Constructor = fn(f64, bool) -> Instance;
+
+thread_local! {
+    static INSTANCE: &'static js::Class<Constructor> =
+        js::Class::of(function::with_this(move |this, (n, dev): (f64, bool)| {
+            // SAFETY: \`new\` gives the constructor the object it makes.
+            let this: &'static Instance = unsafe { js::cast(this) };
+            if dev {
+                *this._held.borrow_mut() = Some(Rc::new(Holder {
+                    n,
+                    weak: js::weak_ref::new(this),
+                    me: Cell::new(Some(this)),
+                }));
+                let name = format!("n{n}");
+                *this._name.borrow_mut() = Some(name);
+                this._count.replace(n);
+                bump(&mut this._count.borrow_mut());
+            }
+            this
+        }));
+}
+
+pub fn held(n: f64) -> f64 {
+    let instance: &'static Instance = INSTANCE.with(|&class| js::new(class, (n, true)));
+    instance._held.borrow().as_ref().unwrap().n
+}
+
+pub fn count(n: f64) -> f64 {
+    let instance: &'static Instance = INSTANCE.with(|&class| js::new(class, (n, true)));
+    *instance._count.borrow()
+}
+
+pub fn name(n: f64) -> String {
+    let instance: &'static Instance = INSTANCE.with(|&class| js::new(class, (n, true)));
+    instance._name.borrow().clone().unwrap()
+}
+`);
+  expect(js).toContain("  if (dev) {\n    this._held = {\n");
+  expect(js).toContain("    this._name = name;\n");
+  expect(js).toContain("function instance(n, dev) {\n  const this$ = this;\n");
+  expect(js).toContain("      get value() {\n        return this$._count;\n");
+  expect(js).not.toMatch(/get value\(\) \{\n\s*return this\./);
+  expect([lib.held(2), lib.name(3), lib.count(4)]).toEqual([2, "n3", 5]);
+});
