@@ -1,6 +1,6 @@
 # 0052. The crate's own `Default`, `From` and `Clone`, and the trait ABI kept
 
-Status: Accepted. Extends [0049](0049-traits-and-generics.md) and [0020](0020-structs-and-tuples.md).
+Status: Accepted; amended (#453): an impl and a function of one name are named apart. Extends [0049](0049-traits-and-generics.md) and [0020](0020-structs-and-tuples.md).
 (Amended: a derived impl here is std's derive's; another crate's derive's is
 the crate's own code, ADR 0186.)
 
@@ -213,4 +213,17 @@ bound `T: Into<U>` instead, either's `either_into`, has its `into`'s
 dictionary and none of a `From`. Held by the corpus case
 `into_a_bound_target` and the mutations `into-a-bound-target-unresolved`,
 `into-of-a-bound-not-redirected` and `into-a-from-unbound`.
+
+## Amendment: an impl and a function of one name are named apart (#453)
+
+`#[derive(Debug)]` on `Expr` is the impl `exprDebug`, and `pub fn
+expr_debug` is `exprDebug` too: rust-js refused the crate, "generated
+trait implementation name `exprDebug` collides", where Rust keeps the two
+apart. Case ([0262](0262-when-rust-and-js-disagree.md)): none, names.
+**Two impls of one name are still an error; an impl and another item of
+the module are named apart, as any two names are** (`fresh_in`): the
+function keeps its name, as it's exported first, and the impl's dictionary
+is `circleShape$1` beside `fn circle_shape`. Held by the corpus's
+`impl_named_like_a_function` against native Rust, and the mutation
+`impl-named-like-a-function-refused` (`analysis/naming.rs`).
 

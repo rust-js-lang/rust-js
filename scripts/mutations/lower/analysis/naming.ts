@@ -731,4 +731,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/js-any-values.test.ts", "-t", "eval is the global eval, called indirectly"],
   },
+  {
+    name: "impl-named-like-a-function-refused",
+    breaks: "a trait impl named as a function the program names, `exprDebug` of `#[derive(Debug)]` and `fn expr_debug`, is refused, where Rust keeps the two apart (#453)",
+    file: "src/lower/analysis/naming.rs",
+    find: "        if trait_impls.contains(&def_id) && !impl_names.entry(module).or_default().insert(js_name.clone()) {\n",
+    replace: "        if trait_impls.contains(&def_id) && names.contains(&js_name) {\n",
+    tests: ["test/corpus.test.ts", "-t", "impl_named_like_a_function"],
+  },
 ];

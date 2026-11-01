@@ -744,6 +744,7 @@ pub(super) fn name_items(
     let mut methods: HashMap<(LocalModId, DefId), HashSet<String>> = HashMap::new();
     let mut fns: HashMap<DefId, FnInfo> = HashMap::new();
     let mut exports: HashMap<(LocalModId, String), DefId> = HashMap::new();
+    let mut impl_names: HashMap<LocalModId, HashSet<String>> = HashMap::new();
     let exported = |def_id: DefId| bindings::exported_by_name(tcx, def_id) && !named_expressions.contains(&def_id);
     let (first, rest): (Vec<DefId>, Vec<DefId>) = items.iter().copied().partition(|&def_id| exported(def_id));
     for def_id in first.into_iter().chain(rest) {
@@ -769,7 +770,10 @@ pub(super) fn name_items(
                 Entry::Vacant(entry) => _ = entry.insert(def_id),
             }
         }
-        if trait_impls.contains(&def_id) && names.contains(&js_name) {
+        // Two impls of one name, `exprDebug`, are an error (ADR 0052); an
+        // impl and a function the program names so, `fn expr_debug`, are
+        // named apart, as any two names are (#453).
+        if trait_impls.contains(&def_id) && !impl_names.entry(module).or_default().insert(js_name.clone()) {
             let message = format!(
                 "rust-js: generated trait implementation name `{js_name}` collides; put the implementations in separate modules"
             );
