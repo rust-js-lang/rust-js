@@ -1199,6 +1199,20 @@ pub(super) fn as_member(
     }
 }
 
+/// Each of the crate's classes that has a prototype method or getter,
+/// which its module assigns to the prototype it makes (#448).
+pub(crate) fn with_prototype_members(tcx: TyCtxt<'_>) -> Vec<DefId> {
+    (tcx.hir_crate_items(()).definitions())
+        .map(|id| id.to_def_id())
+        .filter(|&id| tcx.def_kind(id) == DefKind::Struct && is_class(tcx, id))
+        .filter(|&adt| {
+            (tcx.inherent_impls(adt).iter())
+                .flat_map(|&imp| tcx.associated_item_def_ids(imp).iter().copied())
+                .any(|item| matches!(member(tcx, item), Some(Member::Method | Member::Getter)))
+        })
+        .collect()
+}
+
 /// Where `class`'s member `name` is written, as `member` is of it: its
 /// constructor function, its prototype's method or getter; the rest, its
 /// statics and constants, written where they are.

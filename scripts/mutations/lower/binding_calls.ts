@@ -275,9 +275,8 @@ export const mutations: Mutation[] = [
     breaks:
       'a setter binding, `history.set_scroll_restoration("auto")`, calls the property, `history.scrollRestoration("auto")`, instead of assigning it',
     file: "src/lower/binding_calls.rs",
-    find: "            (JsForm::Set(name), Some(this)) if args.len() == 1 && !name.contains('#') => {\n                let value = args.remove(0);\n                // A setter may answer it, which may do anything, throw\n                // too: never a write that only makes a value (ADR 0660,\n                // amended).\n                let property = Expr::member(this, name).answered_by_a_setter();\n                out.push(StmtKind::Assign(property, value).at(self.js_span(span)));\n                Expr::undefined()\n            }",
-    replace:
-      "            (JsForm::Set(name), Some(this)) if args.len() == 1 && !name.contains('#') => {\n                Expr::call(Expr::member(this, name), args)\n            }",
+    find: "                let value = args.remove(0);\n                // A setter may answer it, which may do anything, throw\n                // too: never a write that only makes a value (ADR 0660,\n                // amended).\n                let property = Expr::member(this, name).answered_by_a_setter();\n                out.push(StmtKind::Assign(property, value).at(self.js_span(span)));\n                Expr::undefined()\n",
+    replace: "                Expr::call(Expr::member(this, name), args)\n",
     tests: [
       "test/webapi-bindings.test.ts",
       "-t",
@@ -846,5 +845,13 @@ export const mutations: Mutation[] = [
     find: "            Some(_) if self.of_indexed_list(def_id, generic_args) => {\n",
     replace: "            Some(_) if false => {\n",
     tests: ["test/lowering-index-loops.test.ts", "-t", "NodeList's items is an index loop"],
+  },
+  {
+    name: "class-prototype-replaced-allowed",
+    breaks: "a class's prototype with methods replaced at load compiles, its methods assigned to the prototype it replaces, `chunk.then` undefined (#448)",
+    file: "src/lower/binding_calls.rs",
+    find: "                if name == \"prototype\"\n",
+    replace: "                if false\n",
+    tests: ["test/classes.test.ts", "-t", "replaced at load"],
   },
 ];

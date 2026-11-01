@@ -1,6 +1,6 @@
 # 0761. A `#[rust_js::class]` is a constructor function and its prototype
 
-Status: Accepted, by the user's decision of 2026-10-24; amended (rd325): a private class is its module's own; amended (2026-11-01, the user's decision): a class whose `new` isn't `pub` is its type alone. Extends
+Status: Accepted, by the user's decision of 2026-10-24; amended (rd325): a private class is its module's own; amended (#448): a prototype of methods isn't replaced at load; amended (2026-11-01, the user's decision): a class whose `new` isn't `pub` is its type alone. Extends
 [0047](0047-methods.md), whose object of functions stays every other
 struct's impl. Amended: its struct's comments, its `///` doc, are its
 constructor function's (below). Amended (2026-10-26, the user's
@@ -504,3 +504,20 @@ the trait impl rustc checks, not an attribute. A class that extends
 nothing is a constructor function, as above. Its refusals of a class of
 no `fn new` and of the attribute on the struct alone don't hold of a
 class React constructs, which writes neither.
+
+## Amendment: a prototype of methods isn't replaced at load (#448)
+
+A class's methods are assigned to the prototype its module makes,
+`ReactPromise.prototype.then = function (..) { .. }`, where its
+constructor is; a `js::on_load!` runs after, so its
+`js::class::<ReactPromise>().set_prototype(object::create(..))` replaced
+that prototype, and every instance made after had no `then`: a wrong
+answer, Rust calling a method JS's object hasn't. **Replacing the
+prototype of a class with prototype methods or getters is refused**,
+naming it; one of none, `ComponentDummy`'s, is replaced as before. React's
+Flight client's `ReactPromise.prototype = Object.create(Promise.prototype)`
+before its `then` needs a form that says so where the class is declared,
+not yet. Case: a refusal ([0262](0262-when-rust-and-js-disagree.md)'s
+last). Held by `test/classes.test.ts`'s "a class's prototype with methods
+replaced at load is refused"; mutation `class-prototype-replaced-allowed`
+(`binding_calls.rs`).

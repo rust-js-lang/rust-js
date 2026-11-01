@@ -1019,3 +1019,41 @@ pub fn wrap(value: f64) -> Rc<Wrapper> {
   expect(Object.keys(lib).sort()).toEqual(["Made", "wrap"]);
   expect([lib.wrap(2).doubled, lib.wrap(2).tripled(), lib.Made.of(5).amount]).toEqual([4, 6, 5]);
 });
+
+// #448: a class's prototype replaced at load, `js::class::<T>().set_prototype(..)`,
+// would drop the methods its module assigned to the one it replaces,
+// `chunk.then` undefined: refused, naming it. A class of no prototype
+// methods, `PureComponent`'s `ComponentDummy`, is replaced as before.
+test("a class's prototype with methods replaced at load is refused", () => {
+  const error = refused(
+    "class-prototype-replaced",
+    `use std::cell::Cell;
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct ReactPromise {
+    pub status: Cell<&'static str>,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl ReactPromise {
+    pub fn new(status: &'static str) -> Self {
+        ReactPromise { status: Cell::new(status) }
+    }
+
+    pub fn then(&self, resolve: &dyn Fn()) {
+        if self.status.get() == "fulfilled" {
+            resolve();
+        }
+    }
+}
+
+js::on_load! {
+    let promise_prototype = js::get(js::class::<js::Promise<()>>(), "prototype");
+    js::class::<ReactPromise>().set_prototype(js::object::create(promise_prototype, None));
+}
+`,
+  );
+  expect(error).toContain(
+    "replacing the prototype of `ReactPromise`, a `#[rust_js::class]` with prototype methods, which are assigned to the prototype it replaces (#448)",
+  );
+});

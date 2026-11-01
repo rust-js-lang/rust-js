@@ -190,6 +190,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A class's static property, read at each call: `Notification.permission`.
             (JsForm::Get(name), None) if args.is_empty() => self.js_ref(&name).or_at(fun_span).answered_by_a_getter(),
             (JsForm::Set(name), Some(this)) if args.len() == 1 && !name.contains('#') => {
+                // A crate's class's prototype replaced, `js::class::<T>().set_prototype(..)`:
+                // its methods are assigned to the prototype its module made,
+                // which the new one hasn't (#448, ADR 0761 amended).
+                if name == "prototype"
+                    && let Some(adt) = (super::classes::with_prototype_members(self.tcx).into_iter()).find(|&adt| {
+                        super::classes::member_naming(self.tcx, adt).is_some_and(
+                            |ctor| matches!(self.fn_ref(ctor).kind, js::ExprKind::Member(ref of, _) if js::same_path(of, &this)),
+                        )
+                    })
+                {
+                    let what = format!(
+                        "replacing the prototype of `{}`, a `#[rust_js::class]` with prototype methods, which are assigned to the prototype it replaces (#448)",
+                        self.tcx.item_name(adt)
+                    );
+                    return Err(self.unsupported(span, &what));
+                }
                 let value = args.remove(0);
                 // A setter may answer it, which may do anything, throw
                 // too: never a write that only makes a value (ADR 0660,

@@ -1043,8 +1043,10 @@ export function Keys() {
   whose methods would be a dictionary's, not the prototype's; a constructor's instance set again; a
   method of
   `self` by value; a method or constant named as a field, which
-  `this.name` would hide; a class of no `new`; and the attribute on one
-  of the struct and its impl alone.
+  `this.name` would hide; a class of no `new`; the prototype of a class
+  with prototype methods replaced, `set_prototype`, which would drop them
+  ([ADR 0761](../../decisions/0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md),
+  amended, #448); and the attribute on one of the struct and its impl alone.
 
 ### A state flattened into a class
 
