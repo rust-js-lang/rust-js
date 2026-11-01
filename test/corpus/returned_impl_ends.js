@@ -30,42 +30,47 @@ export function entry() {
   main();
 }
 
-const Bag = {
-  oddSquares(bag) {
+function main() {
+  const iterExactSizeIterator = { len: (iterator) => iterator.len() };
+  const b = [[1, 2, 3, 4, 6]];
+
+  function oddSquares() {
     return iterator_map(
-      $filterEnds($iter(bag[0]), (x) => x % 2 === 1),
+      $filterEnds($iter(b[0]), (x) => x % 2 === 1),
       (x) => Math.imul(x, x),
     );
-  },
-  evens(bag) {
-    return $filterEnds($iter(bag[0]), (x) => x % 2 === 0);
-  },
-  doubled(bag) {
-    return iterator_map($iter(bag[0]), (x) => (x * 2) | 0);
-  },
-  plain(bag) {
-    return $iter(bag[0]);
-  },
-  ranged(bag) {
-    return { start: 0, end: bag[0].length };
-  },
-  chained(bag) {
+  }
+
+  function evens() {
+    return $filterEnds($iter(b[0]), (x) => x % 2 === 0);
+  }
+
+  function doubled() {
+    return iterator_map($iter(b[0]), (x) => (x * 2) | 0);
+  }
+
+  function plain() {
+    return $iter(b[0]);
+  }
+
+  function ranged() {
+    return { start: 0, end: b[0].length };
+  }
+
+  function chained() {
     return iterator_chain(
-      $iter(bag[0]),
+      $iter(b[0]),
       [100, 200],
       { next: $next },
       { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
     );
-  },
-};
-function main() {
-  const iterExactSizeIterator = { len: (iterator) => iterator.len() };
-  const b = [[1, 2, 3, 4, 6]];
+  }
+
   console.log(
-    `[${Array.from($rev($knowing(Bag.oddSquares(b), mapDoubleEndedIterator_nextBack, undefined, undefined, undefined, (iterator, init, f, broke, unwind) => mapDoubleEndedIterator_tryRfold(iterator, init, f, { next: $next }, { next_back: $nextBack }, $tryOf(broke), undefined, undefined, undefined, unwind)))).join(", ")}]`,
+    `[${Array.from($rev($knowing(oddSquares(), mapDoubleEndedIterator_nextBack, undefined, undefined, undefined, (iterator, init, f, broke, unwind) => mapDoubleEndedIterator_tryRfold(iterator, init, f, { next: $next }, { next_back: $nextBack }, $tryOf(broke), undefined, undefined, undefined, unwind)))).join(", ")}]`,
   );
-  console.log(`[${Array.from($rev(Bag.evens(b))).join(", ")}]`);
-  const e = Bag.evens(b);
+  console.log(`[${Array.from($rev(evens())).join(", ")}]`);
+  const e = evens();
   const nextBack = $nextBack(e);
   const next = $next(e);
   console.log(
@@ -75,7 +80,7 @@ function main() {
     `[${Array.from(
       $rev(
         $knowing(
-          Bag.doubled(b),
+          doubled(),
           mapDoubleEndedIterator_nextBack,
           (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
           undefined,
@@ -95,9 +100,9 @@ function main() {
             ),
         ),
       ),
-    ).join(", ")}] ${mapExactSizeIterator_len(Bag.doubled(b), iterExactSizeIterator)}`,
+    ).join(", ")}] ${mapExactSizeIterator_len(doubled(), iterExactSizeIterator)}`,
   );
-  const d = Bag.doubled(b);
+  const d = doubled();
   mapDoubleEndedIterator_nextBack(d);
   console.log(
     `${mapExactSizeIterator_len(d, iterExactSizeIterator)} ${((value) =>
@@ -128,20 +133,20 @@ function main() {
       ),
     )}`,
   );
-  const nth = $rest(Bag.plain(b)).toReversed()[1];
-  const value = $nextBack(Bag.plain(b));
+  const nth = $rest(plain()).toReversed()[1];
+  const value = $nextBack(plain());
   console.log(
     `${nth == null ? "None" : `Some(${nth})`} ${value == null ? "None" : `Some(${value})`}`,
   );
   console.log(
-    `[${Array.from($iterator(Bag.ranged(b), $rangeNextBack).filter((_, i) => i % 2 === 0)).join(", ")}]`,
+    `[${Array.from($iterator(ranged(), $rangeNextBack).filter((_, i) => i % 2 === 0)).join(", ")}]`,
   );
   console.log(
-    `[${Array.from($rev($knowing(Bag.chained(b), chainDoubleEndedIterator_nextBack, undefined, undefined, chainDoubleEndedIterator_nthBack, (iterator, init, f, broke, unwind) => chainDoubleEndedIterator_tryRfold(iterator, init, f, { next: $next }, { next_back: $nextBack }, { next: $next }, { next_back: $nextBack }, $tryOf(broke), undefined, undefined, unwind))).take(3)).join(", ")}]`,
+    `[${Array.from($rev($knowing(chained(), chainDoubleEndedIterator_nextBack, undefined, undefined, chainDoubleEndedIterator_nthBack, (iterator, init, f, broke, unwind) => chainDoubleEndedIterator_tryRfold(iterator, init, f, { next: $next }, { next_back: $nextBack }, { next: $next }, { next_back: $nextBack }, $tryOf(broke), undefined, undefined, unwind))).take(3)).join(", ")}]`,
   );
   const value$1 = $findBack(
     $knowing(
-      Bag.chained(b),
+      chained(),
       chainDoubleEndedIterator_nextBack,
       undefined,
       undefined,
@@ -164,10 +169,10 @@ function main() {
     (x) => x % 3 === 0,
   );
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  console.log(`${$foldBack(Bag.evens(b), 0, (a, x) => (((a * 10) | 0) + x) | 0)}`);
+  console.log(`${$foldBack(evens(), 0, (a, x) => (((a * 10) | 0) + x) | 0)}`);
   const value$2 = $rposition(
     $knowing(
-      Bag.doubled(b),
+      doubled(),
       mapDoubleEndedIterator_nextBack,
       (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
       undefined,

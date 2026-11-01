@@ -44,6 +44,34 @@ pub(super) fn noinline_starts(module: &Module) -> std::collections::HashSet<u32>
 
 /// Each body of `module`'s statements: its functions', its methods', its
 /// statements', and of a constant, its value's, as a statement.
+/// Where each statement starts that a blank line is before, as it's set
+/// apart: a function declared away from where it's written, and what's
+/// after it but another such function (`Function::set_apart`, ADR 1043).
+pub(super) fn set_apart_starts(module: &Module) -> std::collections::HashSet<u32> {
+    let mut starts = std::collections::HashSet::new();
+    for mut body in bodies(module) {
+        js::each_block_mut(&mut body, &mut |stmts| {
+            let apart = |stmt: &js::Stmt| matches!(&stmt.kind, StmtKind::Function(f) if f.set_apart);
+            for (i, stmt) in stmts.iter().enumerate() {
+                if apart(stmt) && !stmt.span.is_none() {
+                    starts.insert(stmt.span.lo);
+                }
+                // What's after the last, where it's printed: a temporary
+                // rust-js made is at the next statement's start.
+                if apart(stmt)
+                    && let Some(next) = stmts[i + 1..]
+                        .iter()
+                        .take_while(|s| !apart(s))
+                        .find(|s| !s.span.is_none())
+                {
+                    starts.insert(next.span.lo);
+                }
+            }
+        });
+    }
+    starts
+}
+
 pub(super) fn bodies(module: &Module) -> Vec<Vec<js::Stmt>> {
     (module.items.iter())
         .flat_map(|item| match item {

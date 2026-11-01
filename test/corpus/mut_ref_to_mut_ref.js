@@ -15,30 +15,6 @@ function scopeExitGuardDrop_drop(scopeExitGuard, dropT, dropData, dropF) {
   });
 }
 
-const Counter = {
-  extend(counter, n) {
-    const len = counter.len;
-    const guard = {
-      value: {
-        get value() {
-          return counter.len;
-        },
-        set value(value) {
-          counter.len = value;
-        },
-      },
-      data: len,
-      f(len, selfLen) {
-        selfLen.value.value = len;
-      },
-    };
-    for (let i = 0; i < n; i++) {
-      guard.data = (guard.data + 1) >>> 0;
-    }
-    scopeExitGuardDrop_drop(guard);
-  },
-};
-
 function bump(r) {
   r.value.value = (r.value.value + 1) >>> 0;
 }
@@ -68,7 +44,30 @@ function shout(text) {
 
 function main() {
   const counter = { len: 2 };
-  Counter.extend(counter, 3);
+
+  function extend(n) {
+    const len = counter.len;
+    const guard = {
+      value: {
+        get value() {
+          return counter.len;
+        },
+        set value(value) {
+          counter.len = value;
+        },
+      },
+      data: len,
+      f(len, selfLen) {
+        selfLen.value.value = len;
+      },
+    };
+    for (let i = 0; i < n; i++) {
+      guard.data = (guard.data + 1) >>> 0;
+    }
+    scopeExitGuardDrop_drop(guard);
+  }
+
+  extend(3);
   console.log(`${counter.len}`);
   let a = 1;
   let b = 10;

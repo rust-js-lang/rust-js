@@ -66,27 +66,26 @@ function polled(codes, log) {
   return n;
 }
 
-const Codes = {
-  nextCode(codes) {
-    codes.at = (codes.at + 1) >>> 0;
-    codes.log.push(`next:${codes.at}`);
-    return codes.codes[(codes.at - 1) >>> 0] ?? 0;
-  },
-};
-
 function stepped(codes, log) {
   const c = { at: 0, codes, log };
+
+  function nextCode() {
+    c.at = (c.at + 1) >>> 0;
+    c.log.push(`next:${c.at}`);
+    return c.codes[(c.at - 1) >>> 0] ?? 0;
+  }
+
   let n = 0;
   while (true) {
     n = (n + 1) >>> 0;
-    const nextCode = Codes.nextCode(c);
-    if (nextCode === 0) {
+    const value = nextCode();
+    if (value === 0) {
       break;
     }
-    if (nextCode === 1 && on(log, "one", n > 30)) {
+    if (value === 1 && on(log, "one", n > 30)) {
       break;
     }
-    if (nextCode === 1 || nextCode === 2) {
+    if (value === 1 || value === 2) {
       n = (n + 20) >>> 0;
     } else {
       n = (n + 300) >>> 0;

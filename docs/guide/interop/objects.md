@@ -12,6 +12,7 @@ it writes, without its header comment and source-map line.
 
 - [Structs and enums](#structs-and-enums)
 - [Methods](#methods)
+  - [A function's scope struct](#a-functions-scope-struct)
 - [Traits](#traits)
 - [Generic code takes a dictionary](#generic-code-takes-a-dictionary)
 - [`dyn Trait` is a value and its dictionary](#dyn-trait-is-a-value-and-its-dictionary)
@@ -106,6 +107,68 @@ export function scaledArea(side) {
   Pin<&mut Self>`, is named after its type too, `reply` of a `Reply`
   ([ADR 0047](../../decisions/0047-methods.md), amended).
 - **The object is exported** where one of its methods is `pub`.
+
+### A function's scope struct
+
+A private struct whose one value a function makes, which only its own
+methods and that function's closures hold, is that function's scope: its
+methods are functions declared in it, after the value's `let`, closing
+over the value and calling each other by name, as a JS function's nested
+functions read its variables
+([ADR 1043](../../decisions/1043-a-functions-scope-struct-is-its-scope.md)).
+
+```rust
+use std::cell::Cell;
+use std::rc::Rc;
+
+struct Reply {
+    next_id: Cell<u32>,
+}
+
+impl Reply {
+    fn part(self: &Rc<Self>, depth: u32) -> String {
+        let id = self.next_id.get();
+        self.next_id.set(id + 1);
+        match depth {
+            0 => format!("${id}"),
+            _ => format!("${id}:{}", self.part(depth - 1)),
+        }
+    }
+}
+
+pub fn process_reply(depth: u32) -> String {
+    let reply = Rc::new(Reply { next_id: Cell::new(1) });
+    reply.part(depth)
+}
+```
+
+```js
+export function processReply(depth) {
+  const reply = { nextId: 1 };
+
+  function part(depth) {
+    const id = reply.nextId;
+    reply.nextId = (id + 1) >>> 0;
+    if (depth === 0) {
+      return `$${id}`;
+    } else {
+      const arg = part((depth - 1) >>> 0);
+      return `$${id}:${arg}`;
+    }
+  }
+
+  return part(depth);
+}
+```
+
+- **Each call is a scope of its own**: each call of `process_reply` makes
+  its value and its functions, as each call of a JS function does.
+- **What makes one**: the struct isn't `pub`, has no type parameters and
+  no trait impls; its methods take `&self`, `&mut self` or `self:
+  &Rc<Self>`; the crate writes one literal of it, held by a `let` of the
+  function's outermost block, itself or in an `Rc::new`; and it's given to
+  no call but its methods', nor given back. Any other struct's methods are
+  its type's object, as above.
 
 ## Traits
 

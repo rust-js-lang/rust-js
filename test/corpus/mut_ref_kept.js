@@ -22,19 +22,6 @@ function gridIndexMutUsize_indexMut(grid, i) {
   };
 }
 
-const Counter = {
-  getMut(counter) {
-    return {
-      get value() {
-        return counter.n;
-      },
-      set value(value) {
-        counter.n = value;
-      },
-    };
-  },
-};
-
 const refMutI32Bump = { bump: refMutI32Bump_bump };
 function refMutI32Bump_bump(self) {
   self.value = (self.value + 1) | 0;
@@ -54,9 +41,21 @@ function main() {
   );
 
   const c = { n: 1 };
-  const getMut = Counter.getMut(c);
-  getMut.value = (getMut.value + 41) | 0;
-  const n = Counter.getMut(c);
+
+  function getMut() {
+    return {
+      get value() {
+        return c.n;
+      },
+      set value(value) {
+        c.n = value;
+      },
+    };
+  }
+
+  const value$1 = getMut();
+  value$1.value = (value$1.value + 41) | 0;
+  const n = getMut();
   n.value = (n.value * 2) | 0;
   console.log(`${c.n}`);
 

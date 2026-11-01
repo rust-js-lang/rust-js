@@ -812,7 +812,10 @@ What JS sees of a crate:
   name that isn't the camelCase one is `#[rust_js::name = ".."]`'s, the one
   way to name an item in JS.
 - **A type's methods are its exported object's,** the receiver first:
-  `Point.shift(p, by)` ([0047](../decisions/0047-methods.md)).
+  `Point.shift(p, by)` ([0047](../decisions/0047-methods.md)); a
+  function's private scope struct's are functions declared in it, closing
+  over its value
+  ([1043](../decisions/1043-a-functions-scope-struct-is-its-scope.md)).
 - **`LowerHex`, `Pointer` and the other formatting traits are
   dictionaries too:** `{:x}` of a generic `T` is its `fmt`, given the
   placeholder's options ([0174](../decisions/0174-generic-fmt-traits.md)).

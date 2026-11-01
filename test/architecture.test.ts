@@ -441,6 +441,11 @@ const owners: Record<string, string[]> = {
   "self.walks.clones": ["src/lower/std_impls.rs"],
   "self.walks.clone_assumed": ["src/lower/std_impls.rs"],
   "self.codecs": ["src/lower/serde.rs"],
+  // A function's scope struct's methods, functions declared in it (ADR
+  // 1043): their names, which calls of them call, and while one is
+  // lowered, the variable it closes over, its `self`'s.
+  "self.scope_functions": ["src/lower/mir/calls.rs", "src/lower/mir/scopes.rs"],
+  "self.scope_self": ["src/lower/mir/locals.rs", "src/lower/mir/scopes.rs"],
 };
 // The rest of a function's context, which each module may read, and why:
 // what it lowers and where (set entering a body, `bodies.rs`), the names it
@@ -507,6 +512,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/places.rs": ["binding_var", "body", "branches", "cuts", "defaults", "deferred", "in_place", "locals", "named"],
   "src/lower/mir/queries.rs": ["body", "locals", "own_names"],
   "src/lower/mir/rvalues.rs": ["at", "body", "branches", "cuts", "locals", "pending", "statement", "writer"],
+  "src/lower/mir/scopes.rs": ["body", "locals"],
   "src/lower/mir/std_calls.rs": ["at", "body", "locals"],
   "src/lower/mir/structure.rs": ["argument_spans", "at", "body", "commented_jumps", "copy_backs", "deferred", "in_place", "labels", "left", "locals", "pending", "statement", "unwind", "writer", "writes_captured"],
   "src/lower/mir/temporaries.rs": ["body", "copy_backs", "in_place", "locals", "named", "own_names", "pending", "places", "refs", "settled", "unwind"],
@@ -715,7 +721,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/mir/dispatch.rs", "    pub(super) fn mir_call(", 99], // What reads its argument through, `flatten()` and `unwrap()`, in `reads_through` (ADR 0747).
   ["src/lower/mir/dispatch.rs", "    fn mir_call_values_of(", 229], // Whether `?` is written as it is, `tried_as_written` (ADR 0913).
   ["src/lower/mir/dispatch.rs", "    fn mir_std_call(", 132], // An `Option`'s `as_mut()`, `option_as_mut` (#323).
-  ["src/lower/mir.rs", "    fn mir_function(", 344], // Where a call's arguments are written, `argument_spans` (rd220). Its plain types asked of `plain_type`, and what's settled until it's written (#121). The `break`s and `continue`s with comments before them its structure found, for tidy (rd109). Its dictionaries written twice, declared at its top, `declare_kept` (ADR 0979). Its floats, for tidy (ADR 0966). What a closure took by value, `kept_captures` (ADR 0879). What it knows of the body before it writes any of it in one, `local_facts` (the review's P3); the parameters handed to tidy's `scopes` stage in a cell, and whether it asks its stages again (ADR 0659, amended); the jumps the program wrote in one field (ADR 0742); the guards that hold (ADR 0790); what its `let`s bind in one (ADR 0598, amended). A class's method's `self` made `this` before tidy (ADR 0761, amended). Its `bool` paths renamed `this`'s too (#355).
+  ["src/lower/mir.rs", "    fn mir_function(", 325], // The names of its hooks' callbacks, `callback_names`; a scope struct's method's `self`, named in `mir_locals` (ADR 1043). Where a call's arguments are written, `argument_spans` (rd220). Its plain types asked of `plain_type`, and what's settled until it's written (#121). The `break`s and `continue`s with comments before them its structure found, for tidy (rd109). Its dictionaries written twice, declared at its top, `declare_kept` (ADR 0979). Its floats, for tidy (ADR 0966). What a closure took by value, `kept_captures` (ADR 0879). What it knows of the body before it writes any of it in one, `local_facts` (the review's P3); the parameters handed to tidy's `scopes` stage in a cell, and whether it asks its stages again (ADR 0659, amended); the jumps the program wrote in one field (ADR 0742); the guards that hold (ADR 0790); what its `let`s bind in one (ADR 0598, amended). A class's method's `self` made `this` before tidy (ADR 0761, amended). Its `bool` paths renamed `this`'s too (#355).
   ["src/lower/recognition/inherent.rs", "    pub(super) fn classify_inherent(", 750],
   ["src/lower/recognition/calls.rs", "    fn classify_trait_method(", 242], // A `to_owned()`'s answer, `to_owned_of` (#316).
   ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 583],

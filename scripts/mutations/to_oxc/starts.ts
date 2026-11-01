@@ -63,4 +63,22 @@ export const mutations: Mutation[] = [
       "an ES class React renders"
     ]
   },
+  {
+    name: "set-apart-function-no-blank-before",
+    breaks: "a scope struct's method's function, declared after its value's `let`, has no blank line before it",
+    file: "src/to_oxc/starts.rs",
+    find: "                if apart(stmt) && !stmt.span.is_none() {\n                    starts.insert(stmt.span.lo);\n                }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "scope_struct_functions"],
+    snapshots: true,
+  },
+  {
+    name: "set-apart-function-no-blank-after",
+    breaks: "what's after a scope struct's methods' functions has no blank line before it",
+    file: "src/to_oxc/starts.rs",
+    find: "                    starts.insert(next.span.lo);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "scope_struct_functions"],
+    snapshots: true,
+  },
 ];

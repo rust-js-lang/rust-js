@@ -19,13 +19,6 @@ export function entry() {
   main();
 }
 
-const Counter = {
-  hit(counter) {
-    counter.hits = (counter.hits + 1) >>> 0;
-    return counter.hits;
-  },
-};
-
 function main() {
   const cell = [1, 2];
   const a = $borrow(cell, true);
@@ -85,8 +78,14 @@ function main() {
   grid[1] = (grid[1] + 3) | 0;
   console.log(`[${grid.join(", ")}] ${grid[2]}`);
   const counter = { hits: 0 };
-  Counter.hit(counter);
-  console.log(`${Counter.hit(counter)}`);
+
+  function hit() {
+    counter.hits = (counter.hits + 1) >>> 0;
+    return counter.hits;
+  }
+
+  hit();
+  console.log(`${hit()}`);
   const shared = { value: "a" };
   const other = shared;
   const borrowMut = $borrowMut(other);

@@ -419,6 +419,7 @@ mod tests {
             span: Span::NONE,
             name_span: Span::NONE,
             param_spans: Vec::new(),
+            set_apart: false,
         })
     }
 

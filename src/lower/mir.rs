@@ -34,6 +34,7 @@ mod places;
 mod positions;
 mod queries;
 mod rvalues;
+mod scopes;
 mod std_calls;
 mod structure;
 mod temporaries;
@@ -853,6 +854,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .def_ident_span(def_id)
                     .map_or(js::Span::NONE, |s| self.js_span(s)),
                 param_spans,
+                set_apart: false,
             },
             jsx: self.jsx,
             dependencies: self.dependencies.take(),
@@ -1325,6 +1327,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let given = self.writer_options(&state, options.as_deref());
         let lowered = self.with_given(given, |cx| cx.mir_tree(&mut state, start))?;
         out.extend(state.settled_lets().chain(lowered));
+        // Its scope struct's methods, declared after its `let` (ADR 1043).
+        self.declare_scope_functions(&state, captures.is_none(), &mut out)?;
         if let Some(options) = options {
             params.push(js::Pattern::Name(options));
         }
@@ -1337,29 +1341,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let tested = std::mem::replace(&mut self.locals.mir.tested, outer_tested);
         // Where the program writes what tidy reads the body's JS by.
         let written = self.written();
-        // The closures a `let` names that a hook's function alone is, by
-        // their names (ADR 0297).
-        let named: Vec<rustc_span::Span> = (self.frame.thir.stmts.iter())
-            .filter_map(|stmt| match &stmt.kind {
-                thir::StmtKind::Let { pattern, .. }
-                    if let thir::PatKind::Binding { var, .. } = pattern.kind
-                        && self.frame.facts.named_callbacks.contains(&var) =>
-                {
-                    Some(pattern.span)
-                }
-                _ => None,
-            })
-            .collect();
-        let callbacks: std::collections::HashSet<String> = (mir_body.var_debug_info.iter())
-            .filter_map(|info| match info.value {
-                mir::VarDebugInfoContents::Place(place)
-                    if place.projection.is_empty() && named.contains(&info.source_info.span) =>
-                {
-                    Some(state.locals.names[place.local].clone())
-                }
-                _ => None,
-            })
-            .collect();
+        // The closures a `let` names that a hook's function alone is (ADR 0297).
+        let callbacks = self.callback_names(&state);
         let made = std::mem::replace(&mut self.locals.mir.made, outer_made);
         // The names of `bool`s, of integers, and of floats.
         let (mut booleans, numbers, floats) = self.typed_names(mir_body, &state);

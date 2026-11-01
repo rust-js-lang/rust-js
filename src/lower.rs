@@ -343,6 +343,9 @@ struct CrateFacts<'a, 'tcx> {
     counted: &'a analysis::Counted<'tcx>,
     /// Each closure's handle on itself that's no JS (ADR 0843, amended).
     self_handles: &'a analysis::SelfHandles<'tcx>,
+    /// Each function's scope struct, whose methods are functions declared
+    /// in it (ADR 1043).
+    scopes: &'a analysis::Scopes,
     /// What each body may borrow, of its cells (ADR 0580).
     cell_borrows: &'a analysis::CellBorrows<'tcx>,
     /// Whether a function holding a value with a destructor is made a `dyn
@@ -543,6 +546,13 @@ struct FnCx<'a, 'tcx> {
     walks: RefCell<HashMap<ty::TypingEnv<'tcx>, Rc<TypeWalks<'tcx>>>>,
     /// What's dropped, and where (ADR 0098).
     drop_state: drops::DropState<'tcx>,
+    /// Of a function whose scope struct's methods are functions declared
+    /// in it, each method's function's name, which calls of it call (ADR
+    /// 1043).
+    scope_functions: HashMap<DefId, String>,
+    /// While one of them is lowered, the name of the variable it closes
+    /// over, its `self`'s.
+    scope_self: Option<String>,
 }
 
 /// What a body being lowered has of its own, which a nested one, a

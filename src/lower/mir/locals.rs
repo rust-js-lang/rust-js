@@ -123,6 +123,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             given_name: IndexVec::from_elem_n(false, n),
             text: IndexVec::from_elem_n(false, n),
         };
+        // A scope struct's method's `self`, the variable its function
+        // closes over (ADR 1043).
+        let mut named = named.to_vec();
+        if let Some(name) = self.scope_self.take() {
+            named.push((Local::from_usize(1), name));
+        }
         let mut user: IndexVec<Local, Option<String>> = IndexVec::from_elem_n(None, n);
         let sm = self.tcx.sess.source_map();
         // `?`'s own `val`, what its `Continue` holds: a temporary.
@@ -288,6 +294,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let fresh = self.fresh_ranges(body, &locals.names);
         self.note_fresh_ranges(fresh);
         locals
+    }
+
+    /// The names of the closures a `let` names that a hook's function
+    /// alone is (ADR 0297).
+    pub(super) fn callback_names(&self, state: &State<'_, 'tcx>) -> std::collections::HashSet<String> {
+        let named: Vec<rustc_span::Span> = (self.frame.thir.stmts.iter())
+            .filter_map(|stmt| match &stmt.kind {
+                thir::StmtKind::Let { pattern, .. }
+                    if let thir::PatKind::Binding { var, .. } = pattern.kind
+                        && self.frame.facts.named_callbacks.contains(&var) =>
+                {
+                    Some(pattern.span)
+                }
+                _ => None,
+            })
+            .collect();
+        (state.body.var_debug_info.iter())
+            .filter_map(|info| match info.value {
+                mir::VarDebugInfoContents::Place(place)
+                    if place.projection.is_empty() && named.contains(&info.source_info.span) =>
+                {
+                    Some(state.locals.names[place.local].clone())
+                }
+                _ => None,
+            })
+            .collect()
     }
 
     /// The locals `?` binds what a `ControlFlow::Continue` holds to, `val`.

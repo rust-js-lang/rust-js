@@ -17,24 +17,6 @@ export function entry() {
   main();
 }
 
-const Stack = {
-  push(stack, value) {
-    const next = stack.head;
-    stack.head = undefined;
-    stack.head = { value, next };
-  },
-
-  pop(stack) {
-    const old = stack.head;
-    stack.head = undefined;
-    function map(node) {
-      stack.head = node.next;
-      return node.value;
-    }
-    return old != null ? map(old) : undefined;
-  },
-};
-
 function swapIn(slot, value) {
   const old = slot.value;
   slot.value = value;
@@ -100,13 +82,30 @@ function main() {
     `${taken == null ? "None" : `Some(${taken})`} ${a == null ? "None" : `Some(${a})`} ${old == null ? "None" : `Some(${old})`} ${b == null ? "None" : `Some(${b})`} ${first == null ? "None" : `Some(${$debugStr(first)})`} ${second == null ? "None" : `Some(${$debugStr(second)})`} ${slot == null ? "None" : `Some(${$debugStr(slot)})`}`,
   );
   const stack = {};
-  Stack.push(stack, 1);
-  Stack.push(stack, 2);
-  const pop = Stack.pop(stack);
-  const value = Stack.pop(stack);
-  const value$1 = Stack.pop(stack);
+
+  function push(value) {
+    const next = stack.head;
+    stack.head = undefined;
+    stack.head = { value, next };
+  }
+
+  function pop() {
+    const old = stack.head;
+    stack.head = undefined;
+    function map(node) {
+      stack.head = node.next;
+      return node.value;
+    }
+    return old != null ? map(old) : undefined;
+  }
+
+  push(1);
+  push(2);
+  const value = pop();
+  const value$1 = pop();
+  const value$2 = pop();
   console.log(
-    `${pop == null ? "None" : `Some(${pop})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
   let items = [1, 2];
   let text = "hi";
@@ -124,13 +123,13 @@ function main() {
   const max = $bigMax(-2n, 5n);
   const left = [1, "x"];
   const right = [1, "w"];
-  const value$2 = $cmp("a", "b") > 0 ? "a" : "b";
+  const value$3 = $cmp("a", "b") > 0 ? "a" : "b";
   const left$1 = [2, "a"];
   const right$1 = [2, "a"];
   const version = ($cmp(left[0], right[0]) || $cmp(left[1], right[1])) > 0 ? right : left;
-  const value$3 =
+  const value$4 =
     ($cmp(left$1[0], right$1[0]) || $cmp(left$1[1], right$1[1])) > 0 ? left$1 : right$1;
-  console.log(`${min} ${max} ${value$2} ${versionDebug_fmt(version)} ${versionDebug_fmt(value$3)}`);
+  console.log(`${min} ${max} ${value$3} ${versionDebug_fmt(version)} ${versionDebug_fmt(value$4)}`);
   console.log(
     `${$asciiCase("HeLLo Ünï")} ${$asciiCase("abc é", true)} ${$asciiCase("Hello") === $asciiCase("hELLO")} ${$asciiCase("é") === $asciiCase("É")}`,
   );
@@ -146,9 +145,9 @@ function main() {
     .map((x) => (x * 2) | 0);
   console.log(`[${doubled.join(", ")}]`);
   const r = { TAG: "Ok", _0: "abc" };
-  const value$4 = r.TAG === "Ok" ? { TAG: "Ok", _0: r._0.toUpperCase() } : r;
+  const value$5 = r.TAG === "Ok" ? { TAG: "Ok", _0: r._0.toUpperCase() } : r;
   console.log(
-    `${value$4.TAG === "Ok" ? `Ok(${$debugStr(value$4._0)})` : `Err(${value$4._0})`} ${r.TAG === "Ok" ? `Ok(${$debugStr(r._0)})` : `Err(${r._0})`}`,
+    `${value$5.TAG === "Ok" ? `Ok(${$debugStr(value$5._0)})` : `Err(${value$5._0})`} ${r.TAG === "Ok" ? `Ok(${$debugStr(r._0)})` : `Err(${r._0})`}`,
   );
   const cell = [1];
   cell.push(2);
@@ -172,10 +171,10 @@ function main() {
   );
   const table = new $BTreeMap();
   table.set("k", 7);
-  const value$5 = ["a", "b"];
-  const value$6 = [new $BTreeMap()];
+  const value$6 = ["a", "b"];
+  const value$7 = [new $BTreeMap()];
   console.log(
-    `${lettersDebug_fmt([value$5])} ${tableDebug_fmt([table])} ${tableDebug_fmt(value$6)}`,
+    `${lettersDebug_fmt([value$6])} ${tableDebug_fmt([table])} ${tableDebug_fmt(value$7)}`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -117,18 +117,6 @@ function ddDrop_drop(dd) {
   console.log(`drop ${dd[0]}`);
 }
 
-const W = {
-  r(w) {
-    console.log("r");
-    return w[0];
-  },
-  take(w) {
-    const old = w[0];
-    w[0] = undefined;
-    return old;
-  },
-};
-
 function pick(n) {
   console.log(`pick ${n}`);
   switch (n) {
@@ -142,22 +130,34 @@ function pick(n) {
 }
 function matched() {
   const w = [[3], 1];
-  if (W.r(w) != null) {
+
+  function r() {
+    console.log("r");
+    return w[0];
+  }
+
+  function take() {
+    const old = w[0];
+    w[0] = undefined;
+    return old;
+  }
+
+  if (r() != null) {
     console.log("some");
   } else {
     console.log("none");
   }
   try {
-    const take = W.take(w);
-    if (take != null) {
+    const dd = take();
+    if (dd != null) {
       console.log("took");
     } else {
       console.log("empty");
     }
-    if (take != null) {
-      ddDrop_drop(take);
+    if (dd != null) {
+      ddDrop_drop(dd);
     }
-    if (W.r(w) != null) {
+    if (r() != null) {
       console.log("some");
     } else {
       console.log("none");

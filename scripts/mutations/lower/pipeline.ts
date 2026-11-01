@@ -540,20 +540,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "asks a Vec its capacity"],
   },
   {
-    name: "library-tracked-method-unrefused",
-    breaks:
-      "a library's trait method without a default whose entries take its caller's location is exported, which its manifest can't say",
-    file: "src/lower/pipeline.rs",
-    find: "            .filter(|&&id| tcx.trait_of_assoc(id).is_some() && !fns.contains_key(&id))\n",
-    replace:
-      "            .filter(|&&id| false && tcx.trait_of_assoc(id).is_some() && !fns.contains_key(&id))\n",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "tracked trait method without a default",
-    ],
-  },
-  {
     name: "any-function-inlined",
     breaks:
       "a function of the crate's called once, not a `Drop`'s, is inlined where it's called",
@@ -891,5 +877,21 @@ export const mutations: Mutation[] = [
     find: "_ if key.map_or(nullable(def_id), held) =>",
     replace: "_ if key.map_or(nullable(def_id), |_| false) =>",
     tests: ["test/lowering-module-variables.test.ts", "-t", "nullable const's None"],
+  },
+  {
+    name: "scope-function-names-unreserved",
+    breaks: "a scope struct's method's function is named as its method, which a variable of its function, `resolve`, hides",
+    file: "src/lower/pipeline.rs",
+    find: ".map(|&method| (method, crate::names::fresh_in(&mut names, &fns[&method].name)))",
+    replace: ".map(|&method| (method, fns[&method].name.clone()))",
+    tests: ["test/corpus.test.ts", "-t", "scope_struct"],
+  },
+  {
+    name: "scope-methods-lowered-apart",
+    breaks: "a scope struct's methods are lowered as its type's object too, whose calls of each other call no function",
+    file: "src/lower/pipeline.rs",
+    find: "        .filter(|b| scopes.of_method(b.def_id).is_none())\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "scope_struct"],
   },
 ];

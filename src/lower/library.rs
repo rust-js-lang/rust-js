@@ -148,6 +148,31 @@ pub(super) type Exported = HashSet<(Vec<String>, String)>;
 /// name, and those it re-exports, a namespace's method that's the function
 /// it passes its parameters on to among them, `export { batchedUpdates }
 /// from "./ReactFiberWorkLoop.js"` (rd292b).
+/// A library's trait method without a default whose entries take its
+/// caller's location, refused: its manifest, of functions, can't say so to
+/// its consumers' calls through them (ADR 0427).
+pub(super) fn refuse_unsaid_locations(
+    tcx: TyCtxt<'_>,
+    caller_locations: &HashSet<DefId>,
+    fns: &HashMap<DefId, FnInfo>,
+) {
+    let mut unsaid: Vec<DefId> = (caller_locations.iter())
+        .filter(|&&id| tcx.trait_of_assoc(id).is_some() && !fns.contains_key(&id))
+        .filter(|&&id| reachable(tcx, id))
+        .copied()
+        .collect();
+    unsaid.sort_by_key(|&id| tcx.def_span(id));
+    for id in unsaid {
+        super::refusal::refuse(
+            tcx,
+            tcx.def_span(id),
+            super::refusal::Refused::Feature(
+                "a library's trait method without a default that's given its caller's location through its dictionary",
+            ),
+        );
+    }
+}
+
 pub(super) fn exported_names(modules: &[crate::program::UnlinkedModule]) -> Exported {
     let mut exported = HashSet::new();
     for module in modules.iter().map(|unlinked| &unlinked.module) {

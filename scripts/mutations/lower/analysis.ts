@@ -584,4 +584,13 @@ export const mutations: Mutation[] = [
       "an ES class React renders"
     ]
   },
+  {
+    name: "scope-of-a-counted-rc",
+    breaks: "a struct an `Rc` the crate counts holds, `{ value, strong, weak }`, is a scope, its `&self` methods reading the `Rc` for the struct",
+    file: "src/lower/analysis.rs",
+    find: "    scopes.retain(|adt| !counted.counts(tcx, tcx.type_of(adt).instantiate_identity().skip_normalization()));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "scope_struct"],
+    snapshots: true,
+  },
 ];

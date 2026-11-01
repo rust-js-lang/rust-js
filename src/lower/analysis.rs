@@ -26,6 +26,8 @@ mod naming;
 mod only_called;
 mod plain_locals;
 mod rc_counts;
+mod scopes;
+pub(super) use scopes::Scopes;
 mod self_handles;
 pub(super) use self_handles::SelfHandles;
 mod throwing;
@@ -539,6 +541,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// Each closure's handle on itself, of those uncounted (ADR 0843,
     /// amended).
     pub self_handles: SelfHandles<'tcx>,
+    /// Each function's scope struct, whose methods are functions declared
+    /// in it (ADR 1043).
+    pub scopes: Scopes,
     /// What each body may borrow, of its cells (ADR 0580).
     pub cell_borrows: CellBorrows<'tcx>,
     /// Whether a function holding a value with a destructor is made a `dyn
@@ -1050,6 +1055,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     }
     // A handle on itself is no JS where nothing counts its `Rc`.
     self_handles.uncounted(|pointee| counted.counts(tcx, pointee));
+    // A function's scope struct, of an `Rc` counted none (ADR 1043).
+    let mut scopes = Scopes::new(tcx, all_bodies);
+    scopes.retain(|adt| !counted.counts(tcx, tcx.type_of(adt).instantiate_identity().skip_normalization()));
     // The map and filter types it steps from their back (ADR 0545), and of
     // an array's items with a destructor, which its native forms don't step.
     let back_stepped = back_stepped::back_stepped(tcx, recognition, all_bodies, |item| {
@@ -1333,6 +1341,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         mutated,
         counted,
         self_handles,
+        scopes,
         cell_borrows,
         closure_facts,
         cloned,

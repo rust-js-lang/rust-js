@@ -36,7 +36,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0035 JS that throws is a `Result`; `?` returns early](0035-results-and-throwing-js.md) *(amended by 0637: a `match` of its `Result` is `try` and `catch`; 0643: its `unwrap()` is the call; amended: what `?` tries is read once)*
 - [0020 Structs are objects, tuples are arrays](0020-structs-and-tuples.md) *(amended by 0674: a literal's fields are listed as written; 0775: a `()` given to JS is `undefined`)*
 - [0049 Trait dictionaries, generics, and read-only trait objects](0049-traits-and-generics.md)
-- [0047 Methods are an object of functions named after their type](0047-methods.md) *(extended by 0761: a `#[rust_js::class]`'s are its prototype's; extended by 0943: a `#[rust_js::object]`'s its literal's own; amended: a `self` a pointer holds is named after its type)*
+- [0047 Methods are an object of functions named after their type](0047-methods.md) *(extended by 1043: a function's scope struct's are functions declared in it; extended by 0761: a `#[rust_js::class]`'s are its prototype's; extended by 0943: a `#[rust_js::object]`'s its literal's own; amended: a `self` a pointer holds is named after its type)*
 - [0014 `match` becomes an `if`/`else if` chain](0014-match-lowering.md) *(amended by 0629: a `match` of constants is a `switch`)*
 - [0048 Let chains: each part runs only once the ones before it held](0048-let-chains.md)
 - [0051 `Option<T>` in generic code: boxed only when it looks like `None`](0051-generic-options.md) *(amended: a type parameter bound by a function trait is a function; amended: a type parameter no call gives what may look like `None` is never boxed; amended: a function JS calls takes what JS gives as it gives it; by 1017: a local `Option` of an `Option` held where it's made is its payload; amended: a thread-local's closure's `Option`, as it gives it)*
@@ -327,7 +327,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0305 A binding marked `require` is read through `require(module)`](0305-require.md) *(amended: a require no bundler sees, `node::module[requireString]` and `js::function::call`)*
 - [0306 A module's items are where its Rust has them](0306-item-order.md) *(amended: a function an initializer only holds isn't run)*
 - [0307 A trait's binding method is read of the value itself](0307-binding-trait-methods.md)
-- [0308 A function written in a body is that body's](0308-local-functions.md) *(amended by 0696: in the block it's written in, after its comments)*
+- [0308 A function written in a body is that body's](0308-local-functions.md) *(amended by 0696: in the block it's written in, after its comments; extended by 1043: a scope struct's methods)*
 - [0309 A `match` that only gives a value is one expression](0309-value-matches.md)
 - [0310 Any value is read as JS reads it](0310-any-value-as-js-reads-it.md) *(amended by 0639: `concat_text` of any value may throw; extended by 0860: `number::to_string`'s radix; amended: `js::to_number`, JS's unary `+`)*
 - [0311 `.flatten()` of a read of items that may be `None` is the read](0311-flattened-reads.md)
@@ -824,6 +824,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1040 A `position` only tested is JS's own search: `indexOf`, `findIndex`, `-1` its `None`](1040-a-position-tested-is-jss-own-search.md) *(rd316)*
 - [1041 A class that implements a binding's class extends it, an ES class](1041-a-class-that-implements-a-bindings-class-extends-it.md) *(rd331: class components, the react crate's `Component`; amended: `self: &'static Self`; a class of no superclass keeps 0761's form; a class component is an element of `jsx!`, rd331i)*
 - [1042 A loop over an array counts its indices: `for (let i = 0; i < v.length; i++)`](1042-a-loop-over-an-array-counts-its-indices.md) *(amended: an indexed list, a `NodeList`, `#[rust_js::indexed]`, rd274; a `Vec`'s `extend` of one pushes each in an index loop)*
+- [1043 A function's scope struct is its scope: its methods are functions declared in it](1043-a-functions-scope-struct-is-its-scope.md) *(rd345, the user's decision, B1)*
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md) *(amended: a closure's handle on itself is its own name)*
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

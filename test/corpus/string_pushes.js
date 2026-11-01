@@ -6,19 +6,18 @@ export function entry() {
   main();
 }
 
-const Log = {
-  add(log, line) {
-    log.text += line;
-    log.text += "\n";
-  },
-};
-
 function main() {
   let s = "";
   s += "abc-7";
   const log = { text: "" };
-  Log.add(log, "one");
-  Log.add(log, s);
+
+  function add(line) {
+    log.text += line;
+    log.text += "\n";
+  }
+
+  add("one");
+  add(s);
   $print(log.text);
 }
 //# sourceMappingURL=case.js.map

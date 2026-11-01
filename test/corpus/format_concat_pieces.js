@@ -19,13 +19,6 @@ function pointDisplay_fmt(point) {
   return "(" + `${point.x}, ${point.y}` + ")";
 }
 
-const Counter = {
-  bump(counter) {
-    counter.n = (counter.n + 1) >>> 0;
-    return counter.n;
-  },
-};
-
 function pair(n) {
   return [n, n + 1];
 }
@@ -62,10 +55,17 @@ function main() {
   console.log("a{b");
   console.log("p is " + `${pointDisplay_fmt({ x: 1, y: -2 })}`);
   const c = { n: 0 };
-  const bump = Counter.bump(c);
-  const value = Counter.bump(c);
+
+  function bump() {
+    c.n = (c.n + 1) >>> 0;
+    return c.n;
+  }
+
+  const value = bump();
+  const value$1 = bump();
   console.log(
-    `${bump == null ? "None" : `Some(${bump})`} ` + `${value == null ? "None" : `Some(${value})`}`,
+    `${value == null ? "None" : `Some(${value})`} ` +
+      `${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
   let s = "";
   const one = c.n;

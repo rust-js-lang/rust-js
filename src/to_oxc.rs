@@ -44,7 +44,7 @@ use self::openings::{
     arm_opening, closure_opening, leading_statements, macro_opening, match_opening, receiver_only, type_alias,
     unsafe_opening, use_item,
 };
-use self::starts::{bodies, declared_class, noinline_starts, statement_spans};
+use self::starts::{bodies, declared_class, noinline_starts, set_apart_starts, statement_spans};
 
 use std::path::PathBuf;
 
@@ -445,6 +445,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         .map(|(declared, constructor)| (declared.lo, constructor.lo))
         .collect();
     let noinline = noinline_starts(module);
+    let set_apart = set_apart_starts(module);
     // A conditional's branch is a start too, its value's, that a comment
     // before it in Rust is before (ADR 0658).
     let arms = arm_starts(module);
@@ -993,7 +994,9 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                 let comment = own[i];
                 // One after an `if`, its test's that the test's statement
                 // took, `return c ? a : b`'s: before the keyword.
-                if blank_before(if_keyword(&comment).unwrap_or(comment.lo)) && !part {
+                if (blank_before(if_keyword(&comment).unwrap_or(comment.lo)) || (i == 0 && set_apart.contains(&at)))
+                    && !part
+                {
                     pieces.push(blank(&text));
                 }
                 let is_doc_line =
@@ -1026,7 +1029,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             let line_start = sources.text[..at as usize].rfind('\n').map_or(0, |i| i + 1) as u32;
             let first_on_line = !statement_starts.iter().any(|&s| s >= line_start && s < at);
             if part {
-            } else if (own.is_empty() && first_on_line && blank_before(written))
+            } else if (own.is_empty() && ((first_on_line && blank_before(written)) || set_apart.contains(&at)))
                 || (!own.is_empty() && last <= at && {
                     // A line of nothing between: not a closure's opening's.
                     let gap: Vec<&str> = sources.text[last as usize..at as usize].split('\n').collect();

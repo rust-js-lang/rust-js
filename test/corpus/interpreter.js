@@ -440,8 +440,25 @@ function upper(args) {
   return { TAG: "Err", _0: "upper of nothing" };
 }
 
-const Interp = {
-  eval(interp, e, env) {
+function run(src) {
+  const result = Lexer.tokens(Lexer.new(src));
+  const result$1 =
+    result.TAG === "Err" ? { TAG: "Err", _0: lexErrorDisplay_fmt(result._0) } : result;
+  if (result$1.TAG === "Err") {
+    return result$1;
+  }
+  const tokens = result$1._0;
+  const result$2 = Parser.program({ tokens, at: 0 });
+  if (result$2.TAG === "Err") {
+    return result$2;
+  }
+  const program = result$2._0;
+  const globals = [{ vars: new Map() }];
+  Env.set(globals, "len", { TAG: "Builtin", _0: "len", _1: len });
+  Env.set(globals, "upper", { TAG: "Builtin", _0: "upper", _1: upper });
+  const interp = { depth: 0, calls: 0 };
+
+  function eval$(e, env) {
     let value;
     bb195: {
       if (e.TAG === "Num") {
@@ -457,12 +474,12 @@ const Interp = {
         }
         value = result._0;
       } else if (e.TAG === "Binary") {
-        const result = Interp.eval(interp, e._1, env);
+        const result = eval$(e._1, env);
         if (result.TAG === "Err") {
           return result;
         }
         const l = result._0;
-        const result$1 = Interp.eval(interp, e._2, env);
+        const result$1 = eval$(e._2, env);
         if (result$1.TAG === "Err") {
           return result$1;
         }
@@ -516,12 +533,12 @@ const Interp = {
         const b = r;
         return { TAG: "Err", _0: `cannot ${op} ${valueDisplay_fmt(a)} and ${valueDisplay_fmt(b)}` };
       } else if (e.TAG !== "Lambda") {
-        const result = Interp.eval(interp, e._0, env);
+        const result = eval$(e._0, env);
         if (result.TAG === "Err") {
           return result;
         }
         const f = result._0;
-        const result$1 = $collectResults(e._1.values().map((a) => Interp.eval(interp, a, env)));
+        const result$1 = $collectResults(e._1.values().map((a) => eval$(a, env)));
         if (result$1.TAG === "Err") {
           return result$1;
         }
@@ -536,12 +553,12 @@ const Interp = {
             Env.set(scope, p, a);
           }
           interp.depth = (interp.depth + 1) >>> 0;
-          const result$1 = Interp.eval(interp, f._1, scope);
+          const result = eval$(f._1, scope);
           interp.depth = (interp.depth - 1) >>> 0;
-          if (result$1.TAG === "Err") {
-            return result$1;
+          if (result.TAG === "Err") {
+            return result;
           }
-          value = result$1._0;
+          value = result._0;
         } else if (f.TAG === "Builtin") {
           const result = f._1(args);
           if (result.TAG === "Err") {
@@ -556,38 +573,20 @@ const Interp = {
       }
     }
     return { TAG: "Ok", _0: value };
-  },
-};
+  }
 
-function run(src) {
-  const result = Lexer.tokens(Lexer.new(src));
-  const result$1 =
-    result.TAG === "Err" ? { TAG: "Err", _0: lexErrorDisplay_fmt(result._0) } : result;
-  if (result$1.TAG === "Err") {
-    return result$1;
-  }
-  const tokens = result$1._0;
-  const result$2 = Parser.program({ tokens, at: 0 });
-  if (result$2.TAG === "Err") {
-    return result$2;
-  }
-  const program = result$2._0;
-  const globals = [{ vars: new Map() }];
-  Env.set(globals, "len", { TAG: "Builtin", _0: "len", _1: len });
-  Env.set(globals, "upper", { TAG: "Builtin", _0: "upper", _1: upper });
-  const interp = { depth: 0, calls: 0 };
   const out = [];
   for (let i = 0; i < program.length; i++) {
     const stmt = program[i];
     if (stmt.TAG === "Let") {
-      const result = Interp.eval(interp, stmt._1, globals);
+      const result = eval$(stmt._1, globals);
       if (result.TAG === "Err") {
         return result;
       }
       const v = result._0;
       Env.set(globals, stmt._0, v);
     } else {
-      const result = Interp.eval(interp, stmt._0, globals);
+      const result = eval$(stmt._0, globals);
       if (result.TAG === "Err") {
         return result;
       }

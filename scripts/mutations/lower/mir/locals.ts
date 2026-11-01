@@ -170,4 +170,12 @@ export const mutations: Mutation[] = [
     replace: "                    && (false\n",
     tests: ["test/lowering-mir-lets.test.ts", "-t", "a method's self of an Rc is named after its type"],
   },
+  {
+    name: "scope-self-named-apart",
+    breaks: "a scope struct's method's `self` is named apart from the variable its function closes over",
+    file: "src/lower/mir/locals.rs",
+    find: "            named.push((Local::from_usize(1), name));\n",
+    replace: "            let _ = name;\n",
+    tests: ["test/corpus.test.ts", "-t", "scope_struct"],
+  },
 ];

@@ -4,29 +4,6 @@ export function entry() {
   main();
 }
 
-const Slot = {
-  flush(slot) {
-    const old = slot.pending;
-    slot.pending = undefined;
-    let old$0$live = true;
-    let result;
-    if (old != null) {
-      old$0$live = false;
-      const n = old;
-      result = n[0];
-      console.log(`drop ${n[0]}`);
-    } else {
-      result = 0;
-    }
-    if (old != null) {
-      if (old$0$live) {
-        console.log(`drop ${old[0]}`);
-      }
-    }
-    return result;
-  },
-};
-
 function made(n) {
   console.log(`made ${n}`);
   return [n];
@@ -34,9 +11,31 @@ function made(n) {
 
 function main() {
   const slot = { pending: [1] };
+
+  function flush() {
+    const old = slot.pending;
+    slot.pending = undefined;
+    let old$1$0$live = true;
+    let result;
+    if (old != null) {
+      old$1$0$live = false;
+      const n = old;
+      result = n[0];
+      console.log(`drop ${n[0]}`);
+    } else {
+      result = 0;
+    }
+    if (old != null) {
+      if (old$1$0$live) {
+        console.log(`drop ${old[0]}`);
+      }
+    }
+    return result;
+  }
+
   try {
-    console.log(`flushed ${Slot.flush(slot)}`);
-    console.log(`again ${Slot.flush(slot)}`);
+    console.log(`flushed ${flush()}`);
+    console.log(`again ${flush()}`);
     const old = slot.pending;
     slot.pending = [2];
     console.log(`old ${old != null}`);

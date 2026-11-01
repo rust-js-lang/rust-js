@@ -1080,4 +1080,21 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^option_arguments.rs$"],
     snapshots: true,
   },
+  {
+    name: "scope-call-gives-self",
+    breaks: "a call of a scope struct's method's function gives it the value it closes over, first, where it takes its other arguments",
+    file: "src/lower/mir/calls.rs",
+    find: "        args.remove(0);\n        let callee = match self.krate.never_unwinding.contains(&def_id) {",
+    replace: "        let callee = match self.krate.never_unwinding.contains(&def_id) {",
+    tests: ["test/corpus.test.ts", "-t", "scope_struct"],
+  },
+  {
+    name: "scope-call-may-throw",
+    breaks: "a call of a scope struct's method that never unwinds is wrapped in a `try` that drops on unwinding",
+    file: "src/lower/mir/calls.rs",
+    find: "            true => Expr::var(name).never_throws(),\n",
+    replace: "            true => Expr::var(name),\n",
+    tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
+    snapshots: true,
+  },
 ];

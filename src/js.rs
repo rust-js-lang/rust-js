@@ -331,6 +331,10 @@ pub struct Function {
     /// Where each parameter is written, one each, a comment before which
     /// is before it (ADR 0708, amended); none where that isn't known.
     pub param_spans: Vec<Span>,
+    /// Declared in a body away from where it's written, a scope struct's
+    /// method's (ADR 1043): set apart by a blank line before it and after
+    /// it, as a person sets apart a function declared among statements.
+    pub set_apart: bool,
 }
 
 impl Function {
@@ -1277,6 +1281,7 @@ mod tests {
             span: Span::NONE,
             name_span: Span::NONE,
             param_spans: Vec::new(),
+            set_apart: false,
         };
         let value = Expr::array(vec![outer, Expr::new(ExprKind::Function(Box::new(function)))]);
         let mut items = vec![Item::Const(Const {
@@ -1304,6 +1309,7 @@ mod tests {
             span: Span::NONE,
             name_span: Span::NONE,
             param_spans: Vec::new(),
+            set_apart: false,
         };
         let mut names = HashSet::new();
         names_in(&[StmtKind::Function(Box::new(inner)).at(Span::NONE)], &mut names);

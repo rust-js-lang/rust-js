@@ -138,6 +138,7 @@ fn declared_functions(stmts: &mut [Stmt]) {
             span: stmt.span,
             name_span: js::Span::NONE,
             param_spans: Vec::new(),
+            set_apart: false,
         };
         stmt.kind = StmtKind::Function(Box::new(function));
     }

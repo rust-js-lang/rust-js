@@ -525,12 +525,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 flattened.is_some_and(|(local, _)| state.flattened.locals.contains(&local)),
             )
         });
-        let called = self.crate_called_copy((def_id, copy, Some(span)), named, exprs);
+        let called = match self.krate.scopes.of_method(def_id) {
+            Some(_) => self.scope_called(def_id, copy, exprs, span)?,
+            None => self.crate_called_copy((def_id, copy, Some(span)), named, exprs),
+        };
         // A generic `&mut T`'s box, of an object `T` here: what's in it.
         let called = self.generic_result_values((def_id, generic_args), called, span)?;
         let called = self.fmt_result_value(def_id, generic_args, called);
         // A throwing function's call is a throwing call (ADR 0644).
         Ok(Value::Expr(self.catching(def_id, generic_args, called)))
+    }
+
+    /// The call of `def_id`, a scope struct's method, given `args`: of its
+    /// function's function, closing over the value its call is given as its
+    /// `self`, a variable, left out (ADR 1043). One that never unwinds
+    /// throws only where what it's given does (ADR 0902).
+    fn scope_called(
+        &self,
+        def_id: rustc_span::def_id::DefId,
+        copy: Option<usize>,
+        mut args: Vec<Expr>,
+        span: Span,
+    ) -> R<Expr> {
+        let name = (self.scope_functions.get(&def_id).filter(|_| copy.is_none()))
+            .ok_or_else(|| self.unsupported(span, "a scope struct's method, called outside its function"))?;
+        if !matches!(args.first().map(|e| &e.kind), Some(js::ExprKind::Var(_))) {
+            return Err(self.unsupported(span, "a scope struct's method, given a `self` that's no variable"));
+        }
+        args.remove(0);
+        let callee = match self.krate.never_unwinding.contains(&def_id) {
+            true => Expr::var(name).never_throws(),
+            false => Expr::var(name),
+        };
+        Ok(Expr::call(callee, args))
     }
 
     /// The call of the crate's function `def_id`, given `args`: of a class's

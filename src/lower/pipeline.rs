@@ -126,6 +126,7 @@ pub fn lower_crate<'tcx>(
         mutated,
         counted,
         self_handles,
+        scopes,
         cell_borrows,
         closure_facts,
         cloned,
@@ -422,6 +423,7 @@ pub fn lower_crate<'tcx>(
         mutated: &mutated,
         counted: &counted,
         self_handles: &self_handles,
+        scopes: &scopes,
         cell_borrows: &cell_borrows,
         closure_facts: &closure_facts,
         cloned: &cloned,
@@ -479,6 +481,8 @@ pub fn lower_crate<'tcx>(
     let mut work: Vec<(DefId, Option<&Body<'tcx>>, Option<usize>)> = bodies
         .iter()
         .filter(|b| reached::lowered_here(tcx, (&foreign, &forwarded), exports_reachable, b.def_id))
+        // A scope struct's method is lowered in its function (ADR 1043).
+        .filter(|b| scopes.of_method(b.def_id).is_none())
         // Each copy its callers need besides, after it (ADR 0051, amended).
         .flat_map(|b| {
             let copies = js_given.copies(b.def_id).map(|(at, _)| Some(at));
@@ -554,6 +558,12 @@ pub fn lower_crate<'tcx>(
                 .filter(|(id, _)| super::bindings::is_on_load(tcx, *id) && fns[id].module == module);
             names.extend(earlier.flat_map(|(_, item)| item.function.body.iter().flat_map(declared)));
         }
+        // A function's scope struct's methods, functions declared in it, by
+        // names none of its variables hide (ADR 1043).
+        let scope_functions: HashMap<DefId, String> = (scopes.of_function(def_id).into_iter())
+            .flat_map(|scope| scope.methods.iter())
+            .map(|&method| (method, crate::names::fresh_in(&mut names, &fns[&method].name)))
+            .collect();
         let mut cx = FnCx {
             tcx,
             typing_env: ty::TypingEnv::post_analysis(tcx, def_id),
@@ -579,6 +589,8 @@ pub fn lower_crate<'tcx>(
             copy,
             walks: Default::default(),
             drop_state: Default::default(),
+            scope_functions,
+            scope_self: None,
         };
         let result = match body {
             // Each body, a function's or an initializer's, from its MIR (ADR 0364).
@@ -1390,25 +1402,10 @@ pub fn lower_crate<'tcx>(
         .collect();
     // What each module reads of another's variables (ADR 0270, amended).
     super::std_types::cell::crate_imported_variables(tcx, &fns, &variables, &mut lowered);
-    // A library's trait method without a default whose entries take its
-    // caller's location, which its manifest, of functions, can't say to its
-    // consumers' calls through them (ADR 0427).
+    // A library's trait method without a default given its caller's
+    // location through its dictionary (ADR 0427).
     if export_library {
-        let mut unsaid: Vec<DefId> = (caller_locations.iter())
-            .filter(|&&id| tcx.trait_of_assoc(id).is_some() && !fns.contains_key(&id))
-            .filter(|&&id| super::library::reachable(tcx, id))
-            .copied()
-            .collect();
-        unsaid.sort_by_key(|&id| tcx.def_span(id));
-        for id in unsaid {
-            super::refusal::refuse(
-                tcx,
-                tcx.def_span(id),
-                super::refusal::Refused::Feature(
-                    "a library's trait method without a default that's given its caller's location through its dictionary",
-                ),
-            );
-        }
+        super::library::refuse_unsaid_locations(tcx, &caller_locations, &fns);
     }
     // What the library does with its `RefCell`s, which its consumers agree
     // with (ADR 0863).

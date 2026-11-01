@@ -303,7 +303,11 @@ export function demo() {
 - **A struct is a plain object, and its methods are an object of
   functions** that take it first: `c.increment()` is
   `Counter.increment(c)`. There's no `class`, no `this` and no prototype
-  ([ADR 0047](../../decisions/0047-methods.md)).
+  ([ADR 0047](../../decisions/0047-methods.md)). A private struct whose
+  one value a function makes, and that nothing else holds, is that
+  function's scope: its methods are functions declared in it, closing over
+  the value
+  ([ADR 1043](../../decisions/1043-a-functions-scope-struct-is-its-scope.md)).
 - `&self` reads, `&mut self` changes, `self` takes the value.
 - **A getter is a method,** `count(&self)`, called as `c.count()`. The
   field stays private; Rust has no `get` syntax. A setter is a method too,

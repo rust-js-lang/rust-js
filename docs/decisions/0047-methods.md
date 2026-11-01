@@ -1,6 +1,6 @@
 # 0047. Methods are an object of functions named after their type
 
-Status: Accepted. Extends [0020](0020-structs-and-tuples.md). Amended (2026-11-01): a `self` a pointer holds is named after its type too.
+Status: Accepted. Extends [0020](0020-structs-and-tuples.md). Amended (2026-11-01): a `self` a pointer holds is named after its type too. Extended by [1043](1043-a-functions-scope-struct-is-its-scope.md): a function's scope struct's methods are functions declared in it.
 Trait-method rejection is superseded by [0049](0049-traits-and-generics.md)
 for its supported subset; inherent methods keep this representation.
 

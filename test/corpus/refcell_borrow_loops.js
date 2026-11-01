@@ -6,81 +6,6 @@ export function entry() {
   main();
 }
 
-const List = {
-  findLast(list, f) {
-    const borrow = $borrow(list.items, true);
-    try {
-      for (let i = borrow.length - 1; i >= 0; i--) {
-        const item = borrow[i];
-        if (f(item)) {
-          return item;
-        }
-      }
-    } finally {
-      $unborrow(borrow);
-    }
-  },
-
-  // A range over the borrow, which it changes: React Float's
-  // hydrateHoistable, its `for (let i = 0; ..)` in one `try` (rd200).
-  takeFirst(list, f) {
-    const items = $borrowMut(list.items, true);
-    try {
-      const end = items.length;
-      for (let i = 0; i < end; i++) {
-        if (!f($index(items, i))) {
-          continue;
-        }
-        return items.splice(i, 1)[0];
-      }
-    } finally {
-      $unborrow(items);
-    }
-  },
-
-  // The same in a labeled block it leaves from the loop, as
-  // hydrateHoistable's `break 'get_instance` does: each way out, the
-  // block's `break` among them, the `try`'s (rd200).
-  takeOrPush(list, f, made) {
-    let taken;
-    get: {
-      if (made > 0) {
-        const items = $borrowMut(list.items, true);
-        try {
-          const end = items.length;
-          for (let i = 0; i < end; i++) {
-            if (!f($index(items, i))) {
-              continue;
-            }
-            taken = items.splice(i, 1)[0];
-            break get;
-          }
-        } finally {
-          $unborrow(items);
-        }
-      }
-      $borrowMut(list.items).push(made);
-      taken = made;
-    }
-    return taken;
-  },
-
-  any(list, f) {
-    const borrow = $borrow(list.items, true);
-    try {
-      for (let i = 0; i < borrow.length; i++) {
-        const item = borrow[i];
-        if (f(item)) {
-          return true;
-        }
-      }
-    } finally {
-      $unborrow(borrow);
-    }
-    return false;
-  },
-};
-
 // Of a value one way out moves, `return held`, the other drops: no `finally`
 // drops it on the way that moves it.
 function keptOrDropped(stop) {
@@ -110,25 +35,97 @@ function main() {
     console.log(`drop ${noisy[0]}`);
   }
   const list = { items: [1, 4, 2, 8, 5] };
-  const value = List.findLast(list, (x) => x % 2 === 0);
+
+  function findLast(f) {
+    const borrow = $borrow(list.items, true);
+    try {
+      for (let i = borrow.length - 1; i >= 0; i--) {
+        const item = borrow[i];
+        if (f(item)) {
+          return item;
+        }
+      }
+    } finally {
+      $unborrow(borrow);
+    }
+  }
+
+  // A range over the borrow, which it changes: React Float's
+  // hydrateHoistable, its `for (let i = 0; ..)` in one `try` (rd200).
+  function takeFirst(f) {
+    const items = $borrowMut(list.items, true);
+    try {
+      const end = items.length;
+      for (let i = 0; i < end; i++) {
+        if (!f($index(items, i))) {
+          continue;
+        }
+        return items.splice(i, 1)[0];
+      }
+    } finally {
+      $unborrow(items);
+    }
+  }
+
+  // The same in a labeled block it leaves from the loop, as
+  // hydrateHoistable's `break 'get_instance` does: each way out, the
+  // block's `break` among them, the `try`'s (rd200).
+  function takeOrPush(f, made) {
+    let taken;
+    get: {
+      if (made > 0) {
+        const items = $borrowMut(list.items, true);
+        try {
+          const end = items.length;
+          for (let i = 0; i < end; i++) {
+            if (!f($index(items, i))) {
+              continue;
+            }
+            taken = items.splice(i, 1)[0];
+            break get;
+          }
+        } finally {
+          $unborrow(items);
+        }
+      }
+      $borrowMut(list.items).push(made);
+      taken = made;
+    }
+    return taken;
+  }
+
+  function any(f) {
+    const borrow = $borrow(list.items, true);
+    try {
+      for (let i = 0; i < borrow.length; i++) {
+        const item = borrow[i];
+        if (f(item)) {
+          return true;
+        }
+      }
+    } finally {
+      $unborrow(borrow);
+    }
+    return false;
+  }
+
+  const value = findLast((x) => x % 2 === 0);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = List.findLast(list, (x) => x > 9);
+  const value$1 = findLast((x) => x > 9);
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  console.log(`${List.any(list, (x) => x === 2)}`);
-  const takeFirst = List.takeFirst(list, (x) => x === 8);
-  const value$2 = List.takeFirst(list, (x) => x > 99);
+  console.log(`${any((x) => x === 2)}`);
+  const value$2 = takeFirst((x) => x === 8);
+  const value$3 = takeFirst((x) => x > 99);
   console.log(
-    `${takeFirst == null ? "None" : `Some(${takeFirst})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
   $borrowMut(list.items).push(8);
-  console.log(
-    `${List.takeOrPush(list, (x) => x === 8, 5)} ${List.takeOrPush(list, (x) => x === 99, 6)}`,
-  );
-  console.log(`${List.takeOrPush(list, (x) => x === 6, 0)}`);
-  console.log(`${List.any(list, (x) => x === 7 || $borrow(list.items).length > 9)}`);
+  console.log(`${takeOrPush((x) => x === 8, 5)} ${takeOrPush((x) => x === 99, 6)}`);
+  console.log(`${takeOrPush((x) => x === 6, 0)}`);
+  console.log(`${any((x) => x === 7 || $borrow(list.items).length > 9)}`);
   $borrowMut(list.items).push(7);
   const pushed = $catchUnwind(() =>
-    List.any(list, (x) => {
+    any((x) => {
       $borrowMut(list.items).push(x);
       return false;
     }),
