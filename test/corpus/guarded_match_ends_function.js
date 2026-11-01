@@ -52,12 +52,13 @@ function accumulate(tag, hidden, resources, n) {
 }
 
 /**
- * Of a guarded arm a later arm goes on from, one that doesn't name its
- * constant, the `if` chain Rust tries (ADR 0629): `} else if (tag === 22)
- * { if (hidden) { // .. } else { .. } }`, no `return;` MIR made (rd93).
+ * Of a range, the `if` chain Rust tries (ADR 0629): `} else if (tag ===
+ * 22) { if (hidden) { // .. } else { .. } }`, no `return;` MIR made (rd93).
  */
 function accumulateChain(tag, hidden, resources, n) {
-  if (tag === 0) {
+  if (tag >= 40 && tag <= 49) {
+    visit(4);
+  } else if (tag === 0) {
     visit(n);
     if (n > 3) {
       visit(1);
@@ -76,19 +77,12 @@ function accumulateChain(tag, hidden, resources, n) {
     } else {
       visit(n);
     }
-  } else {
-    if (tag === 30) {
-      if (ENABLE) {
-        if (n > 1) {
-          visit(2);
-        }
-        visit(n);
-        return;
-      }
-    } else if (tag === 40) {
-      visit(4);
-      return;
+  } else if (tag === 30 && ENABLE) {
+    if (n > 1) {
+      visit(2);
     }
+    visit(n);
+  } else {
     visit((n * 100) >>> 0);
   }
 }

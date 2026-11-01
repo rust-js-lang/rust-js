@@ -52,11 +52,11 @@ fn accumulate(tag: u8, hidden: bool, resources: bool, n: u32) {
     }
 }
 
-/// Of a guarded arm a later arm goes on from, one that doesn't name its
-/// constant, the `if` chain Rust tries (ADR 0629): `} else if (tag === 22)
-/// { if (hidden) { // .. } else { .. } }`, no `return;` MIR made (rd93).
+/// Of a range, the `if` chain Rust tries (ADR 0629): `} else if (tag ===
+/// 22) { if (hidden) { // .. } else { .. } }`, no `return;` MIR made (rd93).
 fn accumulate_chain(tag: u8, hidden: bool, resources: bool, n: u32) {
     match tag {
+        40..=49 => visit(4),
         0 => {
             visit(n);
             if n > 3 {
@@ -85,7 +85,6 @@ fn accumulate_chain(tag: u8, hidden: bool, resources: bool, n: u32) {
             }
             visit(n);
         }
-        40 => visit(4),
         _ => {
             visit(n * 100);
         }
