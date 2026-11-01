@@ -1086,6 +1086,26 @@ export function aliases() {
 }
 ```
 
+One after an item of a `static`'s or a `const`'s array, on its line, is
+after that item
+([ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md), amended):
+
+```rust
+pub static TRACKS: [&str; 3] = [
+    "Primary",
+    "Parallel", // Each track's name is its own.
+    "Secondary",
+];
+```
+
+```js
+export const TRACKS = [
+  "Primary",
+  "Parallel", // Each track's name is its own.
+  "Secondary",
+];
+```
+
 One after a call's last argument is there too, before its `)`
 ([ADR 0708](../../decisions/0708-a-comment-before-an-argument-is-before-it.md), amended):
 

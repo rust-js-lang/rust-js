@@ -38,6 +38,32 @@ pub(super) fn string_literal(tcx: TyCtxt<'_>, text: &str, span: Span, at: &dyn F
     }))
 }
 
+/// A `const`'s or a `static`'s value where its initializer writes it: a
+/// number where its literal is (ADR 0627), and an array's items each
+/// where it's written, so a line comment after one on its line is after
+/// it, `"Parallel\u200b", // Padded ..` (rd344a).
+pub(super) fn const_placed(tcx: TyCtxt<'_>, def_id: LocalDefId, value: Expr, at: &dyn Fn(Span) -> js::Span) -> Expr {
+    let Some(body) = tcx.hir_maybe_body_owned_by(def_id) else {
+        return value;
+    };
+    match value.kind {
+        js::ExprKind::Num(_) => value.or_at(at(body.value.span)),
+        js::ExprKind::Array(items)
+            if let rustc_hir::ExprKind::Array(written) = body.value.kind
+                && written.len() == items.len() =>
+        {
+            let items = (items.into_iter().zip(written))
+                .map(|(item, written)| item.or_at(at(written.span)))
+                .collect();
+            Expr {
+                kind: js::ExprKind::Array(items),
+                ..value
+            }
+        }
+        _ => value,
+    }
+}
+
 /// A `const`'s or a `static`'s string, `const PAGE: &str = r#"<main>..`
 /// or one of `concat!`'s, as its literal is written, as one written in
 /// place is.

@@ -172,4 +172,25 @@ export const mutations: Mutation[] = [
       "a concat! of literals is its pieces joined by|const of a string written across lines",
     ],
   },
+  {
+    name: "static-array-items-unplaced",
+    breaks:
+      "a `static`'s array's items are where no code is written, so a line comment after one, `\"Parallel\\u200b\", // Padded ..`, is lost (rd344a)",
+    file: "src/lower/literals.rs",
+    find: "                .map(|(item, written)| item.or_at(at(written.span)))\n",
+    replace: "                .map(|(item, _)| item)\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "a comment after an item of a static's array"],
+  },
+  {
+    name: "const-number-unplaced",
+    breaks: "a `const` of `1e4` isn't where its literal is, so it's `10000`",
+    file: "src/lower/literals.rs",
+    find: "        js::ExprKind::Num(_) => value.or_at(at(body.value.span)),\n",
+    replace: "        js::ExprKind::Num(_) => value,\n",
+    tests: [
+      "test/lowering-numbers.test.ts",
+      "-t",
+      "a number literal keeps its base and its exponent",
+    ],
+  },
 ];

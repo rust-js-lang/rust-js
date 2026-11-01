@@ -343,3 +343,29 @@ pub const MARK_SHELL_TIME: &str = r#"requestAnimationFrame(function(){$RT=perfor
   expect(js).toContain("// This is a generated file.\n// Run `yarn generate` to generate.\nexport const markShellTime =");
   expect(lib.markShellTime).toBe("requestAnimationFrame(function(){$RT=performance.now()});");
 });
+
+// React's ReactFlightPerformanceTrack, `const trackNames = ['Primary',
+// 'Parallel', 'Parallel​', // Padded with zero-width space ..`: a line
+// comment after a `static` array's item, on its line, is after that item,
+// which is where it's written in the map (rd344a); a `const`'s too.
+test("a comment after an item of a static's array is after that item", async () => {
+  const { js, lib } = await compiled("comment-after-a-static-item", `pub static TRACK_NAMES: [&str; 4] = [
+    "Primary",
+    "Parallel",
+    "Parallel\\u{200b}", // Padded with zero-width space to give each track a unique name.
+    "Parallel\\u{200b}\\u{200b}",
+];
+
+pub const SIZES: [u32; 3] = [
+    1, // one
+    2,
+    3,
+];
+`);
+  expect(js).toContain(
+    '  "Parallel\\u200b", // Padded with zero-width space to give each track a unique name.\n  "Parallel\\u200b\\u200b",\n];',
+  );
+  expect(js).toContain("export const SIZES = [\n  1, // one\n  2,\n  3,\n];");
+  expect(lib.TRACK_NAMES).toEqual(["Primary", "Parallel", "Parallel​", "Parallel​​"]);
+  expect(lib.SIZES).toEqual([1, 2, 3]);
+});

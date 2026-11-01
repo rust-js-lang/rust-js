@@ -699,3 +699,21 @@ test, and the mutations `safety-comment-written`, `safety-run-unended`,
 `safety-line-end-written` (`to_oxc.rs`) and `safety-declaration-written`
 (`declarations/comments.rs`).
 
+## Amendment: a `static`'s array's items are where they're written (rd344a, 2026-11-02)
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): comments.
+
+React's ReactFlightPerformanceTrack writes `const trackNames = ['Primary',
+'Parallel', 'Parallel\u200b', // Padded with zero-width space to give
+each track a unique name.` The port's `static TRACK_NAMES: [&str; 10]`
+printed no comment: a `static`'s or a `const`'s value is rustc's value of
+it, whose items are where nothing is written, so no JS of the comment's
+line was there to be after. **Each item of such an array is where its
+initializer writes it** (`literals::const_placed`, which places a
+number's literal too, ADR 0627), and a line comment after one is after its JS. Held by
+`lowering-comments-items.test.ts`'s "a comment after an item of a
+static's array is after that item", run, and the mutation
+`static-array-items-unplaced` (`literals.ts`).
+
+An array a function's body borrows, `f(1, &[""], // path`, rustc's
+promoted constant, still prints the comment after the call's `)`.
