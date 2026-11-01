@@ -55,11 +55,27 @@ fn applied_in(body: &mut Vec<Stmt>, ends_function: bool) {
             if done {
                 return;
             }
-            let inlined = |stmt: &Stmt| block_of(stmt, &whole, false, true).or_else(|| value_of(stmt, &whole));
+            let inlined = |stmt: &Stmt| block_of(stmt, &whole, false, true, false).or_else(|| value_of(stmt, &whole));
             if let Some((i, inlined)) = (0..stmts.len()).find_map(|i| Some((i, inlined(&stmts[i])?))) {
                 stmts.splice(i..=i, inlined);
                 done = true;
+                return;
             }
+            // The last of a case whose end leaves its `switch`, where its
+            // `return;` is the `break;` there (rd379).
+            done = (stmts.iter_mut()).any(|stmt| {
+                let StmtKind::Switch { cases, default, .. } = &mut stmt.kind else {
+                    return false;
+                };
+                leaving_cases(cases, default).any(|list| {
+                    let Some(inlined) = list.last().and_then(|last| block_of(last, &whole, false, true, true)) else {
+                        return false;
+                    };
+                    list.pop();
+                    list.extend(inlined);
+                    true
+                })
+            });
         });
         if !done {
             break;
@@ -75,7 +91,9 @@ fn tail_applied(stmts: &mut Vec<Stmt>, whole: &[Stmt]) -> bool {
     let Some(last) = stmts.len().checked_sub(1) else {
         return false;
     };
-    if let Some(inlined) = block_of(&stmts[last], whole, true, true).or_else(|| returned_block(&stmts[last], whole)) {
+    if let Some(inlined) =
+        block_of(&stmts[last], whole, true, true, false).or_else(|| returned_block(&stmts[last], whole))
+    {
         stmts.splice(last..=last, inlined);
         return true;
     }
@@ -84,26 +102,25 @@ fn tail_applied(stmts: &mut Vec<Stmt>, whole: &[Stmt]) -> bool {
             let branch = |b: &mut Option<Vec<Stmt>>| b.as_mut().is_some_and(|b| tail_applied(b, whole));
             tail_applied(then, whole) || branch(otherwise)
         }
-        // A `switch` that's last, a `match` of constants' (ADR 0629): its
-        // last case's, whose end is the function's, and each other's
-        // whose statements in its place still end it, as one that went on
-        // would fall to the next case (rd378).
-        StmtKind::Switch { cases, default, .. } => {
-            let lists = cases.len() + usize::from(default.is_some());
-            (case_lists_mut(cases, default).enumerate()).any(|(i, list)| {
-                if i + 1 == lists {
-                    return tail_applied(list, whole);
-                }
-                let mut inlined = list.clone();
-                let ended = tail_applied(&mut inlined, whole) && inlined.last().is_some_and(ends);
-                if ended {
-                    *list = inlined;
-                }
-                ended
-            })
-        }
+        // A `switch` that's last, a `match` of constants' (ADR 0629): each
+        // case's whose end leaves it, and so ends the function (rd378).
+        StmtKind::Switch { cases, default, .. } => leaving_cases(cases, default).any(|list| tail_applied(list, whole)),
         _ => false,
     }
+}
+
+/// The lists of a `switch`'s cases whose end leaves it: each case's that
+/// doesn't fall through to the next, which is written its `break;`, and
+/// the last's.
+fn leaving_cases<'s>(
+    cases: &'s mut [Case],
+    default: &'s mut Option<Vec<Stmt>>,
+) -> impl Iterator<Item = &'s mut Vec<Stmt>> {
+    let last = (cases.len() + usize::from(default.is_some())).saturating_sub(1);
+    let falls: Vec<bool> = cases.iter().map(|case| case.falls).collect();
+    (case_lists_mut(cases, default).enumerate())
+        .filter(move |(i, _)| *i == last || !falls[*i])
+        .map(|(_, list)| list)
 }
 
 /// `f(arg);`, a call as a statement in `whole`, the function's body, of a
@@ -116,14 +133,15 @@ pub fn applied_call(stmt: &Stmt, whole: &[Stmt], params: &[Pattern], body: &[Stm
         return None;
     };
     let call = StmtKind::Expr(Expr::call(Expr::arrow(params.to_vec(), body.to_vec()), args.clone())).at(stmt.span);
-    block_of(&call, whole, false, false)
+    block_of(&call, whole, false, false, false)
 }
 
 /// The statements `stmt`, a call of a closure made there, is, in `whole`,
 /// the function's body; `tail`, the body's last, which a `return;` ends too;
 /// `hold`, of a closure the program made, which may be given a lazy
-/// thread-local's call (`in_place`).
-fn block_of(stmt: &Stmt, whole: &[Stmt], tail: bool, hold: bool) -> Option<Vec<Stmt>> {
+/// thread-local's call (`in_place`); `leaves`, the last of a case whose
+/// end leaves its `switch`, as a `break;` there would.
+fn block_of(stmt: &Stmt, whole: &[Stmt], tail: bool, hold: bool, leaves: bool) -> Option<Vec<Stmt>> {
     let StmtKind::Expr(e) = &stmt.kind else { return None };
     let ExprKind::Call(callee, args) = &e.kind else {
         return None;
@@ -133,11 +151,20 @@ fn block_of(stmt: &Stmt, whole: &[Stmt], tail: bool, hold: bool) -> Option<Vec<S
     };
     // The closure's `return`s are its own, the function's only at its end,
     // and of no value, which nothing read; elsewhere, each in the loop its
-    // body ends with, that loop's `break`.
+    // body ends with, that loop's `break`; or, the last of a case whose
+    // end leaves its `switch`, `SEEN.with(|seen| { if .. { return; } .. })`
+    // of a `match`'s arm, that `switch`'s (rd379).
     let (any, valued) = returns(body);
     let mut body = body.clone();
-    if valued || any && !tail && !returns_broken(&mut body) {
+    if valued {
         return None;
+    }
+    if any && !tail && !returns_broken(&mut body) {
+        let mut broken = body.clone();
+        if !(leaves && returns_as_breaks(&mut broken)) {
+            return None;
+        }
+        body = broken;
     }
     in_place(stmt, whole, &[], (params, args), body, hold)
 }
@@ -580,24 +607,26 @@ fn returns_broken(body: &mut [Stmt]) -> bool {
     else {
         return false;
     };
-    // Each `return;` outside any inner loop, whose `break` would be its own.
-    fn broken(stmts: &mut [Stmt]) -> bool {
-        stmts.iter_mut().all(|stmt| match &mut stmt.kind {
-            StmtKind::Return(None) => {
-                stmt.kind = StmtKind::Break(None);
-                true
-            }
-            StmtKind::If(_, a, b) => broken(a) && b.as_deref_mut().is_none_or(broken),
-            StmtKind::Labeled(_, a) => broken(a),
-            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => broken(a) && broken(b),
-            StmtKind::While { body, .. }
-            | StmtKind::DoWhile { body, .. }
-            | StmtKind::ForOf { body, .. }
-            | StmtKind::For { body, .. } => !returns(body).0,
-            // Whose `break` would leave it.
-            StmtKind::Switch { cases, default, .. } => !case_lists(cases, default).any(|body| returns(body).0),
-            _ => true,
-        })
-    }
-    broken(inner)
+    returns_as_breaks(inner)
+}
+
+/// Each `return;` of `stmts` a `break;`, where none is in an inner loop or
+/// `switch`, whose `break` would be its own. Whether each is.
+fn returns_as_breaks(stmts: &mut [Stmt]) -> bool {
+    stmts.iter_mut().all(|stmt| match &mut stmt.kind {
+        StmtKind::Return(None) => {
+            stmt.kind = StmtKind::Break(None);
+            true
+        }
+        StmtKind::If(_, a, b) => returns_as_breaks(a) && b.as_deref_mut().is_none_or(returns_as_breaks),
+        StmtKind::Labeled(_, a) => returns_as_breaks(a),
+        StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => returns_as_breaks(a) && returns_as_breaks(b),
+        StmtKind::While { body, .. }
+        | StmtKind::DoWhile { body, .. }
+        | StmtKind::ForOf { body, .. }
+        | StmtKind::For { body, .. } => !returns(body).0,
+        // Whose `break` would leave it.
+        StmtKind::Switch { cases, default, .. } => !case_lists(cases, default).any(|body| returns(body).0),
+        _ => true,
+    })
 }

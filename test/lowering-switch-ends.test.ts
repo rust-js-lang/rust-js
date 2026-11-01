@@ -358,3 +358,82 @@ test("an empty arm of guarded arms that fall through is the next link's test", a
   const lib = await import(join(dir, "lib.js"));
   expect([lib.skips([1, 2, 5, 0, 5], false), lib.skips([2, 1, 5], true)]).toEqual([13, 1]);
 });
+
+// rd379: of a \`match\`'s arm, a \`switch\`'s case whose end leaves it, the
+// closure called last is its body, its \`return;\` that case's \`break;\`,
+// the function's where the \`switch\` ends it (rd378). Its thread-local is
+// then a variable, not a box a closure reads.
+test("a thread-local's with that ends a switch's case is its body", async () => {
+  const dir = fixture("applied-case");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+thread_local! {
+    static SEEN: Cell<u32> = const { Cell::new(0) };
+}
+
+pub fn seen() -> u32 {
+    SEEN.get()
+}
+
+pub fn mark(n: u32) -> u32 {
+    match n {
+        0 => SEEN.set(5),
+        1 => SEEN.with(|seen| {
+            if seen.get() == 0 {
+                return;
+            }
+            seen.set(seen.get() * 2);
+        }),
+        2 => SEEN.with(|seen| {
+            for i in 0..n {
+                if seen.get() > 100 {
+                    return;
+                }
+                seen.set(seen.get() + i);
+            }
+        }),
+        _ => SEEN.set(1),
+    }
+    SEEN.get() + 1
+}
+
+pub fn last(n: u32) {
+    match n {
+        0 => SEEN.set(5),
+        1 => SEEN.with(|seen| {
+            if seen.get() == 0 {
+                return;
+            }
+            seen.set(7);
+        }),
+        _ => SEEN.set(1),
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`    case 1:
+      if (SEEN === 0) {
+        break;
+      }
+      SEEN = (SEEN * 2) >>> 0;
+      break;
+    case 2:
+      for (let i = 0; i < n; i++) {
+        if (SEEN > 100) {
+          break;
+        }
+        SEEN = (SEEN + i) >>> 0;
+      }
+      break;`);
+  expect(js).toContain(`    case 1:
+      if (SEEN === 0) {
+        return;
+      }
+      SEEN = 7;
+      break;`);
+  expect(js).not.toContain("=> {");
+  expect(js).toContain("let SEEN = 0;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.mark(1), lib.mark(0), lib.mark(1), lib.mark(2), lib.last(1), lib.seen(), lib.mark(7)]).toEqual([1, 6, 11, 12, undefined, 7, 2]);
+});

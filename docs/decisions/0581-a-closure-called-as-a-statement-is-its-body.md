@@ -179,7 +179,7 @@ its own, which starts with no blank line, so it takes none. Held by
 whose body is in its place is before its body") and the mutation
 `blank-before-closure-opening-unseen` (`to_oxc.ts`).
 
-## Amended (2026-11-01): a closure called last in a `switch`'s case (rd378)
+## Amended (2026-11-01): a closure called last in a `switch`'s case (rd378, rd379)
 
 React's trackUsedThenable ends `match thenable.status().as_deref()` with
 `_ => { ..; SUSPENSE_EXCEPTION.with(|exception| js::throw(..)) }`. As
@@ -188,12 +188,22 @@ React's trackUsedThenable ends `match thenable.status().as_deref()` with
 the chain a `switch`, and the closure was then a case's
 `return ((exception) => { throw exception; })(SuspenseException);`,
 because a call at the end was looked for in an `if`'s branches and not
-in a `switch`'s cases. **In a `switch` that ends the function, the
-closure called last in its last case is that case's statements, as an
-`if` branch's is. In any other case it is too, where those statements
-still end the case; one that would go on would fall into the next case,
-so it stays a closure** (`tail_applied`). No input found so far reaches
-that refusal: a closure whose value is returned ends on each path, even
-a `loop`. Held by `test/lowering-throws.test.ts` ("a with whose closure
-throws, a switch case's value, is its throw") and the mutation
-`applied-tail-switch-unseen` (`applied.ts`).
+in a `switch`'s cases. And an arm's `SEEN.with(|seen| { if .. { return; }
+.. })` stayed a closure in any `switch`, its thread-local then a box the
+closure reads, `{ value: 0 }`.
+
+**A case whose end leaves its `switch` (one that doesn't fall through to
+the next, which is written its `break;`, and the last) is, for a closure
+called last in it, as an `if`'s branch is: where the `switch` ends the
+function, the closure's statements are in its place and each `return;` is
+the function's; elsewhere each `return;` is the case's `break;`, where
+none is in a loop or `switch` of the closure's own, whose `break` would be
+that one's** (`leaving_cases`, `tail_applied`, `returns_as_breaks`). A
+case that falls through goes on to the next one, so its closure stays one.
+No case ends with a call that falls through yet: a guarded arm's case
+ends with its guard's `if`. Held by `test/lowering-throws.test.ts` ("a
+with whose closure throws, a switch case's value, is its throw") and
+`test/lowering-switch-ends.test.ts` ("a thread-local's with that ends a switch's
+case is its body"), and the mutations `applied-tail-switch-unseen`,
+`leaving-cases-last-unseen` and `applied-case-return-unbroken`
+(`applied.ts`).
