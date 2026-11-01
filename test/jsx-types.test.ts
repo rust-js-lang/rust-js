@@ -992,6 +992,33 @@ pub fn Restarted(restart_id: f64) -> JSX::Element {
   expect(Restarted(1.5).key).toBe("1.5");
 });
 
+// A key may be any of Rust's integers, as @types/react's `Key` has
+// `bigint`: a `u64` id, a BigInt, keys as its digits, `"18446744073709551615"`,
+// where `id as u32` would cut it (#451).
+test("an element's key may be a 64-bit integer", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+
+pub fn Tasks(ids: Vec<u64>, offsets: Vec<i64>, small: u8) -> JSX::Element {
+    jsx! {
+        <ul key={small}>
+            {ids.iter().map(|id| jsx! { <li key={*id}>{"task"}</li> }).collect::<Vec<_>>()}
+            {offsets.iter().map(|offset| jsx! { <li key={*offset}>{"offset"}</li> }).collect::<Vec<_>>()}
+        </ul>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("<li key={id}>");
+  expect(jsx).toContain("<li key={offset}>");
+  const { Tasks } = await import(join(dir, "lib.jsx"));
+  const tree = Tasks([18446744073709551615n, 1n], [-3n], 7);
+  expect(tree.key).toBe("7");
+  expect(tree.props.children.flat().map((li: any) => li.key)).toEqual(["18446744073709551615", "1", "-3"]);
+  expect(renderToStaticMarkup(tree)).toBe("<ul><li>task</li><li>task</li><li>offset</li></ul>");
+});
+
 // An element of what JS gives at run time, as react.dev's errors page
 // revives its elements from JSON: its type, its key and its props each a
 // `js::Unknown`, a wrapper's `Fragment` (ADR 0268).

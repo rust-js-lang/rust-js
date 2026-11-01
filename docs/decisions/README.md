@@ -269,7 +269,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0246 A type parameter of a function needs no copy of its own](0246-function-parameters-need-no-copy.md)
 - [0247 JS's string methods are the builtins crate's `string`](0247-js-string-methods.md) *(amended by 0642: for JS's own indexes, std's methods for a place found; amended: `repeat` of a number, rd406)*
 - [0248 A `thread_local!` is a module's default export too](0248-thread-local-default-export.md)
-- [0249 An element's key may be none](0249-optional-keys.md)
+- [0249 An element's key may be none](0249-optional-keys.md) *(amended: any of Rust's numbers is a key, a `u64` a BigInt)*
 - [0250 Props updated from a reference are a spread](0250-reference-base-spread.md) *(amended by 0674: the fields after it as written)*
 - [0251 A module's default export is imported as its default](0251-default-imports.md)
 - [0252 A one-armed match's value is its body's](0252-one-arm-match-value.md)

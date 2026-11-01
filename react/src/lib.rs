@@ -476,17 +476,29 @@ impl<'a> From<&'a str> for Booleanish<'a> {
     }
 }
 
-/// What a [`key`](Element::key) can be: a string or a number, or none, as
-/// @types/react's `key?: Key | null` has it, `None` no key.
+/// What a [`key`](Element::key) can be: a string, a number or a BigInt,
+/// any of Rust's integers or floats, or none, as @types/react's `key?: Key
+/// | null` has it, `None` no key. React makes text of it, so a `u64`'s, a
+/// BigInt, `10n`, is `"10"`, as a `u32`'s is.
 pub trait Key {}
 
 impl Key for &str {}
 /// A JS value of any shape, as a key read from JSON is.
 impl Key for Unknown {}
 impl Key for String {}
+impl Key for i8 {}
+impl Key for i16 {}
 impl Key for i32 {}
+impl Key for i64 {}
+impl Key for i128 {}
+impl Key for isize {}
+impl Key for u8 {}
+impl Key for u16 {}
 impl Key for u32 {}
+impl Key for u64 {}
+impl Key for u128 {}
 impl Key for usize {}
+impl Key for f32 {}
 impl Key for f64 {}
 impl<T: Key + ?Sized> Key for &T {}
 impl<T: Key> Key for Option<T> {}

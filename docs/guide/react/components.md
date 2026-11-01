@@ -426,7 +426,9 @@ export function Names({ people }) {
 }
 ```
 
-A `key` is a number, a string, or an `Option` of one. It's never a prop:
+A `key` is a string, any of Rust's numbers (a `u64` id is a BigInt, which
+React keys as its digits, so never cut it with `as u32`), or an `Option`
+of one. It's never a prop:
 the component doesn't see it. For a list item of several elements, use a
 keyed `<Fragment key={..}>` ([JSX](jsx.md#fragments)).
 
