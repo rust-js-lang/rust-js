@@ -524,12 +524,45 @@ fn unnulled(e: &mut Expr, x: &str) {
     }
 }
 
+/// Each assignment through a handle, `h.value = v`, a closure's too, whose
+/// object `storage_of` says the storage of: `v` written as it stores it, a
+/// nullable field's `None` `null` (ADRs 0772, 0791).
+fn written_as_stored(body: &mut Vec<Stmt>, storage_of: &dyn Fn(&Expr) -> Option<js::Storage>) {
+    let stored = |list: &mut Vec<Stmt>| {
+        js::statement_lists(list, &mut |stmts| {
+            for stmt in stmts.iter_mut() {
+                if let StmtKind::Assign(target, value) = &mut stmt.kind
+                    && let ExprKind::Member(of, key) = &target.kind
+                    && key == js::HELD
+                    && let Some(storage) = storage_of(of)
+                {
+                    *value = storage.written(std::mem::replace(value, Expr::undefined()), false);
+                }
+            }
+        })
+    };
+    stored(body);
+    js::each_expr_mut(body, &mut |e| match &mut e.kind {
+        ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) => stored(inner),
+        ExprKind::Function(function) => stored(&mut function.body),
+        _ => {}
+    });
+}
+
 /// A handle made only to read or write its value there, `Cell::set` of
 /// `&self.n`'s `({ get value() { .. }, set value(value) { .. } }).value =
 /// v`: its place, `t.n = v`. Of a place that reads the same
 /// alone: of one that computes, `a[f()]`, the setter would compute it after
 /// `v`, where the place itself is computed before.
-pub(super) fn handles_in_place(body: &mut [Stmt]) {
+pub(super) fn handles_in_place(body: &mut Vec<Stmt>) {
+    // What's assigned through one, `({ get value() .., set value(v) { o.f =
+    // v ?? null; } }).value = undefined`, is written as its storage stores
+    // it, a nullable field's `None` `null`, before it's the place (ADR 0772,
+    // amended).
+    written_as_stored(body, &|of| match &of.kind {
+        ExprKind::Handle(place, storage) if place.reads_same() => Some(*storage),
+        _ => None,
+    });
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Member(of, key) = &e.kind
             && key == js::HELD
@@ -591,25 +624,9 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>) {
     let read = |name: &str| (handles.iter()).find(|(h, ..)| h == name);
     // What's written through one, as its storage stores it: a nullable
     // field's `None`, `null` (ADR 0791).
-    let stored = |list: &mut Vec<Stmt>| {
-        js::statement_lists(list, &mut |stmts| {
-            for stmt in stmts.iter_mut() {
-                if let StmtKind::Assign(target, value) = &mut stmt.kind
-                    && let ExprKind::Member(of, key) = &target.kind
-                    && key == js::HELD
-                    && let ExprKind::Var(v) = &of.kind
-                    && let Some((.., storage)) = read(v)
-                {
-                    *value = storage.written(std::mem::replace(value, Expr::undefined()), false);
-                }
-            }
-        })
-    };
-    stored(body);
-    js::each_expr_mut(body, &mut |e| match &mut e.kind {
-        ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) => stored(inner),
-        ExprKind::Function(function) => stored(&mut function.body),
-        _ => {}
+    written_as_stored(body, &|of| match &of.kind {
+        ExprKind::Var(v) => read(v).map(|(.., storage)| *storage),
+        _ => None,
     });
     js::statement_lists(body, &mut |stmts| {
         stmts.retain(

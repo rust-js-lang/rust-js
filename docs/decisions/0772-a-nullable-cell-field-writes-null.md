@@ -99,3 +99,19 @@ nullable `Option` field's.
   (`std_types/cell.rs`), `nullable-cell-some-coalesced`
   (`body_queries.rs`), `nullable-cell-declared-undefined`
   (`declarations.rs`).
+
+## Amendment: a handle put in place, then folded (2026-11-01)
+
+A nullable `RefCell` field written through its guard in a branch,
+`if n > 0 { *internal.queue.borrow_mut() = None; }`, as React's Fizz class
+component internals write `internalInstance.queue = null`, was `undefined`,
+a wrong answer to JS that tests `=== null`: tidy puts the guard's handle in
+place, `({ get value() .., set value(v) { internal.queue = v ?? null; }
+}).value = undefined`, and `handles_in_place` folded it to its place, the
+handle's storage dropped. At a body's top level, `read_handles` wrote it as
+its storage stores it, through the `const` that names it. **A write through
+a handle put in place is written as its storage stores it, before it's the
+place** (`tidy/values.rs`'s `written_as_stored`, which both passes ask),
+`internal.queue = null`. Held by `test/lowering-nullable.test.ts`'s "a
+nullable field written through its guard in a branch is null" and mutation
+`handle-in-place-write-unstored`.

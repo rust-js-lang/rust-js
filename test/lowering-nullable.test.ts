@@ -169,6 +169,34 @@ pub fn clear(slot: &Slot) {
   expect(other.held).toBe(null);
 });
 
+// React's Fizz class component internals, `internalInstance.queue = null`
+// in a branch: a nullable field written through its guard there, whose
+// handle tidy puts in place and then folds to the field, is `null` too, as
+// its handle stores it (ADR 0772, amended).
+test("a nullable field written through its guard in a branch is null", async () => {
+  const dir = fixture("nullable-guard-branch");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+pub struct Internal {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub queue: RefCell<Option<Vec<u32>>>,
+}
+
+pub fn drained(internal: &Internal, n: usize) -> usize {
+    if n > 0 {
+        *internal.queue.borrow_mut() = None;
+        return n;
+    }
+    0
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("    internal.queue = null;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const internal = { queue: [1] };
+  expect([lib.drained(internal, 2), internal.queue]).toEqual([2, null]);
+});
+
 // React's root's lane maps, `createLaneMap(null)`, whose items JS tests
 // `=== null`: a `#[rust_js::nullable]` field of a `Vec<Option<T>>` holds
 // its items' `None` as `null`, each written by index or taken, and each

@@ -334,4 +334,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "set only to values"],
   },
+  {
+    name: "handle-in-place-write-unstored",
+    breaks: "a nullable field's handle put in place and written, `(handle).value = undefined`, is its place written `undefined`, where its handle stores `null`",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "        ExprKind::Handle(place, storage) if place.reads_same() => Some(*storage),\n",
+    replace: "        ExprKind::Handle(place, storage) if place.reads_same() && false => Some(*storage),\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "written through its guard in a branch"],
+  },
 ];
