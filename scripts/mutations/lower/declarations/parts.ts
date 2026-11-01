@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks: "a name shadowed down the chain, `className`, isn't omitted",
     file: "src/lower/declarations/parts.rs",
     find: "            keys.extend(flattened_keys(tcx, field.ty(tcx, args).skip_normalization()));",
-    replace: "            keys.push(field_key(tcx, field));",
+    replace: "            keys.extend(field_key(tcx, field).name().map(str::to_owned));",
     tests: ["test/declarations.test.ts"],
   },
   {
