@@ -162,7 +162,9 @@ pub(super) fn module<'tcx>(
     // A binding it holds as a value, a global function's `typeof
     // Object.assign`, as TypeScript has it (ADR 0622), a static's its type
     // (ADR 0633); not one re-exported from another module that holds it.
-    for held in held.iter().filter(|held| held.through.is_none()) {
+    // Not one a private `use` renames, `use js::array::SLICE as slice;`,
+    // which no export names: no part of the module's type (rd517).
+    for held in (held.iter()).filter(|held| held.through.is_none() && (held.export || held.default)) {
         let mut declared = match tcx.def_kind(held.binding) {
             DefKind::Static { .. } => out.constant(held.binding),
             _ => json!({ "kind": "const", "type": { "kind": "typeof", "name": held.path } }),

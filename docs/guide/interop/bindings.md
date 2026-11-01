@@ -372,7 +372,8 @@ export function initial() {
   `use js::array::SLICE as slice;` is `const slice =
   Array.prototype.slice;`, and `function::call(slice, ..)` is
   `slice.call(..)`, read as the module loads; by its own name, `use
-  js::object::keys;`, it's read where it's called, `Object.keys(value)`
+  js::object::keys;`, it's read where it's called, `Object.keys(value)`;
+  private, it's no part of the module's `.d.ts`
   ([ADR 0622, amended](../../decisions/0622-a-global-binding-a-module-names-is-its-const.md)).
   `#[rust_js::name = "FunctionBind"] use js::function::BIND as
   FUNCTION_BIND;` is `const FunctionBind = Function.prototype.bind;`

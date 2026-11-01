@@ -165,9 +165,14 @@ pub fn names(value: &js::JsObject) -> Vec<String> {
     keys(value)
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("const slice = Array.prototype.slice;\nconst isArrayImpl = Array.isArray;\n");
+  // rd517: a private `const` is no part of the module's type.
+  const declared = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declared).not.toContain("slice");
+  expect(declared).not.toContain("isArrayImpl");
+  expect(declared).toContain("export function copy(list: unknown)");
   expect(js).toContain("  return slice.call(list);\n");
   expect(js).toContain("  return isArrayImpl(value) && isArrayImpl(value);\n");
   expect(js).toContain("  return Object.keys(value);\n");

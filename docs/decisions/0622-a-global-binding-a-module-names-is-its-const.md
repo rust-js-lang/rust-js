@@ -155,3 +155,17 @@ global binding is the module's const", run in Node; mutations
 `private-renamed-global-unheld`, `renamed-global-read-in-place` and
 `underscore-use-held` (`bindings/held.rs`).
 
+## Amendment: a private renamed global is no part of the module's type (rd517, P3)
+
+react-art's `use js::array::SLICE as slice;` printed `const slice =
+Array.prototype.slice;`, right, and its `.d.ts` declared it, `declare const
+slice: (value: number | null | undefined, ..) => ..`: by the binding's Rust
+signature, which this ADR's Alternatives reject, and of a `const` no export
+names, which a hand-written declaration leaves out. **A held global is
+declared only where the module exports it, by name or as its default**; a
+private one isn't, its type no part of the module's. Case N: declarations
+only. Held by `test/lowering-binding-paths.test.ts`'s "a private use
+renaming a global binding is the module's const", now with
+`--declarations`; mutation `private-renamed-global-declared`
+(`lower/declarations.rs`).
+

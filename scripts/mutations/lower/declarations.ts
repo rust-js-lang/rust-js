@@ -845,9 +845,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a module's `const assign = Object.assign` isn't declared, so its `.d.ts`'s `export default assign` names nothing",
     file: "src/lower/declarations.rs",
-    find: "    for held in held.iter().filter(|held| held.through.is_none()) {\n",
+    find: "    for held in (held.iter()).filter(|held| held.through.is_none() && (held.export || held.default)) {\n",
     replace:
-      "    for held in held.iter().filter(|held| held.through.is_none()).take(0) {\n",
+      "    for held in (held.iter()).filter(|held| held.through.is_none() && (held.export || held.default)).take(0) {\n",
     tests: [
       "test/declarations.test.ts",
       "-t",
@@ -1147,5 +1147,14 @@ export const mutations: Mutation[] = [
       "-t",
       "a closure a symbol names is its method"
     ]
+  },
+  {
+    name: "private-renamed-global-declared",
+    breaks:
+      "a private `use` that renames a global, `use js::array::SLICE as slice;`, is declared in the module's .d.ts, `declare const slice: ..`, which no export names (rd517)",
+    file: "src/lower/declarations.rs",
+    find: "    for held in (held.iter()).filter(|held| held.through.is_none() && (held.export || held.default)) {\n",
+    replace: "    for held in (held.iter()).filter(|held| held.through.is_none()) {\n",
+    tests: ["test/lowering-binding-paths.test.ts", "-t", "private use renaming a global"],
   },
 ];
