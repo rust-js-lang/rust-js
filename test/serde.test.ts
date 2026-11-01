@@ -1245,3 +1245,43 @@ pub fn report() -> String {
   // A `null`'s `visit_none` is given nothing.
   expect(readFileSync(join(dir, "cases.js"), "utf8")).toContain("none: () => maybeVisitorVisitor_visitNone(");
 });
+
+// #450: `rust-js build` compiles with `-C incremental`, Cargo's default,
+// under which rustc keeps each HIR span relative to its item: `#[serde(..)]`,
+// read from the expanded crate, is found by each item's, variant's and
+// field's `DefId`, not by the span of its name, so the JSON is serde's,
+// `{"orderId":1}` and `{"kind":"waiting",..}`, with a cache cold and warm.
+test("serde: #[serde(..)] holds under -C incremental, its cache cold and warm", async () => {
+  const dir = fixture("serde-incremental");
+  writeFileSync(join(dir, "cases.rs"), `#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Order {
+    pub order_id: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+}
+#[derive(serde::Serialize)]
+#[serde(tag = "kind", rename_all = "lowercase")]
+pub enum Status {
+    Waiting { on: String },
+}
+#[derive(serde::Serialize)]
+#[serde(tag = "t", content = "c")]
+pub enum Shape {
+    #[serde(rename = "circle")]
+    Circle(f64),
+}
+pub fn report() -> String {
+    let value = (Order { order_id: 1, note: None }, Status::Waiting { on: "ci".into() }, Shape::Circle(2.5));
+    format!("{}\\n{}", serde_json::to_string(&value).unwrap(), serde_json::to_string_pretty(&value).unwrap())
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  expect(expected).toContain('"orderId":1');
+  const cache = join(dir, "incremental");
+  for (const build of ["cold", "warm"]) {
+    const js = join(dir, `cases-${build}.js`);
+    run([compiler, join(dir, "cases.rs"), "-o", js, "--", ...buildSerde(), "-C", `incremental=${cache}`]);
+    expect((await import(js)).report(), build).toBe(expected);
+  }
+});

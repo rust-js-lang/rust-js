@@ -49,16 +49,37 @@ pub struct SerdeItem {
     span: Span,
 }
 
-/// Each item's, variant's and field's `#[serde(..)]`, by the span of its
-/// name. HIR has no `#[serde]`: it's a derive's helper, so it's read from
-/// the crate as it was expanded.
-pub type SerdeAttributes = HashMap<Span, Vec<SerdeItem>>;
+/// Each item's, variant's and field's `#[serde(..)]`, by its `DefId`. HIR
+/// has no `#[serde]`: it's a derive's helper, so it's read from the crate as
+/// it was expanded, each node's `DefId` the resolver's. Not by the span of
+/// its name, which `-C incremental`, Cargo's default, keeps relative to its
+/// item, so no HIR span is the expanded crate's (#450).
+pub type SerdeAttributes = HashMap<DefId, Vec<SerdeItem>>;
 
 /// `#[serde(..)]` everywhere in the expanded crate, before rustc lowers it.
 pub fn attributes(tcx: TyCtxt<'_>) -> SerdeAttributes {
-    struct Collector(SerdeAttributes);
-    impl Collector {
-        fn record(&mut self, span: Span, attrs: &[rustc_ast::Attribute]) {
+    struct Collector<'r, 'tcx> {
+        found: SerdeAttributes,
+        resolver: &'r ty::ResolverAstLowering<'tcx>,
+        /// The item whose variants and fields are visited, its resolver's.
+        owner: Option<&'r ty::PerOwnerResolverData<'tcx>>,
+    }
+    impl Collector<'_, '_> {
+        /// The `DefId` of the node `id`: an item's own, or of a variant's or a
+        /// field's, its item's.
+        fn def_id(&self, id: rustc_ast::NodeId) -> Option<DefId> {
+            let owner = self.owner?;
+            let local = match owner.id == id {
+                true => owner.def_id,
+                false => *owner.node_id_to_def_id.get(&id)?,
+            };
+            Some(local.to_def_id())
+        }
+
+        fn record(&mut self, id: rustc_ast::NodeId, attrs: &[rustc_ast::Attribute]) {
+            let Some(def_id) = self.def_id(id) else {
+                return;
+            };
             for attr in attrs.iter().filter(|a| a.has_name(Symbol::intern("serde"))) {
                 for item in attr.meta_item_list().unwrap_or_default() {
                     let nested = item
@@ -72,7 +93,7 @@ pub fn attributes(tcx: TyCtxt<'_>) -> SerdeAttributes {
                             )
                         })
                         .collect();
-                    self.0.entry(span).or_default().push(SerdeItem {
+                    self.found.entry(def_id).or_default().push(SerdeItem {
                         name: item.name().map(|n| n.to_string()).unwrap_or_default(),
                         value: item.value_str().map(|v| v.to_string()),
                         nested,
@@ -82,27 +103,33 @@ pub fn attributes(tcx: TyCtxt<'_>) -> SerdeAttributes {
             }
         }
     }
-    impl<'a> Visitor<'a> for Collector {
+    impl<'a> Visitor<'a> for Collector<'_, '_> {
         fn visit_item(&mut self, item: &'a rustc_ast::Item) {
-            if let Some(ident) = item.kind.ident() {
-                self.record(ident.span, &item.attrs);
+            let outer = std::mem::replace(&mut self.owner, self.resolver.owners.get(&item.id));
+            if item.kind.ident().is_some() {
+                self.record(item.id, &item.attrs);
             }
             visit::walk_item(self, item);
+            self.owner = outer;
         }
         fn visit_variant(&mut self, variant: &'a rustc_ast::Variant) {
-            self.record(variant.ident.span, &variant.attrs);
+            self.record(variant.id, &variant.attrs);
             visit::walk_variant(self, variant);
         }
         fn visit_field_def(&mut self, field: &'a rustc_ast::FieldDef) {
-            let span = field.ident.map_or(field.span, |ident| ident.span);
-            self.record(span, &field.attrs);
+            self.record(field.id, &field.attrs);
             visit::walk_field_def(self, field);
         }
     }
-    let krate = tcx.resolver_for_lowering().1.borrow();
-    let mut collector = Collector(HashMap::new());
+    let (resolver, krate) = tcx.resolver_for_lowering();
+    let (resolver, krate) = (resolver.borrow(), krate.borrow());
+    let mut collector = Collector {
+        found: HashMap::new(),
+        resolver: &resolver,
+        owner: None,
+    };
     visit::walk_crate(&mut collector, &krate);
-    collector.0
+    collector.found
 }
 
 /// `Some(true)` for serde's `Serialize`, `Some(false)` for `Deserialize`
@@ -249,11 +276,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `#[serde(..)]` on `def_id`, as serde_derive reads it.
     fn serde_attrs(&self, def_id: DefId) -> R<Attrs> {
         let mut attrs = Attrs::default();
-        let span = self
-            .tcx
-            .def_ident_span(def_id)
-            .unwrap_or_else(|| self.tcx.def_span(def_id));
-        for item in self.krate.serde_attrs.get(&span).into_iter().flatten() {
+        for item in self.krate.serde_attrs.get(&def_id).into_iter().flatten() {
             let name = item.name.as_str();
             let value = item.value.clone();
             // `rename(serialize = "a", deserialize = "b")`: the one JSON is
@@ -1017,14 +1040,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 intravisit::walk_expr(self, expr);
             }
         }
-        let item_span = self
-            .tcx
-            .def_ident_span(def_id)
-            .unwrap_or_else(|| self.tcx.def_span(def_id));
         let span = self
             .krate
             .serde_attrs
-            .get(&item_span)?
+            .get(&def_id)?
             .iter()
             .find(|item| item.name == name)?
             .span;

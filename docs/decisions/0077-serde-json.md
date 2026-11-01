@@ -1,6 +1,7 @@
 # 0077. `#[derive(Serialize)]` is a function that writes serde_json's text
 
 Status: Accepted. Extends [0052](0052-std-trait-impls.md) and [0060](0060-debug.md).
+Amended below (#450): the attributes are found by each node's `DefId`.
 
 Case: C, B, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -71,7 +72,8 @@ $toJson(order, orderSerialize_serialize, false);
   `{ message, line, column }`, shown as serde_json shows it.
 - **The attributes are read before rustc drops them.** HIR keeps no trace
   of `#[serde(..)]`, which only serde_derive reads, so rust-js reads them
-  from the expanded AST, by the span of the item's name.
+  from the expanded AST, by each item's, variant's and field's `DefId`
+  (amended below, #450).
 - **The attributes supported** are `rename`, `rename_all`,
   `rename_all_fields`, `tag`, `content`, `untagged`, `transparent`,
   `skip`, `skip_serializing` and `skip_serializing_if`. `rename_all`'s
@@ -139,3 +141,30 @@ which are the same digits, and lays them out as serde_json does.
 `test/serde.test.ts` compiles the same source natively and through rust-js,
 then compares compact and pretty JSON. It covers these attribute combinations
 and predicate resolution independently of generated-code snapshots.
+
+## Amendment: the attributes are found by `DefId`, under `-C incremental` too (2026-11-01, #450)
+
+`rust-js build` compiles as Cargo does, with `-C incremental`, under
+which rustc keeps each HIR span relative to its item. The attributes were
+kept by the span of the name in the expanded AST and found by
+`def_ident_span`, which then never matched: every `#[serde(..)]` was lost,
+`{"order_id":1,"note":null}` where serde_json writes `{"orderId":1}`, and
+`{"Waiting":{..}}` for `{"kind":"waiting",..}`. A wrong answer, of a
+build's default flags (P0).
+
+**Each item's, variant's and field's `#[serde(..)]` is kept by its
+`DefId`**, the resolver's for its node (`PerOwnerResolverData`'s
+`node_id_to_def_id`, its item's own `def_id`), and found by the `DefId`
+rustc gives the type, its variant or its field. No span is matched, so
+nothing depends on how rustc keeps one. Case C (ADR 0262): the JSON is
+serde_json's.
+
+Compiling the corpus with and without `-C incremental` (1,350 cases)
+gives the same JS for each, so no other analysis matched a span across
+that boundary.
+
+Held by `test/serde.test.ts`'s "#[serde(..)] holds under -C incremental,
+its cache cold and warm", against native serde_json, the one test that
+compiles with `-C incremental` other than Cargo's builds, and the
+mutations `serde-item-def-id-unfound` and `serde-field-def-id-unfound`
+(`lower/serde.ts`).

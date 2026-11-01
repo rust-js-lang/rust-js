@@ -86,4 +86,22 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/serde.test.ts", "-t", "its own functions"],
   },
+  {
+    name: "serde-item-def-id-unfound",
+    breaks:
+      "an item's own `#[serde(..)]` is looked for among its fields' and variants' ids, where it isn't, so `rename_all` and `tag` are lost and the JSON is Rust's names, externally tagged (#450)",
+    file: "src/lower/serde.rs",
+    find: "                true => owner.def_id,\n",
+    replace: "                true => *owner.node_id_to_def_id.get(&id)?,\n",
+    tests: ["test/serde.test.ts", "-t", "under -C incremental"],
+  },
+  {
+    name: "serde-field-def-id-unfound",
+    breaks:
+      "a field's or a variant's `#[serde(..)]` has no `DefId`, so `skip_serializing_if` and `rename` are lost (#450)",
+    file: "src/lower/serde.rs",
+    find: "                false => *owner.node_id_to_def_id.get(&id)?,\n",
+    replace: "                false => return None,\n",
+    tests: ["test/serde.test.ts", "-t", "under -C incremental"],
+  },
 ];

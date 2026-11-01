@@ -95,7 +95,7 @@ reordered, and git merges this file by keeping both sides' lines
 
 **Talking to a server**
 
-- [0077 `#[derive(Serialize)]` is a function that writes serde_json's text](0077-serde-json.md)
+- [0077 `#[derive(Serialize)]` is a function that writes serde_json's text](0077-serde-json.md) *(amended: its attributes are found by `DefId`, under `-C incremental` too)*
 - [0078 `serde_json::from_str` is serde_json's reader, ported; `#[derive(Deserialize)]` is a table it reads by](0078-serde-json-reading.md)
 - [0079 A tagged or untagged enum is read as serde reads one: through the value, read first and kept](0079-serde-tagged-enums.md)
 - [0080 A generic type's codec takes its type parameters' codecs; `Result`, `from`, `try_from` and `into` are serde's](0080-serde-generics-and-conversions.md)
