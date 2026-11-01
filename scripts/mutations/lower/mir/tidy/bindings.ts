@@ -616,15 +616,15 @@ export const mutations: Mutation[] = [
   {
     name: "alias-read-placeless",
     breaks:
-      "a temporary's read written as its variable has no place, so a field's doc comment, placed where its value is, is lost: the playground's `crates: crateFiles` after `module: await module` without its `/** Each crate .. */`",
+      "a temporary's read written as its variable has no place where MIR gave it none, so the source map maps `bytes[i]`'s `i` to nothing, not to the Rust's `i]`, and a comment placed by it is lost",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                                *e = of.clone().or_at(e.span).or_at(at);\n",
     replace:
       "                                *e = of.clone().or_at(e.span);\n                                let _ = at;\n",
     tests: [
-      "test/lowering-comment-fields.test.ts",
+      "test/emission.test.ts",
       "-t",
-      "where its value is a variable MIR moved",
+      "a read of a variable MIR copied maps where the program reads it",
     ],
   },
   {

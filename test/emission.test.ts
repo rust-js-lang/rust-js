@@ -83,6 +83,39 @@ test("source map points from fib.js back into fib.rs", async () => {
   }
 });
 
+// A variable MIR copies into a temporary before it's read, `_5 = i;
+// bytes[_5]`, is read as itself where the temporary was, and that read is
+// where the program wrote it: `bytes[i]`'s `i` maps to the Rust's `i]`, not
+// to nothing (tidy's alias_variables, ADR 0434).
+test("a read of a variable MIR copied maps where the program reads it", async () => {
+  const { fixture, compiler } = await import("./support");
+  const { writeFileSync, readFileSync } = await import("node:fs");
+  const { decodeMappings, lookup } = await import("./sourcemap.ts");
+  const dir = fixture("source-map-aliased-reads");
+  const rust = `pub fn total(bytes: &[u8]) -> u32 {
+    let mut sum = 0;
+    let mut i = 0;
+    while i < bytes.len() {
+        let b = bytes[i] as u32;
+        sum += b;
+        i += 1;
+    }
+    sum
+}
+`;
+  writeFileSync(join(dir, "lib.rs"), rust);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8").split("\n");
+  const rs = rust.split("\n");
+  const segments = decodeMappings(JSON.parse(readFileSync(join(dir, "lib.js.map"), "utf8")).mappings);
+  const line = js.findIndex((l) => l.includes("const b = bytes[i];"));
+  expect(line).toBeGreaterThan(0);
+  const col = js[line].indexOf("i];");
+  const hit = segments.find((s) => s.jsLine === line && s.jsCol === col) ?? lookup(segments, line, col);
+  expect(hit && rs[hit.srcLine].slice(hit.srcCol)).toBe("i] as u32;");
+  expect((await import(join(dir, "lib.js"))).total(new Uint8Array([1, 2, 250]))).toBe(253);
+});
+
 // A stack trace through the map (Jest's source-map-support, Node's
 // --enable-source-maps) names a frame by the map's name where the frame is
 // called from, so a name would be what the frame shows: `callback: impl
