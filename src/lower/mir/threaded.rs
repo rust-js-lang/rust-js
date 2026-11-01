@@ -107,6 +107,12 @@ impl<'tcx> FnCx<'_, 'tcx> {
         if !adt.is_enum() || self.drops(ty) != Drops::Nothing {
             return None;
         }
+        // An `Option` that's its value or `undefined` is no object of a tag
+        // made to be tested again: where the first `match` holds no borrow
+        // the second must be past, it's the value the program named and
+        // tests, upstream's `instance` an `if` chain makes and `if
+        // (!instance) throw` after (rd531).
+        let unboxed = self.option_of(ty).is_some_and(|inner| !self.boxed_payload(inner));
         // The switch's block is only the read and the switch.
         if !(data.statements.iter().enumerate()).all(|(i, s)| i == read_at || quiet(s)) {
             return None;
@@ -177,6 +183,22 @@ impl<'tcx> FnCx<'_, 'tcx> {
             *makers.entry(m.case).or_default() += 1;
         }
         if makers.values().any(|&n| n > 1) && !ends_apart(body, &makers.keys().copied().collect::<Vec<_>>()) {
+            return None;
+        }
+        let ends_a_borrow = || {
+            between.iter().any(|&b| {
+                matches!(&body.basic_blocks[b].terminator().kind, TerminatorKind::Drop { place, .. }
+                    if self.recognition().is_guard(place.ty(&body.local_decls, tcx).ty))
+            })
+        };
+        // A `loop`'s value, `let next = loop { .. break Some(next); .. }`,
+        // has no expression of its own in JS: its breaks write it, and the
+        // case goes on there as before (ADR 1055).
+        let in_a_loop = || {
+            let predecessors = body.basic_blocks.predecessors();
+            (made.iter()).any(|m| predecessors[m.block].iter().any(|&p| loops_back(body, p, switch)))
+        };
+        if unboxed && !ends_a_borrow() && !in_a_loop() {
             return None;
         }
         // Nothing else reaches the switch, or what's between.
@@ -629,4 +651,21 @@ impl<'tcx> MutVisitor<'tcx> for Rewrite<'_, 'tcx> {
             };
         }
     }
+}
+
+/// Whether `from` reaches itself again without passing `past`: it's in a
+/// loop that `past` isn't in the way of.
+fn loops_back(body: &mir::Body<'_>, from: BasicBlock, past: BasicBlock) -> bool {
+    let mut seen = HashSet::new();
+    let mut pending: Vec<BasicBlock> = body.basic_blocks[from].terminator().successors().collect();
+    while let Some(at) = pending.pop() {
+        if at == from {
+            return true;
+        }
+        if at == past || body.basic_blocks[at].is_cleanup || !seen.insert(at) {
+            continue;
+        }
+        pending.extend(body.basic_blocks[at].terminator().successors());
+    }
+    false
 }

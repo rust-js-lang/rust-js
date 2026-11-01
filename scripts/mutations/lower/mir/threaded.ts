@@ -96,4 +96,34 @@ export const mutations: Mutation[] = [
     tests: corpus,
     snapshots: true,
   },
+  {
+    name: "threaded-unboxed-option-of-no-borrow",
+    breaks:
+      "an `Option` an `if` chain makes and a `let`-`else` takes, with no borrow between, is threaded: ReactART's `instance` renamed `instance$1` and its `if (!instance) throw` gone (rd531)",
+    file: "src/lower/mir/threaded.rs",
+    find: "        if unboxed && !ends_a_borrow() && !in_a_loop() {\n",
+    replace: "        if false && unboxed && !ends_a_borrow() && !in_a_loop() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_of_what_a_match_made.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "threaded-unboxed-option-past-a-borrow-kept",
+    breaks:
+      "an `Option` a `match` of a borrowed state makes is never threaded, `const done = .. ? state._0 : undefined; if (done !== undefined)` where the arm's case is one dispatch (rd531)",
+    file: "src/lower/mir/threaded.rs",
+    find: "                    if self.recognition().is_guard(place.ty(&body.local_decls, tcx).ty))\n",
+    replace: "                    if self.recognition().is_guard(place.ty(&body.local_decls, tcx).ty) && false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_of_what_a_match_made.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "threaded-loop-value-kept",
+    breaks:
+      "an `Option` a `loop` breaks with, `let next = loop { .. break Some(next) .. }`, with no borrow between, is left a variable its breaks write, `next = undefined; .. if (next !== undefined)`, where its case went on from each break (rd531)",
+    file: "src/lower/mir/threaded.rs",
+    find: "        if unboxed && !ends_a_borrow() && !in_a_loop() {\n",
+    replace: "        if unboxed && !ends_a_borrow() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^loop_value_given_in_its_test.rs$"],
+    snapshots: true,
+  },
 ];

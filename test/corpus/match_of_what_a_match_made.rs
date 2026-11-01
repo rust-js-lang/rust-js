@@ -189,7 +189,28 @@ fn scaled(state: &State, n: i32) -> i32 {
     scaled
 }
 
+// An `Option` an `if` chain makes, its value or `undefined`, taken by the
+// `let`-`else` after it, with no borrow between: the value the program
+// named, tested after, as ReactART's createInstance's `instance` and `if
+// (!instance) throw` (rd531), not threaded.
+fn instance_of(kind: &str) -> i32 {
+    let instance = if kind == "clip" {
+        let instance = kind.len() as i32;
+        println!("clipping {instance}");
+        Some(instance)
+    } else if kind == "group" {
+        Some(2)
+    } else {
+        None
+    };
+    let Some(instance) = instance else {
+        return -1;
+    };
+    instance * 10
+}
+
 fn main() {
+    println!("{} {} {}", instance_of("clip"), instance_of("group"), instance_of("text"));
     let chunk = Chunk {
         state: RefCell::new(State::Done(4)),
     };

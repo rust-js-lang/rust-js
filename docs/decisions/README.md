@@ -232,7 +232,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1051 A field may be named by a symbol](1051-a-field-may-be-named-by-a-symbol.md)
 - [1052 `Array.from` is of what Rust doesn't collect itself](1052-array-from-is-of-what-rust-doesnt-collect.md)
 - [1053 A guard's take of a field read no more is gone, and a comment runs nothing](1053-a-guards-take-of-a-field-read-no-more-is-gone.md)
-- [1055 A `match` of what a `match` made is one dispatch](1055-a-match-of-what-a-match-made-is-one-dispatch.md)
+- [1055 A `match` of what a `match` made is one dispatch](1055-a-match-of-what-a-match-made-is-one-dispatch.md) *(amended: an `Option` of its value made with no borrow to end stays a variable, rd531)*
 - [1056 A stream's general source is TypeScript's `UnderlyingSource`](1056-a-streams-general-source-is-typescripts.md)
 - [1057 A `bigint` `classify` tells is a `js::BigInt`, of any size](1057-a-bigint-kind-is-a-bigint-of-any-size.md)
 - [1058 A held borrow meets only borrows of its own class](1058-a-held-borrow-meets-only-its-own-class.md)

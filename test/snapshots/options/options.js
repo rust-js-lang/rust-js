@@ -85,11 +85,8 @@ export function sameSlots(a, b) {
 
 /** A string inside. */
 export function label(n) {
-  if (n > 0) {
-    const s = String(n);
-    return s + "!";
-  }
-  return "none";
+  const name = n > 0 ? String(n) : undefined;
+  return name !== undefined ? name + "!" : "none";
 }
 
 function double(n) {

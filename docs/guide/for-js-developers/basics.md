@@ -2297,7 +2297,10 @@ match .. { .. => Ok(v), .. => Err(e) }; match settled { .. }`, is one
 dispatch: each arm goes on to its variant's case, its field read where
 the arm wrote it, never an object of a tag tested again. It's the form for
 calling back once a `RefCell`'s borrow has ended, as a callback may borrow
-it again
+it again. An `Option` that's its value or `undefined`, made with no borrow
+to end, `let instance = if .. { Some(..) } else { None }; let Some(instance)
+= instance else { .. };`, is no tagged object: it stays the variable it is,
+tested after, `if (instance === undefined)`
 ([ADR 1055](../../decisions/1055-a-match-of-what-a-match-made-is-one-dispatch.md)):
 
 ```rust

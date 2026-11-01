@@ -152,3 +152,27 @@ if (reject != null) {
   `threaded-read-whole`, `threaded-second-field-lost`,
   `threaded-drops-dropped`, `threaded-past-code`, `threaded-parts-apart`,
   `threaded-comments-lost`, `threaded-binding-apart`.
+
+## Amendment: an `Option` of its value made with no borrow to end stays a variable (rd531, P1)
+
+ReactART's createInstance, `let instance = if .. { let instance = ..;
+Some(instance) } else if .. else { None }; let Some(instance) = instance
+else { panic!(..) };`, was threaded: `let instance$1; .. { const instance =
+..; instance$1 = instance; } .. else { throw .. }`, the program's name lost
+and upstream's `if (!instance) throw` after the `switch` gone; and React
+DOM's scrollIntoView's `host`, its `const host = .. ? fragment.host :
+undefined; if (host !== undefined)` folded into the `if`. **An `Option`
+that's its value or `undefined`, not a `{ value }` box, is threaded only
+where what's between the two `match`es ends a borrow, a guard's drop**:
+there it's the rd433 form, which lets a callback borrow again; and of a
+`loop`'s value, which JS has no expression of, its breaks writing it; elsewhere
+it's no object of a tag made to be tested again, but the value the program
+named, which it tests after. Case N: the same JS either way, by its form.
+A `Result`, or another enum, which is a tagged object, is threaded as
+before. Held by the corpus's `match_of_what_a_match_made`'s
+`instance_of`, against native Rust, `loop_value_given_in_its_test`'s
+`either`, and the `options` snapshot's `label`, `const name = n > 0 ?
+String(n) : undefined`; mutations
+`threaded-unboxed-option-of-no-borrow`, `threaded-loop-value-kept` and
+`threaded-unboxed-option-past-a-borrow-kept` (`mir/threaded.rs`).
+
