@@ -4,7 +4,8 @@ Status: Accepted. Amends [0066](0066-template-literals.md), whose string
 written across lines was the one form a literal kept of its source.
 Amended: a format string of a `concat!` is its pieces too; a comment
 between its pieces is before the piece it's written before; and a format
-argument written across lines may break its template's line.
+argument written across lines may break its template's line; and one
+before a `const`'s first piece is after its `=`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, nothing the program
 can observe: `"a " + "b"` is the string `"a b"` is.
@@ -263,3 +264,27 @@ and `placeholders-counted-past-template` (`lower/format_args.ts`),
 `format-argument-unplaced` (`lower/mir/std_calls.ts`) and
 `template-across-dropped` (`js/make.ts`). The corpus, snapshots and the
 guide's examples are unchanged: none breaks a line it didn't.
+
+## Amendment: a comment before a `const`'s first piece is after its `=` (2026-11-02, rd342)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N: comments, which
+nothing runs.
+
+React's ReactClientConsoleConfigBrowser and Server write `const badgeStyle
+=\n  // We use a fixed background if light-dark is not supported,
+otherwise\n  // we use a transparent background.\n  'background:
+#e6e6e6;' + ..`. Their port writes those two lines inside the
+`concat!(..)`, before its first piece. A comment before a later piece
+already goes after that piece's `+`. Nothing came before the first piece,
+so its comments were lost. **A comment before the first piece of a
+`const`'s or a `let`'s `concat!` is after its `=`, on lines of its own
+before the piece** (`arms::arm_starts`), as Prettier writes one there.
+The rule only applies there, where the `=` before the value is the
+statement's own. Elsewhere, as a call's argument, a comment before the
+argument is already before it.
+
+Held by `lowering-comments-inside.test.ts`'s "a comment before concat!'s
+first piece is before it", run, and the mutations
+`concat-first-piece-comment-lost` and
+`concat-first-piece-comment-of-a-module-const-only` (`to_oxc/arms.ts`).
+

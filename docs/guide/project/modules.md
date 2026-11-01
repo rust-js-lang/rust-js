@@ -773,7 +773,9 @@ or right after an `=` before the value, as written, `export const NoMode =
 block comment on a line of its own between them, as rustfmt writes a
 long one, too, and one ending the line before a setter's call after the
 place it sets, `internals /* Priority */` then `.set_p(priority)` as
-`internals.p /* Priority */ = priority`
+`internals.p /* Priority */ = priority`, and one rustfmt writes on a line
+of its own between an `if`'s condition and its `{` after the condition,
+`=== 47 /* "/" */) {`
 ([ADR 0630](../../decisions/0630-a-comment-inside-an-expression.md), amended),
 and a `///` doc comment is a JSDoc an editor shows a JS caller. A run of
 comment lines before a `match` arm is one, the arm's; a comment before a

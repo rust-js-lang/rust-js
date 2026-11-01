@@ -675,7 +675,11 @@ export function formatProdErrorMessage(code, url) {
 
 - Each of `concat!`'s arguments is its own JS string, in order: a
   `char`'s, a number's or a `bool`'s too, as `concat!` writes it, `"2"`.
-  A comment between them is before the piece it's written before.
+  A comment between them is before the piece it's written before; one
+  before the first piece of a `const`'s or a `let`'s `concat!` is after
+  its `=`, `const badgeStyle =\n  // ..\n  "background: #e6e6e6;" +`
+  ([ADR 0641](../../decisions/0641-concat-is-its-pieces-joined-by-plus.md),
+  amended).
 - A `\` ending a line continues one literal, as it does in Rust: one JS
   string.
 - A space one can't tell from `' '`, `\u{2007}` or `\u{a0}`, a mark one

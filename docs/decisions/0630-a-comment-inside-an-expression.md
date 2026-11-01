@@ -4,7 +4,8 @@ Status: Accepted. Extends [0444](0444-a-comment-is-where-its-code-is.md),
 whose rule 2 was of a comment at its line's end. Amended below: one after
 an `=` is before the value; amended again: and one on a line of its own
 between an `=` and its value; and a block comment after an argument's `,` is
-after the argument; and one before a setter's link is before its `=`.
+after the argument; and one before a setter's link is before its `=`;
+and one on a line of its own before an `if`'s `{` is after its condition.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: comments, which
 nothing runs.
@@ -241,3 +242,22 @@ Held by `lowering-comments-inside.test.ts`'s "a block comment before a
 setter's link is before its `=`", run, and the mutations
 `setter-comment-after-equals` and `setter-comment-before-any-equals`
 (`to_oxc/trailing.ts`).
+
+## Amendment: a comment on a line of its own before an `if`'s `{` is after its condition (2026-11-02, rd344)
+
+React's ReactFlightPerformanceTrack writes `if
+(description.charCodeAt(queryIdx - 1) === 47 /* "/" */) {`. rustfmt moves
+its port's comment onto a line of its own between the condition and the
+`{`, and the JS lost it. **A block comment alone on its line between an
+`if`'s, an `else if`'s or a `while`'s condition and its `{` goes after
+the condition's last code, as if written there** (`own_line_before_block`,
+like `own_line_before_value` before a value): `=== 47 /* "/" */) {`. The
+condition's last line is read whatever it starts with, `if`, `while`, or
+an `&&` or `||` that continues one. Nothing but whitespace and other
+comments may stand between the comment and the code or the `{`.
+
+Held by `lowering-comments-inside.test.ts`'s "a block comment between an
+`if`'s condition and its `{` is after the condition", run, and the
+mutations `comment-before-block-lost` and
+`comment-before-block-of-a-while-unseen` (`to_oxc/trailing.ts`).
+

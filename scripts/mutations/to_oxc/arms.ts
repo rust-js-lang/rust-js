@@ -106,4 +106,22 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/port-scheduler.test.ts"],
   },
+  {
+    name: "concat-first-piece-comment-lost",
+    breaks:
+      "a comment before `concat!`'s first piece, a `const`'s value, is lost, where upstream's `const badgeStyle =\\n  // ..\\n  'background: ..' +` keeps it (rd342)",
+    file: "src/to_oxc/arms.rs",
+    find: "            && let [first, _, ..] = pieces.as_slice()\n",
+    replace: "            && let [first, _, ..] = pieces.as_slice()\n            && false\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "concat!'s first piece"],
+  },
+  {
+    name: "concat-first-piece-comment-of-a-module-const-only",
+    breaks:
+      "a comment before the first piece of a function's `concat!` `let` is lost, as only a module's `const`'s is kept (rd342)",
+    file: "src/to_oxc/arms.rs",
+    find: "                    if let StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) = &stmt.kind {\n",
+    replace: "                    if let StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) = &stmt.kind && false {\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "concat!'s first piece"],
+  },
 ];

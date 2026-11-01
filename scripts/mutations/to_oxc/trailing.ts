@@ -84,4 +84,22 @@ export const mutations: Mutation[] = [
     replace: "                    let assigned = true;\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "setter"],
   },
+  {
+    name: "comment-before-block-lost",
+    breaks:
+      "a block comment rustfmt writes on a line of its own between an `if`'s condition and its `{`, `/* \"/\" */`, is lost, where upstream has `=== 47 /* \"/\" */) {` (rd344)",
+    file: "src/to_oxc/trailing.rs",
+    find: "    if !text[after..].starts_with('{') || !opens.iter().any(|o| condition.starts_with(o)) {\n",
+    replace: "    if true {\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "condition and its"],
+  },
+  {
+    name: "comment-before-block-of-a-while-unseen",
+    breaks:
+      "a block comment before a `while`'s `{`, after its condition's last `&&` line, is lost, as only an `if`'s first line is read (rd344)",
+    file: "src/to_oxc/trailing.rs",
+    find: "    let opens = [\"if \", \"} else if \", \"while \", \"&& \", \"|| \"];\n",
+    replace: "    let opens = [\"if \", \"} else if \"];\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "condition and its"],
+  },
 ];

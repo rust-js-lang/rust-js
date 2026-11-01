@@ -32,7 +32,9 @@ mod starts;
 mod statements;
 mod trailing;
 
-use self::trailing::{Inside, Trailing, own_line_after_value, own_line_before_value, with_inside_comments};
+use self::trailing::{
+    Inside, Trailing, own_line_after_value, own_line_before_block, own_line_before_value, with_inside_comments,
+};
 
 use self::arms::{Arm, arm_starts, else_if_starts};
 pub(crate) use self::cases::{default_fallen_to, fallen_to};
@@ -613,9 +615,26 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                 });
             }
         }
+        // A block comment on a line of its own before an `if`'s `{`, after
+        // its condition, is after the condition's last code, as one on its
+        // line is (rd344).
+        for c in file.comments.iter().filter(|c| c.lo >= past && c.written) {
+            if let Some((line, column)) = own_line_before_block(&sources.text, &file.comments, c) {
+                trailing.push(Trailing {
+                    line,
+                    column,
+                    inside: true,
+                    before_value: false,
+                    text: crate::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]),
+                    after_param: None,
+                    before_link: None,
+                });
+            }
+        }
         let before_value = |c: &crate::program::Comment| {
             own_line_before_value(&sources.text, &file.comments, c).is_some()
                 || own_line_after_value(&sources.text, &file.comments, &value_ends, c).is_some()
+                || own_line_before_block(&sources.text, &file.comments, c).is_some()
         };
         for c in file.comments.iter().filter(|c| c.lo >= past && c.written) {
             if let Some((line, column)) = own_line_before_value(&sources.text, &file.comments, c) {

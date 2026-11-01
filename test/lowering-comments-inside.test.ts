@@ -304,3 +304,71 @@ pub fn math() -> bool {
   expect(lib.frozen()).toBe(false);
   expect(lib.math()).toBe(true);
 });
+
+// React's ReactFlightPerformanceTrack, `if (description.charCodeAt(queryIdx
+// - 1) === 47 /* "/" */) {`, whose port rustfmt writes with the comment on
+// a line of its own before the `{`: after the condition's last code, as
+// upstream has it (rd344); not one before a function's body.
+test("a block comment between an `if`'s condition and its `{` is after the condition", async () => {
+  const { js, lib } = await compiled("comment-before-a-block", `pub fn slash(description: &str, query_idx: usize) -> bool {
+    if js::string::char_code_at(description, query_idx as f64 - 1.0) == 47.0
+    /* "/" */
+    {
+        return true;
+    }
+    false
+}
+
+pub fn count(mut n: u32) -> u32 {
+    let mut steps = 0;
+    while n > 1
+        && n != 7
+    /* not seven */
+    {
+        n /= 2;
+        steps += 1;
+    }
+    steps
+}
+`);
+  expect(js).toContain(` === 47 /* "/" */) {\n`);
+  expect(js).toContain(`n !== 7 /* not seven */) {\n`);
+  const slash = lib.slash as (d: string, i: number) => boolean;
+  expect([slash("a/b", 2), slash("ab", 2), (lib.count as (n: number) => number)(32)]).toEqual([true, false, 5]);
+});
+
+// React's ReactClientConsoleConfigBrowser, `const badgeStyle =\n  // We use
+// a fixed background ..\n  'background: #e6e6e6;' +`: a comment before
+// `concat!`'s first piece is after the `=`, before that piece, as upstream
+// has it, as one before a later piece is after its `+` (rd342).
+test("a comment before concat!'s first piece is before it", async () => {
+  const { js, lib } = await compiled("comment-before-concat", `// Same badge styling as DevTools.
+pub static BADGE_STYLE: &str = concat!(
+    // We use a fixed background if light-dark is not supported, otherwise
+    // we use a transparent background.
+    "background: #e6e6e6;",
+    "background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));",
+    // Then its color.
+    "color: #000000;",
+    "border-radius: 2px"
+);
+
+pub fn style() -> String {
+    let style = concat!(
+        // Its padding first.
+        "padding: 0 2px;",
+        "margin: 0"
+    );
+    style.to_string()
+}
+`);
+  expect(js).toContain(
+    'export const BADGE_STYLE =\n  // We use a fixed background if light-dark is not supported, otherwise\n  // we use a transparent background.\n  "background: #e6e6e6;" +\n',
+  );
+  expect(js).toContain('  // Then its color.\n  "color: #000000;" +\n');
+  expect(js).toContain('  const style =\n    // Its padding first.\n    "padding: 0 2px;" + "margin: 0";\n');
+  expect([lib.BADGE_STYLE, (lib.style as () => string)()]).toEqual([
+    "background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;border-radius: 2px",
+    "padding: 0 2px;margin: 0",
+  ]);
+});

@@ -99,6 +99,37 @@ pub(super) fn arm_starts(module: &Module) -> std::collections::HashMap<u32, Arm>
             js::Item::Namespace(n) => n.methods.iter().for_each(|method| of(method.body.clone())),
         }
     }
+    // A `const`'s value of `concat!`'s pieces, its first after the `=`,
+    // which a comment written before it is after on lines of its own,
+    // `const badgeStyle =\n  // ..\n  "background: #e6e6e6;" +`, as upstream
+    // writes ReactClientConsoleConfig's (rd342).
+    let mut first_piece = |value: &js::Expr| {
+        if let ExprKind::Written(pieces) = &value.kind
+            && let [first, _, ..] = pieces.as_slice()
+            && !first.span.is_none()
+        {
+            let arm = Arm {
+                hi: first.span.hi,
+                operator: "=",
+                operand: false,
+                opening: false,
+            };
+            starts.entry(first.span.lo).or_insert(arm);
+        }
+    };
+    for item in &module.items {
+        match item {
+            js::Item::Const(c) => first_piece(&c.value),
+            js::Item::Function(f) => js::each_list(&f.body, &mut |block| {
+                for stmt in block {
+                    if let StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) = &stmt.kind {
+                        first_piece(value);
+                    }
+                }
+            }),
+            _ => {}
+        }
+    }
     // A function's parameter, after the `(` or the `,` before it, as
     // Prettier writes a comment before one (ADR 0708, amended).
     for item in &module.items {
