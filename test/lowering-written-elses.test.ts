@@ -153,3 +153,67 @@ pub fn instance(fiber: &Rc<Fiber>) -> Option<u32> {
   expect([lib.instance({ state: 0 } as never), lib.instance({ state: 4 } as never)]).toEqual([null, 8]);
   expect(lib.instance({ state: 1 } as never)).toBe(null);
 });
+
+// react-art's appendInitialChild: `if (typeof child === 'string') { //
+// comment throw new Error(..); } child.inject(parentInstance);`. A match's
+// arm that never goes on, a `panic!` as a `return` or a `break` alone, is a
+// guard's way out, as `let .. else` writes one: no `else` after it (ADR
+// 0237, amended). A `match` of two arms that each go on keeps its `else`.
+test("a match arm that panics is a guard, no else after it", async () => {
+  const { js, lib } = await compiled(
+    "match-arm-panics",
+    `pub enum Child {
+    Text(String),
+    Instance(Vec<u32>),
+}
+
+pub fn append_initial_child(parent: &mut Vec<u32>, child: Child) {
+    match child {
+        Child::Text(_) => {
+            // Noop for string children of Text
+            panic!("Text children should already be flattened.");
+        }
+        Child::Instance(child) => {
+            parent.extend(child);
+        }
+    }
+}
+
+pub fn first(v: &[u32]) -> u32 {
+    match v.first() {
+        None => panic!("empty"),
+        Some(&x) => x + 1,
+    }
+}
+
+pub fn logged(v: &[u32], out: &mut Vec<u32>) -> u32 {
+    match v.first() {
+        None => {
+            out.push(0);
+            panic!("empty")
+        }
+        Some(&x) => x,
+    }
+}
+
+pub fn kept(v: &[u32], out: &mut Vec<u32>) {
+    match v.first() {
+        None => out.push(0),
+        Some(&x) => out.push(x),
+    }
+}
+`,
+  );
+  expect(js).toContain(
+    '  if (child.TAG === "Text") {\n    // Noop for string children of Text\n    throw new Error("Text children should already be flattened.");\n  }\n  $extend(parent, child._0);\n}\n',
+  );
+  expect(js).toContain('  if (x == null) {\n    throw new Error("empty");\n  }\n  return (x + 1) >>> 0;\n');
+  expect(js).toContain("  if (x == null) {\n    out.push(0);\n  } else {\n    out.push(x);\n  }\n");
+  // An arm of more than the panic, as of more than a jump, keeps its `else`.
+  expect(js).toContain('    out.push(0);\n    throw new Error("empty");\n  } else {\n');
+  const parent: number[] = [];
+  lib.appendInitialChild(parent as never, { TAG: "Instance", _0: [1, 2] } as never);
+  expect(parent).toEqual([1, 2]);
+  expect(() => lib.appendInitialChild(parent as never, { TAG: "Text", _0: "a" } as never)).toThrow("Text children should already be flattened.");
+  expect([lib.first([4] as never), (() => { try { return lib.first([] as never); } catch (e) { return (e as Error).message; } })()]).toEqual([5, "empty"]);
+});

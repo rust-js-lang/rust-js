@@ -1261,7 +1261,10 @@ ESLint's `no-else-return` writes it
 `match` is `if (current == null) { .. } else { .. }`, and a value's at a
 function's end `return c ? a : b`, as an `if`'s value is; one of
 constants that's a `switch` is a `switch` first; to have no `else`,
-write `let … else` or an `if let` without one. A function's last `match`
+write `let … else` or an `if let` without one. An arm that's only a way
+out, `None => break`, or only a panic, `Child::Text(_) => panic!(..)`, is
+a guard, the rest after it: `if (child.TAG === "Text") { throw new
+Error(..); } $extend(parent, child._0);`. A function's last `match`
 or `if` of arms that give `()` is its arms, `if (current == null) { ..
 } else { .. }`, with no `return;` at their ends
 ([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md), amended).

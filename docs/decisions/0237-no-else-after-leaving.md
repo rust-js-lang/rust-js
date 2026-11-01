@@ -202,7 +202,11 @@ export function valueMatch(n) {
 
 - **Where it's one** (`hints.rs`'s `Written::elses`): two arms, neither
   guarded nor inside an arm's guard, neither a jump alone, `None =>
-  break`, which stays a guard's way out as `let … else` writes it. Its
+  break`, which stays a guard's way out as `let … else` writes it, nor
+  what never goes on alone, a `panic!(..)`, of type `!`: react-art's
+  appendInitialChild, `if (typeof child === 'string') { throw new
+  Error(..); } child.inject(parentInstance);` (amended, 2026-11-01). An
+  arm of more than that, `{ out.push(0); panic!(..) }`, is a branch. Its
   test is where MIR tests it, from `match` to the scrutinee's end, or to
   the first arm's pattern's, where a string's `s === "a"` is.
 - **A `match` of constants is a `switch` first**

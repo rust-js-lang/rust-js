@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1405
-lines	138742
+files	1406
+lines	138820
 temporaries	1	0.1
 labeled blocks	14	1
 while (true)	123	8.9
-$iter	1173	84.5
+$iter	1174	84.6
 Iterator.from	116	8.4
 return;	150	10.8
-renamed x$1	8572	617.8
+renamed x$1	8572	617.5
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1976	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	206	0	0	0	6	0	0	35
@@ -1231,6 +1231,7 @@ test/corpus/thread_yield.js	15	0	0	0	0	0	0	0
 test/corpus/to_owned_is_clone.js	46	0	0	0	0	0	0	0
 test/corpus/track_caller.js	57	0	0	0	0	0	0	0
 test/corpus/track_caller_traits.js	174	0	0	0	0	0	0	12
+test/corpus/trailing_none_items.js	79	0	0	0	1	0	0	0
 test/corpus/trait_default_bounds.js	74	0	0	0	0	0	0	0
 test/corpus/trait_default_impl_const.js	32	0	0	0	0	0	0	0
 test/corpus/trait_impl_copy_bound.js	66	0	0	0	0	0	0	0
@@ -1269,7 +1270,7 @@ test/corpus/unlowered_helpers.js	18	0	0	0	0	0	0	0
 test/corpus/unlowered_impls.js	22	0	0	0	0	0	0	0
 test/corpus/unpaired_option_drops.js	97	0	0	0	0	0	0	11
 test/corpus/unreachable_display.js	27	0	0	0	0	0	0	0
-test/corpus/unreachable_hint.js	20	0	0	0	0	0	0	0
+test/corpus/unreachable_hint.js	19	0	0	0	0	0	0	0
 test/corpus/unread_collected_chain.js	32	0	0	0	1	0	0	2
 test/corpus/unread_mut_through_deref.js	31	0	0	0	0	0	0	0
 test/corpus/unrun_function_drops.js	363	0	0	0	0	0	0	179

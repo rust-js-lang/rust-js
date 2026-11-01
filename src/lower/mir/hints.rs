@@ -975,7 +975,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether `body`, an arm's, is a jump alone, `break`, `continue` or
-    /// `return`, in a block or not.
+    /// `return`, in a block or not; or what never goes on, of type `!`, a
+    /// `panic!(..)`, its `throw` a guard's way out as theirs is (react-art's
+    /// appendInitialChild, ADR 0237, amended).
     fn jump_alone(&self, mut body: thir::ExprId) -> bool {
         loop {
             match self.frame.thir[body].kind {
@@ -1000,7 +1002,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 thir::ExprKind::Break { .. } | thir::ExprKind::Continue { .. } | thir::ExprKind::Return { .. } => {
                     return true;
                 }
-                _ => return false,
+                _ => return self.frame.thir[body].ty.is_never(),
             }
         }
     }

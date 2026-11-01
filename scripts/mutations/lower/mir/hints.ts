@@ -685,4 +685,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^let_else_tuple_guard.rs$"],
     snapshots: true,
   },
+  {
+    name: "panicking-arm-an-else",
+    breaks:
+      "a match arm that only panics, react-art's appendInitialChild's `Child::Text(_) => panic!(..)`, is a branch: `if (..) { throw .. } else { child.inject(..) }`, not a guard and the rest after it (ADR 0237)",
+    file: "src/lower/mir/hints.rs",
+    find: "                _ => return self.frame.thir[body].ty.is_never(),\n",
+    replace: "                _ => return false,\n",
+    tests: ["test/lowering-written-elses.test.ts", "-t", "panics is a guard"],
+  },
+
 ];
