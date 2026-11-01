@@ -943,3 +943,47 @@ pub fn check(next: Option<&Vec<u32>>, log: &mut Vec<u32>) {
   lib.check(undefined as never, log as never);
   expect(log).toEqual([1, 2]);
 });
+
+// rd443: a module variable's \`unwrap()\` returned right after its \`is_none()\`
+// test panicked is the variable, React's resolveCurrentlyRenderingComponent,
+// \`if (current == null) { throw .. } return current;\`; where something
+// runs between, which may set it again, its \`$unwrap\` stays.
+test("a module variable returned after its test panicked is the variable", async () => {
+  const { js, lib } = await compiled("returned-after-test", `use std::cell::Cell;
+
+use js::Unknown;
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static CURRENT: Cell<Option<&'static Unknown>> = const { Cell::new(None) };
+}
+
+pub fn set(value: Option<&'static Unknown>) {
+    CURRENT.set(value);
+}
+
+pub fn resolve() -> &'static Unknown {
+    if CURRENT.get().is_none() {
+        panic!("Invalid hook call.");
+    }
+    CURRENT.get().unwrap()
+}
+
+pub fn resolve_after(run: impl Fn()) -> &'static Unknown {
+    if CURRENT.get().is_none() {
+        panic!("Invalid hook call.");
+    }
+    run();
+    CURRENT.get().unwrap()
+}
+`);
+  expect(js).toContain('    throw new Error("Invalid hook call.");\n  }\n  return current;\n}');
+  expect(js).toContain("  run();\n  return $unwrap(current);\n}");
+  expect(() => lib.resolve()).toThrow("Invalid hook call.");
+  const { set, resolveAfter } = lib as unknown as { set(value: unknown): void; resolveAfter(run: () => void): unknown };
+  const component = {};
+  set(component);
+  expect(lib.resolve()).toBe(component);
+  expect(() => resolveAfter(() => set(undefined))).toThrow("called `Option::unwrap()` on a `None` value");
+});
+
