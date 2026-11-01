@@ -114,9 +114,16 @@ pub fn is_view(value: Option<&Unknown>) -> bool {
 pub fn of_nothing(value: Option<&Unknown>) -> bool {
     js::instance_of(value, None::<&Unknown>)
 }
+
+// React's server stream config asks whether the engine has a detached
+// buffer's accessor.
+pub fn supports_detached() -> bool {
+    js::unknown(js::array_buffer::prototype()).has_own_property("detached")
+}
 `);
   expect(js).toContain("const TypedArrayConstructor = Object.getPrototypeOf(Uint32Array.prototype).constructor;\n");
   expect(js).toContain("  return value instanceof TypedArrayConstructor || value instanceof DataView;\n");
+  expect(js).toContain('return ArrayBuffer.prototype.hasOwnProperty("detached");');
   const out = ran(dir, `import vm from "node:vm";
 const lib = await import("./lib.js");
 const other = vm.runInNewContext("new Uint8Array(2)");

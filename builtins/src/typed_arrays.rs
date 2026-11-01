@@ -84,6 +84,11 @@ pub mod array_buffer {
     pub fn is_view(value: Option<&Unknown>) -> bool {
         unreachable!()
     }
+    /// [`ArrayBuffer.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer): what each `ArrayBuffer` inherits from, its methods and accessors, which an engine may lack one of, as React's server stream config asks `hasOwnProperty.call(ArrayBuffer.prototype, "detached")` (ADR 0878).
+    #[cfg_attr(rust_js, rust_js::link_name = "get ArrayBuffer.prototype")]
+    pub fn prototype() -> &'static ArrayBuffer {
+        unreachable!()
+    }
 }
 
 /// [`SharedArrayBuffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer): bytes workers share.
