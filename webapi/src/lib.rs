@@ -88110,12 +88110,77 @@ pub struct UnderlyingDefaultSource<'a> {
 
 unsafe impl Defined for UnderlyingDefaultSource<'_> {}
 
-/// What [`readable_stream::new`] reads from: an [`UnderlyingByteSource`] or an
-/// [`UnderlyingDefaultSource`], the object itself.
-#[cfg_attr(rust_js, rust_js::types = "UnderlyingByteSource | UnderlyingDefaultSource")]
+/// TypeScript's [`UnderlyingSource`](https://developer.mozilla.org/docs/Web/API/ReadableStream/ReadableStream#underlyingsource):
+/// what a stream of either kind reads from, its `type` `"bytes"` or `None`, as the program
+/// says when it runs, React's Flight client's `new ReadableStream({ type: type, start(c) { .. } })`
+/// (rd403). Each of its functions is given the stream's controller, a [`ReadableStreamController`],
+/// either kind's, each lent as an [`UnderlyingByteSource`]'s is.
+#[derive(Clone, Copy, Default)]
+pub struct UnderlyingSource<'a> {
+    /// `"bytes"`, or `None`: a stream of any values.
+    pub r#type: Option<&'a str>,
+    pub auto_allocate_chunk_size: Option<f64>,
+    pub start: Option<&'a dyn Fn(&'static ReadableStreamController)>,
+    pub pull: Option<&'a dyn Fn(&'static ReadableStreamController)>,
+    pub cancel: Option<&'a dyn Fn(Option<&'static Unknown>)>,
+}
+
+unsafe impl Defined for UnderlyingSource<'_> {}
+
+/// TypeScript's `ReadableStreamController<any>`: a [`ReadableStreamDefaultController`] or a
+/// [`ReadableByteStreamController`], what an [`UnderlyingSource`]'s functions are given, read by
+/// what the two have alike. A byte stream's `enqueue` throws a `TypeError` of what isn't an
+/// `ArrayBufferView`, as JS's does.
+#[cfg_attr(rust_js, rust_js::types = "ReadableStreamController<any>")]
+pub struct ReadableStreamController(PhantomData<JsObject>);
+
+/// `a === b`: the same object.
+impl PartialEq for ReadableStreamController {
+    #[cfg_attr(rust_js, rust_js::link_name = "===")]
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+impl Eq for ReadableStreamController {}
+
+impl ReadableStreamController {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamDefaultController/desiredSize)
+    #[cfg_attr(rust_js, rust_js::link_name = "get desiredSize")]
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub fn desired_size(&self) -> Option<f64> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamDefaultController/close)
+    #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
+    pub fn close(&self) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamDefaultController/enqueue)
+    #[cfg_attr(rust_js, rust_js::link_name = "enqueue")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
+    pub fn enqueue(&self, chunk: Option<&dyn IntoUnknown>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamDefaultController/error)
+    #[cfg_attr(rust_js, rust_js::link_name = "error")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
+    pub fn error(&self, e: Option<&dyn IntoUnknown>) {
+        unreachable!()
+    }
+}
+
+/// What [`readable_stream::new`] reads from: an [`UnderlyingByteSource`], an
+/// [`UnderlyingDefaultSource`] or an [`UnderlyingSource`], the object itself.
+#[cfg_attr(rust_js, rust_js::types = "UnderlyingByteSource | UnderlyingDefaultSource | UnderlyingSource")]
 pub trait IntoUnderlyingSource {}
 impl IntoUnderlyingSource for UnderlyingByteSource<'_> {}
 impl IntoUnderlyingSource for UnderlyingDefaultSource<'_> {}
+impl IntoUnderlyingSource for UnderlyingSource<'_> {}
 
 /// TypeScript's `Record<string, V>`: a JS object each of whose own properties is a `Value`, as a
 /// `Headers`' and a `URLSearchParams`' init is. A [`js::Dict`] is one, and a struct of `Value`s or

@@ -255,7 +255,9 @@ says which parameter takes them. The alternative, WebIDL's
 doesn't write (the user's decision). Case
 ([0262](0262-when-rust-and-js-disagree.md)): N. Held by
 `test/webapi-objects.test.ts` ("a byte stream reads from its byte
-source's pull").
+source's pull"). Amended by [1056](1056-a-streams-general-source-is-typescripts.md):
+TypeScript's general `UnderlyingSource` too, of either kind, its functions
+given a `ReadableStreamController`, either controller (rd403).
 
 ## Amended (2026-11-01): a record is what vouches it's one (rd453)
 

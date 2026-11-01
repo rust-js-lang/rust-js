@@ -983,9 +983,15 @@ export async function open(other) {
   pull: Some(&|controller| ..), cancel: Some(&|reason| ..), .. }), ..)` is
   `new ReadableStream({ type: "bytes", pull(controller) { .. }, cancel(reason)
   { .. } }, ..)`, its controller a `ReadableByteStreamController`; an
-  `UnderlyingDefaultSource`'s a `ReadableStreamDefaultController`. Each
+  `UnderlyingDefaultSource`'s a `ReadableStreamDefaultController`; and a
+  stream of the kind the program picks as it runs, `UnderlyingSource {
+  r#type, start: Some(&|c| ..), ..Default::default() }`, `new
+  ReadableStream({ type, start(c) { .. } })`, its `type` `Some("bytes")`
+  or `None`, its controller a `ReadableStreamController`, either one, read
+  by what the two have alike, `enqueue`, `close` and `error`. Each
   function is lent, as a dictionary's callback is
-  ([ADR 0102](../../decisions/0102-js-and-webapi.md), amended).
+  ([ADR 0102](../../decisions/0102-js-and-webapi.md), amended; [ADR
+  1056](../../decisions/1056-a-streams-general-source-is-typescripts.md)).
 - **An object of any kind, WebIDL's `object`, is a `&dyn Any`**, given
   its value, not the pair that downcasts it, of an `Option` and a `null`
   one too: `element.animate(Some(&Keyframes { opacity: [0.0, 1.0] }),

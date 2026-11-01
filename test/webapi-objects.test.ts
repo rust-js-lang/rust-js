@@ -185,6 +185,66 @@ pub fn cancelled() -> bool {
   expect((await lib.values().getReader().read()).done).toBe(true);
 });
 
+// rd403: a ReadableStream reads from TypeScript's general
+// \`UnderlyingSource\` too, of either kind, its \`type\` \`"bytes"\` or none as
+// the program says when it runs, each function given the stream's
+// \`ReadableStreamController\`, read by what the two controllers have alike:
+// React's Flight client's \`new ReadableStream({ type: type, start(c) {
+// controller = c; } })\`.
+test("a stream of either kind reads from its general source, its controller either's", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-general-source");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+use js::Unknown;
+use webapi::{ReadableStream, ReadableStreamController, UnderlyingSource, readable_stream};
+
+thread_local! {
+    static CONTROLLER: Cell<Option<&'static ReadableStreamController>> = const { Cell::new(None) };
+}
+
+pub fn start_readable_stream(r#type: Option<&'static str>) -> &'static ReadableStream {
+    readable_stream::new(
+        Some(&UnderlyingSource {
+            r#type,
+            start: Some(&|c| CONTROLLER.set(Some(c))),
+            ..Default::default()
+        }),
+        None,
+    )
+}
+
+pub fn enqueue(value: &'static Unknown) {
+    CONTROLLER.get().unwrap().enqueue(Some(value));
+}
+
+pub fn close() {
+    CONTROLLER.get().unwrap().close();
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`return new ReadableStream({
+    type,
+    start(c) {
+      controller = c;
+    },
+  });`);
+  const lib = await import(join(dir, "lib.js"));
+  const values = lib.startReadableStream(undefined).getReader();
+  lib.enqueue({ id: 1 });
+  lib.close();
+  expect((await values.read()).value).toEqual({ id: 1 });
+  expect((await values.read()).done).toBe(true);
+  const bytes = lib.startReadableStream("bytes").getReader({ mode: "byob" });
+  lib.enqueue(new Uint8Array([7, 8]));
+  const read = await bytes.read(new Uint8Array(4));
+  expect([...read.value]).toEqual([7, 8]);
+  expect(() => lib.enqueue({ id: 2 })).toThrow(TypeError);
+  const declared = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declared).toContain("export function startReadableStream(type?: string | null | undefined): ReadableStream;");
+});
+
 // rd453: a record a binding takes, TypeScript's \`Record<string, V>\`, is
 // what vouches it's one, a \`Dict<V>\` or a struct of \`Option<V>\`s each
 // \`None\` of which is written \`None\`, so it's left out: React's
