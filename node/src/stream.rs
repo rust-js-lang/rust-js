@@ -11,7 +11,7 @@
 
 use core::marker::PhantomData;
 
-use js::{IntoUnknown, JsError, JsObject, Uint8Array};
+use js::{IntoUnknown, JsError, JsObject, Uint8Array, Unknown};
 
 use crate::buffer::Buffer;
 use crate::event;
@@ -108,6 +108,52 @@ impl Emits<event::Error> for Writable {
 
 /// `"close"`: it and what it wrote to closed.
 impl Emits<event::Close> for Writable {
+    type Listener = dyn Fn();
+    type Args = ();
+}
+
+impl EventEmitterExt for Readable {}
+
+/// `"close"`: it and what it read from closed.
+impl Emits<event::Close> for Readable {
+    type Listener = dyn Fn();
+    type Args = ();
+}
+
+/// `"data"`: a chunk, any value, as @types/node's `(chunk: any) => void`:
+/// a `Buffer` or text of a stream of bytes, what was pushed of an object
+/// stream's.
+impl Emits<event::Data> for Readable {
+    type Listener = dyn Fn(Option<&Unknown>);
+    type Args = (Option<&'static Unknown>,);
+}
+
+/// `"end"`: all of it read.
+impl Emits<event::End> for Readable {
+    type Listener = dyn Fn();
+    type Args = ();
+}
+
+/// `"error"`: what failed reading, the stream destroyed of it.
+impl Emits<event::Error> for Readable {
+    type Listener = dyn Fn(&JsError);
+    type Args = (&'static JsError,);
+}
+
+/// `"pause"`: it stopped giving its chunks.
+impl Emits<event::Pause> for Readable {
+    type Listener = dyn Fn();
+    type Args = ();
+}
+
+/// `"readable"`: a chunk to `read()`, or its end.
+impl Emits<event::Readable> for Readable {
+    type Listener = dyn Fn();
+    type Args = ();
+}
+
+/// `"resume"`: it gives its chunks again.
+impl Emits<event::Resume> for Readable {
     type Listener = dyn Fn();
     type Args = ();
 }

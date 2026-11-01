@@ -1153,6 +1153,64 @@ readable.on("end", () => console.log(JSON.stringify(seen)));
   expect(JSON.parse(p.stdout.toString())).toEqual(["1", "2", "3"]);
 });
 
+// rd601: a Readable emits what @types/node types its `on` of, each listener
+// of its own type, as React's Flight client reads a Node stream:
+// \`stream.on('data', chunk => ..); stream.on('error', ..); stream.on('end', onEnd)\`.
+test("a Readable's data, end, error, close, pause, resume and readable are listened to", () => {
+  const dir = fixture("node-readable-events");
+  const node = buildNode();
+  writeFileSync(join(dir, "lib.rs"), `use js::{JsError, Unknown};
+use node::event;
+use node::events::EventEmitterExt;
+use node::stream::Readable;
+
+pub fn read_all(stream: &'static Readable, log: &'static dyn Fn(&str)) {
+    stream.on(event::Data, Box::new(move |chunk: Option<&Unknown>| log(&js::string(chunk))));
+    stream.on(event::Error, Box::new(move |error: &JsError| log(&error.message())));
+    stream.on(event::Pause, Box::new(move || log("pause")));
+    stream.on(event::Resume, Box::new(move || log("resume")));
+    stream.on(event::End, Box::new(move || log("end")));
+    stream.on(event::Close, Box::new(move || log("close")));
+}
+
+pub fn when_readable(stream: &'static Readable, log: &'static dyn Fn(&str)) {
+    stream.on(event::Readable, Box::new(move || log("readable")));
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('stream.on("data", (chunk) => {\n    log(String(chunk));\n  });');
+  expect(js).toContain('stream.on("end", () => {\n    log("end");\n  });');
+  expect(js).toContain('stream.on("readable", () => {');
+  writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
+  writeFileSync(join(dir, "run.js"), `import { Readable } from "node:stream";
+import { readAll, whenReadable } from "./lib.js";
+const seen = [];
+const log = (said) => seen.push(said);
+const stream = new Readable({ read() {} });
+readAll(stream, log);
+stream.push("a");
+stream.push("b");
+stream.push(null);
+stream.on("close", () => {
+  const failing = new Readable({ read() {} });
+  readAll(failing, log);
+  failing.pause();
+  failing.destroy(new Error("boom"));
+  failing.on("close", () => {
+    const paused = new Readable({ read() {} });
+    whenReadable(paused, log);
+    paused.push(null);
+    paused.on("end", () => console.log(JSON.stringify(seen)));
+    paused.read();
+  });
+});
+`);
+  const p = Bun.spawnSync(["node", "run.js"], { cwd: dir, stderr: "pipe" });
+  expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
+  expect(JSON.parse(p.stdout.toString())).toEqual(["resume", "a", "b", "end", "close", "pause", "resume", "boom", "close", "readable"]);
+});
+
 test("node's crypto hashes and a Writable is written to", () => {
   const dir = fixture("node-stream");
   const node = buildNode();
