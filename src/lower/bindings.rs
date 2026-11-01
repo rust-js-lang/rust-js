@@ -665,10 +665,9 @@ fn held_of<'tcx>(
             continue;
         };
         let export = super::analysis::is_reexport(tcx, item);
-        let name = match ident.name == tcx.item_name(binding) {
-            true => fn_name(tcx, binding),
-            false => alias_name(tcx, item.owner_id.to_def_id(), ident.name),
-        };
+        let name = use_name(tcx, item.owner_id.to_def_id(), (ident.name, binding), || {
+            fn_name(tcx, binding)
+        });
         let named_default = default == Some(binding) && name == fn_name(tcx, binding);
         if !export && !named_default {
             continue;
@@ -736,6 +735,22 @@ pub(super) fn js_path(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
 /// any other (ADRs 0573, 0596).
 pub(super) fn alias_name(tcx: TyCtxt<'_>, use_item: DefId, alias: Symbol) -> String {
     given_name(tcx, use_item).unwrap_or_else(|| super::camel_case(alias.as_str()))
+}
+
+/// The name `use_item`, a `use` that names `item` by `ident`, imports or
+/// exports it by: its `#[rust_js::name]`, renamed or not; else, by the
+/// item's own name, `own`, its JS name; else its alias, camelCased (ADRs
+/// 0240, 0622, amended).
+pub(super) fn use_name(
+    tcx: TyCtxt<'_>,
+    use_item: DefId,
+    (ident, item): (Symbol, DefId),
+    own: impl FnOnce() -> String,
+) -> String {
+    match ident == tcx.item_name(item) {
+        true => given_name(tcx, use_item).unwrap_or_else(own),
+        false => alias_name(tcx, use_item, ident),
+    }
 }
 
 /// `#[rust_js::name = ".."]`: what an item is in JS, as written; of a

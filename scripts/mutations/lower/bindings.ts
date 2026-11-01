@@ -442,9 +442,8 @@ export const mutations: Mutation[] = [
     name: "bound-global-renamed-lost",
     breaks: "`pub use js::object::keys as names` is `keys`, not `names`",
     file: "src/lower/bindings.rs",
-    find: "            false => alias_name(tcx, item.owner_id.to_def_id(), ident.name),\n        };\n        let named_default",
-    replace:
-      "            false => fn_name(tcx, binding),\n        };\n        let named_default",
+    find: "        false => alias_name(tcx, use_item, ident),\n",
+    replace: "        false => own(),\n",
     tests: [
       "test/lowering-bindings.test.ts",
       "-t",
@@ -685,5 +684,13 @@ export const mutations: Mutation[] = [
     find: " && !once && !cell_of_option {",
     replace: " && !once {",
     tests: ["test/lowering-optional-fields.test.ts", "-t", "optional Cell of an Option"],
+  },
+  {
+    name: "use-name-attribute-dropped",
+    breaks: "a `#[rust_js::name]` on a `pub use` that keeps its item's name is ignored: react-art's `export const PATH = Mode.Path;` and `export { default as TRANSFORM }`, not `Path` and `Transform`",
+    file: "src/lower/bindings.rs",
+    find: "        true => given_name(tcx, use_item).unwrap_or_else(own),\n",
+    replace: "        true => own(),\n",
+    tests: ["test/lowering-binding-paths.test.ts", "-t", "name attribute"],
   },
 ];

@@ -7,9 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`pub use inner::other as renamed;` re-exports `other`, not `renamed`",
     file: "src/lower/reexports.rs",
-    find: "            false => super::bindings::alias_name(tcx, item.owner_id.to_def_id(), ident.name),\n        };\n        // Its value",
-    replace:
-      "            false => name.to_string(),\n        };\n        // Its value",
+    find: "            let named = (ident.name, named_of(path));\n",
+    replace: "            let named = (tcx.item_name(named_of(path)), named_of(path));\n",
     tests: ["test/modules.test.ts", "-t", "re-exported from it"],
   },
   {

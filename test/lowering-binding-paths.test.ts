@@ -105,3 +105,38 @@ pub fn mark(now: f64, on: &js::Unknown) -> bool {
   expect(out).toContain("`./shell.js#times.shell-time` isn't a binding's path: `.shell-time` isn't a JS name's property");
   expect(out).toContain("`['matchMedia']` isn't a binding's path: a method's property is named");
 });
+
+// A `#[rust_js::name]` on a `pub use` of a binding names its export, as on
+// one of the crate's item, renamed or not: react-art's `export const Path =
+// Mode.Path;` and `export {Transform}` of `art/core/transform`'s default
+// (ADRs 0622, 0240, amended).
+test("a pub use of a binding is exported by its name attribute", async () => {
+  const dir = fixture("named-binding-reexports");
+  writeFileSync(join(dir, "lib.rs"), `pub mod api;
+
+mod bound {
+    unsafe extern "Rust" {
+        #[link_name = "./transform.js#default"]
+        pub safe static TRANSFORM: &'static js::Unknown;
+        #[link_name = "Math.PI"]
+        pub safe static PI: f64;
+        #[link_name = "Math.E"]
+        pub safe static E: f64;
+    }
+}
+`);
+  writeFileSync(join(dir, "api.rs"), `#[cfg_attr(rust_js, rust_js::name = "Transform")]
+pub use crate::bound::TRANSFORM;
+#[cfg_attr(rust_js, rust_js::name = "Pi")]
+pub use crate::bound::PI;
+#[cfg_attr(rust_js, rust_js::name = "Euler")]
+pub use crate::bound::E as EULER;
+`);
+  writeFileSync(join(dir, "transform.js"), "export default function Transform() {}\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
+  const api = readFileSync(join(dir, "api.js"), "utf8");
+  expect(api).toContain("export const Pi = Math.PI;\nexport const Euler = Math.E;\n");
+  expect(api).toMatch(/export \{ default as Transform \} from "\.\.?\/transform\.js";/);
+  const loaded = await import(join(dir, "api.js"));
+  expect([loaded.Pi, loaded.Euler, loaded.Transform.name]).toEqual([Math.PI, Math.E, "Transform"]);
+});

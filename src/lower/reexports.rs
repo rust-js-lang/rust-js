@@ -105,9 +105,9 @@ pub(super) fn reexports(
             }
             continue;
         };
-        let alias = |name: &str| match ident.name == tcx.item_name(named_of(path)) {
-            true => name.to_string(),
-            false => super::bindings::alias_name(tcx, item.owner_id.to_def_id(), ident.name),
+        let alias = |name: &str| {
+            let named = (ident.name, named_of(path));
+            super::bindings::use_name(tcx, item.owner_id.to_def_id(), named, || name.to_string())
         };
         // Its value: a function, a constant, a thread-local or a binding.
         if let Some(Res::Def(kind, def_id)) = path.res.value_ns
@@ -119,7 +119,10 @@ pub(super) fn reexports(
                     && let Some(((from, export), "")) = super::bindings::js_import(&written)
                 {
                     // Its namespace too, `export * as ns from` (ADR 0240, amended).
-                    found.push((statement, js::ImportFrom::Specifier(from), (export, ident.to_string())));
+                    let alias = super::bindings::use_name(tcx, item.owner_id.to_def_id(), (ident.name, def_id), || {
+                        ident.to_string()
+                    });
+                    found.push((statement, js::ImportFrom::Specifier(from), (export, alias)));
                 }
                 // A global's, the module's `const` (ADR 0622), or one held
                 // through another module, above.
@@ -216,10 +219,8 @@ pub(super) fn reexports(
                     refuse(statement, "a `pub use` of a class without a constructor", why);
                     continue;
                 };
-                let alias = match ident.name == tcx.item_name(class) {
-                    true => export.clone(),
-                    false => super::bindings::alias_name(tcx, item.owner_id.to_def_id(), ident.name),
-                };
+                let alias =
+                    super::bindings::use_name(tcx, item.owner_id.to_def_id(), (ident.name, class), || export.clone());
                 found.push((statement, from, (export, alias)));
             }
             // A type, a trait or a macro: no JS (ADR 0240).
@@ -419,10 +420,7 @@ pub(super) fn exported_in(
         };
     }
     let used = reexporting_use(tcx, module, name, item)?;
-    Some(match name == tcx.item_name(item) {
-        true => info.name.clone(),
-        false => super::bindings::alias_name(tcx, used, name),
-    })
+    Some(super::bindings::use_name(tcx, used, (name, item), || info.name.clone()))
 }
 
 /// The `pub use` of `module` that re-exports `item` by `name`, which its

@@ -97,3 +97,24 @@ upstream's `const`. @rust-js/typescript's model gains the type
 - Mutations `bound-global-default-refused`, `bound-global-unexported`,
   `bound-global-renamed-lost`, `bound-global-of-a-method`,
   `bound-global-undeclared`.
+
+## Amendment: a `pub use`'s `#[rust_js::name]` names it, renamed or not
+
+react-art's ReactART.js exports ART's members by names of their own,
+`export const Path = Mode.Path;` and `export {Transform}` of
+`art/core/transform`'s default. The port's `#[cfg_attr(rust_js,
+rust_js::name = "Path")] pub use art::mode::PATH;` printed `export const
+PATH = Mode.Path;`, and the binding's default `export { default as
+TRANSFORM }`: a `use` that keeps its item's name read only that item's
+name, and one of a JS module's export only its Rust name, so the
+attribute, which says what the `use` exports its item by, was dropped
+unsaid. A wrong export name, which an importer of `Path` misses. **A
+`use`'s `#[rust_js::name]` is the name it imports or exports its item by,
+renamed or not**, one rule, `bindings::use_name`, which a held global's
+`const`, a re-export of a binding's module export, of the crate's item and
+of a class ask; without one, a `use` by the item's own name keeps the
+item's JS name, and one renamed is its alias, camelCased (ADR 0240). Case
+N: the name is what the program says. Held by
+`test/lowering-binding-paths.test.ts`'s "a pub use of a binding is
+exported by its name attribute" and the mutation
+`use-name-attribute-dropped` (`lower/bindings.rs`).

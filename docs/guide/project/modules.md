@@ -259,7 +259,10 @@ export function welcome(name: string): string;
 
 A `pub use` of another module's function or constant is `export { .. }
 from` it, in the JS and the `.d.ts`. `pub use .. as` renames it, camelCase
-as any name is, or by its `#[rust_js::name]`. Each `pub use` is written
+as any name is, or by its `#[rust_js::name]`, which names it renamed or
+not: a binding's too, `#[cfg_attr(rust_js, rust_js::name = "Path")] pub
+use art::mode::PATH;` is `export const Path = Mode.Path;`
+([0622](../../decisions/0622-a-global-binding-a-module-names-is-its-const.md), amended). Each `pub use` is written
 where it is, in the order written, with the comments before it; a run of
 them from one module with no comment or blank line between, their
 attributes aside, is one `export { .. } from`
