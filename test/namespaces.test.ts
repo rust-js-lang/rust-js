@@ -887,6 +887,54 @@ pub fn nested(renderer: &Reconciler, given: u32) -> String {
   expect(namespace.depth()).toBe(7);
 });
 
+// rd324: react-test-renderer's `unstable_flushSync`, a closure that calls
+// the reconciler's namespace method by its name, `ReactFiberReconciler
+// .flush_sync_from_reconciler(r#fn).flatten()`: its library's JS, as
+// through a value, never one the crate compiles of it.
+test("a library's namespace method by its name is its library's, exact where its result is flattened", async () => {
+  const { dir, ran } = libraryOf(
+    "namespace-by-name-library",
+    flushingLibrary,
+    `use dep::reconciler::Reconciler;
+
+pub fn flushed(given: u32) -> Option<u32> {
+    let inner = move || if given == 0 { None } else { Some(given) };
+    let f: Option<&dyn Fn() -> Option<u32>> = if given == 2 { None } else { Some(&inner) };
+    Reconciler.flush_sync(f).flatten()
+}
+
+pub fn flusher() -> Box<dyn Fn(Option<&dyn Fn() -> Option<u32>>) -> Option<u32>> {
+    Box::new(|f| Reconciler.flush_sync(f).flatten())
+}
+`,
+  );
+  expect(ran.stderr).toBe("");
+  const app = readFileSync(join(dir, "app", "lib.js"), "utf8");
+  expect(app).not.toContain("DEPTH");
+  expect(app).toContain("  return flushSync(f);\n");
+  expect(app).toContain("  return (f) => flushSync(f);\n");
+  const lib = await import(join(dir, "app", "lib.js"));
+  const namespace = await import(join(dir, "dep", "reconciler.js"));
+  const before = namespace.depth();
+  expect([lib.flushed(0), lib.flushed(1), lib.flushed(2), lib.flusher()(() => 4), lib.flusher()(undefined)]).toEqual([
+    undefined,
+    1,
+    undefined,
+    4,
+    undefined,
+  ]);
+  expect(namespace.depth() - before).toBe(5);
+  // Read whole, `is_some()`, the call needs what its export takes nothing
+  // for: compiled here, which reads its library's private state, refused.
+  const kept = libraryOf(
+    "namespace-by-name-library-kept",
+    flushingLibrary,
+    "use dep::reconciler::Reconciler;\n\npub fn flushed() -> bool {\n    let inner = || None::<u32>;\n    Reconciler.flush_sync(Some(inner)).is_some()\n}\n",
+  );
+  expect(kept.ran.code).not.toBe(0);
+  expect(kept.ran.stderr).toContain("this crate compiles `dep::reconciler::flush` itself");
+});
+
 test("a library's namespace method through a value whose call needs a copy is refused unless its result is flattened", () => {
   const app = (body: string) => `use dep::reconciler::Reconciler;
 

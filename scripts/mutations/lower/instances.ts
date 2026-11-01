@@ -240,4 +240,13 @@ export const mutations: Mutation[] = [
     replace: "            if gives_more(&calls, given, &|_| true, &mut may_drop) {\n",
     tests: ["test/namespaces.test.ts", "-t", "exact where its result is flattened"],
   },
+  {
+    name: "flattened-by-name-compiled-here",
+    breaks:
+      "a namespace's method by its name whose result is flattened is compiled in the consumer, which reads its library's private state, refused, react-test-renderer's `unstable_flushSync` (rd324)",
+    file: "src/lower/instances.rs",
+    find: "            let flattened = super::analysis::flattened_by_name(&calls.recognition, &mir.body, (callee, args));\n",
+    replace: "            let flattened: Option<u32> = None;\n",
+    tests: ["test/namespaces.test.ts", "-t", "by its name is its library"],
+  },
 ];

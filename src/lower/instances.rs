@@ -387,17 +387,27 @@ pub(super) fn needed<'tcx>(
                 super::classes::refuse_through(tcx, callee, span, !other);
             }
         }
-        for (callee, args) in by_name {
+        for &(callee, args) in &by_name {
             if !compiled_here(foreign, tcx, callee)
                 || instances.contains(tcx, callee)
                 || more.iter().any(|&(id, _)| id == callee)
             {
                 continue;
             }
+            // A namespace's method by its name, `Reconciler.flush_sync(f)
+            // .flatten()`, is its library's as through a value (rd324).
+            let flattened = super::analysis::flattened_by_name(&calls.recognition, &mir.body, (callee, args));
             // An instance's call of what its library doesn't export, its own
             // too; else one given more than its export takes.
             let private = instance && foreign.item(callee).is_none();
-            if private || gives_more(&calls, (caller, callee, args), &|_| true, &mut may_drop) {
+            if private
+                || gives_more(
+                    &calls,
+                    (caller, callee, args),
+                    &|index| Some(index) != flattened,
+                    &mut may_drop,
+                )
+            {
                 more.push((callee, super::body_module(tcx, instances, body.def_id)));
             }
         }

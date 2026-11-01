@@ -268,6 +268,52 @@ pub(in crate::lower) fn flattened_alike<'tcx>(
     .then_some(p)
 }
 
+/// Of a namespace's method, a library's, called by its name in `body`,
+/// `Reconciler.flush_sync(f).flatten()`: the type parameter its result is
+/// flattened alike of (`flattened_alike`), where each of its calls there is
+/// read by `.flatten()` alone and it's named nowhere else, so its library's
+/// JS is called, as through a value (rd311, rd324). The one answer the
+/// instances it needs and its call's lowering ask.
+pub(in crate::lower) fn flattened_by_name<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    body: &rustc_middle::mir::Body<'tcx>,
+    called: (DefId, ty::GenericArgsRef<'tcx>),
+) -> Option<u32> {
+    use rustc_middle::mir::{self, visit::Visitor};
+    let tcx = recognition.tcx;
+    if crate::lower::classes::member(tcx, called.0) != Some(crate::lower::classes::Member::Namespace) {
+        return None;
+    }
+    let flattened = flattened_alike(recognition, called)?;
+    let unboxed = (recognition
+        .foreign
+        .item(called.0)
+        .and_then(|item| item.calling.param(flattened)))
+    .is_some_and(|param| param.has(crate::library::ParamFact::Unboxed));
+    let destinations: Vec<mir::Local> = (body.basic_blocks.iter())
+        .filter_map(|data| match &data.terminator().kind {
+            mir::TerminatorKind::Call { func, destination, .. } if func.const_fn_def() == Some(called) => {
+                Some(destination.local)
+            }
+            _ => None,
+        })
+        .collect();
+    struct Named<'tcx>((DefId, ty::GenericArgsRef<'tcx>), usize);
+    impl<'tcx> Visitor<'tcx> for Named<'tcx> {
+        fn visit_const_operand(&mut self, constant: &mir::ConstOperand<'tcx>, _: mir::Location) {
+            if crate::lower::fn_def(constant.ty()) == Some(self.0) {
+                self.1 += 1;
+            }
+        }
+    }
+    let mut named = Named(called, 0);
+    named.visit_body(body);
+    let all = !destinations.is_empty()
+        && destinations.len() == named.1
+        && (destinations.iter()).all(|&d| read_by_flatten(recognition, body, d));
+    (unboxed && all).then_some(flattened)
+}
+
 /// Whether `local` of `body` is read once, by a `.flatten()` it's moved to.
 pub(in crate::lower) fn read_by_flatten<'tcx>(
     recognition: &Recognition<'_, 'tcx>,

@@ -1263,7 +1263,12 @@ export function updateContainer(n) {
   that makes its `Option` of what it's given and returns it, reading it
   nowhere, is exact, both `None`s one:
   `noop_renderer.flush_sync_from_reconciler(f).flatten()` is
-  `NoopRenderer.flushSyncFromReconciler(fn)`.
+  `NoopRenderer.flushSyncFromReconciler(fn)`. So is a library's method
+  called by its namespace's name in another crate, each of its calls
+  there flattened, react-test-renderer's
+  `ReactFiberReconciler.flush_sync_from_reconciler(r#fn).flatten()`,
+  `flushSyncFromReconciler(fn)`, its library's JS
+  ([ADR 1037](../../decisions/1037-a-module-namespace-is-a-unit-struct-of-its-functions.md), amended).
 - **Refused, each with what to write**: a struct with fields or type
   parameters; one that's a `#[rust_js::class]` or `#[rust_js::object]`
   too; an impl in another module than its struct's; an item that's no

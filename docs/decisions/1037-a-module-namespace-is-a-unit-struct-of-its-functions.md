@@ -4,7 +4,7 @@ Status: Accepted (the user's decision, rd292, option A); amended below
 (rd292b, the user's decision: a method that only passes its parameters
 on is the function it calls; its import named by a `use`; rd311: a
 library's method through a value is its library's, and a flattened
-result exact). Extends
+result exact; rd324: by its name too, each call flattened). Extends
 [0943](0943-an-object-of-methods-reading-this.md) (an object of methods,
 whose `&self` methods are its module's functions too) and
 [1018](1018-a-function-called-through-its-module-is-read-through-its-namespace.md)
@@ -291,4 +291,34 @@ name or through the value a binding gives" (its `named` crate and
 `kept`), and the mutations `unread-namespace-written`,
 `read-namespace-unwritten`, `namespace-let-fake-read-a-read` and
 `namespace-chain-write-a-read`.
+
+## Amendment: a library's method by its name, each call flattened (rd324)
+
+react-test-renderer, another crate than the reconciler's, holds
+`Box::new(|r#fn| ReactFiberReconciler.flush_sync_from_reconciler(r#fn)
+.flatten())`: the namespace named, its method called by its name since
+rd310. Its `R`, an `Option<&Unknown>`, may look like `None`, which the
+library's export gives as it is, so rust-js compiled the generic method
+in the consumer, which reads the work loop's private state: refused. The
+rd311 rule, a result only `.flatten()` reads is exact both `None`s one,
+held only through a value.
+
+**A library's namespace method called by its name is its library's JS
+too where each of its calls in the body is read by `.flatten()` alone and
+it's named nowhere else** (`analysis::flattened_by_name`, the one answer
+the instances a crate compiles, `instances::needed`, and the call's
+lowering ask): `flushSyncFromReconciler(fn)`, no `$someValue`. One read
+whole, `.is_some()`, is compiled in the consumer as before, refused where
+it reads its library's private state.
+
+The closure stays `(fn) => flushSyncFromReconciler(fn)`: the eta rule
+that makes a closure passing all it's given to a namespace's function
+that function holds only through a value (rd292b); by its name it's a
+decision for the user.
+
+Held by `test/namespaces.test.ts`'s "a library's namespace method by its
+name is its library's, exact where its result is flattened", run, with a
+refusal of one read whole; mutations `flattened-by-name-unread`
+(`js_given.ts`), `flattened-by-name-compiled-here` (`instances.ts`) and
+`flattened-by-name-boxed` (`calls.ts`).
 

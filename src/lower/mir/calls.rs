@@ -425,7 +425,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// lowering reads (`State::namespace_call`): whether its `self` names
     /// the namespace, and of one through a value whose result only
     /// `.flatten()` reads, that result flattened where its function makes
-    /// and returns it (rd311). `None` of any other call.
+    /// and returns it (rd311), by its name too where each call is so
+    /// (rd324). `None` of any other call.
     pub(super) fn namespace_call(
         &self,
         state: &mut State<'_, 'tcx>,
@@ -438,12 +439,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         .then(|| {
             let named =
                 receiver.is_some_and(|receiver| crate::lower::classes::names_namespace(self.tcx, state.body, receiver));
-            let flattened = (!named && destination.projection.is_empty())
-                .then(|| crate::lower::analysis::flattened_alike(&self.recognition(), (def_id, generic_args)))
-                .flatten()
-                .filter(|_| {
-                    crate::lower::analysis::read_by_flatten(&self.recognition(), state.body, destination.local)
-                });
+            let flattened = match named {
+                // By its name, where each of its calls is flattened (rd324).
+                true => {
+                    crate::lower::analysis::flattened_by_name(&self.recognition(), state.body, (def_id, generic_args))
+                }
+                false => (destination.projection.is_empty())
+                    .then(|| crate::lower::analysis::flattened_alike(&self.recognition(), (def_id, generic_args)))
+                    .flatten()
+                    .filter(|_| {
+                        crate::lower::analysis::read_by_flatten(&self.recognition(), state.body, destination.local)
+                    }),
+            }
+            .filter(|_| destination.projection.is_empty());
             (named, flattened.map(|p| (destination.local, p)))
         });
     }
@@ -490,12 +498,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // The copy of it, where JS calls it too, that takes what this call
         // gives as it gives it (ADR 0051, amended).
         let copy = self.called_copy((def_id, generic_args), span)?;
-        // A namespace's method's through a value, the module's own JS:
-        // where the call's result only `.flatten()` reads, of one that makes
-        // and returns it, that JS's result is it flattened, where its JS
-        // leaves out the `Some` of what the call gives alone (rd311).
+        // A namespace's method's through a value, the module's own JS, or
+        // by its name where each of its calls is so (rd324): where the
+        // call's result only `.flatten()` reads, of one that makes and
+        // returns it, that JS's result is it flattened, where its JS leaves
+        // out the `Some` of what the call gives alone (rd311).
         let namespace_call = state.flattened.namespace_call.take();
-        if let Some((false, Some((local, p)))) = namespace_call
+        if let Some((_, Some((local, p)))) = namespace_call
             && self.leaves_out_some_alone((def_id, copy), p)
         {
             state.flattened.locals.insert(local);

@@ -1089,4 +1089,13 @@ export const mutations: Mutation[] = [
     replace: "            if false {\n",
     tests: ["test/namespaces.test.ts", "-t", "a namespace's methods are its module's functions"],
   },
+  {
+    name: "flattened-by-name-boxed",
+    breaks:
+      "a namespace's method by its name whose result is flattened is unboxed again, `$someValue(flushSync(f))`, where its library's JS gives it flattened (rd324)",
+    file: "src/lower/mir/calls.rs",
+    find: "        if let Some((_, Some((local, p)))) = namespace_call\n",
+    replace: "        if let Some((false, Some((local, p)))) = namespace_call\n",
+    tests: ["test/namespaces.test.ts", "-t", "by its name is its library"],
+  },
 ];

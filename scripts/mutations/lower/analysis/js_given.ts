@@ -80,4 +80,13 @@ export const mutations: Mutation[] = [
     replace: "    reads.1 == 1\n        || body.basic_blocks",
     tests: ["test/namespaces.test.ts", "-t", "refused unless its result is flattened"],
   },
+  {
+    name: "flattened-by-name-unread",
+    breaks:
+      "a namespace's method by its name whose result is read whole, `.is_some()`, is taken for one flattened, its library's JS given what may look like `None` (rd324)",
+    file: "src/lower/analysis/js_given.rs",
+    find: "        && (destinations.iter()).all(|&d| read_by_flatten(recognition, body, d));\n",
+    replace: "        ;\n",
+    tests: ["test/namespaces.test.ts", "-t", "by its name is its library"],
+  },
 ];
