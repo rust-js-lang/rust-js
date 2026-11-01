@@ -28,6 +28,7 @@
 #![allow(invalid_runtime_symbol_definitions)]
 
 pub mod buffer;
+pub mod crypto;
 pub mod event;
 pub mod events;
 pub mod fs;
@@ -37,6 +38,7 @@ pub mod module;
 pub mod path;
 pub mod process;
 pub mod querystring;
+pub mod stream;
 pub mod url;
 pub mod util;
 

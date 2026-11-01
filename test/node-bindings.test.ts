@@ -1060,3 +1060,49 @@ process.exit(0);
   expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
   expect(JSON.parse(p.stdout.toString())).toEqual(["node", "channel"]);
 });
+
+// ADR 0272, amended: `crypto`'s hash and `stream`'s `Writable`, as React's
+// server stream config for Node hashes a key and writes its chunks, text
+// and bytes, to the response; `util`'s `TextEncoder` is the global's.
+test("node's crypto hashes and a Writable is written to", () => {
+  const dir = fixture("node-stream");
+  const node = buildNode();
+  writeFileSync(join(dir, "lib.rs"), `use node::crypto::{self, BinaryToTextEncoding};
+use node::stream::Writable;
+use node::util::text_encoder;
+
+pub fn create_fast_hash(input: &str) -> String {
+    let hash = crypto::create_hash("md5");
+    hash.update(input);
+    hash.digest(BinaryToTextEncoding::Hex)
+}
+
+pub fn write_both(destination: &Writable, text: &str) -> bool {
+    let bytes = text_encoder::new().encode(Some(text));
+    let has_capacity = destination.write(text);
+    destination.write(bytes) && has_capacity
+}
+
+pub fn close(destination: &Writable) {
+    destination.end();
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('import { createHash } from "crypto";');
+  expect(js).toContain('const hash = createHash("md5");\n  hash.update(input);\n  return hash.digest("hex");');
+  expect(js).toContain("const bytes = new TextEncoder().encode(text);");
+  expect(js).toContain("destination.end();");
+  writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
+  writeFileSync(join(dir, "run.js"), `import { Writable } from "node:stream";
+import { createFastHash, writeBoth, close } from "./lib.js";
+const seen = [];
+const destination = new Writable({ write(chunk, _, done) { seen.push(Buffer.from(chunk).toString()); done(); } });
+const capacity = writeBoth(destination, "hi");
+close(destination);
+destination.on("finish", () => console.log(JSON.stringify([createFastHash("abc"), capacity, seen])));
+`);
+  const p = Bun.spawnSync(["node", "run.js"], { cwd: dir, stderr: "pipe" });
+  expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
+  expect(JSON.parse(p.stdout.toString())).toEqual(["900150983cd24fb0d6963f7d28e17f72", true, ["hi", "hi"]]);
+});

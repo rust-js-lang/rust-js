@@ -1,5 +1,5 @@
 # The node crate against @types/node: bun test test/node-coverage.test.ts
-# exports: 163 of 1538 (10.6%)
+# exports: 169 of 1538 (11.0%)
 # not bound by design (x): 3, TypeScript's own
 # assert 0 of 28
 - assert#Assert
@@ -146,7 +146,7 @@ x type buffer#WithImplicitCoercion
 - console#trace
 - console#warn
 # constants 0 of 0
-# crypto 0 of 166
+# crypto 3 of 166
 - crypto#argon2
 - type crypto#Argon2Algorithm
 - type crypto#Argon2Parameters
@@ -154,7 +154,7 @@ x type buffer#WithImplicitCoercion
 - type crypto#AsymmetricKeyDetails
 - type crypto#BasePrivateKeyEncodingOptions
 - type crypto#BinaryLike
-- type crypto#BinaryToTextEncoding
++ type crypto#BinaryToTextEncoding
 - crypto#Certificate
 - type crypto#CharacterEncoding
 - crypto#checkPrime
@@ -183,7 +183,7 @@ x type buffer#WithImplicitCoercion
 - crypto#createDiffieHellman
 - crypto#createDiffieHellmanGroup
 - crypto#createECDH
-- crypto#createHash
++ crypto#createHash
 - crypto#createHmac
 - crypto#createPrivateKey
 - crypto#createPublicKey
@@ -231,7 +231,7 @@ x type buffer#WithImplicitCoercion
 - crypto#getHashes
 - crypto#getRandomValues
 - crypto#hash
-- crypto#Hash
++ crypto#Hash
 - type crypto#HashOptions
 - crypto#hkdf
 - crypto#hkdfSync
@@ -1101,7 +1101,7 @@ x type buffer#WithImplicitCoercion
 - type repl#REPLWriter
 - repl#start
 - repl#writer
-# stream 0 of 33
+# stream 1 of 33
 - stream#addAbortSignal
 - type stream#ArrayOptions
 - stream#Duplex
@@ -1133,7 +1133,7 @@ x type buffer#WithImplicitCoercion
 - stream#Transform
 - type stream#TransformCallback
 - type stream#TransformOptions
-- stream#Writable
++ stream#Writable
 - type stream#WritableOptions
 # stream/consumers 0 of 6
 - stream/consumers#arrayBuffer
@@ -1285,7 +1285,7 @@ x type buffer#WithImplicitCoercion
 - url#urlToHttpOptions
 + type url#UrlWithParsedQuery
 + type url#UrlWithStringQuery
-# util 1 of 69
+# util 3 of 69
 - util#aborted
 - type util#ApplyOptionalModifiers
 - type util#BackgroundColors
@@ -1347,8 +1347,8 @@ x type buffer#WithImplicitCoercion
 - type util#Style
 - util#styleText
 - type util#StyleTextOptions
-- util#TextDecoder
-- util#TextEncoder
++ util#TextDecoder
++ util#TextEncoder
 - type util#Token
 - type util#TokenForOptions
 - util#toUSVString

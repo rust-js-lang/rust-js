@@ -4,6 +4,11 @@ use std::marker::PhantomData;
 
 use js::Promise;
 
+/// [`util.TextEncoder`](https://nodejs.org/api/util.html#class-utiltextencoder)
+/// and [`util.TextDecoder`](https://nodejs.org/api/util.html#class-utiltextdecoder)
+/// are the globals, webapi's.
+pub use webapi::{TextDecoder, TextEncoder, text_decoder, text_encoder};
+
 /// What [`promisify`] makes of a function that takes its callback last,
 /// `(err, value) => void` or `(err) => void`, as @types/node's overloads of
 /// it type each: a function of the same arguments, borrowed or not, giving
