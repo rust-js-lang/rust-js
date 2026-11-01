@@ -162,6 +162,40 @@ fn tagged_parts(chunks: &[Chunk], skipped: usize) -> String {
     }
 }
 
+enum Settled {
+    Done(i32),
+    Failed(&'static str),
+}
+
+// The second `match` is reached from where the first made nothing too: a
+// value set before it, kept where `fresh` is false, is no dispatch.
+fn entered(fresh: bool, n: i32) -> i32 {
+    let mut settled = Settled::Failed("stale");
+    if fresh {
+        settled = match n {
+            0 => Settled::Failed("zero"),
+            _ => Settled::Done(n * 2),
+        };
+    }
+    match settled {
+        Settled::Done(v) => v,
+        Settled::Failed(why) => why.len() as i32,
+    }
+}
+
+// The arm's variable is written again after it's bound, so it isn't the
+// field's own.
+fn rebound(n: i32) -> i32 {
+    let settled = if n > 0 { Ok(n) } else { Err(-n) };
+    match settled {
+        Ok(v) => v,
+        Err(mut reason) => {
+            reason += 100;
+            reason
+        }
+    }
+}
+
 struct Loud(&'static str);
 
 impl Drop for Loud {
@@ -265,6 +299,8 @@ fn main() {
     println!("{} {} {} {}", sum(0), sum(4), either(5), either(-6));
     println!("{:?} {:?}", parts(&chunks), parts(&[]));
     println!("{:?} {:?}", tagged_parts(&chunks, 1), tagged_parts(&[], 2));
+    println!("{} {} {}", entered(true, 0), entered(true, 4), entered(false, 9));
+    println!("{} {}", rebound(3), rebound(-3));
     println!("{}", scaled(&State::Pending(vec![]), 2) + scaled(&State::Halted, 2));
     loud(0);
     loud(3);

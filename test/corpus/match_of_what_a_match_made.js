@@ -113,6 +113,27 @@ function taggedParts(chunks, skipped) {
   }
 }
 
+// The second `match` is reached from where the first made nothing too: a
+// value set before it, kept where `fresh` is false, is no dispatch.
+function entered(fresh, n) {
+  let settled = { TAG: "Failed", _0: "stale" };
+  if (fresh) {
+    settled = n === 0 ? { TAG: "Failed", _0: "zero" } : { TAG: "Done", _0: n * 2 };
+  }
+  return settled.TAG === "Done" ? settled._0 : $byteLen(settled._0) | 0;
+}
+
+// The arm's variable is written again after it's bound, so it isn't the
+// field's own.
+function rebound(n) {
+  if (n > 0) {
+    return n;
+  }
+  let reason = -n | 0;
+  reason = (reason + 100) | 0;
+  return reason;
+}
+
 function loud(n) {
   const made = n === 0 ? { TAG: "Ok", _0: ["zero"] } : { TAG: "Err", _0: n };
   if (made.TAG === "Ok") {
@@ -222,6 +243,8 @@ function main() {
   console.log(`${sum(0)} ${sum(4)} ${either(5)} ${either(-6)}`);
   console.log(`${$debugStr(parts(chunks))} ${$debugStr(parts([]))}`);
   console.log(`${$debugStr(taggedParts(chunks, 1))} ${$debugStr(taggedParts([], 2))}`);
+  console.log(`${entered(true, 0)} ${entered(true, 4)} ${entered(false, 9)}`);
+  console.log(`${rebound(3)} ${rebound(-3)}`);
   console.log(`${(scaled({ TAG: "Pending", _0: [] }, 2) + scaled("Halted", 2)) | 0}`);
   loud(0);
   loud(3);
