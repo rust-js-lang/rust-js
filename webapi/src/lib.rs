@@ -27982,12 +27982,6 @@ impl ReadableStream {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/getReader)
-    #[cfg_attr(rust_js, rust_js::link_name = "getReader")]
-    pub fn get_reader(&self, options: Option<ReadableStreamGetReaderOptions<'_>>) -> ReadableStreamReader<'static> {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/pipeThrough)
     #[cfg_attr(rust_js, rust_js::link_name = "pipeThrough")]
     pub fn pipe_through(&self, transform: ReadableWritablePair<'_>, options: Option<StreamPipeOptions<'_>>) -> &'static ReadableStream {
@@ -28003,6 +27997,22 @@ impl ReadableStream {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/tee)
     #[cfg_attr(rust_js, rust_js::link_name = "tee")]
     pub fn tee(&self) -> Vec<&'static ReadableStream> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/getReader): a default reader,
+    /// the stream locked to it, as TypeScript's `getReader(): ReadableStreamDefaultReader<R>` has it.
+    #[cfg_attr(rust_js, rust_js::link_name = "getReader")]
+    pub fn get_reader(&self) -> &'static ReadableStreamDefaultReader {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/getReader): a reader of the
+    /// mode `options` says, as TypeScript's overloads type it: of [`ReadableStreamGetByobReaderOptions`],
+    /// `{ mode: "byob" }`, a [`ReadableStreamBYOBReader`]; of [`ReadableStreamGetReaderOptions`], either.
+    /// `Err`: a `TypeError` of a BYOB reader of a stream that isn't a byte stream.
+    #[cfg_attr(rust_js, rust_js::link_name = "getReader")]
+    pub fn get_reader_with_options<O: ReaderOptions>(&self, options: O) -> Result<O::Reader, &'static JsError> {
         unreachable!()
     }
 
@@ -88196,6 +88206,38 @@ unsafe impl<V> Record for js::Dict<V> {
     type Value = V;
 }
 
+/// TypeScript's `"byob"`, the mode of a [`ReadableStreamBYOBReader`]: the string itself, as the
+/// options of [`ReadableStream::get_reader_with_options`] that give one say it, `{ mode: "byob" }`.
+#[cfg_attr(rust_js, rust_js::name = "byob")]
+#[derive(Clone, Copy)]
+pub struct Byob;
+
+/// TypeScript's `{ mode: "byob" }`, the options [`ReadableStream::get_reader_with_options`]
+/// gives a [`ReadableStreamBYOBReader`] of: a JS object of its field.
+#[derive(Clone, Copy)]
+pub struct ReadableStreamGetByobReaderOptions {
+    pub mode: Byob,
+}
+
+unsafe impl Defined for ReadableStreamGetByobReaderOptions {}
+
+/// What [`ReadableStream::get_reader_with_options`] takes, as TypeScript's overloads of
+/// `getReader` do, and the reader each gives: of `{ mode: "byob" }` a BYOB reader, of
+/// [`ReadableStreamGetReaderOptions`], whose mode may be either, either.
+#[diagnostic::on_unimplemented(message = "`{Self}` is no options of `getReader`", note = "a BYOB reader's are `ReadableStreamGetByobReaderOptions {{ mode: Byob }}`; a default one is `get_reader()`'s")]
+pub trait ReaderOptions: sealed::Sealed {
+    /// The reader it gives.
+    type Reader;
+}
+
+impl ReaderOptions for ReadableStreamGetByobReaderOptions {
+    type Reader = &'static ReadableStreamBYOBReader;
+}
+
+impl ReaderOptions for ReadableStreamGetReaderOptions<'_> {
+    type Reader = ReadableStreamReader<'static>;
+}
+
 /// `AddEventListenerOptions | boolean`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 #[derive(Clone, Copy)]
@@ -102853,6 +102895,8 @@ mod sealed {
     impl Sealed for Path2DOrStr<'_> {}
     impl Sealed for PerformanceMeasureOptions<'_> {}
     impl Sealed for RadioNodeListOrElement<'_> {}
+    impl Sealed for ReadableStreamGetByobReaderOptions {}
+    impl Sealed for ReadableStreamGetReaderOptions<'_> {}
     impl Sealed for ReadableStreamReader<'_> {}
     impl Sealed for RenderingContext<'_> {}
     impl Sealed for RequestInfo<'_> {}

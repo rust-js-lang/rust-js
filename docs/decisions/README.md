@@ -238,6 +238,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1058 A held borrow meets only borrows of its own class](1058-a-held-borrow-meets-only-its-own-class.md)
 - [1059 An async iterator, and `Function.prototype.bind` as a value](1059-an-async-iterator-and-function-bind-as-a-value.md)
 - [1060 A loop from the end down to a computed start counts down](1060-a-loop-from-the-end-of-a-computed-start-counts-down.md)
+- [1061 A stream's reader is of the mode its options say, as TypeScript's overloads type it](1061-a-streams-reader-is-of-the-mode-its-options-say.md)
 - [0205 Flattened structs chain, and the props' own name is theirs](0205-flattened-chains.md)
 - [0206 TypeScript, read and written by TypeScript's own parser and printer](0206-typescript-module.md)
 - [0207 A crate's `.d.ts` is printed by TypeScript](0207-declarations-printed-by-typescript.md)

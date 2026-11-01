@@ -1009,6 +1009,15 @@ export async function open(other) {
   function is lent, as a dictionary's callback is
   ([ADR 0102](../../decisions/0102-js-and-webapi.md), amended; [ADR
   1056](../../decisions/1056-a-streams-general-source-is-typescripts.md)).
+  Its reader is of the mode its options say, as TypeScript's overloads
+  type it: `stream.get_reader()` is `stream.getReader()`, a
+  `ReadableStreamDefaultReader`, and
+  `stream.get_reader_with_options(ReadableStreamGetByobReaderOptions {
+  mode: Byob })` is `stream.getReader({ mode: "byob" })`, a `Result` of a
+  `ReadableStreamBYOBReader`, its `Err` the `TypeError` of a stream that
+  isn't a byte stream, whose `match` is a `try`; of
+  `ReadableStreamGetReaderOptions { mode }`, either reader
+  ([ADR 1061](../../decisions/1061-a-streams-reader-is-of-the-mode-its-options-say.md)).
 - **An object of any kind, WebIDL's `object`, is a `&dyn Any`**, given
   its value, not the pair that downcasts it, of an `Option` and a `null`
   one too: `element.animate(Some(&Keyframes { opacity: [0.0, 1.0] }),

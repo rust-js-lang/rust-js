@@ -168,6 +168,77 @@ const EXTRA: Record<string, Fn[]> = {
   ],
 };
 
+// TypeScript's overloads of `ReadableStream.getReader`, which WebIDL's one
+// operation gives as a union of readers: `getReader()` a default reader,
+// and `getReader({ mode: "byob" })` a BYOB one, which throws a `TypeError`
+// of a stream that isn't a byte stream, what no program can check first,
+// so a `Result` (ADRs 0035, 0442); of options of any mode, either reader.
+// React's Flight reply client's `try { binaryReader = stream.getReader({mode:
+// 'byob'}); } catch (x) { return serializeReader(stream.getReader()); }`
+// (rd506).
+EXTRA.ReadableStream = [
+  {
+    name: "get_reader",
+    jsName: "getReader",
+    params: ["this: &ReadableStream"],
+    result: "&'static ReadableStreamDefaultReader",
+    doc: [
+      "[MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/getReader): a default reader,",
+      "the stream locked to it, as TypeScript's `getReader(): ReadableStreamDefaultReader<R>` has it.",
+    ],
+  },
+  {
+    name: "get_reader_with_options",
+    jsName: "getReader",
+    typeParams: ["O: ReaderOptions"],
+    params: ["this: &ReadableStream", "options: O"],
+    result: "Result<O::Reader, &'static JsError>",
+    doc: [
+      "[MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/getReader): a reader of the",
+      "mode `options` says, as TypeScript's overloads type it: of [`ReadableStreamGetByobReaderOptions`],",
+      "`{ mode: \"byob\" }`, a [`ReadableStreamBYOBReader`]; of [`ReadableStreamGetReaderOptions`], either.",
+      "`Err`: a `TypeError` of a BYOB reader of a stream that isn't a byte stream.",
+    ],
+  },
+];
+
+// What `getReader`'s options are, as TypeScript's overloads take them
+// (rd506): `{ mode: "byob" }`, whose reader is a BYOB one, and WebIDL's
+// dictionary, of either mode, whose reader is either.
+const READER_OPTIONS_BY_HAND = [
+  "/// TypeScript's `\"byob\"`, the mode of a [`ReadableStreamBYOBReader`]: the string itself, as the",
+  "/// options of [`ReadableStream::get_reader_with_options`] that give one say it, `{ mode: \"byob\" }`.",
+  '#[cfg_attr(rust_js, rust_js::name = "byob")]',
+  "#[derive(Clone, Copy)]",
+  "pub struct Byob;",
+  "",
+  "/// TypeScript's `{ mode: \"byob\" }`, the options [`ReadableStream::get_reader_with_options`]",
+  "/// gives a [`ReadableStreamBYOBReader`] of: a JS object of its field.",
+  "#[derive(Clone, Copy)]",
+  "pub struct ReadableStreamGetByobReaderOptions {",
+  "    pub mode: Byob,",
+  "}",
+  "",
+  "unsafe impl Defined for ReadableStreamGetByobReaderOptions {}",
+  "",
+  "/// What [`ReadableStream::get_reader_with_options`] takes, as TypeScript's overloads of",
+  "/// `getReader` do, and the reader each gives: of `{ mode: \"byob\" }` a BYOB reader, of",
+  "/// [`ReadableStreamGetReaderOptions`], whose mode may be either, either.",
+  '#[diagnostic::on_unimplemented(message = "`{Self}` is no options of `getReader`", note = "a BYOB reader\'s are `ReadableStreamGetByobReaderOptions {{ mode: Byob }}`; a default one is `get_reader()`\'s")]',
+  "pub trait ReaderOptions: sealed::Sealed {",
+  "    /// The reader it gives.",
+  "    type Reader;",
+  "}",
+  "",
+  "impl ReaderOptions for ReadableStreamGetByobReaderOptions {",
+  "    type Reader = &'static ReadableStreamBYOBReader;",
+  "}",
+  "",
+  "impl ReaderOptions for ReadableStreamGetReaderOptions<'_> {",
+  "    type Reader = ReadableStreamReader<'static>;",
+  "}",
+].join("\n");
+
 // `scheduler.yield(options)`, as Chrome first shipped it and React's
 // SchedulerPostTask calls it, `scheduler.yield({signal})`: the spec's
 // takes none now and inherits the task's, and a host ignores what it
@@ -2608,6 +2679,8 @@ line();
 line(SOURCES_BY_HAND);
 line();
 line(RECORD_BY_HAND);
+line();
+line(READER_OPTIONS_BY_HAND);
 
 // The unions functions take (ADR 0215): untagged enums, each value the
 // member itself, as TypeScript's union is (ADR 0214). Each member converts
@@ -2621,6 +2694,9 @@ const ancestors = (name: string): string[] => {
 // the enum, which a function's parameter of it takes (ADR 0229): each the
 // value itself. Sealed, by a trait each of them has once.
 const sealed = new Set<string>();
+// `getReader`'s options, each sealed (`READER_OPTIONS_BY_HAND`).
+sealed.add("ReadableStreamGetByobReaderOptions");
+sealed.add("ReadableStreamGetReaderOptions<'_>");
 /** Each union's record member, of the type of its values (rd453). */
 const records: { union: string; value: string }[] = [];
 const promisedUnions = new Map<string, { generics: string; type: string }[]>();

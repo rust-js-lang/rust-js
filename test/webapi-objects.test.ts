@@ -286,3 +286,56 @@ pub fn query(params: &js::Dict<String>) -> &'static URLSearchParams {
   expect(lib.query({ q: "x", n: "1" }).toString()).toBe("q=x&n=1");
 });
 
+
+// rd506: TypeScript's overloads of `getReader`, which WebIDL's one
+// operation types as a union: `getReader()` a default reader, and
+// `getReader({ mode: "byob" })` a BYOB one, which throws a `TypeError` of a
+// stream that isn't a byte stream, a `Result`. React's Flight reply
+// client's `try { binaryReader = stream.getReader({mode: 'byob'}); } catch
+// (x) { return serializeReader(stream.getReader()); }`.
+test("a stream's reader is of the mode its options say, a BYOB one a Result", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-get-reader");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{
+    Byob, ReadableStream, ReadableStreamBYOBReader, ReadableStreamDefaultReader, ReadableStreamGetByobReaderOptions,
+    ReadableStreamGetReaderOptions, ReadableStreamReader,
+};
+
+fn serialize_binary_reader(reader: &ReadableStreamBYOBReader) -> String {
+    reader.release_lock();
+    "binary".to_owned()
+}
+
+fn serialize_reader(reader: &ReadableStreamDefaultReader) -> String {
+    reader.release_lock();
+    "values".to_owned()
+}
+
+pub fn serialize_readable_stream(stream: &ReadableStream) -> String {
+    let binary_reader = match stream.get_reader_with_options(ReadableStreamGetByobReaderOptions { mode: Byob }) {
+        Ok(binary_reader) => binary_reader,
+        Err(_) => return serialize_reader(stream.get_reader()),
+    };
+    serialize_binary_reader(binary_reader)
+}
+
+pub fn of_mode(stream: &ReadableStream, mode: Option<&str>) -> bool {
+    match stream.get_reader_with_options(ReadableStreamGetReaderOptions { mode }) {
+        Ok(ReadableStreamReader::ReadableStreamBYOBReader(_)) => true,
+        Ok(ReadableStreamReader::ReadableStreamDefaultReader(_)) | Err(_) => false,
+    }
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`  let binaryReader;
+  try {
+    binaryReader = stream.getReader({ mode: "byob" });
+  } catch {
+    return serializeReader(stream.getReader());
+  }
+  return serializeBinaryReader(binaryReader);`);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.serializeReadableStream(new ReadableStream({ type: "bytes" })), lib.serializeReadableStream(new ReadableStream())]).toEqual(["binary", "values"]);
+  expect([lib.ofMode(new ReadableStream({ type: "bytes" }), "byob"), lib.ofMode(new ReadableStream(), undefined), lib.ofMode(new ReadableStream(), "byob")]).toEqual([true, false, false]);
+});
