@@ -262,3 +262,36 @@ Held by `test/lowering-shadows.test.ts`, "a copy of a module's variable
 read as a property's object is the variable", run with getters that set
 the variable; the mutations `shadow-receiver-read-after-getter` and
 `shadow-getter-runs-nothing`.
+
+## Amendment: a closure's own of the name stays its own (#457)
+
+React's ReactFlightReplyClient, ported, made each lazy part's retry reject.
+Its `serializeModel` writes `let value: &FormData = unsafe { js::cast(value) };`
+in one case, lowered `const value$1 = value;`, and in another a `move`
+closure, `retry`, whose `catch_unwind` result MIR's temporary named
+`value` by default, given apart as `value$1` from the `value` it captures.
+The closure's tidy names its temporaries apart from what it reads, not
+from what its maker's lowering named, so both were `value$1`. This rule
+renamed every read of `value$1` in the function to `value` and removed the
+maker's `const`: the closure's declaration kept `value$1` and its reads,
+`value.TAG` and `value._0`, read the captured model, so every retry
+rejected with `thrown(model._0)`.
+
+**A shadow's reads are renamed only where its name is the shadow**
+(`js::outside_shadows`): a closure or function in the body that takes a
+parameter of the name, as before, or declares one in its own blocks, a
+`const`, `let`, pattern, loop variable, `catch` binding or declared
+function's name, reads its own there and is set apart while the reads
+are renamed. The one other user, tidy's `readable_temporaries`,
+gets the same answer: a temporary renamed in its maker never renames a
+closure's own of the name.
+
+Case "results change" ([0262](0262-when-rust-and-js-disagree.md)): Rust's
+answer, preserved, as each variable's reads are its own. Held by the corpus
+case `shadow_beside_closure_own_of_its_name`, a closure's and a declared
+function's own `value$1` beside their maker's shadow, run against native
+Rust; the mutations `outside-shadows-own-declaration-not-apart`,
+`declares-own-not-const` (`js/stmt_walk.ts`) and
+`shadow-renamed-in-closure-own` (`prepare/shadows.ts`). `written_back`
+renames as `shadows` did; no program yet gives a closure an own name
+that its `let n$1 = n;` is, and none is set apart there.

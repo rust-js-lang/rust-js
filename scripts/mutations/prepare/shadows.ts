@@ -190,4 +190,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-shadows.test.ts", "-t", "shadowed by its own value"],
   },
+  {
+    name: "shadow-renamed-in-closure-own",
+    breaks: "a shadow's reads are renamed in a closure that declares its own of the name, `const value$1 = $catchUnwind(..)`, so it reads the captured `value`, `value.TAG` (#457)",
+    file: "src/prepare/shadows.rs",
+    find: "        js::outside_shadows(body, &alias, |body| {\n",
+    replace: "        Some(&mut *body).map(|body| {\n",
+    tests: ["test/corpus.test.ts", "-t", "shadow_beside_closure_own_of_its_name"],
+  },
 ];

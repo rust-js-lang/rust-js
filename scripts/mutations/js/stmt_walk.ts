@@ -213,8 +213,8 @@ export const mutations: Mutation[] = [
     name: "shadowed-temporary-renamed",
     breaks: "a temporary renamed `value` renames a closure's own parameter of its name too, so the closure reads the outer value",
     file: "src/js/stmt_walk.rs",
-    find: "        if params.iter().any(|p| p.names().contains(&name)) {\n",
-    replace: "        if false {\n",
+    find: "        if params.iter().any(|p| p.names().contains(&name)) || declares_own(body, name) {\n",
+    replace: "        if declares_own(body, name) {\n",
     tests: ["test/corpus.test.ts", "-t", "^temporaries_taken_apart.rs$"],
   },
   {
@@ -330,5 +330,22 @@ export const mutations: Mutation[] = [
     replace: "            StmtKind::Let(_, None) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "drop_guard_restores_taken_fields"],
     snapshots: true,
+  },
+  {
+    name: "outside-shadows-own-declaration-not-apart",
+    breaks:
+      "a closure that declares its own of the name, its `catch_unwind`'s result `value$1`, is renamed with its maker's `const value$1 = value;`, so each retry reads the captured `value`, `value.TAG` (#457)",
+    file: "src/js/stmt_walk.rs",
+    find: "        if params.iter().any(|p| p.names().contains(&name)) || declares_own(body, name) {\n",
+    replace: "        if params.iter().any(|p| p.names().contains(&name)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "shadow_beside_closure_own_of_its_name"],
+  },
+  {
+    name: "declares-own-not-const",
+    breaks: "a closure's own `const value$1` isn't taken for a declaration of the name, so its maker's shadow renames its reads (#457)",
+    file: "src/js/stmt_walk.rs",
+    find: "                StmtKind::Const(n, _) | StmtKind::Let(n, _) | StmtKind::For { name: n, .. } => n == name,\n",
+    replace: "                StmtKind::Let(n, _) | StmtKind::For { name: n, .. } => n == name,\n",
+    tests: ["test/corpus.test.ts", "-t", "shadow_beside_closure_own_of_its_name"],
   },
 ];

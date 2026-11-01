@@ -525,17 +525,14 @@ pub fn renamed(stmts: &mut [Stmt], from: &str, to: &str) {
 
 /// `change` of `stmts`, a renaming of `name`, made where `name` is the one
 /// `stmts` mean by it: each function in them that takes a parameter of the
-/// name, a closure's `(_2) => _2[0]`, reads its own there, so it's set
-/// apart while `change` runs, then given back.
+/// name, a closure's `(_2) => _2[0]`, or declares one in its own blocks, a
+/// closure's `const value$1` its own tidy named apart from what it reads
+/// alone, not from its maker's `value$1` (#457), reads its own there, so
+/// it's set apart while `change` runs, then given back.
 pub fn outside_shadows(stmts: &mut Vec<Stmt>, name: &str, change: impl FnOnce(&mut Vec<Stmt>)) {
     const APART: &str = "\u{0}apart";
-    each_expr_mut(stmts, &mut |e| {
-        let (params, body) = match &mut e.kind {
-            ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => (params, body),
-            ExprKind::Function(function) => (&mut function.params, &mut function.body),
-            _ => return,
-        };
-        if params.iter().any(|p| p.names().contains(&name)) {
+    let set_apart = |params: &mut Vec<Pattern>, body: &mut Vec<Stmt>| {
+        if params.iter().any(|p| p.names().contains(&name)) || declares_own(body, name) {
             for param in params.iter_mut() {
                 param.each_name_mut(&mut |n| {
                     if n == name {
@@ -545,9 +542,35 @@ pub fn outside_shadows(stmts: &mut Vec<Stmt>, name: &str, change: impl FnOnce(&m
             }
             renamed(body, name, APART);
         }
+    };
+    each_expr_mut(stmts, &mut |e| match &mut e.kind {
+        ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => set_apart(params, body),
+        ExprKind::Function(function) => set_apart(&mut function.params, &mut function.body),
+        _ => {}
     });
     change(stmts);
     renamed(stmts, APART, name);
+}
+
+/// Whether a function's `body` declares `name` in its own blocks, a
+/// variable, a pattern's, a loop's, a `catch`'s or a function's: not in a
+/// closure or a function declared in it, whose are their own.
+fn declares_own(body: &[Stmt], name: &str) -> bool {
+    let mut found = false;
+    each_list(body, &mut |list| {
+        for stmt in list {
+            found |= match &stmt.kind {
+                StmtKind::Const(n, _) | StmtKind::Let(n, _) | StmtKind::For { name: n, .. } => n == name,
+                StmtKind::Destructure { pattern, .. } | StmtKind::ForOf { pattern, .. } => {
+                    pattern.names().contains(&name)
+                }
+                StmtKind::TryCatch(_, Some(n), _) => n == name,
+                StmtKind::Function(function) => function.name == name,
+                _ => false,
+            };
+        }
+    });
+    found
 }
 
 /// Each read of the variable `name` in `stmts` JS's `this`: in them, and

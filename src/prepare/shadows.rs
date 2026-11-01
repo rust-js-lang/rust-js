@@ -52,15 +52,19 @@ fn own_names(params: &[Pattern], body: &mut Vec<Stmt>) -> HashSet<String> {
 /// Each `const n$1 = n;` of `body` that's `n` (`shadow`), `n` in its place.
 fn shadows(body: &mut Vec<Stmt>, own: &HashSet<String>) {
     while let Some((alias, of)) = shadow(body, own) {
-        js::each_expr_mut(body, &mut |e| {
-            if matches!(&e.kind, ExprKind::Var(name) if *name == alias) {
-                e.kind = ExprKind::Var(of.clone());
-            }
-        });
-        js::each_block_mut(body, &mut |stmts| {
-            stmts.retain(|s| {
-                !matches!(&s.kind, StmtKind::Const(name, value)
-                if *name == alias && matches!(&value.kind, ExprKind::Var(v) if *v == of))
+        // Not a closure's own of the name, its `catch_unwind`'s result
+        // named `value$1` apart from the `value` it captures (#457).
+        js::outside_shadows(body, &alias, |body| {
+            js::each_expr_mut(body, &mut |e| {
+                if matches!(&e.kind, ExprKind::Var(name) if *name == alias) {
+                    e.kind = ExprKind::Var(of.clone());
+                }
+            });
+            js::each_block_mut(body, &mut |stmts| {
+                stmts.retain(|s| {
+                    !matches!(&s.kind, StmtKind::Const(name, value)
+                    if *name == alias && matches!(&value.kind, ExprKind::Var(v) if *v == of))
+                });
             });
         });
     }
