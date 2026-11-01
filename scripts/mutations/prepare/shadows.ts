@@ -183,14 +183,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-shadows.test.ts", "-t", "stored again is the variable"],
   },
   {
-    name: "pattern-names-not-own",
-    breaks: "a closure's `for…of` variable shadowed by its cast, React's cache's `let arg: &JsObject = unsafe { js::cast(arg) };`, is `const arg$1 = arg;` (ADRs 0853, 0598, amended)",
-    file: "src/prepare/shadows.rs",
-    find: "                    own.extend(pattern.names().into_iter().map(str::to_string));\n",
-    replace: "",
-    tests: ["test/lowering-shadows.test.ts", "-t", "shadowed by its own value"],
-  },
-  {
     name: "shadow-renamed-in-closure-own",
     breaks: "a shadow's reads are renamed in a closure that declares its own of the name, `const value$1 = $catchUnwind(..)`, so it reads the captured `value`, `value.TAG` (#457)",
     file: "src/prepare/shadows.rs",
