@@ -45,7 +45,10 @@ pub(crate) fn clause_start(source: &str, body: &[js::Stmt]) -> Option<u32> {
 /// past which what's on lines of their own before `lo` is comments only.
 pub(crate) fn opened_at(source: &str, lo: u32) -> Option<u32> {
     let before = source.get(..lo as usize)?;
-    let mut end = before.len();
+    // Of a first statement whose start is its value's, `let mut tail_node =
+    // render_state.tail.borrow().clone();`'s, from its `let`, the line it's
+    // written on (rd532).
+    let mut end = let_start(before).unwrap_or(before.len());
     // Back past the block's own comments, each on a line of its own.
     loop {
         let code = before[..end].trim_end();
@@ -71,6 +74,15 @@ pub(crate) fn opened_at(source: &str, lo: u32) -> Option<u32> {
         return Some(lo);
     }
     opens_default(&code[line..]).then_some(end as u32)
+}
+
+/// Where the line of the `let` that `before` ends with starts, `let mut n
+/// =`, the value its statement starts at next.
+fn let_start(before: &str) -> Option<usize> {
+    let code = before.trim_end();
+    let line = code.rfind('\n').map_or(0, |i| i + 1);
+    let head = code[line..].trim_start();
+    (head.starts_with("let ") && head.ends_with('=')).then_some(line)
 }
 
 /// Whether `between`, the code between a comment and the start it's

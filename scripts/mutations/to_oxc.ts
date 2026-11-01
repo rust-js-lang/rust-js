@@ -715,4 +715,13 @@ export const mutations: Mutation[] = [
     replace: "                    let _ = (lo, hi);\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "whose pattern has a comment"],
   },
+  {
+    name: "default-pattern-comment-unmarked",
+    breaks:
+      "a `_` arm's pattern comment, `_ /* \"{\" \"[\" */ => {`, isn't its `default:`'s: placed by its line's code, which no JS maps to, it's lost (rd525)",
+    file: "src/to_oxc.rs",
+    find: "                let of_default = sources.text[line_start..c.lo as usize].trim() == \"_\"\n",
+    replace: "                let of_default = false && sources.text[line_start..c.lo as usize].trim() == \"_\"\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "opens with a `let`|whose pattern has a comment"],
+  },
 ];

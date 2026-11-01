@@ -578,6 +578,10 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                 let after_param = (!block)
                     .then(|| trailing::after_param(&sources.text, (line_start, c.lo as usize), &param_starts))
                     .flatten();
+                // One on a `_` arm's pattern, `_ /* """ "{" .. */ => {`, is
+                // its `default:`'s, which no code of the line maps to (rd525).
+                let of_default = sources.text[line_start..c.lo as usize].trim() == "_"
+                    && sources.text[c.hi as usize..line_end].trim_start().starts_with("=>");
                 trailing.push(Trailing {
                     line,
                     column: (c.lo as usize - line_start) as u32,
@@ -586,6 +590,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     text: crate::comments::in_js(written),
                     after_param,
                     before_link,
+                    of_default,
                 });
             }
         }
@@ -612,6 +617,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     text: crate::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]),
                     after_param: None,
                     before_link: None,
+                    of_default: false,
                 });
             }
         }
@@ -628,6 +634,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     text: crate::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]),
                     after_param: None,
                     before_link: None,
+                    of_default: false,
                 });
             }
         }
@@ -646,6 +653,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     text: crate::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]),
                     after_param: None,
                     before_link: None,
+                    of_default: false,
                 });
             }
         }

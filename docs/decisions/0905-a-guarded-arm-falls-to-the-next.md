@@ -811,3 +811,33 @@ pattern has a comment is before its case", run, and the mutations
 `default-pattern-comment-unread` and `arm-opening-before-its-if-unseen`
 (`to_oxc/cases.ts`).
 
+
+## Amendment: a `_` arm's comments, above it and on its pattern, are its `default`'s (rd532, rd525, 2026-11-02)
+
+React's cutOffTailIfNeeded writes `// Hidden is now the default.` above
+its `_ => {` arm, whose block opens with `let mut tail_node =
+render_state.tail.borrow().clone();`. The comment printed above the
+`switch`, where it reads as the whole `switch`'s; upstream has it right
+above `case 'hidden': default:`. The `let`'s statement starts where its
+value does, so `cases::opened_at` saw `let mut tail_node =` before it, no
+arm's opening, and the `default` had no start for the comment to be
+before. **A first statement after a `let`'s `=` starts at its `let`**
+(`cases::let_start`): the arm's `{` is then found as it is of any other
+statement, and the comment is above `default: {`. A named arm's was right
+already.
+
+The `_` arm's own pattern comment, `_ /* """ "{" "[" "t" "f" "n" "0" - "9"
+*/ => {` of processFullStringRow, was left out: a comment after code on
+its line is placed by the JS that code's line maps to, and no JS maps to a
+`_`. **A block comment on a `_` arm's pattern is after its `default:`**,
+before the clause's `{` where it has one, `default: /* .. */ {`, as
+upstream writes it (`trailing::placed`, by the `default:` above the JS of
+the arm's first code). Case N (ADR 0262): comments.
+
+Held by `lowering-comments-jumps.test.ts`'s "a comment above a `_` arm
+that opens with a `let` is before its default" and "a comment above an
+arm whose pattern has a comment is before its case", run, and the
+mutations `default-let-start-unread`, `default-let-start-of-no-let`
+(`to_oxc/cases.ts`), `default-pattern-comment-placed-as-code`,
+`default-pattern-comment-after-brace` (`to_oxc/trailing.ts`) and
+`default-pattern-comment-unmarked` (`to_oxc.ts`).

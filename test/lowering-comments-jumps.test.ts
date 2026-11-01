@@ -328,7 +328,9 @@ pub fn process(tag: u8, row: &str) -> Vec<String> {
   expect(js).toContain("    // Fallthrough\n    case 114 /* \"r\" */:");
   expect(js).toContain("    // Fallthrough\n    case 67 /* \"C\" */:");
   expect(js).toContain("    // Fallthrough\n    case 125 /* \"}\" */:");
-  expect(js).toContain("    // Fallthrough\n    default:\n      if (__DEV__ && !row) {");
+  // The `_` arm's own pattern comment after its `default:`, as upstream's
+  // `default: /* """ "{" .. */ {` (rd525).
+  expect(js).toContain('    // Fallthrough\n    default: /* """ "{" "[" "0" - "9" */\n      if (__DEV__ && !row) {');
   (globalThis as { __DEV__?: boolean }).__DEV__ = true;
   const process = lib.process as (tag: number, row: string) => string[];
   expect([process(82, ""), process(114, ""), process(67, ""), process(125, ""), process(48, ""), process(48, "[1]")]).toEqual([
@@ -339,6 +341,71 @@ pub fn process(tag: u8, row: &str) -> Vec<String> {
     ["halt"],
     ["[1]"],
   ]);
+});
+
+// React's cutOffTailIfNeeded: a comment above a `_ =>` arm whose block
+// starts with a `let`, whose statement's span is its value's, `let mut
+// tail_node = render_state.tail..`, is before its `default: {`, as upstream's
+// `// Hidden is now the default.` is, not above the `switch` (rd532); and a
+// `_` arm's pattern comment is after `default:`, before its `{` (rd525).
+test("a comment above a `_` arm that opens with a `let` is before its default", async () => {
+  const { js, lib } = await compiled("comment-above-let-default", `#[derive(Clone, Copy)]
+pub enum Mode {
+    Visible,
+    Collapsed,
+    Hidden,
+}
+
+fn mode(n: u32) -> Option<Mode> {
+    match n {
+        0 => Some(Mode::Visible),
+        1 => Some(Mode::Collapsed),
+        2 => Some(Mode::Hidden),
+        _ => None,
+    }
+}
+
+pub fn cut(n: u32, log: &mut Vec<u32>) {
+    match mode(n) {
+        Some(Mode::Visible) => {
+            // Everything should remain as it was.
+        }
+        Some(Mode::Collapsed) => {
+            log.push(1);
+        }
+        // Hidden is now the default.
+        _ => {
+            // Any insertions at the end of the tail list after this point
+            // should be invisible.
+            let mut left = log.len();
+            while left > 3 {
+                left -= 1;
+            }
+            log.push(left as u32);
+        }
+    }
+}
+
+pub fn tagged(tag: u8) -> u32 {
+    match tag {
+        73 /* "I" */ => 1,
+        72 /* "H" */ => 2,
+        _ /* "{" "[" */ => {
+            let doubled = u32::from(tag) * 2;
+            doubled + 1
+        }
+    }
+}
+`);
+  expect(js).toContain("      break;\n    // Hidden is now the default.\n    default: {\n      // Any insertions");
+  expect(js).not.toMatch(/\/\/ Hidden is now the default\.\n\s+switch/);
+  expect(js).toContain('    default: /* "{" "[" */ {\n      const doubled');
+  const cut = lib.cut as (n: number, log: number[]) => void;
+  const log: number[] = [5, 6, 7, 8, 9];
+  for (const n of [0, 1, 2, 3]) cut(n, log);
+  expect(log).toEqual([5, 6, 7, 8, 9, 1, 3, 3]);
+  expect((lib.tagged as (tag: number) => number)(73)).toBe(1);
+  expect((lib.tagged as (tag: number) => number)(91)).toBe(183);
 });
 
 // React's Flight client's parseModelString: `if .. && let Ok(function) =

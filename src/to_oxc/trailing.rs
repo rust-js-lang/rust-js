@@ -30,6 +30,10 @@ pub(super) struct Trailing {
     /// `(`, where a setter's value is, `internals /* .. */` then
     /// `.set_p(priority)`, its comment before the `=`.
     pub(super) before_link: Option<(u32, u32)>,
+    /// Of a block comment on a `_` arm's pattern, `_ /* """ "{" .. */ => {`:
+    /// after its `default:`, which no code of its line maps to, before the
+    /// clause's `{` (rd525), `default: /* .. */ {`, as upstream writes it.
+    pub(super) of_default: bool,
 }
 
 /// Where each function's parameter starts, by where it ends: a line
@@ -185,6 +189,33 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
                 .push((found.1, Inside::BeforeCode, &comment.text));
             continue;
         }
+        // On a `_` arm's pattern: after the `default:` above the JS of the
+        // arm's first code, past the comments between.
+        if comment.of_default {
+            let first = (map.get_tokens())
+                .filter(|t| t.get_src_line() > comment.line)
+                .min_by_key(|t| (t.get_src_line(), t.get_src_col()));
+            let clause = first.and_then(|t| {
+                let lines = generated_lines.get(..=t.get_dst_line() as usize)?;
+                (lines.iter().enumerate().rev())
+                    .take_while(|(k, text)| *k == t.get_dst_line() as usize || is_comment_or_default(text))
+                    .find(|(_, text)| text.trim_start().starts_with("default:"))
+                    .map(|(k, text)| (k as u32, text))
+            });
+            if let Some((line, text)) = clause {
+                let colon = text.find("default:").expect("found") + "default:".len();
+                match text[colon..].trim_start().starts_with('{') {
+                    true => {
+                        inside
+                            .entry(line)
+                            .or_default()
+                            .push(((colon + 1) as u32, Inside::BeforeCode, &comment.text))
+                    }
+                    false => after.entry(line).or_default().push(&comment.text),
+                }
+            }
+            continue;
+        }
         if comment.inside
             && comment.before_value
             && let Some((line, column)) = equals()
@@ -263,6 +294,13 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
         }
     }
     Placed { after, inside, ends }
+}
+
+/// Whether a line of the JS is a comment or a `default:`, what's between a
+/// `default:` and its first code.
+fn is_comment_or_default(text: &str) -> bool {
+    let text = text.trim_start();
+    text.starts_with("//") || text.starts_with("/*") || text.starts_with('*') || text.starts_with("default:")
 }
 
 /// Where a map's `column` of `line`, in UTF-16 units, is in its bytes.

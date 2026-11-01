@@ -80,4 +80,22 @@ export const mutations: Mutation[] = [
     replace: "    if false\n        && line > 0\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "whose pattern has a comment"],
   },
+  {
+    name: "default-let-start-unread",
+    breaks:
+      "a `_` arm whose block opens with a `let`, whose span is its value's, `let mut tail_node = render_state.tail..`, has no clause start, so the comment above the arm prints above the `switch`, React's cutOffTailIfNeeded's `// Hidden is now the default.` (rd532)",
+    file: "src/to_oxc/cases.rs",
+    find: "    let mut end = let_start(before).unwrap_or(before.len());\n",
+    replace: "    let mut end = before.len();\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "opens with a `let`"],
+  },
+  {
+    name: "default-let-start-of-no-let",
+    breaks:
+      "a `_` arm's first statement after any line ending in `=` is read as a `let`'s value, so a clause starts where none does; and none of a `let` whose line lacks its `=` (rd532)",
+    file: "src/to_oxc/cases.rs",
+    find: "    (head.starts_with(\"let \") && head.ends_with('=')).then_some(line)\n",
+    replace: "    (head.starts_with(\"let \") && head.ends_with(';')).then_some(line)\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "opens with a `let`"],
+  },
 ];

@@ -111,4 +111,22 @@ export const mutations: Mutation[] = [
     replace: "                .filter(|t| t.get_src_line() == next && t.get_src_col() == value)\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "setter"],
   },
+  {
+    name: "default-pattern-comment-placed-as-code",
+    breaks:
+      "a `_` arm's pattern comment, `_ /* \"{\" \"[\" */ => {`, is placed by its line's code, which no JS maps to: it's lost, where upstream writes `default: /* .. */ {` (rd525)",
+    file: "src/to_oxc/trailing.rs",
+    find: "        if comment.of_default {\n",
+    replace: "        if false {\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "opens with a `let`|whose pattern has a comment"],
+  },
+  {
+    name: "default-pattern-comment-after-brace",
+    breaks:
+      "a `_` arm's pattern comment of a block clause is after its `{`, `default: { /* .. */`, not before it as upstream's `default: /* .. */ {` (rd525)",
+    file: "src/to_oxc/trailing.rs",
+    find: "                match text[colon..].trim_start().starts_with('{') {\n",
+    replace: "                match false {\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "opens with a `let`"],
+  },
 ];
