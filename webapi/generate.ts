@@ -2746,6 +2746,10 @@ for (const union of [...unions.values()].sort((a, b) => a.name.localeCompare(b.n
       line(`}`);
       continue;
     }
+    // Text is any text Rust has, a `&String` and a `String` too, as a
+    // parameter of `&str` takes `&string` by its deref (rd540): a generic
+    // parameter's `impl` doesn't deref, so each is a member of its own.
+    if (v.type === "&'a str") members.push("&String", "String");
     for (const from of [v.type, ...extending.map((n) => `&'a ${typeName(n)}`)]) {
       members.push(elided(from));
       line();

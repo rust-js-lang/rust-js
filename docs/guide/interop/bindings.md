@@ -1200,7 +1200,11 @@ impl Shape {
 
 `c.label("unit")` and `c.label(1.5)` are `c.label("unit")` and `c.label(1.5)`;
 `c.label(true)` is rustc's error. A union that's returned, or a field, is an
-[untagged enum](types.md#enums), to `match`.
+[untagged enum](types.md#enums), to `match`. Text is any text Rust has: a
+union of text takes a `&String` and a `String` too, as a `&str` parameter
+takes `&string` by its deref, which a generic parameter doesn't make;
+webapi's each do, `data.append(&stream_prefix, &part_json)` of two
+`String`s ([ADR 0229](../../decisions/0229-union-parameters.md), amended).
 
 A parameter of TypeScript's `any` or `unknown` is generic:
 

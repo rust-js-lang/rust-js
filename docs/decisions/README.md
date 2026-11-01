@@ -263,7 +263,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0226 A component looks inside its children as React's `Children` does](0226-react-children.md)
 - [0227 The react crate's types have @types/react's names](0227-react-type-names.md)
 - [0228 A tag takes the attributes @types/react gives it](0228-per-tag-attributes.md)
-- [0229 A union parameter takes each member as it is](0229-union-parameters.md)
+- [0229 A union parameter takes each member as it is](0229-union-parameters.md) *(amended: a union of text takes a `&String` and a `String`, rd540)*
 - [0230 A bound of a trait with nothing in it passes no dictionary](0230-marker-bounds.md)
 - [0231 A `matches!` of a kind's literal is the literal's test, in place](0231-matches-of-a-literal.md)
 - [0232 A `let`-`else` of a `filter` tests the filter and binds what it kept](0232-let-else-of-a-filter.md)

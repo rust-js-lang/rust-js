@@ -88716,6 +88716,8 @@ impl IntoBlobPart for &DataView {}
 impl IntoBlobPart for &ArrayBuffer {}
 impl IntoBlobPart for &Blob {}
 impl IntoBlobPart for &File {}
+impl IntoBlobPart for &String {}
+impl IntoBlobPart for String {}
 impl IntoBlobPart for &str {}
 impl IntoBlobPart for BlobPart<'_> {}
 impl IntoBlobPart for FormDataEntryValue<'_> {}
@@ -88762,6 +88764,8 @@ impl<'a> From<f64> for BluetoothServiceUUID<'a> {
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a `BluetoothServiceUUID`", note = "an optional one, `Option<&dyn IntoBluetoothServiceUUID>`, takes `Some(&value)`")]
 #[cfg_attr(rust_js, rust_js::types = "BluetoothServiceUUID")]
 pub trait IntoBluetoothServiceUUID: sealed::Sealed {}
+impl IntoBluetoothServiceUUID for &String {}
+impl IntoBluetoothServiceUUID for String {}
 impl IntoBluetoothServiceUUID for &str {}
 impl IntoBluetoothServiceUUID for f64 {}
 impl IntoBluetoothServiceUUID for BluetoothServiceUUID<'_> {}
@@ -88947,6 +88951,8 @@ impl IntoBodyInit for &DataView {}
 impl IntoBodyInit for &ArrayBuffer {}
 impl IntoBodyInit for &FormData {}
 impl IntoBodyInit for &URLSearchParams {}
+impl IntoBodyInit for &String {}
+impl IntoBodyInit for String {}
 impl IntoBodyInit for &str {}
 impl IntoBodyInit for BodyInit<'_> {}
 impl IntoBodyInit for FormDataEntryValue<'_> {}
@@ -89081,6 +89087,8 @@ impl<'a> From<&'a str> for BoolOrNumberOrStr<'a> {
 pub trait IntoBoolOrNumberOrStr: sealed::Sealed {}
 impl IntoBoolOrNumberOrStr for bool {}
 impl IntoBoolOrNumberOrStr for f64 {}
+impl IntoBoolOrNumberOrStr for &String {}
+impl IntoBoolOrNumberOrStr for String {}
 impl IntoBoolOrNumberOrStr for &str {}
 impl IntoBoolOrNumberOrStr for BoolOrNumberOrStr<'_> {}
 impl IntoBoolOrNumberOrStr for StrOrNumber<'_> {}
@@ -89164,6 +89172,8 @@ impl<'a> From<&'a str> for BoolOrStr<'a> {
 #[cfg_attr(rust_js, rust_js::types = "boolean | string")]
 pub trait IntoBoolOrStr: sealed::Sealed {}
 impl IntoBoolOrStr for bool {}
+impl IntoBoolOrStr for &String {}
+impl IntoBoolOrStr for String {}
 impl IntoBoolOrStr for &str {}
 impl IntoBoolOrStr for BoolOrStr<'_> {}
 /// A rest parameter of `boolean | string`s takes each member (ADR 0640).
@@ -89442,6 +89452,8 @@ impl IntoBufferSourceOrBlobOrStr for &DataView {}
 impl IntoBufferSourceOrBlobOrStr for &ArrayBuffer {}
 impl IntoBufferSourceOrBlobOrStr for &Blob {}
 impl IntoBufferSourceOrBlobOrStr for &File {}
+impl IntoBufferSourceOrBlobOrStr for &String {}
+impl IntoBufferSourceOrBlobOrStr for String {}
 impl IntoBufferSourceOrBlobOrStr for &str {}
 impl IntoBufferSourceOrBlobOrStr for BufferSourceOrBlobOrStr<'_> {}
 impl IntoBufferSourceOrBlobOrStr for FormDataEntryValue<'_> {}
@@ -89721,6 +89733,8 @@ impl IntoBufferSourceOrStr for &Float32Array {}
 impl IntoBufferSourceOrStr for &Float64Array {}
 impl IntoBufferSourceOrStr for &DataView {}
 impl IntoBufferSourceOrStr for &ArrayBuffer {}
+impl IntoBufferSourceOrStr for &String {}
+impl IntoBufferSourceOrStr for String {}
 impl IntoBufferSourceOrStr for &str {}
 impl IntoBufferSourceOrStr for BufferSourceOrStr<'_> {}
 impl IntoBufferSourceOrStr for ArrayBufferView<'_> {}
@@ -90119,6 +90133,8 @@ impl IntoCSSPerspectiveValue for &CSSMathProduct {}
 impl IntoCSSPerspectiveValue for &CSSMathSum {}
 impl IntoCSSPerspectiveValue for &CSSMathValue {}
 impl IntoCSSPerspectiveValue for &CSSUnitValue {}
+impl IntoCSSPerspectiveValue for &String {}
+impl IntoCSSPerspectiveValue for String {}
 impl IntoCSSPerspectiveValue for &str {}
 impl IntoCSSPerspectiveValue for &CSSKeywordValue {}
 impl IntoCSSPerspectiveValue for CSSPerspectiveValue<'_> {}
@@ -90258,6 +90274,8 @@ impl IntoCSSStyleValueOrStr for &CSSNumericValue {}
 impl IntoCSSStyleValueOrStr for &CSSTransformValue {}
 impl IntoCSSStyleValueOrStr for &CSSUnitValue {}
 impl IntoCSSStyleValueOrStr for &CSSUnparsedValue {}
+impl IntoCSSStyleValueOrStr for &String {}
+impl IntoCSSStyleValueOrStr for String {}
 impl IntoCSSStyleValueOrStr for &str {}
 impl IntoCSSStyleValueOrStr for CSSStyleValueOrStr<'_> {}
 impl IntoCSSStyleValueOrStr for CSSPerspectiveValue<'_> {}
@@ -90298,6 +90316,8 @@ impl<'a> From<&'a CSSVariableReferenceValue> for CSSUnparsedSegment<'a> {
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a `CSSUnparsedSegment`", note = "an optional one, `Option<&dyn IntoCSSUnparsedSegment>`, takes `Some(&value)`")]
 #[cfg_attr(rust_js, rust_js::types = "CSSUnparsedSegment")]
 pub trait IntoCSSUnparsedSegment: sealed::Sealed {}
+impl IntoCSSUnparsedSegment for &String {}
+impl IntoCSSUnparsedSegment for String {}
 impl IntoCSSUnparsedSegment for &str {}
 impl IntoCSSUnparsedSegment for &CSSVariableReferenceValue {}
 impl IntoCSSUnparsedSegment for CSSUnparsedSegment<'_> {}
@@ -90480,6 +90500,8 @@ impl IntoDocumentOrXMLHttpRequestBodyInit for &DataView {}
 impl IntoDocumentOrXMLHttpRequestBodyInit for &ArrayBuffer {}
 impl IntoDocumentOrXMLHttpRequestBodyInit for &FormData {}
 impl IntoDocumentOrXMLHttpRequestBodyInit for &URLSearchParams {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for &String {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for String {}
 impl IntoDocumentOrXMLHttpRequestBodyInit for &str {}
 impl IntoDocumentOrXMLHttpRequestBodyInit for DocumentOrXMLHttpRequestBodyInit<'_> {}
 impl IntoDocumentOrXMLHttpRequestBodyInit for FormDataEntryValue<'_> {}
@@ -94214,6 +94236,8 @@ impl IntoEventOrStr for &TaskPriorityChangeEvent {}
 impl IntoEventOrStr for &TextEvent {}
 impl IntoEventOrStr for &TrackEvent {}
 impl IntoEventOrStr for &WebGLContextEvent {}
+impl IntoEventOrStr for &String {}
+impl IntoEventOrStr for String {}
 impl IntoEventOrStr for &str {}
 impl IntoEventOrStr for EventOrStr<'_> {}
 /// A rest parameter of `Event | string`s takes each member (ADR 0640).
@@ -94260,6 +94284,8 @@ impl<'a> From<&'a FormData> for FileOrStrOrFormData<'a> {
 #[cfg_attr(rust_js, rust_js::types = "File | string | FormData")]
 pub trait IntoFileOrStrOrFormData: sealed::Sealed {}
 impl IntoFileOrStrOrFormData for &File {}
+impl IntoFileOrStrOrFormData for &String {}
+impl IntoFileOrStrOrFormData for String {}
 impl IntoFileOrStrOrFormData for &str {}
 impl IntoFileOrStrOrFormData for &FormData {}
 impl IntoFileOrStrOrFormData for FileOrStrOrFormData<'_> {}
@@ -94419,6 +94445,8 @@ impl IntoFileSystemWriteChunkType for &DataView {}
 impl IntoFileSystemWriteChunkType for &ArrayBuffer {}
 impl IntoFileSystemWriteChunkType for &Blob {}
 impl IntoFileSystemWriteChunkType for &File {}
+impl IntoFileSystemWriteChunkType for &String {}
+impl IntoFileSystemWriteChunkType for String {}
 impl IntoFileSystemWriteChunkType for &str {}
 impl IntoFileSystemWriteChunkType for WriteParams<'_> {}
 impl IntoFileSystemWriteChunkType for FileSystemWriteChunkType<'_> {}
@@ -94507,6 +94535,8 @@ impl<'a> From<&'a str> for FormDataEntryValue<'a> {
 #[cfg_attr(rust_js, rust_js::types = "FormDataEntryValue")]
 pub trait IntoFormDataEntryValue: sealed::Sealed {}
 impl IntoFormDataEntryValue for &File {}
+impl IntoFormDataEntryValue for &String {}
+impl IntoFormDataEntryValue for String {}
 impl IntoFormDataEntryValue for &str {}
 impl IntoFormDataEntryValue for FormDataEntryValue<'_> {}
 /// A rest parameter of `FormDataEntryValue`s takes each member (ADR 0640).
@@ -95929,6 +95959,8 @@ impl<'a> From<&'a str> for GPUPipelineLayoutOrStr<'a> {
 #[cfg_attr(rust_js, rust_js::types = "GPUPipelineLayout | string")]
 pub trait IntoGPUPipelineLayoutOrStr: sealed::Sealed {}
 impl IntoGPUPipelineLayoutOrStr for &GPUPipelineLayout {}
+impl IntoGPUPipelineLayoutOrStr for &String {}
+impl IntoGPUPipelineLayoutOrStr for String {}
 impl IntoGPUPipelineLayoutOrStr for &str {}
 impl IntoGPUPipelineLayoutOrStr for GPUPipelineLayoutOrStr<'_> {}
 /// A rest parameter of `GPUPipelineLayout | string`s takes each member (ADR 0640).
@@ -98195,6 +98227,8 @@ impl<'a> From<&'a str> for LineAndPositionSetting<'a> {
 #[cfg_attr(rust_js, rust_js::types = "LineAndPositionSetting")]
 pub trait IntoLineAndPositionSetting: sealed::Sealed {}
 impl IntoLineAndPositionSetting for f64 {}
+impl IntoLineAndPositionSetting for &String {}
+impl IntoLineAndPositionSetting for String {}
 impl IntoLineAndPositionSetting for &str {}
 impl IntoLineAndPositionSetting for LineAndPositionSetting<'_> {}
 impl IntoLineAndPositionSetting for StrOrNumber<'_> {}
@@ -98244,6 +98278,8 @@ impl<'a> From<&'a str> for ListOrRecordOrStr<'a> {
 #[cfg_attr(rust_js, rust_js::types = "List | Record<string, String> | string")]
 pub trait IntoListOrRecordOrStr: sealed::Sealed {}
 impl IntoListOrRecordOrStr for &[&[String]] {}
+impl IntoListOrRecordOrStr for &String {}
+impl IntoListOrRecordOrStr for String {}
 impl IntoListOrRecordOrStr for &str {}
 impl IntoListOrRecordOrStr for ListOrRecordOrStr<'_> {}
 impl<R: Record<Value = String>> IntoListOrRecordOrStr for R {}
@@ -98284,6 +98320,8 @@ impl<'a> From<&'a str> for MediaListOrStr<'a> {
 #[cfg_attr(rust_js, rust_js::types = "MediaList | string")]
 pub trait IntoMediaListOrStr: sealed::Sealed {}
 impl IntoMediaListOrStr for &MediaList {}
+impl IntoMediaListOrStr for &String {}
+impl IntoMediaListOrStr for String {}
 impl IntoMediaListOrStr for &str {}
 impl IntoMediaListOrStr for MediaListOrStr<'_> {}
 /// A rest parameter of `MediaList | string`s takes each member (ADR 0640).
@@ -98385,6 +98423,8 @@ impl<'a> From<&'a str> for MediaStreamTrackOrStr<'a> {
 pub trait IntoMediaStreamTrackOrStr: sealed::Sealed {}
 impl IntoMediaStreamTrackOrStr for &MediaStreamTrack {}
 impl IntoMediaStreamTrackOrStr for &CanvasCaptureMediaStreamTrack {}
+impl IntoMediaStreamTrackOrStr for &String {}
+impl IntoMediaStreamTrackOrStr for String {}
 impl IntoMediaStreamTrackOrStr for &str {}
 impl IntoMediaStreamTrackOrStr for MediaStreamTrackOrStr<'_> {}
 /// A rest parameter of `MediaStreamTrack | string`s takes each member (ADR 0640).
@@ -99570,6 +99610,8 @@ impl IntoNodeOrStr for &MathMLElement {}
 impl IntoNodeOrStr for &ProcessingInstruction {}
 impl IntoNodeOrStr for &ShadowRoot {}
 impl IntoNodeOrStr for &XMLDocument {}
+impl IntoNodeOrStr for &String {}
+impl IntoNodeOrStr for String {}
 impl IntoNodeOrStr for &str {}
 impl IntoNodeOrStr for NodeOrStr<'_> {}
 impl IntoNodeOrStr for GeometryNode<'_> {}
@@ -99686,6 +99728,8 @@ impl IntoNumberOrCSSNumericValueOrStr for &CSSMathProduct {}
 impl IntoNumberOrCSSNumericValueOrStr for &CSSMathSum {}
 impl IntoNumberOrCSSNumericValueOrStr for &CSSMathValue {}
 impl IntoNumberOrCSSNumericValueOrStr for &CSSUnitValue {}
+impl IntoNumberOrCSSNumericValueOrStr for &String {}
+impl IntoNumberOrCSSNumericValueOrStr for String {}
 impl IntoNumberOrCSSNumericValueOrStr for &str {}
 impl IntoNumberOrCSSNumericValueOrStr for NumberOrCSSNumericValueOrStr<'_> {}
 impl IntoNumberOrCSSNumericValueOrStr for StrOrNumber<'_> {}
@@ -99937,6 +99981,8 @@ impl<'a> From<&'a str> for NumberOrStr<'a> {
 #[cfg_attr(rust_js, rust_js::types = "number | string")]
 pub trait IntoNumberOrStr: sealed::Sealed {}
 impl IntoNumberOrStr for f64 {}
+impl IntoNumberOrStr for &String {}
+impl IntoNumberOrStr for String {}
 impl IntoNumberOrStr for &str {}
 impl IntoNumberOrStr for NumberOrStr<'_> {}
 impl IntoNumberOrStr for StrOrNumber<'_> {}
@@ -100042,6 +100088,8 @@ impl<'a> From<&'a str> for Path2DOrStr<'a> {
 #[cfg_attr(rust_js, rust_js::types = "Path2D | string")]
 pub trait IntoPath2DOrStr: sealed::Sealed {}
 impl IntoPath2DOrStr for &Path2D {}
+impl IntoPath2DOrStr for &String {}
+impl IntoPath2DOrStr for String {}
 impl IntoPath2DOrStr for &str {}
 impl IntoPath2DOrStr for Path2DOrStr<'_> {}
 /// A rest parameter of `Path2D | string`s takes each member (ADR 0640).
@@ -101232,6 +101280,8 @@ impl<'a> From<&'a str> for RequestInfo<'a> {
 #[cfg_attr(rust_js, rust_js::types = "RequestInfo")]
 pub trait IntoRequestInfo: sealed::Sealed {}
 impl IntoRequestInfo for &Request {}
+impl IntoRequestInfo for &String {}
+impl IntoRequestInfo for String {}
 impl IntoRequestInfo for &str {}
 impl IntoRequestInfo for RequestInfo<'_> {}
 /// A rest parameter of `RequestInfo`s takes each member (ADR 0640).
@@ -101269,6 +101319,8 @@ impl<'a> From<SanitizerAttributeNamespace> for SanitizerAttribute<'a> {
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a `SanitizerAttribute`", note = "an optional one, `Option<&dyn IntoSanitizerAttribute>`, takes `Some(&value)`")]
 #[cfg_attr(rust_js, rust_js::types = "SanitizerAttribute")]
 pub trait IntoSanitizerAttribute: sealed::Sealed {}
+impl IntoSanitizerAttribute for &String {}
+impl IntoSanitizerAttribute for String {}
 impl IntoSanitizerAttribute for &str {}
 impl IntoSanitizerAttribute for SanitizerAttributeNamespace {}
 impl IntoSanitizerAttribute for SanitizerAttribute<'_> {}
@@ -101308,6 +101360,8 @@ impl<'a> From<&'a str> for SanitizerConfigOrStr<'a> {
 #[cfg_attr(rust_js, rust_js::types = "SanitizerConfig | string")]
 pub trait IntoSanitizerConfigOrStr: sealed::Sealed {}
 impl IntoSanitizerConfigOrStr for SanitizerConfig {}
+impl IntoSanitizerConfigOrStr for &String {}
+impl IntoSanitizerConfigOrStr for String {}
 impl IntoSanitizerConfigOrStr for &str {}
 impl IntoSanitizerConfigOrStr for SanitizerConfigOrStr<'_> {}
 /// A rest parameter of `SanitizerConfig | string`s takes each member (ADR 0640).
@@ -101345,6 +101399,8 @@ impl<'a> From<SanitizerElementNamespace> for SanitizerElement<'a> {
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a `SanitizerElement`", note = "an optional one, `Option<&dyn IntoSanitizerElement>`, takes `Some(&value)`")]
 #[cfg_attr(rust_js, rust_js::types = "SanitizerElement")]
 pub trait IntoSanitizerElement: sealed::Sealed {}
+impl IntoSanitizerElement for &String {}
+impl IntoSanitizerElement for String {}
 impl IntoSanitizerElement for &str {}
 impl IntoSanitizerElement for SanitizerElementNamespace {}
 impl IntoSanitizerElement for SanitizerElement<'_> {}
@@ -101383,6 +101439,8 @@ impl<'a> From<SanitizerElementNamespaceWithAttributes> for SanitizerElementWithA
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a `SanitizerElementWithAttributes`", note = "an optional one, `Option<&dyn IntoSanitizerElementWithAttributes>`, takes `Some(&value)`")]
 #[cfg_attr(rust_js, rust_js::types = "SanitizerElementWithAttributes")]
 pub trait IntoSanitizerElementWithAttributes: sealed::Sealed {}
+impl IntoSanitizerElementWithAttributes for &String {}
+impl IntoSanitizerElementWithAttributes for String {}
 impl IntoSanitizerElementWithAttributes for &str {}
 impl IntoSanitizerElementWithAttributes for SanitizerElementNamespaceWithAttributes {}
 impl IntoSanitizerElementWithAttributes for SanitizerElementWithAttributes<'_> {}
@@ -101430,6 +101488,8 @@ impl<'a> From<&'a str> for SanitizerOrSanitizerConfigOrStr<'a> {
 pub trait IntoSanitizerOrSanitizerConfigOrStr: sealed::Sealed {}
 impl IntoSanitizerOrSanitizerConfigOrStr for &Sanitizer {}
 impl IntoSanitizerOrSanitizerConfigOrStr for SanitizerConfig {}
+impl IntoSanitizerOrSanitizerConfigOrStr for &String {}
+impl IntoSanitizerOrSanitizerConfigOrStr for String {}
 impl IntoSanitizerOrSanitizerConfigOrStr for &str {}
 impl IntoSanitizerOrSanitizerConfigOrStr for SanitizerOrSanitizerConfigOrStr<'_> {}
 impl IntoSanitizerOrSanitizerConfigOrStr for SanitizerConfigOrStr<'_> {}
@@ -101468,6 +101528,8 @@ impl<'a> From<SanitizerProcessingInstruction> for SanitizerPI<'a> {
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a `SanitizerPI`", note = "an optional one, `Option<&dyn IntoSanitizerPI>`, takes `Some(&value)`")]
 #[cfg_attr(rust_js, rust_js::types = "SanitizerPI")]
 pub trait IntoSanitizerPI: sealed::Sealed {}
+impl IntoSanitizerPI for &String {}
+impl IntoSanitizerPI for String {}
 impl IntoSanitizerPI for &str {}
 impl IntoSanitizerPI for SanitizerProcessingInstruction {}
 impl IntoSanitizerPI for SanitizerPI<'_> {}
@@ -101507,6 +101569,8 @@ impl<'a> From<&'a ArrayBuffer> for StrOrArrayBuffer<'a> {
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | ArrayBuffer`", note = "an optional one, `Option<&dyn IntoStrOrArrayBuffer>`, takes `Some(&value)`")]
 #[cfg_attr(rust_js, rust_js::types = "string | ArrayBuffer")]
 pub trait IntoStrOrArrayBuffer: sealed::Sealed {}
+impl IntoStrOrArrayBuffer for &String {}
+impl IntoStrOrArrayBuffer for String {}
 impl IntoStrOrArrayBuffer for &str {}
 impl IntoStrOrArrayBuffer for &ArrayBuffer {}
 impl IntoStrOrArrayBuffer for StrOrArrayBuffer<'_> {}
@@ -101546,6 +101610,8 @@ impl<'a> From<AudioSinkOptions<'a>> for StrOrAudioSinkOptions<'a> {
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | AudioSinkOptions`", note = "an optional one, `Option<&dyn IntoStrOrAudioSinkOptions>`, takes `Some(&value)`")]
 #[cfg_attr(rust_js, rust_js::types = "string | AudioSinkOptions")]
 pub trait IntoStrOrAudioSinkOptions: sealed::Sealed {}
+impl IntoStrOrAudioSinkOptions for &String {}
+impl IntoStrOrAudioSinkOptions for String {}
 impl IntoStrOrAudioSinkOptions for &str {}
 impl IntoStrOrAudioSinkOptions for AudioSinkOptions<'_> {}
 impl IntoStrOrAudioSinkOptions for StrOrAudioSinkOptions<'_> {}
@@ -101591,6 +101657,8 @@ impl<'a> From<&'a File> for StrOrBlob<'a> {
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | Blob`", note = "an optional one, `Option<&dyn IntoStrOrBlob>`, takes `Some(&value)`")]
 #[cfg_attr(rust_js, rust_js::types = "string | Blob")]
 pub trait IntoStrOrBlob: sealed::Sealed {}
+impl IntoStrOrBlob for &String {}
+impl IntoStrOrBlob for String {}
 impl IntoStrOrBlob for &str {}
 impl IntoStrOrBlob for &Blob {}
 impl IntoStrOrBlob for &File {}
@@ -101716,6 +101784,8 @@ impl<'a> From<&'a ArrayBuffer> for StrOrBufferSource<'a> {
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer`", note = "an optional one, `Option<&dyn IntoStrOrBufferSource>`, takes `Some(&value)`")]
 #[cfg_attr(rust_js, rust_js::types = "string | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer")]
 pub trait IntoStrOrBufferSource: sealed::Sealed {}
+impl IntoStrOrBufferSource for &String {}
+impl IntoStrOrBufferSource for String {}
 impl IntoStrOrBufferSource for &str {}
 impl IntoStrOrBufferSource for &Int8Array {}
 impl IntoStrOrBufferSource for &Int16Array {}
@@ -101778,6 +101848,8 @@ impl<'a> From<&'a CanvasPattern> for StrOrCanvasGradientOrCanvasPattern<'a> {
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | CanvasGradient | CanvasPattern`", note = "an optional one, `Option<&dyn IntoStrOrCanvasGradientOrCanvasPattern>`, takes `Some(&value)`")]
 #[cfg_attr(rust_js, rust_js::types = "string | CanvasGradient | CanvasPattern")]
 pub trait IntoStrOrCanvasGradientOrCanvasPattern: sealed::Sealed {}
+impl IntoStrOrCanvasGradientOrCanvasPattern for &String {}
+impl IntoStrOrCanvasGradientOrCanvasPattern for String {}
 impl IntoStrOrCanvasGradientOrCanvasPattern for &str {}
 impl IntoStrOrCanvasGradientOrCanvasPattern for &CanvasGradient {}
 impl IntoStrOrCanvasGradientOrCanvasPattern for &CanvasPattern {}
@@ -101818,6 +101890,8 @@ impl<'a> From<ElementCreationOptions<'a>> for StrOrElementCreationOptions<'a> {
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | ElementCreationOptions`", note = "an optional one, `Option<&dyn IntoStrOrElementCreationOptions>`, takes `Some(&value)`")]
 #[cfg_attr(rust_js, rust_js::types = "string | ElementCreationOptions")]
 pub trait IntoStrOrElementCreationOptions: sealed::Sealed {}
+impl IntoStrOrElementCreationOptions for &String {}
+impl IntoStrOrElementCreationOptions for String {}
 impl IntoStrOrElementCreationOptions for &str {}
 impl IntoStrOrElementCreationOptions for ElementCreationOptions<'_> {}
 impl IntoStrOrElementCreationOptions for StrOrElementCreationOptions<'_> {}
@@ -101857,6 +101931,8 @@ impl<'a> From<&'a [String]> for StrOrList<'a> {
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | List`", note = "an optional one, `Option<&dyn IntoStrOrList>`, takes `Some(&value)`")]
 #[cfg_attr(rust_js, rust_js::types = "string | List")]
 pub trait IntoStrOrList: sealed::Sealed {}
+impl IntoStrOrList for &String {}
+impl IntoStrOrList for String {}
 impl IntoStrOrList for &str {}
 impl IntoStrOrList for &[String] {}
 impl IntoStrOrList for StrOrList<'_> {}
@@ -101896,6 +101972,8 @@ impl<'a> From<f64> for StrOrNumber<'a> {
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | number`", note = "an optional one, `Option<&dyn IntoStrOrNumber>`, takes `Some(&value)`")]
 #[cfg_attr(rust_js, rust_js::types = "string | number")]
 pub trait IntoStrOrNumber: sealed::Sealed {}
+impl IntoStrOrNumber for &String {}
+impl IntoStrOrNumber for String {}
 impl IntoStrOrNumber for &str {}
 impl IntoStrOrNumber for f64 {}
 impl IntoStrOrNumber for StrOrNumber<'_> {}
@@ -101938,6 +102016,8 @@ impl<'a> From<PerformanceMeasureOptions<'a>> for StrOrPerformanceMeasureOptions<
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | PerformanceMeasureOptions`", note = "an optional one, `Option<&dyn IntoStrOrPerformanceMeasureOptions>`, takes `Some(&value)`")]
 #[cfg_attr(rust_js, rust_js::types = "string | PerformanceMeasureOptions")]
 pub trait IntoStrOrPerformanceMeasureOptions: sealed::Sealed {}
+impl IntoStrOrPerformanceMeasureOptions for &String {}
+impl IntoStrOrPerformanceMeasureOptions for String {}
 impl IntoStrOrPerformanceMeasureOptions for &str {}
 impl IntoStrOrPerformanceMeasureOptions for PerformanceMeasureOptions<'_> {}
 impl IntoStrOrPerformanceMeasureOptions for StrOrPerformanceMeasureOptions<'_> {}
@@ -101977,6 +102057,8 @@ impl<'a> From<SharedWorkerOptions<'a>> for StrOrSharedWorkerOptions<'a> {
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | SharedWorkerOptions`", note = "an optional one, `Option<&dyn IntoStrOrSharedWorkerOptions>`, takes `Some(&value)`")]
 #[cfg_attr(rust_js, rust_js::types = "string | SharedWorkerOptions")]
 pub trait IntoStrOrSharedWorkerOptions: sealed::Sealed {}
+impl IntoStrOrSharedWorkerOptions for &String {}
+impl IntoStrOrSharedWorkerOptions for String {}
 impl IntoStrOrSharedWorkerOptions for &str {}
 impl IntoStrOrSharedWorkerOptions for SharedWorkerOptions<'_> {}
 impl IntoStrOrSharedWorkerOptions for StrOrSharedWorkerOptions<'_> {}
@@ -102016,6 +102098,8 @@ impl<'a> From<&'a TaskSignal> for StrOrTaskSignal<'a> {
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | TaskSignal`", note = "an optional one, `Option<&dyn IntoStrOrTaskSignal>`, takes `Some(&value)`")]
 #[cfg_attr(rust_js, rust_js::types = "string | TaskSignal")]
 pub trait IntoStrOrTaskSignal: sealed::Sealed {}
+impl IntoStrOrTaskSignal for &String {}
+impl IntoStrOrTaskSignal for String {}
 impl IntoStrOrTaskSignal for &str {}
 impl IntoStrOrTaskSignal for &TaskSignal {}
 impl IntoStrOrTaskSignal for StrOrTaskSignal<'_> {}
@@ -102217,6 +102301,8 @@ impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for &CSSMath
 impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for &CSSMathValue {}
 impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for &CSSUnitValue {}
 impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for &CSSKeywordValue {}
+impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for &String {}
+impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for String {}
 impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for &str {}
 impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'_> {}
 impl IntoTimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr for CSSPerspectiveValue<'_> {}
@@ -102334,6 +102420,8 @@ impl<'a> From<URLPatternInit> for URLPatternInput<'a> {
 #[diagnostic::on_unimplemented(message = "`{Self}` is not a `URLPatternInput`", note = "an optional one, `Option<&dyn IntoURLPatternInput>`, takes `Some(&value)`")]
 #[cfg_attr(rust_js, rust_js::types = "URLPatternInput")]
 pub trait IntoURLPatternInput: sealed::Sealed {}
+impl IntoURLPatternInput for &String {}
+impl IntoURLPatternInput for String {}
 impl IntoURLPatternInput for &str {}
 impl IntoURLPatternInput for URLPatternInit {}
 impl IntoURLPatternInput for URLPatternInput<'_> {}
@@ -102780,6 +102868,7 @@ mod sealed {
     impl Sealed for &SpeechSynthesisErrorEvent {}
     impl Sealed for &SpeechSynthesisEvent {}
     impl Sealed for &StorageEvent {}
+    impl Sealed for &String {}
     impl Sealed for &SubmitEvent {}
     impl Sealed for &TaskPriorityChangeEvent {}
     impl Sealed for &TaskSignal {}
@@ -102924,6 +103013,7 @@ mod sealed {
     impl Sealed for StrOrPerformanceMeasureOptions<'_> {}
     impl Sealed for StrOrSharedWorkerOptions<'_> {}
     impl Sealed for StrOrTaskSignal<'_> {}
+    impl Sealed for String {}
     impl Sealed for TexImageSource<'_> {}
     impl Sealed for TimelineRangeOffset<'_> {}
     impl Sealed for TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'_> {}

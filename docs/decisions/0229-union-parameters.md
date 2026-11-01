@@ -4,6 +4,8 @@ Status: Accepted. Amends [0214](0214-untagged-enums.md) and
 [0215](0215-webapi-unions.md): a binding's union parameter is a sealed
 trait of its members, where it was the untagged enum. Builds on
 [0039](0039-generic-bindings.md) and [0100](0100-separate-crates.md).
+Amended (2026-11-02, rd540): a union of text takes a `&String` and a
+`String` too.
 
 Case: N, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -170,3 +172,23 @@ handler, TypeScript's `TimerHandler`, is `H: IntoTimerHandler`, whose
 'static> IntoTimerHandler for F`, beside `&str` and `&String`. A type
 parameter bound by such a union is called as that kind
 (`recognition::function_kind`).
+
+## Amendment: a union of text takes a `&String` and a `String` (2026-11-02, rd540)
+
+ADR 1061's amendment made a form's `append` take `impl IntoStrOrBlob`,
+where it took `&str`. React's Flight reply client calls it of two
+`String`s, `data.append(&stream_prefix, &part_json)`, 13 times: a `&str`
+parameter took `&part_json` by its deref, but a generic parameter
+doesn't deref, and `IntoStrOrBlob` had no `&String`, so each was rustc's
+E0277, "`&String` is not a `string | Blob`".
+
+**Each union webapi's generator makes of text takes a `&String` and a
+`String` too**, as members of its trait beside `&str` (45 unions), as the
+js crate's `IntoTimerHandler` already did: the value is the JS string
+either way. A `String` is what an optional one's `Some(&text)` gives of
+a `String` variable, `Option<&dyn IntoX>`. Case N: what JS is given is
+the text.
+
+Held by `test/webapi-objects.test.ts` ("a form's append takes text or a
+Blob, an entry as it is"), of a `&String` and a `String`, run in Node,
+and by React's port: its react-client crate's `cargo check`.

@@ -375,7 +375,9 @@ pub fn parts(buffer: Rc<RefCell<Vec<&'static Uint8Array>>>, chunk: &'static Uint
 // first overload does, `string | Blob`, a form's own entry too, as React's
 // Flight reply client copies a form's entries, `value.forEach((v, k) =>
 // data.append(prefix + k, v))`; a Blob's file name is the form that gives
-// one, so its two-argument call is the first's.
+// one, so its two-argument call is the first's. Text is any text Rust
+// has, `&part_json` of a `String` too, as a `&str` parameter takes it
+// (rd540).
 test("a form's append takes text or a Blob, an entry as it is", async () => {
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("webapi-form-append");
@@ -389,8 +391,10 @@ pub fn copied(value: &FormData, prefix: String) -> &'static FormData {
     data
 }
 
-pub fn parts(blob: &Blob) -> &'static FormData {
+pub fn parts(blob: &Blob, stream_prefix: String, part_json: String) -> &'static FormData {
     let data = form_data::new(None, None);
+    data.append(&stream_prefix, &part_json);
+    data.append(&stream_prefix, part_json);
     data.append("text", "C");
     data.append("blob", blob);
     data.append_with_blob("named", blob, "a.txt");
@@ -405,6 +409,7 @@ pub fn parts(blob: &Blob) -> &'static FormData {
     data.append(prefix + originalKey, originalValue);
   });`);
   expect(js).toContain('data.append("blob", blob);');
+  expect(js).toContain("data.append(streamPrefix, partJson);");
   expect(js).toContain('data.append("named", blob, "a.txt");');
   const lib = await import(join(dir, "lib.js"));
   const form = new FormData();
@@ -414,7 +419,8 @@ pub fn parts(blob: &Blob) -> &'static FormData {
   expect([...copy.keys()]).toEqual(["_1_a", "_1_f"]);
   expect(copy.get("_1_a")).toBe("1");
   expect((copy.get("_1_f") as File).name).toBe("x.txt");
-  const parts: FormData = lib.parts(new Blob(["y"]));
-  expect([...parts.keys()]).toEqual(["text", "blob", "named"]);
+  const parts: FormData = lib.parts(new Blob(["y"]), "S1", "{}");
+  expect([...parts.keys()]).toEqual(["S1", "S1", "text", "blob", "named"]);
+  expect(parts.getAll("S1")).toEqual(["{}", "{}"]);
   expect([parts.get("text") instanceof Blob, (parts.get("blob") as File).name, (parts.get("named") as File).name]).toEqual([true, "b.txt", "a.txt"]);
 });
