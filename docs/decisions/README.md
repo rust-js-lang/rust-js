@@ -812,7 +812,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1007 A library's own fn pointers are Rust functions to its consumers](1007-a-libraries-own-fn-pointers-are-rust-functions.md)
 - [1008 What a package's entry re-exports is imported by the package's name](1008-what-a-packages-entry-re-exports-is-imported-by-its-name.md) *(the user's decision)*
 - [1009 A constructor is held as a typed `js::Class`](1009-a-constructor-is-held-as-a-typed-class.md) *(the user's decision)*
-- [1010 A tuple of an `if`'s value taken apart is a `let` of each part](1010-a-tuple-of-an-ifs-value-is-a-let-of-each-part.md) *(the user's decision)*
+- [1010 A tuple of an `if`'s value taken apart is a `let` of each part](1010-a-tuple-of-an-ifs-value-is-a-let-of-each-part.md) *(the user's decision; amended: a tuple each branch ends making of parts it held first, rd524)*
 - [1011 A binding's index signature is std's `Index`](1011-a-bindings-index-signature-is-index.md)
 - [1012 `js::loose_equals` is JS's `==`](1012-loose-equals-is-jss-double-equals.md)
 - [1013 A value the DOM makes text of takes any value](1013-a-value-the-dom-makes-text-of-takes-any-value.md) *(the user's decision; amended: an input's `type` and `name`; a select's `size` and an image's `src`)*

@@ -772,7 +772,111 @@ pub(super) fn conditional_tuples(stmts: &mut Vec<Stmt>) {
             i += count;
             continue;
         }
+        if let Some(count) = assigned_tuple(stmts, i) {
+            i += count;
+            continue;
+        }
         i += 1;
+    }
+}
+
+/// `let _6; if (c) { .. _6 = [old, old$1]; } else { _6 = [undefined,
+/// undefined]; } const a = _6[0]; const b = _6[1];`, a tuple an `if`'s
+/// branches each end making, its parts each given before, `(value.take(),
+/// reason.take())`, then taken apart, read nowhere else: each part a
+/// variable of its own, assigned where the branch made the tuple, `let a;
+/// let b; if (c) { .. a = old; b = old$1; } else { a = undefined; b =
+/// undefined; }`, as `conditional_tuples` makes of one whose branches are
+/// values (rd524), each held part given where it's held, `a = x.value;`.
+/// Each branch gives its parts in their order, as its array did. What it
+/// made, the count of statements, is where the next one starts.
+fn assigned_tuple(stmts: &mut Vec<Stmt>, i: usize) -> Option<usize> {
+    let StmtKind::Let(t, None) = &stmts[i].kind else {
+        return None;
+    };
+    if !is_temporary(t) || !matches!(stmts.get(i + 1)?.kind, StmtKind::If(_, _, Some(_))) {
+        return None;
+    }
+    let t = t.clone();
+    // The parts, read in order right after it, `const a = _6[0];`.
+    let names: Vec<String> = (stmts[i + 2..].iter().enumerate())
+        .map_while(|(k, stmt)| match &stmt.kind {
+            StmtKind::Const(name, value) | StmtKind::Let(name, Some(value))
+                if let ExprKind::Index(of, at) = &value.kind
+                    && matches!(&of.kind, ExprKind::Var(v) if *v == t)
+                    && at.as_int() == i128::try_from(k).ok() =>
+            {
+                Some(name.clone())
+            }
+            _ => None,
+        })
+        .collect();
+    if names.len() < 2 {
+        return None;
+    }
+    let mut branches = stmts[i + 1].clone();
+    let StmtKind::If(_, then, Some(otherwise)) = &mut branches.kind else {
+        return None;
+    };
+    let assigned = parts_at_ends(then, &t, &names)? + parts_at_ends(otherwise, &t, &names)?;
+    // Nothing else reads or sets it: its branches' arrays and its parts.
+    if js::mentions_in(&stmts[i + 1..], &t) != assigned + names.len() {
+        return None;
+    }
+    let span = stmts[i].span;
+    let mut made: Vec<Stmt> = (names.iter())
+        .map(|name| StmtKind::Let(name.clone(), None).at(span))
+        .collect();
+    made.push(branches);
+    let count = made.len();
+    stmts.splice(i..i + 2 + names.len(), made);
+    Some(count)
+}
+
+/// Of statements whose last makes `t`'s array, `t = [x, y]`, or is an `if`
+/// each of whose branches' does, `names`' assignments of its items in its
+/// place: how many arrays it made, or `None` where one path goes on without
+/// making it. A branch that returns or throws is its guard's by now, `if
+/// (n !== 0) { throw .. }` before the array.
+fn parts_at_ends(stmts: &mut Vec<Stmt>, t: &str, names: &[String]) -> Option<usize> {
+    match &mut stmts.last_mut()?.kind {
+        StmtKind::Assign(target, value)
+            if matches!(&target.kind, ExprKind::Var(v) if v == t)
+                && let ExprKind::Array(items) = &value.kind
+                && items.len() == names.len() =>
+        {
+            let items = items.clone();
+            stmts.pop();
+            let reads_in_items = |held: &str| {
+                let mut reads = 0;
+                for item in &items {
+                    item.visit_vars(&mut |v| reads += usize::from(v == held));
+                }
+                reads
+            };
+            for (name, item) in names.iter().zip(items.iter().cloned()) {
+                // A part held first, `const old = x.value; x.value =
+                // undefined;`, read only here: the part, where it's held,
+                // `a = x.value;`, as nothing reads the part before.
+                if let ExprKind::Var(held) = &item.kind
+                    && let Some(k) = (stmts.iter()).rposition(|s| matches!(&s.kind, StmtKind::Const(v, _) if v == held))
+                    && js::mentions_in(&stmts[k + 1..], held) == 0
+                    && reads_in_items(held) == 1
+                    && let StmtKind::Const(_, value) = &stmts[k].kind
+                {
+                    let span = stmts[k].span;
+                    stmts[k] = StmtKind::Assign(Expr::var(name), value.clone()).at(span);
+                    continue;
+                }
+                let span = item.span;
+                stmts.push(StmtKind::Assign(Expr::var(name), item).at(span));
+            }
+            Some(1)
+        }
+        StmtKind::If(_, then, Some(otherwise)) => {
+            Some(parts_at_ends(then, t, names)? + parts_at_ends(otherwise, t, names)?)
+        }
+        _ => None,
     }
 }
 

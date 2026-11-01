@@ -11,28 +11,29 @@ function decode(bytes) {
   let i = 0;
   while (i < bytes.length) {
     const b = bytes[i];
-    const value =
-      b < 0x80
-        ? [b, 1]
-        : b < 0xe0
-          ? [((((b & 0x1f) << 6) >>> 0) | ($index(bytes, i + 1) & 0x3f)) >>> 0, 2]
-          : b < 0xf0
-            ? [
-                ((((((b & 0x0f) << 12) >>> 0) | (($index(bytes, i + 1) & 0x3f) << 6)) >>> 0) |
-                  ($index(bytes, i + 2) & 0x3f)) >>>
-                  0,
-                3,
-              ]
-            : [
-                ((((((((b & 0x07) << 18) >>> 0) | (($index(bytes, i + 1) & 0x3f) << 12)) >>> 0) |
-                  (($index(bytes, i + 2) & 0x3f) << 6)) >>>
-                  0) |
-                  ($index(bytes, i + 3) & 0x3f)) >>>
-                  0,
-                4,
-              ];
-    const point = value[0];
-    const width = value[1];
+    let point;
+    let width;
+    if (b < 0x80) {
+      point = b;
+      width = 1;
+    } else if (b < 0xe0) {
+      point = ((((b & 0x1f) << 6) >>> 0) | ($index(bytes, i + 1) & 0x3f)) >>> 0;
+      width = 2;
+    } else if (b < 0xf0) {
+      point =
+        ((((((b & 0x0f) << 12) >>> 0) | (($index(bytes, i + 1) & 0x3f) << 6)) >>> 0) |
+          ($index(bytes, i + 2) & 0x3f)) >>>
+        0;
+      width = 3;
+    } else {
+      point =
+        ((((((((b & 0x07) << 18) >>> 0) | (($index(bytes, i + 1) & 0x3f) << 12)) >>> 0) |
+          (($index(bytes, i + 2) & 0x3f) << 6)) >>>
+          0) |
+          ($index(bytes, i + 3) & 0x3f)) >>>
+        0;
+      width = 4;
+    }
     out.push(String.fromCodePoint(point));
     i = (i + width) >>> 0;
   }

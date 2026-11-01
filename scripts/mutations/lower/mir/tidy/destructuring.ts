@@ -299,4 +299,23 @@ export const mutations: Mutation[] = [
       "                StmtKind::If((**test).clone(), then, None).at(value.span),\n",
     tests: ["test/corpus.test.ts", "-t", "^tuple_of_an_if_taken_apart.rs$"],
   },
+  {
+    name: "assigned-tuples-kept-whole",
+    breaks:
+      "a tuple each branch ends making of parts it held first, `(value.take(), reason.take())`, is an array made and read item by item, `tmp = [old, old$1]; .. const a = tmp[0];` (rd524)",
+    file: "src/lower/mir/tidy/destructuring.rs",
+    find: "        if let Some(count) = assigned_tuple(stmts, i) {\n",
+    replace: "        if let Some(count) = None::<usize> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^tuple_of_taken_parts.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "assigned-tuples-held-twice-moved",
+    breaks:
+      "a part held once and given twice, `(n, n)`, is moved to the first's assignment, so the second reads a `const` that's gone (a wrong answer, rd524)",
+    file: "src/lower/mir/tidy/destructuring.rs",
+    find: "                    && reads_in_items(held) == 1\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^tuple_of_taken_parts.rs$"],
+  },
 ];

@@ -1047,8 +1047,10 @@ export function firstTwo(items) {
   ("checked", ..) } else { ("value", ..) };`, which clippy asks for over
   two `let`s assigned later, is a `let` of each part assigned in each
   branch, `let field; let value; if (checkable) { field = "checked"; ..
-  } else { .. }`, no array made
-  ([ADR 1010](../../decisions/1010-a-tuple-of-an-ifs-value-is-a-let-of-each-part.md)).
+  } else { .. }`, no array made, a branch's parts made by statements
+  too, `(value.take(), reason.take())`'s `a = chunk.value; chunk.value =
+  null;`
+  ([ADR 1010](../../decisions/1010-a-tuple-of-an-ifs-value-is-a-let-of-each-part.md), amended).
 - `let ... else` handles the pattern not matching: here, fewer than two
   items. Its `else` is a guard, first, where it's written, before a
   `return` written after it too, or a function's tail its value is alike
