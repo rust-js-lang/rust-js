@@ -14,6 +14,8 @@ use core::marker::PhantomData;
 use js::{JsError, JsObject, Uint8Array};
 
 use crate::buffer::Buffer;
+use crate::event;
+use crate::events::{Emits, EventEmitterExt};
 
 /// [`stream.Writable`](https://nodejs.org/api/stream.html#class-streamwritable):
 /// what's written to, a file's, a socket's or a response's.
@@ -44,6 +46,26 @@ impl Writable {
     pub fn destroy(&self, error: Option<&JsError>) -> &Writable {
         unreachable!()
     }
+}
+
+impl EventEmitterExt for Writable {}
+
+/// `"drain"`: it takes more, after a `write` gave `false`.
+impl Emits<event::Drain> for Writable {
+    type Listener = dyn Fn();
+    type Args = ();
+}
+
+/// `"error"`: what failed writing, the stream destroyed of it.
+impl Emits<event::Error> for Writable {
+    type Listener = dyn Fn(&JsError);
+    type Args = (&'static JsError,);
+}
+
+/// `"close"`: it and what it wrote to closed.
+impl Emits<event::Close> for Writable {
+    type Listener = dyn Fn();
+    type Args = ();
 }
 
 /// What a stream's chunk, `string | Uint8Array`, takes: each as it is (ADR

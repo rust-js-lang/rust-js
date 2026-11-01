@@ -6,9 +6,21 @@
 #[cfg_attr(rust_js, rust_js::name = "beforeExit")]
 pub struct BeforeExit;
 
+/// `"close"`: a stream and what it holds closed; nothing is emitted after.
+#[cfg_attr(rust_js, rust_js::name = "close")]
+pub struct Close;
+
 /// `"disconnect"`: an IPC channel closed.
 #[cfg_attr(rust_js, rust_js::name = "disconnect")]
 pub struct Disconnect;
+
+/// `"drain"`: a writable stream whose `write` gave `false` takes more now.
+#[cfg_attr(rust_js, rust_js::name = "drain")]
+pub struct Drain;
+
+/// `"error"`: what failed, a stream's error, which it's destroyed of.
+#[cfg_attr(rust_js, rust_js::name = "error")]
+pub struct Error;
 
 /// `"exit"`: the process ends, now.
 #[cfg_attr(rust_js, rust_js::name = "exit")]

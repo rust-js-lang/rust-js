@@ -1065,6 +1065,45 @@ process.exit(0);
 // server stream config for Node hashes a key and writes its chunks, text
 // and bytes, to the response; `util`'s `TextEncoder` is imported from
 // `util`, as a host may have no global one.
+// rd459: a Writable emits "drain", "error" and "close", each listener of
+// its own type, as React's renderToPipeableStream listens to its
+// destination: \`destination.on('drain', createDrainHandler(..))\`.
+test("a Writable's drain, error and close are listened to", () => {
+  const dir = fixture("node-stream-events");
+  const node = buildNode();
+  writeFileSync(join(dir, "lib.rs"), `use js::JsError;
+use node::event;
+use node::events::EventEmitterExt;
+use node::stream::Writable;
+
+pub fn watch(destination: &'static Writable, log: &'static dyn Fn(&str)) {
+    destination.on(event::Drain, Box::new(move || log("drain")));
+    destination.on(event::Error, Box::new(move |error: &JsError| log(&error.message())));
+    destination.on(event::Close, Box::new(move || log("close")));
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('destination.on("drain", () => {\n    log("drain");\n  });');
+  expect(js).toContain('destination.on("error", (error) => {\n    log(error.message);\n  });');
+  expect(js).toContain('destination.on("close", () => {\n    log("close");\n  });');
+  writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
+  writeFileSync(join(dir, "run.js"), `import { Writable } from "node:stream";
+import { watch } from "./lib.js";
+const seen = [];
+const destination = new Writable({ highWaterMark: 1, write(chunk, _, done) { setTimeout(done, 1); } });
+watch(destination, (said) => seen.push(said));
+destination.write("abc");
+destination.once("drain", () => {
+  destination.destroy(new Error("boom"));
+  destination.on("close", () => console.log(JSON.stringify(seen)));
+});
+`);
+  const p = Bun.spawnSync(["node", "run.js"], { cwd: dir, stderr: "pipe" });
+  expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
+  expect(JSON.parse(p.stdout.toString())).toEqual(["drain", "boom", "close"]);
+});
+
 test("node's crypto hashes and a Writable is written to", () => {
   const dir = fixture("node-stream");
   const node = buildNode();
