@@ -1,6 +1,8 @@
 # 0770. A library's `const` is imported by its name, as its crate reads it
 
-Status: Accepted. Amends [0031](0031-consts.md), whose `const` of
+Status: Accepted. Amended (the user's decision): a dependency's module
+is imported by its package's subpath where its `exports` resolves it.
+Amends [0031](0031-consts.md), whose `const` of
 another crate was its value, written in place, and
 [0100](0100-separate-crates.md), whose consumer imported a library's
 functions alone.
@@ -63,7 +65,8 @@ const elementType = {$$typeof: REACT_MEMO_TYPE, type, compare: compare ?? null};
   A workspace crate's directory that is an npm package of the workspace,
   React's `packages/shared`, is not yet imported by the package's name, as
   a crate an npm package has is (ADR 0414); nor does rust-js write an
-  import without its extension.
+  import without its extension. Amended below: it is, where the package's
+  `exports` resolves that subpath.
 
 ## What holds it
 
@@ -71,3 +74,67 @@ const elementType = {$$typeof: REACT_MEMO_TYPE, type, compare: compare ?? null};
   name": a `SymbolFor`, a number and a string, read in the library and in
   a crate that uses it, run.
 - Mutation `library-const-inlined` (`lower.rs`).
+
+## Amendment: a dependency's module by its package's subpath
+
+The user's decision (2026-11-01), React port gap rd349. Case
+([0262](0262-when-rust-and-js-disagree.md)): none: where the package's
+`exports` resolves the subpath to the module's JS, the specifier and the
+file are one module, one instance; elsewhere the file is imported, as
+before.
+
+Every ported React module imported a workspace package's module by its
+file, `import {enableScopeAPI} from '../../../shared/ReactFeatureFlags.js'`,
+where upstream writes `from 'shared/ReactFeatureFlags'`: 1,003 imports in
+252 files. Node's ESM resolves a bare subpath without its extension only
+through the package's `exports`; React's jest and rollup resolve one by
+their own rules.
+
+**A dependency crate's module is imported by its package's name and the
+module's path in the package without its extension,
+`'shared/ReactFeatureFlags'`, only where that package's `package.json`
+`exports` resolves that subpath to the module's JS, where it goes in
+source, and Node finds the package from the consumer, as ADR 1008's root
+is.** Elsewhere the relative `.js` path stays. rust-js reads `exports` and
+never writes it: what a package exports is its author's, the host's
+authority.
+
+- **One owner**, `src/packages.rs`, which reads `exports["."]` (ADR 1008):
+  `subpaths` resolves each module's subpath as Node's
+  `PACKAGE_EXPORTS_RESOLVE` does, by its own key, else the pattern whose
+  part before its `*` is longest, then whose key is, under the default
+  condition (`default_target`, the same as the root's: `import` or
+  `default`, both where they agree). A `null` target, another condition's
+  alone, a pattern's target of another file (`"./src/*": "./src/*"`, the
+  file without its extension) or a part with a `node_modules` segment,
+  which Node refuses, gives none. The library's manifest says each
+  (`Package::subpaths`); `library.rs` asks `subpath_specifier`.
+- **Inputs**: the `package.json` is already of the library's inputs (ADR
+  1008), so an edit of its `exports` builds the library again, then its
+  consumers.
+- **Declarations** too: a consumer's `.d.ts` imports a type by the same
+  specifier, which TypeScript resolves through `exports` to the `.js`,
+  then the `.d.ts` beside it.
+- **A library in `node_modules`** (ADR 0414): a module whose subpath its
+  `exports` resolves is imported by it, `@acme/greet/src/loud`; another is
+  relinked by the host, as before, to `@acme/greet/src/loud.js`, where
+  `exports` exports that file.
+- **A crate's own modules** are imported by their relative `.js` path, as
+  before: upstream's `'./ReactDOMComponentTree'` without its extension is
+  not this decision.
+
+What a workspace adds for this: `"exports": {"./*": "./*.js"}` beside
+any entries its package has (`".": "./index.js"`, `"./jsx-runtime"`),
+which Node's ESM, Vite and jest all resolve. A hand-written import of a
+subpath with its extension, `'shared/ReactFeatureFlags.js'`, then names
+`ReactFeatureFlags.js.js`: write it without, as upstream does.
+
+Held by `test/libraries.test.ts`, "a dependency's module is imported by
+its package's subpath where its exports resolve it": no `exports`, a
+pattern (run by Node), an exact key under the default condition beside
+another condition's pattern, a `null`, a longer pattern of another file,
+the root alone, a `node_modules` segment and the package not installed,
+each against native Rust. Mutations `package-subpath-any-target`,
+`package-subpath-pattern-shortest`, `package-subpath-exact-key-unread`,
+`package-subpath-segments-unchecked` (`packages.rs`) and
+`package-subpath-unread` (`library.rs`).

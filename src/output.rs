@@ -492,10 +492,8 @@ impl OutputPlan {
             let exported: Vec<Vec<String>> = lowered.modules.iter().map(exports).collect();
             let modules = (lowered.modules.iter().zip(&exported))
                 .map(|(module, exports)| {
-                    let files = vec![
-                        absolute(&self.js_path(&module.path))?,
-                        absolute(&self.in_source(module)?)?,
-                    ];
+                    let in_source = absolute(&self.in_source(module)?)?;
+                    let files = vec![absolute(&self.js_path(&module.path))?, in_source.clone()];
                     // What it re-exports of the crate's modules, by each
                     // one's name there and the name it gives (ADR 0240).
                     let reexports = (module.reexports.iter())
@@ -512,6 +510,7 @@ impl OutputPlan {
                     Ok(crate::packages::Module {
                         path: &module.path,
                         files,
+                        in_source,
                         exports,
                         reexports,
                     })

@@ -505,7 +505,12 @@ impl Dependencies {
                 impls: library.impls.into_iter().collect(),
                 ..Exports::default()
             };
-            // Where a module's JS is, from the consumer's.
+            // Where a module's JS is, from the consumer's: by its package's
+            // subpath, where Node finds the package from the crate's JS and
+            // its `exports` resolve one to that file (ADR 0770, amended),
+            // else its file's path.
+            let package = (library.package.as_ref())
+                .filter(|package| crate::packages::installed(dir, &package.name).as_ref() == Some(&package.dir));
             let specifier = |path: &Vec<String>| -> Result<String, String> {
                 let module = (manifest.modules.iter())
                     .find(|m| &m.module == path)
@@ -520,15 +525,14 @@ impl Dependencies {
                 if !written.is_some_and(|written| manifest.artifacts.iter().any(|a| &a.file == written)) {
                     return Err("dependency module is not a fingerprinted artifact".into());
                 }
-                Ok(crate::paths::specifier(parent, &module.file))
+                let subpath = package.and_then(|package| package.subpath_specifier(path));
+                Ok(subpath.unwrap_or_else(|| crate::paths::specifier(parent, &module.file)))
             };
             // What its package's root re-exports, by the package's name,
             // where Node finds that package from the crate's JS (ADR 1008):
             // an item of its root module, whichever path names it; another,
             // where the crate's Rust names it through the library's root, as
             // `Foreign::import_key` says of each module (ADR 1008, amended).
-            let package = (library.package.as_ref())
-                .filter(|package| crate::packages::installed(dir, &package.name).as_ref() == Some(&package.dir));
             let rooted_of = |module: &Vec<String>, export: &str| {
                 package.and_then(|package| {
                     (package.exports.iter())

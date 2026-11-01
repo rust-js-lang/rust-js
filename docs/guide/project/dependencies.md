@@ -341,6 +341,33 @@ import { Children } from "../../react/src/ReactClient.js";
   its types in a `.d.ts` beside it, `index.d.ts`; an `@flow` header over
   plain JS is fine.
 
+### A package's modules by its subpaths
+
+Another module of a dependency crate whose directory is a package Node
+finds from the consumer, a workspace's `packages/shared`, is imported by
+the package's name and its path there, without its extension, as
+upstream writes it, where the package's `exports` resolves that subpath
+to the module's JS
+([ADR 0770](../../decisions/0770-a-librarys-const-is-imported-by-its-name.md)):
+
+```json
+{ "name": "shared", "exports": { "./*": "./*.js" } }
+```
+
+```js
+// of `use shared::flags::level;`, shared's src/flags.rs
+import { level } from "shared/src/flags";
+```
+
+- **`exports` is yours**: rust-js reads it and never writes it. Without
+  one, or where it hides the subpath or gives another file, the module
+  is imported by its file, `../../shared/src/flags.js`.
+- **As Node resolves it**: a key of its own, else the longest pattern,
+  under the `import` or `default` condition. Vite and jest resolve
+  `"./*": "./*.js"` alike.
+- **Your hand-written JS** imports such a subpath without its extension
+  too: `'shared/src/flags.js'` would name `flags.js.js`.
+
 ## Versions
 
 - **rust-js's own packages are one version**: `@rust-js/build`,

@@ -15,7 +15,6 @@ mod case_rests;
 mod comparisons;
 mod contracts;
 mod copied;
-mod decided;
 mod decisions;
 mod destructuring;
 mod flags;
@@ -38,8 +37,8 @@ pub(super) use self::bindings::{HELD_ARG, is_temporary, temporary, unsuffixed_pa
 pub(super) use self::destructuring::{copied_params, destructured_params};
 pub(super) use self::values::{call_path, field_path, writer_body};
 use self::{
-    bindings::*, branches::*, comparisons::*, copied::*, decided::*, destructuring::*, jumps::*, logicals::*, loops::*,
-    moves::*, options::*, switches::switched, value_chains::*, values::*,
+    bindings::*, branches::*, comparisons::*, copied::*, destructuring::*, jumps::*, logicals::*, loops::*, moves::*,
+    options::*, switches::switched, value_chains::*, values::*,
 };
 use super::hints::{LabeledBlock, Switch};
 

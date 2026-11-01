@@ -99,6 +99,14 @@ export const mutations: Mutation[] = [
     tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
   },
   {
+    name: "package-subpath-unread",
+    breaks: "a dependency's module its package's `exports` resolves a subpath to is imported by its file, `../../shared/src/flags.js`, where upstream's `shared/src/flags` is what the user decided (ADR 0770, amended)",
+    file: "src/library.rs",
+    find: "                let subpath = package.and_then(|package| package.subpath_specifier(path));\n",
+    replace: "                let subpath: Option<String> = package.and(None);\n",
+    tests: ["test/libraries.test.ts", "-t", "package's subpath"],
+  },
+  {
     name: "package-root-module-by-file",
     breaks: "an item of a package's root module, ADR 0414's `src/lib.js`, is imported by its file, `@acme/greet/src/lib.js`, where no path the crate writes names it, a method's type's, a second way beside the package's name (ADR 1008, amended)",
     file: "src/library.rs",

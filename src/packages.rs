@@ -1,8 +1,10 @@
 //! A crate's npm package, its `package.json` beside its `Cargo.toml` (ADR
 //! 0414): its name, the files its root, `"."`, is under each of its
 //! conditions, and what each re-exports of the crate's modules, which a
-//! consumer imports by the package's name (ADR 1008). And where Node finds
-//! a package from a directory, as it resolves a bare specifier. The one
+//! consumer imports by the package's name (ADR 1008), and the subpath its
+//! `exports` names each module's JS by, which a consumer imports it by
+//! (ADR 0770, amended). And where Node finds a package from a directory,
+//! as it resolves a bare specifier. The one
 //! owner of what the compiler reads of a package: artifact planning asks it
 //! of the crate it builds, a consumer of the libraries it's given.
 
@@ -21,6 +23,33 @@ pub struct Package {
     pub dir: std::path::PathBuf,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub exports: Vec<PackageExport>,
+    /// Each of the library's modules whose JS its `exports` map resolves a
+    /// subpath of the package to, that path without its extension (ADR
+    /// 0770, amended): a consumer Node finds the package from imports the
+    /// module by `<name>/<subpath>`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub subpaths: Vec<PackageSubpath>,
+}
+
+/// One of the library's modules, by its path, and the subpath of the
+/// package, `src/client` of `./src/client.js`, that the package's
+/// `exports` resolves to the module's JS where it goes in source, beside
+/// its Rust, as a host places it.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PackageSubpath {
+    pub module: Vec<String>,
+    pub subpath: String,
+}
+
+impl Package {
+    /// The specifier a consumer imports `module`'s JS by, its package's
+    /// name and the subpath its `exports` resolves to that JS,
+    /// `shared/ReactFeatureFlags`, where it's one (ADR 0770, amended).
+    pub fn subpath_specifier(&self, module: &[String]) -> Option<String> {
+        (self.subpaths.iter())
+            .find(|subpath| subpath.module == module)
+            .map(|subpath| format!("{}/{}", self.name, subpath.subpath))
+    }
 }
 
 /// One of the library's modules' exports, by the module's path and its
@@ -65,6 +94,9 @@ pub enum Reexport {
 pub struct Module<'a> {
     pub path: &'a [String],
     pub files: Vec<PathBuf>,
+    /// Where its JS goes in source, beside its Rust, of `files`: what a
+    /// subpath of the package names (ADR 0770, amended).
+    pub in_source: PathBuf,
     pub exports: &'a [String],
     pub reexports: Vec<(Vec<String>, String, String)>,
 }
@@ -102,15 +134,39 @@ pub fn read(dir: &Path, modules: &[Module<'_>], parse: impl Fn(&str) -> Result<E
     let Some(name) = json["name"].as_str() else {
         return Ok(read);
     };
+    let exports = root_exports(dir, name, &json, modules, parse, &mut read)?;
+    let dir = crate::paths::absolute(dir)?;
+    read.package = Some(Package {
+        name: name.to_string(),
+        subpaths: subpaths(&dir, &json["exports"], modules),
+        dir,
+        exports: (exports.into_iter())
+            .map(|((module, export), entry)| PackageExport { module, export, entry })
+            .collect(),
+    });
+    Ok(read)
+}
+
+/// What the package's root's entry re-exports of `modules`, each by its
+/// module and name there, and the entry's name for it; the entry read, of
+/// `read`'s files.
+fn root_exports(
+    dir: &Path,
+    name: &str,
+    json: &serde_json::Value,
+    modules: &[Module<'_>],
+    parse: impl Fn(&str) -> Result<Entry, String>,
+    read: &mut Read,
+) -> Result<BTreeMap<(Vec<String>, String), String>, String> {
     // The first of the files it may be that's one, or one of the crate's
     // modules' JS, which may not be written yet.
     let own = |file: &PathBuf| modules.iter().any(|module| module.files.contains(file));
-    let candidates = root_entry(dir, &json).into_iter().flatten();
+    let candidates = root_entry(dir, json).into_iter().flatten();
     let candidates = candidates.filter_map(|entry| crate::paths::absolute(&entry).ok());
     let Some(file) = candidates.into_iter().find(|file| own(file) || file.is_file()) else {
-        return Ok(read);
+        return Ok(BTreeMap::new());
     };
-    let exports = match modules.iter().find(|module| module.files.contains(&file)) {
+    Ok(match modules.iter().find(|module| module.files.contains(&file)) {
         // The crate's root module's JS, which exports its own and what it
         // re-exports, as its module says.
         Some(root) if root.path.is_empty() => {
@@ -119,11 +175,11 @@ pub fn read(dir: &Path, modules: &[Module<'_>], parse: impl Fn(&str) -> Result<E
                 .map(|(module, export, alias)| ((module.clone(), export.clone()), alias.clone()));
             own.chain(reexported).collect()
         }
-        Some(_) => return Ok(read),
+        Some(_) => BTreeMap::new(),
         None => {
             let js = file.extension().is_some_and(|e| e == "js" || e == "mjs" || e == "jsx");
             if !file.is_file() || !js {
-                return Ok(read);
+                return Ok(BTreeMap::new());
             }
             read.files.push(file.clone());
             read.hand_written = true;
@@ -142,56 +198,109 @@ pub fn read(dir: &Path, modules: &[Module<'_>], parse: impl Fn(&str) -> Result<E
             })?;
             reexported(crate::paths::parent_dir(&file), &parsed, modules)
         }
+    })
+}
+
+/// Each of `modules` whose JS a subpath of the package in `dir`, its
+/// file's path there without its extension, is to an `import` of it by
+/// `exports`, as Node resolves one (ADR 0770, amended): by its own key, or
+/// the pattern's whose `*` matches most of it, `"./*": "./*.js"`, under the
+/// default condition, as the root's entry is (ADR 1008, amended). None
+/// where `exports` exports the root alone, or isn't, as Node then finds a
+/// subpath by its file, which an `import` needs written with its
+/// extension.
+fn subpaths(dir: &Path, exports: &serde_json::Value, modules: &[Module<'_>]) -> Vec<PackageSubpath> {
+    let serde_json::Value::Object(map) = exports else {
+        return Vec::new();
     };
-    read.package = Some(Package {
-        name: name.to_string(),
-        dir: crate::paths::absolute(dir)?,
-        exports: (exports.into_iter())
-            .map(|((module, export), entry)| PackageExport { module, export, entry })
-            .collect(),
-    });
-    Ok(read)
+    let subpath = |file: &Path| -> Option<String> {
+        let bare = file.strip_prefix(dir).ok()?.with_extension("");
+        let bare = bare.to_str()?.replace(std::path::MAIN_SEPARATOR, "/");
+        let target = subpath_target(map, &format!("./{bare}"))?;
+        let target = crate::paths::absolute(&dir.join(target.strip_prefix("./")?)).ok()?;
+        (target == file).then_some(bare)
+    };
+    (modules.iter())
+        .filter_map(|module| {
+            let subpath = subpath(&module.in_source)?;
+            Some(PackageSubpath {
+                module: module.path.to_vec(),
+                subpath,
+            })
+        })
+        .collect()
+}
+
+/// What `exports`' subpath, `./src/client`, resolves to under the default
+/// condition, as Node's `PACKAGE_EXPORTS_RESOLVE` does: its own key, one
+/// without a `*`; else the pattern whose part before its `*` is longest,
+/// then whose key is, its target with each `*` the part the pattern's
+/// matched. None where that's `null`, a condition's other than the
+/// default's, or the matched part has a segment Node refuses, a
+/// `node_modules`.
+fn subpath_target(exports: &serde_json::Map<String, serde_json::Value>, subpath: &str) -> Option<String> {
+    if let Some(value) = exports.get(subpath).filter(|_| !subpath.contains('*')) {
+        return default_target(value).map(str::to_string);
+    }
+    let matched = (exports.iter())
+        .filter_map(|(key, value)| {
+            let (before, after) = key.split_once('*')?;
+            let fits = !after.contains('*')
+                && subpath.len() >= key.len()
+                && subpath.starts_with(before)
+                && subpath.ends_with(after);
+            let part = fits.then(|| &subpath[before.len()..subpath.len() - after.len()])?;
+            Some(((before.len(), key.len()), part, value))
+        })
+        .max_by_key(|(order, _, _)| *order)?;
+    let (_, part, value) = matched;
+    let refused = |segment: &str| matches!(segment.to_lowercase().as_str(), "" | "." | ".." | "node_modules");
+    if part.split(['/', '\\']).any(refused) {
+        return None;
+    }
+    default_target(value).map(|target| target.replace('*', part))
 }
 
 /// The file the package's root, `"."`, is to an `import` of its name by
-/// default, of `exports`: a condition's `import` or `default`, one where
-/// both are, as Node takes whichever an object names first, a fallback
-/// array's first; the others, `react-server`'s,
-/// `browser`'s, the host's to choose (the user's decision, ADR 1008,
-/// amended, listed in ADR 0262). Else its `main`, else `index.js`, as
+/// default, of `exports` (`default_target`). Else its `main`, else `index.js`, as
 /// Node finds a file of it, each it may be. None where it's none, `null`'s,
 /// or exports no root.
 fn root_entry(dir: &Path, json: &serde_json::Value) -> Option<Vec<PathBuf>> {
     use serde_json::Value;
-    fn target(value: &Value) -> Option<&str> {
-        match value {
-            Value::String(target) => Some(target),
-            Value::Array(each) => each.first().and_then(target),
-            // `import`'s or `default`'s; of both, one where they agree, as
-            // which Node takes is whichever is written first, an order
-            // `serde_json` doesn't keep.
-            Value::Object(conditions) => {
-                let import = conditions.get("import").map(target);
-                let default = conditions.get("default").map(target);
-                match (import, default) {
-                    (Some(import), Some(default)) => (import == default).then_some(import).flatten(),
-                    (Some(one), None) | (None, Some(one)) => one,
-                    (None, None) => None,
-                }
-            }
-            _ => None,
-        }
-    }
     let found = match &json["exports"] {
         Value::Null => {
             let main = json["main"].as_str().unwrap_or("index.js");
             let file = dir.join(main);
             return Some(vec![file.clone(), file.with_extension("js"), file.join("index.js")]);
         }
-        Value::Object(map) if map.keys().any(|key| key.starts_with('.')) => target(map.get(".")?)?,
-        exports => target(exports)?,
+        Value::Object(map) if map.keys().any(|key| key.starts_with('.')) => default_target(map.get(".")?)?,
+        exports => default_target(exports)?,
     };
     found.strip_prefix("./").map(|path| vec![dir.join(path)])
+}
+
+/// The file an `exports` target is under the default condition: a
+/// condition's `import` or `default`, one where both are, as which Node
+/// takes is whichever is written first, an order `serde_json` doesn't
+/// keep; a fallback array's first. The others, `react-server`'s,
+/// `browser`'s, are the host's to choose (the user's decision, ADR 1008,
+/// amended, listed in ADR 0262).
+fn default_target(value: &serde_json::Value) -> Option<&str> {
+    use serde_json::Value;
+    match value {
+        Value::String(target) => Some(target),
+        Value::Array(each) => each.first().and_then(default_target),
+        Value::Object(conditions) => {
+            let import = conditions.get("import").map(default_target);
+            let default = conditions.get("default").map(default_target);
+            match (import, default) {
+                (Some(import), Some(default)) => (import == default).then_some(import).flatten(),
+                (Some(one), None) | (None, Some(one)) => one,
+                (None, None) => None,
+            }
+        }
+        _ => None,
+    }
 }
 
 /// What `entry`, in `dir`, re-exports of `modules`: each module's export,

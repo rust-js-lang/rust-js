@@ -327,3 +327,95 @@ pub fn count() -> u32 {
   expect(built().stderr).toBe("");
   expect(js()).toContain('import { bump, hook } from "@acme/kids";\n');
 }, 600_000);
+
+// A workspace package's module, React's `shared/ReactFeatureFlags`, is
+// imported by the package's name and its subpath, without its extension,
+// where the package's `exports` resolves that subpath to the module's JS,
+// as Node, Vite and jest resolve it; elsewhere by its file (the user's
+// decision, ADR 0770, amended). rust-js reads `exports` and never writes
+// it: what a package exports is its author's.
+test("a dependency's module is imported by its package's subpath where its exports resolve it", () => {
+  const dir = fixture("package-subpaths");
+  writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["shared", "dom"]\nresolver = "3"\n');
+  for (const [name, more] of [["shared", ""], ["dom", '\n[dependencies]\nshared = { path = "../shared" }\n']]) {
+    mkdirSync(join(dir, name, "src"), { recursive: true });
+    writeFileSync(join(dir, name, "Cargo.toml"), `[package]\nname = "${name}"\nversion = "0.1.0"\nedition = "2024"\n${more}`);
+  }
+  const shared = join(dir, "shared");
+  const manifest = (exports?: unknown) =>
+    writeFileSync(join(shared, "package.json"), JSON.stringify({ name: "shared", private: true, type: "module", exports }));
+  writeFileSync(join(shared, "src", "lib.rs"), "pub mod flags;\npub mod node_modules;\npub mod symbols;\n");
+  writeFileSync(join(shared, "src", "node_modules.rs"), "pub fn one() -> u32 {\n    1\n}\n");
+  writeFileSync(join(shared, "src", "flags.rs"), "pub const ENABLE_SCOPE_API: bool = true;\n\npub fn level() -> u32 {\n    3\n}\n");
+  writeFileSync(join(shared, "src", "symbols.rs"), 'pub fn name(level: u32) -> String {\n    format!("level {level}")\n}\n');
+  writeFileSync(join(dir, "dom", "src", "lib.rs"), `use shared::flags::{ENABLE_SCOPE_API, level};
+use shared::node_modules::one;
+use shared::symbols::name;
+
+pub fn run() -> String {
+    if ENABLE_SCOPE_API { name(level() + one()) } else { String::new() }
+}
+`);
+  mkdirSync(join(dir, "node_modules", "@rust-js"), { recursive: true });
+  symlinkSync(shared, join(dir, "node_modules", "shared"), "dir");
+  symlinkSync(join(root, "runtime"), join(dir, "node_modules", "@rust-js", "runtime"), "dir");
+  symlinkSync(join(root, "std"), join(dir, "node_modules", "@rust-js", "std"), "dir");
+  const js = () => readFileSync(join(dir, "dom", "src", "lib.js"), "utf8");
+  const ran = () => run([node ?? "node", "--input-type=module", "--eval", `console.log((await import(${JSON.stringify(join(dir, "dom", "src", "lib.js"))})).run());`]).trim();
+  const built = () => build(join(dir, "dom"));
+  const native = join(dir, "native");
+  mkdirSync(native);
+  run(["rustc", "--edition=2024", "--crate-type=rlib", "--crate-name", "shared", join(shared, "src", "lib.rs"), "-o", join(native, "libshared.rlib")]);
+  run(["rustc", "--edition=2024", "--crate-type=rlib", "--crate-name", "dom", join(dir, "dom", "src", "lib.rs"), "-o", join(native, "libdom.rlib"), "--extern", `shared=${join(native, "libshared.rlib")}`]);
+  writeFileSync(join(native, "main.rs"), "fn main() {\n    println!(\"{}\", dom::run());\n}\n");
+  run(["rustc", "--edition=2024", join(native, "main.rs"), "-o", join(native, "program"), "--extern", `dom=${join(native, "libdom.rlib")}`, "-L", `dependency=${native}`]);
+  const nativeRun = run([join(native, "program")]).trim();
+  expect(nativeRun).toBe("level 4");
+  // Each module's import, by its file or its subpath.
+  const imports = (flags: string, symbols: string) => {
+    for (const line of [
+      `import { ENABLE_SCOPE_API, level } from "${flags}";\n`,
+      'import { one } from "../../shared/src/node_modules.js";\n',
+      `import { name } from "${symbols}";\n`,
+    ]) {
+      expect(js()).toContain(line);
+    }
+  };
+  const [flags, symbols] = ["../../shared/src/flags.js", "../../shared/src/symbols.js"];
+  // No `exports`: Node finds `shared/src/flags` by its file, which an
+  // `import` names with its extension, so by its path, as before.
+  manifest();
+  expect(built().stderr).toBe("");
+  imports(flags, symbols);
+  expect(ran()).toBe(nativeRun);
+  // A pattern, Node's, Vite's and jest's alike, the package rebuilt as its
+  // package.json changes; a `node_modules` segment, which Node refuses in
+  // a subpath, by its file.
+  manifest({ "./*": "./*.js" });
+  expect(built().stderr).toBe("");
+  imports("shared/src/flags", "shared/src/symbols");
+  expect(ran()).toBe(nativeRun);
+  // Its own key, the default condition's, beside a pattern another
+  // condition gives and one that hides a module, `null`.
+  manifest({ "./src/flags": { import: "./src/flags.js", default: "./src/flags.js" }, "./src/*": { browser: "./src/*.js" } });
+  expect(built().stderr).toBe("");
+  imports("shared/src/flags", symbols);
+  expect(ran()).toBe(nativeRun);
+  manifest({ "./*": "./*.js", "./src/symbols": null });
+  expect(built().stderr).toBe("");
+  imports("shared/src/flags", symbols);
+  // A longer pattern's, `./src/*`'s, of the file without its extension,
+  // which Node then doesn't find.
+  manifest({ "./*": "./*.js", "./src/*": "./src/*" });
+  expect(built().stderr).toBe("");
+  imports(flags, symbols);
+  // Exports of the root alone, and a package Node finds no copy of.
+  manifest({ ".": "./src/lib.js" });
+  expect(built().stderr).toBe("");
+  imports(flags, symbols);
+  manifest({ "./*": "./*.js" });
+  rmSync(join(dir, "node_modules", "shared"));
+  expect(built().stderr).toBe("");
+  imports(flags, symbols);
+  expect(ran()).toBe(nativeRun);
+}, 600_000);

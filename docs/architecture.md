@@ -48,7 +48,7 @@ compiled for WASI; it is a separate build package, not a second compiler.
 | Owned JS tree, source arena and comments | `src/js.rs`, `src/js/`, `src/program.rs`, `src/comments.rs` |
 | Reachability, linking and names | `src/reachability.rs`, `src/link.rs`, `src/names.rs` |
 | Readability and printing | `src/prepare.rs`, `src/prepare/`, `src/to_oxc.rs`, `src/to_oxc/`, `src/format.rs`, `src/typescript.rs`, `src/prettier.rs`; `typescript/` prints the declaration model |
-| Library contracts, configuration, hooks and path utilities; a crate's npm package and what its entry re-exports (ADR 1008) | `src/library.rs`, `src/settings.rs`, `src/hooks.rs`, `src/paths.rs`, `src/packages.rs` |
+| Library contracts, configuration, hooks and path utilities; a crate's npm package, what its entry re-exports (ADR 1008) and the subpaths its `exports` resolves (ADR 0770) | `src/library.rs`, `src/settings.rs`, `src/hooks.rs`, `src/paths.rs`, `src/packages.rs` |
 | Artifact planning, manifest and publication | `src/output.rs`, `src/manifest.rs`, `src/publish.rs` |
 | Runtime helper catalog and implementations | `src/runtime.rs`, `src/runtime/`; generated package in `runtime/` |
 | Compiled standard-library bodies | `std/lib.rs`, generated `std/*.js` and `std/manifest.json` |
@@ -376,7 +376,10 @@ cannot describe JS linkage. Of a crate whose directory has a `package.json`,
 `to_oxc::entry_exports`, as artifact planning asks; a consumer imports what
 the entry re-exports by the package's name where Node finds it and its Rust
 names it through the library's root, each module by its own paths (`Foreign::import_key`)
-([ADR 1008](decisions/1008-what-a-packages-entry-re-exports-is-imported-by-its-name.md)). Consumers validate library/compiler identity and
+([ADR 1008](decisions/1008-what-a-packages-entry-re-exports-is-imported-by-its-name.md)),
+and another module by the package's subpath its `exports` resolves to
+that module's JS, `shared/ReactFeatureFlags`
+([ADR 0770](decisions/0770-a-librarys-const-is-imported-by-its-name.md), amended). Consumers validate library/compiler identity and
 required dependencies. Cargo provides build configuration and caching;
 `src/cargo.rs` makes compiler identity visible to Cargo's fingerprints.
 

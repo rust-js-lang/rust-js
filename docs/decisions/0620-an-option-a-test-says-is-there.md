@@ -206,19 +206,3 @@ says nothing of it (ADR 0841, amended).
 - Held by `test/lowering-nullable.test.ts`, "a variable of what a nullable
   function gave is returned and stored as it is", run in JS, and the
   mutation `nullable-call-kept-undefined` (`lower/mir/structure.ts`).
-
-## Amended (2026-11-01): what a `return` reads first (rd443)
-
-React's resolveCurrentlyRenderingComponent tests its module's variable,
-throws where it's `null`, and returns it. The port's `CURRENT.get().
-unwrap()` after the `is_none()` test's panic kept its `$unwrap`: a
-module variable isn't a variable alone, so the `return` that unwraps it
-disturbs the test, and a `return` wasn't one of the statements whose first
-read is looked at. **A `return`'s value is what it reads before what it
-does, as a `const`'s is: `return $unwrap(p)` where the test says `p` is
-there is `return p`**. Where something runs between the test and the
-`return` that may set the variable again, a call, the `$unwrap` stays,
-as Rust's `unwrap()` is checked there. Case
-([0262](0262-when-rust-and-js-disagree.md)): N. Held by
-`test/lowering-early-exits.test.ts` ("a module variable returned after its
-test panicked is the variable") and the mutation `present-return-unseen`.
