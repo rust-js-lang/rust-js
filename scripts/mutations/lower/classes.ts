@@ -627,7 +627,7 @@ export const mutations: Mutation[] = [
     name: "subclass-field-set-after-allowed",
     breaks: "a class component React constructs may have an `f64` field, which is `undefined` until set, no number",
     file: "src/lower/classes.rs",
-    find: "                            if !starts_undefined(tcx, ty) {\n",
+    find: "                            if !starts_undefined(tcx, field) {\n",
     replace: "                            if false {\n",
     tests: [
       "test/class-components.test.ts",

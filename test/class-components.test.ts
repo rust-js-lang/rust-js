@@ -665,3 +665,59 @@ pub fn Board() -> JSX::Element {
 }
 `)).toContain("expected closure signature `fn(Option<&'static Gauge>) -> _`");
 }, 60_000);
+
+// rd331l: a class React constructs may hold an optional `OnceCell`, set
+// once, absent until then, as ReactART's Surface's `this._mountNode =
+// createContainer(..)` of `componentDidMount`, read after without a borrow.
+test("a class React constructs holds an optional OnceCell, set once", () => {
+  const { js, dir } = compiled("class-component-once-cell", `use std::cell::OnceCell;
+use std::rc::Rc;
+
+use react::{Component, JSX, jsx};
+
+pub struct Root {
+    pub label: String,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Mounted {
+    #[cfg_attr(rust_js, rust_js::optional)]
+    _root: OnceCell<Rc<Root>>,
+}
+
+impl Component for Mounted {
+    fn component_did_mount(self: &'static Self) {
+        _ = self._root.set(Rc::new(Root { label: "root".to_owned() }));
+        println!("{}", self._root.get().unwrap().label);
+    }
+
+    fn render(self: &'static Self) -> JSX::Element {
+        jsx! { <hr /> }
+    }
+}
+`);
+  // Set where it's still empty, as Rust's `set` is, absent until then.
+  expect(js).toContain(`  componentDidMount() {
+    if (this._root === undefined) {
+      this._root = { label: "root" };
+    }
+    console.log(\`\${$unwrap(this._root).label}\`);
+  }`);
+  const ran = rendered(dir, `import { expect, test } from "bun:test";
+import { createElement } from "react";
+import { flushSync } from "react-dom";
+import { createRoot } from "react-dom/client";
+import { Mounted } from "./lib.jsx";
+
+const said = [];
+console.log = (line) => said.push(line);
+
+test("its cell is set as it mounts", () => {
+  const root = createRoot(document.createElement("div"));
+  flushSync(() => root.render(createElement(Mounted)));
+  expect(said).toEqual(["root"]);
+  flushSync(() => root.unmount());
+});
+`);
+  expect([ran.code, ran.passed], ran.output).toEqual([0, "1"]);
+}, 60_000);

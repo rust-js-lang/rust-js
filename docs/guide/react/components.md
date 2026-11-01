@@ -703,7 +703,8 @@ export function Clocks() {
   write them.
 - **React constructs it**: each field is what the instance is given
   after, `undefined` until set, an `Option` or a `Cell` or `RefCell` of
-  one. Or the class writes its constructor, `fn new(props: &P) -> Self`
+  one, or a `#[rust_js::optional]` `OnceCell`, set once, as a container
+  made as it mounts is. Or the class writes its constructor, `fn new(props: &P) -> Self`
   in its `#[rust_js::class]` impl, which is `constructor(props) {
   super(props); .. }`, and its fields are set as it sets them.
 - **It's an element of `jsx!`**, `<Clock label="UTC" />`, as a component

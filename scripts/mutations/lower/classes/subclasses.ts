@@ -67,4 +67,12 @@ export const mutations: Mutation[] = [
     replace: "        let _ = imp;\n        None\n",
     tests: ["test/class-components.test.ts", "-t", "an element jsx! renders"],
   },
+  {
+    name: "class-once-cell-refused",
+    breaks: "a class React constructs is refused an optional `OnceCell`, set once, ReactART's Surface's `_mountNode` (rd331l; ADR 1041, amended)",
+    file: "src/lower/classes/subclasses.rs",
+    find: "            crate::lower::bindings::is_optional(tcx, field)\n",
+    replace: "            false\n",
+    tests: ["test/class-components.test.ts", "-t", "optional OnceCell"],
+  },
 ];

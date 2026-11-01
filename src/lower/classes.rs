@@ -554,12 +554,11 @@ pub(super) fn reject_misuse<'tcx>(
                     // `undefined` until then (rd331).
                     None => {
                         for field in &variant.fields {
-                            let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
-                            if !starts_undefined(tcx, ty) {
+                            if !starts_undefined(tcx, field) {
                                 refuse(
                                     tcx.def_span(field.did),
                                     &format!(
-                                        "that its superclass constructs has fields set after, `undefined` until then: `{}` is an `Option`, or a `Cell` or a `RefCell` of one, or the class writes its constructor, `fn new(props: P) -> Self`",
+                                        "that its superclass constructs has fields set after, `undefined` until then: `{}` is an `Option`, or a `Cell` or a `RefCell` of one, or an optional `OnceCell`, `#[rust_js::optional]`, or the class writes its constructor, `fn new(props: P) -> Self`",
                                         field.name
                                     ),
                                 );

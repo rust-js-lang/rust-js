@@ -332,3 +332,19 @@ that `use` imports with it, is written before names resolve, of the
 impl's props as its module names them; another module's impl names the
 struct through its own `use`s, which the expansion would have to resolve
 as rustc does to pair them.
+
+## Amendment: an optional `OnceCell` is a field set after (rd331l)
+
+ReactART's Surface sets `this._mountNode = createContainer(..)` once, as it
+mounts, and reads it in each later method while the reconciler runs. A
+`RefCell<Option<Rc<FiberRoot>>>` borrowed across that call is refused
+(ADR 0863), as the reconciler may borrow it; the Rust for a value set
+once is a `OnceCell`, which a class React constructs was refused. **An
+optional `OnceCell`, `#[rust_js::optional]`, is a field set after**: absent
+until it's set (ADR 0280, amended), `undefined` as a field React's
+instance gains after is. Its `set` is Rust's, set where it's still empty,
+`if (this._root === undefined) { this._root = .. }`, as rustc can't know
+React mounts the instance once; its `get().unwrap()` is `$unwrap`. Held by
+`test/class-components.test.ts`'s "a class React constructs holds an
+optional OnceCell, set once" and the mutation `class-once-cell-refused`
+(`lower/classes/subclasses.rs`).

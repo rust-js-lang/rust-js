@@ -76,12 +76,17 @@ pub(crate) fn member_naming(tcx: TyCtxt<'_>, adt: DefId) -> Option<DefId> {
     })
 }
 
-/// Is `ty`, a field's, one a value is of before it's set, `undefined`: an
-/// `Option`, or a `Cell` or a `RefCell` of one, whose `None` it is (rd331).
-pub(super) fn starts_undefined<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) -> bool {
-    let is_option = |ty: ty::Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option));
+/// Is `field` one a value is of before it's set, `undefined`: an `Option`,
+/// or a `Cell` or a `RefCell` of one, whose `None` it is (rd331); or an
+/// optional `OnceCell`, absent until it's set (ADR 0280, amended; rd331l).
+pub(super) fn starts_undefined(tcx: TyCtxt<'_>, field: &ty::FieldDef) -> bool {
+    let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+    let is_option = |ty: ty::Ty<'_>| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option));
     match ty.kind() {
         _ if is_option(ty) => true,
+        ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::OnceCell) => {
+            crate::lower::bindings::is_optional(tcx, field)
+        }
         ty::Adt(adt, args) => {
             (is_std_def(tcx, adt.did(), StdItem::Cell) || is_std_def(tcx, adt.did(), StdItem::RefCell))
                 && is_option(args.type_at(0))
