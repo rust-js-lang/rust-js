@@ -1008,14 +1008,7 @@ export const mutations: Mutation[] = [
       "a nullable thread-local of an Option is null where it's made|a nullable const's None is null",
     ],
   },
-  {
-    name: "class-to-string-undeclared",
-    breaks: "a class's `toString` is left out of its declaration (#358)",
-    file: "src/lower/declarations.rs",
-    find: "        if crate::lower::classes::has_to_string(self.tcx, def_id) {\n",
-    replace: "        if false {\n",
-    tests: ["test/classes.test.ts", "-t", "Display is its prototype"],
-  },
+
   {
     name: "class-declared-by-its-struct-name",
     breaks:
@@ -1030,7 +1023,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a class whose struct is another module's is declared nowhere, though its references import it from where its constructor is",
     file: "src/lower/declarations.rs",
-    find: "            items.push(documented(out.class(class), tcx, class));\n",
+    find: "            items.extend(exported_class(tcx, documented(out.class(class), tcx, class), class));\n",
     replace: "",
     tests: ["test/classes.test.ts", "-t", "constructor's statements set this"],
   },
@@ -1131,4 +1124,5 @@ export const mutations: Mutation[] = [
       "a namespace's methods are its module's functions",
     ],
   },
+
 ];

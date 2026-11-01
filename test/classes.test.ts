@@ -924,7 +924,7 @@ unsafe impl js::Defined for Wrapper {}
 
 #[cfg_attr(rust_js, rust_js::class)]
 impl Wrapper {
-    fn new(value: f64) -> Self {
+    pub fn new(value: f64) -> Self {
         Wrapper { value }
     }
 
@@ -944,4 +944,78 @@ pub fn wrap(value: f64) -> &'static js::Unknown {
   const lib = await import(join(dir, "lib.js"));
   expect(Object.keys(lib)).toEqual(["wrap"]);
   expect(lib.wrap(2).doubled).toBe(4);
+});
+
+// react-test-renderer's `class ReactTestInstance`, `pub` for its getters'
+// types, which only its module constructs: a class whose `new` isn't `pub`
+// is its type alone, no value a package's `export *` exposes, and its
+// `.d.ts` declares the class and exports its type (ADR 0761, amended, the
+// user's decision). Its static is what makes another's a value.
+test("a pub class whose constructor isn't pub exports its type alone", async () => {
+  const { js, ts, dir } = compiled(
+    "class-type-alone",
+    `use std::rc::Rc;
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Wrapper {
+    #[cfg_attr(rust_js, rust_js::name = "_value")]
+    value: f64,
+}
+
+unsafe impl js::Defined for Wrapper {}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Wrapper {
+    fn new(value: f64) -> Self {
+        Wrapper { value }
+    }
+
+    #[cfg_attr(rust_js, rust_js::getter)]
+    pub fn doubled(&self) -> f64 {
+        self.value * 2.0
+    }
+
+    pub fn tripled(&self) -> f64 {
+        self.value * 3.0
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Made {
+    value: f64,
+}
+
+unsafe impl js::Defined for Made {}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Made {
+    fn new(value: f64) -> Self {
+        Made { value }
+    }
+
+    pub fn of(value: f64) -> Rc<Made> {
+        Rc::new(Made::new(value))
+    }
+
+    #[cfg_attr(rust_js, rust_js::getter)]
+    pub fn amount(&self) -> f64 {
+        self.value
+    }
+}
+
+pub fn wrap(value: f64) -> Rc<Wrapper> {
+    Rc::new(Wrapper::new(value))
+}
+`,
+  );
+  expect(js).toContain("\nfunction Wrapper(value) {\n");
+  expect(js).not.toContain("export function Wrapper");
+  expect(js).toContain("export function Made(value) {\n");
+  expect(ts).toContain("\ndeclare class Wrapper {\n");
+  expect(ts).toContain("\nexport type { Wrapper };\n");
+  expect(ts).toContain("export declare class Made {\n");
+  expect(ts).toContain("export function wrap(value: number): Wrapper;\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect(Object.keys(lib).sort()).toEqual(["Made", "wrap"]);
+  expect([lib.wrap(2).doubled, lib.wrap(2).tripled(), lib.Made.of(5).amount]).toEqual([4, 6, 5]);
 });

@@ -541,8 +541,26 @@ export const mutations: Mutation[] = [
     breaks:
       "a private `#[rust_js::class]` whose methods are `pub` is exported, `export function Wrapper`, which a package's `export *` exposes where upstream's module keeps it (rd325)",
     file: "src/lower/classes.rs",
-    find: "    exported && (public || elsewhere)\n",
-    replace: "    exported\n",
+    find: "    exported && (public || elsewhere) && through_its_value\n",
+    replace: "    exported && through_its_value\n",
     tests: ["test/classes.test.ts", "-t", "a private class is its module's own"],
+  },
+  {
+    name: "class-value-of-any-member",
+    breaks:
+      "a `pub` class whose `new` isn't `pub` is exported, `export function ReactTestInstance`, where any of its methods is, a value a package's `export *` exposes where upstream's module keeps it (ADR 0761, amended, the user's decision)",
+    file: "src/lower/classes.rs",
+    find: "        class_of(tcx, method).is_none() || matches!(member(tcx, method), Some(Member::Constructor | Member::Static));\n",
+    replace: "        class_of(tcx, method).is_none() || member(tcx, method).is_some();\n",
+    tests: ["test/classes.test.ts", "-t", "exports its type alone"],
+  },
+  {
+    name: "class-value-not-of-static",
+    breaks:
+      "a class whose `pub` static, `Made.of(5)`, JS reaches through its constructor function, isn't exported where its `new` isn't `pub`: its static can't be called (ADR 0761, amended)",
+    file: "src/lower/classes.rs",
+    find: "        class_of(tcx, method).is_none() || matches!(member(tcx, method), Some(Member::Constructor | Member::Static));\n",
+    replace: "        class_of(tcx, method).is_none() || matches!(member(tcx, method), Some(Member::Constructor));\n",
+    tests: ["test/classes.test.ts", "-t", "exports its type alone"],
   },
 ];

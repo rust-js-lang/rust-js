@@ -1,6 +1,6 @@
 # 0761. A `#[rust_js::class]` is a constructor function and its prototype
 
-Status: Accepted, by the user's decision of 2026-10-24; amended (rd325): a private class is its module's own. Extends
+Status: Accepted, by the user's decision of 2026-10-24; amended (rd325): a private class is its module's own; amended (2026-11-01, the user's decision): a class whose `new` isn't `pub` is its type alone. Extends
 [0047](0047-methods.md), whose object of functions stays every other
 struct's impl. Amended: its struct's comments, its `///` doc, are its
 constructor function's (below). Amended (2026-10-26, the user's
@@ -448,3 +448,39 @@ Not decided here: native `cargo clippy` calls a private class's methods
 that only JS calls dead code, as `#[rust_js::getter]` is seen by rust-js
 alone; the port keeps its struct `pub` for that, or writes `#[allow]`.
 
+
+## Amendment: a class whose `new` isn't `pub` is its type alone (the user's decision, 2026-11-01)
+
+The port keeps `ReactTestInstance` `pub`, as its getters' types,
+`TestChild` and `Predicate`, are the package's API, and native clippy
+calls a private class's methods only JS calls dead code. So it was
+`export function ReactTestInstance(..)` again, the value upstream's module
+keeps its own; only the module constructs one, `new ReactTestInstance(
+fiber)` in `wrapFiber`, as its `fn new` is private.
+
+**A class is exported where what JS reaches through its constructor
+function is: its constructor or a static, `pub` or called by another
+module; its methods, getters and constants are its prototype's, which its
+instances reach.** A `pub` class whose `new` isn't `pub` is its module's
+function, `function ReactTestInstance(..)`, and its `.d.ts` declares the
+class and exports its type alone:
+
+```ts
+declare class ReactTestInstance { get instance(): unknown; .. }
+export type { ReactTestInstance };
+```
+
+so the Rust stays plain `pub` and the JS matches upstream's, with no
+`export function ReactTestInstance`. The user decided the constructor; a
+`pub` static, `Made.of(5)`, is reached through the constructor function
+too, so it exports the class as `new` does (`classes::exports_its_type`,
+which the `.d.ts` asks through `classes::exports_its_value`). A private
+class stays its module's own (rd325, above). @rust-js/typescript's model
+gains a type-only export list, `{ kind: "export", typeOnly: true }`, read
+and printed as TypeScript's `export type { .. }`.
+
+Held by `test/classes.test.ts`'s "a pub class whose constructor isn't pub
+exports its type alone" (run: its getter, its method and the other class's
+static) and `test/typescript.test.ts`'s export lists; mutations
+`class-value-of-any-member`, `class-value-not-of-static` (`classes.ts`)
+and `class-type-alone-exported` (`declarations.ts`).

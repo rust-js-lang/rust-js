@@ -159,18 +159,22 @@ test("read takes @types/react's element attributes apart", async () => {
   }
 }, 60_000);
 
-// The model has no type-only name, so a list that names one is text, as
-// `export type { .. }` is: @types/node's `export { type AllowSharedBuffer, Buffer }`.
+// The model has no type-only name among values, so a list that names one is
+// text: @types/node's `export { type AllowSharedBuffer, Buffer }`. A list of
+// types alone is a type-only export, `export type { ReactTestInstance }`, a
+// class's type without its value (ADR 0761, amended).
 test("read keeps an export list that names a type as text", async () => {
   const file = join(fixture("typescript-export-types"), "buffer.d.ts");
-  writeFileSync(file, "type A = 1;\ndeclare const B: 2;\nexport { type A, B };\nexport { B as C };\n");
+  writeFileSync(file, "type A = 1;\ndeclare const B: 2;\nexport { type A, B };\nexport { B as C };\nexport type { A as D };\n");
   const ts = await open([file]);
   try {
     const { declarations: read } = await ts.read(file);
     expect(read.slice(2)).toEqual([
       { kind: "other", text: "export { type A, B };" },
       { kind: "export", names: [["B", "C"]] },
+      { kind: "export", names: [["A", "D"]], typeOnly: true },
     ]);
+    expect(await ts.print({ declarations: read.slice(3) })).toBe("export { B as C };\n\nexport type { A as D };\n");
   } finally {
     await ts.close();
   }

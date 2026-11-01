@@ -647,8 +647,12 @@ JS class, written as JS wrote one before `class`: a constructor function
 and its prototype ([ADR 0761](../../decisions/0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md)).
 JS's `class X extends Component` runs it, `super(props)` its constructor,
 and `this.setState(..)` its prototype's method. Its constructor is
-exported where its struct is `pub`; a private one is its module's own,
-`function ReactTestInstance(..)`, though its methods are `pub`
+exported where its struct is `pub` and its `new` or a static is; a private
+one is its module's own, `function ReactTestInstance(..)`, though its
+methods are `pub`. A `pub` class whose `new` isn't `pub` is its type
+alone: its module's `function ReactTestInstance(..)`, and in its `.d.ts`
+`declare class ReactTestInstance { .. }` and `export type {
+ReactTestInstance };`
 ([ADR 0761](../../decisions/0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md),
 amended). React's `Component`, and its `PureComponent`, whose prototype
 inherits `Component`'s:

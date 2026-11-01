@@ -141,8 +141,11 @@ pub(crate) fn property(tcx: TyCtxt<'_>, def_id: DefId) -> String {
 /// Whether `method`, exported or not, exports its type's object or class,
 /// as any of its methods does:
 /// of a type that's `pub`, or that another module calls, `elsewhere`; a
-/// private class is its module's own, though its methods are `pub` (rd325,
-/// ADR 0761, amended).
+/// private class is its module's own, though its methods are `pub` (rd325).
+/// Of a class, only what JS reaches through its constructor function does,
+/// its constructor or a static: a class whose `new` isn't `pub` is its
+/// type alone, `export type { ReactTestInstance }`, its instances' methods
+/// their prototype's (ADR 0761, amended, the user's decision).
 pub(crate) fn exports_its_type(tcx: TyCtxt<'_>, method: DefId, exported: bool, elsewhere: bool) -> bool {
     let public = (tcx.impl_of_assoc(method))
         .and_then(|imp| {
@@ -152,7 +155,18 @@ pub(crate) fn exports_its_type(tcx: TyCtxt<'_>, method: DefId, exported: bool, e
                 .ty_adt_def()
         })
         .is_none_or(|adt| tcx.visibility(adt.did()).is_public());
-    exported && (public || elsewhere)
+    let through_its_value =
+        class_of(tcx, method).is_none() || matches!(member(tcx, method), Some(Member::Constructor | Member::Static));
+    exported && (public || elsewhere) && through_its_value
+}
+
+/// Whether `class`, a `pub` class, is a value its module's TypeScript
+/// exports, not its type alone: where a `pub` member exports it, as
+/// [`exports_its_type`] has it (ADR 0761, amended).
+pub(crate) fn exports_its_value(tcx: TyCtxt<'_>, class: DefId) -> bool {
+    (tcx.inherent_impls(class).iter())
+        .flat_map(|&imp| tcx.associated_item_def_ids(imp).iter().copied())
+        .any(|item| exports_its_type(tcx, item, tcx.visibility(item).is_public(), false))
 }
 
 /// The methods of `adt`, an object of methods, each its literal's own

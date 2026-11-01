@@ -23,7 +23,7 @@ import * as f from "typescript/ast/factory";
  *   | { kind: "function", name: string, exported: boolean, default?: boolean, declare: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type, docs?: string }
  *   | { kind: "const", name: string, exported: boolean, declare: boolean, type: Type, mutable?: boolean, docs?: string }
  *   | { kind: "export-default", name: string }
- *   | { kind: "export", from?: string, names: [string, string][] }
+ *   | { kind: "export", from?: string, names: [string, string][], typeOnly?: boolean }
  *   | { kind: "namespace", name: string, exported: boolean, declare: boolean, declarations: Declaration[] }
  *   | { kind: "class", name: string, exported: boolean, declare: boolean, members: ClassMember[], docs?: string }
  *   | { kind: "other", text: string }} Declaration
@@ -252,11 +252,12 @@ function readStatements(statements, text) {
           });
           break;
         }
-        // A list that's types, or names one, is text: the model has no type-only name.
+        // A list that names one type among values is text: a type-only
+        // list is one, `export type { ReactTestInstance }`, a class's type
+        // alone (ADR 0761, amended).
         if (
           named?.kind !== SyntaxKind.NamedExports ||
-          node.isTypeOnly ||
-          named.elements.some((e) => e.isTypeOnly)
+          (!node.isTypeOnly && named.elements.some((e) => e.isTypeOnly))
         ) {
           out.push({ kind: "other", text: sourceOf(node, text) });
           break;
@@ -268,6 +269,7 @@ function readStatements(statements, text) {
             (e.propertyName ?? e.name).text,
             e.name.text,
           ]),
+          ...(node.isTypeOnly && { typeOnly: true }),
         });
         break;
       }
@@ -624,7 +626,7 @@ function statement(declaration) {
       }
       return f.createExportDeclaration(
         undefined,
-        false,
+        !!declaration.typeOnly,
         f.createNamedExports(
           declaration.names.map(([name, alias]) =>
             f.createExportSpecifier(

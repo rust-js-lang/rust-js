@@ -24,6 +24,7 @@ use super::bindings::{
 use super::recognition::{StdItem, is_std_def};
 use super::representation::Num;
 
+mod classes;
 mod comments;
 mod functions;
 mod imports;
@@ -31,6 +32,7 @@ mod namespaces;
 mod parts;
 mod written;
 
+use classes::exported_class;
 use comments::documented;
 pub(in crate::lower) use comments::jsdoc_of;
 use parts::{flattened_keys, opaque_fn_signature};
@@ -98,7 +100,7 @@ pub(super) fn module<'tcx>(
             .filter(|&class| class != def_id && tcx.visibility(class).is_public())
         {
             out.erased = out.erased(class);
-            items.push(documented(out.class(class), tcx, class));
+            items.extend(exported_class(tcx, documented(out.class(class), tcx, class), class));
             continue;
         }
         let held = held_default == Some(def_id);
@@ -148,7 +150,11 @@ pub(super) fn module<'tcx>(
             }
             declared
         });
-        items.extend(declaration.map(|declaration| documented(declaration, tcx, def_id)));
+        let declaration = declaration.map(|declaration| documented(declaration, tcx, def_id));
+        match declaration {
+            Some(class) if class["kind"] == "class" && !held => items.extend(exported_class(tcx, class, def_id)),
+            declaration => items.extend(declaration),
+        }
         if tcx.def_kind(def_id) == DefKind::Enum {
             items.extend(out.variant_constants(def_id));
         }
@@ -772,85 +778,6 @@ impl<'tcx> Declarations<'_, 'tcx> {
     /// A function's or a `const`'s name, as its JS has it.
     fn js_name(&self, def_id: DefId) -> String {
         (self.fns.get(&def_id)).map_or_else(|| fn_name(self.tcx, def_id), |info| info.name.clone())
-    }
-
-    /// `export declare class Component { constructor(props?: unknown);
-    /// props?: unknown; setState(partialState?: unknown): void; }`, a JS
-    /// class's (ADR 0761): its fields `this`'s, its constructor `new`'s,
-    /// its constants and methods its prototype's, and its statics; each
-    /// its impl's that's `pub`.
-    fn class(&mut self, def_id: DefId) -> Value {
-        use super::classes::{Member, member};
-        let fields = self.structure(def_id).map(|s| s["members"].clone());
-        let mut members: Vec<Value> = Vec::new();
-        let mut constructor = None;
-        for field in fields.and_then(|f| f.as_array().cloned()).unwrap_or_default() {
-            if field["kind"] == "property" {
-                let mut property = json!({
-                    "kind": "property",
-                    "name": field["name"],
-                    "static": false,
-                    "optional": field["optional"],
-                    "type": field["type"],
-                });
-                if let Some(docs) = field.get("docs") {
-                    property["docs"] = docs.clone();
-                }
-                members.push(property);
-            }
-        }
-        for &imp in self.tcx.inherent_impls(def_id) {
-            for &item in self.tcx.associated_item_def_ids(imp) {
-                if !self.tcx.visibility(item).is_public() {
-                    continue;
-                }
-                let declared = match member(self.tcx, item) {
-                    Some(Member::Constructor) => {
-                        constructor = Some(json!({ "kind": "constructor", "params": self.function(item)["params"] }));
-                        continue;
-                    }
-                    Some(Member::Const) => {
-                        let constant = self.constant(item);
-                        json!({ "kind": "property", "name": constant["name"], "static": false, "optional": false, "type": constant["type"] })
-                    }
-                    Some(Member::Getter) => {
-                        json!({ "kind": "getter", "name": self.js_name(item), "returns": self.function(item)["returns"] })
-                    }
-                    Some(kind @ (Member::Method | Member::Static)) => {
-                        let function = self.function(item);
-                        let mut params = function["params"].as_array().cloned().unwrap_or_default();
-                        if kind == Member::Method && !params.is_empty() {
-                            params.remove(0);
-                        }
-                        json!({
-                            "kind": "method",
-                            "name": self.js_name(item),
-                            "static": kind == Member::Static,
-                            "typeParameters": function["typeParameters"],
-                            "params": params,
-                            "returns": function["returns"],
-                        })
-                    }
-                    Some(Member::Own | Member::Namespace) | None => continue,
-                };
-                members.push(documented(declared, self.tcx, item));
-            }
-        }
-        // Each method of a trait of classes it implements (rd283).
-        members.extend(self.class_trait_methods(def_id));
-        // Its `Display`, its prototype's `toString` (#358).
-        if crate::lower::classes::has_to_string(self.tcx, def_id) {
-            let returns = keyword("string");
-            members.push(json!({ "kind": "method", "name": "toString", "static": false, "typeParameters": [], "params": [], "returns": returns }));
-        }
-        members.splice(0..0, constructor);
-        json!({
-            "kind": "class",
-            "name": type_name(self.tcx, def_id),
-            "exported": true,
-            "declare": true,
-            "members": members,
-        })
     }
 
     /// `export interface TagProps { variant: RouteTag; text?: string; }`
