@@ -425,7 +425,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         named: Span,
         span: Span,
     ) -> R<Expr> {
-        let arrow = self.binding_value(def_id, args, named, span)?;
+        let mut arrow = self.binding_value(def_id, args, named, span)?;
+        // A constructor JS makes alike called, `Error(m)` as `new Error(m)`:
+        // its arrow's call, so the value is the class where it only passes
+        // its parameters on, `Error` (rd404).
+        if super::bindings::called_constructs(self.tcx, def_id)
+            && let ExprKind::Arrow(_, body) = &mut arrow.kind
+            && let [
+                js::Stmt {
+                    kind: StmtKind::Return(Some(made)),
+                    ..
+                },
+            ] = body.as_mut_slice()
+            && let ExprKind::New(class, given) = &made.kind
+        {
+            made.kind = ExprKind::Call(class.clone(), given.clone());
+        }
         Ok(passed_on(&arrow, Taker::Made, &[]).unwrap_or(arrow))
     }
 

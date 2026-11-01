@@ -100,6 +100,15 @@ export function first(text) {
 }
 ```
 
+A constructor's binding, `new C(..)`, as a value is an arrow that
+constructs, `(a) => new C(a)`, as `C(a)` alone may throw; one marked
+`#[rust_js::called_constructs]`, which JS makes alike called without
+`new`, Error's and AggregateError's, is the class itself, so
+`function::bind(js::error::new, Some(&Kind::Null), (message, options))` is
+`Error.bind(null, message, options)`, as React's Flight client binds it,
+and the stack it makes has no frame of a function of the module's
+([ADR 0602](../../decisions/0602-a-binding-taken-as-a-fn-is-its-function.md), amended, rd404).
+
 A binding of TypeScript's `any`, `reportError(e: any)`, is generic, so
 its value is of the type it's given: a `fn` of `Option<&'static
 Unknown>`, a JS value of any shape, which lives as long as JS keeps it, as
@@ -1213,6 +1222,7 @@ See [Components and props](../react/components.md).
 | `#[rust_js::variadic]` | its last parameter, `impl js::Rest<T>` or a tuple, is the rest arguments |
 | `#[rust_js::require]` | it's read through `require(module)`, not imported |
 | `#[rust_js::cannot_throw]` | it can't throw, as reading a data property can't |
+| `#[rust_js::called_constructs]` | of a constructor, `new C(..)`: JS's spec makes it alike called without `new`, as `Error(m)` is `new Error(m)`, so as a value it's `C` itself, `Error.bind(null, m)`, not an arrow that constructs ([ADR 0602](../../decisions/0602-a-binding-taken-as-a-fn-is-its-function.md), amended) |
 | `#[rust_js::runs_nothing]` | it runs no code but its own, not even what it's given, as `new AggregateError(errors)` doesn't, and React's `memo(component)` keeps its component for later: a `RefCell` borrowed across it isn't counted, and a `thread_local!` it makes doesn't run what it's given as its module loads ([ADR 0867](../../decisions/0867-a-binding-that-runs-nothing-and-aggregate-error.md), [ADR 1006](../../decisions/1006-a-pub-thread-local-is-made-as-its-module-loads.md), amended) |
 | `#[rust_js::runs_only_given]` | it runs no code but its own and what it's given, a closure it calls or a `toString` or getter of a value it reads, as `console.error(..)` and `Math.max(..)` do: given only numbers, `bool`s and text, a `RefCell` borrowed across it isn't counted. A program that replaces such a function with its own is trusted not to borrow what's held across it ([ADR 0898](../../decisions/0898-a-binding-that-runs-only-what-its-given.md)) |
 | `#[rust_js::gives_back]` | it gives back what the program gave it, React's state, a ref's `current`, a context's value, never an object of JS's own: a struct it gives is the program's, its fields read as plain data, where another binding's struct is a JS object whose fields a getter may answer ([ADR 1022](../../decisions/1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md), amended, the user's decision) |

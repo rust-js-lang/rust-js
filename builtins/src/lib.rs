@@ -2465,7 +2465,11 @@ pub mod error {
     /// TypeScript's `message?: string`: of `None`, `new Error()`, which has
     /// no `message` of its own, where `new Error("")`'s is `""`; of
     /// `options`, its `cause`, what it was made of, or `None`, left out.
+    /// As a value it's `Error` itself, which JS makes the same `Error`
+    /// called without `new`: `function::bind(js::error::new, Some(&Kind::Null),
+    /// (message, options))` is `Error.bind(null, message, options)` (rd404).
     #[cfg_attr(rust_js, rust_js::link_name = "new Error")]
+    #[cfg_attr(rust_js, rust_js::called_constructs)]
     pub fn new(message: Option<&str>, options: Option<&ErrorOptions<'_>>) -> &'static Error {
         unreachable!()
     }
@@ -2511,7 +2515,11 @@ pub mod aggregate_error {
     /// `Iterable<any>`, of `message`, or none, and of `options`, its
     /// `cause`, or `None`, left out, as TypeScript's ES2022 types it (rd404).
     /// It runs none of the crate's code: it reads the array, not what's in it.
+    /// As a value it's `AggregateError` itself, which JS makes the same
+    /// called without `new`, `AggregateError.bind(null, errors, message,
+    /// options)` (rd404).
     #[cfg_attr(rust_js, rust_js::link_name = "new AggregateError")]
+    #[cfg_attr(rust_js, rust_js::called_constructs)]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn new(errors: &[Option<&Unknown>], message: Option<&str>, options: Option<&ErrorOptions<'_>>) -> &'static AggregateError {
         unreachable!()

@@ -62,3 +62,13 @@ pub(in crate::lower) fn gives_plain_data(tcx: TyCtxt<'_>, def_id: DefId) -> bool
     let path = [Symbol::intern("rust_js"), Symbol::intern("gives_plain_data")];
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
+
+/// `#[rust_js::called_constructs]`: a constructor JS's spec makes callable
+/// without `new` to the same result, `Error(message)` as `new
+/// Error(message)`, Error's and AggregateError's: as a value, the class
+/// itself, `Error.bind(null, message, options)`, not an arrow that
+/// constructs, which adds a frame to each stack it makes (rd404).
+pub(in crate::lower) fn called_constructs(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("called_constructs")];
+    tcx.get_attrs_by_path(def_id, &path).next().is_some()
+}

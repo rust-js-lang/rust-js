@@ -8,6 +8,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { runSync } from "./child";
+import { node } from "./programs";
 import { buildReact, compiler, fixture, root, target } from "./support";
 
 beforeAll(buildReact, 600_000);
@@ -15,12 +16,12 @@ beforeAll(buildReact, 600_000);
 const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
 
 /** `source` compiled, its JS, and the module it is, loaded. */
-async function compiled(name: string, source: string): Promise<{ js: string; lib: any }> {
+async function compiled(name: string, source: string): Promise<{ js: string; lib: any; dir: string }> {
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), source);
   const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs], root, 600_000);
   expect(built.code, built.stderr).toBe(0);
-  return { js: readFileSync(join(dir, "lib.js"), "utf8"), lib: await import(join(dir, "lib.js")) };
+  return { js: readFileSync(join(dir, "lib.js"), "utf8"), lib: await import(join(dir, "lib.js")), dir };
 }
 
 // ReactFlightClient's parseModelString: `$D` is a date, `$n` a bigint, each
@@ -111,7 +112,7 @@ pub fn of_task(task: Option<&'static ConsoleTask>) -> Option<&'static Unknown> {
 // value, called without `new`, as React's Flight client's fake call stack
 // calls `Error.bind(null, message, options)`.
 test("an AggregateError is made of its options, and a constructor bound as a value", async () => {
-  const { js, lib } = await compiled(
+  const { js, lib, dir } = await compiled(
     "js-globals-errors",
     `use js::{AggregateError, Error, ErrorOptions, Kind, Unknown, aggregate_error, error, function};
 
@@ -119,17 +120,33 @@ pub fn caused(errors: &[Option<&Unknown>], cause: &Unknown) -> &'static Aggregat
     aggregate_error::new(errors, Some("several"), Some(&ErrorOptions { cause: Some(cause) }))
 }
 
-pub fn bound_error(message: &'static str, cause: &'static Unknown) -> &'static dyn Fn() -> &'static Error {
-    function::bind(error::new, Some(&Kind::Null), (Some(message), Some(ErrorOptions { cause: Some(cause) })))
+pub fn bound_error(message: &str, cause: &'static Unknown) -> &'static Error {
+    let make = function::bind(error::new, Some(&Kind::Null), (Some(message), Some(ErrorOptions { cause: Some(cause) })));
+    make()
+}
+
+pub fn bound_aggregate(errors: &[Option<&'static Unknown>], message: &str) -> &'static AggregateError {
+    let make = function::bind(aggregate_error::new, Some(&Kind::Null), (errors, Some(message), None::<ErrorOptions>));
+    make()
 }
 `,
   );
   expect(js).toContain('new AggregateError(errors, "several", { cause })');
-  // A constructor's binding as a value is a function that constructs, bound.
-  expect(js).toContain("((message, options) => new Error(message, options)).bind(null, message, { cause })");
+  // A constructor JS makes alike called, Error's and AggregateError's, is
+  // the class as a value, \`Error.bind(..)\`, as upstream binds it, so the
+  // stack it makes has no frame of a function that constructs (rd404).
+  expect(js).toContain("Error.bind(null, message, { cause })");
+  expect(js).toContain("AggregateError.bind(null, errors, message)");
+  expect(js).not.toContain("=> new Error");
+  const aggregated = lib.boundAggregate([3], "all");
+  expect([aggregated instanceof AggregateError, aggregated.errors, aggregated.message]).toEqual([true, [3], "all"]);
   const cause = { why: 1 };
   const made = lib.caused([1, 2], cause);
   expect([made instanceof AggregateError, made.errors, made.message, made.cause]).toEqual([true, [1, 2], "several", cause]);
-  const error = lib.boundError("boom", cause)();
+  const error = lib.boundError("boom", cause);
   expect([error instanceof Error, error.message, error.cause]).toEqual([true, "boom", cause]);
+  // Its stack's one frame of the module, in Node, is its caller's,
+  // `boundError`'s, not a function's that constructs.
+  const stack = runSync([node ?? "node", "-e", 'import("./lib.js").then((lib) => console.log(lib.boundError("boom", {}).stack))'], dir, 30_000);
+  expect(stack.stdout.split("\n").filter((line) => line.includes("lib.js"))).toEqual([expect.stringContaining("boundError")]);
 });

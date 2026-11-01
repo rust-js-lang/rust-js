@@ -373,4 +373,12 @@ export const mutations: Mutation[] = [
       "a function called through its module is read through its namespace",
     ],
   },
+  {
+    name: "called-constructs-an-arrow",
+    breaks: "`function::bind(js::error::new, ..)` binds an arrow that constructs, `((message, options) => new Error(..)).bind(..)`, whose frame each error's stack records, where upstream binds `Error` (rd404)",
+    file: "src/lower/items.rs",
+    find: "        if super::bindings::called_constructs(self.tcx, def_id)\n",
+    replace: "        if false\n",
+    tests: ["test/js-globals.test.ts", "-t", "bound as a value"],
+  },
 ];

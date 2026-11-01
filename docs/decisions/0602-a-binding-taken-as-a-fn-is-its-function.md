@@ -1,6 +1,6 @@
 # 0602. A binding taken as a `fn` is its JS function, read where it's taken
 
-Status: Accepted. Amends [0039](0039-generic-bindings.md)'s binding as a
+Status: Accepted. Amended (rd404, the user's decision of 2026-11-01): a constructor JS makes alike called is its class as a value (below). Amends [0039](0039-generic-bindings.md)'s binding as a
 value. Amended by [0667](0667-console-is-a-value-and-rest-arguments-are-one.md):
 a variadic binding taken as a `fn` of rest arguments as a value,
 `&dyn js::Rest<T>`, is its function too, which its call spreads them to.
@@ -131,3 +131,43 @@ identity is what Rust's `ptr::addr_eq` compares, one function each time
 in Rust. Held by `test/js-functions.test.ts`' "a binding lent as a dyn Fn
 is the function itself" and mutation `binding-lent-as-dyn-arrow`
 (`mir/rvalues.ts`).
+
+## Amendment: a constructor JS makes alike called is its class (rd404)
+
+The user's decision of 2026-11-01. A constructor's binding, `new C(..)`,
+taken as a `fn` was an arrow that constructs, `(message, options) => new
+Error(message, options)`, as `C(..)` alone throws of most classes, a
+`Map`'s say. React's Flight client replays a server's error by a fake call
+stack whose innermost function is `Error.bind(null, message,
+errorOptions)`, a native bound function, which adds no frame to the
+stack the error records; the port's arrow added one, `in innerCall (at
+**)` where its tests read `in ServerComponent (at **)`, eight of its 95
+suites.
+
+**A constructor's binding marked `#[rust_js::called_constructs]` is its
+class as a value**: JS's spec makes it alike called without `new`, `Error(m)`
+as `new Error(m)` (ECMA-262's NativeError and AggregateError constructors
+create the object where NewTarget is undefined), so the arrow's `new` is
+its call, and an arrow that only passes its parameters on is the
+function, as any binding's is: `function::bind(js::error::new,
+Some(&Kind::Null), (message, options))` is `Error.bind(null, message,
+options)`. The fact is the binding's, in the js crate, where Error's and
+AggregateError's `new` are marked; lowering asks `called_constructs`
+(`bindings/effects.rs`), no list of names.
+
+Case: none of 0262's differences beyond 0602's own, a binding's function
+read once: `Error` called and constructed make the same error; the
+stack it records differs, the arrow's frame gone, as upstream's has none.
+
+A bound function doesn't keep an `Option<String>` for an `Option<&str>`
+parameter, the message `Error`'s takes since main's 9a5b41379: such an
+impl of `function::Keeps` makes a `None` given there ambiguous, which
+programs write. A message read is lent, `Some(message.as_str())`, to a
+bound function that lives as long as it, as Flight's fake call stack's
+does (rd412, open).
+
+Held by `test/js-globals.test.ts`'s "an AggregateError is made of its
+options, and a constructor bound as a value", run in Node, its error's
+innermost frame its caller's. Mutation `called-constructs-an-arrow`
+(`items.rs`).
+
