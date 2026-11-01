@@ -215,6 +215,18 @@ react.dev's TopNav passes the same closure instead.
   has `x`'s truth there and the `if` takes the same branch; nothing tells
   them apart. Said in the guide's global values
   (`interop/global-scope.md`).
+- **A class that extends nothing is a constructor function and its
+  prototype**, the second case's, which the user decided (2026-11-01,
+  rd331): ADR 0761's form, where a port's upstream writes an ES class,
+  react-art's `class LinearGradient { constructor(..) { .. } applyFill(..)
+  { .. } }`, its RadialGradient's and Pattern's. Two things tell them
+  apart: the prototype's methods are enumerable, `for (k in g)` and
+  `Object.assign({}, Object.getPrototypeOf(g))` see `applyFill`, where a
+  class's aren't; and the class may be called without `new`, where an ES
+  class's call throws a `TypeError`. A program that does neither, as
+  react-art's callers don't, can't tell. A class that extends a binding's
+  is an ES class (ADR 1041). Listed in the guide's differences
+  (`semantics.md`, 37).
 
 ## Amendment: the stack's depth
 

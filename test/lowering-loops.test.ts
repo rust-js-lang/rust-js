@@ -468,6 +468,18 @@ fn greet(name: &str, title: Option<&str>) -> String {
 pub fn hi() -> String {
     greet("Ada", None)
 }
+
+fn shown<T>(n: u32, _given: T) -> u32 {
+    n
+}
+
+fn alone<T>(_given: T) -> u32 {
+    1
+}
+
+pub fn twice() -> u32 {
+    shown(2, None::<u8>) + alone(None::<u8>)
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -480,6 +492,8 @@ pub fn hi() -> String {
   expect(js).toContain("const end = args.length;");
   expect(js).toContain("return [...prev, ...next];");
   expect(js).toContain('return greet("Ada");');
+  // Of a type parameter's too, but one given alone, a value.
+  expect(js).toContain("return (shown(2) + alone(undefined)) >>> 0;");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.unescaped(undefined), lib.unescaped(""), lib.unescaped("%")]).toEqual([true, true, false]);
   expect([lib.joined([1, 2]), lib.shifted([1, 2, 3]), lib.drained([1, 2, 3]), lib.both([1], [2, 3]), lib.hi()]).toEqual([" 1 2", " 2 3", 6, [1, 2, 3], "Ada"]);

@@ -346,8 +346,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "            while args.len() > 1 && args.last()",
     replace: "            while !args.is_empty() && args.last()",
-    tests: ["test/snapshots.test.ts", "-t", "playground: the generated JS"],
-    snapshots: true,
+    tests: ["test/lowering-loops.test.ts", "-t", "Console's loops"],
   },
   {
     name: "null-or-falsy-kept",

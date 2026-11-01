@@ -637,17 +637,17 @@ pub struct Clock {
 }
 
 impl Component<ClockProps> for Clock {
-    fn component_did_mount(&self) {
+    fn component_did_mount(self: &'static Self) {
         self._ticks.set(Some(0.0));
     }
 
-    fn component_did_update(&self, prev_props: &ClockProps, _prev_state: &()) {
+    fn component_did_update(self: &'static Self, prev_props: &ClockProps, _prev_state: &()) {
         if prev_props.label != self.props().label {
             self._ticks.set(Some(self._ticks.get().unwrap_or(0.0) + 1.0));
         }
     }
 
-    fn render(&self) -> JSX::Element {
+    fn render(self: &'static Self) -> JSX::Element {
         jsx! { <p>{self.props().label}</p> }
     }
 }
@@ -678,7 +678,11 @@ export class Clock extends Component {
   lifecycle methods React calls, `component_did_mount` as
   `componentDidMount`; one it doesn't write its class doesn't have, so
   React does what it does of none.
-- **`self.props()` is `this.props`**, typed `&P`, and `self.force_update()`
+- **Each method is given `self: &'static Self`**: React makes and keeps
+  the instance, as any JS object, so a ref callback may hold it,
+  `ref={move |r| self.tag_ref.set(r)}`, `ref={(r) => { this.tagRef = r;
+  }}`.
+- **`self.props()` is `this.props`**, typed `&'static P`, and `self.force_update()`
   `this.forceUpdate()`: the class it extends has them, so an impl can't
   write them.
 - **React constructs it**: each field is what the instance is given
@@ -688,7 +692,8 @@ export class Clock extends Component {
   super(props); .. }`, and its fields are set as it sets them.
 - A class that implements no binding's class is a constructor function
   and its prototype, as [JS classes](../interop/export-to-javascript.md#js-classes)
-  are.
+  are: its prototype's methods enumerable and its call without `new`
+  allowed, where an ES class's aren't ([differences](../semantics.md), 37).
 
 Not yet: an element of one in `jsx!`, `<Clock label="x" />`, as a struct
 isn't a value in Rust (JS renders it, `createElement(Clock, ..)`);

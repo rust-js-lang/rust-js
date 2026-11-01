@@ -1169,48 +1169,51 @@ pub trait ComponentType<P, M> {}
 /// impl writes is its class's, which React calls; one it doesn't write its
 /// class doesn't have, so React does what it does of none. The struct's
 /// fields are what the instance gains after React constructs it,
-/// `undefined` until set: each an `Option`, or a `Cell` of one.
+/// `undefined` until set: each an `Option`, or a `Cell` of one. React makes
+/// and keeps the instance, as any JS object, so each method is given it as
+/// `&'static`, `self: &'static Self`, which a ref callback it makes may
+/// hold, `ref={move |r| self.tag_ref.set(r)}`.
 ///
 /// ```ignore
 /// #[cfg_attr(rust_js, rust_js::class)]
 /// pub struct Greeting {}
 ///
 /// impl Component<GreetingProps> for Greeting {
-///     fn render(&self) -> JSX::Element {
+///     fn render(self: &'static Self) -> JSX::Element {
 ///         jsx! { <h1>{"Hello, "}{self.props().name}</h1> }
 ///     }
 /// }
 /// ```
 #[cfg_attr(rust_js, rust_js::types = "react#Component<P, S>")]
-pub trait Component<P = (), S = ()> {
+pub trait Component<P: 'static = (), S: 'static = ()>: 'static {
     /// [`render`](https://react.dev/reference/react/Component#render): what
     /// it renders, of `self.props()`.
-    fn render(&self) -> Element;
+    fn render(self: &'static Self) -> Element;
 
     /// [`componentDidMount`](https://react.dev/reference/react/Component#componentdidmount):
     /// called once it's on the screen.
-    fn component_did_mount(&self) {}
+    fn component_did_mount(self: &'static Self) {}
 
     /// [`componentDidUpdate`](https://react.dev/reference/react/Component#componentdidupdate):
     /// called once it's re-rendered with new props or state, given the ones
     /// before.
-    fn component_did_update(&self, prev_props: &P, prev_state: &S) {}
+    fn component_did_update(self: &'static Self, prev_props: &'static P, prev_state: &'static S) {}
 
     /// [`componentWillUnmount`](https://react.dev/reference/react/Component#componentwillunmount):
     /// called before it's removed from the screen.
-    fn component_will_unmount(&self) {}
+    fn component_will_unmount(self: &'static Self) {}
 
     /// [`this.props`](https://react.dev/reference/react/Component#props):
     /// what it was given, React's to set.
     #[cfg_attr(rust_js, rust_js::link_name = "get props")]
-    fn props(&self) -> &P {
+    fn props(self: &'static Self) -> &'static P {
         unreachable!()
     }
 
     /// [`forceUpdate`](https://react.dev/reference/react/Component#forceupdate):
     /// renders it again, though its props and state are as they were.
     #[cfg_attr(rust_js, rust_js::link_name = "forceUpdate")]
-    fn force_update(&self) {
+    fn force_update(self: &'static Self) {
         unreachable!()
     }
 }

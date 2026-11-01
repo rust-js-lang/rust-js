@@ -71,16 +71,16 @@ pub struct Counter {
 }
 
 impl Component<CounterProps> for Counter {
-    fn component_did_mount(&self) {
+    fn component_did_mount(self: &'static Self) {
         self._mounts.set(Some(self._mounts.get().unwrap_or(0.0) + 1.0));
         println!("mount {}", self.props().label);
     }
 
-    fn component_did_update(&self, prev_props: &CounterProps, _prev_state: &()) {
+    fn component_did_update(self: &'static Self, prev_props: &CounterProps, _prev_state: &()) {
         println!("update {} to {}", prev_props.label, self.props().label);
     }
 
-    fn render(&self) -> JSX::Element {
+    fn render(self: &'static Self) -> JSX::Element {
         let props = self.props();
         jsx! { <p>{props.label}</p> }
     }
@@ -238,3 +238,28 @@ and methods typed, as Rust says what a type is: no attribute.
   (`lower/declarations/functions.rs`); `superclass-unimported`
   (`lower/analysis.rs`); `subclass-impl-refused`
   (`lower/analysis/validation.rs`).
+
+## Amendment: each method is given `self: &'static Self` (rd331b)
+
+Decided by the user (2026-11-01). A ref callback that sets a field of the
+instance, ReactART's `ref={ref => (this._tagRef = ref)}`, was refused by
+rustc: a callback React keeps is `'static`, and `&self` isn't. **Each of
+`react::Component`'s methods takes `self: &'static Self`**, and `props`
+gives `&'static P`: React makes and keeps the instance, as any JS object,
+which rust-js has as `&'static` already, `&'static Element`. The receiver
+says what's true; nothing extends a lifetime unchecked. So
+`ref={move |r| self._tag_ref.set(r)}` compiles, and is `ref={(r) => {
+this._tagRef = r; }}`: a block, as the closure gives `()`, where
+upstream's `(this._tagRef = ref)` gives the element, which React reads
+only for a cleanup function. An impl may still write `&self`, rustc's more
+general signature, where it reads nothing of the trait's; `self.props()`
+takes the `'static` one. Rejected: a `self.this()` binding, a second way to
+reach the same instance; `Rc<Self>` receivers, which no JS object has.
+Held by `test/class-components.test.ts`, whose `componentDidMount` sees
+the paragraph its ref callback set.
+
+## Amendment: a class that extends nothing keeps ADR 0761's form
+
+Decided by the user (2026-11-01): react-art's LinearGradient,
+RadialGradient and Pattern stay constructor functions, ADR 0262's second
+case, listed in its Consequences and the guide's differences (37).

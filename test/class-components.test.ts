@@ -45,6 +45,7 @@ function rendered(dir: string, driver: string) {
 const components = `#![allow(non_snake_case)]
 use std::cell::Cell;
 
+use react::webapi::HTMLParagraphElement;
 use react::{Component, JSX, jsx};
 
 pub struct CounterProps {
@@ -55,25 +56,26 @@ pub struct CounterProps {
 #[cfg_attr(rust_js, rust_js::class)]
 pub struct Counter {
     _mounts: Cell<Option<f64>>,
+    _paragraph: Cell<Option<&'static HTMLParagraphElement>>,
 }
 
 impl Component<CounterProps> for Counter {
-    fn component_did_mount(&self) {
+    fn component_did_mount(self: &'static Self) {
         self._mounts.set(Some(self._mounts.get().unwrap_or(0.0) + 1.0));
-        println!("mount {}", self.props().label);
+        println!("mount {} {}", self.props().label, self._paragraph.get().is_some());
     }
 
-    fn component_did_update(&self, prev_props: &CounterProps, _prev_state: &()) {
+    fn component_did_update(self: &'static Self, prev_props: &CounterProps, _prev_state: &()) {
         println!("update {} to {}", prev_props.label, self.props().label);
     }
 
-    fn component_will_unmount(&self) {
+    fn component_will_unmount(self: &'static Self) {
         println!("unmount {}", self.props().label);
     }
 
-    fn render(&self) -> JSX::Element {
+    fn render(self: &'static Self) -> JSX::Element {
         let props = self.props();
-        jsx! { <p>{props.label}</p> }
+        jsx! { <p ref={move |p| self._paragraph.set(p)}>{props.label}</p> }
     }
 }
 
@@ -99,18 +101,18 @@ impl Label {
 }
 
 impl Component<LabelProps> for Label {
-    fn component_did_mount(&self) {
+    fn component_did_mount(self: &'static Self) {
         self.force_update();
     }
 
-    fn render(&self) -> JSX::Element {
+    fn render(self: &'static Self) -> JSX::Element {
         self.renders.set(self.renders.get() + 1.0);
         jsx! { <span>{self.props().text}{" "}{self.renders.get()}</span> }
     }
 }
 
 /// What a label renders, called as Rust calls its method.
-pub fn shown(label: &Label) -> JSX::Element {
+pub fn shown(label: &'static Label) -> JSX::Element {
     label.render()
 }
 `;
@@ -126,11 +128,10 @@ export class Counter extends Component {
   expect(js).toContain(`  componentDidUpdate(prevProps, prevState) {
     console.log(\`update \${prevProps.label} to \${this.props.label}\`);
   }`);
-  expect(js).toContain(`  render() {
-    const props = this.props;
-    return <p>{props.label}</p>;
-  }
-}`);
+  // A ref callback of `self`, `&'static` as React keeps it, sets its field.
+  expect(js).toContain(`        ref={(p) => {
+          this._paragraph = p;
+        }}`);
   // Its constructor, written, gives the class it extends its props first.
   expect(js).toContain(`export class Label extends Component {
   constructor(props) {
@@ -167,7 +168,7 @@ test("React mounts, updates and unmounts it, in order", () => {
   flushSync(() => root.render(createElement(Counter, { label: "b" })));
   expect(container.innerHTML).toBe("<p>b</p>");
   flushSync(() => root.unmount());
-  expect(said.splice(0)).toEqual(["mount a", "update a to b", "unmount b"]);
+  expect(said.splice(0)).toEqual(["mount a true", "update a to b", "unmount b"]);
 });
 
 test("its constructor runs once, and forceUpdate is React's", () => {
@@ -200,7 +201,7 @@ test("it's a real class: React's and a JS subclass's", () => {
   flushSync(() => root.render(createElement(Loud, { label: "c" })));
   expect(container.innerHTML).toBe("<b><p>c</p></b>");
   flushSync(() => root.unmount());
-  expect(said.splice(0)).toEqual(["mount c", "unmount c"]);
+  expect(said.splice(0)).toEqual(["mount c true", "unmount c"]);
 });
 `);
   expect([ran.code, ran.passed], ran.output).toEqual([0, "3"]);
@@ -222,7 +223,7 @@ pub struct Made {
 }
 
 impl Component<P> for Made {
-    fn render(&self) -> JSX::Element {
+    fn render(self: &'static Self) -> JSX::Element {
         jsx! { <p>{self.count}</p> }
     }
 }
@@ -233,11 +234,11 @@ impl Component<P> for Made {
 pub struct Own {}
 
 impl Component<P> for Own {
-    fn props(&self) -> &P {
+    fn props(self: &'static Self) -> &'static P {
         unreachable!()
     }
 
-    fn render(&self) -> JSX::Element {
+    fn render(self: &'static Self) -> JSX::Element {
         jsx! { <p /> }
     }
 }
@@ -255,7 +256,7 @@ impl Two {
 }
 
 impl Component<P> for Two {
-    fn render(&self) -> JSX::Element {
+    fn render(self: &'static Self) -> JSX::Element {
         jsx! { <p /> }
     }
 }
@@ -268,7 +269,7 @@ pub struct Hidden {
 }
 
 impl Component<P> for Hidden {
-    fn render(&self) -> JSX::Element {
+    fn render(self: &'static Self) -> JSX::Element {
         jsx! { <p /> }
     }
 }
@@ -281,13 +282,13 @@ pub struct Q {}
 pub struct Both {}
 
 impl Component<P> for Both {
-    fn render(&self) -> JSX::Element {
+    fn render(self: &'static Self) -> JSX::Element {
         jsx! { <p /> }
     }
 }
 
 impl Component<Q> for Both {
-    fn render(&self) -> JSX::Element {
+    fn render(self: &'static Self) -> JSX::Element {
         jsx! { <p /> }
     }
 }
@@ -303,7 +304,7 @@ test("a class component is in the module its impl is, which imports what it exte
     pub struct Alone {}
 
     impl Component for Alone {
-        fn render(&self) -> JSX::Element {
+        fn render(self: &'static Self) -> JSX::Element {
             jsx! { <hr /> }
         }
     }
@@ -329,7 +330,7 @@ test("a class component is in the module its impl is, which imports what it exte
         use react::{Component, JSX, jsx};
 
         impl Component for super::Apart {
-            fn render(&self) -> JSX::Element {
+            fn render(self: &'static Self) -> JSX::Element {
                 jsx! { <hr /> }
             }
         }
