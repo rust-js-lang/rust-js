@@ -13,6 +13,7 @@ test("an AsyncLocalStorage's store is what each resource made in its run reads, 
   const dir = fixture("node-async-hooks");
   const node = buildNode();
   writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+use std::rc::Rc;
 
 use js::{JsObject, Unknown};
 use node::async_hooks::{self, AsyncLocalStorage, HookCallbacks};
@@ -25,20 +26,22 @@ thread_local! {
     static PROMISES: Cell<f64> = const { Cell::new(0.0) };
 }
 
-pub fn storage() -> &'static AsyncLocalStorage<Request> {
+pub fn storage() -> &'static AsyncLocalStorage<Rc<Request>> {
     async_hooks::async_local_storage::new(None)
 }
 
-pub fn current(storage: &AsyncLocalStorage<Request>) -> f64 {
+pub fn current(storage: &AsyncLocalStorage<Rc<Request>>) -> f64 {
     storage.get_store().map_or(-1.0, |request| request.id)
 }
 
-pub fn within(storage: &AsyncLocalStorage<Request>, request: &'static Request) -> f64 {
-    storage.run(request, || current(storage) * 10.0)
+// The store is the storage's to keep, an \`Rc\`'s clone, as React's Fizz
+// gives its request (rd497).
+pub fn within(storage: &AsyncLocalStorage<Rc<Request>>, request: &Rc<Request>) -> f64 {
+    storage.run(Rc::clone(request), || current(storage) * 10.0)
 }
 
-pub fn outside(storage: &AsyncLocalStorage<Request>, request: &'static Request) -> f64 {
-    storage.run(request, || storage.exit(|| current(storage)))
+pub fn outside(storage: &AsyncLocalStorage<Rc<Request>>, request: &Rc<Request>) -> f64 {
+    storage.run(Rc::clone(request), || storage.exit(|| current(storage)))
 }
 
 fn counted(_id: f64, kind: &str, _trigger: f64, _resource: &'static JsObject) {

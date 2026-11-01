@@ -207,13 +207,6 @@ impl<T: ?Sized> AsyncLocalStorage<T> {
         unreachable!()
     }
 
-    /// [`storage.run(store, callback)`](https://nodejs.org/api/async_context.html#asynclocalstoragerunstore-callback-args):
-    /// what `callback` gives, run with `store` the store, as is each
-    /// resource it makes.
-    #[cfg_attr(rust_js, rust_js::link_name = "run")]
-    pub fn run<R>(&self, store: &'static T, callback: impl FnOnce() -> R) -> R {
-        unreachable!()
-    }
 
     /// [`storage.exit(callback)`](https://nodejs.org/api/async_context.html#asynclocalstorageexitcallback-args):
     /// what `callback` gives, run with no store.
@@ -222,12 +215,6 @@ impl<T: ?Sized> AsyncLocalStorage<T> {
         unreachable!()
     }
 
-    /// [`storage.enterWith(store)`](https://nodejs.org/api/async_context.html#asynclocalstorageenterwithstore):
-    /// `store` the store of the code that runs from now on.
-    #[cfg_attr(rust_js, rust_js::link_name = "enterWith")]
-    pub fn enter_with(&self, store: &'static T) {
-        unreachable!()
-    }
 
     /// [`storage.disable()`](https://nodejs.org/api/async_context.html#asynclocalstoragedisable):
     /// no store from now on, until a [`run`](Self::run).
@@ -243,3 +230,24 @@ impl<T: ?Sized> AsyncLocalStorage<T> {
         unreachable!()
     }
 }
+
+/// What's given a store, which the storage keeps for the code it runs and
+/// each resource that code makes, as long as they last: owned, an
+/// `Rc<Request>`'s clone say, as Node keeps the value itself (rd497).
+impl<T: 'static> AsyncLocalStorage<T> {
+    /// [`storage.run(store, callback)`](https://nodejs.org/api/async_context.html#asynclocalstoragerunstore-callback-args):
+    /// what `callback` gives, run with `store` the store, as is each
+    /// resource it makes.
+    #[cfg_attr(rust_js, rust_js::link_name = "run")]
+    pub fn run<R>(&self, store: T, callback: impl FnOnce() -> R) -> R {
+        unreachable!()
+    }
+
+    /// [`storage.enterWith(store)`](https://nodejs.org/api/async_context.html#asynclocalstorageenterwithstore):
+    /// `store` the store of the code that runs from now on.
+    #[cfg_attr(rust_js, rust_js::link_name = "enterWith")]
+    pub fn enter_with(&self, store: T) {
+        unreachable!()
+    }
+}
+
