@@ -453,8 +453,8 @@ export const mutations: Mutation[] = [
     name: "kept-ok-at-the-match",
     breaks: "a `catch_unwind` closure of one value, `unwrap_or(false)`'s, its comment first, has it before the `try`, isSameOriginFrame's `// Reading href can throw.` (ADR 0444, amended)",
     file: "src/prepare/catches.rs",
-    find: "        return Some((vec![caught(vec![held.at(of_call)])], taken));\n",
-    replace: "        return Some((vec![caught(vec![held.at(span)])], taken));\n",
+    find: "        return Some((vec![caught(vec![held.at(written.unwrap_or(of_call))])], taken));\n",
+    replace: "        return Some((vec![caught(vec![held.at(written.unwrap_or(span))])], taken));\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "catch_unwind closure's value"],
   },
   {
@@ -472,5 +472,14 @@ export const mutations: Mutation[] = [
     find: "        (true, None) if leaves(then) && rest.first().is_some_and(|s| matches!(s.kind, StmtKind::Comments)) => {\n",
     replace: "        (true, None) if false => {\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "comments around a match of catch_unwind"],
+  },
+  {
+    name: "tried-return-at-the-call",
+    breaks:
+      "the `return` a `try` makes of an `Ok` arm's `return function;` is placed at the call, in the `if`'s test, so the `// eslint-disable-next-line no-eval` above it is lost (rd525)",
+    file: "src/prepare/catches.rs",
+    find: "            (kind, written.then_some(stmt.span))\n",
+    replace: "            (kind, written.then_some(stmt.span).filter(|_| false))\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "above the call's return in the try"],
   },
 ];

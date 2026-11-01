@@ -340,3 +340,27 @@ pub fn process(tag: u8, row: &str) -> Vec<String> {
     ["[1]"],
   ]);
 });
+
+// React's Flight client's parseModelString: `if .. && let Ok(function) =
+// js::eval(&code) { // eslint-disable-next-line no-eval\n return function;
+// }` is `try { return (0, eval)(code); } catch {}`, the comment above the
+// `return` it's written above, so ESLint's next line is the eval's, as
+// upstream has it (rd525).
+test("a comment above an Ok arm's return is above the call's return in the try", async () => {
+  const { js, lib } = await compiled("comment-above-tried-return", `use js::Unknown;
+
+pub fn parse(code: &str) -> Option<&'static Unknown> {
+    if !code.is_empty()
+        && let Ok(function) = js::eval(code)
+    {
+        // eslint-disable-next-line no-eval
+        return function;
+    }
+    // Fallthrough to fallback case.
+    None
+}
+`);
+  expect(js).toContain("    try {\n      // eslint-disable-next-line no-eval\n      return (0, eval)(code);\n    } catch {}\n");
+  const parse = lib.parse as (code: string) => unknown;
+  expect([parse("1 + 2"), parse("("), parse("")]).toEqual([3, undefined, undefined]);
+});

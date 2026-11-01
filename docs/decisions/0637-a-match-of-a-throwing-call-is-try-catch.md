@@ -210,3 +210,28 @@ whose `Err` arm's `else` goes on, `panic_on_root_error(x)` with no
 `return`, and holds its `catch` as `} else { panicOnRootError(x); return;
 }` with no `.TAG`, run where each arm runs. Both mutations are caught
 again. Case ([0262](0262-when-rust-and-js-disagree.md)): A, as above.
+
+## Amendment: the `return` made of an `Ok` arm's is where that arm's is written (2026-11-02, rd525)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N: a comment's place,
+which nothing runs, though ESLint reads it.
+
+React's Flight client's parseModelString writes `if
+(!mightHaveStaticConstructor.test(code)) { try { //
+eslint-disable-next-line no-eval\n return (0, eval)(code); } catch (x) {
+.. } }`. Its port writes `if !MIGHT_HAVE_STATIC_CONSTRUCTOR.with(..) &&
+let Ok(function) = js::eval(&code) { // eslint-disable-next-line
+no-eval\n return function; }`, which is `try { return (0, eval)(code); }
+catch {}`. That `return` was placed at the call, in the `if`'s test, so the
+comment above the written `return function;` had no statement to go
+before. It printed above the `switch`, or nowhere, and ESLint's next line
+wasn't the eval's. **The `return` made of an `Ok` arm's one statement,
+written after the call's `$try`, is placed where that statement is**
+(`try_catch`'s `held`), so the comment is right above `return (0,
+eval)(code);`. The call keeps its own place where the arm is written
+before it or nowhere, as `catch_unwind(|| f(x))`'s does.
+
+Held by `lowering-comments-jumps.test.ts`'s "a comment above an Ok arm's
+return is above the call's return in the try", run, and the mutation
+`tried-return-at-the-call` (`prepare/catches.ts`).
+

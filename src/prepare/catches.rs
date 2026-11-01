@@ -477,8 +477,16 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
             _ => None,
         }
     };
+    // Where the program wrote it, of a statement written after the call's
+    // `$try`, `if let Ok(function) = js::eval(code) { //
+    // eslint-disable-next-line no-eval\n return function; }`'s `return`, so
+    // a comment above it is above the call it's made of, `return (0,
+    // eval)(code);` (rd525).
     let held = match ok {
-        [stmt] => kept(stmt),
+        [stmt] => kept(stmt).map(|kind| {
+            let written = !stmt.span.is_none() && !made.span.is_none() && stmt.span.lo >= made.span.hi;
+            (kind, written.then_some(stmt.span))
+        }),
         _ => None,
     };
     // Nothing else reads the `Result`: the `Ok` arm reads its value, where
@@ -550,8 +558,8 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     let alone = StmtKind::Expr(call.clone()).at(of_call);
     let cannot_throw = |stmt: &Stmt| cannot_throw(stmt);
     // The `Ok`'s value kept is the call's too, `return f(x)`.
-    if let Some(held) = held {
-        return Some((vec![caught(vec![held.at(of_call)])], taken));
+    if let Some((held, written)) = held {
+        return Some((vec![caught(vec![held.at(written.unwrap_or(of_call))])], taken));
     }
     // What the `Ok` arm does can't throw: in the `try`.
     if ok.iter().all(cannot_throw) {
