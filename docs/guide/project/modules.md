@@ -338,8 +338,11 @@ export { greetAll as unstable_greet };
 ```
 
 What a `pub use` names is re-exported from the module its path names,
-which may re-export it itself, by the name it has there; a library's
-item, its default or a binding a module of it holds, from the library's
+which may re-export it itself, by the name it has there, a library's
+item, a class or a module as a function: `pub use client::FRAGMENT;` of
+`client`'s `#[rust_js::name = "Fragment"] pub use ..` is `export {
+Fragment } from "./client.js"`. Otherwise a library's item, its default
+or a binding a module of it holds is re-exported from the library's
 file; a class, by its constructor; a module, its namespace, `export * as
 ns from`, as is a JS module's, `#*`. A private `use .. as`'s
 `#[rust_js::name]` is its import's name. A `pub use m::*;` re-exports

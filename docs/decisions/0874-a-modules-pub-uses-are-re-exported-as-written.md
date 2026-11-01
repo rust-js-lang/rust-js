@@ -1,6 +1,6 @@
 # 0874. A module's `pub use`s are re-exported as written, or refused
 
-Status: Accepted; amended (a `#[rust_js::name]` names a `use` of one name, an error on a group, below; a glob's names, each, rd153). Amends [0240](0240-reexports.md), whose re-exports were
+Status: Accepted; amended (a `#[rust_js::name]` names a `use` of one name, an error on a group, below; a glob's names, each, rd153; through a module that re-exports it, whatever it is, rd338). Amends [0240](0240-reexports.md), whose re-exports were
 one statement for each module, ordered by its path, of the crate's
 functions and bindings alone, and refused a JS module's namespace; and
 [0596](0596-a-pub-use-of-a-modules-own-item-exports-it.md), whose private
@@ -237,3 +237,67 @@ use of every name of a module re-exports each it gives", the diagnostics'
 "a pub use of every name of a module, of a module", rustc's
 `imports/issue-4865-2.rs` (off the known failures), and the `glob-*`
 mutations in `scripts/mutations/lower/reexports.ts`.
+
+## Amendment: through a module that re-exports it, whatever it is (rd338)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. An `export { x }
+from` of the module that re-exports `x` is the same binding as one from
+`x`'s home. What changes is a name JS can see, and that is P2 here: the
+name the path's module gives the item was lost.
+
+React's experimental entries re-export everything through ReactClient,
+`export {Children, Component, Fragment, ..} from './src/ReactClient'`.
+Ported, `pub use crate::react_client::{CHILDREN, Component, FRAGMENT,
+__COMPILER_RUNTIME, ..};` re-exported a function through ReactClient, as
+this ADR says, but a library's item, a class or a module from its home.
+And under Rust's name: ReactClient's `#[rust_js::name = "Fragment"] pub
+use shared::react_symbols::REACT_FRAGMENT_TYPE as FRAGMENT;` gave the
+entry `export { REACT_FRAGMENT_TYPE as FRAGMENT } from
+'../shared/ReactSymbols.js'`. JS's entry exports `Fragment`, ReactClient's
+name for it.
+
+**A `pub use` whose path names its item through another of the crate's
+modules, one with a `pub use` that re-exports the item by the name the
+path gives, is re-exported from that module, by that `use`'s name for it.
+This applies to a function or constant of the crate (as before), a
+library's item, a class and a module alike.** That name is the `use`'s
+`#[rust_js::name]`, else the item's JS name where it keeps the item's
+name, else its alias camelCased (`bindings::use_name`), as that module's
+own `export` says. The `pub use` written here then names it so where it
+keeps the path's name, unless its own `#[rust_js::name]` says otherwise;
+an alias is named as any alias is.
+
+```rust
+// client.rs
+#[cfg_attr(rust_js, rust_js::name = "Fragment")]
+pub use dep::symbols::FRAGMENT_TYPE as FRAGMENT;
+pub use crate::base::Component;
+#[cfg_attr(rust_js, rust_js::name = "__COMPILER_RUNTIME")]
+pub use crate::runtime as __COMPILER_RUNTIME;
+
+// lib.rs
+pub use client::{__COMPILER_RUNTIME, Component, FRAGMENT};
+```
+
+```js
+export { __COMPILER_RUNTIME, Component, Fragment } from "./client.js";
+```
+
+- One owner: `reexports::through_reexport`, of `written_module` and
+  `reexporting_use`, which now finds a `pub use` of a class or module by
+  its type namespace too. A function keeps `exported_in`, which also names
+  one by its own module's alias.
+- Not yet: a private `use` through such a module, `use
+  crate::react_client::use_optimistic;`, still imports from the item's
+  home (`'./src/ReactHooks.js'`, upstream `'./src/ReactClient'`). Same
+  binding, readability only; it changes which module the importer loads
+  first, which `load_cycles` would have to know. Neither are the `//
+  DEV-only` comments inside a `use` list printed yet.
+
+Held by `test/reexports-through.test.ts`: a library's constant, the
+crate's, a class, a module and a function through one module, an alias
+with its `#[rust_js::name]` and a `use` keeping the path's name with its
+own, each the same value as the module's. Mutations
+`reexport-through-library-from-home`, `reexport-through-module-namespace`,
+`reexport-through-class-home`, `reexporting-use-value-only`,
+`through-alias-given-ignored` and `through-reexport-name-unread`.

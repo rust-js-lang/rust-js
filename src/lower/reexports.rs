@@ -109,6 +109,13 @@ pub(super) fn reexports(
             let named = (ident.name, named_of(path));
             super::bindings::use_name(tcx, item.owner_id.to_def_id(), named, || name.to_string())
         };
+        // Its name where it's re-exported through a module that re-exports
+        // it as `export`: that, where the `use` keeps the name the path
+        // gives, but its `#[rust_js::name]` (rd338).
+        let through_alias = |export: &str| match Some(ident.name) == last_name(path) {
+            true => super::bindings::given_name(tcx, item.owner_id.to_def_id()).unwrap_or_else(|| export.to_string()),
+            false => super::bindings::alias_name(tcx, item.owner_id.to_def_id(), ident.name),
+        };
         // Its value: a function, a constant, a thread-local or a binding.
         if let Some(Res::Def(kind, def_id)) = path.res.value_ns
             && matches!(kind, DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. })
@@ -140,8 +147,7 @@ pub(super) fn reexports(
                     .filter(|&through| through != info.module)
                     .and_then(|through| Some((through, exported_in(tcx, fns, through, last_name(path)?, def_id)?)));
                 let (from, export, alias) = match through {
-                    Some((through, export)) if Some(ident.name) == last_name(path) => (through, export.clone(), export),
-                    Some((through, export)) => (through, export, alias(info.exported())),
+                    Some((through, export)) => (through, export.clone(), through_alias(&export)),
                     None => (
                         info.module,
                         super::default_exports::exported_as(tcx, def_id, info.exported()),
@@ -152,14 +158,24 @@ pub(super) fn reexports(
                 found.push((statement, js::ImportFrom::Module(from.clone()), (export, alias)));
                 continue;
             }
-            // A library's, from its file, as its manifest says (ADR 0100).
+            // A library's: through the crate's module its path names that
+            // re-exports it, from there, by its name there (rd338); else
+            // from its file, as its manifest says (ADR 0100).
             if let Some(imported) = foreign.item(def_id)
                 && imported.member.is_none()
-                && let Some((from, export)) = foreign.import_key(def_id, module)
             {
-                let from = js::ImportFrom::Specifier(from);
-                found.push((statement, from, (export, alias(&imported.name))));
-                continue;
+                if let Some((through, export)) = through_reexport(tcx, path, def_id, || imported.name.clone())
+                    && let Some(from) = paths.get(&through)
+                {
+                    let alias = through_alias(&export);
+                    found.push((statement, js::ImportFrom::Module(from.clone()), (export, alias)));
+                    continue;
+                }
+                if let Some((from, export)) = foreign.import_key(def_id, module) {
+                    let from = js::ImportFrom::Specifier(from);
+                    found.push((statement, from, (export, alias(&imported.name))));
+                    continue;
+                }
             }
             let what = format!("a `pub use` of `{}`", tcx.def_path_str(def_id));
             refuse(
@@ -172,6 +188,16 @@ pub(super) fn reexports(
         match path.res.type_ns {
             // A module, its namespace, `export * as ns from`.
             Some(Res::Def(DefKind::Mod, named)) => {
+                // Through a module that re-exports it, that module's export
+                // (rd338).
+                let own = || super::camel_case(ident.as_str());
+                if let Some((through, export)) = through_reexport(tcx, path, named, own)
+                    && let Some(from) = paths.get(&through)
+                {
+                    let alias = through_alias(&export);
+                    found.push((statement, js::ImportFrom::Module(from.clone()), (export, alias)));
+                    continue;
+                }
                 let from = (named.as_local()).and_then(|local| paths.get(&LocalModId::new_unchecked(local)));
                 match from {
                     Some(from) => {
@@ -219,6 +245,14 @@ pub(super) fn reexports(
                     refuse(statement, "a `pub use` of a class without a constructor", why);
                     continue;
                 };
+                // Through a module that re-exports it, from there (rd338).
+                if let Some((through, named)) = through_reexport(tcx, path, class, || export.clone())
+                    && let Some(through) = paths.get(&through)
+                {
+                    let alias = through_alias(&named);
+                    found.push((statement, js::ImportFrom::Module(through.clone()), (named, alias)));
+                    continue;
+                }
                 let alias =
                     super::bindings::use_name(tcx, item.owner_id.to_def_id(), (ident.name, class), || export.clone());
                 found.push((statement, from, (export, alias)));
@@ -423,6 +457,29 @@ pub(super) fn exported_in(
     Some(super::bindings::use_name(tcx, used, (name, item), || info.name.clone()))
 }
 
+/// The crate's module a `pub use`'s `path` names `item` through, whose
+/// own `pub use` re-exports it by the name the path gives, and what it
+/// re-exports it as: that `use`'s `#[rust_js::name]`, else, where it keeps
+/// the item's name, `own`, the item's JS name, else its alias camelCased
+/// (`bindings::use_name`). React's experimental entry's `pub use
+/// crate::react_client::FRAGMENT;` of ReactClient's `#[rust_js::name =
+/// "Fragment"] pub use shared::react_symbols::REACT_FRAGMENT_TYPE as
+/// FRAGMENT;` is `Fragment` of ReactClient's, as upstream's `export
+/// {Fragment} from './src/ReactClient'` (rd338, ADR 0874, amended). A
+/// library's item, a class or a module alike; the crate's function is
+/// `exported_in`'s, which also names one by its own module's alias.
+fn through_reexport(
+    tcx: TyCtxt<'_>,
+    path: &hir::UsePath<'_>,
+    item: DefId,
+    own: impl FnOnce() -> String,
+) -> Option<(LocalModId, String)> {
+    let through = written_module(path)?;
+    let name = last_name(path)?;
+    let used = reexporting_use(tcx, through, name, item)?;
+    Some((through, super::bindings::use_name(tcx, used, (name, item), own)))
+}
+
 /// The `pub use` of `module` that re-exports `item` by `name`, which its
 /// file's JS re-exports (`analysis::is_reexport`), as `pub use
 /// crate::props::register_simple as register_events;` does: the `use`
@@ -433,7 +490,9 @@ pub(super) fn reexporting_use(tcx: TyCtxt<'_>, module: LocalModId, name: Symbol,
         let hir::ItemKind::Use(path, hir::UseKind::Single(ident)) = used.kind else {
             return None;
         };
-        let names_it = matches!(path.res.value_ns, Some(Res::Def(_, named)) if named == item);
+        // Of a value, or of a class or module, the type namespace's.
+        let names = |res: Option<Res>| matches!(res, Some(Res::Def(_, named)) if named == item);
+        let names_it = names(path.res.value_ns) || names(path.res.type_ns);
         (names_it && ident.name == name && super::analysis::is_reexport(tcx, used)).then(|| used.owner_id.to_def_id())
     })
 }
