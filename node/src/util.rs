@@ -9,7 +9,7 @@ use js::Promise;
 /// are the WHATWG classes, webapi's types, made by `util`'s own constructors,
 /// imported from `util`: where a host has no global `TextEncoder`, a test
 /// environment's, `util`'s is still there.
-pub use webapi::{TextDecoder, TextEncoder};
+pub use webapi::{TextDecodeOptions, TextDecoder, TextDecoderOptions, TextEncoder};
 
 pub mod text_encoder {
     use super::TextEncoder;
@@ -23,12 +23,16 @@ pub mod text_encoder {
 }
 
 pub mod text_decoder {
-    use super::TextDecoder;
+    use super::{TextDecoder, TextDecoderOptions};
 
-    /// [`new util.TextDecoder()`](https://nodejs.org/api/util.html#class-utiltextdecoder):
-    /// a decoder of UTF-8 text.
+    /// [`new util.TextDecoder(encoding, options)`](https://nodejs.org/api/util.html#new-textdecoderencoding-options):
+    /// a decoder of text in `encoding`, UTF-8 where it's `None`, as
+    /// @types/node's `constructor(encoding?: string, options?: { fatal?:
+    /// boolean; ignoreBOM?: boolean })` has it, webapi's
+    /// `text_decoder::new`'s: React's Flight client's `new
+    /// TextDecoder('utf-8', {ignoreBOM: preserveByteOrderMark})`.
     #[cfg_attr(rust_js, rust_js::link_name = "new util#TextDecoder")]
-    pub fn new() -> &'static TextDecoder {
+    pub fn new(encoding: Option<&str>, options: Option<TextDecoderOptions>) -> &'static TextDecoder {
         unreachable!()
     }
 }

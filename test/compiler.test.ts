@@ -494,7 +494,8 @@ test("the builtins crate's string functions are JS's string methods", () => {
   const text = " 😀ab ab ";
   const [parts, at, length] = builtins.parts(text, "ab");
   expect(parts).toEqual([text.slice(1, -1), text.slice(-2), text.substring(1, 3), text.substring(1), text.trim(), text.trimStart(), text.trimEnd()]);
-  expect(at).toEqual([text.indexOf("ab"), text.indexOf("ab", 2), text.lastIndexOf("ab")]);
+  // A position from the end is a number, as one `index_of` found (rd343).
+  expect(at).toEqual([text.indexOf("ab"), text.indexOf("ab", 2), text.lastIndexOf("ab"), text.lastIndexOf("ab", 5), text.charCodeAt(text.indexOf("ab") - 1)]);
   expect(length).toBe(text.length);
   // An index is a JS number, as TypeScript has it: one past it is `+ 1`.
   expect(builtins.fileName("a/b/c.txt")).toBe("c.txt");
@@ -518,7 +519,7 @@ test("the builtins crate's string functions are JS's string methods", () => {
   expect(js).toContain("export function asUnknown(text) {\n  return text;\n}");
   expect(js).toContain("return key in value;");
   expect([builtins.holds({ a: 1 }, "a"), builtins.holds({}, "toString"), builtins.holds({}, "b")]).toEqual([true, true, false]);
-  for (const call of ["text.slice(1, -1)", "text.slice(-2)", "text.substring(1, 3)", "text.substring(1)", "text.trim()", "text.trimStart()", "text.trimEnd()", 'text.indexOf(part)', "text.indexOf(part, 2)", "text.lastIndexOf(part)", "text.length", "text.charAt(i)", "text.replace(from, to)"]) {
+  for (const call of ["text.slice(1, -1)", "text.slice(-2)", "text.substring(1, 3)", "text.substring(1)", "text.trim()", "text.trimStart()", "text.trimEnd()", 'text.indexOf(part)', "text.indexOf(part, 2)", "text.lastIndexOf(part)", "text.lastIndexOf(part, 5)", "text.charCodeAt(text.indexOf(part) - 1)", "text.length", "text.charAt(i)", "text.replace(from, to)"]) {
     expect(js).toContain(call);
   }
 });

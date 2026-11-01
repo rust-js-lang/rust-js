@@ -244,3 +244,21 @@ by a global path of its own, as no binding had them but `Date`'s.
 Case: N ([0262](0262-when-rust-and-js-disagree.md)), each JS's own
 function, typed as TypeScript's lib, never narrower. Held by
 `test/js-globals.test.ts`, which runs each.
+
+## Amended (2026-11-01, rd347): a proxy is an object of its target's type
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N; the same `new
+Proxy(target, handler)`, typed as TypeScript types it.
+
+ReactFlightReplyClient keys a `WeakMap` by a proxy,
+`knownServerObjectReferences.set(new Proxy({}, handlers), id)`. `proxy::new`
+gave an `&Unknown`, which no `WeakMap` keys, so the port tested
+`typeof reference === "object"` first, a test upstream doesn't make of what
+is always an object.
+
+**`proxy::new<T: WeakKey + ?Sized>(target: &T, handler) -> &'static T`**,
+TypeScript's `new <T extends object>(target: T, handler: ProxyHandler<T>):
+T`: an object, of its target's type, a weak key as its target is. So is
+`revocable`'s, `RevocableProxy<T>::proxy()`. A handler's traps are given
+the target as any value, as before. Held by `test/js-builtins.test.ts`'
+"Reflect and Proxy are JS's", a proxy keying a `WeakMap`.

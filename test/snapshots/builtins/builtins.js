@@ -106,7 +106,13 @@ export function parts(text, part) {
     text.trimStart(),
     text.trimEnd(),
   ];
-  const at = [text.indexOf(part), text.indexOf(part, 2), text.lastIndexOf(part)];
+  const at = [
+    text.indexOf(part),
+    text.indexOf(part, 2),
+    text.lastIndexOf(part),
+    text.lastIndexOf(part, 5),
+    text.charCodeAt(text.indexOf(part) - 1),
+  ];
   return [parts, at, text.length];
 }
 

@@ -2022,9 +2022,11 @@ pub mod string {
     }
 
     /// [`text.charAt(index)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/charAt):
-    /// its UTF-16 code unit at `index`, half of an emoji, or `""` past its end.
+    /// its UTF-16 code unit at `index`, half of an emoji, or `""` past its
+    /// end. Any number, TypeScript's `number` (ADR 0994): a loop's `u32`, or
+    /// where a search found it, an `f64`.
     #[cfg_attr(rust_js, rust_js::link_name = "charAt")]
-    pub fn char_at(this: &str, index: u32) -> String {
+    pub fn char_at(this: &str, index: impl Into<f64>) -> String {
         unreachable!()
     }
 
@@ -2038,9 +2040,11 @@ pub mod string {
     }
 
     /// [`text.charCodeAt(index)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/charCodeAt):
-    /// its UTF-16 code unit at `index`, a number, `NaN` past its end.
+    /// its UTF-16 code unit at `index`, a number, `NaN` past its end. Any
+    /// number, TypeScript's `number` (ADR 0994): a loop's `u32`, or where a
+    /// search found it, an `f64`, `char_code_at(description, query_idx - 1.0)`.
     #[cfg_attr(rust_js, rust_js::link_name = "charCodeAt")]
-    pub fn char_code_at(this: &str, index: u32) -> f64 {
+    pub fn char_code_at(this: &str, index: impl Into<f64>) -> f64 {
         unreachable!()
     }
 
@@ -2068,11 +2072,12 @@ pub mod string {
         unreachable!()
     }
 
-    /// [`text.lastIndexOf(search)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/lastIndexOf):
-    /// where `search` last is, or `-1`.
+    /// [`text.lastIndexOf(search, position)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/lastIndexOf):
+    /// where `search` last is, at `position` or before where it's given,
+    /// or `-1`.
     #[cfg_attr(rust_js, rust_js::link_name = "lastIndexOf")]
     #[cfg_attr(rust_js, rust_js::whole = "-1..=4294967294")]
-    pub fn last_index_of(this: &str, search: &str) -> f64 {
+    pub fn last_index_of(this: &str, search: &str, position: Option<f64>) -> f64 {
         unreachable!()
     }
 

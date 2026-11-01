@@ -1070,7 +1070,7 @@ test("node's crypto hashes and a Writable is written to", () => {
   const node = buildNode();
   writeFileSync(join(dir, "lib.rs"), `use node::crypto::{self, BinaryToTextEncoding};
 use node::stream::Writable;
-use node::util::text_encoder;
+use node::util::{TextDecodeOptions, TextDecoderOptions, text_decoder, text_encoder};
 
 pub fn create_fast_hash(input: &str) -> String {
     let hash = crypto::create_hash("md5");
@@ -1087,24 +1087,31 @@ pub fn write_both(destination: &Writable, text: &str) -> bool {
 pub fn close(destination: &Writable) {
     destination.end();
 }
+
+pub fn decoded(text: &str) -> String {
+    let bytes = text_encoder::new().encode(Some(text));
+    let decoder = text_decoder::new(Some("utf-8"), Some(TextDecoderOptions { ignore_bom: Some(true), ..Default::default() }));
+    decoder.decode(Some(&bytes), Some(TextDecodeOptions { stream: Some(true) })) + &decoder.decode(None, None)
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('import { createHash } from "crypto";');
   expect(js).toContain('const hash = createHash("md5");\n  hash.update(input);\n  return hash.digest("hex");');
-  expect(js).toContain('import { TextEncoder } from "util";');
   expect(js).toContain("const bytes = new TextEncoder().encode(text);");
   expect(js).toContain("destination.end();");
+  expect(js).toContain('import { TextDecoder, TextEncoder } from "util";');
+  expect(js).toContain('new TextDecoder("utf-8", { ignoreBOM: true });');
   writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
   writeFileSync(join(dir, "run.js"), `import { Writable } from "node:stream";
-import { createFastHash, writeBoth, close } from "./lib.js";
+import { createFastHash, writeBoth, close, decoded } from "./lib.js";
 const seen = [];
 const destination = new Writable({ write(chunk, _, done) { seen.push(Buffer.from(chunk).toString()); done(); } });
 const capacity = writeBoth(destination, "hi");
 close(destination);
-destination.on("finish", () => console.log(JSON.stringify([createFastHash("abc"), capacity, seen])));
+destination.on("finish", () => console.log(JSON.stringify([createFastHash("abc"), capacity, seen, decoded("é!")])));
 `);
   const p = Bun.spawnSync(["node", "run.js"], { cwd: dir, stderr: "pipe" });
   expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
-  expect(JSON.parse(p.stdout.toString())).toEqual(["900150983cd24fb0d6963f7d28e17f72", true, ["hi", "hi"]]);
+  expect(JSON.parse(p.stdout.toString())).toEqual(["900150983cd24fb0d6963f7d28e17f72", true, ["hi", "hi"], "é!"]);
 });

@@ -290,3 +290,25 @@ Held by `test/corpus/counter_shown_as_js_text.rs` (native comparison of
 counters up and down and of each kept case); mutations
 `counter-past-2-53`, `counter-negative-zero`, `counter-any-step` and
 `counter-of-itself-unknown` (`lower/mir/local_facts.ts`).
+
+## Amended (2026-11-01, rd343): a string's index and `lastIndexOf`'s position
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N; the same JS, given
+what TypeScript gives it.
+
+React's ReactFlightPerformanceTrack getIOShortName writes
+`description.charCodeAt(queryIdx - 1)` and `description.lastIndexOf('/',
+queryIdx - 1)` of an index `indexOf` found, an `f64`. `js::string`'s
+`char_code_at` and `char_at` took a `u32`, `charCodeAt($f64ToInt(..))` of
+an `f64`, and `last_index_of` no position, which the port wrote as a
+`slice` first.
+
+- **`char_at` and `char_code_at` take any number**, `impl Into<f64>`,
+  TypeScript's `number`: a loop's `u32`, as before, or a search's `f64`,
+  `text.charCodeAt(text.indexOf(part) - 1)`.
+- **`last_index_of(text, search, position)`**, `position` an
+  `Option<f64>`, as `index_of`'s `from` is, TypeScript's `position?:
+  number`.
+
+Held by `test/compiler.test.ts`' "the builtins crate's string functions
+are JS's string methods" (`test/builtins.rs`).

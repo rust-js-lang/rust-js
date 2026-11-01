@@ -1,35 +1,39 @@
 //! JS's [`Proxy`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Proxy):
 //! an object whose operations a handler's traps make (ADR 0283), as
-//! TypeScript's `lib.es2015.proxy.d.ts` has it. A proxy is a JS value of
-//! any shape, an [`Unknown`], as its traps may give anything: one of a
-//! Rust type would be that type's in name only.
+//! TypeScript's `lib.es2015.proxy.d.ts` has it. A proxy is an object of
+//! its target's type, as TypeScript's `T` is; what its traps give is any
+//! value, an [`Unknown`].
 
 
 use core::marker::PhantomData;
 
-use super::{JsObject, PropertyDescriptor, Unknown};
+use super::{JsObject, PropertyDescriptor, Unknown, WeakKey};
 
 /// [`new Proxy(target, handler)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Proxy/Proxy):
-/// `target`, each operation `handler` has a trap for its trap's.
+/// `target`, each operation `handler` has a trap for its trap's: an object,
+/// of `target`'s type, as TypeScript's `new <T extends object>(target: T,
+/// handler: ProxyHandler<T>): T` has it, so a `WeakMap` keys it, as
+/// ReactFlightReplyClient's `knownServerObjectReferences.set(reference, id)`
+/// does. Its traps are given `target` as a value of any shape, as JS's are.
 #[cfg_attr(rust_js, rust_js::link_name = "new Proxy")]
-pub fn new(target: &Unknown, handler: &ProxyHandler) -> &'static Unknown {
+pub fn new<T: WeakKey + ?Sized>(target: &T, handler: &ProxyHandler) -> &'static T {
     unreachable!()
 }
 
 /// [`Proxy.revocable(target, handler)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Proxy/revocable):
-/// a proxy, and the function that ends it.
+/// a proxy of `target`'s type, as [`new`]'s, and the function that ends it.
 #[cfg_attr(rust_js, rust_js::link_name = "Proxy.revocable")]
-pub fn revocable(target: &Unknown, handler: &ProxyHandler) -> &'static RevocableProxy {
+pub fn revocable<T: WeakKey + ?Sized>(target: &T, handler: &ProxyHandler) -> &'static RevocableProxy<T> {
     unreachable!()
 }
 
 /// What `revocable` gives: the proxy, and `revoke`, after which each of
 /// its operations throws a `TypeError`.
-pub struct RevocableProxy(PhantomData<JsObject>);
+pub struct RevocableProxy<T: ?Sized>(PhantomData<JsObject>, PhantomData<*const T>);
 
-impl RevocableProxy {
+impl<T: ?Sized> RevocableProxy<T> {
     #[cfg_attr(rust_js, rust_js::link_name = "get proxy")]
-    pub fn proxy(&self) -> &'static Unknown {
+    pub fn proxy(&self) -> &'static T {
         unreachable!()
     }
 

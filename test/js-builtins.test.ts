@@ -427,7 +427,7 @@ pub async fn resolvers() -> u32 {
 test("Reflect and Proxy are JS's", async () => {
   const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("js-reflect");
-  writeFileSync(join(dir, "lib.rs"), `use js::{PropertyDescriptor, ProxyHandler, Unknown, proxy, reflect, string, unknown};
+  writeFileSync(join(dir, "lib.rs"), `use js::{JsObject, PropertyDescriptor, ProxyHandler, Unknown, WeakMap, proxy, reflect, string, unknown, weak_map};
 pub fn reflected(o: &Unknown) -> (bool, String, usize, bool, bool) {
     let d = PropertyDescriptor { value: Some(&"fixed"), writable: Some(false), ..Default::default() };
     let defined = reflect::define_property(o, "id", &d);
@@ -435,7 +435,7 @@ pub fn reflected(o: &Unknown) -> (bool, String, usize, bool, bool) {
     let own = reflect::get_own_property_descriptor(o, "id").and_then(|d| d.writable) == Some(false);
     (defined, string(reflect::get(o, "id", None)), reflect::own_keys(o).len(), written, own || !reflect::set_prototype_of(o, None))
 }
-pub fn proxied(o: &'static Unknown) -> (String, String, bool) {
+pub fn proxied(o: &'static JsObject) -> (String, String, bool) {
     let handler = ProxyHandler {
         get: Some(Box::new(|target, key, _| match reflect::get(target, key, None) {
             Some(value) => Some(value),
@@ -448,6 +448,13 @@ pub fn proxied(o: &'static Unknown) -> (String, String, bool) {
     p.revoke();
     (seen.0, seen.1, reflect::get_prototype_of(o).is_none())
 }
+// A proxy is an object of its target's type, which a \`WeakMap\` keys (rd347).
+pub fn keyed(id: u32) -> (&'static JsObject, &'static WeakMap<JsObject, u32>) {
+    let known: &'static WeakMap<JsObject, u32> = weak_map::new();
+    let reference = proxy::new(js::object::from_entries(Vec::<(String, u32)>::new()), &ProxyHandler::default());
+    known.set(reference, id);
+    (reference, known)
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -459,6 +466,10 @@ pub fn proxied(o: &'static Unknown) -> (String, String, bool) {
   const lib = await import(join(dir, "lib.js"));
   expect(lib.reflected({ a: 1 })).toEqual([true, "fixed", 2, false, true]);
   expect(lib.proxied(Object.assign(Object.create(null), { a: 1 }))).toEqual(["1", "missing", true]);
+  expect(js).toContain("known.set(reference, id);");
+  expect(js).not.toContain("typeof reference");
+  const [reference, known] = lib.keyed(7);
+  expect(known.get(reference)).toBe(7);
 });
 
 // ADR 0283: Atomics' functions take an integer typed array, its element a

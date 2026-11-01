@@ -83,7 +83,9 @@ pub fn parts(text: &str, part: &str) -> (Vec<String>, Vec<f64>, u32) {
     let at = vec![
         string::index_of(text, part, None),
         string::index_of(text, part, Some(2.0)),
-        string::last_index_of(text, part),
+        string::last_index_of(text, part, None),
+        string::last_index_of(text, part, Some(5.0)),
+        string::char_code_at(text, string::index_of(text, part, None) - 1.0),
     ];
     (parts, at, string::length(text))
 }
@@ -92,7 +94,7 @@ pub fn parts(text: &str, part: &str) -> (Vec<String>, Vec<f64>, u32) {
 /// file's name: an index is a JS number, as TypeScript has it, so one past
 /// it is `+ 1`.
 pub fn file_name(path: &str) -> String {
-    string::slice(path, string::last_index_of(path, "/") + 1.0, None)
+    string::slice(path, string::last_index_of(path, "/", None) + 1.0, None)
 }
 
 /// JS's `replace` of a string: the first match only, where Rust's
