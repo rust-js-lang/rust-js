@@ -348,7 +348,8 @@ Its function's identity and `.length` are told apart as they are of
 `renderer.batchedUpdates`, ADR 0262's identity exception. A plain function
 called by its name, which Rust could name, keeps its arrow, React's DEV
 dispatchers' `readContext(context) { return readContext(context); }` (ADR
-0605, amended).
+0605, amended). The user confirmed this scope (2026-11-01): the eta covers a
+namespace's methods only; a plain function keeps its arrow.
 
 Held by `test/namespaces.test.ts`'s "a library's namespace method by its
 name is its library's, exact where its result is flattened", `return

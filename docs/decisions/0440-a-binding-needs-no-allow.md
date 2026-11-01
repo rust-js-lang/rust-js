@@ -137,7 +137,9 @@ as a function that never reads its parameters, and an app's plain check
 of a binding crate it has by its path, `node` from its package, is held
 clean (`test/node-bindings.test.ts`): so a binding crate's root says so
 once, `#![cfg_attr(not(rust_js), allow(unused_variables))]`, which rust-js,
-whose `cfg(rust_js)` it is, never reads. `test/architecture.test.ts`'s "a
+whose `cfg(rust_js)` it is, never reads. The user accepted that one line per binding
+crate's root (2026-11-01), over a Cargo `[lints.rust]` table in each
+crate's manifest or plain cargo's warnings. `test/architecture.test.ts`'s "a
 binding is written with no allow of unused variables" holds both: that
 one form at each binding crate's root, none on a binding. A function that isn't a
 binding and reads none of its parameters, a gone timer's `clear_timeout(&self,
