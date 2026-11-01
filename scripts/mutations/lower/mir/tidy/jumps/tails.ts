@@ -880,7 +880,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: '        let last = stmts.pop().expect("matched");\n        if let Some(kind) = emptied_branch(last.kind) {\n            stmts.push(kind.at(last.span));\n        }\n    } else if let Some(StmtKind::Try(body, _))',
     replace: "    } else if let Some(StmtKind::Try(body, _))",
-    tests: ["test/lowering-labels.test.ts", "-t", "never printed empty"],
+    tests: ["test/corpus.test.ts", "-t", "^emptied_branch_nested\\.rs$"],
+    snapshots: true,
   },
   {
     name: "returns-past-blocks-in-try-skipped",

@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1427
-lines	140481
+files	1429
+lines	140594
 temporaries	1	0.1
 labeled blocks	14	1
-while (true)	123	8.8
+while (true)	123	8.7
 $iter	1172	83.4
 Iterator.from	116	8.3
-return;	152	10.8
-renamed x$1	8646	615.5
+return;	153	10.9
+renamed x$1	8646	615
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1976	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	206	0	0	0	6	0	0	35
@@ -289,6 +289,7 @@ test/corpus/drop_flag_loops.js	41	0	0	0	0	0	0	0
 test/corpus/drop_functions.js	98	0	0	0	0	0	0	0
 test/corpus/drop_generic.js	111	0	0	0	0	0	0	0
 test/corpus/drop_guard_early_return.js	56	0	0	0	0	0	0	0
+test/corpus/drop_guard_early_returns.js	47	0	0	0	0	0	1	0
 test/corpus/drop_guard_given_whole.js	23	0	0	0	0	0	0	0
 test/corpus/drop_guard_kept_words.js	21	0	0	0	0	0	0	0
 test/corpus/drop_guard_name_shared.js	28	0	0	0	0	0	0	0
@@ -350,6 +351,7 @@ test/corpus/dyn_tail_in_a_ref_cell.js	305	0	0	0	0	0	0	21
 test/corpus/dyn_to_string.js	37	0	0	0	0	0	0	0
 test/corpus/early_bound_method_lifetime.js	28	0	0	0	0	0	0	0
 test/corpus/else_break_ends_loop.js	125	0	0	0	0	0	0	3
+test/corpus/emptied_branch_nested.js	66	0	0	0	0	0	0	0
 test/corpus/empty_pattern.js	26	0	0	0	0	0	0	0
 test/corpus/encode_utf8_written.js	24	0	0	0	0	0	0	0
 test/corpus/entry_and_modify.js	72	0	0	0	0	0	0	0

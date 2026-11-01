@@ -254,7 +254,9 @@ person writes. Four things kept them so, each now as it should be:
   (Amended 2026-11-01: 672fdd245 took `drop_tail`'s own call out, its
   mutation surviving every test that listed it; React's port showed it
   wasn't redundant, Fizz's `use(usable)` then printing `if (usable ==
-  null) {} else if (typeof usable === "object") { .. }`. Put back, held by
+  null) {} else if (typeof usable === "object") { .. }`, and five more
+  files so (rd503). Put back, held by the corpus case
+  `emptied_branch_nested`, React DOM's initInput against native Rust, and
   `lowering-labels`' "a branch a tail jump was all of is never printed
   empty".)
 
@@ -277,7 +279,8 @@ the cases Rust's arms are, its guards run in Rust's order, each once; a
 - Mutations `switch-negated-guard-unplaced`, `switch-guard-inner-if-apart`,
   `switch-failing-guard-goes-after` and `switch-case-ending-break-kept`
   (`tidy/switches.ts`), and `tail-jump-branch-left-empty`
-  (`tidy/jumps/tails.ts`), of `lowering-labels`' test (amended above).
+  (`tidy/jumps/tails.ts`), of the corpus case `emptied_branch_nested`
+  (amended above).
 
 ## Amendment: a fall-through the program says is said once (2026-10-26)
 
