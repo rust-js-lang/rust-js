@@ -920,13 +920,20 @@ impl<'b, 'tcx> rustc_middle::thir::visit::Visitor<'b, 'tcx> for BoundRefCells<'_
 /// Whether a `RefCell<T>`'s `T` is an object the cell is (ADR 0863), by
 /// what `T` is alone, so that each of generic code's `RefCell<Node<T>>`
 /// is one or none: a `Vec`'s or a `VecDeque`'s array, a map's `Map`, a
-/// set's `Set`, a struct's object or a tuple struct's array, of fields.
-/// Not a reference, which a write points at another; nor a class's
-/// instance, a JS object's binding or one of markers alone. A
+/// set's `Set`, a struct's object or a tuple struct's array, of fields;
+/// an untagged enum's array, where each of its values is one it holds
+/// itself (`untagged::arrays_in_place`). Not a reference, which a write
+/// points at another; nor a class's instance, a JS object's binding or one
+/// of markers alone. A
 /// `#[repr(transparent)]` struct is its field's answer (ADR 0584). One that's `Copy` is copied where it's changed in
 /// place, as any is (ADR 0623).
-pub(in crate::lower) fn holds_itself(tcx: TyCtxt<'_>, held: Ty<'_>) -> bool {
-    let ty::Adt(adt, _) = held.kind() else { return false };
+pub(in crate::lower) fn holds_itself<'tcx>(tcx: TyCtxt<'tcx>, held: Ty<'tcx>) -> bool {
+    let ty::Adt(adt, args) = held.kind() else { return false };
+    // An untagged enum each of whose values is an array it holds itself
+    // (rd490).
+    if adt.is_enum() {
+        return crate::lower::untagged::arrays_in_place(tcx, *adt, args);
+    }
     let std = |item: StdItem| crate::lower::recognition::is_std_def(tcx, adt.did(), item);
     if crate::lower::recognition::is_vec_like_def(tcx, adt.did())
         || [StdItem::HashMap, StdItem::HashSet, StdItem::BTreeMap, StdItem::BTreeSet]

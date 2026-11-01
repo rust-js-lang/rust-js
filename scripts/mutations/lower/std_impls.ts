@@ -204,9 +204,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a clone of an untagged enum's `Vec` is the same array, which a push to the first changes",
     file: "src/lower/std_impls.rs",
-    find: "            ty::Adt(adt, args) if self.untagged(ty).is_some() => {\n                let mut value = place.clone();\n",
+    find: "            ty::Adt(adt, args) if self.untagged(ty).is_some() => {\n                let itself = self.untagged_changed_itself(ty);\n",
     replace:
-      "            ty::Adt(adt, args) if false => {\n                let mut value = place.clone();\n",
+      "            ty::Adt(adt, args) if false => {\n                let itself = self.untagged_changed_itself(ty);\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_enums"],
   },
   {
@@ -1062,5 +1062,14 @@ export const mutations: Mutation[] = [
     replace:
       '                Ok(Expr::object(vec![Prop::Field("start".into(), Expr::member(place.clone(), "start")), Prop::Field("end".into(), Expr::member(place, "end"))]))\n',
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
+  },
+  {
+    name: "untagged-arrays-clone-shared",
+    breaks:
+      "a clone of an untagged enum of arrays changed in place is the array itself, where its payload needs no clone of its own, which `*place = ..` then changes too (rd490)",
+    file: "src/lower/std_impls.rs",
+    find: "                let itself = self.untagged_changed_itself(ty);\n",
+    replace: "                let itself = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
   },
 ];

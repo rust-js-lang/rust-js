@@ -113,9 +113,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a copy of a `Copy` untagged enum is a tagged one's, `{ ...spot, _0: { ...spot._0 } }`, a payload it hasn't",
     file: "src/lower/copies.rs",
-    find: "                if self.untagged(ty).is_some() {\n                    return once(place, &|e| {\n",
+    find: "                if self.untagged(ty).is_some() {\n                    let itself = self.untagged_changed_itself(ty);\n",
     replace:
-      "                if false {\n                    return once(place, &|e| {\n",
+      "                if false {\n                    let itself = self.untagged_changed_itself(ty);\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_enums"],
     snapshots: true,
   },
@@ -318,6 +318,25 @@ export const mutations: Mutation[] = [
     find: "                    if !boxed && self.copy(probe.clone(), item).kind == probe.kind {\n",
     replace: "                    if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^unboxed_type_params.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "untagged-arrays-copy-shared",
+    breaks:
+      "a copy of an untagged enum of arrays changed in place is the array itself, which `*place = ..` then changes too (rd490)",
+    file: "src/lower/copies.rs",
+    find: "            && self.mutated_itself(ty)\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
+  },
+  {
+    name: "untagged-arrays-slice-unread",
+    breaks:
+      "a copy of an untagged enum of arrays tests each variant to copy its items, where its `slice()` copies any (rd490)",
+    file: "src/lower/copies.rs",
+    find: "        super::untagged::arrays_in_place(self.tcx, adt, args)\n            && adt.variants().iter().all(|v| {\n",
+    replace: "        false\n            && adt.variants().iter().all(|v| {\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
     snapshots: true,
   },
 ];

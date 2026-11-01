@@ -24,6 +24,11 @@ pub(super) enum Kind {
     Boolean,
     Symbol,
     Array,
+    /// An array whose type fixes how many items it has, a tuple's, a tuple
+    /// struct's or a `[T; N]`'s: told from another of another length by
+    /// its `length`, as React's Fizz server tells a replay node of four
+    /// from a boundary's of six, `node.length === 4` (rd490).
+    Tuple(usize),
     Function,
     Object,
     /// A class, `instanceof`: its JS name, and the Rust type that's it, whose
@@ -56,6 +61,8 @@ impl Kind {
         match (self, other) {
             (Kind::Union(parts), other) | (other, Kind::Union(parts)) => parts.iter().any(|part| part.overlaps(other)),
             (Kind::Literal(_), Kind::String) | (Kind::String, Kind::Literal(_)) => true,
+            // An array of any length may be of the one a tuple has.
+            (Kind::Tuple(_), Kind::Array) | (Kind::Array, Kind::Tuple(_)) => true,
             (a, b) => a == b,
         }
     }
@@ -81,7 +88,13 @@ impl Kind {
             Kind::Object => Some("object"),
             Kind::Literal(_) => Some("string"),
             Kind::Undefined => Some("undefined"),
-            Kind::Array | Kind::Class(..) | Kind::Test(_) | Kind::Member(..) | Kind::Null | Kind::Union(_) => None,
+            Kind::Array
+            | Kind::Tuple(_)
+            | Kind::Class(..)
+            | Kind::Test(_)
+            | Kind::Member(..)
+            | Kind::Null
+            | Kind::Union(_) => None,
         }
     }
 
@@ -97,6 +110,7 @@ impl Kind {
     fn describe(&self) -> String {
         match self {
             Kind::Array => "an array".into(),
+            Kind::Tuple(len) => format!("an array of {len} items"),
             Kind::Class(name, _) => format!("a `{name}`"),
             Kind::Test(test) => format!("what `{test}` says is one"),
             Kind::Member(key, kind) => format!("an object whose `{key}` is {}", kind.describe()),
@@ -125,6 +139,17 @@ const TYPE_OF: [Kind; 7] = [
     Kind::Function,
     Kind::Object,
 ];
+
+/// What tells an untagged enum's arrays whose types fix their lengths
+/// apart (`lengths_tell`, rd490): nothing more than that each is an array,
+/// where it's the enum's one; their `length` too; or their `length` alone,
+/// where each of its values is one.
+#[derive(Clone, Copy, PartialEq)]
+enum Lengths {
+    Untold,
+    Told,
+    Alone,
+}
 
 /// What a `switch (typeof value)` has of a variant of an untagged enum
 /// (ADR 0668): its `case`, what `typeof` says of it, and the variants'
@@ -255,6 +280,50 @@ pub(super) fn holds_nullish(tcx: TyCtxt<'_>, adt: AdtDef<'_>) -> bool {
         && (adt.variants().iter()).any(|v| matches!(unit_kind(tcx, v), Some(Kind::Null | Kind::Undefined)))
 }
 
+/// Whether each value of the untagged enum `adt` is an array it holds
+/// itself, not through a reference nor an `Rc`: a tuple's, a tuple
+/// struct's, a `[T; N]`'s or a `Vec`'s, each variant's. One is then
+/// changed in place as an array is, `*r = v` making the array `v`'s items
+/// (`$assign`, ADR 0147), so a `&mut` to it is the array and a `RefCell`
+/// of it the array it holds (ADR 0863), as React's Fizz server grows a
+/// replay node of four to a boundary's of six where its parent's children
+/// hold it, and shrinks it back, `node.length = 4` (rd490). Not one of a
+/// string, a number or an object, which `*r = v` can't make another's in
+/// place (#347).
+pub(in crate::lower) fn arrays_in_place<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    adt: AdtDef<'tcx>,
+    args: GenericArgsRef<'tcx>,
+) -> bool {
+    fn array<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+        match *ty.kind() {
+            ty::Tuple(items) => !items.is_empty(),
+            ty::Array(..) => true,
+            ty::Adt(adt, _) if super::recognition::is_vec_like_def(tcx, adt.did()) => true,
+            ty::Adt(adt, args) if adt.is_struct() => match super::recognition::transparent_field(tcx, adt) {
+                // A `#[repr(transparent)]` struct is its field (ADR 0584).
+                Some(at) => array(
+                    tcx,
+                    adt.non_enum_variant().fields[rustc_abi::FieldIdx::from_usize(at)]
+                        .ty(tcx, args)
+                        .skip_normalization(),
+                ),
+                None => {
+                    adt.non_enum_variant().ctor_kind() == Some(CtorKind::Fn)
+                        && !super::recognition::is_symbol_for_def(tcx, adt.did())
+                        && super::drops::holds_itself(tcx, ty)
+                }
+            },
+            _ => false,
+        }
+    }
+    bindings::is_untagged(tcx, adt.did())
+        && (adt.variants().iter()).all(|v| {
+            !bindings::is_otherwise(tcx, v.def_id)
+                && matches!(&v.fields.raw[..], [field] if array(tcx, field.ty(tcx, args).skip_normalization()))
+        })
+}
+
 /// Whether `ty` is an untagged enum, `#[rust_js::untagged]`.
 pub(super) fn untagged_adt<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(AdtDef<'tcx>, GenericArgsRef<'tcx>)> {
     match *ty.kind() {
@@ -308,11 +377,20 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if self.is_set(ty) {
             return Some(Kind::Class("Set".into(), None));
         }
-        if ty.is_array()
-            || ty.is_slice()
-            || self.is_vec_like(ty)
-            || matches!(ty.kind(), ty::Tuple(items) if !items.is_empty())
+        // A tuple, and an array of a length its type fixes, is an array of
+        // that many items, its `length` (rd490); a slice, a `Vec`, or an
+        // array of a length a generic `const` is, an array of any.
+        if let ty::Tuple(items) = ty.kind()
+            && !items.is_empty()
         {
+            return Some(Kind::Tuple(items.len()));
+        }
+        if let ty::Array(_, len) = ty.kind()
+            && let Some(len) = len.try_to_target_usize(self.tcx)
+        {
+            return Some(Kind::Tuple(len as usize));
+        }
+        if ty.is_array() || ty.is_slice() || self.is_vec_like(ty) {
             return Some(Kind::Array);
         }
         // One TypeScript types as `typeof` names a primitive, `js::Symbol`'s
@@ -376,7 +454,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         match ty.kind() {
             ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..) => Some(Kind::Function),
             ty::Dynamic(predicates, ..) if predicates.principal_def_id().is_some_and(fn_trait) => Some(Kind::Function),
-            // A struct of fields is an object, and of a tuple's an array (ADR 0033).
+            // A `#[repr(transparent)]` struct is its field (ADR 0584).
+            ty::Adt(adt, args)
+                if let Some(at) = super::recognition::transparent_field(self.tcx, *adt)
+                    && !self.is_std(adt.did()) =>
+            {
+                let field = &adt.non_enum_variant().fields[rustc_abi::FieldIdx::from_usize(at)];
+                self.untagged_kind(field.ty(self.tcx, args).skip_normalization())
+            }
+            // A struct of fields is an object, and of a tuple's an array of
+            // as many items as it has fields (ADR 0033, rd490).
             ty::Adt(adt, args) if adt.is_struct() && !self.is_std(adt.did()) => {
                 match adt.non_enum_variant().ctor_kind() {
                     // One a field of which tells it apart, an object whose
@@ -391,7 +478,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                             None => Kind::Object,
                         },
                     ),
-                    Some(CtorKind::Fn) if !adt.non_enum_variant().fields.is_empty() => Some(Kind::Array),
+                    Some(CtorKind::Fn) if !adt.non_enum_variant().fields.is_empty() => {
+                        Some(Kind::Tuple(adt.non_enum_variant().fields.len()))
+                    }
                     Some(_) => None,
                 }
             }
@@ -607,7 +696,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 ),
             };
         }
-        let test = |kind: &Kind| self.kind_test(kind, value, class);
+        let lengths = self.lengths_tell(adt, args);
+        let test = |kind: &Kind| match kind {
+            Kind::Tuple(len) => self.tuple_test(lengths, *len, value),
+            kind => self.kind_test(kind, value, class),
+        };
         // Of an enum each variant of which is a struct, an object, a plain
         // one's is only what tells the others apart, `!Array.isArray(
         // child.children)`: that it's an object holds of each (rd291).
@@ -675,6 +768,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             |kind: &Kind| (parts.iter()).any(|(_, own, narrower)| *own == Kind::Object && !narrower.contains(kind));
         let taken_in = |own: &Kind| match own {
             Kind::Array => objects(own),
+            Kind::Tuple(_) => objects(&Kind::Array),
             Kind::Null => objects(own),
             Kind::Member(..) | Kind::Class(..) | Kind::Test(_) => objects(own) && variants.len() == 1,
             _ => false,
@@ -741,7 +835,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let narrower: Vec<&Kind> = kinds
             .iter()
             .filter(|kind| match (&own, kind) {
-                (Kind::Object, Kind::Array | Kind::Class(..) | Kind::Test(_) | Kind::Member(..)) => true,
+                (Kind::Object, Kind::Array | Kind::Tuple(_) | Kind::Class(..) | Kind::Test(_) | Kind::Member(..)) => {
+                    true
+                }
                 (Kind::Object, Kind::Null) => !present,
                 (Kind::Class(_, Some(base)), Kind::Class(_, Some(sub))) => self.superclasses(*sub).contains(base),
                 _ => false,
@@ -753,21 +849,68 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             (Kind::Class(_, Some(sub)), Kind::Class(_, Some(base))) => self.superclasses(*sub).contains(base),
             _ => false,
         };
-        let mut narrower: Vec<Kind> = narrower
+        let mut left_out: Vec<Kind> = Vec::new();
+        for kind in narrower
             .iter()
             .filter(|kind| !narrower.iter().any(|base| extends(kind, base)))
-            .map(|&kind| kind.clone())
-            .collect();
+        {
+            // An object leaves out every array, of any length.
+            let kind = match kind {
+                Kind::Tuple(_) => Kind::Array,
+                kind => (*kind).clone(),
+            };
+            if !left_out.contains(&kind) {
+                left_out.push(kind);
+            }
+        }
+        let mut narrower = left_out;
         // `null` first, as JS writes an object's test: `typeof value ===
         // "object" && value !== null`.
         narrower.sort_by_key(|kind| *kind != Kind::Null);
         (own, narrower)
     }
 
+    /// What tells an array of `adt`'s whose type fixes its length apart
+    /// (rd490): where it's the enum's one array, that it's an array; of
+    /// more, its `length` too; and where each variant is one, its `length`
+    /// alone, `node.length === 4`, as upstream React tells a replay node
+    /// from a boundary's, not `Array.isArray(node) && ..`, which holds of
+    /// each.
+    fn lengths_tell(&self, adt: AdtDef<'tcx>, args: GenericArgsRef<'tcx>) -> Lengths {
+        let kinds: Vec<Option<Kind>> = (adt.variants().iter())
+            .map(|v| match bindings::is_otherwise(self.tcx, v.def_id) {
+                true => None,
+                false => self.untagged_variant_kind(v, args),
+            })
+            .collect();
+        let arrays = (kinds.iter().flatten().flat_map(Kind::parts))
+            .filter(|kind| matches!(kind, Kind::Array | Kind::Tuple(_)))
+            .count();
+        match arrays {
+            0 | 1 => Lengths::Untold,
+            _ if kinds.iter().all(|kind| matches!(kind, Some(Kind::Tuple(_)))) => Lengths::Alone,
+            _ => Lengths::Told,
+        }
+    }
+
+    /// The test that `value` is an array of `len` items, as `lengths` says
+    /// one of its enum's is told (`lengths_tell`).
+    fn tuple_test(&self, lengths: Lengths, len: usize, value: &Expr) -> Expr {
+        let array = || self.kind_test(&Kind::Array, value, &|_| unreachable!("an array's test names no class"));
+        match lengths {
+            Lengths::Untold => array(),
+            Lengths::Told => Expr::bin(Op::And, array(), length_test(len, value)),
+            Lengths::Alone => length_test(len, value),
+        }
+    }
+
     /// The test that `value` is of `kind`.
     fn kind_test(&self, kind: &Kind, value: &Expr, class: &dyn Fn(&str) -> Expr) -> Expr {
         match kind {
             Kind::Array => Expr::call(Expr::member(Expr::var("Array"), "isArray"), vec![value.clone()]),
+            // Of a member, an array: another struct's of that member tells
+            // nothing apart (rd291).
+            Kind::Tuple(_) => self.kind_test(&Kind::Array, value, class),
             Kind::Class(name, _) => Expr::bin(Op::InstanceOf, value.clone(), class(name)),
             Kind::Test(test) => Expr::call(class(test), vec![value.clone()]),
             Kind::Member(key, kind) => self.kind_test(kind, &Expr::member(value.clone(), key.clone()), class),
@@ -804,6 +947,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return None;
         }
         let no_class = |_: &str| unreachable!("a `typeof` kind's test names no class");
+        let lengths = self.lengths_tell(adt, args);
         (self.union_parts(adt, args, variants, present).into_iter())
             .map(|(_, own, narrower)| {
                 // What it leaves out is an array or `null`, or it's no case:
@@ -813,6 +957,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 }
                 match (&own, own.type_of()) {
                     (Kind::Array, _) => Some(TypeofCase::Tested(self.kind_test(&own, value, &no_class))),
+                    (Kind::Tuple(len), _) => Some(TypeofCase::Tested(self.tuple_test(lengths, *len, value))),
                     (Kind::Null, _) => Some(TypeofCase::Inside(
                         Kind::Object.type_of().expect("an object's `typeof`"),
                         self.kind_test(&own, value, &no_class),
@@ -852,6 +997,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .untagged_test(adt, args, variants, written, value, present, &|name| self.js_ref(name))
     }
 
+    /// The most items a value of `ty` has, an array whose type fixes its
+    /// length, a tuple's, a tuple struct's or a `[T; N]`'s; of an untagged
+    /// enum each of whose values is one it holds itself, its longest
+    /// variant's (rd490). None of a `Vec`'s, or what isn't an array.
+    pub(super) fn most_items(&self, ty: Ty<'tcx>) -> Option<usize> {
+        if let ty::Array(_, len) = ty.kind() {
+            return len.try_to_target_usize(self.tcx).map(|len| len as usize);
+        }
+        if let super::Shape::Array(tys) = self.shape(ty) {
+            return Some(tys.len());
+        }
+        let (adt, args) = self.untagged(ty)?;
+        if !arrays_in_place(self.tcx, adt, args) {
+            return None;
+        }
+        (adt.variants().iter())
+            .map(|v| self.most_items(self.field_ty(&v.fields.raw[0], args)))
+            .try_fold(0, |most, items| Some(most.max(items?)))
+    }
+
     /// The test that `value`, of the untagged enum `ty`, is an object or
     /// an array, its variants of each, as an or-pattern of them tests it:
     /// `js::Kind`'s `Object(_) | Array(_)`, `typeof value === "object" &&
@@ -864,10 +1029,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => recognition.untagged_variant_kind(v, args),
         };
         let objects: Vec<&VariantDef> = (adt.variants().iter())
-            .filter(|v| matches!(kind(v), Some(Kind::Object | Kind::Array)))
+            .filter(|v| matches!(kind(v), Some(Kind::Object | Kind::Array | Kind::Tuple(_))))
             .collect();
         self.untagged_variant_test(ty, &objects, &[], value, false)
     }
+}
+
+/// The test that `value`, an array, has `len` items, a tuple's of as many
+/// (rd490): `node.length === 4`.
+fn length_test(len: usize, value: &Expr) -> Expr {
+    Expr::bin(Op::Eq, Expr::member(value.clone(), "length"), Expr::int(len as i128))
 }
 
 /// Does something but a `match` tell `def_id`'s variants apart: its

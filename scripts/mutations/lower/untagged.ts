@@ -210,8 +210,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an untagged enum's struct variant takes an array, or a class's instance, as `typeof` says object of each",
     file: "src/lower/untagged.rs",
-    find: "                (Kind::Object, Kind::Array | Kind::Class(..) | Kind::Test(_) | Kind::Member(..)) => true,\n",
-    replace: "                (Kind::Object, Kind::Member(..)) => true,\n",
+    find: "                (Kind::Object, Kind::Array | Kind::Tuple(_) | Kind::Class(..) | Kind::Test(_) | Kind::Member(..)) => {\n",
+    replace: "                (Kind::Object, Kind::Member(..)) => {\n",
     tests: [
       "test/compiler.test.ts",
       "test/lowering-options.test.ts",
@@ -240,8 +240,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an untagged enum's test leaves out a `TypeError` as well as the `Error` it is",
     file: "src/lower/untagged.rs",
-    find: "            .filter(|kind| !narrower.iter().any(|base| extends(kind, base)))\n",
-    replace: "",
+    find: "            .filter(|kind| !narrower.iter().any(|base| extends(kind, base)))\n        {\n",
+    replace: "        {\n",
     tests: [
       "test/compiler.test.ts",
       "test/lowering-options.test.ts",
@@ -416,8 +416,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an untagged enum's slice payload, `ReactNodeKind::List(&[..])`, isn't an array JS tells, and is refused",
     file: "src/lower/untagged.rs",
-    find: "            || ty.is_slice()\n",
-    replace: "",
+    find: "        if ty.is_array() || ty.is_slice() || self.is_vec_like(ty) {\n",
+    replace: "        if ty.is_array() || self.is_vec_like(ty) {\n",
     tests: [
       "test/jsx-types.test.ts",
       "-t",
@@ -616,9 +616,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a plain object's test leaves in what a member tells, so a text instance's test holds of an instance too (rd291)",
     file: "src/lower/untagged.rs",
-    find: "                (Kind::Object, Kind::Array | Kind::Class(..) | Kind::Test(_) | Kind::Member(..)) => true,\n",
+    find: "                (Kind::Object, Kind::Array | Kind::Tuple(_) | Kind::Class(..) | Kind::Test(_) | Kind::Member(..)) => {\n",
     replace:
-      "                (Kind::Object, Kind::Array | Kind::Class(..) | Kind::Test(_)) => true,\n",
+      "                (Kind::Object, Kind::Array | Kind::Tuple(_) | Kind::Class(..) | Kind::Test(_)) => {\n",
     tests: ["test/untagged-members.test.ts"],
   },
   {
@@ -713,5 +713,61 @@ export const mutations: Mutation[] = [
     find: "                bindings::field_key(self.tcx, f) == key && !apart(f.ty(self.tcx, args).skip_normalization())\n",
     replace: "                bindings::field_key(self.tcx, f) == key\n",
     tests: ["test/untagged-members.test.ts", "-t", "a member of one literal"],
+  },
+  {
+    name: "untagged-tuple-any-array",
+    breaks:
+      "an untagged enum's tuple is an array of any length, so `Point((f64, f64))` beside `Box((f64, f64, f64, f64))` is refused, two arrays (rd490)",
+    file: "src/lower/untagged.rs",
+    find: "            return Some(Kind::Tuple(items.len()));\n",
+    replace: "            return Some(Kind::Array);\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
+  },
+  {
+    name: "untagged-tuple-struct-any-array",
+    breaks:
+      "an untagged enum's tuple struct is an array of any length, so a replay node of four beside a boundary's of six is refused, two arrays (rd490)",
+    file: "src/lower/untagged.rs",
+    find: "                        Some(Kind::Tuple(adt.non_enum_variant().fields.len()))\n",
+    replace: "                        Some(Kind::Array)\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
+  },
+  {
+    name: "untagged-length-unread",
+    breaks:
+      "two arrays of an untagged enum are each told by `Array.isArray` alone, so a box of four is taken for a point of two (rd490)",
+    file: "src/lower/untagged.rs",
+    find: "            Lengths::Told => Expr::bin(Op::And, array(), length_test(len, value)),\n",
+    replace: "            Lengths::Told => array(),\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
+  },
+  {
+    name: "untagged-lengths-always-tested",
+    breaks:
+      "the enum's one array is tested by its length too, `Array.isArray(entry) && entry.length === 2`, where `Array.isArray` tells it (rd490)",
+    file: "src/lower/untagged.rs",
+    find: "            0 | 1 => Lengths::Untold,\n",
+    replace: "            0 | 1 => Lengths::Told,\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
+    snapshots: true,
+  },
+  {
+    name: "untagged-lengths-never-alone",
+    breaks:
+      "an enum each of whose values is an array tests `Array.isArray(node) && node.length === 4`, where upstream's `node.length === 4` tells it (rd490)",
+    file: "src/lower/untagged.rs",
+    find: "            _ if kinds.iter().all(|kind| matches!(kind, Some(Kind::Tuple(_)))) => Lengths::Alone,\n",
+    replace: "            _ if false => Lengths::Alone,\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
+    snapshots: true,
+  },
+  {
+    name: "untagged-transparent-an-array",
+    breaks:
+      "a `#[repr(transparent)]` struct of a number is taken for an array of one, `Array.isArray(key)`, which a number isn't (rd490)",
+    file: "src/lower/untagged.rs",
+    find: "                if let Some(at) = super::recognition::transparent_field(self.tcx, *adt)\n                    && !self.is_std(adt.did()) =>\n",
+    replace: "                if let Some(at) = super::recognition::transparent_field(self.tcx, *adt)\n                    && false =>\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
   },
 ];

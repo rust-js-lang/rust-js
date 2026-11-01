@@ -767,7 +767,10 @@ export function size(input) {
 - **`#[rust_js::untagged]` makes each value its payload**, as TypeScript's
   `string | number` is. `match` tests each payload's kind, `typeof`,
   `Array.isArray` or `instanceof`, so each variant holds one value, and no
-  two of one kind. A JS type's class is the global its
+  two of one kind. An array whose type fixes its length, a tuple's, a
+  tuple struct's or a `[T; N]`'s, is told from another of another length
+  by its `length`, below; a `Vec` beside one is two arrays, an error. A
+  `#[repr(transparent)]` struct is its field. A JS type's class is the global its
   `#[rust_js::types]` names, `types = "URL"`'s `instanceof URL`, as the js
   crate's `Date`, `RegExp`, `Promise`, buffers and `Intl` classes declare
   theirs; a module's type, `types = "chart.js#Chart"`, is an object,
@@ -826,7 +829,8 @@ export function size(input) {
   ([ADR 1032](../../decisions/1032-an-if-whose-branches-are-alike-is-its-branch.md)).
   A `&mut` to one is a place, as a `&mut f64` is: `*r = v` writes where
   the value is, as no payload can become another's in place
-  ([ADR 0214](../../decisions/0214-untagged-enums.md)).
+  ([ADR 0214](../../decisions/0214-untagged-enums.md)); but of one each
+  of whose values is an array, below, the array.
   A `js::SymbolFor` payload is a symbol, `typeof value === "symbol"`. A
   derived `==` of one whose every payload JS's `===` compares as Rust
   does, a string, a number or a symbol, is `a === b`, as React's `child.key
@@ -834,6 +838,79 @@ export function size(input) {
   null)`, a nullable field's `a.key === b.key`; one holding a `Vec`
   compares its items, `$eq(a, b)`
   ([ADR 0214](../../decisions/0214-untagged-enums.md), amended).
+
+Arrays of different lengths, as React's Fizz server keeps a replay node,
+`[name, key, children, slots]` or a boundary's six, are told by their
+`length`, and one its holders share is changed where each sees it:
+
+```rust
+use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Element(pub Option<String>, pub f64, pub Vec<f64>, pub Option<f64>);
+
+pub struct Boundary(pub Option<String>, pub f64, pub Vec<f64>, pub Option<f64>, pub Option<f64>, pub f64);
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum ReplayNode {
+    Element(Element),
+    Boundary(Boundary),
+}
+
+pub fn is_element(node: &ReplayNode) -> bool {
+    matches!(node, ReplayNode::Element(_))
+}
+
+pub fn track(node: &Rc<RefCell<ReplayNode>>, fallback: Option<f64>, id: f64) {
+    let mut node = node.borrow_mut();
+    if let ReplayNode::Element(Element(name, key, children, slots)) = &*node {
+        *node = ReplayNode::Boundary(Boundary(name.clone(), *key, children.clone(), *slots, fallback, id));
+    }
+}
+
+pub fn untrack(node: &Rc<RefCell<ReplayNode>>) {
+    let mut node = node.borrow_mut();
+    if let ReplayNode::Boundary(Boundary(name, key, ..)) = &*node {
+        *node = ReplayNode::Element(Element(name.clone(), *key, vec![], None));
+    }
+}
+```
+
+```js
+export function isElement(node) {
+  return node.length === 4;
+}
+
+export function track(node, fallback, id) {
+  if (node.length === 4) {
+    node[4] = fallback;
+    node[5] = id;
+  }
+}
+
+export function untrack(node) {
+  if (node.length === 6) {
+    node.length = 4;
+    node[2] = [];
+    node[3] = undefined;
+  }
+}
+```
+
+- **An array whose type fixes its length is told by it**: where each
+  variant is one, `node.length === 4`; beside what isn't an array,
+  `Array.isArray(v) && v.length === 4`; where it's the enum's one array,
+  `Array.isArray(v)`, as before.
+- **An untagged enum each of whose values is an array it holds itself**, a
+  tuple's, a tuple struct's, a `[T; N]`'s or a `Vec`'s, not through a
+  reference nor an `Rc`, is changed in place: a `&mut` to one is the
+  array, and a `RefCell` of one the array it holds, so `*node = ..` writes
+  the array each holder has. A write that keeps some of its items writes
+  only the others, its `length` first where a value may have more:
+  upstream's grow, `node[4] = fallback; node[5] = id;`, and shrink,
+  `node.length = 4; node[2] = []; node[3] = undefined;`. A copy or a clone
+  of one is its own, `node.slice()`
+  ([ADR 1045](../../decisions/1045-an-untagged-enums-arrays-are-told-by-their-length.md)).
 
 ## Option and Result
 

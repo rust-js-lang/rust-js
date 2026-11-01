@@ -822,6 +822,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.written_in_place(place.ty(decls, self.tcx).ty)
             && !matches!(target.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..))
         {
+            let ty = place.ty(decls, self.tcx).ty;
+            if let Some(writes) = self.kept_items_written(&target, &value, ty, js_span, out) {
+                out.extend(writes);
+                return Ok(());
+            }
             let assigned = Expr::call(Expr::helper("$assign"), vec![target, value]);
             out.push(StmtKind::Expr(assigned).at(js_span));
             return Ok(());
@@ -847,6 +852,57 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         out.push(StmtKind::Assign(target, value).at(js_span));
         Ok(())
+    }
+
+    /// `*r = v` of an array `r` that `v`, an array written out, keeps some
+    /// items of, each its own read where it is, `r[0]` first: the writes of
+    /// the others, as upstream React shrinks a replay node, `node.length =
+    /// 4; node[2] = []; node[3] = null;`, and grows one, `node[4] =
+    /// fallback; node[5] = id;` (rd490). Its `length` is written first,
+    /// but where no value of `ty` has more items and the last is written,
+    /// which makes it that. What reads more than variables is held first,
+    /// as `$assign` reads each item before it writes any. None where none
+    /// is kept: `$assign(r, [..])`.
+    fn kept_items_written(
+        &mut self,
+        target: &Expr,
+        value: &Expr,
+        ty: Ty<'tcx>,
+        js_span: js::Span,
+        out: &mut Vec<Stmt>,
+    ) -> Option<Vec<Stmt>> {
+        let js::ExprKind::Array(items) = &value.kind else {
+            return None;
+        };
+        if !matches!(target.kind, js::ExprKind::Var(_)) {
+            return None;
+        }
+        let kept = |i: usize, item: &Expr| {
+            matches!(&item.kind, js::ExprKind::Index(object, index)
+                if object.kind == target.kind && index.as_int() == Some(i as i128))
+        };
+        if !items.iter().enumerate().any(|(i, item)| kept(i, item)) {
+            return None;
+        }
+        let mut writes = Vec::new();
+        let len = items.len();
+        let last_written = items.last().is_some_and(|item| !kept(len - 1, item));
+        if !(last_written && self.most_items(ty).is_some_and(|most| most <= len)) {
+            let length = Expr::member(target.clone(), "length");
+            writes.push(StmtKind::Assign(length, Expr::int(len as i128)).at(js_span));
+        }
+        for (i, item) in items.iter().enumerate() {
+            if kept(i, item) {
+                continue;
+            }
+            let item = match item.reads_only_vars() || item.is_constant() {
+                true => item.clone(),
+                false => self.spill("value", item.clone(), out),
+            };
+            let at = Expr::index(target.clone(), Expr::int(i as i128));
+            writes.push(StmtKind::Assign(at, item).at(js_span));
+        }
+        Some(writes)
     }
 
     /// The arguments of a call of the crate's: a `&mut` to a value JS can't

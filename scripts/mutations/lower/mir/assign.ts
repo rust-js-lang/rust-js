@@ -967,4 +967,42 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^panic_in_own_next_drops.rs$"],
   },
+  {
+    name: "kept-items-length-never-written",
+    breaks:
+      "a write that keeps some of an array's items never writes its `length`, so a boundary shrunk to a plain node keeps six items (rd490)",
+    file: "src/lower/mir/assign.rs",
+    find: "        if !(last_written && self.most_items(ty).is_some_and(|most| most <= len)) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
+  },
+  {
+    name: "kept-items-length-always-written",
+    breaks:
+      "a write that keeps some of an array's items writes its `length` where nothing has more, `node.length = 6;` before upstream's grow (rd490)",
+    file: "src/lower/mir/assign.rs",
+    find: "        if !(last_written && self.most_items(ty).is_some_and(|most| most <= len)) {\n",
+    replace: "        if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
+    snapshots: true,
+  },
+  {
+    name: "kept-items-unheld",
+    breaks:
+      "a write that keeps some of an array's items reads an item it loses after its `length` cuts it, `node[3] = node[4]` (rd490)",
+    file: "src/lower/mir/assign.rs",
+    find: "            let item = match item.reads_only_vars() || item.is_constant() {\n",
+    replace: "            let item = match true {\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
+  },
+  {
+    name: "kept-items-unwritten",
+    breaks:
+      "a write that keeps some of an array's items is `$assign(node, [node[0], node[1], [], undefined])`, not upstream's writes of the others (rd490)",
+    file: "src/lower/mir/assign.rs",
+    find: "        if !items.iter().enumerate().any(|(i, item)| kept(i, item)) {\n",
+    replace: "        if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
+    snapshots: true,
+  },
 ];

@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`*cell = Matrix::Cell(v)` through a `&mut` to an untagged enum is `$assign(cell, v)`, which changes no number: the matrix keeps its old cell (#347)",
     file: "src/lower/representation.rs",
-    find: "                && !bindings::is_untagged(self.tcx, adt.did())\n                && adt.variants().iter().all(|v| !v.fields.is_empty()))\n",
+    find: "                && (!bindings::is_untagged(self.tcx, adt.did())\n                    || super::untagged::arrays_in_place(self.tcx, *adt, args))\n                && adt.variants().iter().all(|v| !v.fields.is_empty()))\n",
     replace:
       "                && adt.variants().iter().all(|v| !v.fields.is_empty()))\n",
     tests: ["test/corpus.test.ts", "-t", "^untagged_written_through_mut.rs$"],
@@ -884,5 +884,14 @@ export const mutations: Mutation[] = [
     find: "                        Expr::stored_handle(base, js::Storage::in_place(&keys))\n",
     replace: "                        { let _ = keys; base }\n",
     tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
+  },
+  {
+    name: "untagged-arrays-a-place",
+    breaks:
+      "a `&mut` to an untagged enum of arrays is a place, so `*node = ..` through a `RefCell` its holders share gives one holder another array (rd490)",
+    file: "src/lower/representation.rs",
+    find: "                    || super::untagged::arrays_in_place(self.tcx, *adt, args))\n",
+    replace: "                    || false)\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
   },
 ];

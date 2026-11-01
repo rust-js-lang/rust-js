@@ -443,13 +443,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // another in place, so `*r = ..` is its place's, as a number's
             // is (ADR 0147). `Option` is its value itself (ADR 0030), not an
             // object.
-            || matches!(ty.kind(), ty::Adt(adt, _) if adt.is_enum()
+            || matches!(ty.kind(), ty::Adt(adt, args) if adt.is_enum()
                 && !self.tcx.is_lang_item(adt.did(), LangItem::Option)
                 // An untagged enum is its payload (ADR 0214), which `*r = v`
                 // can't make another's in place: a number isn't an object,
                 // an array no plain object, and a class's instance keeps its
-                // prototype (#347). A `&mut` to one is a place.
-                && !bindings::is_untagged(self.tcx, adt.did())
+                // prototype (#347). A `&mut` to one is a place; but to one
+                // each of whose values is an array it holds itself, the
+                // array, which `*r = v` makes `v`'s items (rd490).
+                && (!bindings::is_untagged(self.tcx, adt.did())
+                    || super::untagged::arrays_in_place(self.tcx, *adt, args))
                 && adt.variants().iter().all(|v| !v.fields.is_empty()))
     }
 

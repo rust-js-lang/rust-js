@@ -508,17 +508,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // An untagged enum's variant is its payload (ADR 0214): one that
             // needs it gets the payload's clone, told by its kind: being changed
             // in place, as a tagged one's object is, is the payload's.
+            // One whose array is changed in place itself (rd490) gets a
+            // copy of each payload, and of arrays of what needs no clone of
+            // its own, the array's `slice()`.
             ty::Adt(adt, args) if self.untagged(ty).is_some() => {
+                let itself = self.untagged_changed_itself(ty);
+                if itself && self.sliced_untagged(ty, &|t| self.needs_clone(t)) {
+                    return Ok(Expr::call(Expr::member(place, "slice"), Vec::new()));
+                }
                 let mut value = place.clone();
                 for variant in adt.variants().iter().rev() {
                     let Some(field) = variant.fields.iter().next() else {
                         continue;
                     };
                     let payload = self.field_ty(field, args);
-                    if !self.needs_clone(payload) {
-                        continue;
-                    }
-                    let copy = self.clone_value(place.clone(), payload, span, out)?;
+                    let copy = match self.needs_clone(payload) {
+                        true => self.clone_value(place.clone(), payload, span, out)?,
+                        false if itself => self.copy(place.clone(), payload),
+                        false => continue,
+                    };
                     let test = self.untagged_variant_test(ty, &[variant], &[], &place, false);
                     value = Expr::cond(test, copy, value);
                 }

@@ -434,4 +434,14 @@ export const mutations: Mutation[] = [
     replace: "                        ExprKind::Call { .. } => Vec::new(),\n",
     tests: ["test/corpus.test.ts", "-t", "^class_trait_field_borrows.rs$"],
   },
+  {
+    name: "untagged-arrays-boxed-in-a-cell",
+    breaks:
+      "a `RefCell` of an untagged enum of arrays is a `{ value }` box, `node.value.length === 4`, not the array upstream's replay node is (rd490)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "        return crate::lower::untagged::arrays_in_place(tcx, *adt, args);\n",
+    replace: "        return false;\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
+    snapshots: true,
+  },
 ];

@@ -146,15 +146,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return place;
                 }
                 // An untagged enum's variant is its payload (ADR 0214): one that
-                // changes gets the payload's copy, told by its kind.
+                // changes gets the payload's copy, told by its kind; each, of
+                // one whose array is changed in place itself, through a
+                // `&mut` (rd490).
                 if self.untagged(ty).is_some() {
+                    let itself = self.untagged_changed_itself(ty);
+                    // Of arrays of what needs no copy of its own, the array's
+                    // `slice()`, whatever its variant.
+                    let changed = (adt.variants().iter())
+                        .filter_map(|v| self.variant_fields(v, args).first().map(|&(_, t)| t))
+                        .any(|t| self.contains_mutated(t));
+                    if (itself || changed) && self.sliced_untagged(ty, &|t| self.contains_mutated(t)) {
+                        return Expr::call(Expr::member(place, "slice"), Vec::new());
+                    }
                     return once(place, &|e| {
                         let mut value = e.clone();
                         for variant in adt.variants().iter().rev() {
                             let Some(&(_, t)) = self.variant_fields(variant, args).first() else {
                                 continue;
                             };
-                            if !self.contains_mutated(t) {
+                            if !(itself || self.contains_mutated(t)) {
                                 continue;
                             }
                             let test = self.untagged_variant_test(ty, &[variant], &[], &e, false);
@@ -188,6 +199,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 })
             }
         }
+    }
+
+    /// Whether `ty` is an untagged enum whose array is changed in place
+    /// itself, through a `&mut`, each of its values one it holds itself
+    /// (`untagged::arrays_in_place`, rd490): a copy or a clone of it is
+    /// then its own array, whatever its payload's type. Of another, a
+    /// `&mut` is a place, which `*r = v` gives another value (#347).
+    pub(super) fn untagged_changed_itself(&self, ty: Ty<'tcx>) -> bool {
+        self.untagged(ty)
+            .is_some_and(|(adt, args)| super::untagged::arrays_in_place(self.tcx, adt, args))
+            && self.mutated_itself(ty)
+    }
+
+    /// Whether a copy or a clone of `ty`, an untagged enum each of whose
+    /// values is an array it holds itself (`untagged::arrays_in_place`,
+    /// rd490), is the array's `slice()`: where none of its variants' items
+    /// `needs` one of its own, a copy's `contains_mutated`, a clone's
+    /// `needs_clone`.
+    pub(super) fn sliced_untagged(&self, ty: Ty<'tcx>, needs: &dyn Fn(Ty<'tcx>) -> bool) -> bool {
+        let Some((adt, args)) = self.untagged(ty) else {
+            return false;
+        };
+        super::untagged::arrays_in_place(self.tcx, adt, args)
+            && adt.variants().iter().all(|v| {
+                let payload = self.field_ty(&v.fields.raw[0], args);
+                match (self.shape(payload), payload.kind()) {
+                    (Shape::Array(tys), _) => !tys.into_iter().any(needs),
+                    (_, ty::Array(item, _)) => !needs(*item),
+                    _ => false,
+                }
+            })
     }
 
     /// Rust copies a `Copy` value when it's read, and JS objects are shared
