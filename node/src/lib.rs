@@ -27,6 +27,7 @@
 // JS functions, which in native code rustc would take for those.
 #![allow(invalid_runtime_symbol_definitions)]
 
+pub mod async_hooks;
 pub mod buffer;
 pub mod crypto;
 pub mod event;

@@ -425,8 +425,13 @@ Node's modules, typed as `@types/node` types them, for the Rust of a
 program that runs in Node, a Next.js page's data, a build script's
 ([ADR 0272](../../decisions/0272-node.md)). It binds what ports have
 needed so far: all of `path`, `buffer` and `querystring`, most of
-`process`, `url` and `events`, parts of `fs`, `http` and `util`, and
-V8's stack trace API.
+`process`, `url`, `events` and `async_hooks`, parts of `fs`, `http` and
+`util`, and V8's stack trace API. `async_hooks::async_local_storage::new(None)`
+is `new AsyncLocalStorage()`, a store of a `T` that `storage.run(store, ||
+..)` gives the code it runs and each resource that code makes, read by
+`get_store()`, as React's servers keep the request rendering; and
+`create_hook(&HookCallbacks { init: Some(&f), ..Default::default() })` is
+`createHook({ init: f })`, `None` callbacks left out.
 
 ```rust
 use node::{BufferEncoding, fs, process};

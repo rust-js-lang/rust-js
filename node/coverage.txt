@@ -1,5 +1,5 @@
 # The node crate against @types/node: bun test test/node-coverage.test.ts
-# exports: 171 of 1538 (11.1%)
+# exports: 181 of 1538 (11.8%)
 # not bound by design (x): 3, TypeScript's own
 # assert 0 of 28
 - assert#Assert
@@ -31,18 +31,18 @@
 - assert#strictEqual
 - assert#throws
 # assert/strict 0 of 0
-# async_hooks 0 of 11
-- type async_hooks#AsyncHook
-- async_hooks#AsyncLocalStorage
-- type async_hooks#AsyncLocalStorageOptions
-- async_hooks#AsyncResource
-- type async_hooks#AsyncResourceOptions
+# async_hooks 10 of 11
++ type async_hooks#AsyncHook
++ async_hooks#AsyncLocalStorage
++ type async_hooks#AsyncLocalStorageOptions
++ async_hooks#AsyncResource
++ type async_hooks#AsyncResourceOptions
 - async_hooks#asyncWrapProviders
-- async_hooks#createHook
-- async_hooks#executionAsyncId
-- async_hooks#executionAsyncResource
-- type async_hooks#HookCallbacks
-- async_hooks#triggerAsyncId
++ async_hooks#createHook
++ async_hooks#executionAsyncId
++ async_hooks#executionAsyncResource
++ type async_hooks#HookCallbacks
++ async_hooks#triggerAsyncId
 # buffer 17 of 17
 + type buffer#AllowSharedBuffer
 + buffer#Blob
