@@ -397,7 +397,10 @@ impl Stmt {
             StmtKind::Assign(target, value) => {
                 !target.facts.has(Known::Setter) && !target.may_throw() && !value.may_throw()
             }
-            StmtKind::Let(_, None) => true,
+            // Where a block of only comments ends: nothing runs (ADR 0753),
+            // so a scope's `finally` runs past it, upstream's `if (handler.errored) {
+            // // Ignore .. }` (rd429).
+            StmtKind::Let(_, None) | StmtKind::Comments => true,
             _ => false,
         }
     }

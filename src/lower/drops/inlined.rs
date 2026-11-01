@@ -115,7 +115,7 @@ fn inline_drop(items: &mut Vec<Item>, name: &str) {
             // named twice, in each closure where it's its own.
             for guard in given {
                 if alone(own_params, &made, &guard, true) {
-                    unread_writes(&mut made, &guard, false);
+                    unread_writes(&mut made, &guard, GuardReads::default());
                     fields_of(&mut made, own_params, &guard);
                     one_field_of(&mut made, own_params, &guard);
                     continue;
@@ -124,7 +124,7 @@ fn inline_drop(items: &mut Vec<Item>, name: &str) {
                     if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &mut e.kind
                         && alone(params, body, &guard, false)
                     {
-                        unread_writes(body, &guard, false);
+                        unread_writes(body, &guard, GuardReads::default());
                         fields_of(body, params, &guard);
                         one_field_of(body, params, &guard);
                     }
@@ -207,56 +207,107 @@ fn unwrapped_tries(stmts: &mut Vec<Stmt>) {
     }
 }
 
+/// What of a guard what runs after reads: the whole of it, given or read
+/// otherwise, or the fields it reads, by key, `_restore.handler`'s
+/// `handler`, `_restore[0]`'s `0` (rd429).
+#[derive(Clone, Default)]
+struct GuardReads {
+    whole: bool,
+    fields: HashSet<String>,
+}
+
+impl GuardReads {
+    /// Whether what runs after may read the field `key`.
+    fn reads(&self, key: &str) -> bool {
+        self.whole || self.fields.contains(key)
+    }
+
+    /// These and what `stmts` reads of `guard`: each field it reads or
+    /// writes, or the whole, where it's named otherwise.
+    fn add(&mut self, stmts: &[Stmt], guard: &str) {
+        let mentions = js::mentions_in(stmts, guard);
+        if mentions == 0 {
+            return;
+        }
+        let mut fields = 0;
+        let mut copy = stmts.to_vec();
+        js::each_expr_mut(&mut copy, &mut |e| {
+            if let Some(key) = field_key(e, guard) {
+                self.fields.insert(key);
+                fields += 1;
+            }
+        });
+        self.whole |= fields != mentions;
+    }
+
+    fn union(&mut self, other: GuardReads) {
+        self.whole |= other.whole;
+        self.fields.extend(other.fields);
+    }
+}
+
+/// The key of `e`, a read of one of `guard`'s fields, `guard.key` or
+/// `guard[0]`.
+fn field_key(e: &Expr, guard: &str) -> Option<String> {
+    match &e.kind {
+        ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v == guard) => Some(key.clone()),
+        ExprKind::Index(of, at) if matches!(&of.kind, ExprKind::Var(v) if v == guard) => match at.kind {
+            ExprKind::Num(n) => Some(n.to_string()),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
 /// Of `stmts`, in which `guard` is made and dropped, each write of one of
 /// its fields that nothing reads after, `_restore[0] = undefined;` of a
 /// `Drop`'s `self.0.take()`: gone, as a guard is dropped once, and is
-/// nothing after (ADR 0705, amended). `read_after` says whether what runs
-/// after `stmts` may read it. Into a `try`, an `if` and a labeled block,
-/// and a loop's body where it's made, fresh each time round: what else
-/// runs again, or after a `catch`, is left as it is.
-fn unread_writes(stmts: &mut Vec<Stmt>, guard: &str, mut read_after: bool) {
-    let field = |e: &Expr| {
-        matches!(&e.kind, ExprKind::Index(of, _) | ExprKind::Member(of, _)
-            if matches!(&of.kind, ExprKind::Var(v) if v == guard))
-    };
+/// nothing after (ADR 0705, amended), though another field is read after,
+/// `_restore.prevChunk` of the drop's next statement (rd429). `read_after`
+/// says what of it what runs after `stmts` may read. Into a `try`, an `if`
+/// and a labeled block, and a loop's body where it's made, fresh each time
+/// round: what else runs again, or after a `catch`, is left as it is.
+fn unread_writes(stmts: &mut Vec<Stmt>, guard: &str, mut read_after: GuardReads) {
     let mut i = stmts.len();
     while i > 0 {
         i -= 1;
-        if !read_after
-            && let StmtKind::Assign(target, value) = &stmts[i].kind
-            && field(target)
+        if let StmtKind::Assign(target, value) = &stmts[i].kind
+            && let Some(key) = field_key(target, guard)
+            && !read_after.reads(&key)
             && !value.has_effects()
             && js::mentions_in(&[StmtKind::Expr(value.clone()).at(value.span)], guard) == 0
         {
             stmts.remove(i);
             continue;
         }
-        let read = js::mentions_in(&stmts[i..=i], guard) > 0;
         let made_in = |body: &[Stmt]| {
             body.iter()
                 .any(|s| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, _) if n == guard))
         };
         match &mut stmts[i].kind {
             StmtKind::Try(block, finally) => {
-                unread_writes(finally, guard, read_after);
-                let read_finally = js::mentions_in(finally, guard) > 0;
-                unread_writes(block, guard, read_after || read_finally);
+                unread_writes(finally, guard, read_after.clone());
+                let mut read_finally = read_after.clone();
+                read_finally.add(finally, guard);
+                unread_writes(block, guard, read_finally);
             }
             StmtKind::If(_, a, b) => {
                 if let Some(b) = b {
-                    unread_writes(b, guard, read_after);
+                    unread_writes(b, guard, read_after.clone());
                 }
-                unread_writes(a, guard, read_after);
+                unread_writes(a, guard, read_after.clone());
             }
-            StmtKind::Labeled(_, body) => unread_writes(body, guard, read_after),
+            StmtKind::Labeled(_, body) => unread_writes(body, guard, read_after.clone()),
             StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. }
                 if made_in(body) =>
             {
-                unread_writes(body, guard, false)
+                unread_writes(body, guard, GuardReads::default())
             }
             _ => {}
         }
-        read_after |= read;
+        let mut read = GuardReads::default();
+        read.add(&stmts[i..=i], guard);
+        read_after.union(read);
     }
 }
 

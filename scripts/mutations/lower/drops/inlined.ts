@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard whose `Drop` takes its field, `set_current_fiber(self.0.take())`, stays `const _restore = [previousFiber]`, its `finally` `const old = _restore[0]; _restore[0] = undefined;` (ADR 0705, amended)",
     file: "src/lower/drops/inlined.rs",
-    find: "                    unread_writes(&mut made, &guard, false);\n",
+    find: "                    unread_writes(&mut made, &guard, GuardReads::default());\n",
     replace: "",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "takes its field"],
   },
@@ -124,9 +124,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Drop`'s write of its guard's field that its drop reads again, a second `self.0.take()`, goes, so that reads what was there before (ADR 0705, amended)",
     file: "src/lower/drops/inlined.rs",
-    find: "        if !read_after\n            && let StmtKind::Assign(target, value) = &stmts[i].kind\n",
-    replace:
-      "        if let StmtKind::Assign(target, value) = &stmts[i].kind\n",
+    find: "            && !read_after.reads(&key)\n",
+    replace: "",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "takes its field"],
   },
   {
@@ -134,8 +133,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a write of a guard's field in its scope, which its drop in the `finally` reads, goes: `guard.0 = None` before the drop prints `Some(true)` (ADR 0705, amended)",
     file: "src/lower/drops/inlined.rs",
-    find: "                unread_writes(block, guard, read_after || read_finally);\n",
-    replace: "                unread_writes(block, guard, read_after);\n",
+    find: "                unread_writes(block, guard, read_finally);\n",
+    replace: "                unread_writes(block, guard, read_after.clone());\n",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "takes its field"],
   },
   {
@@ -417,5 +416,15 @@ export const mutations: Mutation[] = [
     find: "                && !free.starts_with(|c: char| c.is_ascii_digit())\n",
     replace: "",
     tests: ["test/tidy-stages.test.ts", "-t", "^drop_guard_name_shared after"],
+  },
+  {
+    name: "guard-field-read-by-another",
+    breaks:
+      "a guard's take of a field is kept where its drop reads another field after, so React's Flight client's `_restore.prevHandler = undefined` keeps the guard an object (rd429)",
+    file: "src/lower/drops/inlined.rs",
+    find: "        self.whole || self.fields.contains(key)\n",
+    replace: "        self.whole || !self.fields.is_empty() || key.is_empty()\n",
+    tests: ["test/corpus.test.ts", "-t", "drop_guard_restores_taken_fields"],
+    snapshots: true,
   },
 ];

@@ -1,6 +1,6 @@
 # 0705. A guard's scope reads as any body, its fields the variables it was made of
 
-Status: Accepted. Amends [0693](0693-a-guards-scope-is-one-finally-its-returns-in-it.md),
+Status: Accepted; amended by [1053](1053-a-guards-take-of-a-field-read-no-more-is-gone.md) (rd429): a write of a field nothing reads after is gone, though another field is read. Amends [0693](0693-a-guards-scope-is-one-finally-its-returns-in-it.md),
 whose `try` kept the temporaries each statement's own `try` had held
 apart, and whose guard stayed an object where a field's name was taken;
 and [0589](0589-a-drop-dropped-once-is-its-body-there.md), whose guard

@@ -674,7 +674,11 @@ items, `$dropItems(items, drop)`, where what's dropped may throw
 ([0098](../decisions/0098-destructors.md), [`drop_parts_past_a_panic`](../../test/corpus/drop_parts_past_a_panic.rs)).
 A `Drop` is its body where it's dropped, at each drop, its guard its
 fields, `const previous = depth; try { .. } finally { depth = previous; }`
-([0589](../decisions/0589-a-drop-dropped-once-is-its-body-there.md)).
+([0589](../decisions/0589-a-drop-dropped-once-is-its-body-there.md)); a
+`take()` of a field its drop reads no more, `HANDLER.set(self.prev.take())`,
+is that read alone, though it reads another field after, and what runs
+after the call is in the one `try`, an `if` of only comments too
+([1053](../decisions/1053-a-guards-take-of-a-field-read-no-more-is-gone.md)).
 An `unwrap()` or `expect("..")` whose panic drops what no `finally` does
 is its test, as an `assert!` is: `if (f == null) { $dispose(task); throw
 new Error(".."); } f(task);`

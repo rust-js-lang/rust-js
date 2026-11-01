@@ -321,4 +321,14 @@ export const mutations: Mutation[] = [
     replace: "        if let ExprKind::Handle(place, _) | ExprKind::Pair(place, _) = &mut e.kind\n            && false\n        {\n            place.each_mut(&mut |part| {\n",
     tests: ["test/classes.test.ts", "-t", "Cell fields"],
   },
+  {
+    name: "comments-block-scope",
+    breaks:
+      "a block of only comments counts as what may throw, so a scope's drop after an `if` of comments is a `catch` and a second drop, never one `finally` (rd429)",
+    file: "src/js/stmt_walk.rs",
+    find: "            StmtKind::Let(_, None) | StmtKind::Comments => true,\n",
+    replace: "            StmtKind::Let(_, None) => true,\n",
+    tests: ["test/corpus.test.ts", "-t", "drop_guard_restores_taken_fields"],
+    snapshots: true,
+  },
 ];

@@ -230,6 +230,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1049 `js::class::<T>()` is typed by `T`'s `Classed`](1049-js-class-is-typed-by-classed.md)
 - [1051 A field may be named by a symbol](1051-a-field-may-be-named-by-a-symbol.md)
 - [1052 `Array.from` is of what Rust doesn't collect itself](1052-array-from-is-of-what-rust-doesnt-collect.md)
+- [1053 A guard's take of a field read no more is gone, and a comment runs nothing](1053-a-guards-take-of-a-field-read-no-more-is-gone.md)
 - [0205 Flattened structs chain, and the props' own name is theirs](0205-flattened-chains.md)
 - [0206 TypeScript, read and written by TypeScript's own parser and printer](0206-typescript-module.md)
 - [0207 A crate's `.d.ts` is printed by TypeScript](0207-declarations-printed-by-typescript.md)
