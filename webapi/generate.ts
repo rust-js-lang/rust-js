@@ -345,7 +345,7 @@ for (const [spec, defs] of Object.entries(all)) {
   for (const d of defs) {
     if (d.type !== "dictionary" || !d.partial) continue;
     const ts = typescriptDictionaries.get(d.name);
-    const kept = (d.members ?? []).filter((m) => SPECS.includes(spec) || (!!m.name && !!ts?.has(m.name)));
+    const kept = (d.members ?? []).filter((m) => SPECS.includes(spec) || (!!m.name && !!ts?.members.has(m.name)));
     partialMembers.set(d.name, [...(partialMembers.get(d.name) ?? []), ...kept]);
   }
 }
@@ -722,7 +722,11 @@ function dictionaryType(d: Def): string | { skip: string } {
   for (const m of dictionaryMembers(d)) {
     const rust = rustType(m.idlType!, "result");
     if (typeof rust !== "string") continue;
-    fields.push({ rust: snake(m.name!), js: m.name!, type: m.idlType!.nullable ? `Option<${rust}>` : rust, optional: !m.required });
+    // What a function gives has each member TypeScript's DOM requires,
+    // `TextEncoderEncodeIntoResult`'s `read` and `written`, though WebIDL's
+    // dictionary doesn't say `required`: its own isn't an `Option`.
+    const required = m.required || [d.name, ...dictionaryAncestors(d.name)].some((n) => typescriptDictionaries.get(n)?.required.has(m.name!));
+    fields.push({ rust: snake(m.name!), js: m.name!, type: m.idlType!.nullable ? `Option<${rust}>` : rust, optional: !required });
   }
   // One of no fields Rust can take is an empty struct: the function gives it,
   // and nothing of it is read.

@@ -83185,10 +83185,9 @@ pub struct SanitizerProcessingInstruction {
 }
 
 /// The `TextEncoderEncodeIntoResult` dictionary: a JS object with these fields, a `None` one not there.
-#[derive(Default)]
 pub struct TextEncoderEncodeIntoResult {
-    pub read: Option<f64>,
-    pub written: Option<f64>,
+    pub read: f64,
+    pub written: f64,
 }
 
 /// The `ModuleExportDescriptor` dictionary: a JS object with these fields, a `None` one not there.
@@ -84032,10 +84031,9 @@ pub struct StorageEstimate {
 }
 
 /// The `CryptoKeyPair` dictionary: a JS object with these fields, a `None` one not there.
-#[derive(Default)]
 pub struct CryptoKeyPair {
-    pub public_key: Option<&'static CryptoKey>,
-    pub private_key: Option<&'static CryptoKey>,
+    pub public_key: &'static CryptoKey,
+    pub private_key: &'static CryptoKey,
 }
 
 /// The `JsonWebKey` dictionary: a JS object with these fields, a `None` one not there.
@@ -84086,22 +84084,20 @@ pub struct URLPatternInit {
 }
 
 /// The `URLPatternResult` dictionary: a JS object with these fields, a `None` one not there.
-#[derive(Default)]
 pub struct URLPatternResult {
-    pub protocol: Option<URLPatternComponentResult>,
-    pub username: Option<URLPatternComponentResult>,
-    pub password: Option<URLPatternComponentResult>,
-    pub hostname: Option<URLPatternComponentResult>,
-    pub port: Option<URLPatternComponentResult>,
-    pub pathname: Option<URLPatternComponentResult>,
-    pub search: Option<URLPatternComponentResult>,
-    pub hash: Option<URLPatternComponentResult>,
+    pub protocol: URLPatternComponentResult,
+    pub username: URLPatternComponentResult,
+    pub password: URLPatternComponentResult,
+    pub hostname: URLPatternComponentResult,
+    pub port: URLPatternComponentResult,
+    pub pathname: URLPatternComponentResult,
+    pub search: URLPatternComponentResult,
+    pub hash: URLPatternComponentResult,
 }
 
 /// The `URLPatternComponentResult` dictionary: a JS object with these fields, a `None` one not there.
-#[derive(Default)]
 pub struct URLPatternComponentResult {
-    pub input: Option<String>,
+    pub input: String,
 }
 
 /// The `VideoColorSpaceInit` dictionary: a JS object with these fields, a `None` one not there.

@@ -74,7 +74,7 @@ pub fn kinds(
     blob: &webapi::Blob,
     param: &webapi::AudioParam,
     bytes: &js::Uint8Array,
-) -> (Vec<String>, usize, f64, f64, f64, Option<f64>) {
+) -> (Vec<String>, usize, f64, f64, f64, f64) {
     let names = el.get_attribute_names();
     let languages = webapi::navigator.languages();
     let into = text_encoder::new().encode_into("hi", bytes);

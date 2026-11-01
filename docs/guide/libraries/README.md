@@ -385,6 +385,9 @@ How WebIDL maps to Rust, one rule for each:
   any shape, `js::unknown(&options)`, and `object::define_property(&options,
   "passive", ..)` gives it a getter
   ([ADR 1023](../../decisions/1023-a-dictionary-is-a-js-object-and-its-parents.md)).
+  One a JS API gives has each member TypeScript's DOM requires, not an
+  `Option`: `encode_into(text, view).read` is an `f64`
+  ([ADR 0102](../../decisions/0102-js-and-webapi.md), amended).
 - **A rest parameter is a tuple, each argument of its own type:**
   `el.append((node, "text"))` is `el.append(node, "text")`, and
   `console::error(("%s is %s", name, kind))` is `console.error("%s is %s",

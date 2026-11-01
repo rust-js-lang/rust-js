@@ -69,16 +69,20 @@ function listed(member: any): string | undefined {
 
 /** The members TypeScript's DOM declares of each interface, a class's or a
  * dictionary's, `EffectTiming`'s `delay`: its own, not its parents'. */
-export async function typescriptInterfaces(): Promise<Map<string, Set<string>>> {
+/** Each TypeScript DOM interface's members, and the properties it requires, not `?:`. */
+export async function typescriptInterfaces(): Promise<Map<string, { members: Set<string>; required: Set<string> }>> {
   const session = await open([dom]);
   const { declarations } = await session.read(dom);
   await session.close();
-  const interfaces = new Map<string, Set<string>>();
+  const interfaces = new Map<string, { members: Set<string>; required: Set<string> }>();
   for (const d of declarations as any[]) {
     if (d.kind !== "interface") continue;
-    const members = interfaces.get(d.name) ?? new Set<string>();
-    for (const member of d.members) if (member.kind === "method" || member.kind === "property") members.add(member.name);
-    interfaces.set(d.name, members);
+    const known = interfaces.get(d.name) ?? { members: new Set<string>(), required: new Set<string>() };
+    for (const member of d.members) {
+      if (member.kind === "method" || member.kind === "property") known.members.add(member.name);
+      if (member.kind === "property" && !member.optional) known.required.add(member.name);
+    }
+    interfaces.set(d.name, known);
   }
   return interfaces;
 }

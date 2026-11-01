@@ -190,3 +190,29 @@ Function`, a function given as it is or text of code, and webapi's
 `window.set_timeout`, `clear_timeout`, `set_interval` and `clear_interval`,
 a second way of text alone, are gone, each an error naming the js crate's.
 
+
+## Amendment: a dictionary given has what TypeScript requires (2026-11-01)
+
+A dictionary a function gives, `TextEncoder.encodeInto`'s
+`TextEncoderEncodeIntoResult`, had each member WebIDL doesn't mark
+`required` as an `Option`, `read: Option<f64>`. But WebIDL's
+`dictionary` members are optional for what a caller gives, and what the
+browser gives has them all, as TypeScript's DOM types them: `read:
+number; written: number;`. React's server stream config for Node reads
+`const {read, written} = textEncoder.encodeInto(..)`, which the port wrote
+`encoded.read.unwrap_or(0.0)`, a `?? 0` upstream lacks.
+
+**A dictionary a function gives has each member TypeScript's DOM requires
+as its own type** (`generate.ts`'s `dictionaryType`, of
+`coverage.ts`'s `typescriptInterfaces`, which now says what each
+interface requires): four of them, `TextEncoderEncodeIntoResult`,
+`CryptoKeyPair`, `URLPatternResult` and `URLPatternComponentResult`. What
+a function takes is as it was, its members `Option`s but WebIDL's
+`required`.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A: the browser gives
+each of them, so the `None` was never read.
+
+Held by `test/webapi-objects.test.ts`'s "a dictionary a function gives has
+the members TypeScript's DOM requires" and `test/web_forms.rs`'s
+`into.written`.

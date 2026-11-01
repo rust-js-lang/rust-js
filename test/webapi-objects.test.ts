@@ -90,3 +90,25 @@ pub fn seen(element: &'static Element, set: &js::WeakSet<Element>) -> bool {
   const element = {};
   expect([lib.seen(element, set), lib.seen(element, set)]).toEqual([false, true]);
 });
+
+// React's server stream config for Node reads `const {read, written} =
+// textEncoder.encodeInto(text, view)`: what a function gives has each member
+// TypeScript's DOM requires, though WebIDL's dictionary doesn't say
+// `required`, so it isn't an `Option` (ADR 0102, amended).
+test("a dictionary a function gives has the members TypeScript's DOM requires", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-given-dictionary");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::text_encoder;
+
+pub fn encoded(text: &str) -> f64 {
+    let view = js::uint8_array::new(8);
+    let result = text_encoder::new().encode_into(text, view);
+    result.read * 100.0 + result.written
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return result.read * 100 + result.written;");
+  const { encoded } = await import(join(dir, "lib.js"));
+  expect(encoded("héllo")).toBe(506);
+});
