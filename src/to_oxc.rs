@@ -27,6 +27,7 @@ mod expressions;
 mod header;
 mod loads;
 mod openings;
+mod placed;
 mod statements;
 mod trailing;
 
@@ -147,6 +148,15 @@ pub fn emit(
             js::Item::Function(f) => body.push(cx.function(f, defaulted(module) == Some(f.name.as_str()))),
         }
         items = rest;
+    }
+    // Each statement copied into a function from past it, a `Drop` impl's
+    // body, at a place of its own there, its comments with it (rd328).
+    let moved = placed::placed(&mut body, comments.iter().map(|c| c.attached_to).collect());
+    let mut comments = comments;
+    for c in comments.iter_mut() {
+        if let Some(&at) = moved.get(&c.attached_to) {
+            c.attached_to = at;
+        }
     }
     // A blank line between two statements where the Rust has one between
     // their code, where it tells (ADR 0444, amended).

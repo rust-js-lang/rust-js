@@ -231,3 +231,31 @@ stays its pattern's, which what's before the statement and the source map
 read. Held by `lowering-comments-ends.test.ts`'s "a comment after a
 function's last if is at its end" and the mutation
 `tail-if-let-comments-dropped` (`lower/mir/tidy.ts`).
+
+## Amendment: in a statement copied from past its function (2026-11-01, rd328)
+
+React's SchedulerPostTask ends runTask with a guard whose `Drop` impl is
+written after handleAbortError, a function of only comments. The impl's
+body, written in runTask's `finally` (`drops/inlined.rs`), keeps the
+impl's spans, which its source map and its own comments need: so its
+statements started past handleAbortError's comments, and oxc, printing a
+comment whose node is gone before the first statement past it, printed
+them in runTask's `finally`, before `level = reset;`, and none in
+handleAbortError. A block of only comments between, an `else { // .. }`,
+was taken the same way.
+
+Who owns it: the printer, which hands oxc each comment's place
+(`to_oxc.rs`). Lowering is right to keep the impl's spans: placing its
+body at the drop's would lose the comments upstream writes in its
+`finally` (ReactFiberConfigDOM's, ReactFiberWorkLoop's). Now
+`to_oxc/placed.rs` gives each statement of a function written past the
+function's end, and each block of only comments ending there, a place of
+its own in the function: right past the last printed before it, where no
+comment is and no node starts. Its comments are there; the statement's
+place maps to nothing, and what it holds keeps its spans and its map. One
+copied from before its function is before every comment printed after it,
+so it stays where it's written. Case (ADR 0262): N, comments.
+
+Held by `lowering-comments-ends.test.ts`'s "a function's comments aren't
+printed in a guard's finally written past it" and the mutations of
+`to_oxc/placed.ts`.

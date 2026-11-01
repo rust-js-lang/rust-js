@@ -400,3 +400,78 @@ pub fn each(items: &[Option<u32>], out: &mut Vec<u32>) {
   lib.each([1, undefined, 3] as never, out as never);
   expect(out).toEqual(["a", 2, 0, 1, 3]);
 });
+
+// React's SchedulerPostTask ends runTask with a guard and has
+// handleAbortError, a function of only comments, after it; a `Drop` impl's
+// body, written in the `finally` with its impl's spans, past both, printed
+// those comments there, before `level = reset;` (rd328). A statement
+// copied into a function from past it is placed in it, its comments with
+// it, its own block's of only comments too.
+test("a function's comments aren't printed in a guard's finally written past it", async () => {
+  const { js, lib } = await compiled("comments-past-a-guard", `use std::cell::Cell;
+
+thread_local! {
+    static LEVEL: Cell<u32> = const { Cell::new(0) };
+}
+
+struct Restore(u32);
+
+fn work(n: u32, out: &mut Vec<u32>) -> u32 {
+    out.push(n);
+    n
+}
+
+pub fn run_task(n: u32, out: &mut Vec<u32>) -> u32 {
+    let _reset = Restore(LEVEL.get());
+    LEVEL.set(n);
+    work(n, out)
+}
+
+fn handle_abort_error(_error: u32) {
+    // Abort errors are an implementation detail. We don't expose the
+    // TaskController, so no way for the user to handle them.
+}
+
+pub fn quiet(n: u32) -> u32 {
+    handle_abort_error(n);
+    let mut total = 0;
+    if n > 1 {
+        total += n;
+    } else {
+        // Nothing to add.
+    }
+    total
+}
+
+pub fn level() -> u32 {
+    LEVEL.get()
+}
+
+impl Drop for Restore {
+    fn drop(&mut self) {
+        // Put the level back.
+        LEVEL.set(self.0);
+        if self.0 > 2 {
+            // Nothing more here.
+        } else {
+            LEVEL.set(self.0 + 1);
+        }
+        // Restored.
+    }
+}
+`);
+  expect(js).toContain(
+    "  } finally {\n    // Put the level back.\n    LEVEL = reset;\n    if (reset > 2) {\n      // Nothing more here.\n    } else {\n      LEVEL = (reset + 1) >>> 0;\n    }\n    // Restored.\n  }\n}\n",
+  );
+  expect(js).toContain(
+    "function handleAbortError(error) {\n  // Abort errors are an implementation detail. We don't expose the\n  // TaskController, so no way for the user to handle them.\n}\n",
+  );
+  expect(js).toContain("  } else {\n    // Nothing to add.\n  }\n");
+  const out: unknown[] = [];
+  expect(lib.runTask(5 as never, out as never)).toBe(5);
+  expect(lib.level()).toBe(1);
+  expect(lib.runTask(2 as never, out as never)).toBe(2);
+  expect(lib.level()).toBe(2);
+  expect(lib.quiet(3 as never)).toBe(3);
+  expect(out).toEqual([5, 2]);
+});
