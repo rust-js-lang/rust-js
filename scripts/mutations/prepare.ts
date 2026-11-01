@@ -804,4 +804,12 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments-ends.test.ts", "test/corpus.test.ts", "-t", "an else of only comments after a branch|^match_last_arm_else.rs$"],
     snapshots: true,
   },
+  {
+    name: "in-place-setter-assigns",
+    breaks: "a flattened state's handle given away sets the variable its object is, not each key (rd380)",
+    file: "src/prepare.rs",
+    find: "            sets.unwrap_or_else(|| vec![StmtKind::Assign((**place).clone(), written).at(place.span)]),",
+    replace: "            vec![StmtKind::Assign((**place).clone(), written).at(place.span)],",
+    tests: ["test/corpus.test.ts", "-t", "flattened_state_cell"],
+  },
 ];

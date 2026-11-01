@@ -1203,9 +1203,16 @@ fn expr(e: &mut Expr) {
             ExprKind::Handle(_, storage) => storage.written(Expr::var(&param), false),
             _ => Expr::var(&param),
         };
+        // A flattened state's, each of its keys set on its object (ADR 1044).
+        let sets = match &e.kind {
+            ExprKind::Handle(_, storage) => {
+                storage.written_in_place(place, Expr::var(&param), &mut |value, _| value, place.span)
+            }
+            _ => None,
+        };
         let set = Expr::arrow(
             vec![param.as_str().into()],
-            vec![StmtKind::Assign((**place).clone(), written).at(place.span)],
+            sets.unwrap_or_else(|| vec![StmtKind::Assign((**place).clone(), written).at(place.span)]),
         );
         let dictionary = match &e.kind {
             ExprKind::Pair(_, dictionary) => Some(Prop::Field(js::DICTIONARY.into(), (**dictionary).clone())),

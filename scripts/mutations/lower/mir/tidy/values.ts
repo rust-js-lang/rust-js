@@ -342,4 +342,12 @@ export const mutations: Mutation[] = [
     replace: "        ExprKind::Handle(place, storage) if place.reads_same() && false => Some(*storage),\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "written through its guard in a branch"],
   },
+  {
+    name: "in-place-handle-assigned",
+    breaks: "a flattened state written whole through its handle assigns the variable holding its object, `chunk = { status }`, not each key (rd380)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "                && let Some(sets) = storage.written_in_place(",
+    replace: "                && false\n                && let Some(sets) = storage.written_in_place(",
+    tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
+  },
 ];

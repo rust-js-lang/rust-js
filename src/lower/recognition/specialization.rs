@@ -400,7 +400,7 @@ impl<'tcx> Recognition<'_, 'tcx> {
 }
 
 /// `Recognition::trait_holds` in `typing_env`.
-fn trait_holds_in<'tcx>(
+pub(crate) fn trait_holds_in<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     ty: Ty<'tcx>,

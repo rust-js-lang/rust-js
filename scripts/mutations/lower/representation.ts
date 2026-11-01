@@ -334,9 +334,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`props.html.title` is `props.html.title`, which JS's flat props don't have",
     file: "src/lower/representation.rs",
-    find: "            (Shape::Object(_), _) if super::bindings::is_flatten_field(self.tcx, ty, i) => base,",
-    replace:
-      "            (Shape::Object(_), _) if false && super::bindings::is_flatten_field(self.tcx, ty, i) => base,",
+    find: "            (Shape::Object(fields), _) if super::bindings::is_flatten_field(self.tcx, ty, i) => {",
+    replace: "            (Shape::Object(fields), _) if false && super::bindings::is_flatten_field(self.tcx, ty, i) => {",
     tests: ["test/jsx-props.test.ts", "-t", "chain of flattened"],
   },
   {
@@ -869,5 +868,21 @@ export const mutations: Mutation[] = [
     find: "        // `\"Text\"` (ADR 0220, amended).\n        ty::Adt(adt, args) if marks_js_object(tcx, *adt, args) => None,\n",
     replace: "",
     tests: ["test/jsx-types.test.ts", "-t", "ElementType, rendered as a tag"],
+  },
+  {
+    name: "flattened-state-counted-allowed",
+    breaks: "a flattened state lent or held where another borrow may meet it compiles, though nothing can count its borrows (rd380)",
+    file: "src/lower/representation.rs",
+    find: "                            && !self.quiet_field(field.did)\n",
+    replace: "                            && false\n",
+    tests: ["test/classes-flattened-state.test.ts", "-t", "refused"],
+  },
+  {
+    name: "flattened-state-no-handle",
+    breaks: "a flattened state's cell is its parent alone, as a flattened struct is, so its borrows are boxes of the parent (rd380)",
+    file: "src/lower/representation.rs",
+    find: "                        Expr::stored_handle(base, js::Storage::in_place(&keys))\n",
+    replace: "                        { let _ = keys; base }\n",
+    tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
   },
 ];

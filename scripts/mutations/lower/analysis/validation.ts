@@ -93,9 +93,8 @@ export const mutations: Mutation[] = [
     name: "flatten-js-object-refused",
     breaks: "a flattened `Dict` is refused, whose keys spread",
     file: "src/lower/analysis/validation.rs",
-    find: "                    adt.is_struct() && adt.non_enum_variant().ctor.is_none() || marks_js_object(tcx, *adt, args)",
-    replace:
-      "                    adt.is_struct() && adt.non_enum_variant().ctor.is_none()",
+    find: "                        || marks_js_object(tcx, *adt, args)\n",
+    replace: "",
     tests: ["test/jsx-props.test.ts", "-t", "two flattened fields"],
   },
   {
@@ -330,5 +329,21 @@ export const mutations: Mutation[] = [
     find: "            return Some(field.name);\n",
     replace: "            return None;\n",
     tests: ["test/lowering.test.ts", "-t", "flattened field lent whole"],
+  },
+  {
+    name: "flattened-std-struct-allowed",
+    breaks: "a flattened `RefCell` of a struct, std's struct of named fields, is accepted, read as the parent's own (rd380)",
+    file: "src/lower/analysis/validation.rs",
+    find: "adt.is_struct() && adt.non_enum_variant().ctor.is_none() && !std(*adt)",
+    replace: "adt.is_struct() && adt.non_enum_variant().ctor.is_none()",
+    tests: ["test/classes-flattened-state.test.ts", "-t", "refused"],
+  },
+  {
+    name: "reads-whole-by-any-impl",
+    breaks: "a flattened state's `RefCell` reads it whole by the `Clone` std has of any `RefCell`, where only its state's would, so every borrow of it is refused (rd380)",
+    file: "src/lower/analysis/validation.rs",
+    find: ".any(|tr| crate::lower::recognition::trait_holds_in(tcx, env, ty, tr) != Some(false))",
+    replace: ".any(|_| true)",
+    tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
   },
 ];

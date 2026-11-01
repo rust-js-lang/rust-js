@@ -1132,8 +1132,11 @@ impl<T> Made for Option<T> {
 /// JS value; a new `Error` is `panic!`'s (ADR 0706), and what
 /// `catch_unwind` caught is thrown again by `resume_unwind`. What it throws
 /// unwinds as any JS throw: `catch_unwind` catches it, its payload's
-/// `downcast_ref::<&JsError>()` the value thrown (ADR 0710).
+/// `downcast_ref::<&JsError>()` the value thrown (ADR 0710). It runs none
+/// of the crate's code: what unwinding drops is the crate's own drops,
+/// seen as any unwind's are (rd380).
 #[cfg_attr(rust_js, rust_js::link_name = "throw")]
+#[cfg_attr(rust_js, rust_js::runs_nothing)]
 pub fn throw(this: Option<&Unknown>) -> ! {
     unreachable!()
 }

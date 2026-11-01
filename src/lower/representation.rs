@@ -567,7 +567,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (Shape::Array(_), _) => Expr::index(base, Expr::int(i as i128)),
             // A flattened struct's fields are its parent's: read through it,
             // `props.html.title` is `props.title` (ADR 0205).
-            (Shape::Object(_), _) if super::bindings::is_flatten_field(self.tcx, ty, i) => base,
+            // A flattened state's cell is the object it's in: a handle on
+            // it, whose writes set each key there (rd380, ADR 1044).
+            (Shape::Object(fields), _) if super::bindings::is_flatten_field(self.tcx, ty, i) => {
+                match super::bindings::flattened_state(self.tcx, fields[i].1) {
+                    Some((_, keys)) => {
+                        // Never counted: what would count its borrows is the
+                        // object, which is the parent's.
+                        if let Some(field) = self.struct_field_def(ty, i)
+                            && !self.quiet_field(field.did)
+                        {
+                            super::refusal::refuse(
+                                self.tcx,
+                                self.tcx.def_span(field.did),
+                                super::refusal::Refused::Feature(
+                                    "a flattened state lent, or borrowed where another borrow of it may be: it's its object's own keys, which count no borrows; borrow it for a moment, `match &*chunk.state.borrow() { .. }`",
+                                ),
+                            );
+                        }
+                        Expr::stored_handle(base, js::Storage::in_place(&keys))
+                    }
+                    None => base,
+                }
+            }
             (Shape::Object(fields), _) => {
                 let field = Expr::member(base, fields[i].0.clone());
                 // Of a JS object the program didn't build, a getter may

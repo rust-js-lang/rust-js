@@ -247,16 +247,24 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
             let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
             // A struct, or a reference to one, which is the object it is; or a
             // JS object, a `Dict` whose keys spread.
+            // Or a `RefCell` of a discriminated union, the parent's own
+            // tag and fields (rd380, ADR 1044); no other cell, which a
+            // struct of named fields of std's is not.
+            let std = |adt: ty::AdtDef<'_>| crate::lower::recognition::is_std_crate(tcx, adt.did());
             let object = match ty.peel_refs().kind() {
+                _ if bindings::flattened_state(tcx, ty).is_some() => true,
                 ty::Adt(adt, args) => {
-                    adt.is_struct() && adt.non_enum_variant().ctor.is_none() || marks_js_object(tcx, *adt, args)
+                    adt.is_struct() && adt.non_enum_variant().ctor.is_none() && !std(*adt)
+                        || marks_js_object(tcx, *adt, args)
                 }
                 _ => false,
             };
             if !object {
                 refuse(
                     tcx.def_span(field.did),
-                    format!("flattening `{ty}`: a flattened field is a struct of named fields or a JS object"),
+                    format!(
+                        "flattening `{ty}`: a flattened field is a struct of named fields, a JS object or a `RefCell` of a `#[rust_js::tag]` enum"
+                    ),
                 );
             }
         }
@@ -294,12 +302,16 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
             .collect();
         // Whether a value of `ty` has an impl whose JS reads its object
         // whole: a clone's spread, `==`'s `$eq`, a comparison's or a hash's.
+        // Its own impl, as rustc selects it: a `RefCell<State>`'s `Clone` is
+        // `State`'s, none of a state of none (rd380); where rustc can't say,
+        // of a type of parameters, it may.
         let reads_whole = |ty: Ty<'tcx>| {
-            let ty::Adt(adt, _) = ty.kind() else {
+            if !matches!(ty.kind(), ty::Adt(..)) {
                 return true;
-            };
+            }
             let items = tcx.lang_items();
             let hash = crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::Hash);
+            let env = ty::TypingEnv::fully_monomorphized();
             [
                 items.clone_trait(),
                 items.eq_trait(),
@@ -308,12 +320,7 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
             ]
             .into_iter()
             .flatten()
-            .any(|tr| {
-                tcx.all_impls(tr).any(|imp| {
-                    matches!(tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
-                            ty::Adt(of, _) if of.did() == adt.did())
-                })
-            })
+            .any(|tr| crate::lower::recognition::trait_holds_in(tcx, env, ty, tr) != Some(false))
         };
         // A flattened field lent whole, `&state.base`, is its parent's
         // object, which has its fields (ADR 0204, amended).
@@ -390,6 +397,10 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
 /// The names of `ty`'s fields its JS object has: a struct's own, and,
 /// through each flattened field, its struct's.
 fn object_names<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> HashSet<rustc_span::Symbol> {
+    // A flattened state's: its tag and its variants' fields (rd380).
+    if let Some((_, keys)) = bindings::flattened_state(tcx, ty.peel_refs()) {
+        return keys.iter().map(|key| rustc_span::Symbol::intern(key)).collect();
+    }
     let ty::Adt(adt, args) = ty.peel_refs().kind() else {
         return HashSet::new();
     };

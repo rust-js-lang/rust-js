@@ -585,4 +585,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^nested_option_tests.rs$"],
     snapshots: true,
   },
+  {
+    name: "in-place-tag-left",
+    breaks: "a whole write of a flattened state sets its variant's fields but not its tag, so it still reads as the variant it was (rd380)",
+    file: "src/js/make.rs",
+    find: "            let sets = props.iter().map(|prop| match prop {",
+    replace: "            let sets = props.iter().skip(1).map(|prop| match prop {",
+    tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
+  },
 ];

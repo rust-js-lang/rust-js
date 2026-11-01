@@ -647,4 +647,12 @@ export const mutations: Mutation[] = [
     replace: "StmtKind::Expr(Expr::call(Expr::super_(), given)).at(js::Span::NONE);",
     tests: ["test/class-components.test.ts", "-t", "comment comes after super"],
   },
+  {
+    name: "flattened-parameter-kept",
+    breaks: "a constructor's flattened state stays one parameter, `function ReactPromise(state)`, its instance spreading it, where its keys are its parameters (rd380)",
+    file: "src/lower/classes.rs",
+    find: "            spread_state(tcx, def_id, function)?;\n",
+    replace: "",
+    tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
+  },
 ];

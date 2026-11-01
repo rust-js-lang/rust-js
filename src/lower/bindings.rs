@@ -1150,6 +1150,35 @@ pub(super) fn field_default_const(tcx: TyCtxt<'_>, field: &FieldDef) -> Option<S
     }
 }
 
+/// Of `ty`, a flattened field's type, the state it holds where it's a
+/// `RefCell` of a discriminated union, `#[rust_js::tag = "status"]`, each
+/// variant of named fields or none (rd380, ADR 1044): its tag and each
+/// key a variant has, in the order they're first declared, the parent's
+/// own properties. `None` of any other type.
+pub(super) fn flattened_state<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(ty::AdtDef<'tcx>, Vec<String>)> {
+    let ty::Adt(cell, args) = ty.kind() else { return None };
+    if !crate::lower::recognition::is_std_def(tcx, cell.did(), crate::lower::recognition::StdItem::RefCell) {
+        return None;
+    }
+    let ty::Adt(state, _) = args.type_at(0).kind() else {
+        return None;
+    };
+    let tag = declared_tag(tcx, state.did())?;
+    if !state.is_enum()
+        || (state.variants().iter()).any(|v| v.ctor.is_some() && !v.fields.is_empty() || is_otherwise(tcx, v.def_id))
+    {
+        return None;
+    }
+    let mut keys = vec![tag];
+    for field in state.variants().iter().flat_map(|v| v.fields.iter()) {
+        let key = field_key(tcx, field);
+        if !keys.contains(&key) {
+            keys.push(key);
+        }
+    }
+    Some((*state, keys))
+}
+
 /// Whether field `i` of `ty`, a struct, is flattened (ADR 0204).
 pub(super) fn is_flatten_field(tcx: TyCtxt<'_>, ty: Ty<'_>, i: usize) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct()

@@ -17,9 +17,12 @@ use rustc_span::def_id::DefId;
 
 mod defaults;
 mod namespaces;
+mod states;
 mod subclasses;
 pub(in crate::lower) use defaults::{prototype_defaults, take_default};
 pub(crate) use namespaces::{names_namespace, unread_namespaces};
+use states::spread_state;
+pub(crate) use states::{flattened_parameter, new_of_state};
 pub(crate) use subclasses::{base_class, js_class, member_naming, subclass_impl_class, superclass};
 use subclasses::{starts_undefined, superclass_impls};
 
@@ -1162,6 +1165,7 @@ pub(super) fn as_member(
         // Its instance a handle may be kept on the place of, a field's, as
         // a method's `this` (#359).
         Member::Constructor => {
+            spread_state(tcx, def_id, function)?;
             set_this(&mut function.body)?;
             this_outside_accessors(class, &mut function.body);
             // Of a class that extends one, its superclass constructs `this` first,

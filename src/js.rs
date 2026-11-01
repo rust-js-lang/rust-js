@@ -63,6 +63,10 @@ pub enum Storage {
     /// A `#[rust_js::nullable]` field's `Option`, or `Cell` of one: its
     /// `None`, `null` (ADRs 0275, 0772).
     NullForNone,
+    /// A flattened state's cell, the object it's flattened in (rd380, ADR
+    /// 1044): what's written is each of its keys, these, comma-separated,
+    /// set on that object, never the object itself.
+    InPlace(&'static str),
 }
 
 /// What a `Symbol` of a module's namespace exports, the module itself,

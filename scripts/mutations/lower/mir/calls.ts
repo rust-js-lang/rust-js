@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a class's `Component::new(..)` is `Component(..)`, called, not constructed, so its `this` is `undefined` (ADR 0761)",
     file: "src/lower/mir/calls.rs",
-    find: "                Expr::new_(*class, args)\n",
-    replace: "                Expr::call(*class, args)\n",
+    find: "                    _ => Expr::new_(*class, args),\n",
+    replace: "                    _ => Expr::call(*class, args),\n",
     tests: [
       "test/classes.test.ts",
       "-t",
@@ -1097,4 +1097,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
     snapshots: true,
   },
+  {
+    name: "flattened-state-given-whole",
+    breaks: "`new` of a class whose constructor takes its flattened state's keys is given the state's object, `new ReactPromise({ status })`, the keys shifted (rd380)",
+    file: "src/lower/mir/calls.rs",
+    find: "Some((at, keys)) if at < args.len() => crate::lower::classes::new_of_state(*class, args, at, &keys),",
+    replace: "Some((at, _)) if at < args.len() => Expr::new_(*class, args),",
+    tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
+  },
+
 ];

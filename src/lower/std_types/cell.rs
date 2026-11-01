@@ -78,6 +78,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // own or its type's (`representation::held`).
         let unchecked =
             call.quiet || (values.as_slice().first()).is_some_and(|cell| matches!(cell.kind, js::ExprKind::Handle(..)));
+        // A flattened state's cell is its object's own keys (ADR 1044):
+        // borrowed, read and written through a borrow; what would give or
+        // take its value whole, which is no object of its own, refused.
+        if (values.as_slice().first())
+            .is_some_and(|cell| matches!(cell.kind, js::ExprKind::Handle(_, js::Storage::InPlace(_))))
+            && matches!(
+                known,
+                Std::CellReplace
+                    | Std::CellTake
+                    | Std::CellReplaceWith
+                    | Std::CellSwap
+                    | Std::CellGetMut
+                    | Std::CellFromMut
+                    | Std::CellItems
+                    | Std::CellUpdate
+                    | Std::CellSet
+                    | Std::CellGet
+                    | Std::TryBorrow { .. }
+            )
+        {
+            return Err(self.unsupported(
+                span,
+                "a flattened state's value given or taken whole, `replace`, `take`, `swap`, `get_mut` or `into_inner`: it's its object's own keys; write it through a borrow, `*chunk.state.borrow_mut() = ..`",
+            ));
+        }
         let mut arg = || values.next().expect("rustc checked the arguments");
         let js_span = self.js_span(span);
         // What a `Cell` is written, as its storage, the handle on it, says

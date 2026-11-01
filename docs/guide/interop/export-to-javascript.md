@@ -1046,6 +1046,89 @@ export function Keys() {
   `this.name` would hide; a class of no `new`; and the attribute on one
   of the struct and its impl alone.
 
+### A state flattened into a class
+
+A class's field `#[cfg_attr(rust_js, rust_js::flatten)]` of a `RefCell` of
+a discriminated union, `#[rust_js::tag = "status"]`, is the class's own
+keys: its tag and each key a variant has. A borrow reads the object, a
+whole write sets the new variant's tag and fields, and its
+constructor takes the keys, as React's Flight client's chunk is
+`new ReactPromise("pending", null, null)`. A key an earlier variant set
+stays, as upstream's do; Rust reads it only through its variant. Its
+`replace`, `take`, `swap` and `get_mut` are refused, and so is the cell
+lent, `&chunk.state`, or borrowed where another borrow of it may be, as
+its object counts no borrows
+([ADR 1044](../../decisions/1044-a-flattened-state-is-its-classs-own-keys.md)):
+
+```rust
+use std::cell::RefCell;
+
+#[cfg_attr(rust_js, rust_js::tag = "status")]
+pub enum ChunkState {
+    #[cfg_attr(rust_js, rust_js::name = "pending")]
+    Pending {
+        #[cfg_attr(rust_js, rust_js::nullable)]
+        value: Option<Vec<u32>>,
+    },
+    #[cfg_attr(rust_js, rust_js::name = "fulfilled")]
+    Initialized { value: String },
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct ReactPromise {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub state: RefCell<ChunkState>,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl ReactPromise {
+    pub fn new(state: ChunkState) -> Self {
+        ReactPromise {
+            state: RefCell::new(state),
+        }
+    }
+}
+
+pub fn create_pending_chunk() -> ReactPromise {
+    ReactPromise::new(ChunkState::Pending { value: None })
+}
+
+pub fn resolve(chunk: &ReactPromise, value: String) -> Vec<u32> {
+    let listeners = match &mut *chunk.state.borrow_mut() {
+        ChunkState::Pending { value } => value.take(),
+        ChunkState::Initialized { .. } => None,
+    };
+    *chunk.state.borrow_mut() = ChunkState::Initialized { value };
+    listeners.unwrap_or_default()
+}
+```
+
+```js
+export function ReactPromise(status, value) {
+  this.status = status;
+  this.value = value;
+}
+
+export function createPendingChunk() {
+  return new ReactPromise("pending", null);
+}
+
+export function resolve(chunk, value) {
+  let listeners;
+  if (chunk.status === "pending") {
+    const value = chunk;
+    const old = value.value;
+    value.value = null;
+    listeners = old;
+  } else {
+    listeners = undefined;
+  }
+  chunk.status = "fulfilled";
+  chunk.value = value;
+  return listeners ?? [];
+}
+```
+
 ## Objects of methods
 
 A struct and its impl marked `#[cfg_attr(rust_js, rust_js::object)]` are

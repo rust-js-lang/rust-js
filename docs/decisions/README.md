@@ -223,7 +223,8 @@ reordered, and git merges this file by keeping both sides' lines
 - [0201 A component takes no dictionary, and an update makes no default it replaces](0201-components-take-no-dictionaries.md)
 - [0202 An import is named in each file that imports it](0202-imports-named-around-importers.md) *(amended: every import a `use .. as` renames is named so, a library's item and a binding's named export too; amended: a `use`'s name is cased as its item's own; amended: a module's own item renamed twice imports nothing; amended: a `use`'s name of an item its `#[rust_js::name]` names is cased as that name; by 1037: a module namespace's import too)*
 - [0203 A component's props are as written](0203-component-props-as-written.md) *(amended by 0674: the order is the object's)*
-- [0204 A flattened field's struct is its parent's props](0204-flattened-props.md) *(amended by 0674: found by its name)*
+- [0204 A flattened field's struct is its parent's props](0204-flattened-props.md) *(amended by 0674: found by its name); extended by 1044: a `RefCell` of a discriminated union, its class's own keys)*
+- [1044 A flattened state is its class's own keys](1044-a-flattened-state-is-its-classs-own-keys.md)
 - [0205 Flattened structs chain, and the props' own name is theirs](0205-flattened-chains.md)
 - [0206 TypeScript, read and written by TypeScript's own parser and printer](0206-typescript-module.md)
 - [0207 A crate's `.d.ts` is printed by TypeScript](0207-declarations-printed-by-typescript.md)

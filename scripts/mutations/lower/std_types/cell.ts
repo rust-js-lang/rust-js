@@ -820,4 +820,12 @@ export const mutations: Mutation[] = [
       "        js::ExprKind::Array(items) if items.is_empty() && false => {\n",
     tests: ["test/lowering-cell-borrows.test.ts", "-t", "an array taken"],
   },
+  {
+    name: "flattened-replace-allowed",
+    breaks: "a flattened state's `replace` is lowered as any cell's, which assigns the variable holding its object, a wrong answer, where it's refused (rd380)",
+    file: "src/lower/std_types/cell.rs",
+    find: "            && matches!(\n                known,\n                Std::CellReplace\n",
+    replace: "            && false\n            && matches!(\n                known,\n                Std::CellReplace\n",
+    tests: ["test/classes-flattened-state.test.ts", "-t", "refused"],
+  },
 ];
