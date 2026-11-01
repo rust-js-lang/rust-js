@@ -583,3 +583,19 @@ on macOS, aborting, where Linux's frames fit. **rust-js runs on a thread of
 its own with the stack rustc's thread has**, `RUST_MIN_STACK`'s if it's
 set; a panic there ends the process with 101, as one on the main thread
 did. The rustc suite's `issue-29227.rs` run on a Mac is what holds it.
+
+## Amendment: tests each path ends with alike are tested once, a guard's call too (rd136, 2026-11-02)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same tests in
+the same order.
+
+MIR tests a guarded or-pattern's guard of each alternative, so an arm's
+paths end alike: `(a === 1 && on) || (a === 2 && on)`. **What each path
+tests last alike is tested once, after**, `(a === 1 || a === 2) && on`,
+as `1 | 2 if on` is written (`factored`); of pure tests it's the same
+truth. A guard that calls was refused a chain where the tree has two calls
+alike, MIR's copies of one guard, as the model read them as one: **calls
+alike are one call of the model**, which refuses only a path that makes
+two, `(1, _) | (_, 1) if odd(a + b)` of `(1, 1)`, which Rust calls twice.
+`Some(1) | None if odd(3)` is `(a == null || a === 1) && odd(3)`, where it
+was MIR's labeled block. See ADR 0905's amendment of the same day.

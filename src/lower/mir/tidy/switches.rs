@@ -13,8 +13,10 @@ use super::bindings::declared;
 use super::loop_labels::{LOOP_LABEL, continued, held_subject, labeled_breaks, labels_in};
 use super::{first_written, is_temporary, relabeled, unlabeled, written_loop};
 
+mod guards;
 mod kinds;
 mod nullish;
+use guards::{fallen, guard_held, guards_once};
 use kinds::{kinds_of, of_subject};
 use nullish::{some_switch_defaults, switch_of};
 
@@ -25,6 +27,7 @@ pub(super) fn switches(body: &mut Vec<Stmt>, switches: &[Switch], loops: &[(js::
     if switches.is_empty() {
         return;
     }
+    js::statement_lists(body, &mut |list| guards_once(list, switches));
     walk(body, switches, loops, &mut Vec::new(), None, false);
 }
 
@@ -109,18 +112,21 @@ fn walk(
                 walk(body, switches, loops, labels, Some(&mut inner), true);
                 labels.pop();
                 // A case's `continue` of the loop whose turn the `switch`
-                // ends, which it goes on to anyway.
+                // ends, which it goes on to anyway; and one MIR made, past
+                // what an arm does, that ends an `if` in it, the `switch`'s
+                // `break`, which goes there too, `if (on(name)) { break; }`
+                // of a guarded arm that does nothing (rd136).
                 if let Some(Stmt {
                     kind: StmtKind::Switch { cases, default, .. },
                     ..
                 }) = body.last_mut()
                 {
+                    let of_it = |l: &Option<String>| l.is_none() || l.as_deref() == label.as_deref();
                     for case in js::case_lists_mut(cases, default) {
-                        if matches!(case.last().map(|s| &s.kind), Some(StmtKind::Continue(l))
-                            if l.is_none() || l.as_deref() == label.as_deref())
-                        {
+                        if matches!(case.last().map(|s| &s.kind), Some(StmtKind::Continue(l)) if of_it(l)) {
                             case.pop();
                         }
+                        made_continues_broken(case, &of_it);
                     }
                 }
                 if inner.named {
@@ -133,6 +139,27 @@ fn walk(
                 }
             }
             _ => {}
+        }
+    }
+}
+
+/// Each `continue` MIR made, of no place written, `of_it`, the loop's
+/// whose turn a `switch` ends, that ends an `if`'s branch in the case
+/// `stmts`, however deep in `if`s: the `switch`'s `break`, which leaves to
+/// where it goes.
+fn made_continues_broken(stmts: &mut [Stmt], of_it: &dyn Fn(&Option<String>) -> bool) {
+    for stmt in stmts.iter_mut() {
+        let StmtKind::If(_, then, otherwise) = &mut stmt.kind else {
+            continue;
+        };
+        for branch in std::iter::once(then).chain(otherwise.as_mut()) {
+            if let Some(last) = branch.last_mut()
+                && last.span.is_none()
+                && matches!(&last.kind, StmtKind::Continue(l) if of_it(l))
+            {
+                last.kind = StmtKind::Break(None);
+            }
+            made_continues_broken(branch, of_it);
         }
     }
 }
@@ -565,153 +592,6 @@ fn stacked(cases: Vec<Case>) -> Option<Vec<Case>> {
     Some(stacked)
 }
 
-/// Of `cases`, each in the order its arm is written, each of an arm that
-/// falls to the next (`SwitchArm::falls`), whose statements are the
-/// guard's `if` and then the next case's: the guard's `if` alone, its case
-/// falling through to the next (ADR 0905). Whether each falls, or `None`
-/// where one's statements aren't so. Where its guard fails, a case only
-/// tested, then goes on to the next's statements, as Rust goes on to the
-/// next arm; and where it holds, it leaves, as its arm's statements did,
-/// a `break;` of the `switch` where they go on past the `match`.
-fn fallen(cases: &mut [Case], arms: &[&SwitchArm]) -> Option<Vec<bool>> {
-    let mut falls = vec![false; cases.len()];
-    let mut own = Vec::new();
-    for (c, case) in cases.iter().enumerate() {
-        let k = arms.iter().position(|arm| arm.span == case.3)?;
-        if !arms[k].falls {
-            continue;
-        }
-        // The next case is the next arm's, which Rust tries next.
-        let next = cases
-            .get(c + 1)
-            .filter(|next| arms.get(k + 1).is_some_and(|arm| arm.span == next.3))?;
-        // Of the `default` next, a last `_`'s, the guard's `if` alone,
-        // which leaves where it holds, is one the chain goes on from to the
-        // `_`'s statements, as the case falls to them (ADR 0636, amended).
-        let alone = match (&case.1[..], next.2) {
-            (
-                [
-                    stmt @ Stmt {
-                        kind: StmtKind::If(_, then, None),
-                        ..
-                    },
-                ],
-                true,
-            ) if then.last().is_some_and(js::ends) => Some(stmt.clone()),
-            _ => guard_alone(&case.1, &next.1),
-        };
-        own.push((c, alone?));
-        falls[c] = true;
-    }
-    for (c, stmt) in own {
-        cases[c].1 = vec![stmt];
-    }
-    Some(falls)
-}
-
-/// Of a case's statements, `body`, those of the guard's `if` followed by
-/// those of the next case, `next`: the guard's `if`, which leaves where the
-/// guard holds, and else goes on, having only tested. MIR's are one of
-/// `if (guard) { .. } next`, its `if` leaving; `if (guard) { .. } else {
-/// next }`; `if (!guard) { next } ..`, what follows leaving, as MIR tests a
-/// guard whose arm does nothing; or `if (!guard) { next } else { .. }`.
-/// Of `&&`, tested in parts, `if (a) { if (b) { .. } }`, one test, `if (a
-/// && b)`, React's finishConcurrentRender's (ADR 0905, amended).
-fn guard_alone(body: &[Stmt], next: &[Stmt]) -> Option<Stmt> {
-    let (first, rest) = body.split_first()?;
-    let StmtKind::If(test, then, otherwise) = &first.kind else {
-        return None;
-    };
-    let (mut test, mut then) = (test.clone(), then);
-    while otherwise.is_none()
-        && let [part] = &then[..]
-        && let StmtKind::If(t, inner, None) = &part.kind
-    {
-        (test, then) = (Expr::bin(Op::And, test, t.clone()), inner);
-    }
-    // Each way it goes on to the next only tests.
-    let mut assigns = false;
-    test.clone()
-        .each_mut(&mut |e| assigns |= matches!(e.kind, ExprKind::Assigned(..)));
-    if assigns {
-        return None;
-    }
-    // What leaves where the guard holds: of statements that go on past the
-    // `match`, a `break;` of the `switch` after them.
-    let leaving = |stmts: &[Stmt]| {
-        let mut stmts = stmts.to_vec();
-        if !stmts.last().is_some_and(js::ends) {
-            stmts.push(StmtKind::Break(None).at(js::Span::NONE));
-        }
-        stmts
-    };
-    let alike = js::stmts_alike;
-    let held = match otherwise {
-        None if alike(rest, next) && then.last().is_some_and(js::ends) => (test.clone(), then.clone()),
-        None if alike(then, next) && rest.last().is_none_or(js::ends) => (test.clone().negated_test(), leaving(rest)),
-        Some(otherwise) if rest.is_empty() && alike(otherwise, next) => (test.clone(), leaving(then)),
-        Some(otherwise) if rest.is_empty() && alike(then, next) => (test.clone().negated_test(), leaving(otherwise)),
-        // `if (guard) { .. } else { next } rest`, its `if` leaving: the
-        // `else` and what follows are the next's, `else if` of three arms
-        // falling, React's getTag (ADR 0905, amended).
-        Some(otherwise) if then.last().is_some_and(js::ends) && alike(&[otherwise.as_slice(), rest].concat(), next) => {
-            (test.clone(), then.clone())
-        }
-        _ => return None,
-    };
-    let (test, then) = held;
-    Some(StmtKind::If(test, then, None).at(first.span))
-}
-
-/// A case's `if (!guard) { break; } ..`, MIR's test of a guard whose
-/// failing goes past the `match`, where what follows leaves: `if (guard) {
-/// .. }`, as the arm is written, its case going on past the `switch` where
-/// the guard fails (ADR 0905, amended); of `a || b`, tested in parts, `if
-/// (!a) { if (!b) { break; } }`, `if (a || b) { .. }`. Only of a guard
-/// written of the arm what follows is written in.
-fn guard_held(stmts: &mut Vec<Stmt>, switches: &[Switch]) {
-    let [first, rest @ ..] = &stmts[..] else {
-        return;
-    };
-    // Of a guard MIR tests in parts, `if (!a) { if (!b) { break; } }`, of
-    // `a || b`: each part.
-    let mut tests = Vec::new();
-    let mut then = std::slice::from_ref(first);
-    while let [
-        Stmt {
-            kind: StmtKind::If(test, inner, None),
-            ..
-        },
-    ] = then
-    {
-        tests.push(test.clone());
-        then = inner;
-    }
-    let Some(test) = tests.into_iter().reduce(|a, b| Expr::bin(Op::And, a, b)) else {
-        return;
-    };
-    let broken = matches!(
-        then,
-        [Stmt {
-            kind: StmtKind::Break(None),
-            ..
-        }]
-    );
-    if !broken || !rest.last().is_some_and(js::ends) {
-        return;
-    }
-    // A guard written of the arm what follows is written in: not `I if
-    // legacy_off => {}` before `I => { .. }`, whose `if (legacyOff) {
-    // break; }` is as written (ADR 0905, amended).
-    let arm = (switches.iter().flat_map(|s| &s.arms))
-        .find(|arm| (arm.guard).is_some_and(|guard| test_at(&test, first.span).is_some_and(|at| within(at, guard))));
-    if !arm.is_some_and(|arm| (rest.iter()).all(|s| written_at(s).is_some_and(|at| within(at, arm.span)))) {
-        return;
-    }
-    let held = StmtKind::If(test.negated_test(), rest.to_vec(), None).at(first.span);
-    *stmts = vec![held];
-}
-
 /// Each `return value;` of a case's `stmts`, outside a loop, a `switch` or
 /// a `try` of their own, that's written past the `match` at `written`,
 /// MIR's copy of the `return` the `switch` is followed by: the case's
@@ -916,11 +796,18 @@ fn chain(
         }
         let negations = parts.into_iter().find_map(|(test, then)| {
             let mut negated = discriminant.clone();
-            let values = values_of(&test, &arm.constants[from..], true, &mut negated)?;
+            let values = match values_of(&test, &arm.constants[from..], true, &mut negated) {
+                Some(values) => vec![(k, values)],
+                None => negated_arms(&test, &left, k, &mut negated)?,
+            };
             Some((values, negated, then))
         });
         if let Some((values, negated, then)) = negations {
-            left.remove(k);
+            let alone = values.len() == 1;
+            let spans: Vec<js::Span> = values.iter().map(|&(at, _)| left[at].0.span).collect();
+            for &(at, _) in values.iter().rev() {
+                left.remove(at);
+            }
             if left.is_empty() || left.iter().any(|&(_, from)| from > 0) {
                 return None;
             }
@@ -933,7 +820,13 @@ fn chain(
                 }
                 None => (Vec::new(), 0),
             };
-            cases.push((values, own, false, arm.span));
+            // Of arms tested together, each does nothing.
+            if !alone && !own.is_empty() {
+                return None;
+            }
+            for ((_, values), span) in values.into_iter().zip(spans) {
+                cases.push((values, own.clone(), false, span));
+            }
             match left[..] {
                 // The last arm's, untested.
                 [(last, _)] => cases.push((
@@ -954,7 +847,26 @@ fn chain(
             let taken = i + 1 + taken;
             return (!whole || taken == stmts.len()).then_some((cases, taken));
         }
-        let (tested, body, held) = guarded(test, then, arm.guard)?;
+        let (tested, mut body, held) = guarded(test, then, arm.guard)?;
+        // Of an arm that falls to the next, whose guard MIR's test joins,
+        // `if ((n === A && on) || ..) { .. } else { next }`, what does
+        // something and goes on: where its guard fails, it goes on to that
+        // `else`, as where its pattern's does, the guard's `if`'s `else`
+        // too, which `fallen` finds is the next case's (rd136).
+        let joined = !js::stmts_alike(then, &body);
+        if arm.falls
+            && joined
+            && let Some(otherwise) = otherwise
+            && !held.last().is_some_and(js::ends)
+            && let [
+                Stmt {
+                    kind: StmtKind::If(_, _, own @ None),
+                    ..
+                },
+            ] = &mut body[..]
+        {
+            *own = Some(otherwise.clone());
+        }
         // The constants it tests: the next of its arm's.
         let mut each = Vec::new();
         alternatives(&tested, Op::Or, &mut each);
@@ -1024,6 +936,37 @@ fn chain(
     // Each arm tested: what's after them isn't the `match`'s, but in an
     // `else`, which nothing reaches.
     (!whole || i == stmts.len()).then_some((cases, i))
+}
+
+/// Of a test `&&` joins of the negated tests of arms in turn, `n !== A &&
+/// n !== B`, each written in its arm's pattern, the arms from `left[k]`
+/// on, of no guard, as MIR tests arms that do nothing, `"value" => {}`,
+/// and tidy joins their `if`s: each one's index in `left` and values, of
+/// two arms or more (rd136).
+fn negated_arms(
+    test: &Expr,
+    left: &[(&SwitchArm, usize)],
+    k: usize,
+    discriminant: &mut Option<Expr>,
+) -> Option<Vec<(usize, Values)>> {
+    let mut tests = Vec::new();
+    alternatives(test, Op::And, &mut tests);
+    let mut arms = Vec::new();
+    let mut t = 0;
+    while t < tests.len() {
+        let at = k + arms.len();
+        let &(arm, from) = left.get(at)?;
+        let n = arm.constants.len().checked_sub(from).filter(|&n| n > 0)?;
+        let part = tests.get(t..t + n)?;
+        let written = |e: &&Expr| test_at(e, js::Span::NONE).is_some_and(|at| within(at, arm.pattern));
+        if arm.guard.is_some() || !part.iter().all(written) {
+            return None;
+        }
+        let joined = (part.iter().map(|&e| e.clone())).reduce(|a, b| Expr::bin(Op::And, a, b))?;
+        arms.push((at, values_of(&joined, &arm.constants[from..], true, discriminant)?));
+        t += n;
+    }
+    (arms.len() > 1).then_some(arms)
 }
 
 /// Whether `stmt` only jumps: a `break`, a `continue`, or a `return` of

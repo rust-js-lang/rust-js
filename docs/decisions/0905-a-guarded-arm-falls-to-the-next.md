@@ -841,3 +841,59 @@ mutations `default-let-start-unread`, `default-let-start-of-no-let`
 (`to_oxc/cases.ts`), `default-pattern-comment-placed-as-code`,
 `default-pattern-comment-after-brace` (`to_oxc/trailing.ts`) and
 `default-pattern-comment-unmarked` (`to_oxc.ts`).
+
+
+## Amendment: a guarded `|` of constants is its cases, the guard's `if` once (rd136, 2026-11-02)
+
+React DOM's diffHydratedProperties writes `case 'value': break; case
+'checked': break; case 'vt-name': case 'vt-update': .. if
+(enableViewTransition) { break; } // Fallthrough default: ..`, ported as
+`"value" => {}`, `"checked" => {}`, `"vt-name" | "vt-update" if
+enable_view_transition => {}` and a `_` that does something. MIR tests a
+guarded or-pattern's alternatives apart, the guard in each, so the arm
+reached the `switch` as `(name === "vt-name" && on) || (name ===
+"vt-update" && on)`, which no case was made of; the arms before it, which
+do nothing, as `name !== "value" && name !== "checked"`, one test of two
+arms; and where the guard calls, as MIR's labeled block, `bb10: { if (name
+=== "vt-name") { if (!on(name)) { break bb10; } } else if (..) .. }`,
+which `decisions` leaves the `switch` (ADR 0364, #221). It printed an `if`
+chain, a label the program never wrote of the last.
+
+- **An arm's paths that end in a test alike are tested once**, `(name ===
+  "vt-name" || name === "vt-update") && on` (`decisions::factored`, ADR
+  0364, amended), as a `|` with a guard is written; `guarded` reads that
+  as the arm's pattern and its guard.
+- **MIR's block of a guarded `|` whose guard calls**, each alternative's
+  `if (!guard) break` and the block's end leaving, is that one test of its
+  arm, `if ((a || b) && on(name)) { .. }` (`switches/guards.rs`'s `guards_once`). The
+  alternatives compare what's matched, so one holds at most, and the guard
+  runs once where one does, as Rust runs it.
+- **A guarded arm that falls to a last `_`**, whose test joins its guard
+  and whose `else` is the `_`'s, has the guard's `if` with that `else`, so
+  `fallen` finds it falls through to the `default`, `if (on) { ..; break;
+  }`; of one constant too, `30 if ENABLE`, React's
+  accumulateSuspenseyCommitOnFiber's `case ViewTransitionComponent: if
+  (enableViewTransition) { .. }`, where its arm does something and goes
+  on, an `if` chain before (the corpus's `guarded_match_ends_function`).
+- **Arms tested negated together**, `n !== A && n !== B`, each of no
+  guard and doing nothing, are each a case (`switches::negated_arms`).
+- **A `continue` MIR made at a case's end in an `if`**, of the loop whose
+  turn the `switch` ends, is the `switch`'s `break`, which goes there too
+  (`made_continues_broken`); a `continue` the program wrote, which has its
+  place, stays.
+
+Case N (ADR 0262): the same tests, made in the same order, each call
+once. Held by the corpus's `switch_guarded_or_pattern` and
+`switch_of_empty_first_arms_in_an_if`, each run against native Rust, and
+the mutations `guards-once-off`, `negated-arms-off`,
+`falling-guard-no-else` and `made-continue-kept` (`switches.ts`),
+`guards-once-guard-unturned` (`switches/guards.ts`, where the guards'
+cases now are, `fallen` and `guard_held` with them),
+`factored-no-suffix` (`decisions.ts`) and `calls-alike-refused`
+(`decisions/calls.ts`), and `tail-returns-of-branches-only-at-the-top`
+(`jumps.ts`) by `guarded_match_ends_function`'s `accumulate_chain`, the
+`if` chain that match was. The model's refusal of a path that calls one
+guard twice has no mutation: a chain it'd take must make the tree's calls
+in the tree's order each way (`tells`), which no chain of such a tree
+does, so what it refuses no corpus case reaches; it stays, as the one bit
+a call is read as would otherwise stand for two answers.

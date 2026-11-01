@@ -27,17 +27,42 @@ impl Model<'_> {
     /// all of them holds of those a program has: `None` where there are
     /// too many, or one it can't tell.
     pub(super) fn of<'e>(arms: &[Arm], calls: &'e [Expr], guards: &[Guard]) -> Option<Model<'e>> {
-        if (0..calls.len()).any(|i| calls[..i].iter().any(|c| c.written_alike(&calls[i]))) {
+        // Calls alike, one call of the model: a guarded or-pattern's guard,
+        // MIR's copy of which each alternative makes, `A | B if on(x)`, of
+        // which a path makes one (rd136). Two a path makes are two calls,
+        // which may say different things: no model.
+        let mut unique: Vec<&'e Expr> = Vec::new();
+        for call in calls {
+            if !unique.iter().any(|c| c.written_alike(call)) {
+                unique.push(call);
+            }
+        }
+        let twice = |path: &Vec<Expr>| {
+            let mut made: Vec<Expr> = Vec::new();
+            for test in path {
+                let mut parts = Vec::new();
+                leaf_tests(test, js::Span::NONE, &mut parts);
+                for (part, _) in parts.into_iter().filter(|(part, _)| !pure(part)) {
+                    if made.iter().any(|m| m.written_alike(part)) {
+                        return true;
+                    }
+                    made.push(part.clone());
+                }
+            }
+            false
+        };
+        if arms.iter().any(|arm| arm.made.iter().any(twice)) {
             return None;
         }
+        let made = (unique.iter())
+            .map(|c| guards.iter().find(|g| !c.span.is_none() && within(c.span, g.span)))
+            .map(|g| g.and_then(|g| g.tested.first().copied()))
+            .collect();
         let mut model = Model {
             subjects: Vec::new(),
             opaque: Vec::new(),
-            calls,
-            made: (calls.iter())
-                .map(|c| guards.iter().find(|g| !c.span.is_none() && within(c.span, g.span)))
-                .map(|g| g.and_then(|g| g.tested.first().copied()))
-                .collect(),
+            calls: unique,
+            made,
             outcomes: Vec::new(),
         };
         let paths: Vec<(usize, &Vec<Expr>)> = (arms.iter().enumerate())
@@ -99,7 +124,7 @@ impl Model<'_> {
         }
         let ways = (model.subjects.iter().map(|s| s.1.len()))
             .try_fold(1usize, |n, cells| n.checked_mul(cells))
-            .and_then(|n| n.checked_shl(u32::try_from(model.opaque.len() + calls.len()).ok()?))
+            .and_then(|n| n.checked_shl(u32::try_from(model.opaque.len() + model.calls.len()).ok()?))
             .filter(|&n| n <= WAYS)?;
         for way in 0..ways {
             let mut rest = way;
@@ -311,7 +336,7 @@ fn merged(paths: &mut Vec<Vec<Expr>>) {
 pub(super) struct Model<'e> {
     subjects: Vec<(Expr, Vec<Set>, Vec<js::Span>)>,
     opaque: Vec<(Expr, Vec<js::Span>)>,
-    calls: &'e [Expr],
+    calls: Vec<&'e Expr>,
     made: Vec<Option<js::Span>>,
     outcomes: Vec<Outcome>,
 }

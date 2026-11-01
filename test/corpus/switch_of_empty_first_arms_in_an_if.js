@@ -35,12 +35,20 @@ function extra(names, transitions) {
   const found = [];
   for (let i = 0; i < names.length; i++) {
     const name = names[i];
-    if (name !== "value" && name !== "checked") {
-      if ((name === "vt-name" && transitions) || (name === "vt-update" && transitions)) {
-        // Expected from the server.
-      } else {
+    switch (name) {
+      case "value":
+        break;
+      case "checked":
+        break;
+      case "vt-name":
+      case "vt-update":
+        if (transitions) {
+          // Expected from the server.
+          break;
+        }
+      // Fallthrough
+      default:
         found.push(name);
-      }
     }
   }
   return found;

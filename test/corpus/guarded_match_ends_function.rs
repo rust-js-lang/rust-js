@@ -1,8 +1,9 @@
-// A function's last `match`, of a guarded arm, so an `if` chain, whose
-// middle arms are each an `if … else` that gives `()`: the chain as
-// written, `} else if (tag === 22) { if (hidden) { // .. } else { .. } }`,
-// no `return;` MIR made, each comment in its own arm (rd93, React's
-// accumulateSuspenseyCommitOnFiber).
+// A function's last `match`, of a guarded arm falling to the `_`, whose
+// middle arms are each an `if … else` that gives `()`: its `switch`, as
+// React's accumulateSuspenseyCommitOnFiber writes it, `case 22: if (hidden)
+// { // .. } else { .. } break;`, no `return;` MIR made, each comment in its
+// own arm (rd93), the guarded case `if (ENABLE) { ..; break; }` falling
+// through to the `default` (rd136).
 use std::cell::Cell;
 
 thread_local! {
@@ -51,13 +52,55 @@ fn accumulate(tag: u8, hidden: bool, resources: bool, n: u32) {
     }
 }
 
+/// Of a guarded arm a later arm goes on from, one that doesn't name its
+/// constant, the `if` chain Rust tries (ADR 0629): `} else if (tag === 22)
+/// { if (hidden) { // .. } else { .. } }`, no `return;` MIR made (rd93).
+fn accumulate_chain(tag: u8, hidden: bool, resources: bool, n: u32) {
+    match tag {
+        0 => {
+            visit(n);
+            if n > 3 {
+                visit(1);
+            }
+        }
+        3 | 4 => {
+            if resources {
+                let previous = ROOT.get();
+                visit(n);
+                ROOT.set(previous);
+            } else {
+                visit(n);
+            }
+        }
+        22 => {
+            if hidden {
+                // Don't suspend in hidden trees
+            } else {
+                visit(n);
+            }
+        }
+        30 if ENABLE => {
+            if n > 1 {
+                visit(2);
+            }
+            visit(n);
+        }
+        40 => visit(4),
+        _ => {
+            visit(n * 100);
+        }
+    }
+}
+
 fn main() {
-    for tag in [0, 3, 4, 22, 30, 7] {
+    for tag in [0, 3, 4, 22, 30, 40, 7] {
         for (hidden, resources) in [(false, false), (true, true), (false, true)] {
             for n in [1, 5] {
                 ROOT.set(0);
                 accumulate(tag, hidden, resources, n);
-                println!("{tag} {hidden} {resources} {n}: {}", ROOT.get());
+                let switched = ROOT.replace(0);
+                accumulate_chain(tag, hidden, resources, n);
+                println!("{tag} {hidden} {resources} {n}: {switched} {}", ROOT.get());
             }
         }
     }

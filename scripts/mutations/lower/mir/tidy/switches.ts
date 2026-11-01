@@ -1,6 +1,7 @@
 // Mutations of src/lower/mir/tidy/switches.rs (ADR 0629).
 import type { Mutation } from "../../../../mutations";
 
+const ORS = ["test/corpus.test.ts", "-t", "^switch_guarded_or_pattern.rs$"];
 const switches = [
   "test/lowering-matches.test.ts",
   "-t",
@@ -156,9 +157,9 @@ export const mutations: Mutation[] = [
     breaks:
       'an arm MIR tests negated, `if (c !== ".")`, keeps the whole `match` an `if` chain',
     file: "src/lower/mir/tidy/switches.rs",
-    find: "            let values = values_of(&test, &arm.constants[from..], true, &mut negated)?;\n",
+    find: "            let values = match values_of(&test, &arm.constants[from..], true, &mut negated) {\n",
     replace:
-      "            let values = values_of(&test, &arm.constants[from..], true, &mut negated).filter(|_| false)?;\n",
+      "            let values = match values_of(&test, &arm.constants[from..], true, &mut negated).filter(|_| false) {\n",
     tests: switches,
   },
   {
@@ -418,19 +419,6 @@ export const mutations: Mutation[] = [
     tests: fallthrough,
   },
   {
-    name: "switch-fallen-guard-goes-on",
-    breaks:
-      "a guard that holds where its arm does nothing goes on to the next case, `if (disableLegacyMode) {}`, not past the `switch`",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "            stmts.push(StmtKind::Break(None).at(js::Span::NONE));\n",
-    replace: "",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(guarded_arm_chains|switch_guard_does_nothing|while_let_at_end)\\.rs$",
-    ],
-  },
-  {
     name: "switch-copied-returns-kept",
     breaks:
       "a `return null` MIR copied into a case of what follows the `match` stays, not the case's `break`: React DOM's validateProperty's `switch (name)` in its guarded `case \"string\"` is an `if` chain of its guard",
@@ -470,33 +458,6 @@ export const mutations: Mutation[] = [
     find: "            && of_guard(test)\n",
     replace: "            && false\n",
     tests: twoGuards,
-  },
-  {
-    name: "switch-default-fallen-refused",
-    breaks:
-      "a guarded case whose chain goes on to the `_`'s statements isn't one that falls to the `default`, so React's `describeFiber` is an `if` chain",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "            ) if then.last().is_some_and(js::ends) => Some(stmt.clone()),\n",
-    replace: "            ) if false => Some(stmt.clone()),\n",
-    tests: [
-      "test/lowering-switch-fallthrough.test.ts",
-      "-t",
-      "falls through to the default",
-    ],
-  },
-  {
-    name: "guard-else-falling-unread",
-    breaks:
-      "a guarded arm whose `if` has the next arm's in its `else`, `if (scope) { .. } else if (tracing) { .. }`, falls to nothing, React's getTag an `if` chain with a labeled block",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "        Some(otherwise) if then.last().is_some_and(js::ends) && alike(&[otherwise.as_slice(), rest].concat(), next) => {\n",
-    replace:
-      "        Some(otherwise) if false && alike(&[otherwise.as_slice(), rest].concat(), next) => {\n",
-    tests: [
-      "test/lowering-switch-fallthrough.test.ts",
-      "-t",
-      "four guarded arms of symbols",
-    ],
   },
   {
     name: "fallen-to-own-case-not-absorbed",
@@ -542,47 +503,6 @@ export const mutations: Mutation[] = [
     replace:
       "        ExprKind::Binary(Op::And, first, _) if test.span.is_none() => test_at(first, span),\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_guard_shares_next.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "and-guard-parts-unjoined",
-    breaks:
-      "a guard of `&&` MIR tests in parts, `if (!a) { if (!b) { break bb22; } }`, isn't a case's guard, so React's finishConcurrentRender is an `if` chain and a label, not its `switch` (ADR 0905, amended)",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "    while otherwise.is_none()\n        && let [part] = &then[..]\n",
-    replace:
-      "    while otherwise.is_some()\n        && let [part] = &then[..]\n",
-    tests: ["test/corpus.test.ts", "-t", "^guarded_arm_chains.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "and-guard-first-part-dropped",
-    breaks:
-      "a guard of `&&` tested in parts is its last part alone, `if (!onlyRetries(lanes))`, a wrong answer where the first fails (ADR 0905, amended)",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "        (test, then) = (Expr::bin(Op::And, test, t.clone()), inner);\n",
-    replace: "        (test, then) = (t.clone(), inner);\n",
-    tests: ["test/corpus.test.ts", "-t", "^guarded_arm_chains.rs$"],
-  },
-  {
-    name: "guard-parts-unjoined",
-    breaks:
-      "a guard of `||` MIR tests in parts, `if (!legacy) { if (lanes === 0) { break; } }`, stays so, not the arm's `if (legacy || lanes !== 0) { .. }` (ADR 0905, amended)",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "        tests.push(test.clone());\n        then = inner;\n",
-    replace:
-      "        tests.push(test.clone());\n        then = inner;\n        break;\n",
-    tests: ["test/corpus.test.ts", "-t", "^switch_guard_shares_next.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "guard-held-of-a-joined-arm",
-    breaks:
-      "`I if legacy_off => {}` before `I => { .. }`, React's completeWork's `case I: if (legacyOff) { break; } ..`, is turned, `if (!legacyOff) { .. } break;` (ADR 0905, amended)",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "    if !arm.is_some_and(|arm| (rest.iter()).all(|s| written_at(s).is_some_and(|at| within(at, arm.span)))) {\n",
-    replace: "    if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^switch_guard_does_nothing.rs$"],
     snapshots: true,
   },
   {
@@ -711,6 +631,46 @@ export const mutations: Mutation[] = [
     find: "        ExprKind::Var(_) | ExprKind::ItemHole(_) | ExprKind::Symbol(_) => true,\n",
     replace: "        ExprKind::Var(_) | ExprKind::ItemHole(_) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_case_of_a_read.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "guards-once-off",
+    breaks:
+      "MIR's block of a guarded `|` whose guard calls, `bb10: { if (name === \"vt-name\") { if (!on(name)) { break bb10; } } .. }`, stays, a label the program never wrote, and no `switch` (rd136)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "    js::statement_lists(body, &mut |list| guards_once(list, switches));\n",
+    replace: "",
+    tests: ORS,
+    snapshots: true,
+  },
+  {
+    name: "negated-arms-off",
+    breaks:
+      "arms that do nothing tested negated together, `name !== \"value\" && name !== \"checked\"`, make no `switch`, an `if` chain (rd136)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "                None => negated_arms(&test, &left, k, &mut negated)?,\n",
+    replace: "                None => negated_arms(&test, &left, k, &mut negated).filter(|_| false)?,\n",
+    tests: ORS,
+    snapshots: true,
+  },
+  {
+    name: "falling-guard-no-else",
+    breaks:
+      "a guarded `|` falling to a last `_`, its test joining its guard, `(a === 3 || a === 4) && on`, makes no `switch`, as its guard's `if` has no `else` the `default` is (rd136)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "            *own = Some(otherwise.clone());\n",
+    replace: "            let _ = (own, otherwise);\n",
+    tests: ORS,
+    snapshots: true,
+  },
+  {
+    name: "made-continue-kept",
+    breaks:
+      "a guarded case of a `switch` that ends a loop's turn keeps MIR's `continue;`, `if (on(name)) { continue; }`, not the `break;` written (rd136)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "                last.kind = StmtKind::Break(None);\n",
+    replace: "                let _ = &last;\n",
+    tests: ORS,
     snapshots: true,
   },
 ];

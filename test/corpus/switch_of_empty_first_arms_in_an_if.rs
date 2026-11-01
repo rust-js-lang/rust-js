@@ -2,8 +2,8 @@
 // its `switch`, React DOM's updateProperties' `switch (propKey) { case
 // 'checked': break; case 'value': // .. break; case 'defaultValue': .. }`,
 // not that arm's test joined to the `if`'s, `&& key !== "checked"`, and
-// the rest an `if` chain. Where no `switch` is made, a guarded arm's,
-// the tests are one `if`'s still.
+// the rest an `if` chain; and of empty arms before a guarded `|`, each
+// its case, the guard's `if` once (rd136).
 
 fn updated(keys: &[&str], next: &[&str], log: &mut Vec<String>) {
     for &key in keys {

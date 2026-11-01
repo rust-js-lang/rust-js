@@ -13,6 +13,50 @@ function visit(n) {
 const ENABLE = true;
 
 function accumulate(tag, hidden, resources, n) {
+  switch (tag) {
+    case 0:
+      visit(n);
+      if (n > 3) {
+        visit(1);
+      }
+      break;
+    case 3:
+    case 4:
+      if (resources) {
+        const previous = root;
+        visit(n);
+        root = previous;
+      } else {
+        visit(n);
+      }
+      break;
+    case 22:
+      if (hidden) {
+        // Don't suspend in hidden trees
+      } else {
+        visit(n);
+      }
+      break;
+    case 30:
+      if (ENABLE) {
+        if (n > 1) {
+          visit(2);
+        }
+        visit(n);
+        break;
+      }
+    // Fallthrough
+    default:
+      visit((n * 100) >>> 0);
+  }
+}
+
+/**
+ * Of a guarded arm a later arm goes on from, one that doesn't name its
+ * constant, the `if` chain Rust tries (ADR 0629): `} else if (tag === 22)
+ * { if (hidden) { // .. } else { .. } }`, no `return;` MIR made (rd93).
+ */
+function accumulateChain(tag, hidden, resources, n) {
   if (tag === 0) {
     visit(n);
     if (n > 3) {
@@ -32,18 +76,25 @@ function accumulate(tag, hidden, resources, n) {
     } else {
       visit(n);
     }
-  } else if (tag === 30 && ENABLE) {
-    if (n > 1) {
-      visit(2);
-    }
-    visit(n);
   } else {
+    if (tag === 30) {
+      if (ENABLE) {
+        if (n > 1) {
+          visit(2);
+        }
+        visit(n);
+        return;
+      }
+    } else if (tag === 40) {
+      visit(4);
+      return;
+    }
     visit((n * 100) >>> 0);
   }
 }
 
 function main() {
-  for (const tag of [0, 3, 4, 22, 30, 7]) {
+  for (const tag of [0, 3, 4, 22, 30, 40, 7]) {
     for (const [hidden, resources] of [
       [false, false],
       [true, true],
@@ -52,7 +103,10 @@ function main() {
       for (const n of [1, 5]) {
         root = 0;
         accumulate(tag, hidden, resources, n);
-        console.log(`${tag} ${hidden} ${resources} ${n}: ${root}`);
+        const switched = root;
+        root = 0;
+        accumulateChain(tag, hidden, resources, n);
+        console.log(`${tag} ${hidden} ${resources} ${n}: ${switched} ${root}`);
       }
     }
   }

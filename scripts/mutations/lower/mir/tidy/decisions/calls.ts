@@ -38,4 +38,14 @@ export const mutations: Mutation[] = [
     tests: CALLS,
     snapshots: true,
   },
+  {
+    name: "calls-alike-refused",
+    breaks:
+      "a guarded `|`'s guard that calls, MIR's copy in each alternative, is two calls of the model, which refuses the tree: `Some(1) | None if on(..)` is MIR's labeled block (rd136)",
+    file: "src/lower/mir/tidy/decisions/calls.rs",
+    find: "        if arms.iter().any(|arm| arm.made.iter().any(twice)) {\n",
+    replace: "        if unique.len() < calls.len() || arms.iter().any(|arm| arm.made.iter().any(twice)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_guarded_or_pattern.rs$"],
+    snapshots: true,
+  },
 ];

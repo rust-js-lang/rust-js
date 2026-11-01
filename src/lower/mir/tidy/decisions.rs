@@ -402,7 +402,10 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt], told: 
 /// An arm's test of its `paths`, the tests of each: what each tests first
 /// alike, once, before the rest of each, `n >= 1 && (a === 1 || b === 1)`,
 /// not `n >= 1 && a === 1 || n >= 1 && b === 1`, as the tests are pure
-/// (#221); and each tried as `alternatives` says.
+/// (#221); what each tests last alike, once, after, a guarded or-pattern's
+/// guard MIR tests of each alternative, `(n === 1 || n === 2) && on`, not
+/// `(n === 1 && on) || (n === 2 && on)`, as `A | B if on` is written
+/// (rd136); and each tried as `alternatives` says.
 fn factored(mut paths: Vec<Vec<Expr>>) -> Expr {
     let shared = match paths.split_first() {
         Some((first, others)) if !others.is_empty() => (0..first.len())
@@ -417,13 +420,27 @@ fn factored(mut paths: Vec<Vec<Expr>>) -> Expr {
     for path in &mut paths {
         path.drain(..shared);
     }
+    let last = match paths.split_first() {
+        Some((first, others)) if !others.is_empty() => (1..first.len())
+            .take_while(|&t| {
+                (others.iter())
+                    .all(|path| path.len() > t && path[path.len() - t].written_alike(&first[first.len() - t]))
+            })
+            .count(),
+        _ => 0,
+    };
+    let after: Vec<Expr> = paths
+        .first()
+        .map(|path| path[path.len() - last..].to_vec())
+        .unwrap_or_default();
+    for path in &mut paths {
+        path.truncate(path.len() - last);
+    }
     alternatives(&mut paths);
-    match before.is_empty() {
-        true => any(paths.into_iter().map(all).collect()),
-        false => all(before
-            .into_iter()
-            .chain([any(paths.into_iter().map(all).collect())])
-            .collect()),
+    let either = any(paths.into_iter().map(all).collect());
+    match before.is_empty() && after.is_empty() {
+        true => either,
+        false => all(before.into_iter().chain([either]).chain(after).collect()),
     }
 }
 

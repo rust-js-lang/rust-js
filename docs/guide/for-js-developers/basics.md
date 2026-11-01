@@ -1635,7 +1635,12 @@ comments keeps them in its `default`
 ([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md), amended);
 or where it's a last `_` that does something, a case that falls through
 to the `default`
-([ADR 0636](../../decisions/0636-a-guarded-arm-is-a-case.md), amended); and
+([ADR 0636](../../decisions/0636-a-guarded-arm-is-a-case.md), amended), of
+a guarded `|`, `"vt-name" | "vt-update" if on(name)`, its stacked
+`case`s and the guard's `if` once, `if (on(name)) { break; }`, as
+React DOM's diffHydratedProperties writes it, arms before it that do
+nothing each `case "value": break;`
+([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md), amended); and
 of a guard that fails past the `match`, `"LINK" if keep => continue, _ =>
 {}` and then `remove(node)`, a `switch` with no `default`, what follows the
 `match` after it, `case "LINK": if (keep) { continue; } } remove(node);`,
@@ -1647,7 +1652,9 @@ of two cases, is an `if` chain ([ADR 0014](../../decisions/0014-match-lowering.m
 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md)), a guard
 that calls made where Rust makes it and no other time, `[n, ..] if
 below(*n)`'s `row.length >= 1 && below(row[0])`, `(1, x) | (x, 1) if
-odd(x)`'s `(a === 1 && odd(b)) || (b === 1 && odd(a))`
+odd(x)`'s `(a === 1 && odd(b)) || (b === 1 && odd(a))`, a guard each
+alternative tests alike tested once, `Some(1) | None if on(x)`'s `(value
+== null || value === 1) && on(x)`
 ([ADR 0364](../../decisions/0364-mir-lowering.md), amended); and one
 whose value is read in place, `f(match n { .. })`, is a `?:`, as JS has
 no `switch` expression. An arm that names a `const` tests it by its name,

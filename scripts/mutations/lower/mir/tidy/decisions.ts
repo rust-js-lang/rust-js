@@ -321,4 +321,14 @@ export const mutations: Mutation[] = [
     replace: "            && then.iter().zip(otherwise)",
     tests: ["test/lowering-switches.test.ts", "-t", "arms are alike"],
   },
+  {
+    name: "factored-no-suffix",
+    breaks:
+      "a guarded `|`'s guard, which each path ends with, is tested of each, `(a === 1 && on) || (a === 2 && on)`, so no `switch` is made of it, not `(a === 1 || a === 2) && on` (rd136)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "        Some((first, others)) if !others.is_empty() => (1..first.len())\n",
+    replace: "        Some((first, others)) if !others.is_empty() => (1..1)\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_(guarded_or_pattern|of_empty_first_arms_in_an_if).rs$"],
+    snapshots: true,
+  },
 ];
