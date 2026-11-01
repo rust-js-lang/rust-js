@@ -952,9 +952,10 @@ consumer may hold a borrow of one while the library's code runs, and the
 library has only its contract's types to say so. So in a library, a
 borrow of a cell `TOP` reaches is quiet only where its type is, as
 before. Only its own cells, which no consumer reaches, are each their
-class. `unchecked` is each type the library borrows quietly of a cell
-`TOP` reaches, or whose class isn't known. A borrow of a cell only the
-library's code reaches is never a consumer's, so it isn't listed.
+class. `unchecked` is, as before, each type quiet by its type that the
+library borrows of a cell `TOP` reaches, or whose class isn't known. A
+borrow of a cell only the library's code reaches is never a consumer's,
+so its type isn't listed for it.
 React's reconciler holds a `RefCell<Vec<Rc<Fiber>>>` of its own across
 code. Were its shared cells of that type unchecked, React DOM, which holds
 one across the reconciler's code, would be refused.

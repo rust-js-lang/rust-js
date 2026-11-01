@@ -122,12 +122,11 @@ impl<'tcx> RefCells<'tcx> {
         let tcx = recognition.tcx;
         let shapes = |tys: &HashSet<Ty<'tcx>>| crate::lower::library::shapes(tcx, tys.iter().copied());
         // Of a cell that may be a consumer's, one it reaches: a borrow of one
-        // only the library's code reaches is never one of the consumer's.
+        // only the library's code reaches is never one of the consumer's. A
+        // library's borrow of one is quiet only where its type is
+        // (`quiet_class`), so its type says.
         let unchecked: HashSet<Ty<'tcx>> = (self.borrowed.iter())
-            .filter(|&&ty| {
-                self.quiet(recognition, borrows, (ty, true), drops)
-                    || self.quiet_class(recognition, borrows, (ty, CellClass::Anything), drops)
-            })
+            .filter(|&&ty| self.quiet(recognition, borrows, (ty, true), drops))
             .copied()
             .collect();
         crate::library::RefCellFacts {
