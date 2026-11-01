@@ -927,6 +927,26 @@ test("a binding's optional argument is an Option of its one function", () => {
   // It reads every binding crate, 1 s alone: past 5 s beside check:fast's other jobs.
 }, 30_000);
 
+// \`JSON.stringify(value)\` is \`json::stringify(value)\`, one way: not
+// \`stringify_with(value, None, 0)\`, of neither a replacer nor an
+// indentation, which wrote \`JSON.stringify(value, null, 0)\` (ADR 0102,
+// amended).
+test("JSON of no replacer and no indentation is stringify's", () => {
+  // Each decision is as it was decided, a later one amending it.
+  const sources = ["builtins", "webapi/src", "react/src", "node/src", "next/src", "test", "examples", "docs/guide"]
+    .flatMap(files)
+    .filter((f) => /\.(rs|ts|md)$/.test(f) && !f.includes("/node_modules/") && f !== "test/architecture.test.ts");
+  const neither = /stringify_with\(((?:[^()]|\((?:[^()]|\([^()]*\))*\))*?),\s*None,\s*0\s*\)/g;
+  const found = (file: string, text: string) =>
+    [...text.matchAll(neither)].map((m) => `${file}: \`${m[0].replace(/\s+/g, " ")}\` is \`json::stringify(${m[1].trim()})\``);
+  expect(sources.length).toBeGreaterThan(400);
+  expect(sources.flatMap((file) => found(file, read(file)))).toEqual([]);
+  expect(found("planted.rs", "json::stringify_with(js::unknown(&[a, b]), None, 0)")).toEqual([
+    "planted.rs: `stringify_with(js::unknown(&[a, b]), None, 0)` is `json::stringify(js::unknown(&[a, b]))`",
+  ]);
+  expect(found("planted.rs", "json::stringify_with(value, None, 2)")).toEqual([]);
+});
+
 test("only recognition spells std's names", () => {
   const strays: string[] = [];
   for (const file of ["src/lower.rs", ...files("src/lower")].filter(f => !f.includes("/recognition") && !f.endsWith("/shortcuts.rs"))) {
