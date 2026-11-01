@@ -630,3 +630,19 @@ test of a `bool`, `Some(false) => ..`, is now folded as a number's is
 (`mir/patterns.rs::mir_payload_tests`, ADR 0629 amended): its test is
 exact, so no `None` passes it. Case ([0262](0262-when-rust-and-js-disagree.md)):
 N, the same values compare equal.
+
+## Amended (2026-11-01): `typeof x === "boolean" && x` is `x === true` (rd444)
+
+A match of `Kind::Bool(true)` on a value of any shape tests its `typeof`
+and then its payload's truth. That's `typeof x === "boolean" && x`, which
+a function's value made `!!(..)`, behind a `const` for the two reads.
+React's isRecoverableError writes `error[REACT_RECOVERABLE_TYPE] === true`.
+**`typeof x === "boolean" && x` is `x === true`, and `typeof x ===
+"boolean" && !x` is `x === false`, of a place read twice with nothing run
+between, as `typeof p === "function" && p != null` is its test**
+(`Expr::bin`). The value is the other's for every `x`: `false` of what's
+not a boolean, and the boolean otherwise. Case
+([0262](0262-when-rust-and-js-disagree.md)): N. Held by
+`test/js-any-values.test.ts` ("a value of any shape that's true is ===
+true") and the mutations `typeof-boolean-and-kept` and
+`typeof-boolean-not-flipped`.

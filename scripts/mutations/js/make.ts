@@ -5,6 +5,22 @@ const pieces = ["test/lowering-strings.test.ts", "-t", "a format string of a con
 
 export const mutations: Mutation[] = [
   {
+    name: "typeof-boolean-and-kept",
+    breaks: "React's isRecoverableError is `!!(typeof kind === \"boolean\" && kind)`, not `error[REACT_RECOVERABLE_TYPE] === true` (rd444)",
+    file: "src/js/make.rs",
+    find: "            if super::same_path(x, y) {\n                return Expr::bin(Op::Eq, (**x).clone(), Expr::bool(truth));\n",
+    replace: "            if super::same_path(x, y) && false {\n                return Expr::bin(Op::Eq, (**x).clone(), Expr::bool(truth));\n",
+    tests: ["test/js-any-values.test.ts", "-t", "that's true is === true"],
+  },
+  {
+    name: "typeof-boolean-not-flipped",
+    breaks: "`Kind::Bool(false)`'s `typeof x === \"boolean\" && !x` is `x === true`, wrong of every value",
+    file: "src/js/make.rs",
+    find: "                ExprKind::Unary(UnaryOp::Not, y) => (&**y, false),\n",
+    replace: "                ExprKind::Unary(UnaryOp::Not, y) => (&**y, true),\n",
+    tests: ["test/js-any-values.test.ts", "-t", "that's true is === true"],
+  },
+  {
     name: "presence-of-a-made-option",
     breaks: "`kind.object().is_some()` is `!!(t ? value : undefined)`, not the test it's made by (ADR 0910)",
     file: "src/js/make.rs",

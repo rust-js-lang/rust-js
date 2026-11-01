@@ -69,6 +69,34 @@ pub fn same(a: Option<&Unknown>, b: Option<&Unknown>) -> bool {
   expect([lib.same(null, undefined), lib.same(undefined, 0), lib.same("1", true), lib.same(null, false)]).toEqual([true, false, true, false]);
 });
 
+// rd444: \`Kind::Bool(true)\` of a value of any shape is \`x === true\`, as
+// React's isRecoverableError writes \`error[REACT_RECOVERABLE_TYPE] === true\`,
+// not \`!!(typeof x === "boolean" && x)\`, its match's \`typeof\` and its
+// payload's truth; \`Kind::Bool(false)\` \`x === false\`.
+test("a value of any shape that's true is === true", async () => {
+  const { js, lib } = await compiled("js-kind-bool", `use js::{Kind, Unknown};
+
+pub fn branded(error: Option<&'static Unknown>) -> bool {
+    matches!(js::classify(js::get(error, "brand")), Kind::Bool(true))
+}
+
+pub fn off(value: Option<&'static Unknown>) -> bool {
+    matches!(js::classify(value), Kind::Bool(false))
+}
+
+pub fn flag(value: Option<&'static Unknown>) -> bool {
+    matches!(js::classify(value), Kind::Bool(_))
+}
+`);
+  expect(js).toContain("  return error.brand === true;\n");
+  expect(js).toContain("  return value === false;\n");
+  expect(js).toContain('  return typeof value === "boolean";\n');
+  const values = [true, false, 1, 0, "true", "", null, undefined, {}];
+  expect(values.map((brand) => lib.branded({ brand }))).toEqual(values.map((v) => v === true));
+  expect(values.map(lib.off)).toEqual(values.map((v) => v === false));
+  expect(values.map(lib.flag)).toEqual(values.map((v) => typeof v === "boolean"));
+});
+
 // React's ReactDOMEventReplaying walks its form replaying queue, a JS
 // array, three items at a time, `formReplayingQueue[i + 1]`, `i += 3`: an
 // `f64` is a property key, TypeScript's `number`, as ADR 0994 gives

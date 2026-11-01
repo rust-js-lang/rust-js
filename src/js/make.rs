@@ -755,6 +755,24 @@ impl Expr {
         if let Some(strict) = null_apart(op, &lhs, &rhs) {
             return strict;
         }
+        // `typeof x === "boolean" && x` is `x === true`, and `&& !x` is `x
+        // === false`: each the value of the other, of any `x`, a place read
+        // twice with nothing run between the same value, as an untagged
+        // `Kind::Bool(true)`'s match tests it (rd444).
+        if op == Op::And
+            && let ExprKind::Binary(Op::Eq, kind, name) = &lhs.kind
+            && let ExprKind::Unary(UnaryOp::Typeof, x) = &kind.kind
+            && matches!(&name.kind, ExprKind::Str(t) if t == "boolean")
+            && super::stmt_walk::taken_place(x)
+        {
+            let (y, truth) = match &rhs.kind {
+                ExprKind::Unary(UnaryOp::Not, y) => (&**y, false),
+                _ => (&rhs, true),
+            };
+            if super::same_path(x, y) {
+                return Expr::bin(Op::Eq, (**x).clone(), Expr::bool(truth));
+            }
+        }
         // `0 < 0` is `false`: a comparison of two numbers written out is its
         // answer, as a person writes it.
         if let (ExprKind::Num(a), ExprKind::Num(b)) = (&lhs.kind, &rhs.kind) {
