@@ -580,6 +580,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     _ => return None,
                 };
+                // Not one that may be a `function::with_this` function that
+                // reads `js::arguments()`, which counts what JS gives it (rd509).
+                if callee != Callee::Own && self.krate.reads_arguments.may_call(self.tcx, thir[args[1]].ty) {
+                    return None;
+                }
                 let given = match thir[super::body_queries::strip(thir, args[1])].kind {
                     ExprKind::Tuple { ref fields } if leaves_out(fields) => return None,
                     ExprKind::Tuple { ref fields } => fields.is_empty(),

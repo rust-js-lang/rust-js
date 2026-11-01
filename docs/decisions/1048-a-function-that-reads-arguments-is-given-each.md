@@ -1,6 +1,6 @@
 # 1048. A function that reads `js::arguments()` is given each argument
 
-Status: Accepted. The user's decision (2026-11-01, rd332, option A).
+Status: Accepted. The user's decision (2026-11-01, rd332, option A). Amended (rd509): a `function::with_this` function's own.
 Extends [0313](0313-console-forms.md)'s and
 [0443](0443-a-value-a-caller-may-leave-out-is-an-option.md)'s trailing
 `undefined`s, and [0605](0605-an-arrow-that-passes-on-has-one-owner.md)'s
@@ -125,3 +125,26 @@ LinearGradient.prototype.applyFill = function (node) {
   `arguments-own-call-left-out` (`mir/calls.rs`),
   `arguments-pointer-left-out` (`mir/dispatch.rs`), `arguments-forwarded`
   (`passed_on.rs`) and `contract-arguments-unsaid` (`library.rs`).
+
+## Amendment: a `function::with_this` function's own (rd509)
+
+ReactFlightReplyClient's server reference `bind` and both `action`s read
+`arguments`, and they close over `id`, `callServer` and `bound`, so the
+refusal's "read it in the function around" can't apply. A closure
+`function::with_this` makes is a JS `function`, not an arrow, so its
+`arguments` is its own. **`js::arguments()` is read directly in its body**,
+and each call of a `dyn Fn`, a generic one or a pointer, of the same
+parameters' tuple gives every argument (`ReadsArguments::may_call`, in
+`mir/calls.rs`). A forwarding closure to one of those isn't it either
+(`passed_on`; an array method's generic callback, given the index and the
+array too, is the case that matters). Case: as above, preserve Rust's.
+
+Not yet: a library's `with_this` function that reads it, called by a
+consumer through its `dyn Fn` with a trailing `None`. ReplyClient's take
+no parameters, and JS calls them.
+
+Held by `test/arguments.test.ts`' `counter`, called by JS with two
+arguments and by Rust with one `None`, and forwarded to, and the mutations
+`with-this-arguments-refused` (`analysis/arguments.rs`) and
+`with-this-call-left-out` (`mir/calls.rs`).
+

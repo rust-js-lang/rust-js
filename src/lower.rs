@@ -384,7 +384,7 @@ struct CrateFacts<'a, 'tcx> {
     never_unwinding: &'a HashSet<DefId>,
     /// The functions that read `js::arguments()`, each call of which gives
     /// every argument the Rust does (rd332).
-    reads_arguments: &'a HashSet<DefId>,
+    reads_arguments: &'a analysis::arguments::ReadsArguments<'tcx>,
     /// Whether a `Vec`'s capacity is kept, as the crate or a library it uses
     /// asks it (ADR 0419).
     keeps_capacity: bool,

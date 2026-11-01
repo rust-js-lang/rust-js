@@ -1456,7 +1456,7 @@ pub fn lower_crate<'tcx>(
                         no_drops: &no_drops,
                         type_facts: &type_facts,
                         caller_locations: &caller_locations,
-                        reads_arguments: &reads_arguments,
+                        reads_arguments: &reads_arguments.functions,
                         keeps_capacity,
                         writers_take_options,
                         makes_dropping_anys: closure_facts.any_dyns_drop,

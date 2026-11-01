@@ -401,9 +401,10 @@ export function LinearGradient(stops, x1, y1) {
 - **Each call rust-js writes of it gives every argument**, an `undefined`
   too, and no closure that passes its arguments on to it is it.
 - **Only where its JS's `arguments` is the Rust's**: a function of the
-  crate's that isn't generic, or a class's constructor, method or static.
-  In a closure, a generic function, a trait's method or a method of what
-  isn't a class it's a compile error.
+  crate's that isn't generic, a class's constructor, method or static, or
+  a `function::with_this` closure, a JS `function`. In another closure, a
+  generic function, a trait's method or a method of what isn't a class
+  it's a compile error.
 - **A binding's method as a value** is a getter of it, `#[link_name = "get
   fillLinear"] fn fill_linear(&self) -> &'static dyn Fn(..)`, given to
   `function::apply`, `node.fillLinear.apply(node, this.args)`.

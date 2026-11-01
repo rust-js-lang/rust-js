@@ -1114,4 +1114,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/arguments.test.ts"],
   },
+  {
+    name: "with-this-call-left-out",
+    breaks: "a call of a `dyn Fn` that may be a `with_this` function reading `js::arguments()` leaves out its trailing `undefined` (rd509)",
+    file: "src/lower/mir/calls.rs",
+    find: "            false if self.krate.reads_arguments.may_call(self.tcx, arg_tys[1]) => {\n",
+    replace: "            false if false => {\n",
+    tests: ["test/arguments.test.ts"],
+  },
 ];

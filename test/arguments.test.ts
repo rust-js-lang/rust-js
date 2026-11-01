@@ -103,6 +103,23 @@ pub fn rebound() -> Box<dyn Fn(Option<&'static Unknown>) -> Option<&'static Unkn
     Box::new(move |first| g(first))
 }
 
+/// A \`function::with_this\` function, a JS \`function\`, whose \`arguments\`
+/// is its own (rd509).
+pub fn counter() -> &'static dyn Fn(Option<&'static Unknown>) -> Option<&'static Unknown> {
+    function::with_this(|_, (_first,): (Option<&'static Unknown>,)| js::get(js::arguments(), "length"))
+}
+
+/// Called through its \`dyn Fn\`, given every argument.
+pub fn counted_by_value() -> Option<&'static Unknown> {
+    counter()(None)
+}
+
+/// A closure that passes on to it what it's given, an arrow.
+pub fn forwarding_value() -> Box<dyn Fn(Option<&'static Unknown>) -> Option<&'static Unknown>> {
+    let f = counter();
+    Box::new(move |first| f(first))
+}
+
 /// Through a pointer, every argument too.
 pub fn pointed() -> Option<&'static Unknown> {
     let f: fn(Option<&Unknown>, Option<&Unknown>) -> Option<&'static Unknown> = given;
@@ -129,7 +146,7 @@ test("a function that reads arguments names its parameters and is given each", a
   new lib.LinearGradient("stops", 1).applyFill(node);
   lib.made().applyFill(node);
   expect(seen).toEqual([["stops", 1, 2, 3, 4, 5], ["stops", 1], [undefined, undefined, undefined, undefined, undefined]]);
-  expect([lib.counted(), lib.pointed(), lib.given(1, 2, 3), lib.passing()(1, 2, 3), lib.captured(1)(2, 3), lib.COUNTER.count(1, 2), lib.rebound()(1, 2)]).toEqual([2, 2, 3, 2, 2, 1, 1]);
+  expect([lib.counted(), lib.pointed(), lib.given(1, 2, 3), lib.passing()(1, 2, 3), lib.captured(1)(2, 3), lib.COUNTER.count(1, 2), lib.rebound()(1, 2), lib.counter()(1, 2), lib.countedByValue(), lib.forwardingValue()(1, 2)]).toEqual([2, 2, 3, 2, 2, 1, 1, 2, 1, 1]);
 });
 
 test("arguments read where its JS's aren't the Rust's is refused", () => {

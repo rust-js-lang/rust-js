@@ -1214,6 +1214,16 @@ pub(in crate::lower) fn js_root_fn(tcx: TyCtxt<'_>, did: DefId) -> Option<rustc_
     .then(|| tcx.item_name(did))
 }
 
+/// Whether `id` is `js::function::with_this`, a JS `function` of a
+/// closure, whose `arguments` is its own (rd509).
+pub(in crate::lower) fn is_with_this(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.crate_name(id.krate).as_str() == "js"
+        && tcx.item_name(id).as_str() == "with_this"
+        && tcx
+            .opt_parent(id)
+            .is_some_and(|module| tcx.item_name(module).as_str() == "function")
+}
+
 /// Whether `did` is `js::Class`, a constructor function, typed by its
 /// signature or not (ADRs 0761, 1009).
 pub(in crate::lower) fn is_js_class(tcx: TyCtxt<'_>, did: DefId) -> bool {

@@ -174,6 +174,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let absent = |i, arg: &Expr| crate::lower::calls::absent(self.tcx, &tys, &[], i, arg);
         match own {
+            // One that may be a `function::with_this` function that reads
+            // `js::arguments()`: every argument (rd509).
+            false if self.krate.reads_arguments.may_call(self.tcx, arg_tys[1]) => {
+                crate::lower::calls::given_to_js(&mut exprs)
+            }
             true => crate::lower::calls::own_absent(&mut exprs, absent),
             false => crate::lower::calls::given_to_js_but(&mut exprs, absent),
         }

@@ -150,7 +150,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// does, `given_to_js`'s, and no closure that forwards to it is it, as
     /// its JS caller's arguments would be its (rd332).
     pub(super) fn reads_arguments(&self, def_id: DefId) -> bool {
-        self.krate.reads_arguments.contains(&def_id) || self.krate.foreign.reads_arguments(def_id)
+        self.krate.reads_arguments.functions.contains(&def_id) || self.krate.foreign.reads_arguments(def_id)
     }
 
     /// Refused, a call each owner says JS can't make as Rust does: of a

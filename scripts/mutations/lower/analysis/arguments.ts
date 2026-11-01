@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "arguments-unread",
     breaks: "a function that reads `js::arguments()` isn't one, so its calls leave out a trailing `undefined` and a closure that forwards to it is it, `new LinearGradient()` (rd332)",
     file: "src/lower/analysis/arguments.rs",
-    find: "            None => _ = reading.insert(body.def_id),\n",
+    find: "            None => _ = reading.functions.insert(body.def_id),\n",
     replace: "            None => {}\n",
     tests: ["test/arguments.test.ts"],
   },
@@ -40,6 +40,14 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/arguments.rs",
     find: "        None if tcx.associated_item(def_id).is_method() => Some(\n",
     replace: "        None if false => Some(\n",
+    tests: ["test/arguments.test.ts"],
+  },
+  {
+    name: "with-this-arguments-refused",
+    breaks: "`js::arguments()` in a `function::with_this` function, a JS `function` whose `arguments` is its own, is refused as an arrow's (rd509)",
+    file: "src/lower/analysis/arguments.rs",
+    find: "        if let Some(&params) = functions_made.get(&body.def_id) {\n",
+    replace: "        if let Some(&params) = functions_made.get(&body.def_id).filter(|_| false) {\n",
     tests: ["test/arguments.test.ts"],
   },
 ];
