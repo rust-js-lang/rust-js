@@ -2,6 +2,7 @@
 
 Status: Accepted. Amended (the user's decision): a dependency's module
 is imported by its package's subpath where its `exports` resolves it.
+Amended: so is a crate's own module whose JS is in another package.
 Amends [0031](0031-consts.md), whose `const` of
 another crate was its value, written in place, and
 [0100](0100-separate-crates.md), whose consumer imported a library's
@@ -152,3 +153,49 @@ as without, beside a binding's `../../a.js` and `../../t.js`. Mutations
 `package-subpath-pattern-shortest`, `package-subpath-exact-key-unread`,
 `package-subpath-segments-unchecked` (`packages.rs`) and
 `package-subpath-unread` (`library.rs`).
+
+## Amendment: a crate's own module in another package by that package's subpath
+
+React port gap rd434, the user's rd349 decision extended (taken on their
+behalf while away, logged). Case ([0262](0262-when-rust-and-js-disagree.md)):
+none, as above: the specifier and the file are one module.
+
+React DOM's crate declares a module whose file is in `packages/shared`,
+`#[path = "../shared/ReactDOMFragmentRefShared.rs"]`, as upstream keeps
+the file shared with Fabric there. Its JS goes beside it, in `shared`'s
+package, and the crate's other modules imported it by its file,
+`'../../../shared/ReactDOMFragmentRefShared.js'`, where upstream writes
+`'shared/ReactDOMFragmentRefShared'`. "A crate's own modules are imported
+by their relative `.js` path" held only of a module in the importer's
+own package.
+
+**A crate's module whose JS goes in source in another package than the
+importing module's, the `package.json` nearest above each, as Node's
+`LOOKUP_PACKAGE_SCOPE` finds it, is imported by that package's name and
+subpath where its `exports` resolves the subpath to the module's JS and
+Node finds the package from the importing module's, as a dependency's
+module is.** One in the importer's own package, or where either fails, is
+imported by its file, as before; so is each of a file compiled alone,
+whose JS no host writes in source.
+
+- **One owner**: `packages.rs` answers which package a file is of
+  (`packages::scope`), with the same subpath resolution as a dependency's
+  (`subpath`, shared with `subpaths`); `output.rs` asks it of each module
+  where its JS goes in source and chooses the specifier
+  (`scope_specifier`), for its JS, its `.d.ts` and an `import()` alike.
+- **Inputs**: each other package's `package.json` is of what the build
+  read, so an edit of its `exports` builds the crate again.
+- **Order**: as a dependency's, by its file's specifier,
+  `js::Import::ordered_as`, which `to_oxc/header.rs` orders a crate's
+  import by, as it does a package's.
+- **The host's relinking** (ADR 0101) leaves a bare specifier as it is:
+  it rewrites only the relative ones the manifest's links name.
+
+Held by `test/libraries.test.ts`, "a crate's module in another package is
+imported by that package's subpath": no copy installed, no `exports`, a
+pattern (run by Node against native Rust), the `.d.ts`'s import, the
+module in `shared` importing the crate's other module by its file, a
+pattern of another file, and the import's place beside a binding's
+`../../a.js`. Mutations `own-subpath-same-package`,
+`own-subpath-not-installed` (`output.rs`), `own-subpath-ordered-by-text`
+(`to_oxc/header.rs`) and `scope-past-nearest` (`packages.rs`).

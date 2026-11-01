@@ -49,8 +49,8 @@ export const mutations: Mutation[] = [
     name: "package-subpath-any-target",
     breaks: "a module is imported by its package's subpath where `exports` resolves it to another file than its JS, `./src/*`'s `./src/flags`, which Node then doesn't find (ADR 0770, amended)",
     file: "src/packages.rs",
-    find: "        (target == file).then_some(bare)\n",
-    replace: "        Some(bare)\n",
+    find: "    (target == file).then_some(bare)\n",
+    replace: "    Some(bare)\n",
     tests: subpaths,
   },
   {
@@ -76,5 +76,14 @@ export const mutations: Mutation[] = [
     find: "    if part.split(['/', '\\\\']).any(refused) {\n",
     replace: "    if false && part.split(['/', '\\\\']).any(refused) {\n",
     tests: subpaths,
+  },
+  {
+    name: "scope-past-nearest",
+    breaks:
+      "a file's package is the farthest `package.json` above it, a workspace's root, not the nearest, as Node scopes one, so a crate's module in another package is imported by its file (ADR 0770, amended)",
+    file: "src/packages.rs",
+    find: "        .find(|dir| dir.join(\"package.json\").is_file())\n",
+    replace: "        .filter(|dir| dir.join(\"package.json\").is_file())\n        .last()\n",
+    tests: ["test/libraries.test.ts", "-t", "another package"],
   },
 ];

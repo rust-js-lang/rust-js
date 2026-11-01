@@ -94,8 +94,8 @@ export const mutations: Mutation[] = [
     name: "module-import-unresolved",
     breaks: "an import of another module's types is given no file it's from",
     file: "src/output.rs",
-    find: "                js::ImportFrom::Module(path) => self.specifier(&module.path, path),\n",
-    replace: "                js::ImportFrom::Module(path) => path.join(\"/\"),\n",
+    find: "                    (self.scope_specifier(&module.path, path)).unwrap_or_else(|| self.specifier(&module.path, path))\n",
+    replace: "                    path.join(\"/\")\n",
     tests: ["test/declarations.test.ts"],
   },
   {
@@ -346,5 +346,23 @@ export const mutations: Mutation[] = [
     find: "                    |(file, dir)| PathBuf::from(relative_resolved(&dir, &file)),\n",
     replace: "                    |(file, dir)| file.strip_prefix(&dir).map_or_else(|_| rust_path.clone(), Path::to_path_buf),\n",
     tests: ["test/cargo-in-source.test.ts", "-t", "through"],
+  },
+  {
+    name: "own-subpath-same-package",
+    breaks:
+      "a crate's module imports another of its own package by that package's subpath, `dom/src/zeta`, not its file, where upstream writes the file (ADR 0770, amended)",
+    file: "src/output.rs",
+    find: "        if from_scope.as_ref().is_some_and(|own| own.dir == scope.dir) {\n",
+    replace: "        if false && from_scope.as_ref().is_some_and(|own| own.dir == scope.dir) {\n",
+    tests: ["test/libraries.test.ts", "-t", "another package"],
+  },
+  {
+    name: "own-subpath-not-installed",
+    breaks:
+      "a crate's module in another package is imported by that package's subpath where Node finds no copy of the package from the importer, so the import fails where the file's path loads (ADR 0770, amended)",
+    file: "src/output.rs",
+    find: "        (found.as_ref() == Some(&scope.dir))\n",
+    replace: "        (found.is_some() || found.is_none())\n",
+    tests: ["test/libraries.test.ts", "-t", "another package"],
   },
 ];

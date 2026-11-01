@@ -367,6 +367,16 @@ import { level } from "shared/src/flags";
   `"./*": "./*.js"` alike.
 - **Your hand-written JS** imports such a subpath without its extension
   too: `'shared/src/flags.js'` would name `flags.js.js`.
+- **A crate's own module in another package** is imported the same way:
+  React DOM's `#[path = "../shared/ReactDOMFragmentRefShared.rs"] mod
+  react_dom_fragment_ref_shared;`, whose JS goes in `packages/shared`, is
+  `'shared/ReactDOMFragmentRefShared'` to the crate's other modules, as
+  upstream writes it, where `shared`'s `exports` resolves it and Node finds
+  `shared` from them. A module in the importer's own package is imported
+  by its file, as before.
+- **Its place among the imports** is its file's, `../../shared/..`: JS
+  loads a module's imports in their order, which a bare specifier never
+  moves.
 
 ## Versions
 

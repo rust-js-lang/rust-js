@@ -42,6 +42,10 @@ pub struct OutputPlan {
     jsx: HashSet<Vec<String>>,
     /// Each `#[path]` module's file, where its JS goes beside (ADR 0273).
     located: HashMap<Vec<String>, PathBuf>,
+    /// Of a crate Cargo builds, each module's JS in source and the package
+    /// it's of there, which another package's module imports it by the
+    /// subpath of (ADR 0770, amended).
+    scopes: HashMap<Vec<String>, (PathBuf, Option<crate::packages::Scope>)>,
 }
 
 /// What writes Cargo's record of a crate's sources, given what else the
@@ -84,11 +88,19 @@ impl OutputPlan {
             let specified = |imports: &[program::LoweredImport]| {
                 imports
                     .iter()
-                    .map(|import| js::Import {
-                        named: import.named.clone(),
-                        namespace: import.namespace.clone(),
-                        from: self.specifier(&module.path, &import.path),
-                        span: import.span,
+                    .map(|import| {
+                        let file = self.specifier(&module.path, &import.path);
+                        let (from, ordered_as) = match self.scope_specifier(&module.path, &import.path) {
+                            Some(subpath) => (subpath, Some(file)),
+                            None => (file, None),
+                        };
+                        js::Import {
+                            named: import.named.clone(),
+                            namespace: import.namespace.clone(),
+                            from,
+                            ordered_as,
+                            span: import.span,
+                        }
                     })
                     .collect::<Vec<_>>()
             };
@@ -97,7 +109,9 @@ impl OutputPlan {
             // Where a module of the crate's, or a JS module, is from this
             // one's file, as its JS and its `.d.ts` name it.
             let from_here = |from: &js::ImportFrom| match from {
-                js::ImportFrom::Module(path) => self.specifier(&module.path, path),
+                js::ImportFrom::Module(path) => {
+                    (self.scope_specifier(&module.path, path)).unwrap_or_else(|| self.specifier(&module.path, path))
+                }
                 js::ImportFrom::Specifier(specifier) => located(specifier),
             };
             let reexports = (module.reexports.iter())
@@ -427,6 +441,26 @@ impl OutputPlan {
         self.file_specifier(from, &self.js_path(to))
     }
 
+    /// The specifier module `from`'s JS imports module `to`'s by where
+    /// `to`'s file in source is in another package than `from`'s: that
+    /// package's name and the subpath its `exports` resolves to the file,
+    /// `shared/ReactDOMFragmentRefShared`, where Node finds the package
+    /// from `from`'s, as a dependency's module is imported (ADR 0770,
+    /// amended). None elsewhere: its file's `specifier`.
+    fn scope_specifier(&self, from: &[String], to: &[String]) -> Option<String> {
+        let (from_file, from_scope) = self.scopes.get(from)?;
+        let (_, Some(scope)) = self.scopes.get(to)? else {
+            return None;
+        };
+        if from_scope.as_ref().is_some_and(|own| own.dir == scope.dir) {
+            return None;
+        }
+        let found = crate::packages::installed(parent_dir(from_file), scope.name.as_deref()?);
+        (found.as_ref() == Some(&scope.dir))
+            .then(|| scope.specifier())
+            .flatten()
+    }
+
     /// `to`, a file, as module `from`'s file imports it: `./a.js`,
     /// `../../b.js`. The one way a specifier of a file is made.
     fn file_specifier(&self, from: &[String], to: &std::path::Path) -> String {
@@ -464,6 +498,7 @@ impl OutputPlan {
             bound: Vec::new(),
             jsx: HashSet::new(),
             located: HashMap::new(),
+            scopes: HashMap::new(),
         }
     }
 
@@ -520,7 +555,7 @@ impl OutputPlan {
             let read = crate::packages::read(&self.settings.dir, &modules, to_oxc::entry_exports)?;
             library.package = read.package;
             let hand_written = read.hand_written;
-            packaged.clone_from(&read.files);
+            packaged.extend(read.files.iter().cloned());
             sources.extend(read.files);
             // A root whose only job is re-exporting what the package's
             // entry re-exports, each from the same module, is that entry's
@@ -528,6 +563,27 @@ impl OutputPlan {
             // amended).
             if let Some(package) = library.package.as_ref().filter(|_| hand_written) {
                 lowered.modules.retain(|module| !entry_is_root(package, module));
+            }
+        }
+        // Each module's package, where its JS goes in source, of a crate
+        // Cargo builds, whose JS a host writes there: of modules in more
+        // than one, each `package.json`, what the build read, as one
+        // imports another's by its subpath (ADR 0770, amended).
+        if self.settings.cargo {
+            for module in &lowered.modules {
+                let in_source = absolute(&self.in_source(module)?)?;
+                let scope = crate::packages::scope(&in_source)?;
+                self.scopes.insert(module.path.clone(), (in_source, scope));
+            }
+            let mut manifests: Vec<PathBuf> = (self.scopes.values())
+                .filter_map(|(_, scope)| Some(scope.as_ref()?.manifest.clone()))
+                .collect();
+            manifests.sort();
+            manifests.dedup();
+            if manifests.len() > 1 {
+                manifests.retain(|manifest| !sources.contains(manifest));
+                packaged.extend(manifests.iter().cloned());
+                sources.extend(manifests);
             }
         }
         if let Some(library) = &mut lowered.library {

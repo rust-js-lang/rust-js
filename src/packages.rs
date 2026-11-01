@@ -4,7 +4,8 @@
 //! consumer imports by the package's name (ADR 1008), and the subpath its
 //! `exports` names each module's JS by, which a consumer imports it by
 //! (ADR 0770, amended). And where Node finds a package from a directory,
-//! as it resolves a bare specifier. The one
+//! as it resolves a bare specifier, and which package a file is of, its
+//! scope, whose subpath another package's module imports it by. The one
 //! owner of what the compiler reads of a package: artifact planning asks it
 //! of the crate it builds, a consumer of the libraries it's given.
 
@@ -210,25 +211,71 @@ fn root_exports(
 /// subpath by its file, which an `import` needs written with its
 /// extension.
 fn subpaths(dir: &Path, exports: &serde_json::Value, modules: &[Module<'_>]) -> Vec<PackageSubpath> {
-    let serde_json::Value::Object(map) = exports else {
-        return Vec::new();
-    };
-    let subpath = |file: &Path| -> Option<String> {
-        let bare = file.strip_prefix(dir).ok()?.with_extension("");
-        let bare = bare.to_str()?.replace(std::path::MAIN_SEPARATOR, "/");
-        let target = subpath_target(map, &format!("./{bare}"))?;
-        let target = crate::paths::absolute(&dir.join(target.strip_prefix("./")?)).ok()?;
-        (target == file).then_some(bare)
-    };
     (modules.iter())
         .filter_map(|module| {
-            let subpath = subpath(&module.in_source)?;
+            let subpath = subpath(dir, exports, &module.in_source)?;
             Some(PackageSubpath {
                 module: module.path.to_vec(),
                 subpath,
             })
         })
         .collect()
+}
+
+/// The subpath of the package in `dir`, `file`'s path there without its
+/// extension, that `exports` resolves to `file`, as `subpaths` says.
+fn subpath(dir: &Path, exports: &serde_json::Value, file: &Path) -> Option<String> {
+    let serde_json::Value::Object(map) = exports else {
+        return None;
+    };
+    let bare = file.strip_prefix(dir).ok()?.with_extension("");
+    let bare = bare.to_str()?.replace(std::path::MAIN_SEPARATOR, "/");
+    let target = subpath_target(map, &format!("./{bare}"))?;
+    let target = crate::paths::absolute(&dir.join(target.strip_prefix("./")?)).ok()?;
+    (target == file).then_some(bare)
+}
+
+/// The package a file is of, as Node scopes it: the directory of the
+/// `package.json` nearest above it, and the specifier another package's
+/// file imports it by, its name and the subpath its `exports` resolves to
+/// the file, where it's one (ADR 0770, amended).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Scope {
+    pub dir: PathBuf,
+    /// Its `package.json`, which the build read.
+    pub manifest: PathBuf,
+    pub name: Option<String>,
+    pub subpath: Option<String>,
+}
+
+impl Scope {
+    /// `<name>/<subpath>`, `shared/ReactDOMFragmentRefShared`, where it
+    /// has both.
+    pub fn specifier(&self) -> Option<String> {
+        Some(format!("{}/{}", self.name.as_ref()?, self.subpath.as_ref()?))
+    }
+}
+
+/// The package `file`, a JS file in source, is of, as Node's
+/// `LOOKUP_PACKAGE_SCOPE` finds it: the nearest `package.json` above it,
+/// below any `node_modules`. None where none is.
+pub fn scope(file: &Path) -> Result<Option<Scope>, String> {
+    let file = crate::paths::absolute(file)?;
+    let Some(dir) = (file.ancestors().skip(1))
+        .take_while(|dir| dir.file_name().is_none_or(|base| base != "node_modules"))
+        .find(|dir| dir.join("package.json").is_file())
+    else {
+        return Ok(None);
+    };
+    let manifest = dir.join("package.json");
+    let text = std::fs::read_to_string(&manifest).map_err(|e| format!("{}: {e}", manifest.display()))?;
+    let json: serde_json::Value = serde_json::from_str(&text).map_err(|e| format!("{}: {e}", manifest.display()))?;
+    Ok(Some(Scope {
+        dir: dir.to_path_buf(),
+        subpath: subpath(dir, &json["exports"], &file),
+        name: json["name"].as_str().map(str::to_string),
+        manifest,
+    }))
 }
 
 /// What `exports`' subpath, `./src/client`, resolves to under the default

@@ -440,3 +440,103 @@ pub fn run() -> String {
   imports(flags, symbols);
   expect(ran()).toBe(nativeRun);
 }, 600_000);
+
+// A crate's own module whose file is in another package, React DOM's
+// `#[path = "../shared/ReactDOMFragmentRefShared.rs"]`, is imported by that
+// package's name and subpath, `'shared/ReactDOMFragmentRefShared'` as
+// upstream writes it, where its `exports` resolves the subpath to the
+// module's JS and Node finds the package from the importing module, as a
+// dependency's module is (ADR 0770, amended); one in the importer's own
+// package, by its file, as before; and the import stays where its file's
+// path put it.
+test("a crate's module in another package is imported by that package's subpath", () => {
+  const dir = fixture("own-module-subpaths");
+  mkdirSync(join(dir, "dom", "src"), { recursive: true });
+  mkdirSync(join(dir, "shared"));
+  writeFileSync(join(dir, "dom", "Cargo.toml"), '[package]\nname = "dom"\nversion = "0.1.0"\nedition = "2024"\n\n[workspace]\n');
+  // A workspace's root package above both, as React's is: each module is
+  // of the package nearest above it.
+  writeFileSync(join(dir, "package.json"), JSON.stringify({ name: "workspace", private: true, type: "module" }));
+  const dom = (exports?: unknown) =>
+    writeFileSync(join(dir, "dom", "package.json"), JSON.stringify({ name: "dom", private: true, type: "module", exports }));
+  dom();
+  const manifest = (exports?: unknown) =>
+    writeFileSync(join(dir, "shared", "package.json"), JSON.stringify({ name: "shared", private: true, type: "module", exports }));
+  writeFileSync(join(dir, "shared", "fragment.rs"), "use crate::level::LEVEL;\n\npub struct Spot {\n    pub at: u32,\n}\n\npub fn position(n: u32) -> u32 {\n    n * LEVEL\n}\n");
+  writeFileSync(join(dir, "dom", "src", "level.rs"), "pub const LEVEL: u32 = 2;\n");
+  writeFileSync(join(dir, "dom", "src", "zeta.rs"), "pub fn zeta() -> u32 {\n    1\n}\n");
+  writeFileSync(join(dir, "dom", "src", "lib.rs"), `#[path = "../../shared/fragment.rs"]
+pub mod fragment;
+pub mod level;
+pub mod zeta;
+
+use fragment::{Spot, position};
+use zeta::zeta;
+
+pub fn run() -> u32 {
+    spot(3).at + zeta()
+}
+
+pub fn spot(n: u32) -> Spot {
+    Spot { at: position(n) }
+}
+
+pub fn bound() -> u32 {
+    a()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "../../a.js#a")]
+fn a() -> u32 {
+    unreachable!()
+}
+`);
+  writeFileSync(join(dir, "a.js"), "export function a() {\n  return 1;\n}\n");
+  mkdirSync(join(dir, "node_modules", "@rust-js"), { recursive: true });
+  symlinkSync(join(root, "runtime"), join(dir, "node_modules", "@rust-js", "runtime"), "dir");
+  symlinkSync(join(root, "std"), join(dir, "node_modules", "@rust-js", "std"), "dir");
+  const js = () => readFileSync(join(dir, "dom", "src", "lib.js"), "utf8");
+  const imported = () => [...js().matchAll(/^import .* from "(.*)";$/gm)].map((line) => line[1]);
+  const ran = () => run([node ?? "node", "--input-type=module", "--eval", `console.log((await import(${JSON.stringify(join(dir, "dom", "src", "lib.js"))})).run());`]).trim();
+  const built = () => build(join(dir, "dom"));
+  const native = join(dir, "native");
+  mkdirSync(native);
+  run(["rustc", "--edition=2024", "--crate-type=rlib", "--crate-name", "dom", join(dir, "dom", "src", "lib.rs"), "-o", join(native, "libdom.rlib")]);
+  writeFileSync(join(native, "main.rs"), "fn main() {\n    println!(\"{}\", dom::run());\n}\n");
+  run(["rustc", "--edition=2024", join(native, "main.rs"), "-o", join(native, "program"), "--extern", `dom=${join(native, "libdom.rlib")}`, "-L", `dependency=${native}`]);
+  const nativeRun = run([join(native, "program")]).trim();
+  expect(nativeRun).toBe("7");
+  const byFile = ["../../a.js", "../../shared/fragment.js", "./zeta.js"];
+  // No `exports`, or Node finds no copy of the package: by its file.
+  manifest({ "./*": "./*.js" });
+  expect(built().stderr).toBe("");
+  expect(imported()).toEqual(byFile);
+  manifest();
+  symlinkSync(join(dir, "shared"), join(dir, "node_modules", "shared"), "dir");
+  expect(built().stderr).toBe("");
+  expect(imported()).toEqual(byFile);
+  expect(ran()).toBe(nativeRun);
+  // By its package's subpath, where its file's path put it among the
+  // imports, as JS loads them in that order; its types by the same
+  // specifier; the module in `shared` imports `dom`'s by its file, `dom`
+  // exporting none.
+  manifest({ "./*": "./*.js" });
+  expect(built().stderr).toBe("");
+  expect(imported()).toEqual(["../../a.js", "shared/fragment", "./zeta.js"]);
+  const types = readFileSync(join(dir, "dom", "src", "lib.d.ts"), "utf8");
+  expect(types).toContain('from "shared/fragment";\n');
+  expect(readFileSync(join(dir, "shared", "fragment.js"), "utf8")).toContain('from "../dom/src/level.js";\n');
+  expect(ran()).toBe(nativeRun);
+  // `dom` exporting its modules too: the module in `shared` imports
+  // `dom`'s by `dom`'s subpath, and `dom`'s own modules each other's by
+  // its file, being of one package.
+  dom({ "./*": "./*.js" });
+  symlinkSync(join(dir, "dom"), join(dir, "node_modules", "dom"), "dir");
+  expect(built().stderr).toBe("");
+  expect(imported()).toEqual(["../../a.js", "shared/fragment", "./zeta.js"]);
+  expect(readFileSync(join(dir, "shared", "fragment.js"), "utf8")).toContain('from "dom/src/level";\n');
+  expect(ran()).toBe(nativeRun);
+  // A pattern of another file, which Node then doesn't find: by its file.
+  manifest({ "./*": "./*" });
+  expect(built().stderr).toBe("");
+  expect(imported()).toEqual(byFile);
+}, 600_000);

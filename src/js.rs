@@ -282,8 +282,13 @@ pub struct Import {
     /// The module itself, `import * as Plugin` (rd114, ADR 1018), as
     /// `Package::namespace` is: its own `import`, beside a named one.
     pub namespace: Option<String>,
-    /// A relative specifier, like `./math.js` or `../lib.js`.
+    /// A relative specifier, like `./math.js` or `../lib.js`, or another
+    /// package's subpath, `shared/ReactDOMFragmentRefShared`, of a module
+    /// whose file is in that package (ADR 0770, amended).
     pub from: String,
+    /// The specifier it's ordered by among the imports where it isn't
+    /// `from`, its file's, as `Package::ordered_as` is.
+    pub ordered_as: Option<String>,
     /// The `use` that makes it, the first of the module's naming what it
     /// imports, which its comments are before; `Span::NONE` of none.
     pub span: Span,

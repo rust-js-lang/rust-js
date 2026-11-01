@@ -74,4 +74,13 @@ export const mutations: Mutation[] = [
     replace: "        let ordered_as = package.from.as_str();\n",
     tests: ["test/libraries.test.ts", "-t", "package's subpath"],
   },
+  {
+    name: "own-subpath-ordered-by-text",
+    breaks:
+      "a crate's module imported by another package's subpath is ordered by that text, among the packages, before a binding's `../../a.js` its file's path came after, so JS loads its modules in another order (ADR 0770, amended)",
+    file: "src/to_oxc/header.rs",
+    find: "        let ordered_as = import.ordered_as.as_deref().unwrap_or(&import.from);\n",
+    replace: "        let ordered_as = import.from.as_str();\n",
+    tests: ["test/libraries.test.ts", "-t", "another package"],
+  },
 ];
