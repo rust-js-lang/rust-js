@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
       "a binding's `FnOnce` callback that only passes its call on stays an arrow, `p.then(() => ping())`, not `p.then(ping)`",
     file: "src/lower/passed_on.rs",
     find: "            true => Taker::OnceCallback,\n",
-    replace: "            true => Taker::Callback,\n",
+    replace: "            true => Taker::Closure,\n",
     tests: once,
   },
   {
@@ -231,8 +231,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure as a `fn` whose call never returns, `|_, _| throw_invalid_hook_error()`, keeps its arrow, as its JS is a statement (ADR 0605, amended)",
     file: "src/lower/passed_on.rs",
-    find: "                Taker::Handler | Taker::OnceCallback | Taker::FnPointer | Taker::Callback | Taker::Closure\n",
-    replace: "                Taker::Handler | Taker::OnceCallback | Taker::Callback\n",
+    find: "                Taker::Handler | Taker::OnceCallback | Taker::FnPointer | Taker::Closure\n",
+    replace: "                Taker::Handler | Taker::OnceCallback\n",
     tests: [
       "test/lowering-passed-on.test.ts",
       "-t",
@@ -384,15 +384,7 @@ export const mutations: Mutation[] = [
     replace: "            Taker::Handler => true,\n",
     tests: ["test/jsx-events.test.ts"],
   },
-  {
-    name: "ignoring-listener-kept",
-    breaks:
-      "a listener that ignores what it's given and calls a function of the crate's keeps its arrow, `addEventListener(\"layout\", () => { layoutCallback(); })` (rd212)",
-    file: "src/lower/passed_on.rs",
-    find: "            false => Taker::Callback,\n",
-    replace: "            false => return None,\n",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "ignores what it's given"],
-  },
+
   {
     name: "ignoring-not-taken",
     breaks:
@@ -537,5 +529,14 @@ export const mutations: Mutation[] = [
     find: "                    ignores_this(self.tcx, target)\n",
     replace: "                    false\n",
     tests: ["test/webapi-events.test.ts", "-t", "event methods and reusable listeners"],
+  },
+  {
+    name: "flattened-forwarding-unseen",
+    breaks:
+      "a closure that only passes its argument on to a namespace's method by its name, its result flattened, `|f| Reconciler.flush_sync(f).flatten()`, is an arrow of its own, `(f) => flushSync(f)`, not the function, as one through a value is (rd324, the user's decision)",
+    file: "src/lower/passed_on.rs",
+    find: "            && super::analysis::flattened_by_name(&self.recognition(), &mir.body, called).is_some()\n",
+    replace: "            && super::analysis::flattened_by_name(&self.recognition(), &mir.body, called).is_some() && false\n",
+    tests: ["test/namespaces.test.ts", "-t", "by its name is its library"],
   },
 ];

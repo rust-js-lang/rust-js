@@ -57,16 +57,13 @@ pub(in crate::lower) enum Taker {
     /// runtime helper, which may read an optional parameter; an arrow made
     /// here of as many parameters too.
     FnValue,
-    /// Another callback a binding or a function of the crate's takes, an
-    /// `Fn`'s, a listener's, `el.addEventListener("load", ping)`: only a
-    /// closure that ignores what it's given (`Forwarding`'s `ignores`) is
-    /// the function it calls, as any taker's is (rd196, rd212, ADR 0262's
-    /// exception, the user's decision).
-    Callback,
     /// A closure where it's made, wherever its value goes, a `let`'s, a
-    /// field's, a box's: only one that's the function it calls whoever
-    /// takes it, that ignores what it's given (`Forwarding`'s `ignores`) or
-    /// passes it all on (`eta`).
+    /// field's, a box's, and another callback a binding or a function of
+    /// the crate's takes, an `Fn`'s, a listener's,
+    /// `el.addEventListener("load", ping)`: only one that's the function it
+    /// calls whoever takes it, that ignores what it's given (`Forwarding`'s
+    /// `ignores`) or passes it all on (`eta`) (rd196, rd212, ADR 0262's
+    /// exception, the user's decision).
     Closure,
 }
 
@@ -162,8 +159,8 @@ impl Taker {
     /// whose `Function` member is, `js::set_timeout`'s `H:
     /// IntoTimerHandler`, or a `Box<dyn FnOnce(..)>`. Another, an `Fn` or
     /// `FnMut`'s, a listener's, which JS may keep and compare,
-    /// `removeEventListener`'s, is a `Callback`, which takes only a closure
-    /// that ignores what it's given.
+    /// `removeEventListener`'s, is a `Closure`'s, which takes only a closure
+    /// that's the function it calls wherever it's given.
     pub(in crate::lower) fn parameter(tcx: TyCtxt<'_>, def_id: DefId, i: usize) -> Option<Taker> {
         let ty = *tcx.fn_sig(def_id).skip_binder().skip_binder().inputs().get(i)?;
         let only_once = |id: DefId| tcx.fn_trait_kind_from_def_id(id) == Some(ty::ClosureKind::FnOnce);
@@ -177,7 +174,7 @@ impl Taker {
         };
         Some(match once {
             true => Taker::OnceCallback,
-            false => Taker::Callback,
+            false => Taker::Closure,
         })
     }
 
@@ -188,7 +185,7 @@ impl Taker {
             Taker::Handler => callee != Callee::Host,
             Taker::OnceCallback => callee == Callee::Own,
             Taker::FnPointer => matches!(callee, Callee::Own | Callee::Host),
-            Taker::Made | Taker::FnValue | Taker::Callback | Taker::Closure => false,
+            Taker::Made | Taker::FnValue | Taker::Closure => false,
         }
     }
 }
@@ -225,7 +222,7 @@ pub(in crate::lower) fn passed_on(f: &Expr, taker: Taker, forwarding: &[Forwardi
             }
             matches!(
                 taker,
-                Taker::Handler | Taker::OnceCallback | Taker::FnPointer | Taker::Callback | Taker::Closure
+                Taker::Handler | Taker::OnceCallback | Taker::FnPointer | Taker::Closure
             )
         }
     };
@@ -237,12 +234,7 @@ pub(in crate::lower) fn passed_on(f: &Expr, taker: Taker, forwarding: &[Forwardi
         || eta
             && matches!(&callee.kind, js::ExprKind::Member(of, _) if matches!(of.kind, js::ExprKind::Var(_) | js::ExprKind::Symbol(_)));
     let takes = match taker {
-        Taker::ArrayMethod
-        | Taker::Handler
-        | Taker::OnceCallback
-        | Taker::FnPointer
-        | Taker::Callback
-        | Taker::Closure => named,
+        Taker::ArrayMethod | Taker::Handler | Taker::OnceCallback | Taker::FnPointer | Taker::Closure => named,
         Taker::Made => named || matches!(callee.kind, js::ExprKind::Member(..)),
         Taker::FnValue => match &callee.kind {
             js::ExprKind::Var(_) => callee.helper_name().is_none(),
@@ -524,6 +516,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 _ => {}
             }
+        }
+        // A namespace's method's call whose result only `.flatten()` reads,
+        // which its JS leaves out, `Reconciler.flush_sync(f).flatten()`'s
+        // `flushSync(f)`, is that call (rd324, ADR 1037): of the one answer
+        // its lowering asks, each of its calls in the body so.
+        if let ExprKind::Call { fun, ref args, .. } = thir[call].kind
+            && let [flattened] = args[..]
+            && let Some((flatten, generic)) = fn_def(thir[fun].ty)
+            && self.recognition().classify(flatten, generic) == Some(super::Std::OptionFlatten)
+            && let inner = super::body_queries::strip(thir, flattened)
+            && let ExprKind::Call { fun: method, .. } = thir[inner].kind
+            && let Some(called) = fn_def(thir[method].ty)
+            && let Some(mir) = &body.mir
+            && super::analysis::flattened_by_name(&self.recognition(), &mir.body, called).is_some()
+        {
+            call = inner;
         }
         let ExprKind::Call { fun, ref args, .. } = thir[call].kind else {
             return None;

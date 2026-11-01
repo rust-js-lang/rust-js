@@ -912,7 +912,9 @@ pub fn flusher() -> Box<dyn Fn(Option<&dyn Fn() -> Option<u32>>) -> Option<u32>>
   const app = readFileSync(join(dir, "app", "lib.js"), "utf8");
   expect(app).not.toContain("DEPTH");
   expect(app).toContain("  return flushSync(f);\n");
-  expect(app).toContain("  return (f) => flushSync(f);\n");
+  // The closure that only passes its argument on to it is it, as one
+  // through a value is (the user's decision, 2026-11-01).
+  expect(app).toContain("  return flushSync;\n");
   const lib = await import(join(dir, "app", "lib.js"));
   const namespace = await import(join(dir, "dep", "reconciler.js"));
   const before = namespace.depth();

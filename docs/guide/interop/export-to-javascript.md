@@ -1275,7 +1275,9 @@ export function updateContainer(n) {
   called by its namespace's name in another crate, each of its calls
   there flattened, react-test-renderer's
   `ReactFiberReconciler.flush_sync_from_reconciler(r#fn).flatten()`,
-  `flushSyncFromReconciler(fn)`, its library's JS
+  `flushSyncFromReconciler(fn)`, its library's JS, and a closure that
+  only passes its argument on to it, `Box::new(|r#fn| ..)`, is the
+  function, `unstable_flushSync: flushSyncFromReconciler`
   ([ADR 1037](../../decisions/1037-a-module-namespace-is-a-unit-struct-of-its-functions.md), amended).
 - **Refused, each with what to write**: a struct with fields or type
   parameters; one that's a `#[rust_js::class]` or `#[rust_js::object]`

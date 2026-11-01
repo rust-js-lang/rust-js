@@ -101,8 +101,10 @@ react.dev's TopNav passes the same closure instead.
   allocation `Rc::ptr_eq` reads, which stays a function of its own. And
   a closure that passes all it's given, in order, to a namespace's
   function through a value is that function (the user's eta rule, ADR
-  0605, amended), only there: a dictionary's or a class's method reads
-  its `this`. A closure written in place for removal
+  0605, amended), and so is one to a namespace's method by its name,
+  `unstable_flushSync: flushSyncFromReconciler` (the user's decision,
+  2026-11-01, ADR 1037, amended), only there: a dictionary's or a class's
+  method reads its `this`. A closure written in place for removal
   is refused, as it removes nothing (ADR 1021, amended).
 - **A `RegExp`'s `test` and `replace` take text, as TypeScript types
   them**, the second case's, which the user decided (2026-10-28, gap rd33):

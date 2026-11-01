@@ -1059,7 +1059,10 @@ React and JSX are [their own pages](README.md#react).
     function through the value it's called on, `move |f, a|
     renderer.batched_updates(f, a)`, is that function, read where the
     closure is made, `renderer.batchedUpdates` (ADR 0605, amended, the
-    user's decision, 2026-10-31). Not a closure an `Rc` is made of,
+    user's decision, 2026-10-31); so does one to a namespace's method by
+    its name, `|r#fn| ReactFiberReconciler.flush_sync_from_reconciler(r#fn)
+    .flatten()`, `flushSyncFromReconciler` (ADR 1037, amended, the user's
+    decision, 2026-11-01). Not a closure an `Rc` is made of,
     `Rc::new(|| ping())`, whose pointer `Rc::ptr_eq` compares; nor one of
     a function Rust could have named there, which the program wrote to be
     a function of its own.

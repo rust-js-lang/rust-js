@@ -445,7 +445,7 @@ Held by `test/lowering-passed-on.test.ts`'s "a closure that ignores
 what it's given is the function it calls" (run: a bound `with_this`
 function pinged by `then` and a listener) and its "a closure given to a
 binding's FnOnce callback .." (`listenEvery(count)`, `keepAny(count)`);
-mutations `ignoring-listener-kept`, `ignoring-not-taken`,
+mutations `ignoring-not-taken`,
 `ignoring-item-given`, `bound-own-dyn`, `bound-host-own` and
 `bound-with-this-not-own` (`passed_on.ts`).
 
@@ -531,3 +531,13 @@ removed as `handleNavigateComplete`; `named`, which reads its `this`,
 kept in its arrow). Mutations `fixed-local-function-unheld`,
 `with-this-reading-this-held` and `with-this-never-own` (`passed_on.ts`).
 
+
+## Amendment: a listener's taker is a closure's (2026-11-01)
+
+A listener's, `Taker::Callback`, and a closure's where it's made,
+`Taker::Closure`, took the same arrows, one that ignores what it's given
+or passes it all on: two names for one rule, which the mutation
+`ignoring-listener-kept` showed, surviving, as the closure's taker took
+what the listener's no longer did. **A callback that isn't called once is
+a `Closure`'s**, the one taker; the mutation is gone, the rule held by the
+closure's (`ignoring-not-taken`).

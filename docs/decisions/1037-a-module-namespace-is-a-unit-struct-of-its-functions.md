@@ -311,10 +311,11 @@ lowering ask): `flushSyncFromReconciler(fn)`, no `$someValue`. One read
 whole, `.is_some()`, is compiled in the consumer as before, refused where
 it reads its library's private state.
 
-The closure stays `(fn) => flushSyncFromReconciler(fn)`: the eta rule
-that makes a closure passing all it's given to a namespace's function
-that function holds only through a value (rd292b); by its name it's a
-decision for the user.
+The closure was `(fn) => flushSyncFromReconciler(fn)`: the eta rule that
+makes a closure passing all it's given to a namespace's function that
+function held only through a value (rd292b), as MIR's `.flatten()` of
+the call was the closure's one call, which its JS leaves out. By the
+user's decision (2026-11-01), it holds by its name too (below).
 
 Held by `test/namespaces.test.ts`'s "a library's namespace method by its
 name is its library's, exact where its result is flattened", run, with a
@@ -331,3 +332,24 @@ library's private state rather than for what JS's value can't be. So
 through a value whose call needs a copy is refused unless its result is
 flattened", whose refusal it changes, not by the flattened run, which it
 no longer changes (main's survivor, 96feaca3a).
+
+## Amendment: a closure that passes all on to a namespace's method by its name is it (the user's decision, 2026-11-01)
+
+**The eta rule extends to a closure whose body only passes its arguments
+on to a namespace's method called by its name**:
+`Box::new(|r#fn| ReactFiberReconciler.flush_sync_from_reconciler(r#fn)
+.flatten())` is react-test-renderer's `unstable_flushSync:
+flushSyncFromReconciler`, upstream's. Rust names the method as a function
+no other way, `Reconciler::flush_sync_from_reconciler` taking the
+namespace too, as through a value. A `.flatten()` of the call its JS
+leaves out, each call of it in the closure so (`flattened_by_name`, the
+one answer its lowering asks), is that call (`passed_on::forwarded_to`).
+Its function's identity and `.length` are told apart as they are of
+`renderer.batchedUpdates`, ADR 0262's identity exception. A plain function
+called by its name, which Rust could name, keeps its arrow, React's DEV
+dispatchers' `readContext(context) { return readContext(context); }` (ADR
+0605, amended).
+
+Held by `test/namespaces.test.ts`'s "a library's namespace method by its
+name is its library's, exact where its result is flattened", `return
+flushSync;`, run; mutation `flattened-forwarding-unseen` (`passed_on.ts`).
