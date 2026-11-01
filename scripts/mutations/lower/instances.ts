@@ -249,4 +249,13 @@ export const mutations: Mutation[] = [
     replace: "            let flattened: Option<u32> = None;\n",
     tests: ["test/namespaces.test.ts", "-t", "by its name is its library"],
   },
+  {
+    name: "library-body-copies-asked-monomorphized",
+    breaks:
+      "what a library's generic function copies is asked with no parameters of its own, so a consumer of one whose `[i32; N]` it iterates crashes rustc, `cannot find N/#0 in param-env` (#454)",
+    file: "src/lower/instances.rs",
+    find: "            typing_env: ty::TypingEnv::post_analysis(tcx, body.source.def_id()),\n",
+    replace: "            typing_env: ty::TypingEnv::fully_monomorphized(),\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: const_generic"],
+  },
 ];

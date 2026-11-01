@@ -155,14 +155,24 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
         (copies, read)
     }
 
+    /// `copies` of `body`, a library's MIR, generic over its own
+    /// parameters: asked where it is, whose bounds and const parameters'
+    /// types are its own, `N` of `fn sum_n<const N: usize>(a: [i32; N])`
+    /// (#454).
     fn body_copies(&self, body: &mir::Body<'tcx>) -> (bool, usize) {
         let tcx = self.recognition.tcx;
+        let recognition = super::recognition::Recognition {
+            typing_env: ty::TypingEnv::post_analysis(tcx, body.source.def_id()),
+            ..self.recognition
+        };
         let holds = |ty: Ty<'tcx>| {
             let ty = tcx.erase_and_anonymize_regions(ty);
-            super::copies::may_hold_changed(&self.recognition, self.changed, ty)
+            super::copies::may_hold_changed(&recognition, self.changed, ty)
         };
         struct Found<'b, 'a, 'tcx> {
             copying: &'b Copying<'a, 'tcx>,
+            /// The crate's, asked where `body` is.
+            recognition: super::recognition::Recognition<'a, 'tcx>,
             body: &'b mir::Body<'tcx>,
             holds: &'b dyn Fn(Ty<'tcx>) -> bool,
             copies: bool,
@@ -178,11 +188,8 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
         }
         impl<'tcx> mir::visit::Visitor<'tcx> for Found<'_, '_, 'tcx> {
             fn visit_operand(&mut self, operand: &mir::Operand<'tcx>, location: mir::Location) {
-                let tcx = self.copying.recognition.tcx;
-                let copy = |ty: Ty<'tcx>| {
-                    let typing_env = ty::TypingEnv::post_analysis(tcx, self.body.source.def_id());
-                    tcx.type_is_copy_modulo_regions(typing_env, ty)
-                };
+                let tcx = self.recognition.tcx;
+                let copy = |ty: Ty<'tcx>| tcx.type_is_copy_modulo_regions(self.recognition.typing_env, ty);
                 match operand {
                     // A `Copy` value's, not what optimized MIR copies of a
                     // `Box` it reads through.
@@ -205,7 +212,7 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
                 self.super_rvalue(rvalue, location);
             }
             fn visit_terminator(&mut self, terminator: &mir::Terminator<'tcx>, location: mir::Location) {
-                let tcx = self.copying.recognition.tcx;
+                let tcx = self.recognition.tcx;
                 if let TerminatorKind::Call {
                     func,
                     args,
@@ -215,7 +222,7 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
                 {
                     // A trait's method, the impl's it resolves to, where it does.
                     let resolved = func.const_fn_def().map(|(callee, args)| {
-                        let typing_env = ty::TypingEnv::post_analysis(tcx, self.body.source.def_id());
+                        let typing_env = self.recognition.typing_env;
                         match tcx.trait_of_assoc(callee) {
                             Some(_) => super::items::resolve_instance_in(tcx, typing_env, callee, args)
                                 .ok()
@@ -226,7 +233,7 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
                     });
                     self.copies |= match resolved {
                         // Its library's, which may copy one itself.
-                        Some(callee) if self.copying.recognition.foreign.is_library(callee.krate) => {
+                        Some(callee) if self.recognition.foreign.is_library(callee.krate) => {
                             self.ask(callee);
                             false
                         }
@@ -240,7 +247,7 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
                         // `Option<&Unknown>`s (ADR 0914, amended).
                         Some(_)
                             if let Some((callee, generic)) = func.const_fn_def()
-                                && self.copying.recognition.classify(callee, generic)
+                                && self.recognition.classify(callee, generic)
                                     == Some(super::Std::Comb(super::combinators::Comb::Concat)) =>
                         {
                             match destination.ty(&self.body.local_decls, tcx).ty.kind() {
@@ -267,6 +274,7 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
         }
         let mut found = Found {
             copying: self,
+            recognition,
             body,
             holds: &holds,
             copies: false,
