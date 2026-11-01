@@ -996,7 +996,10 @@ export function reveal(batch) {
   `refcell_flow_reaches_unseen` (a generic `f()`) and
   `refcell_flow_through_dyn`. Cells of the same type beside them that
   can't be the held one are plain. Snapshots `untagged_ref_cells` and
-  `refcell_borrows` lose the checks they no longer need.
+  `refcell_borrows` lose the checks they no longer need. The readability
+  baseline counts the new cases. Over the cases it counted before,
+  `refcell_borrows`' five fewer lines raise `$iter`'s share from 83.6 to
+  83.7 in 10,000 lines, though no `$iter` was added.
 - `test/crates.test.ts`: a consumer's own cell beside a library's held one
   is unchecked; "a library checks a cell its consumer may share as its
   type says", pair `ref_cells_flow`, against native Rust.

@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1419
-lines	140110
+files	1426
+lines	140427
 temporaries	1	0.1
 labeled blocks	14	1
 while (true)	123	8.8
-$iter	1172	83.6
+$iter	1172	83.5
 Iterator.from	116	8.3
 return;	152	10.8
-renamed x$1	8635	616.3
+renamed x$1	8646	615.7
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1976	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	206	0	0	0	6	0	0	35
@@ -773,6 +773,7 @@ test/corpus/nested_item_drops.js	330	0	0	1	2	0	0	21
 test/corpus/nested_loop_jumps.js	113	0	0	2	2	0	0	0
 test/corpus/nested_loop_tails.js	133	0	0	0	0	0	0	0
 test/corpus/nested_option_held_as_payload.js	182	0	0	0	0	0	0	2
+test/corpus/nested_option_inner_none.js	122	0	0	0	0	0	0	14
 test/corpus/nested_option_tests.js	50	0	0	0	0	0	0	0
 test/corpus/nested_options.js	171	0	0	0	2	0	0	28
 test/corpus/nested_type_chain.js	314	0	0	0	0	0	0	0
@@ -964,7 +965,7 @@ test/corpus/refcell_borrow_in_std_clone.js	34	0	0	0	0	0	0	0
 test/corpus/refcell_borrow_in_std_closure.js	28	0	0	0	0	0	0	0
 test/corpus/refcell_borrow_loops.js	139	0	0	0	0	0	0	17
 test/corpus/refcell_borrow_while_mut.js	24	0	0	0	0	0	0	0
-test/corpus/refcell_borrows.js	252	0	0	0	0	0	0	22
+test/corpus/refcell_borrows.js	249	0	0	0	0	0	0	17
 test/corpus/refcell_bound_field_held.js	31	0	0	0	0	0	0	0
 test/corpus/refcell_clone_borrows_itself.js	62	0	0	0	0	0	0	0
 test/corpus/refcell_clone_nested_parts.js	39	0	0	0	0	0	0	2
@@ -980,6 +981,12 @@ test/corpus/refcell_field_cells.js	42	0	0	0	0	0	0	0
 test/corpus/refcell_field_derive_meets.js	49	0	0	0	0	0	0	6
 test/corpus/refcell_field_lent_held.js	31	0	0	0	0	0	0	0
 test/corpus/refcell_field_places.js	84	0	0	0	0	0	0	4
+test/corpus/refcell_flow_lent_key.js	34	0	0	0	0	0	0	0
+test/corpus/refcell_flow_reaches_unseen.js	31	0	0	0	0	0	0	0
+test/corpus/refcell_flow_thread_local.js	36	0	0	0	0	0	0	0
+test/corpus/refcell_flow_thread_local_init.js	25	0	0	0	0	0	0	2
+test/corpus/refcell_flow_through_dyn.js	33	0	0	0	0	0	0	0
+test/corpus/refcell_flow_through_std.js	39	0	0	0	0	0	0	0
 test/corpus/refcell_generic_borrow_meets_held.js	77	0	0	0	0	0	0	0
 test/corpus/refcell_generic_field_held.js	40	0	0	0	0	0	0	0
 test/corpus/refcell_generic_field_made.js	34	0	0	0	0	0	0	0
