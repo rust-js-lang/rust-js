@@ -1097,3 +1097,36 @@ with an inner loop the program `break`s too; `test/lowering-labels.test.ts`
 ("what a loop inside another does after it, in a catch MIR made, is after
 it"); and the mutation `exit-after-held-in-catch-unwritten`
 (`tidy/jumps/labels.ts`).
+
+## Amendment: a `while` whose test is read in its body keeps its `continue`s (rd530, 2026-11-02)
+
+React's Flight client's lazy loops write their test inline, `while
+js::type_of(value) == "object" && value.is_some() &&
+SymbolFor::from_value(js::get(value, "$$typeof")) == Some(REACT_LAZY_TYPE)
+{ .. if .. { value = ..; continue; } else if .. { .. } }`, a body that ends
+with an `else if` chain whose arms `continue` or return. With the test a
+helper's call, `while (isLazy(value))`, each `continue` printed where
+written; inline, the loop printed `bb182: { if (..) { value = ..; } else if
+(..) { .. break bb182; } .. }`, a label the program didn't write.
+
+`loops`' `continued` makes a block MIR made that a loop's body ends with
+the loop's `continue`s, but only of a loop whose test it can read there,
+`if (!t) { break; } ..`. A test that reads what the body reads, `while
+(value.$$typeof != null)`, is MIR's `if (!t) { break; } else { .. }` there,
+and one of `&&`s MIR reads into temporaries first is `if (a) { const _19 =
+value.$$typeof; if (_19 === LAZY) { .. } } break;`: neither is a loop's
+test until `chains` reads the temporaries in place and `while tests` makes
+it one. **`chains` now runs `continued` again after `while tests`**
+(`continued_blocks`), of each loop whose body ends in a block MIR made,
+through the `else`s it ends with, `if (c) { ..; continue; } else { ..; l: {
+.. } }`, and of no other loop, whose `if`s `continued` has read already
+(`if (key > 0 && ..) { out.push(key); }` stays as written). By then
+`written elses` has made the program's `else if` chains, so an `if` the
+program wrote with an `else` is kept, not made `if (a) { ..; continue; }
+if (b) { .. }`. Case ([0262](0262-when-rust-and-js-disagree.md)): N, the
+same jumps.
+
+Held by the corpus case `while_test_continues_of_chain`, against native
+Rust, of both shapes, and the mutations `continued-else-chain-unlinked`,
+`continued-blocks-of-every-loop`, `continued-blocks-past-elses-unread`
+(`tidy/jumps/continues.ts`) and `chains-continued-off` (`tidy/stages.ts`).

@@ -530,6 +530,15 @@ pub(super) const STAGES: &[Stage] = &[
             pass("while tests", |b, h| {
                 js::statement_lists(b, &mut |s| while_tests(s, &h.written.loops))
             }),
+            // A block MIR made that the body of a loop of such a test ends
+            // with: its `break`s the loop's `continue`s, as `loops`' are,
+            // `while (typeof v === "object" && v.$$typeof === LAZY) { ..;
+            // continue; }` (rd530).
+            pass("continued", |b, h| {
+                js::statement_lists(b, &mut |s| {
+                    continued_blocks(s, &h.written.continues, &h.written.logicals, &h.written.elses)
+                })
+            }),
             // A block MIR made that a loop's body ends with, then its
             // `break;`: the block's `break`s the loop's, as an arm's `break`
             // is written (#389c).

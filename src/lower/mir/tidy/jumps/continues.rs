@@ -13,78 +13,126 @@ pub(in crate::lower::mir::tidy) fn continued(
     logicals: &[js::Span],
 ) {
     for stmt in stmts.iter_mut() {
-        let (looped, body) = match &mut stmt.kind {
-            StmtKind::While { label, body, .. }
-            | StmtKind::ForOf { label, body, .. }
-            | StmtKind::For { label, body, .. } => (label.clone(), body),
-            _ => continue,
-        };
-        // What can't follow a jump, before the body's end is read.
-        unreachable_after(body);
-        loop {
-            match body.last().map(|s| &s.kind) {
-                Some(StmtKind::Labeled(..)) => {
-                    let Some(Stmt {
-                        kind: StmtKind::Labeled(block, mut inner),
-                        span,
-                    }) = body.pop()
-                    else {
-                        unreachable!("matched")
-                    };
-                    // A condition the program wrote, of `&&`, `||` and
-                    // `!` mixed, whose tests leave the block: its `if`, as
-                    // written, not a `continue` it didn't write.
-                    if !continue_tested(&inner, guards)
-                        && let Some(test) = logicals::skipped_test(&block, &inner, logicals)
-                    {
-                        body.push(test);
-                        break;
-                    }
-                    // One the program wrote as a `continue` of its negation,
-                    // `if (!(a && (!b || c))) { continue; }`, every test of
-                    // it in the written `if`'s: that `if`, then what it
-                    // skips, not the tests nested (rd72c).
-                    if let Some((test, then, at)) = negated_continue(&block, &inner, guards) {
-                        body.push(StmtKind::If(test, vec![StmtKind::Continue(None).at(at)], None).at(span));
-                        body.extend(then);
-                        break;
-                    }
-                    let clashes = declared(&inner).any(|name| declared(body).any(|n| n == name));
-                    if clashes || continues(&mut inner, &block, looped.as_deref(), false).is_none() {
-                        body.push(StmtKind::Labeled(block, inner).at(span));
-                        break;
-                    }
-                    continues(&mut inner, &block, looped.as_deref(), true);
-                    body.extend(inner);
-                }
-                // One the program ended with a `continue`, `if (t) { a;
-                // continue; }`, of what MIR has as its `else`.
-                Some(StmtKind::If(_, _, Some(otherwise)))
-                    if tests_continue(guards, body.last().expect("matched").span)
-                        && !declared(otherwise).any(|name| declared(&body[..body.len() - 1]).any(|n| n == name)) =>
+        if let Some((looped, body)) = looped(stmt) {
+            continued_loop(looped, body, (guards, logicals), None);
+        }
+    }
+}
+
+/// `continued` again, once `chains` has read in place a loop's test MIR
+/// read into temporaries first, `const _19 = value.$$typeof; if (_19 ===
+/// LAZY)`, and `while tests` made it the loop's: of each loop whose body
+/// ends in a block MIR made, `if (c) { ..; continue; } else { ..; l: { ..
+/// } }`'s too, only (rd530). The `if .. else` chains `written elses` has
+/// made as the program wrote them by now are kept so.
+pub(in crate::lower::mir::tidy) fn continued_blocks(
+    stmts: &mut [Stmt],
+    guards: &[(js::Span, js::Span)],
+    logicals: &[js::Span],
+    elses: &[(js::Span, js::Span, js::Span)],
+) {
+    fn ends_in_block(body: &[Stmt]) -> bool {
+        match body.last().map(|s| &s.kind) {
+            Some(StmtKind::Labeled(..)) => true,
+            Some(StmtKind::If(_, _, Some(otherwise))) => ends_in_block(otherwise),
+            _ => false,
+        }
+    }
+    for stmt in stmts.iter_mut() {
+        if let Some((looped, body)) = looped(stmt)
+            && ends_in_block(body)
+        {
+            continued_loop(looped, body, (guards, logicals), Some(elses));
+        }
+    }
+}
+
+/// The label and body of `stmt`, where it's a loop a `continue` goes on with.
+fn looped(stmt: &mut Stmt) -> Option<(Option<String>, &mut Vec<Stmt>)> {
+    match &mut stmt.kind {
+        StmtKind::While { label, body, .. }
+        | StmtKind::ForOf { label, body, .. }
+        | StmtKind::For { label, body, .. } => Some((label.clone(), body)),
+        _ => None,
+    }
+}
+
+/// `continued` of one loop, `looped` its label and `body` its body, by the
+/// `if`s of the `continue`s the program wrote, `guards`, and its conditions
+/// of `&&`, `||` and `!` mixed, `logicals`; each `if` of `kept`, written
+/// with an `else`, kept as it is (`continued_blocks`).
+fn continued_loop(
+    looped: Option<String>,
+    body: &mut Vec<Stmt>,
+    (guards, logicals): (&[(js::Span, js::Span)], &[js::Span]),
+    kept: Option<&[(js::Span, js::Span, js::Span)]>,
+) {
+    // What can't follow a jump, before the body's end is read.
+    unreachable_after(body);
+    loop {
+        match body.last().map(|s| &s.kind) {
+            Some(StmtKind::Labeled(..)) => {
+                let Some(Stmt {
+                    kind: StmtKind::Labeled(block, mut inner),
+                    span,
+                }) = body.pop()
+                else {
+                    unreachable!("matched")
+                };
+                // A condition the program wrote, of `&&`, `||` and
+                // `!` mixed, whose tests leave the block: its `if`, as
+                // written, not a `continue` it didn't write.
+                if !continue_tested(&inner, guards)
+                    && let Some(test) = logicals::skipped_test(&block, &inner, logicals)
                 {
-                    let Some(Stmt {
-                        kind: StmtKind::If(test, mut then, Some(otherwise)),
-                        span,
-                    }) = body.pop()
-                    else {
-                        unreachable!("matched")
-                    };
-                    if !then.last().is_some_and(ends) {
-                        then.push(StmtKind::Continue(None).at(js::Span::NONE));
-                    }
-                    body.push(StmtKind::If(test, then, None).at(span));
-                    body.extend(otherwise);
+                    body.push(test);
+                    break;
                 }
-                // Of one statement, where the program wrote the `continue`,
-                // whatever its test, `i % 2 !== 0` of `i % 2 == 0`.
-                Some(StmtKind::If(_, _, None)) => {
-                    if !turned_continue(body, guards) {
-                        break;
-                    }
+                // One the program wrote as a `continue` of its negation,
+                // `if (!(a && (!b || c))) { continue; }`, every test of
+                // it in the written `if`'s: that `if`, then what it
+                // skips, not the tests nested (rd72c).
+                if let Some((test, then, at)) = negated_continue(&block, &inner, guards) {
+                    body.push(StmtKind::If(test, vec![StmtKind::Continue(None).at(at)], None).at(span));
+                    body.extend(then);
+                    break;
                 }
-                _ => break,
+                let clashes = declared(&inner).any(|name| declared(body).any(|n| n == name));
+                if clashes || continues(&mut inner, &block, looped.as_deref(), false).is_none() {
+                    body.push(StmtKind::Labeled(block, inner).at(span));
+                    break;
+                }
+                continues(&mut inner, &block, looped.as_deref(), true);
+                body.extend(inner);
             }
+            // One the program ended with a `continue`, `if (t) { a;
+            // continue; }`, of what MIR has as its `else`.
+            Some(StmtKind::If(_, _, Some(otherwise)))
+                if tests_continue(guards, body.last().expect("matched").span)
+                    && !kept.is_some_and(|elses| written_else(body.last().expect("matched"), elses))
+                    && !declared(otherwise).any(|name| declared(&body[..body.len() - 1]).any(|n| n == name)) =>
+            {
+                let Some(Stmt {
+                    kind: StmtKind::If(test, mut then, Some(otherwise)),
+                    span,
+                }) = body.pop()
+                else {
+                    unreachable!("matched")
+                };
+                if !then.last().is_some_and(ends) {
+                    then.push(StmtKind::Continue(None).at(js::Span::NONE));
+                }
+                body.push(StmtKind::If(test, then, None).at(span));
+                body.extend(otherwise);
+            }
+            // Of one statement, where the program wrote the `continue`,
+            // whatever its test, `i % 2 !== 0` of `i % 2 == 0`.
+            Some(StmtKind::If(_, _, None)) => {
+                if !turned_continue(body, guards) {
+                    break;
+                }
+            }
+            _ => break,
         }
     }
 }

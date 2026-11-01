@@ -5,6 +5,16 @@ import type { Mutation } from "../../../../mutations";
 export const mutations: Mutation[] = [
 
   {
+    name: "chains-continued-off",
+    breaks:
+      "a `while` whose test MIR reads into temporaries first, `while (at != null && nodes[at].status < 10)`, ends its body with a block MIR made, `bb39: { .. break bb39; }`, where the program wrote `continue;` (rd530)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "                js::statement_lists(b, &mut |s| {\n                    continued_blocks(s, &h.written.continues, &h.written.logicals, &h.written.elses)\n                })\n",
+    replace: "                let _ = (b, h);\n",
+    tests: ["test/corpus.test.ts", "-t", "^while_test_continues_of_chain.rs$"],
+    snapshots: true,
+  },
+  {
     name: "in-place-logical-returns-off",
     breaks:
       "a `return a || (b && c)` of method reads MIR held in temporaries stays `if (a) { return true; } return b && c;`, not as written (rd179)",
