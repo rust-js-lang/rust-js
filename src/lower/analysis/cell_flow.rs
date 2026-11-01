@@ -8,7 +8,7 @@
 //! return make two nodes one, and with them what's beneath them. Std's code
 //! moves a `T` only where a `T` goes, so a call of std's makes each value of
 //! a type it's given or gives one with each other of that type; so does a
-//! binding that keeps what it's given in its collection (ADR 1048).
+//! binding that keeps what it's given in its collection (ADR 1050).
 //!
 //! What code rust-js can't see is given, and what it gives, is `TOP`: a
 //! binding's, a library's, a `dyn`'s or a fn pointer's call; what an
@@ -757,7 +757,7 @@ impl<'r, 'tcx> Flow<'r, 'tcx> {
         if crate::lower::bindings::is_binding(tcx, id) {
             return match crate::lower::bindings::keeps_in_collection(tcx, id) {
                 // What it keeps is its collection's, as std's code keeps it
-                // (ADR 1048).
+                // (ADR 1050).
                 true => self.by_type(at, &ports, true),
                 false => self.unseen(&ports),
             };

@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "flow-collection-unseen",
     breaks:
-      "a JS collection's methods are code rust-js can't see, so a cell kept in a `Map` is any cell of its type, and Fizz's batch, of the same type as a tag cache held across a getter, is checked (ADR 1048)",
+      "a JS collection's methods are code rust-js can't see, so a cell kept in a `Map` is any cell of its type, and Fizz's batch, of the same type as a tag cache held across a getter, is checked (ADR 1050)",
     file: "src/lower/analysis/cell_flow.rs",
     find: "                true => self.by_type(at, &ports, true),",
     replace: "                true => self.unseen(&ports),",

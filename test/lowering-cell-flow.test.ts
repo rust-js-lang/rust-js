@@ -1,6 +1,6 @@
 // Which cells a held borrow can be of (ADR 0863, amended, issue #445): a
 // cell's flow, where it's made and where it goes, and a JS collection's
-// mark that it keeps what it's given only in itself (ADR 1048). Each test
+// mark that it keeps what it's given only in itself (ADR 1050). Each test
 // is a program of its own, compiled and run.
 
 import { beforeAll, expect, test } from "bun:test";
@@ -18,7 +18,7 @@ const withBindings = [
   target,
 ];
 
-// ADR 1048: the mark is a binding's that runs nothing, of a JS object.
+// ADR 1050: the mark is a binding's that runs nothing, of a JS object.
 test("a collection's mark is refused where it can't be said", () => {
   const dir = fixture("collection-mark-refused");
   writeFileSync(join(dir, "lib.rs"), `use std::marker::PhantomData;

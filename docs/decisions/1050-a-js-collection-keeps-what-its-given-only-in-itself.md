@@ -1,4 +1,4 @@
-# 1048. A JS collection keeps what it's given only in itself
+# 1050. A JS collection keeps what it's given only in itself
 
 Status: Accepted (the user's decision, 2026-11-01, issue #445). Extends
 [0867](0867-a-binding-that-runs-nothing-and-aggregate-error.md) (a binding

@@ -1,7 +1,7 @@
 //! What a binding says of what it runs, which nothing of its JS shows:
 //! that it can't throw (ADR 0301), that it runs nothing (ADR 0867), or
 //! only what it's given (ADR 0898), or gives back what it was given (ADR
-//! 1022), or keeps what it's given only in its collection (ADR 1048).
+//! 1022), or keeps what it's given only in its collection (ADR 1050).
 
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
@@ -78,7 +78,7 @@ pub(in crate::lower) fn called_constructs(tcx: TyCtxt<'_>, def_id: DefId) -> boo
 /// what it's given only in its collection, the JS object it's called on or,
 /// of no receiver, the one it makes and gives, and gives only what that
 /// collection holds, as a JS `Map`'s, `Set`'s, `WeakMap`'s and `WeakSet`'s
-/// own methods do (ADR 1048): a value a program keeps in one reaches no
+/// own methods do (ADR 1050): a value a program keeps in one reaches no
 /// code but its own, as one it keeps in a `HashMap` doesn't.
 pub(in crate::lower) fn keeps_in_collection(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("keeps_in_collection")];
@@ -86,7 +86,7 @@ pub(in crate::lower) fn keeps_in_collection(tcx: TyCtxt<'_>, def_id: DefId) -> b
 }
 
 /// Each `#[rust_js::keeps_in_collection]` that can't say so refused (ADR
-/// 1048): one on what isn't a binding, whose body is the program's; on a
+/// 1050): one on what isn't a binding, whose body is the program's; on a
 /// binding that may run code, which may keep what it's given anywhere, so
 /// it says `#[rust_js::runs_nothing]` too; and on one with no collection, a
 /// JS object it's called on or, of no receiver, gives.
@@ -114,7 +114,7 @@ pub(in crate::lower) fn reject_unkept_collections(
         if let Some(why) = refused {
             tcx.dcx().span_err(
                 tcx.def_span(def),
-                format!("rust-js: `#[rust_js::keeps_in_collection]` can't be said of this (ADR 1048): {why}"),
+                format!("rust-js: `#[rust_js::keeps_in_collection]` can't be said of this (ADR 1050): {why}"),
             );
             valid = false;
         }
@@ -123,7 +123,7 @@ pub(in crate::lower) fn reject_unkept_collections(
 }
 
 /// The collection a `#[rust_js::keeps_in_collection]` binding keeps what
-/// it's given in (ADR 1048): the JS object its `&self` is, or, of none, the
+/// it's given in (ADR 1050): the JS object its `&self` is, or, of none, the
 /// one it gives.
 fn collection<'tcx>(
     recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
