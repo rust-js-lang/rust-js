@@ -329,6 +329,10 @@ impl Walk {
                 | Prop::Getter(_, value)
                 | Prop::Setter(_, value)
                 | Prop::Method(_, value) => self.expr(value),
+                Prop::Keyed(key, value) | Prop::KeyedMethod(key, value) => {
+                    self.expr(key);
+                    self.expr(value);
+                }
             }
         }
     }

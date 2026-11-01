@@ -434,6 +434,7 @@ impl<'a> Cx<'a> {
             | Prop::Getter(name, value)
             | Prop::Setter(name, value)
             | Prop::Method(name, value) => (name, value),
+            Prop::Keyed(..) | Prop::KeyedMethod(..) => unreachable!("a JSX attribute is named by text (ADR 1051)"),
         };
         let sp = span(value.span);
         let value = match &value.kind {
@@ -474,7 +475,7 @@ impl<'a> Cx<'a> {
     fn accessor(
         &self,
         kind: PropertyKind,
-        name: &str,
+        name: AccessorKey<'_>,
         params: &[js::Pattern],
         body: &[js::Stmt],
         is_async: bool,
@@ -498,10 +499,12 @@ impl<'a> Cx<'a> {
             b,
         );
         let method = kind == PropertyKind::Init;
-        let key = if crate::names::is_identifier(name) {
-            PropertyKey::new_static_identifier(SPAN, self.name(name), b)
-        } else {
-            PropertyKey::new_string_literal(SPAN, self.name(name), None, b)
+        let (key, computed) = match name {
+            AccessorKey::Computed(key) => (PropertyKey::from(self.expr(key)), true),
+            AccessorKey::Named(name) if crate::names::is_identifier(name) => {
+                (PropertyKey::new_static_identifier(SPAN, self.name(name), b), false)
+            }
+            AccessorKey::Named(name) => (PropertyKey::new_string_literal(SPAN, self.name(name), None, b), false),
         };
         // A method starts where its arrow did, which a comment before the
         // field is attached to, as a field's value (ADR 0708).
@@ -509,7 +512,7 @@ impl<'a> Cx<'a> {
             true => Span::new(at.lo, at.lo),
             false => SPAN,
         };
-        ObjectPropertyKind::new_object_property(at, kind, key, value, method, false, false, b)
+        ObjectPropertyKind::new_object_property(at, kind, key, value, method, false, computed, b)
     }
 
     fn property(&self, prop: &Prop, layout: &js::ObjectLayout) -> ObjectPropertyKind<'a> {
@@ -521,18 +524,28 @@ impl<'a> Cx<'a> {
         };
         match prop {
             Prop::Setter(name, value) => match &value.kind {
-                ExprKind::Arrow(params, body) => {
-                    self.accessor(PropertyKind::Set, name, params, body, false, value.span)
-                }
+                ExprKind::Arrow(params, body) => self.accessor(
+                    PropertyKind::Set,
+                    AccessorKey::Named(name),
+                    params,
+                    body,
+                    false,
+                    value.span,
+                ),
                 _ => unreachable!("a setter is an arrow of one parameter"),
             },
             Prop::Getter(name, value) => match &value.kind {
-                ExprKind::Arrow(params, body) => {
-                    self.accessor(PropertyKind::Get, name, params, body, false, value.span)
-                }
+                ExprKind::Arrow(params, body) => self.accessor(
+                    PropertyKind::Get,
+                    AccessorKey::Named(name),
+                    params,
+                    body,
+                    false,
+                    value.span,
+                ),
                 _ => self.accessor(
                     PropertyKind::Get,
-                    name,
+                    AccessorKey::Named(name),
                     &[],
                     &[js::StmtKind::Return(Some(value.clone())).at(value.span)],
                     false,
@@ -540,12 +553,22 @@ impl<'a> Cx<'a> {
                 ),
             },
             Prop::Method(name, value) => match &value.kind {
-                ExprKind::Arrow(params, body) => {
-                    self.accessor(PropertyKind::Init, name, params, body, false, written(name, value))
-                }
-                ExprKind::AsyncArrow(params, body) => {
-                    self.accessor(PropertyKind::Init, name, params, body, true, written(name, value))
-                }
+                ExprKind::Arrow(params, body) => self.accessor(
+                    PropertyKind::Init,
+                    AccessorKey::Named(name),
+                    params,
+                    body,
+                    false,
+                    written(name, value),
+                ),
+                ExprKind::AsyncArrow(params, body) => self.accessor(
+                    PropertyKind::Init,
+                    AccessorKey::Named(name),
+                    params,
+                    body,
+                    true,
+                    written(name, value),
+                ),
                 _ => unreachable!("a method is an arrow"),
             },
             Prop::Field(name, value) => {
@@ -578,6 +601,37 @@ impl<'a> Cx<'a> {
                 )
             }
             Prop::Spread(value) => ObjectPropertyKind::new_spread_property(SPAN, self.expr(value), b),
+            // `[ASYNC_ITERATOR]() { .. }`, a method a symbol names (ADR 1051).
+            Prop::KeyedMethod(key, value) => match &value.kind {
+                ExprKind::Arrow(params, body) => self.accessor(
+                    PropertyKind::Init,
+                    AccessorKey::Computed(key),
+                    params,
+                    body,
+                    false,
+                    value.span,
+                ),
+                ExprKind::AsyncArrow(params, body) => self.accessor(
+                    PropertyKind::Init,
+                    AccessorKey::Computed(key),
+                    params,
+                    body,
+                    true,
+                    value.span,
+                ),
+                _ => unreachable!("a method is an arrow"),
+            },
+            // `[RESPONSE_SYMBOL]: response`, a computed key (ADR 1051).
+            Prop::Keyed(key, value) => ObjectPropertyKind::new_object_property(
+                SPAN,
+                PropertyKind::Init,
+                PropertyKey::from(self.expr(key)),
+                self.expr(value),
+                false,
+                false,
+                true,
+                b,
+            ),
         }
     }
 
@@ -1151,4 +1205,12 @@ mod tests {
         assert_eq!(as_written("1e-1", f64::from(0.1f32)), None);
         assert_eq!(as_written("0xffu8.wrapping_add(1)", 0.0), None);
     }
+}
+
+/// A property's key as an accessor or a method is named: its name, or a
+/// symbol's, computed, `[ASYNC_ITERATOR]` (ADR 1051).
+#[derive(Clone, Copy)]
+enum AccessorKey<'e> {
+    Named(&'e str),
+    Computed(&'e js::Expr),
 }

@@ -357,45 +357,45 @@ export const mutations: Mutation[] = [
     tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
   },
   {
-    "name": "constants-not-destructured",
-    "breaks": "constants each reading a property of one object stay apart, not its destructuring",
-    "file": "src/prepare.rs",
-    "find": "        module.items.push(match fields.len() {\n            1 => js::Item::Const(first),\n",
-    "replace": "        module.items.push(match fields.len() * 0 + 1 {\n            1 => js::Item::Const(first),\n",
-    "tests": ["test/jsx-types.test.ts", "-t", "children declared any node"]
+    name: "constants-not-destructured",
+    breaks: "constants each reading a property of one object stay apart, not its destructuring",
+    file: "src/prepare.rs",
+    find: "        module.items.push(match fields.len() {\n            1 => js::Item::Const(first),\n",
+    replace: "        module.items.push(match fields.len() * 0 + 1 {\n            1 => js::Item::Const(first),\n",
+    tests: ["test/jsx-types.test.ts", "-t", "children declared any node"]
   },
   {
-    "name": "constants-of-two-objects-destructured",
-    "breaks": "constants reading properties of two objects are destructured from the first",
-    "file": "src/prepare.rs",
-    "find": "            && same_var(&object, of)\n",
-    "replace": "            && (true || same_var(&object, of))\n",
-    "tests": ["test/jsx-types.test.ts", "-t", "children declared any node"]
+    name: "constants-of-two-objects-destructured",
+    breaks: "constants reading properties of two objects are destructured from the first",
+    file: "src/prepare.rs",
+    find: "            && same_var(&object, of)\n",
+    replace: "            && (true || same_var(&object, of))\n",
+    tests: ["test/jsx-types.test.ts", "-t", "children declared any node"]
   },
   {
-    "name": "else-after-return-kept",
-    "breaks": "`if (c) { return a; } else { return b; }` keeps its `else`, which JS writes as `return b;` after it",
-    "file": "src/prepare.rs",
-    "find": "            && then.last().is_some_and(js::ends)\n            && !test",
-    "replace": "            && false\n            && !test",
-    "tests": ["test/snapshots.test.ts"],
+    name: "else-after-return-kept",
+    breaks: "`if (c) { return a; } else { return b; }` keeps its `else`, which JS writes as `return b;` after it",
+    file: "src/prepare.rs",
+    find: "            && then.last().is_some_and(js::ends)\n            && !test",
+    replace: "            && false\n            && !test",
+    tests: ["test/snapshots.test.ts"],
     "snapshots": true
   },
   {
-    "name": "else-dropped-of-any-branch",
-    "breaks": "an `else` of a branch that doesn't leave is run after it too: `total += n; total -= n`",
-    "file": "src/prepare.rs",
-    "find": "            && then.last().is_some_and(js::ends)\n            && !test",
-    "replace": "            && true\n            && !test",
-    "tests": ["test/lowering-labels.test.ts", "-t", "an else the program wrote in a case, or after a branch that goes on, stays"]
+    name: "else-dropped-of-any-branch",
+    breaks: "an `else` of a branch that doesn't leave is run after it too: `total += n; total -= n`",
+    file: "src/prepare.rs",
+    find: "            && then.last().is_some_and(js::ends)\n            && !test",
+    replace: "            && true\n            && !test",
+    tests: ["test/lowering-labels.test.ts", "-t", "an else the program wrote in a case, or after a branch that goes on, stays"]
   },
   {
-    "name": "same-test-and-value-conditional",
-    "breaks": "`code ? code : null`, not `code || null`",
-    "file": "src/prepare.rs",
-    "find": "            if js::same_path(a, b) {\n",
-    "replace": "            if false && js::same_path(a, b) {\n",
-    "tests": ["test/lowering-options.test.ts", "-t", "nullable field's None is null|a filter by truth then a fallback is JS"]
+    name: "same-test-and-value-conditional",
+    breaks: "`code ? code : null`, not `code || null`",
+    file: "src/prepare.rs",
+    find: "            if js::same_path(a, b) {\n",
+    replace: "            if false && js::same_path(a, b) {\n",
+    tests: ["test/lowering-options.test.ts", "-t", "nullable field's None is null|a filter by truth then a fallback is JS"]
   },
   {
     name: "test-and-else-conditional",
@@ -414,44 +414,44 @@ export const mutations: Mutation[] = [
     tests: ["test/bindings.test.ts", "-t", "tested as JS tests it"],
   },
   {
-    "name": "return-undefined-written",
-    "breaks": "a `return` of `undefined` says it, `return undefined;`, where JS writes `return;`",
-    "file": "src/prepare.rs",
-    "find": "        if let StmtKind::Let(_, value) | StmtKind::Return(value) = &mut stmt.kind\n",
-    "replace": "        if let StmtKind::Let(_, value) = &mut stmt.kind\n",
-    "tests": ["test/lowering-branches.test.ts", "-t", "a return of undefined is a bare return"]
+    name: "return-undefined-written",
+    breaks: "a `return` of `undefined` says it, `return undefined;`, where JS writes `return;`",
+    file: "src/prepare.rs",
+    find: "        if let StmtKind::Let(_, value) | StmtKind::Return(value) = &mut stmt.kind\n",
+    replace: "        if let StmtKind::Let(_, value) = &mut stmt.kind\n",
+    tests: ["test/lowering-branches.test.ts", "-t", "a return of undefined is a bare return"]
   },
   {
-    "name": "test-double-negation-kept",
-    "breaks": "an `if`'s test of a value's truth keeps its `!!`, `if (!!x)`",
-    "file": "src/prepare.rs",
-    "find": "                *e = e.tested();\n",
-    "replace": "",
-    "tests": ["test/snapshots.test.ts"]
+    name: "test-double-negation-kept",
+    breaks: "an `if`'s test of a value's truth keeps its `!!`, `if (!!x)`",
+    file: "src/prepare.rs",
+    find: "                *e = e.tested();\n",
+    replace: "",
+    tests: ["test/snapshots.test.ts"]
   },
   {
-    "name": "jsx-undefined-attribute-written",
-    "breaks": "a JSX attribute that's `undefined`, a `None`, is written, `title={undefined}`",
-    "file": "src/prepare.rs",
-    "find": "            jsx.props.retain(|p| {\n",
-    "replace": "            jsx.props.retain(|p| true || {\n",
-    "tests": ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
+    name: "jsx-undefined-attribute-written",
+    breaks: "a JSX attribute that's `undefined`, a `None`, is written, `title={undefined}`",
+    file: "src/prepare.rs",
+    find: "            jsx.props.retain(|p| {\n",
+    replace: "            jsx.props.retain(|p| true || {\n",
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
   },
   {
-    "name": "pair-without-impl",
-    "breaks": "a number's `&mut dyn` pair is written without its `impl`, and `d.impl.bump` throws",
-    "file": "src/prepare.rs",
-    "find": "        let props = dictionary\n            .into_iter()\n",
-    "replace": "        let props = dictionary\n            .into_iter()\n            .take(0)\n",
-    "tests": ["test/corpus.test.ts", "-t", "dyn_mut"]
+    name: "pair-without-impl",
+    breaks: "a number's `&mut dyn` pair is written without its `impl`, and `d.impl.bump` throws",
+    file: "src/prepare.rs",
+    find: "        let props = dictionary\n            .into_iter()\n",
+    replace: "        let props = dictionary\n            .into_iter()\n            .take(0)\n",
+    tests: ["test/corpus.test.ts", "-t", "dyn_mut"]
   },
   {
-    "name": "handle-setter-reads-its-param",
-    "breaks": "a handle on `value[0]` names its setter's parameter `value_`, not `newValue`, as a person names it",
-    "file": "src/prepare.rs",
-    "find": "        if place.mentions_var(&param) {\n            param = \"newValue\".to_string();\n        }\n",
-    "replace": "",
-    "tests": ["test/corpus.test.ts", "-t", "handle_named_value"],
+    name: "handle-setter-reads-its-param",
+    breaks: "a handle on `value[0]` names its setter's parameter `value_`, not `newValue`, as a person names it",
+    file: "src/prepare.rs",
+    find: "        if place.mentions_var(&param) {\n            param = \"newValue\".to_string();\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "handle_named_value"],
     "snapshots": true
   },
   {
@@ -732,60 +732,60 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-written-branches.test.ts", "-t", "an else after a branch that returns stays"],
   },
   {
-    "name": "bitwise-chain-not-compound",
-    "breaks": "React's `workInProgress.flags = workInProgress.flags | Update | LayoutStatic`, a chain of its target, not `|=` (ADR 0631, amended)",
-    "file": "src/prepare.rs",
-    "find": "            if bitwise && js::same_path(first, target) {\n",
-    "replace": "            if false && bitwise && js::same_path(first, target) {\n",
-    "tests": ["test/lowering-math.test.ts", "-t", "bitwise chain"]
+    name: "bitwise-chain-not-compound",
+    breaks: "React's `workInProgress.flags = workInProgress.flags | Update | LayoutStatic`, a chain of its target, not `|=` (ADR 0631, amended)",
+    file: "src/prepare.rs",
+    find: "            if bitwise && js::same_path(first, target) {\n",
+    replace: "            if false && bitwise && js::same_path(first, target) {\n",
+    tests: ["test/lowering-math.test.ts", "-t", "bitwise chain"]
   },
   {
-    "name": "bitwise-chain-of-any-operator",
-    "breaks": "a chain of `-` of its target, `x = x - a - b`, made `x -= a - b`, another value",
-    "file": "src/prepare.rs",
-    "find": "            let bitwise = matches!(op, Op::BitAnd | Op::BitOr | Op::BitXor);\n",
-    "replace": "            let bitwise = true;\n",
-    "tests": ["test/lowering-math.test.ts", "-t", "bitwise chain"]
+    name: "bitwise-chain-of-any-operator",
+    breaks: "a chain of `-` of its target, `x = x - a - b`, made `x -= a - b`, another value",
+    file: "src/prepare.rs",
+    find: "            let bitwise = matches!(op, Op::BitAnd | Op::BitOr | Op::BitXor);\n",
+    replace: "            let bitwise = true;\n",
+    tests: ["test/lowering-math.test.ts", "-t", "bitwise chain"]
   },
   {
-    "name": "function-stored-unnamed",
-    "breaks": "a `with_this` function stored as a property stays anonymous, `update.callback = function () { .. }`, not React's `function callback()` (ADR 0972)",
-    "file": "src/prepare.rs",
-    "find": "            named_as(value, property);\n",
-    "replace": "",
-    "tests": ["test/js-functions.test.ts", "-t", "stored as a property is named"]
+    name: "function-stored-unnamed",
+    breaks: "a `with_this` function stored as a property stays anonymous, `update.callback = function () { .. }`, not React's `function callback()` (ADR 0972)",
+    file: "src/prepare.rs",
+    find: "            named_as(value, property);\n",
+    replace: "",
+    tests: ["test/js-functions.test.ts", "-t", "stored as a property is named"]
   },
   {
-    "name": "function-named-as-what-it-reads",
-    "breaks": "a function stored as `update.callback` is named `callback` where it reads a variable of that name, which its own name then is: `function callback() { return callback(); }` calls itself (a wrong answer, ADR 0972)",
-    "file": "src/prepare.rs",
-    "find": "        && js::mentions_in(&function.body, property) == 0\n",
-    "replace": "",
-    "tests": ["test/js-functions.test.ts", "-t", "stored as a property is named"]
+    name: "function-named-as-what-it-reads",
+    breaks: "a function stored as `update.callback` is named `callback` where it reads a variable of that name, which its own name then is: `function callback() { return callback(); }` calls itself (a wrong answer, ADR 0972)",
+    file: "src/prepare.rs",
+    find: "        && js::mentions_in(&function.body, property) == 0\n",
+    replace: "",
+    tests: ["test/js-functions.test.ts", "-t", "stored as a property is named"]
   },
   {
-    "name": "function-named-a-kept-word",
-    "breaks": "a function stored as `update.default` is named `function default()`, a `SyntaxError` (ADR 0972)",
-    "file": "src/prepare.rs",
-    "find": "        && !crate::names::kept_word(property)\n",
-    "replace": "",
-    "tests": ["test/js-functions.test.ts", "-t", "stored as a property is named"]
+    name: "function-named-a-kept-word",
+    breaks: "a function stored as `update.default` is named `function default()`, a `SyntaxError` (ADR 0972)",
+    file: "src/prepare.rs",
+    find: "        && !crate::names::kept_word(property)\n",
+    replace: "",
+    tests: ["test/js-functions.test.ts", "-t", "stored as a property is named"]
   },
   {
-    "name": "function-named-no-name",
-    "breaks": "a function stored as `on[\"data-on\"]` is named `function data-on()`, a `SyntaxError` (ADR 0972)",
-    "file": "src/prepare.rs",
-    "find": "        && crate::names::is_identifier(property)\n",
-    "replace": "",
-    "tests": ["test/js-functions.test.ts", "-t", "stored as a property is named"]
+    name: "function-named-no-name",
+    breaks: "a function stored as `on[\"data-on\"]` is named `function data-on()`, a `SyntaxError` (ADR 0972)",
+    file: "src/prepare.rs",
+    find: "        && crate::names::is_identifier(property)\n",
+    replace: "",
+    tests: ["test/js-functions.test.ts", "-t", "stored as a property is named"]
   },
   {
-    "name": "function-of-a-let-not-declared",
-    "breaks": "a `let` of a `with_this` function stays `const inner = function () { .. }`, not `function inner() { .. }` (ADR 0972)",
-    "file": "src/prepare.rs",
-    "find": "            && matches!(&value.kind, ExprKind::Function(function) if function.name.is_empty())\n",
-    "replace": "            && matches!(&value.kind, ExprKind::Function(function) if function.name.is_empty() && false)\n",
-    "tests": ["test/js-functions.test.ts", "-t", "a function nested in a with_this function"]
+    name: "function-of-a-let-not-declared",
+    breaks: "a `let` of a `with_this` function stays `const inner = function () { .. }`, not `function inner() { .. }` (ADR 0972)",
+    file: "src/prepare.rs",
+    find: "            && matches!(&value.kind, ExprKind::Function(function) if function.name.is_empty())\n",
+    replace: "            && matches!(&value.kind, ExprKind::Function(function) if function.name.is_empty() && false)\n",
+    tests: ["test/js-functions.test.ts", "-t", "a function nested in a with_this function"]
   },
   {
     name: "err-ending-a-block-returns",
@@ -819,5 +819,17 @@ export const mutations: Mutation[] = [
     find: "    this_handles::this_read_apart(body);\n",
     replace: "",
     tests: ["test/js-constructors.test.ts", "-t", "RefCell field sets"],
+  },
+  {
+    name: "keyed-closure-no-method",
+    breaks: "a closure a symbol names is an arrow, `[Symbol.asyncIterator]: () => {..}`, where a field's is a method",
+    file: "src/prepare.rs",
+    find: "    let (Prop::Field(_, value) | Prop::Keyed(_, value)) = prop else {",
+    replace: "    let Prop::Field(_, value) = prop else {",
+    tests: [
+      "test/field-symbol-names.test.ts",
+      "-t",
+      "a closure a symbol names is its method"
+    ]
   },
 ];

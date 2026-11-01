@@ -264,8 +264,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a derived `Default`'s `Cell` field is `{ value: 0 }`, where it's `0`",
     file: "src/lower/std_impls.rs",
-    find: "                                Ok(Prop::Field(name, self.holding(value, self.struct_field_def(ty, i), t)))\n",
-    replace: "                                Ok(Prop::Field(name, value))\n",
+    find: "                                let value = self.holding(value, self.struct_field_def(ty, i), t);\n",
+    replace: "",
     tests: [
       "test/lowering-cells.test.ts",
       "-t",
@@ -1071,5 +1071,17 @@ export const mutations: Mutation[] = [
     find: "                let itself = self.untagged_changed_itself(ty);\n",
     replace: "                let itself = false;\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
+  },
+  {
+    name: "field-symbol-default-by-name",
+    breaks: "a derived `Default`'s field a symbol names is keyed by the symbol item's name",
+    file: "src/lower/std_impls.rs",
+    find: "                                    Some((item, at)) => Prop::Keyed(self.field_symbol(item, at), value),",
+    replace: "                                    Some((item, _)) => Prop::Field(self.tcx.item_name(item).to_string(), value),",
+    tests: [
+      "test/field-symbol-names.test.ts",
+      "-t",
+      "each field is its own symbol's"
+    ]
   },
 ];

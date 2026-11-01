@@ -81,6 +81,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 js::Pattern::names_array(items)
             }
+            // A struct a symbol names a field of is read field by field, as
+            // no pattern of it is written yet (ADR 1051).
+            Shape::Object(fields) if fields.iter().any(|(key, _)| key.symbol_item().is_some()) => return None,
             Shape::Object(fields) => {
                 let mut named = Vec::new();
                 let mut rest = None;
@@ -93,7 +96,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         true => rest = Some(bound),
                         false => {
                             let default = self.prop_default(pat.ty, i, pat.span);
-                            named.push((fields[i].0.clone(), js::Pattern::Name(bound), default))
+                            named.push((fields[i].0.text().to_owned(), js::Pattern::Name(bound), default))
                         }
                     }
                 }
@@ -104,9 +107,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let keys: Vec<&str> = (fields.iter().enumerate())
                         .filter(|&(i, (key, _))| {
                             !super::bindings::is_rest_field(self.tcx, pat.ty, i)
-                                && !named.iter().any(|(k, _, _)| k == key)
+                                && !named.iter().any(|(k, _, _)| k == key.text())
                         })
-                        .map(|(_, (key, _))| key.as_str())
+                        .map(|(_, (key, _))| key.text())
                         .collect();
                     for (key, unused) in keys.iter().zip(self.left_out(&keys)) {
                         named.push((key.to_string(), js::Pattern::Name(unused), None));

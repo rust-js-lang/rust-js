@@ -589,7 +589,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(self.stepped_items(left))
             }
             _ if !matches!(ty.kind(), ty::Adt(adt, _) if self.is_std(adt.did())) => match self.shape(ty) {
-                Shape::Object(fields) => self.clone_fields(place, ty, fields, span, out),
+                Shape::Object(fields) => self.clone_fields(place, ty, Self::named_fields(fields), span, out),
                 Shape::Array(tys) => Ok(Expr::array(
                     tys.into_iter()
                         .enumerate()
@@ -813,9 +813,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         fields
                             .into_iter()
                             .enumerate()
-                            .map(|(i, (name, t))| {
+                            .map(|(i, (key, t))| {
                                 let value = self.default_value(t, span)?;
-                                Ok(Prop::Field(name, self.holding(value, self.struct_field_def(ty, i), t)))
+                                let value = self.holding(value, self.struct_field_def(ty, i), t);
+                                // One a symbol names, `[SYMBOL]: ..` (ADR 1051).
+                                Ok(match key.symbol_item() {
+                                    Some((item, at)) => Prop::Keyed(self.field_symbol(item, at), value),
+                                    None => Prop::Field(key.text().to_owned(), value),
+                                })
                             })
                             .collect::<R<_>>()?,
                     );
@@ -1411,7 +1416,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => {
                 let parts: Vec<(Expr, Expr, Ty<'tcx>)> = match self.shape(ty) {
-                    Shape::Object(fields) => fields
+                    Shape::Object(fields) => Self::named_fields(fields)
                         .into_iter()
                         .enumerate()
                         .map(|(i, (name, t))| {

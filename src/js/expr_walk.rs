@@ -19,6 +19,10 @@ impl Expr {
                     | Prop::Getter(_, value)
                     | Prop::Setter(_, value)
                     | Prop::Method(_, value) => value.visit_vars(read),
+                    Prop::Keyed(key, value) | Prop::KeyedMethod(key, value) => {
+                        key.visit_vars(read);
+                        value.visit_vars(read);
+                    }
                 }
             }
         };
@@ -114,6 +118,10 @@ impl Expr {
                 for prop in props {
                     match prop {
                         Prop::Field(_, value) => value.visit_held_vars(read),
+                        Prop::Keyed(key, value) | Prop::KeyedMethod(key, value) => {
+                            key.visit_vars(&mut |v| read(v, false));
+                            value.visit_held_vars(read);
+                        }
                         Prop::Spread(value)
                         | Prop::Getter(_, value)
                         | Prop::Setter(_, value)
@@ -157,6 +165,14 @@ impl Expr {
                     Prop::Setter(name, value) => Some(Prop::Setter(name.clone(), value.replace(with, callbacks)?)),
                     Prop::Method(name, value) => Some(Prop::Method(name.clone(), value.replace(with, callbacks)?)),
                     Prop::Spread(value) => Some(Prop::Spread(value.replace(with, callbacks)?)),
+                    Prop::Keyed(key, value) => Some(Prop::Keyed(
+                        key.replace(with, callbacks)?,
+                        value.replace(with, callbacks)?,
+                    )),
+                    Prop::KeyedMethod(key, value) => Some(Prop::KeyedMethod(
+                        key.replace(with, callbacks)?,
+                        value.replace(with, callbacks)?,
+                    )),
                 })
                 .collect::<Option<Vec<_>>>()
         };
@@ -425,6 +441,9 @@ impl Expr {
                 | Prop::Setter(_, value)
                 | Prop::Method(_, value)
                 | Prop::Spread(value) => value.reads_only_vars(),
+                Prop::Keyed(key, value) | Prop::KeyedMethod(key, value) => {
+                    key.reads_only_vars() && value.reads_only_vars()
+                }
             })
         };
         match &self.kind {
@@ -619,6 +638,7 @@ impl Expr {
                 | Prop::Setter(_, value)
                 | Prop::Method(_, value)
                 | Prop::Spread(value) => value.has_effects(),
+                Prop::Keyed(key, value) | Prop::KeyedMethod(key, value) => key.has_effects() || value.has_effects(),
             }),
             ExprKind::Unary(op, a) => op.writes() || a.has_effects(),
             ExprKind::Binary(_, a, b) => a.has_effects() || b.has_effects(),
@@ -672,6 +692,9 @@ impl Expr {
                         | Prop::Setter(_, value)
                         | Prop::Method(_, value)
                         | Prop::Spread(value) => value.has_effects(),
+                        Prop::Keyed(key, value) | Prop::KeyedMethod(key, value) => {
+                            key.has_effects() || value.has_effects()
+                        }
                     })
                     || jsx.children.iter().any(Expr::has_effects)
             }

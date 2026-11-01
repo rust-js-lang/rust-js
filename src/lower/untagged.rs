@@ -472,7 +472,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                         match (adt.non_enum_variant().fields.iter()).find(|f| bindings::is_test_field(self.tcx, f.did))
                         {
                             Some(field) => Kind::Member(
-                                bindings::field_key(self.tcx, field),
+                                bindings::field_key(self.tcx, field).text().to_owned(),
                                 Box::new(self.untagged_kind(field.ty(self.tcx, args).skip_normalization())?),
                             ),
                             None => Kind::Object,
@@ -587,7 +587,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let declares = |ty: Ty<'tcx>| {
             matches!(*self.untagged_payload(ty).kind(), ty::Adt(s, args) if s.is_struct()
             && s.non_enum_variant().fields.iter().any(|f| {
-                bindings::field_key(self.tcx, f) == key && !apart(f.ty(self.tcx, args).skip_normalization())
+                bindings::field_key(self.tcx, f).name() == Some(key) && !apart(f.ty(self.tcx, args).skip_normalization())
             }))
         };
         match *self.untagged_payload(ty).kind() {

@@ -1156,7 +1156,7 @@ fn unread(body: &mut Vec<Stmt>) {
 /// `readContext(context) { return readContext(context); }` (ADR 0882,
 /// amended).
 fn method(prop: &Prop, beside: bool) -> Option<Prop> {
-    let Prop::Field(name, value) = prop else {
+    let (Prop::Field(_, value) | Prop::Keyed(_, value)) = prop else {
         return None;
     };
     let (ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body)) = &value.kind else {
@@ -1178,7 +1178,11 @@ fn method(prop: &Prop, beside: bool) -> Option<Prop> {
     {
         return None;
     }
-    Some(Prop::Method(name.clone(), value.clone()))
+    Some(match prop {
+        Prop::Keyed(key, _) => Prop::KeyedMethod(key.clone(), value.clone()),
+        Prop::Field(name, _) => Prop::Method(name.clone(), value.clone()),
+        _ => unreachable!("a field"),
+    })
 }
 
 fn expr(e: &mut Expr) {
@@ -1330,6 +1334,9 @@ fn expr(e: &mut Expr) {
                     Prop::Getter(_, value) | Prop::Setter(_, value) | Prop::Method(_, value) | Prop::Spread(value) => {
                         expr(value)
                     }
+                    Prop::Keyed(..) | Prop::KeyedMethod(..) => {
+                        unreachable!("a JSX attribute is named by text (ADR 1051)")
+                    }
                 }
             }
             for child in &mut jsx.children {
@@ -1427,12 +1434,17 @@ fn expr(e: &mut Expr) {
             // A field that's `undefined` is no key, `{ code }` (ADR 0280).
             js::undefined_keys::left_out(props, layout);
             for prop in props.iter_mut() {
-                let (Prop::Field(_, value)
-                | Prop::Getter(_, value)
-                | Prop::Setter(_, value)
-                | Prop::Method(_, value)
-                | Prop::Spread(value)) = prop;
-                expr(value);
+                match prop {
+                    Prop::Field(_, value)
+                    | Prop::Getter(_, value)
+                    | Prop::Setter(_, value)
+                    | Prop::Method(_, value)
+                    | Prop::Spread(value) => expr(value),
+                    Prop::Keyed(key, value) | Prop::KeyedMethod(key, value) => {
+                        expr(key);
+                        expr(value);
+                    }
+                }
             }
             objects::spread_written_out(props, layout);
             // Where one field is a method, each is (ADR 0882, amended).

@@ -790,7 +790,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .erase_and_anonymize_regions(field.ty(self.tcx, args).skip_normalization());
                 let value = Expr::member(
                     Expr::var("iterator"),
-                    crate::lower::bindings::field_key(self.tcx, field),
+                    crate::lower::bindings::field_key(self.tcx, field).text(),
                 );
                 self.drop_value(value, field_ty, span, &mut body)?;
             }

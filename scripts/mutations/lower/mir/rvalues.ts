@@ -907,4 +907,16 @@ export const mutations: Mutation[] = [
     replace: "                let made = (true)\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_fn_ptr_eq.rs$"],
   },
+  {
+    name: "field-symbol-update-by-name",
+    breaks: "an update's field a symbol names, `Pair { second: 9, ..pair }`, is keyed by the symbol item's name",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                    Some((item, span)) => Prop::Keyed(self.field_symbol(item, span), value),",
+    replace: "                    Some((item, _)) => Prop::Field(self.tcx.item_name(item).to_string(), value),",
+    tests: [
+      "test/field-symbol-names.test.ts",
+      "-t",
+      "each field is its own symbol's"
+    ]
+  },
 ];

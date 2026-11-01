@@ -363,10 +363,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for elem in place.projection {
             if let ProjectionElem::Field(field, _) = elem {
                 let key = match (ty.ty.kind(), ty.variant_index) {
-                    (ty::Adt(adt, _), variant) => crate::lower::bindings::field_key(
-                        self.tcx,
-                        &adt.variant(variant.unwrap_or(rustc_abi::FIRST_VARIANT)).fields[field],
-                    ),
+                    // One a symbol names, by its Rust name (ADR 1051).
+                    (ty::Adt(adt, _), variant) => {
+                        let field = &adt.variant(variant.unwrap_or(rustc_abi::FIRST_VARIANT)).fields[field];
+                        match crate::lower::bindings::field_key(self.tcx, field).name() {
+                            Some(key) => key.to_string(),
+                            None => field.name.to_string(),
+                        }
+                    }
                     _ => field.as_usize().to_string(),
                 };
                 name = format!("{name}${key}");

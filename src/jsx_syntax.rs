@@ -370,6 +370,8 @@ impl Expand<'_> {
                 }
             }
             companions.extend(parser::class_elsewhere(self.sess, item, &classes));
+            // A field named by a symbol, its name's use beside it (ADR 1051).
+            companions.extend(parser::field_symbol_uses(self.sess, item));
         }
         items.extend(companions);
     }

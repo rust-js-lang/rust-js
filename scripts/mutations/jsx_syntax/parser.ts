@@ -291,52 +291,52 @@ export const mutations: Mutation[] = [
     tests: ["test/jsx-types.test.ts", "-t", "children of a type parameter"],
   },
   {
-    "name": "const-component-unnamed",
-    "breaks": "a constant of a component's function type isn't a component JSX can name",
-    "file": "src/jsx_syntax/parser.rs",
-    "find": "        ItemKind::Const(c) => {\n            let TyKind::FnPtr(f) = &c.ty.kind else { return None };",
-    "replace": "        ItemKind::Const(c) if false => {\n            let TyKind::FnPtr(f) = &c.ty.kind else { return None };",
-    "tests": ["test/jsx-types.test.ts", "-t", "children declared any node"]
+    name: "const-component-unnamed",
+    breaks: "a constant of a component's function type isn't a component JSX can name",
+    file: "src/jsx_syntax/parser.rs",
+    find: "        ItemKind::Const(c) => {\n            let TyKind::FnPtr(f) = &c.ty.kind else { return None };",
+    replace: "        ItemKind::Const(c) if false => {\n            let TyKind::FnPtr(f) = &c.ty.kind else { return None };",
+    tests: ["test/jsx-types.test.ts", "-t", "children declared any node"]
   },
   {
-    "name": "const-component-props-literal",
-    "breaks": "a constant's component, of props in another module, builds them as a struct literal, without their companion's defaults",
-    "file": "src/jsx_syntax/parser.rs",
-    "find": "        || (matches!(item.kind, ItemKind::Const(_)) && !props.is_empty())\n",
-    "replace": "",
-    "tests": ["test/jsx-types.test.ts", "-t", "children declared any node"]
+    name: "const-component-props-literal",
+    breaks: "a constant's component, of props in another module, builds them as a struct literal, without their companion's defaults",
+    file: "src/jsx_syntax/parser.rs",
+    find: "        || (matches!(item.kind, ItemKind::Const(_)) && !props.is_empty())\n",
+    replace: "",
+    tests: ["test/jsx-types.test.ts", "-t", "children declared any node"]
   },
   {
-    "name": "any-node-children-moved",
-    "breaks": "children declared any node, `&'a dyn ReactNode`, are given as they are, not by reference",
-    "file": "src/jsx_syntax/parser.rs",
-    "find": "        let empty = if field_name == \"children\" && any_node(&field.ty) {",
-    "replace": "        let empty = if false && field_name == \"children\" && any_node(&field.ty) {",
-    "tests": ["test/jsx-types.test.ts", "-t", "children declared any node"]
+    name: "any-node-children-moved",
+    breaks: "children declared any node, `&'a dyn ReactNode`, are given as they are, not by reference",
+    file: "src/jsx_syntax/parser.rs",
+    find: "        let empty = if field_name == \"children\" && any_node(&field.ty) {",
+    replace: "        let empty = if false && field_name == \"children\" && any_node(&field.ty) {",
+    tests: ["test/jsx-types.test.ts", "-t", "children declared any node"]
   },
   {
-    "name": "optional-any-node-children-moved",
-    "breaks": "children declared an `Option` of any node are given as they are, not `Some` by reference",
-    "file": "src/jsx_syntax/parser.rs",
-    "find": "        } else if field_name == \"children\" && optional_any_node {",
-    "replace": "        } else if false && optional_any_node {",
-    "tests": ["test/jsx-types.test.ts", "-t", "children declared any node"]
+    name: "optional-any-node-children-moved",
+    breaks: "children declared an `Option` of any node are given as they are, not `Some` by reference",
+    file: "src/jsx_syntax/parser.rs",
+    find: "        } else if field_name == \"children\" && optional_any_node {",
+    replace: "        } else if false && optional_any_node {",
+    tests: ["test/jsx-types.test.ts", "-t", "children declared any node"]
   },
   {
-    "name": "lone-struct-update-whole",
-    "breaks": "a component given only `{..posts[0]}` takes the struct whole, a move out of the slice rustc refuses",
-    "file": "src/jsx_syntax/parser.rs",
-    "find": "            && !struct_update\n            && let Some(props) = spread.clone()",
-    "replace": "            && let Some(props) = spread.clone()",
-    "tests": ["test/jsx-props.test.ts", "-t", "props updated from a reference are spread"]
+    name: "lone-struct-update-whole",
+    breaks: "a component given only `{..posts[0]}` takes the struct whole, a move out of the slice rustc refuses",
+    file: "src/jsx_syntax/parser.rs",
+    find: "            && !struct_update\n            && let Some(props) = spread.clone()",
+    replace: "            && let Some(props) = spread.clone()",
+    tests: ["test/jsx-props.test.ts", "-t", "props updated from a reference are spread"]
   },
   {
-    "name": "static-component-props-literal",
-    "breaks": "a thread_local memo of a component in another module builds its props as a struct literal, an Option not given an error",
-    "file": "src/jsx_syntax/parser.rs",
-    "find": "        || (matches!(item.kind, ItemKind::Static(_)) && !props.is_empty() && !props.starts_with(\"::react::\"));",
-    "replace": ";",
-    "tests": ["test/jsx-evaluation-order.test.ts", "-t", "another module's props leaves out"]
+    name: "static-component-props-literal",
+    breaks: "a thread_local memo of a component in another module builds its props as a struct literal, an Option not given an error",
+    file: "src/jsx_syntax/parser.rs",
+    find: "        || (matches!(item.kind, ItemKind::Static(_)) && !props.is_empty() && !props.starts_with(\"::react::\"));",
+    replace: ";",
+    tests: ["test/jsx-evaluation-order.test.ts", "-t", "another module's props leaves out"]
   },
   {
     name: "aria-attribute-unnamed",
@@ -409,5 +409,17 @@ export const mutations: Mutation[] = [
     find: "    if classes.contains_key(ident.as_str())\n        || !ident.as_str().starts_with(char::is_uppercase)\n",
     replace: "    if true\n        || !ident.as_str().starts_with(char::is_uppercase)\n",
     tests: ["test/class-components.test.ts", "-t", "beside its struct"],
+  },
+  {
+    name: "field-symbol-any-tokens-used",
+    breaks: "a symbol name of two paths, or of none, is written as a use, so rustc's error of the use is said where rust-js's of what to write would be",
+    file: "src/jsx_syntax/parser.rs",
+    find: "            if !path || args.tokens.is_empty() {",
+    replace: "            if args.tokens.is_empty() {",
+    tests: [
+      "test/field-symbol-names.test.ts",
+      "-t",
+      "a symbol name where it can't be one is refused"
+    ]
   },
 ];

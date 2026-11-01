@@ -158,8 +158,8 @@ export const mutations: Mutation[] = [
     breaks:
       "\`js::directive!\`'s and \`js::export_default!\`'s \`const _\` is written to the JS",
     file: "src/lower/bindings.rs",
-    find: '    ["import", "directive", "export_default", "on_load"].iter().any(|name| {\n',
-    replace: '    ["import", "on_load"].iter().any(|name| {\n',
+    find: '    ["import", "directive", "export_default", "on_load", "names_field"]\n',
+    replace: '    ["import", "on_load", "names_field"]\n',
     tests: ["test/modules.test.ts", "-t", "make a module a Next.js route"],
   },
   {
@@ -177,8 +177,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`js::on_load!`'s `const _`, which holds its function, is written, `const _ = undefined`",
     file: "src/lower/bindings.rs",
-    find: '["import", "directive", "export_default", "on_load"]',
-    replace: '["import", "directive", "export_default"]',
+    find: '["import", "directive", "export_default", "on_load", "names_field"]',
+    replace: '["import", "directive", "export_default", "names_field"]',
     tests: ["test/modules.test.ts", "-t", "js::on_load!"],
   },
   {
@@ -692,5 +692,41 @@ export const mutations: Mutation[] = [
     find: "        true => given_name(tcx, use_item).unwrap_or_else(own),\n",
     replace: "        true => own(),\n",
     tests: ["test/lowering-binding-paths.test.ts", "-t", "name attribute"],
+  },
+  {
+    name: "field-symbol-name-unread",
+    breaks: "a field a symbol names is named by its own name, `reason.response`, not `reason[RESPONSE_SYMBOL]`",
+    file: "src/lower/bindings.rs",
+    find: "    if let Some((item, span)) = symbol_name(tcx, field) {",
+    replace: "    if let Some((item, span)) = symbol_name(tcx, field).filter(|_| false) {",
+    tests: [
+      "test/field-symbol-names.test.ts",
+      "-t",
+      "a field a symbol names is that symbol's key"
+    ]
+  },
+  {
+    name: "field-symbol-unvalidated",
+    breaks: "no symbol name is refused, a derived `Clone`'s or a class's field's lowered as if named by text",
+    file: "src/lower/bindings.rs",
+    find: "    valid &= symbol_names::validate(tcx);\n",
+    replace: "",
+    tests: [
+      "test/field-symbol-names.test.ts",
+      "-t",
+      "a symbol name where it can't be one is refused"
+    ]
+  },
+  {
+    name: "field-symbol-use-lowered",
+    breaks: "the use beside a struct its symbol name makes rustc see is lowered, `const _ = (value) => {}`, JS no program wrote",
+    file: "src/lower/bindings.rs",
+    find: "    [\"import\", \"directive\", \"export_default\", \"on_load\", \"names_field\"]",
+    replace: "    [\"import\", \"directive\", \"export_default\", \"on_load\"]",
+    tests: [
+      "test/field-symbol-names.test.ts",
+      "-t",
+      "a field a symbol names is that symbol's key"
+    ]
   },
 ];

@@ -399,6 +399,10 @@ fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(&Expr) -> b
                     | js::Prop::Getter(_, v)
                     | js::Prop::Setter(_, v)
                     | js::Prop::Method(_, v) => std::borrow::Cow::Borrowed(v),
+                    // Its key is read before its value, as JS reads them.
+                    js::Prop::Keyed(key, v) | js::Prop::KeyedMethod(key, v) => {
+                        std::borrow::Cow::Owned(Expr::array(vec![key.clone(), v.clone()]))
+                    }
                 })
                 .collect();
             in_order(&mut values.iter().map(|v| &**v))
@@ -413,7 +417,9 @@ fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(&Expr) -> b
                 | js::Prop::Getter(_, v)
                 | js::Prop::Setter(_, v)
                 | js::Prop::Method(_, v)
-                | js::Prop::Spread(v)) = p;
+                | js::Prop::Spread(v)
+                | js::Prop::Keyed(_, v)
+                | js::Prop::KeyedMethod(_, v)) = p;
                 v
             });
             // JS's JSX runtime makes `key` after the children, and

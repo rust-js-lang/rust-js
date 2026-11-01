@@ -196,3 +196,49 @@ test("rust-js clippy of clean Rust says nothing", () => {
   expect([code, said], stderr).toEqual([0, []]);
   expect(readdirSync(join(dir, "src")).sort()).toEqual(["App.rs", "logs.rs", "shim.rs", "v8.rs"]);
 }, 600_000);
+
+// A symbol only a field's `#[rust_js::name(SYMBOL)]` names (ADR 1051): the
+// `jsx!` pass writes a use of it beside its struct, which rustc resolves,
+// so neither the import nor the static is unused, with no `#[allow]`. A
+// plain `cargo clippy`, which runs no pass and no `cfg(rust_js)`, warns.
+test("rust-js clippy of a symbol only a field's name uses says nothing", () => {
+  const dir = app("clippy-field-symbol", {
+    "App.rs": `mod symbols;
+
+use std::cell::Cell;
+
+use symbols::RESPONSE_SYMBOL;
+
+thread_local! {
+    static ORDER_SYMBOL: &'static js::Symbol = js::symbol::new(None);
+}
+
+pub struct Reason {
+    pub id: f64,
+    #[cfg_attr(rust_js, rust_js::name(RESPONSE_SYMBOL))]
+    pub response: f64,
+    #[cfg_attr(rust_js, rust_js::name(ORDER_SYMBOL))]
+    pub order: Cell<u32>,
+}
+
+pub fn reason(id: f64) -> Reason {
+    Reason {
+        id,
+        response: id * 2.0,
+        order: Cell::new(0),
+    }
+}
+
+pub fn response(reason: &Reason) -> f64 {
+    reason.order.set(reason.order.get() + 1);
+    reason.response
+}
+`,
+    "symbols.rs": `thread_local! {
+    pub static RESPONSE_SYMBOL: &'static js::Symbol = js::symbol::new(None);
+}
+`,
+  });
+  const { code, said, stderr } = clippy(dir, "-D", "warnings");
+  expect([code, said], stderr).toEqual([0, []]);
+}, 600_000);

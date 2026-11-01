@@ -439,4 +439,16 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^object_field_comments.rs$"],
     snapshots: true,
   },
+  {
+    name: "field-symbol-default-base-named",
+    breaks: "an update of a derived `Default`'s base names a field a symbol names by text",
+    file: "src/lower/aggregates.rs",
+    find: "            Shape::Object(fields) if fields.iter().all(|(key, _)| key.symbol_item().is_none()) => Some(",
+    replace: "            Shape::Object(fields) => Some(",
+    tests: [
+      "test/field-symbol-names.test.ts",
+      "-t",
+      "each field is its own symbol's"
+    ]
+  },
 ];

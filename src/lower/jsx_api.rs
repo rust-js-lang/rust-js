@@ -123,12 +123,16 @@ impl<'tcx> Uses<'tcx> {
         for written in attr.meta_item_list().unwrap_or_default() {
             let Some(lit) = written.lit() else { continue };
             let text = lit.symbol.as_str();
-            if fields.iter().any(|f| super::bindings::field_key(self.tcx, f) == text) {
+            if fields
+                .iter()
+                .any(|f| super::bindings::field_key(self.tcx, f).name() == Some(text))
+            {
                 continue;
             }
             let rust = crate::jsx_syntax::snake(text);
             if let Some(field) = fields.iter().find(|f| f.name.as_str() == rust) {
                 let js = super::bindings::field_key(self.tcx, field);
+                let js = js.name().unwrap_or(rust.as_str());
                 self.tcx.dcx().span_err(
                     lit.span,
                     format!("rust-js: `{text}` is `{js}` in JSX, as React names it"),

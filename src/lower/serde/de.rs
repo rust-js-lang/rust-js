@@ -476,7 +476,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect();
         }
         match self.shape(Ty::new_adt(self.tcx, adt, args)) {
-            Shape::Object(fields) => fields.into_iter().map(|(key, _)| key).collect(),
+            Shape::Object(fields) => Self::named_fields(fields).into_iter().map(|(key, _)| key).collect(),
             _ => (0..variant.fields.len()).map(js::positional).collect(),
         }
     }
@@ -511,7 +511,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 fields
                     .into_iter()
                     .zip(items)
-                    .map(|((key, _), value)| Prop::Field(key, value))
+                    .map(|((key, _), value)| Prop::Field(key.text().to_owned(), value))
                     .collect(),
             ),
             Shape::Array(_) => Expr::array(items),

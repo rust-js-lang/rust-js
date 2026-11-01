@@ -164,4 +164,16 @@ export const mutations: Mutation[] = [
     replace: "[field] if field.name.as_usize() == at)\n",
     tests: ["test/corpus.test.ts", "-t", "^newtype_conversions.rs$"],
   },
+  {
+    name: "field-symbol-pattern-by-name",
+    breaks: "a pattern of a struct a symbol names a field of is a JS pattern of its keys' text, which it hasn't",
+    file: "src/lower/patterns.rs",
+    find: "            Shape::Object(fields) if fields.iter().any(|(key, _)| key.symbol_item().is_some()) => return None,\n",
+    replace: "",
+    tests: [
+      "test/field-symbol-names.test.ts",
+      "-t",
+      "each field is its own symbol's"
+    ]
+  },
 ];

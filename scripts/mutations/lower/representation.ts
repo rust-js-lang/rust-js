@@ -37,9 +37,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `const` of a struct whose `RefCell<Option<u8>>` field is the value it holds is `{ items: {} }`, the cell's box, which a read of the field takes for `Some` (ADR 0863, amended)",
     file: "src/lower/representation.rs",
-    find: "            if variant.ctor_kind().is_none() && variant.fields.iter().any(ref_cell) {\n",
-    replace:
-      "            if variant.ctor_kind().is_none() && variant.fields.iter().any(ref_cell) && false {\n",
+    find: "                    .any(|f| ref_cell(f) || bindings::named_by_symbol(tcx, f.did))\n",
+    replace: "                    .any(|f| bindings::named_by_symbol(tcx, f.did))\n",
     tests: ["test/corpus.test.ts", "-t", "^ref_cell_field_const.rs$"],
   },
   {
@@ -351,7 +350,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a struct variant's fields are `_0`, `_1` as a tuple variant's are, so a JS caller's `{ TAG: \"Rect\", w, h }` isn't the shape it gets",
     file: "src/lower/representation.rs",
-    find: '        Some(CtorKind::Fn) => js::positional(i),\n        _ => field_key(tcx, variant.fields.iter().nth(i).expect("a field of this variant")),',
+    find: '        Some(CtorKind::Fn) => js::positional(i),\n        // An enum variant\'s field a symbol never names (`validate`, ADR 1051).\n        _ => field_key(tcx, variant.fields.iter().nth(i).expect("a field of this variant"))\n            .text()\n            .to_owned(),',
     replace: "        _ => js::positional(i),",
     tests: [
       "test/compiler.test.ts",
@@ -893,5 +892,17 @@ export const mutations: Mutation[] = [
     find: "                    || super::untagged::arrays_in_place(self.tcx, *adt, args))\n",
     replace: "                    || false)\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
+  },
+  {
+    name: "field-symbol-constant-folded",
+    breaks: "a constant struct a symbol names a field of is folded at compile time, its key named by text, which it hasn't",
+    file: "src/lower/representation.rs",
+    find: "                    .any(|f| ref_cell(f) || bindings::named_by_symbol(tcx, f.did))",
+    replace: "                    .any(ref_cell)",
+    tests: [
+      "test/field-symbol-names.test.ts",
+      "-t",
+      "a registry's symbol names a field"
+    ]
   },
 ];

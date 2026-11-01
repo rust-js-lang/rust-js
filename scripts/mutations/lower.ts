@@ -487,4 +487,16 @@ export const mutations: Mutation[] = [
     replace: "    if let Some(inner) = bindings::unbound(name).filter(|_| false) {\n",
     tests: ["test/js-any-values.test.ts", "-t", "eval is the global eval, called indirectly"],
   },
+  {
+    name: "field-symbol-literal-by-name",
+    breaks: "a struct's literal keys a field a symbol names by the symbol item's name, `{ RESPONSE_SYMBOL: response }`",
+    file: "src/lower.rs",
+    find: "                        Some((item, span)) => Prop::Keyed(self.field_symbol(item, span), v),",
+    replace: "                        Some((item, _)) => Prop::Field(self.tcx.item_name(item).to_string(), v),",
+    tests: [
+      "test/field-symbol-names.test.ts",
+      "-t",
+      "a field a symbol names is that symbol's key"
+    ]
+  },
 ];

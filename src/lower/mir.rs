@@ -1268,7 +1268,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     match self.shape(mir_body.local_decls[local].ty.peel_refs()) {
                         Shape::Object(fields) => (fields.into_iter())
                             .filter(|(_, ty)| self.plain_type(*ty))
-                            .map(|(field, _)| format!("{name}.{field}"))
+                            .filter_map(|(field, _)| Some(format!("{name}.{}", field.name()?)))
                             .collect(),
                         _ => Vec::new(),
                     }

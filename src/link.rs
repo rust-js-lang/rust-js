@@ -357,6 +357,10 @@ fn properties(props: &mut [Prop], visitor: &mut Visitor<'_>) {
             Prop::Field(_, e) | Prop::Getter(_, e) | Prop::Setter(_, e) | Prop::Method(_, e) | Prop::Spread(e) => {
                 expr(e, visitor)
             }
+            Prop::Keyed(key, e) | Prop::KeyedMethod(key, e) => {
+                expr(key, visitor);
+                expr(e, visitor);
+            }
         }
     }
 }

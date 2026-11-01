@@ -46,6 +46,7 @@ mod declarations;
 mod default_exports;
 mod display;
 mod drops;
+mod field_keys;
 mod format_args;
 mod format_spec;
 mod instances;
@@ -277,7 +278,8 @@ struct Locals {
 /// How a Rust struct or tuple type is represented in JS (ADR 0020).
 enum Shape<'tcx> {
     /// A struct with named fields: `{ x: 1, y: 2 }`.
-    Object(Vec<(String, Ty<'tcx>)>),
+    /// A struct's fields, by their keys: a name, or a symbol (ADR 1051).
+    Object(Vec<(bindings::FieldKey, Ty<'tcx>)>),
     /// A tuple or tuple struct: `[1, 2]`.
     Array(Vec<Ty<'tcx>>),
     /// Anything else: numbers, `bool`, unit and unit structs (`undefined`), enums.
@@ -1128,14 +1130,24 @@ fn discriminants<'tcx>(tcx: TyCtxt<'tcx>, adt: ty::AdtDef<'tcx>) -> Vec<(String,
 /// A struct's or a variant's value, of its fields' values in declared order:
 /// an object, tagged `{ TAG: "Circle", _0: r }` for a variant (ADR 0033), or
 /// an array for a tuple struct (ADR 0020).
-fn assembled(shape: Shape<'_>, tag: Option<(String, Expr)>, items: Vec<Expr>) -> Expr {
-    match shape {
-        Shape::Object(fields) => {
-            let tag = tag.map(|(key, name)| Prop::Field(key, name));
-            let fields = fields.into_iter().zip(items).map(|((name, _), v)| Prop::Field(name, v));
-            Expr::object(tag.into_iter().chain(fields).collect())
+/// A field a symbol names is `[SYMBOL]: value`, that symbol's item read
+/// where it's made (ADR 1051).
+impl<'tcx> FnCx<'_, 'tcx> {
+    fn assembled(&self, shape: Shape<'tcx>, tag: Option<(String, Expr)>, items: Vec<Expr>) -> Expr {
+        match shape {
+            Shape::Object(fields) => {
+                let tag = tag.map(|(key, name)| Prop::Field(key, name));
+                let fields = fields
+                    .into_iter()
+                    .zip(items)
+                    .map(|((key, _), v)| match key.symbol_item() {
+                        Some((item, span)) => Prop::Keyed(self.field_symbol(item, span), v),
+                        None => Prop::Field(key.text().to_owned(), v),
+                    });
+                Expr::object(tag.into_iter().chain(fields).collect())
+            }
+            _ => Expr::array(items),
         }
-        _ => Expr::array(items),
     }
 }
 

@@ -189,4 +189,16 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "capitalized name needs no allow"],
   },
+  {
+    name: "field-symbol-use-unwritten",
+    breaks: "no use of a field's symbol name is written beside its struct: rustc never resolves it, an import or a static it alone uses is unused, and rust-js refuses each",
+    file: "src/jsx_syntax.rs",
+    find: "            companions.extend(parser::field_symbol_uses(self.sess, item));\n",
+    replace: "",
+    tests: [
+      "test/field-symbol-names.test.ts",
+      "-t",
+      "a field a symbol names is that symbol's key"
+    ]
+  },
 ];

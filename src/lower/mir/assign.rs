@@ -404,7 +404,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let tcx = self.tcx;
         let keys: Vec<&str> = (fields.iter().enumerate())
             .filter(|&(i, _)| !bindings::is_rest_field(tcx, ty, i))
-            .map(|(_, (key, _))| key.as_str())
+            .map(|(_, (key, _))| key.text())
             .collect();
         let named = (keys.iter().zip(self.left_out(&keys)))
             .map(|(key, unused)| (key.to_string(), js::Pattern::Name(unused), None))

@@ -116,6 +116,32 @@ impl IntoStrOrNumber for &str {}
 impl IntoStrOrNumber for &String {}
 impl IntoStrOrNumber for f64 {}
 
+/// What a struct's field may be named by, `#[rust_js::name(SYMBOL)]`: a
+/// symbol of the program's own, a `&'static Symbol` static or
+/// thread-local, `RESPONSE_SYMBOL`, or a well-known one,
+/// `js::symbol::async_iterator`; or the registry's, a [`SymbolFor`]
+/// constant (ADR 1051). Its field is `object[SYMBOL]` in JS, its literal's
+/// key `[SYMBOL]`.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` is no symbol a field may be named by",
+    note = "`#[rust_js::name(SYMBOL)]` of a field names a `&'static js::Symbol` static or thread-local, or a `js::SymbolFor` constant; a field named by text is `#[rust_js::name = \"text\"]`"
+)]
+pub trait FieldName {}
+
+impl FieldName for std::thread::LocalKey<&'static Symbol> {}
+impl FieldName for &'static Symbol {}
+impl FieldName for SymbolFor<'_> {}
+
+/// What rust-js's `jsx!` pass writes beside a struct one of whose fields
+/// is `#[rust_js::name(SYMBOL)]`, `|value| names_field(&value.field,
+/// &SYMBOL)`: so rustc resolves `SYMBOL` and checks it's a [`FieldName`],
+/// and sees it used, as rust-js reads which item it is (ADR 1051). No
+/// program calls it, and its JS is nothing.
+#[doc(hidden)]
+pub fn names_field<T: ?Sized, S: FieldName + ?Sized>(field: &T, symbol: &S) {
+    let _ = (field, symbol);
+}
+
 mod sealed {
     pub trait Sealed {}
     impl Sealed for &str {}

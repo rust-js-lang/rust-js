@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
     name: "component-prop-js-name-refused",
     breaks: "a component's prop as JSX names it, `labelText`, is refused",
     file: "src/lower/jsx_api.rs",
-    find: "            if fields.iter().any(|f| super::bindings::field_key(self.tcx, f) == text) {\n",
+    find: "            if fields\n                .iter()\n                .any(|f| super::bindings::field_key(self.tcx, f).name() == Some(text))\n            {\n",
     replace: "            if false {\n",
     tests: ["test/jsx.test.ts", "-t", "names a component's prop as JSX"],
   },

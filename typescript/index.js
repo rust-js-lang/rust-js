@@ -28,8 +28,12 @@ import * as f from "typescript/ast/factory";
  *   | { kind: "class", name: string, exported: boolean, declare: boolean, extends?: Type, members: ClassMember[], docs?: string }
  *   | { kind: "other", text: string }} Declaration
  *
- * @typedef {{ kind: "property", name: string, optional: boolean, readonly: boolean, type: Type, docs?: string }
- *   | { kind: "method", name: string, optional: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type }
+ * @typedef {string | { computed: string }} MemberName A property's name, or a
+ *   key a symbol's path names, `{ computed: "Symbol.asyncIterator" }`,
+ *   `[Symbol.asyncIterator]` (ADR 1051).
+ *
+ * @typedef {{ kind: "property", name: MemberName, optional: boolean, readonly: boolean, type: Type, docs?: string }
+ *   | { kind: "method", name: MemberName, optional: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type }
  *   | { kind: "index", parameter: string, key: Type, type: Type }
  *   | { kind: "other", text: string }} Member
  *
@@ -52,6 +56,7 @@ import * as f from "typescript/ast/factory";
  *   | { kind: "function", typeParameters: TypeParameter[], params: Param[], returns: Type }
  *   | { kind: "object", members: Member[] }
  *   | { kind: "typeof", name: string }
+ *   | { kind: "unique-symbol" }
  *   | { kind: "other", text: string }} Type
  */
 
@@ -695,7 +700,19 @@ function erasable(/** @type {Declaration} */ declaration) {
   }
 }
 
+/** @param {MemberName} name */
 function propertyName(name) {
+  if (typeof name === "object")
+  {
+    const [first, ...rest] = name.computed.split(".");
+    return f.createComputedPropertyName(
+      rest.reduce(
+        (object, part) =>
+          f.createPropertyAccessExpression(object, undefined, id(part), NodeFlags.None),
+        id(first),
+      ),
+    );
+  }
   return IDENTIFIER.test(name) ? id(name) : string(name);
 }
 
@@ -803,6 +820,11 @@ function element(t) {
 /** @param {Type} t */
 function typeNode(t) {
   switch (t.kind) {
+    case "unique-symbol":
+      return f.createTypeOperatorNode(
+        SyntaxKind.UniqueKeyword,
+        f.createKeywordTypeNode(SyntaxKind.SymbolKeyword),
+      );
     case "keyword":
       if (t.keyword === "null")
         return f.createLiteralTypeNode(f.createToken(SyntaxKind.NullKeyword));

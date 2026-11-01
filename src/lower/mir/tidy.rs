@@ -514,8 +514,11 @@ fn inert_element(e: &Expr, changing: &HashSet<String>) -> bool {
             | js::Prop::Getter(_, v)
             | js::Prop::Setter(_, v)
             | js::Prop::Method(_, v)
-            | js::Prop::Spread(v)) = p;
-            !matches!(p, js::Prop::Spread(_)) && inert_element(v, changing)
+            | js::Prop::Spread(v)
+            | js::Prop::Keyed(_, v)
+            | js::Prop::KeyedMethod(_, v)) = p;
+            !matches!(p, js::Prop::Spread(_) | js::Prop::Keyed(..) | js::Prop::KeyedMethod(..))
+                && inert_element(v, changing)
         })
     };
     match &e.kind {

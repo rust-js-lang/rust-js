@@ -710,8 +710,8 @@ export const mutations: Mutation[] = [
     breaks:
       "two structs whose `tag`s are different literals are taken as told by nothing, as a member both declare is, and refused (rd315)",
     file: "src/lower/untagged.rs",
-    find: "                bindings::field_key(self.tcx, f) == key && !apart(f.ty(self.tcx, args).skip_normalization())\n",
-    replace: "                bindings::field_key(self.tcx, f) == key\n",
+    find: "                bindings::field_key(self.tcx, f).name() == Some(key) && !apart(f.ty(self.tcx, args).skip_normalization())\n",
+    replace: "                bindings::field_key(self.tcx, f).name() == Some(key)\n",
     tests: ["test/untagged-members.test.ts", "-t", "a member of one literal"],
   },
   {

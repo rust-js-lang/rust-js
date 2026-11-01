@@ -1124,4 +1124,28 @@ export const mutations: Mutation[] = [
       "a namespace's methods are its module's functions",
     ],
   },
+  {
+    name: "field-symbol-private-undeclared",
+    breaks: "a module's own symbol a declared field is named by isn't declared, `[RESPONSE_SYMBOL]` of nothing TypeScript knows",
+    file: "src/lower/declarations.rs",
+    find: "                self.unexported.insert(name.clone(), Some(declared));\n            }\n            return json!({ \"computed\": name });",
+    replace: "            }\n            return json!({ \"computed\": name });",
+    tests: [
+      "test/field-symbol-names.test.ts",
+      "-t",
+      "a field a symbol names is that symbol's key"
+    ]
+  },
+  {
+    name: "field-symbol-declared-by-text",
+    breaks: "a declared field a symbol names is declared by the symbol's text, a string key",
+    file: "src/lower/declarations.rs",
+    find: "            return json!({ \"computed\": super::bindings::js_name(self.tcx, item) });",
+    replace: "            return json!(super::bindings::js_name(self.tcx, item));",
+    tests: [
+      "test/field-symbol-names.test.ts",
+      "-t",
+      "a closure a symbol names is its method"
+    ]
+  },
 ];

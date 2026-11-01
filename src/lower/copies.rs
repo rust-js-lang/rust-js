@@ -61,7 +61,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match self.shape(ty) {
             Shape::Object(fields) => {
                 let mut props = vec![Prop::Spread(place.clone())];
-                for (name, t) in fields {
+                // A `Copy` struct's, which a symbol names no field of
+                // (`validate`, ADR 1051).
+                for (name, t) in Self::named_fields(fields) {
                     if self.contains_mutated(t) {
                         let field = self.copy(Expr::member(place.clone(), name.clone()), t);
                         props.push(Prop::Field(name, field));

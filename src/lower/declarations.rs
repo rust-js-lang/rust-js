@@ -813,7 +813,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 let ty = self.tcx.type_of(field.did).instantiate_identity().skip_normalization();
                 let own: Vec<String> = (variant.fields.iter())
                     .filter(|f| f.did != field.did)
-                    .map(|f| field_key(self.tcx, f))
+                    .filter_map(|f| field_key(self.tcx, f).name().map(str::to_owned))
                     .collect();
                 let shadowed: Vec<Value> = (flattened_keys(self.tcx, ty).into_iter())
                     .filter(|key| own.contains(key))
@@ -882,7 +882,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
             let ty = if optional { or_undefined(ty) } else { ty };
             let property = json!({
                 "kind": "property",
-                "name": field_key(self.tcx, field),
+                "name": self.member_name(field),
                 "optional": optional,
                 "readonly": false,
                 "type": ty,
@@ -1056,7 +1056,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
         let types: Vec<Value> = (fields.into_iter())
             .map(|field| {
                 let ty = self.field_ts(field.ty(self.tcx, args).skip_normalization(), None);
-                let member = json!({ "kind": "property", "name": field_key(self.tcx, field), "optional": false, "readonly": false, "type": ty });
+                let member = json!({ "kind": "property", "name": field_key(self.tcx, field).text(), "optional": false, "readonly": false, "type": ty });
                 json!({ "kind": "object", "members": [member] })
             })
             .collect();
@@ -1074,6 +1074,35 @@ impl<'tcx> Declarations<'_, 'tcx> {
     /// `thread_local!`'s value, or a `const`'s; of a thread-local that's
     /// its module's variable, what its cell holds, `export let enabled:
     /// boolean;` where its module sets it (ADR 0270, amended).
+    /// A field's name as its declaration has it: its text, or the key a
+    /// symbol names it by, `[Symbol.asyncIterator]` of JS's, and
+    /// `[RESPONSE_SYMBOL]` of this module's own, declared a `unique symbol`,
+    /// as TypeScript takes a computed key of no other (ADR 1051).
+    fn member_name(&mut self, field: &ty::FieldDef) -> Value {
+        let key = field_key(self.tcx, field);
+        let Some((item, span)) = key.symbol_item() else {
+            return json!(key.text());
+        };
+        if self.tcx.is_foreign_item(item) {
+            return json!({ "computed": super::bindings::js_name(self.tcx, item) });
+        }
+        if let Some(local) = item.as_local()
+            && LocalModId::new_unchecked(self.tcx.parent_module_from_def_id(local).to_local_def_id()) == self.module
+        {
+            let name = self.js_name(item);
+            if !self.tcx.visibility(item).is_public() && !self.unexported.contains_key(&name) {
+                let declared = json!({ "kind": "const", "name": name, "exported": false, "declare": true, "type": { "kind": "unique-symbol" } });
+                self.unexported.insert(name.clone(), Some(declared));
+            }
+            return json!({ "computed": name });
+        }
+        self.tcx.dcx().span_err(
+            span,
+            "rust-js: a declared struct's field is named by another module's symbol, which its `.d.ts` can't name yet: name it by a symbol its own module holds, or JS's own, `js::symbol::async_iterator` (ADR 1051)",
+        );
+        json!(self.tcx.def_path_str(item))
+    }
+
     fn constant(&mut self, def_id: DefId) -> Value {
         let ty = self.tcx.type_of(def_id).instantiate_identity().skip_normalization();
         let variable = self.variables.get(&def_id).copied();
@@ -1100,6 +1129,12 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 json!({ "kind": "union", "types": [self.as_written(written, |out| out.ts(inner)), keyword("null")] })
             }
             _ => self.as_written(written, |out| out.ts(ty)),
+        };
+        // A symbol a field is named by is a `unique symbol`, what TypeScript
+        // takes a computed key of (ADR 1051).
+        let ty = match super::bindings::names_a_field(self.tcx, def_id) {
+            true => json!({ "kind": "unique-symbol" }),
+            false => ty,
         };
         let mut declared = json!({
             "kind": "const",

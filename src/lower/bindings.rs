@@ -21,6 +21,7 @@ mod indexed;
 mod nullable;
 mod paths;
 mod rest_values;
+mod symbol_names;
 mod value_only;
 mod whole;
 
@@ -43,6 +44,7 @@ pub(super) use nullable::{
 };
 pub(in crate::lower) use paths::{Step, first_name, has_steps, read as read_path, steps, unbound};
 pub(super) use rest_values::{is_rest_value, reads_rest_value, rest_items};
+pub(crate) use symbol_names::{FieldKey, named_by_symbol, names_a_field, symbol_name};
 pub(super) use value_only::reject_value_only_calls;
 use whole::whole_refused;
 pub(in crate::lower) use whole::{whole_output, whole_range};
@@ -224,7 +226,10 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
                     }
                     continue;
                 }
-                let clash = variant.fields.iter().any(|f| field_key(tcx, f) == key);
+                let clash = variant
+                    .fields
+                    .iter()
+                    .any(|f| field_key(tcx, f).name() == Some(key.as_str()));
                 if tuple || clash {
                     let what = if tuple {
                         "a tuple variant, whose fields have no names"
@@ -262,11 +267,18 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
         // Two fields that are one JS property would overwrite each other.
         if matches!(tcx.def_kind(def), DefKind::Struct | DefKind::Enum) {
             for variant in tcx.adt_def(def).variants() {
-                let mut keys: Vec<(String, Symbol)> = Vec::new();
+                let mut keys: Vec<(FieldKey, Symbol)> = Vec::new();
                 for field in variant.fields.iter() {
                     let key = field_key(tcx, field);
                     if let Some((_, other)) = keys.iter().find(|(k, _)| *k == key) {
-                        let message = format!("rust-js: fields `{other}` and `{}` are both `{key}` in JS", field.name);
+                        let shown = match key.symbol_item() {
+                            Some((item, _)) => format!("[{}]", tcx.def_path_str(item)),
+                            None => key.text().to_string(),
+                        };
+                        let message = format!(
+                            "rust-js: fields `{other}` and `{}` are both `{shown}` in JS",
+                            field.name
+                        );
                         tcx.dcx().span_err(tcx.def_span(field.did), message);
                         valid = false;
                     }
@@ -275,6 +287,8 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
             }
         }
     }
+    // What can't name its field by a symbol (ADR 1051).
+    valid &= symbol_names::validate(tcx);
     valid
 }
 
@@ -1033,17 +1047,20 @@ pub(super) fn is_on_load(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 }
 
 /// Is `def_id` a `js::import!`'s, `js::directive!`'s, `js::export_default!`'s
-/// or `js::on_load!`'s `const _`, which is rust-js's to read, and has nothing
-/// to write? Not a constant the default is itself (ADR 0625).
+/// or `js::on_load!`'s `const _`, or the `jsx!` pass's use of a field's
+/// symbol name (ADR 1051), which is rust-js's to read, and has nothing to
+/// write? Not a constant the default is itself (ADR 0625).
 pub(super) fn is_mark(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     if super::default_exports::held_by_default(tcx, def_id) {
         return false;
     }
-    ["import", "directive", "export_default", "on_load"].iter().any(|name| {
-        tcx.get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), Symbol::intern(name)])
-            .next()
-            .is_some()
-    })
+    ["import", "directive", "export_default", "on_load", "names_field"]
+        .iter()
+        .any(|name| {
+            tcx.get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), Symbol::intern(name)])
+                .next()
+                .is_some()
+        })
 }
 
 /// Whether `def_id` is a React component, as `jsx!` takes one: a
@@ -1172,7 +1189,7 @@ pub(super) fn flattened_state<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(
     }
     let mut keys = vec![tag];
     for field in state.variants().iter().flat_map(|v| v.fields.iter()) {
-        let key = field_key(tcx, field);
+        let key = field_key(tcx, field).text().to_string();
         if !keys.contains(&key) {
             keys.push(key);
         }
@@ -1437,13 +1454,22 @@ pub(super) fn trait_method_name(tcx: TyCtxt<'_>, trait_id: DefId, name: &str) ->
 /// struct, which is the JS iterator `$stdIterator` makes too, one named as
 /// a method that iterator has, `Enumerate`'s `count`, is `count$`, as the
 /// method's `count` is the iterator's (ADR 0912).
-pub(crate) fn field_key(tcx: TyCtxt<'_>, field: &FieldDef) -> String {
-    let key = name_in_js(tcx, field.did);
-    match STEPS_METHODS.contains(&key.as_str()) && super::recognition::is_compiled_std_type(tcx, tcx.parent(field.did))
-    {
-        true => format!("{key}$"),
-        false => key,
+///
+/// A field `#[rust_js::name(SYMBOL)]` names by a symbol is that symbol's
+/// key, `object[SYMBOL]` (ADR 1051).
+pub(crate) fn field_key(tcx: TyCtxt<'_>, field: &FieldDef) -> FieldKey {
+    if let Some((item, span)) = symbol_name(tcx, field) {
+        return FieldKey::symbol(item, span);
     }
+    let key = name_in_js(tcx, field.did);
+    FieldKey::named(
+        match STEPS_METHODS.contains(&key.as_str())
+            && super::recognition::is_compiled_std_type(tcx, tcx.parent(field.did))
+        {
+            true => format!("{key}$"),
+            false => key,
+        },
+    )
 }
 
 /// What `$stdIterator` (`src/runtime/std_iterator.js`) gives std's struct

@@ -595,7 +595,7 @@ pub(super) fn reject_misuse<'tcx>(
                     continue;
                 };
                 let fields: Vec<String> = (tcx.adt_def(class).non_enum_variant().fields.iter())
-                    .map(|field| crate::lower::bindings::field_key(tcx, field))
+                    .filter_map(|field| crate::lower::bindings::field_key(tcx, field).name().map(str::to_owned))
                     .collect();
                 for &item in tcx.associated_item_def_ids(id) {
                     let item_span = tcx.def_span(item);
@@ -671,7 +671,7 @@ pub(super) fn reject_misuse<'tcx>(
                 // method named as a field is never called. Not one that
                 // gives a field, which is that field, no method (rd304).
                 let fields: Vec<String> = (tcx.adt_def(class).non_enum_variant().fields.iter())
-                    .map(|field| crate::lower::bindings::field_key(tcx, field))
+                    .filter_map(|field| crate::lower::bindings::field_key(tcx, field).name().map(str::to_owned))
                     .collect();
                 for &item in tcx.associated_item_def_ids(tcx.impl_trait_id(id)) {
                     let named = crate::lower::bindings::fn_name(tcx, item);
@@ -1040,7 +1040,7 @@ fn reject_object_misuse(tcx: TyCtxt<'_>) -> bool {
                     continue;
                 };
                 let fields: Vec<String> = (tcx.adt_def(object).non_enum_variant().fields.iter())
-                    .map(|field| crate::lower::bindings::field_key(tcx, field))
+                    .filter_map(|field| crate::lower::bindings::field_key(tcx, field).name().map(str::to_owned))
                     .collect();
                 for &item in tcx.associated_item_def_ids(id) {
                     if member(tcx, item) != Some(Member::Own) {

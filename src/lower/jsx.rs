@@ -23,6 +23,15 @@ pub(super) enum OneCall {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A props struct's fields by their names: JSX's attributes, which
+    /// a symbol names none of (`validate`, ADR 1051).
+    fn prop_types(&self, ty: Ty<'tcx>) -> Option<Vec<(String, Ty<'tcx>)>> {
+        match self.shape(ty) {
+            Shape::Object(fields) => Some(Self::named_fields(fields)),
+            _ => None,
+        }
+    }
+
     /// Element construction is inert (ADR 0040). Capture its inputs at the
     /// original evaluation point while leaving the element in the JSX tree.
     pub(super) fn capture_jsx(&mut self, value: &mut Expr, out: &mut Vec<Stmt>) -> bool {
@@ -37,6 +46,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         | Prop::Getter(name, value)
                         | Prop::Setter(name, value)
                         | Prop::Method(name, value) => self.capture_jsx_input(&js_ident(name), value, out),
+                        Prop::Keyed(..) | Prop::KeyedMethod(..) => {
+                            unreachable!("a JSX attribute is named by text (ADR 1051)")
+                        }
                         Prop::Spread(value) => {
                             // JSX spreads read properties now, not when the
                             // later element is built. Preserve getters too.
@@ -97,10 +109,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let js::ExprKind::Object(props, ..) = &mut value.kind else {
             return false;
         };
-        if props
-            .iter()
-            .any(|p| matches!(p, Prop::Getter(..) | Prop::Setter(..) | Prop::Method(..)))
-        {
+        if props.iter().any(|p| {
+            matches!(
+                p,
+                Prop::Getter(..) | Prop::Setter(..) | Prop::Method(..) | Prop::Keyed(..) | Prop::KeyedMethod(..)
+            )
+        }) {
             return false;
         }
         for prop in props {
@@ -116,7 +130,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         *value = self.spill(&camel_case(&js_ident(name)), old, out);
                     }
                 }
-                Prop::Getter(..) | Prop::Setter(..) | Prop::Method(..) => unreachable!("none"),
+                Prop::Getter(..) | Prop::Setter(..) | Prop::Method(..) | Prop::Keyed(..) | Prop::KeyedMethod(..) => {
+                    unreachable!("none")
+                }
                 Prop::Spread(value) => {
                     // A spread reads its properties now.
                     let old = std::mem::replace(value, Expr::undefined());
@@ -295,7 +311,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // doesn't say: a `key` written before it goes before it.
         if let Some(props) = props
             && let ExprKind::Adt(adt) = &self.frame.thir[super::body_queries::strip(self.frame.thir, props)].kind
-            && let Shape::Object(types) = self.shape(ty)
+            && let Some(types) = self.prop_types(ty)
         {
             for f in adt.fields.iter() {
                 let name = &types[f.name.as_usize()].0;
@@ -327,7 +343,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 | Prop::Getter(_, value)
                 | Prop::Setter(_, value)
                 | Prop::Method(_, value)
-                | Prop::Spread(value)) = p;
+                | Prop::Spread(value)
+                | Prop::Keyed(_, value)
+                | Prop::KeyedMethod(_, value)) = p;
                 value.has_effects() && !self.reads_unchanging(children, out)
                     || children.has_effects() && !value.is_constant() && !self.reads_unchanging(value, out)
             })
@@ -336,8 +354,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.read_first(prop, out);
             }
         }
-        let rest_fields: Vec<String> = match self.shape(ty) {
-            Shape::Object(types) => (types.into_iter().enumerate())
+        let rest_fields: Vec<String> = match self.prop_types(ty) {
+            Some(types) => (types.into_iter().enumerate())
                 .filter(|&(i, _)| super::bindings::is_rest_field(self.tcx, ty, i))
                 .map(|(_, (name, _))| name)
                 .collect(),
@@ -353,7 +371,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut given = HashMap::new();
         if let Some(props) = props
             && let ExprKind::Adt(adt) = &self.frame.thir[super::body_queries::strip(self.frame.thir, props)].kind
-            && let Shape::Object(types) = self.shape(ty)
+            && let Some(types) = self.prop_types(ty)
         {
             for field in adt.fields.iter() {
                 given.insert(types[field.name.as_usize()].0.clone(), field.expr);
@@ -369,7 +387,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // and so is a flattened struct's: one made here, each field
                 // given, an attribute of its own (ADR 0204).
                 Prop::Field(name, value) if rest_fields.contains(&name) => {
-                    let Shape::Object(types) = self.shape(ty) else {
+                    let Some(types) = self.prop_types(ty) else {
                         unreachable!("a struct's fields")
                     };
                     let field_ty = types.iter().find(|(n, _)| *n == name).expect("the field").1;
@@ -388,6 +406,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             | Prop::Setter(key, _)
                             | Prop::Method(key, _) => written.get(key).copied(),
                             Prop::Spread(_) => None,
+                            Prop::Keyed(..) | Prop::KeyedMethod(..) => {
+                                unreachable!("a JSX attribute is named by text (ADR 1051)")
+                            }
                         })
                         .min();
                     for prop in flattened {
@@ -399,12 +420,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             | Prop::Getter(key, _)
                             | Prop::Setter(key, _)
                             | Prop::Method(key, _) => written.get(key).copied(),
+                            Prop::Keyed(..) | Prop::KeyedMethod(..) => {
+                                unreachable!("a JSX attribute is named by text (ADR 1051)")
+                            }
                         };
                         attrs.push((at, prop));
                     }
                 }
                 Prop::Field(name, value) if name == "children" => {
-                    let Shape::Object(types) = self.shape(ty) else {
+                    let Some(types) = self.prop_types(ty) else {
                         unreachable!("a struct's fields")
                     };
                     let mut child_ty = types.into_iter().find(|(n, _)| *n == name).expect("the field").1;
@@ -429,6 +453,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         // A base's, `{..*props}`, before what it's updated
                         // with, which JSX's order says wins (ADR 0250).
                         Prop::Spread(_) => Some(BytePos(0)),
+                        Prop::Keyed(..) | Prop::KeyedMethod(..) => {
+                            unreachable!("a JSX attribute is named by text (ADR 1051)")
+                        }
                     };
                     attrs.push((at, other));
                 }
@@ -448,7 +475,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 | Prop::Getter(_, value)
                 | Prop::Setter(_, value)
                 | Prop::Method(_, value)
-                | Prop::Spread(value)) = prop;
+                | Prop::Spread(value)
+                | Prop::Keyed(_, value)
+                | Prop::KeyedMethod(_, value)) = prop;
                 value.has_effects()
             };
             if attrs.iter().filter(|attr| effects(attr)).count() > 1 {
@@ -489,6 +518,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Prop::Setter(name, value)
             | Prop::Method(name, value) => (name.as_str(), value),
             Prop::Spread(value) => ("props", value),
+            Prop::Keyed(..) | Prop::KeyedMethod(..) => unreachable!("a JSX attribute is named by text (ADR 1051)"),
         };
         if !value.is_constant() {
             let old = std::mem::replace(value, Expr::undefined());
@@ -546,7 +576,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ExprKind::Adt(adt) = &self.frame.thir[super::body_queries::strip(self.frame.thir, props)].kind else {
             return;
         };
-        let Shape::Object(types) = self.shape(ty) else { return };
+        let Some(types) = self.prop_types(ty) else { return };
         let made_here = |field: &thir::FieldExpr| {
             let i = field.name.as_usize();
             super::bindings::is_flatten_field(self.tcx, ty, i)
@@ -583,7 +613,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => vec![Prop::Spread(value)],
             });
         };
-        let Shape::Object(types) = self.shape(ty) else {
+        let Some(types) = self.prop_types(ty) else {
             unreachable!("a flattened struct's fields")
         };
         let mut shadowing = own.to_vec();
@@ -775,6 +805,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Prop::Setter(name, value)
                     | Prop::Method(name, value) => (name.as_str(), value),
                     Prop::Spread(value) => ("props", value),
+                    Prop::Keyed(..) | Prop::KeyedMethod(..) => {
+                        unreachable!("a JSX attribute is named by text (ADR 1051)")
+                    }
                 };
                 if !value.is_constant() {
                     let old = std::mem::replace(value, Expr::undefined());
@@ -828,6 +861,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Prop::Setter(_, v)
                     | Prop::Method(_, v)
                     | Prop::Spread(v) => !v.span.is_none() && v.span.lo > written,
+                    Prop::Keyed(..) | Prop::KeyedMethod(..) => {
+                        unreachable!("a JSX attribute is named by text (ADR 1051)")
+                    }
                 })
             }
             _ => None,

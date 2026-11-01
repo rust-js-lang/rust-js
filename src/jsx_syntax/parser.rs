@@ -974,6 +974,84 @@ pub(super) fn class_elsewhere(sess: &Session, item: &ast::Item, classes: &Classe
     companion_item(sess, tokens, "JSX class component", item)
 }
 
+/// Of a struct a field of which `#[rust_js::name(SYMBOL)]` names by a
+/// symbol, a use of each such name beside it, `#[rust_js::names_field]
+/// const _: fn(&Reason<'_>) = |value| ::js::symbol::names_field(&value.field,
+/// &SYMBOL);`, `SYMBOL` the attribute's own tokens: rustc resolves the
+/// path and checks it's a symbol, as it does no attribute's, and sees
+/// what it names used, so no import or static it alone uses is flagged;
+/// and rust-js reads which item it is of its HIR (`bindings::symbol_name`,
+/// ADR 1051). A struct of type or const parameters gets none, which
+/// rust-js refuses; one in a function's body isn't seen, refused too.
+// rustc stores module items in boxes.
+#[allow(clippy::vec_box)]
+pub(super) fn field_symbol_uses(sess: &Session, item: &ast::Item) -> Vec<Box<ast::Item>> {
+    let ItemKind::Struct(ident, generics, ast::VariantData::Struct { fields, .. }) = &item.kind else {
+        return Vec::new();
+    };
+    if (generics.params.iter()).any(|param| !matches!(param.kind, ast::GenericParamKind::Lifetime)) {
+        return Vec::new();
+    }
+    let lifetimes = generics.params.len();
+    let ty = match lifetimes {
+        0 => ident.to_string(),
+        _ => format!("{ident}<{}>", vec!["'_"; lifetimes].join(", ")),
+    };
+    let mut uses = Vec::new();
+    for field in fields {
+        let Some(name) = field.ident else { continue };
+        let Some(attrs) = super::configured_attrs(sess, &field.attrs) else {
+            continue;
+        };
+        for attr in attrs.iter().filter(|attr| super::is_rust_js_attr(attr, "name")) {
+            let ast::AttrKind::Normal(normal) = &attr.kind else {
+                continue;
+            };
+            let ast::AttrArgs::Delimited(args) = &normal.item.args else {
+                continue;
+            };
+            // One path, `RESPONSE_SYMBOL` or `js::symbol::async_iterator`:
+            // anything else is refused, saying what to write (ADR 1051).
+            let path = (args.tokens.iter()).all(|tree| {
+                matches!(tree, TokenTree::Token(token, _) if token.is_ident() || token.kind == TokenKind::PathSep)
+            });
+            if !path || args.tokens.is_empty() {
+                continue;
+            }
+            let prefix = template(
+                sess,
+                format!("#[rust_js::names_field] const _: fn(&{ty}) = |value| ::js::symbol::names_field"),
+                attr.span,
+            );
+            // `(&value.field, &SYMBOL)`, the path its own tokens, where the
+            // attribute writes it.
+            let arguments: TokenStream = (template(sess, format!("&value.{name}, &"), attr.span).iter().cloned())
+                .chain(args.tokens.iter().cloned())
+                .collect();
+            let call = TokenTree::Delimited(
+                DelimSpan::from_single(attr.span),
+                DelimSpacing::new(Spacing::Alone, Spacing::Alone),
+                Delimiter::Parenthesis,
+                arguments,
+            );
+            let suffix = template(sess, ";".into(), attr.span);
+            let tokens: TokenStream = (prefix.iter().cloned())
+                .chain([call])
+                .chain(suffix.iter().cloned())
+                .collect();
+            let mut parser = Parser::new(&sess.psess, tokens, Some("a field's symbol name"));
+            match parser.parse_item(ForceCollect::No, AllowConstBlockItems::No) {
+                Ok(Some(companion)) => uses.push(companion),
+                Ok(None) => {}
+                Err(e) => {
+                    e.emit();
+                }
+            }
+        }
+    }
+    uses
+}
+
 /// A companion's macro, parsed of `tokens`, of `item`'s visibility.
 fn companion_item(sess: &Session, tokens: TokenStream, what: &'static str, item: &ast::Item) -> Option<Box<ast::Item>> {
     let mut parser = Parser::new(&sess.psess, tokens, Some(what));

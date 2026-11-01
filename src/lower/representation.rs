@@ -594,7 +594,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             (Shape::Object(fields), _) => {
-                let field = Expr::member(base, fields[i].0.clone());
+                let field = self.field_member(base, &fields[i].0);
                 // Of a JS object the program didn't build, a getter may
                 // answer it (rd204, ADR 1022); Rust's read of a field can't
                 // panic, so it throws only where what it's read of does: a
@@ -1341,7 +1341,14 @@ fn const_js_by<'tcx>(
                 let declared = tcx.type_of(field.did).instantiate_identity().skip_normalization();
                 matches!(declared.kind(), ty::Adt(cell, _) if is_std_def(tcx, cell.did(), StdItem::RefCell))
             };
-            if variant.ctor_kind().is_none() && variant.fields.iter().any(ref_cell) {
+            // So may a field a symbol names, read where its initializer runs,
+            // as that symbol is made (ADR 1051).
+            if variant.ctor_kind().is_none()
+                && variant
+                    .fields
+                    .iter()
+                    .any(|f| ref_cell(f) || bindings::named_by_symbol(tcx, f.did))
+            {
                 return None;
             }
             let values = match variant.ctor_kind() {
@@ -1364,7 +1371,7 @@ fn const_js_by<'tcx>(
                                 true => js::Storage::NullForNone.written(v, false),
                                 false => v,
                             };
-                            Prop::Field(field_key(tcx, f), v)
+                            Prop::Field(field_key(tcx, f).text().to_owned(), v)
                         })
                         .collect(),
                 )),
@@ -1379,7 +1386,10 @@ fn const_js_by<'tcx>(
 pub(super) fn variant_field(tcx: TyCtxt<'_>, variant: &ty::VariantDef, i: usize) -> String {
     match variant.ctor_kind() {
         Some(CtorKind::Fn) => js::positional(i),
-        _ => field_key(tcx, variant.fields.iter().nth(i).expect("a field of this variant")),
+        // An enum variant's field a symbol never names (`validate`, ADR 1051).
+        _ => field_key(tcx, variant.fields.iter().nth(i).expect("a field of this variant"))
+            .text()
+            .to_owned(),
     }
 }
 

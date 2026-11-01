@@ -1214,7 +1214,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 let object = self.pointee_place(pointer);
                 let key = super::bindings::field_key(self.tcx, field);
-                self.pointer_to(Expr::member(object, key), b, Some(0), span)
+                self.pointer_to(self.field_member(object, &key), b, Some(0), span)
             }
             // Two layouts of one `#[repr(C)]` struct, anyhow's `ErrorImpl<E>`
             // as its prefix `ErrorImpl<()>` and back: the same handle, its

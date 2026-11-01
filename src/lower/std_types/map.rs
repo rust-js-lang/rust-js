@@ -1114,7 +1114,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => match self.shape(ty) {
                 crate::lower::Shape::Object(fields) => {
                     let mut props = vec![js::Prop::Spread(key.clone())];
-                    for (i, (name, t)) in fields.into_iter().enumerate() {
+                    for (i, (name, t)) in Self::named_fields(fields).into_iter().enumerate() {
                         if self.holds_identity(t) {
                             let part = self.key_parts(self.project(key.clone(), ty, i), t, span)?;
                             props.push(js::Prop::Field(name, part));

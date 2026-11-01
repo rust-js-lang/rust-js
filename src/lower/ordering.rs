@@ -315,7 +315,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ if self.one_value(ty) && !a.has_effects() && !b.has_effects() => Ok(Expr::int(0)),
             _ => {
                 let parts: Vec<(Expr, Expr, Ty<'tcx>)> = match self.shape(ty) {
-                    Shape::Object(fields) => fields
+                    Shape::Object(fields) => Self::named_fields(fields)
                         .into_iter()
                         .map(|(name, t)| (Expr::member(a.clone(), name.clone()), Expr::member(b.clone(), name), t))
                         .collect(),

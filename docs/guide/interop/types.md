@@ -3117,6 +3117,116 @@ pub struct Manifest {
 }
 ```
 
+A field may be named by a symbol instead, `#[rust_js::name(SYMBOL)]`, the
+path of the item holding it: a `&'static js::Symbol` static or
+thread-local, JS's own, `js::symbol::async_iterator`, or a `js::SymbolFor`
+constant. Its literal's key is the symbol, and its reads and writes are
+`x[SYMBOL]`; a closure there is a method
+([ADR 1051](../../decisions/1051-a-field-may-be-named-by-a-symbol.md)):
+
+```rust
+use std::cell::Cell;
+use std::rc::Rc;
+
+use js::Symbol;
+
+thread_local! {
+    static RESPONSE: &'static Symbol = js::symbol::new(None);
+}
+
+pub struct Reason {
+    pub id: u32,
+    #[cfg_attr(rust_js, rust_js::name(RESPONSE))]
+    pub response: String,
+}
+
+pub struct Steps {
+    #[cfg_attr(rust_js, rust_js::name(js::symbol::async_iterator))]
+    pub next: Box<dyn Fn() -> u32>,
+}
+
+pub fn reason(id: u32) -> Reason {
+    Reason {
+        id,
+        response: String::from("ok"),
+    }
+}
+
+pub fn response(reason: &Reason) -> String {
+    reason.response.clone()
+}
+
+pub fn steps() -> Steps {
+    let at = Rc::new(Cell::new(0));
+    Steps {
+        next: Box::new(move || {
+            at.set(at.get() + 1);
+            at.get()
+        }),
+    }
+}
+```
+
+```js
+const RESPONSE = Symbol();
+
+export function reason(id) {
+  return {
+    id,
+    [RESPONSE]: "ok",
+  };
+}
+
+export function response(reason) {
+  return reason[RESPONSE];
+}
+
+export function steps() {
+  let at = 0;
+  return {
+    [Symbol.asyncIterator]() {
+      at = (at + 1) >>> 0;
+      return at;
+    },
+  };
+}
+```
+
+```ts
+declare const RESPONSE: unique symbol;
+
+export interface Reason {
+    id: number;
+    [RESPONSE]: string;
+}
+
+export interface Steps {
+    [Symbol.asyncIterator]: () => number;
+}
+
+export function reason(id: number): Reason;
+
+export function response(reason: Reason): string;
+
+export function steps(): Steps;
+```
+
+- **rustc resolves and checks the path**: rust-js's `jsx!` pass writes a
+  use of it beside the struct, `js::symbol::names_field(&value.response,
+  &RESPONSE)`, so what isn't a symbol is rustc's error, "`u32` is no
+  symbol a field may be named by", and an import or a static only the
+  attribute names is used, with no `#[allow]`. The use writes no JS.
+- **Its declaration is a `unique symbol`'s key**, `[RESPONSE]: string`,
+  and the symbol, where its module holds it, a `declare const RESPONSE:
+  unique symbol;`, as TypeScript takes a computed key of no other.
+- **Refused, saying what to write**: on an item, an enum variant's field or
+  a union's; of a struct of type or const parameters, or one written in a
+  function's body; on a class's field, a flattened one, a `#[rust_js::test]`
+  member or a component's props field; and of a struct that derives or
+  implements `Clone`, `PartialEq`, `PartialOrd`, `Debug`, `Hash` or serde's
+  traits, whose JS reads each field by its name. A pattern of such a
+  struct, `let Reason { id, response } = reason;`, reads each field.
+
 A `#[rust_js::name]` that repeats the camelCase name is an error, since
 there's one way to write it:
 

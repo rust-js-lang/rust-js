@@ -49,7 +49,8 @@ pub(super) fn flattened_keys<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<Strin
         if is_flatten(tcx, field) {
             keys.extend(flattened_keys(tcx, field.ty(tcx, args).skip_normalization()));
         } else {
-            keys.push(field_key(tcx, field));
+            // One a symbol names shadows no key of text (ADR 1051).
+            keys.extend(field_key(tcx, field).name().map(str::to_owned));
         }
     }
     keys

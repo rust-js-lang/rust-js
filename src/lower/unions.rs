@@ -34,7 +34,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A union made holding `field`, `U { a: 10 }`: `{ a: 10 }`.
     pub(super) fn union_value(&self, ty: Ty<'tcx>, field: FieldIdx, value: Expr) -> Expr {
         let (adt, _) = self.union_of(ty).expect("a union");
-        let key = field_key(self.tcx, &adt.non_enum_variant().fields[field]);
+        let key = field_key(self.tcx, &adt.non_enum_variant().fields[field])
+            .text()
+            .to_owned();
         Expr::object(vec![Prop::Field(key, value)])
     }
 
@@ -47,7 +49,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (adt, args) = self.union_of(ty).expect("a union");
         let fields = &adt.non_enum_variant().fields;
         let read_ty = self.field_ty(&fields[field], args);
-        let key = field_key(self.tcx, &fields[field]);
+        let key = field_key(self.tcx, &fields[field]).text().to_owned();
         let mut alike = Vec::new();
         let mut decoders = Vec::new();
         // A field JS holds as an object, which a write goes into, `u.a.0 =
@@ -62,7 +64,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             let other_ty = self.field_ty(def, args);
-            let other_key = field_key(self.tcx, def);
+            let other_key = field_key(self.tcx, def).text().to_owned();
             if other_ty == read_ty {
                 alike.push(Expr::str(other_key));
             } else if writable_whole && let Some(decoder) = self.plain_decoder(other_ty, read_ty, span)? {
@@ -83,7 +85,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `u.field = value`: `$unionSet(u, "a", value)`, the field it holds now.
     pub(super) fn union_write(&self, union: Expr, ty: Ty<'tcx>, field: FieldIdx, value: Expr) -> Expr {
         let (adt, _) = self.union_of(ty).expect("a union");
-        let key = field_key(self.tcx, &adt.non_enum_variant().fields[field]);
+        let key = field_key(self.tcx, &adt.non_enum_variant().fields[field])
+            .text()
+            .to_owned();
         Expr::call(Expr::helper("$unionSet"), vec![union, Expr::str(key), value])
     }
 
@@ -98,7 +102,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if !self.contains_mutated(field_ty) {
                 continue;
             }
-            let key = field_key(self.tcx, def);
+            let key = field_key(self.tcx, def).text().to_owned();
             let held = Expr::call(
                 Expr::member(Expr::var("Object"), "hasOwn"),
                 vec![union.clone(), Expr::str(key.clone())],

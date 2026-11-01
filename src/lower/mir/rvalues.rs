@@ -775,10 +775,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             for (i, value) in given.into_iter().zip(values) {
                 let value = self.value_expr(value, span)?;
                 let field = &self.tcx.adt_def(did).non_enum_variant().fields[FieldIdx::from_usize(i)];
-                props.push(Prop::Field(
-                    names[i].0.clone(),
-                    self.holding(value, Some(field), names[i].1),
-                ));
+                let value = self.holding(value, Some(field), names[i].1);
+                // One a symbol names, `[SYMBOL]: ..` (ADR 1051).
+                props.push(match names[i].0.symbol_item() {
+                    Some((item, span)) => Prop::Keyed(self.field_symbol(item, span), value),
+                    None => Prop::Field(names[i].0.text().to_owned(), value),
+                });
             }
             let mut made = Expr::object(props);
             if let js::ExprKind::Object(_, layout) = &mut made.kind {

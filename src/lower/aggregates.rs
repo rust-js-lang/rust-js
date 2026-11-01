@@ -6,7 +6,7 @@ use super::bindings;
 use super::fn_def;
 use super::recognition::{StdItem, std_item};
 use super::representation::ordering_value;
-use super::{FnCx, R, Shape, assembled};
+use super::{FnCx, R, Shape};
 use crate::js::{self, Expr, Prop, StmtKind};
 use rustc_abi::VariantIdx;
 use rustc_hir::def::CtorKind;
@@ -116,7 +116,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // Each field by its name, as the object lists them as written.
         let flattened = |name: &str| {
-            (names.iter().position(|(n, _)| n == name)).is_some_and(|i| bindings::is_flatten_field(self.tcx, ty, i))
+            (names.iter().position(|(n, _)| n.name() == Some(name)))
+                .is_some_and(|i| bindings::is_flatten_field(self.tcx, ty, i))
         };
         let mut flat = Vec::new();
         for prop in props {
@@ -418,7 +419,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             )
         });
         let shape = match tag {
-            Some(_) => Shape::Object(self.variant_fields(variant, args)),
+            Some(_) => Shape::Object(Self::variant_keys(self.variant_fields(variant, args))),
             None => self.shape(ty),
         };
         // The keys whose `undefined`, a `None`'s, is kept: one a comment is
@@ -428,23 +429,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `Cell` in an object's field is what it holds (ADR 0288).
             Shape::Object(names) => {
                 let (on, before) = self.commented_fields(&adt_def, variant_index, span);
+                // The layout's keys are text: one a symbol names is laid out
+                // as any value (ADR 1051).
                 let keys = |at: Vec<usize>| -> Vec<String> {
                     (at.into_iter())
-                        .filter_map(|i| names.get(i).map(|(name, _)| name.clone()))
+                        .filter_map(|i| names.get(i).and_then(|(name, _)| name.name()).map(str::to_owned))
                         .collect()
                 };
                 kept = keys(on);
                 led = keys(before);
                 // Where each field is written, what's before it is before.
                 starts = (self.field_starts(&adt_def, variant_index, span).into_iter())
-                    .filter_map(|(i, at)| Some((names.get(i)?.0.clone(), at)))
+                    .filter_map(|(i, at)| Some((names.get(i)?.0.name()?.to_owned(), at)))
                     .collect();
                 // Its fields' doc comments, where it's the struct's one
                 // literal (ADR 0444, amended).
                 if adt_def.is_struct() && self.krate.struct_literals.get(&adt_def.did()) == Some(&1) {
                     docs = (names.iter().zip(&variant.fields))
                         .filter_map(|((name, _), field)| {
-                            Some((name.clone(), super::declarations::jsdoc_of(self.tcx, field.did)?))
+                            Some((
+                                name.name()?.to_owned(),
+                                super::declarations::jsdoc_of(self.tcx, field.did)?,
+                            ))
                         })
                         .collect();
                 }
@@ -454,7 +460,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let cells = (names.iter().zip(&variant.fields))
                     .filter(|&(&(_, field_ty), field)| self.property_cell(Some(field), field_ty).is_some())
                     .filter(|(_, field)| !bindings::is_optional(self.tcx, field))
-                    .map(|((name, _), _)| name.clone());
+                    .filter_map(|((name, _), _)| name.name().map(str::to_owned));
                 kept.extend(cells);
                 let mut items: Vec<Option<Expr>> = (names.iter().zip(&variant.fields).zip(fields))
                     .map(|((&(_, field_ty), field), value)| Some(self.holding(value, Some(field), field_ty)))
@@ -470,7 +476,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Shape::Array(_) => (shape, fields),
             Shape::Other => return Err(self.unsupported(span, &format!("a `{ty}`"))),
         };
-        let mut made = assembled(shape, tag, items);
+        let mut made = self.assembled(shape, tag, items);
         // An object of methods holds its impl's, after its fields, each its
         // module's function (ADR 0943): `{ containsNode }`.
         if let js::ExprKind::Object(props, _) = &mut made.kind {
@@ -515,8 +521,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return None;
         }
+        // Not of a struct a symbol names a field of, whose base is read as
+        // it's made (ADR 1051).
         match self.shape(ty) {
-            Shape::Object(fields) => Some(fields),
+            Shape::Object(fields) if fields.iter().all(|(key, _)| key.symbol_item().is_none()) => Some(
+                fields
+                    .into_iter()
+                    .map(|(key, ty)| (key.text().to_owned(), ty))
+                    .collect(),
+            ),
             _ => None,
         }
     }
@@ -624,10 +637,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )
             });
             let shape = match tag {
-                Some(_) => Shape::Object(self.variant_fields(variant, adt_args)),
+                Some(_) => Shape::Object(Self::variant_keys(self.variant_fields(variant, adt_args))),
                 None => self.shape(ty),
             };
-            assembled(shape, tag, items)
+            self.assembled(shape, tag, items)
         };
         Ok(Expr::arrow(
             params.into_iter().map(Into::into).collect(),

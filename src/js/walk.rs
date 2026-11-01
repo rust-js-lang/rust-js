@@ -134,11 +134,17 @@ macro_rules! walks {
                 f(self);
                 let props = |props: & $($($m)*)? [Prop], f: &mut dyn FnMut(& $($($m)*)? Expr)| {
                     for prop in props {
-                        let (Prop::Field(_, value)
-                        | Prop::Spread(value)
-                        | Prop::Getter(_, value)
-                        | Prop::Setter(_, value) | Prop::Method(_, value)) = prop;
-                        value.$expr(f);
+                        match prop {
+                            Prop::Field(_, value)
+                            | Prop::Spread(value)
+                            | Prop::Getter(_, value)
+                            | Prop::Setter(_, value)
+                            | Prop::Method(_, value) => value.$expr(f),
+                            Prop::Keyed(key, value) | Prop::KeyedMethod(key, value) => {
+                                key.$expr(f);
+                                value.$expr(f);
+                            }
+                        }
                     }
                 };
                 match & $($($m)*)? self.kind {

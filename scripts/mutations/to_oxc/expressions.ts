@@ -171,20 +171,20 @@ export const mutations: Mutation[] = [
     tests: ["test/emission.test.ts", "-t", "copied trait defaults map to their original source file"],
   },
   {
-    "name": "adjacent-text-earlier-always",
-    "breaks": "of two strings side by side, the earlier is always in braces, `{\"If this is a mistake\"}, `",
-    "file": "src/to_oxc/expressions.rs",
-    "find": "                && spaced(later)",
-    "replace": "                && spaced(later)\n                && false",
-    "tests": ["test/jsx-children.test.ts", "-t", "adjacent text children stay apart"]
+    name: "adjacent-text-earlier-always",
+    breaks: "of two strings side by side, the earlier is always in braces, `{\"If this is a mistake\"}, `",
+    file: "src/to_oxc/expressions.rs",
+    find: "                && spaced(later)",
+    replace: "                && spaced(later)\n                && false",
+    tests: ["test/jsx-children.test.ts", "-t", "adjacent text children stay apart"]
   },
   {
-    "name": "adjacent-text-blank-braced",
-    "breaks": "a blank string after text is put in braces, which a formatter makes a space of the text, one text node of two",
-    "file": "src/to_oxc/expressions.rs",
-    "find": "        let spaced = |s: &str| !s.trim().is_empty() && s.trim() != s;",
-    "replace": "        let spaced = |s: &str| s.trim() != s;",
-    "tests": ["test/jsx-children.test.ts", "-t", "adjacent text children stay apart"]
+    name: "adjacent-text-blank-braced",
+    breaks: "a blank string after text is put in braces, which a formatter makes a space of the text, one text node of two",
+    file: "src/to_oxc/expressions.rs",
+    find: "        let spaced = |s: &str| !s.trim().is_empty() && s.trim() != s;",
+    replace: "        let spaced = |s: &str| s.trim() != s;",
+    tests: ["test/jsx-children.test.ts", "-t", "adjacent text children stay apart"]
   },
   {
     name: "number-as-written-unread",
@@ -458,5 +458,17 @@ export const mutations: Mutation[] = [
     find: "                Expression::new_sequence_expression(sp, ArenaVec::from_iter_in([zero, self.expr(f)], b), b)\n",
     replace: "                { let _ = zero; self.expr(f) }\n",
     tests: ["test/js-any-values.test.ts", "-t", "eval is the global eval, called indirectly"],
+  },
+  {
+    name: "keyed-method-uncomputed",
+    breaks: "a method a symbol names is printed named by the symbol's text, `Symbol.asyncIterator() {..}`, which JS refuses",
+    file: "src/to_oxc/expressions.rs",
+    find: "            AccessorKey::Computed(key) => (PropertyKey::from(self.expr(key)), true),",
+    replace: "            AccessorKey::Computed(key) => (PropertyKey::from(self.expr(key)), false),",
+    tests: [
+      "test/field-symbol-names.test.ts",
+      "-t",
+      "a closure a symbol names is its method"
+    ]
   },
 ];

@@ -120,7 +120,7 @@ pub(super) fn impl_misuse(tcx: TyCtxt<'_>, imp: DefId, class: DefId) -> Vec<(rus
         ));
     }
     let fields: Vec<String> = (tcx.adt_def(class).non_enum_variant().fields.iter())
-        .map(|field| crate::lower::bindings::field_key(tcx, field))
+        .filter_map(|field| crate::lower::bindings::field_key(tcx, field).name().map(str::to_owned))
         .collect();
     for &own in tcx.associated_item_def_ids(imp) {
         let Some(item) = tcx.trait_item_of(own) else {

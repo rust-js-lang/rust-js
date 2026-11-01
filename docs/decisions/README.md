@@ -229,6 +229,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1048 A function that reads `js::arguments()` is given each argument](1048-a-function-that-reads-arguments-is-given-each.md)
 - [1046 `js::class::<T>()` is typed by `T`'s `Classed`](1046-js-class-is-typed-by-classed.md)
 - [1049 `js::class::<T>()` is typed by `T`'s `Classed`](1049-js-class-is-typed-by-classed.md)
+- [1051 A field may be named by a symbol](1051-a-field-may-be-named-by-a-symbol.md)
 - [0205 Flattened structs chain, and the props' own name is theirs](0205-flattened-chains.md)
 - [0206 TypeScript, read and written by TypeScript's own parser and printer](0206-typescript-module.md)
 - [0207 A crate's `.d.ts` is printed by TypeScript](0207-declarations-printed-by-typescript.md)
@@ -460,7 +461,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0434 A temporary of a variable is the variable, until it changes](0434-a-temporary-of-a-variable-is-the-variable.md) *(amended: a copy, a pattern's binding's too, is the variable where each read is before it's set, on every way; amended: a `while let`'s binding too; amended: a branch that leaves is no way past it)*
 - [0433 What's written after a loop is after it](0433-whats-written-after-a-loop-is-after-it.md) *(amended: a tuple's `return` is where its parts are)*
 - [0435 Rust's world and React's: each its own names, JSX the boundary](0435-rust-and-react-two-worlds.md)
-- [0573 Every Rust name is camelCase in JS](0573-every-rust-name-is-camel-case-in-js.md) *(amended by 0678: a parameter's leading `_` isn't in its JS name; extended by 0855: a parameter's `#[rust_js::name]`)*
+- [0573 Every Rust name is camelCase in JS](0573-every-rust-name-is-camel-case-in-js.md) *(amended by 0678: a parameter's leading `_` isn't in its JS name; extended by 0855: a parameter's `#[rust_js::name]`; extended by 1051: a field named by a symbol)*
 - [0574 What React's scheduler heap asks: a nullable result, an object's `Some`, a runtime that loads anywhere](0574-what-reacts-scheduler-heap-asks.md) *(amended: a nullable result is declared `T | null`)*
 - [0575 An `if` keeps the `else` it's written with, and a tail `if` of two values is a conditional](0575-an-if-keeps-its-else-and-a-tail-if-is-a-conditional.md) *(amended: `undefined` beside `null` is a value, `t ? undefined : null`)*
 - [0576 What a body's integers can be: an index in bounds, an operator that can't wrap, a swap JS's own](0576-what-a-bodys-integers-can-be.md) *(extended by 1047: a bound by each length, a closure told what's known where it's made; 0720: a labeled block's `break` and a named constant; extended by 0847: which `OnceCell` is still empty; amended: a `*const` of a shared reference's changes nothing, a `String`'s text is read; amended: a `Vec`'s `remove` and `insert` in bounds are JS's own; extended by 1040: the index a `position` finds)*

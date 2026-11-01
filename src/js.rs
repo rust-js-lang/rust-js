@@ -1132,6 +1132,13 @@ pub enum JsxTag {
 pub enum Prop {
     /// `name: value`, printed as `name` when `value` is a variable of that name.
     Field(String, Expr),
+    /// `[key]: value`: a field a symbol names, `key` that symbol's item
+    /// as it's read, `[RESPONSE_SYMBOL]: response` (ADR 1051).
+    Keyed(Expr, Expr),
+    /// `[key](a) { .. }`: a `Keyed` field that's a closure reading no
+    /// `this`, which preparation writes of it as of a `Field` (ADRs 0882,
+    /// 1051).
+    KeyedMethod(Expr, Expr),
     /// `...value`: copy every field of `value`.
     Spread(Expr),
     /// `get name() { .. }`, of an arrow that takes nothing: its body runs
