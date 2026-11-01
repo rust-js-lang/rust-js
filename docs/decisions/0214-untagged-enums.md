@@ -14,7 +14,7 @@ the object, of an `Rc` what it points at, below. Amended (2026-10-26):
 a `js::SymbolFor` payload is a symbol, and a derived `==` of payloads
 JS's `===` compares is `===`. Amended (2026-10-28, #391): a JS object's
 class is the one its `#[rust_js::types]` names, and a module's type an
-object. Extended by [1045](1045-an-untagged-enums-arrays-are-told-by-their-length.md)
+object. Extended by [1046](1046-an-untagged-enums-arrays-are-told-by-their-length.md)
 (rd490): an array whose type fixes its length is told by its `length`,
 and a `&mut` to an enum each of whose values is an array it holds itself
 is the array, not a place, as #347's below says of the others.

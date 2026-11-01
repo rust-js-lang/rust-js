@@ -9,7 +9,7 @@ library's too), [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md)
 `Rc<RefCell<T>>`), [0585](0585-a-refcells-replace-holds-it-for-a-moment.md)
 (`replace`, `take` and `get_mut` of an object) and
 [0772](0772-a-nullable-cell-field-writes-null.md) (a nullable `RefCell`
-field). Extended by [1045](1045-an-untagged-enums-arrays-are-told-by-their-length.md):
+field). Extended by [1046](1046-an-untagged-enums-arrays-are-told-by-their-length.md):
 a `RefCell` of an untagged enum each of whose values is an array it holds
 itself is that array (rd490). Amended by [0867](0867-a-binding-that-runs-nothing-and-aggregate-error.md)
 (a binding that says it runs nothing borrows nothing) and

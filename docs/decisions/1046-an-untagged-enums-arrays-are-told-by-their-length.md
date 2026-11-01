@@ -1,4 +1,4 @@
-# 1045. An untagged enum's arrays are told by their length, and changed in place
+# 1046. An untagged enum's arrays are told by their length, and changed in place
 
 Status: Accepted (rd490). Extends [0214](0214-untagged-enums.md): two
 arrays whose types fix their lengths in one untagged enum. Amends 0214's

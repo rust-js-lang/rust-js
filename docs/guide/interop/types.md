@@ -910,7 +910,7 @@ export function untrack(node) {
   upstream's grow, `node[4] = fallback; node[5] = id;`, and shrink,
   `node.length = 4; node[2] = []; node[3] = undefined;`. A copy or a clone
   of one is its own, `node.slice()`
-  ([ADR 1045](../../decisions/1045-an-untagged-enums-arrays-are-told-by-their-length.md)).
+  ([ADR 1046](../../decisions/1046-an-untagged-enums-arrays-are-told-by-their-length.md)).
 
 ## Option and Result
 
