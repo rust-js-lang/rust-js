@@ -19,51 +19,54 @@ function noted(why) {
   return why;
 }
 
-function main() {
-  let canvas;
-  let size$1;
-
-  function mount(name) {
-    canvas = name;
-    const line = shown(canvas, 2);
+const Surface = {
+  mount(surface, name) {
+    surface.canvas = name;
+    const line = shown(surface.canvas, 2);
     console.log(`${line}`);
-    size$1 = 3;
-    let size = size$1;
+    surface.size = 3;
+    let size = surface.size;
     console.log(`${$displayF64(size)}`);
     // A message that runs code runs it still.
-    size$1 = size + 1;
-    size = $unwrap(size$1, noted("set again"));
+    surface.size = size + 1;
+    size = $unwrap(surface.size, noted("set again"));
     console.log(`${$displayF64(size)}`);
     // Through a block that only binds, `_ = ..`'s.
-    canvas = "framed";
-    size$1 = $byteLen(shown(canvas, size));
-    console.log(`${size$1 == null ? "None" : `Some(${$debugF64(size$1)})`}`);
-  }
+    surface.canvas = "framed";
+    surface.size = $byteLen(shown(surface.canvas, size));
+    console.log(`${surface.size == null ? "None" : `Some(${$debugF64(surface.size)})`}`);
+  },
 
   // Read back as what the body gives.
-  function framed() {
-    canvas = "tail";
-    return shown(canvas, 0.5);
-  }
+  framed(surface) {
+    surface.canvas = "tail";
+    return shown(surface.canvas, 0.5);
+  },
 
-  function unset() {
-    canvas = undefined;
+  unset(surface) {
+    surface.canvas = undefined;
     return 1;
-  }
+  },
 
-  function remount() {
+  remount(surface) {
     // Another cell's read back is no read of this one.
-    size$1 = 4;
-    const other = $unwrap(canvas);
+    surface.size = 4;
+    const other = $unwrap(surface.canvas);
     console.log(`${other}`);
     // A call that runs first may unset it, here as an argument before.
-    canvas = "again";
-    const line = joined(unset(), $unwrap(canvas));
+    surface.canvas = "again";
+    const line = joined(Surface.unset(surface), $unwrap(surface.canvas));
     console.log(`${line}`);
-  }
+  },
+};
 
-  mount("canvas");
-  console.log(`${framed()}`);
-  remount();
+function main() {
+  const surface = {
+    canvas: undefined,
+    size: undefined,
+  };
+  Surface.mount(surface, "canvas");
+  console.log(`${Surface.framed(surface)}`);
+  Surface.remount(surface);
 }
 //# sourceMappingURL=case.js.map

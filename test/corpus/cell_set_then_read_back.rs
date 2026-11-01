@@ -7,7 +7,9 @@
 // runs first or a statement apart, keeps Rust's check, which then panics.
 use std::cell::Cell;
 
-struct Surface {
+// `pub`, so it stays an object whose fields are cells, no function's scope
+// (ADR 1043).
+pub struct Surface {
     canvas: Cell<Option<&'static str>>,
     size: Cell<Option<f64>>,
 }
