@@ -388,3 +388,15 @@ other accessor reading `this`. Mutations `handle-of-a-getters-object-kept` (`tid
 `this-handles-not-read-apart` (`prepare.rs`) and #359's
 `class-handle-this-unnamed`, now `js/stmt_walk.rs`'s.
 
+
+Amended, 2026-11-02 (#459): the rule covers a trait's default too.
+1035's default copied into a class's prototype, `Keys.prototype.step`,
+keeps a handle on `this.count` until tidy's `drops` stage. Before
+3ce9fbb21 that stage's JS read `this.count` in the handle's own getter and
+setter, and `class_trait_methods` printed `5 5` where Rust prints `6 9`.
+The nightly's every-case tidy-stages run found it each night from
+78f195185 on. `prepare`'s `this_read_apart` is applied to every function
+body, so the default reads `const this$ = this;` as well. The case is now
+one of the few cases `test/tidy-stages.test.ts` runs in the nightly's suite, and
+`this-handles-not-read-apart` names it too: without the rule, and with
+3ce9fbb21's parent, it fails after `flags/settled flags`.

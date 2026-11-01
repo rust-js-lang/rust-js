@@ -31,6 +31,10 @@ const few = [
   "assignment_order.rs",
   "calculator.rs",
   "catch_unwind_drops.rs",
+  // A trait's default, a class's prototype's method, holding a handle on
+  // `this.count` until `drops`: its getter reads `this$`, not the handle's
+  // own `this` (#459).
+  "class_trait_methods.rs",
   "conditional_regions.rs",
   // A drop's guard inlined while it's a temporary, `_3`, named by no number.
   "drop_guard_name_shared.rs",

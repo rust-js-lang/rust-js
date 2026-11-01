@@ -814,11 +814,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "this-handles-not-read-apart",
-    breaks: "a handle kept on a place of a `with_this` function's `this` reads `this` in its own getter and setter, the handle object (#449)",
+    breaks:
+      "a handle kept on a place of a `with_this` function's `this`, or of a trait's default a class's prototype takes until tidy's `drops`, reads `this` in its own getter and setter, the handle object (#449, #459)",
     file: "src/prepare.rs",
     find: "    this_handles::this_read_apart(body);\n",
     replace: "",
-    tests: ["test/js-constructors.test.ts", "-t", "RefCell field sets"],
+    tests: ["test/js-constructors.test.ts", "test/tidy-stages.test.ts", "-t", "RefCell field sets|^class_trait_methods after"],
   },
   {
     name: "keyed-closure-no-method",

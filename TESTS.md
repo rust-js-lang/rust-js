@@ -12,7 +12,7 @@ As of 2026-10-30, `main` at `120772e2`; times are CI's, check run 41022723550.
 | Mutations | ~7,700 (`scripts/mutations/`) | Each rule has a test that fails without it | a check runs only the changed ones: ~10 min on up to 16 machines; built up to 32 to a compiler (ADR 1031) |
 | rustc's suite | 3,762 run-pass tests, 1,493 of them out of scope | rustc's own programs run the same as JS | a check runs a sample in 1 min; all of them take ~2 h 45 min |
 | Generated programs | 600 random programs a night | Programs no one wrote | in the nightly |
-| Tidy's stages (`test/tidy-stages.test.ts`) | 6 corpus cases in the nightly's suite; every case a night, each at 16 stage ends | Each of tidy's stages leaves JS that runs as native Rust does (ADR 0659) | in the nightly: its suite runs the 6, and every case on 6 machines |
+| Tidy's stages (`test/tidy-stages.test.ts`) | 9 corpus cases in the nightly's suite; every case a night, each at 16 stage ends | Each of tidy's stages leaves JS that runs as native Rust does (ADR 0659) | in the nightly: its suite runs the 9, and every case on 6 machines |
 | Iterator forms (`test/iterator-forms.test.ts`) | 45 corpus cases in the nightly's suite; every case a night, built with std's iterator structs alone (`--std-iterators`) | That build runs as native Rust does, but the cases `differs` lists, which only shrinks (ADR 0908) | in the nightly: its suite runs the 45, and every case on 2 machines |
 
 - **A check** (each push to `main`, which runs to its end; `bun run ci:check` of another branch) runs everything except the full rustc suite, fuzz and the nightly's files, in parallel: about **15 min**.
