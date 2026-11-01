@@ -414,9 +414,28 @@ const SOURCES_BY_HAND = [
   "impl IntoUnderlyingSource for UnderlyingSource<'_> {}",
 ].join("\n");
 
-// A parameter WebIDL types as an `object` that a type above says, by its
-// interface's member and its name.
-const PARAM_TYPES: Record<string, string> = { "ReadableStream.constructor.underlying_source": "&dyn IntoUnderlyingSource" };
+// A parameter typed as TypeScript types it where WebIDL's type is another,
+// by its interface's member and its name, its whole Rust type: one WebIDL
+// types as an `object` that a type above says; and `FormData`'s `append`
+// and `set`, whose value TypeScript's first overload takes as `string |
+// Blob`, a `FormDataEntryValue` too, as React's Flight reply client copies
+// a form's entries, `data.append(prefix + key, value)`, and whose Blob's
+// file name is given, so its two-argument call is the first's (rd505).
+const PARAM_TYPES: Record<string, string> = {
+  "ReadableStream.constructor.underlying_source": "Option<&dyn IntoUnderlyingSource>",
+  "FormData.append.value": "impl IntoStrOrBlob",
+  "FormData.append.filename": "&str",
+  "FormData.set.value": "impl IntoStrOrBlob",
+  "FormData.set.filename": "&str",
+};
+
+/** `params`, a member's, each typed as `PARAM_TYPES` says. */
+const typedParams = (i: Interface, member: string, params: string[]): string[] =>
+  params.map((p) => {
+    const name = p.slice(0, p.indexOf(": "));
+    const typed = PARAM_TYPES[`${i.name}.${member}.${name}`];
+    return typed === undefined ? p : `${name}: ${typed}`;
+  });
 
 // Namespaces: a module of functions, like `web_assembly::compile`.
 const NAMESPACES = ["WebAssembly", "console", "CSS"];
@@ -1708,11 +1727,7 @@ function functionsOf(declared: Interface): Fn[] {
       }
       // `new`, its optional arguments `Option`s (ADR 0443).
       const v = form("new", sig, m.arguments ?? []);
-      v.params = v.params.map((p) => {
-        const [name, type] = p.split(": ");
-        const typed = PARAM_TYPES[`${i.name}.constructor.${name}`];
-        return typed === undefined ? p : `${name}: ${type.startsWith("Option<") ? `Option<${typed}>` : typed}`;
-      });
+      v.params = typedParams(i, "constructor", v.params);
       fns.push({ name: v.name, jsName: `new ${jsName(i)}`, params: v.params, result: `&'static ${typeName(i.name)}`, doc: [`[MDN](${mdn(i.name, i.name)})`], variadic: v.variadic, ...nulled(sig.nulls) });
     } else if (m.type === "attribute") {
       // A static attribute is a function of the class's module, read at
@@ -1853,6 +1868,7 @@ function functionsOf(declared: Interface): Fn[] {
       const name = NAMED[`${i.name}.${m.name}`] ?? snake(m.name);
       const base = lead.length > 0 ? identifier(`${plain(name)}_with_${lead.join("_and_")}`) : name;
       const v = form(base, sig, m.arguments ?? []);
+      v.params = typedParams(i, m.name, v.params);
       const jsName = isStatic ? `${i.name}.${m.name}` : member(m.name);
       const params = CALLED_ONCE.has(`${i.name}.${m.name}`) ? v.params.map(once) : v.params;
       const given = orNull(result, m.idlType!);

@@ -4,7 +4,9 @@ Status: Accepted (rd506, P2, 2026-11-02). Amends
 [0102](0102-js-and-webapi.md) (webapi's members are WebIDL's, typed as
 TypeScript's DOM types them) and applies
 [0442](0442-a-web-api-that-may-throw-is-a-result.md) (what throws for
-what a program can't check first is a `Result`).
+what a program can't check first is a `Result`). Amended (2026-11-02,
+rd505): a form's `append` and `set` take text or a Blob, as TypeScript's
+first overload does.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. The JS is the call
 upstream writes; only the Rust types of its result change.
@@ -102,3 +104,49 @@ return serializeBinaryReader(binaryReader);
   its options say, a BYOB one a Result"): the JS above, a byte stream's
   BYOB reader and a default stream's fallback, run, and the general
   options' union of either mode.
+
+## Amendment: a form's `append` and `set` take text or a Blob (2026-11-02, rd505, rd397)
+
+React's Flight reply client copies a form's entries into the one it
+sends, each as it is, a string or a `File`:
+
+```js
+value.forEach((originalValue, originalKey) => {
+  data.append(prefix + originalKey, originalValue);
+});
+```
+
+WebIDL declares `append(name, USVString value)` and `append(name, Blob
+blobValue, optional USVString filename)`, so webapi's `append` took text
+and `append_with_blob` a Blob, and the port matched each entry,
+`FormDataEntryValue::Str(text) => data.append(.., text), File(file) =>
+data.append_with_blob(.., file, None)`, a test upstream doesn't make.
+TypeScript's first overload takes either: `append(name: string, value:
+string | Blob): void`.
+
+**`append` and `set` take a value as TypeScript's first overload does,
+`impl IntoStrOrBlob`, and the Blob's form is the one that gives a file
+name**, `append_with_blob(name, blob_value, filename: &str)`:
+`PARAM_TYPES` in `webapi/generate.ts`, now each parameter's whole type
+by its interface's member and its name, the constructor's as before.
+
+```rust
+value.for_each(Box::new(move |original_value, original_key, _| {
+    data.append(&(prefix.clone() + original_key), original_value)
+}));
+```
+```js
+value.forEach((originalValue, originalKey) => {
+  data.append(prefix + originalKey, originalValue);
+});
+```
+
+- A form's entry, `FormDataEntryValue`, is a `string | Blob` already
+  (`IntoStrOrBlob for FormDataEntryValue`), so it's given as it is, as
+  upstream gives it.
+- The file name required: `data.append("blob", blob)` is `append`'s, one
+  way, where `append_with_blob(.., None)` was another.
+- Case N: the JS call is the one upstream writes.
+
+Held by `test/webapi-objects.test.ts` ("a form's append takes text or a
+Blob, an entry as it is"), run in Node.

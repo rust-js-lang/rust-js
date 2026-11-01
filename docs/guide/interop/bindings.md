@@ -1018,6 +1018,11 @@ export async function open(other) {
   isn't a byte stream, whose `match` is a `try`; of
   `ReadableStreamGetReaderOptions { mode }`, either reader
   ([ADR 1061](../../decisions/1061-a-streams-reader-is-of-the-mode-its-options-say.md)).
+  A form's `append` and `set` take text or a Blob as TypeScript's first
+  overload does, `impl IntoStrOrBlob`, a form's own entry as it is,
+  `data.append(&name, entry)` of a `FormDataEntryValue`; a Blob's with
+  its file name is `append_with_blob(name, blob, "a.txt")`
+  ([ADR 1061](../../decisions/1061-a-streams-reader-is-of-the-mode-its-options-say.md), amended).
 - **An object of any kind, WebIDL's `object`, is a `&dyn Any`**, given
   its value, not the pair that downcasts it, of an `Option` and a `null`
   one too: `element.animate(Some(&Keyframes { opacity: [0.0, 1.0] }),

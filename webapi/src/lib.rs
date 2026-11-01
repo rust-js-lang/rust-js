@@ -27863,7 +27863,7 @@ impl FormData {
     #[cfg_attr(rust_js, rust_js::link_name = "append")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn append(&self, name: &str, value: &str) {
+    pub fn append(&self, name: &str, value: impl IntoStrOrBlob) {
         unreachable!()
     }
 
@@ -27871,7 +27871,7 @@ impl FormData {
     #[cfg_attr(rust_js, rust_js::link_name = "append")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn append_with_blob(&self, name: &str, blob_value: &Blob, filename: Option<&str>) {
+    pub fn append_with_blob(&self, name: &str, blob_value: &Blob, filename: &str) {
         unreachable!()
     }
 
@@ -27906,7 +27906,7 @@ impl FormData {
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn set(&self, name: &str, value: &str) {
+    pub fn set(&self, name: &str, value: impl IntoStrOrBlob) {
         unreachable!()
     }
 
@@ -27914,7 +27914,7 @@ impl FormData {
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn set_with_blob(&self, name: &str, blob_value: &Blob, filename: Option<&str>) {
+    pub fn set_with_blob(&self, name: &str, blob_value: &Blob, filename: &str) {
         unreachable!()
     }
 
