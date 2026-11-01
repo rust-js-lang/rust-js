@@ -665,7 +665,8 @@ thread_local! {
 
 // React's ReactFiberTransition: `export const NoTransition = null`. A
 // `#[rust_js::nullable]` `const` of an `Option` is `null` for `None`, and
-// its `.d.ts` `Transition | null`; a `Some`'s value is as it is; and of no
+// its `.d.ts` `Transition | null`; a `Some`'s value is as it is, and a
+// thread-local of one made in a `const { .. }` block is `null` too; of no
 // `Option` it's refused, as a `const`'s, not a thread-local's (ADR 0586,
 // amended).
 test("a nullable const's None is null", async () => {
@@ -687,16 +688,24 @@ pub fn transition_name(transition: Option<&Transition>) -> &str {
 pub fn none_name() -> &'static str {
     transition_name(NO_TRANSITION)
 }
+
+thread_local! {
+    // React's FB stream config: \`export const byteLengthOfChunk = null\`,
+    // tested \`!== null\`, a thread-local made in a \`const { .. }\` block.
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub static BYTE_LENGTH_OF_CHUNK: Option<fn(&str) -> f64> = const { None };
+}
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export const NoTransition = null;\n");
   expect(js).toContain('export const DEFAULT_NAME = "idle";\n');
+  expect(js).toContain("export const byteLengthOfChunk = null;\n");
   const types = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(types).toContain("export const NoTransition: Transition | null;\n");
   expect(types).toContain("export const DEFAULT_NAME: string | null;\n");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.NoTransition, lib.DEFAULT_NAME, lib.noneName()]).toEqual([null, "idle", "none"]);
+  expect([lib.NoTransition, lib.DEFAULT_NAME, lib.noneName(), lib.byteLengthOfChunk]).toEqual([null, "idle", "none", null]);
   writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::nullable)]
 pub const LANES: u32 = 0;
 `);

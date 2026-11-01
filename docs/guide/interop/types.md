@@ -955,7 +955,9 @@ export function ratio(a, b) {
   On a `const` of an `Option`, its `None` is `null`, `pub const
   NO_TRANSITION: Option<&Transition> = None;`'s `export const
   NoTransition = null;`, `Transition | null` to TypeScript; on a `const`
-  of anything else it's an error
+  of anything else it's an error. So is a thread-local's of one, made in
+  a `const { .. }` block too, `static BYTE_LENGTH_OF_CHUNK: Option<fn(&str)
+  -> f64> = const { None };`'s `export const byteLengthOfChunk = null;`
   ([ADR 0586](../../decisions/0586-a-nullable-field-is-an-option.md), amended).
   The crate's function's parameter is `null` where a call gives it `None`
   and where its body sets it so, `children = None`'s `children = null`,

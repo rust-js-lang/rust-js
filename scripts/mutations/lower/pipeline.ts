@@ -740,9 +740,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable `const`'s `None` is made `undefined`, `export const NoTransition = undefined;`, where React's is `null` (ADR 0586, amended)",
     file: "src/lower/pipeline.rs",
-    find: "            None if nullable(def_id) => js::Storage::NullForNone.written(value, false),\n",
-    replace:
-      "            None if false && nullable(def_id) => js::Storage::NullForNone.written(value, false),\n",
+    find: "_ if key.map_or(nullable(def_id), held) =>",
+    replace: "_ if key.map_or(false, held) =>",
     tests: [
       "test/lowering-module-variables.test.ts",
       "-t",
@@ -884,5 +883,13 @@ export const mutations: Mutation[] = [
       "-t",
       "a function called through its module is read through its namespace",
     ],
+  },
+  {
+    name: "nullable-const-block-local-undefined",
+    breaks: "a nullable thread-local of an `Option` made in a `const { .. }` block is `undefined` for `None`, so React's FB stream config's `byteLengthOfChunk !== null` calls it",
+    file: "src/lower/pipeline.rs",
+    find: "_ if key.map_or(nullable(def_id), held) =>",
+    replace: "_ if key.map_or(nullable(def_id), |_| false) =>",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "nullable const's None"],
   },
 ];

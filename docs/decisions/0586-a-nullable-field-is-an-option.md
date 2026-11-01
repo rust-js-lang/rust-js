@@ -373,3 +373,18 @@ ConsoleTask | null;`.
 `#[rust_js::nullable]` field wrote `undefined`, where every other write of
 it stores `null`; they store `null` too
 ([0996](0996-a-take-then-tested-is-the-place-tested.md)).
+
+## Amendment: a thread-local of an `Option` made in a `const` block (2026-11-01)
+
+React's FB stream config exports `const byteLengthOfChunk = null`, which
+Fizz and Flight test `!== null`. Its port, `#[rust_js::nullable] pub static
+BYTE_LENGTH_OF_CHUNK: Option<fn(&str) -> f64> = const { None };`, as
+clippy's `missing_const_for_thread_local` asks, was `export const
+byteLengthOfChunk = undefined;`, a wrong answer: a `const { .. }`
+thread-local's value is the `const` in its block, and its `None` was
+made `null` only where it's a cell's, `{ value: null }`
+(`cell::nullable_made`). **One that holds the `Option` itself is `null`
+for `None`, as a nullable `const` is** (`pipeline.rs`), and as the same
+thread-local made without the block already was. Held by
+`test/lowering-module-variables.test.ts`'s "a nullable const's None is
+null" and mutation `nullable-const-block-local-undefined`.
