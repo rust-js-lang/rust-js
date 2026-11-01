@@ -920,6 +920,14 @@ export async function open(other) {
   TypeScript's `any`, is an `Option<&dyn IntoUnknown>`, given as it is:
   `ErrorEventInit { error: Some(&error), .. }` is `{ error }`
   ([ADR 0654](../../decisions/0654-a-dictionary-member-of-any-value-is-a-dyn-into-unknown.md)).
+- **A stream's source is TypeScript's**, where WebIDL's constructor takes an
+  `object`: `readable_stream::new(Some(&UnderlyingByteSource { r#type: "bytes",
+  pull: Some(&|controller| ..), cancel: Some(&|reason| ..), .. }), ..)` is
+  `new ReadableStream({ type: "bytes", pull(controller) { .. }, cancel(reason)
+  { .. } }, ..)`, its controller a `ReadableByteStreamController`; an
+  `UnderlyingDefaultSource`'s a `ReadableStreamDefaultController`. Each
+  function is lent, as a dictionary's callback is
+  ([ADR 0102](../../decisions/0102-js-and-webapi.md), amended).
 - **An object of any kind, WebIDL's `object`, is a `&dyn Any`**, given
   its value, not the pair that downcasts it, of an `Option` and a `null`
   one too: `element.animate(Some(&Keyframes { opacity: [0.0, 1.0] }),

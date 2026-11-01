@@ -112,3 +112,76 @@ pub fn encoded(text: &str) -> f64 {
   const { encoded } = await import(join(dir, "lib.js"));
   expect(encoded("héllo")).toBe(506);
 });
+
+// rd452: a ReadableStream reads from TypeScript's \`UnderlyingByteSource\`
+// or \`UnderlyingDefaultSource\`, which WebIDL takes as an \`object\`: React's
+// Fizz \`new ReadableStream({ type: 'bytes', pull, cancel }, { highWaterMark:
+// 0 })\`, each function lent, its controller the stream's (the user's
+// decision).
+test("a byte stream reads from its byte source's pull", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-byte-source");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+use js::Uint8Array;
+use webapi::{
+    QueuingStrategy, ReadableByteStreamController, ReadableStream, ReadableStreamDefaultController,
+    UnderlyingByteSource, UnderlyingDefaultSource, readable_stream,
+};
+
+thread_local! {
+    static CANCELLED: Cell<bool> = const { Cell::new(false) };
+}
+
+pub fn bytes(chunk: &'static Uint8Array) -> &'static ReadableStream {
+    readable_stream::new(
+        Some(&UnderlyingByteSource {
+            r#type: "bytes",
+            auto_allocate_chunk_size: None,
+            start: None,
+            pull: Some(&move |controller: &'static ReadableByteStreamController| {
+                controller.enqueue(chunk);
+                controller.close();
+            }),
+            cancel: Some(&|_reason| CANCELLED.set(true)),
+        }),
+        Some(QueuingStrategy {
+            high_water_mark: Some(0.0),
+        }),
+    )
+}
+
+pub fn values() -> &'static ReadableStream {
+    readable_stream::new(
+        Some(&UnderlyingDefaultSource {
+            start: Some(&|controller: &'static ReadableStreamDefaultController| controller.close()),
+            ..Default::default()
+        }),
+        None,
+    )
+}
+
+pub fn cancelled() -> bool {
+    CANCELLED.get()
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`new ReadableStream(
+    {
+      type: "bytes",
+      pull(controller) {
+        controller.enqueue(chunk);
+        controller.close();
+      },`);
+  expect(js).toContain("{\n      highWaterMark: 0,\n    },");
+  const lib = await import(join(dir, "lib.js"));
+  const reader = lib.bytes(new Uint8Array([1, 2, 3])).getReader();
+  const read = await reader.read();
+  expect([...read.value]).toEqual([1, 2, 3]);
+  expect((await reader.read()).done).toBe(true);
+  await lib.bytes(new Uint8Array([4])).cancel("why");
+  expect(lib.cancelled()).toBe(true);
+  expect((await lib.values().getReader().read()).done).toBe(true);
+});
+

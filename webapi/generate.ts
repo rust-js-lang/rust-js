@@ -211,6 +211,55 @@ const TYPES_BY_HAND: Record<string, string[]> = {
   ],
 };
 
+// TypeScript's sources of a `ReadableStream`, which WebIDL's constructor
+// takes as an `object` and the streams spec reads as its `UnderlyingSource`:
+// a byte stream's, each of whose functions is given its
+// `ReadableByteStreamController`, and a default stream's, its
+// `ReadableStreamDefaultController`, as TypeScript's DOM declares each; and
+// the trait the constructor takes either by, as a union's is (ADR 0229).
+// React's Fizz `new ReadableStream({ type: 'bytes', pull, cancel }, ..)`
+// (rd452, the user's decision).
+const SOURCES_BY_HAND = [
+  "/// TypeScript's [`UnderlyingByteSource`](https://developer.mozilla.org/docs/Web/API/ReadableStream/ReadableStream#underlyingsource):",
+  "/// what a byte stream reads from, its `type` `\"bytes\"`, each of its functions given the stream's",
+  "/// [`ReadableByteStreamController`]. JS keeps each, lent as an event handler is: a function, a",
+  "/// `Copy` closure, or `listener(..)`'s of one that owns what it holds.",
+  "#[derive(Clone, Copy)]",
+  "pub struct UnderlyingByteSource<'a> {",
+  "    /// `\"bytes\"`.",
+  "    pub r#type: &'a str,",
+  "    pub auto_allocate_chunk_size: Option<f64>,",
+  "    pub start: Option<&'a dyn Fn(&'static ReadableByteStreamController)>,",
+  "    pub pull: Option<&'a dyn Fn(&'static ReadableByteStreamController)>,",
+  "    pub cancel: Option<&'a dyn Fn(Option<&'static Unknown>)>,",
+  "}",
+  "",
+  "unsafe impl Defined for UnderlyingByteSource<'_> {}",
+  "",
+  "/// TypeScript's [`UnderlyingDefaultSource`](https://developer.mozilla.org/docs/Web/API/ReadableStream/ReadableStream#underlyingsource):",
+  "/// what a stream of any values reads from, each of its functions given the stream's",
+  "/// [`ReadableStreamDefaultController`], each lent as an [`UnderlyingByteSource`]'s is.",
+  "#[derive(Clone, Copy, Default)]",
+  "pub struct UnderlyingDefaultSource<'a> {",
+  "    pub start: Option<&'a dyn Fn(&'static ReadableStreamDefaultController)>,",
+  "    pub pull: Option<&'a dyn Fn(&'static ReadableStreamDefaultController)>,",
+  "    pub cancel: Option<&'a dyn Fn(Option<&'static Unknown>)>,",
+  "}",
+  "",
+  "unsafe impl Defined for UnderlyingDefaultSource<'_> {}",
+  "",
+  "/// What [`readable_stream::new`] reads from: an [`UnderlyingByteSource`] or an",
+  "/// [`UnderlyingDefaultSource`], the object itself.",
+  '#[cfg_attr(rust_js, rust_js::types = "UnderlyingByteSource | UnderlyingDefaultSource")]',
+  "pub trait IntoUnderlyingSource {}",
+  "impl IntoUnderlyingSource for UnderlyingByteSource<'_> {}",
+  "impl IntoUnderlyingSource for UnderlyingDefaultSource<'_> {}",
+].join("\n");
+
+// A parameter WebIDL types as an `object` that a type above says, by its
+// interface's member and its name.
+const PARAM_TYPES: Record<string, string> = { "ReadableStream.constructor.underlying_source": "&dyn IntoUnderlyingSource" };
+
 // Namespaces: a module of functions, like `web_assembly::compile`.
 const NAMESPACES = ["WebAssembly", "console", "CSS"];
 
@@ -1490,6 +1539,11 @@ function functionsOf(declared: Interface): Fn[] {
       }
       // `new`, its optional arguments `Option`s (ADR 0443).
       const v = form("new", sig, m.arguments ?? []);
+      v.params = v.params.map((p) => {
+        const [name, type] = p.split(": ");
+        const typed = PARAM_TYPES[`${i.name}.constructor.${name}`];
+        return typed === undefined ? p : `${name}: ${type.startsWith("Option<") ? `Option<${typed}>` : typed}`;
+      });
       fns.push({ name: v.name, jsName: `new ${jsName(i)}`, params: v.params, result: `&'static ${typeName(i.name)}`, doc: [`[MDN](${mdn(i.name, i.name)})`], variadic: v.variadic, ...nulled(sig.nulls) });
     } else if (m.type === "attribute") {
       // A static attribute is a function of the class's module, read at
@@ -2451,6 +2505,9 @@ for (const [name, { fields, borrows }] of [...paramDictionaries].sort(([a], [b])
   line();
   line(`unsafe impl Defined for ${typeName(name)}${borrows ? "<'_>" : ""} {}`);
 }
+
+line();
+line(SOURCES_BY_HAND);
 
 // The unions functions take (ADR 0215): untagged enums, each value the
 // member itself, as TypeScript's union is (ADR 0214). Each member converts

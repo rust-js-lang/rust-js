@@ -27964,7 +27964,7 @@ pub mod readable_stream {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/ReadableStream)
     #[cfg_attr(rust_js, rust_js::link_name = "new ReadableStream")]
-    pub fn new(underlying_source: Option<&dyn core::any::Any>, strategy: Option<QueuingStrategy>) -> &'static ReadableStream {
+    pub fn new(underlying_source: Option<&dyn IntoUnderlyingSource>, strategy: Option<QueuingStrategy>) -> &'static ReadableStream {
         unreachable!()
     }
 }
@@ -80738,7 +80738,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/ReadableStream)
     /// `new window.ReadableStream(..)`: this window's class, which is [`readable_stream::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new ReadableStream")]
-    pub fn new_readable_stream(&self, underlying_source: Option<&dyn core::any::Any>, strategy: Option<QueuingStrategy>) -> &'static ReadableStream {
+    pub fn new_readable_stream(&self, underlying_source: Option<&dyn IntoUnderlyingSource>, strategy: Option<QueuingStrategy>) -> &'static ReadableStream {
         unreachable!()
     }
 
@@ -88050,6 +88050,41 @@ pub struct WriteParams<'a> {
 }
 
 unsafe impl Defined for WriteParams<'_> {}
+
+/// TypeScript's [`UnderlyingByteSource`](https://developer.mozilla.org/docs/Web/API/ReadableStream/ReadableStream#underlyingsource):
+/// what a byte stream reads from, its `type` `"bytes"`, each of its functions given the stream's
+/// [`ReadableByteStreamController`]. JS keeps each, lent as an event handler is: a function, a
+/// `Copy` closure, or `listener(..)`'s of one that owns what it holds.
+#[derive(Clone, Copy)]
+pub struct UnderlyingByteSource<'a> {
+    /// `"bytes"`.
+    pub r#type: &'a str,
+    pub auto_allocate_chunk_size: Option<f64>,
+    pub start: Option<&'a dyn Fn(&'static ReadableByteStreamController)>,
+    pub pull: Option<&'a dyn Fn(&'static ReadableByteStreamController)>,
+    pub cancel: Option<&'a dyn Fn(Option<&'static Unknown>)>,
+}
+
+unsafe impl Defined for UnderlyingByteSource<'_> {}
+
+/// TypeScript's [`UnderlyingDefaultSource`](https://developer.mozilla.org/docs/Web/API/ReadableStream/ReadableStream#underlyingsource):
+/// what a stream of any values reads from, each of its functions given the stream's
+/// [`ReadableStreamDefaultController`], each lent as an [`UnderlyingByteSource`]'s is.
+#[derive(Clone, Copy, Default)]
+pub struct UnderlyingDefaultSource<'a> {
+    pub start: Option<&'a dyn Fn(&'static ReadableStreamDefaultController)>,
+    pub pull: Option<&'a dyn Fn(&'static ReadableStreamDefaultController)>,
+    pub cancel: Option<&'a dyn Fn(Option<&'static Unknown>)>,
+}
+
+unsafe impl Defined for UnderlyingDefaultSource<'_> {}
+
+/// What [`readable_stream::new`] reads from: an [`UnderlyingByteSource`] or an
+/// [`UnderlyingDefaultSource`], the object itself.
+#[cfg_attr(rust_js, rust_js::types = "UnderlyingByteSource | UnderlyingDefaultSource")]
+pub trait IntoUnderlyingSource {}
+impl IntoUnderlyingSource for UnderlyingByteSource<'_> {}
+impl IntoUnderlyingSource for UnderlyingDefaultSource<'_> {}
 
 /// `AddEventListenerOptions | boolean`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]

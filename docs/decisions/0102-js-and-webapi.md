@@ -234,3 +234,25 @@ is stringify's") rejects, naming `json::stringify`, in the repository's
 Rust, its tests' and the guide's. Held by `test/js-builtins.test.ts`
 ("unwrap of a throwing call each branch makes is each call") and
 `test/webapi-bindings.test.ts`.
+
+## Amended (2026-11-01): a `ReadableStream`'s source is TypeScript's (rd452)
+
+WebIDL's `ReadableStream` constructor takes `optional object
+underlyingSource`. The streams spec reads it as its `UnderlyingSource`,
+whose functions are given the `ReadableStreamController` union, and
+webapi bound it as a `&dyn Any`, so a Rust program couldn't say what it
+gave. React's Fizz entries write `new ReadableStream({ type: 'bytes',
+pull: (controller) => startFlowing(request, controller), cancel },
+{highWaterMark: 0})`. **The constructor takes `Option<&dyn
+IntoUnderlyingSource>`, of TypeScript's DOM's two sources: an
+`UnderlyingByteSource`, `type: "bytes"`, whose `start` and `pull` are
+given a `ReadableByteStreamController`, and an `UnderlyingDefaultSource`,
+whose are given a `ReadableStreamDefaultController`. Each function is
+lent, as a dictionary's callback is.** `webapi/generate.ts` writes them by
+hand (`SOURCES_BY_HAND`), as no WebIDL declares them, and `PARAM_TYPES`
+says which parameter takes them. The alternative, WebIDL's
+`UnderlyingSource`, would give each `pull` the union to test, which React
+doesn't write (the user's decision). Case
+([0262](0262-when-rust-and-js-disagree.md)): N. Held by
+`test/webapi-objects.test.ts` ("a byte stream reads from its byte
+source's pull").
