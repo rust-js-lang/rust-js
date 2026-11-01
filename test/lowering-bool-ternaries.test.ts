@@ -42,7 +42,6 @@ pub fn both(dev: bool, n: u32) -> bool {
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.bigIt")]
-#[allow(unused_variables)]
 fn big_it(n: u32) -> bool {
     unreachable!()
 }

@@ -4,8 +4,6 @@
 //! date's parts are `NaN`, which no integer holds; what it's given, a part,
 //! an `i32`, as ReScript's Stdlib has them.
 
-// A binding's parameters are its JS function's: its body never runs.
-#![allow(unused_variables)]
 
 use super::intl::DateTimeFormatOptions;
 use super::{JsError, JsObject};

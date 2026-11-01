@@ -447,7 +447,6 @@ test("arrays joined are one array of their items", async () => {
   const dir = fixture("concat-spread");
   writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.made")]
-#[allow(unused_variables)]
 fn made(name: &str) -> &'static Unknown {
     unreachable!()
 }

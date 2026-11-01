@@ -2,8 +2,6 @@
 //! a value unlike any other, a property's key no string can be (ADR 0283);
 //! and the registry's, [`SymbolFor`], a `const` a `match` names (ADR 0634).
 
-// A binding's parameters are its JS function's: its body never runs.
-#![allow(unused_variables)]
 
 use super::{Defined, JsObject, PropertyKey, Unknown};
 use core::marker::PhantomData;
@@ -105,7 +103,7 @@ pub fn new(description: &str) -> &'static Symbol {
 
 /// Gone (ADR 0634): the registry's symbol of `key` is a value,
 /// `js::SymbolFor(key)`, which a `const` holds and a `match` names.
-pub fn r#for<K: Gone>(key: K) -> &'static Symbol {
+pub fn r#for<K: Gone>(_key: K) -> &'static Symbol {
     unreachable!()
 }
 
@@ -146,7 +144,7 @@ impl SymbolFor<'static> {
     /// as no other value is one of them; else
     /// `$symbolFor(value)`, the value where it's the registry's, `undefined`
     /// where not (ADR 0634).
-    pub fn from_value(value: Option<&Unknown>) -> Option<SymbolFor<'static>> {
+    pub fn from_value(_value: Option<&Unknown>) -> Option<SymbolFor<'static>> {
         unreachable!()
     }
 }

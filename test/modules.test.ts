@@ -1038,7 +1038,7 @@ test("a module's default is called with whatever JS gives it", async () => {
 test("js::on_load! is what the module runs when it's loaded", async () => {
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("on-load");
-  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.loaded")] #[allow(unused_variables)] fn loaded(what: &str) { unreachable!() }
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.loaded")] fn loaded(what: &str) { unreachable!() }
 
 fn which() -> usize {
     1

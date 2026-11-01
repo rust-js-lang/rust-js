@@ -23,13 +23,11 @@ test("a () given to JS as any value is undefined", async () => {
   writeFileSync(join(dir, "lib.rs"), `use js::{IntoUnknown, Unknown};
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.kinds")]
-#[allow(unused_variables)]
 fn kinds(a: Option<&dyn IntoUnknown>, b: impl IntoUnknown) -> String {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.kinds")]
-#[allow(unused_variables)]
 fn unit_kinds(a: (), b: u8) -> String {
     unreachable!()
 }
@@ -90,21 +88,18 @@ test("a () of rest arguments is none of them", async () => {
   const dir = fixture("unit-given-rest");
   writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.counted")]
 #[cfg_attr(rust_js, rust_js::variadic)]
-#[allow(unused_variables)]
 fn counted(first: &str, rest: impl js::Rest<dyn js::IntoUnknown>) -> u32 {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.counted")]
 #[cfg_attr(rust_js, rust_js::variadic)]
-#[allow(unused_variables)]
 fn counted_held(first: &str, rest: &dyn js::Rest<dyn js::IntoUnknown>) -> u32 {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.counted")]
 #[cfg_attr(rust_js, rust_js::variadic)]
-#[allow(unused_variables)]
 fn counted_tuple(first: &str, rest: ()) -> u32 {
     unreachable!()
 }

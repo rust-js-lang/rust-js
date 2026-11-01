@@ -41,7 +41,6 @@ test("an ignored result of a call that throws is try and an empty catch", async 
   writeFileSync(join(dir, "lib.rs"), `use js::JsError;
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.risky")]
-#[allow(unused_variables)]
 fn risky(n: f64) -> Result<f64, &'static JsError> {
     unreachable!()
 }
@@ -83,7 +82,6 @@ test("a match of a throwing call's Result is try and catch", async () => {
   writeFileSync(join(dir, "lib.rs"), `use js::JsError;
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.risky")]
-#[allow(unused_variables)]
 fn risky(n: f64) -> Result<f64, &'static JsError> {
     unreachable!()
 }
@@ -217,7 +215,6 @@ fn counter() -> f64 {
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "set globalThis.counter")]
-#[allow(unused_variables)]
 fn set_counter(value: f64) {
     unreachable!()
 }
@@ -324,7 +321,7 @@ pub fn body(response: &webapi::Response) -> Promise<Option<&'static Unknown>> {
 // that bind one name are two variables at the module's top.
 test("on_load bodies that bind one name each keep their own", async () => {
   const dir = fixture("on-load-scopes");
-  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.onLoadSeen")] #[allow(unused_variables)] fn seen(n: u32) { unreachable!() }
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.onLoadSeen")] fn seen(n: u32) { unreachable!() }
 fn pair() -> (u32, u32) {
     (1, 0)
 }
@@ -393,7 +390,7 @@ pub fn describe(props: &CodeProps) -> String {
 // `break` of a labeled block of it (ADR 0267).
 test("an on_load body's loop ends at the module's top", async () => {
   const dir = fixture("on-load-loop");
-  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.onLoadLooped")] #[allow(unused_variables)] fn seen(n: u32) { unreachable!() }
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.onLoadLooped")] fn seen(n: u32) { unreachable!() }
 js::on_load! {
     let mut it = [1u32, 2, 3].iter();
     while let Some(&n) = it.next() {
@@ -458,7 +455,7 @@ pub fn most(x: u32) -> bool {
 // `el.offsetWidth` lays the page out again, which restarts an animation.
 test("an unread getter of a binding is still read", async () => {
   const dir = fixture("unread-getter");
-  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "get offsetWidth")] #[allow(unused_variables)] fn offset_width(this: &js::JsObject) -> f64 { unreachable!() }
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "get offsetWidth")] fn offset_width(this: &js::JsObject) -> f64 { unreachable!() }
 
 pub fn reflow(el: &js::JsObject) {
     let _width = offset_width(el);
@@ -568,7 +565,6 @@ test("only a DOM element's handler returns its one call", async () => {
 use react::{JSX, jsx};
 
 #[cfg_attr(rust_js, rust_js::link_name = "parseInt")]
-#[allow(unused_variables)]
 fn parse_int(s: &str) -> f64 {
     unreachable!()
 }
@@ -609,20 +605,17 @@ use std::rc::Rc;
 use react::{JSX, jsx};
 
 #[cfg_attr(rust_js, rust_js::link_name = "parseInt")]
-#[allow(unused_variables)]
 fn parse_int(s: &str) -> f64 {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")]
-#[allow(unused_variables)]
 fn record(n: i32) {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")]
 #[cfg_attr(rust_js, rust_js::returns_undefined)]
-#[allow(unused_variables)]
 fn noted(n: i32) {
     unreachable!()
 }
@@ -681,13 +674,11 @@ test("a binding is given each dyn Any's value", async () => {
   writeFileSync(join(dir, "lib.rs"), `use std::any::Any;
 
 #[cfg_attr(rust_js, rust_js::link_name = "JSON.stringify")]
-#[allow(unused_variables)]
 fn stringify_all(values: Vec<&dyn Any>) -> String {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "JSON.stringify")]
-#[allow(unused_variables)]
 fn stringify_slice(values: &[&dyn Any]) -> String {
     unreachable!()
 }
@@ -1255,7 +1246,6 @@ pub fn timed() -> bool {
 test("a get binding's property a let chain tests and binds is read once", async () => {
   const dir = fixture("get-binding-read-once");
   writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "get url")]
-#[allow(unused_variables)]
 fn url(this: &js::JsObject) -> Option<String> {
     unreachable!()
 }

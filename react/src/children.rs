@@ -22,7 +22,6 @@ impl Child<'_> {
     /// `element` as a child, of a list made of [`to_array`]'s and more,
     /// `[...Children.toArray(children), <pre />]`: the element itself.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
-    #[allow(unused_variables)]
     pub fn element(this: super::Element) -> Child<'static> {
         unreachable!()
     }
@@ -39,7 +38,6 @@ impl sealed::Sealed for Child<'_> {}
 /// each child, a list's flattened, `null`, `undefined` and booleans left
 /// out, each keyed.
 #[cfg_attr(rust_js, rust_js::link_name = "react#Children.toArray")]
-#[allow(unused_variables)]
 pub fn to_array<C: ReactNode + ?Sized>(children: &C) -> Vec<Child<'_>> {
     unreachable!()
 }
@@ -51,7 +49,6 @@ pub fn to_array<C: ReactNode + ?Sized>(children: &C) -> Vec<Child<'_>> {
 /// empty child, `null`, `undefined` or a boolean, is `None`: `forEach`
 /// gives it where [`to_array`] leaves it out.
 #[cfg_attr(rust_js, rust_js::link_name = "react#Children.forEach")]
-#[allow(unused_variables)]
 pub fn for_each<C: ReactNode>(children: &C, f: impl FnMut(Option<Child<'static>>, u32)) {
     unreachable!()
 }

@@ -811,6 +811,25 @@ test("a binding's keyword name is its raw identifier", () => {
   expect(generators.filter((file) => /KEYWORDS|`r#\$\{|replace\(\/\(\[a-z0-9\]\)\(\[A-Z\]\)/.test(read(file)))).toEqual([]);
 });
 
+// A binding's body never runs, so rustc's check of its variables skips it,
+// a binding crate's too, a method's, a trait's or one a macro writes (ADR
+// 0440, amended, rd330): no binding, test or example writes
+// `#[allow(unused_variables)]` for one. A binding crate's root says once
+// that a plain rustc, which runs no rust-js, may see one unread,
+// `#![cfg_attr(not(rust_js), allow(unused_variables))]`, the one form.
+test("a binding is written with no allow of unused variables", () => {
+  const sources = ["builtins/src", "webapi/src", "react/src", "node/src", "next/src", "examples", "test"]
+    .flatMap(files)
+    .filter((f) => /\.(rs|ts)$/.test(f) && f !== "test/architecture.test.ts");
+  const generators = ["react/generate.ts", "react/attributes.ts", "react/literals.ts", "webapi/generate.ts", "builtins/intl.ts", "builtins/typed_arrays.ts"];
+  const root = "#![cfg_attr(not(rust_js), allow(unused_variables))]";
+  const allowed = [...sources, ...generators].filter((file) => /allow\((?:[^)]*, )?unused_variables/.test(read(file).replaceAll(root, "")));
+  // One test's function that's no binding, whose unread `let` is the case.
+  expect(allowed).toEqual(["test/lowering-names.test.ts"]);
+  const roots = ["builtins/src/lib.rs", "webapi/src/lib.rs", "react/src/lib.rs", "node/src/lib.rs", "next/src/lib.rs", "webapi/generate.ts"];
+  expect(roots.filter((file) => read(file).split(root).length !== 2)).toEqual([]);
+});
+
 // A binding's optional argument is an `Option` of the one function that
 // binds its JS name (ADR 0443): no second binding of that name, in one impl
 // or module, whose parameters begin with another's and go on, as

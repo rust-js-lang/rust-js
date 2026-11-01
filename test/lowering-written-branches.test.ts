@@ -341,7 +341,6 @@ test("a value's truth or else a bool is a bool part by part", async () => {
   const { js, lib } = await compiled("negated-truth-bool", `use js::Unknown;
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.supportsIt")]
-#[allow(unused_variables)]
 fn supports(what: &str) -> bool {
     unreachable!()
 }

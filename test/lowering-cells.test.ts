@@ -1019,7 +1019,7 @@ pub fn rebound_set(error: &Failure, other: &Failure) -> Option<&'static str> {
 // writes `linter.defineRules({..})`: no closure called in place.
 test("with of a one-statement closure is its statement", async () => {
   const dir = fixture("with-statement");
-  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.seen.push")] #[allow(unused_variables)] fn seen(s: &str) { unreachable!() }
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.seen.push")] fn seen(s: &str) { unreachable!() }
 pub struct Logger {
     pub prefix: &'static str,
 }

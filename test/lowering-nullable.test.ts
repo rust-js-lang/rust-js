@@ -307,7 +307,6 @@ pub struct Info {
 
 #[cfg_attr(rust_js, rust_js::link_name = "Object.is")]
 #[cfg_attr(rust_js, rust_js::nullable(a))]
-#[allow(unused_variables)]
 fn same(a: Option<&Unknown>, b: f64) -> bool {
     unreachable!()
 }

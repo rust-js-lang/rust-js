@@ -37,7 +37,6 @@ pub struct WithRouterProps<P> {
 #[cfg_attr(rust_js, rust_js::link_name = "next/router#withRouter")]
 // It makes a component of what it's given, run only when React renders it.
 #[cfg_attr(rust_js, rust_js::runs_nothing)]
-#[allow(unused_variables)]
 pub fn with_router<P, M>(component: impl ComponentType<WithRouterProps<P>, M>) -> ComponentValue<P> {
     unreachable!()
 }

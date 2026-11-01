@@ -18,7 +18,6 @@ test("a binding's nullable parameter's None is null", async () => {
   const dir = fixture("nullable-param");
   writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "JSON.stringify")]
 #[cfg_attr(rust_js, rust_js::nullable(replacer))]
-#[allow(unused_variables)]
 fn stringify(value: &[u32], replacer: Option<&[&str]>, space: u32) -> String {
     unreachable!()
 }
@@ -171,7 +170,6 @@ pub fn formatted(f: impl Fn(Options) -> u32) -> String {
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "keyed")]
-#[allow(unused_variables)]
 fn keyed(this: &js::JsObject, options: Options) -> u32 {
     unreachable!()
 }
@@ -511,7 +509,6 @@ pub fn other(n: u32) -> Option<String> {
 
 #[cfg_attr(rust_js, rust_js::nullable)]
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.lookup")]
-#[allow(unused_variables)]
 fn lookup(key: &str) -> Option<String> {
     unreachable!()
 }
@@ -1023,7 +1020,6 @@ fn scriptSupports() -> Option<&'static JsObject> {
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.supportsIt")]
-#[allow(unused_variables)]
 fn supports(what: &str) -> bool {
     unreachable!()
 }

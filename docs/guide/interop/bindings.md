@@ -33,8 +33,13 @@ export function greet() {
 
 - **The function's signature is the JS function's**, in TypeScript's order.
 - **Its body is `unreachable!()`**: it never runs, JS's function does. rust-js
-  allows its unread parameters, so you write no `#[allow]`
-  ([ADR 0440](../../decisions/0440-a-binding-needs-no-allow.md)).
+  allows its unread parameters, so you write no `#[allow]`: a function's,
+  a method's, a trait's or one a macro writes, in an app or a binding
+  crate, `bindings = true`. A binding crate a plain `cargo check` reads
+  too, by its path, says once at its root that one may run no rust-js,
+  `#![cfg_attr(not(rust_js), allow(unused_variables))]`, as the js crate,
+  webapi, react and node do
+  ([ADR 0440](../../decisions/0440-a-binding-needs-no-allow.md), amended).
 - **`#[rust_js::link_name]` says what JS it is**, written as
   `#[cfg_attr(rust_js, ..)]` so a plain `cargo check` reads the crate too.
 - **A binding is trusted as declared.** rustc checks your calls against it;

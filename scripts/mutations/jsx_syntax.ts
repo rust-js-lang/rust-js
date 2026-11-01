@@ -140,14 +140,7 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "capitalized name needs no allow"],
   },
-  {
-    name: "binding-unread-params-flagged",
-    breaks: "a binding's parameters, which its never-run body doesn't read, are flagged, so each needs `#[allow(unused_variables)]`",
-    file: "src/jsx_syntax.rs",
-    find: "                && attrs.iter().any(|a| is_rust_js_attr(a, \"link_name\"))\n",
-    replace: "                && false\n",
-    tests: ["test/jsx.test.ts", "-t", "a binding needs no allow"],
-  },
+
   {
     name: "thread-local-names-flagged",
     breaks: "a `thread_local!`'s component, `static IconCopy = memo(..)`, is flagged for its JSX name",

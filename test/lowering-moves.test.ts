@@ -395,13 +395,11 @@ fn side() -> &'static Tag {
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "./names.js#log")]
-#[allow(unused_variables)]
 fn log(s: &str) {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "./names.js#both")]
-#[allow(unused_variables)]
 fn both(a: Tags, b: Tags) -> String {
     unreachable!()
 }
@@ -452,14 +450,12 @@ unsafe impl js::Defined for StyleProp {}
 
 #[cfg_attr(rust_js, rust_js::link_name = "set margin")]
 #[cfg_attr(rust_js, rust_js::runs_nothing)]
-#[allow(unused_variables)]
 fn set_margin(this: &Unknown, value: Option<&Unknown>) {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "set padding")]
 #[cfg_attr(rust_js, rust_js::runs_nothing)]
-#[allow(unused_variables)]
 fn set_padding(this: &Unknown, value: Option<&Unknown>) {
     unreachable!()
 }
@@ -523,7 +519,6 @@ pub fn margin_of(style: &Unknown, props: &Unknown) {
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "Boolean")]
-#[allow(unused_variables)]
 fn truthy(value: &Unknown) -> bool {
     unreachable!()
 }
@@ -618,13 +613,11 @@ pub struct Manifest {
 // JSON.parse makes a fresh object of data properties.
 #[cfg_attr(rust_js, rust_js::link_name = "JSON.parse")]
 #[cfg_attr(rust_js, rust_js::gives_plain_data)]
-#[allow(unused_variables)]
 fn manifest_of(text: &str) -> Manifest {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "console.log")]
-#[allow(unused_variables)]
 fn log(text: &str) {
     unreachable!()
 }
@@ -742,7 +735,6 @@ pub fn kept(margin: Option<&'static Unknown>) -> Rc<Kept> {
 
 #[cfg_attr(rust_js, rust_js::link_name = "set margin")]
 #[cfg_attr(rust_js, rust_js::runs_nothing)]
-#[allow(unused_variables)]
 fn set_margin(this: &Unknown, value: Option<&Unknown>) {
     unreachable!()
 }

@@ -43,8 +43,10 @@
 //! records which release first has each export, event and attribute, read
 //! from the releases themselves.
 
-// The bodies are never compiled, so they don't use their parameters.
-#![allow(unused_variables)]
+// A binding's body never runs: rust-js skips its check of it, but a plain
+// rustc, a `cargo check` that runs no rust-js, sees an unread parameter
+// (ADR 0440, amended).
+#![cfg_attr(not(rust_js), allow(unused_variables))]
 
 #[cfg(react = "19.0")]
 use core::future::Future;
@@ -213,7 +215,6 @@ impl sealed::Sealed for ReactNodeKind<'_> {}
 /// What `node` is, its text, an element or another node: the node itself,
 /// matched, `if let ReactNodeKind::Text(text) = kind_of(&children)`.
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
-#[allow(unused_variables)]
 pub fn kind_of<C: ReactNode>(this: &C) -> ReactNodeKind<'_> {
     unreachable!()
 }
@@ -234,7 +235,6 @@ impl<P> ReactElement<P> {
     /// doesn't check they're `P`'s, as TypeScript's `isValidElement<P>`
     /// doesn't. The element itself.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
-    #[allow(unused_variables)]
     pub fn unchecked_from(this: &ReactElement) -> &ReactElement<P> {
         unreachable!()
     }
@@ -301,7 +301,6 @@ impl sealed::Sealed for ReactPortal {}
 /// `clone_element(child, Linked { is_link: true })`: an element, as
 /// @types/react's `ReactElement`, so a child as any other, `Child::Element`.
 #[cfg_attr(rust_js, rust_js::link_name = "react#cloneElement")]
-#[allow(unused_variables)]
 pub fn clone_element<P, Q>(element: &ReactElement<P>, props: Q) -> &'static ReactElement<P> {
     unreachable!()
 }
@@ -1288,7 +1287,6 @@ impl ElementType {
     /// unchecked. Or one that may be none, as TypeScript's `any` may be:
     /// `undefined` is React's to refuse when it renders.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
-    #[allow(unused_variables)]
     pub fn from_unknown<'a>(this: impl Into<Option<&'a Unknown>>) -> ElementType {
         unreachable!()
     }
@@ -1305,7 +1303,6 @@ unsafe extern "Rust" {
 /// the same value. A `const fn`, so a `static`'s table holds one, as
 /// react.dev's `variantMap` does.
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
-#[allow(unused_variables)]
 pub const fn element_type(this: impl IntoElementType) -> ElementType {
     ElementType(PhantomData)
 }
@@ -1755,7 +1752,6 @@ impl<P> Module<P> {
     /// [`lazy`] loads of one whose component isn't its default,
     /// `import(..).then((mod) => ({ default: mod.Named }))`.
     #[cfg_attr(rust_js, rust_js::link_name = "{default}")]
-    #[allow(unused_variables)]
     pub fn of<M>(component: impl ComponentType<P, M>) -> Module<P> {
         unreachable!()
     }

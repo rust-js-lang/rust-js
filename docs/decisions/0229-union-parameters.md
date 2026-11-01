@@ -72,7 +72,6 @@ impl IntoUploadBody for &Blob {}
 impl IntoUploadBody for UploadBody<'_> {}
 
 #[cfg_attr(rust_js, rust_js::link_name = "upload")]
-#[allow(unused_variables)]
 pub fn upload(body: impl IntoUploadBody) {
     unreachable!()
 }

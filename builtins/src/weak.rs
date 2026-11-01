@@ -1,8 +1,6 @@
 //! JS's weak references (ADR 0283): `WeakMap`, `WeakSet`, `WeakRef` and
 //! `FinalizationRegistry`, which don't keep what they hold alive.
 
-// A binding's parameters are its JS function's: its body never runs.
-#![allow(unused_variables)]
 
 use super::JsObject;
 use core::marker::PhantomData;

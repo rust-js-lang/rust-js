@@ -4,8 +4,6 @@
 //! [`get`](super::get) and [`set`](super::set) are, and the rest. A target
 //! that isn't an object, a string say, JS throws a `TypeError` of.
 
-// A binding's parameters are its JS function's: its body never runs.
-#![allow(unused_variables)]
 
 use super::{Dict, IntoUnknown, PropertyKey, Unknown};
 

@@ -203,8 +203,6 @@ const TYPES_BY_HAND: Record<string, string[]> = {
       "impl ConsoleTask {",
       "    /// `task.run(f)`: `f` called, as part of the task, and what it gives.",
       '    #[cfg_attr(rust_js, rust_js::link_name = "run")]',
-      "    // rust-js writes its JS: the body never runs, nor reads a parameter.",
-      "    #[allow(unused_variables)]",
       "    pub fn run<T>(&self, f: impl FnOnce() -> T) -> T {",
       "        unreachable!()",
       "    }",
@@ -1738,7 +1736,7 @@ for (const names of [eventNames, tagNames, svgTagNames]) {
 // The typed forms of the `_named` operations: generic, so Rust functions
 // whose JS is the operation's, not extern ones.
 const typed = (doc: string[], js: string, signature: string, visibility = "pub ") =>
-  [...doc.map((d) => `    /// ${d}`), `    #[cfg_attr(rust_js, rust_js::link_name = ${JSON.stringify(js)})]`, "    // rust-js writes its JS: the body never runs, nor reads a parameter.", "    #[allow(unused_variables)]", `    ${visibility}fn ${signature} {`, `        unreachable!()`, `    }`].join("\n");
+  [...doc.map((d) => `    /// ${d}`), `    #[cfg_attr(rust_js, rust_js::link_name = ${JSON.stringify(js)})]`, `    ${visibility}fn ${signature} {`, `        unreachable!()`, `    }`].join("\n");
 // A listener is TypeScript's `EventListenerOrEventListenerObject`, each
 // member as it is (ADRs 0229, 1021): a closure, or a listener JS gave, a
 // function or an object JS calls `handleEvent` of, kept by identity.
@@ -1750,7 +1748,8 @@ const shared = "impl IntoAddedEventListener<<Self as Listen<E>>::Event>";
 // A window's timers, gone (ADR 1020): a timer is the js crate's global,
 // which takes a function as it is, where these took text alone. Each takes
 // what it did, of a type that's never a `TimerGone`, so a call is the error
-// that says what to write.
+// that says what to write; a function that's no binding, its parameters
+// unread, `_id`, as Rust names them.
 // What a call of a window's timer says to write, `TimerGone`'s, and of one
 // read as a value alone, its `#[rust_js::value_only]`'s.
 const TIMERS_GONE_MESSAGE =
@@ -1761,7 +1760,6 @@ const gone = (doc: string, signature: string, read?: string) =>
     ...(read
       ? [`    #[cfg_attr(rust_js, rust_js::link_name = "${read}")]`, `    #[cfg_attr(rust_js, rust_js::value_only = ${JSON.stringify(TIMERS_GONE_MESSAGE)})]`]
       : []),
-    "    #[allow(unused_variables)]",
     `    pub fn ${signature} {`,
     `        unreachable!()`,
     `    }`,
@@ -1772,9 +1770,9 @@ const TIMERS_GONE = [
     "set_timeout<G: TimerGone<fn()>>(&self, handler: G, timeout: Option<f64>) -> &'static js::TimeoutId",
     "setTimeout",
   ),
-  gone("a timeout is cleared by `js::clear_timeout(id)`.", "clear_timeout<G: TimerGone>(&self, id: G)"),
-  gone("an interval is `js::set_interval(callback, ms)`'s.", "set_interval<G: TimerGone>(&self, handler: G, timeout: Option<f64>, arguments: impl Rest<dyn IntoUnknown>) -> f64"),
-  gone("an interval is cleared by `js::clear_interval(id)`.", "clear_interval<G: TimerGone>(&self, id: G)"),
+  gone("a timeout is cleared by `js::clear_timeout(id)`.", "clear_timeout<G: TimerGone>(&self, _id: G)"),
+  gone("an interval is `js::set_interval(callback, ms)`'s.", "set_interval<G: TimerGone>(&self, _handler: G, _timeout: Option<f64>, _arguments: impl Rest<dyn IntoUnknown>) -> f64"),
+  gone("an interval is cleared by `js::clear_interval(id)`.", "clear_interval<G: TimerGone>(&self, _id: G)"),
 ];
 // A media query list's legacy `addListener(callback)` and
 // `removeListener(callback)`, each a listener as `addEventListener`'s and
@@ -1809,6 +1807,11 @@ line(`//! The JS language's own types, \`Promise\` and \`ArrayBuffer\` say, are 
 line(`//! Each event's name and each tag is a type too (ADR 0223), from \`@webref/events\` ${eventsPackage.version}`);
 line(`//! and \`@webref/elements\` ${elementsPackage.version}: \`events::Click\`, whose value is \`"click"\`.`);
 line(`//! Import \`EventTargetExt\` for \`button.add_event_listener(Click, |e: &PointerEvent| ..)\` (ADR 0282).`);
+line();
+line(`// A binding's body never runs: rust-js skips its check of it, but a plain`);
+line(`// rustc, a \`cargo check\` that runs no rust-js, sees an unread parameter`);
+line(`// (ADR 0440, amended).`);
+line(`#![cfg_attr(not(rust_js), allow(unused_variables))]`);
 line();
 line(`use core::marker::PhantomData;`);
 line(`use core::ops::{Deref, Index};`);
@@ -1897,8 +1900,6 @@ function generic(f: Fn): string {
     // assignment's value is what it's given.
     // Not a setter's, nor a `delete`'s, which gives `true` (#429).
     ...(f.result === "()" && !f.jsName.startsWith("set ") && f.jsName !== "delete []" ? ["    #[cfg_attr(rust_js, rust_js::returns_undefined)]"] : []),
-    "    // rust-js writes its JS: the body never runs, nor reads a parameter.",
-    "    #[allow(unused_variables)]",
     `    pub fn ${f.name}${names.length > 0 ? `<${names.join(", ")}>` : ""}(${params.join(", ")})${result} {`,
     "        unreachable!()",
     "    }",
@@ -2051,8 +2052,6 @@ for (const name of INTERFACES) {
     line(`    type Output = ${output};`);
     line();
     line(`    #[cfg_attr(rust_js, rust_js::link_name = "get []")]`);
-    line(`    // rust-js writes its JS: the body never runs, nor reads a parameter.`);
-    line(`    #[allow(unused_variables)]`);
     line(`    fn index(&self, index: usize) -> &${output} {`);
     line(`        unreachable!()`);
     line(`    }`);
@@ -2506,7 +2505,6 @@ for (const union of [...unions.values()].sort((a, b) => a.name.localeCompare(b.n
   line(`impl${lifetime} ${union.name}${lifetime} {`);
   line(`    /// The member a parameter was given, as its enum, to \`match\`: the value itself.`);
   line(`    #[cfg_attr(rust_js, rust_js::link_name = "this")]`);
-  line(`    #[allow(unused_variables)]`);
   line(`    pub fn of(this: impl Into${union.name}${union.borrows ? " + 'a" : ""}) -> ${union.name}${lifetime} {`);
   line(`        unreachable!()`);
   line(`    }`);

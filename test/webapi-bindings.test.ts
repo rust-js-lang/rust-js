@@ -1054,7 +1054,7 @@ pub fn selection_end(input: &webapi::HTMLInputElement) -> u32 {
     ['#[rust_js::whole = "5..=1"]', '`#[rust_js::whole = "lo..=hi"]` writes the least and the most whole number'],
     ["#[rust_js::position]", '`#[rust_js::position]` is `#[rust_js::whole = "-1..=4294967294"]`'],
   ]) {
-    writeFileSync(join(dir, "lib.rs"), `#[rust_js::link_name = "get size"] ${attr} #[allow(unused_variables)] pub fn size(this: &js::Unknown) -> f64 { unreachable!() }\n`);
+    writeFileSync(join(dir, "lib.rs"), `#[rust_js::link_name = "get size"] ${attr} pub fn size(this: &js::Unknown) -> f64 { unreachable!() }\n`);
     const result = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withWeb], { cwd: dir });
     expect(result.exitCode).not.toBe(0);
     expect(result.stderr.toString()).toContain(message);

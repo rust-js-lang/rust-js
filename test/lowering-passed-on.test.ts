@@ -37,7 +37,6 @@ fn shown(x: u32) -> u32 {
 
 /// JS calls \`f\` once, with 5.
 #[cfg_attr(rust_js, rust_js::link_name = "listenOnce")]
-#[allow(unused_variables)]
 fn listen_once(f: impl FnOnce(u32) -> u32 + 'static) {
     unreachable!()
 }
@@ -50,14 +49,12 @@ pub trait Kept {}
 impl<F: FnOnce(u32) -> u32 + 'static> Kept for F {}
 
 #[cfg_attr(rust_js, rust_js::link_name = "keepAny")]
-#[allow(unused_variables)]
 fn keep_any<K: Kept>(k: K) {
     unreachable!()
 }
 
 /// JS keeps \`f\`, and may call it again.
 #[cfg_attr(rust_js, rust_js::link_name = "listenEvery")]
-#[allow(unused_variables)]
 fn listen_every(f: impl Fn(u32) -> u32 + 'static) {
     unreachable!()
 }
@@ -127,7 +124,6 @@ fn many(#[cfg_attr(rust_js, rust_js::rest)] xs: &[u32]) -> u32 {
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "Number")]
-#[allow(unused_variables)]
 fn number() -> u32 {
     unreachable!()
 }
@@ -748,7 +744,6 @@ pub fn listen(target: &EventTarget) {
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "console.log")]
-#[allow(unused_variables)]
 fn log(text: &str) {
     unreachable!()
 }

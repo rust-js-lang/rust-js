@@ -10,8 +10,10 @@
 // A JS method of several forms, `slice` and `slice_to_end`, is one link
 // name of several Rust signatures, as the webapi crate's are.
 #![allow(clashing_extern_declarations)]
-// A binding's parameters are its JS function's: its body never runs.
-#![allow(unused_variables)]
+// A binding's body never runs: rust-js skips its check of it, but a plain
+// rustc, a `cargo check` that runs no rust-js, sees an unread parameter
+// (ADR 0440, amended).
+#![cfg_attr(not(rust_js), allow(unused_variables))]
 
 use core::marker::PhantomData;
 
@@ -290,7 +292,6 @@ pub mod array {
     /// `TypeError`, a panic (ADR 0967, amended). An array Rust owns is a
     /// `Vec`, whose `remove` and `drain` say this.
     #[cfg_attr(rust_js, rust_js::link_name = "splice")]
-    #[allow(unused_variables)]
     pub fn splice(this: &Unknown, start: f64, delete_count: f64) -> Vec<Option<&'static Unknown>> {
         unreachable!()
     }
@@ -301,7 +302,6 @@ pub mod array {
     /// `prevDeps.join(', ')`. Of a symbol, JS's `TypeError`, a panic. Text
     /// Rust owns is joined by `[String]::join`.
     #[cfg_attr(rust_js, rust_js::link_name = "join")]
-    #[allow(unused_variables)]
     pub fn join(this: &[Option<&Unknown>], separator: &str) -> String {
         unreachable!()
     }
@@ -311,7 +311,6 @@ pub mod array {
 /// a `typeof` of it in JS; of `None`, `Undefined` or `Null`, and of one
 /// that's there, `classify(Some(value))` (ADR 0676). The value itself.
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
-#[allow(unused_variables)]
 pub fn classify(this: Option<&Unknown>) -> Kind<'_> {
     unreachable!()
 }
@@ -322,7 +321,6 @@ pub fn classify(this: Option<&Unknown>) -> Kind<'_> {
 /// `js::set(js::unknown(&disabled_log), "__reactDisabledLog", true)` is
 /// `disabledLog.__reactDisabledLog = true` (ADR 0673).
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
-#[allow(unused_variables)]
 pub fn unknown<T: AnyShape<M> + ?Sized, M>(this: &T) -> &Unknown {
     unreachable!()
 }
@@ -332,7 +330,6 @@ pub fn unknown<T: AnyShape<M> + ?Sized, M>(this: &T) -> &Unknown {
 /// closure, which [`unknown`] would borrow only for its block. The value
 /// itself, kept as long as JS has it.
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
-#[allow(unused_variables)]
 pub fn unknown_of<T: AnyShape<M> + 'static, M>(this: T) -> &'static Unknown {
     unreachable!()
 }
@@ -346,7 +343,6 @@ pub fn unknown_of<T: AnyShape<M> + 'static, M>(this: T) -> &'static Unknown {
 /// a value of a type that's known, a compile error: [`unknown_of`] gives
 /// one that's always there, and `value.map(js::unknown_of)` an `Option`.
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
-#[allow(unused_variables)]
 pub fn any_of<T: 'static>(this: T) -> Option<&'static Unknown> {
     unreachable!()
 }
@@ -657,7 +653,6 @@ functions! {
 /// as JS's `if (value)` asks: `None`, `""`, `0`, `NaN` and `false` aren't,
 /// all else is.
 #[cfg_attr(rust_js, rust_js::link_name = "!!")]
-#[allow(unused_variables)]
 pub fn truthy<T: Defined + ?Sized>(this: Option<&T>) -> bool {
     unreachable!()
 }
@@ -668,7 +663,6 @@ pub fn truthy<T: Defined + ?Sized>(this: Option<&T>) -> bool {
 /// them so. `==` is Rust's, two `None`s equal, whichever each is (ADR
 /// 0612); this is JS's, for what a port of JS's `===` compares (ADR 0721).
 #[cfg_attr(rust_js, rust_js::link_name = "===")]
-#[allow(unused_variables)]
 pub fn strict_equals(this: impl IntoUnknown, other: impl IntoUnknown) -> bool {
     unreachable!()
 }
@@ -679,7 +673,6 @@ pub fn strict_equals(this: impl IntoUnknown, other: impl IntoUnknown) -> bool {
 /// which leaves `"0.0"` as typed where the value is `0`; any other
 /// comparison is Rust's `==`, or [`strict_equals`]'s `===` (ADR 1012).
 #[cfg_attr(rust_js, rust_js::link_name = "==")]
-#[allow(unused_variables)]
 pub fn loose_equals(this: impl IntoUnknown, other: impl IntoUnknown) -> bool {
     unreachable!()
 }
@@ -709,7 +702,6 @@ pub const fn null<T>() -> Option<T> {
 /// `Option`'s `None`, as JS has `Some` of a function as the function
 /// itself; `cast::<Option<fn()>>(v)` says so.
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
-#[allow(unused_variables)]
 pub unsafe fn cast<T>(this: Option<&Unknown>) -> T {
     unreachable!()
 }
@@ -751,7 +743,6 @@ impl ToText for f64 {
 /// `str::parse` is an `Err`; in base `radix`, or 16 after a `0x`, else 10.
 /// Of any value, of its text.
 #[cfg_attr(rust_js, rust_js::link_name = "parseInt")]
-#[allow(unused_variables)]
 pub fn parse_int<T: ToText>(text: T, radix: Option<u32>) -> f64 {
     unreachable!()
 }
@@ -759,7 +750,6 @@ pub fn parse_int<T: ToText>(text: T, radix: Option<u32>) -> f64 {
 /// [`parseFloat(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/parseFloat):
 /// the number `text` starts with, `NaN` of none. Of any value, of its text.
 #[cfg_attr(rust_js, rust_js::link_name = "parseFloat")]
-#[allow(unused_variables)]
 pub fn parse_float<T: ToText>(text: T) -> f64 {
     unreachable!()
 }
@@ -770,7 +760,6 @@ pub fn parse_float<T: ToText>(text: T) -> f64 {
 /// a symbol, which `String` names, and of an object whose `valueOf` throws,
 /// an `Err` (ADR 0639); of text or a number, its text.
 #[cfg_attr(rust_js, rust_js::link_name = "\"\" +")]
-#[allow(unused_variables)]
 pub fn concat_text<T: ToText>(this: T) -> T::Text {
     unreachable!()
 }
@@ -778,7 +767,6 @@ pub fn concat_text<T: ToText>(this: T) -> T::Text {
 /// Any value as JS's template shows it, `${value}`: `format!("{}-{index}",
 /// js::shown(msg))` is `${msg}-${index}` (ADR 0312). The value itself.
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
-#[allow(unused_variables)]
 pub fn shown<T: ToText>(this: T) -> &'static Shown {
     unreachable!()
 }
@@ -789,7 +777,6 @@ pub struct Shown(PhantomData<JsObject>);
 impl core::fmt::Display for Shown {
     /// The value itself, in its template.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
-    #[allow(unused_variables)]
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         unreachable!()
     }
@@ -798,7 +785,6 @@ impl core::fmt::Display for Shown {
 /// [`typeof value`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/typeof):
 /// what JS says it is, as text, `"undefined"` of `None` (ADR 0310).
 #[cfg_attr(rust_js, rust_js::link_name = "typeof")]
-#[allow(unused_variables)]
 pub fn type_of(this: Option<&Unknown>) -> String {
     unreachable!()
 }
@@ -811,7 +797,6 @@ pub fn type_of(this: Option<&Unknown>) -> String {
 /// one before gives, each part (ADR 0624). Rust is told nothing: the
 /// binding is still there to call, which throws where the host hasn't it.
 #[cfg_attr(rust_js, rust_js::link_name = "typeof !== \"undefined\"")]
-#[allow(unused_variables)]
 pub fn is_defined<B: Copy>(binding: B) -> bool {
     unreachable!()
 }
@@ -822,7 +807,6 @@ pub fn is_defined<B: Copy>(binding: B) -> bool {
 /// them, each part before the last asked whether it's there (ADR 0942).
 /// Rust is told nothing: the binding is still there to call.
 #[cfg_attr(rust_js, rust_js::link_name = "typeof === \"function\"")]
-#[allow(unused_variables)]
 pub fn is_function<B: Copy>(binding: B) -> bool {
     unreachable!()
 }
@@ -834,7 +818,6 @@ pub fn is_function<B: Copy>(binding: B) -> bool {
 /// it asked whether it's there, as [`is_function`] asks. Rust is told nothing: the binding is still there
 /// to read, which gives what the host has.
 #[cfg_attr(rust_js, rust_js::link_name = "typeof === \"number\"")]
-#[allow(unused_variables)]
 pub fn is_number<B: Copy>(binding: B) -> bool {
     unreachable!()
 }
@@ -846,7 +829,6 @@ pub fn is_number<B: Copy>(binding: B) -> bool {
 /// given (rd282). Rust is told nothing: the binding is still there to
 /// read, which gives what the host has.
 #[cfg_attr(rust_js, rust_js::link_name = "typeof === \"object\"")]
-#[allow(unused_variables)]
 pub fn is_object<B: Copy>(binding: B) -> bool {
     unreachable!()
 }
@@ -860,7 +842,6 @@ pub fn is_object<B: Copy>(binding: B) -> bool {
 /// as TypeScript reads `any`'s; else the method's own type (rd181).
 /// Called with [`function::call`], its `this` given, as JS calls it.
 #[cfg_attr(rust_js, rust_js::link_name = "method")]
-#[allow(unused_variables)]
 pub fn method<P: Method<M>, M>(path: P) -> P::Function {
     unreachable!()
 }
@@ -914,7 +895,6 @@ methods! {
 /// Rust gives it both, so an `other` that may run code runs first, as
 /// `Option::unwrap_or`'s does.
 #[cfg_attr(rust_js, rust_js::link_name = "||")]
-#[allow(unused_variables)]
 pub fn or<T: Copy>(this: T, other: T) -> T {
     unreachable!()
 }
@@ -923,7 +903,6 @@ pub fn or<T: Copy>(this: T, other: T) -> T {
 /// any value as text, as JS makes it, `result += value` say: `"undefined"`
 /// of `None`, `"[object Object]"` of an object.
 #[cfg_attr(rust_js, rust_js::link_name = "String")]
-#[allow(unused_variables)]
 pub fn string(value: Option<&Unknown>) -> String {
     unreachable!()
 }
@@ -933,7 +912,6 @@ pub fn string(value: Option<&Unknown>) -> String {
 /// none. Of `undefined` or `null` itself, a `None`, JS's `TypeError`, a
 /// panic, as JS throws it (ADR 0776).
 #[cfg_attr(rust_js, rust_js::link_name = "get []")]
-#[allow(unused_variables)]
 pub fn get<K: PropertyKey + ?Sized>(this: impl IntoUnknown, key: &K) -> Option<&'static Unknown> {
     unreachable!()
 }
@@ -944,7 +922,6 @@ pub fn get<K: PropertyKey + ?Sized>(this: impl IntoUnknown, key: &K) -> Option<&
 /// Of any value, as TypeScript's `delete` is of an `any`'s; of `undefined`
 /// or `null`, a `None`, JS's `TypeError`, a panic (ADR 0776).
 #[cfg_attr(rust_js, rust_js::link_name = "delete []")]
-#[allow(unused_variables)]
 pub fn delete<K: PropertyKey + ?Sized>(this: impl IntoUnknown, key: &K) -> bool {
     unreachable!()
 }
@@ -965,7 +942,6 @@ pub fn delete<K: PropertyKey + ?Sized>(this: impl IntoUnknown, key: &K) -> bool 
 /// constructor, an arrow, JS's `TypeError`, a panic.
 #[cfg_attr(rust_js, rust_js::link_name = "new this()")]
 #[cfg_attr(rust_js, rust_js::variadic)]
-#[allow(unused_variables)]
 pub fn new<C: Construct<A> + ?Sized, A>(this: &C, arguments: A) -> C::Instance {
     unreachable!()
 }
@@ -1103,7 +1079,6 @@ impl<T> Made for Option<T> {
 /// unwinds as any JS throw: `catch_unwind` catches it, its payload's
 /// `downcast_ref::<&JsError>()` the value thrown (ADR 0710).
 #[cfg_attr(rust_js, rust_js::link_name = "throw")]
-#[allow(unused_variables)]
 pub fn throw(this: Option<&Unknown>) -> ! {
     unreachable!()
 }
@@ -1134,7 +1109,6 @@ impl<S> Class<S> {
     /// SyntheticBaseEvent(..) { this._reactName = reactName; .. return this; }`
     /// of `Class::of(function::with_this(move |this, (react_name, ..)| ..))`.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
-    #[allow(unused_variables)]
     pub fn of<F: AnyFunction<M>, M: Signature<Class = S>>(this: F) -> &'static Class<S> {
         unreachable!()
     }
@@ -1160,14 +1134,12 @@ impl<S> Class<S> {
     /// binding's static or constructor, a compile error.
     #[cfg_attr(rust_js, rust_js::link_name = "static")]
     #[cfg_attr(rust_js, rust_js::variadic)]
-    #[allow(unused_variables)]
     pub fn call_static<F: Static<A>, A>(&self, f: F, arguments: A) -> F::Output {
         unreachable!()
     }
 
     /// `C.prototype = prototype`: what each instance made after inherits from.
     #[cfg_attr(rust_js, rust_js::link_name = "set prototype")]
-    #[allow(unused_variables)]
     pub fn set_prototype(&self, prototype: &Unknown) {
         unreachable!()
     }
@@ -1193,7 +1165,6 @@ pub fn class<T>() -> &'static Class {
 /// js crate's `data_view::is` is. Of a `constructor` that's no function,
 /// JS's `TypeError`, a panic.
 #[cfg_attr(rust_js, rust_js::link_name = "instanceof")]
-#[allow(unused_variables)]
 pub fn instance_of(this: impl IntoUnknown, constructor: impl IntoUnknown) -> bool {
     unreachable!()
 }
@@ -1203,7 +1174,6 @@ pub fn instance_of(this: impl IntoUnknown, constructor: impl IntoUnknown) -> boo
 /// object, `undefined` or `null`, a `None`, or a string, JS's `TypeError`,
 /// a panic (ADR 0776).
 #[cfg_attr(rust_js, rust_js::link_name = "in []")]
-#[allow(unused_variables)]
 pub fn has<K: PropertyKey + ?Sized>(this: impl IntoUnknown, key: &K) -> bool {
     unreachable!()
 }
@@ -1218,7 +1188,6 @@ pub fn has<K: PropertyKey + ?Sized>(this: impl IntoUnknown, key: &K) -> bool {
 /// none, as JS visits none, `for (const key in styles)` of an
 /// `Option<&Unknown>` (React port gap rd71).
 #[cfg_attr(rust_js, rust_js::link_name = "for in")]
-#[allow(unused_variables)]
 pub fn keys_in(this: impl IntoUnknown) -> Box<dyn core::iter::Iterator<Item = String>> {
     unreachable!()
 }
@@ -1245,7 +1214,6 @@ impl PropertyKey for f64 {}
 /// number or a JS value (ADR 0967); of `undefined` or `null`, a `None`,
 /// JS's `TypeError`, a panic (ADR 0776).
 #[cfg_attr(rust_js, rust_js::link_name = "set []")]
-#[allow(unused_variables)]
 pub fn set<K: PropertyKey + ?Sized, T>(this: impl IntoUnknown, key: &K, to: T) {
     unreachable!()
 }
@@ -1508,7 +1476,6 @@ impl Json<'static> {
     /// the value `text` is, `None` of `null`, or what it threw for text that
     /// isn't JSON (ADR 0035).
     #[cfg_attr(rust_js, rust_js::link_name = "JSON.parse")]
-    #[allow(unused_variables)]
     pub fn parse(text: &str) -> Result<Option<Json<'static>>, &'static JsError> {
         unreachable!()
     }
@@ -1518,7 +1485,6 @@ impl Json<'_> {
     /// [`JSON.stringify(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify):
     /// its JSON text.
     #[cfg_attr(rust_js, rust_js::link_name = "JSON.stringify")]
-    #[allow(unused_variables)]
     pub fn stringify(value: &Json<'_>) -> String {
         unreachable!()
     }
@@ -1534,7 +1500,6 @@ pub mod dict {
     /// `Dict<Option<_>>`, `Some(None)` of a JSON `null`, and `None` where the
     /// key isn't its own (ADR 0225).
     #[cfg_attr(rust_js, rust_js::link_name = "get []")]
-    #[allow(unused_variables)]
     pub fn get<'a, T>(this: &'a Dict<T>, key: &str) -> Option<&'a T> {
         unreachable!()
     }
@@ -1547,7 +1512,6 @@ pub mod dict {
 
     /// `dict[key] = value`.
     #[cfg_attr(rust_js, rust_js::link_name = "set []")]
-    #[allow(unused_variables)]
     pub fn set<T>(this: &Dict<T>, key: &str, value: T) {
         unreachable!()
     }
@@ -1555,7 +1519,6 @@ pub mod dict {
     /// [`Object.keys(dict)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/keys):
     /// its keys, in order.
     #[cfg_attr(rust_js, rust_js::link_name = "Object.keys")]
-    #[allow(unused_variables)]
     pub fn keys<T>(dict: &Dict<T>) -> Vec<String> {
         unreachable!()
     }
@@ -1563,7 +1526,6 @@ pub mod dict {
     /// [`Object.entries(dict)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/entries):
     /// each key and its value, in order.
     #[cfg_attr(rust_js, rust_js::link_name = "Object.entries")]
-    #[allow(unused_variables)]
     pub fn entries<T>(dict: &Dict<T>) -> Vec<(String, T)> {
         unreachable!()
     }
@@ -1571,7 +1533,6 @@ pub mod dict {
     /// [`Object.values(dict)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/values):
     /// its values, in order.
     #[cfg_attr(rust_js, rust_js::link_name = "Object.values")]
-    #[allow(unused_variables)]
     pub fn values<T>(dict: &Dict<T>) -> Vec<T> {
         unreachable!()
     }
@@ -1585,7 +1546,6 @@ pub mod dict {
     /// them (ADR 0967, amended).
     #[cfg_attr(rust_js, rust_js::link_name = "Object.fromEntries")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    #[allow(unused_variables)]
     pub fn from_entries<K, T>(entries: Vec<(K, T)>) -> &'static Dict<T>
     where
         str: Takes<K>,
@@ -1628,7 +1588,6 @@ impl<T> core::future::Future for Promise<T> {
 /// `settle(window.fetch(url)).await` is a network error's `Err`
 /// (ADR 0035).
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
-#[allow(unused_variables)]
 pub fn settle<T>(this: Promise<T>) -> Promise<Result<T, &'static JsError>> {
     unreachable!()
 }
@@ -1637,7 +1596,6 @@ pub fn settle<T>(this: Promise<T>) -> Promise<Result<T, &'static JsError>> {
 /// one already: handed, unawaited, to what takes a promise, as
 /// `new ClipboardItem({ "text/plain": promise(fetch_blob()) })`.
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
-#[allow(unused_variables)]
 pub fn promise<T>(this: impl core::future::Future<Output = T>) -> Promise<T> {
     unreachable!()
 }
@@ -1963,7 +1921,6 @@ pub mod reg_exp {
     /// nothing, giving the text, as TypeScript's overloads take either
     /// (ADR 0310).
     #[cfg_attr(rust_js, rust_js::link_name = "replace")]
-    #[allow(unused_variables)]
     pub fn replace<A>(this: &str, pattern: &RegExp, with: impl Replacement<A>) -> String {
         unreachable!()
     }
@@ -2271,7 +2228,6 @@ pub mod json {
     /// `BigInt`, or be `undefined`, of a function (ADR 0310).
     #[cfg_attr(rust_js, rust_js::link_name = "JSON.stringify")]
     #[cfg_attr(rust_js, rust_js::nullable(replacer))]
-    #[allow(unused_variables)]
     pub fn stringify_with<T: Stringify + ?Sized>(value: &T, replacer: Option<&[&str]>, space: u32) -> T::Stringified {
         unreachable!()
     }
@@ -2472,7 +2428,6 @@ pub mod object {
     /// a JS object of these keys and values, as an API that takes a
     /// dictionary of them wants: `{ "aria-label": "Rust source" }`.
     #[cfg_attr(rust_js, rust_js::link_name = "Object.fromEntries")]
-    #[allow(unused_variables)]
     pub fn from_entries<T>(entries: Vec<(String, T)>) -> &'static JsObject {
         unreachable!()
     }
@@ -2488,7 +2443,6 @@ pub mod object {
     /// dict::from_entries(vec![("view", 0)])))`'s `{ ...EventInterface,
     /// view: 0 }` (ADR 0967, amended).
     #[cfg_attr(rust_js, rust_js::link_name = "{...}")]
-    #[allow(unused_variables)]
     pub fn spread<S: Spread>(values: S) -> &'static S::Object {
         unreachable!()
     }
@@ -2562,7 +2516,6 @@ pub mod object {
     /// much (ADR 0285); this, of two Rust types too, since a JS object may
     /// be seen as either: a message's sender, an object, and a frame's `Window`.
     #[cfg_attr(rust_js, rust_js::link_name = "Object.is")]
-    #[allow(unused_variables)]
     pub fn is<A: ?Sized, B: ?Sized>(a: &A, b: &B) -> bool {
         unreachable!()
     }

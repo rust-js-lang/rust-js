@@ -1280,7 +1280,6 @@ test("a call giving a bool is one in a test", async () => {
     pub kind: String,
 }
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.isItem")]
-#[allow(unused_variables)]
 fn is_item(x: &Item) -> bool {
     unreachable!()
 }

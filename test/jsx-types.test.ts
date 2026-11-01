@@ -1053,7 +1053,6 @@ test("dyn values given to a JS module's function are the values", async () => {
   const { dir, args } = compile(`use std::any::Any;
 pub struct Highlight;
 #[rust_js::link_name = "./style.js#HighlightStyle.define"]
-#[allow(unused_variables)]
 fn define(specs: Vec<&dyn Any>) -> &'static Highlight {
     unreachable!()
 }
@@ -1091,7 +1090,6 @@ test("a variant's test function is a bool in a test", async () => {
 use react::children::{self, Child};
 use react::{JSX, ReactElement, ReactNode, jsx};
 #[cfg_attr(rust_js, rust_js::link_name = "get type")]
-#[allow(unused_variables)]
 fn tag(this: &ReactElement) -> Option<&'static str> {
     unreachable!()
 }

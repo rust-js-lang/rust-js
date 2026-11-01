@@ -4,8 +4,6 @@
 //! reason a handler reads is a `JsError`, as `settle` has it; what rejects
 //! one takes any value, as TypeScript's `reason?: any` (ADR 0782).
 
-// A binding's parameters are its JS function's: its body never runs.
-#![allow(unused_variables)]
 
 use super::{IntoUnknown, JsError, Promise, Unknown};
 

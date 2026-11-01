@@ -79,14 +79,12 @@ impl<T: IntoUploadBody> IntoUploadBody for Option<T> {}
 
 impl<'a> UploadBody<'a> {
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
-    #[allow(unused_variables)]
     pub fn of(this: impl IntoUploadBody + 'a) -> UploadBody<'a> {
         unreachable!()
     }
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.upload")]
-#[allow(unused_variables)]
 pub fn upload(body: impl IntoUploadBody) {
     unreachable!()
 }
@@ -546,7 +544,6 @@ test("a rest parameter takes a tuple or a slice to spread", async () => {
   const source = `use js::Rest;
 #[cfg_attr(rust_js, rust_js::link_name = "Math.max")]
 #[cfg_attr(rust_js, rust_js::variadic)]
-#[allow(unused_variables)]
 fn max(values: impl Rest<f64>) -> f64 {
     unreachable!()
 }
@@ -605,14 +602,12 @@ impl Event for Nothing {
 
 #[rust_js::link_name = "globalThis.called"]
 #[rust_js::variadic]
-#[allow(unused_variables)]
 fn called<E: Event>(event: &str, args: E::Args) -> String {
     unreachable!()
 }
 
 #[rust_js::link_name = "globalThis.called"]
 #[rust_js::variadic]
-#[allow(unused_variables)]
 fn pair(event: &str, args: (f64, &str)) -> String {
     unreachable!()
 }
@@ -642,7 +637,7 @@ pub fn calls(held: (f64, &str)) -> Vec<String> {
 test("a binding that skips what's falsy is given test && value", async () => {
   const dir = fixture("skips-falsy");
   writeFileSync(join(dir, "cn.js"), 'export default (...classes) => classes.filter(Boolean).join(" ");\n');
-  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "./cn.js#default")] #[rust_js::variadic] #[rust_js::skips_falsy] #[allow(unused_variables)] fn cn(classes: impl js::Rest<dyn js::IntoUnknown>) -> String { unreachable!() } #[cfg_attr(rust_js, rust_js::link_name = "./cn.js#default")] #[rust_js::variadic] #[allow(unused_variables)] fn plain(classes: impl js::Rest<dyn js::IntoUnknown>) -> String { unreachable!() }
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "./cn.js#default")] #[rust_js::variadic] #[rust_js::skips_falsy] fn cn(classes: impl js::Rest<dyn js::IntoUnknown>) -> String { unreachable!() } #[cfg_attr(rust_js, rust_js::link_name = "./cn.js#default")] #[rust_js::variadic] fn plain(classes: impl js::Rest<dyn js::IntoUnknown>) -> String { unreachable!() }
 pub fn classes(expanded: bool, shown: bool) -> String {
     cn((Some("a"), expanded.then_some("wide"), (!expanded && shown).then_some("tall")))
 }
@@ -781,7 +776,6 @@ test("js::import! loads a module when it's asked for", async () => {
 mod lint;
 mod root;
 #[cfg_attr(rust_js, rust_js::link_name = "./math.js#twice")]
-#[allow(unused_variables)]
 fn twice(n: f64) -> f64 {
     unreachable!()
 }

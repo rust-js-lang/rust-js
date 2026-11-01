@@ -54,7 +54,6 @@ test("JSX preparation preserves evaluation order, conditional execution and text
   await Bun.write(input, `#![allow(non_snake_case)]
 use react::{JSX, jsx};
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")]
-#[allow(unused_variables)]
 fn record(n: i32) -> i32 {
     unreachable!()
 }

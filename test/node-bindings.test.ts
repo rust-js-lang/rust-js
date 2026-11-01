@@ -313,7 +313,6 @@ use node::js::JsError;
 use node::process::{self, Signals};
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.log")]
-#[allow(unused_variables)]
 fn log(what: &str) {
     unreachable!()
 }

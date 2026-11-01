@@ -97,4 +97,13 @@ export const mutations: Mutation[] = [
       "                    let _ = local;\n                }\n            }\n            _ => {}\n",
     tests: clippy,
   },
+  {
+    name: "binding-unread-params-flagged",
+    breaks:
+      "a binding's parameters, which its never-run body doesn't read, are flagged, so each needs `#[allow(unused_variables)]`, a binding crate's method's too, react-art's `inject(&self, container)` (ADR 0440, amended, rd330)",
+    file: "src/lower/liveness.rs",
+    find: "    if super::bindings::is_binding(tcx, def_id.to_def_id()) {\n",
+    replace: "    if false {\n",
+    tests: ["test/jsx.test.ts", "-t", "need(s)? no allow"],
+  },
 ];

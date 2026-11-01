@@ -37,7 +37,7 @@ for (const [name, source, message, crate] of [
   ["a pub use of every name of a module, of a module", "mod m {\n    pub mod n {\n        pub fn g() -> u32 { 1 }\n    }\n}\npub use m::*;\npub fn f() -> u32 { m::n::g() }", "does not support a `pub use` of every name of a module, of its module or class `n` yet: `pub use` each of its names that has JS by its name"],
   ["fields that are one JS property", 'pub struct P { pub first: u32, #[rust_js::name = "first"] pub other: u32 }\npub fn f(p: &P) -> u32 { p.first + p.other }', "both `first` in JS"],
   // A binding's nullable parameter is one of its own, an `Option` (ADR 0275).
-  ["a nullable parameter that isn't an Option", '#[rust_js::link_name = "f"]\n#[rust_js::nullable(n)]\n#[allow(unused_variables)]\npub fn f(n: u32) {}', "names no parameter of this function that's an `Option`"],
+  ["a nullable parameter that isn't an Option", '#[rust_js::link_name = "f"]\n#[rust_js::nullable(n)]\npub fn f(n: u32) {}', "names no parameter of this function that's an `Option`"],
   // A `pub` thread-local is made as its module loads, as JS's importers
   // read an `export const`; one whose initializer runs or reads what may
   // not be made yet then is refused (ADR 0037, amended; React port gap rd51).
@@ -50,8 +50,8 @@ for (const [name, source, message, crate] of [
   ["a nullable field that isn't an Option", "pub struct Task {\n    #[rust_js::nullable]\n    pub callback: std::cell::RefCell<u32>,\n}", "is of a field that's an `Option`"],
   // An `Option` field's `None` is left out where it's made already (ADR 0810).
   ["an optional field that isn't nullable", "pub struct Context {\n    #[rust_js::optional]\n    pub renderer: Option<u32>,\n}", "`#[rust_js::optional]` is of a `#[rust_js::nullable]` field"],
-  ["a lazy parameter that isn't there", '#[rust_js::link_name = "f"]\n#[rust_js::lazy(init)]\n#[allow(unused_variables)]\npub fn f(initial: impl FnOnce() -> u32) {}', "`#[rust_js::lazy(init)]` names no parameter of this function"],
-  ["a nullable parameter that isn't there", '#[rust_js::link_name = "f"]\n#[rust_js::nullable(m)]\n#[allow(unused_variables)]\npub fn f(n: Option<u32>) {}', "`#[rust_js::nullable(m)]` names no parameter"],
+  ["a lazy parameter that isn't there", '#[rust_js::link_name = "f"]\n#[rust_js::lazy(init)]\npub fn f(initial: impl FnOnce() -> u32) {}', "`#[rust_js::lazy(init)]` names no parameter of this function"],
+  ["a nullable parameter that isn't there", '#[rust_js::link_name = "f"]\n#[rust_js::nullable(m)]\npub fn f(n: Option<u32>) {}', "`#[rust_js::nullable(m)]` names no parameter"],
   // A discriminated union's variants are named fields beside its tag (ADR 0284).
   ["a tagged enum's tuple variant", '#[rust_js::tag = "kind"]\npub enum E { A(u32) }\npub fn f() -> E { E::A(1) }', "has a tuple variant, whose fields have no names"],
   // Only its tag may be `true` or `false`: another enum's variant is its name, a string.
@@ -202,7 +202,7 @@ for (const [name, source, message, crate] of [
   ["an untagged enum's variants of one kind, matched", '#[rust_js::untagged] pub enum E { A(&\'static str), B(char) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }', "which JS can't tell apart"],
   ["an untagged enum's variants of one kind, cloned", '#[rust_js::untagged] #[derive(Clone)] pub enum E { A(String), B(&\'static str) }\npub fn f(s: String) -> E { E::A(s) }', "which JS can't tell apart"],
   // A variadic binding's rest arguments are its last parameter, a slice (ADR 0221).
-  ["a variadic binding of no slice", '#[rust_js::link_name = "Math.max"]\n#[rust_js::variadic]\n#[allow(unused_variables)]\nfn max(a: f64, b: f64) -> f64 { unreachable!() }\npub fn f() -> f64 { max(1.0, 2.0) }', "isn't rest arguments"],
+  ["a variadic binding of no slice", '#[rust_js::link_name = "Math.max"]\n#[rust_js::variadic]\nfn max(a: f64, b: f64) -> f64 { unreachable!() }\npub fn f() -> f64 { max(1.0, 2.0) }', "isn't rest arguments"],
   // A JS function is bound one way, an ordinary function with
   // `#[rust_js::link_name]` (ADR 0373): one in an `extern` block is
   // refused, its error saying the one way.

@@ -40,7 +40,6 @@ use react::{JSX, ReactNode, RefObject, jsx, use_effect, use_ref};
 #[cfg_attr(rust_js, rust_js::link_name = "./cn.js#default")]
 #[cfg_attr(rust_js, rust_js::variadic)]
 #[cfg_attr(rust_js, rust_js::skips_falsy)]
-#[allow(unused_variables)]
 pub fn cn(classes: impl js::Rest<dyn js::IntoUnknown>) -> String {
     unreachable!()
 }
@@ -112,13 +111,11 @@ pub struct SidebarLinkProps<'a> {
 
 // Chrome's and Safari's, not every browser's.
 #[cfg_attr(rust_js, rust_js::link_name = "get scrollIntoViewIfNeeded")]
-#[allow(unused_variables)]
 fn scroll_into_view_if_needed_of(this: &HTMLAnchorElement) -> Option<&'static Unknown> {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "scrollIntoViewIfNeeded")]
-#[allow(unused_variables)]
 fn scroll_into_view_if_needed(this: &HTMLAnchorElement) {
     unreachable!()
 }
@@ -697,7 +694,6 @@ use react::{JSX, ReactNode, jsx};
 #[cfg_attr(rust_js, rust_js::link_name = "./cn.js#default")]
 #[cfg_attr(rust_js, rust_js::variadic)]
 #[cfg_attr(rust_js, rust_js::skips_falsy)]
-#[allow(unused_variables)]
 fn cn(classes: impl js::Rest<dyn js::IntoUnknown>) -> String {
     unreachable!()
 }
@@ -748,7 +744,6 @@ use js::Unknown;
 use react::children::{self, Child};
 use react::{JSX, ReactNode, jsx};
 #[cfg_attr(rust_js, rust_js::link_name = "get mdxName")]
-#[allow(unused_variables)]
 fn mdx_name(this: &Unknown) -> Option<&'static str> {
     unreachable!()
 }

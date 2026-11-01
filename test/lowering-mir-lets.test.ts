@@ -154,7 +154,7 @@ pub fn fixed(given: Option<&'static Error>, lint: Option<&'static Error>) -> Opt
 // CodeBlock reads its regular expressions' matches.
 test("a held temporary is named after the call that made it", async () => {
   const dir = fixture("temporary-name");
-  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.find")] #[allow(unused_variables)] fn find(text: &str) -> Option<(String, String)> { unreachable!() }
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.find")] fn find(text: &str) -> Option<(String, String)> { unreachable!() }
 pub fn lines(meta: &str) -> String {
     let Some((_, lines)) = find(meta) else {
         return String::new();
@@ -186,7 +186,6 @@ pub enum ContentBoxSize {
     Single(&'static BoxSize),
 }
 #[cfg_attr(rust_js, rust_js::link_name = "get contentBoxSize")]
-#[allow(unused_variables)]
 fn contentBoxSize(this: &Unknown) -> Option<ContentBoxSize> {
     unreachable!()
 }

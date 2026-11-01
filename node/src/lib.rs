@@ -15,12 +15,14 @@
 //! const text = readFileSync(root + "/index.md", "utf8");
 //! ```
 
-// A binding's parameters are its JS function's: its body never runs.
-#![allow(unused_variables)]
 // Many Rust functions call the same JS name: a form per optional argument
 // (`basename`, `basename_with_suffix`). rustc warns because in native code
 // they would be one symbol.
 #![allow(clashing_extern_declarations)]
+// A binding's body never runs: rust-js skips its check of it, but a plain
+// rustc, a `cargo check` that runs no rust-js, sees an unread parameter
+// (ADR 0440, amended).
+#![cfg_attr(not(rust_js), allow(unused_variables))]
 // And some are named as libc's functions are, `abort`, `exit` and `kill`:
 // JS functions, which in native code rustc would take for those.
 #![allow(invalid_runtime_symbol_definitions)]

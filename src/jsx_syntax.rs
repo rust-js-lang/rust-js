@@ -333,15 +333,6 @@ impl Expand<'_> {
                         .push(self.allow(Symbol::intern("private_interfaces"), item.span));
                 }
             }
-            // A binding's body never runs, JS's function is called: its
-            // parameters unread, `unreachable!()`'s, which isn't the crate's
-            // to allow (ADR 0440).
-            if let ItemKind::Fn(_) = item.kind
-                && attrs.iter().any(|a| is_rust_js_attr(a, "link_name"))
-            {
-                item.attrs
-                    .push(self.allow(Symbol::intern("unused_variables"), item.span));
-            }
         }
         items.extend(companions);
     }

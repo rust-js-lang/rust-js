@@ -99,13 +99,11 @@ pub fn Badge(props: BadgeProps) -> JSX::Element {
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "encodeURIComponent")]
-#[allow(unused_variables)]
 fn encode(text: &str) -> String {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "parseInt")]
-#[allow(unused_variables)]
 fn parse_int(text: &str) -> f64 {
     unreachable!()
 }
@@ -180,7 +178,7 @@ pub fn View() -> JSX::Element {
 test("JSX preserves evaluation order and maps tags and handler statements to their original lines", async () => {
   const source = `#![allow(non_snake_case)]
 use react::{JSX, jsx};
-#[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")] #[allow(unused_variables)] fn record(n: i32) -> i32 { unreachable!() }
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")] fn record(n: i32) -> i32 { unreachable!() }
 pub fn App() -> JSX::Element {
     jsx! {
         <button
@@ -323,7 +321,7 @@ test("nested component JSX stays readable, contextually typed and mapped to the 
 #![allow(non_snake_case)]
 use react::{JSX, jsx};
 use std::rc::Rc;
-#[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")] #[allow(unused_variables)] fn record(n: i32) { unreachable!() }
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")] fn record(n: i32) { unreachable!() }
 pub struct Props { pub title: &'static str, pub content: JSX::Element, pub on_submit: Option<Rc<dyn Fn()>> }
 pub fn Card(p: Props) -> JSX::Element { jsx! { <section title={p.title}>{p.content}</section> } }
 pub fn App(active: bool) -> JSX::Element {
@@ -419,7 +417,7 @@ pub fn View() -> JSX::Element {
 test("component props, keys and children evaluate in source order without capturing names", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, jsx};
-#[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")] #[allow(unused_variables)] fn record(n: i32) -> i32 { unreachable!() }
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")] fn record(n: i32) -> i32 { unreachable!() }
 pub struct Props { pub title: i32, pub children: i32 }
 pub(crate) fn Card(p: Props) -> JSX::Element { jsx! { <div>{p.title}{p.children}</div> } }
 pub fn App() -> JSX::Element {
@@ -721,7 +719,7 @@ pub fn App() -> JSX::Element {
 test("forwarded refs keep their handle type, evaluation order and handwritten JSX", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, ForwardRefExoticComponent, ForwardedRef, RefObject, forward_ref, jsx, webapi};
-#[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")] #[allow(unused_variables)] fn record(n: i32) -> i32 { unreachable!() }
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")] fn record(n: i32) -> i32 { unreachable!() }
 pub struct Props { pub label: i32 }
 pub fn Input(p: Props, reference: ForwardedRef<&'static webapi::Element>) -> JSX::Element {
     jsx! { <input ref={reference} tabIndex={p.label} /> }
@@ -878,13 +876,11 @@ pub struct LabelProps<'a> {
 pub struct Labels(PhantomData<JsObject>);
 
 #[cfg_attr(rust_js, rust_js::link_name = "import")]
-#[allow(unused_variables)]
 fn import_labels(specifier: &str) -> Promise<&'static Labels> {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "get Label")]
-#[allow(unused_variables)]
 fn label_of(this: &Labels) -> fn(LabelProps) -> JSX::Element {
     unreachable!()
 }
@@ -997,4 +993,46 @@ pub fn configured() -> u32 {
   const built = Bun.spawnSync(args, { cwd: dir });
   const warned = built.stderr.toString().split("\n").filter((line) => line.startsWith("warning:") && !/warnings? emitted/.test(line));
   expect([built.exitCode, warned]).toEqual([0, ["warning: unused variable: `x`", "warning: field `unread` is never read"]]);
+});
+
+// rd330: a binding crate, `bindings = true`, which Cargo builds through
+// rust-js as rustc with its tool, `--rustc` (ADRs 0112, 0414), is a
+// program's for its bindings: a method's and a trait's, react-art's
+// `pub fn inject(&self, container: &JsObject) -> &'static Node`, are
+// bindings as a function's are, their parameters unread by a body that
+// never runs, with no `#[allow]` (ADR 0440, amended). Another method's
+// unread parameter is still flagged.
+test("a binding crate's methods need no allow", () => {
+  const dir = fixture("binding-crate-methods");
+  writeFileSync(join(dir, "lib.rs"), `#![allow(dead_code)]
+pub struct Surface(u32);
+
+impl Surface {
+    #[cfg_attr(rust_js, rust_js::link_name = "inject")]
+    pub fn inject(&self, container: &u32) -> u32 {
+        unreachable!()
+    }
+
+    pub fn unread(&self, y: u32) -> u32 {
+        self.0
+    }
+}
+
+pub trait Drawn {
+    #[cfg_attr(rust_js, rust_js::link_name = "draw")]
+    fn draw(&self, times: u32) {
+        unreachable!()
+    }
+}
+
+mod inner {
+    #[cfg_attr(rust_js, rust_js::link_name = "Math.max")]
+    pub fn max(a: f64, b: f64) -> f64 {
+        unreachable!()
+    }
+}
+`);
+  const built = Bun.spawnSync([compiler, "--rustc", "--edition=2024", "--crate-type=lib", "--crate-name=art", "--emit=metadata", "--target=wasm32-unknown-unknown", join(dir, "lib.rs"), "-o", join(dir, "libart.rmeta")], { cwd: dir });
+  const warned = built.stderr.toString().split("\n").filter((line) => line.startsWith("warning:") && !/warnings? emitted/.test(line));
+  expect([built.exitCode, warned]).toEqual([0, ["warning: unused variable: `y`"]]);
 });

@@ -135,7 +135,6 @@ test("module-load statements resolve imports around their local bindings", async
       }
 
       #[cfg_attr(rust_js, rust_js::link_name = "globalThis.auditLoaded")]
-      #[allow(unused_variables)]
       fn loaded(n: u32) {
           unreachable!()
       }

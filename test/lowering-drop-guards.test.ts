@@ -632,13 +632,11 @@ pub struct Descriptor {
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.descriptorOf")]
-#[allow(unused_variables)]
 fn descriptor_of(name: &str) -> Option<&'static Descriptor> {
     unreachable!()
 }
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.work")]
-#[allow(unused_variables)]
 fn work(n: f64) -> f64 {
     unreachable!()
 }

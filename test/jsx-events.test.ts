@@ -110,7 +110,6 @@ use js::Promise;
 use react::webapi::HTMLButtonElement;
 use react::{JSX, event, jsx, use_state};
 #[cfg_attr(rust_js, rust_js::link_name = "Promise.resolve")]
-#[allow(unused_variables)]
 fn resolved() -> Promise<()> {
     unreachable!()
 }

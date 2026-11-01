@@ -203,7 +203,6 @@ pub fn tag(value: &Cell<u32>) -> Rc<u32> {
   writeFileSync(join(dir, "math.js"), "export const twice = (n) => n * 2;\n");
   writeFileSync(join(dir, "lib.rs"), `pub mod math {
     #[cfg_attr(rust_js, rust_js::link_name = "./math.js#twice")]
-    #[allow(unused_variables)]
     pub fn twice(n: f64) -> f64 {
         unreachable!()
     }

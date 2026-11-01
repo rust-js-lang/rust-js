@@ -4,8 +4,6 @@
 //! any shape, an [`Unknown`], as its traps may give anything: one of a
 //! Rust type would be that type's in name only.
 
-// A binding's parameters are its JS function's: its body never runs.
-#![allow(unused_variables)]
 
 use core::marker::PhantomData;
 

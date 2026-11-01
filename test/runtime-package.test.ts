@@ -685,7 +685,7 @@ pub fn type_id() -> String {
 // the crate's own alone isn't.
 test("an undefined given to JS is an argument, never left out", () => {
   const dir = fixture("given-undefined");
-  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "Math.max")] #[allow(unused_variables)] fn math_max<B>(a: f64, b: B) -> f64 { unreachable!() }
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "Math.max")] fn math_max<B>(a: f64, b: B) -> f64 { unreachable!() }
 
 pub fn bound() -> f64 {
     math_max(1.0, None::<f64>)

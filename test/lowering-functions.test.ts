@@ -128,7 +128,7 @@ pub fn replaced(again: bool) -> bool {
 // the index too.
 test("a callback that only passes its arguments on is the function", async () => {
   const dir = fixture("eta");
-  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "parseFloat")] #[allow(unused_variables)] fn parse_float(text: &str) -> f64 { unreachable!() }
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "parseFloat")] fn parse_float(text: &str) -> f64 { unreachable!() }
 
 fn double(x: &u32) -> u32 {
     x * 2
@@ -162,7 +162,6 @@ test("an awaited reference given to a generic function is awaited", async () => 
   writeFileSync(join(dir, "lib.rs"), `use js::Promise;
 
 #[cfg_attr(rust_js, rust_js::link_name = "node:timers/promises#setTimeout")]
-#[allow(unused_variables)]
 fn later(ms: u32, value: &str) -> Promise<&'static str> {
     unreachable!()
 }
@@ -305,7 +304,7 @@ pub fn both(h: Holder<bool>) -> (Holder<bool>, Holder<bool>) {
 test("a closure that only spawns an async block is an async arrow", async () => {
   const dir = fixture("spawning-closure");
   writeFileSync(join(dir, "copy.js"), "export const copied = [];\nexport async function copy(text) { copied.push(text); }\n");
-  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "./copy.js#copy")] #[allow(unused_variables)] fn copy(text: &str) -> js::Promise<()> { unreachable!() }
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "./copy.js#copy")] fn copy(text: &str) -> js::Promise<()> { unreachable!() }
 
 pub fn handler() -> Box<dyn Fn()> {
     Box::new(|| {
@@ -957,7 +956,7 @@ test("a chain is read in place past a closure's mutable borrow", async () => {
 // function's still takes the item alone.
 test("a crate function given as a callback is passed as itself", async () => {
   const dir = fixture("fn-item-callback");
-  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "parseFloat")] #[allow(unused_variables)] fn parse_float(text: &str) -> f64 { unreachable!() }
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "parseFloat")] fn parse_float(text: &str) -> f64 { unreachable!() }
 pub struct E {
     pub rule: Option<String>,
 }
@@ -1234,7 +1233,6 @@ pub struct Syntax { pub string: String } pub struct Theme { pub syntax: Syntax }
 pub struct Tag(PhantomData<JsObject>);
 pub struct HighlightStyle(PhantomData<JsObject>);
 #[cfg_attr(rust_js, rust_js::link_name = "@codemirror/language#HighlightStyle.define")]
-#[allow(unused_variables)]
 fn define(specs: Vec<&dyn Any>) -> &'static HighlightStyle {
     unreachable!()
 }
@@ -1275,19 +1273,16 @@ mod tags {
     }
 
     #[cfg_attr(rust_js, rust_js::link_name = "@lezer/highlight#tags.standard")]
-    #[allow(unused_variables)]
     pub fn standard(tag: &Tag) -> &'static Tag {
         unreachable!()
     }
 
     #[cfg_attr(rust_js, rust_js::link_name = "@lezer/highlight#tags.function")]
-    #[allow(unused_variables)]
     pub fn function(tag: &Tag) -> &'static Tag {
         unreachable!()
     }
 
     #[cfg_attr(rust_js, rust_js::link_name = "@lezer/highlight#tags.definition")]
-    #[allow(unused_variables)]
     pub fn definition(tag: &Tag) -> &'static Tag {
         unreachable!()
     }

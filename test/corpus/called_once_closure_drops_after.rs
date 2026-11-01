@@ -34,7 +34,6 @@ impl<F: FnOnce() + 'static> Handler for F {
 /// `handler.call()`: JS calls the handler once, where it's given, as
 /// `setTimeout` does later.
 #[cfg_attr(rust_js, rust_js::link_name = "call")]
-#[cfg_attr(rust_js, allow(unused_variables))]
 fn run_once<H: Handler>(this: H) {
     #[cfg(not(rust_js))]
     this.run();

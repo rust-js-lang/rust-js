@@ -10,9 +10,11 @@
 
 use std::sync::OnceLock;
 
+use rustc_abi::FieldIdx;
 use rustc_hir as hir;
 use rustc_hir::def::Res;
 use rustc_hir::intravisit::{self, Visitor};
+use rustc_index::bit_set::DenseBitSet;
 use rustc_middle::hir::nested_filter;
 use rustc_middle::middle::dead_code::DeadCodeLivenessSummary;
 use rustc_middle::ty::{self, Ty, TyCtxt};
@@ -25,10 +27,30 @@ type Liveness = fn(TyCtxt<'_>, ()) -> Result<DeadCodeLivenessSummary, ErrorGuara
 /// rustc's own liveness, which rust-js's adds to.
 static RUSTC_LIVENESS: OnceLock<Liveness> = OnceLock::new();
 
-/// rustc's providers, with liveness that counts what JS reads.
+type BodyLiveness = for<'tcx> fn(TyCtxt<'tcx>, LocalDefId) -> DenseBitSet<FieldIdx>;
+
+/// rustc's own check of a body's variables, which a binding's skips.
+static RUSTC_BODY_LIVENESS: OnceLock<BodyLiveness> = OnceLock::new();
+
+/// rustc's providers, with liveness that counts what JS reads, and no
+/// check of a binding's body, which never runs.
 pub(crate) fn provide(providers: &mut Providers) {
     RUSTC_LIVENESS.get_or_init(|| providers.queries.live_symbols_and_ignored_derived_traits);
     providers.queries.live_symbols_and_ignored_derived_traits = live_symbols;
+    RUSTC_BODY_LIVENESS.get_or_init(|| providers.queries.check_liveness);
+    providers.queries.check_liveness = body_liveness;
+}
+
+/// A body's variables, as rustc checks them, but a binding's: JS's
+/// function is called, its body never runs, `unreachable!()`, so its
+/// parameters are unread, which isn't the crate's to allow, a binding
+/// crate's either: a function's, a method's, a trait's, one a macro writes
+/// (ADR 0440, amended), as rustc skips an intrinsic's.
+fn body_liveness(tcx: TyCtxt<'_>, def_id: LocalDefId) -> DenseBitSet<FieldIdx> {
+    if super::bindings::is_binding(tcx, def_id.to_def_id()) {
+        return DenseBitSet::new_empty(0);
+    }
+    RUSTC_BODY_LIVENESS.get().expect("rustc's check of a body, kept first")(tcx, def_id)
 }
 
 fn live_symbols(tcx: TyCtxt<'_>, (): ()) -> Result<DeadCodeLivenessSummary, ErrorGuaranteed> {

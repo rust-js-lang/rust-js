@@ -109,7 +109,6 @@ macro_rules! widen {
             /// future. In JS it's the async function itself, `async (e) => { .. }`,
             /// whose promise React ignores, as it does what any handler returns.
             #[cfg_attr(rust_js, rust_js::link_name = "this")]
-            #[allow(unused_variables)]
             pub fn spawn(this: impl AsyncFn(&$name<T>) + 'static) -> Box<dyn Fn(&$name<T>)> {
                 unreachable!()
             }

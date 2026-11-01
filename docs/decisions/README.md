@@ -840,7 +840,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0437 A scope's drops on a panic are one `try { .. } finally { .. }`](0437-a-scopes-drops-are-one-finally.md) *(amended by 0693: its `if`s, loops and `return`s in it)*
 - [0438 An optional prop is given `Some(..)`, or left out](0438-an-optional-prop-is-given-some.md)
 - [0439 A component is named as JSX names it, and needs no `#[allow]`](0439-a-component-is-named-as-jsx-names-it.md)
-- [0440 A binding needs no `#[allow]`](0440-a-binding-needs-no-allow.md) *(amended: a descriptor map's fields and a default export's function are used; a plain clippy warns of them; amended by 0888: `rust-js clippy` lints with them used)*
+- [0440 A binding needs no `#[allow]`](0440-a-binding-needs-no-allow.md) *(amended: a descriptor map's fields and a default export's function are used; a plain clippy warns of them; amended by 0888: `rust-js clippy` lints with them used; amended: rustc's check of a body skips every binding's, a binding crate's too, rd330)*
 - [0441 A `()` given a function value is no argument](0441-a-unit-is-no-argument.md)
 - [0442 A web API that throws for what a program can't prevent is a `Result`](0442-a-web-api-that-may-throw-is-a-result.md)
 - [0443 A value a caller may leave out is an `Option`, in each direction](0443-a-value-a-caller-may-leave-out-is-an-option.md) *(amended by 0640: a `None` before a rest of none is no argument; 0648: a setter's `None` is written; 0775: a `()` as a `dyn` is `undefined` but of a list; amended: a timer's delay is optional; a function value's and the crate's own function's trailing `None` is no argument)*

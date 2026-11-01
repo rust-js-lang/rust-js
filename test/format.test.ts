@@ -154,7 +154,7 @@ test("formatting preserves generated JSX and maps handlers to the formatted sour
   const dir = fixture("format-map");
   const file = join(dir, "lib.rs");
   const source = `use react::{JSX, jsx};
-#[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")] #[allow(unused_variables)] fn record(n: i32) { unreachable!() }
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")] fn record(n: i32) { unreachable!() }
 pub fn view() -> JSX::Element {
     jsx! {
  <button

@@ -15,8 +15,12 @@
 //! A component's optional props are `None` unless they're given, as
 //! `Some(..)`, which Next.js takes as its default (ADR 0438).
 
-// A binding's parameters are its JS function's: its body never runs.
-#![allow(non_snake_case, unused_variables)]
+// A component is named as JSX names it.
+#![allow(non_snake_case)]
+// A binding's body never runs: rust-js skips its check of it, but a plain
+// rustc, a `cargo check` that runs no rust-js, sees an unread parameter
+// (ADR 0440, amended).
+#![cfg_attr(not(rust_js), allow(unused_variables))]
 
 pub mod app;
 pub mod cache;

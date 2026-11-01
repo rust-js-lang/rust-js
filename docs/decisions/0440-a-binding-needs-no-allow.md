@@ -1,7 +1,8 @@
 # 0440. A binding needs no `#[allow]`
 
 Status: Accepted; amended by [0888](0888-rust-js-clippy.md) (`rust-js
-clippy` lints with what JS reads used). Extends [0039](0039-generic-bindings.md) and
+clippy` lints with what JS reads used); amended (rd330): rustc's check of a
+body's variables skips a binding's, every binding's, a binding crate's too. Extends [0039](0039-generic-bindings.md) and
 [0439](0439-a-component-is-named-as-jsx-names-it.md).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)): a lint's warning
@@ -110,3 +111,44 @@ clippy`**, clippy's lints registered in rust-js's driver, with this
 liveness and the `jsx!` pass as the build has them. A plain `cargo
 clippy` still warns, as a plain `cargo check` does; the amendment above,
 which ruled out a second mechanism in the source, stands.
+
+## Amendment: rustc's check of a body skips a binding's, a binding crate's too (rd330)
+
+react-in-rust's `@rust-js-bindings/art`, a crate saying `bindings = true`
+(ADR 0414), wrote its bindings as the guide's, no `#[allow]`, and its
+build and `rust-js clippy` warned of 59 unused variables: its bindings
+are methods, `pub fn inject(&self, container: &JsObject) -> &'static
+Node`, and the `jsx!` pass allowed `unused_variables` only on a free
+function it found `#[rust_js::link_name]` on, before macros expand. So
+rust-js's own binding crates, the js crate, webapi, react, node and next,
+wrote `#![allow(unused_variables)]` or `#[allow(unused_variables)]` on
+each binding, 9,667 of them, webapi's generated, and so did a hundred of
+the tests' bindings: a second way, which the guide never taught.
+
+**rustc's check of a body's variables, its `check_liveness` query, skips
+a binding's** (`lower::liveness`, which the three drivers, `--rustc`,
+`rust-js clippy` and the compiler, provide, `bindings::is_binding` the one
+answer): a function's, a method's, a trait's, one a macro writes, React's
+`options!`, as rustc skips an intrinsic's and a `#[naked]` one's. The
+`jsx!` pass's allowance is gone, the rule's one owner now the query. Every
+`#[allow(unused_variables)]` on a binding is gone. A plain rustc, a
+`cargo check` or `cargo clippy` that runs no rust-js, sees each binding
+as a function that never reads its parameters, and an app's plain check
+of a binding crate it has by its path, `node` from its package, is held
+clean (`test/node-bindings.test.ts`): so a binding crate's root says so
+once, `#![cfg_attr(not(rust_js), allow(unused_variables))]`, which rust-js,
+whose `cfg(rust_js)` it is, never reads. `test/architecture.test.ts`'s "a
+binding is written with no allow of unused variables" holds both: that
+one form at each binding crate's root, none on a binding. A function that isn't a
+binding and reads none of its parameters, a gone timer's `clear_timeout(&self,
+_id: G)` or `SymbolFor::from_value(_value)`, which rust-js recognizes,
+names them as Rust does, `_id`.
+
+An app's own bindings, under a plain `cargo check`, still warn, as before.
+
+Held by `test/jsx.test.ts`'s "a binding crate's methods need no allow"
+(the crate built with `--rustc`, as Cargo builds a binding crate: a
+method's, a trait's and a module's bindings, another method's unread
+parameter still flagged) and "a binding needs no allow"; mutation
+`binding-unread-params-flagged` (`lower/liveness.ts`, moved from
+`jsx_syntax.ts`).

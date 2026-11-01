@@ -403,7 +403,6 @@ test("JSX keeps children that read what never changes, and a filtered child, in 
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, ReactNode, event, jsx, use_state};
 #[cfg_attr(rust_js, rust_js::link_name = "String")]
-#[allow(unused_variables)]
 fn cn(a: &str) -> String {
     unreachable!()
 }
@@ -847,7 +846,7 @@ pub fn Hint(HintProps { hint }: HintProps) -> JSX::Element {
 test("a key that does something is made before the children", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, jsx};
-#[cfg_attr(rust_js, rust_js::link_name = "globalThis.recordKey")] #[allow(unused_variables)] fn record(n: i32) -> i32 { unreachable!() }
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.recordKey")] fn record(n: i32) -> i32 { unreachable!() }
 pub struct Props { pub title: i32, pub children: i32 }
 pub(crate) fn Card(p: Props) -> JSX::Element { jsx! { <div>{p.title}{p.children}</div> } }
 pub fn App() -> JSX::Element {

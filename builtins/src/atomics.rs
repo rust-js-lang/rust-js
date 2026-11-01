@@ -4,8 +4,6 @@
 //! has them; ReScript has none. Each takes the array and an element's index,
 //! and gives the element as it was.
 
-// A binding's parameters are its JS function's: its body never runs.
-#![allow(unused_variables)]
 
 use super::{BigInt64Array, BigUint64Array, Int8Array, Int16Array, Int32Array, Promise, Uint8Array, Uint16Array, Uint32Array};
 

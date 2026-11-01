@@ -211,7 +211,6 @@ test("a payload is a panic's message or what JS threw", async () => {
 use std::panic::{catch_unwind, resume_unwind};
 
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.risky")]
-#[allow(unused_variables)]
 fn risky(n: f64) -> f64 {
     unreachable!()
 }

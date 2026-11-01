@@ -725,7 +725,7 @@ test("an adapter of a JS iterator is not made one again", async () => {
 // react.dev's Console filters what's logged.
 test("an array's iterator for an adapter alone is its values", async () => {
   const dir = fixture("values-adapter");
-  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.seen")] #[allow(unused_variables)] fn seen(x: u32) -> u32 { unreachable!() }
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.seen")] fn seen(x: u32) -> u32 { unreachable!() }
 pub fn joined(prev: &[u32], log: &[u32]) -> Vec<u32> {
     let new_logs = log.iter().filter(|x| seen(**x) != 3).map(|x| seen(x * 2));
     prev.iter().cloned().chain(new_logs).collect()

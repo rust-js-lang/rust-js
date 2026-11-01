@@ -321,7 +321,6 @@ thread_local! {
 /// JS's, \`globalThis.setH\`, which keeps what it's given.
 #[cfg_attr(rust_js, rust_js::link_name = "setH")]
 #[cfg_attr(rust_js, rust_js::nullable(dispatcher))]
-#[allow(unused_variables)]
 fn set_h(dispatcher: Option<&Dispatcher>) {
     unreachable!()
 }
