@@ -51,38 +51,77 @@ pub(super) struct Given<'c> {
     pub(super) null_for_none: bool,
 }
 
-/// Arguments given to JS: a trailing `undefined` is one it's given, which
-/// no pass leaves out, as what it calls may count its arguments,
-/// `Math.max(1, undefined)` (ADR 0330).
-pub(super) fn given_to_js(args: &mut [Expr]) {
-    for arg in args.iter_mut().rev() {
-        if !matches!(arg.kind, js::ExprKind::Undefined) {
-            break;
-        }
-        arg.kind = js::ExprKind::GivenUndefined;
-    }
+/// Arguments given to JS: a trailing `undefined` is one it's given,
+/// `GivenUndefined`, which no pass leaves out, as what it calls may count
+/// its arguments, `Math.max(1, undefined)` (ADR 0330).
+pub(super) fn given_to_js(args: &mut Vec<Expr>) {
+    given_to_js_but(args, |_, _| false);
 }
 
-/// A function value's call's arguments, each of type `tys`: a trailing `()`,
-/// which is no value, is no argument, `resolve()` of `resolve(())`, as JS
-/// leaves one out (ADR 0441); and a trailing `None` of an `Option`, `cb()` of
-/// `cb(None)`, as a person leaves an optional one out (ADR 0443, amended,
-/// ADR 0262's second case), but of a pointer that may be one of `bindings`,
-/// whose parameter there isn't optional, which is given it, `max(1,
-/// undefined)` of `Math.max`'s (ADR 0330). Only `arguments.length` tells.
-/// One that does something to make is kept, so it's still made.
-pub(super) fn left_out(tcx: ty::TyCtxt<'_>, args: &mut Vec<Expr>, tys: &[Ty<'_>], bindings: &[DefId]) {
-    let optional = |i: usize| {
-        matches!(tys[i].kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option))
-            && bindings.iter().all(|&f| super::bindings::is_optional_param(tcx, f, i))
-    };
-    while args.len() <= tys.len()
-        && let Some(last) = args.last()
-        && let i = args.len() - 1
-        && ((tys[i].is_unit() && !last.has_effects()) || (optional(i) && matches!(last.kind, js::ExprKind::Undefined)))
-    {
-        args.pop();
+/// Arguments given to JS, as `given_to_js` gives them, but of those last
+/// each `absent` says is no argument, a `None` of a parameter TypeScript's
+/// `x?` leaves out or a `()` (`absent`), `Undefined` marked so,
+/// `Known::Absent`, which the one rule, `undefined_arguments::left_out`,
+/// leaves out, `cb()` of `cb(None)` (ADR 0313, amended).
+pub(super) fn given_to_js_but(args: &mut Vec<Expr>, absent: impl Fn(usize, &Expr) -> bool) {
+    marked_absent(args, absent, true);
+}
+
+/// The crate's own call's arguments, of a function or a closure of its:
+/// of those last, each `absent` says is no argument, `own()` of
+/// `own(None)`, marked `Known::Absent`, which prepare leaves out, alone too
+/// (ADRs 0443, 0441); any other `undefined` it leaves out only after
+/// another argument (ADR 0313).
+pub(super) fn own_absent(args: &mut Vec<Expr>, absent: impl Fn(usize, &Expr) -> bool) {
+    marked_absent(args, absent, false);
+}
+
+/// Whether `e` is `undefined`, given to JS or not.
+pub(super) fn is_undefined(e: &Expr) -> bool {
+    matches!(e.kind, js::ExprKind::Undefined | js::ExprKind::GivenUndefined)
+}
+
+fn marked_absent(args: &mut Vec<Expr>, absent: impl Fn(usize, &Expr) -> bool, to_js: bool) {
+    let mut last = true;
+    for (i, arg) in args.iter_mut().enumerate().rev() {
+        last = last && absent(i, arg);
+        if last {
+            // A `()` that does nothing to make is `undefined`, a variable's too.
+            *arg = Expr {
+                kind: js::ExprKind::Undefined,
+                span: arg.span,
+                facts: arg.facts.with(js::Known::Absent),
+            };
+            continue;
+        }
+        if !is_undefined(arg) {
+            break;
+        }
+        if to_js {
+            arg.kind = js::ExprKind::GivenUndefined;
+        }
     }
+    // Left out here too, as prepare leaves them out, so what reads the call
+    // before then sees the arguments its JS has.
+    js::undefined_arguments::left_out(args);
+}
+
+/// Whether argument `i`, `arg`, of a call whose parameters are `tys`, is
+/// no argument where it's last: a `()`, which is no value, as JS leaves one
+/// out, `resolve()` of `resolve(())` (ADR 0441), one that does nothing to
+/// make; and a `None` of an `Option`, `cb()` of `cb(None)`, as a person
+/// leaves an optional one out (ADR 0443, amended, ADR 0262's second case),
+/// but of a pointer that may be one of `bindings`, whose parameter there
+/// isn't optional, which is given it, `max(1, undefined)` of `Math.max`'s
+/// (ADR 0330). Only `arguments.length` tells.
+pub(super) fn absent(tcx: ty::TyCtxt<'_>, tys: &[Ty<'_>], bindings: &[DefId], i: usize, arg: &Expr) -> bool {
+    let Some(ty) = tys.get(i) else {
+        return false;
+    };
+    (ty.is_unit() && !arg.has_effects())
+        || matches!(arg.kind, js::ExprKind::Undefined)
+            && matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option))
+            && bindings.iter().all(|&f| super::bindings::is_optional_param(tcx, f, i))
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {

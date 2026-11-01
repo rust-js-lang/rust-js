@@ -255,4 +255,30 @@ export const mutations: Mutation[] = [
       "and_then of a nullable binding",
     ],
   },
+  {
+    name: "unit-argument-given",
+    breaks:
+      "a `()` given a function value JS may have made is an argument, `resolve(undefined)` of `resolve(())`",
+    file: "src/lower/calls.rs",
+    find: "    (ty.is_unit() && !arg.has_effects())\n",
+    replace: "    (false && !arg.has_effects())\n",
+    tests: ["test/corpus.test.ts", "-t", "^unit_arguments.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "given-absent-kept",
+    breaks: "a trailing `None` given a function value JS may have made is an argument, `cb(undefined)` of `cb(None)` (ADR 0443, amended)",
+    file: "src/lower/calls.rs",
+    find: "        last = last && absent(i, arg);\n",
+    replace: "        last = false && absent(i, arg);\n",
+    tests: ["test/js-functions.test.ts", "-t", "a trailing None given a function value is no argument"],
+  },
+  {
+    name: "given-absent-of-any",
+    breaks: "a trailing `undefined` given what may be JS's is left out wherever it's an `Option`'s, `Math.max(1)` of a pointer of `Math.max`, `1` where it's `NaN` (ADR 0330)",
+    file: "src/lower/calls.rs",
+    find: "            && bindings.iter().all(|&f| super::bindings::is_optional_param(tcx, f, i))\n",
+    replace: "\n",
+    tests: ["test/runtime-package.test.ts", "-t", "an undefined given to JS is an argument"],
+  },
 ];

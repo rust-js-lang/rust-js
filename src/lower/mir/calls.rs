@@ -150,7 +150,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .filter(|(i, _)| given(i))
                 .map(|(_, t)| t)
                 .collect();
-            crate::lower::calls::left_out(self.tcx, &mut exprs, &tys, &[]);
             // Rest arguments as a value, its last, spread (ADR 0851): what
             // takes them is JS's rest parameter, a closure's or a binding's.
             if tys
@@ -166,8 +165,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             arg_tys[0].peel_refs().kind(),
             ty::Closure(..) | ty::CoroutineClosure(..)
         );
-        if !own {
-            crate::lower::calls::given_to_js(&mut exprs);
+        let tys: Vec<Ty<'tcx>> = match arg_tys[1].kind() {
+            ty::Tuple(tys) => (tys.iter().enumerate())
+                .filter(|(i, _)| given(i))
+                .map(|(_, t)| t)
+                .collect(),
+            _ => Vec::new(),
+        };
+        let absent = |i, arg: &Expr| crate::lower::calls::absent(self.tcx, &tys, &[], i, arg);
+        match own {
+            true => crate::lower::calls::own_absent(&mut exprs, absent),
+            false => crate::lower::calls::given_to_js_but(&mut exprs, absent),
         }
         // And its options, where the crate's writers take them (ADR 0137).
         if writes.is_some() {
@@ -492,7 +500,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // after it, a dictionary, and each argument is its parameter's.
         let declared = self.tcx.fn_sig(def_id).instantiate_identity().skip_binder();
         if evidence.is_empty() && exprs.len() == arg_tys.len() && declared.inputs().len() == arg_tys.len() {
-            crate::lower::calls::left_out(self.tcx, &mut exprs, declared.inputs(), &[]);
+            crate::lower::calls::own_absent(&mut exprs, |i, arg| {
+                crate::lower::calls::absent(self.tcx, declared.inputs(), &[], i, arg)
+            });
         }
         exprs.extend(evidence);
         // The copy of it, where JS calls it too, that takes what this call

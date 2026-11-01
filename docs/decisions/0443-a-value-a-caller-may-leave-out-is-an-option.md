@@ -1,6 +1,6 @@
 # 0443. A value a caller may leave out is an `Option`, in each direction
 
-Status: Accepted; amended by [0775](0775-a-unit-given-to-js-is-undefined.md),
+Status: Accepted; amended (2026-11-01) by [0313](0313-console-forms.md)'s amendment: prepare leaves out what lowering marks absent, the one rule, and `calls::left_out` is gone; amended by [0775](0775-a-unit-given-to-js-is-undefined.md),
 whose `()` as a `dyn` is `undefined` but of a list, a hook's dependencies',
 `[]` (point 6); and by [0593](0593-a-lazy-argument-is-its-value.md),
 whose `use_state` is one function, and [0594](0594-an-overload-an-options-dictionary-holds-is-it.md),
@@ -270,3 +270,15 @@ Case: third ([0262](0262-when-rust-and-js-disagree.md)), results change:
 Rust's. Held by the corpus's `option_arguments`, against native Rust, and
 mutations `passed-on-closure-of-a-left-out-none` and
 `passed-on-function-of-a-left-out-none` (`passed_on.ts`).
+
+## Amended (2026-11-01): prepare leaves it out
+
+A trailing `None` was left out by lowering, `calls::left_out`, at a
+function value's and the crate's own function's call, and by
+`binding_calls`' loops at a binding's, where prepare left out the rest.
+Now lowering leaves none out: it marks a trailing `None` of a parameter
+that may be left out `Known::Absent`, and what JS is given otherwise
+`GivenUndefined` (`calls::given_to_js_but`, `calls::own_absent`,
+`calls::absent`), and prepare's one rule leaves out each trailing
+`Undefined` after another argument and each absent one alone (ADR 0313,
+amended). What prints is as before.

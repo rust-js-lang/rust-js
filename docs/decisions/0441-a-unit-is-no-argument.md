@@ -1,6 +1,6 @@
 # 0441. A `()` given a function value is no argument
 
-Status: Accepted. Extends [0313](0313-console-forms.md)
+Status: Accepted; amended (2026-11-01) by [0313](0313-console-forms.md)'s amendment: lowering marks a `()` absent, `calls::absent`, and prepare leaves it out. Extends [0313](0313-console-forms.md)
 and [0330](0330-undefined-given-to-js.md).
 
 Case: B ([0262](0262-when-rust-and-js-disagree.md)): only a function

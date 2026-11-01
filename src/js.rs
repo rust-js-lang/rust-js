@@ -13,6 +13,7 @@ mod expr_walk;
 mod make;
 pub mod result;
 mod stmt_walk;
+pub mod undefined_arguments;
 pub mod undefined_keys;
 mod walk;
 mod writes;
@@ -827,6 +828,12 @@ pub enum Known {
     /// `[Symbol.iterator]` makes a held `$Steps` close as it's done, before
     /// the statement that holds it ends (ADR 0570, amended).
     Iterator,
+    /// An `undefined` argument that's no argument where it's last, alone
+    /// too: a `None` of a parameter that may be left out, or a `()` (ADRs
+    /// 0443, 0441), as lowering says it of the call's parameter types
+    /// (`calls::given_to_js_but`), which prepare's one rule leaves out
+    /// (ADR 0313, amended).
+    Absent,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

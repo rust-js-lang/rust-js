@@ -2,7 +2,7 @@
 //! function, method, property or operator it names (ADRs 0019, 0020).
 
 use super::bindings::{JsForm, is_binding, is_method, is_optional_param, is_rest_value, is_variadic, js_form};
-use super::calls::{given_to_js, spread_rest};
+use super::calls::{given_to_js_but, spread_rest};
 use super::recognition::StdItem;
 use super::{FnCx, R};
 use crate::js;
@@ -96,6 +96,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // name, options)`; and where each of its parameters is bound, a
         // trailing `None` of an optional one left out, as its call leaves it
         // (ADRs 0907, 0443, amended).
+        let mut bound = None;
         if super::recognition::is_function_bind(self.tcx, def_id)
             && let Some(&ty::FnDef(f, _)) = generic_args.types().next().map(|ty| ty.kind())
             && is_binding(self.tcx, f)
@@ -114,14 +115,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let params = self.tcx.fn_sig(f).skip_binder().skip_binder().inputs().len();
             if first + args.len() - 1 == params {
-                while args.len() > 1
-                    && args
-                        .last()
-                        .is_some_and(|last| matches!(last.kind, js::ExprKind::Undefined))
-                    && is_optional_param(self.tcx, f, first + args.len() - 2)
-                {
-                    args.pop();
-                }
+                bound = Some((f, first));
             }
         }
         // What skips what's falsy is given `test && value` for `test ?
@@ -147,14 +141,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // 0640). A rest's argument is no optional parameter's, nor a spread,
         // so a `None` before one stays.
         let offset = usize::from(this.is_some());
-        while args
-            .last()
-            .is_some_and(|last| matches!(last.kind, js::ExprKind::Undefined))
-            && is_optional_param(self.tcx, def_id, args.len() - 1 + offset)
-        {
-            args.pop();
-        }
-        given_to_js(&mut args);
+        let optional = |i: usize, arg: &Expr| {
+            matches!(arg.kind, js::ExprKind::Undefined)
+                && (is_optional_param(self.tcx, def_id, i + offset)
+                    || bound.is_some_and(|(f, first)| i > 0 && is_optional_param(self.tcx, f, first + i - 1)))
+        };
+        given_to_js_but(&mut args, optional);
         // A keyed read of a value that may look like `None`, an `Option`
         // itself: `Some(None)` of a key whose value is `undefined` or
         // `null`, apart from `None` of a key it lacks, as JS's read alone
@@ -268,13 +260,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Err(self.unsupported(span, what));
                 };
                 args.remove(0);
-                while args
-                    .last()
-                    .is_some_and(|last| matches!(last.kind, js::ExprKind::Undefined | js::ExprKind::GivenUndefined))
-                    && is_optional_param(self.tcx, f, args.len() - 1)
-                {
-                    args.pop();
-                }
+                given_to_js_but(&mut args, |i, arg| {
+                    super::calls::is_undefined(arg) && is_optional_param(self.tcx, f, i)
+                });
                 match member {
                     Some(name) => Expr::call(Expr::member(this, name).or_at(fun_span), args),
                     None => Expr::new_(this, args),

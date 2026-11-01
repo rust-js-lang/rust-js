@@ -288,16 +288,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_compound_assign.rs$"],
   },
   {
-    name: "unit-argument-given",
-    breaks:
-      "a `()` given a function value is an argument, `resolve(undefined)` of `resolve(())`",
-    file: "src/lower/mir/calls.rs",
-    find: "            crate::lower::calls::left_out(self.tcx, &mut exprs, &tys, &[]);\n",
-    replace: "            let _ = tys;\n",
-    tests: ["test/corpus.test.ts", "-t", "^unit_arguments.rs$"],
-    snapshots: true,
-  },
-  {
     name: "unit-given-binding-array",
     breaks:
       "a `()` given a binding as any value is its tuple's `[]`, never `===` anything: `x === []` of `js::strict_equals(x, ())` (ADR 0775)",
@@ -997,40 +987,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-binding-paths.test.ts"],
   },
   {
-    name: "own-call-none-given",
-    breaks:
-      "the crate's own function's trailing `None` is given, `shown(undefined)`, where a binding's and a function value's leave it out (ADR 0443)",
-    file: "src/lower/mir/calls.rs",
-    find: "        if evidence.is_empty() && exprs.len() == arg_tys.len() && declared.inputs().len() == arg_tys.len() {\n",
-    replace: "        if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^option_arguments.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "own-call-none-before-dictionary-left-out",
-    breaks:
-      "a trailing `None` before a dictionary is left out too, so the dictionary is given as the `Option`, `labelled(u32Label)`, a wrong answer",
-    file: "src/lower/mir/calls.rs",
-    find: "        if evidence.is_empty() && exprs.len() == arg_tys.len() && declared.inputs().len() == arg_tys.len() {\n",
-    replace:
-      "        if exprs.len() == arg_tys.len() && declared.inputs().len() == arg_tys.len() {\n",
-    tests: ["test/corpus.test.ts", "-t", "^option_arguments.rs$"],
-  },
-  {
-    name: "own-call-type-parameter-left-out",
-    breaks:
-      "a `None` given a type parameter's value, React's `createCursor(undefined)`, is left out, `createCursor()`, where TypeScript's parameter isn't optional",
-    file: "src/lower/mir/calls.rs",
-    find: "            crate::lower::calls::left_out(self.tcx, &mut exprs, declared.inputs(), &[]);\n",
-    replace:
-      "            crate::lower::calls::left_out(self.tcx, &mut exprs, arg_tys, &[]);\n",
-    tests: [
-      "test/lowering-module-variables.test.ts",
-      "-t",
-      "a nullable thread-local a generic constructor makes",
-    ],
-  },
-  {
     name: "asked-object-any-kind",
     breaks:
       "`js::is_object` of a number's binding, always false, compiles, not refused",
@@ -1097,5 +1053,31 @@ export const mutations: Mutation[] = [
     find: "        if let Some((_, Some((local, p)))) = namespace_call\n",
     replace: "        if let Some((false, Some((local, p)))) = namespace_call\n",
     tests: ["test/namespaces.test.ts", "-t", "by its name is its library"],
+  },
+  {
+    name: "fn-value-none-given",
+    breaks: "a trailing `None` given a `dyn Fn` is an argument, `cb(undefined)`, the function value's parameters unread",
+    file: "src/lower/mir/calls.rs",
+    find: "            false => crate::lower::calls::given_to_js_but(&mut exprs, absent),\n",
+    replace: "            false => crate::lower::calls::given_to_js(&mut exprs),\n",
+    tests: ["test/js-functions.test.ts", "-t", "a trailing None given a function value is no argument"],
+  },
+  {
+    name: "own-call-none-given",
+    breaks: "the crate's own function's trailing `None` is given, `shown(undefined)`, where a binding's and a function value's leave it out (ADR 0443)",
+    file: "src/lower/mir/calls.rs",
+    find: "            crate::lower::calls::own_absent(&mut exprs, |i, arg| {\n",
+    replace: "            crate::lower::calls::own_absent(&mut exprs, |i, arg| false && {\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_arguments.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "own-closure-none-given",
+    breaks: "a closure's own trailing `None` is given, `cb(undefined)` of `cb(None)`, alone",
+    file: "src/lower/mir/calls.rs",
+    find: "            true => crate::lower::calls::own_absent(&mut exprs, absent),\n",
+    replace: "            true => {\n                let _ = absent;\n            }\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_arguments.rs$"],
+    snapshots: true,
   },
 ];

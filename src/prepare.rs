@@ -1406,13 +1406,8 @@ fn expr(e: &mut Expr) {
         ExprKind::Call(f, args) | ExprKind::New(f, args) => {
             expr(f);
             args.iter_mut().for_each(expr);
-            // A trailing `undefined` after another argument, a `None` say, is
-            // no argument, `f(x)`, as a person leaves an optional one out:
-            // only `arguments.length` tells (ADR 0313). One given alone is a
-            // value, `setProgram(undefined)`.
-            while args.len() > 1 && args.last().is_some_and(|a| matches!(a.kind, ExprKind::Undefined)) {
-                args.pop();
-            }
+            // Its last `undefined`s that are no argument (ADR 0313, amended).
+            js::undefined_arguments::left_out(args);
             if let Some(object) = objects::entries_written_out(e) {
                 *e = object;
             }

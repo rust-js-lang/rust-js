@@ -333,22 +333,6 @@ export const mutations: Mutation[] = [
     tests: ["test/compiler.test.ts", "-t", "async code becomes"],
   },
   {
-    name: "trailing-undefined-kept",
-    breaks: "`greet(\"Ada\", undefined)`, not `greet(\"Ada\")`",
-    file: "src/prepare.rs",
-    find: "            while args.len() > 1 && args.last()",
-    replace: "            while false && args.len() > 1 && args.last()",
-    tests: ["test/lowering-loops.test.ts", "-t", "Console's loops"],
-  },
-  {
-    name: "trailing-undefined-alone",
-    breaks: "a lone `undefined` argument, a value given, is left out: `setProgram()`",
-    file: "src/prepare.rs",
-    find: "            while args.len() > 1 && args.last()",
-    replace: "            while !args.is_empty() && args.last()",
-    tests: ["test/lowering-loops.test.ts", "-t", "Console's loops"],
-  },
-  {
     name: "null-or-falsy-kept",
     breaks: "`escaped == null || !escaped`, not `!escaped`",
     file: "src/prepare.rs",

@@ -33,8 +33,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a trailing `None` given a held class's static or constructor is an argument, `new PossiblyWeakMap(undefined)` (ADR 0443)",
     file: "src/lower/binding_calls.rs",
-    find: "                    && is_optional_param(self.tcx, f, args.len() - 1)\n",
-    replace: "                    && false\n",
+    find: "                    super::calls::is_undefined(arg) && is_optional_param(self.tcx, f, i)\n",
+    replace: "                    super::calls::is_undefined(arg) && is_optional_param(self.tcx, f, i) && false\n",
     tests: [
       "test/lowering-is-function.test.ts",
       "-t",
@@ -343,8 +343,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`Math.max(1, None::<f64>)`, of a parameter of any value, is `Math.max(1)`, `1` where it's `NaN`",
     file: "src/lower/binding_calls.rs",
-    find: "        given_to_js(&mut args);\n",
-    replace: "",
+    find: "        given_to_js_but(&mut args, optional);\n",
+    replace: "        let _ = optional;\n",
     tests: ["test/runtime-package.test.ts", "-t", "undefined given to JS"],
   },
   {
@@ -411,8 +411,8 @@ export const mutations: Mutation[] = [
     breaks:
       'a binding\'s trailing `None` of an optional parameter is written, `addRule("p", undefined, undefined)`',
     file: "src/lower/binding_calls.rs",
-    find: "            && is_optional_param(self.tcx, def_id, args.len() - 1 + offset)\n",
-    replace: "            && false\n",
+    find: "                && (is_optional_param(self.tcx, def_id, i + offset)\n",
+    replace: "                && (false\n",
     tests: ["test/bindings.test.ts", "-t", "trailing None is no argument"],
   },
   {
@@ -455,9 +455,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `None` before a rest of none, `console::time_log(None, ())`, is `console.timeLog(undefined)`",
     file: "src/lower/binding_calls.rs",
-    find: "            .is_some_and(|last| matches!(last.kind, js::ExprKind::Undefined))\n            && is_optional_param(",
-    replace:
-      "            .is_some_and(|last| matches!(last.kind, js::ExprKind::Undefined))\n            && !is_variadic(self.tcx, def_id)\n            && is_optional_param(",
+    find: "                && (is_optional_param(self.tcx, def_id, i + offset)\n",
+    replace: "                && (!is_variadic(self.tcx, def_id) && is_optional_param(self.tcx, def_id, i + offset)\n",
     tests: [
       "test/webapi-bindings.test.ts",
       "-t",
@@ -688,8 +687,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a trailing `None` bound where each parameter is bound stays, `performance.measure.bind(performance, name, options, undefined)`, not as its call leaves it out",
     file: "src/lower/binding_calls.rs",
-    find: "                    && is_optional_param(self.tcx, f, first + args.len() - 2)\n",
-    replace: "                    && false\n",
+    find: "                    || bound.is_some_and(|(f, first)| i > 0 && is_optional_param(self.tcx, f, first + i - 1)))\n",
+    replace: "                    || bound.is_some_and(|_: (DefId, usize)| false))\n",
     tests: [
       "test/js-object.test.ts",
       "-t",

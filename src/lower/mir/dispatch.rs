@@ -44,7 +44,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|&(f, _)| f)
             .filter(|&f| bindings::is_binding(self.tcx, f))
             .collect();
-        crate::lower::calls::left_out(self.tcx, &mut exprs, sig.skip_binder().inputs(), &bindings);
         if rest {
             crate::lower::calls::spread_rest(&mut exprs);
         }
@@ -54,8 +53,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // or come from JS, is given what JS is (ADR 0330, amended).
         // A with_this function, a `Box<dyn Fn>`, is never one, so it's
         // called through what holds it, `t.g()`, as JS calls it (#404).
-        if !pointers.rust_only(self.tcx, fn_ptr) {
-            crate::lower::calls::given_to_js(&mut exprs);
+        let inputs = sig.skip_binder().inputs();
+        let absent = |i, arg: &Expr| crate::lower::calls::absent(self.tcx, inputs, &bindings, i, arg);
+        match pointers.rust_only(self.tcx, fn_ptr) {
+            true => crate::lower::calls::own_absent(&mut exprs, absent),
+            false => crate::lower::calls::given_to_js_but(&mut exprs, absent),
         }
         // One that may be a binding's JS function, called through what holds
         // it, is called with no `this`, which a host's own may refuse (#427).

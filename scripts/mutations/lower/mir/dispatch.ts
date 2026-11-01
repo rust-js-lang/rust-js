@@ -18,12 +18,11 @@ export const mutations: Mutation[] = [
   {
     name: "pointer-arguments-given",
     breaks:
-      "a trailing `()` or `None` given a function pointer is an argument, `finish(undefined)` of `finish(())` (ADRs 0441, 0443)",
+      "a trailing `()` or `None` given a function pointer JS may have made is an argument, `finish(undefined)` of `finish(())` (ADRs 0441, 0443)",
     file: "src/lower/mir/dispatch.rs",
-    find: "        crate::lower::calls::left_out(self.tcx, &mut exprs, sig.skip_binder().inputs(), &bindings);\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^option_arguments.rs$"],
-    snapshots: true,
+    find: "            false => crate::lower::calls::given_to_js_but(&mut exprs, absent),\n",
+    replace: "            false => crate::lower::calls::given_to_js(&mut exprs),\n",
+    tests: ["test/js-functions.test.ts", "-t", "a trailing None given a function value is no argument"],
   },
   {
     name: "as-mut-through-a-handle-refused",
