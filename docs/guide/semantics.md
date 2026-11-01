@@ -1190,4 +1190,10 @@ React and JSX are [their own pages](README.md#react).
     `Object.keys(o)` or `hasOwnProperty` tells them apart, which React's
     readers don't use (ADR 0262, the user's decision, 2026-11-01, rd391;
     [ADR 0280](../decisions/0280-undefined-fields-left-out.md)).
+43. A closure a function returns is an anonymous function, `return
+    function (event) { .. }`, where React's react-art writes `return
+    function handleEvent(event) { .. }`: calling it does the same; only its
+    `name`, `''` for `'handleEvent'`, tells them apart, in a stack trace
+    or DevTools' listener list (ADR 0262, the user's decision, 2026-11-02,
+    rd335).
 

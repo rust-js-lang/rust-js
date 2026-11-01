@@ -290,6 +290,15 @@ react.dev's TopNav passes the same closure instead.
   spread over another object's key tell them apart, which React's
   readers of these objects don't do. Listed in the guide's differences
   (`semantics.md`, 42).
+- **A returned closure is an anonymous function where upstream names
+  it**, the second case's, which the user decided (2026-11-02, rd335):
+  react-art's createEventHandler is `return function handleEvent(event) {
+  .. }`, whose port's `function::with_this(move |_, (event,)| { .. })`,
+  returned, prints `return function (event) { .. }`. The function's
+  `name` is `''` where upstream's is `'handleEvent'`. Only a stack trace,
+  a DevTools listener list or a read of `.name` tells them apart, which
+  React's code doesn't do; calling it does the same. Listed in the guide's
+  differences (`semantics.md`, 43).
 
 ## Amendment: the stack's depth
 
