@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1438
-lines	141698
+files	1439
+lines	141817
 temporaries	1	0.1
 labeled blocks	14	1
 while (true)	123	8.7
-$iter	1172	82.7
+$iter	1172	82.6
 Iterator.from	116	8.2
 return;	178	12.6
-renamed x$1	8684	612.9
+renamed x$1	8688	612.6
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1976	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	206	0	0	0	6	0	0	35
@@ -352,7 +352,7 @@ test/corpus/dyn_struct_tails.js	59	0	0	0	0	0	0	0
 test/corpus/dyn_tail_in_a_ref_cell.js	305	0	0	0	0	0	0	21
 test/corpus/dyn_to_string.js	37	0	0	0	0	0	0	0
 test/corpus/early_bound_method_lifetime.js	28	0	0	0	0	0	0	0
-test/corpus/else_break_ends_loop.js	125	0	0	0	0	0	0	3
+test/corpus/else_break_ends_loop.js	123	0	0	0	0	0	0	3
 test/corpus/emptied_branch_nested.js	66	0	0	0	0	0	0	0
 test/corpus/empty_pattern.js	26	0	0	0	0	0	0	0
 test/corpus/encode_utf8_written.js	24	0	0	0	0	0	0	0
@@ -421,7 +421,7 @@ test/corpus/flatten_from_both_ends.js	213	0	0	0	8	0	4	35
 test/corpus/flatten_from_its_back.js	246	0	0	0	10	0	2	19
 test/corpus/flatten_of_iterators_from_back.js	160	0	0	0	9	0	0	4
 test/corpus/flattened_rows_apart.js	26	0	0	0	1	0	0	2
-test/corpus/flattened_state_cell.js	110	0	0	0	0	0	0	0
+test/corpus/flattened_state_cell.js	108	0	0	0	0	0	0	0
 test/corpus/flattened_state_lent.js	47	0	0	0	0	0	0	0
 test/corpus/float_clamp_nan.js	15	0	0	0	0	0	0	0
 test/corpus/float_methods_more.js	64	0	0	0	0	0	0	10
@@ -551,6 +551,7 @@ test/corpus/held_adapters_by_ref.js	86	0	0	0	4	0	0	4
 test/corpus/held_adapters_of_by_ref.js	98	0	0	0	0	1	0	10
 test/corpus/held_adapters_stepped_to_their_end.js	223	0	0	1	1	0	0	0
 test/corpus/held_back_folds_by_try_rfold.js	225	0	0	0	0	0	0	2
+test/corpus/held_borrow_of_own_cell.js	128	0	0	0	0	0	0	6
 test/corpus/held_cycle.js	265	0	0	0	5	0	1	5
 test/corpus/held_enumerate.js	272	0	0	0	4	0	0	20
 test/corpus/held_filter_map_drops.js	59	0	0	0	2	0	0	0
@@ -733,7 +734,7 @@ test/corpus/match_call_once.js	71	0	0	0	0	0	0	2
 test/corpus/match_index.js	73	0	0	0	0	0	0	0
 test/corpus/match_last_arm_else.js	87	0	0	0	0	0	0	0
 test/corpus/match_of_strings_to_bools_is_a_switch.js	47	0	0	0	0	0	0	2
-test/corpus/match_of_what_a_match_made.js	196	0	0	0	0	0	2	7
+test/corpus/match_of_what_a_match_made.js	193	0	0	0	0	0	2	5
 test/corpus/match_trait_const.js	40	0	0	0	0	0	0	0
 test/corpus/matches_by_predicate.js	40	0	0	0	0	2	0	0
 test/corpus/math_values.js	154	0	0	0	0	0	0	2
@@ -843,7 +844,7 @@ test/corpus/or_guard_written_first.js	48	0	0	0	0	0	0	0
 test/corpus/or_pattern_constant_alternative.js	34	0	0	0	0	0	0	3
 test/corpus/or_pattern_guard.js	32	0	0	0	0	0	0	4
 test/corpus/or_pattern_moved_part.js	70	0	1	0	0	0	0	6
-test/corpus/or_pattern_one_place.js	132	0	0	0	0	0	0	3
+test/corpus/or_pattern_one_place.js	130	0	0	0	0	0	0	3
 test/corpus/or_pattern_part_moves.js	201	0	2	0	0	0	0	18
 test/corpus/or_pattern_ref_mut.js	45	0	0	0	0	0	1	0
 test/corpus/ordered_searches.js	27	0	0	0	0	0	0	2

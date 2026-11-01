@@ -238,6 +238,12 @@ CurrentUpdatePriority */ = priority`. This needs an `=` that assigns. A
 method whose JS is a comparison, `name /* c */` then `.eq(other)`, keeps
 the comment after the name, `name /* c */ === other`.
 
+The value's first JS is found at or past the column after the `(`, so a
+value made by a call the JS has none of counts too, ReactDOMFlushSync's
+`.set_p(i32::from(DISCRETE_EVENT_PRIORITY))` as `.p /* .. */ =
+DiscreteEventPriority` (amended again, 2026-11-02, mutation
+`setter-comment-of-a-converted-value-lost`).
+
 Held by `lowering-comments-inside.test.ts`'s "a block comment before a
 setter's link is before its `=`", run, and the mutations
 `setter-comment-after-equals` and `setter-comment-before-any-equals`

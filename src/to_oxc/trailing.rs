@@ -141,9 +141,15 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
         // sets: after that place, before its `=`, found back from the JS of
         // the value it's given, `internals.p /* CurrentUpdatePriority */ =
         // priority`, as upstream has it.
+        // Its value's first JS, at the link's `(` or past it, inside a call
+        // the JS has none of, `i32::from(DISCRETE_EVENT_PRIORITY)`'s.
         if let Some((next, value)) = comment.before_link
+            && let Some(first) = (map.get_tokens())
+                .filter(|t| t.get_src_line() == next && t.get_src_col() >= value)
+                .map(|t| t.get_src_col())
+                .min()
             && let Some(found) = (map.get_tokens())
-                .filter(|t| t.get_src_line() == next && t.get_src_col() == value)
+                .filter(|t| t.get_src_line() == next && t.get_src_col() == first)
                 .find_map(|t| {
                     let text = generated_lines.get(t.get_dst_line() as usize)?;
                     let place = text[..in_bytes(text, t.get_dst_col())].trim_end().strip_suffix('=')?;

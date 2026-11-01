@@ -102,4 +102,13 @@ export const mutations: Mutation[] = [
     replace: "    let opens = [\"if \", \"} else if \"];\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "condition and its"],
   },
+  {
+    name: "setter-comment-of-a-converted-value-lost",
+    breaks:
+      "a block comment before a setter's link whose value a call the JS has none of makes, `.set_p(i32::from(DISCRETE_EVENT_PRIORITY))`, is lost, ReactDOMFlushSync's `try`'s",
+    file: "src/to_oxc/trailing.rs",
+    find: "                .filter(|t| t.get_src_line() == next && t.get_src_col() >= value)\n",
+    replace: "                .filter(|t| t.get_src_line() == next && t.get_src_col() == value)\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "setter"],
+  },
 ];

@@ -177,6 +177,13 @@ pub fn set(internals: &Internals, priority: f64) {
         .set_p(priority);
 }
 
+const DISCRETE: u8 = 2;
+
+pub fn discrete(internals: &Internals) {
+    internals /* CurrentUpdatePriority */
+        .set_p(f64::from(DISCRETE));
+}
+
 pub fn same(name: &str, other: &str) -> bool {
     name /* the tag's */
         .eq(other)
@@ -188,6 +195,9 @@ pub fn dispatch(internals: &Internals) {
 }
 `);
   expect(js).toContain("  internals.p /* CurrentUpdatePriority */ = priority;\n");
+  // Of a value made by a call the JS has none of, `f64::from(DISCRETE)`'s
+  // `DISCRETE`, as ReactDOMFlushSync's `i32::from(DISCRETE_EVENT_PRIORITY)`.
+  expect(js).toContain("  internals.p /* CurrentUpdatePriority */ = DISCRETE;\n");
   expect(js).toContain("  internals.d /* CurrentDispatcher */ = [1, 2,");
   const internals: { p?: number; d?: number[] } = {};
   (lib.set as (internals: unknown, priority: number) => void)(internals, 2);
