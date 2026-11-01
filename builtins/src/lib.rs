@@ -312,6 +312,36 @@ pub mod array {
         unreachable!()
     }
 
+    /// [`Array.from(items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array/from):
+    /// a new array of what `items` holds, each in order, as TypeScript's
+    /// `Array.from(iterable: Iterable<T> | ArrayLike<T>)`: a value of any
+    /// shape, as React's Flight reply client's `Array.from(iterator as
+    /// any)`, a typed array's elements, a string's characters, or a `Box<dyn
+    /// Iterator>` JS steps itself (ADR 1052). What Rust collects already is
+    /// collected, the one way, and `from` of it refused, naming it: a JS
+    /// `Set`'s `set.values().collect()`, a `Map`'s `map.entries().collect()`,
+    /// a `Vec`'s, a slice's or an array's `to_vec()`.
+    #[cfg_attr(rust_js, rust_js::link_name = "Array.from")]
+    #[cfg_attr(rust_js, rust_js::collects)]
+    pub fn from<T>(items: &dyn Iterable<T>) -> Vec<T> {
+        unreachable!()
+    }
+
+    /// [`Array.from(items, mapfn, thisArg)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array/from):
+    /// [`from`]'s array of what `map_fn` makes of each item and its index,
+    /// called with `this_arg` as its `this`, any value, `None` of none, as
+    /// TypeScript's `Array.from(iterable, mapfn: (v: T, k: number) => U,
+    /// thisArg?: any): U[]` (ADR 1052).
+    #[cfg_attr(rust_js, rust_js::link_name = "Array.from")]
+    #[cfg_attr(rust_js, rust_js::collects)]
+    pub fn from_with_map_fn<T, U>(
+        items: &dyn Iterable<T>,
+        map_fn: impl FnMut(T, f64) -> U + 'static,
+        this_arg: Option<&dyn IntoUnknown>,
+    ) -> Vec<U> {
+        unreachable!()
+    }
+
     unsafe extern "Rust" {
         /// [`Array.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array):
         /// what an array inherits from, as a value, as [`object::prototype`]

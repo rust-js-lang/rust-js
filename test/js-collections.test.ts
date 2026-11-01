@@ -699,3 +699,50 @@ mapCopy.set("y", 2);
 console.log(JSON.stringify([[...copy], s.size, [...lib.ofVec(["b", "a", "b"])], [...lib.long(s)], lib.nonEmpty(["", "a", "a", "b"]), [...mapCopy], m.size, [...lib.ofSlice(["c", "c"])]]));`);
   expect(JSON.parse(out)).toEqual([["a", "bb", "ccc", "d"], 3, ["b", "a"], ["bb", "ccc"], 2, [["x", 1], ["y", 2]], 1, ["c"]]);
 });
+
+// ADR 1052: `Array.from` as TypeScript types it, `Array.from(iterable,
+// mapfn?, thisArg?)`: of a value of any shape, as React's Flight reply
+// client's `Array.from(iterator as any)`, a typed array's elements and a
+// string's characters, mapped and given its `this`; of what Rust collects
+// already, a `Set`, a `Map`, a `Vec`, a slice or an array, refused, naming
+// the one way.
+test("Array.from is of any iterable, mapped, and refused of what Rust collects", () => {
+  const { dir, js } = compiled("js-array-from", `use js::{Int16Array, Unknown};
+
+pub fn items(iterator: &Unknown) -> Vec<Option<&'static Unknown>> {
+    js::array::from(iterator)
+}
+
+pub fn elements(array: &Int16Array) -> Vec<i16> {
+    js::array::from(array)
+}
+
+pub fn characters(text: &str) -> Vec<String> {
+    js::array::from(&text)
+}
+
+pub fn doubled(array: &Int16Array, base: f64) -> Vec<f64> {
+    js::array::from_with_map_fn(array, move |x, i| f64::from(x) * 2.0 + i + base, None)
+}
+`);
+  expect(js).toContain("  return Array.from(iterator);\n");
+  expect(js).toContain("  return Array.from(text);\n");
+  expect(js).toContain("  return Array.from(array, (x, i) => x * 2 + i + base);\n");
+  const out = ran(dir, `const lib = await import("./lib.js");
+function* steps() { yield 1; yield "a"; }
+console.log(JSON.stringify([lib.items(steps()), lib.items({ length: 2, 0: "x" }), lib.elements(new Int16Array([3, -4])), lib.characters("a😀"), lib.doubled(new Int16Array([1, 2]), 10)]));
+`);
+  expect(out).toBe('[[1,"a"],["x",null],[3,-4],["a","😀"],[12,15]]\n');
+  for (const [name, ty, given, says] of [
+    ["set", "&js::Set<str>", "set", "`set.values().collect()`"],
+    ["map", "&js::Map<str, u32>", "map", "`map.entries().collect()`"],
+    ["vec", "&Vec<u32>", "vec", "`Array.from` of a `std::vec::Vec<u32>` is what Rust collects itself, the one way: `to_vec()`"],
+    ["slice", "&[u32]", "&slice", "`to_vec()`"],
+  ]) {
+    const dir = fixture(`js-array-from-${name}`);
+    writeFileSync(join(dir, "lib.rs"), `pub fn f(${name}: ${ty}) -> usize {\n    js::array::from(${given}).len()\n}\n`);
+    const result = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs], root, 120_000);
+    expect(result.code).not.toBe(0);
+    expect(result.stderr).toContain(says);
+  }
+});

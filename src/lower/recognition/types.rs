@@ -1165,6 +1165,17 @@ const VEC_LIKE: &[StdItem] = &[
     StdItem::LinkedList,
 ];
 
+/// Of `did`, the js crate's `Set` or `Map`, a JS collection whose own
+/// iteration Rust collects, `set.values().collect()`, whether it's the
+/// `Set`; `None` of any other (ADR 1052).
+pub(in crate::lower) fn js_set_or_map(tcx: TyCtxt<'_>, did: DefId) -> Option<bool> {
+    if tcx.crate_name(did.krate).as_str() != "js" {
+        return None;
+    }
+    let name = tcx.item_name(did);
+    (name.as_str() == "Set" || name.as_str() == "Map").then(|| name.as_str() == "Set")
+}
+
 /// Whether `did` is `react::DependencyList`, a hook's dependencies, a
 /// tuple of them its array, `(count, name)`'s `[count, name]`, whose `()`
 /// is none, `[]` (ADR 0775).

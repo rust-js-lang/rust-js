@@ -40,7 +40,9 @@ pub struct IteratorResult<T> {
 /// of `T`, TypeScript's `Iterable<T>`: what a JS constructor that takes one,
 /// `new Set(values)`, `new Map(entries)`, steps, given as it is: a
 /// [`Set`](crate::Set) or a [`Map`](crate::Map) of JS's, an array, a slice, a `Vec`,
-/// or a `Box<dyn Iterator>` JS steps itself (the user's decision, bw8).
+/// or a `Box<dyn Iterator>` JS steps itself (the user's decision, bw8); a
+/// value of any shape, a typed array and a string, as TypeScript's are
+/// (ADR 1052).
 #[cfg_attr(rust_js, rust_js::types = "Iterable<T>")]
 pub trait Iterable<T> {}
 
@@ -50,3 +52,9 @@ impl<T> Iterable<T> for Vec<T> {}
 impl<T> Iterable<T> for Box<dyn core::iter::Iterator<Item = T> + '_> {}
 impl<T: ?Sized> Iterable<&'static T> for crate::Set<T> {}
 impl<K: ?Sized, V> Iterable<(&'static K, V)> for crate::Map<K, V> {}
+/// A value of any shape, TypeScript's `any`, each item of which is any
+/// value, `undefined` too (ADR 1052).
+impl Iterable<Option<&'static crate::Unknown>> for crate::Unknown {}
+/// A string's characters, each a string of its own, as JS steps it: by
+/// code point, `"a😀"` two (ADR 1052).
+impl Iterable<String> for &str {}

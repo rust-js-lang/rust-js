@@ -728,7 +728,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         return None;
     }
     if !super::bindings::reject_made_in_place(tcx, &all_bodies)
-        || !super::bindings::reject_value_only_calls(tcx, &all_bodies)
+        || !super::bindings::reject_attributed_calls(tcx, &all_bodies)
         || !super::bindings::reject_nullable_held(&classes_recognition, &all_bodies)
         || !super::bindings::reject_unkept_collections(&classes_recognition)
     {

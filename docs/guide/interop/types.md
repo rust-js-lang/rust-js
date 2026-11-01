@@ -2264,6 +2264,38 @@ export function depsText(deps) {
   return `[${deps.join(", ")}]`;
 }
 ```
+- `js::array::from(items)` is `Array.from(items)`, TypeScript's
+  `Array.from(iterable | arrayLike)`: of a value of any shape, its items
+  each any value, as React's Flight reply client's `Array.from(iterator
+  as any)`, of a typed array's elements and a string's characters;
+  `js::array::from_with_map_fn(items, map_fn, this_arg)` is its `mapfn`
+  and `thisArg`. What Rust collects itself is collected, the one way, and
+  `from` of it refused, naming it: a JS `Set`'s `set.values().collect()`
+  and a `Map`'s `map.entries().collect()`, which are `Array.from(set)`
+  and `Array.from(map)`, and a `Vec`'s, a slice's or an array's `to_vec()`
+  ([ADR 1052](../../decisions/1052-array-from-is-of-what-rust-doesnt-collect.md)):
+
+```rust
+use js::Unknown;
+
+pub fn items(iterator: &Unknown) -> Vec<Option<&'static Unknown>> {
+    js::array::from(iterator)
+}
+
+pub fn exclaimed(text: &str) -> Vec<String> {
+    js::array::from_with_map_fn(&text, |c, _| c + "!", None)
+}
+```
+
+```js
+export function items(iterator) {
+  return Array.from(iterator);
+}
+
+export function exclaimed(text) {
+  return Array.from(text, (c) => c + "!");
+}
+```
 - **Each of the js crate's objects is a value of any shape**, a `Set`, a
   `Map`, a `Promise`, an `Error`, a `RegExp`, the weak ones, as a `Date`
   is: `js::unknown(js::set::new(Some(&[wakeable])))` is `new

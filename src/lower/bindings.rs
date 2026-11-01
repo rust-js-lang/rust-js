@@ -12,6 +12,8 @@ use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
 use rustc_span::{Span, Symbol, sym};
 use std::collections::HashMap;
 
+mod collects;
+pub(super) use collects::reject_attributed_calls;
 mod effects;
 mod forms;
 mod given_before;
@@ -45,7 +47,6 @@ pub(super) use nullable::{
 pub(in crate::lower) use paths::{Step, first_name, has_steps, read as read_path, steps, unbound};
 pub(super) use rest_values::{is_rest_value, reads_rest_value, rest_items};
 pub(crate) use symbol_names::{FieldKey, named_by_symbol, names_a_field, symbol_name};
-pub(super) use value_only::reject_value_only_calls;
 use whole::whole_refused;
 pub(in crate::lower) use whole::{whole_output, whole_range};
 
