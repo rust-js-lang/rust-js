@@ -339,3 +339,57 @@ pub fn keyframes() -> Vec<&'static js::JsObject> {
   const [a, b] = lib.keyframes() as unknown[];
   expect([a, a === b]).toEqual([{}, false]);
 });
+
+// rd489 (P0): an `Option` of an `Option` held as its payload keeps its
+// `Some(None)` as `null` (ADR 1017), so the inner `None` it gave on was
+// `null`: `first(undefined, f)` called `f(null)`, and React's Flight port
+// resolved a chunk whose value is `undefined` with `null`, `Some(*value)`
+// written `chunk.value ?? null`. A value of any shape tells `undefined`
+// from `null` (ADR 0676): one whose inner `Option` is given on keeps its
+// box, which holds which it was (ADR 1017, amended).
+test("the None an Option of an Option gives of any value is undefined", async () => {
+  const { js, lib } = await compiled("js-nested-option-any", `use js::Unknown;
+
+pub fn first(v: Option<&'static Unknown>, f: &dyn Fn(Option<&'static Unknown>)) {
+    let o = if v.is_some() { Some(v) } else { Some(None) };
+    if let Some(v) = o {
+        f(v);
+    }
+}
+
+pub struct Chunk {
+    pub fulfilled: bool,
+    pub value: Option<&'static Unknown>,
+}
+
+pub fn settle(chunk: &Chunk, resolve: &dyn Fn(Option<&'static Unknown>)) {
+    let value = if chunk.fulfilled { Some(chunk.value) } else { None };
+    if let Some(value) = value {
+        resolve(value);
+    }
+}
+
+pub fn kind(chunk: &Chunk) -> &'static str {
+    let value = if chunk.fulfilled { Some(chunk.value) } else { None };
+    match value {
+        Some(value) => match js::classify(value) {
+            js::Kind::Undefined => "undefined",
+            js::Kind::Null => "null",
+            _ => "value",
+        },
+        None => "pending",
+    }
+}
+`);
+  expect(js).not.toContain("?? null");
+  const given = (call: (f: (v: unknown) => void) => void) => {
+    const seen: unknown[] = [];
+    call((v) => seen.push(v));
+    return seen;
+  };
+  expect([undefined, null, 0, "a"].map((v) => given((f) => lib.first(v, f)))).toStrictEqual([[undefined], [undefined], [0], ["a"]]);
+  const chunks = [undefined, null, 0, { a: 1 }].map((value) => ({ fulfilled: true, value }));
+  expect(chunks.map((chunk) => given((f) => lib.settle(chunk, f)))).toStrictEqual([[undefined], [null], [0], [{ a: 1 }]]);
+  expect(given((f) => lib.settle({ fulfilled: false, value: 1 }, f))).toEqual([]);
+  expect([...chunks, { fulfilled: false }].map(lib.kind)).toEqual(["undefined", "null", "value", "value", "pending"]);
+});

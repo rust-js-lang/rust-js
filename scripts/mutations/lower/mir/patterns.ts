@@ -482,45 +482,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "nested-option-mentions-unchecked",
-    breaks:
-      "an `Option` of an `Option` given to a function is held as its payload too, so the function, which boxes, reads its `Some(None)`, `null`, as `None` (ADR 1017)",
-    file: "src/lower/mir/patterns.rs",
-    find: "                (nested.contains(&local) || refs.contains_key(&local)) && !allowed.contains(&(at, local))\n",
-    replace:
-      "                (nested.contains(&local) || refs.contains_key(&local)) && false\n",
-    tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
-  },
-  {
-    name: "nested-option-copies-unlinked",
-    breaks:
-      "an `Option` of an `Option` copied to one given to a function is held as its payload while the copy is boxed (ADR 1017)",
-    file: "src/lower/mir/patterns.rs",
-    find: "                if out.contains(&x) || out.contains(&y) {\n",
-    replace: "                if out.contains(&x) && out.contains(&y) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
-  },
-  {
-    name: "nested-option-is-some-boxed",
-    breaks:
-      "`last.is_some()` of an `Option` of an `Option` held where it's made keeps its box, `$some(item)`",
-    file: "src/lower/mir/patterns.rs",
-    find: "                        through(&a.node)\n",
-    replace: "                        None\n",
-    tests: ["test/corpus.test.ts", "-t", "^nested_option_tests.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "nested-option-some-none-eq-boxed",
-    breaks:
-      "`last == Some(None)` of an `Option` of an `Option` held where it's made keeps its box, `$eq(last, { $someNone: 0 })`",
-    file: "src/lower/mir/patterns.rs",
-    find: "                            (Some(a), None) if self.nested_some_none(body, &b.node) => Some(a),\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^nested_option_tests.rs$"],
-    snapshots: true,
-  },
-  {
     name: "getter-subject-not-held",
     breaks:
       "an `if let` of a JS-made struct's field tests it by one read and binds it by another, a getter run twice (#430)",
@@ -562,15 +523,5 @@ export const mutations: Mutation[] = [
       "^subject_of_a_struct_js_made_read_once.rs$",
     ],
     snapshots: true,
-  },
-  {
-    name: "nested-option-keyed-read-out",
-    breaks:
-      "a keyed read of a value a collection holds `None` of as `null` doesn't write a local held as its payload, so it's `$someGet`'s box, `$eq(.., { $someNone: 0 })` (ADR 0884, amended)",
-    file: "src/lower/mir/patterns.rs",
-    find: "                && bindings::reads_a_nullable_value(self.tcx, def_id, args)\n            {\n                allowed.insert((body.terminator_loc(block), to));",
-    replace:
-      "                && bindings::reads_a_nullable_value(self.tcx, def_id, args)\n                && false\n            {\n                allowed.insert((body.terminator_loc(block), to));",
-    tests: ["test/js-collections.test.ts", "-t", "a Map's value is any value"],
   },
 ];

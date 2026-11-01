@@ -1203,7 +1203,11 @@ export function ratio(a, b) {
   reads `match`, `if let`, `==` of another such, or what its `Some` holds;
   `is_some()` is `last !== undefined`, `is_none()` `last === undefined`
   and `== Some(None)` `last === null`; one given to a function, returned or
-  captured keeps its box
+  captured keeps its box. So does one whose inner `Option` is read whole
+  and given on, kept or returned, `if let Some(v) = last { f(v) }`: its
+  `None` is `null` there, and `f` is given `undefined`, or the `null` a
+  value of any shape was; only tested, `inner.is_some()`, it's
+  `last != null`
   ([ADR 1017](../../decisions/1017-an-option-of-an-option-held-where-its-made-is-its-payload.md), amended):
 
 ```rust

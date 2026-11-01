@@ -28,6 +28,7 @@ mod iter;
 mod jsx_props;
 mod local_facts;
 mod locals;
+mod nested_options;
 mod offsets;
 mod operands;
 mod patterns;

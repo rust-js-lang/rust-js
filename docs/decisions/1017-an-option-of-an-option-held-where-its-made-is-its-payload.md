@@ -216,3 +216,80 @@ mutations `nested-option-is-some-boxed`, `nested-option-some-none-eq-boxed`
 `nested-option-eq-some-none-undefined` (`lower/mir/dispatch.ts`),
 `nested-constant-any-some` (`lower/mir/operands.ts`) and `null-said-twice`
 (`js/make.ts`).
+
+## Amendment: the inner `Option` given on keeps the box (2026-11-01)
+
+rd489, P0, a wrong answer. A read of what its `Some` holds was the payload
+itself, so the inner `Option` of `Some(None)`, read whole, was `null`:
+
+```rust
+pub fn first(v: Option<&'static Unknown>, f: &dyn Fn(Option<&'static Unknown>)) {
+    let o = if v.is_some() { Some(v) } else { Some(None) };
+    if let Some(v) = o {
+        f(v);
+    }
+}
+```
+
+```js
+const o = v != null ? (v ?? null) : null;
+if (o !== undefined) {
+  f(o);
+}
+```
+
+`first(undefined, f)` called `f(null)`, where Rust's `None` given to JS
+is `undefined` (ADR 0030); an `Option<u32>`'s or an `Option<&str>`'s
+alike. And a `Some` of what may be `undefined` is written `?? null`,
+so it lost which it was: React's Flight port's `Some(chunk.value)`, a
+value of any shape, `chunk.value ?? null`, resolved a chunk whose value
+is `undefined` with `null`, which `js::classify` tells apart, `Kind::Null`
+(ADR 0676). Four values, `None`, `Some(undefined)`, `Some(null)` and
+`Some(v)`, can't be three JS values; only the box, `{ $someNone: 0,
+$value: null }`, holds the fourth.
+
+**The inner `Option` read whole, `(x as Some).0` or through its
+references, `*(x as Some).0`, is a read of one held as its payload only
+where it's only tested** (`mir/nested_options.rs`'s `only_tested`): its
+discriminant read, its `Some`'s payload read, or it, or a shared reference
+to it made once, given to `is_some()` or `is_none()`, each of which reads
+`null` as the `None` it is. Read any other way, given on, kept, returned or
+compared, the local keeps ADR 0051's box, which holds what was given:
+
+```js
+const o = v != null ? $some(v) : $some(undefined);
+if (o != null) {
+  const v = $someValue(o);
+  f(v);
+}
+```
+
+`if let Some(inner) = last { inner.is_some() }` is still `last != null`,
+and its payload's reads, `if let Some(Some(v)) = last`, its `===`
+compares and its `match`es are as before.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior: a callback is given the `None` Rust gives, `undefined`,
+and a value of any shape the one it was.
+
+Not yet: `$some(v)` where `v != null` was just tested is `v` itself, and
+`const v = $someValue(o); f(v);` reads the box once where it's used;
+both are the box's readability, P3. React's port's JS, each package built
+before and after, is unchanged: its Flight client, whose `Some(chunk.value)`
+found it, isn't ported yet.
+
+Held by `test/js-any-values.test.ts`'s "the None an Option of an Option
+gives of any value is undefined" (the repro, Flight's `Some(chunk.value)`
+and `js::classify` of it, in Node), `test/lowering-nested-options.test.ts`'s
+"the None an Option of an Option gives on is undefined" (numbers, text, a
+struct through a reference, a number read through one, `Some(&value)`, a
+returned one and a tested one, in Node),
+corpus `nested_option_inner_none` (numbers, text and structs kept, looked
+for and shown, against native Rust), and the mutations
+`nested-inner-given-on-unboxed`, `nested-inner-through-reference-unchecked`,
+`nested-inner-copied-on-unchecked`, `nested-inner-test-boxed` and
+`nested-inner-test-reference-unseen` (`lower/mir/nested_options.ts`).
+
+`mir_nested`, which was `mir/patterns.rs`'s, is `mir/nested_options.rs`'s
+now, with `only_tested`, and so are its mutations above that were
+`lower/mir/patterns.ts`'s, but `nested-options-boxed`, of its call.

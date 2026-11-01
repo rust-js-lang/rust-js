@@ -807,7 +807,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1014 Generic code's `eq` of `TrustedLen` iterators is refused at its caller](1014-generic-eq-of-trusted-len-is-refused-at-its-caller.md) *(amended: a zip folded or stepped)*
 - [1015 What holds an object `===` compares is never `$eq` of it](1015-what-holds-an-identity-is-never-eq-of-its-contents.md) *(amended: a key that holds one finds it by itself too)*
 - [1016 A webapi object is equal only to itself](1016-a-webapi-object-is-equal-only-to-itself.md)
-- [1017 An `Option` of an `Option` held where it's made is its payload](1017-an-option-of-an-option-held-where-its-made-is-its-payload.md) *(the user's representation; amended: `Some(None)` is `=== null`)*
+- [1017 An `Option` of an `Option` held where it's made is its payload](1017-an-option-of-an-option-held-where-its-made-is-its-payload.md) *(the user's representation; amended: `Some(None)` is `=== null`; amended: the inner `Option` given on keeps the box)*
 - [1018 A function called through its module is read through its namespace](1018-a-function-called-through-its-module-is-read-through-its-namespace.md) *(the user's decision; amended: one a module re-exports, through that module, rd137; extended by 1037: a unit struct's value)*
 - [1019 A loop over an array's `&mut` items is over its indices](1019-a-loop-over-an-arrays-mut-items-is-over-its-indices.md)
 - [1020 A timer is the js crate's global, which takes a function as it is](1020-a-timer-is-the-js-crates-global.md) *(the user's decision, rd10; amended: a closure the timer calls once drops what it took)*
