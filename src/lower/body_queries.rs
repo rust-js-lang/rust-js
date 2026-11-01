@@ -9,6 +9,7 @@ use rustc_hir::{BindingMode, ByRef, Mutability};
 
 use rustc_middle::mir::{BinOp, BorrowKind, UnOp};
 use rustc_middle::thir::{self, ExprId, ExprKind, LocalVarId, LogicalOp, Pat, PatKind, Thir};
+use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::{DefId, LocalModId};
@@ -144,6 +145,9 @@ pub(super) struct BodyFacts<'tcx> {
     pub(super) held_guards: HashSet<Span>,
     /// Where each call is whose value is told present, `present_calls`'s.
     pub(super) present_calls: HashSet<Span>,
+    /// Where each `resume_unwind(x)` is of a payload as it was given,
+    /// `resumed_as_given`'s (rd550).
+    pub(super) resumed_as_given: HashSet<Span>,
     /// Where each `unwrap` or `expect` is of a cell's `get` read right
     /// after it's set to a `Some`, `set_then_unwrapped`'s (rd331e).
     pub(super) set_then_unwrapped: HashSet<Span>,
@@ -178,6 +182,7 @@ impl<'tcx> BodyFacts<'tcx> {
             registered_equalities: registered_equalities(tcx, thir),
             held_guards: held_guards(tcx, thir),
             present_calls: present_calls(tcx, thir),
+            resumed_as_given: resumed_as_given(tcx, thir),
             set_then_unwrapped: set_reads::set_then_unwrapped(tcx, thir),
             in_place_adapters,
             in_place_adapter_steps,
@@ -231,6 +236,87 @@ fn named_callbacks<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<LocalV
     found
 }
 
+/// Each `resume_unwind(x)` of a variable of the body's own, `x`, in a body
+/// that lends no `&mut` to what holds a `dyn Any` (`lends_dyn_any`): only
+/// through one is what a `Box<dyn Any>` holds written, so `x`'s holds what
+/// it was given, `catch_unwind`'s `Err` of what was thrown, whichever
+/// variables held it before (rd550); `x` itself may be set again, which
+/// its JS says, a `let`. Its `fn_span`. One of a variable a closure
+/// captured is its family's, `resumes_as_given`'s.
+fn resumed_as_given<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<Span> {
+    match lends_dyn_any(tcx, thir) {
+        true => HashSet::new(),
+        false => resumes(tcx, thir, false),
+    }
+}
+
+/// Each `resume_unwind(x)` of a variable a closure captured, of a body
+/// whose family, the function it's in and each closure in that, lends no
+/// `&mut` to what holds a `dyn Any`: where the payload it captured is made
+/// and changed, if anywhere (rd550). Before lowering, of the crate's
+/// bodies.
+fn resumes_as_given<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'tcx>]) {
+    let lending: HashSet<DefId> = (bodies.iter())
+        .filter(|body| lends_dyn_any(tcx, &body.thir))
+        .map(|body| tcx.typeck_root_def_id(body.def_id))
+        .collect();
+    for body in bodies.iter_mut() {
+        if !lending.contains(&tcx.typeck_root_def_id(body.def_id)) {
+            let captured = resumes(tcx, &body.thir, true);
+            body.facts.resumed_as_given.extend(captured);
+        }
+    }
+}
+
+/// Whether `thir` lends a `&mut` to what holds a `dyn Any`, anywhere in a
+/// value's type, `Option<&mut Box<dyn Any>>`'s too: the `&mut *x`
+/// `downcast_mut` is given, a `ref mut` binding's, a closure's capture by
+/// `&mut`, a `mem::swap`'s, one made of a raw pointer.
+fn lends_dyn_any<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> bool {
+    use super::recognition::holds_dyn_any;
+    thir.exprs.iter().any(|expr| {
+        (expr.ty.walk())
+            .filter_map(|part| part.as_type())
+            .any(|part| matches!(*part.kind(), ty::Ref(_, to, Mutability::Mut) if holds_dyn_any(tcx, to)))
+    })
+}
+
+/// The `fn_span` of each `resume_unwind(x)` of a variable, of the body's own
+/// or, `captured`, one a closure captured.
+fn resumes<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, captured: bool) -> HashSet<Span> {
+    use super::recognition::unwind_op;
+    use super::std_types::unwind::UnwindOp;
+    // A variable, as it is or as the payload's type, `dyn Any + Send +
+    // 'static` of `dyn Any + Send`, which its `Box` is coerced to.
+    let variable = |e: ExprId| {
+        let e = match thir[strip(thir, e)].kind {
+            ExprKind::PointerCoercion {
+                cast: PointerCoercion::Unsize,
+                source,
+                ..
+            } => source,
+            _ => e,
+        };
+        match thir[strip(thir, e)].kind {
+            ExprKind::VarRef { .. } => !captured,
+            ExprKind::UpvarRef { .. } => captured,
+            _ => false,
+        }
+    };
+    (thir.exprs.iter())
+        .filter_map(|expr| match expr.kind {
+            ExprKind::Call {
+                fun, ref args, fn_span, ..
+            } if matches!(*thir[fun].ty.kind(), ty::FnDef(id, _) if unwind_op(tcx, id) == Some(UnwindOp::Resume))
+                && matches!(**args, [payload] if variable(payload)) =>
+            {
+                Some(fn_span)
+            }
+            _ => None,
+        })
+        .collect()
+}
+
 /// Where each variable is changed, as the body's order has it: set or lent
 /// as `&mut`, in whole or in part. A variable of the
 /// enclosing function a closure captures is the closure's too.
@@ -274,15 +360,20 @@ pub(super) fn tail(thir: &Thir<'_>, e: ExprId) -> ExprId {
     }
 }
 
+/// What a body's facts take of the crate's other bodies, before lowering:
+/// what a closure given `flat_map` gives, made in place
+/// (`results_in_place`), and each resume of a payload a closure captured
+/// (`resumes_as_given`).
+pub(super) fn across_bodies<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'tcx>], cloned: &HashSet<ty::Ty<'tcx>>) {
+    results_in_place(tcx, bodies, cloned);
+    resumes_as_given(tcx, bodies);
+}
+
 /// Each closure the crate gives `flat_map`, which steps what it gives
 /// there as a JS iterator: what it gives is made in place
 /// (`in_place_adapters`), its facts made again so. Before lowering, of the
 /// crate's bodies.
-pub(super) fn results_in_place<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    bodies: &mut [super::Body<'tcx>],
-    cloned: &HashSet<ty::Ty<'tcx>>,
-) {
+fn results_in_place<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'tcx>], cloned: &HashSet<ty::Ty<'tcx>>) {
     let mut given = HashSet::new();
     for body in bodies.iter() {
         for e in body.thir.exprs.iter() {

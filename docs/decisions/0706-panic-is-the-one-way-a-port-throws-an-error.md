@@ -12,7 +12,10 @@ below: a `catch_unwind` that heads an `if let` chain is a `try`; one
 tested after what an `if` asks first is a `try` inside it; and by
 [0830](0830-what-follows-a-let-err-of-a-closure-that-never-returns-is-its-catch.md):
 the `catch` of a `let Err(x)` is what follows that reads `x` or what that
-declares, with no `let` before the `try`.
+declares, with no `let` before the `try`; and below (rd550): the payload
+is made where the `catch` first reads it, and resumed as what was thrown
+where nothing writes through it, as lowering says, not where it's only
+read as JS shows.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A where what's read is
 the same value, `$unwinding($unwound(e))` being `e`; for `new Error()`,
@@ -243,3 +246,108 @@ native Rust (one asked first, two, one after, an `Ok`, an `else`);
 an if asks first is a try inside it", run in Node; the guide's `passive` (`interop/exceptions.md`); and mutations
 `asked-first-kept-in-test`, `asked-first-only-the-first`,
 `asked-first-else-dropped` (`prepare/catches.rs`).
+
+## Amendment (2026-11-02): the payload made where it's first read, and resumed as thrown where nothing writes through it (rd550)
+
+React's Fizz `replayElement` pops the replay it pushed before anything
+else in its `catch`, and rethrows what it caught:
+
+```js
+} catch (x) {
+  task.replay = replay;
+  if (typeof x === 'object' && x !== null && (x === SuspenseException || typeof x.then === 'function')) {
+    ..
+    throw x;
+  }
+  ..
+}
+```
+
+It runs where JS's stack is spent, rendering very deep trees ("can
+recover from very deep trees during resume"): there a call throws a
+`RangeError` again, and a property write doesn't. The port's `if let
+Err(x) = catch_unwind(..) { task.replay.replace(..); let thrown_value =
+thrown_value_of(&*x); .. resume_unwind(x); }` printed `catch (thrown) {
+const x = $unwound(thrown); task.replay = replay; .. throw
+$unwinding(x); }`: two calls of the runtime's, `$unwound` and the
+`$isPanic` it calls, before the program's first statement, so the write
+never happened, and a call again at the rethrow. The rule above made a
+resume `throw thrown` only where every read of the payload was a field's,
+`x.impl`, as the `catch`'s JS showed; a payload given to a function,
+`thrown_value_of(&*x)`, kept `$unwinding(x)`.
+
+**The `catch` makes the payload where it first reads it**, `const x =
+$unwound(thrown);` before the first of its statements that mentions `x`
+(`prepare::catches::unwound_where_read`), of that statement's span, so a
+comment before it is still before it. What comes before reads nothing of
+the payload, so it runs first, as it would in Rust: the payload is what
+`catch_unwind` gave, which nothing between changes.
+
+**`resume_unwind(x)` is `throw thrown` where nothing writes through `x`,
+as lowering says**: a variable of the body's own, in a body that lends no
+`&mut` to what holds a `dyn Any` (`BodyFacts::resumed_as_given`, of the
+THIR, carried as `Known::AsGiven` on its `$unwinding(x)`), and `x` the
+`catch`'s `const`, never set again. Only through a `&mut` is what a
+`Box<dyn Any>` holds written, `downcast_mut`'s, a function's given `&mut
+*x`, a `ref mut` binding's, a closure's capture by `&mut`; a payload moved
+to another variable first, `let again = e;`, is the same payload, and any
+`&mut` of it, before or after, is in the same body. A closure's resume of
+a payload it captured, React's error loggers' `setTimeout(() => { throw
+e; })`, is where no body of its family, the function it's in and each
+closure in that, lends one (`body_queries::resumes_as_given`, of the
+crate's bodies), as its maker may change it first. This replaces the
+rule's reading of the `catch`'s JS, which a write through an alias, `const
+m = .. ? e : undefined; m.value += "?"`, kept right only by the alias
+being a mention that isn't a field's.
+
+```rust
+if let Err(e) = catch_unwind(AssertUnwindSafe(|| deep(d - 1, wrote))) {
+    wrote.set(wrote.get() + 1);
+    read.set(message_of(&*e));
+    resume_unwind(e);
+}
+```
+
+```js
+} catch (thrown) {
+  wrote.value = (wrote.value + 1) >>> 0;
+  const e = $unwound(thrown);
+  read.value = messageOf(e);
+  throw thrown;
+}
+```
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. `throw thrown` is
+`throw $unwinding($unwound(thrown))` of every value thrown: a
+`$Unwinding` is its payload's `error`; a panic's `Error` the one whose
+message its payload's is, unchanged; what JS threw itself. Making the
+payload later reads the same `Error`'s `message`, `constructor` and
+prototype later, which only JS holding that `Error` could change between,
+and nothing Rust does; it's what JS's own `throw x` of a `catch (x)`
+reads. What changes is that the helpers' calls, which could throw where
+the stack is spent, or where a thrown Proxy's trap throws, aren't made
+where the program makes none.
+
+Held by `test/lowering-unwind-arms.test.ts`, "a catch makes its payload
+where it's first read, and resumes it as thrown", run in Node: the
+issue's repro, a JS `overflow` that recurses to a `RangeError`; a
+recursion of a million levels whose every `catch` that entered its `try`
+writes first, where the old JS's left some unwritten (5,423 to 5,655
+of 5,658 in a run on the Mac); a `TypeError` read as a `&JsError` and resumed as the same object; a
+panic's message read and resumed; one changed by `downcast_mut`, resumed
+as what it is now. Corpus case `catch_unwind_payload_where_read` against
+native Rust: a message read after a write and resumed; one changed by a
+function given `&mut`, or by `downcast_mut` and moved to another variable,
+or then resumed by a closure that took it; one resumed by a closure that
+took it unchanged, `throw e` in the closure; another payload resumed by a
+closure whose variable has the payload's name; guards dropped as each
+scope unwinds; a typed payload; a `catch_unwind` in another's closure.
+`catch_unwind_irrefutable`'s snapshot makes its payloads after a `const
+guard` and after a `continue`. Mutations `unwound-made-first`,
+`resumed-of-another-variable` (`prepare/catches.rs`, and
+`resumed-made-again`, `resumed-after-write`, `thrown-error-read-as-payload`
+moved to the new rule), `as-given-lent-unseen`, `as-given-of-a-shared-borrow`,
+`as-given-of-a-captured-variable`, `as-given-captured-unseen`,
+`as-given-coerced-unseen`
+(`body_queries.rs`), `resumed-as-given-unmarked` (`std_types/unwind.rs`),
+`holds-dyn-any-never` (`recognition/types.rs`).

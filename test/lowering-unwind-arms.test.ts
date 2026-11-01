@@ -1,12 +1,15 @@
 // Where the arms of a `match` of `catch_unwind` go in JS's `try` and
 // `catch` (ADRs 0637, 0660): the `Ok` arm in the `try` where it can't
-// throw, else after it, where the `Err` arm, the `catch`, leaves. Each test
-// is a program of its own, compiled and run.
+// throw, else after it, where the `Err` arm, the `catch`, leaves; and what
+// the `catch` does first (rd550). Each test is a program of its own,
+// compiled and run.
 
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, compiler, fixture, run, target } from "./support";
+import { runSync } from "./child";
+import { node } from "./programs";
+import { buildReact, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -251,4 +254,173 @@ pub fn mount(n: i32, out: &mut Vec<i32>) {
   const out: number[] = [];
   for (const n of [1, 5, 0]) lib.mount(n, out);
   expect(out).toEqual([5]);
+});
+
+// React's Fizz replayElement pops its replay first in its catch, `catch (x)
+// { task.replay = replay; .. throw x; }`, which must run where the stack is
+// spent, rendering very deep trees: a `catch`'s payload is made where it's
+// first read, after what its arm does first, and one resumed as it was
+// given, nothing written through it, is what was thrown, `throw thrown`,
+// with no call before it (rd550).
+test("a catch makes its payload where it's first read, and resumes it as thrown", () => {
+  const { js, dir } = compiled("unwind-where-read", `use js::JsError;
+use std::any::Any;
+use std::cell::Cell;
+use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
+
+#[cfg_attr(rust_js, rust_js::link_name = "./host.js#overflow")]
+fn overflow() {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./host.js#render")]
+fn render() {
+    unreachable!()
+}
+
+pub fn f(d: u32, s: &Cell<u32>) {
+    if d == 0 {
+        return overflow();
+    }
+    if let Err(e) = catch_unwind(AssertUnwindSafe(|| f(d - 1, s))) {
+        s.set(d);
+        resume_unwind(e);
+    }
+}
+
+fn name_of(payload: &(dyn Any + Send)) -> String {
+    payload.downcast_ref::<&'static JsError>().map(|e| e.name()).unwrap_or_default()
+}
+
+/// Each level that entered its \`try\`, each whose \`catch\` wrote first, and
+/// those that read a \`RangeError\` after.
+pub fn deep(d: u32, entered: &Cell<u32>, wrote: &Cell<u32>, ranges: &Cell<u32>) {
+    if d == 0 {
+        return;
+    }
+    entered.set(entered.get() + 1);
+    if let Err(e) = catch_unwind(AssertUnwindSafe(|| deep(d - 1, entered, wrote, ranges))) {
+        wrote.set(wrote.get() + 1);
+        if name_of(&*e) == "RangeError" {
+            ranges.set(ranges.get() + 1);
+        }
+        resume_unwind(e);
+    }
+}
+
+/// What JS threw, a \`&JsError\`, read after a write, then resumed.
+pub fn rethrown(seen: &Cell<u32>) -> String {
+    match catch_unwind(AssertUnwindSafe(render)) {
+        Ok(()) => String::new(),
+        Err(e) => {
+            seen.set(seen.get() + 1);
+            let name = name_of(&*e);
+            if name == "TypeError" {
+                resume_unwind(e);
+            }
+            name
+        }
+    }
+}
+
+/// A panic's message read after a write, and resumed.
+pub fn message(n: u32, seen: &Cell<u32>) -> u32 {
+    match catch_unwind(AssertUnwindSafe(|| if n > 2 { panic!("big {n}") } else { n })) {
+        Ok(v) => v,
+        Err(e) => {
+            seen.set(seen.get() + 1);
+            if let Some(m) = e.downcast_ref::<String>() {
+                seen.set(seen.get() + m.len() as u32);
+            }
+            resume_unwind(e)
+        }
+    }
+}
+
+/// Changed through \`downcast_mut\`, so resumed as what it is now.
+pub fn changed(n: u32) -> u32 {
+    match catch_unwind(|| if n > 2 { panic!("big {n}") } else { n }) {
+        Ok(v) => v,
+        Err(mut e) => {
+            if let Some(m) = e.downcast_mut::<String>() {
+                m.push('!');
+            }
+            resume_unwind(e)
+        }
+    }
+}
+`);
+  // What the arm does first runs first: no call before it.
+  expect(js).toContain(`  } catch (e) {
+    s.value = d;
+    throw e;
+  }`);
+  expect(js).toContain(`  } catch (thrown) {
+    wrote.value = (wrote.value + 1) >>> 0;
+    const e = $unwound(thrown);
+    if (nameOf(e) === "RangeError") {
+      ranges.value = (ranges.value + 1) >>> 0;
+    }
+    throw thrown;
+  }`);
+  expect(js).toContain(`  } catch (thrown) {
+    seen.value = (seen.value + 1) >>> 0;
+    const e = $unwound(thrown);
+    const name = nameOf(e);
+    if (name === "TypeError") {
+      throw thrown;
+    }
+    return name;
+  }`);
+  // Changed, it's resumed as what it is now, `$unwinding`'s.
+  expect(js).toContain("    throw $unwinding(e);\n");
+  writeFileSync(join(dir, "host.js"), `export function overflow() {
+  overflow();
+}
+export function render() {
+  throw globalThis.toThrow;
+}
+`);
+  writeFileSync(join(dir, "run.mjs"), `import * as lib from "./lib.js";
+const cell = () => ({ value: 0 });
+const outcome = (f) => {
+  try {
+    return ["returned", f()];
+  } catch (e) {
+    return ["threw", e];
+  }
+};
+const s = cell();
+const [how, error] = outcome(() => lib.f(3, s));
+console.log("f", how, error.constructor.name, s.value);
+for (let i = 0; i < 3; i++) {
+  const [entered, wrote, ranges] = [cell(), cell(), cell()];
+  const [how, error] = outcome(() => lib.deep(1e6, entered, wrote, ranges));
+  console.log("deep", how, error.constructor.name, entered.value > 1000, entered.value === wrote.value, ranges.value > 0);
+}
+const seen = cell();
+globalThis.toThrow = new TypeError("no props");
+const [rethrew, again] = outcome(() => lib.rethrown(seen));
+console.log("rethrown", rethrew, again === globalThis.toThrow, seen.value);
+globalThis.toThrow = new RangeError("deep");
+console.log("named", JSON.stringify(outcome(() => lib.rethrown(seen))), seen.value);
+const counted = cell();
+console.log("message", JSON.stringify(outcome(() => lib.message(2, counted))), counted.value);
+const [threw, panic] = outcome(() => lib.message(5, counted));
+console.log("message", threw, panic.constructor === Error, panic.message, counted.value);
+const [, changed] = outcome(() => lib.changed(7));
+console.log("changed", changed.constructor === Error, changed.message);
+`);
+  const ran = runSync([node!, join(dir, "run.mjs")], root, 60_000);
+  expect(ran.stderr).toBe("");
+  expect(ran.stdout).toBe(`f threw RangeError 3
+deep threw RangeError true true true
+deep threw RangeError true true true
+deep threw RangeError true true true
+rethrown threw true 1
+named ["returned","RangeError"] 2
+message ["returned",2] 0
+message threw true big 5 6
+changed true big 7!
+`);
 });

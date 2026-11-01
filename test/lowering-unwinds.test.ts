@@ -1139,7 +1139,9 @@ pub fn of_any_boxed(own: bool) -> String {
     control = x;
   }`);
   expect(js).not.toContain("not thrown");
-  expect(js).toContain("    const e = thrown;\n    return `${e.message} ");
+  // The payload is made where it's first read, after what reads only
+  // what was thrown (rd550).
+  expect(js).toContain("    const e = thrown;\n    const x = $unwound(thrown);\n    return `${e.message} ");
   const lib = await import(join(dir, "lib.js"));
   const g = globalThis as Record<string, unknown>;
   const thrown = new TypeError("no props");

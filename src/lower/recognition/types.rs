@@ -901,6 +901,18 @@ pub(crate) fn points_at_dyn_any<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(pointer_target(tcx, ty).kind(), ty::Dynamic(traits, ..) if traits.principal_def_id().is_some() && traits.principal_def_id() == any_trait(tcx))
 }
 
+/// Whether `ty` holds a `dyn Any`, `+ Send` or not, among its type's
+/// parts: a `Box`'s, a reference's, an `Option`'s, a tuple's; not a
+/// struct's field, which its type doesn't name.
+pub(crate) fn holds_dyn_any<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    ty.walk().any(|part| {
+        part.as_type().is_some_and(|part| {
+            matches!(part.kind(), ty::Dynamic(traits, ..)
+            if traits.principal_def_id().is_some() && traits.principal_def_id() == any_trait(tcx))
+        })
+    })
+}
+
 /// Is `variant` a `Result`'s `Err`?
 pub(crate) fn is_err_variant(tcx: TyCtxt<'_>, variant: DefId) -> bool {
     tcx.is_lang_item(variant, LangItem::ResultErr)

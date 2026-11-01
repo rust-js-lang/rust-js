@@ -859,6 +859,14 @@ pub enum Known {
     /// (`calls::given_to_js_but`), which prepare's one rule leaves out
     /// (ADR 0313, amended).
     Absent,
+    /// A `resume_unwind(x)`'s `$unwinding(x)` of a variable of the body's
+    /// own, in a body that lends no `&mut` to a `dyn Any`, or one a
+    /// closure captured, in a family of bodies none of which does, so
+    /// nothing is written through `x` (`BodyFacts::resumed_as_given`). Where `x` is a
+    /// `catch`'s payload, `const x = $unwound(thrown)`, never set again,
+    /// it's what was thrown, `throw thrown`, as `$unwinding($unwound(e))`
+    /// is `e` (ADR 0706, amended, rd550).
+    AsGiven,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

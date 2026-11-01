@@ -793,12 +793,14 @@ fn caught_run(payload: &str, rest: &[Stmt]) -> Option<usize> {
 
 /// A `catch (thrown) { const payload = $unwound(thrown); .. }`,
 /// what it reads of `payload` as `thrown` is (ADR 0706): its
-/// `resume_unwind`, `$unwinding(payload)`, of a payload only read, as
+/// `resume_unwind`, `$unwinding(payload)`, of a payload as it was given,
+/// nothing written through it (`Known::AsGiven`), as
 /// `$unwinding($unwound(e))` is `e`; and what was thrown, its `&JsError`,
 /// `payload.error`, `thrown` (ADR 0710). Where nothing else reads the
 /// payload, the `catch` is of it, `catch (payload)`; and of a payload its
 /// shadow sets to what was thrown first, `let x = $unwound(thrown); x =
-/// x.error;`, `catch (x)`.
+/// x.error;`, `catch (x)`. Else the payload is made where it's first read
+/// (`unwound_where_read`, rd550).
 fn read_as_thrown(binding: Option<String>, handler: Vec<Stmt>) -> (Option<String>, Vec<Stmt>) {
     let Some(thrown) = binding else {
         return (binding, handler);
@@ -841,30 +843,23 @@ fn read_as_thrown(binding: Option<String>, handler: Vec<Stmt>) -> (Option<String
     let payload = payload.clone();
     let mut rest = handler[1..].to_vec();
     let of_payload = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if *v == payload);
-    let resumed = |e: &Expr| {
-        matches!(&e.kind, ExprKind::Call(callee, args)
-            if callee.helper_name() == Some("$unwinding") && matches!(args.as_slice(), [arg] if of_payload(arg)))
+    // A resume of the payload as it was given, which lowering knows
+    // (`Known::AsGiven`): what was thrown, `$unwinding($unwound(e))` being
+    // `e`.
+    let resumed_as_given = |e: &Expr| {
+        e.facts.has(js::Known::AsGiven)
+            && matches!(&e.kind, ExprKind::Call(callee, args)
+                if callee.helper_name() == Some("$unwinding") && matches!(args.as_slice(), [arg] if of_payload(arg)))
     };
-    // Only read: each mention a field's, `payload.impl`, or its resume,
-    // and none written through it.
-    let mut read = 0;
-    js::each_expr(&rest, &mut |e| match &e.kind {
-        ExprKind::Member(of, _) if of_payload(of) => read += 1,
-        _ if resumed(e) => read += 1,
-        _ => {}
-    });
-    let only_read = read == js::mentions_in(&rest, &payload) && !js::Writes::of(&rest).changed.contains(&payload);
     js::each_expr_mut(&mut rest, &mut |e| {
-        if (only_read && resumed(e)) || e.thrown_error_of().is_some_and(of_payload) {
+        if resumed_as_given(e) || e.thrown_error_of().is_some_and(of_payload) {
             *e = Expr::var(&thrown).or_at(e.span);
         }
     });
     let mut declared = 0;
     js::each_declared(&rest, &mut |name| declared += usize::from(name == payload));
     if js::mentions_in(&rest, &payload) > 0 || declared > 0 {
-        let mut kept = vec![handler[0].clone()];
-        kept.extend(rest);
-        return (Some(thrown), kept);
+        return (Some(thrown), unwound_where_read(handler[0].clone(), &payload, rest));
     }
     js::each_expr_mut(&mut rest, &mut |e| {
         if matches!(&e.kind, ExprKind::Var(v) if *v == thrown) {
@@ -872,6 +867,28 @@ fn read_as_thrown(binding: Option<String>, handler: Vec<Stmt>) -> (Option<String
         }
     });
     (Some(payload), rest)
+}
+
+/// A `catch`'s statements `rest`, and `made`, `const payload =
+/// $unwound(thrown);`, where the payload is first read: before the first
+/// of them that mentions it, so what comes before runs first, as it reads
+/// nothing of the payload, nothing but its own writes, which can't fail
+/// where the stack's spent as a call can (rd550). There, of that
+/// statement's span, where a comment before it is before it. A function
+/// declared before it reads none of the payload, as a nested `fn` captures
+/// nothing, and a closure that reads it is declared after it.
+fn unwound_where_read(made: Stmt, payload: &str, mut rest: Vec<Stmt>) -> Vec<Stmt> {
+    let first = rest
+        .iter()
+        .position(|s| js::mentions_in(std::slice::from_ref(s), payload) > 0);
+    match first {
+        Some(at) if at > 0 => {
+            let span = rest[at].span;
+            rest.insert(at, Stmt { span, ..made });
+        }
+        _ => rest.insert(0, made),
+    }
+    rest
 }
 
 /// `$try(() => call).TAG === "Err"`, or `!== "Ok"`: whether a JS call

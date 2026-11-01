@@ -414,4 +414,13 @@ export const mutations: Mutation[] = [
       "a constructor held as a value of any shape is refused",
     ],
   },
+  {
+    name: "holds-dyn-any-never",
+    breaks:
+      "what's lent `&mut` to a payload isn't seen to hold a `dyn Any`, so a payload changed is resumed as what was thrown (rd550)",
+    file: "src/lower/recognition/types.rs",
+    find: "            if traits.principal_def_id().is_some() && traits.principal_def_id() == any_trait(tcx))\n        })\n",
+    replace: "            if false)\n        })\n",
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_payload_where_read.rs$"],
+  },
 ];

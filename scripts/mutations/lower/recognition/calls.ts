@@ -730,9 +730,8 @@ export const mutations: Mutation[] = [
     name: "catch-unwind-resumes",
     breaks: "`catch_unwind(f)` is `resume_unwind(f)`",
     file: "src/lower/recognition/calls.rs",
-    find: '                "std::panic::catch_unwind" => return Some(Some(Std::Unwind(UnwindOp::Catch))),\n',
-    replace:
-      '                "std::panic::catch_unwind" => return Some(Some(Std::Unwind(UnwindOp::Resume))),\n',
+    find: '        "std::panic::catch_unwind" => Some(UnwindOp::Catch),\n',
+    replace: '        "std::panic::catch_unwind" => Some(UnwindOp::Resume),\n',
     tests: ["test/lowering-unwinds.test.ts", "-t", "getIODescription"],
   },
   {

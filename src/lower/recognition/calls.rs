@@ -458,13 +458,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let Some(error) = print_of(tcx, def_id) {
             return Some(Some(Std::Print { error }));
         }
-        if krate == Some(StdCrate::Std) {
-            match std_path(tcx, def_id).as_str() {
-                "std::rt::begin_panic" => return Some(Some(Std::BeginPanic)),
-                "std::panic::catch_unwind" => return Some(Some(Std::Unwind(UnwindOp::Catch))),
-                "std::panic::resume_unwind" => return Some(Some(Std::Unwind(UnwindOp::Resume))),
-                _ => {}
-            }
+        if krate == Some(StdCrate::Std) && std_path(tcx, def_id) == "std::rt::begin_panic" {
+            return Some(Some(Std::BeginPanic));
+        }
+        if let Some(op) = unwind_op(tcx, def_id) {
+            return Some(Some(Std::Unwind(op)));
         }
         if tcx.is_lang_item(def_id, LangItem::PanicFmt) {
             return Some(Some(Std::PanicFmt));
@@ -1285,6 +1283,19 @@ pub(in crate::lower) fn print_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool>
     match std_path(tcx, def_id).as_str() {
         "std::io::_print" => Some(false),
         "std::io::_eprint" => Some(true),
+        _ => None,
+    }
+}
+
+/// Which of unwinding's functions `def_id` is, `catch_unwind` or
+/// `resume_unwind` (ADR 0660).
+pub(in crate::lower) fn unwind_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<UnwindOp> {
+    if !of_std_crate(tcx, def_id, StdCrate::Std) {
+        return None;
+    }
+    match std_path(tcx, def_id).as_str() {
+        "std::panic::catch_unwind" => Some(UnwindOp::Catch),
+        "std::panic::resume_unwind" => Some(UnwindOp::Resume),
         _ => None,
     }
 }

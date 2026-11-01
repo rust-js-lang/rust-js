@@ -664,8 +664,13 @@ export function text(value) {
   `.copied()`, `.is_some()`, is `None`, as JS's `if (x)` reads it.
 - **`resume_unwind(payload)` throws it again**: a thrown `Error` or what
   JS threw, itself; text, its panic; any other payload, an `Error` that a
-  `catch_unwind` gives back as it was. Of a payload only read, it's
-  `throw` of what was caught, the same object, `throw thrown` above.
+  `catch_unwind` gives back as it was. Of a payload nothing writes
+  through, where the function lends no `&mut` to a `dyn Any`, it's
+  `throw` of what was caught, the same object, `throw thrown` above,
+  whatever reads it first, `message_of(&*e)` too. And the `catch` makes
+  the payload where it first reads it, after what it does first, so a
+  write it makes first runs before any call, where JS's stack is spent
+  too ([ADR 0706](../../decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md), amended).
 - **`panic!` is the one way to throw a new `Error`**, `panic!("")` a `new
   Error()`: a JS value isn't `Send`, so rustc refuses `resume_unwind`
   and `panic_any` of a `&JsError`; a value JS already has is thrown by

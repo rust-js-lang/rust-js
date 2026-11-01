@@ -481,4 +481,50 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) => break true,\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_size_hints.rs$"],
   },
+  {
+    name: "as-given-lent-unseen",
+    breaks:
+      "a payload a `downcast_mut` or a function given `&mut` changed is resumed as what was thrown, its old message (rd550)",
+    file: "src/lower/body_queries.rs",
+    find: "    match lends_dyn_any(tcx, thir) {\n        true => HashSet::new(),\n",
+    replace: "    match lends_dyn_any(tcx, thir) {\n        true => resumes(tcx, thir, false),\n",
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_payload_where_read.rs$"],
+  },
+  {
+    name: "as-given-of-a-shared-borrow",
+    breaks:
+      "a payload only read, `message_of(&*e)`, is taken as lent to be changed, so it's resumed as `$unwinding(e)`, a call where the stack may be spent (rd550)",
+    file: "src/lower/body_queries.rs",
+    find: "            .any(|part| matches!(*part.kind(), ty::Ref(_, to, Mutability::Mut) if holds_dyn_any(tcx, to)))\n",
+    replace: "            .any(|part| matches!(*part.kind(), ty::Ref(_, to, _) if holds_dyn_any(tcx, to)))\n",
+    tests: ["test/lowering-unwind-arms.test.ts", "-t", "a catch makes its payload where it's first read"],
+  },
+  {
+    name: "as-given-of-a-captured-variable",
+    breaks:
+      "a closure's `resume_unwind` of a payload it took, which its maker changed first, is resumed as what was thrown (rd550)",
+    file: "src/lower/body_queries.rs",
+    find: "        if !lending.contains(&tcx.typeck_root_def_id(body.def_id)) {\n",
+    replace: "        if lending.len() < usize::MAX {\n",
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_payload_where_read.rs$"],
+  },
+  {
+    name: "as-given-captured-unseen",
+    breaks:
+      "a closure's `resume_unwind` of a payload it took as it was caught, React's `setTimeout(() => { throw e; })`, is `$unwinding(e)` (rd550)",
+    file: "src/lower/body_queries.rs",
+    find: "            body.facts.resumed_as_given.extend(captured);\n",
+    replace: "            drop(captured);\n",
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_payload_where_read.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "as-given-coerced-unseen",
+    breaks:
+      "`resume_unwind(e)` of a payload only read, its `Box` coerced to `dyn Any + Send`'s, is `$unwinding(e)`, not what was thrown (rd550)",
+    file: "src/lower/body_queries.rs",
+    find: "            } => source,\n",
+    replace: "            } => return false,\n",
+    tests: ["test/lowering-unwind-arms.test.ts", "-t", "a catch makes its payload where it's first read"],
+  },
 ];

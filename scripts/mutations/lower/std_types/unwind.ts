@@ -28,4 +28,13 @@ export const mutations: Mutation[] = [
       "resume_unwind throws what unwound",
     ],
   },
+  {
+    name: "resumed-as-given-unmarked",
+    breaks:
+      "`resume_unwind(e)` of a payload only read is `$unwinding(e)`, a call where the stack may be spent, not what was thrown (rd550)",
+    file: "src/lower/std_types/unwind.rs",
+    find: "                    thrown.facts = thrown.facts.with(Known::AsGiven);\n",
+    replace: "",
+    tests: ["test/lowering-unwind-arms.test.ts", "-t", "a catch makes its payload where it's first read"],
+  },
 ];

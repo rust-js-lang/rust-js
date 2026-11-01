@@ -151,8 +151,8 @@ function dropped(early) {
   try {
     throw new Error("dropped");
   } catch (thrown) {
-    const x = $unwound(thrown);
     const guard = "guard";
+    const x = $unwound(thrown);
     try {
       const option = x.impl.typeId() === "&str" ? x.value : undefined;
       const len = option != null ? $byteLen(option) : 0;
@@ -178,10 +178,10 @@ function looped() {
     try {
       throw new Error("loop");
     } catch (thrown) {
-      const x = $unwound(thrown);
       if (i === 1) {
         continue;
       }
+      const x = $unwound(thrown);
       const option = x.impl.typeId() === "&str" ? x.value : undefined;
       const len = option != null ? $byteLen(option) : 0;
       if (i === 3) {

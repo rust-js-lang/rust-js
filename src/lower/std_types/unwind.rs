@@ -7,7 +7,7 @@
 //! `resume_unwind(payload)` is `throw $unwinding(payload)`. An
 //! `AssertUnwindSafe` is the value it holds (`Recognition::transparent`).
 
-use crate::js::{Expr, Stmt, StmtKind};
+use crate::js::{Expr, Known, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::recognition::Std;
 use crate::lower::{FnCx, R};
@@ -45,7 +45,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(match op {
             UnwindOp::Catch => Expr::caught_unwind(value),
             UnwindOp::Resume => {
-                let thrown = Expr::call_helper("$unwinding", vec![value]);
+                let mut thrown = Expr::call_helper("$unwinding", vec![value]);
+                // Of a payload as it was given, which a `catch` throws
+                // again as it caught it (rd550).
+                if self.frame.facts.resumed_as_given.contains(&call.span) {
+                    thrown.facts = thrown.facts.with(Known::AsGiven);
+                }
                 out.push(StmtKind::Throw(thrown).at(self.js_span(call.span)));
                 Expr::undefined()
             }
