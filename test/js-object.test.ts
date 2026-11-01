@@ -1265,6 +1265,53 @@ pub fn type_of_type(next_type: Option<&'static Unknown>) -> Option<&'static Unkn
   expect([lib.typeOfType({ $$typeof: tag }), lib.typeOfType(null), lib.typeOfType(3), lib.typeOfType(undefined)]).toEqual([tag, undefined, undefined, undefined]);
 });
 
+// ReactFlightReplyClient's resolveToJSON tests `if let Some(object) =
+// js::classify(value).object()`, and a closure in it names its own
+// `value`, its `Result` that reads nothing of `object`: the `if` is that
+// test still, `object` read as `value` (rd514). A closure of its own
+// `value` that reads `object` keeps the `const`, which it reads.
+test("an object tested beside a closure's own of its name is its test", async () => {
+  const { js, lib } = await compiled("object-tested-beside-own", `use js::Unknown;
+
+fn checked(value: Option<&'static Unknown>) -> Result<String, String> {
+    match js::classify(value) {
+        js::Kind::Null => Err("null".to_string()),
+        _ => Ok("ok".to_string()),
+    }
+}
+
+pub fn resolve(value: Option<&'static Unknown>, log: &dyn Fn(&str), then: &dyn Fn(&dyn Fn(Option<&'static Unknown>))) -> bool {
+    if let Some(object) = js::classify(value).object() {
+        log(&js::type_of(js::get(object, "x")));
+        then(&move |part| match checked(part) {
+            Ok(text) => log(&text),
+            Err(reason) => log(&reason),
+        });
+        return true;
+    }
+    false
+}
+
+pub fn resolve_read(value: Option<&'static Unknown>, log: &dyn Fn(&str), then: &dyn Fn(&dyn Fn(Option<&'static Unknown>))) -> bool {
+    if let Some(object) = js::classify(value).object() {
+        then(&move |part| match checked(part) {
+            Ok(text) => log(&(text + &js::type_of(js::get(object, "x")))),
+            Err(reason) => log(&reason),
+        });
+        return true;
+    }
+    false
+}
+`);
+  expect(js).toContain('export function resolve(value, log, then) {\n  if (typeof value === "object" && value !== null) {\n    log(typeof value.x);\n');
+  expect(js).toContain("const object =");
+  const seen: string[] = [];
+  const log = (text: string) => seen.push(text);
+  const then = (f: (part: unknown) => void) => { f(1); f(null); };
+  expect([lib.resolve({ x: 1 }, log, then), lib.resolve(2, log, then), lib.resolveRead({ x: "s" }, log, then)]).toEqual([true, false, true]);
+  expect(seen).toEqual(["number", "ok", "null", "okstring", "null"]);
+});
+
 // React's mountTransition stores the function it returns in its hook,
 // `hook.memoizedState = start; return [false, start];`, and
 // updateTransition reads it back: an `Rc<dyn Fn>` is of any shape as the

@@ -27,8 +27,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Option` read past its test is folded away, so what reads it after reads a variable no longer declared (ADR 0910)",
     file: "src/lower/mir/tidy/options.rs",
-    find: "    if read_elsewhere || js::declares(reads, x) || js::declares(reads, v) {\n",
-    replace: "    if js::declares(reads, x) || js::declares(reads, v) {\n",
+    find: "    if read_elsewhere || js::declares(reads, x) || js::read_where_other(reads, x, v) {\n",
+    replace: "    if js::declares(reads, x) || js::read_where_other(reads, x, v) {\n",
     tests: ["test/corpus.test.ts", "-t", "tested_options"],
   },
   {
@@ -63,5 +63,13 @@ export const mutations: Mutation[] = [
     find: "    if js::mentions_in(none_branch, c) > 0 || js::mentions_in(rest, c) > 0 {\n",
     replace: "    if js::mentions_in(none_branch, c) > 0 {\n",
     tests: ["test/lowering-takes.test.ts", "-t", "an Option taken then tested"],
+  },
+  {
+    name: "tested-option-read-where-another",
+    breaks: "an `Option` made where it's tested is read as its value inside a closure of its own `value`, `log(value._0 + typeof value.x)`, the closure's `Result` (rd514)",
+    file: "src/lower/mir/tidy/options.rs",
+    find: "|| js::read_where_other(reads, x, v) {\n",
+    replace: "{\n",
+    tests: ["test/js-object.test.ts", "-t", "beside a closure's own of its name"],
   },
 ];

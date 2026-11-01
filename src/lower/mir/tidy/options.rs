@@ -10,8 +10,9 @@ use super::*;
 /// true exactly where `t` holds, `v` being there; or `x == null`, of a
 /// branch that ends, `x` read past it. `v`
 /// is a variable nothing changes, so it's what `x` was wherever `x` is
-/// read, a closure's later too; `x` is read nowhere else, and neither is
-/// declared in what reads `x`, which would read another.
+/// read, a closure's later too; `x` is read nowhere else, nor declared in
+/// what reads it, and it's read nowhere `v` is another, a closure's own
+/// `value` that reads no `x` being none (rd514).
 /// Past what's only declared between, `let typeofNextType;` of what the
 /// test's branches set.
 pub(super) fn tested_options(stmts: &mut Vec<Stmt>, changing: &HashSet<String>) {
@@ -69,7 +70,7 @@ fn tested_option(
         (false, _) => return None,
     };
     let read_elsewhere = unread.iter().any(|stmts| js::mentions_in(stmts, x) > 0) || test.mentions_var(x);
-    if read_elsewhere || js::declares(reads, x) || js::declares(reads, v) {
+    if read_elsewhere || js::declares(reads, x) || js::read_where_other(reads, x, v) {
         return None;
     }
     let mut reads = reads.to_vec();

@@ -348,4 +348,12 @@ export const mutations: Mutation[] = [
     replace: "                StmtKind::Let(n, _) | StmtKind::For { name: n, .. } => n == name,\n",
     tests: ["test/corpus.test.ts", "-t", "shadow_beside_closure_own_of_its_name"],
   },
+  {
+    name: "read-where-other-any-own",
+    breaks: "a closure of its own `value` that reads nothing of an `Option` made where it's tested keeps the `Option`'s `const`, `const object = typeof value === \"object\" && .. ? value : undefined;`, upstream's `if` of its test (rd514)",
+    file: "src/js/stmt_walk.rs",
+    find: "        found |= own && mentions_in(body, read) > 0;\n",
+    replace: "        found |= own;\n",
+    tests: ["test/js-object.test.ts", "-t", "beside a closure's own of its name"],
+  },
 ];

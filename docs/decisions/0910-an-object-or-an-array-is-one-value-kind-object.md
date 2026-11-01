@@ -167,3 +167,26 @@ Held by `test/js-object.test.ts`, "an object's property read where its
 test holds is one conditional", run in JS, and the mutations
 `tested-option-before-a-declaration` (`lower/mir/tidy/options.ts`) and
 `tested-options-after-branch-values` (`lower/mir/tidy/stages.ts`).
+
+## Amendment: a closure's own of the value's name is no other where it reads none of the `Option` (rd514)
+
+React's ReactFlightReplyClient, ported, tests `if let Some(object) =
+js::classify(value).object()` in resolveToJSON, and printed `const object =
+typeof value === 'object' && value !== null ? value : undefined; if (object
+!= null) { .. }`, reading `object` where upstream reads `value`. A closure in
+its branch, a promise's `then` callback, names its `catch_unwind`'s result
+`value`, its own, apart from nothing it reads, and `tested options` refused
+wherever what reads `x` declared `v` at all, the closure's included.
+
+**`x` is read as `v` unless it's read where `v` is another**
+(`js::read_where_other`): in a block of the branch that declares a `v`, or
+in a closure or function there that takes or declares its own `v` and
+reads `x`, whose `v` there would be its own. A closure whose own `value`
+reads no `object` reads nothing `x` is replaced in. Case N, as above: the
+same test and the same value read.
+
+Held by `test/js-object.test.ts`, "an object tested beside a closure's own
+of its name is its test", run in JS, with a closure of its own `value`
+that reads `object` keeping the `const`; the mutations
+`tested-option-read-where-another` (`lower/mir/tidy/options.ts`) and
+`read-where-other-any-own` (`js/stmt_walk.ts`).

@@ -552,6 +552,28 @@ pub fn outside_shadows(stmts: &mut Vec<Stmt>, name: &str, change: impl FnOnce(&m
     renamed(stmts, APART, name);
 }
 
+/// Whether `stmts` read `read` where `name` is another than the one
+/// around them: anywhere, where their own blocks declare a `name`, or in a
+/// closure or function of theirs that takes or declares its own, which
+/// it reads there (`outside_shadows`). A closure's own `value` that reads
+/// nothing of `read` is no other `value` to it (rd514).
+pub fn read_where_other(stmts: &[Stmt], read: &str, name: &str) -> bool {
+    if declares_own(stmts, name) {
+        return mentions_in(stmts, read) > 0;
+    }
+    let mut found = false;
+    each_expr(stmts, &mut |e| {
+        let (params, body) = match &e.kind {
+            ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => (params, body),
+            ExprKind::Function(function) => (&function.params, &function.body),
+            _ => return,
+        };
+        let own = params.iter().any(|p| p.names().contains(&name)) || declares_own(body, name);
+        found |= own && mentions_in(body, read) > 0;
+    });
+    found
+}
+
 /// Whether a function's `body` declares `name` in its own blocks, a
 /// variable, a pattern's, a loop's, a `catch`'s or a function's: not in a
 /// closure or a function declared in it, whose are their own.
