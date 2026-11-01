@@ -235,3 +235,20 @@ Held by `lowering-comments-jumps.test.ts`'s "a comment above an Ok arm's
 return is above the call's return in the try", run, and the mutation
 `tried-return-at-the-call` (`prepare/catches.ts`).
 
+## Amendment: an assignment made of an `Ok` arm's value is where the value is (2026-11-02, rd545)
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): comments.
+
+React's Webpack bundler config's addChunkDebugInfo, ported as `let href =
+match catch_unwind(|| { // $FlowFixMe[incompatible-type]\n
+url(..).href() }) { Ok(h) => h, Err(_) => .. }`, printed the comment above
+`let href;`, where upstream has it inside `try {`, above `href = ..`. The
+rule above placed what's kept of the `Ok` arm where that arm is written,
+`h`, after the `match`'s call, so no statement started between the
+comment and the arm, and it went above the whole `let`. **Only a `return`
+the program wrote in the `Ok` arm is where it's written**; the assignment
+of the arm's value, which the `let` makes, is where the value is, the
+closure's call, after the comment. Held by
+`lowering-comments-jumps.test.ts`'s "a comment in a catch_unwind closure
+is above its value in the try", run, and the mutation
+`tried-assignment-where-its-arm-is` (`catches.ts`).

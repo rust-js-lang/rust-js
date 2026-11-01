@@ -432,6 +432,37 @@ pub fn parse(code: &str) -> Option<&'static Unknown> {
   expect([parse("1 + 2"), parse("("), parse("")]).toEqual([3, undefined, undefined]);
 });
 
+// React's Webpack bundler config's addChunkDebugInfo: `let href = match
+// catch_unwind(|| { // $FlowFixMe[incompatible-type]\n url(..).href() })
+// { Ok(h) => h, Err(_) => .. }` is `let href; try { // $FlowFixMe..\n href
+// = ..; } catch { .. }`, the comment inside the `try` above the value it's
+// written above, as upstream has it, not above `let href;` (rd545).
+test("a comment in a catch_unwind closure is above its value in the try", async () => {
+  const { js, lib } = await compiled("comment-in-tried-closure", `use std::panic::catch_unwind;
+
+fn parse(s: &str) -> String {
+    if s.is_empty() {
+        panic!("empty");
+    }
+    s.to_uppercase()
+}
+
+pub fn href(s: &str, fallback: &str) -> String {
+    let href = match catch_unwind(|| {
+        // $FlowFixMe[incompatible-type]
+        parse(s)
+    }) {
+        Ok(h) => h,
+        Err(_) => fallback.to_string(),
+    };
+    href + "!"
+}
+`);
+  expect(js).toContain("  let href;\n  try {\n    // $FlowFixMe[incompatible-type]\n    href = parse(s);\n  } catch {\n");
+  const href = lib.href as (s: string, fallback: string) => unknown;
+  expect([href("a", "f"), href("", "f")]).toEqual(["A!", "f!"]);
+});
+
 // React's Flight client's `then`: a comment above `let settled = match &mut
 // *chunk.state.borrow_mut() { .. }`, whose JS's first statement printed is
 // the `if` of its first arm, is above that `if`, as upstream's `// The

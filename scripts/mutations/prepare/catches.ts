@@ -490,4 +490,13 @@ export const mutations: Mutation[] = [
     replace: "            (kind, written.then_some(stmt.span).filter(|_| false))\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "above the call's return in the try"],
   },
+  {
+    name: "tried-assignment-where-its-arm-is",
+    breaks:
+      "an `Ok` arm's value, `Ok(h) => h`, kept as the `try`'s `href = parse(s)`, is where that arm is, so a comment above the value in the `catch_unwind` closure is above `let href;` (rd545)",
+    file: "src/prepare/catches.rs",
+    find: "            let written = matches!(stmt.kind, StmtKind::Return(_))\n",
+    replace: "            let written = true\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment in a catch_unwind closure is above its value"],
+  },
 ];

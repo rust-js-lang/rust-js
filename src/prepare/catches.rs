@@ -484,14 +484,20 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
             _ => None,
         }
     };
-    // Where the program wrote it, of a statement written after the call's
+    // Where the program wrote it, of a `return` written after the call's
     // `$try`, `if let Ok(function) = js::eval(code) { //
-    // eslint-disable-next-line no-eval\n return function; }`'s `return`, so
-    // a comment above it is above the call it's made of, `return (0,
-    // eval)(code);` (rd525).
+    // eslint-disable-next-line no-eval\n return function; }`'s, so a
+    // comment above it is above the call it's made of, `return (0,
+    // eval)(code);` (rd525); not an assignment of the `Ok`'s value, `let
+    // href = match catch_unwind(|| { // c\n parse(s) }) { Ok(h) => h, .. }`'s
+    // `href = parse(s)`, which is where that value is, the call's, after
+    // the comment in the closure (rd545).
     let held = match ok {
         [stmt] => kept(stmt).map(|kind| {
-            let written = !stmt.span.is_none() && !made.span.is_none() && stmt.span.lo >= made.span.hi;
+            let written = matches!(stmt.kind, StmtKind::Return(_))
+                && !stmt.span.is_none()
+                && !made.span.is_none()
+                && stmt.span.lo >= made.span.hi;
             (kind, written.then_some(stmt.span))
         }),
         _ => None,
