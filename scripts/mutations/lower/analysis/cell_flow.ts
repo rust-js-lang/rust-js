@@ -74,8 +74,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a call rustc can't resolve, a generic `f()`, runs nothing of what it's given, so a closure it calls borrows a cell of its own, unchecked, and runs on where Rust panics",
     file: "src/lower/analysis/cell_flow.rs",
-    find: "        let Ok(Some(instance)) = crate::lower::items::resolve_instance_in(tcx, recognition.typing_env, id, args)\n        else {\n            return self.unseen(&ports);\n        };",
-    replace: "        let Ok(Some(instance)) = crate::lower::items::resolve_instance_in(tcx, recognition.typing_env, id, args)\n        else {\n            return;\n        };",
+    find: "args) else {\n            return self.unseen(&ports);\n        };\n        let ty::InstanceKind::Item(callee)",
+    replace: "args) else {\n            return;\n        };\n        let ty::InstanceKind::Item(callee)",
     tests: corpus("refcell_flow_reaches_unseen"),
   },
   {

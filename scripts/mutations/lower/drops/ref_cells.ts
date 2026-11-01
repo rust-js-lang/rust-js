@@ -467,8 +467,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a cell code rust-js can't see may reach is quiet beside a counted borrow of another such cell of its type, so a borrow of a binding's batch while JS's batch is held runs on where Rust panics (ADR 0863, amended)",
     file: "src/lower/drops/ref_cells.rs",
-    find: "                may_be(&self.counted_reached)\n                    || may_be(&self.counted_unknown)",
-    replace: "                may_be(&self.counted_unknown)",
+    find: "                library_counts || may_be(&self.counted_reached) || may_be(&self.counted_unknown)",
+    replace: "                library_counts || may_be(&self.counted_unknown)",
     tests: ["test/lowering-cell-flow.test.ts", "-t", "a cell JS gives may be any cell of its type JS reaches"],
   },
   {
@@ -479,5 +479,14 @@ export const mutations: Mutation[] = [
     find: "        ref_cells.classed.contains(&(body, span, callee))\n",
     replace: "        false\n",
     tests: ["test/lowering-cell-flow.test.ts", "-t", "a held borrow counts the cells that can be its own"],
+  },
+  {
+    name: "class-reached-ignores-library-counted",
+    breaks:
+      "a cell a library may reach is quiet in its consumer though the library counts its type, so a borrow of one the library holds runs on where Rust panics (ADR 0863, amended)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "                library_counts || may_be(&self.counted_reached)",
+    replace: "                may_be(&self.counted_reached)",
+    tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
   },
 ];

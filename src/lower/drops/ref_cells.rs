@@ -224,9 +224,8 @@ impl<'tcx> RefCells<'tcx> {
         let counted = match class {
             CellClass::Own(class) => self.counted_classes.contains(&class) || may_be(&self.counted_unknown),
             CellClass::Anything => {
-                may_be(&self.counted_reached)
-                    || may_be(&self.counted_unknown)
-                    || self.library_has(tcx, ty, |f| &f.counted).is_some()
+                let library_counts = self.library_has(tcx, ty, |f| &f.counted).is_some();
+                library_counts || may_be(&self.counted_reached) || may_be(&self.counted_unknown)
             }
         };
         !counted && !self.impls_ask_of(recognition, borrows, ty, drops)
