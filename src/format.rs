@@ -586,7 +586,10 @@ mod tests {
         let map = map.into_sourcemap().to_json_string();
         let (_, moved) = transformed(code, text.to_string(), &map, "a.js").expect("the same program");
         let moved = SourceMap::from_json_string(&moved).expect("a map");
-        let at: Vec<_> = moved.get_tokens().map(|t| (t.get_dst_line(), t.get_dst_col())).collect();
+        let at: Vec<_> = moved
+            .get_tokens()
+            .map(|t| (t.get_dst_line(), t.get_dst_col()))
+            .collect();
         let mut sorted = at.clone();
         sorted.sort();
         assert_eq!(at, sorted);

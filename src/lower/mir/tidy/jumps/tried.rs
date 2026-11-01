@@ -6,7 +6,7 @@ use super::*;
 /// What a `for` binds of `item`, read by the first statements of `body`:
 /// `const x = item;`, or `const a = item[0]; const b = item[1];`, its
 /// pattern, whether it's a `let`, and how many statements; `_` where nothing
-/// reads it. And each part read again by a `const`, `const c = item[1];`
+/// reads it, and `item` itself where it's a name the program gave. And each part read again by a `const`, `const c = item[1];`
 /// after `b`'s, MIR's of a pattern's two bindings of one element: an alias,
 /// `c` of `b`, which the body reads by the name the pattern gives it.
 pub(in crate::lower::mir::tidy) type Binding = (js::Pattern, bool, usize, Vec<(String, String)>);
@@ -54,6 +54,12 @@ pub(in crate::lower::mir::tidy) fn binding(body: &[Stmt], item: &str) -> Option<
     let mutable = parts.iter().any(|&(_, _, m)| m);
     let pattern = match parts.as_slice() {
         [] if js::mentions_in(body, item) == 0 => js::Pattern::Name("_".to_string()),
+        // Read as it is, named already for the pattern that binds it, a
+        // drop guard's `let item; try { item = $next(iter); } ..` (#444's
+        // names): the `for`'s own, `let` where the body sets it.
+        [] if !is_temporary(item) => {
+            return Some((js::Pattern::Name(item.to_string()), assigns(body, item), 0, aliases));
+        }
         [(Ok(None), bound, _)] => js::Pattern::Name(bound.clone()),
         _ if !parts.is_empty() && parts.iter().all(|(p, ..)| matches!(p, Ok(Some(_)))) => {
             let last = parts.iter().filter_map(|(p, ..)| p.clone().ok().flatten()).max()?;

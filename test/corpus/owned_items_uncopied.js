@@ -43,7 +43,6 @@ function main() {
     [a[0], a[1]],
     [a[0], a[1]],
   ];
-  let p;
   for (let j = 0; j < pair.length; j++) {
     const p = pair[j];
     bump(p);

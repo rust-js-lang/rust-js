@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tried.rs",
     find: "                    && parts.is_empty() =>\n",
     replace: "                    && false =>\n",
-    tests: ["test/lowering-loops.test.ts", "-t", "a for loop of a mut binding"],
+    tests: ["test/lowering-index-loops.test.ts", "-t", "a for loop of a mut binding"],
   },
   {
     name: "tried-first-not-after",
@@ -169,6 +169,16 @@ export const mutations: Mutation[] = [
     find: "                    .is_some_and(|r| first_written(let_else_bindings(then, r, let_elses)).is_some_and(|a| r < a))\n",
     replace: "                    .is_some_and(|r| first_written(then).is_some_and(|a| r < a))\n",
     tests: ["test/corpus.test.ts", "-t", "^let_else_tuple_guard.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "named-step-item-unbound",
+    breaks:
+      "a `for` over a `RefCell`'s borrow whose step's temporary is named for its pattern, `let item; try { item = $next(iter); } ..`, binds nothing, and stays `while ((item = $next(iter)) != null)`, not `for (let i = 0; i < borrow.length; i++) { const item = borrow[i]; .. }` (#444's names, rd191)",
+    file: "src/lower/mir/tidy/jumps/tried.rs",
+    find: "        [] if !is_temporary(item) => {\n",
+    replace: "        [] if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_loops.rs$"],
     snapshots: true,
   },
 ];

@@ -267,7 +267,8 @@ pub(super) fn for_of(
             }
         });
     }
-    if js::mentions_in(&body, item) > 0 || js::mentions_in(&exit, item) > 0 {
+    let own = matches!(&pattern, js::Pattern::Name(name) if name == item);
+    if (!own && js::mentions_in(&body, item) > 0) || js::mentions_in(&exit, item) > 0 {
         return None;
     }
     let looped = match step {

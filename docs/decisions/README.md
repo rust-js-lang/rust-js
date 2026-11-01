@@ -823,7 +823,6 @@ reordered, and git merges this file by keeping both sides' lines
 - [1039 An untagged enum's variant may hold another untagged enum](1039-an-untagged-enum-may-hold-another.md) *(rd305)*
 - [1040 A `position` only tested is JS's own search: `indexOf`, `findIndex`, `-1` its `None`](1040-a-position-tested-is-jss-own-search.md) *(rd316)*
 - [1041 A class that implements a binding's class extends it, an ES class](1041-a-class-that-implements-a-bindings-class-extends-it.md) *(rd331: class components, the react crate's `Component`; amended: `self: &'static Self`; a class of no superclass keeps 0761's form; a class component is an element of `jsx!`, rd331i)*
-- [1041 A class that implements a binding's class extends it, an ES class](1041-a-class-that-implements-a-bindings-class-extends-it.md) *(rd331: class components, the react crate's `Component`)*
 - [1042 A loop over an array counts its indices: `for (let i = 0; i < v.length; i++)`](1042-a-loop-over-an-array-counts-its-indices.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md) *(amended: a closure's handle on itself is its own name)*
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*

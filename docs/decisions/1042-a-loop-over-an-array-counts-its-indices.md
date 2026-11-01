@@ -72,7 +72,14 @@ build paid for the polyfills.
   examples with them. Native comparisons are unchanged.
 - `format.rs` keeps a mapping only on its node's line, where the formatter
   wrote less of that line than the code. A loop's binding, which has no
-  span, put one past the text's end.
+  span, put one past the text's end. The order of the mappings it moves,
+  which no program it prints puts out of order now, is held by
+  `format::tests::moved_tokens_in_order`.
+- A loop over a `RefCell`'s borrow is a `for` again, `for (let i = 0; i <
+  borrow.length; i++)` in its `try`: a step whose temporary was named for
+  the pattern that binds it, `let item; try { item = $next(iter); } ..`
+  (ADR 0569's #444), is the `for`'s own binding (`tried::binding`), where
+  it had printed `while ((item = $next(iter)) != null)` since #444.
 - Held by `test/corpus/array_counted_loops.rs`, run against native Rust,
   and the mutations of `scripts/mutations/lower/mir/tidy/loops.ts` and
   `lower/mir/iter/sources.ts`.
