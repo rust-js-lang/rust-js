@@ -92,6 +92,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.js_eq(ty) == Some(crate::lower::std_impls::JsEq::SameValue)
     }
 
+    /// `a === b` of `ty`s JS's `===` compares as Rust's `==` does
+    /// (`js_eq`, or by address): of what's never a NaN, text or an object
+    /// equal only to itself, known so, as an array's `includes` finds what
+    /// it does (`Known::NeverNaN`, rd353).
+    pub(in crate::lower) fn strict_eq(&self, ty: Ty<'tcx>, a: Expr, b: Expr) -> Expr {
+        let mut same = Expr::bin(js::Op::Eq, a, b);
+        if self.eq_is_identity(ty) || self.eq_by_address(ty) {
+            same.facts = same.facts.with(js::Known::NeverNaN);
+        }
+        same
+    }
+
     /// The drop of a `receiver`'s items, an iterator's, where they have a
     /// destructor.
     fn item_drop_of(&mut self, receiver: Ty<'tcx>, span: Span) -> R<Option<Expr>> {

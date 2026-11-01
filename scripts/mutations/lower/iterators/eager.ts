@@ -197,13 +197,9 @@ export const mutations: Mutation[] = [
     breaks:
       '`any(|t| t == "hidden")` from MIR is `some((t) => t === "hidden")`, not `includes("hidden")`',
     file: "src/lower/iterators/eager.rs",
-    find: "                    matches!(&v.kind, js::ExprKind::Str(_) | js::ExprKind::Bool(_)) || v.as_int().is_some()\n",
-    replace: "                    false\n",
-    tests: [
-      "test/lowering-iterators.test.ts",
-      "-t",
-      "negated matches, string methods",
-    ],
+    find: "                    matches!(&v.kind, js::ExprKind::Str(_) | js::ExprKind::Bool(_))\n                        || v.as_int().is_some()\n",
+    replace: "                    false\n                        || false\n",
+    tests: ["test/lowering-iterators.test.ts", "-t", "whether any item equals a value"],
   },
   {
     name: "count-reduced",
@@ -533,5 +529,14 @@ export const mutations: Mutation[] = [
     find: "        _ if owns => return None,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
+  },
+  {
+    name: "never-nan-any-unread",
+    breaks: "`any` of one value compared, of what's never a NaN, text say, stays `some((t) => t === type)`, not the array's `includes(type)` (rd353, ADR 0966, amended)",
+    file: "src/lower/iterators/eager.rs",
+    find: "                        || compares_never_nan(f)\n",
+    replace: "                        || false && compares_never_nan(f)\n",
+    tests: ["test/corpus.test.ts", "-t", "^any_of_one_value_is_includes.rs$"],
+    snapshots: true,
   },
 ];

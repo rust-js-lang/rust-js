@@ -998,7 +998,7 @@ fn atom(e: &Expr) -> Option<(Expr, Set)> {
         ExprKind::Unary(UnaryOp::Not, a) => atom(a).map(|(s, set)| (s, set.complement())),
         // Of integers, `n < 1` is `!(n >= 1)`, its converse's complement,
         // as `Expr::negated_test` makes one of the other: one set of each.
-        ExprKind::Binary(Op::Lt | Op::Le, ..) if e.facts.has(js::Known::Integers) => {
+        ExprKind::Binary(Op::Lt | Op::Le, ..) if e.facts.has(js::Known::NeverNaN) => {
             atom(&e.clone().negated_test()).map(|(s, set)| (s, set.complement()))
         }
         ExprKind::Binary(op @ (Op::And | Op::Or), a, b) => {

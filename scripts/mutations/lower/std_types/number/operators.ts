@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a comparison of integers isn't known never to be of a NaN, so a `loop` ending `if n > limit { break; }` is `do { .. } while (!(n > limit))`, not `while (n <= limit)` (ADR 0978, amended)",
     file: "src/lower/std_types/number/operators.rs",
-    find: "            if ty.is_integral() {\n                compared.facts",
+    find: "            if ty.is_integral() || ty.is_char() || ty.is_bool() {\n                compared.facts",
     replace: "            if false {\n                compared.facts",
     tests: ["test/corpus.test.ts", "-t", "^do_while_tested_last.rs$"],
     snapshots: true,
@@ -244,5 +244,22 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^remainder_operands.rs$"],
     snapshots: true,
+  },
+  {
+    name: "never-nan-chars-unmarked",
+    breaks: "a `===` of `char`s or `bool`s isn't known never to compare a NaN, so `any` of one compared stays `some`, not `includes` (rd353, ADR 0966, amended)",
+    file: "src/lower/std_types/number/operators.rs",
+    find: "            if ty.is_integral() || ty.is_char() || ty.is_bool() {\n",
+    replace: "            if ty.is_integral() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^any_of_one_value_is_includes.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "never-nan-floats-ordered",
+    breaks: "a comparison of floats is taken never to be of a NaN, so `any` of a float compared is `includes`, which finds a NaN `==` doesn't (rd353, ADR 0966, amended)",
+    file: "src/lower/std_types/number/operators.rs",
+    find: "            if ty.is_integral() || ty.is_char() || ty.is_bool() {\n",
+    replace: "            if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^any_of_one_value_is_includes.rs$"],
   },
 ];

@@ -41,7 +41,8 @@ test("no item is mapped to itself", () => {
 });
 
 // Whether any item is one value, `any(|t| t == "hidden")`, is whether the
-// array includes it, as react.dev's createFileMap asks of a meta's tokens.
+// array includes it, as react.dev's createFileMap asks of a meta's tokens, of
+// a literal or of a variable of text (rd353, ADR 0966, amended).
 // Not of floats: `includes` finds NaN, which `==` never does.
 test("whether any item equals a value is whether the array includes it", async () => {
   const dir = fixture("any-equal");
@@ -52,11 +53,17 @@ test("whether any item equals a value is whether the array includes it", async (
 pub fn nan(xs: Vec<f64>) -> bool {
     xs.iter().any(|&x| x == f64::NAN)
 }
+
+pub fn one(xs: Vec<f64>) -> bool {
+    xs.iter().any(|&x| x == 1.0)
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain(`[tokens.includes("hidden"), tokens.some((token) => token === name)]`);
+  expect(js).toContain(`[tokens.includes("hidden"), tokens.includes(name)]`);
   expect(js).toContain("xs.some((x) => x === NaN)");
+  // A float's literal, which no NaN is: `includes`.
+  expect(js).toContain("xs.includes(1)");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.hidden(["a", "hidden"], "b")).toEqual([true, false]);
   expect(lib.hidden([], "b")).toEqual([false, false]);

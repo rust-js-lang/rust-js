@@ -76,7 +76,7 @@ function seen(fiber, names) {
   let child = fiber.child;
   while (child != null) {
     const current = child;
-    if (names.some((n) => n === current.name)) {
+    if (names.includes(current.name)) {
       count = (count + 1) >>> 0;
     }
     child = current.sibling;

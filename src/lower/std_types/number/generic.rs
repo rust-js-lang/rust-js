@@ -439,7 +439,7 @@ pub(in crate::lower) fn int_out_of(n: &Expr, from: Num, to: Num) -> Expr {
     let ((from_lo, from_hi), (lo, hi)) = (from.range(), to.range());
     let compared = |op, bound| {
         let mut test = Expr::bin(op, n.clone(), from.literal(bound));
-        test.facts = test.facts.with(js::Known::Integers);
+        test.facts = test.facts.with(js::Known::NeverNaN);
         test
     };
     let below = (from_lo < lo).then(|| compared(Op::Lt, lo));

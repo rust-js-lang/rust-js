@@ -857,9 +857,13 @@ pub enum Known {
     /// `+` of it makes text of what's joined to it, as `"" +` would
     /// (`Expr::text_joined`, ADR 0639, amended).
     Text,
-    /// A comparison of integers, `n < 0`, never of a NaN: its negation is
-    /// its converse, `n >= 0` (`Expr::negated_test`, #366).
-    Integers,
+    /// A comparison of what's never a NaN, as Rust's types tell: of
+    /// integers, `n < 0`, whose negation is its converse, `n >= 0`
+    /// (`Expr::negated_test`, #366); a `===` of text, `bool`s, `char`s or
+    /// an object equal only to itself too, whose search of an array is the
+    /// array's `includes`, which finds what `===` does but a NaN (rd353,
+    /// ADR 0966, amended).
+    NeverNaN,
     /// A JS iterator already, as its Rust type tells (`as_js_iterator`'s):
     /// a variable holding a std adapter, `takeWhile` of `takeWhile.filter(..)`,
     /// is never made one again by `Iterator.from`, whose call of its

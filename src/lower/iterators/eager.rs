@@ -282,10 +282,13 @@ pub(in crate::lower) fn eager_chains(stmts: &mut [Stmt]) {
                 Expr::call(Expr::member(items, "reduce"), vec![f, init.clone()])
             }),
             // Whether any item is a literal, which `===` and `includes` agree
-            // of whatever the items are: `includes`.
+            // of whatever the items are, or one value its `===` compares of
+            // what's never a NaN, as Rust's types tell (rd353): `includes`.
             ("some", [f])
                 if let Some(value) = sought(f).filter(|v| {
-                    matches!(&v.kind, js::ExprKind::Str(_) | js::ExprKind::Bool(_)) || v.as_int().is_some()
+                    matches!(&v.kind, js::ExprKind::Str(_) | js::ExprKind::Bool(_))
+                        || v.as_int().is_some()
+                        || compares_never_nan(f)
                 }) =>
             {
                 eager_items(chain, false, None)

@@ -387,6 +387,15 @@ pub(in crate::lower) fn sought(test: &Expr) -> Option<Expr> {
     (value.reads_same() && !value.mentions_var(param)).then(|| (**value).clone())
 }
 
+/// Whether `test`, one `sought` reads, compares what's never a NaN, as
+/// Rust's types tell (`Known::NeverNaN`): what an array's `includes` finds
+/// as its `===` does (rd353).
+pub(in crate::lower) fn compares_never_nan(test: &Expr) -> bool {
+    matches!(&test.kind, js::ExprKind::Arrow(_, body)
+        if matches!(body.as_slice(), [Stmt { kind: StmtKind::Return(Some(e)), .. }]
+            if matches!(e.kind, js::ExprKind::Binary(Op::Eq, ..)) && e.facts.has(js::Known::NeverNaN)))
+}
+
 /// Whether `e` is an array as it's made: `[a, b]`, `Array.from(x)`, a
 /// string's `split` or a helper's, and through an array's methods that make one,
 /// `.filter(f)`, not an iterator's of the same names, `$iter(xs).filter(f)`.

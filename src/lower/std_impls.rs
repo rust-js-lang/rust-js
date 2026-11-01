@@ -1155,7 +1155,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // One whose `==` is its address's, its `Hash` whatever it is: the
         // object's `===` (ADR 0864, amended).
         if self.js_eq(ty).is_some() || self.eq_by_address(ty) {
-            return Ok(Expr::bin(Op::Eq, a, b));
+            return Ok(self.strict_eq(ty, a, b));
         }
         // A type of a type parameter whose `PartialEq` a bound gives, a
         // method's `where Self: PartialEq` of a `Wrapping<T>`: its dictionary's,

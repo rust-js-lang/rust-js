@@ -44,9 +44,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(js_op) = comparison {
             let mut compared = Expr::bin(js_op, without_zero_sign(l), without_zero_sign(r));
             // Of integers, never a NaN: its negation is its converse, `!(n
-            // > limit)` is `n <= limit` (`Expr::negated_test`, #366).
-            if ty.is_integral() {
-                compared.facts = compared.facts.with(js::Known::Integers);
+            // > limit)` is `n <= limit` (`Expr::negated_test`, #366); of
+            // them, `char`s and `bool`s, a `===` an array's `includes` finds
+            // as it does (rd353).
+            if ty.is_integral() || ty.is_char() || ty.is_bool() {
+                compared.facts = compared.facts.with(js::Known::NeverNaN);
             }
             return Ok(compared);
         }

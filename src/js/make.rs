@@ -679,7 +679,7 @@ impl Expr {
             // a method's call, `!word` of `word.is_empty()` (#301).
             ExprKind::Unary(UnaryOp::Not, inner) => inner.or_at(self.span),
             // Of integers, the converse: `!(n < 0)` is `n >= 0`.
-            ExprKind::Binary(op @ (Op::Lt | Op::Le | Op::Gt | Op::Ge), a, b) if self.facts.has(Known::Integers) => {
+            ExprKind::Binary(op @ (Op::Lt | Op::Le | Op::Gt | Op::Ge), a, b) if self.facts.has(Known::NeverNaN) => {
                 let converse = match op {
                     Op::Lt => Op::Ge,
                     Op::Le => Op::Gt,

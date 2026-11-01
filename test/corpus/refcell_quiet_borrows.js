@@ -10,7 +10,7 @@ function addType(transition, ty) {
   const types = transition.types;
   if (types == null) {
     transition.types = [ty];
-  } else if (!types.some((t) => t === ty)) {
+  } else if (!types.includes(ty)) {
     types.push(ty);
   }
 }

@@ -238,7 +238,7 @@ export function hasFloat(xs, x) {
 | `reduce` | `iter().fold(init, ..)`; a total is `sum()` |
 | `find` | `iter().find(..)`, an `Option` |
 | `findIndex`, `indexOf` | `iter().position(..)`, an `Option`, never `-1`: where the function only tests it and reads its index, JS's own, `-1` its `None`, `indexOf(x)` of a test by `===`, `Rc::ptr_eq` too; one it gives back is `$position`'s, `undefined` its `None` ([ADR 1040](../../decisions/1040-a-position-tested-is-jss-own-search.md)) |
-| `some`, `every` | `iter().any(..)`, `iter().all(..)` |
+| `some`, `every` | `iter().any(..)`, `iter().all(..)`; an `any` that only compares its item with one value, `any(\|t\| t == ty)`, is `includes(ty)` where what's compared is never a NaN, text, integers, `char`s and `bool`s ([ADR 0966](../../decisions/0966-a-floats-order-is-its-comparison.md), amended) |
 | `includes` | `contains(&x)`, of an object equal only to itself too, a DOM node's ([ADR 1016](../../decisions/1016-a-webapi-object-is-equal-only-to-itself.md)); of floats, which `==` finds no `NaN` of, `indexOf(x) >= 0` ([ADR 0966](../../decisions/0966-a-floats-order-is-its-comparison.md)) |
 | `flat` | `iter().flatten()` |
 | `slice(a, b)` | `&v[a..b]` |

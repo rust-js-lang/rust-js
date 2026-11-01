@@ -439,4 +439,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^trailing_none_items.rs$"],
   },
+  {
+    name: "never-nan-text-unmarked",
+    breaks: "a `===` of text isn't known never to compare a NaN, so `any` of a `String` compared with one value stays `some`, not `includes` (rd353, ADR 0966, amended)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "        if self.eq_is_identity(ty) || self.eq_by_address(ty) {\n",
+    replace: "        if false && (self.eq_is_identity(ty) || self.eq_by_address(ty)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^any_of_one_value_is_includes.rs$"],
+    snapshots: true,
+  },
 ];

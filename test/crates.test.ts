@@ -563,7 +563,7 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
   const out = chain(pairs, "ref_cells", ["dep", "app"]);
   const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
   expect(dep).toContain("  const current = {\n    types: undefined,\n    seen: new Set(),\n  };\n  current.types = prev?.types;\n");
-  expect(dep).toContain("    transition.types = [ty];\n  } else if (!types.some((t) => t === ty)) {\n    types.push(ty);\n");
+  expect(dep).toContain("    transition.types = [ty];\n  } else if (!types.includes(ty)) {\n    types.push(ty);\n");
   expect(dep).toContain("    return a === b;\n");
   expect(dep).toContain("    const count = transition.seen.size;\n    transition.seen.clear();\n");
   expect(dep).not.toContain("$borrow");

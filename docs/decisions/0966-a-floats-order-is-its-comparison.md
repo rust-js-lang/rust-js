@@ -1,6 +1,6 @@
 # 0966. A float's `partial_cmp` against an `Ordering` is its comparison, and `contains` of floats `indexOf`
 
-Status: Accepted; its `position` decided by [1040](1040-a-position-tested-is-jss-own-search.md). Extends [0371](0371-tests-and-names-as-written.md)'s turned
+Status: Accepted; its `position` decided by [1040](1040-a-position-tested-is-jss-own-search.md). Amended: `any` of one value compared is `includes` where it's never a NaN. Extends [0371](0371-tests-and-names-as-written.md)'s turned
 comparisons and [0053](0053-partial-eq.md)'s `contains` to what
 React's test selectors write.
 
@@ -58,3 +58,38 @@ array. (Decided by [1040](1040-a-position-tested-is-jss-own-search.md):
 one only tested is `indexOf`, `-1` its `None`, and `splice`.) A pair read from an array index, `stack[index][0]` and
 `stack[index][1]`, where a `let (a, b) = stack[index].clone()` is
 destructured elsewhere, is left too.
+
+## Amendment: `any` of one value compared is `includes` where it's never a NaN (rd353)
+
+React's `addTransitionType` asks `transition_types.iter().any(|t| t ==
+r#type)` of a `Vec<String>` and a `&str`, the Rust an engineer writes
+where `contains` would need a `&String`. It printed
+`transitionTypes.some((t) => t === type)`; upstream searches,
+`transitionTypes.indexOf(type) === -1`. Only a literal sought, `some((t)
+=> t === "a")`, was `includes`.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. `includes` finds
+what `===` finds but a NaN; of what's never one, the two agree item by
+item, and the value, a variable that reads the same, is read once either
+way, as `contains`' is.
+
+**`any` whose closure only compares its item with one value is
+`includes(value)` where the comparison is of what's never a NaN, as
+Rust's types tell, the same search `contains` makes of it**: the `===`
+the comparison's owner made carries `Known::NeverNaN` (`Integers`
+before, renamed, which an integers' ordering kept for its negation,
+#366): of integers, `char`s and `bool`s (`number/operators.rs`), and of
+text and an object equal only to itself (`strict_eq`, `JsEq::SameValue`
+or by address). `iterators::compares_never_nan` reads it, beside
+`sought`. A float's stays `some`, which `includes` would make find a
+NaN.
+
+- `!types.some((t) => t === type)` is `!types.includes(type)`, as
+  `!types.contains(..)` is, not upstream's `indexOf(type) === -1`: one
+  form of one search ([0053](0053-partial-eq.md)'s `includes`).
+
+Held by `test/corpus/any_of_one_value_is_includes.rs` (text, a `u32`, a
+`char`, a `bool`, and a float of a NaN and `-0.0`, against native Rust).
+Mutations `never-nan-any-unread` (`iterators/eager.rs`),
+`never-nan-text-unmarked` (`combinators/adapters.rs`), `never-nan-floats-ordered` and
+`never-nan-chars-unmarked` (`number/operators.rs`).
