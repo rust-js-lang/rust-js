@@ -1,6 +1,6 @@
 # shape	count	per 10,000 lines
 files	1403
-lines	138350
+lines	138364
 temporaries	1	0.1
 labeled blocks	14	1
 while (true)	124	9
@@ -725,7 +725,7 @@ test/corpus/matrix_integers.js	966	0	0	0	0	0	0	495
 test/corpus/matrix_strings.js	142	0	0	0	0	1	0	15
 test/corpus/maybe_uninit_pointer.js	47	0	0	0	0	0	0	3
 test/corpus/min_max_chains.js	34	0	0	0	0	0	0	0
-test/corpus/mixed_condition_around_inner_loop.js	61	0	0	0	0	0	0	0
+test/corpus/mixed_condition_around_inner_loop.js	75	0	0	0	0	0	0	0
 test/corpus/module_of_types_reexported.js	13	0	0	0	0	0	0	0
 test/corpus/module_path_namespace.js	37	0	0	0	0	0	0	2
 test/corpus/module_text_truth.js	35	0	0	0	0	0	0	0

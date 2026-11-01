@@ -34,14 +34,27 @@ function written(keys, seen, last) {
 function negated(keys, seen, last) {
   const out = [];
   for (const key of keys) {
-    if (key > 0) {
-      if (seen && last === key) {
-        continue;
-      }
-      for (const part of [key, -key | 0]) {
-        out.push(part);
-      }
+    if (!(key > 0 && (!seen || last !== key))) {
+      continue;
     }
+    for (const part of [key, -key | 0]) {
+      out.push(part);
+    }
+  }
+  return out;
+}
+
+function skippedAfter(keys, seen, last) {
+  const out = [];
+  for (const key of keys) {
+    if (key === 5) {
+      continue;
+    }
+    if (key <= 0 || (seen && last === key)) {
+      // Neither new nor positive.
+      continue;
+    }
+    out.push(key);
   }
   return out;
 }
@@ -55,6 +68,7 @@ function main() {
     console.log(`[${changed([1, 2, -3, 5], seen, last).join(", ")}]`);
     console.log(`[${written([1, 2, -3, 5], seen, last).join(", ")}]`);
     console.log(`[${negated([1, 2, -3, 5], seen, last).join(", ")}]`);
+    console.log(`[${skippedAfter([1, 2, -3, 5], seen, last).join(", ")}]`);
   }
 }
 //# sourceMappingURL=case.js.map

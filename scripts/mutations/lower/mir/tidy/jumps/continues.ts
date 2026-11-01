@@ -19,6 +19,16 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "negated-continue-nested",
+    breaks:
+      "a `continue` the program wrote of a negated chain, `if !(a && (!b || c)) { continue; }`, is `if (a) { if (b && !c) { continue; } .. }`, tests it didn't nest (rd72c)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                    if let Some((test, then, at)) = negated_continue(&block, &inner, guards) {\n",
+    replace: "                    if false && let Some((test, then, at)) = negated_continue(&block, &inner, guards) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^mixed_condition_around_inner_loop.rs$"],
+    snapshots: true,
+  },
+  {
     name: "written-continue-of-a-mixed-condition-folded",
     breaks:
       "an `if` of a `continue` the program wrote, `if (seen && last === key) { continue; }`, is folded into the `if` around the rest, `if (key > 0 && (!seen || last !== key))`, a test it didn't write",

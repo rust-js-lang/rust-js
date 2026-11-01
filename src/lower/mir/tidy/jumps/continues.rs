@@ -40,6 +40,15 @@ pub(in crate::lower::mir::tidy) fn continued(
                         body.push(test);
                         break;
                     }
+                    // One the program wrote as a `continue` of its negation,
+                    // `if (!(a && (!b || c))) { continue; }`, every test of
+                    // it in the written `if`'s: that `if`, then what it
+                    // skips, not the tests nested (rd72c).
+                    if let Some((test, then, at)) = negated_continue(&block, &inner, guards) {
+                        body.push(StmtKind::If(test, vec![StmtKind::Continue(None).at(at)], None).at(span));
+                        body.extend(then);
+                        break;
+                    }
                     let clashes = declared(&inner).any(|name| declared(body).any(|n| n == name));
                     if clashes || continues(&mut inner, &block, looped.as_deref(), false).is_none() {
                         body.push(StmtKind::Labeled(block, inner).at(span));
@@ -1104,4 +1113,29 @@ pub(in crate::lower::mir::tidy) fn present(test: &Expr, item: &str) -> bool {
         ExprKind::Var(v) => v == item,
         _ => js::null_test(test, true).is_some_and(|e| matches!(&e.kind, ExprKind::Var(v) if v == item)),
     }
+}
+
+/// Of a block `label` a loop's body ends in, `inner`, whose tests are
+/// each in the condition of an `if` of a `continue` the program wrote
+/// (`Written::continues`), `if !(a && (!b || c)) { continue; }`: the test
+/// of that `continue`, the negation of the one under which what follows
+/// runs (`logicals::skipped_test`), what follows, and where the `continue`
+/// is written.
+fn negated_continue(
+    label: &str,
+    inner: &[Stmt],
+    guards: &[(js::Span, js::Span)],
+) -> Option<(Expr, Vec<Stmt>, js::Span)> {
+    let tests: Vec<js::Span> = guards.iter().map(|&(test, _)| test).collect();
+    let Stmt {
+        kind: StmtKind::If(test, then, None),
+        span,
+    } = logicals::skipped_test(label, inner, &tests)?
+    else {
+        return None;
+    };
+    let &(_, at) = guards
+        .iter()
+        .find(|(test, _)| test.lo <= span.lo && span.hi <= test.hi)?;
+    Some((test.negated_test(), then, at))
 }

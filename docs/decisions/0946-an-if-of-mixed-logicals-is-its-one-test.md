@@ -179,3 +179,22 @@ whose `continue` stays. Held by `mixed_condition_around_inner_loop.rs`
 (native-compared) and the mutations
 `mixed-condition-ending-a-loop-continued` and
 `written-continue-of-a-mixed-condition-folded`.
+
+## Amendment: a `continue` of a written negation is that `if` (2026-11-01, rd72c)
+
+`if !(key > 0 && (!seen || last != key)) { continue; }`, then the rest
+of the body, printed `if (key > 0) { if (seen && last === key) { continue;
+} .. }`, the rest nested in tests the program didn't write. Its `continue`
+stays, as above, and so does the test that leads to it. Where every test
+of the block the body ends in is in the condition of an `if` of a written
+`continue` (`Written::continues`), `continued` makes that `if` of the
+negation of `skipped_test`'s test, then what follows:
+`if (!(key > 0 && (!seen || last !== key))) { continue; } for (..)`. The
+written negations pass gives back the `!( .. )` as written. Case (ADR
+0262): N, as above: a test's truth, the same either way. Held by
+`mixed_condition_around_inner_loop.rs`'s `negated` (native-compared) and
+the mutation `negated-continue-nested`.
+
+The same test after an earlier `continue` in the body, `skipped_after`
+there, still prints De Morgan's form, `if (key <= 0 || (seen && last ===
+key)) { continue; }`. Another pass makes it, after the written negations.
