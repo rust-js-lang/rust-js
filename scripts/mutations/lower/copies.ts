@@ -238,6 +238,24 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^type_id_statics.rs$"],
   },
   {
+    name: "library-struct-unshareable",
+    breaks:
+      "a static of a library's struct of functions, React's `Dispatcher`, isn't made as its initializer says, and is refused",
+    file: "src/lower/copies.rs",
+    find: "            ty::Adt(adt, args) if !super::recognition::is_std_crate(tcx, adt.did()) && !adt.is_union() => adt",
+    replace: "            ty::Adt(adt, args) if adt.did().is_local() && !adt.is_union() => adt",
+    tests: ["test/crates.test.ts", "-t", "two crates: static_of_a_library_struct"],
+  },
+  {
+    name: "std-struct-shareable",
+    breaks:
+      "std's struct is shared as its fields read, so a constant `BTreeMap` is one JS map, which `extend` of one use grows for the next",
+    file: "src/lower/copies.rs",
+    find: "            ty::Adt(adt, args) if !super::recognition::is_std_crate(tcx, adt.did()) && !adt.is_union() => adt",
+    replace: "            ty::Adt(adt, args) if !adt.is_union() => adt",
+    tests: ["test/corpus.test.ts", "-t", "^std_map_const.rs$"],
+  },
+  {
     name: "raw-pointer-not-shareable",
     breaks:
       "a static holding a raw pointer isn't made as its initializer says, and is refused",

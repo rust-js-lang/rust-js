@@ -492,8 +492,9 @@ pub(super) fn may_hold_changed<'tcx>(
 /// Can one JS value be every use of a constant of `ty`, which Rust makes
 /// afresh at each? A function, a closure, a shared reference, a `dyn`
 /// behind one, a number and a string can't change in place; an array, a
-/// tuple, an `Option` and the crate's own struct or enum of those can, and
-/// is copied where it's read if something changes one, as any value is.
+/// tuple, an `Option` and the crate's own struct or enum of those, or a
+/// library's, can, and is copied where it's read if something changes one,
+/// as any value is.
 pub(super) fn shareable<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     fn walk<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
         if seen.contains(&ty) {
@@ -526,7 +527,10 @@ pub(super) fn shareable<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
             ty::Adt(adt, args) if super::representation::marks_js_object(tcx, *adt, args) => {
                 tcx.type_is_copy_modulo_regions(ty::TypingEnv::fully_monomorphized(), ty)
             }
-            ty::Adt(adt, args) if adt.did().is_local() && !adt.is_union() => adt
+            // The crate's own struct or enum, or a library's, React's
+            // `Dispatcher`, compiled as its fields say too (ADR 0100); not
+            // std's, whose fields are no JS value's.
+            ty::Adt(adt, args) if !super::recognition::is_std_crate(tcx, adt.did()) && !adt.is_union() => adt
                 .all_fields()
                 .all(|field| walk(tcx, field.ty(tcx, args).skip_normalization(), seen)),
             _ => false,

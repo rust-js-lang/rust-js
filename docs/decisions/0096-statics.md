@@ -300,3 +300,29 @@ refused where it's exported". The mutations `static-mut-*`,
 `static-pointer-unrefused` and `library-static-mut-unread`. Of rustc's 46
 run-pass tests in scope that use a `static mut` or a raw pointer to a
 place, none changed: 35 pass, and 11 still stop where they did.
+
+## Amendment (2026-11-01): a library's struct is shareable as the crate's own (rd473)
+
+React's Flight server makes its hooks of react-reconciler's `Dispatcher`,
+a struct of fn pointers, `pub static HOOKS_DISPATCHER: Dispatcher =
+Dispatcher { use_id, .. }`, as the reconciler's own statics of it are. A
+value tree holds no function, so a static of one is its initializer,
+lowered as code where `copies::shareable` says one JS value can be every
+use's; that walked the crate's own structs only, so a library's was
+refused: "statics of type `Dispatcher`". Case C
+([0262](0262-when-rust-and-js-disagree.md)) only in that it refused a
+valid program; the JS is the reconciler's form.
+
+**`shareable` walks a library's struct or enum by its fields** as the
+crate's own, as `contains_mutated` does: a library rust-js compiled is
+written as its fields say (ADR 0100). Not std's, whose fields are no JS
+value's: walked, a `BTreeMap`'s say it can't change, and a constant one
+would be one JS map, which `extend` of one use grows for the next.
+
+Held by `test/crates.test.ts`'s "two crates: static_of_a_library_struct",
+against native Rust: a static of a library's struct of a function, a
+closure and text, and a constant of its struct of a `Vec` copied at each
+use; `test/corpus/std_map_const.rs`, a constant `BTreeMap` grown by
+`extend` and by a function given it; and the mutations
+`library-struct-unshareable` and `std-struct-shareable`.
+

@@ -114,7 +114,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0093 Known bugs put back into the compiler, which the tests must catch](0093-mutations.md) *(amended by 1031: built many to a build)*
 - [0094 A distribution is qualified by the suite, run through what it installs](0094-qualification.md)
 - [0095 The JS rust-js makes runs on Node; Bun runs the tests](0095-node-runtime.md)
-- [0096 A `static` is its module's value, and a `static mut` its `{ value }`](0096-statics.md) *(amended: a `static mut` is its module's variable, `export let` where it's `pub`, which only its module writes, and a raw pointer to one a handle on its place)*
+- [0096 A `static` is its module's value, and a `static mut` its `{ value }`](0096-statics.md) *(amended: a `static mut` is its module's variable, `export let` where it's `pub`, which only its module writes, and a raw pointer to one a handle on its place; a library's struct of functions is one too)*
 - [0097 A user `Deref` or `IndexMut` is its method, and an auto trait's impl is nothing](0097-deref-and-marker-impls.md)
 - [0098 A destructor runs where rustc runs it, in a `finally`](0098-destructors.md) *(amended by 0660: a panic's drops run before `catch_unwind` returns; amended by 0694: `extend` of what holds nothing; amended: which type is inside itself is the drop query's; amended by 0914: a library's function is given the drops its crate's calls give it)*
 - [0099 A `&mut` held in a variable names its place; one kept elsewhere is a handle](0099-mut-references.md) *(amended: a reborrow is held only where it's read past its reference's write; amended by 0791: a handle reaches its place once, and stores as its storage says; extended by 0897: a parameter's index, and a `RefCell` guard's element)*

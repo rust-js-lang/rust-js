@@ -1482,7 +1482,11 @@ export function click() {
 }
 ```
 
-- A `pub const` and a `pub static` are `export const`s.
+- A `pub const` and a `pub static` are `export const`s. One of a
+  struct of functions, the crate's own or a library's, React's
+  `Dispatcher`, is the object its initializer writes, `export const
+  HOOKS_DISPATCHER = { useId, useMemo: (create) => create() }`
+  ([ADR 0096](../../decisions/0096-statics.md), amended).
 - A `pub` thread-local is its module's variable, exported. Of a `Cell`, or
   a `RefCell` of a number, text or an `Option`, it's what the cell holds,
   `export let`, which an importer, JS's or Rust's, reads as it is now,
