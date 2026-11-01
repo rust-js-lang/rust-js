@@ -664,7 +664,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary a drop guard's `try` sets, `let _8; try { _8 = descriptorOf(name); }`, isn't named for the pattern that binds it, `const descriptorOf = ..` (#444)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                StmtKind::Let(a, None) if set_once_in_try(&stmts[i + 1..], a) => a,\n",
+    find: "                StmtKind::Let(a, None) if set_once_in_try(&stmts[i + 1..], a) => a.clone(),\n",
     replace: "",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "a field read of what JS made in a guard's scope"],
   },
@@ -685,6 +685,15 @@ export const mutations: Mutation[] = [
     find: "            && let Some(items) = crate::lower::iterators::fresh_iter_source(value)\n",
     replace: "            && let Some(items) = crate::lower::iterators::fresh_iter_source(value).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_edits.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "destructured-temporary-unnamed",
+    breaks: "a temporary a `const` takes apart, `const { value: _4 } = $borrow(cell)`, isn't named after the variable that takes it, `const chunk = _4` (rd439)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                } => match pattern.names()[..] {\n",
+    replace: "                } if false => match pattern.names()[..] {\n",
+    tests: ["test/corpus.test.ts", "-t", "counted_guard_value_named"],
     snapshots: true,
   },
 ];

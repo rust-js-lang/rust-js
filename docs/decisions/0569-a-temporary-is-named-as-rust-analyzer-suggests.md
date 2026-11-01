@@ -1,6 +1,6 @@
 # 0569. A temporary is named as rust-analyzer suggests
 
-Status: Accepted; amended (#444): a temporary a drop guard's `try` sets. Amends [0364](0364-mir-lowering.md), whose tidy named a
+Status: Accepted; amended (#444): a temporary a drop guard's `try` sets; amended (rd439): one a `const` takes apart. Amends [0364](0364-mir-lowering.md), whose tidy named a
 temporary after the field it reads or else `value`; extends
 [0352](0352-reclaimed-names.md) and [0565](0565-readability-is-a-gate.md),
 whose first number to bring down this is.
@@ -148,3 +148,20 @@ Held by `test/lowering-drop-guards.test.ts`'s "a field read of what JS
 made in a guard's scope is in its one try", tidy's unit test
 `set_once_in_a_try` (set again after, or read in the `try` first, keeps
 the temporary), and mutation `temporary-set-in-try-unnamed`.
+
+## Amendment: a temporary a `const` takes apart (rd439)
+
+React's Flight client's initializeChunkIfUnblocked leaked MIR's name:
+`const { value: _12 } = $borrow($fieldCell(handler, 'chunk', true)); if
+(_12 == null) return; const chunk = _12;`, of `let Some(chunk) =
+handler.chunk.borrow().clone() else { return; };` of a cell tracked at run
+time. `named_temporaries` names a temporary after the variable the program
+gives it, `const _3 = e; .. const current = _3;`, but only a `const` or a
+`let` of it, and here a `const` takes it apart, one field read out of the
+guard (`destructured`). **A `const` that takes one name apart, a
+temporary, is named so too**: `const { value: chunk } =
+$borrow($fieldCell(handler, "chunk", true)); if (chunk == null) ..`. Case
+([0262](0262-when-rust-and-js-disagree.md)): none, a name. Upstream's
+`const chunk = handler.chunk;` is the borrow helpers' to give (rd428).
+Held by the corpus's `counted_guard_value_named`, against native Rust, and
+the mutation `destructured-temporary-unnamed` (`tidy/bindings.rs`).

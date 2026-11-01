@@ -378,14 +378,24 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
             // guard's, `let _8; try { _8 = descriptorOf(name); } catch ..`,
             // and never again: as a `const` from there on (#444).
             let a = match &stmts[i].kind {
-                StmtKind::Const(a, _) => a,
-                StmtKind::Let(a, None) if set_once_in_try(&stmts[i + 1..], a) => a,
+                StmtKind::Const(a, _) => a.clone(),
+                StmtKind::Let(a, None) if set_once_in_try(&stmts[i + 1..], a) => a.clone(),
+                // Or the one name a `const` takes apart, a cell's value read
+                // while its guard is, `const { value: _4 } = $borrow(cell)`,
+                // `let Some(chunk) = cell.borrow().clone() else ..`'s (#452).
+                StmtKind::Destructure {
+                    pattern,
+                    mutable: false,
+                    ..
+                } => match pattern.names()[..] {
+                    [only] => only.to_string(),
+                    _ => continue,
+                },
                 _ => continue,
             };
-            if !is_temporary(a) {
+            if !is_temporary(&a) {
                 continue;
             }
-            let a = a.clone();
             let mut found = Vec::new();
             taking(&stmts[i + 1..], &a, &mut found);
             // One name, each arm's that binds it, `n` of `(n, Some(x))` and
@@ -415,10 +425,11 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
             for name in &taken {
                 dropping(stmts, &a, name);
             }
-            let (StmtKind::Const(name, _) | StmtKind::Let(name, _)) = &mut stmts[i].kind else {
-                unreachable!("matched")
-            };
-            *name = b.clone();
+            match &mut stmts[i].kind {
+                StmtKind::Const(name, _) | StmtKind::Let(name, _) => *name = b.clone(),
+                StmtKind::Destructure { pattern, .. } => pattern.each_name_mut(&mut |name| *name = b.clone()),
+                _ => unreachable!("matched"),
+            }
             js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
                 if let ExprKind::Var(v) = &mut e.kind
                     && (*v == a || taken.contains(v))
