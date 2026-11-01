@@ -339,3 +339,34 @@ pub fn of_mode(stream: &ReadableStream, mode: Option<&str>) -> bool {
   expect([lib.serializeReadableStream(new ReadableStream({ type: "bytes" })), lib.serializeReadableStream(new ReadableStream())]).toEqual(["binary", "values"]);
   expect([lib.ofMode(new ReadableStream({ type: "bytes" }), "byob"), lib.ofMode(new ReadableStream(), undefined), lib.ofMode(new ReadableStream(), "byob")]).toEqual([true, false, false]);
 });
+
+// rd535: a `From` into an untagged enum is the value it's given (ADR 0214),
+// so it runs nothing, webapi's whose body rust-js doesn't see too: a
+// borrow held while each chunk is made a `BlobPart`, React's Flight reply
+// client's `buffer.borrow().iter().map(|&chunk| BlobPart::from(chunk))`,
+// is plain, and so is every other borrow of a cell of its type.
+test("a borrow held across a From into an untagged enum is plain", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-untagged-from-held");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+use js::Uint8Array;
+use webapi::BlobPart;
+
+pub fn parts(buffer: Rc<RefCell<Vec<&'static Uint8Array>>>, chunk: &'static Uint8Array) -> usize {
+    buffer.borrow_mut().push(chunk);
+    let parts: Vec<BlobPart<'_>> = buffer.borrow().iter().map(|&chunk| BlobPart::from(chunk)).collect();
+    parts.len()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`  buffer.push(chunk);
+  const parts = buffer.slice();
+  return parts.length;`);
+  expect(js).not.toContain("$borrow");
+  const lib = await import(join(dir, "lib.js"));
+  const buffer = [new Uint8Array([1])];
+  expect([lib.parts(buffer, new Uint8Array([2])), buffer.length]).toEqual([2, 2]);
+});

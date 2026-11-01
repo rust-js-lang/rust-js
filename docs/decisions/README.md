@@ -235,7 +235,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1055 A `match` of what a `match` made is one dispatch](1055-a-match-of-what-a-match-made-is-one-dispatch.md) *(amended: an `Option` of its value made with no borrow to end stays a variable, rd531)*
 - [1056 A stream's general source is TypeScript's `UnderlyingSource`](1056-a-streams-general-source-is-typescripts.md)
 - [1057 A `bigint` `classify` tells is a `js::BigInt`, of any size](1057-a-bigint-kind-is-a-bigint-of-any-size.md)
-- [1058 A held borrow meets only borrows of its own class](1058-a-held-borrow-meets-only-its-own-class.md)
+- [1058 A held borrow meets only borrows of its own class](1058-a-held-borrow-meets-only-its-own-class.md) *(amended: a `From` into an untagged enum runs nothing, rd535)*
 - [1059 An async iterator, and `Function.prototype.bind` as a value](1059-an-async-iterator-and-function-bind-as-a-value.md)
 - [1060 A loop from the end down to a computed start counts down](1060-a-loop-from-the-end-of-a-computed-start-counts-down.md)
 - [1061 A stream's reader is of the mode its options say, as TypeScript's overloads type it](1061-a-streams-reader-is-of-the-mode-its-options-say.md)

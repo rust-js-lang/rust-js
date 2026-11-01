@@ -4,7 +4,8 @@ Status: Accepted (rd482, P2, 2026-11-02). Amends
 [0863](0863-a-refcell-of-an-object-is-the-object.md) (a borrow is
 counted where it's held while code that may borrow its cell runs) and
 [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md) (what a
-call may borrow, by its cells' types).
+call may borrow, by its cells' types). Amended (2026-11-02, rd535): a
+`From` into an untagged enum runs nothing.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
 difference. A borrow left uncounted is one no other borrow can meet, so
@@ -99,3 +100,34 @@ PENDING: case BLOCKED:` reads it.
   `borrows-unclassed`, `held-borrow-unclassed` (`analysis/cell_borrows.rs`),
   `held-borrow-direct-unclassed` (`drops/facts.rs`), `fixed-alias-kept`
   (`tidy/bindings.rs`), `kept-object-named` (`mir/assign.rs`).
+
+## Amendment: a `From` into an untagged enum runs nothing (2026-11-02, rd535)
+
+React's Flight reply client makes a Blob of the chunks a BYOB reader read,
+each a `BlobPart`, while its buffer is borrowed:
+
+```rust
+let parts: Vec<BlobPart<'_>> = buffer.borrow().iter().map(|&chunk| BlobPart::from(chunk)).collect();
+```
+
+`BlobPart::from` is webapi's, whose body rust-js doesn't compile, so the
+call was code rust-js can't see, which may borrow any cell such code
+reaches: the borrow was counted, `$borrow(buffer, true)` and a
+`try`/`finally`, and so was every borrow of a cell of its type that such
+code reaches, the Flight client's own `streamState._buffer`, `$borrow(buffer).slice()`
+and `$borrowMut(buffer).push(..)`, in a module the reply client never
+touches.
+
+**A `From` into an untagged enum runs nothing** (`call_runs_nothing`,
+asking `untagged::is_untagged_from`): ADR 0214 makes it the value it's
+given where it's called, and its `from` is checked to be the variant of
+its argument, so no code runs, a library's as the crate's. The borrow is
+plain, `const parts = buffer.slice();`, and nothing else of its type is
+checked for it.
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): no borrow can meet
+one held across a call that runs nothing, so no Rust panic is lost.
+
+Held by `test/webapi-objects.test.ts` ("a borrow held across a From into
+an untagged enum is plain"), run, and the mutation
+`untagged-from-runs-code`.

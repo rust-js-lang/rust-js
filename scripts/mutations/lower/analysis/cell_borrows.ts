@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "untagged-from-runs-code",
+    breaks:
+      "a `From` into an untagged enum is taken to run code rust-js can't see, so a borrow held across webapi's `BlobPart::from(chunk)` is counted, `$borrow(buffer, true)` and a `try`/`finally` (rd535)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "        || crate::lower::untagged::is_untagged_from(tcx, id)\n",
+    replace: "",
+    tests: ["test/webapi-objects.test.ts", "-t", "From into an untagged"],
+  },
+  {
     name: "cell-key-never-same",
     breaks:
       "a thread-local's borrow is never its own, so `LOG`'s second borrow in its own closure isn't counted and doesn't throw",
@@ -236,8 +245,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `&AggregateError`'s `Deref` to `&JsError` may run anything, so `thrownErrors` is a counted cell (ADR 0867)",
     file: "src/lower/analysis/cell_borrows.rs",
-    find: "    binding_runs_nothing(tcx, id) || is_js_object_deref(tcx, tcx.parent(id))\n",
-    replace: "    binding_runs_nothing(tcx, id)\n",
+    find: "        || is_js_object_deref(tcx, tcx.parent(id))\n",
+    replace: "",
     tests: [
       "test/js-builtins.test.ts",
       "test/js-errors.test.ts",

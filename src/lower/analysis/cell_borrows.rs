@@ -720,11 +720,15 @@ pub(in crate::lower) fn binding_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool
 /// Whether a call of `id` runs no code of anyone's but its own, not even
 /// what it's given: a binding's that runs nothing (`binding_runs_nothing`),
 /// or a JS object type's `Deref` to the class it extends, which is the
-/// object itself, `AggregateError`'s to `Error`. The one answer a borrow
+/// object itself, `AggregateError`'s to `Error`; or a `From` into an
+/// untagged enum, the value it's given, webapi's `BlobPart::from(chunk)`
+/// (rd535). The one answer a borrow
 /// held across it and a thread-local made as its module loads ask
 /// (`lazy_locals::loaded_by`, ADR 1006, amended).
 pub(in crate::lower) fn call_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    binding_runs_nothing(tcx, id) || is_js_object_deref(tcx, tcx.parent(id))
+    binding_runs_nothing(tcx, id)
+        || is_js_object_deref(tcx, tcx.parent(id))
+        || crate::lower::untagged::is_untagged_from(tcx, id)
 }
 
 /// Whether `def_id`, a binding that runs no code but its own and what it's

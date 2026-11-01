@@ -1749,6 +1749,11 @@ export function shared() {
   cell, `t` would be found, and nothing pushed; not of floats, nor where
   `into` is set again
   ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md), amended).
+  A `From` into an untagged enum is the value it's given, so it runs
+  nothing, a library's whose body rust-js doesn't see too: a borrow held
+  while each item is made one, `buffer.borrow().iter().map(|&chunk|
+  BlobPart::from(chunk)).collect()`, is `buffer.slice()`
+  ([ADR 1058](../../decisions/1058-a-held-borrow-meets-only-its-own-class.md), amended).
 - **A library's manifest says what it does with its `RefCell`s**, and a
   crate using it that would read one otherwise is refused: one it shares as
   the object, which the crate's generic code would box, or a borrow of one

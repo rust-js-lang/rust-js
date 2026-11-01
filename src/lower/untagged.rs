@@ -1258,11 +1258,22 @@ pub(super) fn validate<'tcx>(tcx: TyCtxt<'tcx>, foreign: &super::library::Foreig
     valid
 }
 
+/// Whether `def_id` is the `from` of a `From` into an untagged enum, which
+/// is the value it's given where it's called (ADR 0214), and so runs
+/// nothing, its body the variant of its argument (`untagged_from_misuse`):
+/// webapi's `BlobPart::from(chunk)` too, whose body rust-js doesn't see.
+pub(crate) fn is_untagged_from(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    tcx.def_kind(def_id) == DefKind::AssocFn
+        && tcx.trait_impl_of_assoc(def_id).is_some()
+        && conversion_target(tcx, def_id, ty::GenericArgs::identity_for_item(tcx, def_id))
+            .is_some_and(|target| untagged_adt(tcx, target).is_some())
+}
+
 /// A `From` into an untagged enum is the value itself where it's called
 /// (ADR 0214), so its `from` must be the variant of its argument,
 /// `Src::Text(s)`: what else it did, a call that's the value would skip.
 fn untagged_from_misuse(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
-    if tcx.def_kind(def_id) != DefKind::AssocFn || tcx.trait_impl_of_assoc(def_id).is_none() {
+    if !is_untagged_from(tcx, def_id) {
         return None;
     }
     let target = conversion_target(tcx, def_id, ty::GenericArgs::identity_for_item(tcx, def_id))?;
