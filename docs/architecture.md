@@ -280,7 +280,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | A type equal only to itself, a JS key by itself, a library's as its contract says (ADR 0864) | `std_impls.rs`; `library.rs` | `equal_only_to_itself` |
 | Std call classification | `recognition/calls.rs` | `classify`, and its answers through `shortcuts.rs` |
 | Std identities and layout | `recognition/std_items.rs`, `recognition/types.rs`, `recognition/fmt.rs`, `recognition/iterators.rs` | `StdItem`, `is_std_type`, `is_std_def`, `std_item`, `trait_method`, `cell_value_field`, `deref_target`, `debug_builder`, `builder_step`, `iterator_method` |
-| Whether a crate is one of std's, `core`, `alloc` or `std`, by the lang item it defines, not its name (ADR 1052) | `recognition/std_items.rs` | `std_crate`, `std_crate_num`, `is_std_crate`, `of_std_crate` |
+| Whether a crate is one of std's, `core`, `alloc` or `std`, by the lang item it defines, not its name (ADR 1054) | `recognition/std_items.rs` | `std_crate`, `std_crate_num`, `is_std_crate`, `of_std_crate` |
 | Std coverage catalog | `recognition/registry.rs` | `measured` |
 | Compiled std bodies, types and module placement | `recognition/std_items.rs`, `recognition/iterators.rs` | `compiled_std`, `is_compiled_std`, `is_compiled_std_type`, `is_compiled_std_iterator`, `std_home_module`, `memory_intrinsic`, `addresses_memory` |
 | Memory-addressing operations, and which two handles compared are two objects compared (ADR 0285, amended) | `pointers.rs` | `raw_pointee`, `mir_addresses_memory`, `same_object` |

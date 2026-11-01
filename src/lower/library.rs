@@ -29,7 +29,7 @@ fn key(tcx: TyCtxt<'_>, id: DefId) -> String {
 /// The name of the library `krate`'s items are of, by which `Dependencies`
 /// knows it: `@rust-js/std`'s, which no crate is named, of std's crates,
 /// not their names, which a program's crate may have, a workspace's `core`
-/// (ADR 1052); any other's, its crate's name.
+/// (ADR 1054); any other's, its crate's name.
 fn library_name(tcx: TyCtxt<'_>, krate: rustc_span::def_id::CrateNum) -> rustc_span::Symbol {
     match super::recognition::std_crate(tcx, krate) {
         Some(_) => rustc_span::Symbol::intern(crate::library::STD_PACKAGE),

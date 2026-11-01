@@ -1,7 +1,7 @@
 //@ crate-name: alloc
 //! A program's crate named `alloc` (#455): an ordinary crate, whose items
 //! rust-js never takes for std's, though each is named as one of std's is,
-//! and does something else (ADR 1052).
+//! and does something else (ADR 1054).
 
 /// `alloc::fmt::format`'s name: a text of its own.
 pub mod fmt {

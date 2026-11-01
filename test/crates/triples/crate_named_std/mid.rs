@@ -1,5 +1,5 @@
 //! A `#![no_std]` crate given a crate named `std` (#455), whose `std` is
-//! then that crate (ADR 1052).
+//! then that crate (ADR 1054).
 #![no_std]
 
 pub fn quadruple(x: i32) -> i32 {

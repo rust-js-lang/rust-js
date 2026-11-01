@@ -683,7 +683,7 @@ impl Dependencies {
         }
         // Its items are std's, of `core`, `alloc` or `std`: by its package's
         // name, which no crate has, not theirs, which a program's may
-        // (ADR 1052).
+        // (ADR 1054).
         self.libraries.insert(STD_PACKAGE.to_string(), exports);
         Ok(())
     }

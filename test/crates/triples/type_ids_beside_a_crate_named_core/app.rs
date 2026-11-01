@@ -1,5 +1,5 @@
 //! `dyn Any`s of three crates, one named `core` (#455), told apart where
-//! each is asked (ADR 1052).
+//! each is asked (ADR 1054).
 pub fn main() {
     let some = dep::some();
     let text = dep::text();

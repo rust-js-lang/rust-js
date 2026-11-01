@@ -532,7 +532,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-library-by-crate-name",
     breaks:
-      "std's crates' library is found by their names, which a program's library named `core` has, so std's `core` is that library's and `@rust-js/std` is never found (#455, ADR 1052)",
+      "std's crates' library is found by their names, which a program's library named `core` has, so std's `core` is that library's and `@rust-js/std` is never found (#455, ADR 1054)",
     file: "src/lower/library.rs",
     find: "        Some(_) => rustc_span::Symbol::intern(crate::library::STD_PACKAGE),\n",
     replace: "        Some(_) => tcx.crate_name(krate),\n",

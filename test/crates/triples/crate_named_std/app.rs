@@ -1,5 +1,5 @@
 //! A crate using one that's given a crate named `std` (#455): its own
-//! `std` is std's (ADR 1052).
+//! `std` is std's (ADR 1054).
 pub fn main() {
     println!("{}", mid::quadruple(3));
     println!("{}", mid::exited(4));

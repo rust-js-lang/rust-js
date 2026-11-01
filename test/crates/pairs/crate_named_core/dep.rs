@@ -1,7 +1,7 @@
 //@ crate-name: core
 //! A program's crate named `core`, a workspace's (#455): an ordinary
 //! crate, whose items rust-js never takes for std's, though each is named
-//! as one of std's is, and does something else (ADR 1052).
+//! as one of std's is, and does something else (ADR 1054).
 use std::fmt;
 
 pub fn double(x: i32) -> i32 {

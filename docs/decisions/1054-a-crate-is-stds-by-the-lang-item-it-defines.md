@@ -1,4 +1,4 @@
-# 1052. A crate is std's by the lang item it defines, not by its name
+# 1054. A crate is std's by the lang item it defines, not by its name
 
 Status: Accepted (#455, P2, 2026-11-02). Amends
 [0331](0331-dyn-any.md): a `TypeId` of a crate named as one of std's is,

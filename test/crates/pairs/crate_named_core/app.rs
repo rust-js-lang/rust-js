@@ -1,5 +1,5 @@
 //! A crate calling its dependency named `core` (#455), whose items are
-//! that crate's, and std's alike, each what it does (ADR 1052).
+//! that crate's, and std's alike, each what it does (ADR 1054).
 pub fn main() {
     println!("{}", core::double(21));
     println!("{}", core::Point { x: 1, y: 2 });

@@ -95,7 +95,7 @@ fn from_sysroot(tcx: TyCtxt<'_>, id: DefId) -> bool {
 }
 
 /// Is `id` libtest's, the `test` crate of rustc's sysroot, not a program's
-/// crate of that name (ADR 1052)?
+/// crate of that name (ADR 1054)?
 pub(super) fn is_libtest(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.crate_name(id.krate).as_str() == "test" && from_sysroot(tcx, id)
 }
@@ -942,7 +942,7 @@ pub(crate) fn std_crate_num(tcx: TyCtxt<'_>, std: StdCrate) -> Option<CrateNum> 
 
 /// Which of std's crates `krate` is, if it's one: known by the lang item
 /// only it defines, not by its name, which a program's crate may have too,
-/// a workspace's `core` (ADR 1052). The one answer of whether a crate is
+/// a workspace's `core` (ADR 1054). The one answer of whether a crate is
 /// std's: each question of std's crates asks it.
 pub(crate) fn std_crate(tcx: TyCtxt<'_>, krate: CrateNum) -> Option<StdCrate> {
     [StdCrate::Core, StdCrate::Alloc, StdCrate::Std]
@@ -962,7 +962,7 @@ pub(crate) fn of_std_crate(tcx: TyCtxt<'_>, id: DefId, krate: StdCrate) -> bool 
 
 /// std's path of `id`, a std item, `std::str::Chars`, whichever of std's
 /// crates it's of; empty of any other item, which no std path is: an item
-/// of a program's crate named `std` or `core` is never std's (ADR 1052).
+/// of a program's crate named `std` or `core` is never std's (ADR 1054).
 pub(super) fn std_path(tcx: TyCtxt<'_>, id: DefId) -> String {
     if !is_std_crate(tcx, id) {
         return String::new();
@@ -1106,7 +1106,7 @@ fn bound_map_item(tcx: TyCtxt<'_>, id: DefId) -> Option<&'static str> {
 /// workspace's `core` beside std's, the crate compiled too, which every
 /// crate that sees it sees beside std's: never std's own, whose paths are
 /// then theirs alone, the same in every crate, as `@rust-js/runtime` reads
-/// a `String`'s (ADR 1052).
+/// a `String`'s (ADR 1054).
 pub(crate) fn linked_twice(tcx: TyCtxt<'_>, id: DefId) -> bool {
     let name = tcx.crate_name(id.krate);
     !is_std_crate(tcx, id)

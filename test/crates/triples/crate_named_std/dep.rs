@@ -1,7 +1,7 @@
 //@ crate-name: std
 //! A program's crate named `std` (#455): an ordinary crate, whose items
 //! rust-js never takes for std's, though each is named as one of std's is,
-//! and does something else (ADR 1052). Only a `#![no_std]` crate can be
+//! and does something else (ADR 1054). Only a `#![no_std]` crate can be
 //! given it: another's `std` is std's.
 
 pub fn double(x: i32) -> i32 {

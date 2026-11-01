@@ -783,7 +783,7 @@ test("library identity checks and method tables stay in recognition", () => {
 // std's crates are known by `std_crate`, by the lang item each defines, not
 // by their names, which a program's crate may have, a workspace's `core`:
 // fifty checks of `crate_name(..) == sym::core` took it for std's (#455,
-// ADR 1052). Only `std_path` reads `core::` in a std item's path, to make it
+// ADR 1054). Only `std_path` reads `core::` in a std item's path, to make it
 // std's.
 test("std's crates are known by std_crate, not by their names", () => {
   const named = /\bsym::(?:core|alloc|std)\b|"(?:core|alloc|std)"\s*(?:\||\]|,)|==\s*"(?:core|alloc|std)"/;

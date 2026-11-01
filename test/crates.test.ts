@@ -142,7 +142,7 @@ const triples = join(root, "test", "crates", "triples");
  * the native program does; where each crate's JS is. A crate's file names
  * it, `dep.rs` the crate `dep`, but where its first line says otherwise,
  * `//@ crate-name: core`; one named `std` is given to a `#![no_std]` crate
- * alone, as another's `std` is std's (ADR 1052). */
+ * alone, as another's `std` is std's (ADR 1054). */
 function chain(cases: string, name: string, files: string[]): string {
   const dir = fixture(`${files.length === 2 ? "pair" : "triple"}-${name}`);
   const native = join(dir, "native"), out = join(dir, "js");
@@ -186,7 +186,7 @@ for (const name of readdirSync(triples).sort()) {
   }, 300_000);
 }
 
-// ADR 1052: a crate rust-js didn't compile, its metadata alone, named as
+// ADR 1054: a crate rust-js didn't compile, its metadata alone, named as
 // libtest is or as std's is, is neither: a call of it is refused, as one
 // of any crate rust-js has no JS of is, never libtest's `black_box`, its
 // argument, nor std's `process::exit`.

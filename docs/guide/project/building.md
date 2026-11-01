@@ -254,7 +254,7 @@ compiled and called as any other, `core::double(21)` its `double`, and
 never std's, though its `mem::take` is named as std's is; std's crates
 stay std's beside it. Only a `#![no_std]` crate can use one named
 `std`, as in Rust, where it would be any other crate's prelude
-([ADR 1052](../../decisions/1052-a-crate-is-stds-by-the-lang-item-it-defines.md)).
+([ADR 1054](../../decisions/1054-a-crate-is-stds-by-the-lang-item-it-defines.md)).
 
 The package built is compiled as a program only where no crate of the
 workspace uses it; one another crate uses is a library, whichever package

@@ -13,7 +13,7 @@ is reached only at a leaf of addressable memory, and
 is std's own now.
 Amended by [0983](0983-a-fuse-that-drops-its-source-stays.md): a `fuse()`
 stepped in place is left out only where it's given no drops. Amended by
-[1052](1052-a-crate-is-stds-by-the-lang-item-it-defines.md): std's crates
+[1054](1054-a-crate-is-stds-by-the-lang-item-it-defines.md): std's crates
 are known by their lang items, not their names, and `@rust-js/std` is
 their library by its package's name, which a program's crate named
 `core` can't take.

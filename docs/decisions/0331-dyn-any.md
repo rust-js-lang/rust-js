@@ -5,7 +5,7 @@ Status: Accepted. Extends [0141](0141-std-trait-objects.md) and
 [0314](0314-std-data-structures.md). Amended by
 [0660](0660-catch-unwind-catches-what-js-throws.md): what unwound is a
 `dyn Any`, a panic's message a `String` to a downcast as well as a `&str`.
-Amended by [1052](1052-a-crate-is-stds-by-the-lang-item-it-defines.md):
+Amended by [1054](1054-a-crate-is-stds-by-the-lang-item-it-defines.md):
 a type of a crate named as another the session sees is, the crate
 compiled too, a program's `core` beside std's, has its hash beside its
 name; std's own never do.
