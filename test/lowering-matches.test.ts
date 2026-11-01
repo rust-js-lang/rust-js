@@ -1277,7 +1277,6 @@ pub fn grown() -> Vec<f64> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  // Each `r` is `s._0`, one place: the arm once, of either (rd430).
   expect(js).toContain('    if (s.TAG === "Circle" || s.TAG === "Sphere") {\n      s._0 *= 10;\n    }\n');
   expect((await import(join(dir, "lib.js"))).grown()).toEqual([10, 2, 30]);
 });
