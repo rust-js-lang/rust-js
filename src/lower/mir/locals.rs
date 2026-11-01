@@ -109,6 +109,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         body: &mir::Body<'tcx>,
         drops: Option<&drops::Elaboration<'tcx>>,
         named: &[(Local, String)],
+        unreached: &HashSet<BasicBlock>,
     ) -> Locals {
         let n = body.local_decls.len();
         let mut locals = Locals {
@@ -196,7 +197,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 continue;
             }
-            let _ = block;
+            // An or-pattern's alternative JS holds as another, never run (rd430).
+            if unreached.contains(&block) {
+                continue;
+            }
             for (at, statement) in data.statements.iter().enumerate() {
                 match &statement.kind {
                     StatementKind::Assign(assign) => {

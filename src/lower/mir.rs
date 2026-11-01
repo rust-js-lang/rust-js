@@ -12,6 +12,7 @@
 //!
 //! The function's THIR is beside it, for its shape: names and spans.
 
+mod alternatives;
 mod assign;
 mod awaits;
 mod bounds;
@@ -1091,14 +1092,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(_) => Vec::new(),
         };
         let named: Vec<(Local, String)> = patterns.iter().flat_map(|(_, _, named)| named.clone()).collect();
-        let mut locals = self.mir_locals(mir_body, drops.as_ref(), &named);
+        let alternatives = self.mir_alike_alternatives(mir_body);
+        let mut locals = self.mir_locals(mir_body, drops.as_ref(), &named, &alternatives.unreached);
         // A drop reads what it drops more than once, so it's a variable.
         let dropped: Vec<Local> = drops.iter().flat_map(|drops| drops.read(mir_body)).collect();
         for &local in &dropped {
             locals.reads[local] += 2;
         }
         let given = captures.clone().unwrap_or_default();
-        let (facts, held_bindings) = self.local_facts(mir, (&locals, drops, given), (seed.as_ref(), own));
+        let (facts, held_bindings) =
+            self.local_facts(mir, (&locals, drops, given), (seed.as_ref(), own, alternatives.held_as));
         let mut state = State {
             body: mir_body,
             facts,

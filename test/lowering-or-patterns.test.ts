@@ -155,3 +155,64 @@ pub fn kinds(a: Option<&Unknown>, b: Option<&Unknown>) -> (bool, bool) {
     [false, false],
   ]);
 });
+
+// rd430: an or-pattern whose alternatives bind fields JS holds at one place,
+// `Shape::Circle { r } | Shape::Square { r }` of a tagged enum, each `r`,
+// is one test of either and its arm once, the binding that place: as
+// upstream writes `case CIRCLE: case SQUARE:` of one property, not a
+// variable each alternative sets, a getter and setter box of a `&mut`.
+// Of fields at other places, `_0` and `r`, each alternative its own.
+test("an or-pattern's bindings of one place are one arm", async () => {
+  const { js, dir } = compiled("or-pattern-one-place", `pub enum Shape {
+    Circle { r: f64 },
+    Square { r: f64 },
+    Ring(f64),
+    Dot,
+}
+
+pub fn grow(shape: &mut Shape) {
+    if let Shape::Circle { r } | Shape::Square { r } = shape {
+        *r += 1.0;
+    }
+}
+
+pub fn size(shape: &Shape) -> f64 {
+    match shape {
+        Shape::Circle { r } | Shape::Square { r } => *r,
+        Shape::Dot => 0.0,
+        Shape::Ring(r) => -r,
+    }
+}
+
+pub fn apart(shape: &Shape) -> f64 {
+    match shape {
+        Shape::Circle { r } | Shape::Ring(r) => *r,
+        _ => 1.0,
+    }
+}
+
+pub fn made(kind: u32) -> Shape {
+    match kind {
+        0 => Shape::Circle { r: 2.0 },
+        1 => Shape::Square { r: 3.0 },
+        2 => Shape::Ring(4.0),
+        _ => Shape::Dot,
+    }
+}
+
+pub fn grown(kind: u32) -> f64 {
+    let mut shape = made(kind);
+    grow(&mut shape);
+    size(&shape) + apart(&shape)
+}
+`);
+  expect(js).toContain(
+    'export function size(shape) {\n  if (shape.TAG === "Circle" || shape.TAG === "Square") {\n    return shape.r;\n  }\n',
+  );
+  expect(js).toContain('if (shape.value.TAG === "Circle" || shape.value.TAG === "Square") {\n');
+  expect(js).not.toContain("get value()");
+  // `Circle`'s `r` and `Ring`'s `_0` are two places, each its own.
+  expect(js.match(/shape\.TAG === "Circle"/g)?.length).toBe(2);
+  const { grown } = await import(join(dir, "lib.js"));
+  expect([0, 1, 2, 3].map(grown)).toEqual([3 + 3, 4 + 1, -4 + 4, 0 + 1]);
+});

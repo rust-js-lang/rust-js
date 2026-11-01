@@ -24,12 +24,10 @@ function shapeDebug_fmt(shape) {
 
 function size(s) {
   if (s.TAG === "Circle" || s.TAG === "Sphere") {
-    const r = s._0;
-    return r * 2;
+    return s._0 * 2;
   }
   if (s.TAG === "Rect" || s.TAG === "Line") {
-    const w = s.w;
-    return w;
+    return s.w;
   }
   return s._0;
 }
@@ -63,12 +61,7 @@ function firstSome(o) {
 }
 
 function text(t) {
-  if (t.TAG === "Word" || t.TAG === "Quoted") {
-    const s = t._0;
-    return s;
-  }
-  const n = t._0;
-  return String(n);
+  return t.TAG === "Word" || t.TAG === "Quoted" ? t._0 : String(t._0);
 }
 
 function main() {
@@ -137,39 +130,17 @@ function main() {
   // In an `if let`, and a `let` that can't fail.
   const shape = $index(shapes, 4);
   if (shape.TAG === "Rect" || shape.TAG === "Line") {
-    const w = shape.w;
-    console.log(`width ${$displayF64(w)}`);
+    console.log(`width ${$displayF64(shape.w)}`);
   }
   const r = { TAG: "Err", _0: 9 };
-  const n = r._0;
-  console.log(`${n}`);
+  console.log(`${r._0}`);
 
   // Through a `&mut`, where it's the same place in each: written there.
   const grown = shapes.map((item) => ({ ...item }));
   for (const s of grown) {
-    let r;
-    if (s.TAG === "Circle") {
-      r = {
-        get value() {
-          return s._0;
-        },
-        set value(value) {
-          s._0 = value;
-        },
-      };
-    } else if (s.TAG === "Sphere") {
-      r = {
-        get value() {
-          return s._0;
-        },
-        set value(value) {
-          s._0 = value;
-        },
-      };
-    } else {
-      continue;
+    if (s.TAG === "Circle" || s.TAG === "Sphere") {
+      s._0 *= 10;
     }
-    r.value *= 10;
   }
   console.log(`[${grown.map((item) => shapeDebug_fmt(item)).join(", ")}]`);
   console.log(`[${shapes.map((item) => shapeDebug_fmt(item)).join(", ")}]`);

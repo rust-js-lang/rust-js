@@ -1256,9 +1256,9 @@ pub fn read_first(n: i32) -> (i32, Vec<i32>) {
   expect([lib.readFirst(4), lib.readFirst(8)]).toEqual([[0, [3]], [4, [3]]]);
 });
 
-// An or-pattern's arm that changes what it binds, `*r *= 10.0`, after the
-// handle each alternative makes: written once, after the chain that makes
-// it, not copied into each alternative's arm.
+// An or-pattern's arm that changes what it binds, `*r *= 10.0`: written
+// once, not copied into each alternative's arm; each alternative's `r` one
+// place, `s._0`, the arm is one test of either (rd430, ADR 1045).
 test("an or-pattern's arm that changes what it binds is written once", async () => {
   const dir = fixture("or-pattern-shared");
   writeFileSync(join(dir, "lib.rs"), `pub enum Shape { Circle(f64), Sphere(f64), Square(f64) }
@@ -1277,7 +1277,8 @@ pub fn grown() -> Vec<f64> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js.match(/r\.value \*= 10;/g)).toHaveLength(1);
+  // Each `r` is `s._0`, one place: the arm once, of either (rd430).
+  expect(js).toContain('    if (s.TAG === "Circle" || s.TAG === "Sphere") {\n      s._0 *= 10;\n    }\n');
   expect((await import(join(dir, "lib.js"))).grown()).toEqual([10, 2, 30]);
 });
 

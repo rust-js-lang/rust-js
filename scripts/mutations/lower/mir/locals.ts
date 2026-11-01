@@ -178,4 +178,12 @@ export const mutations: Mutation[] = [
     replace: "            let _ = name;\n",
     tests: ["test/corpus.test.ts", "-t", "scope_struct"],
   },
+  {
+    name: "unreached-alternative-counted",
+    breaks: "an or-pattern's alternative JS holds as another counts its binding's write, so it's a `let` set in a branch, `let r; if (..) r = shape.r`, not read in place (rd430)",
+    file: "src/lower/mir/locals.rs",
+    find: "            if unreached.contains(&block) {\n",
+    replace: "            if false {\n",
+    tests: ["test/lowering-or-patterns.test.ts", "-t", "one place"],
+  },
 ];

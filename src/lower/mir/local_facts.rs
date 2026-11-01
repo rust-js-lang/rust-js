@@ -47,7 +47,9 @@ pub(super) struct LocalFacts<'m, 'tcx> {
     /// What its writes say of its `Option`s.
     options: OptionWrites,
     /// Each block that goes on to an arm past a guard that holds, and that
-    /// arm's first block (`held_arms`): the edges to it the arm's.
+    /// arm's first block (`held_arms`): the edges to it the arm's; and each
+    /// or-pattern's alternative JS holds as an earlier one, and that one
+    /// (`mir_alike_alternatives`, rd430).
     held_arms: HashMap<BasicBlock, BasicBlock>,
     /// Each block whose test that an `Option` is `Some` is its payload's
     /// test's, in that block (`mir_payload_tests`): its edges that test's.
@@ -310,7 +312,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         mir: &'m Mir<'tcx>,
         (locals, drops, captures): (&Locals, Option<drops::Elaboration<'tcx>>, Vec<(Expr, bool)>),
-        (seed, own): (Option<&offsets::Seed>, Option<Expr>),
+        (seed, own, alternatives): (Option<&offsets::Seed>, Option<Expr>, HashMap<BasicBlock, BasicBlock>),
     ) -> (LocalFacts<'m, 'tcx>, Vec<(Local, Local)>) {
         let body = &mir.body;
         let def_id = body.source.def_id();
@@ -319,7 +321,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let options = self.mir_option_writes(body, &mir.promoted, locals);
         let bindings = self.mir_held_bindings(body, &options.held);
         let bound: HashSet<Local> = bindings.iter().map(|&(bound, _)| bound).collect();
-        let held_arms = self.mir_held_arms(body, &options.held, &bound);
+        let mut held_arms = self.mir_held_arms(body, &options.held, &bound);
+        // An or-pattern's alternative JS holds as another, as one (rd430).
+        for (alternative, arm) in alternatives {
+            held_arms.entry(alternative).or_insert(arm);
+        }
         let payload_tests = self.mir_payload_tests(body);
         let mut unlowered = handles.unlowered(def_id);
         unlowered.extend(crate::lower::classes::unread_namespaces(self.tcx, body));

@@ -359,6 +359,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether field `a` of variant `va` of `ty`, an enum, and field `b` of
+    /// variant `vb` are one JS place of a value of it, as `mir_field` reads
+    /// them: a tagged enum's fields of one key, `Circle { r }`'s and
+    /// `Square { r }`'s `shape.r`, a flattened state's `chunk.value`, of one
+    /// type and stored alike, no cell's. An `Option`'s, a write's result's
+    /// and an untagged enum's aren't, each variant's payload its own (rd430).
+    pub(super) fn one_variant_place(
+        &self,
+        ty: Ty<'tcx>,
+        (va, a): (VariantIdx, FieldIdx),
+        (vb, b): (VariantIdx, FieldIdx),
+    ) -> bool {
+        let ty::Adt(adt, args) = ty.kind() else {
+            return false;
+        };
+        if !adt.is_enum()
+            || self.transparent(ty).is_some()
+            || self.tcx.is_lang_item(adt.did(), LangItem::Option)
+            || bindings::is_untagged(self.tcx, adt.did())
+            || self.is_write_result(ty)
+        {
+            return false;
+        }
+        let (variant_a, variant_b) = (adt.variant(va), adt.variant(vb));
+        let (field_a, field_b) = (&variant_a.fields[a], &variant_b.fields[b]);
+        let (ty_a, ty_b) = (self.field_ty(field_a, args), self.field_ty(field_b, args));
+        ty_a == ty_b
+            && self.property_cell(Some(field_a), ty_a).is_none()
+            && self.property_cell(Some(field_b), ty_b).is_none()
+            && variant_field(self.tcx, variant_a, a.as_usize()) == variant_field(self.tcx, variant_b, b.as_usize())
+            && bindings::is_nullable(self.tcx, field_a) == bindings::is_nullable(self.tcx, field_b)
+            && bindings::is_optional(self.tcx, field_a) == bindings::is_optional(self.tcx, field_b)
+    }
+
     /// `read`, `place`'s value, of a props field with a default, what JS
     /// takes apart with it (ADR 0212): the default where it's `undefined`,
     /// `o.k === undefined ? d : o.k`, which a pattern of it writes `{ k = d }`.

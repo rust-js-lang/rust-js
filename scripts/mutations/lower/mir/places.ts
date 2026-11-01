@@ -193,4 +193,12 @@ export const mutations: Mutation[] = [
     replace: "            && variant.as_u32() == 1\n",
     tests: ["test/corpus.test.ts", "-t", "^try_from_int_tested.rs$"],
   },
+  {
+    name: "one-variant-place-of-any-key",
+    breaks: "fields of two variants at other keys, `Circle`'s `r` and `Ring`'s `_0`, are one JS place, a `Ring`'s read as `shape.r` (rd430)",
+    file: "src/lower/mir/places.rs",
+    find: "            && variant_field(self.tcx, variant_a, a.as_usize()) == variant_field(self.tcx, variant_b, b.as_usize())\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "or_pattern_one_place"],
+  },
 ];

@@ -2243,6 +2243,48 @@ export function unit() {
 A variant with unnamed fields, `Text(String)`, keeps them as `_0`, `_1`:
 `{ TAG: "Text", _0: s }` ([ADR 0013](../../decisions/0013-fieldless-enums.md), [ADR 0033](../../decisions/0033-enums-with-fields.md)).
 
+An or-pattern whose alternatives bind a field each has at one key,
+`Circle { r } | Square { r }`, is one test of either, its arm once, the
+field read where it's bound, as `case "Circle": case "Square":` falls
+through; a `&mut` of it reads and writes it there
+([ADR 1045](../../decisions/1045-or-pattern-alternatives-of-one-place-are-one.md)):
+
+```rust
+pub enum Shape {
+    Circle { r: f64 },
+    Square { r: f64 },
+    Ring(f64),
+}
+
+pub fn size(shape: &Shape) -> f64 {
+    match shape {
+        Shape::Circle { r } | Shape::Square { r } => *r,
+        Shape::Ring(r) => -r,
+    }
+}
+
+pub fn grow(shape: &mut Shape) {
+    if let Shape::Circle { r } | Shape::Square { r } = shape {
+        *r += 1.0;
+    }
+}
+```
+
+```js
+export function size(shape) {
+  return shape.TAG === "Circle" || shape.TAG === "Square" ? shape.r : -shape._0;
+}
+
+export function grow(shape) {
+  if (shape.TAG === "Circle" || shape.TAG === "Square") {
+    shape.r++;
+  }
+}
+```
+
+Of fields at other keys, `Circle { r } | Ring(r)`'s `r` and `_0`, each
+alternative binds its own.
+
 ## Loops
 
 `for ... of` is `for ... in`. `while` is `while`. `loop` is

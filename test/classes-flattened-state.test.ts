@@ -206,3 +206,79 @@ pub fn n(outer: &Outer) -> u32 {
     ),
   ).toContain("a flattened field is a struct of named fields, a JS object or a `RefCell` of a `#[rust_js::tag]` enum");
 });
+
+// rd430: an or-pattern of a field each variant has at one key,
+// `Pending { value } | Blocked { value }`, `&mut` through the state's
+// borrow, is one test of either, its arm once, the field `chunk.value`
+// read and written there, as upstream's `case PENDING: case BLOCKED:`;
+// not a getter and setter box each alternative sets, nor a `match`'s
+// labeled block.
+test("an or-pattern of a field each variant has is its key, one arm", async () => {
+  const { js, lib } = await compiled("flattened-state-or-pattern", `use std::cell::RefCell;
+use std::rc::Rc;
+
+#[cfg_attr(rust_js, rust_js::tag = "status")]
+pub enum ChunkState {
+    #[cfg_attr(rust_js, rust_js::name = "pending")]
+    Pending {
+        #[cfg_attr(rust_js, rust_js::nullable)]
+        value: Option<Vec<u32>>,
+    },
+    #[cfg_attr(rust_js, rust_js::name = "blocked")]
+    Blocked {
+        #[cfg_attr(rust_js, rust_js::nullable)]
+        value: Option<Vec<u32>>,
+    },
+    #[cfg_attr(rust_js, rust_js::name = "fulfilled")]
+    Initialized { value: String },
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct ReactPromise {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub state: RefCell<ChunkState>,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl ReactPromise {
+    fn new(state: ChunkState) -> Self {
+        ReactPromise { state: RefCell::new(state) }
+    }
+}
+
+// Upstream: \`case PENDING: case BLOCKED: if (chunk.value === null) chunk.value = [id]; else chunk.value.push(id);\`
+pub fn listen(chunk: &Rc<ReactPromise>, id: u32) {
+    if let ChunkState::Pending { value } | ChunkState::Blocked { value } = &mut *chunk.state.borrow_mut() {
+        match value {
+            None => *value = Some(vec![id]),
+            Some(listeners) => listeners.push(id),
+        }
+    }
+}
+
+// Upstream: \`const listeners = chunk.value; chunk.status = 'fulfilled'; chunk.value = text;\`
+pub fn take(chunk: &Rc<ReactPromise>, text: String) -> Option<Vec<u32>> {
+    let listeners = match &mut *chunk.state.borrow_mut() {
+        ChunkState::Pending { value } | ChunkState::Blocked { value } => value.take(),
+        _ => None,
+    };
+    *chunk.state.borrow_mut() = ChunkState::Initialized { value: text };
+    listeners
+}
+
+pub fn make() -> Rc<ReactPromise> {
+    Rc::new(ReactPromise::new(ChunkState::Pending { value: None }))
+}
+`);
+  expect(js).toContain('  if (chunk.status === "pending" || chunk.status === "blocked") {\n');
+  expect(js).not.toContain("get value()");
+  expect(js).not.toMatch(/\bbb\d+:/);
+  const chunk = lib.make();
+  lib.listen(chunk, 1);
+  lib.listen(chunk, 2);
+  expect(chunk.value).toEqual([1, 2]);
+  expect(lib.take(chunk, "done")).toEqual([1, 2]);
+  expect([chunk.status, chunk.value]).toEqual(["fulfilled", "done"]);
+  lib.listen(chunk, 3);
+  expect([lib.take(chunk, "again"), chunk.value]).toEqual([undefined, "again"]);
+});

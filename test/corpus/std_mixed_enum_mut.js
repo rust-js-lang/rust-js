@@ -7,32 +7,10 @@ export function entry() {
 }
 
 function widen(bound) {
-  let n;
-  if (bound.value.TAG === "Included") {
-    const value$1 = bound.value;
-    n = {
-      get value() {
-        return value$1._0;
-      },
-      set value(value) {
-        value$1._0 = value;
-      },
-    };
-  } else {
-    if (bound.value.TAG !== "Excluded") {
-      return;
-    }
+  if (bound.value.TAG === "Included" || bound.value.TAG === "Excluded") {
     const value = bound.value;
-    n = {
-      get value() {
-        return value._0;
-      },
-      set value(newValue) {
-        value._0 = newValue;
-      },
-    };
+    value._0 = (value._0 + 1) >>> 0;
   }
-  n.value = (n.value + 1) >>> 0;
 }
 
 function clear(bound) {
