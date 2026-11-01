@@ -149,6 +149,19 @@ fn parts(chunks: &[Chunk]) -> String {
     String::new()
 }
 
+// A tagged enum's payload, a tuple bound apart, is threaded as its parts,
+// each read of its own, never the tuple's `const [text, count]`.
+fn tagged_parts(chunks: &[Chunk], skipped: usize) -> String {
+    let first = match chunks.first() {
+        Some(chunk) => Ok((describe(chunk), chunks.len())),
+        None => Err(skipped),
+    };
+    match first {
+        Ok((text, count)) => format!("{text} of {count}"),
+        Err(skipped) => format!("none, {skipped} skipped"),
+    }
+}
+
 struct Loud(&'static str);
 
 impl Drop for Loud {
@@ -251,6 +264,7 @@ fn main() {
     println!("{:?} {:?}", kept(&chunks[0]), kept(&chunks[2]));
     println!("{} {} {} {}", sum(0), sum(4), either(5), either(-6));
     println!("{:?} {:?}", parts(&chunks), parts(&[]));
+    println!("{:?} {:?}", tagged_parts(&chunks, 1), tagged_parts(&[], 2));
     println!("{}", scaled(&State::Pending(vec![]), 2) + scaled(&State::Halted, 2));
     loud(0);
     loud(3);

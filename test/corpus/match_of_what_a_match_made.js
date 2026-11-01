@@ -96,6 +96,23 @@ function parts(chunks) {
   return "";
 }
 
+// A tagged enum's payload, a tuple bound apart, is threaded as its parts,
+// each read of its own, never the tuple's `const [text, count]`.
+function taggedParts(chunks, skipped) {
+  const chunk = chunks[0];
+  const first =
+    chunk != null
+      ? { TAG: "Ok", _0: [describe(chunk), chunks.length] }
+      : { TAG: "Err", _0: skipped };
+  if (first.TAG === "Ok") {
+    const text = first._0[0];
+    const count = first._0[1];
+    return `${text} of ${count}`;
+  } else {
+    return `none, ${first._0} skipped`;
+  }
+}
+
 function loud(n) {
   const made = n === 0 ? { TAG: "Ok", _0: ["zero"] } : { TAG: "Err", _0: n };
   if (made.TAG === "Ok") {
@@ -204,6 +221,7 @@ function main() {
   );
   console.log(`${sum(0)} ${sum(4)} ${either(5)} ${either(-6)}`);
   console.log(`${$debugStr(parts(chunks))} ${$debugStr(parts([]))}`);
+  console.log(`${$debugStr(taggedParts(chunks, 1))} ${$debugStr(taggedParts([], 2))}`);
   console.log(`${(scaled({ TAG: "Pending", _0: [] }, 2) + scaled("Halted", 2)) | 0}`);
   loud(0);
   loud(3);

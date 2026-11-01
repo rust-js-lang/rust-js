@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "threaded-parts-apart",
-    breaks: "a payload's parts bound apart, `Some((text, count))`, are threaded, each read of its own local, not `const [text, count] = first`",
+    breaks: "a tagged enum's payload, a tuple bound apart, `Ok((text, count))`, is threaded, each part read of its own local, not of the tuple `first._0` (an `Option`'s is no longer threaded, rd531)",
     file: "src/lower/mir/threaded.rs",
     find: "] if !matches!(rest.first(), Some(PlaceElem::Field(..))) => {\n",
     replace: "] if true => {\n",
