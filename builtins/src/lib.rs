@@ -2781,9 +2781,12 @@ pub mod object {
     pub struct HasOwnProperty(PhantomData<JsObject>);
 
     impl HasOwnProperty {
-        /// `hasOwnProperty.call(object, key)`.
+        /// `hasOwnProperty.call(object, key)`: of any value, as
+        /// `Function.prototype.call`'s `this` is, what [`get`](crate::get)
+        /// gives too; of `undefined` or `null`, a `None`, JS's `TypeError`,
+        /// a panic (ADR 0615, amended).
         #[cfg_attr(rust_js, rust_js::link_name = "call")]
-        pub fn call<K: PropertyKey + ?Sized>(&self, object: &Unknown, key: &K) -> bool {
+        pub fn call<K: PropertyKey + ?Sized>(&self, object: impl IntoUnknown, key: &K) -> bool {
             unreachable!()
         }
     }

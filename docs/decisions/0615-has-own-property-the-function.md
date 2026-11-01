@@ -2,7 +2,8 @@
 
 Status: Accepted. Extends [0102](0102-js-and-webapi.md)'s js crate.
 Amended (2026-10-26): a value's own `hasOwnProperty`, `value.has_own_property(key)`,
-is the other form, of the other meaning.
+is the other form, of the other meaning. Amended (2026-11-02): `call`'s
+object is any value, as [0776](0776-get-has-set-take-any-value.md)'s `js::get`'s is (rd546).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: the binding is JS's.
 
@@ -81,3 +82,29 @@ on it": an object of no prototype makes `describe_diff` `""`, an
 inherited property isn't its own, and an own `hasOwnProperty` answers,
 run; and by "Object.prototype.hasOwnProperty is called with its object",
 whose same objects answer otherwise.
+
+## Amendment (2026-11-02): `call`'s object is any value (rd546)
+
+React's webpack client asks of what a module exported,
+`hasOwnProperty.call(moduleExports, metadata[NAME])`, where
+`moduleExports` may be a fulfilled promise's `value`, any value, in the
+port `js::get(..)`'s `Option<&Unknown>`. `call` took `&Unknown`, so the
+port had to cast the `Option` or `unwrap` it, a Rust panic where
+upstream's `.call(undefined, ..)` throws JS's `TypeError`.
+
+**`HasOwnProperty::call(&self, object: impl IntoUnknown, key)` takes any
+value**, as `Function.prototype.call`'s `this` is, and as `js::get`,
+`js::has`, `js::set` and `js::delete` take theirs (ADR 0776): an
+`&Unknown`, an `Option<&Unknown>`, a `&JsObject`. Of `undefined` or
+`null`, a `None`, JS throws its `TypeError`, a panic. Every caller's JS is
+what it was, and every caller compiles as it was: `impl IntoUnknown`
+rather than ADR 0666's `Option<&Unknown>`, which made each caller holding
+a value write `Some(..)`, as `call`'s receiver is the one ADR 0776 gave
+`js::get`'s, a value of what JS's own call is made on.
+
+- Case N ([0262](0262-when-rust-and-js-disagree.md)): JS's call, of what
+  it's given.
+- Held by `test/lowering-bindings.test.ts`, "Object.prototype.hasOwnProperty
+  is called with its object": `js::get(module, "exports")` given as it is,
+  `hasOwnProperty.call(exports, name)`, run, a `TypeError` of `undefined`.
+  A binding's signature has no mutation: the test doesn't compile without it.

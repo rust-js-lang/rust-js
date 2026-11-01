@@ -972,6 +972,11 @@ thread_local! {
 pub fn owns(object: &js::Unknown, key: &str) -> bool {
     HAS_OWN_PROPERTY.with(|has_own_property| has_own_property.call(object, key))
 }
+
+pub fn exports(module: &js::Unknown, name: &str) -> bool {
+    let exports = js::get(module, "exports");
+    HAS_OWN_PROPERTY.with(|has_own_property| has_own_property.call(exports, name))
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -982,6 +987,10 @@ pub fn owns(object: &js::Unknown, key: &str) -> bool {
   own.mine = 2;
   own.hasOwnProperty = () => true;
   expect([lib.owns(own, "mine"), lib.owns(own, "inherited"), lib.owns(Object.create(null), "x")]).toEqual([true, false, false]);
+  // Any value, what js::get gives, as it is: undefined's TypeError is JS's (rd546).
+  expect(js).toContain("  const exports = module.exports;\n  return hasOwnProperty.call(exports, name);");
+  expect([lib.exports({ exports: { a: 1 } }, "a"), lib.exports({ exports: {} }, "a")]).toEqual([true, false]);
+  expect(() => lib.exports({}, "a")).toThrow(TypeError);
 });
 
 // ADR 0612: two values of any shape are equal as JS's \`===\` has them,
