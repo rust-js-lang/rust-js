@@ -213,11 +213,15 @@ test("an untagged enum's dictionary is told apart as an object", async () => {
 pub enum Query {
     Str(String),
     Parsed(&'static Dict<u32>),
+    Pattern(&'static js::RegExp),
 }
 
+// A \`RegExp\` beside it, a class: a lone one is what the others leave,
+// never tested (ADR 1062).
 pub fn told(query: Option<Query>) -> String {
     match query {
         Some(Query::Parsed(parsed)) => format!("parsed {}", dict::get(parsed, "a").copied().unwrap_or(0)),
+        Some(Query::Pattern(_)) => "pattern".to_string(),
         Some(Query::Str(text)) => format!("text {text}"),
         None => "none".to_string(),
     }
@@ -227,7 +231,7 @@ pub fn told(query: Option<Query>) -> String {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).not.toContain("instanceof Dict");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.told("a=1"), lib.told({ a: 2 }), lib.told(undefined)]).toEqual(["text a=1", "parsed 2", "none"]);
+  expect([lib.told("a=1"), lib.told({ a: 2 }), lib.told(/a/), lib.told(undefined)]).toEqual(["text a=1", "parsed 2", "pattern", "none"]);
 });
 
 // ADR 0214, amended: shared/ReactTypes' `ReactKey`, a string or the
