@@ -90,6 +90,7 @@ line("    use super::*;");
 line();
 moduleFn(`[\`new ArrayBuffer(length)\`](${page("ArrayBuffer/ArrayBuffer")}): \`length\` bytes, each 0.`, "new ArrayBuffer", "new(length: f64) -> &'static ArrayBuffer");
 moduleFn(`[\`ArrayBuffer.isView(value)\`](${page("ArrayBuffer/isView")}): whether \`value\`, any value, as TypeScript's \`any\`, is an [\`ArrayBufferView\`], a typed array or a \`DataView\` (ADR 0741).`, "ArrayBuffer.isView", "is_view(value: Option<&Unknown>) -> bool");
+moduleFn(`[\`ArrayBuffer.prototype\`](${page("ArrayBuffer")}): what each \`ArrayBuffer\` inherits from, its methods and accessors, which an engine may lack one of, as React's server stream config asks \`hasOwnProperty.call(ArrayBuffer.prototype, "detached")\` (ADR 0878).`, "get ArrayBuffer.prototype", "prototype() -> &'static ArrayBuffer");
 close();
 line("}");
 line();
