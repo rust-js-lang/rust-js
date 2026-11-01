@@ -578,9 +578,47 @@ fn ending_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span], branch: bool) {
             ending_returns(otherwise, returns, true);
         }
     }
+    // An `else if` chain each branch of which ends in such a `return;`, of
+    // a guarded arm and those after it, `if (tag === 30 && on) { ..;
+    // return; } else if (tag === 40) { ..; return; } rest`: each branch
+    // without it, `rest` the chain's last `else`, the chain as written
+    // (rd600).
+    fn returning_chain(stmt: &Stmt, unwritten: &dyn Fn(&Stmt) -> bool) -> bool {
+        match &stmt.kind {
+            StmtKind::If(_, then, otherwise) => {
+                then.len() > 1
+                    && then.last().is_some_and(unwritten)
+                    && match otherwise.as_deref() {
+                        None => true,
+                        Some([next]) => returning_chain(next, unwritten),
+                        Some(_) => false,
+                    }
+            }
+            _ => false,
+        }
+    }
+    fn closed(stmt: &mut Stmt, rest: Vec<Stmt>, each: &mut dyn FnMut(&mut Vec<Stmt>)) {
+        let StmtKind::If(_, then, otherwise) = &mut stmt.kind else {
+            unreachable!("a chain")
+        };
+        then.pop();
+        each(then);
+        match otherwise {
+            Some(next) => closed(&mut next[0], rest, each),
+            None if rest.is_empty() => {}
+            None => *otherwise = Some(rest),
+        }
+    }
+    let alone = (stmts.iter())
+        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if then.last().is_some_and(unwritten)));
     if let Some(at) = (stmts.iter())
-        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if then.last().is_some_and(unwritten)))
+        .position(|s| matches!(&s.kind, StmtKind::If(_, _, Some(_))) && returning_chain(s, &unwritten))
+        .filter(|&at| alone.is_none_or(|alone| at < alone))
     {
+        let mut rest = stmts.split_off(at + 1);
+        ending_returns(&mut rest, returns, branch);
+        closed(&mut stmts[at], rest, &mut |then| ending_returns(then, returns, branch));
+    } else if let Some(at) = alone {
         let rest = stmts.split_off(at + 1);
         let Some(Stmt {
             kind: StmtKind::If(test, mut then, None),

@@ -52,13 +52,14 @@ function accumulate(tag, hidden, resources, n) {
 }
 
 /**
- * Of a range, the `if` chain Rust tries (ADR 0629): `} else if (tag ===
- * 22) { if (hidden) { // .. } else { .. } }`, no `return;` MIR made (rd93).
+ * Of a guarded arm a later arm goes on from, one that doesn't name its
+ * constant, the `if` chain Rust tries (ADR 0629): `} else if (tag === 22)
+ * { if (hidden) { // .. } else { .. } } else if (tag === 30 && ENABLE) {
+ * .. } else if (tag === 40) { .. } else { .. }`, as written, no `return;`
+ * MIR made (rd93, rd600).
  */
 function accumulateChain(tag, hidden, resources, n) {
-  if (tag >= 40 && tag <= 49) {
-    visit(4);
-  } else if (tag === 0) {
+  if (tag === 0) {
     visit(n);
     if (n > 3) {
       visit(1);
@@ -82,6 +83,28 @@ function accumulateChain(tag, hidden, resources, n) {
       visit(2);
     }
     visit(n);
+  } else if (tag === 40) {
+    visit(4);
+  } else {
+    visit((n * 100) >>> 0);
+  }
+}
+
+/**
+ * Of an arm after it that names the guarded arm's constant too, where
+ * the guard fails, that arm, as Rust tries it.
+ */
+function accumulateAgain(tag, n) {
+  if (tag === 0) {
+    visit(n);
+  } else if (tag === 30) {
+    if (ENABLE) {
+      visit(3);
+    } else {
+      visit(1);
+    }
+  } else if (tag === 40) {
+    visit(4);
   } else {
     visit((n * 100) >>> 0);
   }
@@ -100,7 +123,10 @@ function main() {
         const switched = root;
         root = 0;
         accumulateChain(tag, hidden, resources, n);
-        console.log(`${tag} ${hidden} ${resources} ${n}: ${switched} ${root}`);
+        const chained = root;
+        root = 0;
+        accumulateAgain(tag, n);
+        console.log(`${tag} ${hidden} ${resources} ${n}: ${switched} ${chained} ${root}`);
       }
     }
   }

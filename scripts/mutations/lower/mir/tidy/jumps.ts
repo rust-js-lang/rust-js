@@ -79,9 +79,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`if (c) { s; return; } t` where the program wrote no `return` stays, not `if (c) { s } else { t }`",
     file: "src/lower/mir/tidy/jumps.rs",
-    find: "        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if then.last().is_some_and(unwritten)))\n",
+    find: "        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if then.last().is_some_and(unwritten)));\n",
     replace:
-      "        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if matches!(then.as_slice(), [r] if unwritten(r))))\n",
+      "        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if matches!(then.as_slice(), [r] if unwritten(r))));\n",
     tests: [
       "test/lowering-matches.test.ts",
       "-t",
@@ -406,6 +406,16 @@ export const mutations: Mutation[] = [
     find: "        let written = lo <= end && start <= hi;\n",
     replace: "        let written = (lo, hi) != (1, 1);\n",
     tests: ["test/corpus.test.ts", "-t", "^decided_tests_past_a_call.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "returning-chain-unclosed",
+    breaks:
+      "a function's last `else if` chain whose each branch ends in MIR's `return;`, `if (tag === 30 && ENABLE) { ..; return; } else if (tag === 40) { visit(4); return; }`, keeps them, the `_`'s statements after it (rd600)",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "        .filter(|&at| alone.is_none_or(|alone| at < alone))\n",
+    replace: "        .filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^guarded_match_ends_function.rs$"],
     snapshots: true,
   },
 ];

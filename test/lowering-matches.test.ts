@@ -1469,7 +1469,7 @@ pub fn specifier(code: u8, log: &mut Vec<u8>) {
   expect(js).toContain('          break rows;\n        case ".":\n          break;\n        default:\n          n = (n + 1) >>> 0;\n          continue;\n      }\n      break;\n');
   expect(js).toContain("    case 1: {\n      const s = `one${n}`;\n      log.push(s);\n      break;\n    }\n");
   expect(js).not.toMatch(/default:\n *break;/);
-  expect(js).toContain("  if (n === 1) {\n    if (n > 0) {");
+  expect(js).toContain("  if (n === 1 && n > 0) {\n    return 1;\n  }\n  if (n === 2) {");
   // A variable the program named, by its name; a value read in place, its `?:`.
   expect(js).toContain("  switch (len) {\n");
   expect(js).toContain("  switch ($byteLen(s)) {\n");

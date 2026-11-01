@@ -767,4 +767,14 @@ export const mutations: Mutation[] = [
       "a written negation of an if of a bool literal branch stays one",
     ],
   },
+  {
+    name: "guard-before-others-unjoined",
+    breaks:
+      "a guarded arm's tests before the arms after it, `if (tag === 30) { if (ENABLE) { .. } } else if (tag === 40) { .. }`, stay apart, so the chain's MIR `return;`s stay (rd600)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "    guards_before_others(stmts, conditions);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^guarded_match_ends_function.rs$"],
+    snapshots: true,
+  },
 ];

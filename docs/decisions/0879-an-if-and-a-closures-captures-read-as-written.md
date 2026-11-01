@@ -981,3 +981,35 @@ the corpus case `drop_guard_early_returns` (`replay`, `replay_else` and
 `replay_let_else`) against native Rust, and the mutations
 `returned-apart-unread`, `returned-apart-any-before` and
 `returned-apart-of-the-then-only` (`lower/mir/tidy/jumps.ts`).
+
+## Amendment: a function's last chain of a guarded arm and those after it, as written (rd600, 2026-11-02)
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): the same tests, in
+the same order, each way.
+
+A function's last `match` of an arm `30 if ENABLE` and then `40 =>
+visit(4)`, which names another constant, an `if` chain (no `switch`: a
+guard a later arm goes on from), printed `} else { if (tag === 30) { if
+(ENABLE) { ..; return; } } else if (tag === 40) { visit(4); return; }
+visit(..); }`, two `return;`s MIR made, which the readability ratchet
+counted (React's accumulateSuspenseyCommitOnFiber's shape). Two rules:
+
+- **A guarded arm's test and its guard are one test where the arms after
+  it only compare what's matched with other constants**, `if (tag === 30
+  && ENABLE) { .. } else if (tag === 40) { .. }`
+  (`logicals::guards_before_others`, beside `and tests`): where the guard
+  fails, the arms after it are tested and fail, as `tag` is 30, and the
+  chain's end is next, as it was. Each test after compares a name with a
+  literal or a name not the guarded arm's; a test of the same constant
+  never has this shape, as Rust goes on to that arm where the guard fails,
+  which MIR writes in the guard's `else`, so that check has no mutation.
+- **An `else if` chain each branch of which ends in MIR's `return;`, at
+  the function's end**, is that chain without them, what follows it its
+  last `else` (`jumps::ending_returns`), as one `if` of them was.
+
+It prints `} else if (tag === 30 && ENABLE) { .. } else if (tag === 40) {
+visit(4); } else { visit(..); }`, as written. Held by the corpus's
+`guarded_match_ends_function` (its `accumulate_chain`, and
+`accumulate_again`, of an arm after it of the same constant), run against
+native Rust, and the mutations `returning-chain-unclosed` (`jumps.ts`) and
+`guard-before-others-unjoined` (`logicals.ts`).

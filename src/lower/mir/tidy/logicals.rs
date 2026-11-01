@@ -335,6 +335,81 @@ fn reads_a_getter(e: &Expr) -> bool {
     e.facts.has(js::Known::Getter)
 }
 
+/// `if (n === A) { if (on) { s } } else if (n === B) { t }`, a `match`'s
+/// arm of a pattern and its guard, MIR's two tests, where the arms tested
+/// after it each only compare what's matched with another constant, which
+/// a value the pattern takes isn't: `if (n === A && on) { s } else if (n
+/// === B) { t }`, as the chain's `else if` of an arm `A if on` is, so where
+/// the guard fails the chain's end is next, as it was, the arms after it
+/// tested and failing (rd600). React's accumulateSuspenseyCommitOnFiber's
+/// `30 if ENABLE` then `40`, at the function's end, where `tail returns`
+/// left each arm's `return;`, and a `break` of a loop's.
+fn guards_before_others(stmts: &mut [Stmt], conditions: &[(js::Span, js::Span)]) {
+    let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
+    // `n === K`'s `n` and `K`, of a name compared with a literal or a name.
+    fn compared(e: &Expr) -> Option<(&Expr, &Expr)> {
+        let ExprKind::Binary(Op::Eq, a, b) = &e.kind else {
+            return None;
+        };
+        let constant = |e: &Expr| {
+            matches!(e.kind, ExprKind::Num(_) | ExprKind::Str(_) | ExprKind::Var(_))
+                || matches!(&e.kind, ExprKind::Unary(UnaryOp::Neg, n) if matches!(n.kind, ExprKind::Num(_)))
+        };
+        (matches!(a.kind, ExprKind::Var(_)) && constant(b)).then_some((&**a, &**b))
+    }
+    // Whether `test` only compares `subject` with constants other than
+    // `taken`'s, `n === B || n === C`.
+    fn others(test: &Expr, subject: &Expr, taken: &Expr) -> bool {
+        match &test.kind {
+            ExprKind::Binary(Op::Or, a, b) => others(a, subject, taken) && others(b, subject, taken),
+            _ => compared(test).is_some_and(|(s, k)| s.written_alike(subject) && !k.written_alike(taken)),
+        }
+    }
+    // Whether `stmts` is an `if` chain of such tests, with no last `else`,
+    // which does nothing where each fails.
+    fn chain_of_others(stmts: &[Stmt], subject: &Expr, taken: &Expr) -> bool {
+        match stmts {
+            [
+                Stmt {
+                    kind: StmtKind::If(test, _, otherwise),
+                    ..
+                },
+            ] => {
+                others(test, subject, taken) && otherwise.as_deref().is_none_or(|o| chain_of_others(o, subject, taken))
+            }
+            _ => false,
+        }
+    }
+    for stmt in stmts.iter_mut() {
+        let span = stmt.span;
+        let StmtKind::If(test, then, Some(otherwise)) = &mut stmt.kind else {
+            continue;
+        };
+        let [inner] = then.as_slice() else { continue };
+        let StmtKind::If(guard, _, None) = &inner.kind else {
+            continue;
+        };
+        let guarded = (conditions.iter()).any(|(arm, guard)| within(arm, span) && within(guard, inner.span));
+        let Some((subject, taken)) = compared(test) else {
+            continue;
+        };
+        if !guarded || !chain_of_others(otherwise, subject, taken) {
+            continue;
+        }
+        let guard = guard.clone();
+        let Some(Stmt {
+            kind: StmtKind::If(_, body, None),
+            ..
+        }) = then.pop()
+        else {
+            unreachable!("matched")
+        };
+        let first = std::mem::replace(test, Expr::undefined());
+        *test = Expr::bin(Op::And, first, guard);
+        *then = body;
+    }
+}
+
 /// `if (a) { if (b) { s } }`, the tests of one condition the program wrote,
 /// `a && b`'s: `if (a && b) { s }`. What's bound between them, a read that
 /// does nothing, comes first in `s`, and `b` reads its value, as
@@ -345,6 +420,7 @@ fn reads_a_getter(e: &Expr) -> bool {
 /// breaks out to a label (`read_once_first`); nor where it would read a
 /// place twice that `a` doesn't test (`read_twice_apart`).
 pub(super) fn and_tests(stmts: &mut Vec<Stmt>, conditions: &[(js::Span, js::Span)], switches: &[Switch]) {
+    guards_before_others(stmts, conditions);
     let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
     let mut first_reads = Vec::new();
     for (i, stmt) in stmts.iter_mut().enumerate() {
