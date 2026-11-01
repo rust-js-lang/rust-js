@@ -1611,7 +1611,10 @@ and `false` is a `switch` too, `case "annotation-xml": .. return false;
 default: return true;`, as React DOM's isCustomElement writes it; a
 `matches!` is the one boolean it's written as; and one inside an `if`
 whose first arm does nothing, `"checked" => {}`, is `case "checked":
-break;`, its test not joined to the `if`'s ([ADR
+break;`, its test not joined to the `if`'s; an arm that binds what it
+matched, `symbol @ (VIEW_TRANSITION | TRACING_MARKER)`, is `case
+VIEW_TRANSITION: case TRACING_MARKER:` too, its binding read as what the
+`switch` tests, `if (kind === VIEW_TRANSITION && ..)` ([ADR
 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md), amended). An arm with
 a guard is a case that tests it, where what Rust tries when the guard
 fails does nothing: each later arm that could match its constants is a

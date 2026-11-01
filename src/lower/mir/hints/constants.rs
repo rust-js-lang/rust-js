@@ -20,6 +20,13 @@ impl<'tcx> FnCx<'_, 'tcx> {
         let value = |constant| (constant, body_queries::pattern_value(self.tcx, pattern));
         match &pattern.kind {
             thir::PatKind::Deref { subpattern, .. } => self.valued_constants(subpattern, present),
+            // A binding of constants, `symbol @ (VIEW_TRANSITION |
+            // TRACING_MARKER)`: those, its value what the `switch` tests,
+            // which its case reads it as (rd351).
+            thir::PatKind::Binding {
+                subpattern: Some(subpattern),
+                ..
+            } => self.valued_constants(subpattern, present),
             // Of a number, a `char` or a string, which `===` compares by its
             // value; not a `bool`, which has two, its `if`'s.
             thir::PatKind::Constant { .. } => {

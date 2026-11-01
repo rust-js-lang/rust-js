@@ -53,4 +53,14 @@ export const mutations: Mutation[] = [
       "a match of an untagged enum's constants is a switch of the value",
     ],
   },
+  {
+    name: "binding-of-constants-unswitched",
+    breaks:
+      "a `match` of constants whose arm binds what it matched, `symbol @ (VIEW_TRANSITION | TRACING_MARKER)`, is an `if` chain, not its `switch` (rd351, getComponentNameFromType)",
+    file: "src/lower/mir/hints/constants.rs",
+    find: "            thir::PatKind::Binding {\n                subpattern: Some(subpattern),\n                ..\n            } => self.valued_constants(subpattern, present),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^switch_arm_binding_constants.rs$"],
+    snapshots: true,
+  },
 ];

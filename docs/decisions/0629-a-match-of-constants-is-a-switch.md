@@ -954,3 +954,28 @@ Case N: the same tests, in the same order. Held by
 `switch_of_empty_first_arms_in_an_if.rs` (native-compared) and the
 mutations `switch-arm-test-joined-to-its-if` and
 `switch-arm-test-in-its-own-switch-kept-apart`.
+
+## Amendment: an arm that binds what it matched is a case (2026-11-02, rd351)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The same tests run in
+the same order, and the binding is the value the `switch` tests.
+
+React's getComponentNameFromType is upstream's `switch (type) { case
+REACT_FRAGMENT_TYPE: .. case REACT_VIEW_TRANSITION_TYPE: if
+(enableViewTransition) { .. } // Fall through case
+REACT_TRACING_MARKER_TYPE: .. }`. Its port writes the fall-through as one
+arm, `Some(symbol @ (REACT_VIEW_TRANSITION_TYPE |
+REACT_TRACING_MARKER_TYPE)) => { if symbol == REACT_VIEW_TRANSITION_TYPE
+&& .. { .. } .. }`. Because of that binding, the whole `match` printed as
+an `if` chain, so the port copied the tracing marker's body into the view
+transition's arm instead. **A binding of constants, `symbol @ (A | B)`,
+names the constants its pattern names** (`valued_constants`), so its arm
+is a case like any other, `case A: case B:`. Its binding reads as what
+the `switch` tests, `if (kind === A && ..)`, the same way it reads
+without one. A binding of anything that isn't constants is still no
+case.
+
+Held by the corpus case `switch_arm_binding_constants` against native
+Rust, and the mutation `binding-of-constants-unswitched`
+(`lower/mir/hints/constants.ts`).
+
