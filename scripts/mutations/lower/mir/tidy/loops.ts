@@ -370,8 +370,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a range's start the body changes is read each step by the `for`'s test, where Rust read it once",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "    if mutable || !number(range.start) || !number(range.end) || !same {\n",
-    replace: "    if mutable || !number(range.start) || !number(range.end) {\n",
+    find: "    if mutable || !number(range.start, numbers) || !number(range.end, numbers) || !same {\n",
+    replace: "    if mutable || !number(range.start, numbers) || !number(range.end, numbers) {\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_loops.rs$"],
   },
   {
@@ -379,7 +379,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a range of `char`s from its end is counted down by `--`, which text isn't",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "    if mutable || !number(range.start) || !number(range.end) || !same {\n",
+    find: "    if mutable || !number(range.start, numbers) || !number(range.end, numbers) || !same {\n",
     replace: "    if mutable || !same {\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_loops.rs$"],
   },
@@ -459,9 +459,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`(1..n).rev()` is `for (let i = n - 1; i >= 1; i--)`, not the `i > 0` React's findBoundingRects writes (ADR 0961)",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "        Some(1) => Expr::bin(Op::Gt, Expr::var(&name), Expr::int(0)),\n",
+    find: "        (Some(1), _) => Expr::bin(Op::Gt, Expr::var(&name), Expr::int(0)),\n",
     replace:
-      "        Some(-1) => Expr::bin(Op::Gt, Expr::var(&name), Expr::int(0)),\n",
+      "        (Some(-1), _) => Expr::bin(Op::Gt, Expr::var(&name), Expr::int(0)),\n",
     tests: ["test/corpus.test.ts", "-t", "^loop_ending_branch_loop.rs$"],
     snapshots: true,
   },
@@ -692,5 +692,44 @@ export const mutations: Mutation[] = [
     find: "            } if n == name && !start.mentions_var(name) => {\n",
     replace: "            } if n == name && start.as_int() == Some(0) => {\n",
     tests: ["test/lowering-index-loops.test.ts", "-t", "a loop over a range of a slice in bounds"],
+  },
+  {
+    name: "counted-down-start-of-sums-unread",
+    breaks:
+      "a range stepped from its end whose start is a sum of variables the body doesn't assign, `(i + 1..end).rev()`, is stepped by `$iterator(.., $rangeNextBack)`, not `for (let j = end - 1; j > i; j--)` (rd529)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "            ExprKind::Binary(_, a, b) => reads_same(a, body) && reads_same(b, body),\n",
+    replace: "            ExprKind::Binary(..) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_rev_from_computed.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "counted-down-start-assigned",
+    breaks:
+      "a range stepped from its end whose start reads a variable the body assigns is a `for` that reads it again at each step, `j >= start * 2`, where Rust read it once, and stops early (rd529)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "            ExprKind::Var(v) => !assigns(body, v),\n",
+    replace: "            ExprKind::Var(_) => true,\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_rev_from_computed.rs$"],
+  },
+  {
+    name: "counted-down-sum-not-a-number",
+    breaks:
+      "a sum of numbers, `i + 1`, isn't taken as a number a range steps, so `(i + 1..end).rev()` is stepped by `$iterator(.., $rangeNextBack)` (rd529)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "            || matches!(&e.kind, ExprKind::Binary(Op::Add, a, b) if number(a, numbers) && number(b, numbers))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^range_rev_from_computed.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "counted-down-past-one-kept",
+    breaks:
+      "a range stepped from its end down to one past another is `j >= i + 1`, not upstream's `j > i` (rd529)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "        (_, ExprKind::Binary(Op::Add, past, one)) if one.as_int() == Some(1) => {\n",
+    replace: "        (_, ExprKind::Binary(Op::Add, past, one)) if one.as_int() == Some(-1) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_rev_from_computed.rs$"],
+    snapshots: true,
   },
 ];

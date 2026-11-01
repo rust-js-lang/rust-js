@@ -237,6 +237,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1057 A `bigint` `classify` tells is a `js::BigInt`, of any size](1057-a-bigint-kind-is-a-bigint-of-any-size.md)
 - [1058 A held borrow meets only borrows of its own class](1058-a-held-borrow-meets-only-its-own-class.md)
 - [1059 An async iterator, and `Function.prototype.bind` as a value](1059-an-async-iterator-and-function-bind-as-a-value.md)
+- [1060 A loop from the end down to a computed start counts down](1060-a-loop-from-the-end-of-a-computed-start-counts-down.md)
 - [0205 Flattened structs chain, and the props' own name is theirs](0205-flattened-chains.md)
 - [0206 TypeScript, read and written by TypeScript's own parser and printer](0206-typescript-module.md)
 - [0207 A crate's `.d.ts` is printed by TypeScript](0207-declarations-printed-by-typescript.md)
@@ -705,7 +706,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0901 A print throws only where its text does](0901-a-print-throws-only-where-its-text-does.md) *(extended by 0902: what never unwinds is read from MIR)*
 - [0902 What never unwinds is read from MIR](0902-what-never-unwinds-is-read-from-mir.md)
 - [0903 A `FlatMap` held is std's](0903-a-flat-map-held-is-stds.md)
-- [0904 A `for` over a slice or a range from its end counts down](0904-a-loop-from-the-end-counts-down.md) *(extended by 1042: a loop over an array counts its indices)*
+- [0904 A `for` over a slice or a range from its end counts down](0904-a-loop-from-the-end-counts-down.md) *(extended by 1042: a loop over an array counts its indices; amended by 1060: down to a computed start)*
 - [0905 A guarded arm whose constants the next arm names falls through to its case](0905-a-guarded-arm-falls-to-the-next.md) *(amended: a comment before an arm fallen to is before its `// Fallthrough`; amended: a guard that falls to nothing beside one that falls to the next is a case too; amended: a fall-through the program's comment says gets no `// Fallthrough`; a guard whose next arm's test is in its `else` falls through; amended: a guard's `break` reaches what's after the `switch` too, a wrong answer fixed; amended: a guarded arm that does nothing before one of its constants alone is that one's case; amended: a case of an arm that returns ends with its `return`; amended: a chain of guarded arms beside another is one `switch`; amended: a guard of `&&` tested in parts falls through too; amended: a `switch` that ends a function has its cases' `break`s; amended: a string's arms fall too; amended: a comment above an arm of patterns is above its first `case`)*
 - [0906 A library's facts are sets of named facts](0906-a-librarys-facts-are-sets.md) *(extended by 0863, amended: a struct's field's facts, `fields`, library ABI 7)*
 - [0907 A fn pointer runs what the crate made it of](0907-a-fn-pointer-runs-what-the-crate-made-it-of.md) *(amended: a type of a `dyn` from outside leaves the others as they are; amended: `bind` binds a function's first arguments, a binding's function itself; amended: a binding's method bound is the method; amended by 1007: a signature that holds a `dyn` is keyed; amended: `bind` of some arguments gives `&'l dyn Fn`, as with_this, rd209; amended: a `String` kept for a `&str` parameter, rd412)*

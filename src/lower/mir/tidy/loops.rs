@@ -654,7 +654,7 @@ fn from_the_end(
         return None;
     };
     // JS's `--` steps a number: of a `char`'s range, text, none.
-    let number = |e: &Expr| {
+    fn number(e: &Expr, numbers: &HashSet<String>) -> bool {
         e.as_int().is_some()
             || matches!(&e.kind, ExprKind::Var(v) if numbers.contains(v))
             || matches!(&e.kind, ExprKind::Unary(UnaryOp::Neg, n) if n.as_int().is_some())
@@ -665,9 +665,23 @@ fn from_the_end(
             || matches!(&e.kind, ExprKind::Call(callee, _) if matches!(&callee.kind,
                 ExprKind::Member(math, name) if matches!(&math.kind, ExprKind::Var(m) if m == "Math")
                     && matches!(name.as_str(), "max" | "min")))
-    };
-    let same = range.start.is_constant() || matches!(&range.start.kind, ExprKind::Var(v) if !assigns(body, v));
-    if mutable || !number(range.start) || !number(range.end) || !same {
+            // A sum of numbers, `i + 1`, a number too (rd529).
+            || matches!(&e.kind, ExprKind::Binary(Op::Add, a, b) if number(a, numbers) && number(b, numbers))
+    }
+    // What reads the same at each step, as Rust reads it once: a constant,
+    // or numbers of variables the body doesn't assign, `(i + 1) >>> 0`
+    // (rd529); not a length the body may change.
+    fn reads_same(e: &Expr, body: &[Stmt]) -> bool {
+        match &e.kind {
+            _ if e.is_constant() => true,
+            ExprKind::Var(v) => !assigns(body, v),
+            ExprKind::Binary(_, a, b) => reads_same(a, body) && reads_same(b, body),
+            ExprKind::Unary(UnaryOp::Neg, a) => reads_same(a, body),
+            _ => false,
+        }
+    }
+    let same = reads_same(range.start, body);
+    if mutable || !number(range.start, numbers) || !number(range.end, numbers) || !same {
         return None;
     }
     let name = match name.as_str() {
@@ -679,9 +693,14 @@ fn from_the_end(
         (false, Some(end)) => Expr::int(end - 1),
         (false, None) => Expr::bin(Op::Sub, range.end.clone(), Expr::int(1)),
     };
-    // Down to 1, `i > 0`, as a person writes it (ADR 0961).
-    let test = match range.start.as_int() {
-        Some(1) => Expr::bin(Op::Gt, Expr::var(&name), Expr::int(0)),
+    // Down to 1, `i > 0`, as a person writes it (ADR 0961); down to one
+    // past another, `j > i` of `i + 1`, a step's integer past another's,
+    // which JS adds exactly (rd529).
+    let test = match (range.start.as_int(), &range.start.kind) {
+        (Some(1), _) => Expr::bin(Op::Gt, Expr::var(&name), Expr::int(0)),
+        (_, ExprKind::Binary(Op::Add, past, one)) if one.as_int() == Some(1) => {
+            Expr::bin(Op::Gt, Expr::var(&name), (**past).clone())
+        }
         _ => Expr::bin(Op::Ge, Expr::var(&name), range.start.clone()),
     };
     Some((name, start, test, body.to_vec()))

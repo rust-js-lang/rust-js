@@ -2450,8 +2450,11 @@ export function findPair(grid, target) {
   includes `n`.
 - A loop from the end, `for (let i = v.length - 1; i >= 0; i--)`, is `for
   x in v.iter().rev()`, each item `v[i]`, no copy of the array made; and
-  `for i in (0..n).rev()` is `for (let i = n - 1; i >= 0; i--)`
-  ([ADR 0904](../../decisions/0904-a-loop-from-the-end-counts-down.md)):
+  `for i in (0..n).rev()` is `for (let i = n - 1; i >= 0; i--)`, and
+  `for j in (i + 1..end).rev()`, of an `i` the body doesn't assign, `for
+  (let j = end - 1; j > i; j--)`
+  ([ADR 0904](../../decisions/0904-a-loop-from-the-end-counts-down.md),
+  [1060](../../decisions/1060-a-loop-from-the-end-of-a-computed-start-counts-down.md)):
 
 ```rust
 pub fn last_named(names: &[String]) -> Option<&String> {
