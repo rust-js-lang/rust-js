@@ -946,14 +946,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `&mut v` too (ADR 0454).
         let given_box = |cx: &Self, i: usize| {
             callee.is_some_and(|(id, args)| {
-                let inputs = cx
-                    .tcx
-                    .fn_sig(id)
-                    .instantiate_identity()
-                    .skip_normalization()
-                    .skip_binder()
-                    .inputs();
-                inputs
+                let sig = cx.tcx.instantiate_bound_regions_with_erased(
+                    cx.tcx.fn_sig(id).instantiate_identity().skip_normalization(),
+                );
+                sig.inputs()
                     .get(i)
                     .is_some_and(|&input| cx.boxed_in_call(id, input, args).is_some())
             })
@@ -1006,8 +1002,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // the object, which it changes in place, a box's `value` or a
             // generic `self` boxed for none.
             let holds = fn_id.is_some_and(|fn_id| {
-                let sig = self.tcx.fn_sig(fn_id).instantiate_identity().skip_normalization();
-                let param = sig.skip_binder().inputs().get(i).copied();
+                let sig = (self.tcx).instantiate_bound_regions_with_erased(
+                    self.tcx.fn_sig(fn_id).instantiate_identity().skip_normalization(),
+                );
+                let param = sig.inputs().get(i).copied();
                 let typing_env = ty::TypingEnv::post_analysis(self.tcx, fn_id);
                 let itself = |inner: Ty<'tcx>| {
                     let generic = self.recognition().is_unknown_in(inner, typing_env);
@@ -1035,11 +1033,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 exprs.push(cell);
                 continue;
             }
-            let param = self
-                .tcx
-                .fn_sig(def_id)
-                .instantiate(self.tcx, generic_args)
-                .skip_binder()
+            // Its lifetimes, the signature's own, erased: a type with them
+            // still bound, `&mut &'a dyn Fn()`'s `dyn`, has no layout to ask
+            // (#460).
+            let param = (self.tcx)
+                .instantiate_bound_regions_with_erased(
+                    self.tcx
+                        .fn_sig(def_id)
+                        .instantiate(self.tcx, generic_args)
+                        .skip_normalization(),
+                )
                 .inputs()[i];
             // A box of a place that isn't fixed couldn't be copied back; one
             // of a type of one value, `()`'s, a unit struct's, needn't be: no

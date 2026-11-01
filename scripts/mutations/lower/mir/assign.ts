@@ -1015,4 +1015,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell.rs$"],
     snapshots: true,
   },
+  {
+    name: "boxed-param-regions-bound",
+    breaks:
+      "a call's parameter type is read with its signature's lifetimes still bound, so a `&mut &dyn Fn() -> u32` given a variable's box panics asking the `dyn`'s layout: the compiler crashes (#460)",
+    file: "src/lower/mir/assign.rs",
+    find: "            let param = (self.tcx)\n                .instantiate_bound_regions_with_erased(\n                    self.tcx\n                        .fn_sig(def_id)\n                        .instantiate(self.tcx, generic_args)\n                        .skip_normalization(),\n                )\n                .inputs()[i];\n",
+    replace: "            let param = self.tcx.fn_sig(def_id).instantiate(self.tcx, generic_args).skip_binder().inputs()[i];\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_reference_changed_through_mut\\.rs$"],
+  },
 ];
