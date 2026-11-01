@@ -653,17 +653,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "guard-alone-else-leaving-unread",
-    breaks:
-      "a guard MIR tests as `if (!guard) { next } else { break; } rest`, `b'a' if on(n) => break` before the arm it falls to, isn't read as the guard's `if`, so the `match` is no `switch` and keeps `bb25: { bb10: { .. } }` (#389c)",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "        Some(otherwise) if otherwise.last().is_some_and(js::ends) && alike(&[then, rest].concat(), next) => {\n",
-    replace:
-      "        Some(otherwise) if false && alike(&[then, rest].concat(), next) => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^guarded_arms_index_copy.rs$"],
-    snapshots: true,
-  },
-  {
     name: "switch-missing-an-arm",
     breaks:
       "a chain begun past an arm MIR tested apart, `if (c === 97) { break; }`, is a `switch` of the arms left, `switch (c) { case 98: .. }`, a `switch` of one case (#389c)",

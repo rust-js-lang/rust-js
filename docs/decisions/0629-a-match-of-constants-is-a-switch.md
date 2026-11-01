@@ -656,6 +656,14 @@ against native Rust, and the mutations `copy-read-in-place-kept`
 (`mir/tidy/loop_labels.ts`) and `guard-alone-else-leaving-unread`
 (`mir/tidy/switches.ts`).
 
+Amended, 2026-11-02: `guard_alone`'s arm for `if (!guard) { next } else
+{ .. } rest` is gone, and its mutation `guard-alone-else-leaving-unread`
+with it. By the nightly of 2026-10-31 that mutation survived:
+`guarded_arms_index_copy`'s JS was the same without the arm. The arm, with
+a probe that logged each time it was taken, was taken by none of the
+corpus's 1,398 cases, the suite or the React port's 630 modules. The
+chain above is still the case's, held by its snapshot and native Rust.
+
 ## Amendment: a `switch` holds each arm of constants (#389c)
 
 Where an arm that leaves the loop, `b'a' => break`, is tested apart, `if

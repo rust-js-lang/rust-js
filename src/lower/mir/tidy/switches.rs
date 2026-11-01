@@ -657,10 +657,6 @@ fn guard_alone(body: &[Stmt], next: &[Stmt]) -> Option<Stmt> {
         Some(otherwise) if then.last().is_some_and(js::ends) && alike(&[otherwise.as_slice(), rest].concat(), next) => {
             (test.clone(), then.clone())
         }
-        // And `if (!guard) { next } else { .. } rest`, its `else` leaving (#389c).
-        Some(otherwise) if otherwise.last().is_some_and(js::ends) && alike(&[then, rest].concat(), next) => {
-            (test.clone().negated_test(), otherwise.clone())
-        }
         _ => return None,
     };
     let (test, then) = held;
