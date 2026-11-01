@@ -15,7 +15,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// A `OnceLock` or `LazyLock`, std's, not a `OnceCell` or `LazyCell`,
     /// `core`'s: their reentrant inits differ (ADRs 0317, 0318).
     pub(in crate::lower) fn is_lock_cell(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == sym::std)
+        matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(self.tcx, adt.did(), StdCrate::Std))
             && (self.is_std_type(ty, StdItem::OnceCell) || self.is_std_type(ty, StdItem::LazyCell))
     }
 
@@ -541,7 +541,7 @@ pub(crate) fn reads_rc_count<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, pointee: Option
     }
     let object = matches!(pointee.map(|pointee| *pointee.kind()), Some(ty::Adt(adt, _))
         if adt.is_struct()
-            && (adt.did().is_local() || !super::std_items::is_std_item(tcx, adt.did()) && holds_data(tcx, adt))
+            && (adt.did().is_local() || !super::std_items::is_std_crate(tcx, adt.did()) && holds_data(tcx, adt))
             && !adt.non_enum_variant().fields.is_empty()
             && transparent_field(tcx, adt).is_none())
         // A `RefCell`, its own object, `{ value }`, or the object it holds,
@@ -711,7 +711,7 @@ fn holds_value(tcx: TyCtxt<'_>, field: &ty::FieldDef) -> bool {
 }
 
 pub(in crate::lower) fn transparent_field(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> Option<usize> {
-    if !adt.is_struct() || !adt.repr().transparent() || super::std_items::is_std_item(tcx, adt.did()) {
+    if !adt.is_struct() || !adt.repr().transparent() || super::std_items::is_std_crate(tcx, adt.did()) {
         return None;
     }
     adt.non_enum_variant()

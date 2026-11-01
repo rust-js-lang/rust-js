@@ -26,6 +26,17 @@ fn key(tcx: TyCtxt<'_>, id: DefId) -> String {
     }
 }
 
+/// The name of the library `krate`'s items are of, by which `Dependencies`
+/// knows it: `@rust-js/std`'s, which no crate is named, of std's crates,
+/// not their names, which a program's crate may have, a workspace's `core`
+/// (ADR 1052); any other's, its crate's name.
+fn library_name(tcx: TyCtxt<'_>, krate: rustc_span::def_id::CrateNum) -> rustc_span::Symbol {
+    match super::recognition::std_crate(tcx, krate) {
+        Some(_) => rustc_span::Symbol::intern(crate::library::STD_PACKAGE),
+        None => tcx.crate_name(krate),
+    }
+}
+
 /// Can another crate reach `id`, a local item? rustc's own answer, which
 /// follows `pub use`; and every trait impl, and its methods: the library's
 /// generic code may ask a consumer that instantiates it for an impl of a
@@ -572,6 +583,13 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         }
     }
 
+    /// The library `krate`'s items are of, if it's one: `@rust-js/std` of
+    /// std's crates, whatever their names, any other by its crate's name
+    /// (`library_name`).
+    fn library(&self, krate: rustc_span::def_id::CrateNum) -> Option<&'a crate::library::Exports> {
+        self.dependencies.libraries.get(library_name(self.tcx, krate).as_str())
+    }
+
     /// The crate's type context, which its queries are asked in.
     pub(super) fn tcx(&self) -> TyCtxt<'tcx> {
         self.tcx
@@ -591,7 +609,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         let mut matched = true;
         for &krate in self.tcx.crates(()) {
             let name = self.tcx.crate_name(krate);
-            if let Some(library) = self.dependencies.libraries.get(name.as_str())
+            if let Some(library) = self.library(krate)
                 && !library.builtin
                 && self.tcx.crate_hash(krate).to_string() != library.crate_hash
             {
@@ -610,7 +628,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     pub(super) fn in_library(&self, id: DefId) -> bool {
         !id.is_local()
             && !super::recognition::not_compiled_for_build(self.tcx, id)
-            && (self.dependencies.libraries.get(self.tcx.crate_name(id.krate).as_str())).is_some_and(|library| {
+            && self.library(id.krate).is_some_and(|library| {
                 !library.builtin || {
                     let key = key(self.tcx, id);
                     library.items.contains_key(&key) || library.impls.contains(&key)
@@ -649,17 +667,14 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         if id.is_local() || self.is_instance(id) || super::recognition::not_compiled_for_build(self.tcx, id) {
             return None;
         }
-        let library = self
-            .dependencies
-            .libraries
-            .get(self.tcx.crate_name(id.krate).as_str())?;
+        let library = self.library(id.krate)?;
         library.items.get(&key(self.tcx, id))
     }
 
     /// How a library's `module` holds `binding` by its name `ident` there,
     /// if it does (ADR 0633).
     pub(super) fn held(&self, module: DefId, ident: rustc_span::Symbol, binding: DefId) -> Option<&'a HeldImport> {
-        let library = (self.dependencies.libraries).get(self.tcx.crate_name(module.krate).as_str())?;
+        let library = self.library(module.krate)?;
         let held = library.held.get(&(key(self.tcx, module), ident.to_string()))?;
         (held.binding == key(self.tcx, binding)).then_some(held)
     }
@@ -820,7 +835,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
 
     /// Does `krate`, a library, count an `Rc` of `pointee` (ADR 0852)?
     fn counts_rc(&self, krate: rustc_span::def_id::CrateNum, pointee: rustc_middle::ty::Ty<'tcx>) -> bool {
-        (self.dependencies.libraries.get(self.tcx.crate_name(krate).as_str()))
+        self.library(krate)
             .is_some_and(|library| (library.counted_rcs.iter()).any(|shape| may_be_shape(self.tcx, shape, pointee)))
     }
 
@@ -831,12 +846,10 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// `fact` of (ADR 0906).
     pub(super) fn field_has(&self, field: DefId, fact: crate::library::FieldFact) -> bool {
         !field.is_local()
-            && (self
-                .dependencies
-                .libraries
-                .get(self.tcx.crate_name(field.krate).as_str()))
-            .and_then(|library| library.fields.get(&key(self.tcx, field)))
-            .is_some_and(|facts| facts.contains(&fact))
+            && self
+                .library(field.krate)
+                .and_then(|library| library.fields.get(&key(self.tcx, field)))
+                .is_some_and(|facts| facts.contains(&fact))
     }
 
     pub(super) fn fields_saying(&self, fact: crate::library::FieldFact) -> HashMap<String, String> {
@@ -861,8 +874,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// Do the writers of `krate`, a library's, take their `Formatter`'s
     /// options (ADR 0137)?
     pub(super) fn writers_take_options(&self, krate: rustc_span::def_id::CrateNum) -> bool {
-        (self.dependencies.libraries.get(self.tcx.crate_name(krate).as_str()))
-            .is_some_and(|library| library.writers_take_options)
+        self.library(krate).is_some_and(|library| library.writers_take_options)
     }
 
     /// May any of the libraries' items?
@@ -875,9 +887,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         !id.is_local()
             && !super::recognition::not_compiled_for_build(self.tcx, id)
             && self
-                .dependencies
-                .libraries
-                .get(self.tcx.crate_name(id.krate).as_str())
+                .library(id.krate)
                 .is_some_and(|library| library.impls.contains(&key(self.tcx, id)))
     }
 
@@ -888,7 +898,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         if id.is_local() {
             return None;
         }
-        let library = (self.dependencies.libraries).get(self.tcx.crate_name(id.krate).as_str())?;
+        let library = self.library(id.krate)?;
         library.types.get(&key(self.tcx, id))
     }
 
@@ -896,7 +906,8 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// says (ADR 0864)?
     pub(super) fn equal_only_to_itself(&self, id: DefId) -> bool {
         !id.is_local()
-            && (self.dependencies.libraries.get(self.tcx.crate_name(id.krate).as_str()))
+            && self
+                .library(id.krate)
                 .is_some_and(|library| library.identities.contains(&key(self.tcx, id)))
     }
 
@@ -904,7 +915,8 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// says (ADR 0864, amended)?
     pub(super) fn eq_by_address(&self, id: DefId) -> bool {
         !id.is_local()
-            && (self.dependencies.libraries.get(self.tcx.crate_name(id.krate).as_str()))
+            && self
+                .library(id.krate)
                 .is_some_and(|library| library.eq_by_address.contains(&key(self.tcx, id)))
     }
 
@@ -912,7 +924,8 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// contract says (ADR 0584, amended)?
     pub(super) fn gives_its_argument(&self, id: DefId) -> bool {
         !id.is_local()
-            && (self.dependencies.libraries.get(self.tcx.crate_name(id.krate).as_str()))
+            && self
+                .library(id.krate)
                 .is_some_and(|library| library.gives_argument.contains(&key(self.tcx, id)))
     }
 
@@ -933,7 +946,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// Is `krate` a library's, one rust-js built for this crate to use, not
     /// `@rust-js/std` (ADR 0100)?
     pub(super) fn is_library(&self, krate: rustc_span::def_id::CrateNum) -> bool {
-        (self.dependencies.libraries.get(self.tcx.crate_name(krate).as_str())).is_some_and(|library| !library.builtin)
+        self.library(krate).is_some_and(|library| !library.builtin)
     }
 
     /// What the libraries can hand this crate (ADR 0626): of each type its
@@ -1001,7 +1014,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
                 if let Some(krate) = exported
                     && super::recognition::is_fn_dyn(tcx, predicates) =>
             {
-                reached.fn_dyns_of.insert(tcx.crate_name(krate).to_string());
+                reached.fn_dyns_of.insert(library_name(tcx, krate).to_string());
             }
             ty::FnDef(..)
                 if let Some((id, args)) = super::fn_def(ty)

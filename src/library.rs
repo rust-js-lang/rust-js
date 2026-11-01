@@ -447,6 +447,8 @@ pub struct Exports {
 
 #[derive(Default)]
 pub struct Dependencies {
+    /// Each library, by its crate's name; `@rust-js/std`'s, of std's
+    /// crates, by `STD_PACKAGE`, which no crate is named.
     pub libraries: HashMap<String, Exports>,
     pub inputs: Vec<std::path::PathBuf>,
     /// Each library's module imported by its package's subpath, by that
@@ -679,11 +681,10 @@ impl Dependencies {
                 return Err("duplicate std export".into());
             }
         }
-        // Its items are std's, found by the crate each is of: `core`'s,
-        // `alloc`'s or `std`'s, not the std crate's own name.
-        for krate in ["core", "alloc", "std"] {
-            self.libraries.insert(krate.to_string(), exports.clone());
-        }
+        // Its items are std's, of `core`, `alloc` or `std`: by its package's
+        // name, which no crate has, not theirs, which a program's may
+        // (ADR 1052).
+        self.libraries.insert(STD_PACKAGE.to_string(), exports);
         Ok(())
     }
 }

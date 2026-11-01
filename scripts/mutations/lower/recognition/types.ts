@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a crate's own `struct ParseIntError` is taken for std's by its name, and shown as std's `ParseIntError { kind: .. }`",
     file: "src/lower/recognition/types.rs",
-    find: '        matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == rustc_span::sym::core\n            && ["ParseIntError"',
+    find: '        matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(self.tcx, adt.did(), StdCrate::Core)\n            && ["ParseIntError"',
     replace: '        matches!(ty.kind(), ty::Adt(adt, _) if ["ParseIntError"',
     tests: [
       "test/recognition.test.ts",

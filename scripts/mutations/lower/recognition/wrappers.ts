@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`Rc::ptr_eq` of a library's struct counts it, so a crate an uncounting library hands it is refused (ADR 0844)",
     file: "src/lower/recognition/wrappers.rs",
-    find: "            && (adt.did().is_local() || !super::std_items::is_std_item(tcx, adt.did()) && holds_data(tcx, adt))\n",
+    find: "            && (adt.did().is_local() || !super::std_items::is_std_crate(tcx, adt.did()) && holds_data(tcx, adt))\n",
     replace: "            && adt.did().is_local()\n",
     tests: ["test/crates.test.ts", "-t", "reads no count"],
   },
@@ -283,7 +283,7 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `#[repr(transparent)]` `Cell` is its value, not the `{ value }` set in place",
     file: "src/lower/recognition/wrappers.rs",
-    find: "    if !adt.is_struct() || !adt.repr().transparent() || super::std_items::is_std_item(tcx, adt.did()) {\n",
+    find: "    if !adt.is_struct() || !adt.repr().transparent() || super::std_items::is_std_crate(tcx, adt.did()) {\n",
     replace: "    if !adt.is_struct() || !adt.repr().transparent() {\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_(const|drops).rs$"],
   },

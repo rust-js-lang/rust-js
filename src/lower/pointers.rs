@@ -13,7 +13,6 @@ use std::collections::{HashMap, HashSet};
 use rustc_middle::mir::{self, Local, PlaceElem, Rvalue, StatementKind};
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::Span;
-use rustc_span::def_id::DefId;
 
 use super::calls::Call;
 use super::recognition::Std;
@@ -301,12 +300,12 @@ const NON_NULL_METHODS: &[(&str, PointerOp)] = &[
     ("is_aligned", PointerOp::IsAligned),
 ];
 
-/// The facts a raw pointer's method `def_id` asks of its pointee, an
-/// address's: its size, an item's stride, and of `is_aligned` its alignment
-/// (ADR 0562). `None` of a method that asks no address.
-pub(in crate::lower) fn address_facts(tcx: ty::TyCtxt<'_>, def_id: DefId) -> Option<&'static [TypeFact]> {
-    let path = tcx.def_path_str(def_id);
-    match pointer_op(&path)? {
+/// The facts a raw pointer's method at `path`, std's path of it, asks of
+/// its pointee, an address's: its size, an item's stride, and of
+/// `is_aligned` its alignment (ADR 0562). `None` of a method that asks no
+/// address.
+pub(in crate::lower) fn address_facts(path: &str) -> Option<&'static [TypeFact]> {
+    match pointer_op(path)? {
         PointerOp::Addr
         | PointerOp::WithAddr
         | PointerOp::MapAddr

@@ -8,6 +8,8 @@ use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Symbol;
 use rustc_span::def_id::DefId;
 
+use super::StdCrate;
+
 /// The data structures, by their diagnostic items.
 const DIAGNOSTIC: &[&str] = &[
     "Vec",
@@ -33,12 +35,12 @@ const DIAGNOSTIC: &[&str] = &[
 ];
 
 /// Those with no diagnostic item, by their crate and path.
-const PATHS: &[(&str, &str, &[&str])] = &[
-    ("OnceCell", "core", &["cell", "OnceCell"]),
-    ("LazyCell", "core", &["cell", "LazyCell"]),
-    ("OnceLock", "std", &["sync", "OnceLock"]),
-    ("LazyLock", "std", &["sync", "LazyLock"]),
-    ("SystemTime", "std", &["time", "SystemTime"]),
+const PATHS: &[(&str, StdCrate, &[&str])] = &[
+    ("OnceCell", StdCrate::Core, &["cell", "OnceCell"]),
+    ("LazyCell", StdCrate::Core, &["cell", "LazyCell"]),
+    ("OnceLock", StdCrate::Std, &["sync", "OnceLock"]),
+    ("LazyLock", StdCrate::Std, &["sync", "LazyLock"]),
+    ("SystemTime", StdCrate::Std, &["time", "SystemTime"]),
 ];
 
 /// The iterator traits, whose provided methods are bodies: each by its lang
@@ -108,7 +110,7 @@ pub(in crate::lower) fn measured(tcx: TyCtxt<'_>) -> Vec<(&'static str, Measured
                 Some(lang) => tcx.lang_items().get(lang),
                 None => tcx
                     .get_diagnostic_item(Symbol::intern(name))
-                    .or_else(|| by_path(tcx, "core", &["iter", name])),
+                    .or_else(|| by_path(tcx, StdCrate::Core, &["iter", name])),
             };
             (name, def)
         })
@@ -119,7 +121,7 @@ pub(in crate::lower) fn measured(tcx: TyCtxt<'_>) -> Vec<(&'static str, Measured
         }
     }
     for &name in ADAPTERS {
-        let Some(adt) = by_path(tcx, "core", &["iter", name]) else {
+        let Some(adt) = by_path(tcx, StdCrate::Core, &["iter", name]) else {
             all.push((name, Measured::Impls(Vec::new())));
             continue;
         };
@@ -170,9 +172,9 @@ fn data_structures(tcx: TyCtxt<'_>) -> Vec<(&'static str, Vec<DefId>)> {
     types
 }
 
-/// The item at `path` in the crate named `krate`, through its modules' children.
-pub(super) fn by_path(tcx: TyCtxt<'_>, krate: &str, path: &[&str]) -> Option<DefId> {
-    let root = tcx.crates(()).iter().find(|&&c| tcx.crate_name(c).as_str() == krate)?;
+/// The item at `path` in `krate`, one of std's, through its modules' children.
+pub(super) fn by_path(tcx: TyCtxt<'_>, krate: StdCrate, path: &[&str]) -> Option<DefId> {
+    let root = super::std_crate_num(tcx, krate)?;
     let mut at = root.as_def_id();
     for part in path {
         at = (tcx.module_children(at).iter())

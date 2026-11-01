@@ -54,7 +54,7 @@ use rustc_middle::mir::{BinOp, TerminatorKind, UnOp};
 
 use rustc_middle::traits::ImplSource;
 use rustc_middle::ty::{self, Ty, TyCtxt};
-use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalDefId, LocalModId};
+use rustc_span::def_id::{CRATE_MOD_ID, CrateNum, DefId, LocalDefId, LocalModId};
 use rustc_span::hygiene::{ExpnKind, MacroKind};
 use rustc_span::{Symbol, sym};
 

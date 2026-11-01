@@ -120,6 +120,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0099 A `&mut` held in a variable names its place; one kept elsewhere is a handle](0099-mut-references.md) *(amended: a reborrow is held only where it's read past its reference's write; amended by 0791: a handle reaches its place once, and stores as its storage says; extended by 0897: a parameter's index, and a `RefCell` guard's element)*
 - [0100 Each crate is compiled once, to JS of its own, with a manifest of what crosses](0100-separate-crates.md) *(amended by 0770: a library's `const` is imported by its name; amended: a library trait's method as a value is its impl's; amended by 0914: a library exports what its program does, a consumer compiling the impls and copies it needs more of)*
 - [0101 Cargo builds a workspace with rust-js as its workspace wrapper](0101-cargo-workspace-wrapper.md)
+- [1052 A crate is std's by the lang item it defines, not by its name](1052-a-crate-is-stds-by-the-lang-item-it-defines.md)
 - [0102 Two binding crates, `js` and `webapi`, named as ReScript's](0102-js-and-webapi.md) *(extended by 0860: JS's iterator protocol, `js::Iterator`; amended by 1020: a timeout takes `TimerHandler`, a window's timers gone)*
 - [0103 The runtime is a package, `@rust-js/runtime`, as ReScript's is](0103-runtime-package.md) *(amended by 0919: it spreads only arrays, so an app's loose transforms leave its answers)*
 - [0919 The runtime spreads only arrays, so an app's loose transforms leave its answers as they are](0919-the-runtime-survives-loose-transforms.md)
@@ -357,7 +358,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0328 A `RefCell` counts its borrows, as std's does](0328-refcell-borrow-counts.md) *(amended by 0863: a `RefCell` of an object is the object, its borrows counted only where one may meet another)*
 - [0329 A `Pin` is its pointer](0329-pin.md)
 - [0330 An `undefined` given to JS is an argument](0330-undefined-given-to-js.md) *(amended: a `fold`'s start; a fn pointer that may only be the crate's functions is called as they are; amended by 1007: a library's own, of a field its contract says so of, too; amended: an item a std call gives JS's own method is given, `splice(1, 0, undefined)`)*
-- [0331 A `TypeId` is its type's name, and a `dyn Any` a pair](0331-dyn-any.md) *(amended by 0660: what unwound is one; amended: a nullable parameter's is its value too, rd170)*
+- [0331 A `TypeId` is its type's name, and a `dyn Any` a pair](0331-dyn-any.md) *(amended by 0660: what unwound is one; amended: a nullable parameter's is its value too, rd170; amended by 1052: a type of a crate named as another is, std's never, has its hash too)*
 - [0332 A `MaybeUninit` is its value, or `undefined` before it's written](0332-maybe-uninit.md)
 - [0333 A heap's `append`, `retain`, `drain` and `peek_mut`, and a `Vec`'s `push_mut`](0333-heap-and-vec-methods.md)
 - [0334 A `&mut str` is a cell of the text, written in place](0334-mut-str.md)
@@ -973,7 +974,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0558 A byte's escape is its bytes](0558-a-bytes-escape-is-its-bytes.md)
 - [0559 `{:x?}` of an integer is its hex](0559-debug-hex-of-an-integer.md)
 - [0560 A copied default resolves a call with its own bounds](0560-a-copied-default-resolves-with-its-own-bounds.md)
-- [0561 std's bodies are std's own; a recognizer is a proved rewrite to an idiom](0561-std-bodies.md)
+- [0561 std's bodies are std's own; a recognizer is a proved rewrite to an idiom](0561-std-bodies.md) *(amended by 1052: std's crates by their lang items, `@rust-js/std` by its package's name)*
 - [0562 A pointer is a place and an address; bytes are plain data's](0562-a-pointer-is-a-place-and-an-address.md) *(extended by 0864: a hash of an address; amended: `Rc::as_ptr`, and two pointers to one field; a function's pointer is the function)*
 - [0563 What's found once of a crate is keyed by the crate's own files](0563-found-once-is-keyed-by-the-crates-own-files.md) *(superseded by 0573)*
 - [0564 A std body's JS is tidied as the app's is: decided tests, once-read temporaries, shared tails](0564-a-std-body-is-tidied-as-the-apps-are.md) *(extended by 0743: a part of a chain a test decides; amended: an `if` the program wrote stays; amended by 0879: a `let … else`'s exit stays)*

@@ -114,4 +114,13 @@ export const mutations: Mutation[] = [
     replace: "Some((name, entry)) if false =>",
     tests: ["test/libraries.test.ts", "-t", "compiles a library from npm"],
   },
+  {
+    name: "std-library-keyed-by-std-crates",
+    breaks:
+      "`@rust-js/std` is kept by std's crates' names, so a program's library named `core` replaces it, and std's crates, found by the package's name, have no library (#455, ADR 1052)",
+    file: "src/library.rs",
+    find: "        self.libraries.insert(STD_PACKAGE.to_string(), exports);\n",
+    replace: '        for krate in ["core", "alloc", "std"] {\n            self.libraries.insert(krate.to_string(), exports.clone());\n        }\n',
+    tests: ["test/crates.test.ts", "-t", "crate_named_core"],
+  },
 ];

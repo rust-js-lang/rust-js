@@ -648,7 +648,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         args: ty::GenericArgsRef<'tcx>,
     ) -> Option<(DefId, ty::GenericArgsRef<'tcx>, DefId)> {
         let tcx = self.tcx;
-        if tcx.crate_name(def_id.krate) != sym::core {
+        if !of_std_crate(tcx, def_id, StdCrate::Core) {
             return None;
         }
         let wanted = match tcx.item_name(def_id).as_str() {
@@ -767,7 +767,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 /// `PhantomData` and `Reverse(x)`, `[x]`; any other of std's has fields of
 /// its own that aren't the JS value rust-js makes of it.
 pub(in crate::lower) fn struct_is_its_fields(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    ![sym::std, sym::core, sym::alloc].contains(&tcx.crate_name(id.krate))
+    !is_std_crate(tcx, id)
         || tcx.is_lang_item(id, LangItem::PhantomData)
         || tcx.item_name(id).as_str() == "Reverse"
         // `Wrapping(x)`, `[x]` (ADR 0175).
@@ -871,7 +871,7 @@ pub(crate) fn bound_by_any(tcx: TyCtxt<'_>, owner: DefId, index: u32) -> bool {
 /// `cmp::max`, `Some(true)`, or `cmp::min`, `Some(false)`: `core`'s, which
 /// `std` re-exports.
 pub(crate) fn cmp_extreme(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool> {
-    if tcx.crate_name(def_id.krate) != sym::core {
+    if !of_std_crate(tcx, def_id, StdCrate::Core) {
         return None;
     }
     match std_path(tcx, def_id).as_str() {

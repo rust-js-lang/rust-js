@@ -26,7 +26,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// A `Peekable`, std's struct, `{ iter, peeked }` (ADR 0561).
     pub(in crate::lower) fn is_peekable(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == rustc_span::sym::core
+        matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if of_std_crate(self.tcx, adt.did(), StdCrate::Core)
             && self.tcx.item_name(adt.did()).as_str() == "Peekable")
     }
 
@@ -92,7 +92,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(in crate::lower) fn reversed(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         match ty.peel_refs().kind() {
             ty::Adt(adt, args)
-                if self.tcx.crate_name(adt.did().krate) == rustc_span::sym::core
+                if of_std_crate(self.tcx, adt.did(), StdCrate::Core)
                     && self.tcx.item_name(adt.did()).as_str() == "Rev" =>
             {
                 Some(args.type_at(0))
@@ -132,7 +132,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     pub(in crate::lower) fn is_reverse(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == rustc_span::sym::core
+        matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(self.tcx, adt.did(), StdCrate::Core)
             && self.tcx.item_name(adt.did()).as_str() == "Reverse")
     }
 
@@ -198,10 +198,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if self.is_str_bytes(ty) {
             return Some(true);
         }
-        let owning = [sym::alloc, sym::std].contains(&self.tcx.crate_name(adt.did().krate))
-            && matches!(
-                std_path(self.tcx, adt.did()).as_str(),
-                "std::vec::IntoIter"
+        let owning = matches!(
+            std_crate(self.tcx, adt.did().krate),
+            Some(StdCrate::Alloc | StdCrate::Std)
+        ) && matches!(
+            std_path(self.tcx, adt.did()).as_str(),
+            "std::vec::IntoIter"
                     | "std::vec::Drain"
                     | "std::vec::Splice"
                     | "std::collections::vec_deque::Drain"
@@ -230,7 +232,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     // A `Box<[T; N]>`'s `into_iter()`, 1.99's, its array (ADR
                     // 0941).
                     | "std::boxed::BoxedArrayIntoIter"
-            );
+        );
         (self.is_std_type(ty, StdItem::ArrayIntoIter) || owning || self.is_iter_empty(ty)).then_some(true)
     }
 
@@ -243,8 +245,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty::Adt(adt, _) = ty.kind() else { return false };
         self.is_std_type(ty, StdItem::SliceIter)
             || self.is_std_type(ty, StdItem::ArrayIntoIter)
-            || ([sym::alloc, sym::std].contains(&self.tcx.crate_name(adt.did().krate))
-                && std_path(self.tcx, adt.did()) == "std::vec::IntoIter")
+            || (matches!(
+                std_crate(self.tcx, adt.did().krate),
+                Some(StdCrate::Alloc | StdCrate::Std)
+            ) && std_path(self.tcx, adt.did()) == "std::vec::IntoIter")
     }
 
     /// std's iterator adapter, `iter::Map` and the like: a JS iterator's,
@@ -814,8 +818,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty = self.reveal(ty);
         let ty::Adt(adt, _) = ty.kind() else { return false };
         let path = std_path(self.tcx, adt.did());
-        let krate = self.tcx.crate_name(adt.did().krate);
-        (krate == sym::core || krate == sym::alloc)
+        let krate = std_crate(self.tcx, adt.did().krate);
+        matches!(krate, Some(StdCrate::Core | StdCrate::Alloc))
             && (path.contains("::iter::")
                 || [
                     "std::slice::Iter",
@@ -865,18 +869,18 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 || self.is_str_split(ty)
                 || self.iterates_items(ty))
             // A map's `iter()`, `keys()` and `values()` are arrays too (ADR 0059).
-            || ((krate == sym::alloc || krate == sym::std)
+            || (matches!(krate, Some(StdCrate::Alloc | StdCrate::Std))
                 && ["btree_map::Iter", "btree_map::IterMut", "btree_map::Keys", "btree_map::Values", "btree_map::ValuesMut", "btree_map::IntoIter", "btree_set::Iter", "btree_set::IntoIter"]
                     .iter()
                     .any(|name| path == format!("std::collections::{name}")))
-            || (krate == sym::std
+            || (krate == Some(StdCrate::Std)
                 && ["hash_map::Iter", "hash_map::IterMut", "hash_map::Keys", "hash_map::Values", "hash_map::ValuesMut", "hash_map::IntoIter", "hash_set::Iter", "hash_set::IntoIter"]
                     .iter()
                     .any(|name| path == format!("std::collections::{name}")))
     }
 
     pub(in crate::lower) fn is_str_split(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == sym::core
+        matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(self.tcx, adt.did(), StdCrate::Core)
             && self.tcx.item_name(adt.did()).as_str() == "Split"
             && std_path(self.tcx, adt.did()).contains("str::"))
     }
@@ -909,7 +913,7 @@ pub(crate) fn accumulation_of(tcx: TyCtxt<'_>, method: DefId) -> Option<DefId> {
 
 /// std's `Sum` or `Product`, by its method's name, `sum` or `product`.
 pub(crate) fn accumulation(tcx: TyCtxt<'_>, id: DefId) -> Option<&'static str> {
-    if tcx.crate_name(id.krate) != sym::core || tcx.def_kind(id) != DefKind::Trait {
+    if !of_std_crate(tcx, id, StdCrate::Core) || tcx.def_kind(id) != DefKind::Trait {
         return None;
     }
     match tcx.item_name(id).as_str() {
@@ -1026,7 +1030,7 @@ pub(crate) fn index_by_slice_index<'tcx>(tcx: TyCtxt<'tcx>, tr: ty::TraitRef<'tc
 }
 
 pub(crate) fn is_iterator_extension(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    tcx.crate_name(id.krate) == sym::core
+    of_std_crate(tcx, id, StdCrate::Core)
         && tcx.def_kind(id) == DefKind::Trait
         && [
             Symbol::intern("DoubleEndedIterator"),
@@ -1047,7 +1051,7 @@ pub(crate) fn into_iter_by_dictionary(tcx: TyCtxt<'_>, trait_id: DefId, self_ty:
 }
 
 pub(in crate::lower) fn is_extend(tcx: rustc_middle::ty::TyCtxt<'_>, trait_id: rustc_span::def_id::DefId) -> bool {
-    tcx.crate_name(trait_id.krate) == rustc_span::sym::core && tcx.item_name(trait_id) == Symbol::intern("Extend")
+    of_std_crate(tcx, trait_id, StdCrate::Core) && tcx.item_name(trait_id) == Symbol::intern("Extend")
 }
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {

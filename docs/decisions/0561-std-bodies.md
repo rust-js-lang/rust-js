@@ -12,7 +12,11 @@ is reached only at a leaf of addressable memory, and
 [0543](0543-a-held-peekable-keeps-what-it-peeked-at.md), whose `Peekable`
 is std's own now.
 Amended by [0983](0983-a-fuse-that-drops-its-source-stays.md): a `fuse()`
-stepped in place is left out only where it's given no drops.
+stepped in place is left out only where it's given no drops. Amended by
+[1052](1052-a-crate-is-stds-by-the-lang-item-it-defines.md): std's crates
+are known by their lang items, not their names, and `@rust-js/std` is
+their library by its package's name, which a program's crate named
+`core` can't take.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): a std function's
 answer, its order of effects, its drops and its panics are Rust's, as its

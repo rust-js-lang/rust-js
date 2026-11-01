@@ -238,7 +238,8 @@ test("each runtime helper is asked for, or needed by another", () => {
   const readBy = (helper: string, name: string) => helpers.some(other => other !== helper && new RegExp(`(?<![\\w.$"'])\\$${name.slice(1)}\\b(?!\\s*:)`).test(source(other)));
   const unasked = helpers.filter(name => !declared(name).some(own => writing.includes(`"${own}"`) || readBy(name, own)));
   expect(unasked).toEqual([]);
-});
+  // It reads every source and each helper's JS, 1 s alone: past 5 s beside check:fast's other jobs.
+}, 30_000);
 
 // A helper is written as the runtime's, `Expr::helper("$cmp")`, which
 // checks the runtime has it and is asked for by being written (ADR 0103),
@@ -776,6 +777,19 @@ test("library identity checks and method tables stay in recognition", () => {
   }
   for (const file of ["src/lower/calls.rs", "src/lower/ordering.rs", "src/lower/traits.rs", ...files("src/lower/traits")]) {
     expect(read(file), file).not.toMatch(/match\s+(?:self\.tcx\.item_name\(\w+\)|name)\.as_str\(\)/);
+  }
+});
+
+// std's crates are known by `std_crate`, by the lang item each defines, not
+// by their names, which a program's crate may have, a workspace's `core`:
+// fifty checks of `crate_name(..) == sym::core` took it for std's (#455,
+// ADR 1052). Only `std_path` reads `core::` in a std item's path, to make it
+// std's.
+test("std's crates are known by std_crate, not by their names", () => {
+  const named = /\bsym::(?:core|alloc|std)\b|"(?:core|alloc|std)"\s*(?:\||\]|,)|==\s*"(?:core|alloc|std)"/;
+  for (const file of ["src/lower.rs", ...files("src/lower"), "src/library.rs"]) {
+    const text = read(file).replace(/\npub\(super\) fn std_path\([\s\S]*?\n\}\n/, "\n");
+    expect(text, file).not.toMatch(named);
   }
 });
 

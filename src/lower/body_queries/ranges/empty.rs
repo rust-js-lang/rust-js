@@ -9,7 +9,7 @@
 use super::super::strip;
 use super::Slice;
 use crate::lower::fn_def;
-use crate::lower::recognition::{is_pointer_new, is_rc_clone, is_rc_deref, is_std_item, once_method};
+use crate::lower::recognition::{is_pointer_new, is_rc_clone, is_rc_deref, is_std_crate, once_method};
 use crate::lower::std_types::once::OnceOp;
 use rustc_hir::{BindingMode, ByRef};
 use rustc_middle::mir::BorrowKind;
@@ -184,7 +184,7 @@ pub(super) fn drop_runs_code<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<
             continue;
         }
         match ty.kind() {
-            ty::Adt(adt, args) if is_std_item(tcx, adt.did()) => work.extend(args.types()),
+            ty::Adt(adt, args) if is_std_crate(tcx, adt.did()) => work.extend(args.types()),
             ty::Adt(adt, args) => {
                 if tcx.adt_destructor(adt.did()).is_some() {
                     return true;

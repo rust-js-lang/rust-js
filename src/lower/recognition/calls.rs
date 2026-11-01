@@ -329,7 +329,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Some(Std::CloneFrom));
         }
-        if tcx.crate_name(def_id.krate) == sym::core && std_path(tcx, def_id) == "std::mem::take" {
+        if of_std_crate(tcx, def_id, StdCrate::Core) && std_path(tcx, def_id) == "std::mem::take" {
             return Some(Some(Std::MemTake));
         }
         // `cmp::max(a, b)` of numbers is `a.max(b)`'s (ADR 0136); of anything
@@ -342,13 +342,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if tcx.is_lang_item(def_id, LangItem::RangeInclusiveNew) {
             return Some(Some(Std::Range(RangeOp::New)));
         }
-        if tcx.crate_name(def_id.krate) == sym::std {
+        if of_std_crate(tcx, def_id, StdCrate::Std) {
             match std_path(tcx, def_id).as_str() {
                 "std::io::stdout" | "std::io::stderr" => return Some(Some(Std::Stream(StreamOp::Open))),
                 _ => {}
             }
         }
-        if tcx.crate_name(def_id.krate) == sym::core {
+        if of_std_crate(tcx, def_id, StdCrate::Core) {
             match std_path(tcx, def_id).as_str() {
                 "std::any::type_name" => return Some(Some(Std::TypeName { of_val: false })),
                 "std::any::type_name_of_val" => return Some(Some(Std::TypeName { of_val: true })),
@@ -357,7 +357,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         // std's iterator sources (ADR 0128), by path: most have no
         // diagnostic item.
-        if tcx.crate_name(def_id.krate) == sym::core && tcx.def_kind(def_id) == DefKind::Fn {
+        if of_std_crate(tcx, def_id, StdCrate::Core) && tcx.def_kind(def_id) == DefKind::Fn {
             let source = match std_path(tcx, def_id).as_str() {
                 "std::iter::once" => Some(IterSource::Once),
                 "std::iter::empty" => Some(IterSource::Empty),
@@ -375,9 +375,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         // `hint::black_box(x)` is `x`: it only hides `x` from an optimizer.
         // libtest's `test::black_box` is the same.
-        let krate = tcx.crate_name(def_id.krate);
+        let krate = std_crate(tcx, def_id.krate);
         if tcx.item_name(def_id).as_str() == "black_box"
-            && ((krate == sym::core && std_path(tcx, def_id).contains("hint")) || krate.as_str() == "test")
+            && ((krate == Some(StdCrate::Core) && std_path(tcx, def_id).contains("hint")) || is_libtest(tcx, def_id))
         {
             return Some(Some(Std::Same));
         }
@@ -390,7 +390,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         // `char::from_digit`, `std::char::from_digit` and `from_u32`.
         let char_fn = |name: &str| {
-            tcx.crate_name(def_id.krate) == sym::core
+            of_std_crate(tcx, def_id, StdCrate::Core)
                 && tcx.item_name(def_id).as_str() == name
                 && std_path(tcx, def_id).contains("char")
         };
@@ -423,9 +423,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         // `format!(..)` is `must_use(format(format_args!(..)))`, and the
         // arguments are a string already (ADR 0034).
-        let krate = tcx.crate_name(def_id.krate);
+        let krate = std_crate(tcx, def_id.krate);
         let name = tcx.item_name(def_id);
-        if krate == sym::core
+        if krate == Some(StdCrate::Core)
             && let Some(imp) = tcx.inherent_impl_of_assoc(def_id)
             && Num::of(tcx.type_of(imp).instantiate_identity().skip_normalization()).is_some_and(Num::float)
         {
@@ -435,10 +435,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 _ => {}
             }
         }
-        if krate == sym::alloc && name.as_str() == "format" && std_path(tcx, def_id).ends_with("fmt::format") {
+        if krate == Some(StdCrate::Alloc) && name.as_str() == "format" && std_path(tcx, def_id).ends_with("fmt::format")
+        {
             return Some(Some(Std::Format));
         }
-        if krate == sym::core && name.as_str() == "must_use" {
+        if krate == Some(StdCrate::Core) && name.as_str() == "must_use" {
             return Some(Some(Std::Same));
         }
         if tcx.is_lang_item(def_id, LangItem::Panic) {
@@ -448,13 +449,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if tcx.is_lang_item(def_id, LangItem::PanicDisplay) {
             return Some(Some(Std::PanicDisplay { unreachable: false }));
         }
-        if krate == sym::core && name.as_str() == "unreachable_display" && std_path(tcx, def_id).contains("panicking") {
+        if krate == Some(StdCrate::Core)
+            && name.as_str() == "unreachable_display"
+            && std_path(tcx, def_id).contains("panicking")
+        {
             return Some(Some(Std::PanicDisplay { unreachable: true }));
         }
         if let Some(error) = print_of(tcx, def_id) {
             return Some(Some(Std::Print { error }));
         }
-        if krate == sym::std {
+        if krate == Some(StdCrate::Std) {
             match std_path(tcx, def_id).as_str() {
                 "std::rt::begin_panic" => return Some(Some(Std::BeginPanic)),
                 "std::panic::catch_unwind" => return Some(Some(Std::Unwind(UnwindOp::Catch))),
@@ -467,10 +471,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         // `hint::unreachable_unchecked()`, which a program that's right never
         // reaches: what MIR's unreachable code is.
-        if krate == sym::core && std_path(tcx, def_id) == "std::hint::unreachable_unchecked" {
+        if krate == Some(StdCrate::Core) && std_path(tcx, def_id) == "std::hint::unreachable_unchecked" {
             return Some(Some(Std::Unreachable));
         }
-        if tcx.crate_name(def_id.krate) == sym::core && tcx.item_name(def_id).as_str() == "assert_failed" {
+        if of_std_crate(tcx, def_id, StdCrate::Core) && tcx.item_name(def_id).as_str() == "assert_failed" {
             return Some(Some(Std::AssertFailed));
         }
         if diagnostic("deref_method") || diagnostic("deref_mut_method") {
@@ -1275,7 +1279,7 @@ fn to_owned_of(ty: Ty<'_>) -> Std {
 /// Whether `def_id` is what `println!` calls, std's `_print`, `Some(false)`,
 /// or `eprintln!`'s `_eprint`, `Some(true)`, its error.
 pub(in crate::lower) fn print_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool> {
-    if tcx.crate_name(def_id.krate) != sym::std {
+    if !of_std_crate(tcx, def_id, StdCrate::Std) {
         return None;
     }
     match std_path(tcx, def_id).as_str() {

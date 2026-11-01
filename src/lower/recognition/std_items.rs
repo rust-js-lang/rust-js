@@ -38,7 +38,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         generic_args: ty::GenericArgsRef<'tcx>,
     ) -> (DefId, ty::GenericArgsRef<'tcx>) {
         let tcx = self.tcx;
-        if tcx.crate_name(def_id.krate) == sym::core
+        if of_std_crate(tcx, def_id, StdCrate::Core)
             && std_path(tcx, def_id).ends_with("fmt::write")
             && let sig = tcx
                 .instantiate_bound_regions_with_erased(tcx.fn_sig(def_id).instantiate_identity().skip_normalization())
@@ -73,20 +73,31 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     pub(in crate::lower) fn is_std(&self, id: DefId) -> bool {
-        is_std_item(self.tcx, id)
+        is_std_crate(self.tcx, id)
     }
 
     /// Is `id` the standard library's: std, core, alloc, or a crate rustc's
     /// sysroot holds beside them, as `hashbrown`, which std's maps are made of?
     pub(in crate::lower) fn in_sysroot(&self, id: DefId) -> bool {
-        self.is_std(id) || {
-            let sysroots: Vec<&std::path::Path> = self.tcx.sess.opts.sysroot.all_paths().collect();
-            self.tcx
-                .used_crate_source(id.krate)
-                .paths()
-                .any(|path| sysroots.iter().any(|sysroot| path.starts_with(sysroot)))
-        }
+        self.is_std(id) || from_sysroot(self.tcx, id)
     }
+}
+
+/// Is `id` of a crate rustc loaded from its sysroot, not one a program
+/// built?
+fn from_sysroot(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    !id.is_local() && {
+        let sysroots: Vec<&std::path::Path> = tcx.sess.opts.sysroot.all_paths().collect();
+        tcx.used_crate_source(id.krate)
+            .paths()
+            .any(|path| sysroots.iter().any(|sysroot| path.starts_with(sysroot)))
+    }
+}
+
+/// Is `id` libtest's, the `test` crate of rustc's sysroot, not a program's
+/// crate of that name (ADR 1052)?
+pub(super) fn is_libtest(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.crate_name(id.krate).as_str() == "test" && from_sysroot(tcx, id)
 }
 
 /// A std item's path as std names it, `std::str::Chars`: a `#![no_std]`
@@ -750,7 +761,7 @@ pub(crate) fn is_compiled_std(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// `TrustedRandomAccessNoCoerce`.
 fn std_iter_trait(tcx: TyCtxt<'_>, name: &str) -> Option<DefId> {
     tcx.get_diagnostic_item(Symbol::intern(name))
-        .or_else(|| registry::by_path(tcx, "core", &["iter", name]))
+        .or_else(|| registry::by_path(tcx, StdCrate::Core, &["iter", name]))
 }
 
 fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
@@ -759,7 +770,7 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
         .iter()
         .filter(|&&(type_name, ..)| compiled_for_build(type_name))
     {
-        let Some(adt) = registry::by_path(tcx, "core", &["iter", type_name]) else {
+        let Some(adt) = registry::by_path(tcx, StdCrate::Core, &["iter", type_name]) else {
             continue;
         };
         // A trait std keeps private is beside the type, `FuseImpl` in
@@ -902,20 +913,68 @@ pub(crate) fn is_check_language_ub(tcx: TyCtxt<'_>, id: DefId) -> bool {
     is_std_crate(tcx, id) && std_path(tcx, id) == "std::ub_checks::check_language_ub"
 }
 
-/// Whether `id` is std's: of `std`, `core` or `alloc`.
-pub(crate) fn is_std_crate(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    !id.is_local() && matches!(tcx.crate_name(id.krate).as_str(), "core" | "alloc" | "std")
+/// One of the standard library's own crates.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum StdCrate {
+    Core,
+    Alloc,
+    Std,
 }
 
+impl StdCrate {
+    /// The lang item only this crate defines: `core`'s `Sized`, `alloc`'s
+    /// `Box`, and `std`'s `start`, which runs a program's `main`. No crate
+    /// on stable Rust defines a lang item.
+    fn lang_item(self) -> LangItem {
+        match self {
+            StdCrate::Core => LangItem::Sized,
+            StdCrate::Alloc => LangItem::OwnedBox,
+            StdCrate::Std => LangItem::Start,
+        }
+    }
+}
+
+/// The crate that is `std`, std's `core`, `alloc` or `std`, of those the
+/// session loaded: the one that defines its lang item.
+pub(crate) fn std_crate_num(tcx: TyCtxt<'_>, std: StdCrate) -> Option<CrateNum> {
+    tcx.lang_items().get(std.lang_item()).map(|id| id.krate)
+}
+
+/// Which of std's crates `krate` is, if it's one: known by the lang item
+/// only it defines, not by its name, which a program's crate may have too,
+/// a workspace's `core` (ADR 1052). The one answer of whether a crate is
+/// std's: each question of std's crates asks it.
+pub(crate) fn std_crate(tcx: TyCtxt<'_>, krate: CrateNum) -> Option<StdCrate> {
+    [StdCrate::Core, StdCrate::Alloc, StdCrate::Std]
+        .into_iter()
+        .find(|&std| std_crate_num(tcx, std) == Some(krate))
+}
+
+/// Whether `id` is std's: of `std`, `core` or `alloc` (`std_crate`).
+pub(crate) fn is_std_crate(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    std_crate(tcx, id.krate).is_some()
+}
+
+/// Whether `id` is of `krate`, one of std's crates (`std_crate`).
+pub(crate) fn of_std_crate(tcx: TyCtxt<'_>, id: DefId, krate: StdCrate) -> bool {
+    std_crate(tcx, id.krate) == Some(krate)
+}
+
+/// std's path of `id`, a std item, `std::str::Chars`, whichever of std's
+/// crates it's of; empty of any other item, which no std path is: an item
+/// of a program's crate named `std` or `core` is never std's (ADR 1052).
 pub(super) fn std_path(tcx: TyCtxt<'_>, id: DefId) -> String {
+    if !is_std_crate(tcx, id) {
+        return String::new();
+    }
     let mut path = tcx.def_path_str(id);
     // Named through a crate's own name for std's, hashbrown's `extern crate
     // alloc as stdalloc`: std's own path, `alloc::alloc::alloc`.
-    if is_std_crate(tcx, id) && !matches!(path.split("::").next(), Some("std" | "core" | "alloc")) {
+    if !matches!(path.split("::").next(), Some("std" | "core" | "alloc")) {
         path = ty::print::with_no_visible_paths!(tcx.def_path_str(id));
     }
     match path.split_once("::") {
-        Some(("core" | "alloc", rest)) if !id.is_local() => format!("std::{rest}"),
+        Some(("core" | "alloc", rest)) => format!("std::{rest}"),
         _ => path,
     }
 }
@@ -975,7 +1034,7 @@ pub(super) fn is_index_map(tcx: TyCtxt<'_>, id: DefId) -> bool {
 fn map_entry_item(tcx: TyCtxt<'_>, id: DefId, name: &str) -> bool {
     match bound_map_item(tcx, id) {
         Some(item) => item == name,
-        None => is_std_item(tcx, id) && tcx.item_name(id).as_str() == name,
+        None => is_std_crate(tcx, id) && tcx.item_name(id).as_str() == name,
     }
 }
 
@@ -1042,15 +1101,19 @@ fn bound_map_item(tcx: TyCtxt<'_>, id: DefId) -> Option<&'static str> {
     }
 }
 
-pub(in crate::lower) fn is_std_item(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    [sym::core, sym::alloc, sym::std].contains(&tcx.crate_name(id.krate))
-}
-
 /// Is `id` of a crate linked at two versions, whose paths alone don't tell
-/// the two apart (ADR 0331)?
+/// the two apart (ADR 0331)? Or of a crate named as one of std's is, a
+/// workspace's `core` beside std's, the crate compiled too, which every
+/// crate that sees it sees beside std's: never std's own, whose paths are
+/// then theirs alone, the same in every crate, as `@rust-js/runtime` reads
+/// a `String`'s (ADR 1052).
 pub(crate) fn linked_twice(tcx: TyCtxt<'_>, id: DefId) -> bool {
     let name = tcx.crate_name(id.krate);
-    tcx.crates(()).iter().filter(|&&c| tcx.crate_name(c) == name).count() > 1
+    !is_std_crate(tcx, id)
+        && (tcx.crates(()).iter().chain([&rustc_span::def_id::LOCAL_CRATE]))
+            .filter(|&&c| tcx.crate_name(c) == name)
+            .count()
+            > 1
 }
 
 /// A std type whose bodies are compiled into `@rust-js/std` (the std-bodies
@@ -1202,20 +1265,20 @@ impl StdItem {
 pub(crate) fn replaces_whole(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.is_diagnostic_item(Symbol::intern("mem_swap"), id)
         || tcx.is_diagnostic_item(Symbol::intern("mem_replace"), id)
-        || tcx.crate_name(id.krate) == sym::core && std_path(tcx, id) == "std::mem::take"
+        || of_std_crate(tcx, id, StdCrate::Core) && std_path(tcx, id) == "std::mem::take"
 }
 
 /// Is `id` a slice of arrays' `as_flattened_mut`, a `&mut` to the items of
 /// each array, which it changes through?
 pub(crate) fn flattens_mut(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    tcx.crate_name(id.krate) == sym::core
+    of_std_crate(tcx, id, StdCrate::Core)
         && tcx.item_name(id).as_str() == "as_flattened_mut"
         && tcx.inherent_impl_of_assoc(id).is_some()
 }
 
 /// Is `id` std's `FromStr`, which has no diagnostic item to know it by?
 pub(crate) fn is_from_str(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    tcx.crate_name(id.krate) == sym::core
+    of_std_crate(tcx, id, StdCrate::Core)
         && tcx.def_kind(id) == DefKind::Trait
         && std_path(tcx, id).ends_with("str::FromStr")
 }
@@ -1231,8 +1294,8 @@ pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
             };
             tcx.def_kind(id) == DefKind::Struct && {
                 let name = tcx.item_name(id);
-                name.as_str() == cell && tcx.crate_name(id.krate) == sym::core
-                    || name.as_str() == lock && tcx.crate_name(id.krate) == sym::std
+                name.as_str() == cell && of_std_crate(tcx, id, StdCrate::Core)
+                    || name.as_str() == lock && of_std_crate(tcx, id, StdCrate::Std)
             }
         }
         // A lang item, which has no diagnostic item.
@@ -1357,7 +1420,7 @@ pub(crate) enum PureStd {
 
 /// Which pure std function `id` is, if it's one.
 pub(crate) fn pure_std(tcx: TyCtxt<'_>, id: DefId) -> Option<PureStd> {
-    if !is_std_item(tcx, id) {
+    if !is_std_crate(tcx, id) {
         return None;
     }
     match tcx.item_name(id).as_str() {

@@ -248,6 +248,14 @@ models/src/lib.js     export const MAX_LENGTH = 254;
 frontend/src/lib.js   import { MAX_LENGTH, validEmail } from "../../models/src/lib.js";
 ```
 
+A workspace's crate may have any name Rust gives one, std's own too: a
+package named `core`, `alloc` or `test` is the workspace's crate,
+compiled and called as any other, `core::double(21)` its `double`, and
+never std's, though its `mem::take` is named as std's is; std's crates
+stay std's beside it. Only a `#![no_std]` crate can use one named
+`std`, as in Rust, where it would be any other crate's prelude
+([ADR 1052](../../decisions/1052-a-crate-is-stds-by-the-lang-item-it-defines.md)).
+
 The package built is compiled as a program only where no crate of the
 workspace uses it; one another crate uses is a library, whichever package
 is built ([ADR 0360](../../decisions/0360-the-app-is-a-program.md)). A

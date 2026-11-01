@@ -242,7 +242,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     pub(in crate::lower) fn skip_predicate(&self, function: DefId, ty: Ty<'tcx>) -> Option<SkipPredicate> {
-        let standard = matches!(self.tcx.crate_name(function.krate).as_str(), "core" | "alloc");
+        let standard = matches!(
+            std_crate(self.tcx, function.krate),
+            Some(StdCrate::Core | StdCrate::Alloc)
+        );
         match self.tcx.item_name(function).as_str() {
             "is_none" if standard && self.option_of(ty).is_some() => Some(SkipPredicate::None),
             "is_some" if standard && self.option_of(ty).is_some() => Some(SkipPredicate::Some),
@@ -254,7 +257,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     pub(in crate::lower) fn skips_none(&self, function: DefId) -> bool {
-        self.tcx.crate_name(function.krate).as_str() == "core" && self.tcx.item_name(function).as_str() == "is_none"
+        of_std_crate(self.tcx, function, StdCrate::Core) && self.tcx.item_name(function).as_str() == "is_none"
     }
 }
 
@@ -267,7 +270,7 @@ const OTHER_FMT_TRAITS: [&str; 7] = [
 
 /// Is `id` one of core's `OTHER_FMT_TRAITS`?
 pub(crate) fn is_other_fmt_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    tcx.crate_name(id.krate) == sym::core
+    of_std_crate(tcx, id, StdCrate::Core)
         && tcx.def_kind(id) == DefKind::Trait
         && OTHER_FMT_TRAITS.contains(&tcx.item_name(id).as_str())
         && std_path(tcx, id).contains("fmt::")

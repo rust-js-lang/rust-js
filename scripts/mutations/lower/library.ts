@@ -45,9 +45,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's manifest is taken beside the metadata of another build of it",
     file: "src/lower/library.rs",
-    find: "            if let Some(library) = self.dependencies.libraries.get(name.as_str())\n",
+    find: "            if let Some(library) = self.library(krate)\n",
     replace:
-      "            if let Some(library) = self.dependencies.libraries.get(name.as_str()).filter(|_| false)\n",
+      "            if let Some(library) = self.library(krate).filter(|_| false)\n",
     tests: ["test/crates.test.ts", "-t", "another build"],
   },
   {
@@ -155,7 +155,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Box<dyn FnMut>` a library's function gives, of its own closure with a destructor, is taken to drop nothing",
     file: "src/lower/library.rs",
-    find: "                reached.fn_dyns_of.insert(tcx.crate_name(krate).to_string());\n",
+    find: "                reached.fn_dyns_of.insert(library_name(tcx, krate).to_string());\n",
     replace: "",
     tests: [
       "test/cargo-link.test.ts",
@@ -528,5 +528,14 @@ export const mutations: Mutation[] = [
     find: "                    (ItemFact::Arguments, reads_arguments.contains(&id)),\n",
     replace: "                    (ItemFact::Arguments, false),\n",
     tests: ["test/arguments.test.ts"],
+  },
+  {
+    name: "std-library-by-crate-name",
+    breaks:
+      "std's crates' library is found by their names, which a program's library named `core` has, so std's `core` is that library's and `@rust-js/std` is never found (#455, ADR 1052)",
+    file: "src/lower/library.rs",
+    find: "        Some(_) => rustc_span::Symbol::intern(crate::library::STD_PACKAGE),\n",
+    replace: "        Some(_) => tcx.crate_name(krate),\n",
+    tests: ["test/crates.test.ts", "-t", "crate_named_core"],
   },
 ];

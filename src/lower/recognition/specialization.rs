@@ -226,9 +226,11 @@ pub(crate) fn fact_trait(tcx: TyCtxt<'_>, fact: TypeFact) -> Option<DefId> {
     match fact {
         TypeFact::Fused => tcx.lang_items().get(LangItem::FusedIterator),
         TypeFact::OneShot => one_shot_trait(tcx),
-        TypeFact::RandomAccess => registry::by_path(tcx, "core", &["iter", "TrustedRandomAccess"]),
-        TypeFact::RandomAccessNoCoerce => registry::by_path(tcx, "core", &["iter", "TrustedRandomAccessNoCoerce"]),
-        TypeFact::TrustedLen => registry::by_path(tcx, "core", &["iter", "TrustedLen"]),
+        TypeFact::RandomAccess => registry::by_path(tcx, StdCrate::Core, &["iter", "TrustedRandomAccess"]),
+        TypeFact::RandomAccessNoCoerce => {
+            registry::by_path(tcx, StdCrate::Core, &["iter", "TrustedRandomAccessNoCoerce"])
+        }
+        TypeFact::TrustedLen => registry::by_path(tcx, StdCrate::Core, &["iter", "TrustedLen"]),
         _ => None,
     }
 }
@@ -244,8 +246,8 @@ pub(crate) fn fact_trait(tcx: TyCtxt<'_>, fact: TypeFact) -> Option<DefId> {
 pub(crate) fn collects_in_place<'tcx>(tcx: TyCtxt<'tcx>, iter: Ty<'tcx>, dest: Ty<'tcx>) -> bool {
     let typing_env = ty::TypingEnv::fully_monomorphized();
     let (Some(in_place), Some(source_iter), Some(as_vec)) = (
-        registry::by_path(tcx, "core", &["iter", "InPlaceIterable"]),
-        registry::by_path(tcx, "core", &["iter", "SourceIter"]),
+        registry::by_path(tcx, StdCrate::Core, &["iter", "InPlaceIterable"]),
+        registry::by_path(tcx, StdCrate::Core, &["iter", "SourceIter"]),
         alloc_trait(tcx, "AsVecIntoIter"),
     ) else {
         return false;
@@ -280,22 +282,14 @@ pub(crate) fn collects_in_place<'tcx>(tcx: TyCtxt<'tcx>, iter: Ty<'tcx>, dest: T
 
 /// One of alloc's own traits, crate-private, by its name.
 fn alloc_trait(tcx: TyCtxt<'_>, name: &str) -> Option<DefId> {
-    let alloc = tcx
-        .crates(())
-        .iter()
-        .copied()
-        .find(|&krate| tcx.crate_name(krate) == sym::alloc)?;
+    let alloc = std_crate_num(tcx, StdCrate::Alloc)?;
     (tcx.traits(alloc).iter().copied()).find(|&id| tcx.item_name(id).as_str() == name)
 }
 
 /// std's `OneShot`, private to `flatten`'s module: an iterator of one item
 /// at most, `option::IntoIter`'s (ADR 0899).
 pub(crate) fn one_shot_trait(tcx: TyCtxt<'_>) -> Option<DefId> {
-    let core = tcx
-        .crates(())
-        .iter()
-        .copied()
-        .find(|&krate| tcx.crate_name(krate) == sym::core)?;
+    let core = std_crate_num(tcx, StdCrate::Core)?;
     (tcx.traits(core).iter().copied()).find(|&id| tcx.item_name(id).as_str() == "OneShot")
 }
 

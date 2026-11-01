@@ -833,7 +833,7 @@ pub(super) fn numbered(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> bool {
         && (adt.variants().iter()).all(|v| v.fields.is_empty() && given_bool(tcx, v.def_id).is_none())
         && declared_tag(tcx, adt.did()).is_none()
         && !is_untagged(tcx, adt.did())
-        && !super::recognition::is_std_item(tcx, adt.did())
+        && !super::recognition::is_std_crate(tcx, adt.did())
 }
 
 /// A discriminated union's variant's `#[rust_js::name = true]` or `false`.

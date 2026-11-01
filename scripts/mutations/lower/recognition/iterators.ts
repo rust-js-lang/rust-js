@@ -70,9 +70,9 @@ export const mutations: Mutation[] = [
     name: "vec-into-iter-unknown",
     breaks: "a clone of a `Vec`'s `into_iter()` is refused",
     file: "src/lower/recognition/iterators.rs",
-    find: '                "std::vec::IntoIter"\n                    | "std::vec::Drain"\n',
+    find: '            "std::vec::IntoIter"\n                    | "std::vec::Drain"\n',
     replace:
-      '                "std::vec::Nothing"\n                    | "std::vec::Drain"\n',
+      '            "std::vec::Nothing"\n                    | "std::vec::Drain"\n',
     tests: ["test/corpus.test.ts", "-t", "iterator_clones"],
   },
   {
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a crate's own `struct Reverse` is taken for std's `cmp::Reverse` by its name, and compares backwards",
     file: "src/lower/recognition/iterators.rs",
-    find: '        matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == rustc_span::sym::core\n            && self.tcx.item_name(adt.did()).as_str() == "Reverse")',
+    find: '        matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(self.tcx, adt.did(), StdCrate::Core)\n            && self.tcx.item_name(adt.did()).as_str() == "Reverse")',
     replace:
       '        matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.item_name(adt.did()).as_str() == "Reverse")',
     tests: [
@@ -930,8 +930,8 @@ export const mutations: Mutation[] = [
     name: "owned-vec-items-unsaid",
     breaks: "a `for` over a `Vec` it owns, `for s in v`, is a `for…of`, where one over its slice counts (ADR 1042)",
     file: "src/lower/recognition/iterators.rs",
-    find: "                && std_path(self.tcx, adt.did()) == \"std::vec::IntoIter\")\n",
-    replace: "                && false)\n",
+    find: "            ) && std_path(self.tcx, adt.did()) == \"std::vec::IntoIter\")\n",
+    replace: "            ) && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^array_counted_loops.rs$"],
     snapshots: true,
   },

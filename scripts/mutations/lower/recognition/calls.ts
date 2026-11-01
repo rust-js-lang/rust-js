@@ -38,9 +38,9 @@ export const mutations: Mutation[] = [
     name: "iter-source-unknown",
     breaks: "`std::iter::once(x)` and std's other iterator sources are refused",
     file: "src/lower/recognition/calls.rs",
-    find: "        if tcx.crate_name(def_id.krate) == sym::core && tcx.def_kind(def_id) == DefKind::Fn {",
+    find: "        if of_std_crate(tcx, def_id, StdCrate::Core) && tcx.def_kind(def_id) == DefKind::Fn {",
     replace:
-      "        if false && tcx.crate_name(def_id.krate) == sym::core && tcx.def_kind(def_id) == DefKind::Fn {",
+      "        if false && of_std_crate(tcx, def_id, StdCrate::Core) && tcx.def_kind(def_id) == DefKind::Fn {",
     tests: ["test/corpus.test.ts", "-t", "iterator_sources"],
   },
   {
@@ -313,7 +313,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`hint::unreachable_unchecked()` is refused, where it's unreachable code's throw",
     file: "src/lower/recognition/calls.rs",
-    find: '        if krate == sym::core && std_path(tcx, def_id) == "std::hint::unreachable_unchecked" {\n',
+    find: '        if krate == Some(StdCrate::Core) && std_path(tcx, def_id) == "std::hint::unreachable_unchecked" {\n',
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^unreachable_hint.rs$"],
   },
@@ -551,8 +551,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an edition 2018 `unreachable!(x)`, `unreachable_display(&x)`, is refused",
     file: "src/lower/recognition/calls.rs",
-    find: '        if krate == sym::core && name.as_str() == "unreachable_display" && std_path(tcx, def_id).contains("panicking") {\n',
-    replace: "        if false {\n",
+    find: '        if krate == Some(StdCrate::Core)\n            && name.as_str() == "unreachable_display"\n',
+    replace: '        if false\n            && name.as_str() == "unreachable_display"\n',
     tests: ["test/corpus.test.ts", "-t", "^unreachable_display.rs$"],
   },
   {

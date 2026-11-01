@@ -139,15 +139,22 @@ const triples = join(root, "test", "crates", "triples");
 
 /** `crates` of `cases/name`, each a library of the ones before it but the
  * last, the app, compiled natively and by rust-js: the app's JS prints what
- * the native program does; where each crate's JS is. */
-function chain(cases: string, name: string, crates: string[]): string {
-  const dir = fixture(`${crates.length === 2 ? "pair" : "triple"}-${name}`);
+ * the native program does; where each crate's JS is. A crate's file names
+ * it, `dep.rs` the crate `dep`, but where its first line says otherwise,
+ * `//@ crate-name: core`; one named `std` is given to a `#![no_std]` crate
+ * alone, as another's `std` is std's (ADR 1052). */
+function chain(cases: string, name: string, files: string[]): string {
+  const dir = fixture(`${files.length === 2 ? "pair" : "triple"}-${name}`);
   const native = join(dir, "native"), out = join(dir, "js");
   mkdirSync(native, { recursive: true });
   const rustc = ["rustc", "--edition=2024", "-Coverflow-checks=off"];
+  const source = (file: string) => join(cases, name, `${file}.rs`);
+  const crates = files.map((file) => readFileSync(source(file), "utf8").match(/^\/\/@ crate-name: (\w+)\n/)?.[1] ?? file);
+  const given = (i: number) => crates.slice(0, i)
+    .filter((used) => used !== "std" || readFileSync(source(files[i]), "utf8").includes("#![no_std]"));
   crates.forEach((crate, i) => {
-    const externs = crates.slice(0, i).flatMap((used) => ["--extern", `${used}=${join(native, `lib${used}.rlib`)}`]);
-    run([...rustc, "--crate-type=rlib", "--crate-name", crate, join(cases, name, `${crate}.rs`), "-o", join(native, `lib${crate}.rlib`), ...externs, "-L", `dependency=${native}`]);
+    const externs = given(i).flatMap((used) => ["--extern", `${used}=${join(native, `lib${used}.rlib`)}`]);
+    run([...rustc, "--crate-type=rlib", "--crate-name", crate, source(files[i]), "-o", join(native, `lib${crate}.rlib`), ...externs, "-L", `dependency=${native}`]);
   });
   const app = crates[crates.length - 1];
   writeFileSync(join(native, "main.rs"), `fn main() {\n    ${app}::main();\n}\n`);
@@ -158,10 +165,11 @@ function chain(cases: string, name: string, crates: string[]): string {
       ? ["--library", "--manifest", join(out, crate, "lib.manifest.json")]
       : [];
     const metadata = i < crates.length - 1 ? [`--emit=metadata=${join(out, crate, `lib${crate}.rmeta`)}`] : [];
-    run([compiler, join(cases, name, `${crate}.rs`), "-o", join(out, crate, "lib.js"), ...library,
+    run([compiler, source(files[i]), "-o", join(out, crate, "lib.js"), ...library,
       ...used.flatMap((u) => ["--dependency", join(out, u, "lib.manifest.json")]),
       "--", "--crate-name", crate, ...metadata,
-      ...used.flatMap((u) => ["--extern", `${u}=${join(out, u, `lib${u}.rmeta`)}`, "-L", `dependency=${join(out, u)}`])]);
+      ...given(i).flatMap((u) => ["--extern", `${u}=${join(out, u, `lib${u}.rmeta`)}`]),
+      ...used.flatMap((u) => ["-L", `dependency=${join(out, u)}`])]);
   });
   expect(printed(join(out, app, "lib.js"))).toBe(run([join(native, "program")]));
   return out;
@@ -177,6 +185,32 @@ for (const name of readdirSync(triples).sort()) {
     chain(triples, name, ["dep", "mid", "app"]);
   }, 300_000);
 }
+
+// ADR 1052: a crate rust-js didn't compile, its metadata alone, named as
+// libtest is or as std's is, is neither: a call of it is refused, as one
+// of any crate rust-js has no JS of is, never libtest's `black_box`, its
+// argument, nor std's `process::exit`.
+test("a crate of no JS named test or std is neither libtest nor std", () => {
+  const dir = fixture("named-as-std-without-js");
+  const rustc = ["rustc", "--edition=2024", "--target=wasm32-unknown-unknown", "--crate-type=rlib", "--emit=metadata"];
+  const crates = {
+    test: "pub fn black_box(x: i32) -> i32 {\n    x * 10\n}\n",
+    std: "#![no_std]\npub mod process {\n    pub fn exit(code: i32) -> i32 {\n        code + 1\n    }\n}\n",
+  };
+  for (const [name, source] of Object.entries(crates)) {
+    writeFileSync(join(dir, `${name}.rs`), source);
+    run([...rustc, "--crate-name", name, join(dir, `${name}.rs`), "-o", join(dir, `lib${name}.rmeta`)]);
+  }
+  const calling = (name: string, used: string, source: string) => {
+    writeFileSync(join(dir, `${name}.rs`), source);
+    return () => run([compiler, join(dir, `${name}.rs`), "-o", join(dir, "out", `${name}.js`), "--", "--crate-name", name,
+      "--crate-type=rlib", "--extern", `${used}=${join(dir, `lib${used}.rmeta`)}`]);
+  };
+  expect(calling("hides", "test", "pub fn hidden() -> i32 {\n    test::black_box(2)\n}\n"))
+    .toThrow("rust-js does not support calling `test::black_box` yet");
+  expect(calling("exits", "std", "#![no_std]\npub fn exited() -> i32 {\n    std::process::exit(4)\n}\n"))
+    .toThrow("rust-js does not support calling `std::process::exit` yet");
+}, 300_000);
 
 // ADR 0914, amended: a consumer that grows a clone of a library's `Tree`
 // calls the library's own `grow`: the `Box` optimized MIR copies to read

@@ -88,9 +88,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `#![no_std]` crate's std items, which rustc names `core::str::Chars`, aren't std's",
     file: "src/lower/recognition/std_items.rs",
-    find: '        Some(("core" | "alloc", rest)) if !id.is_local() => format!("std::{rest}"),',
+    find: '        Some(("core" | "alloc", rest)) => format!("std::{rest}"),',
     replace:
-      '        Some(("alloc", rest)) if !id.is_local() => format!("std::{rest}"),',
+      '        Some(("alloc", rest)) => format!("std::{rest}"),',
     tests: ["test/crates.test.ts", "-t", "std items are std"],
   },
   {
@@ -367,5 +367,50 @@ export const mutations: Mutation[] = [
     find: '    ("Zip", "zip", false),\n',
     replace: '    ("Zip", "zip", true),\n',
     tests: ["test/corpus.test.ts", "-t", "^zip_size_hints.rs$"],
+  },
+  {
+    name: "std-crate-by-name",
+    breaks:
+      "std's crates are known by their names again: a program's crate named `core` is std's, so `core::double(21)` is refused, and its `hint::black_box` is std's, its argument (#455, ADR 1052)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "        .find(|&std| std_crate_num(tcx, std) == Some(krate))\n",
+    replace: '        .find(|&std| tcx.crate_name(krate).as_str() == ["core", "alloc", "std"][std as usize])\n',
+    tests: ["test/crates.test.ts", "-t", "crate_named_core"],
+  },
+  {
+    name: "std-path-of-any-crate",
+    breaks:
+      "an item of a crate named `std` that rust-js didn't compile has std's path, so its `process::exit` is std's, which ends the program, where a call of it is refused (#455, ADR 1052)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "    if !is_std_crate(tcx, id) {\n        return String::new();\n    }\n    let mut path = tcx.def_path_str(id);\n",
+    replace: "    let mut path = tcx.def_path_str(id);\n",
+    tests: ["test/crates.test.ts", "-t", "of no JS named test or std"],
+  },
+  {
+    name: "libtest-by-name",
+    breaks:
+      "a crate named `test` that rust-js didn't compile is libtest, so its `black_box` is libtest's, its argument, where a call of it is refused (#455, ADR 1052)",
+    file: "src/lower/recognition/std_items.rs",
+    find: '    tcx.crate_name(id.krate).as_str() == "test" && from_sysroot(tcx, id)\n',
+    replace: '    tcx.crate_name(id.krate).as_str() == "test"\n',
+    tests: ["test/crates.test.ts", "-t", "of no JS named test or std"],
+  },
+  {
+    name: "std-type-ids-hashed-beside-their-name",
+    breaks:
+      "std's `TypeId`s have their hash beside a program's crate named `core`, and not in a crate that doesn't see it, so its `Option<i32>` isn't the one another crate boxed (#455, ADR 1052)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "    !is_std_crate(tcx, id)\n        && (tcx.crates(()).iter().chain([&rustc_span::def_id::LOCAL_CRATE]))\n",
+    replace: "    (tcx.crates(()).iter().chain([&rustc_span::def_id::LOCAL_CRATE]))\n",
+    tests: ["test/crates.test.ts", "-t", "type_ids_beside_a_crate_named_core"],
+  },
+  {
+    name: "type-id-census-without-the-crate-compiled",
+    breaks:
+      "a crate named `core`, compiled, isn't counted among the crates of its name, so its own `option::Option<i32>` has std's `Option<i32>`'s `TypeId` (#455, ADR 1052)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "        && (tcx.crates(()).iter().chain([&rustc_span::def_id::LOCAL_CRATE]))\n",
+    replace: "        && (tcx.crates(()).iter())\n",
+    tests: ["test/crates.test.ts", "-t", "crate_named_core"],
   },
 ];

@@ -124,7 +124,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// `std::str::Chars`, what a string's `chars()` gives.
     pub(in crate::lower) fn is_str_chars(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == sym::core
+        matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(self.tcx, adt.did(), StdCrate::Core)
             && self.tcx.item_name(adt.did()).as_str() == "Chars")
     }
 
@@ -141,7 +141,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// A string's `bytes()`, an array of its UTF-8 bytes (ADR 0034).
     pub(in crate::lower) fn is_str_bytes(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == sym::core
+        matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(self.tcx, adt.did(), StdCrate::Core)
             && self.tcx.item_name(adt.did()).as_str() == "Bytes")
     }
 
@@ -247,7 +247,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     pub(in crate::lower) fn is_parse_error(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == rustc_span::sym::core
+        matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(self.tcx, adt.did(), StdCrate::Core)
             && ["ParseIntError", "ParseFloatError", "ParseBoolError", "ParseCharError", "TryFromIntError", "CharTryFromError", "TryFromCharError", "BorrowError", "BorrowMutError"]
                 .contains(&self.tcx.item_name(adt.did()).as_str()))
     }
@@ -540,7 +540,7 @@ pub(super) fn is_poison_error(ty: Ty<'_>) -> bool {
     ty::tls::with_opt(|tcx| {
         tcx.is_some_and(|tcx| {
             matches!(ty.kind(), ty::Adt(adt, _)
-                if tcx.crate_name(adt.did().krate) == sym::std && std_path(tcx, adt.did()) == "std::sync::PoisonError")
+                if of_std_crate(tcx, adt.did(), StdCrate::Std) && std_path(tcx, adt.did()) == "std::sync::PoisonError")
         })
     })
 }
@@ -560,7 +560,7 @@ pub(crate) fn clock_type(id: DefId) -> Option<ClockType> {
         if tcx.is_diagnostic_item(Symbol::intern("Instant"), id) {
             return Some(ClockType::Instant);
         }
-        if tcx.crate_name(id.krate) != sym::std {
+        if !of_std_crate(tcx, id, StdCrate::Std) {
             return None;
         }
         match std_path(tcx, id).as_str() {
@@ -592,20 +592,20 @@ pub(in crate::lower) fn never_made(tcx: TyCtxt<'_>, variant: &ty::VariantDef) ->
 
 /// core's `TryFromSliceError` (ADR 0189).
 pub(crate) fn is_try_from_slice_error(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
-    matches!(ty.kind(), ty::Adt(adt, _) if tcx.crate_name(adt.did().krate) == sym::core
+    matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(tcx, adt.did(), StdCrate::Core)
         && tcx.item_name(adt.did()).as_str() == "TryFromSliceError")
 }
 
 /// `String::from_utf16`'s error, of a lone surrogate, the one kind it makes
 /// (ADR 0323).
 pub(crate) fn is_from_utf16_error(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
-    matches!(ty.kind(), ty::Adt(adt, _) if tcx.crate_name(adt.did().krate) == sym::alloc
+    matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(tcx, adt.did(), StdCrate::Alloc)
         && tcx.item_name(adt.did()).as_str() == "FromUtf16Error")
 }
 
 /// `char::decode_utf16`'s error, its unpaired surrogate's code (ADR 0327).
 pub(crate) fn is_decode_utf16_error(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
-    matches!(ty.kind(), ty::Adt(adt, _) if tcx.crate_name(adt.did().krate) == sym::core
+    matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(tcx, adt.did(), StdCrate::Core)
         && tcx.item_name(adt.did()).as_str() == "DecodeUtf16Error")
 }
 
@@ -613,7 +613,7 @@ pub(crate) fn is_decode_utf16_error(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 /// `escape_unicode()`: the array of its `char`s, as a case mapping is (ADRs
 /// 0327, 0971).
 pub(crate) fn is_text_escape(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
-    matches!(ty.kind(), ty::Adt(adt, _) if tcx.crate_name(adt.did().krate) == sym::core
+    matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(tcx, adt.did(), StdCrate::Core)
         && matches!(tcx.item_name(adt.did()).as_str(), "EscapeDefault" | "EscapeDebug" | "EscapeUnicode")
         && matches!(std_path(tcx, adt.did()).as_str(), p if p.starts_with("std::char::") || p.starts_with("std::str::")))
 }
@@ -626,7 +626,7 @@ pub(crate) fn is_byte_escape(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 }
 
 pub(crate) fn is_case_mapping(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
-    matches!(ty.kind(), ty::Adt(adt, _) if tcx.crate_name(adt.did().krate) == sym::core
+    matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(tcx, adt.did(), StdCrate::Core)
         && matches!(std_path(tcx, adt.did()).as_str(), "std::char::ToUppercase" | "std::char::ToLowercase"))
 }
 
@@ -856,7 +856,7 @@ pub(crate) fn type_facts(tcx: TyCtxt<'_>, def_id: DefId) -> &'static [TypeFact] 
         }
         _ => {}
     }
-    if let Some(facts) = crate::lower::pointers::address_facts(tcx, def_id) {
+    if let Some(facts) = crate::lower::pointers::address_facts(&std_path(tcx, def_id)) {
         return facts;
     }
     // `x.type_id()`, and a downcast's type, its last type argument (ADR 0331).
@@ -1037,12 +1037,12 @@ pub(in crate::lower) fn compares_utf16_units<'tcx>(tcx: TyCtxt<'tcx>, def_id: De
 /// Whether a call of `def_id` that gives a `made` makes a string's
 /// `encode_utf16()`, std's, which reads the string and changes nothing.
 pub(in crate::lower) fn makes_utf16_units<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, made: Ty<'tcx>) -> bool {
-    tcx.crate_name(def_id.krate) == sym::core && is_str_utf16(tcx, made)
+    of_std_crate(tcx, def_id, StdCrate::Core) && is_str_utf16(tcx, made)
 }
 
 /// `std::str::EncodeUtf16`, what a string's `encode_utf16()` gives.
 fn is_str_utf16<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-    matches!(ty.kind(), ty::Adt(adt, _) if tcx.crate_name(adt.did().krate) == sym::core
+    matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(tcx, adt.did(), StdCrate::Core)
         && tcx.item_name(adt.did()).as_str() == "EncodeUtf16")
 }
 
@@ -1320,7 +1320,7 @@ pub(crate) fn is_async_block(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// `classify` names `Std::Method("repeat")`, and a body's query asks of a
 /// call's function.
 pub(in crate::lower) fn is_str_repeat(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    is_std_item(tcx, def_id)
+    is_std_crate(tcx, def_id)
         && tcx.item_name(def_id).as_str() == "repeat"
         && (tcx.inherent_impl_of_assoc(def_id))
             .is_some_and(|imp| tcx.type_of(imp).instantiate_identity().skip_normalization().is_str())
