@@ -75,6 +75,14 @@ const method = (doc: string, js: string, signature: string, indent = "    ") => 
   line();
 };
 
+/** `name`'s class, which `js::class::<T>()` names, held: made by its
+ * module's constructor (ADR 1049). */
+const classed = (name: string) => {
+  line(`impl super::Classed for ${name} {`);
+  line("    type Constructor = super::AnyConstructor;");
+  line("}");
+};
+
 /** A formatter: its type, its methods, and its module's constructor and
  * `supportedLocalesOf`. */
 const formatter = (name: string, doc: string, methods: [string, string, string][], ctor: { options: string; result?: string; doc?: string }) => {
@@ -84,6 +92,8 @@ const formatter = (name: string, doc: string, methods: [string, string, string][
   line(`#[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(js)})]`);
   line(`#[cfg_attr(rust_js, rust_js::types = ${JSON.stringify(js)})]`);
   line(`pub struct ${name}(PhantomData<JsObject>);`);
+  line();
+  classed(name);
   line();
   line(`impl ${name} {`);
   for (const [d, j, s] of methods) method(d, j, s);
@@ -314,6 +324,8 @@ line(`/// [\`Intl.Locale\`](${page("Locale")}): a locale and its parts, \`en-Lat
 line(`#[cfg_attr(rust_js, rust_js::name = "Intl.Locale")]`);
 line(`#[cfg_attr(rust_js, rust_js::types = "Intl.Locale")]`);
 line("pub struct Locale(PhantomData<JsObject>);");
+line();
+classed("Locale");
 line();
 line("impl Locale {");
 const lp = (m: string) => page(`Locale/${m}`);

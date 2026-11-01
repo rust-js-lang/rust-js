@@ -866,4 +866,13 @@ export const mutations: Mutation[] = [
       "prototype replaced"
     ]
   },
+  {
+    name: "class-typed-of-a-crate-struct",
+    breaks:
+      "a `#[rust_js::class]` struct's `Classed` of a signature is taken, so `js::new` of it is given what its constructor needn't take (ADR 1049)",
+    file: "src/lower/binding_calls.rs",
+    find: "                    (Some(_), _) if self.typed_class_given(def_id, generic_args) => {\n",
+    replace: "                    (Some(_), _) if false && self.typed_class_given(def_id, generic_args) => {\n",
+    tests: ["test/classes.test.ts", "-t", "what a class is refused says what to write"],
+  },
 ];

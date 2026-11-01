@@ -681,3 +681,36 @@ pub fn name(n: f64) -> String {
   expect(js).not.toMatch(/get value\(\) \{\n\s*return this\./);
   expect([lib.held(2), lib.name(3), lib.count(4)]).toEqual([2, "n3", 5]);
 });
+
+// ADR 1049: a typed array's class, and a `DataView`'s, is typed by one
+// view's constructor, `Class<fn(&'static ArrayBuffer, f64, f64) ->
+// ArrayBufferView>`, so one function takes any of them and `new` makes
+// the view, as React's Flight client's `resolveTypedArray(.., Int8Array,
+// 1, ..)` does.
+test("a typed array's class is one view's constructor, which new makes the view of", async () => {
+  const { js, lib } = await compiled(
+    "typed-array-class",
+    `use js::{ArrayBuffer, ArrayBufferView, Class, Uint8Array};
+
+type ViewConstructor = Class<fn(&'static ArrayBuffer, f64, f64) -> ArrayBufferView>;
+
+fn view_of(chunk: &'static Uint8Array, constructor: &'static ViewConstructor, bytes_per_element: f64) -> &'static ArrayBufferView {
+    js::new(constructor, (chunk.buffer(), chunk.byte_offset(), chunk.byte_length() / bytes_per_element))
+}
+
+pub fn views(chunk: &'static Uint8Array) -> Vec<&'static ArrayBufferView> {
+    vec![
+        view_of(chunk, js::class::<js::Int16Array>(), 2.0),
+        view_of(chunk, js::class::<js::DataView>(), 1.0),
+    ]
+}
+`,
+  );
+  expect(js).toContain("return new constructor(chunk.buffer, chunk.byteOffset, chunk.byteLength / bytesPerElement);");
+  expect(js).toContain("[viewOf(chunk, Int16Array, 2), viewOf(chunk, DataView, 1)]");
+  const [int16, view] = lib.views(new Uint8Array([1, 0, 2, 0]));
+  expect(int16).toBeInstanceOf(Int16Array);
+  expect([...int16]).toEqual([1, 2]);
+  expect(view).toBeInstanceOf(DataView);
+  expect(view.byteLength).toBe(4);
+});

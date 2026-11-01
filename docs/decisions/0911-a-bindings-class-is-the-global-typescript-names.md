@@ -1,6 +1,6 @@
 # 0911. A binding's class is the global class TypeScript names
 
-Status: Accepted. Extends [0761](0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md)'s
+Status: Accepted; amended by [1049](1049-js-class-is-typed-by-classed.md): a binding crate's class is `js::Classed`, a typed array's typed by one view's constructor. Extends [0761](0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md)'s
 `js::class::<T>()`, which took a `#[rust_js::class]` struct only, to a
 binding's type, by [0597](0597-whether-the-host-has-a-global-is-is-defined.md)'s
 and [0891](0891-a-windows-constructor-is-the-windows.md)'s rule that a

@@ -767,7 +767,8 @@ pub(super) fn reject_misuse<'tcx>(
             }
             // A trait's methods would be a dictionary's, given the value,
             // not the prototype's: only a marker's, of no items, `unsafe
-            // impl js::Defined`, and `Display`'s, its `toString` (#358); and
+            // impl js::Defined`, or of types alone, which no JS is of,
+            // `impl js::Classed` (ADR 1049), and `Display`'s, its `toString` (#358); and
             // a `PartialEq` and a `Hash` of its address, `ptr::eq` and
             // `ptr::hash`, of one equal only to itself, which JS's `===` and
             // a `Set` are of an object, with no JS of their own (ADR 0864;
@@ -780,14 +781,14 @@ pub(super) fn reject_misuse<'tcx>(
                     && crate::lower::std_impls::equal_only_to_itself(recognition, &by_id, self_ty);
                 if let ty::Adt(adt, _) = self_ty.kind()
                     && is_class(tcx, adt.did())
-                    && !tcx.associated_item_def_ids(id).is_empty()
+                    && (tcx.associated_item_def_ids(id).iter()).any(|&item| tcx.def_kind(item) != DefKind::AssocTy)
                     && !identity
                 {
                     let name = tcx.def_path_str(tcx.impl_trait_id(id));
                     refuse(
                         span,
                         &format!(
-                            "implements no trait but a marker's, of no items, not `{name}`: its methods are its prototype's"
+                            "implements no trait but a marker's, of no items or of types alone, not `{name}`: its methods are its prototype's"
                         ),
                     );
                 }

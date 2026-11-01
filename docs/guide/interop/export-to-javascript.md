@@ -682,6 +682,9 @@ pub struct Component {
 }
 
 unsafe impl js::Defined for Component {}
+impl js::Classed for Component {
+    type Constructor = js::AnyConstructor;
+}
 
 #[cfg_attr(rust_js, rust_js::class)]
 impl Component {
@@ -704,6 +707,9 @@ impl Component {
 struct ComponentDummy {}
 
 unsafe impl js::Defined for ComponentDummy {}
+impl js::Classed for ComponentDummy {
+    type Constructor = js::AnyConstructor;
+}
 
 #[cfg_attr(rust_js, rust_js::class)]
 impl ComponentDummy {
@@ -716,6 +722,10 @@ impl ComponentDummy {
 pub struct PureComponent {
     pub props: Option<&'static Unknown>,
     pub updater: &'static Updater,
+}
+
+impl js::Classed for PureComponent {
+    type Constructor = js::AnyConstructor;
 }
 
 #[cfg_attr(rust_js, rust_js::class)]
@@ -1023,7 +1033,15 @@ export function Keys() {
   `&js::Class`: its `prototype()` and `set_prototype(..)` are JS's, which
   a prototype chain is written with, as JS writes it. Of a binding's
   type, it's the global class TypeScript names, `AbortController`
-  ([A class as a value](global-scope.md#a-class-as-a-value)). `js::unknown(..)` of
+  ([A class as a value](global-scope.md#a-class-as-a-value)). A class it
+  names is `js::Classed`, by one line beside the struct, `impl js::Classed
+  for Component { type Constructor = js::AnyConstructor; }`, untyped, as
+  the error without it says, the user's decision ([ADR
+  1049](../../decisions/1049-js-class-is-typed-by-classed.md)): rustc can't
+  default it, and a crate's class is held untyped, made by its `new`. A
+  typed array's class is typed, `js::Class<fn(&'static ArrayBuffer, f64,
+  f64) -> ArrayBufferView>`, which `js::new(class, (buffer, offset,
+  length))` constructs. `js::unknown(..)` of
   an instance needs its `unsafe impl js::Defined`, a marker. A class it
   hands JS is used, its `new`, its impl's items, its fields and what they
   use, as JS makes it and reads them: a private one, which only
@@ -1064,6 +1082,10 @@ use std::cell::Cell;
 pub struct ReactPromise {
     pub status: Cell<&'static str>,
     pub value: Cell<f64>,
+}
+
+impl js::Classed for ReactPromise {
+    type Constructor = js::AnyConstructor;
 }
 
 #[cfg_attr(rust_js, rust_js::class)]

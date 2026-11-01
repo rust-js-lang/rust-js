@@ -122956,3 +122956,2113 @@ unsafe impl Defined for XPathResult {}
 unsafe impl js::WeakKey for XPathResult {}
 unsafe impl Defined for XSLTProcessor {}
 unsafe impl js::WeakKey for XSLTProcessor {}
+
+impl js::Classed for EventTarget {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Event {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Node {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CharacterData {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Text {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Comment {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Element {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Document {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DocumentFragment {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DOMTokenList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for NodeList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLCollection {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AbortController {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AbortSignal {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLAnchorElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLButtonElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLDivElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLFormElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLHeadingElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLImageElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLInputElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLLabelElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLLIElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLOListElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLOptionElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLOutputElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLParagraphElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLSelectElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLSpanElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLTextAreaElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLUListElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLTableElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLTableSectionElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLTableRowElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLTableCellElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLIFrameElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLCanvasElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLDetailsElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLHtmlElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLHeadElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLTitleElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLBaseElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLLinkElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLMetaElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLStyleElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLBodyElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLHRElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLPreElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLQuoteElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLMenuElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLDListElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLDataElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLTimeElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLBRElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLModElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLPictureElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLSourceElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLEmbedElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLObjectElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLVideoElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLAudioElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLTrackElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLMediaElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLMapElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLAreaElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLTableCaptionElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLTableColElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLDataListElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLOptGroupElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLProgressElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLMeterElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLFieldSetElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLLegendElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLSelectedContentElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLDialogElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLScriptElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLTemplateElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLSlotElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Window {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Location {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for History {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Storage {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DataTransfer {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DragEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ToggleEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MessageEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SubmitEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Performance {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for UIEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for FocusEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MouseEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for KeyboardEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for InputEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WheelEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CompositionEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for TouchEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AnimationEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for TransitionEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ClipboardEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PointerEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSStyleDeclaration {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSStyleProperties {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DOMRectReadOnly {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DOMRect {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaQueryList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaQueryListEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for IntersectionObserver {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for IntersectionObserverEntry {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Headers {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Request {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Response {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for FormData {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ReadableStream {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Touch {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for TouchList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for TextEncoder {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for TextDecoder {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebAssemblyModule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebAssemblyInstance {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebAssemblyMemory {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Blob {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for File {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for URL {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Navigator {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Clipboard {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ClipboardItem {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGGraphicsElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGGeometryElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGSVGElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGGElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGDefsElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGSymbolElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGUseElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGSwitchElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGTitleElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGDescElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGMetadataElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGStyleElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGScriptElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGPathElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGRectElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGCircleElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGEllipseElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGLineElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGPolylineElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGPolygonElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGTextContentElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGTextPositioningElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGTextElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGTSpanElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGTextPathElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGImageElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGForeignObjectElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGMarkerElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGGradientElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGLinearGradientElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGRadialGradientElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGStopElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGPatternElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGAElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGViewElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGAnimationElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGAnimateElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGSetElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGAnimateMotionElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGMPathElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGAnimateTransformElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFilterElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFEBlendElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFEColorMatrixElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFEComponentTransferElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGComponentTransferFunctionElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFEFuncRElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFEFuncGElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFEFuncBElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFEFuncAElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFECompositeElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFEConvolveMatrixElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFEDiffuseLightingElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFEDisplacementMapElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFEDropShadowElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFEFloodElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFEGaussianBlurElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFEImageElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFEMergeElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFEMergeNodeElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFEMorphologyElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFEOffsetElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFESpecularLightingElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFETileElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFETurbulenceElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFEDistantLightElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFEPointLightElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGFESpotLightElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGClipPathElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGMaskElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AbstractRange {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AnalyserNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Animation {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AnimationEffect {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AnimationPlaybackEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AnimationTimeline {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Attr {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AudioBuffer {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AudioBufferSourceNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AudioContext {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AudioData {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AudioDecoder {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AudioDestinationNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AudioEncoder {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AudioListener {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AudioNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AudioParam {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AudioParamMap {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AudioProcessingEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AudioScheduledSourceNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AudioWorklet {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AudioWorkletNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AuthenticatorAssertionResponse {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AuthenticatorAttestationResponse {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for AuthenticatorResponse {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for BarProp {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for BaseAudioContext {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for BeforeUnloadEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for BiquadFilterNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for BlobEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for BroadcastChannel {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ByteLengthQueuingStrategy {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CDATASection {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSAnimation {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSConditionRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSContainerRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSCounterStyleRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSFontFaceDescriptors {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSFontFaceRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSFontFeatureValuesRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSFontPaletteValuesRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSGroupingRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSImageValue {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSImportRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSKeyframeRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSKeyframesRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSKeywordValue {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSLayerBlockRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSLayerStatementRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSMathClamp {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSMathInvert {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSMathMax {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSMathMin {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSMathNegate {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSMathProduct {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSMathSum {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSMathValue {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSMatrixComponent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSMediaRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSNamespaceRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSNestedDeclarations {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSNumericArray {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSNumericValue {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSPageDescriptors {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSPageRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSPerspective {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSPositionTryDescriptors {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSPositionTryRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSPropertyRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSRotate {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSRuleList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSScale {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSScopeRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSSkew {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSSkewX {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSSkewY {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSStartingStyleRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSStyleRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSStyleSheet {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSStyleValue {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSSupportsRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSTransformComponent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSTransformValue {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSTransition {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSTranslate {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSUnitValue {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSUnparsedValue {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSVariableReferenceValue {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CSSViewTransitionRule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Cache {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CacheStorage {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CanvasCaptureMediaStreamTrack {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CanvasGradient {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CanvasPattern {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CanvasRenderingContext2D {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CaretPosition {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ChannelMergerNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ChannelSplitterNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CloseEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CloseWatcher {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CommandEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CompressionStream {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ConstantSourceNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ContentVisibilityAutoStateChangeEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ConvolverNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CookieChangeEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CookieStore {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CookieStoreManager {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CountQueuingStrategy {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Credential {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CredentialsContainer {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Crypto {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CryptoKey {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CustomElementRegistry {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CustomEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for CustomStateSet {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DOMException {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DOMImplementation {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DOMMatrix {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DOMMatrixReadOnly {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DOMParser {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DOMPoint {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DOMPointReadOnly {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DOMQuad {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DOMRectList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DOMStringList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DOMStringMap {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DataTransferItem {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DataTransferItemList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DecompressionStream {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DelayNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DeviceMotionEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DeviceOrientationEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DigitalCredential {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DocumentPictureInPicture {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DocumentPictureInPictureEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DocumentTimeline {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DocumentType {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for DynamicsCompressorNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ElementInternals {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for EncodedAudioChunk {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for EncodedVideoChunk {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ErrorEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for EventCounts {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for EventSource {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for External {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for FileList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for FileReader {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for FileSystem {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for FileSystemDirectoryEntry {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for FileSystemDirectoryHandle {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for FileSystemDirectoryReader {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for FileSystemEntry {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for FileSystemFileEntry {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for FileSystemFileHandle {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for FileSystemHandle {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for FileSystemWritableFileStream {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for FontFace {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for FontFaceSet {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for FontFaceSetLoadEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for FormDataEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for FragmentDirective {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPU {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUAdapter {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUAdapterInfo {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUBindGroup {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUBindGroupLayout {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUBuffer {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUCanvasContext {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUCommandBuffer {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUCommandEncoder {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUCompilationInfo {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUCompilationMessage {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUComputePassEncoder {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUComputePipeline {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUDevice {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUDeviceLostInfo {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUError {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUExternalTexture {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUInternalError {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUOutOfMemoryError {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUPipelineError {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUPipelineLayout {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUQuerySet {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUQueue {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPURenderBundle {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPURenderBundleEncoder {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPURenderPassEncoder {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPURenderPipeline {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUSampler {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUShaderModule {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUSupportedFeatures {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUSupportedLimits {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUTexture {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUTextureView {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUUncapturedErrorEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GPUValidationError {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GainNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Gamepad {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GamepadButton {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GamepadEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GamepadHapticActuator {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Geolocation {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GeolocationCoordinates {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GeolocationPosition {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for GeolocationPositionError {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLAllCollection {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLDirectoryElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLFontElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLFormControlsCollection {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLFrameElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLFrameSetElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLMarqueeElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLOptionsCollection {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLParamElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HTMLUnknownElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HashChangeEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Highlight {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for HighlightRegistry {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for IDBCursor {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for IDBCursorWithValue {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for IDBDatabase {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for IDBFactory {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for IDBIndex {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for IDBKeyRange {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for IDBObjectStore {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for IDBOpenDBRequest {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for IDBRequest {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for IDBTransaction {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for IDBVersionChangeEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for IIRFilterNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for IdleDeadline {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ImageBitmap {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ImageBitmapRenderingContext {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ImageCapture {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ImageData {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ImageDecoder {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ImageTrack {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ImageTrackList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for InputDeviceInfo {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for KeyframeEffect {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for LargestContentfulPaint {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Lock {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for LockManager {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MIDIAccess {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MIDIConnectionEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MIDIInput {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MIDIInputMap {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MIDIMessageEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MIDIOutput {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MIDIOutputMap {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MIDIPort {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MathMLElement {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaCapabilities {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaDeviceInfo {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaDevices {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaElementAudioSourceNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaEncryptedEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaError {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaKeyMessageEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaKeySession {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaKeyStatusMap {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaKeySystemAccess {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaKeys {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaMetadata {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaRecorder {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaSession {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaSource {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaSourceHandle {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaStream {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaStreamAudioDestinationNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaStreamAudioSourceNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaStreamTrack {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MediaStreamTrackEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MessageChannel {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MessagePort {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MimeType {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MimeTypeArray {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MutationObserver {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for MutationRecord {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for NamedNodeMap {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for NavigateEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Navigation {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for NavigationActivation {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for NavigationCurrentEntryChangeEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for NavigationDestination {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for NavigationHistoryEntry {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for NavigationPrecommitController {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for NavigationPreloadManager {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for NavigationTransition {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for NavigatorLogin {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for NodeIterator {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Notification {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for OfflineAudioCompletionEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for OfflineAudioContext {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for OffscreenCanvas {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for OffscreenCanvasRenderingContext2D {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Origin {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for OscillatorNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for OverconstrainedError {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PageRevealEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PageSwapEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PageTransitionEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PannerNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Path2D {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PaymentMethodChangeEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PaymentRequest {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PaymentRequestUpdateEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PaymentResponse {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PerformanceEntry {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PerformanceEventTiming {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PerformanceMark {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PerformanceMeasure {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PerformanceNavigation {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PerformanceNavigationTiming {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PerformanceObserver {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PerformanceObserverEntryList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PerformancePaintTiming {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PerformanceResourceTiming {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PerformanceServerTiming {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PerformanceTiming {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PeriodicWave {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PermissionStatus {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Permissions {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PictureInPictureEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PictureInPictureWindow {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Plugin {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PluginArray {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PopStateEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ProcessingInstruction {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ProgressEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PromiseRejectionEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PublicKeyCredential {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PushManager {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PushSubscription {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for PushSubscriptionOptions {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCCertificate {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCDTMFSender {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCDTMFToneChangeEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCDataChannel {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCDataChannelEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCDtlsTransport {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCEncodedAudioFrame {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCEncodedVideoFrame {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCError {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCErrorEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCIceCandidate {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCIceTransport {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCPeerConnection {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCPeerConnectionIceErrorEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCPeerConnectionIceEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCRtpReceiver {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCRtpScriptTransform {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCRtpSender {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCRtpTransceiver {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCSctpTransport {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCSessionDescription {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCStatsReport {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RTCTrackEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RadioNodeList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Range {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ReadableByteStreamController {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ReadableStreamBYOBReader {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ReadableStreamBYOBRequest {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ReadableStreamDefaultController {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ReadableStreamDefaultReader {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for RemotePlayback {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ReportingObserver {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ResizeObserver {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ResizeObserverEntry {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ResizeObserverSize {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGAngle {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGAnimatedAngle {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGAnimatedBoolean {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGAnimatedEnumeration {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGAnimatedInteger {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGAnimatedLength {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGAnimatedLengthList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGAnimatedNumber {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGAnimatedNumberList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGAnimatedPreserveAspectRatio {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGAnimatedRect {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGAnimatedString {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGAnimatedTransformList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGLength {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGLengthList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGNumber {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGNumberList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGPointList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGPreserveAspectRatio {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGStringList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGTransform {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGTransformList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SVGUnitTypes {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Sanitizer {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Scheduler {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Screen {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ScreenOrientation {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ScriptProcessorNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ScrollTimeline {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SecurityPolicyViolationEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Selection {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Serial {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SerialPort {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ServiceWorker {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ServiceWorkerContainer {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ServiceWorkerRegistration {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ShadowRoot {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SharedWorker {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SourceBuffer {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SourceBufferList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SpeechRecognitionAlternative {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SpeechRecognitionErrorEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SpeechRecognitionEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SpeechRecognitionResult {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SpeechRecognitionResultList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SpeechSynthesis {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SpeechSynthesisErrorEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SpeechSynthesisEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SpeechSynthesisUtterance {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SpeechSynthesisVoice {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for StaticRange {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for StereoPannerNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for StorageEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for StorageManager {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for StylePropertyMap {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for StylePropertyMapReadOnly {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for StyleSheet {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for StyleSheetList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for SubtleCrypto {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for TaskController {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for TaskPriorityChangeEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for TaskSignal {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for TextDecoderStream {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for TextEncoderStream {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for TextEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for TextMetrics {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for TextTrack {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for TextTrackCue {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for TextTrackCueList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for TextTrackList {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for TimeRanges {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for TrackEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for TransformStream {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for TransformStreamDefaultController {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for TreeWalker {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for URLPattern {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for URLSearchParams {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for UserActivation {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for VTTCue {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for VTTRegion {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ValidityState {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for VideoColorSpace {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for VideoDecoder {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for VideoEncoder {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for VideoFrame {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for VideoPlaybackQuality {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ViewTimeline {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ViewTransition {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for ViewTransitionTypeSet {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for VisualViewport {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WGSLLanguageFeatures {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WakeLock {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WakeLockSentinel {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WaveShaperNode {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebGL2RenderingContext {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebGLActiveInfo {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebGLBuffer {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebGLContextEvent {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebGLFramebuffer {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebGLProgram {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebGLQuery {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebGLRenderbuffer {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebGLRenderingContext {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebGLSampler {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebGLShader {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebGLShaderPrecisionFormat {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebGLSync {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebGLTexture {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebGLTransformFeedback {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebGLUniformLocation {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebGLVertexArrayObject {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebSocket {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebTransport {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebTransportBidirectionalStream {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebTransportDatagramDuplexStream {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebTransportError {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebTransportReceiveStream {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WebTransportSendStream {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Worker {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for Worklet {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WritableStream {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WritableStreamDefaultController {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for WritableStreamDefaultWriter {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for XMLDocument {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for XMLHttpRequest {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for XMLHttpRequestEventTarget {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for XMLHttpRequestUpload {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for XMLSerializer {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for XPathEvaluator {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for XPathExpression {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for XPathResult {
+    type Constructor = js::AnyConstructor;
+}
+impl js::Classed for XSLTProcessor {
+    type Constructor = js::AnyConstructor;
+}

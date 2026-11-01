@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a class's `#[derive(Clone)]` compiles, and its clone is a plain object, no instance of its prototype",
     file,
-    find: "                    && !tcx.associated_item_def_ids(id).is_empty()\n",
+    find: "                    && (tcx.associated_item_def_ids(id).iter()).any(|&item| tcx.def_kind(item) != DefKind::AssocTy)\n",
     replace: "                    && false\n",
     tests: refusals,
   },
@@ -645,5 +645,14 @@ export const mutations: Mutation[] = [
     find: "            spread_state(tcx, def_id, function)?;\n",
     replace: "",
     tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
+  },
+  {
+    name: "class-trait-of-types-refused",
+    breaks:
+      "a `#[rust_js::class]` struct's `impl js::Classed`, of a type alone, which no JS is of, is refused as a trait of methods (ADR 1049)",
+    file: "src/lower/classes.rs",
+    find: "                    && (tcx.associated_item_def_ids(id).iter()).any(|&item| tcx.def_kind(item) != DefKind::AssocTy)\n",
+    replace: "                    && !tcx.associated_item_def_ids(id).is_empty()\n",
+    tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
   },
 ];

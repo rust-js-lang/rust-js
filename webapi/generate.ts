@@ -2793,6 +2793,18 @@ for (const name of INTERFACES) {
   line(`unsafe impl js::WeakKey for ${typeName(name)} {}`);
 }
 
+// Each interface the page has as a global, `js::class::<T>()`'s class,
+// held: made by its constructor's binding (ADR 1049). Not a mixin's
+// union, nor one WebIDL leaves no interface object.
+line();
+for (const name of INTERFACES) {
+  const global = read.some((d) => d.type === "interface" && d.name === name && !(d.extAttrs ?? []).some((a) => a.name === "LegacyNoInterfaceObject"));
+  if (!global || name in UNIONS) continue;
+  line(`impl js::Classed for ${typeName(name)} {`);
+  line(`    type Constructor = js::AnyConstructor;`);
+  line(`}`);
+}
+
 // Each member `THROWS` names is one this crate binds: a name gone from
 // WebIDL, or written wrong, is no `Result` that quietly isn't.
 const unthrown = Object.keys(THROWS).filter((key) => !thrown.has(key));

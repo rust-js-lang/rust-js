@@ -1265,11 +1265,33 @@ impl<S> Class<S> {
 /// The constructor function of `T`, a struct marked `#[rust_js::class]`:
 /// `js::class::<Component>()` is `Component` (ADR 0761). Of a binding's
 /// type, the global class TypeScript names it, its `#[rust_js::types]`:
-/// `js::class::<AbortController>()` is `AbortController` (ADR 0911). Of
-/// any other type, a compile error.
+/// `js::class::<AbortController>()` is `AbortController` (ADR 0911). Typed
+/// as `T` says, its [`Classed`]: a typed array's or `DataView`'s,
+/// `Class<fn(&'static ArrayBuffer, f64, f64) -> ArrayBufferView>`, which
+/// [`new`] constructs, as React's Flight client hands `Int8Array` to
+/// `resolveTypedArray` (ADR 1049). Of any other type, a compile error.
 #[cfg_attr(rust_js, rust_js::link_name = "class")]
-pub fn class<T>() -> &'static Class {
+pub fn class<T: Classed>() -> &'static Class<T::Constructor> {
     unreachable!()
+}
+
+/// A type [`class`] names the class of, and that class's constructor: a
+/// signature, `fn(A, B) -> &'static T`, where its binding types the one
+/// [`new`] makes it of, each typed array's and `DataView`'s; or
+/// [`AnyConstructor`], a class held, made by its constructor's binding,
+/// [`Class::call_static`]. The binding crates implement it of each class
+/// they declare. A program's struct marked `#[rust_js::class]` implements
+/// it by one line beside its `unsafe impl js::Defined`, untyped: `impl
+/// js::Classed for Component { type Constructor = js::AnyConstructor; }`
+/// (ADR 1049, the user's decision).
+#[diagnostic::on_unimplemented(
+    message = "`js::class::<{Self}>()` names no class: `{Self}` isn't `js::Classed`",
+    label = "no `impl js::Classed for {Self}`",
+    note = "a struct marked `#[rust_js::class]` is a class `js::class` names by one line beside it: `impl js::Classed for {Self} {{ type Constructor = js::AnyConstructor; }}` (ADR 1049)"
+)]
+pub trait Classed {
+    /// Its constructor's signature, or [`AnyConstructor`].
+    type Constructor;
 }
 
 /// [`value instanceof constructor`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/instanceof):
@@ -2860,3 +2882,36 @@ unsafe impl<K: WeakKey + ?Sized, V> Defined for WeakMap<K, V> {}
 unsafe impl<T: WeakKey + ?Sized> Defined for WeakSet<T> {}
 unsafe impl<T: WeakKey + ?Sized + 'static> Defined for WeakRef<T> {}
 unsafe impl<T> Defined for FinalizationRegistry<T> {}
+
+// The crate's global classes, each one `js::class::<T>()` names, held:
+// made by its constructor's binding (ADR 1049).
+impl Classed for RegExp {
+    type Constructor = AnyConstructor;
+}
+impl Classed for Error {
+    type Constructor = AnyConstructor;
+}
+impl Classed for AggregateError {
+    type Constructor = AnyConstructor;
+}
+impl<T> Classed for Promise<T> {
+    type Constructor = AnyConstructor;
+}
+impl<K: ?Sized, V> Classed for Map<K, V> {
+    type Constructor = AnyConstructor;
+}
+impl<T: ?Sized> Classed for Set<T> {
+    type Constructor = AnyConstructor;
+}
+impl<K: WeakKey + ?Sized, V> Classed for WeakMap<K, V> {
+    type Constructor = AnyConstructor;
+}
+impl<T: WeakKey + ?Sized> Classed for WeakSet<T> {
+    type Constructor = AnyConstructor;
+}
+impl<T: WeakKey + ?Sized + 'static> Classed for WeakRef<T> {
+    type Constructor = AnyConstructor;
+}
+impl<T> Classed for FinalizationRegistry<T> {
+    type Constructor = AnyConstructor;
+}

@@ -17,6 +17,11 @@ pub use webapi::{Blob, File};
 #[cfg_attr(rust_js, rust_js::types = "Buffer")]
 pub struct Buffer(PhantomData<JsObject>);
 
+// A global class, `js::class::<Buffer>()`'s, held (ADR 1049).
+impl js::Classed for Buffer {
+    type Constructor = js::AnyConstructor;
+}
+
 impl Deref for Buffer {
     type Target = Uint8Array;
 

@@ -67,6 +67,9 @@ pub struct Component {
 }
 
 unsafe impl js::Defined for Component {}
+impl js::Classed for Component {
+    type Constructor = js::AnyConstructor;
+}
 
 #[cfg_attr(rust_js, rust_js::class)]
 impl Component {
@@ -111,6 +114,9 @@ impl Component {
 struct ComponentDummy {}
 
 unsafe impl js::Defined for ComponentDummy {}
+impl js::Classed for ComponentDummy {
+    type Constructor = js::AnyConstructor;
+}
 
 #[cfg_attr(rust_js, rust_js::class)]
 impl ComponentDummy {
@@ -126,6 +132,10 @@ pub struct PureComponent {
     pub context: Option<&'static Unknown>,
     pub refs: &'static EmptyObject,
     pub updater: &'static Updater,
+}
+
+impl js::Classed for PureComponent {
+    type Constructor = js::AnyConstructor;
 }
 
 #[cfg_attr(rust_js, rust_js::class)]
@@ -282,7 +292,7 @@ test("what a class is refused says what to write", () => {
   const made = "    pub fn new() -> Self {\n        C { n: 0 }\n    }\n";
   const marked = "#[cfg_attr(rust_js, rust_js::class)]\nimpl C {\n";
   const cases: [string, string, string][] = [
-    ["class-trait", `#[derive(Clone)]\n${head}${marked}${made}}\n`, "implements no trait but a marker's, of no items, not `std::clone::Clone`"],
+    ["class-trait", `#[derive(Clone)]\n${head}${marked}${made}}\n`, "implements no trait but a marker's, of no items or of types alone, not `std::clone::Clone`"],
     ["class-by-value", `${head}${marked}${made}    pub fn take(self) -> u32 {\n        self.n\n    }\n}\n`, "method takes `&self` or `&mut self`, `this`, not `self` by value"],
     ["class-generic", "#[cfg_attr(rust_js, rust_js::class)]\npub struct C<T> {\n    pub n: T,\n}\n#[cfg_attr(rust_js, rust_js::class)]\nimpl<T> C<T> {\n    pub fn new(n: T) -> Self {\n        C { n }\n    }\n}\n", "has no type or const parameters"],
     ["class-literal", `${head}${marked}${made}}\npub fn other() -> C {\n    C { n: 1 }\n}\n`, "is made by its constructor, `C::new(..)`, not a struct literal"],
@@ -290,7 +300,11 @@ test("what a class is refused says what to write", () => {
     ["class-unmade", `${head}${marked}    pub fn get(&self) -> u32 {\n        self.n\n    }\n}\n`, "is made by its constructor, `fn new(..) -> Self`, in its impl"],
     ["class-tuple", "#[cfg_attr(rust_js, rust_js::class)]\npub struct C(pub u32);\n#[cfg_attr(rust_js, rust_js::class)]\nimpl C {\n    pub fn new() -> Self {\n        C(0)\n    }\n}\n", "is a struct of named fields"],
     ["class-method-of-a-field", `${head}${marked}${made}    pub fn n(&self) -> u32 {\n        self.n\n    }\n}\n`, "has no method or constant named as its field, `n`, which `this.n` would hide"],
-    ["class-of-no-class", "pub struct S;\npub fn f() -> &'static js::Class {\n    js::class::<S>()\n}\n", "`js::class::<T>()` of a `T` that's no `#[rust_js::class]` struct"],
+    ["class-of-no-class", "pub struct S;\nimpl js::Classed for S {\n    type Constructor = js::AnyConstructor;\n}\npub fn f() -> &'static js::Class {\n    js::class::<S>()\n}\n", "`js::class::<T>()` of a `T` that's no `#[rust_js::class]` struct"],
+    // ADR 1049: a class `js::class` names is `js::Classed`, by one line
+    // the error writes; and a crate's is held untyped.
+    ["class-unclassed", `${head}${marked}${made}}\npub fn f() -> &'static js::Class {\n    js::class::<C>()\n}\n`, "`impl js::Classed for C { type Constructor = js::AnyConstructor; }`"],
+    ["class-typed", `${head}${marked}${made}}\nimpl js::Classed for C {\n    type Constructor = fn() -> C;\n}\npub fn f() -> &'static js::Class<fn() -> C> {\n    js::class::<C>()\n}\n`, "its class is held untyped, `type Constructor = js::AnyConstructor;`"],
     ["class-instance-set-again", `${head}${marked}    pub fn new(fresh: bool) -> Self {\n        let mut c = C { n: 0 };\n        if fresh {\n            c = C { n: 1 };\n        }\n        c\n    }\n}\n`, "a constructor whose instance is set again, not changed in place"],
   ];
   for (const [name, rust, message] of cases) {
@@ -310,6 +324,9 @@ pub struct Component {
 }
 
 unsafe impl js::Defined for Component {}
+impl js::Classed for Component {
+    type Constructor = js::AnyConstructor;
+}
 
 #[cfg_attr(rust_js, rust_js::class)]
 impl Component {
@@ -1033,6 +1050,10 @@ const reactPromise = (load: string, after = "") => `use std::cell::Cell;
 pub struct ReactPromise {
     pub status: Cell<&'static str>,
     pub value: Cell<f64>,
+}
+
+impl js::Classed for ReactPromise {
+    type Constructor = js::AnyConstructor;
 }
 
 #[cfg_attr(rust_js, rust_js::class)]

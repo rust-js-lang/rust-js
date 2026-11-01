@@ -596,6 +596,10 @@ pub struct AbortControllerShim {
     pub shimmed: bool,
 }
 
+impl js::Classed for AbortControllerShim {
+    type Constructor = js::AnyConstructor;
+}
+
 #[cfg_attr(rust_js, rust_js::class)]
 impl AbortControllerShim {
     pub fn new() -> Self {
@@ -640,7 +644,7 @@ const AbortControllerLocal =
   for (const [ty, name] of [["js::JsError", "error"], ["js::JsObject", "object"], ["js::Unknown", "unknown"]]) {
     writeFileSync(join(dir, `${name}.rs`), `pub fn class() -> &'static js::Class {\n    js::class::<${ty}>()\n}\n`);
     const refused = Bun.spawnSync([compiler, join(dir, `${name}.rs`), "-o", join(dir, "wrong.js"), ...withWeb], { cwd: dir });
-    expect([refused.exitCode, refused.stderr.toString()]).toEqual([1, expect.stringContaining("`js::class::<T>()` of a `T` that's no `#[rust_js::class]` struct, nor a class TypeScript names")]);
+    expect([refused.exitCode, refused.stderr.toString()]).toEqual([1, expect.stringContaining("isn't `js::Classed`")]);
   }
 });
 

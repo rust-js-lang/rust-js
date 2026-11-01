@@ -569,6 +569,10 @@ struct AbortControllerShim {
     aborted: bool,
 }
 
+impl js::Classed for AbortControllerShim {
+    type Constructor = js::AnyConstructor;
+}
+
 #[cfg_attr(rust_js, rust_js::class)]
 impl AbortControllerShim {
     fn new() -> Self {
@@ -607,9 +611,21 @@ export function controller() {
 }
 ```
 
+- **A class `js::class` names is `js::Classed`**, which the binding
+  crates implement of each class they declare, and a program of its own,
+  `impl js::Classed for AbortControllerShim { type Constructor =
+  js::AnyConstructor; }`, held untyped: without it, rustc's error writes
+  that line. A typed array's and a `DataView`'s is typed by one view's
+  constructor, `js::Class<fn(&'static ArrayBuffer, f64, f64) ->
+  ArrayBufferView>`, so one function takes any of them and
+  `js::new(constructor, (buffer, offset, length))` makes the view, as
+  React's Flight client's `resolveTypedArray(.., Int8Array, 1, ..)` does
+  ([ADR 1049](../../decisions/1049-js-class-is-typed-by-classed.md), the
+  user's decision).
 - **What TypeScript names no class is refused**: a `JsError`, what JS
   threw, of no one class; a `JsObject` or an `Unknown`, TypeScript's
-  `object` and `unknown`; a type it doesn't name, `any`.
+  `object` and `unknown`; a type it doesn't name, `any`, none of which is
+  `js::Classed`.
 - **Whether the host has it is `js::is_function(js::class::<T>)`**,
   `typeof Promise === "function"`, and **a static of the class held is
   `class.call_static(binding, (arguments,))`**, called on the class held,

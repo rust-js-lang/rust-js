@@ -153,6 +153,10 @@ struct AbortControllerShim {
     listeners: u32,
 }
 
+impl js::Classed for AbortControllerShim {
+    type Constructor = js::AnyConstructor;
+}
+
 #[cfg_attr(rust_js, rust_js::class)]
 impl AbortControllerShim {
     fn new() -> Self {

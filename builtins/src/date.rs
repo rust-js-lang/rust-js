@@ -14,8 +14,11 @@ use core::marker::PhantomData;
 #[cfg_attr(rust_js, rust_js::types = "Date")]
 pub struct Date(PhantomData<JsObject>);
 
-// An object, never `undefined`.
+// An object, never `undefined`; a global class, held (ADR 1049).
 unsafe impl super::Defined for Date {}
+impl super::Classed for Date {
+    type Constructor = super::AnyConstructor;
+}
 
 impl Date {
     /// [`date.getDate()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date/getDate): the day of the month, 1 to 31, in the local time zone.

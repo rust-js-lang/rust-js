@@ -301,6 +301,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // The crate's class, its constructor function; or a
                 // binding's, the global class TypeScript names (ADR 0911).
                 match (constructor, ty.and_then(|ty| self.recognition().class_value(ty))) {
+                    // A crate's class is held untyped: what its `Classed`
+                    // says `new` is given needn't be what its constructor
+                    // takes (ADR 1049).
+                    (Some(_), _) if self.typed_class_given(def_id, generic_args) => {
+                        let what = "a `#[rust_js::class]` struct's `js::Classed` of a constructor's signature: its class is held untyped, `type Constructor = js::AnyConstructor;`, and made by `T::new(..)`";
+                        return Err(self.unsupported(span, what));
+                    }
                     (Some(constructor), _) => match self.fn_ref(constructor).kind {
                         js::ExprKind::Member(class, _) => *class,
                         _ => unreachable!("a class's constructor is a member of its class"),
@@ -387,6 +394,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .instantiate(self.tcx, generic_args)
             .skip_normalization();
         (sig.skip_binder().inputs().first()).is_some_and(|&ty| super::bindings::is_indexed_list(self.tcx, ty))
+    }
+
+    /// Whether `js::class::<T>()`, binding `def_id` of `generic_args`, gives
+    /// a typed `Class`, `T`'s `Classed` of a signature, not of
+    /// `AnyConstructor` (ADR 1049).
+    fn typed_class_given(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> bool {
+        let output = (self.tcx.fn_sig(def_id).instantiate(self.tcx, generic_args))
+            .skip_normalization()
+            .skip_binder()
+            .output();
+        let output = (self.tcx)
+            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(output))
+            .unwrap_or(output);
+        let output = output.peel_refs();
+        matches!(output.kind(), ty::Adt(class, _) if super::recognition::is_js_class(self.tcx, class.did()))
+            && !super::recognition::is_untyped_class(self.tcx, output)
     }
 
     /// Does binding `def_id`, of `generic_args`, give an `Option` of a

@@ -155,6 +155,10 @@ pub struct ResolvedCollatorOptions {
 #[cfg_attr(rust_js, rust_js::types = "Intl.Collator")]
 pub struct Collator(PhantomData<JsObject>);
 
+impl super::Classed for Collator {
+    type Constructor = super::AnyConstructor;
+}
+
 impl Collator {
     /// [`collator.compare(a, b)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Collator/compare): how `a` is ordered to `b`, `v.sort_by(|a, b| collator.compare(a, b))`; JS's -1, 0 or 1 (ADR 0057).
     #[cfg_attr(rust_js, rust_js::link_name = "compare")]
@@ -434,6 +438,10 @@ pub struct NumberRangeFormatPart {
 #[cfg_attr(rust_js, rust_js::types = "Intl.NumberFormat")]
 pub struct NumberFormat(PhantomData<JsObject>);
 
+impl super::Classed for NumberFormat {
+    type Constructor = super::AnyConstructor;
+}
+
 impl NumberFormat {
     /// [`format.format(n)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat/format): `n` written.
     #[cfg_attr(rust_js, rust_js::link_name = "format")]
@@ -657,6 +665,10 @@ pub struct DateTimeRangeFormatPart {
 #[cfg_attr(rust_js, rust_js::types = "Intl.DateTimeFormat")]
 pub struct DateTimeFormat(PhantomData<JsObject>);
 
+impl super::Classed for DateTimeFormat {
+    type Constructor = super::AnyConstructor;
+}
+
 impl DateTimeFormat {
     /// [`format.format(date)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/format): `date` written.
     #[cfg_attr(rust_js, rust_js::link_name = "format")]
@@ -762,6 +774,10 @@ pub struct ResolvedPluralRulesOptions {
 #[cfg_attr(rust_js, rust_js::types = "Intl.PluralRules")]
 pub struct PluralRules(PhantomData<JsObject>);
 
+impl super::Classed for PluralRules {
+    type Constructor = super::AnyConstructor;
+}
+
 impl PluralRules {
     /// [`rules.select(n)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/PluralRules/select): the form `n` takes.
     #[cfg_attr(rust_js, rust_js::link_name = "select")]
@@ -853,6 +869,10 @@ pub struct RelativeTimeFormatPart {
 #[cfg_attr(rust_js, rust_js::types = "Intl.RelativeTimeFormat")]
 pub struct RelativeTimeFormat(PhantomData<JsObject>);
 
+impl super::Classed for RelativeTimeFormat {
+    type Constructor = super::AnyConstructor;
+}
+
 impl RelativeTimeFormat {
     /// [`format.format(value, unit)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/RelativeTimeFormat/format): `value` `unit`s from now written, ago if negative.
     #[cfg_attr(rust_js, rust_js::link_name = "format")]
@@ -937,6 +957,10 @@ pub struct ListFormatPart {
 #[cfg_attr(rust_js, rust_js::name = "Intl.ListFormat")]
 #[cfg_attr(rust_js, rust_js::types = "Intl.ListFormat")]
 pub struct ListFormat(PhantomData<JsObject>);
+
+impl super::Classed for ListFormat {
+    type Constructor = super::AnyConstructor;
+}
 
 impl ListFormat {
     /// [`format.format(list)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/ListFormat/format): `list` written.
@@ -1034,6 +1058,10 @@ pub struct ResolvedDisplayNamesOptions {
 #[cfg_attr(rust_js, rust_js::types = "Intl.DisplayNames")]
 pub struct DisplayNames(PhantomData<JsObject>);
 
+impl super::Classed for DisplayNames {
+    type Constructor = super::AnyConstructor;
+}
+
 impl DisplayNames {
     /// [`names.of(code)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/DisplayNames/of): the name of `code`, `"fr"`, `"US"`; none of one without a name, where `fallback` is `"none"`.
     #[cfg_attr(rust_js, rust_js::link_name = "of")]
@@ -1083,6 +1111,10 @@ pub struct LocaleOptions<'a> {
 #[cfg_attr(rust_js, rust_js::name = "Intl.Locale")]
 #[cfg_attr(rust_js, rust_js::types = "Intl.Locale")]
 pub struct Locale(PhantomData<JsObject>);
+
+impl super::Classed for Locale {
+    type Constructor = super::AnyConstructor;
+}
 
 impl Locale {
     /// [`locale.baseName`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/baseName): its language, script and region, `en-Latn-US`.
@@ -1234,6 +1266,10 @@ pub mod segments {
 #[cfg_attr(rust_js, rust_js::name = "Intl.Segmenter")]
 #[cfg_attr(rust_js, rust_js::types = "Intl.Segmenter")]
 pub struct Segmenter(PhantomData<JsObject>);
+
+impl super::Classed for Segmenter {
+    type Constructor = super::AnyConstructor;
+}
 
 impl Segmenter {
     /// [`segmenter.segment(input)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Segmenter/segment): `input` split.

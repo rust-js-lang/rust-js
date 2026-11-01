@@ -189,7 +189,7 @@ impl RootType for Plain {
 }
 `,
   );
-  expect(mixed).toContain("implements no trait but a marker's, of no items, not `RootType`");
+  expect(mixed).toContain("implements no trait but a marker's, of no items or of types alone, not `RootType`");
   // The method that gives a field is no function to hold (rd304).
   const held = refused(
     "class-traits-accessor-held",
