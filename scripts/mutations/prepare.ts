@@ -225,7 +225,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "    catches::try_catches(body, ends);\n",
     replace: "",
-    tests: ["test/js-builtins.test.ts", "-t", "a JS error is shown"],
+    tests: ["test/js-errors.test.ts", "-t", "a JS error is shown"],
   },
   {
     name: "coalescing-if",

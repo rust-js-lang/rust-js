@@ -229,7 +229,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/cell_borrows.rs",
     find: "                | JsForm::StrictEquals\n                | JsForm::Asks(_)\n",
     replace: "                | JsForm::StrictEquals\n",
-    tests: ["test/js-builtins.test.ts", "-t", "AggregateError"],
+    tests: ["test/js-errors.test.ts", "-t", "AggregateError"],
   },
   {
     name: "js-object-deref-runs-code",
@@ -240,6 +240,7 @@ export const mutations: Mutation[] = [
     replace: "    binding_runs_nothing(tcx, id)\n",
     tests: [
       "test/js-builtins.test.ts",
+      "test/js-errors.test.ts",
       "-t",
       "AggregateError|a Map is a WeakMap",
     ],

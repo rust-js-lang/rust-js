@@ -2392,6 +2392,14 @@ impl JsError {
     pub fn stack(&self) -> Option<String> {
         unreachable!()
     }
+
+    /// [`e.stack = stack`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error/stack):
+    /// where it shows it was made, `None` of none, `undefined`, as React's
+    /// cloneRecoverableErrorAsFatal gives a new error the frames of another.
+    #[cfg_attr(rust_js, rust_js::link_name = "set stack")]
+    pub fn set_stack(&self, stack: Option<&str>) {
+        unreachable!()
+    }
 }
 
 pub mod js_error {

@@ -134,7 +134,7 @@ export const mutations: Mutation[] = [
     find: "        if self.recognition().is_js_error(ty) {\n",
     replace: "        if false && self.recognition().is_js_error(ty) {\n",
     tests: [
-      "test/js-builtins.test.ts",
+      "test/js-errors.test.ts",
       "-t",
       "a JS error is shown as JS shows it",
     ],

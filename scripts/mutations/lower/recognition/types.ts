@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     find: 'self.tcx.crate_name(adt.did().krate).as_str() == "js"',
     replace: 'self.tcx.crate_name(adt.did().krate).as_str() == "jsx"',
     tests: [
-      "test/js-builtins.test.ts",
+      "test/js-errors.test.ts",
       "-t",
       "a JS error is shown as JS shows it",
     ],
