@@ -283,7 +283,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (JsForm::Class, None) if args.is_empty() => {
                 let ty = generic_args.types().next();
                 let constructor = ty.and_then(|ty| match ty.kind() {
-                    ty::Adt(adt, _) => super::classes::constructor_of(self.tcx, adt.did()),
+                    ty::Adt(adt, _) => super::classes::member_naming(self.tcx, adt.did()),
                     _ => None,
                 });
                 // The crate's class, its constructor function; or a

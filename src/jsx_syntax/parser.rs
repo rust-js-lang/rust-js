@@ -7,7 +7,7 @@ use rustc_ast::{self as ast, FnRetTy, ItemKind, TyKind};
 use rustc_parse::parser::{AllowConstBlockItems, ForceCollect, Parser};
 use rustc_session::Session;
 use rustc_span::{ErrorGuaranteed, Ident, Span};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use super::formatting::Layout;
 use super::literals;
@@ -728,9 +728,23 @@ fn renders(ty: &ast::Ty, optional: bool) -> bool {
 
 /// A component's name, what it's called by, its props' type and, of a
 /// `ForwardRef`, its handle's: `None` of what's no component.
-fn signature(sess: &Session, item: &ast::Item) -> Option<(Ident, String, String, Option<String>)> {
-    super::configured_attrs(sess, &item.attrs)?;
+fn signature(sess: &Session, item: &ast::Item, classes: &Classes) -> Option<(Ident, String, String, Option<String>)> {
+    let attrs = super::configured_attrs(sess, &item.attrs)?;
     let signature = match &item.kind {
+        // A class component, a `#[rust_js::class]` struct whose impl of
+        // react's `Component` is beside it: its class, of that impl's props
+        // (rd331i).
+        ItemKind::Struct(ident, ..)
+            if let Some(props) = classes.get(ident.as_str())
+                && attrs.iter().any(|attr| super::is_rust_js_attr(attr, "class")) =>
+        {
+            (
+                *ident,
+                format!("::react::class_component::<{ident}, _, _>()"),
+                props.clone(),
+                None,
+            )
+        }
         ItemKind::Fn(f) => {
             let FnRetTy::Ty(ret) = &f.sig.decl.output else {
                 return None;
@@ -797,13 +811,46 @@ fn signature(sess: &Session, item: &ast::Item) -> Option<(Ident, String, String,
         .then_some(signature)
 }
 
+/// The class components among a module's items, each struct's name and
+/// the props its impl of react's `Component` takes, `Component<SurfaceProps>`
+/// `SurfaceProps`, or none, `""`, of `Component`'s `()` (rd331i).
+pub(super) type Classes = HashMap<String, String>;
+
+/// `items`' impls of react's `Component`, `impl Component<P> for Surface`, as
+/// `Classes`: read by their names, as a component function is, before
+/// names resolve; rustc checks the impl's trait is react's where `jsx!`
+/// renders the class, `class_component::<Surface, _, _>()`.
+pub(super) fn classes(items: &[Box<ast::Item>]) -> Classes {
+    (items.iter())
+        .filter_map(|item| {
+            let ItemKind::Impl(imp) = &item.kind else { return None };
+            let segment = imp.of_trait.as_ref()?.trait_ref.path.segments.last()?;
+            if segment.ident.as_str() != "Component" {
+                return None;
+            }
+            let TyKind::Path(None, path) = &imp.self_ty.kind else {
+                return None;
+            };
+            let [class] = &path.segments[..] else { return None };
+            let props = match segment.args.as_deref() {
+                Some(ast::GenericArgs::AngleBracketed(args)) => match args.args.first() {
+                    Some(ast::AngleBracketedArg::Arg(ast::GenericArg::Type(ty))) => props_path(ty)?,
+                    _ => String::new(),
+                },
+                _ => String::new(),
+            };
+            Some((class.ident.as_str().to_string(), props))
+        })
+        .collect()
+}
+
 /// The props types the components among `item` take, by their names: a
 /// function's, a `static`'s or a `thread_local!`'s, `ButtonLinkProps`.
-pub(super) fn props_names(sess: &Session, item: &ast::Item) -> Vec<String> {
+pub(super) fn props_names(sess: &Session, item: &ast::Item, classes: &Classes) -> Vec<String> {
     let declarations = thread_local_declarations(sess, item).unwrap_or_else(|| vec![Box::new(item.clone())]);
     declarations
         .iter()
-        .filter_map(|declaration| signature(sess, declaration))
+        .filter_map(|declaration| signature(sess, declaration, classes))
         .filter_map(|(_, _, props, _)| props.rsplit("::").next().map(str::to_string))
         .filter(|name| !name.is_empty())
         .collect()
@@ -814,8 +861,13 @@ pub(super) fn props_names(sess: &Session, item: &ast::Item) -> Vec<String> {
 /// Calling it through an imported/renamed component uses Rust's macro
 /// namespace. Its props are built by their type's companion where it has
 /// one, `built` (ADR 0213), else they're a struct literal.
-pub(super) fn component(sess: &Session, item: &ast::Item, built: &HashSet<String>) -> Option<Box<ast::Item>> {
-    let (ident, target, props, handle) = signature(sess, item)?;
+pub(super) fn component(
+    sess: &Session,
+    item: &ast::Item,
+    built: &HashSet<String>,
+    classes: &Classes,
+) -> Option<Box<ast::Item>> {
+    let (ident, target, props, handle) = signature(sess, item, classes)?;
     // A constant's props, or a `thread_local!`'s memo's, are another
     // component's, wherever it is, whose companion is beside them, imported
     // with them.
@@ -916,7 +968,7 @@ pub(super) fn thread_local_components(
     built: &HashSet<String>,
 ) -> Vec<Box<ast::Item>> {
     (thread_local_declarations(sess, item).into_iter().flatten())
-        .filter_map(|declaration| component(sess, &declaration, built))
+        .filter_map(|declaration| component(sess, &declaration, built, &Classes::new()))
         .collect()
 }
 
@@ -932,7 +984,7 @@ pub(super) fn thread_local_named_as_jsx(
 ) -> Option<TokenStream> {
     let declarations = thread_local_declarations(sess, item)?;
     let named: Vec<bool> = (declarations.iter())
-        .map(|declaration| component(sess, declaration, built).is_some())
+        .map(|declaration| component(sess, declaration, built, &Classes::new()).is_some())
         .collect();
     let ItemKind::MacCall(mac) = &item.kind else {
         return None;

@@ -338,3 +338,98 @@ test("a class component is in the module its impl is, which imports what it exte
 }
 `)).toContain("rust-js: a `#[rust_js::class]` implements the class it extends in the module its constructor is in, where its class is");
 }, 60_000);
+
+// rd331i: a class component is an element of `jsx!`, as JSX's `<Surface
+// width={2} />` is `createElement(Surface, { width: 2 })`: its class, of its
+// impl's props, which a `use` imports with it, as a component function's.
+test("a class component is an element jsx! renders, its class given its props", () => {
+  const dir = fixture("class-component-element");
+  writeFileSync(join(dir, "lib.rs"), `pub mod shapes {
+    use react::{Component, JSX, jsx};
+
+    pub struct SurfaceProps {
+        pub width: f64,
+        pub title: Option<&'static str>,
+    }
+
+    #[cfg_attr(rust_js, rust_js::class)]
+    pub struct Surface {}
+
+    impl Component<SurfaceProps> for Surface {
+        fn render(self: &'static Self) -> JSX::Element {
+            let props = self.props();
+            jsx! { <i title={props.title}>{props.width}</i> }
+        }
+    }
+
+    pub struct LabelProps {
+        pub text: &'static str,
+    }
+
+    #[cfg_attr(rust_js, rust_js::class)]
+    pub struct Label {
+        text: String,
+    }
+
+    #[cfg_attr(rust_js, rust_js::class)]
+    impl Label {
+        pub fn new(props: &LabelProps) -> Self {
+            Label { text: props.text.to_uppercase() }
+        }
+    }
+
+    impl Component<LabelProps> for Label {
+        fn render(self: &'static Self) -> JSX::Element {
+            jsx! { <b>{self.text.as_str()}</b> }
+        }
+    }
+
+    #[cfg_attr(rust_js, rust_js::class)]
+    pub struct Rule {}
+
+    impl Component for Rule {
+        fn render(self: &'static Self) -> JSX::Element {
+            jsx! { <hr /> }
+        }
+    }
+}
+
+pub mod app {
+    use react::{JSX, jsx};
+
+    use crate::shapes::{self, Label};
+
+    pub fn App() -> JSX::Element {
+        jsx! {
+            <div>
+                <shapes::Surface width={2.0} />
+                <shapes::Surface width={3.0} title={Some("big")} />
+                <Label text="b" key="k" />
+                <shapes::Rule />
+            </div>
+        }
+    }
+}
+`);
+  run([compiler, ...flags(dir)]);
+  const app = readFileSync(join(dir, "app.jsx"), "utf8");
+  expect(app).toContain('import { Label, Rule, Surface } from "./shapes.jsx";');
+  expect(app).toContain(`      <Surface width={2} />
+      <Surface width={3} title="big" />
+      <Label text="b" key="k" />
+      <Rule />`);
+  const ran = rendered(dir, `import { expect, test } from "bun:test";
+import { flushSync } from "react-dom";
+import { createRoot } from "react-dom/client";
+import { App } from "./app.jsx";
+
+test("React constructs each class it's given", () => {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  flushSync(() => root.render(<App />));
+  expect(container.innerHTML).toBe('<div><i>2</i><i title="big">3</i><b>B</b><hr></div>');
+  flushSync(() => root.unmount());
+});
+`);
+  expect([ran.code, ran.passed], ran.output).toEqual([0, "1"]);
+}, 60_000);

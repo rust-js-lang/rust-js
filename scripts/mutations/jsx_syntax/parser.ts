@@ -370,4 +370,20 @@ export const mutations: Mutation[] = [
     replace: "        if starts {",
     tests: ["test/jsx.test.ts", "-t", "capitalized name needs no allow"],
   },
+  {
+    name: "class-component-props-unread",
+    breaks: "a class component's element is built of no props, `()`, where its impl's `Component<SurfaceProps>` says its props (rd331i)",
+    file: "src/jsx_syntax/parser.rs",
+    find: "                    Some(ast::AngleBracketedArg::Arg(ast::GenericArg::Type(ty))) => props_path(ty)?,\n",
+    replace: "",
+    tests: ["test/class-components.test.ts", "-t", "an element jsx! renders"],
+  },
+  {
+    name: "class-component-of-no-class",
+    breaks: "a `#[rust_js::class]` struct that implements react's `Component` has no element, `<Surface ..>` a macro rustc can't find (rd331i)",
+    file: "src/jsx_syntax/parser.rs",
+    find: "                && attrs.iter().any(|attr| super::is_rust_js_attr(attr, \"class\")) =>",
+    replace: "                && attrs.iter().any(|attr| super::is_rust_js_attr(attr, \"namespace\")) =>",
+    tests: ["test/class-components.test.ts", "-t", "an element jsx! renders"],
+  },
 ];

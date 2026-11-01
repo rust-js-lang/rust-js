@@ -59,4 +59,12 @@ export const mutations: Mutation[] = [
       "an ES class React renders"
     ]
   },
+  {
+    name: "class-named-by-its-constructor-alone",
+    breaks: "a class React constructs, of no `fn new`, has no value `js::class` and `jsx!` name, `<Surface ..>` refused (rd331i)",
+    file: "src/lower/classes/subclasses.rs",
+    find: "        tcx.associated_item_def_ids(imp).first().copied()\n",
+    replace: "        let _ = imp;\n        None\n",
+    tests: ["test/class-components.test.ts", "-t", "an element jsx! renders"],
+  },
 ];

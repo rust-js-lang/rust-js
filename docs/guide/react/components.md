@@ -651,6 +651,14 @@ impl Component<ClockProps> for Clock {
         jsx! { <p>{self.props().label}</p> }
     }
 }
+
+pub fn Clocks() -> JSX::Element {
+    jsx! {
+        <div>
+            <Clock label="UTC" />
+        </div>
+    }
+}
 ```
 
 ```jsx
@@ -672,6 +680,14 @@ export class Clock extends Component {
     return <p>{this.props.label}</p>;
   }
 }
+
+export function Clocks() {
+  return (
+    <div>
+      <Clock label="UTC" />
+    </div>
+  );
+}
 ```
 
 - **Each method its impl writes is its class's**, `render` and the
@@ -690,11 +706,15 @@ export class Clock extends Component {
   one. Or the class writes its constructor, `fn new(props: &P) -> Self`
   in its `#[rust_js::class]` impl, which is `constructor(props) {
   super(props); .. }`, and its fields are set as it sets them.
+- **It's an element of `jsx!`**, `<Clock label="UTC" />`, as a component
+  function is: its class, given its impl's props, `Component<ClockProps>`'s,
+  each written as JSX writes it, as React's `createElement(Clock, ..)` is.
+  Its struct and its impl of `Component` are in one module, where a `use`
+  imports it with its element.
 - A class that implements no binding's class is a constructor function
   and its prototype, as [JS classes](../interop/export-to-javascript.md#js-classes)
   are: its prototype's methods enumerable and its call without `new`
   allowed, where an ES class's aren't ([differences](../semantics.md), 37).
 
-Not yet: an element of one in `jsx!`, `<Clock label="x" />`, as a struct
-isn't a value in Rust (JS renders it, `createElement(Clock, ..)`);
-`this.state` and `setState`; `PureComponent`.
+Not yet: `this.state` and `setState`; `PureComponent`; a `ref` of an
+element of one, the instance React gives it.

@@ -198,9 +198,8 @@ and methods typed, as Rust says what a type is: no attribute.
 
 ## Consequences
 
-- A class component isn't yet an element of `jsx!`, `<Counter label="a"
-  />`: a struct is no value in Rust, which `jsx!`'s `component(Counter,
-  ..)` passes; JS renders it, `createElement(Counter, ..)`. Its own gap.
+- A class component is an element of `jsx!`, `<Counter label="a" />`
+  (amended below, rd331i).
 - `this.state` and `setState` aren't bound yet: `S` types
   `componentDidUpdate`'s `prevState`, `undefined` of `()`. Nor is
   `PureComponent`, a trait of its own.
@@ -263,3 +262,35 @@ the paragraph its ref callback set.
 Decided by the user (2026-11-01): react-art's LinearGradient,
 RadialGradient and Pattern stay constructor functions, ADR 0262's second
 case, listed in its Consequences and the guide's differences (37).
+
+## Amendment: a class component is an element of `jsx!` (rd331i)
+
+`<Surface width={..} />` of a class component was `react::component(Surface,
+..)`, which rustc refused: a braced struct is no value. JS renders the
+class, `createElement(Surface, ..)`. **`jsx!` renders a class component as
+it renders a component function**: the expansion that writes a function's
+companion, before names resolve (ADR 0213), writes one for a
+`#[rust_js::class]` struct whose impl of `Component` is beside it, `impl
+Component<SurfaceProps> for Surface`, read by the trait's name as a
+function component is read by its signature (`parser::classes`). Its
+companion, a macro of the struct's name and visibility, which a `use`
+imports with the struct, builds the impl's props, by their own companion
+where they have one, so an `Option` not written is left out, and gives
+them to `react::component(react::class_component::<Surface, _, _>(), ..)`:
+rustc checks the struct implements react's `Component` of those props, and
+`class_component`'s JS is its class, as `js::class::<T>()`'s is, named by
+its constructor or, of one React constructs, by a method of its impl
+(`classes::member_naming`). The element is JSX's, `<Surface width={2} />`,
+its props as written. Case N: React constructs the class it's given, as of
+JS's.
+
+One way: the element of a component function and of a class are the same
+JSX, of one companion form; no `component::<Surface>(..)` call of a type.
+Not yet: a `ref` of a class's element, the instance; and a class whose
+impl of `Component` is in another module than its struct, which has no
+element. Held by `test/class-components.test.ts`'s "a class component is
+an element jsx! renders, its class given its props", rendered by React,
+of one React constructs, one that writes its constructor and one of no
+props, across modules, and the mutations `class-component-props-unread`,
+`class-component-of-no-class` (`jsx_syntax/parser.rs`) and
+`class-named-by-its-constructor-alone` (`lower/classes/subclasses.rs`).

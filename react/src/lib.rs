@@ -1217,6 +1217,25 @@ pub trait Component<P: 'static = (), S: 'static = ()>: 'static {
     }
 }
 
+/// `<Surface ..>` of a class component `C`, what `jsx!` renders of it: its
+/// class, `C`'s constructor, as JSX's `createElement(Surface, ..)` is
+/// given, of the props its impl of [`Component`] takes.
+#[cfg_attr(rust_js, rust_js::link_name = "class")]
+#[doc(hidden)]
+pub fn class_component<C: Component<P, S>, P: 'static, S: 'static>() -> ClassComponent<P> {
+    unreachable!()
+}
+
+/// A class component's class, of its props `P`: what JSX renders, as a
+/// component function is.
+#[doc(hidden)]
+pub struct ClassComponent<P>(PhantomData<(JsObject, P)>);
+
+#[doc(hidden)]
+pub struct Constructed;
+
+impl<P> ComponentType<P, Constructed> for ClassComponent<P> {}
+
 /// What a component function renders: an [`Element`], or an `Option` of
 /// one, `undefined` where it renders nothing, JS's `return null` (ADR 0286).
 pub trait Rendered {}

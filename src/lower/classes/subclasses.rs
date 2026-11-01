@@ -65,6 +65,17 @@ pub(crate) fn superclass(tcx: TyCtxt<'_>, adt: DefId) -> Option<(DefId, (String,
     Some((imp, base_class(tcx, tcx.impl_trait_id(imp))?))
 }
 
+/// A function of class `adt` its reference names, `Surface` of
+/// `Surface.prototype.render`'s: its constructor, or, of one React
+/// constructs, which has none, a method of its impl of the class it
+/// extends (rd331i); `None` of what's no class.
+pub(crate) fn member_naming(tcx: TyCtxt<'_>, adt: DefId) -> Option<DefId> {
+    super::constructor_of(tcx, adt).or_else(|| {
+        let (imp, _) = superclass(tcx, adt)?;
+        tcx.associated_item_def_ids(imp).first().copied()
+    })
+}
+
 /// Is `ty`, a field's, one a value is of before it's set, `undefined`: an
 /// `Option`, or a `Cell` or a `RefCell` of one, whose `None` it is (rd331).
 pub(super) fn starts_undefined<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) -> bool {

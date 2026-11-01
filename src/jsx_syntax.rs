@@ -263,9 +263,10 @@ impl Expand<'_> {
         }
         // The props structs the components here take, and their companions,
         // which build them from what JSX gives (ADR 0213).
+        let classes = parser::classes(items);
         let props: HashSet<String> = (items.iter())
             .filter(|item| configured_attrs(self.sess, &item.attrs).is_some())
-            .flat_map(|item| parser::props_names(self.sess, item))
+            .flat_map(|item| parser::props_names(self.sess, item, &classes))
             .collect();
         // What has a `Default` written for it, as a derived one does: React's
         // attributes, of any element (ADR 0208).
@@ -320,7 +321,7 @@ impl Expand<'_> {
             {
                 mac.args.tokens = tokens;
             }
-            if let Some(companion) = parser::component(self.sess, item, &built) {
+            if let Some(companion) = parser::component(self.sess, item, &built, &classes) {
                 companions.push(companion);
                 // A component is named as JSX names it, capitalized, which
                 // rustc's lint would flag: rust-js allows it, so no crate

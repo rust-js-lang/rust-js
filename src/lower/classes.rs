@@ -18,7 +18,7 @@ use rustc_span::def_id::DefId;
 mod namespaces;
 mod subclasses;
 pub(crate) use namespaces::{names_namespace, unread_namespaces};
-pub(crate) use subclasses::{base_class, js_class, subclass_impl_class, superclass};
+pub(crate) use subclasses::{base_class, js_class, member_naming, subclass_impl_class, superclass};
 use subclasses::{starts_undefined, superclass_impls};
 
 /// The name of a class's constructor, Rust's own for one, `fn new(..) ->
