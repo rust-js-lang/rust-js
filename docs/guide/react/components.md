@@ -711,10 +711,13 @@ export function Clocks() {
   each written as JSX writes it, as React's `createElement(Clock, ..)` is.
   Its struct and its impl of `Component` are in one module, where a `use`
   imports it with its element.
+- **Its element's `ref` is its instance**, React's, `<Clock ref={move
+  |clock: Option<&'static Clock>| ..} />`, a callback or a `RefObject` of
+  `&'static Clock`; one of another type is rustc's error.
 - A class that implements no binding's class is a constructor function
   and its prototype, as [JS classes](../interop/export-to-javascript.md#js-classes)
   are: its prototype's methods enumerable and its call without `new`
   allowed, where an ES class's aren't ([differences](../semantics.md), 37).
 
-Not yet: `this.state` and `setState`; `PureComponent`; a `ref` of an
-element of one, the instance React gives it.
+Not yet: `this.state` and `setState`; `PureComponent`; an element of a
+class whose impl of `Component` is in another module than its struct.

@@ -125,12 +125,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// Whether a value of `ty`, a payload seen through its references, is
 /// `undefined` or `null` by its type alone: a `()`, an `Option`, a
 /// `MaybeUninit` before it's written (ADR 0332), a unit struct, or an
-/// untagged enum of `undefined` or `null`, `js::Kind` (ADR 0676).
+/// untagged enum of `undefined` or `null`, `js::Kind` (ADR 0676). Not a
+/// class of no fields, whose value is the instance its constructor made,
+/// as a class component's `ref` is given (ADR 1041, amended).
 fn nullish_by_its_shape<'tcx>(recognition: &super::super::recognition::Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> bool {
     ty.is_unit()
         || recognition.option_of(ty).is_some()
         || recognition.uninit_of(ty).is_some()
-        || matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.non_enum_variant().fields.is_empty())
+        || matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct()
+            && adt.non_enum_variant().fields.is_empty()
+            && !super::super::classes::is_class(recognition.tcx, adt.did()))
         || matches!(ty.kind(), ty::Adt(adt, _) if super::super::untagged::holds_nullish(recognition.tcx, *adt))
 }
 

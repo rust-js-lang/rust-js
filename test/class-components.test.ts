@@ -582,3 +582,86 @@ test("React DOM renders each tag, its ref the instance", () => {
 `);
   expect([ran.code, ran.passed], ran.output).toEqual([0, "1"]);
 }, 60_000);
+
+// A `ref` of a class component's element is its instance, as JSX's `<Gauge
+// ref={..} />` of a class is: React gives it the instance it made (ADR 1041,
+// amended).
+test("a class component's ref is its instance", () => {
+  const { js, dir } = compiled("class-component-ref", `use react::{Component, JSX, jsx};
+
+pub struct GaugeProps {
+    pub label: &'static str,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Gauge {}
+
+impl Component<GaugeProps> for Gauge {
+    fn render(self: &'static Self) -> JSX::Element {
+        jsx! { <b>{self.props().label}</b> }
+    }
+}
+
+pub fn Board() -> JSX::Element {
+    jsx! {
+        <div>
+            <Gauge
+                label="g"
+                ref={|gauge: Option<&'static Gauge>| {
+                    if let Some(gauge) = gauge {
+                        println!("ref {}", gauge.props().label);
+                    }
+                }}
+            />
+        </div>
+    }
+}
+`);
+  // Its instance is an object, never `undefined`, though its class has
+  // no fields: a `Some` of it is it.
+  expect(js).toContain(`      <Gauge
+        label="g"
+        ref={(gauge) => {
+          if (gauge != null) {
+            console.log(\`ref \${gauge.props.label}\`);
+          }
+        }}
+      />`);
+  const ran = rendered(dir, `import { expect, test } from "bun:test";
+import { createElement } from "react";
+import { flushSync } from "react-dom";
+import { createRoot } from "react-dom/client";
+import { Board, Gauge } from "./lib.jsx";
+
+const said = [];
+console.log = (line) => said.push(line);
+
+test("React gives the ref its instance", () => {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  flushSync(() => root.render(createElement(Board)));
+  expect(container.innerHTML).toBe("<div><b>g</b></div>");
+  expect(said.splice(0)).toEqual(["ref g"]);
+  flushSync(() => root.unmount());
+  expect(said).toEqual([]);
+});
+`);
+  expect([ran.code, ran.passed], ran.output).toEqual([0, "1"]);
+  // A ref of another type is rustc's error.
+  expect(refused("class-component-ref-refused", `use react::webapi::HTMLElement;
+use react::{Component, JSX, jsx};
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Gauge {}
+
+impl Component for Gauge {
+    fn render(self: &'static Self) -> JSX::Element {
+        jsx! { <hr /> }
+    }
+}
+
+pub fn Board() -> JSX::Element {
+    jsx! { <Gauge ref={|_: Option<&'static HTMLElement>| {}} /> }
+}
+`)).toContain("expected closure signature `fn(Option<&'static Gauge>) -> _`");
+}, 60_000);

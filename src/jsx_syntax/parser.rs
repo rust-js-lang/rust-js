@@ -905,6 +905,14 @@ pub(super) fn component(
             call(&target, &value)
         );
         arms.push(arm("@ref ($reference:expr)", &body));
+    } else if let ItemKind::Struct(class, ..) = &item.kind {
+        // A class component's `ref` is its instance, which React gives it,
+        // not one of its props (ADR 1041, amended).
+        let body = format!(
+            "#[rust_js::jsx] ::react::class_ref::<{class}, _>({}, $reference)",
+            call(&target, &value)
+        );
+        arms.push(arm("@ref ($reference:expr)", &body));
     } else if !props.is_empty() {
         arms.push(arm("@ref ($reference:expr)", &call(&target, &ref_value)));
     }

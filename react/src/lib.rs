@@ -1234,6 +1234,15 @@ pub fn class_component<C: Component<P, S>, P: 'static, S: 'static>() -> ClassCom
     unreachable!()
 }
 
+/// `<Surface ref={..} />` of a class component `C`, what `jsx!` gives its
+/// element's `ref`: a ref of its instance, which React gives it as it
+/// mounts, `None` as it unmounts.
+#[cfg_attr(rust_js, rust_js::link_name = "prop ref")]
+#[doc(hidden)]
+pub fn class_ref<C: 'static, M>(element: Element, value: impl IntoRef<&'static C, M>) -> Element {
+    unreachable!()
+}
+
 /// A class component's class, of its props `P`: what JSX renders, as a
 /// component function is.
 #[doc(hidden)]

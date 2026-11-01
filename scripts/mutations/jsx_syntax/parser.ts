@@ -394,4 +394,12 @@ export const mutations: Mutation[] = [
     replace: "            if intrinsic {\n                expr = call(\n",
     tests: ["test/class-components.test.ts", "-t", "a tag that's a string"],
   },
+  {
+    name: "class-component-ref-a-prop",
+    breaks: "a class component's `ref`, `<Gauge ref={..} />`, is a field of its props, which have none, where it's its instance, React's (ADR 1041, amended)",
+    file: "src/jsx_syntax/parser.rs",
+    find: "    } else if let ItemKind::Struct(class, ..) = &item.kind {\n",
+    replace: "    } else if let ItemKind::Struct(class, ..) = &item.kind\n        && false\n    {\n",
+    tests: ["test/class-components.test.ts", "-t", "ref is its instance"],
+  },
 ];

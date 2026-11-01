@@ -92,4 +92,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/compiler.test.ts", "-t", "an Option of a generic T"],
   },
+  {
+    name: "class-of-no-fields-nullish",
+    breaks: "a class of no fields is nullish by its shape, as a unit struct is, so a `Some` of its instance, a class component's `ref`, is boxed, `$someValue(gauge)` (ADR 1041, amended)",
+    file: "src/lower/representation/options.rs",
+    find: "            && !super::super::classes::is_class(recognition.tcx, adt.did()))",
+    replace: ")",
+    tests: ["test/class-components.test.ts", "-t", "ref is its instance"],
+  },
 ];

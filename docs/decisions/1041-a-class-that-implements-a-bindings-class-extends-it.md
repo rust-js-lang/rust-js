@@ -303,3 +303,32 @@ writes it after. `super(props)` is placed where the constructor is named,
 before its body, so all its body writes, a comment too, follows it. Held
 by `test/class-components.test.ts`'s "a constructor's comment comes after
 super(props)" and the mutation `super-placed-nowhere` (`lower/classes.rs`).
+
+## Amendment: a class component's `ref` is its instance
+
+`<Gauge ref={..} />` of a class component was a field of its props,
+`GaugeProps { r#ref: .. }`, which rustc refused: its props have none.
+React gives a class's `ref` the instance it constructed, `None` as it
+unmounts. **The companion's `@ref` arm gives the element its `ref` by
+`react::class_ref::<Gauge, _>(element, reference)`**, `prop ref`, whose
+`IntoRef<&'static Gauge, _>` rustc checks: a callback of `Option<&'static
+Gauge>` or a `RefObject` of one. The JSX is JSX's, `<Gauge label="g"
+ref={(gauge) => { .. }} />`. Case N: React does what it does of a JS
+class's `ref`.
+
+A class of no fields, `pub struct Gauge {}`, was nullish by its shape, as
+a unit struct is, so a `Some` of its instance was boxed and read back,
+`$someValue(gauge)`: its value is the object its constructor made, never
+`undefined`, so it's no unit struct's (`nullish_by_its_shape`). Case N.
+
+Held by `test/class-components.test.ts`'s "a class component's ref is its
+instance", rendered by React DOM, and the mutations
+`class-component-ref-a-prop` (`jsx_syntax/parser.rs`) and
+`class-of-no-fields-nullish` (`lower/representation/options.rs`).
+
+Not yet, still: an element of a class whose impl of `Component` is in
+another module than its struct. The companion, a macro beside the struct
+that `use` imports with it, is written before names resolve, of the
+impl's props as its module names them; another module's impl names the
+struct through its own `use`s, which the expansion would have to resolve
+as rustc does to pair them.
