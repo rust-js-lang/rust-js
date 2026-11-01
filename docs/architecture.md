@@ -356,6 +356,8 @@ which lowering and `src/prepare.rs` both ask ([ADR 0688](decisions/0688-a-result
 in the printed lines, by the map ([ADR 0630](decisions/0630-a-comment-inside-an-expression.md));
 `src/to_oxc/placed.rs` places a statement copied into a function from past
 it, a `Drop` impl's body, in the function, its comments with it ([ADR 0753](decisions/0753-a-branch-of-only-comments-keeps-them.md));
+`src/to_oxc/starts.rs` says where each statement and item starts, what a
+comment is attached to ([ADR 0444](decisions/0444-a-comment-is-where-its-code-is.md));
 `src/format.rs` lays it out with oxfmt and remaps changed text. Declarations
 flow from `src/lower/declarations.rs` through `src/typescript.rs` to `typescript/`.
 `src/output.rs` coordinates crate transforms, optional application Prettier,

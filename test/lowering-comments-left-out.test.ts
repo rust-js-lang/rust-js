@@ -12,7 +12,7 @@ import { compiler, fixture, run } from "./support";
 async function compiled(
   name: string,
   rust: string,
-): Promise<{ js: string; declarations: string; lib: Record<string, unknown> }> {
+): Promise<{ js: string; declarations: string; lib: Record<string, (...args: never[]) => unknown> }> {
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), rust);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
