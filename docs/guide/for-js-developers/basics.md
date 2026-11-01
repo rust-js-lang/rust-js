@@ -2285,6 +2285,56 @@ export function grow(shape) {
 Of fields at other keys, `Circle { r } | Ring(r)`'s `r` and `_0`, each
 alternative binds its own.
 
+A `match` of what the `match` before it made in each arm, `let settled =
+match .. { .. => Ok(v), .. => Err(e) }; match settled { .. }`, is one
+dispatch: each arm goes on to its variant's case, its field read where
+the arm wrote it, never an object of a tag tested again. It's the form for
+calling back once a `RefCell`'s borrow has ended, as a callback may borrow
+it again
+([ADR 1055](../../decisions/1055-a-match-of-what-a-match-made-is-one-dispatch.md)):
+
+```rust
+use std::cell::RefCell;
+
+pub enum Task {
+    Waiting,
+    Done(f64),
+    Failed(String),
+}
+
+pub fn report(task: &RefCell<Task>, done: &dyn Fn(f64), failed: &dyn Fn(&str)) {
+    // Called back once `task` is no longer borrowed, as each may read it.
+    let settled = match &*task.borrow() {
+        Task::Waiting => return,
+        Task::Done(value) => Ok(*value),
+        Task::Failed(reason) => Err(reason.clone()),
+    };
+    match settled {
+        Ok(value) => done(value),
+        Err(reason) => failed(&reason),
+    }
+}
+```
+
+```js
+export function report(task, done, failed) {
+  // Called back once `task` is no longer borrowed, as each may read it.
+  const value = task.value;
+  if (value === "Waiting") {
+    return;
+  }
+  if (value.TAG === "Done") {
+    done(value._0);
+  } else {
+    failed(value._0);
+  }
+}
+```
+
+The enum is made where something runs between the two, where it's read
+whole too, of a variant of two fields, of a payload whose parts are bound
+apart, `Some((text, count))`, and where it holds what drops.
+
 ## Loops
 
 `for ... of` is `for ... in`. `while` is `while`. `loop` is

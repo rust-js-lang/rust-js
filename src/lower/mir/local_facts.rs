@@ -14,6 +14,9 @@ use super::*;
 pub(super) struct LocalFacts<'m, 'tcx> {
     /// The blocks whose call is an `.await` (`awaits.rs`).
     awaits: &'m HashSet<BasicBlock>,
+    /// Each block an arm goes on to its case through, of a `match` of what
+    /// its arms' `match` made, and where it's written (`threaded.rs`).
+    cases: &'m HashMap<BasicBlock, Span>,
     promoted: &'m IndexVec<mir::Promoted, mir::Body<'tcx>>,
     /// Its blocks' edges, the arms a guard that holds goes on to taken as
     /// that arm's (`held_arms`).
@@ -121,6 +124,12 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
 
     pub(super) fn awaits(&self) -> &'m HashSet<BasicBlock> {
         self.awaits
+    }
+
+    /// Where the `match` is written whose case `block` goes on to, of what
+    /// its arms' `match` made (`threaded.rs`).
+    pub(super) fn case_of(&self, block: BasicBlock) -> Option<Span> {
+        self.cases.get(&block).copied()
     }
 
     pub(super) fn promoted(&self) -> &'m IndexVec<mir::Promoted, mir::Body<'tcx>> {
@@ -331,6 +340,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         unlowered.extend(crate::lower::classes::unread_namespaces(self.tcx, body));
         let facts = LocalFacts {
             awaits: &mir.awaits,
+            cases: &mir.cases,
             promoted: &mir.promoted,
             graph: cfg::Graph::of(body, &held_arms, &payload_tests),
             rests: (self.let_pattern_bindings(body).into_iter())

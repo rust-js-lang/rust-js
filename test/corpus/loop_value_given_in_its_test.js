@@ -28,27 +28,21 @@ function walk(node, stop) {
 
 function either(node, stop) {
   let total = 0;
-  let next;
   while (true) {
+    let next;
     while (true) {
       if (node.value === stop) {
-        next = undefined;
-      } else {
-        total = (total + node.value) >>> 0;
-        const next$1 = node.next;
-        if (next$1 != null) {
-          next = next$1;
-        } else if (node.parent != null) {
-          node = node.parent;
-          continue;
-        } else {
-          return total;
-        }
+        return (total * 10) >>> 0;
       }
-      if (next !== undefined) {
+      total = (total + node.value) >>> 0;
+      if ((next = node.next) != null) {
         break;
       }
-      return (total * 10) >>> 0;
+      if (node.parent != null) {
+        node = node.parent;
+      } else {
+        return total;
+      }
     }
     node = next;
   }

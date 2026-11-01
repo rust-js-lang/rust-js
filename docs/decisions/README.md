@@ -232,6 +232,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1051 A field may be named by a symbol](1051-a-field-may-be-named-by-a-symbol.md)
 - [1052 `Array.from` is of what Rust doesn't collect itself](1052-array-from-is-of-what-rust-doesnt-collect.md)
 - [1053 A guard's take of a field read no more is gone, and a comment runs nothing](1053-a-guards-take-of-a-field-read-no-more-is-gone.md)
+- [1055 A `match` of what a `match` made is one dispatch](1055-a-match-of-what-a-match-made-is-one-dispatch.md)
 - [0205 Flattened structs chain, and the props' own name is theirs](0205-flattened-chains.md)
 - [0206 TypeScript, read and written by TypeScript's own parser and printer](0206-typescript-module.md)
 - [0207 A crate's `.d.ts` is printed by TypeScript](0207-declarations-printed-by-typescript.md)
@@ -391,7 +392,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0361 Node's events are names of their own, typed by their emitters](0361-node-events.md) *(amended by 0656: `emit` takes what TypeScript's does)*
 - [0362 A field's `RefCell` never counted is the value it holds](0362-refcell-fields-never-counted.md) *(amended by 0863: a library's plain field too, by its contract)*
 - [0363 Children of any node are given by reference](0363-children-of-any-node.md)
-- [0364 Bodies are lowered from their MIR](0364-mir-lowering.md) *(amended by 0659: tidy's passes are one list of stages, each checked; extended by 0745: a `continue` in a chain; by 0751: a binding only a guard reads; amended by 0800: a drop of nothing never unwinds; amended by 0879: an `if`'s value of a branch of `false` is a conditional)*
+- [0364 Bodies are lowered from their MIR](0364-mir-lowering.md) *(amended by 0659: tidy's passes are one list of stages, each checked; extended by 0745: a `continue` in a chain; by 0751: a binding only a guard reads; amended by 0800: a drop of nothing never unwinds; amended by 0879: an `if`'s value of a branch of `false` is a conditional; extended by 1055: a `match` of what a `match` made is one dispatch)*
 - [0365 JS's Math where Rust's methods differ: `js::math`](0365-js-math-where-rust-differs.md) *(extended by 0887: the rest of `Math` is std's, as values too)*
 - [0366 A `NodeList` of its items' type, as TypeScript's `NodeListOf`](0366-nodelist-of-its-items.md)
 - [0367 A state's setter is the function it is](0367-state-setter-is-a-function.md)

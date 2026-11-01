@@ -1232,6 +1232,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             body,
             promoted: mir.promoted.clone(),
             awaits: mir.awaits.clone(),
+            cases: mir.cases.clone(),
         })
     }
 }

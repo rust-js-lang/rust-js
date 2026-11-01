@@ -254,6 +254,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         state.at = block;
         let data = &state.body.basic_blocks[block];
         let mut out = Vec::new();
+        // The comments before a `match` of what its arms' `match` made,
+        // before its case, which each arm goes on to (`threaded.rs`).
+        if let Some(span) = state.facts.case_of(block)
+            && let Some(at) = crate::lower::sources::commented(self.krate.sources, span)
+        {
+            out.push(StmtKind::Comments.at(at));
+        }
         for (index, statement) in data.statements.iter().enumerate() {
             let span = statement.source_info.span;
             // A statement that runs a call made before, which may panic

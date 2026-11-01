@@ -18,11 +18,8 @@ function keptNumbers(values) {
   const kept = [];
   for (let i = 0; i < values.length; i++) {
     const value = values[i];
-    const o = value != null ? $some(value) : $some(undefined);
-    if (o != null) {
-      const v = $someValue(o);
-      kept.push(v);
-    }
+    const v = value ?? undefined;
+    kept.push(v);
   }
   return kept;
 }
@@ -31,11 +28,8 @@ function keptText(values) {
   const kept = [];
   for (let i = 0; i < values.length; i++) {
     const value = values[i];
-    const o = value != null ? $some(value) : $some(undefined);
-    if (o != null) {
-      const v = $someValue(o);
-      kept.push(v);
-    }
+    const v = value ?? undefined;
+    kept.push(v);
   }
   return kept;
 }
@@ -44,11 +38,8 @@ function keptPoints(values) {
   const kept = [];
   for (let i = 0; i < values.length; i++) {
     const value = values[i];
-    const o = value != null ? $some(value) : $some(undefined);
-    if (o != null) {
-      const v = $someValue(o);
-      kept.push(v);
-    }
+    const v = value ?? undefined;
+    kept.push(v);
   }
   return kept;
 }
@@ -57,10 +48,8 @@ function settled(chunks) {
   const out = [];
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i];
-    const value = chunk.fulfilled ? $some(chunk.value) : undefined;
-    if (value !== undefined) {
-      const value$1 = $someValue(value);
-      out.push(value$1);
+    if (chunk.fulfilled) {
+      out.push(chunk.value);
     }
   }
   return out;

@@ -41,6 +41,7 @@ mod scopes;
 mod std_calls;
 mod structure;
 mod temporaries;
+mod threaded;
 mod tidy;
 mod tried_ints;
 pub(super) use tidy::pass_names as tidy_pass_names;
@@ -91,6 +92,10 @@ pub struct Mir<'tcx> {
     /// Of a coroutine's, an `async` body's: the blocks whose call is an
     /// `.await` (`awaits.rs`).
     pub(super) awaits: std::collections::HashSet<BasicBlock>,
+    /// Of each `match` of an enum its arms' `match` made (`threaded.rs`):
+    /// each block an arm goes on to its case through, and where the
+    /// `match` is written, whose comments are before the case.
+    pub(super) cases: HashMap<BasicBlock, Span>,
 }
 
 impl<'tcx> Mir<'tcx> {
@@ -106,6 +111,7 @@ impl<'tcx> Mir<'tcx> {
             body: of(&self.body),
             promoted: self.promoted.iter().map(of).collect(),
             awaits: self.awaits.clone(),
+            cases: self.cases.clone(),
         }
     }
 
@@ -187,7 +193,12 @@ impl<'tcx> Mir<'tcx> {
             true => awaits::awaits(tcx, &mut body),
             false => Default::default(),
         };
-        Mir { body, promoted, awaits }
+        Mir {
+            body,
+            promoted,
+            awaits,
+            cases: HashMap::new(),
+        }
     }
 
     /// Of a closure's body rustc infers `Fn` or `FnMut`, which takes
@@ -271,6 +282,7 @@ impl<'tcx> Mir<'tcx> {
             body,
             promoted: self.promoted.clone(),
             awaits: self.awaits.clone(),
+            cases: self.cases.clone(),
         })
     }
 }
@@ -1043,7 +1055,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let declaring = std::mem::replace(&mut self.locals.mir.declaring, true);
         // A subject a getter may answer, read once where it's tested (#430).
         let held = self.held_subjects(mir);
-        let lowered = self.mir_function(held.as_ref().unwrap_or(mir), captures, seed);
+        let held = held.as_ref().unwrap_or(mir);
+        // An enum one `match` makes and the next takes apart, one dispatch
+        // (rd433).
+        let threaded = self.mir_threaded(held);
+        let lowered = self.mir_function(threaded.as_ref().unwrap_or(held), captures, seed);
         self.locals.mir.dictionaries = dictionaries;
         self.locals.mir.declaring = declaring;
         lowered
