@@ -13,7 +13,6 @@ use rustc_hir as hir;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::{DefKind, Res};
 use rustc_middle::ty::{self, Ty, TyCtxt};
-use rustc_span::Symbol;
 use rustc_span::def_id::{DefId, LocalModId};
 use serde_json::{Value, json};
 
@@ -24,6 +23,7 @@ use super::bindings::{
 use super::recognition::{StdItem, is_std_def};
 use super::representation::Num;
 
+mod aliases;
 mod classes;
 mod comments;
 mod functions;
@@ -37,6 +37,7 @@ use comments::documented;
 pub(in crate::lower) use comments::jsdoc_of;
 use parts::{flattened_keys, opaque_fn_signature};
 
+use aliases::declares_written_alias;
 pub use written::validate_types;
 use written::{Member, Signature};
 pub(super) use written::{Written, written_types};
@@ -236,7 +237,8 @@ fn by_own_name(fns: &HashMap<DefId, super::FnInfo>, item: DefId, export: &str) -
 /// enum or a union of the crate's another module's or a library's consumer
 /// names by its name (ADR 0210, amended): an enum, a union, a
 /// `#[repr(transparent)]` struct, or one of named fields; not a tuple
-/// struct, which has no declaration.
+/// struct, which has no declaration; and an alias whose `#[rust_js::types]`
+/// writes a type of its own (`declares_written_alias`).
 pub(super) fn declares_type(tcx: TyCtxt<'_>, did: DefId) -> bool {
     match tcx.def_kind(did) {
         DefKind::Struct => {
@@ -244,6 +246,7 @@ pub(super) fn declares_type(tcx: TyCtxt<'_>, did: DefId) -> bool {
             adt.non_enum_variant().ctor.is_none() || super::recognition::transparent_field(tcx, adt).is_some()
         }
         DefKind::Enum | DefKind::Union => true,
+        DefKind::TyAlias => declares_written_alias(tcx, did),
         _ => false,
     }
 }
@@ -571,10 +574,10 @@ impl<'tcx> Declarations<'_, 'tcx> {
                             json!({ "kind": "method", "name": name, "optional": optional,
                                 "typeParameters": type_parameters, "params": params, "returns": returns })
                         }
-                        Member::Index { parameter, key, ty } => {
+                        Member::Index { readonly, parameter, key, ty } => {
                             let key = self.written_value(key, param, bound)?;
                             let ty = self.written_value(ty, param, bound)?;
-                            json!({ "kind": "index", "parameter": parameter, "key": key, "type": ty })
+                            json!({ "kind": "index", "readonly": readonly, "parameter": parameter, "key": key, "type": ty })
                         }
                     });
                 }
@@ -617,150 +620,6 @@ impl<'tcx> Declarations<'_, 'tcx> {
         if let Some(from) = from {
             self.imports.insert((from.to_string(), imported(name)));
         }
-    }
-
-    /// A type as the Rust writes it, `of` making it of rustc's: each alias
-    /// written in it by its name, as TypeScript has it, where rustc's type
-    /// has it expanded, the crate's own, `Context<Toc>`, or one that says
-    /// what it is to TypeScript, `MouseEventHandler<HTMLButtonElement>`.
-    fn as_written(&mut self, written: Option<&hir::Ty<'tcx>>, of: impl FnOnce(&mut Self) -> Value) -> Value {
-        let mut named = Vec::new();
-        if let Some(written) = written {
-            self.aliases_in(written, &mut named);
-        }
-        let outer = self.named.len();
-        self.named.extend(named);
-        let value = of(self);
-        self.named.truncate(outer);
-        value
-    }
-
-    /// Each alias `written` names that TypeScript has by its name, and that.
-    fn aliases_in(&mut self, written: &hir::Ty<'tcx>, named: &mut Vec<(Ty<'tcx>, Value)>) {
-        match &written.kind {
-            hir::TyKind::Path(hir::QPath::Resolved(None, path)) => {
-                if let Res::Def(DefKind::TyAlias, did) = path.res
-                    && let Some(value) = self.alias_named(written, path, did)
-                {
-                    let ty = rustc_hir_analysis::lower_ty(self.tcx, written);
-                    named.push((self.tcx.erase_and_anonymize_regions(ty), value));
-                    return;
-                }
-                for arg in path.segments.iter().filter_map(|s| s.args).flat_map(|args| args.args) {
-                    if let hir::GenericArg::Type(ty) = arg {
-                        self.aliases_in(ty.as_unambig_ty(), named);
-                    }
-                }
-            }
-            hir::TyKind::Ref(_, inner) | hir::TyKind::Ptr(inner) => self.aliases_in(inner.ty, named),
-            hir::TyKind::Slice(inner) | hir::TyKind::Array(inner, _) => self.aliases_in(inner, named),
-            hir::TyKind::Tup(items) => {
-                for item in *items {
-                    self.aliases_in(item, named);
-                }
-            }
-            _ => {}
-        }
-    }
-
-    /// An alias written, `did`, by its name: one that says what it is to
-    /// TypeScript, or one of the crate's it declares, this module's or
-    /// another's, imported from it (ADR 0210), of its arguments as written.
-    fn alias_named(&mut self, written: &hir::Ty<'tcx>, path: &hir::Path<'tcx>, did: DefId) -> Option<Value> {
-        if written_types(self.tcx, did).is_some() {
-            return self.written_alias(written);
-        }
-        let local = did.as_local()?;
-        if !self.tcx.visibility(did).is_public() {
-            return None;
-        }
-        let home = self.tcx.parent_module_from_def_id(local);
-        let name = self.tcx.item_name(did).to_string();
-        if home != self.module {
-            let file = self.files.get(&home)?.clone();
-            self.imported(file, did, name.clone());
-        }
-        let given: Vec<&hir::Ty<'tcx>> = (path.segments.last()?.args.map(|args| args.args).unwrap_or_default())
-            .iter()
-            .filter_map(|arg| match arg {
-                hir::GenericArg::Type(ty) => Some(ty.as_unambig_ty()),
-                _ => None,
-            })
-            .collect();
-        let args = (given.into_iter())
-            .map(|given| {
-                let ty = rustc_hir_analysis::lower_ty(self.tcx, given);
-                self.as_written(Some(given), |out| out.ts(ty))
-            })
-            .collect();
-        Some(reference(&name, args))
-    }
-
-    /// A type written as an alias that says what it is to TypeScript,
-    /// `#[rust_js::types = "react#MouseEventHandler<T>"]`: that, as a person
-    /// writes it, `MouseEventHandler<HTMLButtonElement>`, where rustc's
-    /// type is the alias expanded. Its arguments are those written, one
-    /// left to its default left out, as TypeScript's has the same.
-    fn written_alias(&mut self, written: &hir::Ty<'tcx>) -> Option<Value> {
-        let hir::TyKind::Path(hir::QPath::Resolved(None, path)) = &written.kind else {
-            return None;
-        };
-        let Res::Def(DefKind::TyAlias, did) = path.res else {
-            return None;
-        };
-        let declared = written_types(self.tcx, did)?;
-        let given: Vec<&hir::Ty<'tcx>> = (path.segments.last()?.args)
-            .map(|args| args.args.iter())
-            .into_iter()
-            .flatten()
-            .filter_map(|arg| match arg {
-                hir::GenericArg::Type(ty) => Some(ty.as_unambig_ty()),
-                _ => None,
-            })
-            .collect();
-        let params: Vec<Symbol> = (self.tcx.generics_of(did).own_params.iter())
-            .filter(|param| matches!(param.kind, ty::GenericParamDefKind::Type { .. }))
-            .map(|param| param.name)
-            .collect();
-        let at = |name: &str| params.iter().position(|param| param.as_str() == name);
-        // Each of its parameters is what's written of it; one left to its
-        // default, none written.
-        let mut param = |out: &mut Self, name: &str| match at(name) {
-            Some(at) => match given.get(at) {
-                Some(given) => {
-                    let ty = rustc_hir_analysis::lower_ty(out.tcx, given);
-                    Given::Is(out.as_written(Some(given), |out| out.ts(ty)))
-                }
-                None => Given::Unknown,
-            },
-            None => Given::NotParam,
-        };
-        // Its arguments end where one's left to its default, as TypeScript's
-        // has the same: `MouseEventHandler` of `T = Element`. Where one's
-        // left so in another place, it's as rustc has it, expanded.
-        if let Written::Reference {
-            from,
-            name,
-            args: Some(wanted),
-        } = &declared
-        {
-            let mut args = Vec::new();
-            for wanted in wanted {
-                if let Written::Reference {
-                    from: None,
-                    name,
-                    args: None,
-                } = wanted
-                    && at(name).is_some_and(|at| at >= given.len())
-                {
-                    break;
-                }
-                args.push(self.written_value(wanted, &mut param, &mut Vec::new())?);
-            }
-            self.imported_from(from.as_deref(), name);
-            return Some(reference(name, args));
-        }
-        self.written_value(&declared, &mut param, &mut Vec::new())
     }
 
     /// `Option<T>`'s `T` as written, where `written` is one.
@@ -940,22 +799,6 @@ impl<'tcx> Declarations<'_, 'tcx> {
             "extends": extends,
             "members": members,
         }))
-    }
-
-    /// `export type RouteTag = "foundation" | "intermediate";`, of an enum
-    /// whose variants hold nothing: each is its name (ADR 0013).
-    /// `export type Toc = TocItem[];` of `pub type Toc = Vec<TocItem>;`.
-    fn alias(&mut self, def_id: DefId) -> Value {
-        let ty = self.tcx.type_of(def_id).instantiate_identity().skip_normalization();
-        let ty = self.as_written(self.written_type(def_id), |out| out.ts(ty));
-        json!({
-            "kind": "type",
-            "name": self.tcx.item_name(def_id).as_str(),
-            "exported": true,
-            "declare": false,
-            "typeParameters": self.generics(def_id),
-            "type": ty,
-        })
     }
 
     fn enumeration(&mut self, def_id: DefId) -> Value {

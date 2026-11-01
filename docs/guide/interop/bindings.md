@@ -1200,7 +1200,16 @@ impl Shape {
 
 `c.label("unit")` and `c.label(1.5)` are `c.label("unit")` and `c.label(1.5)`;
 `c.label(true)` is rustc's error. A union that's returned, or a field, is an
-[untagged enum](types.md#enums), to `match`. Text is any text Rust has: a
+[untagged enum](types.md#enums), to `match`.
+
+A union your own module exports as a type, read by what it is rather than
+matched, is an alias of `js::Unknown` whose `#[rust_js::types]` writes it:
+`#[cfg_attr(rust_js, rust_js::types = "string | number | Value[]")] pub
+type Value = Unknown;` is declared `export type Value = string | number |
+Value[];`, and named `Value` wherever it's used
+([ADR 0811](../../decisions/0811-console-create-task-may-be-absent.md), amended).
+An alias whose `#[rust_js::types]` names a type, `react#MouseEventHandler<T>`,
+is that type where it's used. Text is any text Rust has: a
 union of text takes a `&String` and a `String` too, as a `&str` parameter
 takes `&string` by its deref, which a generic parameter doesn't make;
 webapi's each do, `data.append(&stream_prefix, &part_json)` of two

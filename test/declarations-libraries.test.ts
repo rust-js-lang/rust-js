@@ -153,3 +153,50 @@ named({ name: 1 });
   expect(errors).toHaveLength(1);
   expect(errors[0]).toContain("caller.ts(4,");
 });
+
+// ReactFlightReplyClient's `ReactServerValue`, a union of JS types upstream
+// exports, which processReply takes and reads by `js::classify`: an alias of
+// `js::Unknown` whose `#[rust_js::types]` writes a type of its own, not a
+// name, is declared as written, by its name, as its own module's and a
+// consumer's declarations name it, imported from its file (rd538, ADR 0811
+// amended); `readonly [key: string]: T` is Flow's `{+[key: string]: T}`.
+test("an alias whose rust_js::types writes a union is declared as written and named where used", () => {
+  const dir = fixture("declarations-library-written-alias");
+  compiled(dir, {
+    "dep.rs": "pub mod reply;\n",
+    "reply.rs": `use js::Unknown;
+
+pub type ServerReference<T> = T;
+
+/// What a server reply holds.
+#[cfg_attr(
+    rust_js,
+    rust_js::types = "ServerReference<() => void> | string | boolean | number | null | undefined | ReactServerValue[] | Map<ReactServerValue, ReactServerValue> | { readonly [key: string]: ReactServerValue } | Promise<ReactServerValue>"
+)]
+pub type ReactServerValue = Unknown;
+
+pub fn process(root: Option<&'static ReactServerValue>) -> bool {
+    root.is_some()
+}
+`,
+  }, `use dep::reply::ReactServerValue;
+
+pub fn encode_reply(value: &'static ReactServerValue) -> bool {
+    dep::reply::process(Some(value))
+}
+`);
+  const own = readFileSync(join(dir, "dep", "reply.d.ts"), "utf8");
+  expect(own).toContain("/** What a server reply holds. */\nexport type ReactServerValue = ServerReference<() => void> | string | boolean | number | null | undefined | ReactServerValue[] | Map<ReactServerValue, ReactServerValue> | {\n    readonly [key: string]: ReactServerValue;\n} | Promise<ReactServerValue>;");
+  expect(own).toContain("export function process(root?: ReactServerValue | null | undefined): boolean;");
+  const declarations = readFileSync(join(dir, "app", "lib.d.ts"), "utf8");
+  expect(declarations).toContain('import type { ReactServerValue } from "../dep/reply.js";\n');
+  expect(declarations).toContain("export function encodeReply(value: ReactServerValue): boolean;");
+  writeFileSync(join(dir, "caller.ts"), `import { encodeReply } from "./app/lib.js";
+
+encodeReply(new Map([["a", [1, "b", { c: true }]]]));
+encodeReply(Symbol());
+`);
+  const errors = typeChecked(dir, "caller.ts");
+  expect(errors).toHaveLength(1);
+  expect(errors[0]).toContain("caller.ts(4,");
+});

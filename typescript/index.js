@@ -34,7 +34,7 @@ import * as f from "typescript/ast/factory";
  *
  * @typedef {{ kind: "property", name: MemberName, optional: boolean, readonly: boolean, type: Type, docs?: string }
  *   | { kind: "method", name: MemberName, optional: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type }
- *   | { kind: "index", parameter: string, key: Type, type: Type }
+ *   | { kind: "index", readonly?: boolean, parameter: string, key: Type, type: Type }
  *   | { kind: "other", text: string }} Member
  *
  * @typedef {{ kind: "constructor", params: Param[] }
@@ -393,6 +393,7 @@ function readMember(node, text) {
       const [parameter] = node.parameters;
       return {
         kind: "index",
+        readonly: (node.modifiers ?? []).some((m) => m.kind === SyntaxKind.ReadonlyKeyword),
         parameter: sourceOf(parameter.name, text),
         key: readType(parameter.type, text),
         type: readType(node.type, text),
@@ -738,7 +739,7 @@ function member(m) {
       );
     case "index":
       return f.createIndexSignatureDeclaration(
-        undefined,
+        m.readonly ? [f.createToken(SyntaxKind.ReadonlyKeyword)] : undefined,
         [
           f.createParameterDeclaration(
             undefined,

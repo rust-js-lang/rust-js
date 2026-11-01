@@ -2,7 +2,8 @@
 
 Status: Accepted. Amended: `#[rust_js::types]` is a TypeScript type, read
 into the declaration model, one it can't read an error; and a `ConsoleTask`
-is `js::Defined` (rd417). Extends [0597](0597-whether-the-host-has-a-global-is-is-defined.md):
+is `js::Defined` (rd417); and an alias whose `#[rust_js::types]` writes a
+type of its own is declared as written, by its name (rd538). Extends [0597](0597-whether-the-host-has-a-global-is-is-defined.md):
 a member no TypeScript lib declares.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none: the program reads
@@ -246,3 +247,56 @@ written by `builtins/typed_arrays.ts`, has it too, as each typed array
 has. Case: N ([0262](0262-when-rust-and-js-disagree.md)). Held by
 `test/js-globals.test.ts`'s "a DataView and a ConsoleTask are values of
 any shape".
+
+## Amendment: an alias that writes a type of its own is declared as written (rd538)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
+difference: a declaration says nothing the JS does.
+
+Upstream's ReactFlightReplyClient exports a union of JS types,
+`ReactServerValue`, which processReply takes and reads by what it is. The
+port's Rust is `pub type ReactServerValue = Unknown;`, read by
+`js::classify`, as Rust reads a value of any shape: its `.d.ts` was
+`export type ReactServerValue = unknown;`, looser than upstream's. An
+untagged enum of its members (ADR 0214) would be read by `match`, which
+the code doesn't, and isn't recursive. **An alias's `#[rust_js::types]`
+that writes a type of its own, a union, an object, a function, a keyword,
+is the alias's declaration, by its name**:
+
+```rust
+#[cfg_attr(
+    rust_js,
+    rust_js::types = "ServerReference<any> | string | boolean | number | null | undefined | ReactServerValue[] | Map<ReactServerValue, ReactServerValue> | { readonly [key: string]: ReactServerValue } | Promise<ReactServerValue>"
+)]
+pub type ReactServerValue = Unknown;
+```
+
+```ts
+export type ReactServerValue = ServerReference<any> | string | boolean | .. | Promise<ReactServerValue>;
+
+export function processReply(root: ReactServerValue | null | undefined, ..): void;
+```
+
+- **Named where it's used**: its module's own declarations, another
+  module's, imported from its file (ADR 0210), and a library's consumer's,
+  as the library's contract says its declarations export it, as its
+  structs (`declares_type`). A private one is written out where it's used,
+  as before.
+- **One that names a type**, `react#MouseEventHandler<T>` (ADR 0227), is
+  that type wherever it's used, as before: it has no declaration of its
+  own to name.
+- **Its Rust type is what the program reads**, `Unknown` here, any value;
+  the declaration is what a TypeScript caller is held to, as a binding's
+  `#[rust_js::types]` is. Its names are those of its module, as TypeScript
+  reads them: `ServerReference` and `ReactServerValue` its own.
+- **`readonly [key: string]: T`** is read, Flow's `{+[key: string]: T}`,
+  as `readonly expire: number` was.
+
+The alternative, an attribute of its own, `#[rust_js::union = ".."]`, is a
+second way to say what a type is to TypeScript. Held by
+`test/declarations-libraries.test.ts`'s "an alias whose rust_js::types
+writes a union is declared as written and named where used", TypeScript
+checking a caller of the consumer's; mutations `written-alias-expanded`,
+`written-alias-declared-as-rust`, `written-alias-unexported-to-consumers`
+(`declarations.ts`) and `written-readonly-index-mutable`
+(`declarations/written.ts`).

@@ -70,4 +70,13 @@ export const mutations: Mutation[] = [
       "intersection is declared as written",
     ],
   },
+  {
+    name: "written-readonly-index-mutable",
+    breaks:
+      "`readonly [key: string]: T`, Flow's `{+[key: string]: T}`, is read as `[key: string]: T`, which TypeScript lets a callee change (rd538)",
+    file: "src/lower/declarations/written.rs",
+    find: "                readonly: readonly_index,",
+    replace: "                readonly: false,",
+    tests: ["test/declarations-libraries.test.ts", "-t", "declared as written"],
+  },
 ];

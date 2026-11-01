@@ -490,20 +490,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "alias-expanded",
-    breaks:
-      "a field written as @types/react's alias is its expansion, `(event: MouseEvent<..>) => void`, where it's `MouseEventHandler<HTMLButtonElement>`",
-    file: "src/lower/declarations.rs",
-    find: "        let declared = written_types(self.tcx, did)?;\n        let given: Vec<&hir::Ty<'tcx>>",
-    replace:
-      "        let declared = written_types(self.tcx, did).filter(|_| false)?;\n        let given: Vec<&hir::Ty<'tcx>>",
-    tests: [
-      "test/declarations.test.ts",
-      "-t",
-      "aliases as the Rust names them",
-    ],
-  },
-  {
     name: "alias-option-unwritten",
     breaks:
       "an `Option` of an alias, an optional field's, isn't read as written, so it's the alias expanded",
@@ -511,20 +497,6 @@ export const mutations: Mutation[] = [
     find: "        if !self.tcx.is_lang_item(did, LangItem::Option) {",
     replace:
       "        if true || !self.tcx.is_lang_item(did, LangItem::Option) {",
-    tests: [
-      "test/declarations.test.ts",
-      "-t",
-      "aliases as the Rust names them",
-    ],
-  },
-  {
-    name: "alias-default-written",
-    breaks:
-      "an alias's argument left to its default is written out, `MouseEventHandler<Element>`, where it's `MouseEventHandler`",
-    file: "src/lower/declarations.rs",
-    find: "                    && at(name).is_some_and(|at| at >= given.len())\n                {\n                    break;\n",
-    replace:
-      '                    && at(name).is_some_and(|at| at >= given.len())\n                {\n                    let param = (self.tcx.generics_of(did).own_params.iter()).find(|p| p.name.as_str() == name.as_str()).expect("a parameter");\n                    let ty = self.tcx.type_of(param.def_id).instantiate_identity().skip_normalization();\n                    args.push(self.ts(ty));\n                    continue;\n',
     tests: [
       "test/declarations.test.ts",
       "-t",
@@ -719,73 +691,6 @@ export const mutations: Mutation[] = [
     find: "        if let Some((_, named)) = self.named.iter().rev().find(|(named, _)| *named == erased) {",
     replace:
       "        if let Some((_, named)) = self.named.iter().rev().find(|_| false) {",
-    tests: [
-      "test/declarations.test.ts",
-      "-t",
-      "declarations name a type alias",
-    ],
-  },
-  {
-    name: "written-alias-not-nested",
-    breaks:
-      "an alias written as another type's argument, `Context<Toc>`, is what it stands for, `Context<TocItem[]>`",
-    file: "src/lower/declarations.rs",
-    find: "                        self.aliases_in(ty.as_unambig_ty(), named);",
-    replace: "                        let _ = ty;",
-    tests: [
-      "test/declarations.test.ts",
-      "-t",
-      "declarations name a type alias",
-    ],
-  },
-  {
-    name: "written-alias-args-expanded",
-    breaks:
-      "an alias's argument written as an alias, `Pair<Toc>`, is what it stands for",
-    file: "src/lower/declarations.rs",
-    find: "                self.as_written(Some(given), |out| out.ts(ty))\n",
-    replace: "                self.ts(ty)\n",
-    tests: [
-      "test/declarations.test.ts",
-      "-t",
-      "declarations name a type alias",
-    ],
-  },
-  {
-    name: "written-alias-in-ref",
-    breaks:
-      "an alias written behind a reference, `&Toc`, is what it stands for",
-    file: "src/lower/declarations.rs",
-    find: "            hir::TyKind::Ref(_, inner) | hir::TyKind::Ptr(inner) => self.aliases_in(inner.ty, named),",
-    replace:
-      "            hir::TyKind::Ptr(inner) => self.aliases_in(inner.ty, named),",
-    tests: [
-      "test/declarations.test.ts",
-      "-t",
-      "declarations name a type alias",
-    ],
-  },
-  {
-    name: "written-private-alias-named",
-    breaks:
-      "a private alias, which isn't declared, is named, and TypeScript finds no `Depth`",
-    file: "src/lower/declarations.rs",
-    find: "        if !self.tcx.visibility(did).is_public() {\n            return None;\n        }\n        let home",
-    replace:
-      "        if false {\n            return None;\n        }\n        let home",
-    tests: [
-      "test/declarations.test.ts",
-      "-t",
-      "declarations name a type alias",
-    ],
-  },
-  {
-    name: "written-alias-unimported",
-    breaks:
-      "another module's alias is named but not imported, and TypeScript finds no `Toc`",
-    file: "src/lower/declarations.rs",
-    find: "            self.imported(file, did, name.clone());",
-    replace: "            let _ = file;",
     tests: [
       "test/declarations.test.ts",
       "-t",
@@ -1164,5 +1069,14 @@ export const mutations: Mutation[] = [
     find: "            items.extend(out.namespace_fields(def_id));\n",
     replace: "            items.extend(Vec::<Value>::new());\n",
     tests: ["test/namespace-values.test.ts", "-t", "fields are its module's exports"],
+  },
+  {
+    name: "written-alias-unexported-to-consumers",
+    breaks:
+      "a library's alias whose `#[rust_js::types]` writes a union isn't in its contract's declared types, so a consumer writes it out, its names unimported (rd538)",
+    file: "src/lower/declarations.rs",
+    find: "        DefKind::TyAlias => declares_written_alias(tcx, did),",
+    replace: "        DefKind::TyAlias => false,",
+    tests: ["test/declarations-libraries.test.ts", "-t", "declared as written"],
   },
 ];

@@ -68,8 +68,9 @@ pub(in crate::lower) enum Member {
         optional: bool,
         signature: Signature,
     },
-    /// `[key: string]: T`.
+    /// `[key: string]: T`, `readonly [key: string]: T`.
     Index {
+        readonly: bool,
         parameter: String,
         key: Written,
         ty: Written,
@@ -380,6 +381,17 @@ impl<'a> Reader<'a> {
     }
 
     fn member(&mut self) -> Result<Member, String> {
+        // `readonly` is a modifier before a name or an index, else a
+        // member's own name.
+        let readonly_index = {
+            let at = self.at;
+            let modified = self.eat_word("readonly") && self.eat("[");
+            self.at = at;
+            modified
+        };
+        if readonly_index {
+            self.eat_word("readonly");
+        }
         if self.eat("[") {
             let parameter = self.name()?;
             self.expect(":")?;
@@ -387,9 +399,13 @@ impl<'a> Reader<'a> {
             self.expect("]")?;
             self.expect(":")?;
             let ty = self.ty()?;
-            return Ok(Member::Index { parameter, key, ty });
+            return Ok(Member::Index {
+                readonly: readonly_index,
+                parameter,
+                key,
+                ty,
+            });
         }
-        // `readonly` is a modifier before a name, else a member's own name.
         let mut name = self.name()?;
         let mut readonly = false;
         if name == "readonly" {
