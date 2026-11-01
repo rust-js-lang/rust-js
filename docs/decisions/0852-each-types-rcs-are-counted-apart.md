@@ -258,3 +258,29 @@ function readContextForConsumer(consumer, context) {
 - Mutations `library-type-rcs-counted-for-unseen-consumers`
   (`lower/library.rs`) and `library-rcs-of-own-calls-unsettled`
   (`lower/analysis.rs`).
+
+## Amendment: an `Rc` made of a counted one is counted (#458)
+
+A P1 found writing rd515's corpus case. As a library, a closure pushed as
+`Rc::new(move |v| ..)` into a `Vec<Rc<dyn Fn(&str) -> String>>` inside an
+`FnMut` was counted, `{ value, strong: 1, weak: 0 }`: its closure's `Rc`
+holds what a library may drop. The `Rc<dyn Fn>` it's made, by an unsizing
+coercion, wasn't, so its caller called the object, `callback("x")`:
+`TypeError: callback is not a function`. The two were one allocation
+whose representations two answers gave: the counting spread from an
+`Rc` made another's to what it's made of (`Rc<RefCell<dyn Listener>>`
+counted makes `Rc<RefCell<Logger>>` counted), not the other way.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change (a
+crash), so preserve: one allocation, one representation.
+
+**An `Rc` made of a counted one, by an unsizing coercion, is counted too**
+(`rc_counts::counted_rcs`, `made_others` both ways): `Rc<{closure}>`
+counted makes the `Rc<dyn Fn>` it's made counted, so every call through
+it reads its `value`. Each pair of the coercion shares one answer of
+`Counted::counts`, the one owner.
+
+Held by `test/corpus/rc_fn_made_of_a_counted_rc.rs`, `library-differs`,
+in the program build (nothing counted) and the library build (both
+counted), against native Rust. Mutation `rc-made-of-counted-uncounted`
+(`analysis/rc_counts.rs`).

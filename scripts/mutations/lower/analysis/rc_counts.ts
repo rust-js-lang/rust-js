@@ -251,4 +251,13 @@ export const mutations: Mutation[] = [
       "                        false => made_with.insert(erased(from)),\n                    };\n                }",
     tests: ["test/cross-crate-items.test.ts", "-t", "bound function, compared"],
   },
+  {
+    name: "rc-made-of-counted-uncounted",
+    breaks:
+      "an `Rc<dyn Fn>` made of a counted `Rc<{closure}>` isn't counted, so a library's caller calls the `{ value, strong, weak }` it is, `TypeError: callback is not a function` (#458, ADR 0852, amended)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "                .filter(|(from, to)| counted.types.contains(from) && !counted.types.contains(to))\n",
+    replace: "                .filter(|(from, to)| false && counted.types.contains(from) && !counted.types.contains(to))\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_fn_made_of_a_counted_rc.rs$"],
+  },
 ];

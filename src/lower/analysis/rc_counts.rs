@@ -298,11 +298,18 @@ pub(super) fn counted_rcs<'tcx>(
             })
             .copied()
             .collect();
-        // An `Rc` made a counted one is counted: its counts are the other's.
+        // An `Rc` made a counted one is counted, and one a counted one is
+        // made, `Rc<{closure}>`'s `Rc<dyn Fn>`: the two are one allocation,
+        // whose counts each reads, so one representation (#458).
         more.extend(
             (made_others.iter())
                 .filter(|(from, to)| counted.types.contains(to) && !counted.types.contains(from))
                 .map(|&(from, _)| from),
+        );
+        more.extend(
+            (made_others.iter())
+                .filter(|(from, to)| counted.types.contains(from) && !counted.types.contains(to))
+                .map(|&(_, to)| to),
         );
         if more.is_empty() {
             break;
