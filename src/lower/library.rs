@@ -58,6 +58,8 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) type_facts: &'a HashMap<DefId, Vec<(u32, super::recognition::TypeFact)>>,
     /// Those that take their caller's location (ADR 0427).
     pub(super) caller_locations: &'a HashSet<DefId>,
+    /// Those that read `js::arguments()` (rd332).
+    pub(super) reads_arguments: &'a HashSet<DefId>,
     /// Whether it keeps a `Vec`'s capacity, which its consumers then do
     /// too, as what they give it may be asked (ADR 0419).
     pub(super) keeps_capacity: bool,
@@ -222,6 +224,7 @@ pub(super) fn exports<'tcx>(
         given: _,
         failing,
         caller_locations,
+        reads_arguments,
         keeps_capacity,
         writers_take_options,
         makes_dropping_anys,
@@ -266,6 +269,7 @@ pub(super) fn exports<'tcx>(
                     ),
                     (ItemFact::TakesLocation, caller_locations.contains(&id)),
                     (ItemFact::Rest, super::bindings::takes_rest(tcx, id)),
+                    (ItemFact::Arguments, reads_arguments.contains(&id)),
                     (
                         ItemFact::Lazy,
                         id.as_local()
@@ -742,6 +746,12 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// `#[rust_js::rest]` (ADR 0664)?
     pub(super) fn takes_rest(&self, id: DefId) -> bool {
         self.item(id).is_some_and(|item| item.calling.has(ItemFact::Rest))
+    }
+
+    /// Does `id`, a library's function, read `js::arguments()`, as its
+    /// contract says (rd332)?
+    pub(super) fn reads_arguments(&self, id: DefId) -> bool {
+        self.item(id).is_some_and(|item| item.calling.has(ItemFact::Arguments))
     }
 
     /// Does any of the libraries make a `dyn Any` of what drops, which the

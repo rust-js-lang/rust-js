@@ -380,6 +380,9 @@ struct CrateFacts<'a, 'tcx> {
     /// The functions that never unwind, whose call throws only where what
     /// it's given does (ADR 0902).
     never_unwinding: &'a HashSet<DefId>,
+    /// The functions that read `js::arguments()`, each call of which gives
+    /// every argument the Rust does (rd332).
+    reads_arguments: &'a HashSet<DefId>,
     /// Whether a `Vec`'s capacity is kept, as the crate or a library it uses
     /// asks it (ADR 0419).
     keeps_capacity: bool,

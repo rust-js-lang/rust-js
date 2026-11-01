@@ -55,7 +55,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // called through what holds it, `t.g()`, as JS calls it (#404).
         let inputs = sig.skip_binder().inputs();
         let absent = |i, arg: &Expr| crate::lower::calls::absent(self.tcx, inputs, &bindings, i, arg);
+        // One that may read `js::arguments()` is given every argument (rd332).
+        let counts = (pointers.may_be(self.tcx, fn_ptr).into_iter().flatten()).any(|&(f, _)| self.reads_arguments(f));
         match pointers.rust_only(self.tcx, fn_ptr) {
+            _ if counts => crate::lower::calls::given_to_js(&mut exprs),
             true => crate::lower::calls::own_absent(&mut exprs, absent),
             false => crate::lower::calls::given_to_js_but(&mut exprs, absent),
         }

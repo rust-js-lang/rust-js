@@ -376,6 +376,38 @@ export function initial() {
   ([ADR 0633](../../decisions/0633-a-binding-named-through-a-module-is-read-through-it.md),
   and [the default export](../project/modules.md#the-default-export)).
 
+### All a function was given, `js::arguments()`
+
+`js::arguments()` is JS's `arguments`, each argument the function was
+called with, more or fewer than its parameters; `js::array::SLICE`,
+`Array.prototype.slice`, makes an array of it, as react-art's fill
+classes keep theirs
+([ADR 1048](../../decisions/1048-a-function-that-reads-arguments-is-given-each.md)):
+
+```rust excerpt
+pub fn new(_stops: Option<&Unknown>, _x1: Option<&Unknown>, _y1: Option<&Unknown>) -> Self {
+    LinearGradient {
+        args: function::call(js::array::SLICE, Some(js::arguments()), ()),
+    }
+}
+```
+
+```js
+export function LinearGradient(stops, x1, y1) {
+  this.args = Array.prototype.slice.call(arguments);
+}
+```
+
+- **Each call rust-js writes of it gives every argument**, an `undefined`
+  too, and no closure that passes its arguments on to it is it.
+- **Only where its JS's `arguments` is the Rust's**: a function of the
+  crate's that isn't generic, or a class's constructor, method or static.
+  In a closure, a generic function, a trait's method or a method of what
+  isn't a class it's a compile error.
+- **A binding's method as a value** is a getter of it, `#[link_name = "get
+  fillLinear"] fn fill_linear(&self) -> &'static dyn Fn(..)`, given to
+  `function::apply`, `node.fillLinear.apply(node, this.args)`.
+
 To publish bindings of an npm package for others, see
 [Dependencies](../project/dependencies.md).
 

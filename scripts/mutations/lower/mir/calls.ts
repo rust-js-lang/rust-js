@@ -1106,4 +1106,12 @@ export const mutations: Mutation[] = [
     tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
   },
 
+  {
+    name: "arguments-own-call-left-out",
+    breaks: "a call of the crate's function that reads `js::arguments()` leaves out its trailing `undefined`s, `new LinearGradient()` of five `None`s (rd332)",
+    file: "src/lower/mir/calls.rs",
+    find: "        if self.reads_arguments(def_id) {\n",
+    replace: "        if false {\n",
+    tests: ["test/arguments.test.ts"],
+  },
 ];

@@ -145,6 +145,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         super::bindings::takes_rest(self.tcx, def_id) || self.krate.foreign.takes_rest(def_id)
     }
 
+    /// Whether `def_id`, the crate's function or a library's, reads
+    /// `js::arguments()`: each call of it gives every argument the Rust
+    /// does, `given_to_js`'s, and no closure that forwards to it is it, as
+    /// its JS caller's arguments would be its (rd332).
+    pub(super) fn reads_arguments(&self, def_id: DefId) -> bool {
+        self.krate.reads_arguments.contains(&def_id) || self.krate.foreign.reads_arguments(def_id)
+    }
+
     /// Refused, a call each owner says JS can't make as Rust does: of a
     /// string's bytes' pointer (`pointers.rs`), rest arguments as a value
     /// given as a type parameter's (`check_rest_unspread`), and a counted

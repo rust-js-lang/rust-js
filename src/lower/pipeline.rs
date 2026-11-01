@@ -349,6 +349,9 @@ pub fn lower_crate<'tcx>(
     }
 
     let function_bodies = bodies.iter().map(|body| (body.def_id, *body)).collect();
+    // What reads `js::arguments()`, each call of which gives every argument (rd332).
+    let with_closures: Vec<&Body<'tcx>> = bodies.iter().copied().chain(closures.values().copied()).collect();
+    let reads_arguments = super::analysis::arguments::reads_arguments(tcx, &with_closures);
     let forwarded = reached::forwarded(tcx, &bodies, (given, &js_given), &caller_locations, &foreign);
     // A trait impl's dictionary (ADR 0049) has no body of its own, so its
     // function context gets an empty one; a copied default brings its own.
@@ -439,6 +442,7 @@ pub fn lower_crate<'tcx>(
         failing: &failing,
         throwing: &throwing,
         never_unwinding: &never_unwinding,
+        reads_arguments: &reads_arguments,
         caller_locations: &caller_locations,
         any_failing: !failing.is_empty() || foreign.any_fails(),
         keeps_capacity,
@@ -1452,6 +1456,7 @@ pub fn lower_crate<'tcx>(
                         no_drops: &no_drops,
                         type_facts: &type_facts,
                         caller_locations: &caller_locations,
+                        reads_arguments: &reads_arguments,
                         keeps_capacity,
                         writers_take_options,
                         makes_dropping_anys: closure_facts.any_dyns_drop,

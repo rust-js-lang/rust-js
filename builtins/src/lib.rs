@@ -319,6 +319,15 @@ pub mod array {
         /// `getPrototypeOf(value) === ArrayPrototype` (rd399).
         #[link_name = "Array.prototype"]
         pub safe static prototype: &'static Unknown;
+
+        /// [`Array.prototype.slice`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array/slice)
+        /// as a value, a function of an array-like `this`, as TypeScript's
+        /// `(start?: number, end?: number) => any[]`: react-art's `const
+        /// slice = Array.prototype.slice;` of `use js::array::SLICE as
+        /// slice;`, whose `slice.call(arguments)` is `function::call(slice,
+        /// Some(js::arguments()), ())`, an array of each argument (rd332).
+        #[link_name = "Array.prototype.slice"]
+        pub safe static SLICE: &'static dyn Fn(Option<f64>, Option<f64>) -> Vec<Option<&'static Unknown>>;
     }
 
     /// [`array.splice(start, deleteCount, ...items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array/splice):
@@ -348,6 +357,41 @@ pub mod array {
     #[cfg_attr(rust_js, rust_js::link_name = "join")]
     pub fn join(this: &[Option<&Unknown>], separator: &str) -> String {
         unreachable!()
+    }
+}
+
+/// [`arguments`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Functions/arguments):
+/// each argument the function it's read in was called with, as many as
+/// its caller gave, more or fewer than its parameters, TypeScript's
+/// `IArguments`, an array-like object. react-art's `LinearGradient`'s
+/// `constructor(stops, x1, y1, x2, y2) { this._args = slice.call(arguments); }`
+/// of a `new` of five parameters that keeps `function::call(slice,
+/// Some(js::arguments()), ())` (rd332, the user's decision). Read only in
+/// the body of a function of the crate's, a constructor or a method of a
+/// class, never in a closure, whose arrow's `arguments` is another's; each
+/// call rust-js writes of that function gives it every argument the Rust
+/// does, `undefined`s too. Of a generic function, a trait's method or a
+/// method of what isn't a class, whose JS takes more than the Rust says, a
+/// compile error.
+#[cfg_attr(rust_js, rust_js::link_name = "get arguments")]
+pub fn arguments() -> &'static Arguments {
+    unreachable!()
+}
+
+/// What [`arguments`] gives: TypeScript's `IArguments`, an array-like
+/// object of each argument a function was called with, which
+/// [`array::SLICE`] makes an array of.
+#[cfg_attr(rust_js, rust_js::js_object)]
+#[cfg_attr(rust_js, rust_js::types = "IArguments")]
+pub struct Arguments(PhantomData<JsObject>);
+
+/// An `arguments` object is an object, the object itself.
+impl core::ops::Deref for Arguments {
+    type Target = JsObject;
+
+    fn deref(&self) -> &JsObject {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const JsObject) }
     }
 }
 
@@ -1438,6 +1482,7 @@ unsafe impl StructuredClone for () {}
 // An object, never nullish, though not one a clone copies, which a function
 // in it isn't (ADR 0677).
 unsafe impl Defined for JsObject {}
+unsafe impl Defined for Arguments {}
 
 unsafe impl<T: StructuredClone + ?Sized> StructuredClone for &T {}
 unsafe impl<T: Defined + ?Sized> Defined for &T {}

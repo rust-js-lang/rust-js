@@ -521,4 +521,12 @@ export const mutations: Mutation[] = [
       "tracked trait method without a default",
     ],
   },
+  {
+    name: "contract-arguments-unsaid",
+    breaks: "a library's function that reads `js::arguments()` isn't one to its consumer, whose call leaves out its trailing `undefined`s (rd332)",
+    file: "src/lower/library.rs",
+    find: "                    (ItemFact::Arguments, reads_arguments.contains(&id)),\n",
+    replace: "                    (ItemFact::Arguments, false),\n",
+    tests: ["test/arguments.test.ts"],
+  },
 ];

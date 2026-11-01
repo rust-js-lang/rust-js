@@ -499,7 +499,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // type parameter's, `createCursor(undefined)`; where nothing comes
         // after it, a dictionary, and each argument is its parameter's.
         let declared = self.tcx.fn_sig(def_id).instantiate_identity().skip_binder();
-        if evidence.is_empty() && exprs.len() == arg_tys.len() && declared.inputs().len() == arg_tys.len() {
+        // Of one that reads `js::arguments()`, every argument, as the Rust
+        // gives it (rd332).
+        if self.reads_arguments(def_id) {
+            crate::lower::calls::given_to_js(&mut exprs);
+        } else if evidence.is_empty() && exprs.len() == arg_tys.len() && declared.inputs().len() == arg_tys.len() {
             crate::lower::calls::own_absent(&mut exprs, |i, arg| {
                 crate::lower::calls::absent(self.tcx, declared.inputs(), &[], i, arg)
             });

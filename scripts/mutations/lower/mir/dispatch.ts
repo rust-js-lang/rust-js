@@ -967,4 +967,12 @@ export const mutations: Mutation[] = [
       "            return Ok(Some(Expr::bin(op, x, Expr::undefined())));\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_tests.rs$"],
   },
+  {
+    name: "arguments-pointer-left-out",
+    breaks: "a call through a pointer that may be a function reading `js::arguments()` leaves out its trailing `undefined`s (rd332)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            _ if counts => crate::lower::calls::given_to_js(&mut exprs),\n",
+    replace: "            _ if false => crate::lower::calls::given_to_js(&mut exprs),\n",
+    tests: ["test/arguments.test.ts"],
+  },
 ];

@@ -1,5 +1,6 @@
 //! Collect crate facts before emission; no function lowering or linking.
 
+pub(super) mod arguments;
 mod back_stepped;
 mod callers_decide;
 mod cell_borrows;

@@ -81,6 +81,10 @@ pub enum ItemFact {
     /// It takes its caller's location, `#[track_caller]` (ADR 0427), which
     /// its consumers' calls give it.
     TakesLocation,
+    /// It reads `js::arguments()`, JS's `arguments`: its consumers' calls
+    /// give it every argument the Rust does, an `undefined` too, and no
+    /// closure of theirs that forwards to it is it (rd332).
+    Arguments,
     /// Its last parameter, a slice, is JS's rest parameter,
     /// `#[rust_js::rest]` (ADR 0664), which its consumers' calls spread.
     /// rustc's metadata keeps no parameter's attributes.

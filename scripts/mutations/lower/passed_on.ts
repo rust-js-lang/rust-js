@@ -539,4 +539,12 @@ export const mutations: Mutation[] = [
     replace: "            && super::analysis::flattened_by_name(&self.recognition(), &mir.body, called).is_some() && false\n",
     tests: ["test/namespaces.test.ts", "-t", "by its name is its library"],
   },
+  {
+    name: "arguments-forwarded",
+    breaks: "a closure that only passes on what it's given to a function reading `js::arguments()` is that function, which then counts what its JS caller gives it (rd332)",
+    file: "src/lower/passed_on.rs",
+    find: "                && !self.reads_arguments(def_id)\n",
+    replace: "",
+    tests: ["test/arguments.test.ts"],
+  },
 ];

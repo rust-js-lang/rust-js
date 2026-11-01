@@ -226,6 +226,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0204 A flattened field's struct is its parent's props](0204-flattened-props.md) *(amended by 0674: found by its name); extended by 1044: a `RefCell` of a discriminated union, its class's own keys)*
 - [1044 A flattened state is its class's own keys](1044-a-flattened-state-is-its-classs-own-keys.md)
 - [1045 An or-pattern's alternatives of one JS place are one arm](1045-or-pattern-alternatives-of-one-place-are-one.md)
+- [1048 A function that reads `js::arguments()` is given each argument](1048-a-function-that-reads-arguments-is-given-each.md)
 - [0205 Flattened structs chain, and the props' own name is theirs](0205-flattened-chains.md)
 - [0206 TypeScript, read and written by TypeScript's own parser and printer](0206-typescript-module.md)
 - [0207 A crate's `.d.ts` is printed by TypeScript](0207-declarations-printed-by-typescript.md)
