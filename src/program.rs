@@ -39,12 +39,15 @@ pub struct Source {
 
 /// A comment of a source, `//` or `/* */`, where it is in the arena: its JS's,
 /// where its code is (ADR 0444). A doc comment, `///` or `/** */`, its
-/// item's, is a JSDoc one, `doc`.
+/// item's, is a JSDoc one, `doc`. One the JS leaves out, a `// SAFETY:`
+/// one's (`comments::left_out`), isn't `written`: it's still a comment, no
+/// code, between what's before and after it.
 #[derive(Clone, Copy)]
 pub struct Comment {
     pub lo: u32,
     pub hi: u32,
     pub doc: bool,
+    pub written: bool,
 }
 
 /// One Rust module's functions: a future JS file (ADR 0019).

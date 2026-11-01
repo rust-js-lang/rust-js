@@ -76,7 +76,6 @@ function main() {
   const owned = $utf8Lossy([120, 128])._0;
   console.log(`${owned}`);
 
-  // SAFETY: the euro sign's bytes.
   const euro = $utf8Decode([226, 130, 172]);
   console.log(`${euro} ${$fromUtf8($slice(inputs[2], 2, 3)).TAG === "Ok"}`);
 }

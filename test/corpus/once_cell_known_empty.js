@@ -141,7 +141,6 @@ function main() {
     node: raw,
   };
   const pointer = $ptrTo(pointed);
-  // SAFETY: `pointed` lives to the end of `main`.
   fill(pointer.value.node);
   const unset$4 = raw.cache === undefined;
   if (unset$4) {

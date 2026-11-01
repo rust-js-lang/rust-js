@@ -725,4 +725,28 @@ export const mutations: Mutation[] = [
       "an ES class React renders"
     ]
   },
+  {
+    name: "safety-blank-lost",
+    breaks: "the blank line above a `// SAFETY:` comment the JS leaves out is lost, what was after it right below the code before (ADR 0444, amended)",
+    file: "src/to_oxc.rs",
+    find: "                    Some(c) => lo = c.lo,\n",
+    replace: "                    Some(_) => break false,\n",
+    tests: ["test/lowering-comments-left-out.test.ts", "-t", "a SAFETY comment is left out"],
+  },
+  {
+    name: "safety-statement-comment-written",
+    breaks: "a `// SAFETY:` comment before a statement is written, its arena's `written` ignored (ADR 0444, amended)",
+    file: "src/to_oxc.rs",
+    find: "            own.retain(|c| c.written);\n",
+    replace: "",
+    tests: ["test/lowering-comments-left-out.test.ts", "-t", "a SAFETY comment is left out"],
+  },
+  {
+    name: "safety-line-end-written",
+    breaks: "a `// SAFETY:` comment after code on its line is written at the line's end",
+    file: "src/to_oxc.rs",
+    find: "            .filter(|c| c.lo >= past && c.written && after_code(c))\n",
+    replace: "            .filter(|c| c.lo >= past && after_code(c))\n",
+    tests: ["test/lowering-comments-left-out.test.ts", "-t", "a SAFETY comment is left out"],
+  },
 ];

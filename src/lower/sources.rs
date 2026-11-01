@@ -275,9 +275,17 @@ fn comments(text: &str, start: u32) -> Vec<Comment> {
                 lo: at,
                 hi: at + written.len() as u32,
                 doc: matches!(doc_style, Some(DocStyle::Outer)),
+                written: true,
             });
         }
         at += token.len;
+    }
+    // Those the JS leaves out, a `// SAFETY:` one's (ADR 0444, amended).
+    let spans: Vec<(usize, usize)> = (found.iter())
+        .map(|c| ((c.lo - start) as usize, (c.hi - start) as usize))
+        .collect();
+    for (c, left_out) in found.iter_mut().zip(crate::comments::left_out(text, &spans)) {
+        c.written = !left_out;
     }
     found
 }

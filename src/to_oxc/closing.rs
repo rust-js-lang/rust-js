@@ -51,6 +51,7 @@ pub(super) fn end_of(
                     lo: hi - 1,
                     hi,
                     doc: false,
+                    written: true,
                 }])
                 .all(|other| {
                     let between = sources.text.get(code as usize..other.lo as usize);
@@ -81,6 +82,10 @@ pub(super) fn taken<'c>(
             continue;
         };
         taken.push(c.lo);
+        // One the JS leaves out, a `// SAFETY:` one's, is placed, not written.
+        if !c.written {
+            continue;
+        }
         let written = sources.text[c.lo as usize..c.hi as usize].to_string();
         match closing.iter_mut().find(|(at, _)| *at == end) {
             Some((_, texts)) => texts.push(written),

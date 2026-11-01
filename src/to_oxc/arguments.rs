@@ -41,7 +41,12 @@ pub(super) fn end_of(
         let mut code = c.hi;
         (comments.iter())
             .filter(|other| other.lo >= c.hi && other.hi <= hi)
-            .chain([&crate::program::Comment { lo: hi, hi, doc: false }])
+            .chain([&crate::program::Comment {
+                lo: hi,
+                hi,
+                doc: false,
+                written: true,
+            }])
             .all(|other| {
                 let between = sources.text.get(code as usize..other.lo as usize);
                 code = other.hi;

@@ -131,5 +131,19 @@ fn leading_comments(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
         }
     }
     found.reverse();
-    (!found.is_empty()).then(|| found.join("\n"))
+    // Not one the JS leaves out, a `// SAFETY:` one's (ADR 0444, amended),
+    // nor a blank line it leaves first or twice.
+    let spans: Vec<(usize, usize)> = (found.iter().filter(|text| !text.is_empty()))
+        .map(|text| {
+            let lo = text.as_ptr() as usize - before.as_ptr() as usize;
+            (lo, lo + text.len())
+        })
+        .collect();
+    let mut left_out = crate::comments::left_out(before, &spans).into_iter();
+    found.retain(|text| text.is_empty() || !left_out.next().unwrap_or(false));
+    found.dedup_by(|a, b| a.is_empty() && b.is_empty());
+    while found.first().is_some_and(|text| text.is_empty()) {
+        found.remove(0);
+    }
+    (found.iter().any(|text| !text.is_empty())).then(|| found.join("\n"))
 }

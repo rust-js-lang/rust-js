@@ -805,6 +805,28 @@ does (`empty_line_after_doc_comments`); write a plain comment there, `//`
 or `/* */` as rustc says, which the JS keeps as written ([ADR
 0444](../../decisions/0444-a-comment-is-where-its-code-is.md)).
 
+A comment that begins `SAFETY:`, the one clippy asks for above an `unsafe`
+block, says why Rust's `unsafe` holds, and JS has no `unsafe`: it's left
+out of the JS and the `.d.ts`, with the line comments right below it, the
+rest of what it says, and the blank line above it is the next code's.
+Every other comment is kept, one that begins `Safety:` too ([ADR
+0444](../../decisions/0444-a-comment-is-where-its-code-is.md), amended):
+
+```rust
+pub fn resolved(dispatcher: Option<u32>) -> u32 {
+    // Will result in a null access error if accessed outside render phase.
+    // SAFETY: every caller is in render, where the dispatcher is set.
+    unsafe { dispatcher.unwrap_unchecked() }
+}
+```
+
+```js
+export function resolved(dispatcher) {
+  // Will result in a null access error if accessed outside render phase.
+  return dispatcher;
+}
+```
+
 A struct's field's doc comment documents the object its literal makes
 where the crate writes one literal of the struct: it's that field's
 JSDoc there, as a JS object documents its fields. A struct made in more

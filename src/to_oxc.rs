@@ -519,7 +519,11 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             let line_start = sources.text[..c.lo as usize].rfind('\n').map_or(0, |i| i + 1);
             !sources.text[line_start..c.lo as usize].trim().is_empty()
         };
-        for c in file.comments.iter().filter(|c| c.lo >= past && after_code(c)) {
+        for c in file
+            .comments
+            .iter()
+            .filter(|c| c.lo >= past && c.written && after_code(c))
+        {
             let written = &sources.text[c.lo as usize..c.hi as usize];
             if !written.contains('\n') {
                 let line = sources.text[..c.lo as usize].matches('\n').count() as u32;
@@ -575,7 +579,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             .filter(|arm| matches!(arm.operator, "?" | ":"))
             .map(|arm| arm.hi)
             .collect();
-        for c in file.comments.iter().filter(|c| c.lo >= past) {
+        for c in file.comments.iter().filter(|c| c.lo >= past && c.written) {
             if let Some((line, column)) = own_line_after_value(&sources.text, &file.comments, &value_ends, c) {
                 trailing.push(Trailing {
                     line,
@@ -592,7 +596,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             own_line_before_value(&sources.text, &file.comments, c).is_some()
                 || own_line_after_value(&sources.text, &file.comments, &value_ends, c).is_some()
         };
-        for c in file.comments.iter().filter(|c| c.lo >= past) {
+        for c in file.comments.iter().filter(|c| c.lo >= past && c.written) {
             if let Some((line, column)) = own_line_before_value(&sources.text, &file.comments, c) {
                 trailing.push(Trailing {
                     line,
@@ -652,8 +656,8 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         // 0708, amended).
         let (own_line, closed) = closing::taken(own_line, (&object_ends, &mut closing), sources, &file.comments);
         found.extend(
-            ending
-                .iter()
+            (ending.iter())
+                .filter(|c| c.written)
                 .map(|c| arguments::before_parenthesis(c, &argument_ends, sources, &file.comments)),
         );
         let mut attached: Vec<(crate::program::Comment, u32)> = (own_line.iter().copied())
@@ -667,7 +671,12 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     let mut code = lo;
                     (file.comments.iter())
                         .filter(|other| other.lo >= lo && other.hi <= hi)
-                        .chain([&crate::program::Comment { lo: hi, hi, doc: false }])
+                        .chain([&crate::program::Comment {
+                            lo: hi,
+                            hi,
+                            doc: false,
+                            written: true,
+                        }])
                         .all(|other| {
                             let between = sources.text.get(code as usize..other.lo as usize);
                             code = other.hi;
@@ -681,7 +690,12 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     let mut code = lo;
                     (file.comments.iter())
                         .filter(|other| other.lo >= lo && other.hi <= hi)
-                        .chain([&crate::program::Comment { lo: hi, hi, doc: false }])
+                        .chain([&crate::program::Comment {
+                            lo: hi,
+                            hi,
+                            doc: false,
+                            written: true,
+                        }])
                         .all(|other| {
                             let between = sources.text.get(code as usize..other.lo as usize);
                             code = other.hi;
@@ -737,6 +751,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                         lo: at,
                         hi: at,
                         doc: false,
+                        written: true,
                     }])
                     .all(|other| {
                         let between = &sources.text[code as usize..other.lo as usize];
@@ -780,7 +795,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         // the Rust has one, before or between them (ADR 0444).
         // Before the line it's on: a statement's span may start inside its
         // Rust's, `if` before its test, a `let .. else` before its pattern.
-        let blank_before = |lo: u32| {
+        let blank_right_before = |lo: u32| {
             let before = &sources.text[file_start..lo as usize];
             let mut before = &before[..before.rfind('\n').map_or(0, |i| i + 1)];
             // Of a method call rustfmt writes on the line after its receiver,
@@ -817,6 +832,23 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                 !lets.is_empty() && lets.iter().all(|s| s.starts_with("let ")) && rest.trim().is_empty() && !printed
             });
             gap.matches('\n').count() >= 2 || past_lets
+        };
+        // Or before a comment the JS leaves out, a `// SAFETY:` one's, on
+        // lines of its own right above: what's after it is where it was
+        // (ADR 0444, amended).
+        let blank_before = |lo: u32| {
+            let mut lo = lo;
+            loop {
+                if blank_right_before(lo) {
+                    break true;
+                }
+                let line = sources.text[..lo as usize].rfind('\n').map_or(0, |i| i + 1);
+                let code = sources.text[file_start..line].trim_end().len() + file_start;
+                match (file.comments.iter()).find(|c| !c.written && c.hi as usize == code && !after_code(c)) {
+                    Some(c) => lo = c.lo,
+                    None => break false,
+                }
+            }
         };
         // A blank line: a line comment of nothing, which prints as one.
         let blank = |text: &String| {
@@ -875,6 +907,9 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         // The constructors a class's struct's comments are before.
         let mut documented = std::collections::HashSet::new();
         for (at, mut own) in starts_and_end {
+            // Placed, but not written: a `// SAFETY:` comment (ADR 0444,
+            // amended), whose blank line before is what's after it's.
+            own.retain(|c| c.written);
             // An import's, in the header, above its line.
             if import_starts.contains(&at) {
                 let texts = own

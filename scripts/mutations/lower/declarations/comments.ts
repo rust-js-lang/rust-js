@@ -105,4 +105,12 @@ export const mutations: Mutation[] = [
       "a block doc comment is its lines' JSDoc",
     ],
   },
+  {
+    name: "safety-declaration-written",
+    breaks: "a `// SAFETY:` comment before an item is in its `.d.ts` declaration's comments (ADR 0444, amended)",
+    file: "src/lower/declarations/comments.rs",
+    find: "    found.retain(|text| text.is_empty() || !left_out.next().unwrap_or(false));\n",
+    replace: "",
+    tests: ["test/lowering-comments-left-out.test.ts", "-t", "a SAFETY comment is left out"],
+  },
 ];

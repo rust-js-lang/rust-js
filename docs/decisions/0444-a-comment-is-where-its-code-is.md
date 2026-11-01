@@ -1,6 +1,6 @@
 # 0444. A comment is in the JS where its code is, and so is a blank line
 
-Status: Accepted. Amended (2026-10-29): a comment above a `use` is above the import it makes; an inner doc comment is JS's plain one. Amended (2026-10-28): a field's doc comment is its struct's one literal's. Amended (2026-10-26): a blank line before a statement rustfmt starts with a receiver on a line before its call is kept; a comment before a `match` an `if` is made of is the `if`'s. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
+Status: Accepted. Amended (2026-11-01): a `// SAFETY:` comment is left out of the JS, the user's decision. Amended (2026-10-29): a comment above a `use` is above the import it makes; an inner doc comment is JS's plain one. Amended (2026-10-28): a field's doc comment is its struct's one literal's. Amended (2026-10-26): a blank line before a statement rustfmt starts with a receiver on a line before its call is kept; a comment before a `match` an `if` is made of is the `if`'s. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
 an object is across lines where its struct literal is. Extends [0383](0383-a-files-leading-comments-are-its-jss.md),
 whose rules for what JS can hold are now every comment's, and
 [0018](0018-print-with-oxc.md). Its amendment, a branch's comment keeps it a statement, is
@@ -166,7 +166,7 @@ it was kept. **An `unsafe` block's opening is a start, as a closure's
 `|queue| {` is (ADR 0581)**: the block has no JS but its code's, so a
 comment before it is before that code, `// Will result .. return
 dispatcher;`. The corpus's `// SAFETY:` comments before an `unsafe` block,
-lost before, are kept too.
+lost before, were kept too, until the amendment below left them out.
 
 Held by `test/lowering-comments.test.ts`, "a comment before an unsafe block
 is its code's", and the mutation `unsafe-opening-code` (`to_oxc.ts`).
@@ -661,3 +661,41 @@ function says it, `comments::in_js`. The pilot's committed JS and the
   import, and an inline module's `/*!` above its code. Mutations
   `inner-doc-kept-in-js` (`comments.ts`) and
   `inner-doc-printed-from-source` (`to_oxc.ts`).
+
+## Amended (2026-11-01): a `// SAFETY:` comment is left out
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments alone.
+
+Clippy's `undocumented_unsafe_blocks` asks for a `// SAFETY:` comment
+above each `unsafe` block, and the port writes them, `// SAFETY:
+mount_transition stored an Rc<dyn Fn(bool)> there.` above `unsafe {
+js::cast(..) }`. Kept, it was in the JS above `return hook.memoizedState;`:
+it speaks of an `unsafe` the JS has none of, of Rust's ownership and
+validity, and upstream's file has no such line, so the port's JS read
+unlike its original.
+
+**A comment that begins `SAFETY:` is left out of the JS and the `.d.ts`**,
+the user's decision, and so are the line comments on the lines right below
+one on lines of its own, the rest of what it says; a doc comment, `///
+SAFETY:`, is its item's, and one that begins otherwise, `// Safety:`, is
+kept. One function says which, `comments::left_out`; the source arena
+keeps each such comment, not `written`, so what's between code and a
+comment is still no code; the printer places it and writes nothing, and
+the blank line above it is the next code's. Where lowering asks whether
+a comment is somewhere, a `None` given at a function's end, a jump's, a
+block that ends with one, a `// SAFETY:` one gives the same JS as none:
+those keep no statement of their own that prints.
+
+Alternatives: keeping it, as before, which the port's JS showed upstream
+didn't have; leaving out every comment above an `unsafe` block, which
+loses what a comment says of the code itself, React's resolveDispatcher's
+`// Will result in a null access error ..`.
+
+Held by `test/lowering-comments-left-out.test.ts`, "a SAFETY comment is
+left out of the JS, the comments around it kept", `comments.rs`'s unit
+test, and the mutations `safety-comment-written`, `safety-run-unended`,
+`safety-run-after-code` (`comments.rs`), `safety-arena-written`
+(`sources.rs`), `safety-blank-lost`, `safety-statement-comment-written`,
+`safety-line-end-written` (`to_oxc.rs`) and `safety-declaration-written`
+(`declarations/comments.rs`).
+

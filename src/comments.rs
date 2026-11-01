@@ -82,6 +82,40 @@ pub fn is_one_in_js(comment: &str) -> bool {
     }
 }
 
+/// Of each of `comments`, where they are in `text`, in order, whether the JS
+/// leaves it out: one that begins `SAFETY:`, `// SAFETY: ..` above an
+/// `unsafe` block, as clippy asks of one, says why Rust's `unsafe` holds,
+/// which JS has none of (ADR 0444, amended, the user's decision); and so
+/// does each line comment on the lines right below one on lines of its
+/// own, the rest of what it says. A doc comment, `/// SAFETY:`, is its item's, kept.
+pub fn left_out(text: &str, comments: &[(usize, usize)]) -> Vec<bool> {
+    let mut out = Vec::with_capacity(comments.len());
+    let mut run_end = None;
+    for &(lo, hi) in comments {
+        let written = &text[lo..hi];
+        let said = (written.strip_prefix("//").or_else(|| written.strip_prefix("/*")))
+            .is_some_and(|rest| rest.trim_start().starts_with("SAFETY:"));
+        // The next line's, nothing but its indentation before it.
+        let continued = run_end.is_some_and(|end: usize| {
+            let gap = &text[end..lo];
+            written.starts_with("//")
+                && !written.starts_with("///")
+                && !written.starts_with("//!")
+                && gap.matches('\n').count() == 1
+                && gap.trim().is_empty()
+        });
+        let out_of_js = said || continued;
+        // Of one on lines of its own, not one after code on its line.
+        let own_line = text[..lo]
+            .rsplit('\n')
+            .next()
+            .is_some_and(|line| line.trim().is_empty());
+        run_end = (out_of_js && own_line && written.starts_with("//")).then_some(hi);
+        out.push(out_of_js);
+    }
+    out
+}
+
 /// A doc comment's lines, each as `///` or `#[doc]` writes it, its first
 /// space but not its text's: their JSDoc, `/** one */` or one line each
 /// (ADR 0444); none where one has the `*/` that would end it.
@@ -103,7 +137,24 @@ pub fn jsdoc(lines: &[&str]) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::leading_comments;
+    use super::{leading_comments, left_out};
+
+    #[test]
+    fn a_safety_comment_and_its_lines_below_are_left_out() {
+        let text =
+            "// Before.\n// SAFETY: a\n// b.\n\n// After.\nlet x = 1; // SAFETY: c.\n// Not its.\n/* SAFETY: d */";
+        let spans: Vec<(usize, usize)> = (text.match_indices("//").map(|(lo, _)| lo))
+            .chain(text.find("/*"))
+            .map(|lo| {
+                let end = match text[lo..].starts_with("/*") {
+                    true => text[lo..].find("*/").unwrap() + 2,
+                    false => text[lo..].find('\n').unwrap_or(text.len() - lo),
+                };
+                (lo, lo + end)
+            })
+            .collect();
+        assert_eq!(left_out(text, &spans), [false, true, true, false, true, false, true]);
+    }
 
     #[test]
     fn a_blank_line_inside_a_block_comment_parts_nothing() {

@@ -56,7 +56,6 @@ function main() {
   console.log(
     `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5.TAG === "Ok" ? `Ok(${value$5._0})` : `Err(${$debugParseError(value$5._0, "TryFromIntError")})`}`,
   );
-  // SAFETY: not zero.
   const d = -5;
   console.log(
     `${Math.abs(d) | 0} ${((value) => (value == null ? "None" : `Some(${value})`))($checked(d * $unwrap(2), -2147483648, 2147483647))}`,

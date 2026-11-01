@@ -66,4 +66,28 @@ export const mutations: Mutation[] = [
     replace: "        && let Some(&(before, _)) = gaps.iter().rev().find(|&&(from, to)| blank(&text[from..to])).filter(|_| false)\n",
     tests: ["test/emission.test.ts", "-t", "a file's leading comments are its JS's"],
   },
+  {
+    name: "safety-comment-written",
+    breaks: "a `// SAFETY:` comment above an `unsafe` block is in the JS, of an `unsafe` JS has none of (ADR 0444, amended)",
+    file: "src/comments.rs",
+    find: "            .is_some_and(|rest| rest.trim_start().starts_with(\"SAFETY:\"));\n",
+    replace: "            .is_some_and(|_| false);\n",
+    tests: ["test/lowering-comments-left-out.test.ts", "-t", "a SAFETY comment is left out"],
+  },
+  {
+    name: "safety-run-unended",
+    breaks: "the line comments right below a `// SAFETY:` one, the rest of what it says, are in the JS",
+    file: "src/comments.rs",
+    find: "        let out_of_js = said || continued;\n",
+    replace: "        let out_of_js = said;\n",
+    tests: ["test/lowering-comments-left-out.test.ts", "-t", "a SAFETY comment is left out"],
+  },
+  {
+    name: "safety-run-after-code",
+    breaks: "a comment on its own line below a `// SAFETY:` one after code on its line is taken for the rest of it, and left out",
+    file: "src/comments.rs",
+    find: "        run_end = (out_of_js && own_line && written.starts_with(\"//\")).then_some(hi);\n",
+    replace: "        run_end = (out_of_js && written.starts_with(\"//\")).then_some(hi);\n",
+    tests: ["test/lowering-comments-left-out.test.ts", "-t", "a SAFETY comment is left out"],
+  },
 ];

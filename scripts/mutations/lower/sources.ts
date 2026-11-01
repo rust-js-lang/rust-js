@@ -111,4 +111,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "ending a loop"],
   },
+  {
+    name: "safety-arena-written",
+    breaks: "the source arena marks no comment the JS leaves out, a `// SAFETY:` one written (ADR 0444, amended)",
+    file: "src/lower/sources.rs",
+    find: "        c.written = !left_out;\n",
+    replace: "",
+    tests: ["test/lowering-comments-left-out.test.ts", "-t", "a SAFETY comment is left out"],
+  },
 ];

@@ -2253,7 +2253,6 @@ export function mountTransition(hook, pending) {
 }
 
 export function updateTransition(hook) {
-  // SAFETY: `mount_transition` stored an `Rc<dyn Fn(bool)>` there.
   return hook.memoizedState;
 }
 ```
