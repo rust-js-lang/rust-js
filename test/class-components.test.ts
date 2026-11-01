@@ -465,3 +465,120 @@ impl Component for Noted {
     console.log("made");
   }`);
 }, 60_000);
+
+// rd331d: a tag that's a string, as ReactART's two are. A `&'static str` is
+// a DOM element's tag, as TypeScript's `string` tag is, `const Tag =
+// Mode.Surface.tagName`, taking a DOM element's attributes; a
+// `react::HostType<P, I>`, a string in JS, is a renderer's host type,
+// `TYPES.TEXT`, whose element takes its props `P` whole, `{...this.props}`,
+// and whose `ref` is its instance, `I` (ADR 0220, amended).
+test("a tag that's a string: a DOM element's, and a host type's of its props and instance", () => {
+  const { js, dir } = compiled("class-component-string-tags", `use std::cell::Cell;
+
+use react::webapi::{Element, HTMLElement};
+use react::{Component, HostType, JSX, jsx};
+
+pub struct SurfaceProps {
+    pub tag: &'static str,
+    pub title: Option<&'static str>,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Surface {
+    _tag_ref: Cell<Option<&'static Element>>,
+}
+
+impl Component<SurfaceProps> for Surface {
+    fn component_did_mount(self: &'static Self) {
+        println!("surface {}", self._tag_ref.get().map_or(String::new(), |e| e.tag_name()));
+    }
+
+    fn render(self: &'static Self) -> JSX::Element {
+        let props = self.props();
+        let Tag = props.tag;
+        jsx! {
+            <Tag
+                ref={move |r| self._tag_ref.set(r)}
+                accessKey="s"
+                className="surface"
+                draggable={true}
+                title={props.title}
+            />
+        }
+    }
+}
+
+pub struct NoteProps {
+    pub id: &'static str,
+}
+
+pub const NOTE: HostType<NoteProps, HTMLElement> = HostType::new("aside");
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Note {
+    #[cfg_attr(rust_js, rust_js::optional)]
+    _node: Cell<Option<&'static HTMLElement>>,
+}
+
+impl Component<NoteProps> for Note {
+    fn component_did_mount(self: &'static Self) {
+        println!("note {}", self._node.get().map_or(String::new(), |n| n.tag_name()));
+    }
+
+    fn render(self: &'static Self) -> JSX::Element {
+        let T = NOTE;
+        jsx! {
+            <T {...self.props()} ref={move |n| self._node.set(n)}>
+                {"note "}{self.props().id}
+            </T>
+        }
+    }
+}
+
+/// A host type given its props alone.
+pub fn Bare(props: NoteProps) -> JSX::Element {
+    let T = NOTE;
+    jsx! { <T {...props} /> }
+}
+`);
+  expect(js).toContain('export const NOTE = "aside";');
+  expect(js).toContain("    const Tag = props.tag;");
+  expect(js).toContain(`      <Tag
+        ref={(r) => {
+          this._tagRef = r;
+        }}
+        accessKey="s"
+        className="surface"
+        draggable
+        title={props.title}
+      />`);
+  expect(js).toContain("    const T = NOTE;");
+  expect(js).toContain(`      <T
+        {...this.props}
+        ref={(n) => {
+          this._node = n;
+        }}
+      >
+        note {this.props.id}
+      </T>`);
+  expect(js).toContain("  return <T {...props} />;");
+  const ran = rendered(dir, `import { expect, test } from "bun:test";
+import { createElement } from "react";
+import { flushSync } from "react-dom";
+import { createRoot } from "react-dom/client";
+import { Bare, Note, Surface } from "./lib.jsx";
+
+const said = [];
+console.log = (line) => said.push(line);
+
+test("React DOM renders each tag, its ref the instance", () => {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  flushSync(() => root.render(createElement("div", null, createElement(Surface, { tag: "canvas", title: "t" }), createElement(Note, { id: "n" }), createElement(Bare, { id: "b" }))));
+  expect(container.innerHTML).toBe('<div><canvas accesskey="s" class="surface" draggable="true" title="t"></canvas><aside id="n">note n</aside><aside id="b"></aside></div>');
+  expect(said.splice(0)).toEqual(["surface CANVAS", "note ASIDE"]);
+  flushSync(() => root.unmount());
+});
+`);
+  expect([ran.code, ran.passed], ran.output).toEqual([0, "1"]);
+}, 60_000);

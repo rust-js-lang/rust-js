@@ -258,6 +258,28 @@ react.dev's TopNav passes the same closure instead.
   react-art's callers don't, can't tell. A class that extends a binding's
   is an ES class (ADR 1041). Listed in the guide's differences
   (`semantics.md`, 37).
+- **A closure given as a descriptor's `get` is an arrow**, the second
+  case's, which the user decided (2026-11-01, rd331f): react-art's Text
+  defines `width` and the rest on its instance, `Object.defineProperty(this,
+  key, { get: function () { return this._text ? this._text[key] :
+  undefined; } })`, which the port's `PropertyDescriptor { get: Some(&||
+  text._text.get().and_then(|text| js::get(text, *key))), .. }` writes
+  `get: () => this._text?.[key]`. The arrow's `this` is the instance it
+  was made in; the function's is what the property is read through, the
+  instance too, but for a read through an object that inherits from it,
+  `Object.create(text).width`, which no React caller makes. `_text` is a
+  node or none, so `?.` gives what the ternary does. Listed in the guide's
+  differences (`semantics.md`, 40).
+- **A ref callback that sets a field returns `undefined`**, the second
+  case's, which the user decided (2026-11-01, rd331): `ref={move |r|
+  self._tag_ref.set(r)}` is `ref={(r) => { this._tagRef = r; }}`, a block,
+  as `Cell::set` gives `()`, where react-art's `ref={ref => (this._tagRef
+  = ref)}` returns the element, or `null` as it's detached. React reads a
+  ref callback's result only where it's a function, React 19's cleanup;
+  an element or `null` isn't one, and React 19's development build warns
+  of neither, so React does the same. Only a caller that calls the
+  callback itself and reads its result tells them apart. Listed in the
+  guide's differences (`semantics.md`, 41).
 
 ## Amendment: the stack's depth
 

@@ -80,3 +80,62 @@ function Heading({ as: Comp = "div", id, children, ...rest }) {
   function's JSX.
 - **What a tag takes isn't narrowed to its element's**: an `<h1>` and a
   `<div>` take the same attributes, as React's own types give them.
+
+## Amendment: a string is a tag, and a renderer's host type one of its props (rd331d)
+
+Decided by the user (2026-11-01), the two forms recommended for
+react-art's ReactART.js, whose tags are strings read at run time:
+
+```js
+const Tag = Mode.Surface.tagName;             // "canvas" or "svg", React DOM's
+return <Tag ref={ref => (this._tagRef = ref)} accessKey={props.accessKey} .. />;
+
+const T = TYPES.TEXT;                         // "Text", ART's own renderer's
+return <T {...this.props} ref={t => (this._text = t)}>{..}</T>;
+```
+
+Case: N ([0262](0262-when-rust-and-js-disagree.md)): the tag is the
+string either way, which React renders as it renders any.
+
+- **A `&'static str` is a `react::Tag`**, a DOM element's of any name, as
+  TypeScript's `string` tag is and React DOM's `createElement(type)` takes
+  one: `let Tag = mode::surface_tag_name(); <Tag ref={..} accessKey={..}
+  ..>`, its attributes a DOM element's, `webapi::Element`'s, which takes
+  `accessKey`, `draggable` and `title` already, as HTML's elements do,
+  and its `ref` an `Element` or what it extends. This loosens the
+  Decision's "not any value": a string is a tag, which TypeScript's JSX
+  checks no closer.
+- **A renderer's host type is `react::HostType<P, I>`**, a string in JS
+  typed by the props `P` its element is given and the instance `I` its
+  `ref` is, as TypeScript's custom renderers type their intrinsic
+  elements, made `const` by `HostType::new`, the string itself: `pub
+  const TEXT: HostType<TextProps, Node> = HostType::new(TYPES.text);`,
+  `export const TEXT = TYPES.TEXT;`. A capitalized local of one is a tag
+  `jsx!` reads as it reads any, `react::tag(T)`, whose element while its
+  props are set is a `HostElement<P, I>`: its props whole, `{...props}`
+  of a `P` or a reference to one, `{...self.props()}`; a `ref` of `I`; a
+  `key`; children. No DOM element's attribute or event is one of its
+  methods, which ART's renderer doesn't take; a prop written by name is
+  rustc's error, `no method named ..`, as the renderer is given its props
+  whole. Given its props alone, `<T {...props} />`, it's a component's
+  call, as a `Tag` is (above). rustc checks both: `P` and `I` are what
+  the element is given.
+- **What `react::tag` makes is the tag's**, `TagElement::Element`: a
+  `Tag`'s an `Element`, a `HostType`'s a `HostElement`, each made an
+  `Element` by `react::element`, as an intrinsic's is (ADR 0224).
+- **A `const` of a binding's JS value is its initializer's**: rustc's
+  value of `HostType::new("Text")` is its markers, nothing of the string,
+  so it's `HostType::new`'s `"Text"`, as a static's `ElementType` is (ADR
+  0234).
+
+Rejected: one form for both, a `Tag<I>` of the instance its element has,
+which would give a renderer's tag the DOM's attributes and events,
+`onClick(SyntheticEvent<Node>)`, wrong for ART's; and only
+`ElementType::from_unknown(js::unknown(&tag))`, a cast that types the ref
+as a DOM `Element` where ART's is its `Node`.
+
+Held by `test/class-components.test.ts`'s "a tag that's a string: a DOM
+element's, and a host type's of its props and instance", rendered by
+React DOM, a ref of each its instance; and the mutations
+`host-type-element-unfinished` (`jsx_syntax/parser.rs`) and
+`const-of-a-js-value-its-markers` (`lower/representation.rs`).

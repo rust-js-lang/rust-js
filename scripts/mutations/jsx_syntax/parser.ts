@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "tag-element-unfinished",
     breaks: "a tag's JSX is of its DOM element, `Element<HTMLSpanElement>`, where an `Element` is wanted: a `<span>` or a `<b>` isn't a value of one type",
     file: "src/jsx_syntax/parser.rs",
-    find: "            if intrinsic {\n                expr = call(\n",
-    replace: "            if false && intrinsic {\n                expr = call(\n",
+    find: "            if intrinsic || tag {\n                expr = call(\n",
+    replace: "            if false && tag {\n                expr = call(\n",
     tests: ["test/jsx-events.test.ts", "-t", "tag's element"],
   },
   {
@@ -385,5 +385,13 @@ export const mutations: Mutation[] = [
     find: "                && attrs.iter().any(|attr| super::is_rust_js_attr(attr, \"class\")) =>",
     replace: "                && attrs.iter().any(|attr| super::is_rust_js_attr(attr, \"namespace\")) =>",
     tests: ["test/class-components.test.ts", "-t", "an element jsx! renders"],
+  },
+  {
+    name: "host-type-element-unfinished",
+    breaks: "a tag local's element is what it is while its props are set, a host type's `HostElement<P, I>`, where an `Element` is wanted (ADR 0220, amended)",
+    file: "src/jsx_syntax/parser.rs",
+    find: "            if intrinsic || tag {\n                expr = call(\n",
+    replace: "            if intrinsic {\n                expr = call(\n",
+    tests: ["test/class-components.test.ts", "-t", "a tag that's a string"],
   },
 ];

@@ -348,15 +348,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "untagged_enums"],
   },
   {
-    name: "js-object-value-tree-said",
-    breaks:
-      "a static of react's `ElementType` is what rustc's memory says, `Icon: [undefined]`, not `Icon: IconBadge`",
-    file: "src/lower/representation.rs",
-    find: "        ty::Adt(adt, args) if marks_js_object(tcx, *adt, args) => None,\n",
-    replace: "",
-    tests: ["test/jsx-types.test.ts", "-t", "ElementType, rendered as a tag"],
-  },
-  {
     name: "struct-variant-fields-numbered",
     breaks:
       "a struct variant's fields are `_0`, `_1` as a tuple variant's are, so a JS caller's `{ TAG: \"Rect\", w, h }` isn't the shape it gets",
@@ -860,5 +851,23 @@ export const mutations: Mutation[] = [
       "-t",
       "a namespace's methods are its module's functions",
     ],
+  },
+  {
+    name: "const-of-a-js-value-its-markers",
+    breaks:
+      "a `const` of a binding's JS value, `HostType::new(\"aside\")`, is rustc's value of its markers, `[undefined, undefined]`, not its initializer's `\"aside\"` (ADR 0220, amended)",
+    file: "src/lower/representation.rs",
+    find: "        // `\"Text\"` (ADR 0220, amended).\n        ty::Adt(adt, args) if marks_js_object(tcx, *adt, args) => None,\n",
+    replace: "",
+    tests: ["test/class-components.test.ts", "-t", "a tag that's a string"],
+  },
+  {
+    name: "js-object-value-tree-said",
+    breaks:
+      "a static of react's `ElementType` is what rustc's memory says, `Icon: [undefined]`, not `Icon: IconBadge`",
+    file: "src/lower/representation.rs",
+    find: "        // `\"Text\"` (ADR 0220, amended).\n        ty::Adt(adt, args) if marks_js_object(tcx, *adt, args) => None,\n",
+    replace: "",
+    tests: ["test/jsx-types.test.ts", "-t", "ElementType, rendered as a tag"],
   },
 ];

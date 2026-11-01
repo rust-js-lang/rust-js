@@ -66,3 +66,19 @@ don't.
 - **No line to learn**: the `#![allow]` was something only rust-js users
   wrote. `test/jsx.test.ts` compiles components with none and holds that
   rustc warns of none of them, and of the function that isn't one.
+
+## Amendment: a tag local is named as JSX names it too (rd331k)
+
+A capitalized local `jsx!` reads as its tag (ADR 0220), ReactART's `const
+Tag = Mode.Surface.tagName;` and `const T = TYPES.TEXT;`, was flagged by
+`non_snake_case` outside a component, all of whose function the pass
+allows: in a class component's `render`, a trait method. **The pass gives
+each parameter and `let` that binds a local its JSX read as a tag
+`#[allow(non_snake_case)]`**, a closure's too, as it gives a component
+its function's: no `#[allow]` in the source. Only what JSX reads: another
+capitalized local, `let Unread = 1;`, is still flagged. The parser says
+what it read (`TagNames::read`), the one place a tag local is told from
+another. Held by `test/jsx.test.ts`'s "a component's capitalized name
+needs no allow" and the mutations `tag-local-flagged`,
+`tag-local-of-a-parameter-flagged`, `every-capitalized-local-allowed` and
+`tag-read-unrecorded` (`jsx_syntax.rs`).

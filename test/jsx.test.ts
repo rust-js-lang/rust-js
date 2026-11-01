@@ -940,13 +940,32 @@ pub fn Panel(PanelProps { title }: PanelProps) -> JSX::Element {
 }
 struct Hidden;
 pub fn exposed(_: Hidden) -> u32 { 1 }
+// A capitalized local its JSX reads as a tag, a \`let\`'s, a parameter's,
+// a field's pattern's or a closure's, as ReactART's \`const Tag =
+// Mode.Surface.tagName\` (rd331k), outside a component, all of whose function
+// is allowed; another capitalized local is still flagged.
+pub fn surface(wide: bool) -> JSX::Element {
+    let Tag = if wide { "section" } else { "div" };
+    let Other = 1;
+    jsx! { <Tag tabIndex={Other} /> }
+}
+pub struct TaggedProps { pub tag: &'static str }
+pub fn Tagged(TaggedProps { tag: Inner }: TaggedProps) -> JSX::Element {
+    jsx! { <Inner>{tagged(Inner)}</Inner> }
+}
+fn tagged(Comp: &'static str) -> JSX::Element {
+    let Unread = Comp;
+    let render = |Item: &'static str| jsx! { <Item /> };
+    jsx! { <Comp>{render(Unread)}</Comp> }
+}
 `);
   const built = Bun.spawnSync(args, { cwd: dir });
   const stderr = built.stderr.toString();
   const warned = [...stderr.matchAll(/function `(\w+)` should have a snake case name/g)].map((m) => m[1]);
   const constants = [...stderr.matchAll(/constant `(\w+)` should have an upper case name/g)].map((m) => m[1]);
   const private_ = [...stderr.matchAll(/type `(\w+)` is more private than the item `(\w+)`/g)].map((m) => m[2]);
-  expect([built.exitCode, warned, constants, private_]).toEqual([0, ["NotComponent"], ["notConstant"], ["exposed"]]);
+  const variables = [...stderr.matchAll(/variable `(\w+)` should have a snake case name/g)].map((m) => m[1]);
+  expect([built.exitCode, warned, constants, private_, variables]).toEqual([0, ["NotComponent"], ["notConstant"], ["exposed"], ["Other", "Unread"]]);
 });
 
 // ADR 0440: a binding's body never runs, so its parameters are unread,

@@ -1150,3 +1150,18 @@ React and JSX are [their own pages](README.md#react).
     borrows the receiver's cell, sees the difference: it passes, as
     upstream's does, where Rust panics `already borrowed` (ADR 0863,
     amended, the user's decision, rd360).
+40. A closure given as a property descriptor's `get`, `PropertyDescriptor
+    { get: Some(&|| text._text.get()..), .. }`, is an arrow, `get: () =>
+    this._text?.[key]`, whose `this` is the instance it was made in, where
+    react-art's Text writes `get: function () { return this._text ?
+    this._text[key] : undefined; }`, whose `this` is what the property is
+    read through. Only a read through an object that inherits from the
+    instance, `Object.create(text).width`, tells them apart, which no
+    React caller makes (ADR 0262, the user's decision, 2026-11-01, rd331f).
+41. A ref callback whose body sets a field, `ref={move |r|
+    self._tag_ref.set(r)}`, is a block, `ref={(r) => { this._tagRef = r;
+    }}`, which returns `undefined`, as `Cell::set` gives `()`, where
+    react-art's `ref={ref => (this._tagRef = ref)}` returns the element. React
+    reads what a ref callback returns only when it's a function, the
+    cleanup React 19 calls; an element or `null` isn't one, so React does
+    the same either way (ADR 0262, the user's decision, 2026-11-01).

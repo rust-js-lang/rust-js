@@ -8,9 +8,11 @@ mod parser;
 
 pub(crate) use parser::snake;
 
+use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
 use rustc_ast::ast_traits::{HasAttrs, HasTokens};
@@ -174,15 +176,48 @@ struct Expand<'a> {
 
 /// The capitalized names a function's binds, each a tag its JSX reads,
 /// `<Comp>`, by the props type of a component it's written to be, `fn(P) ->
-/// ..`'s `P` (ADR 0239): `None` of an element's tag (ADR 0220).
-pub(super) type TagNames = HashMap<String, Option<String>>;
+/// ..`'s `P` (ADR 0239): `None` of an element's tag (ADR 0220). And which
+/// its JSX read, shared by its clones, whose bindings rustc's lint is
+/// allowed of (ADR 0439, amended).
+#[derive(Clone, Default)]
+pub(super) struct TagNames {
+    names: HashMap<String, Option<String>>,
+    read: Rc<RefCell<HashSet<String>>>,
+}
+
+impl TagNames {
+    pub(super) fn new() -> TagNames {
+        TagNames::default()
+    }
+
+    pub(super) fn extend(&mut self, names: HashMap<String, Option<String>>) {
+        self.names.extend(names);
+    }
+
+    /// The local `name` JSX reads as its tag, `<Comp>`, if it's one, and
+    /// what it's written to be, `Some(None)` of an element's tag: read, so
+    /// its binding is allowed its name.
+    pub(super) fn read(&self, name: &str) -> Option<&Option<String>> {
+        let found = self.names.get(name);
+        if found.is_some() {
+            self.read.borrow_mut().insert(name.to_string());
+        }
+        found
+    }
+
+    /// What JSX reads from now on, apart from what it read before.
+    fn reading(&mut self) -> Rc<RefCell<HashSet<String>>> {
+        self.read = Rc::default();
+        self.read.clone()
+    }
+}
 
 /// The capitalized names a function's parameters and `let`s bind, which
 /// its JSX reads as tags, `<Comp>`: `Comp` of `let Comp = As::H1` or of
 /// `HeadingProps { r#as: Comp, .. }` (ADR 0220), and of `let Heading:
 /// fn(HProps<..>) -> JSX::Element` a component of `HProps` (ADR 0239). A
 /// function inside is its own.
-fn tags_of(kind: &FnKind<'_>) -> TagNames {
+fn tags_of(kind: &FnKind<'_>) -> HashMap<String, Option<String>> {
     let mut names = Tags::default();
     if let FnKind::Fn(_, _, function) = kind {
         visit::walk_fn_decl(&mut names, &function.sig.decl);
@@ -194,7 +229,7 @@ fn tags_of(kind: &FnKind<'_>) -> TagNames {
 }
 
 #[derive(Default)]
-struct Tags(TagNames);
+struct Tags(HashMap<String, Option<String>>);
 
 impl Tags {
     /// What `pat` binds, of the type `ty` written: a component's props of
@@ -565,9 +600,83 @@ impl MutVisitor for Expand<'_> {
     fn visit_fn(&mut self, kind: FnKind<'_>, _: &AttrVec, _: Span, _: NodeId) {
         let old = self.tags.clone();
         self.tags.extend(tags_of(&kind));
-        mut_visit::walk_fn(self, kind);
+        let FnKind::Fn(ctxt, vis, function) = kind else {
+            mut_visit::walk_fn(self, kind);
+            self.tags = old;
+            return;
+        };
+        let read = self.tags.reading();
+        mut_visit::walk_fn(self, FnKind::Fn(ctxt, vis, function));
+        // A capitalized local its JSX reads as a tag, `let Tag = ..; <Tag>`,
+        // is named as JSX names it, as a component is: rust-js allows
+        // rustc's lint of its binding, so no source writes `#[allow]` for it
+        // (ADR 0439, amended).
+        let read = read.borrow();
+        if !read.is_empty() {
+            let mut allow = AllowTags {
+                sess: self.sess,
+                read: &read,
+            };
+            for param in &mut function.sig.decl.inputs {
+                allow.visit_param(param);
+            }
+            if let Some(body) = &mut function.body {
+                allow.visit_block(body);
+            }
+        }
         self.tags = old;
     }
+}
+
+/// Gives each parameter and `let` of a function that binds a tag its JSX
+/// read, `read`, `#[allow(non_snake_case)]` (ADR 0439, amended). A function
+/// inside is its own.
+struct AllowTags<'a> {
+    sess: &'a Session,
+    read: &'a HashSet<String>,
+}
+
+impl AllowTags<'_> {
+    fn binds(&self, pat: &ast::Pat) -> bool {
+        let mut binds = false;
+        pat.walk(&mut |p| {
+            if let ast::PatKind::Ident(_, ident, _) = p.kind
+                && self.read.contains(ident.as_str())
+            {
+                binds = true;
+            }
+            true
+        });
+        binds
+    }
+
+    fn allow(&self, span: Span) -> ast::Attribute {
+        attr::mk_attr_nested_word(
+            &self.sess.psess.attr_id_generator,
+            ast::AttrStyle::Outer,
+            sym::allow,
+            Symbol::intern("non_snake_case"),
+            span,
+        )
+    }
+}
+
+impl MutVisitor for AllowTags<'_> {
+    fn visit_param(&mut self, param: &mut ast::Param) {
+        if self.binds(&param.pat) {
+            param.attrs.push(self.allow(param.span));
+        }
+        mut_visit::walk_param(self, param);
+    }
+
+    fn visit_local(&mut self, local: &mut ast::Local) {
+        if self.binds(&local.pat) {
+            local.attrs.push(self.allow(local.span));
+        }
+        mut_visit::walk_local(self, local);
+    }
+
+    fn visit_item(&mut self, _: &mut ast::Item) {}
 }
 
 // Check cfg without cloning entire module trees or changing the attributes

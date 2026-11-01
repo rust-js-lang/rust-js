@@ -991,9 +991,6 @@ fn valtree_of<'tcx>(tcx: TyCtxt<'tcx>, value: ConstValue, ty: Ty<'tcx>) -> Optio
             valtree_at(tcx, pointee(tcx, pointer, primitive)?, *inner)
         }
         ty::Adt(adt, _) if adt.is_union() => None,
-        // A JS value, react's `ElementType` say, is nothing in Rust's memory:
-        // its initializer says what it is (ADR 0234).
-        ty::Adt(adt, args) if marks_js_object(tcx, *adt, args) => None,
         ty::Array(..) | ty::Tuple(_) | ty::Adt(..) => {
             let parts = tcx.try_destructure_mir_constant_for_user_output(value, ty)?;
             // An enum's starts with its variant's index, as rustc's own does.
@@ -1304,6 +1301,11 @@ fn const_js_by<'tcx>(
             Some(Expr::object(vec![Prop::Field("end".into(), end)]))
         }
         ty::Adt(adt, _) if adt.is_struct() && !super::recognition::struct_is_its_fields(tcx, adt.did()) => None,
+        // A JS value, a binding's, is nothing of rustc's value, its markers,
+        // a static's or a constant's: its initializer says what it is,
+        // react's `ElementType`'s (ADR 0234), `HostType::new("Text")`'s
+        // `"Text"` (ADR 0220, amended).
+        ty::Adt(adt, args) if marks_js_object(tcx, *adt, args) => None,
         ty::Adt(adt, args) if adt.is_struct() => {
             let variant = adt.non_enum_variant();
             // A `RefCell` field may be the value it holds, by its declaration

@@ -397,6 +397,87 @@ export function Title() {
 }
 ```
 
+A `&'static str` is a tag too, any DOM element's, as TypeScript's `string`
+tag is: one read at run time, as react-art's `Mode.Surface.tagName` is,
+takes a DOM element's attributes and a ref of an `Element`. A capitalized
+local JSX reads as its tag needs no `#[allow(non_snake_case)]`, as a
+component's name doesn't ([ADR 0439](../../decisions/0439-a-component-is-named-as-jsx-names-it.md)):
+
+```rust
+use react::{JSX, jsx};
+
+pub struct PanelProps {
+    pub wide: bool,
+    pub title: Option<&'static str>,
+}
+
+pub fn Panel(PanelProps { wide, title }: PanelProps) -> JSX::Element {
+    let Tag = if wide { "section" } else { "div" };
+    jsx! { <Tag accessKey="p" draggable={true} title={title} /> }
+}
+```
+
+```jsx
+export function Panel({ wide, title }) {
+  const Tag = wide ? "section" : "div";
+  return <Tag accessKey="p" draggable title={title} />;
+}
+```
+
+A custom renderer's host type, a string in JS that its renderer, not React
+DOM, makes an instance of, is a `react::HostType<P, I>`: its element is
+given its props `P` whole, `{...props}`, and its `ref` is the renderer's
+instance, `I`, as react-art's `TYPES.TEXT` is. It takes no DOM element's
+attributes or events ([ADR 0220](../../decisions/0220-jsx-tag-values.md)):
+
+```rust
+use std::cell::Cell;
+
+use react::webapi::HTMLElement;
+use react::{Component, HostType, JSX, jsx};
+
+pub struct NoteProps {
+    pub id: &'static str,
+}
+
+pub const NOTE: HostType<NoteProps, HTMLElement> = HostType::new("aside");
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Note {
+    #[cfg_attr(rust_js, rust_js::optional)]
+    _node: Cell<Option<&'static HTMLElement>>,
+}
+
+impl Component<NoteProps> for Note {
+    fn render(self: &'static Self) -> JSX::Element {
+        let T = NOTE;
+        jsx! { <T {...self.props()} ref={move |n| self._node.set(n)}>{"A note"}</T> }
+    }
+}
+```
+
+```jsx
+import { Component } from "react";
+
+export const NOTE = "aside";
+
+export class Note extends Component {
+  render() {
+    const T = NOTE;
+    return (
+      <T
+        {...this.props}
+        ref={(n) => {
+          this._node = n;
+        }}
+      >
+        A note
+      </T>
+    );
+  }
+}
+```
+
 `react::ElementType` holds any tag or a `memo` component of an element's
 props, as @types/react's `ElementType` does ([ADR 0234](../../decisions/0234-element-type.md)).
 

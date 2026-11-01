@@ -104,9 +104,17 @@ use JSX::Element;
 /// A tag's element, as what `jsx!` makes: an `Element`, the value itself.
 #[doc(hidden)]
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
-pub fn element<T>(this: Element<T>) -> Element {
+pub fn element(this: impl Built) -> Element {
     unreachable!()
 }
+
+/// What `jsx!` makes an [`Element`] of once its props are set: a tag's
+/// element, of its DOM element's type, or a [`HostType`]'s.
+#[doc(hidden)]
+pub trait Built {}
+
+impl<T> Built for Element<T> {}
+impl<P, I> Built for HostElement<P, I> {}
 
 /// The props a component's struct doesn't name, JS's `...rest`: a field of
 /// one, in props the component destructures, `LinkProps { href, rest }:
@@ -1250,17 +1258,123 @@ impl<R: Rendered, F: Fn() -> R> ComponentType<(), NoProps> for F {}
 impl<P, R: Rendered, F: Fn(P) -> R> ComponentType<P, WithProps> for F {}
 
 /// A DOM element's tag as a value, as JSX's `<Comp>` of `const Comp =
-/// "h1"`: a fieldless enum whose variants are named as tags are, `"h1"`,
-/// `"div"`. `jsx!` reads a tag that names a capitalized parameter or `let`
-/// of its function, `<Comp>`, as an element of it, which takes what a DOM
-/// element takes (ADR 0220).
+/// "h1"`: a string, as TypeScript's `string` tag is, or a fieldless enum
+/// whose variants are named as tags are, `"h1"`, `"div"`. `jsx!` reads a tag
+/// that names a capitalized parameter or `let` of its function, `<Comp>`, as
+/// an element of it, which takes what a DOM element takes (ADR 0220).
 pub trait Tag: Copy {}
+
+/// A tag's name, read at run time, as ReactART's `const Tag =
+/// Mode.Surface.tagName` is: any DOM element's, as React DOM's
+/// `createElement(type)` takes one (ADR 0220, amended).
+impl Tag for &'static str {}
 
 pub struct Intrinsic;
 
 /// A tag given its props whole, `<Comp {...rest} />`, as a component is.
 impl<P, T: Tag> ComponentType<P, Intrinsic> for T {}
 impl<T: Tag> Tag for &T {}
+
+/// A custom renderer's host type, a string in JS, as react-art's
+/// `TYPES.TEXT`, `"Text"`, is: typed by the props `P` its element is given
+/// and the instance `I` its `ref` is, which the renderer makes of them, as
+/// TypeScript's custom renderers type their intrinsic elements. A
+/// capitalized local of one is a tag `jsx!` renders, `<T {...self.props()}
+/// ref={..}>`, given its props whole, a `ref` of `I`, a `key` and children:
+/// no DOM element's attributes or events, which its renderer doesn't take
+/// (ADR 0220, amended).
+///
+/// ```ignore
+/// pub const TEXT: HostType<TextProps, art::Node> = HostType::new("Text");
+///
+/// let T = TEXT;
+/// jsx! { <T {...self.props()} ref={move |t| self._text.set(t)}>{text}</T> }
+/// ```
+#[cfg_attr(rust_js, rust_js::types = "string")]
+pub struct HostType<P, I>(PhantomData<JsObject>, PhantomData<fn() -> (P, I)>);
+
+impl<P, I> Clone for HostType<P, I> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<P, I> Copy for HostType<P, I> {}
+
+// SAFETY: it holds nothing in Rust, only a marker of what it is in JS, a
+// string, on JS's one thread: a `static`'s table may hold one.
+unsafe impl<P, I> Sync for HostType<P, I> {}
+
+// A string in JS, never `undefined`.
+unsafe impl<P, I> js::Defined for HostType<P, I> {}
+
+impl<P, I> HostType<P, I> {
+    /// The host type named `this` in JS, its renderer's: the string itself.
+    /// A `const fn`, so a `const` names it.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    pub const fn new(this: &'static str) -> HostType<P, I> {
+        HostType(PhantomData, PhantomData)
+    }
+}
+
+#[doc(hidden)]
+pub struct Host;
+
+/// A host type given its props whole, `<T {...props} />`, as a component
+/// is: its `P`, or a reference to it, `{...self.props()}`.
+impl<P, Q: core::borrow::Borrow<P>, I> ComponentType<Q, Host> for &HostType<P, I> {}
+
+/// What a tag `jsx!` reads, `<Comp>`, makes as its props are set: a DOM
+/// element's of a [`Tag`], a host type's of a [`HostType`].
+#[doc(hidden)]
+pub trait TagElement {
+    type Element;
+}
+
+impl<T: Tag> TagElement for T {
+    type Element = Element;
+}
+
+impl<P, I> TagElement for HostType<P, I> {
+    type Element = HostElement<P, I>;
+}
+
+/// The element of a [`HostType`] as its props are set: its props whole, a
+/// `ref` of its instance `I`, a `key` and children. What `jsx!` makes of it
+/// is an [`Element`].
+#[cfg_attr(rust_js, rust_js::jsx_element)]
+#[doc(hidden)]
+pub struct HostElement<P, I>(PhantomData<JsObject>, PhantomData<fn() -> (P, I)>);
+
+#[doc(hidden)]
+impl<P, I> HostElement<P, I> {
+    /// Its props, `{...props}`: its `P`, or a reference to it.
+    #[cfg_attr(rust_js, rust_js::link_name = "prop ...")]
+    pub fn props(self, props: impl core::borrow::Borrow<P>) -> HostElement<P, I> {
+        unreachable!()
+    }
+
+    /// Its children: one [`ReactNode`], or several as a tuple.
+    #[cfg_attr(rust_js, rust_js::link_name = "prop children")]
+    pub fn children(self, children: impl ReactNode) -> HostElement<P, I> {
+        unreachable!()
+    }
+
+    /// Tells React which item of a list this is, across renders.
+    #[cfg_attr(rust_js, rust_js::link_name = "prop key")]
+    pub fn key(self, key: impl Key) -> HostElement<P, I> {
+        unreachable!()
+    }
+
+    /// A ref to its instance, what its renderer makes of it.
+    #[cfg_attr(rust_js, rust_js::link_name = "prop ref")]
+    pub fn r#ref<M>(self, value: impl IntoRef<&'static I, M>) -> HostElement<P, I>
+    where
+        I: 'static,
+    {
+        unreachable!()
+    }
+}
 
 /// Props that take what a DOM element takes, as `SVGAttributes` do, or
 /// a component's that flatten them and have nothing else it must be given:
@@ -1326,10 +1440,10 @@ pub const fn element_type(this: impl IntoElementType) -> ElementType {
     ElementType(PhantomData)
 }
 
-/// `<Comp>` of a [`Tag`] `Comp`.
+/// `<Comp>` of a [`Tag`] `Comp`, or of a [`HostType`].
 #[cfg_attr(rust_js, rust_js::link_name = "<$>")]
 #[doc(hidden)]
-pub fn tag(tag: impl Tag) -> Element {
+pub fn tag<T: TagElement>(tag: T) -> T::Element {
     unreachable!()
 }
 

@@ -206,10 +206,11 @@ impl Jsx<'_> {
         let intrinsic = !name.is_empty() && !name.contains("::") && name.starts_with(char::is_lowercase);
         // A capitalized local of the function, `<Comp>`: a `react::Tag`'s
         // element, or a component given its props whole, as before.
-        let local = self.tags.contains_key(&name);
+        let found = self.tags.read(&name);
+        let local = found.is_some();
         // A local of a component's function type, `fn(HProps<..>) -> ..`: that
         // component, its props built by their type's companion (ADR 0239).
-        let local_props = self.tags.get(&name).cloned().flatten();
+        let local_props = found.cloned().flatten();
         let builtin = match name.as_str() {
             "Fragment" => Some("keyed_fragment"),
             "StrictMode" => Some("strict_mode"),
@@ -390,8 +391,9 @@ impl Jsx<'_> {
                 expr = method_call(self.sess, expr, "children", vec![children], span);
             }
             // A tag's is of its DOM element while its props are set, which its
-            // handlers and `ref` take; what it makes is an `Element` (ADR 0224).
-            if intrinsic {
+            // handlers and `ref` take, or a host type's, of its props and
+            // instance; what it makes is an `Element` (ADR 0224, 0220).
+            if intrinsic || tag {
                 expr = call(
                     self.sess,
                     template(self.sess, "::react::element".into(), span),
