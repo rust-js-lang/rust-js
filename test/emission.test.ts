@@ -116,6 +116,84 @@ test("a read of a variable MIR copied maps where the program reads it", async ()
   expect((await import(join(dir, "lib.js"))).total(new Uint8Array([1, 2, 250]))).toBe(253);
 });
 
+// What each JS segment of `rust` compiled points at in it: the Rust from
+// there to its line's end, or nothing, by JS line and column.
+async function mapped(name: string, rust: string) {
+  const { fixture, compiler } = await import("./support");
+  const { writeFileSync, readFileSync } = await import("node:fs");
+  const { decodeMappings, lookup } = await import("./sourcemap.ts");
+  const dir = fixture(name);
+  writeFileSync(join(dir, "lib.rs"), rust);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8").split("\n");
+  const rs = rust.split("\n");
+  const segments = decodeMappings(JSON.parse(readFileSync(join(dir, "lib.js.map"), "utf8")).mappings);
+  /** The Rust that `text`, found in the JS, maps to where it starts. */
+  const at = (text: string) => {
+    const line = js.findIndex((l) => l.includes(text));
+    expect(line).toBeGreaterThan(0);
+    const col = js[line].indexOf(text);
+    const hit = segments.find((s) => s.jsLine === line && s.jsCol === col) ?? lookup(segments, line, col);
+    return hit && rs[hit.srcLine].slice(hit.srcCol);
+  };
+  return { at, lib: await import(join(dir, "lib.js")) };
+}
+
+// A nullable field's `None` is `null`, made where the `None` is: `value:
+// null` and `slot.value = null`'s `null`s map to the Rust's `None`, not to
+// what's before them (`Storage::written`, ADRs 0275, 0772).
+test("a nullable field's null maps to the None it is", async () => {
+  const { at, lib } = await mapped(
+    "source-map-nullable-null",
+    `use std::cell::Cell;
+
+pub struct Slot {
+    pub count: u32,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub value: Cell<Option<u32>>,
+}
+
+pub fn make(count: u32) -> Slot {
+    Slot {
+        count,
+        value: Cell::new(None),
+    }
+}
+
+pub fn reset(slot: &Slot) {
+    slot.value.set(None);
+}
+`,
+  );
+  expect(at("null,")).toBe("None),");
+  expect(at("null;")).toBe("None);");
+  const slot = lib.make(2);
+  lib.reset(slot);
+  expect(slot).toEqual({ count: 2, value: null });
+});
+
+// An `if` whose branches tidy makes one conditional is where the `if` is:
+// `return first ? a : b;` maps to the Rust's `first { a } else { b }`, the
+// `if`'s condition, as its statement is, not to the line before
+// (`one_assignment`'s value, ADR 0708, amended).
+test("an if's branches made one conditional map to the if", async () => {
+  const { at, lib } = await mapped(
+    "source-map-branch-value",
+    `pub fn chosen<'a>(first: bool, a: &'a mut u32, b: &'a mut u32) -> &'a mut u32 {
+    if first { a } else { b }
+}
+
+pub fn picked(first: bool) -> u32 {
+    let (mut a, mut b) = (1, 2);
+    *chosen(first, &mut a, &mut b) += 10;
+    a * 100 + b
+}
+`,
+  );
+  expect(at("return first ? a : b;")).toBe("first { a } else { b }");
+  expect([lib.picked(true), lib.picked(false)]).toEqual([1102, 112]);
+});
+
 // A stack trace through the map (Jest's source-map-support, Node's
 // --enable-source-maps) names a frame by the map's name where the frame is
 // called from, so a name would be what the frame shows: `callback: impl

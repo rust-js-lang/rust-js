@@ -606,16 +606,12 @@ export const mutations: Mutation[] = [
   {
     name: "branch-value-placed-nowhere",
     breaks:
-      "an `if`'s branches made one conditional, read in a struct literal's field, are placed nowhere, so the comment before the field is before the `return {` (ADR 0708, amended)",
+      "an `if`'s branches made one conditional are placed nowhere, so the source map maps `return first ? a : b;` to nothing, not the Rust's `if` (ADR 0708, amended)",
     file: "src/lower/mir/tidy/branches.rs",
     find: "                if value.span.is_none() {\n                    value.span = span;\n",
     replace:
       "                if false {\n                    value.span = span;\n",
-    tests: [
-      "test/lowering-comment-fields.test.ts",
-      "-t",
-      "a comment before a field of an if's value",
-    ],
+    tests: ["test/emission.test.ts", "-t", "an if's branches made one conditional map to the if"],
   },
   {
     name: "branch-adding-made-conditional",

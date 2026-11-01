@@ -345,11 +345,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "nullable-null-unplaced",
-    breaks: "a nullable field's `null` is where nothing is, so the comment before the field goes after it",
+    breaks: "a nullable field's `null` is where nothing is, so the source map maps `value: null`'s `null` to nothing, not the Rust's `None`",
     file: "src/js/make.rs",
     find: "        ExprKind::Undefined | ExprKind::GivenUndefined => Some(Expr::null().or_at(made.span)),\n",
     replace: "        ExprKind::Undefined | ExprKind::GivenUndefined => Some(Expr::null()),\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "nullable Cell field's None is null"],
+    tests: ["test/emission.test.ts", "-t", "a nullable field's null maps to the None it is"],
   },
   {
     name: "nulled-field-coalesced",

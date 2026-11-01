@@ -1451,6 +1451,16 @@ pub fn named(o: Option<Kind>) -> String {
     };
     format!("{name}.")
 }
+// Its \`None\` last, as std's \`Formatter::align\` is matched.
+pub fn tagged(o: Option<Kind>) -> String {
+    let tag = match o {
+        Some(Kind::Note) => "note",
+        Some(Kind::Warn { .. }) => "warn",
+        Some(Kind::Tip(_)) => "tip",
+        None => "none",
+    };
+    format!("{tag}.")
+}
 // Of a value MIR holds, \`tmp\`, its first branch doing more than giving
 // it, as react.dev's CodeDiagram picks a child.
 pub fn pick(x: i32) -> String {
@@ -1469,6 +1479,7 @@ pub fn pick(x: i32) -> String {
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain('  const cls = k === "Note" ? "note" : k.TAG === "Warn" ? "warn" : "tip";\n');
   expect(js).toContain('  const name = o == null ? "none" : o === "Note" ? "note" : "other";\n');
+  expect(js).toContain('  const tag = o == null ? "none" : o === "Note" ? "note" : o.TAG === "Warn" ? "warn" : "tip";\n');
   expect(js).toContain('  if (k === "Note") {\n    counted = (n + 1) | 0;\n  } else if (k.TAG === "Warn") {\n    counted = 0;\n  } else {\n    counted = n;\n  }\n');
   expect(js).toMatch(/} else if \(x < 0\) {\n    \w+ = /);
   const lib = await import(join(dir, "mir.js"));
@@ -1476,4 +1487,5 @@ pub fn pick(x: i32) -> String {
   expect([lib.pick(6), lib.pick(-1), lib.pick(2)]).toEqual(["13", "neg", "2"]);
   expect([lib.count("Note", 3), lib.count({ TAG: "Warn", level: 1 }, 3), lib.count({ TAG: "Tip", _0: "x" }, 3)]).toEqual([5, 1, 4]);
   expect([lib.named(undefined), lib.named("Note"), lib.named({ TAG: "Tip", _0: "x" })]).toEqual(["none.", "note.", "other."]);
+  expect([lib.tagged(undefined), lib.tagged("Note"), lib.tagged({ TAG: "Warn", level: 1 }), lib.tagged({ TAG: "Tip", _0: "x" })]).toEqual(["none.", "note.", "warn.", "tip."]);
 });

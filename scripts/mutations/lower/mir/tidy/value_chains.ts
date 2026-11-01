@@ -43,7 +43,7 @@ export const mutations: Mutation[] = [
   {
     name: "plain-chain-in-yes-kept",
     breaks:
-      'a match of plain values whose `None` arm comes first is `if (value != null) { align = a ? .. : .. } else { align = "none"; }`, half a chain (ADR 0969, amended)',
+      'a match of plain values whose `None` arm comes first in the JS, last in the Rust, as `Formatter::align` is matched, is `if (value != null) { align = a ? .. : .. } else { align = "none"; }`, half a chain (ADR 0969, amended)',
     file: "src/lower/mir/tidy/value_chains.rs",
     find: "        (true, false, _) if plain(&no) => ",
     replace: "        (true, false, _) if false => ",
