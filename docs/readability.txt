@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
 files	1412
-lines	139231
+lines	139285
 temporaries	1	0.1
 labeled blocks	14	1
 while (true)	123	8.8
 $iter	1174	84.3
 Iterator.from	116	8.3
 return;	150	10.8
-renamed x$1	8619	619
+renamed x$1	8635	620
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1976	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	206	0	0	0	6	0	0	35
@@ -136,7 +136,7 @@ test/corpus/cell_from_mut.js	54	0	0	0	0	0	0	0
 test/corpus/cell_of_a_boxed_option.js	62	0	0	0	0	0	0	10
 test/corpus/cell_reached_through_a_call.js	95	0	0	0	0	0	0	24
 test/corpus/cell_set_none_then_read_back.js	17	0	0	0	0	0	0	0
-test/corpus/cell_set_then_read_back.js	72	0	0	0	0	0	0	0
+test/corpus/cell_set_then_read_back.js	70	0	0	0	0	0	0	8
 test/corpus/chain_nth_drops_what_it_passes.js	172	0	0	0	4	0	0	20
 test/corpus/chain_rev_own_back.js	132	0	0	0	2	0	0	0
 test/corpus/chain_sides_own_steps.js	550	0	0	0	34	0	0	134
@@ -1053,7 +1053,7 @@ test/corpus/scan_lazy_drops.js	59	0	0	0	3	0	0	0
 test/corpus/scan_map_while_unfused.js	38	0	0	0	2	0	0	2
 test/corpus/scan_object_state.js	61	0	0	0	4	0	0	0
 test/corpus/scope_struct_functions.js	74	0	0	0	0	0	0	17
-test/corpus/scope_struct_kept_apart.js	153	0	0	0	0	0	0	0
+test/corpus/scope_struct_kept_apart.js	209	0	0	0	0	0	0	8
 test/corpus/scope_struct_read_whole.js	41	0	0	0	0	0	0	0
 test/corpus/scope_temporaries.js	168	0	0	1	0	0	0	29
 test/corpus/scoped_drops_cross.js	40	0	0	0	0	0	0	0

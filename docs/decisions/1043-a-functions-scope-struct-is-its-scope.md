@@ -99,7 +99,10 @@ function processReply(root, prefix, depth) {
 One owner, `analysis/scopes.rs`, reads each body's MIR, the one it's
 lowered from, and finds a struct a scope where:
 
-- **It's its own**: not `pub`, of no type or const parameters, and no
+- **It's its own object**: of fields, not a unit struct, whose value is
+  `undefined`, and a `&mut self` of which a box (rustc's
+  `borrowck/borrow-in-match-with-format-string.rs` was refused, amended);
+  not `pub`, of no type or const parameters, and no
   trait is implemented for it, so no `Clone` copies it, no `Drop` runs of
   it, and no generic code is given it. Its fields hold none of it.
 - **Its impls are methods**: each item a method of `&self`, `&mut self`,
@@ -209,7 +212,7 @@ function processReply(root, prefix, depth) {
 - **Named apart** from every name the function's body and parameters
   have, `parts$1` where the function has a `parts` of its own: a field
   read into a variable of its name, `let parts = reply.parts.borrow()`, is
-  common, so readability's `renamed x$1` grew again, 617 to 619.4 in
+  common, so readability's `renamed x$1` grew again, 617 to 620 in
   10,000 lines.
 - **What holds it**: its `const`, and a `const` of that, which tidy left
   where it reads it, gone with it.

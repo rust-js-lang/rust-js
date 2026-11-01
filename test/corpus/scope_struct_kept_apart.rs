@@ -1,8 +1,8 @@
 // A struct that isn't a function's scope keeps its methods as its type's
 // object (ADR 1043): its value given away or given back, made twice, made
 // in a loop or an inner block, its method named as a value, a trait
-// implemented for it, `pub`, or held by an `Rc` that's counted, as its last
-// owner runs a destructor.
+// implemented for it, `pub`, held by an `Rc` that's counted, as its last
+// owner runs a destructor, or a unit struct, `undefined`.
 use std::cell::Cell;
 use std::fmt;
 use std::rc::Rc;
@@ -194,11 +194,35 @@ fn returned(n: u32) -> Returned {
     returned
 }
 
+struct Unit;
+
+impl Unit {
+    fn method(&mut self, arg: &str) -> Result<usize, &str> {
+        Ok(arg.len())
+    }
+
+    fn test(self: &mut Unit) -> Result<usize, &str> {
+        let s = format!("abcde");
+        let data = match self.method(&s) {
+            Ok(r) => r,
+            Err(e) => return Err(e),
+        };
+        Ok(data)
+    }
+}
+
+fn unit() -> usize {
+    let mut unit = Unit;
+    assert_eq!(unit.method("one"), Ok(3));
+    assert_eq!(unit.test(), Ok(5));
+    8
+}
+
 fn main() {
     println!("{} {}", given_away(1), given_away(2));
     println!("{} {}", made_twice(1), made_in_a_loop());
     println!("{} {}", named_as_a_value(1), implemented(2));
     println!("{} {}", public(1), counted(2));
     println!("{} {}", in_a_block(3), tagged(4));
-    println!("{}", returned(5).bump());
+    println!("{} {}", returned(5).bump(), unit());
 }

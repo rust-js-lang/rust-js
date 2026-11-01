@@ -103,4 +103,12 @@ export const mutations: Mutation[] = [
     tests: scopes,
     snapshots: true,
   },
+  {
+    name: "scope-of-a-unit-struct",
+    breaks: "a unit struct, `undefined`, is a function's scope, its `&mut self` a box its calls are refused for, no variable (rustc's borrow-in-match-with-format-string)",
+    file: "src/lower/analysis/scopes.rs",
+    find: "    if def.all_fields().next().is_none()\n        || (def.all_fields())",
+    replace: "    if (def.all_fields())",
+    tests: scopes,
+  },
 ];

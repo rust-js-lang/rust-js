@@ -29,7 +29,8 @@
 //! borrowck reads it, the one the body is lowered from, so what's found is
 //! what's lowered. A struct is one where:
 //!
-//! - it's not `pub`, has no type or const parameters, and no trait is
+//! - it has fields, an object (a unit struct is `undefined`), is not
+//!   `pub`, has no type or const parameters, and no trait is
 //!   implemented for it: no `Clone` copies it, no `Drop` runs of it, and no
 //!   generic code is given it;
 //! - every item of its impls is a method of `&self`, `&mut self` or
@@ -137,7 +138,11 @@ fn scope_of<'tcx>(
         return None;
     }
     let def = tcx.adt_def(adt);
-    if (def.all_fields()).any(|field| mentions(tcx.type_of(field.did).instantiate_identity().skip_normalization(), adt))
+    // A unit struct is `undefined`, no object a function closes over (ADR
+    // 0020): what its methods are given isn't a variable.
+    if def.all_fields().next().is_none()
+        || (def.all_fields())
+            .any(|field| mentions(tcx.type_of(field.did).instantiate_identity().skip_normalization(), adt))
     {
         return None;
     }
