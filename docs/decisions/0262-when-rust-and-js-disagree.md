@@ -280,6 +280,16 @@ react.dev's TopNav passes the same closure instead.
   of neither, so React does the same. Only a caller that calls the
   callback itself and reads its result tells them apart. Listed in the
   guide's differences (`semantics.md`, 41).
+- **An object's `None` field is no key where upstream writes `key:
+  undefined`**, the second case's, which the user decided (2026-11-01,
+  rd391, ADR 0280): React's Flight client's element and lazy node
+  literals, `{$$typeof, type, key, props, _owner: undefined}` say, are
+  `{ $$typeof, type, key, props }` of a struct whose field is `None`.
+  A read of the key gives `undefined` either way, and JSON leaves it out
+  either way; only `"key" in o`, `Object.keys(o)`, `hasOwnProperty` and a
+  spread over another object's key tell them apart, which React's
+  readers of these objects don't do. Listed in the guide's differences
+  (`semantics.md`, 42).
 
 ## Amendment: the stack's depth
 

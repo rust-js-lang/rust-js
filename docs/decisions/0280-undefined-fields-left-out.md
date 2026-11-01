@@ -5,7 +5,7 @@ its line keeps its key, `undefined`, the comment's place; a comment before a
 field changes no key, but where no key follows it; a field that holds a
 cell keeps its key where it's made `None` (the user's decision, 2026-10-27).
 
-Case: A ([0262](0262-when-rust-and-js-disagree.md)).
+Case: A ([0262](0262-when-rust-and-js-disagree.md)); B where upstream writes the key, `_owner: undefined`, the user's decision (2026-11-01, rd391): `in`, `Object.keys` and `hasOwnProperty` tell them apart, listed in 0262's Consequences.
 
 ## Context
 

@@ -1175,3 +1175,10 @@ React and JSX are [their own pages](README.md#react).
     reads what a ref callback returns only when it's a function, the
     cleanup React 19 calls; an element or `null` isn't one, so React does
     the same either way (ADR 0262, the user's decision, 2026-11-01).
+42. An object's field that's `None` is no key, `{ type, props }`, where
+    React's Flight client writes `{ type, props, _owner: undefined }`: a
+    read of it gives `undefined` either way; only `"_owner" in o`,
+    `Object.keys(o)` or `hasOwnProperty` tells them apart, which React's
+    readers don't use (ADR 0262, the user's decision, 2026-11-01, rd391;
+    [ADR 0280](../decisions/0280-undefined-fields-left-out.md)).
+
