@@ -1036,10 +1036,12 @@ export function ratio(a, b) {
   rust-js: `#[rust_js::nullable]` is of a field that's an `Option`, or a `Vec` of them, or a `Cell` or a `RefCell` of one, or of a type parameter's value, whose `None` is `null`; this one isn't
   ```
 
-- **`#[rust_js::optional]` on a `OnceCell` field makes it absent until
-  it's set**, React's lazy payload's `_ioInfo?: ..`: made empty, `{
-  _status: -1 }`, then `payload._ioInfo = ..` where it's set; one that
-  isn't optional keeps its key, `undefined`
+- **`#[rust_js::optional]` on a cell field makes it absent until it's
+  set**, a `OnceCell`, React's lazy payload's `_ioInfo?: ..`, made empty,
+  `{ _status: -1 }`, then `payload._ioInfo = ..` where it's set; or a
+  `Cell<Option<T>>` or a `RefCell` of one, react-art's Text's `_text`,
+  left out where it's made `None` and set as it's given, `this._text = t`,
+  `null` too. One that isn't optional keeps its key, `undefined`
   ([ADR 0280](../../decisions/0280-undefined-fields-left-out.md), amended).
 - **`#[rust_js::optional]` on a nullable field makes it absent until
   it's set**, Flow's and TypeScript's `banner?: string | null`: made with
@@ -1055,12 +1057,11 @@ export function ratio(a, b) {
   marks are the two attributes: `nullable` the `| null`, `optional` the
   `?`. Read, absent, `null` or a value, it's its `Option`. Its `.d.ts` is a
   nullable field's. On a field that isn't nullable it's an error, as a
-  plain `Option` field's `None` is left out already, and a cell's keeps
-  its key
+  plain `Option` field's `None` is left out already
   ([ADR 0810](../../decisions/0810-an-optional-nullable-field-is-absent-until-set.md)):
 
   ```
-  rust-js: `#[rust_js::optional]` is of a `#[rust_js::nullable]` field, whose `None` is then left out where its struct is made and `null` where it's set; an `Option` field's `None` is left out already
+  rust-js: `#[rust_js::optional]` is of a cell, a `Cell<Option<T>>`, a `RefCell` of one or a `OnceCell`, left out where it's made `None` or empty, or of a `#[rust_js::nullable]` field, whose `None` is then left out where its struct is made and `null` where it's set; an `Option` field's `None` is left out already
   ```
 
 - **`js::null()` is a `None` that's `null` where it's written**, of any

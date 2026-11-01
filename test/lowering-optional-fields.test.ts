@@ -164,3 +164,42 @@ pub fn info(payload: &Payload) -> Option<u32> {
   const [prod, dev] = [lib.lazy(false), lib.lazy(true)];
   expect(["_ioInfo" in prod, "kept" in prod, lib.info(prod), lib.info(dev)]).toEqual([false, true, undefined, 7]);
 });
+
+// rd331g: a cell of an `Option` made `None` keeps its key (ADR 0280,
+// amended), unless it's optional: react-art's Text's `_text`, absent until
+// its ref sets what React gives it, as upstream's `this._text = t` is,
+// stored as it's given, `null` too, with no `?? null`.
+test("an optional Cell of an Option is left out where it's made None", async () => {
+  const dir = fixture("optional-cell");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+pub struct Text {
+    #[cfg_attr(rust_js, rust_js::optional)]
+    pub node: Cell<Option<&'static str>>,
+    pub kept: Cell<Option<&'static str>>,
+}
+
+pub fn text() -> Text {
+    Text { node: Cell::new(None), kept: Cell::new(None) }
+}
+
+pub fn attach(text: &Text, node: Option<&'static str>) {
+    text.node.set(node);
+}
+
+pub fn node(text: &Text) -> Option<&'static str> {
+    text.node.get()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return { kept: undefined };");
+  expect(js).toContain("text.node = node;");
+  const lib = await import(join(dir, "lib.js"));
+  const made = lib.text();
+  expect(["node" in made, "kept" in made, lib.node(made)]).toEqual([false, true, undefined]);
+  lib.attach(made, "n");
+  expect(lib.node(made)).toBe("n");
+  lib.attach(made, null);
+  expect([made.node, lib.node(made)]).toEqual([null, null]);
+});

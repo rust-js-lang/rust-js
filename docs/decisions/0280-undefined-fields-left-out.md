@@ -230,3 +230,22 @@ empty one, so it needs no `nullable`.
 - Held by `test/lowering-optional-fields.test.ts`, "an optional OnceCell
   field is left out where it's made empty", and the mutation
   `optional-once-cell-refused`.
+
+## Amendment: an optional `Cell<Option<T>>` field is left out where it's made `None` (rd331g, 2026-11-01)
+
+react-art's Text constructs itself, `super(props)`, and has no `_text`
+until its ref sets it, `ref={t => (this._text = t)}`. The port's `_text:
+Cell<Option<&'static Unknown>>`, made `Cell::new(None)`, printed
+`this._text = undefined;`, an own key upstream's instance lacks, which
+`Object.keys` sees; `#[rust_js::optional]` was refused on what isn't
+nullable, and nullable and optional printed its ref's `this._text = t ??
+null;`, a `?? null` upstream doesn't write. **`#[rust_js::optional]` is
+of a cell of an `Option` too, a `Cell<Option<T>>` or a `RefCell` of one**,
+as of a `OnceCell` (lz1): made `None`, it's left out; set, it holds what
+it's given, as any cell field does. Case N
+([0262](0262-when-rust-and-js-disagree.md)): its `get()` is `undefined`
+either way; the key's absence is what JS sees, as the attribute asks. The
+refusal names the cells it's of. Held by
+`test/lowering-optional-fields.test.ts`'s "an optional Cell of an Option is
+left out where it's made None", run in Node, and the mutation
+`optional-cell-refused` (`lower/bindings.rs`).

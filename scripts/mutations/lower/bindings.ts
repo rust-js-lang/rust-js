@@ -580,7 +580,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`#[rust_js::optional]` of a field that isn't nullable, which says nothing, compiles (ADR 0810)",
     file: "src/lower/bindings.rs",
-    find: "                if is_optional(tcx, field) && !is_nullable(tcx, field) && !once {\n",
+    find: "                if is_optional(tcx, field) && !is_nullable(tcx, field) && !once && !cell_of_option {\n",
     replace: "                if false {\n",
     tests: [
       "test/diagnostics.test.ts",
@@ -641,9 +641,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `#[rust_js::optional]` `OnceCell` field is refused, so React's lazy payload keeps `_ioInfo: undefined` (ADR 0280, amended)",
     file: "src/lower/bindings.rs",
-    find: "                if is_optional(tcx, field) && !is_nullable(tcx, field) && !once {\n",
+    find: "                if is_optional(tcx, field) && !is_nullable(tcx, field) && !once && !cell_of_option {\n",
     replace:
-      "                if is_optional(tcx, field) && !is_nullable(tcx, field) && (!once || true) {\n",
+      "                if is_optional(tcx, field) && !is_nullable(tcx, field) && (!once || true) && !cell_of_option {\n",
     tests: [
       "test/lowering-optional-fields.test.ts",
       "-t",
@@ -677,5 +677,13 @@ export const mutations: Mutation[] = [
     find: "            Some((_, rest)) => paths::steps(rest).err(),\n",
     replace: "            Some(_) => None,\n",
     tests: ["test/lowering-binding-paths.test.ts"],
+  },
+  {
+    name: "optional-cell-refused",
+    breaks: "`#[rust_js::optional]` of a `Cell<Option<T>>` is refused, which react-art's Text's `_text` needs to be absent until its ref sets it (rd331g)",
+    file: "src/lower/bindings.rs",
+    find: " && !once && !cell_of_option {",
+    replace: " && !once {",
+    tests: ["test/lowering-optional-fields.test.ts", "-t", "optional Cell of an Option"],
   },
 ];

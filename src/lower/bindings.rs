@@ -183,11 +183,14 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
                 // 0810); a cell's keeps its key, `undefined`, absent until
                 // it's set only where it's nullable and optional (ADR 0280,
                 // amended), or a `OnceCell`, which has no `None` to write but
-                // its empty one, React's lazy payload's `_ioInfo`.
+                // its empty one, React's lazy payload's `_ioInfo`; or a cell of
+                // an `Option`, left out where it's made `None` and set as it's
+                // given, react-art's Text's `_text`, which its ref sets (rd331g).
                 let once = matches!(ty.kind(), ty::Adt(cell, _)
                     if super::recognition::is_std_def(tcx, cell.did(), super::recognition::StdItem::OnceCell));
-                if is_optional(tcx, field) && !is_nullable(tcx, field) && !once {
-                    let message = "rust-js: `#[rust_js::optional]` is of a `#[rust_js::nullable]` field, whose `None` is then left out where its struct is made and `null` where it's set, or of a `OnceCell`, left out where it's made empty; an `Option` field's `None` is left out already, and a cell's, `Cell<Option<T>>`, keeps its key, `undefined`, unless it's nullable and optional";
+                let cell_of_option = nullable_option(tcx, ty).is_some_and(|option| option != ty);
+                if is_optional(tcx, field) && !is_nullable(tcx, field) && !once && !cell_of_option {
+                    let message = "rust-js: `#[rust_js::optional]` is of a cell, a `Cell<Option<T>>`, a `RefCell` of one or a `OnceCell`, left out where it's made `None` or empty, or of a `#[rust_js::nullable]` field, whose `None` is then left out where its struct is made and `null` where it's set; an `Option` field's `None` is left out already";
                     tcx.dcx().span_err(tcx.def_span(field.did), message);
                     valid = false;
                 }
