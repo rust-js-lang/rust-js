@@ -931,3 +931,57 @@ test("a break the program wrote through drops is its label's", async () => {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.found([], 12), lib.found(["a"], 7), lib.found([], 4)]).toEqual([1, 4, 2]);
 });
+
+// React's Fizz `use(usable)`: a let chain whose body's `if` chain returns
+// or throws in each branch, past MIR's block of it. Taking the block's tail
+// jump out of a branch it was all of leaves no empty branch: `if (usable !=
+// null) { if (typeof usable === "object") { .. } }`, never `if (usable ==
+// null) {} else if (..)`, as `emptied_branch` writes it.
+test("a branch a tail jump was all of is never printed empty", async () => {
+  const dir = fixture("emptied-branch");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+fn unwrap_thenable(thenable: &'static Unknown) -> Option<&'static Unknown> {
+    js::get(thenable, "value")
+}
+
+fn read_context(context: &'static Unknown) -> Option<&'static Unknown> {
+    js::get(context, "_currentValue")
+}
+
+pub fn r#use(usable: Option<&'static Unknown>) -> Option<&'static Unknown> {
+    // $FlowFixMe[invalid-compare]
+    if let Some(usable) = usable
+        && js::type_of(Some(usable)) == "object"
+    {
+        // $FlowFixMe[method-unbinding]
+        if js::type_of(js::get(usable, "then")) == "function" {
+            // This is a thenable.
+            let thenable: &'static Unknown = unsafe { js::cast(Some(usable)) };
+            return unwrap_thenable(thenable);
+        } else if js::truthy(js::get(usable, "recoverable")) {
+            // Create the recoverable error here.
+            let recoverable: &'static Unknown = unsafe { js::cast(Some(usable)) };
+            js::throw(Some(recoverable));
+        } else if js::truthy(js::get(usable, "context")) {
+            let context: &'static Unknown = unsafe { js::cast(Some(usable)) };
+            return read_context(context);
+        }
+    }
+
+    // eslint-disable-next-line react-internal/safe-string-coercion
+    panic!("An unsupported type was passed to use(): {}", js::string(usable));
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toMatch(/\) \{\n\s*\} else/);
+  expect(js).toContain('  if (usable != null) {\n    if (typeof usable === "object") {');
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.use({ then() {}, value: 4 })).toBe(4);
+  expect(lib.use({ context: true, _currentValue: 5 })).toBe(5);
+  const recoverable = { recoverable: true };
+  expect(() => lib.use(recoverable)).toThrow();
+  expect(() => lib.use(null)).toThrow("An unsupported type was passed to use(): null");
+  expect(() => lib.use(3)).toThrow("An unsupported type was passed to use(): 3");
+});

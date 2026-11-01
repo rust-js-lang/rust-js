@@ -250,13 +250,13 @@ person writes. Four things kept them so, each now as it should be:
 - **A branch a tail jump was all of is gone**: `drop_tail`, which takes a
   `break` that goes where the code goes on anyway, left `if (!on) {}
   else { .. }`, which no chain reads; `emptied_branch`, the one owner of
-  an emptied branch, makes it `if (on) { .. }`. (Amended 2026-11-01:
-  `drop_tail` no longer asks it itself. The passes after it that ask it,
-  `branch_values`' first, write each such branch before any chain reads
-  it, so its own call changed no JS: its mutation
-  `tail-jump-branch-left-empty` survived the nightly, and `check:fast
-  --all`, the corpus's 1,370 cases with tidy's contracts that refuse an
-  empty `if` among them, passes without it. Removed with that mutation.)
+  an emptied branch, makes it `if (on) { .. }`.
+  (Amended 2026-11-01: 672fdd245 took `drop_tail`'s own call out, its
+  mutation surviving every test that listed it; React's port showed it
+  wasn't redundant, Fizz's `use(usable)` then printing `if (usable ==
+  null) {} else if (typeof usable === "object") { .. }`. Put back, held by
+  `lowering-labels`' "a branch a tail jump was all of is never printed
+  empty".)
 
 And **a `break;` that ends a branch of the `if` a case ends with is
 gone**, where the case doesn't fall: the case's end leaves the `switch`
@@ -276,8 +276,8 @@ the cases Rust's arms are, its guards run in Rust's order, each once; a
   upstream's JS; `test/corpus/switch_guards_apart.rs` against native Rust.
 - Mutations `switch-negated-guard-unplaced`, `switch-guard-inner-if-apart`,
   `switch-failing-guard-goes-after` and `switch-case-ending-break-kept`
-  (`tidy/switches.ts`); `tail-jump-branch-left-empty` removed with the
-  call it held (amended above).
+  (`tidy/switches.ts`), and `tail-jump-branch-left-empty`
+  (`tidy/jumps/tails.ts`), of `lowering-labels`' test (amended above).
 
 ## Amendment: a fall-through the program says is said once (2026-10-26)
 

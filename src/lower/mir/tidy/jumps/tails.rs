@@ -712,6 +712,14 @@ pub(in crate::lower::mir::tidy) fn drop_tail(stmts: &mut Vec<Stmt>, jump: &StmtK
         if let Some(otherwise) = otherwise {
             drop_tail(otherwise, jump);
         }
+        // A branch with nothing left, as `emptied_branch` writes it: `if
+        // (!on) {} else { s }` of a guard's arm is `if (on) { s }`, and a
+        // let chain's `if (usable == null) {} else if (..) { .. }` is
+        // `if (usable != null && ..) { .. }`, as no later pass writes it.
+        let last = stmts.pop().expect("matched");
+        if let Some(kind) = emptied_branch(last.kind) {
+            stmts.push(kind.at(last.span));
+        }
     } else if let Some(StmtKind::Try(body, _)) = stmts.last_mut().map(|s| &mut s.kind) {
         // A `try`'s, its `finally` run as it goes on to the end anyway: a
         // borrow's around a loop, `try { for (..) { .. } break bb26; }

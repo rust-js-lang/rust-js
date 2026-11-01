@@ -873,4 +873,13 @@ export const mutations: Mutation[] = [
     replace: "        // the program wrote there, `continue;` in a `switch`'s case.\n        _ = body;\n",
     tests: ["test/lowering-labels.test.ts", "-t", "a break the program wrote through drops is its label's"],
   },
+  {
+    name: "tail-jump-branch-left-empty",
+    breaks:
+      "a branch a tail jump was all of stays, empty: React's Fizz `use(usable)` prints `if (usable == null) {} else if (typeof usable === \"object\") { .. }`",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: '        let last = stmts.pop().expect("matched");\n        if let Some(kind) = emptied_branch(last.kind) {\n            stmts.push(kind.at(last.span));\n        }\n    } else if let Some(StmtKind::Try(body, _))',
+    replace: "    } else if let Some(StmtKind::Try(body, _))",
+    tests: ["test/lowering-labels.test.ts", "-t", "never printed empty"],
+  },
 ];
