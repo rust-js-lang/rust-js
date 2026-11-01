@@ -987,3 +987,92 @@ pub fn resolve_after(run: impl Fn()) -> &'static Unknown {
   expect(() => resolveAfter(() => set(undefined))).toThrow("called `Option::unwrap()` on a `None` value");
 });
 
+// The scheduler's SchedulerMock unstable_flushAllWithoutAsserting: `let mut
+// has_more_work; loop { has_more_work = cb(..); if !has_more_work { break;
+// } }` and what the program wrote after the loop, which reads it: after the
+// loop, upstream's `do { hasMoreWork = cb(..); } while (hasMoreWork); if
+// (!hasMoreWork) { .. } return true;`, not inside the `break`'s branch,
+// `if (!hasMoreWork) { if (!hasMoreWork) { .. } return true; }`, its test
+// twice (rd352). A closure that reads the variable keeps it each turn's.
+test("what's written after a loop whose turn gives its variable is after it", async () => {
+  const { js, lib } = await compiled("loop-given-each-turn", `use std::cell::Cell;
+
+thread_local! {
+    static SCHEDULED: Cell<Option<fn(bool, f64) -> bool>> = const { Cell::new(None) };
+    static TIME: Cell<f64> = const { Cell::new(0.0) };
+    static FLUSHING: Cell<bool> = const { Cell::new(false) };
+    static TURNS: Cell<u32> = const { Cell::new(0) };
+}
+
+struct StopFlushing;
+
+impl Drop for StopFlushing {
+    fn drop(&mut self) {
+        FLUSHING.set(false);
+    }
+}
+
+fn three(_: bool, _: f64) -> bool {
+    TURNS.set(TURNS.get() + 1);
+    TURNS.get() % 3 != 0
+}
+
+pub fn schedule() {
+    SCHEDULED.set(Some(three));
+}
+
+pub fn flush_all() -> bool {
+    if let Some(cb) = SCHEDULED.get() {
+        FLUSHING.set(true);
+        let _stop = StopFlushing;
+        let mut has_more_work;
+        loop {
+            has_more_work = cb(true, TIME.get());
+            if !has_more_work {
+                break;
+            }
+        }
+        if !has_more_work {
+            SCHEDULED.set(None);
+        }
+        true
+    } else {
+        false
+    }
+}
+
+pub fn turns() -> u32 {
+    TURNS.get()
+}
+
+pub fn flushing() -> bool {
+    FLUSHING.get()
+}
+
+pub fn last_seen(xs: &[u32]) -> u32 {
+    let mut seen = Vec::new();
+    let mut x;
+    let mut i = 0;
+    loop {
+        x = xs[i];
+        seen.push(move || x);
+        i += 1;
+        if x == 0 {
+            break;
+        }
+    }
+    seen.iter().map(|f| f()).sum::<u32>() + x
+}
+`);
+  expect(js).toContain(
+    "    try {\n      let hasMoreWork;\n      do {\n        hasMoreWork = cb(true, time);\n      } while (hasMoreWork);\n      if (!hasMoreWork) {\n        scheduled = undefined;\n      }\n    } finally {\n      FLUSHING = false;\n    }\n    return true;\n",
+  );
+  expect(js).not.toContain("if (!hasMoreWork) {\n          if (!hasMoreWork)");
+  expect(js).toContain("    seen.push(() => x);\n");
+  // As native Rust gives them: `false`, then three turns, `true`, done.
+  const flushAll = lib.flushAll as () => boolean;
+  expect(flushAll()).toBe(false);
+  (lib.schedule as () => void)();
+  expect([flushAll(), lib.turns(), lib.flushing(), flushAll()]).toEqual([true, 3, false, false]);
+  expect((lib.lastSeen as (xs: number[]) => number)([4, 5, 0, 9])).toBe(9);
+});

@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
 files	1413
-lines	139404
+lines	139402
 temporaries	1	0.1
 labeled blocks	14	1
 while (true)	123	8.8
-$iter	1174	84.2
+$iter	1172	84.1
 Iterator.from	116	8.3
 return;	150	10.8
-renamed x$1	8627	618.8
+renamed x$1	8627	618.9
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1976	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	206	0	0	0	6	0	0	35
@@ -1237,7 +1237,7 @@ test/corpus/thread_yield.js	15	0	0	0	0	0	0	0
 test/corpus/to_owned_is_clone.js	46	0	0	0	0	0	0	0
 test/corpus/track_caller.js	57	0	0	0	0	0	0	0
 test/corpus/track_caller_traits.js	174	0	0	0	0	0	0	12
-test/corpus/trailing_none_items.js	79	0	0	0	1	0	0	0
+test/corpus/trailing_none_items.js	78	0	0	0	0	0	0	0
 test/corpus/trait_default_bounds.js	74	0	0	0	0	0	0	0
 test/corpus/trait_default_impl_const.js	32	0	0	0	0	0	0	0
 test/corpus/trait_impl_copy_bound.js	66	0	0	0	0	0	0	0
@@ -1316,7 +1316,7 @@ test/corpus/value_keys.js	147	0	0	0	0	0	0	20
 test/corpus/value_read_in_a_guards_try.js	112	0	0	0	0	0	0	6
 test/corpus/vec_capacity.js	40	0	0	0	0	0	0	0
 test/corpus/vec_destructors.js	279	0	0	0	1	0	0	15
-test/corpus/vec_edits.js	102	0	0	0	1	0	0	4
+test/corpus/vec_edits.js	101	0	0	0	0	0	0	4
 test/corpus/vec_extend_indexed.js	59	0	0	0	0	0	0	3
 test/corpus/vec_from_items.js	33	0	0	0	0	0	0	0
 test/corpus/vec_into_array.js	38	0	0	0	0	0	0	2

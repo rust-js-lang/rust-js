@@ -1047,3 +1047,29 @@ Held by `test/corpus/loop_value_given_in_its_test.rs` against native Rust,
 and mutations `assigned-break-never` and `assigned-break-read-twice`
 (`prepare/assigned_breaks.ts`); a `let` with a value, or one the loop
 names elsewhere, no Rust `let … = loop` reaches.
+
+## Amendment: a variable the loop gives each turn, read after it (rd352, 2026-11-01)
+
+The scheduler's SchedulerMock writes `let mut has_more_work; loop {
+has_more_work = cb(true, ..); if !has_more_work { break; } } if
+!has_more_work { .. } true`. MIR declares the variable in the loop's
+body, `const hasMoreWork = cb(..)`, or `let hasMoreWork; try {
+hasMoreWork = cb(..); } catch ..` where a drop guard is live, and its way
+out reads it, so what's written after the loop stayed in the `break`'s
+branch, `if (!hasMoreWork) { if (!hasMoreWork) { .. } return true; }`, its
+test twice: what the way out reads was given only where the `break` is.
+**A variable a list around the way out declares, before the way to it, is
+the Rust's declared before the loop too, given each turn** (`exit_after`'s
+`given_at_break`): `let hasMoreWork;` before the loop, `hasMoreWork =
+cb(..)` in it, what's written after the loop after it, and prepare's `do {
+.. } while (hasMoreWork)` (ADR 0978), upstream's form. The way out reads the
+turn's value, as it did. Not where a closure in the loop reads it, `move
+|| x`, which reads its own turn's `const`, a later turn's of one `let`.
+Case ([0262](0262-when-rust-and-js-disagree.md)): N.
+
+Held by `test/lowering-early-exits.test.ts` ("what's written after a loop
+whose turn gives its variable is after it"), run against native Rust's
+`false true 3 false false 9`, and the mutations
+`given-around-way-out-unseen`, `given-around-way-out-captured`,
+`given-let-in-try-unseen` and `given-let-kept-in-loop`
+(`tidy/jumps/labels.ts`).

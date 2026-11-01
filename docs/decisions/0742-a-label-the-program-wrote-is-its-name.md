@@ -355,3 +355,21 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same jumps.
 
 Held by the corpus case `let_chain_around_early_returns` and the
 mutation `joined-returns-inner-taken` (`mir/tidy/jumps/tails.ts`).
+
+## Amendment: MIR's block around the program's, gone (#447, 2026-11-01)
+
+`let v = 'found: { let s = ..; if .. { break 'found 1; } ..; 2 };`, whose
+`break`s go through the drops of what the block owns, printed `bb18: {
+found: { ..; v = 2; break bb18; } }`: MIR's block around the program's,
+left at the program's block's end, where it goes on anyway. A label MIR
+names is never printed where the program wrote none. **A `break l` that
+ends a block ending `l`'s, `l`'s end its end, is no jump** (`tail_jumps`'
+`drop_tail`, as of an `if`'s branches and a `try`'s body), and `bb18`, of
+nothing then, goes: `found: { ..; v = 2; }`. Of a `break` only: a loop's
+`continue` at a block's end is the program's, React DOM's Fizz
+`pushStartCustomElement`'s `continue;` in a `switch`'s case, which as a
+fall through the case's end would read `break;`. Case
+([0262](0262-when-rust-and-js-disagree.md)): N, the same jumps. Held by
+`test/lowering-labels.test.ts` ("a break the program wrote through drops is
+its label's") and the mutation `tail-jump-in-ending-block-kept`
+(`tidy/jumps/tails.ts`).

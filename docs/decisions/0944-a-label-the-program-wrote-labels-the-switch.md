@@ -115,3 +115,16 @@ does the same of every `switch` a list ends with, a labeled one's too,
 later in the stage: the snapshots and the labeled-switch tests are the
 same without the first, whose mutation `labeled-switch-else-kept`
 survived. It's removed, with `labeled_switches`' `elses`.
+
+## Amendment: MIR's copies of the `return` in a labeled `switch`'s cases, gone with #447 (2026-11-01)
+
+`labeled_cases` made each copy of the `return` after `L: switch (..)` in
+its cases the case's `break;`. MIR left those copies where its own block
+was around the program's, `bbN: { getTag: { .. } } return tag;`, whose
+`break bbN` at the program's block's end ADR 0742's #447 amendment now
+drops, so `bbN` goes before the copies are made. With the pass off, the
+mutation `labeled-switch-returns-kept` survived `lowering-labels`, and the
+corpus, `lowering-labels`, `lowering-switches`, `lowering-switch-ends`,
+`lowering-switch-fallthrough`, `lowering-switch-symbols`,
+`lowering-matches` and `lowering-throws`, 1,465 tests, passed. **`labeled_cases`
+and its mutation are removed** (ADR 0093).

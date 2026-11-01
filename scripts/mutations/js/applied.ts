@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
     name: "applied-param-unread",
     breaks: "a closure's parameter, called with what's another name, is left unread, so its body reads a variable that isn't",
     file: "src/js/applied.rs",
-    find: "        && !substituted(&mut body, &|v| (v == param).then(|| arg.clone()))\n",
+    find: "        && !substituted(&mut body, &|v| (v == param).then(|| read.clone()))\n",
     replace: "        && false\n",
     tests: ["test/lowering-cells.test.ts", "-t", "closure called as a statement is its body"],
   },
@@ -201,5 +201,14 @@ export const mutations: Mutation[] = [
     find: "            tail_applied(then, whole) || branch(otherwise)\n",
     replace: "            false\n",
     tests: ["test/lowering-throws.test.ts", "-t", "a with whose closure throws"],
+  },
+  {
+    name: "applied-argument-at-call",
+    breaks:
+      "a closure's parameter read in its body in place is where the call is, so a comment above a thread-local's `with` prints inside an index loop's test, `i <\n// We listen ..\nmediaEventTypes.length` (rd355)",
+    file: "src/js/applied.rs",
+    find: "    read.each_mut(&mut |e| e.span = Span::NONE);\n",
+    replace: "",
+    tests: ["test/lowering-index-loops.test.ts", "-t", "a comment above a loop over a thread-local's array"],
   },
 ];

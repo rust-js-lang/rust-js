@@ -844,15 +844,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "in-place-empty-if-kept",
-    breaks:
-      "an `if` that tidy's `in place` stage empties, run again after `scopes` took a `try` away, stays, and its contract panics: the compiler crashes (#247)",
-    file: "src/lower/mir/tidy/stages.rs",
-    find: '            // does anything.\n            pass("never taken", |b, _| bottom_up(b, &mut never_taken)),\n',
-    replace: "            // does anything.\n",
-    tests: ["test/corpus.test.ts", "-t", "^drop_scope_empty_if.rs$"],
-  },
-  {
     name: "names-empty-if-kept",
     breaks:
       "an `if let` whose binding is only read, emptied by tidy's `names` stage, stays, and the stage's contract panics: the compiler crashes (#247)",

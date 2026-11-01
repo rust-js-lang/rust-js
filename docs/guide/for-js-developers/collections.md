@@ -370,7 +370,10 @@ export function at(v, i) {
 - Spread, `[...a, x]`, is `to_vec()` then `push`; `[...a, ...b]` is
   `[a, b].concat()`.
 - `&v[a..b]` is a copy of that part, as `slice(a, b)` is: nothing can
-  change `v` while the slice is borrowed, so no one can tell.
+  change `v` while the slice is borrowed, so no one can tell. A loop over
+  a range in bounds, `for x in &v[1..]`, counts its indices instead, `for
+  (let i = 1; i < v.length; i++)`, no copy made
+  ([ADR 1042](../../decisions/1042-a-loop-over-an-array-counts-its-indices.md#amendment-a-range-of-it-in-bounds-rd376-2026-11-01)).
 - **A range the code before it shows in bounds is JS's own `slice`,**
   `v.slice(0, 3)`: one that ends at most at a length tested, `v.len() >
   3`, or held in a `bool`, `let truncated = v.len() > 3;`, while nothing

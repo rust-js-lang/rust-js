@@ -27,8 +27,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`let doubled = loop { .. break n * 2; };` keeps what follows the loop at its `break`, `const doubled = n * 2; console.log(..); return ..;` inside it, not `let doubled;` before it and `doubled = n * 2; break;` (rd148)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
-    find: "        if !given_at_break(&mut kept, &path, name) {\n",
-    replace: "        if true {\n",
+    find: "        declared_lets.extend(given_at_break(&mut kept, &path, name)?);\n",
+    replace: "        declared_lets.extend(given_at_break(&mut kept, &path, name).filter(|_| false)?);\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -285,15 +285,7 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-labels.test.ts", "-t", "inner switch leaves"],
   },
 
-  {
-    name: "labeled-switch-returns-kept",
-    breaks:
-      "a case of a labeled `switch` ends with MIR's copy of the `return` after it, not the case's end (ADR 0944)",
-    file: "src/lower/mir/tidy/jumps/labels.rs",
-    find: "        super::super::switches::returns_broken(case, value.as_ref(), *written);\n",
-    replace: "",
-    tests: ["test/lowering-labels.test.ts", "-t", "inner switch leaves"],
-  },
+
 
   {
     name: "loop-end-return-kept",
@@ -324,5 +316,41 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^while_before_borrowed_tail.rs$"],
     snapshots: true,
+  },
+  {
+    name: "given-around-way-out-unseen",
+    breaks:
+      "a loop's variable given each turn, `has_more_work = cb()`, read by what's written after the loop, keeps that code in the `break`'s branch, its test twice (rd352)",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "        if depth == 0 || captured {\n",
+    replace: "        if true {\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "whose turn gives its variable"],
+  },
+  {
+    name: "given-around-way-out-captured",
+    breaks:
+      "a loop's `const x` a closure reads, `seen.push(move || x)`, is one `let x` before the loop, so each closure reads the last turn's (rd352)",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "        if depth == 0 || captured {\n",
+    replace: "        if depth == 0 {\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "whose turn gives its variable"],
+  },
+  {
+    name: "given-let-in-try-unseen",
+    breaks:
+      "a loop's `let has_more_work;` given in a `try` of a drop guard's keeps what's after the loop in the `break`'s branch (rd352)",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "StmtKind::Const(n, _) | StmtKind::Let(n, None) if n == name);\n",
+    replace: "StmtKind::Const(n, _) if n == name);\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "whose turn gives its variable"],
+  },
+  {
+    name: "given-let-kept-in-loop",
+    breaks:
+      "a loop's `let has_more_work;` declared before the loop stays in it too, which shadows the one after the loop reads: `undefined` there (rd352)",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "        at_path(&mut kept, &path[..depth]).remove(d);\n",
+    replace: "        _ = (depth, d);\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "whose turn gives its variable"],
   },
 ];

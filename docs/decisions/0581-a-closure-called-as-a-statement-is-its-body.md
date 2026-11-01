@@ -207,3 +207,31 @@ with whose closure throws, a switch case's value, is its throw") and
 case is its body"), and the mutations `applied-tail-switch-unseen`,
 `leaving-cases-last-unseen` and `applied-case-return-unbroken`
 (`applied.ts`).
+
+in a `switch`'s cases. **In a `switch` that ends the function, the
+closure called last in its last case is that case's statements, as an
+`if` branch's is. In any other case it is too, where those statements
+still end the case; one that would go on would fall into the next case,
+so it stays a closure** (`tail_applied`). No input found so far reaches
+that refusal: a closure whose value is returned ends on each path, even
+a `loop`. Held by `test/lowering-throws.test.ts` ("a with whose closure
+throws, a switch case's value, is its throw") and the mutation
+`applied-tail-switch-unseen` (`applied.ts`).
+
+## Amendment: what it's given is read where its body reads it (rd355, 2026-11-01)
+
+React DOM's setInitialProperties writes `// We listen to these events ..`
+above `MEDIA_EVENT_TYPES.with(|media_event_types| { for .. in
+media_event_types { .. } })`. Since ADR 1042 the loop is `for (let i = 0;
+i < mediaEventTypes.length; i++)`, and the comment printed inside its test,
+before `mediaEventTypes.length`: the parameter, read as what the call gives
+it, took the call's place in the source, before the comment's end, and the
+comment went to the first node past it. **Each read of the parameter in the
+body in its place is where the body reads it**: what the call gives it, its
+place in the source cleared (`js::applied`'s `in_place`), so the comment is
+above the body's first statement, the `for`, as upstream writes it. Case
+([0262](0262-when-rust-and-js-disagree.md)): N, a comment's place.
+
+Held by `test/lowering-index-loops.test.ts` ("a comment above a loop over a
+thread-local's array is above the for") and the mutation
+`applied-argument-at-call` (`js/applied.ts`).

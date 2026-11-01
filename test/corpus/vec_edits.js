@@ -6,7 +6,6 @@ import {
   $dedupByCells,
   $extend,
   $index,
-  $iter,
   $popIfCell,
   $resize,
   $resizeWith,
@@ -60,7 +59,7 @@ function main() {
   console.log(`[${s.join(", ")}]`);
   const removed = $splice(s, 1, 3, [7, 8, 9]).slice();
   console.log(`[${removed.join(", ")}] [${s.join(", ")}]`);
-  $iter($splice(s, 0, 1, []));
+  $splice(s, 0, 1, []);
   console.log(`[${s.join(", ")}]`);
   const top = $popIfCell(s, (x) => x.value > 5);
   const kept = $popIfCell(s, (x) => x.value > 100);

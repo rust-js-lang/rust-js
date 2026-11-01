@@ -144,3 +144,46 @@ Closure's ES5 build polyfilled `Iterator.from` and its iteration, about
 - Held by `test/corpus/array_counted_loops.rs`, run against native Rust,
   and the mutations of `scripts/mutations/lower/mir/tidy/loops.ts` and
   `lower/mir/iter/sources.ts`.
+
+## Amendment: a counter is no other `let` of its name (rd356, 2026-11-01)
+
+React DOM's retryIfBlockedOn loops over a thread-local's array in its
+`with_borrow`, then writes `let mut i = 0.0; while i < .. { .. }` in an
+`if`. The closure's loop, tidied as a body of its own, counts with `i`, and
+`sunk lets`, which takes MIR's `let i;` from the function's top to where
+it's first named, saw the closure's `i` first, and left it there: `let i;
+for (let i = 0; ..) { .. } .. i = 0;`. **A `for` that counts with a `let`
+of a name, in a closure, names another binding**, block-scoped, as
+`reads_past_shadows` says of a closure's parameter: the program's `let i =
+0;` is where it's written, as upstream's is. Case
+([0262](0262-when-rust-and-js-disagree.md)): N, each `i` its own binding,
+as it was. Held by `test/lowering-index-loops.test.ts` ("an index loop's
+counter is no program's later let of its name"), run against native
+Rust's `16 0 [0, 2, 0]`, and the mutation
+`sunk-let-past-closure-counter-unseen` (`tidy/bindings.ts`). A loop the
+function's own body counts names no counter the function mentions, so
+only a closure's can meet a later `let` of its name.
+
+## Amendment: a range of it, in bounds (rd376, 2026-11-01)
+
+React's Fizz class components' processUpdateQueue writes `for (let i =
+oldReplace ? 1 : 0; i < oldQueue.length; i++)`, a port `for partial in
+&old_queue[start..]`, which printed `for (const x of $slice(v, start))`,
+or `v.slice(1)` where the body's ranges show the range in bounds (ADR
+0806): a copy upstream never makes. **A loop over a range of a slice or a
+`Vec` the ranges show in bounds, `start..`, `..end` or `start..end`, counts
+its indices from the start to the end, `v.length` or the end: `for (let i
+= 1; i < v.length; i++) { const x = v[i]; .. }`**, on this ADR's
+conditions, and an end read the same each step, a constant or a variable
+the body doesn't assign, as Rust reads it once; siblings each count with
+`i`. Rust lends the slice to the loop, so nothing changes it meanwhile, as
+the copy didn't. One not shown in bounds stays `$slice(v, start)`, which
+panics past the end as Rust's range does: an index loop of it wouldn't, so
+the port's `oldReplace ? 1 : 0` start, which the ranges don't bound, stays
+a `$slice` until they can. Case ([0262](0262-when-rust-and-js-disagree.md)):
+N, the same items, in order, and the same panic. Held by
+`test/lowering-index-loops.test.ts` ("a loop over a range of a slice in
+bounds counts its indices"), run against native Rust's `235 0 5 0 31` and
+its panic, and the mutations `indexed-range-unsliced`,
+`indexed-range-end-changed` and `indexed-range-siblings-apart`
+(`tidy/loops.ts`).

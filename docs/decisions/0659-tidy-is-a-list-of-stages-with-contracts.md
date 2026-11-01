@@ -485,3 +485,21 @@ same JS and no contract refusal. **The step and its mutation are
 removed** (ADR 0093: a mutation no test can catch names no behavior). The
 stage's contract, nothing after a jump, still refuses in a debug build
 what would come back. The amendment above is superseded in that part.
+
+## Amendment: `in place`'s own `never taken` goes, dead since 3aa30746a (2026-11-01)
+
+`in place` ended with `never taken` for #247's seed 43967, whose `if let`
+in a loop a guard outlives was emptied in `in place`'s run again, after
+`scopes` took the guard's `try` away. Since 3aa30746a, an inner loop's
+labels are its own, so that guard's drop is the early `drop scopes`
+stage's `looped drops`, one `try` of the `for` loops, before `jumps`; no
+`scopes` run makes the `try`, `in place` doesn't run again, and the `if`
+is `names`' `shared tails`' to take, as `bun scripts/tidy-trace.ts
+test/corpus/drop_scope_empty_if.rs` shows. The mutation
+`in-place-empty-if-kept` survived its corpus case and the nightly's
+suite; without the pass the four #247 seeds (43967, 44670, 44691, 44977)
+pass, as do the corpus, `tidy-stages` and React's port. **The pass and
+its mutation are removed** (ADR 0093). The stage still ensures no empty
+`if`, so a debug build refuses what would come back. `names` and
+`written` keep theirs, held by `names-empty-if-kept` and
+`written-empty-if-kept`.

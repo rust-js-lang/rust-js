@@ -44,6 +44,20 @@ pub(super) fn unread_made(stmts: &mut Vec<Stmt>, mentions: &HashMap<String, usiz
         {
             stmts[i].kind = StmtKind::Expr(value.clone());
         }
+        // An array's iterator nothing steps, a `Splice` dropped where it's
+        // made, `$iter($splice(v, a, b, xs))`: what making the array does,
+        // as `$iter` of an array reads only what it's given (rd341).
+        if let StmtKind::Expr(value) = &stmts[i].kind
+            && let Some(items) = crate::lower::iterators::fresh_iter_source(value)
+        {
+            match items.has_effects() {
+                true => stmts[i].kind = StmtKind::Expr(items.clone()),
+                false => {
+                    stmts.remove(i);
+                    continue;
+                }
+            }
+        }
         i += 1;
     }
 }
@@ -784,13 +798,26 @@ pub(super) fn aliases(
 /// Whether `stmt` reads `name` where it's the variable, not only in a
 /// closure whose parameter of that name shadows it, `(a, b) => ..`'s `b`.
 fn reads_past_shadows(stmt: &Stmt, name: &str) -> bool {
-    let mut unshadowed = [stmt.clone()];
-    js::each_expr_mut(&mut unshadowed, &mut |e| {
-        if let ExprKind::Arrow(params, _) | ExprKind::AsyncArrow(params, _) = &e.kind
-            && params.iter().any(|p| p.names().contains(&name))
+    // A `for` that counts with a `let` of the name, `for (let i = 0; ..)`,
+    // an array's index loop's (ADR 1042), in a closure, which counted with
+    // a name its body didn't mention: another binding, block-scoped, as a
+    // program's later `let mut i = 0` is its own (rd356).
+    let counted = |list: &mut Vec<Stmt>| {
+        list.retain(
+            |s| !matches!(&s.kind, StmtKind::For { name: n, start, .. } if n == name && !start.mentions_var(name)),
+        )
+    };
+    let mut unshadowed = vec![stmt.clone()];
+    js::each_expr_mut(&mut unshadowed, &mut |e| match &mut e.kind {
+        ExprKind::Arrow(params, _) | ExprKind::AsyncArrow(params, _)
+            if params.iter().any(|p| p.names().contains(&name)) =>
         {
             *e = Expr::undefined();
         }
+        ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => {
+            js::statement_lists(body, &mut |list| counted(list))
+        }
+        _ => {}
     });
     js::mentions_in(&unshadowed, name) > 0
 }

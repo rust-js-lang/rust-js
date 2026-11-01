@@ -193,3 +193,166 @@ test("as Rust's extend", () => {
   const output = p.stdout.toString() + p.stderr.toString();
   expect([p.exitCode, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "1"]);
 });
+
+// React DOM's setInitialProperties: a comment above a thread-local's
+// `with`, whose closure is the loop, is above the `for`, as upstream's
+// `// We listen to these events ..` is, not inside its test before the
+// array's `length` (rd355): the array the test and each item read is
+// where the loop is, not where the `with` was written.
+test("a comment above a loop over a thread-local's array is above the for", async () => {
+  const dir = fixture("indexed-comment");
+  writeFileSync(join(dir, "lib.rs"), `thread_local! {
+    static MEDIA_EVENT_TYPES: Vec<&'static str> = vec!["abort", "canplay"];
+}
+
+fn listen(name: &str, out: &mut Vec<String>) {
+    out.push(name.to_string());
+}
+
+pub fn set_initial(tag: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    match tag {
+        "video" | "audio" => {
+            // We listen to these events in case to ensure emulated bubble
+            // listeners still fire for all the media events.
+            MEDIA_EVENT_TYPES.with(|media_event_types| {
+                for media_event_type in media_event_types {
+                    listen(media_event_type, &mut out);
+                }
+            });
+        }
+        _ => {}
+    }
+    out
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(
+    "      // We listen to these events in case to ensure emulated bubble\n      // listeners still fire for all the media events.\n      for (let i = 0; i < mediaEventTypes.length; i++) {\n        const mediaEventType = mediaEventTypes[i];\n",
+  );
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.setInitial("video"), lib.setInitial("p")]).toEqual([["abort", "canplay"], []]);
+});
+
+// React DOM's retryIfBlockedOn: an index loop in a thread-local's `with`,
+// `for (let i = 0; ..)`, then the program's own `let mut i = 0` in an `if`:
+// each its own `let i`, as upstream writes them, the loop's block-scoped,
+// not the program's declared above the loop, `let i;`, and assigned `i =
+// 0;` where it's written (rd356).
+test("an index loop's counter is no program's later let of its name", async () => {
+  const dir = fixture("indexed-counter-name");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+pub struct Target {
+    pub blocked: Cell<u32>,
+}
+
+thread_local! {
+    static TARGETS: RefCell<Vec<Rc<Target>>> = const { RefCell::new(Vec::new()) };
+}
+
+pub fn add(blocked: u32) {
+    TARGETS.with_borrow_mut(|targets| targets.push(Rc::new(Target { blocked: Cell::new(blocked) })));
+}
+
+pub fn retry(unblocked: u32, queue: Option<&[f64]>) -> f64 {
+    TARGETS.with_borrow(|targets| {
+        for target in targets {
+            if target.blocked.get() == unblocked {
+                target.blocked.set(0);
+            }
+        }
+    });
+    let mut n = 0.0;
+    if let Some(queue) = queue {
+        let mut i = 0.0;
+        while i < queue.len() as f64 {
+            let x = queue[i as usize];
+            if x > 10.0 {
+                i += 3.0;
+                continue;
+            }
+            n += x;
+            i += 1.0;
+        }
+    }
+    n
+}
+
+pub fn blocked() -> Vec<u32> {
+    TARGETS.with_borrow(|targets| targets.iter().map(|t| t.blocked.get()).collect())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function retry(unblocked, queue) {\n  for (let i = 0; i < targets.length; i++) {\n");
+  expect(js).toContain("  if (queue != null) {\n    let i = 0;\n    while (i < queue.length) {\n");
+  expect(js).not.toContain("let i;");
+  const lib = await import(join(dir, "lib.js"));
+  lib.add(1);
+  lib.add(2);
+  lib.add(1);
+  // As native Rust prints them: `16 0 [0, 2, 0]`.
+  expect([lib.retry(1, [1, 2, 11, 4, 5, 6, 7]), lib.retry(9, undefined), lib.blocked()]).toEqual([16, 0, [0, 2, 0]]);
+});
+
+// React's Fizz class components' processUpdateQueue, `for (let i =
+// oldReplace ? 1 : 0; i < oldQueue.length; i++)`: a loop over a range of a
+// slice the body's ranges show in bounds, `&v[1..]`, `&v[..2]`, `&v[1..2]`,
+// counts its indices from the range's start to its end, `v.length` or the
+// end, no copy, `v.slice(1)`, made (rd376); siblings each `i`. One not
+// shown in bounds stays `$slice(v, start)`, which panics past the end, as
+// Rust's range does.
+test("a loop over a range of a slice in bounds counts its indices", async () => {
+  const dir = fixture("indexed-ranges");
+  writeFileSync(join(dir, "lib.rs"), `pub fn known(v: &[u32]) -> u32 {
+    let mut n = 0;
+    if v.len() > 2 {
+        for x in &v[1..] {
+            n += x;
+        }
+        for x in &v[..2] {
+            n += 10 * x;
+        }
+        for x in &v[1..2] {
+            n += 100 * x;
+        }
+    }
+    n
+}
+
+pub fn tail(v: &[u32], start: usize) -> u32 {
+    let mut n = 0;
+    for &x in &v[start..] {
+        n += x;
+    }
+    n
+}
+
+pub fn shrinking(v: &[u32]) -> u32 {
+    let mut n = 0;
+    if v.len() > 2 {
+        let mut end = 2;
+        for x in &v[..end] {
+            end -= 1;
+            n += x * 10 + end as u32;
+        }
+    }
+    n
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("    for (let i = 1; i < v.length; i++) {\n      const x = v[i];\n");
+  expect(js).toContain("    for (let i = 0; i < 2; i++) {\n      const x = v[i];\n");
+  expect(js).toContain("    for (let i = 1; i < 2; i++) {\n      const x = v[i];\n");
+  expect(js).toContain("  for (const x of $slice(v, start)) {\n");
+  // An end the body changes, which Rust read once: the range's copy.
+  expect(js).toContain("    for (const x of v.slice(0, end)) {\n");
+  const lib = await import(join(dir, "lib.js"));
+  // As native Rust prints them: `235 0 5 0 31`, then a panic past the end.
+  expect([lib.known([1, 2, 3]), lib.known([1, 2]), lib.tail([1, 2, 3], 1), lib.tail([1, 2, 3], 3), lib.shrinking([1, 2, 3])]).toEqual([235, 0, 5, 0, 31]);
+  expect(() => lib.tail([1, 2, 3], 5)).toThrow("range start index 5 out of range for slice of length 3");
+});

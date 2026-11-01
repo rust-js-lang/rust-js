@@ -867,9 +867,18 @@ export const mutations: Mutation[] = [
     breaks:
       "a `break` of a block MIR made that ends a `try` at the block's end stays, the block with it, `bb26: { if (..) { try { for (..) { .. } break bb26; } finally { .. } } }` (rd200)",
     file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "        drop_tail(body, jump);\n    }\n}\n",
-    replace: "        let _ = body;\n    }\n}\n",
+    find: "        // finally { $unborrow(nodes); }` (rd200).\n        drop_tail(body, jump);\n",
+    replace: "        // finally { $unborrow(nodes); }` (rd200).\n        let _ = body;\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_loops.rs$"],
     snapshots: true,
+  },
+  {
+    name: "tail-jump-in-ending-block-kept",
+    breaks:
+      "a labeled block whose breaks go through drops prints MIR's block around the program's, `bb18: { found: { ..; v = 2; break bb18; } }` (#447)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "        // the program wrote there, `continue;` in a `switch`'s case.\n        drop_tail(body, jump);\n",
+    replace: "        // the program wrote there, `continue;` in a `switch`'s case.\n        _ = body;\n",
+    tests: ["test/lowering-labels.test.ts", "-t", "a break the program wrote through drops is its label's"],
   },
 ];

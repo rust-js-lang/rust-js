@@ -902,7 +902,9 @@ test("an arm that does nothing between guarded arms is no labeled block", async 
 
 // A `break` the program wrote of a block it labeled, reached through the
 // drops of what the block owns, `s` and `t`, is that `break`: what follows
-// its `if` is the block's rest, no `else` the program didn't write.
+// its `if` is the block's rest, no `else` the program didn't write; and
+// the block is the one MIR leaves, no label of MIR's around it, `bb18: {
+// found: { ..; v = 2; break bb18; } }`, which no person writes (#447).
 test("a break the program wrote through drops is its label's", async () => {
   const dir = fixture("labeled-break-through-drops");
   writeFileSync(join(dir, "lib.rs"), `pub fn found(xs: Vec<String>, n: u32) -> u32 {
@@ -922,7 +924,9 @@ test("a break the program wrote through drops is its label's", async () => {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toMatch(/v = 3;\s*break found;\s*\}\s*v = 2;/);
+  expect(js).toMatch(/v = 3;\s*break found;\s*\}\s*v = 2;\n  \}\n  return /);
+  expect(js).toContain("  let v;\n  found: {\n");
+  expect(js).not.toMatch(/\bbb\d+/);
   expect(js).not.toContain("else");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.found([], 12), lib.found(["a"], 7), lib.found([], 4)]).toEqual([1, 4, 2]);

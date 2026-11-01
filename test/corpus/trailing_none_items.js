@@ -7,7 +7,6 @@ import {
   $cmp,
   $dequeInsert,
   $extend,
-  $iter,
   $maxBy,
   $resize,
   $someValue,
@@ -30,7 +29,7 @@ function main() {
   v.push(2, undefined);
   $extend(v, [undefined, undefined]);
   $extend(v, [3, undefined]);
-  $iter($splice(v, 1, 2, [4, undefined]));
+  $splice(v, 1, 2, [4, undefined]);
   $resize(v, 12);
   $append(v, [5, undefined]);
   console.log(`${shown(v)}`);

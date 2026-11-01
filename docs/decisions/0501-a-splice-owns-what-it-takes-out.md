@@ -28,3 +28,15 @@ each, as `drain`'s is (ADR 0098): its items its replacing iterator's,
 ## Consequences
 
 - **`extract_if` of values with a destructor** is refused yet.
+
+## Amendment: a `Splice` dropped where it's made is its `$splice` (rd341, 2026-11-01)
+
+`new_args.splice(at..at, [..]);`, its `Splice` dropped unread, printed
+`$iter($splice(newArgs, at, at, [..]));`: an iterator of the array taken
+out that nothing steps. `$splice` replaces the range as it's called, and
+`$iter` of an array reads only what it's given, so **an array's iterator
+made only to be dropped, a statement `$iter(items)`, is what making
+`items` does, `$splice(newArgs, at, at, [..]);`** (tidy's `unread made`).
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Held by the corpus's
+`vec_edits` and `trailing_none_items`, run against native Rust, and the
+mutation `unread-iter-kept` (`tidy/bindings.ts`).

@@ -338,11 +338,13 @@ pub(super) fn for_of(
                     step: js::Step::Down,
                     body,
                 }
-            } else if let Some((name, test, body)) = indexed(source, &iterable, &pattern, mutable, &body, mentions) {
+            } else if let Some((name, start, test, body)) =
+                indexed(source, &iterable, &pattern, mutable, &body, mentions)
+            {
                 StmtKind::For {
                     label: label.clone(),
                     name,
-                    start: Expr::int(0),
+                    start,
                     test,
                     step: js::Step::Up,
                     body,
@@ -493,7 +495,13 @@ fn counted_range(
 /// them (ADR 1042). The same steps: an array's iterator reads its length
 /// and its item at each step, as the loop does, of a `v` read the same each
 /// time, a variable the body doesn't assign: a `Vec` it owns may be given
-/// another meanwhile, `v = vec![x]`, which `for…of` doesn't step.
+/// another meanwhile, `v = vec![x]`, which `for…of` doesn't step. Of a
+/// range of it the body's ranges show in bounds, `&v[a..b]`'s `v.slice(a,
+/// b)`, which can't panic (ADR 0806): its indices from `a` to `b`, or to
+/// `v.length`, `for (let i = a; i < b; i++)`, no copy made, of a `b` read
+/// the same each step, a constant or a variable the body doesn't assign
+/// (rd376). One not shown in bounds stays `$slice(v, a, b)`, which panics
+/// where Rust's range does.
 fn indexed(
     source: &Expr,
     iterable: &Expr,
@@ -501,11 +509,28 @@ fn indexed(
     mutable: bool,
     body: &[Stmt],
     mentions: &HashMap<String, usize>,
-) -> Option<(String, Expr, Vec<Stmt>)> {
+) -> Option<(String, Expr, Expr, Vec<Stmt>)> {
+    let (iterable, start, end) = match &iterable.kind {
+        // Said so where it's stepped, `$iter(v.slice(a))`, as `unarrayed`
+        // says nothing of what it gives.
+        ExprKind::Call(callee, bounds)
+            if crate::lower::iterators::fresh_iter_source(source).is_some_and(|s| s.facts.has(js::Known::Sliced))
+                && let ExprKind::Member(items, slice) = &callee.kind
+                && slice == "slice"
+                && (1..=2).contains(&bounds.len()) =>
+        {
+            (&**items, bounds[0].clone(), bounds.get(1).cloned())
+        }
+        _ => (iterable, Expr::int(0), None),
+    };
     let ExprKind::Var(array) = &iterable.kind else {
         return None;
     };
     if !source.facts.has(js::Known::ArrayItems) || assigns(body, array) {
+        return None;
+    }
+    let same = |e: &Expr| e.is_constant() || matches!(&e.kind, ExprKind::Var(v) if !assigns(body, v));
+    if end.as_ref().is_some_and(|end| !same(end)) {
         return None;
     }
     // A name the function doesn't mention, or only as the counter of a
@@ -536,14 +561,16 @@ fn indexed(
             mutable,
         },
     };
-    let test = Expr::bin(Op::Lt, Expr::var(&index), Expr::member(iterable.clone(), "length"));
+    let end = end.unwrap_or_else(|| Expr::member(iterable.clone(), "length"));
+    let test = Expr::bin(Op::Lt, Expr::var(&index), end);
     let mut stepped = vec![bound.at(js::Span::NONE)];
     stepped.extend(body);
-    Some((index, test, stepped))
+    Some((index, start, test, stepped))
 }
 
 /// Whether `stmts` hold a loop `indexed` made counting with `name`: `for
-/// (let name = 0; name < v.length; name++) { const x = v[name]; .. }`,
+/// (let name = 0; name < v.length; name++) { const x = v[name]; .. }`, or
+/// of a range of `v`, from `a` to `b`,
 /// whose counter nothing else reads, as clippy's `needless_range_loop` has
 /// no program write it.
 fn counts(stmts: &[Stmt], name: &str) -> bool {
@@ -557,7 +584,7 @@ fn counts(stmts: &[Stmt], name: &str) -> bool {
                 step: js::Step::Up,
                 body,
                 ..
-            } if n == name && start.as_int() == Some(0) => {
+            } if n == name && !start.mentions_var(name) => {
                 let read = |e: &Expr| matches!(&e.kind, ExprKind::Index(_, at) if matches!(&at.kind, ExprKind::Var(v) if v == name));
                 let bound = match body.first().map(|s| &s.kind) {
                     Some(StmtKind::Const(_, e) | StmtKind::Let(_, Some(e)) | StmtKind::Destructure { value: e, .. }) => {
@@ -565,9 +592,8 @@ fn counts(stmts: &[Stmt], name: &str) -> bool {
                     }
                     _ => false,
                 };
-                matches!(&test.kind, ExprKind::Binary(Op::Lt, counter, length)
-                    if matches!(&counter.kind, ExprKind::Var(v) if v == name)
-                        && matches!(&length.kind, ExprKind::Member(_, l) if l == "length"))
+                matches!(&test.kind, ExprKind::Binary(Op::Lt, counter, end)
+                    if matches!(&counter.kind, ExprKind::Var(v) if v == name) && !end.mentions_var(name))
                     && bound
                     && js::mentions_in(&body[1..], name) == 0
             }

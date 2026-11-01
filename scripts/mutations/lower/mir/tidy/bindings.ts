@@ -668,4 +668,23 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "a field read of what JS made in a guard's scope"],
   },
+
+  {
+    name: "sunk-let-past-closure-counter-unseen",
+    breaks:
+      "an index loop's `for (let i = 0; ..)` in a thread-local's closure reads as the function's `i`, so the program's later `let mut i = 0` is `let i;` above the loop (rd356)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "            js::statement_lists(body, &mut |list| counted(list))\n",
+    replace: "            _ = body;\n",
+    tests: ["test/lowering-index-loops.test.ts", "-t", "an index loop's counter is no program's later let"],
+  },
+  {
+    name: "unread-iter-kept",
+    breaks: "a `Splice` dropped where it's made is `$iter($splice(s, 0, 1, []));`, an iterator nothing steps (rd341)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "            && let Some(items) = crate::lower::iterators::fresh_iter_source(value)\n",
+    replace: "            && let Some(items) = crate::lower::iterators::fresh_iter_source(value).filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_edits.rs$"],
+    snapshots: true,
+  },
 ];

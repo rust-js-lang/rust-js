@@ -669,4 +669,28 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^array_counted_loops.rs$"],
     snapshots: true,
   },
+  {
+    name: "indexed-range-unsliced",
+    breaks: "a loop over a range of a slice in bounds, `&v[1..]`, is `for (const x of v.slice(1))`, a copy, not an index loop from 1 (rd376)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "            if crate::lower::iterators::fresh_iter_source(source).is_some_and(|s| s.facts.has(js::Known::Sliced))\n",
+    replace: "            if false\n",
+    tests: ["test/lowering-index-loops.test.ts", "-t", "a loop over a range of a slice in bounds"],
+  },
+  {
+    name: "indexed-range-end-changed",
+    breaks: "a loop over `&v[..end]` whose body changes `end`, which Rust read once, tests the changed `end` each step: fewer items (rd376)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "    if end.as_ref().is_some_and(|end| !same(end)) {\n",
+    replace: "    if false {\n",
+    tests: ["test/lowering-index-loops.test.ts", "-t", "a loop over a range of a slice in bounds"],
+  },
+  {
+    name: "indexed-range-siblings-apart",
+    breaks: "sibling loops over ranges of a slice count with `k`, `j` and `i`, not each `i` (rd376)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "            } if n == name && !start.mentions_var(name) => {\n",
+    replace: "            } if n == name && start.as_int() == Some(0) => {\n",
+    tests: ["test/lowering-index-loops.test.ts", "-t", "a loop over a range of a slice in bounds"],
+  },
 ];

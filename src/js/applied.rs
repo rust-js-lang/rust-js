@@ -395,9 +395,14 @@ fn in_place(
     }
     // Read as what it's given: a parameter never set, now, of a body with
     // no closure of its own whose names could shadow it.
+    // Each read where it was in the body, not where the call is: a comment
+    // above a thread-local's `with` is above the body's first statement,
+    // not inside a loop's test that reads it (rd355).
+    let mut read = arg.clone();
+    read.each_mut(&mut |e| e.span = Span::NONE);
     if !held
         && !matches!(&arg.kind, ExprKind::Var(v) if v == param)
-        && !substituted(&mut body, &|v| (v == param).then(|| arg.clone()))
+        && !substituted(&mut body, &|v| (v == param).then(|| read.clone()))
     {
         return None;
     }

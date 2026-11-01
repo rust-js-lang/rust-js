@@ -231,17 +231,22 @@ pub(super) fn exit_after(
     // Its name is apart from what's beside the loop, as the Rust's is,
     // whose block the loop is in (`exits_after`).
     let mut before = Vec::new();
+    let mut declared_lets = Vec::new();
     for name in &given {
-        if !given_at_break(&mut kept, &path, name) {
-            return None;
-        }
+        declared_lets.extend(given_at_break(&mut kept, &path, name)?);
         before.push(StmtKind::Let(name.clone(), None).at(js::Span::NONE));
+    }
+    at_path(&mut kept, &path).push(jump);
+    // Each `let` the loop declared of what's given, declared before it now,
+    // the last of a list first, as each moves those after it.
+    declared_lets.sort_by(|a, b| b.cmp(a));
+    for (depth, d) in declared_lets {
+        at_path(&mut kept, &path[..depth]).remove(d);
     }
     let StmtKind::While { body, .. } = &mut stmts[i].kind else {
         unreachable!("matched")
     };
     *body = kept;
-    at_path(body, &path).push(jump);
     Some((before, moved))
 }
 
@@ -285,18 +290,39 @@ fn in_loop(stmts: &[Stmt], path: &[(usize, bool)]) -> bool {
 /// break v; }`, declared outside the loop, given at its `break`: nothing in
 /// the loop reads it but what follows there, nor a closure, as `aliases`
 /// gives the binding it's given, `if let Some(next) = ..`, its name only
-/// where nothing else reads that.
-fn given_at_break(kept: &mut Vec<Stmt>, path: &[(usize, bool)], name: &str) -> bool {
-    let list = at_path(kept, path);
-    let declares = |s: &Stmt| matches!(&s.kind, StmtKind::Const(n, _) if n == name);
-    let Some(d) = list.iter().position(declares) else {
-        return false;
+/// where nothing else reads that. Or in a list around it, before the way
+/// to it: the Rust's `let mut has_more_work; loop { has_more_work = cb();
+/// if !has_more_work { break; } }`, given each turn, which the way out
+/// reads as that turn gave it, where no closure reads it, which would read
+/// a later turn's (rd352).
+fn given_at_break(kept: &mut Vec<Stmt>, path: &[(usize, bool)], name: &str) -> Option<Option<(usize, usize)>> {
+    // Or `let name;`, given in a `try` of what may throw, its drops in the
+    // `catch`, `try { hasMoreWork = cb(); } catch (error) { .. }`: where it
+    // is, which the caller takes away once the way out's `break` is in.
+    let declares = |s: &Stmt| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, None) if n == name);
+    let captured = crate::lower::mir::tidy::bindings::captured(kept).contains(name);
+    let mut depth = path.len();
+    let (list, d) = loop {
+        let list = at_path(kept, &path[..depth]);
+        let before = path.get(depth).map_or(list.len(), |&(at, _)| at);
+        if let Some(d) = list[..before].iter().position(declares) {
+            break (list, d);
+        }
+        if depth == 0 || captured {
+            return None;
+        }
+        depth -= 1;
     };
-    let StmtKind::Const(_, value) = std::mem::replace(&mut list[d].kind, StmtKind::Comments) else {
-        unreachable!("found")
-    };
-    list[d].kind = StmtKind::Assign(Expr::var(name), value);
-    true
+    match std::mem::replace(&mut list[d].kind, StmtKind::Comments) {
+        StmtKind::Const(_, value) => {
+            list[d].kind = StmtKind::Assign(Expr::var(name), value);
+            Some(None)
+        }
+        declared => {
+            list[d].kind = declared;
+            Some(Some((depth, d)))
+        }
+    }
 }
 
 /// The list at `path` in `stmts`: each step an `if`'s branch, its `else` of
@@ -595,10 +621,9 @@ pub(in crate::lower::mir::tidy) fn never_taken(stmts: &mut Vec<Stmt>) {
 /// `L: { switch (..) { .. break L; } } break;`: then the block's statements
 /// in its place, the jump gone where they never go on to it, and the outer
 /// `switch` labeled `L`. Each `break L` of a case's own, outside a `switch`
-/// or a loop of its own, is the case's `break;`, and each copy of the
-/// `return` after it too, its `if` written with no `else` then none, as
-/// `blocks ending cases` has it (ADR 0805); a label nothing names then,
-/// gone. A block MIR made (`is_block_label`) labels nothing.
+/// or a loop of its own, is the case's `break;`, as `blocks ending cases`
+/// has it (ADR 0805); a label nothing names then, gone. A block MIR made
+/// (`is_block_label`) labels nothing.
 pub(in crate::lower::mir::tidy) fn labeled_switches(body: &mut [Stmt]) {
     /// `stmts`, whose end is that of the blocks of `ending` and goes on to
     /// the `return` of `then`.
@@ -618,7 +643,6 @@ pub(in crate::lower::mir::tidy) fn labeled_switches(body: &mut [Stmt]) {
                 let span = switch.span;
                 stmts[i] = StmtKind::Labeled(label, vec![switch]).at(span);
             }
-            labeled_cases(&mut stmts[i], returned.as_ref());
         }
         for i in 0..n {
             let ending: &[String] = if i + 1 == n { ending } else { &[] };
@@ -649,35 +673,6 @@ pub(in crate::lower::mir::tidy) fn labeled_switches(body: &mut [Stmt]) {
         }
     }
     walk(body, &[], None);
-}
-
-/// Of `L: switch (..) { .. }`, a label the program wrote: each copy of
-/// `returned`, the `return` after it, the case's `break;`. Each `break L`
-/// of a case's own is the case's `break;` later, as a block's is
-/// (`breaks_past_switches`).
-fn labeled_cases(stmt: &mut Stmt, returned: Option<&Option<Expr>>) {
-    let StmtKind::Labeled(label, body) = &mut stmt.kind else {
-        return;
-    };
-    let [
-        Stmt {
-            kind: StmtKind::Switch { cases, default, .. },
-            span: written,
-        },
-    ] = &mut body[..]
-    else {
-        return;
-    };
-    let (Some(value), false) = (returned, crate::lower::mir::is_block_label(label)) else {
-        return;
-    };
-    let ending = (cases.iter_mut())
-        .filter(|case| !case.falls)
-        .map(|case| &mut case.body)
-        .chain(default.as_mut());
-    for case in ending {
-        super::super::switches::returns_broken(case, value.as_ref(), *written);
-    }
 }
 
 /// Of a `switch`, the label of each block the program labeled that a case

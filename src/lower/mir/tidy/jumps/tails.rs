@@ -723,6 +723,14 @@ pub(in crate::lower::mir::tidy) fn drop_tail(stmts: &mut Vec<Stmt>, jump: &StmtK
         // borrow's around a loop, `try { for (..) { .. } break bb26; }
         // finally { $unborrow(nodes); }` (rd200).
         drop_tail(body, jump);
+    } else if let StmtKind::Break(_) = jump
+        && let Some(StmtKind::Labeled(_, body)) = stmts.last_mut().map(|s| &mut s.kind)
+    {
+        // A block that ends it, whose end is its end: the program's
+        // `found: { ..; v = 2; break bb21; }` in MIR's `bb21: { .. }`,
+        // which then names nothing (#447). Not a loop's `continue`, which
+        // the program wrote there, `continue;` in a `switch`'s case.
+        drop_tail(body, jump);
     }
 }
 
