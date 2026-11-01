@@ -151,4 +151,12 @@ export const mutations: Mutation[] = [
       "js::is_object is whether",
     ],
   },
+  {
+    name: "unary-plus-a-call",
+    breaks: "`js::to_number`'s `+` form is read as a call of a function named `+`, not JS's unary `+width` (rd331c)",
+    file: "src/lower/bindings/forms.rs",
+    find: "        \"+\" => return JsForm::Number,\n",
+    replace: "",
+    tests: ["test/js-any-values.test.ts", "-t", "to_number is JS's unary"],
+  },
 ];

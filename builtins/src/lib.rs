@@ -764,6 +764,45 @@ pub fn concat_text<T: ToText>(this: T) -> T::Text {
     unreachable!()
 }
 
+/// What JS's unary `+` makes a number of: text, `+"  12 "` 12, `+""` 0,
+/// `+"0x10"` 16, where Rust's `str::parse` is an `Err`; or any value.
+pub trait ToNumber {
+    /// What [`to_number`] gives of it: a number, of text; of a value of any
+    /// shape, a `Result`, as JS's `+` throws of a `BigInt` and a symbol, and
+    /// of an object whose `valueOf` throws.
+    type Number;
+}
+
+impl ToNumber for &str {
+    type Number = f64;
+}
+impl ToNumber for &String {
+    type Number = f64;
+}
+impl ToNumber for String {
+    type Number = f64;
+}
+impl ToNumber for &Unknown {
+    type Number = Result<f64, &'static JsError>;
+}
+impl ToNumber for &JsObject {
+    type Number = Result<f64, &'static JsError>;
+}
+impl ToNumber for Option<&Unknown> {
+    type Number = Result<f64, &'static JsError>;
+}
+
+/// [`+value`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/Unary_plus):
+/// any value as JS's unary `+` makes it a number, react-art's `+width`:
+/// `NaN` of `None` and of text that's no number, an object's by its
+/// `valueOf`. Not `Number(value)`, which makes `1` of `1n`, where `+1n`
+/// throws. Of a value of any shape, a `Result`, as [`concat_text`]'s is:
+/// its `unwrap()` is `+value`, what JS threw going on as itself.
+#[cfg_attr(rust_js, rust_js::link_name = "+")]
+pub fn to_number<T: ToNumber>(this: T) -> T::Number {
+    unreachable!()
+}
+
 /// Any value as JS's template shows it, `${value}`: `format!("{}-{index}",
 /// js::shown(msg))` is `${msg}-${index}` (ADR 0312). The value itself.
 #[cfg_attr(rust_js, rust_js::link_name = "this")]

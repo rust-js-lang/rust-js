@@ -443,4 +443,12 @@ export const mutations: Mutation[] = [
       "an ES class React renders"
     ]
   },
+  {
+    name: "unary-plus-negates",
+    breaks: "JS's unary `+`, `+width`, is printed `-width`, the number's negation (rd331c)",
+    file: "src/to_oxc/expressions.rs",
+    find: "                    UnaryOp::Plus => UnaryOperator::UnaryPlus,\n",
+    replace: "                    UnaryOp::Plus => UnaryOperator::UnaryNegation,\n",
+    tests: ["test/js-any-values.test.ts", "-t", "to_number is JS's unary"],
+  },
 ];

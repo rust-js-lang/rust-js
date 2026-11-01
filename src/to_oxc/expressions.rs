@@ -205,6 +205,7 @@ impl<'a> Cx<'a> {
             ExprKind::Unary(op, arg) => {
                 let op = match op {
                     UnaryOp::Neg => UnaryOperator::UnaryNegation,
+                    UnaryOp::Plus => UnaryOperator::UnaryPlus,
                     UnaryOp::Not => UnaryOperator::LogicalNot,
                     UnaryOp::BitNot => UnaryOperator::BitwiseNot,
                     UnaryOp::Typeof => UnaryOperator::Typeof,

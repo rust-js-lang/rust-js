@@ -1108,6 +1108,9 @@ pub enum Prop {
 #[derive(Clone, Copy, PartialEq)]
 pub enum UnaryOp {
     Neg,
+    /// `+x`: any value as a number, as JS's `ToNumber` makes it, which
+    /// throws of a `BigInt` and a symbol, `js::to_number`'s (rd331c).
+    Plus,
     Not,
     BitNot,
     /// `typeof x`: what an untagged enum's variant is told by (ADR 0214).

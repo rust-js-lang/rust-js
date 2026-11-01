@@ -81,3 +81,30 @@ $try(() => JSON.stringify(msg, null, 2));
   `undefined`, objects, a function, a cycle and a `BigInt`; mutations make
   `typeof` and `+ ""` calls, and read a binding's throwing from its generic
   signature.
+
+## Amendment (2026-11-01): `js::to_number`, JS's unary `+` (rd331c)
+
+react-art's Surface makes its surface of `Mode.Surface(+width, +height,
+this._tagRef)`, `width` a prop of any shape. No binding was JS's unary
+`+`, and `Number(width)` isn't it: `Number(1n)` is `1`, where `+1n`
+throws a `TypeError`, as it does of a symbol. Case C
+([0262](0262-when-rust-and-js-disagree.md)): results would change, so JS's
+own operator is bound.
+
+**`js::to_number(value)` is `+value`**, a link form of its own, `"+"`,
+beside `concat_text`'s `"" +`, its result by `ToNumber`'s associated type,
+as `concat_text`'s is by `ToText`'s (ADR 0639): of text, `&str` or a
+`String`, an `f64`, `+"0x10"` 16 and `+""` 0, where `str::parse` is an
+`Err`; of a value of any shape, `&Unknown`, `Option<&Unknown>` or
+`&JsObject`, `Result<f64, &'static JsError>`, whose `unwrap()` is the call
+(ADR 0643), `+width`, what JS threw going on as itself, and whose `match`
+or `is_ok()` is JS's `try`. Not of a number or a `bool`, whose `+` Rust
+writes already, `x` and `f64::from(u8::from(b))`.
+
+Rejected: `js::number`, a name a reader takes for `Number(value)`; and
+`Number(value)` itself, whose `BigInt` result differs. Held by
+`test/js-any-values.test.ts`'s "to_number is JS's unary +, which throws of
+a BigInt", run in Node of text, objects, `undefined`, a `BigInt` and a
+symbol, and the mutations `to-number-of-number`
+(`lower/binding_calls.rs`), `unary-plus-a-call` (`lower/bindings/forms.rs`)
+and `unary-plus-negates` (`to_oxc/expressions.rs`).

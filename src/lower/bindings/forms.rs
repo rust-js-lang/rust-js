@@ -61,6 +61,9 @@ pub(in crate::lower) enum JsForm {
     /// `"" +`: `"" + this`, any value as JS's `+` makes it text (ADRs 0310,
     /// 0639).
     Text,
+    /// `+`: `+this`, any value as JS's unary `+` makes it a number,
+    /// `js::to_number`'s (rd331c).
+    Number,
     /// `set []`: `this[key] = value`.
     SetIndex,
     /// `import()`: the item given, of its module loaded when it's asked
@@ -156,6 +159,7 @@ pub(in crate::lower) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "typeof === \"number\"" => return JsForm::Asks(Asked::Number),
         "typeof === \"object\"" => return JsForm::Asks(Asked::Object),
         "\"\" +" => return JsForm::Text,
+        "+" => return JsForm::Number,
         "set []" => return JsForm::SetIndex,
         "import()" => return JsForm::Import { module: false },
         "import(*)" => return JsForm::Import { module: true },

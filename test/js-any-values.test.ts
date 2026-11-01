@@ -121,3 +121,34 @@ pub async fn blocked(image: Promise<()>, ms: f64) -> Option<&'static Unknown> {
   expect(await lib.blocked(Promise.resolve(), 50)).toEqual(["fonts", undefined]);
   expect(await lib.blocked(new Promise(() => {}), 1)).toBe(undefined);
 });
+
+// rd331c: JS's unary `+` of any value, react-art's `Mode.Surface(+width,
+// +height, ..)`, `js::to_number`: not `Number(value)`, which makes `1` of
+// `1n`, where `+1n` throws. Of a value of any shape a `Result`, as
+// `concat_text`'s is, whose `unwrap()` is the call; of text, a number.
+test("to_number is JS's unary +, which throws of a BigInt", async () => {
+  const { js, lib } = await compiled("js-to-number", `use js::Unknown;
+
+pub fn sized(width: &Unknown, height: Option<&Unknown>) -> f64 {
+    js::to_number(width).unwrap() * js::to_number(height).unwrap()
+}
+
+pub fn numeric(value: &Unknown) -> bool {
+    js::to_number(value).is_ok()
+}
+
+pub fn parsed(text: &str) -> f64 {
+    js::to_number(text) + 1.0
+}
+`);
+  expect(js).toContain("return +width * +height;");
+  expect(js).toContain("function numeric(value) {\n  try {\n    +value;\n    return true;\n  } catch {\n    return false;\n  }\n}");
+  expect(js).toContain("return +text + 1;");
+  expect(js).not.toContain("Number(");
+  expect([lib.sized("2", 3), lib.sized({ valueOf: () => 4 }, "0x2"), lib.sized(2, undefined)]).toEqual([6, 8, NaN]);
+  expect(() => lib.sized(1n, 1)).toThrow(TypeError);
+  expect(() => lib.sized(1, Symbol("s"))).toThrow(TypeError);
+  const throwing = { valueOf() { throw new Error("no"); } };
+  expect([1n, Symbol("s"), throwing, "a", null, {}].map(lib.numeric)).toEqual([false, false, false, true, true, true]);
+  expect([lib.parsed("  12 "), lib.parsed(""), lib.parsed("0x10"), lib.parsed("1px")]).toEqual([13, 1, 17, NaN]);
+});

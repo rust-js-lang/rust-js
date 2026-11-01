@@ -829,4 +829,14 @@ export const mutations: Mutation[] = [
       "name.rsplit('#').next().is_some_and(|member| member.contains('.'))",
     tests: ["test/lowering-binding-paths.test.ts"],
   },
+  {
+    name: "to-number-of-number",
+    breaks:
+      "`js::to_number(width)` is `Number(width)`, which makes `1` of `1n`, where react-art's `+width` throws",
+    file: "src/lower/binding_calls.rs",
+    find: "            (JsForm::Number, Some(this)) if args.is_empty() => Expr::unary(UnaryOp::Plus, this),\n",
+    replace:
+      "            (JsForm::Number, Some(this)) if args.is_empty() => Expr::call(Expr::var(\"Number\"), vec![this]),\n",
+    tests: ["test/js-any-values.test.ts", "-t", "to_number is JS's unary"],
+  },
 ];
