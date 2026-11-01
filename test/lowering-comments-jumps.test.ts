@@ -278,3 +278,65 @@ pub fn valid(tag: &str, parent: Option<&str>) -> bool {
   for (const tag of [0, 3, 7]) lib.effects(tag as never, log as never);
   expect([log, lib.valid("rt" as never, undefined as never), lib.valid("y" as never, undefined as never)]).toEqual([[1, 2], true, false]);
 });
+
+// React's Flight client's processFullStringRow: an arm whose pattern has a
+// block comment, `114 /* "r" */ => {`, still has the `// Fallthrough`
+// written above it before its `case`, not stacked above the `switch`; so
+// does a last `_ /* .. */` arm whose first statement is an `if` whose test
+// starts it, `if __DEV__ && row.is_empty() {`, before its `default` (rd525).
+test("a comment above an arm whose pattern has a comment is before its case", async () => {
+  const { js, lib } = await compiled("comment-above-commented-arm", `unsafe extern "C" {
+    safe static __DEV__: bool;
+}
+
+fn start(log: &mut Vec<String>, kind: Option<&str>) {
+    log.push(format!("start {kind:?}"));
+}
+
+pub fn process(tag: u8, row: &str) -> Vec<String> {
+    let mut log = Vec::new();
+    match tag {
+        82 /* "R" */ => {
+            start(&mut log, None);
+        }
+        // Fallthrough
+        114 /* "r" */ => {
+            start(&mut log, Some("bytes"));
+        }
+        // Fallthrough
+        67 /* "C" */ => {
+            log.push("stop".to_string());
+        }
+        // Fallthrough
+        125 /* "}" */ => {
+            log.push("close".to_string());
+        }
+        // Fallthrough
+        _ /* """ "{" "[" "0" - "9" */ => {
+            if __DEV__ && row.is_empty() {
+                log.push("halt".to_string());
+                return log;
+            }
+            // We assume anything else is JSON.
+            log.push(row.to_string());
+        }
+    }
+    log
+}
+`);
+  expect(js).toContain("  switch (tag) {\n    case 82 /* \"R\" */:");
+  expect(js).toContain("    // Fallthrough\n    case 114 /* \"r\" */:");
+  expect(js).toContain("    // Fallthrough\n    case 67 /* \"C\" */:");
+  expect(js).toContain("    // Fallthrough\n    case 125 /* \"}\" */:");
+  expect(js).toContain("    // Fallthrough\n    default:\n      if (__DEV__ && !row) {");
+  (globalThis as { __DEV__?: boolean }).__DEV__ = true;
+  const process = lib.process as (tag: number, row: string) => string[];
+  expect([process(82, ""), process(114, ""), process(67, ""), process(125, ""), process(48, ""), process(48, "[1]")]).toEqual([
+    ["start None"],
+    ['start Some("bytes")'],
+    ["stop"],
+    ["close"],
+    ["halt"],
+    ["[1]"],
+  ]);
+});

@@ -1625,7 +1625,7 @@ fails does nothing: each later arm that could match its constants is a
 `_ => {}`, as below; or where it's the next arm, which names each of its
 constants and more, a case that falls through to the next's, `// Fallthrough`,
 a comment written before that next arm before it and its labels, as React
-writes one, and no `// Fallthrough` where that comment says it, `//
+writes one, a comment on its pattern, `114 /* "r" */ => {`, too, and no `// Fallthrough` where that comment says it, `//
 falls through`; a comment between an arm's patterns, `"mouseup" // TODO
 .. | "mouseout"`, is between their `case`s, one above an arm of
 patterns above its first `case`, and a last `_` of only

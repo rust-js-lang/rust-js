@@ -60,6 +60,16 @@ pub(crate) fn opened_at(source: &str, lo: u32) -> Option<u32> {
     }
     let code = &before[..end];
     let line = code.rfind('\n').map_or(0, |i| i + 1);
+    // Of a first statement that's an `if` whose span starts at its test,
+    // `if __DEV__ && row.is_empty() {`: the arm's opening the line before
+    // its `if`, and the clause where that statement starts, as a case falls
+    // through to it there (rd525).
+    if code[line..].trim() == "if"
+        && line > 0
+        && opens_default(&code[code[..line - 1].rfind('\n').map_or(0, |i| i + 1)..])
+    {
+        return Some(lo);
+    }
     opens_default(&code[line..]).then_some(end as u32)
 }
 
@@ -67,9 +77,17 @@ pub(crate) fn opened_at(source: &str, lo: u32) -> Option<u32> {
 /// before, is a `_` arm's opening, `_ => {`, and its first `if`'s: then
 /// the start is its `default`'s, which the comment is before where a case
 /// falls through to it (ADR 0905, amended); or an arm's of one pattern on
-/// its line, `"meta" => {`, its case's (rd166).
+/// its line, `"meta" => {`, its case's (rd166); a block comment on the
+/// pattern, `67 /* "C" */ => {`, as if it weren't there (rd525).
 pub(super) fn opens_default(between: &str) -> bool {
-    let head = between.trim();
+    // Past a block comment on its pattern, `_ /* "{" "[" */ => {` (rd525).
+    let mut code = between.to_string();
+    while let Some(open) = code.find("/*")
+        && let Some(close) = code[open..].find("*/")
+    {
+        code.replace_range(open..open + close + 2, " ");
+    }
+    let head = code.trim();
     let head = head.strip_suffix("if").map_or(head, str::trim_end);
     head.strip_suffix('{')
         .map(str::trim_end)

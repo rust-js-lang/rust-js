@@ -780,3 +780,34 @@ removed; its stage's pass is `tail continues` alone. React's
 popToNextHostParent is still `case 27: log.push(2); return;`, held by
 `test/lowering-switches.test.ts`'s "a case of an arm that returns ends
 with its return".
+
+## Amendment: a comment above an arm whose pattern has a comment is before its case (2026-11-02, rd525)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N: comments, which
+nothing runs.
+
+React's Flight client's processFullStringRow writes a byte's letter after
+each arm's pattern, `114 /* "r" */ => {`, and `// Fallthrough` above each
+arm, as upstream writes it before each `case`. Five `// Fallthrough`s
+printed stacked above the `switch`. Two rules missed them. The text
+between a comment and the start it's before was judged in pieces around
+each comment inside it, so neither `114 ` nor ` => {` read as an arm's
+opening. **That text is judged whole, each comment in it blanked**
+(`to_oxc.rs`). And `cases::opens_default` didn't read past a block comment
+on a `_` arm's pattern, `_ /* """ "{" "[" .. */ => {`, whose `{` and `[`
+it took for code. **It reads past such a comment** too. One more rule
+missed the `_` arm. Its first statement is an `if` whose span starts at
+its test, `if __DEV__ && row.is_empty() {`, so the arm's `{` is on the line
+before, and the `default` had no start of its own unless a case fell
+through to it. **`cases::opened_at` reads the line before a lone `if`, and
+the clause starts where that statement does**, the same start a case
+falling through to it gives. Each `// Fallthrough` is now before its case,
+the last before `default:`. The `_` arm's own pattern comment is still left
+out.
+
+Held by `lowering-comments-jumps.test.ts`'s "a comment above an arm whose
+pattern has a comment is before its case", run, and the mutations
+`comment-between-read-apart` (`to_oxc.ts`),
+`default-pattern-comment-unread` and `arm-opening-before-its-if-unseen`
+(`to_oxc/cases.ts`).
+

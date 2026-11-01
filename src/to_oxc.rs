@@ -783,51 +783,46 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     next += 1;
                 }
                 let at = *starts.get(next).filter(|&&at| in_file(at))?;
-                // What's between, but other comments, whose text is no code.
-                let mut code = c.hi;
-                let only_starts = (file.comments.iter())
-                    .filter(|other| other.lo >= c.hi && other.hi <= at)
-                    .chain([&crate::program::Comment {
-                        lo: at,
-                        hi: at,
-                        doc: false,
-                        written: true,
-                    }])
-                    .all(|other| {
-                        let between = &sources.text[code as usize..other.lo as usize];
-                        code = other.hi;
-                        // Past `let`s with no JS of their own, a variable read
-                        // in place, `let timer = Rc::clone(timer);` (ADR
-                        // 0603), a block's too, `let arg = unsafe {
-                        // js::cast(arg) };`, in the same block (ADR 0444,
-                        // amended).
-                        let (lets, rest) = leading_statements(between);
-                        // A closure's opening, `with_borrow_mut(|queue| {`,
-                        // whose body is in its place (ADR 0581), is a start;
-                        // and a macro's on its own line, `thread_local! {`,
-                        // whose code is (ADR 0621); and an `unsafe` block's,
-                        // which has no JS but its code's (ADR 0444, amended).
-                        // And a `match`'s, `match &new_last {`, right before
-                        // its first arm, whose pattern the `if` MIR makes of
-                        // it starts at (ADR 0444, amended).
-                        // And a `_` arm's whose `default` is fallen to.
-                        let default = cases::opens_default(rest) && case_starts.binary_search(&at).is_ok();
-                        let opens = (rest.match_indices('{')).all(|(i, _)| {
-                            let head = rest[..i].trim_end();
-                            head.ends_with('|')
-                                || macro_opening(&rest[..=i])
-                                || unsafe_opening(head)
-                                || match_opening(head) && rest[i + 1..].trim().is_empty()
-                                || arm_opening(head) && receiver_only(&rest[i + 1..])
-                        }) || default;
-                        // And a type alias's, an item with no JS, `pub type
-                        // ActivityInstance = Unknown;` (ADR 0444, amended);
-                        // and a `use` that makes no import, a type's (rd92).
-                        lets.iter()
-                            .all(|s| s.starts_with("let ") || type_alias(s) || use_item(s))
-                            && !rest.contains([';', '}'])
-                            && opens
-                    });
+                // What's between, but other comments, whose text is no code:
+                // each a space where it is, so code around one is read as
+                // one, `114 /* "r" */ => {`'s arm opening (rd525).
+                let mut between = sources.text[c.hi as usize..at as usize].to_string();
+                for other in (file.comments.iter()).filter(|other| other.lo >= c.hi && other.hi <= at) {
+                    let (lo, hi) = ((other.lo - c.hi) as usize, (other.hi - c.hi) as usize);
+                    between.replace_range(lo..hi, &" ".repeat(hi - lo));
+                }
+                // Past `let`s with no JS of their own, a variable read
+                // in place, `let timer = Rc::clone(timer);` (ADR
+                // 0603), a block's too, `let arg = unsafe {
+                // js::cast(arg) };`, in the same block (ADR 0444,
+                // amended).
+                let (lets, rest) = leading_statements(&between);
+                // A closure's opening, `with_borrow_mut(|queue| {`,
+                // whose body is in its place (ADR 0581), is a start;
+                // and a macro's on its own line, `thread_local! {`,
+                // whose code is (ADR 0621); and an `unsafe` block's,
+                // which has no JS but its code's (ADR 0444, amended).
+                // And a `match`'s, `match &new_last {`, right before
+                // its first arm, whose pattern the `if` MIR makes of
+                // it starts at (ADR 0444, amended).
+                // And a `_` arm's whose `default` is fallen to.
+                let default = cases::opens_default(rest) && case_starts.binary_search(&at).is_ok();
+                let opens = (rest.match_indices('{')).all(|(i, _)| {
+                    let head = rest[..i].trim_end();
+                    head.ends_with('|')
+                        || macro_opening(&rest[..=i])
+                        || unsafe_opening(head)
+                        || match_opening(head) && rest[i + 1..].trim().is_empty()
+                        || arm_opening(head) && receiver_only(&rest[i + 1..])
+                }) || default;
+                // And a type alias's, an item with no JS, `pub type
+                // ActivityInstance = Unknown;` (ADR 0444, amended);
+                // and a `use` that makes no import, a type's (rd92).
+                let only_starts = lets
+                    .iter()
+                    .all(|s| s.starts_with("let ") || type_alias(s) || use_item(s))
+                    && !rest.contains([';', '}'])
+                    && opens;
                 only_starts.then_some((*c, at))
             })
             .collect();

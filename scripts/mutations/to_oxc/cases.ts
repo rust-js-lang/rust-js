@@ -62,4 +62,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^switch_guard_skips_its_case.rs$"],
     snapshots: true,
   },
+  {
+    name: "default-pattern-comment-unread",
+    breaks:
+      "a `_ /* \"{\" \"[\" */ => {` arm isn't read as its `default`'s opening, so the `// Fallthrough` above it is lost from before `default:` (rd525)",
+    file: "src/to_oxc/cases.rs",
+    find: "    while let Some(open) = code.find(\"/*\")\n",
+    replace: "    while false\n        && let Some(open) = code.find(\"/*\")\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "whose pattern has a comment"],
+  },
+  {
+    name: "arm-opening-before-its-if-unseen",
+    breaks:
+      "a `_` arm whose first statement is an `if` whose span starts at its test, `if __DEV__ && row.is_empty() {`, has no clause start, so the `// Fallthrough` above it is stacked above the `switch` (rd525)",
+    file: "src/to_oxc/cases.rs",
+    find: "    if code[line..].trim() == \"if\"\n        && line > 0\n",
+    replace: "    if false\n        && line > 0\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "whose pattern has a comment"],
+  },
 ];
