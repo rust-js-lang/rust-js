@@ -507,8 +507,12 @@ async function test(
   mkdirSync(own, { recursive: true });
   const p = await withRuntime(compiler, () =>
     // The first failure is the answer: a mutant is caught by any test, and
-    // a control passes only where none fails (ADR 1031).
-    run([process.execPath, "test", ...(bail ? ["--bail"] : []), ...tests], root, testTimeout, {
+    // a control passes only where none fails (ADR 1031). Each test has the
+    // minute the suite gives it (`test/setup.ts`, `test:serial`): files run
+    // one after another have Bun's five seconds each, which a JSX test of
+    // three seconds alone ran past on a nightly's machine of two workers,
+    // and its mutation was inconclusive.
+    run([process.execPath, "test", "--timeout=60000", ...(bail ? ["--bail"] : []), ...tests], root, testTimeout, {
       ...env,
       RUST_JS_COMPILER: compiler,
       // Which mutation of a build of many it is, for a test that runs a
