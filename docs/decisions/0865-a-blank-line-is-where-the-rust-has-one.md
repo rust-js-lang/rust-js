@@ -241,3 +241,25 @@ let, a comment after the let inside it", run; and the mutations
 `guard-try-at-first`, `guard-try-at-an-earlier-guard` (`mir/tidy/unwinds.ts`,
 the corpus's `vec_destructors`, whose `swapped` is an earlier guard of
 `main`'s block) and `guard-lets-unseen` (`mir/patterns.ts`).
+
+## Amendment: a comment above a `let` of a `match` is above the chain it makes (rd533, 2026-11-02)
+
+React's Flight client's `then` writes `// The status might have changed
+after initialization.` above `let settled = match &mut
+*chunk.state.borrow_mut() { .. }`. The `let`'s JS has no start of its own:
+the chain the `match` makes starts at its first arm, and the start right
+after the comment is the scrutinee's, which a later arm's binding was
+given, `const value = chunk;` inside the second branch. The comment
+printed there, and once that binding was gone, nowhere. **A start inside
+a `let`'s value on its line is before the first JS printed of the whole
+`let`**, to the next line no deeper than its first but its closings, as
+rustfmt writes it (`openings::let_end`): the chain's first `if`. Not past
+it, where JS hoists a later statement's declaration first. A start that's
+its line's first code, or one between a `match` arm's patterns, is as
+before. Case N (ADR 0262): comments.
+
+Held by `lowering-comments-jumps.test.ts`'s "a comment above a `let` of a
+`match` is above the chain it makes", run, and the mutations
+`printed-first-of-a-let-on-its-line` (`to_oxc.ts`),
+`let-value-of-any-start` and `let-end-past-its-indentation`
+(`to_oxc/openings.ts`).

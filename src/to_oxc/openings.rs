@@ -111,3 +111,29 @@ pub(super) fn macro_opening(line: &str) -> bool {
         .and_then(|head| head.trim_end().strip_suffix('!'))
         .is_some_and(|path| !path.is_empty() && path.chars().all(|c| c.is_alphanumeric() || c == '_' || c == ':'))
 }
+
+/// Of a `start` inside a `let`'s value on its line, `let settled = match
+/// &mut *chunk.state.borrow_mut() {`'s scrutinee, whose JS needn't start
+/// there, a `match`'s chain at its first arm: where that `let` ends, as
+/// rustfmt writes it, at the next line no deeper than its first but one of
+/// its closings, `}`, `)` or `]` (rd533).
+pub(super) fn let_end(text: &str, start: u32) -> Option<u32> {
+    let start = start as usize;
+    let line_start = text[..start].rfind('\n').map_or(0, |i| i + 1);
+    let first = &text[line_start..start];
+    if !first.trim_start().starts_with("let ") {
+        return None;
+    }
+    let indent = first.len() - first.trim_start().len();
+    let mut at = text[start..].find('\n').map_or(text.len(), |i| start + i + 1);
+    while at < text.len() {
+        let line = &text[at..text[at..].find('\n').map_or(text.len(), |i| at + i)];
+        let code = line.trim_start();
+        let depth = line.len() - code.len();
+        if !code.is_empty() && (depth < indent || depth == indent && !code.starts_with(['}', ')', ']'])) {
+            break;
+        }
+        at += line.len() + 1;
+    }
+    Some(at.min(text.len()) as u32)
+}

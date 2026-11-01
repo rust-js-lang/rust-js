@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "printed-first-of-its-span-alone",
     breaks: "a blank line and a comment before an `if let`'s line are before its `if`, past what its test's `take()` prints first",
     file: "src/to_oxc.rs",
-    find: "            .unwrap_or(start)\n            .max(line_end);\n",
-    replace: "            .unwrap_or(start)\n            .max(line_end.min(start));\n",
+    find: "            .unwrap_or(start)\n            .max(line_end)\n",
+    replace: "            .unwrap_or(start)\n            .max(line_end.min(start))\n",
     tests: ["test/lowering-comments.test.ts", "-t", "what its test's take"],
   },
   {
@@ -723,5 +723,14 @@ export const mutations: Mutation[] = [
     find: "                let of_default = sources.text[line_start..c.lo as usize].trim() == \"_\"\n",
     replace: "                let of_default = false && sources.text[line_start..c.lo as usize].trim() == \"_\"\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "opens with a `let`|whose pattern has a comment"],
+  },
+  {
+    name: "printed-first-of-a-let-on-its-line",
+    breaks:
+      "a comment above `let settled = match &mut *chunk.state.borrow_mut() { .. }` is before the JS of its scrutinee's span, a later arm's binding, not above the `if` of its first arm, React's Flight client's `then` (rd533)",
+    file: "src/to_oxc.rs",
+    find: "            .max(let_end(&sources.text, start).unwrap_or(0));\n",
+    replace: "            .max(0);\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "of a .match. is above the chain"],
   },
 ];

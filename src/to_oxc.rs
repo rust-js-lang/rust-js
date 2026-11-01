@@ -43,7 +43,7 @@ use self::header::header;
 pub use self::header::import_line;
 pub(crate) use self::loads::{entry_exports, loaded_modules};
 use self::openings::{
-    arm_opening, closure_opening, leading_statements, macro_opening, match_opening, receiver_only, type_alias,
+    arm_opening, closure_opening, leading_statements, let_end, macro_opening, match_opening, receiver_only, type_alias,
     unsafe_opening, use_item,
 };
 use self::starts::{bodies, declared_class, noinline_starts, set_apart_starts, statement_spans};
@@ -503,7 +503,10 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
     // = ..` of `let v = V { patch: .. }`: the first of its spans; or of
     // what's written after it on its line, an `if let`'s `take()` after its
     // pattern, `const old = slots[i]; slots[i] = undefined;` (ADR 0865,
-    // amended).
+    // amended). Of a start inside a `let`'s value, `let settled = match ..`'s
+    // scrutinee, the first JS printed of the whole `let`, the chain a
+    // `match` makes, its first arm's `if`, before a later arm's binding the
+    // scrutinee's span is (rd533).
     let printed_first = |start: u32| {
         let line_end = (sources.text.get(start as usize..))
             .and_then(|rest| rest.find('\n'))
@@ -513,7 +516,8 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             .map(|&(_, hi)| hi)
             .max()
             .unwrap_or(start)
-            .max(line_end);
+            .max(line_end)
+            .max(let_end(&sources.text, start).unwrap_or(0));
         (spans.iter())
             .find(|&&(lo, _)| lo >= start && (lo < end || lo == start))
             .map_or(start, |&(lo, _)| lo)

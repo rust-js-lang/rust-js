@@ -35,4 +35,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^switch_guard_skips_its_case.rs$"],
     snapshots: true,
   },
+  {
+    name: "let-value-of-any-start",
+    breaks:
+      "a comment between an arm's patterns, `\"keydown\"\\n// ..\\n| \"keyup\"`, is read as above a `let` whose JS starts inside its value, and printed before the arm's body, not before `case \"keyup\":` (rd533)",
+    file: "src/to_oxc/openings.rs",
+    find: "    if !first.trim_start().starts_with(\"let \") {\n",
+    replace: "    if first.trim().is_empty() {\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment between an arm.s patterns"],
+  },
+  {
+    name: "let-end-past-its-indentation",
+    breaks:
+      "a `let` a comment is above ends where its block does, so the comment is before the first JS printed of what's after it too, a declaration hoisted from a later statement, `let cache` (rd533)",
+    file: "src/to_oxc/openings.rs",
+    find: "        if !code.is_empty() && (depth < indent || depth == indent && !code.starts_with(['}', ')', ']'])) {\n",
+    replace: "        if false {\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "a comment before a let read in place"],
+  },
 ];

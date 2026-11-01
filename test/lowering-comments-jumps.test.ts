@@ -431,3 +431,60 @@ pub fn parse(code: &str) -> Option<&'static Unknown> {
   const parse = lib.parse as (code: string) => unknown;
   expect([parse("1 + 2"), parse("("), parse("")]).toEqual([3, undefined, undefined]);
 });
+
+// React's Flight client's `then`: a comment above `let settled = match &mut
+// *chunk.state.borrow_mut() { .. }`, whose JS's first statement printed is
+// the `if` of its first arm, is above that `if`, as upstream's `// The
+// status might have changed after initialization.` is above its `switch`;
+// not before the binding of a later arm, which the scrutinee's span is,
+// nor lost where that binding isn't printed (rd533).
+test("a comment above a `let` of a `match` is above the chain it makes", async () => {
+  const { js, lib } = await compiled("comment-above-let-match", `use std::cell::RefCell;
+
+pub enum State {
+    Done { value: u32, extra: u32 },
+    Pending { value: Option<Vec<u32>>, reason: Option<Vec<u32>> },
+    Blocked { value: Option<Vec<u32>>, reason: Option<Vec<u32>> },
+    Failed { reason: u32 },
+}
+
+pub struct Chunk {
+    pub state: RefCell<State>,
+}
+
+pub fn make(n: u32) -> Chunk {
+    let state = match n {
+        0 => State::Done { value: 7, extra: 0 },
+        1 => State::Pending { value: None, reason: None },
+        2 => State::Blocked { value: Some(vec![9]), reason: None },
+        _ => State::Failed { reason: n },
+    };
+    Chunk { state: RefCell::new(state) }
+}
+
+pub fn settle(chunk: &Chunk, out: &mut Vec<u32>) {
+    out.push(0);
+    // The status might have changed after initialization.
+    let settled = match &mut *chunk.state.borrow_mut() {
+        State::Done { value, .. } => Ok(*value),
+        State::Pending { value, reason } | State::Blocked { value, reason } => {
+            value.get_or_insert_with(Vec::new).push(1);
+            reason.get_or_insert_with(Vec::new).push(2);
+            out.push(value.as_ref().map_or(0, |v| v.len() as u32));
+            return;
+        }
+        State::Failed { reason } => Err(*reason),
+    };
+    match settled {
+        Ok(value) => out.push(value),
+        Err(reason) => out.push(reason + 100),
+    }
+}
+`);
+  expect(js).toMatch(/out\.push\(0\);\n {2}\/\/ The status might have changed after initialization\.\n {2}if \(/);
+  const settle = lib.settle as (chunk: unknown, out: number[]) => void;
+  const make = lib.make as (n: number) => unknown;
+  const out: number[] = [];
+  for (const n of [0, 1, 2, 5]) settle(make(n), out);
+  expect(out).toEqual([0, 7, 0, 1, 0, 2, 0, 105]);
+});
