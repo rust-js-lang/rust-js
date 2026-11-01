@@ -11,7 +11,7 @@
 
 use core::marker::PhantomData;
 
-use js::{JsError, JsObject, Uint8Array};
+use js::{IntoUnknown, JsError, JsObject, Uint8Array};
 
 use crate::buffer::Buffer;
 use crate::event;
@@ -44,6 +44,50 @@ impl Writable {
     /// there is one; the stream itself.
     #[cfg_attr(rust_js, rust_js::link_name = "destroy")]
     pub fn destroy(&self, error: Option<&JsError>) -> &Writable {
+        unreachable!()
+    }
+}
+
+/// [`stream.Readable`](https://nodejs.org/api/stream.html#class-streamreadable):
+/// what's read from, as its `read` pushes its chunks, React's prelude of a
+/// prerender.
+#[cfg_attr(rust_js, rust_js::types = "stream#Readable")]
+pub struct Readable(PhantomData<JsObject>);
+
+impl Readable {
+    /// [`readable.push(chunk)`](https://nodejs.org/api/stream.html#readablepushchunk-encoding):
+    /// `chunk` given to what reads it, any value, as @types/node's `any`, `None`
+    /// `null`, its end; whether it would take more now.
+    #[cfg_attr(rust_js, rust_js::link_name = "push")]
+    #[cfg_attr(rust_js, rust_js::nullable(chunk))]
+    pub fn push(&self, chunk: Option<&dyn IntoUnknown>) -> bool {
+        unreachable!()
+    }
+
+    /// [`readable.destroy(error)`](https://nodejs.org/api/stream.html#readabledestroyerror):
+    /// the stream closed at once, `"error"` emitted with `error` where there
+    /// is one; the stream itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "destroy")]
+    pub fn destroy(&self, error: Option<&dyn IntoUnknown>) -> &Readable {
+        unreachable!()
+    }
+}
+
+/// What [`readable::new`] is given, @types/node's `ReadableOptions`: its
+/// `read`, called with how much is asked for when it may push more.
+#[derive(Clone, Copy, Default)]
+pub struct ReadableOptions<'a> {
+    pub read: Option<&'a dyn Fn(f64)>,
+    pub high_water_mark: Option<f64>,
+}
+
+pub mod readable {
+    use super::{Readable, ReadableOptions};
+
+    /// [`new stream.Readable(options)`](https://nodejs.org/api/stream.html#new-streamreadableoptions):
+    /// a stream its `read` pushes to.
+    #[cfg_attr(rust_js, rust_js::link_name = "new stream#Readable")]
+    pub fn new(options: Option<&ReadableOptions<'_>>) -> &'static Readable {
         unreachable!()
     }
 }

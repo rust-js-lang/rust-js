@@ -1104,6 +1104,52 @@ destination.once("drain", () => {
   expect(JSON.parse(p.stdout.toString())).toEqual(["drain", "boom", "close"]);
 });
 
+// rd462: a Readable its \`read\` pushes to, React's prerenderToNodeStream's
+// prelude: \`new Readable({ read() { .. } })\`, \`readable.push(chunk)\`, its
+// end \`readable.push(null)\`.
+test("a Readable is pushed to by its read", () => {
+  const dir = fixture("node-readable");
+  const node = buildNode();
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+use node::stream::{Readable, ReadableOptions, readable};
+
+pub fn counted(to: u32) -> &'static Readable {
+    let count = Cell::new(0);
+    let stream: Cell<Option<&'static Readable>> = Cell::new(None);
+    let made = readable::new(Some(&ReadableOptions {
+        read: Some(&|_size| {
+            let stream = stream.get().unwrap();
+            if count.get() < to {
+                count.set(count.get() + 1);
+                stream.push(Some(&count.get().to_string().as_str()));
+            } else {
+                stream.push(None);
+            }
+        }),
+        ..Default::default()
+    }));
+    stream.set(Some(made));
+    made
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('import { Readable } from "stream";');
+  expect(js).toContain("const made = new Readable({");
+  expect(js).toContain("stream$1.push(null);");
+  writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
+  writeFileSync(join(dir, "run.js"), `import { counted } from "./lib.js";
+const seen = [];
+const readable = counted(3);
+readable.on("data", (chunk) => seen.push(chunk.toString()));
+readable.on("end", () => console.log(JSON.stringify(seen)));
+`);
+  const p = Bun.spawnSync(["node", "run.js"], { cwd: dir, stderr: "pipe" });
+  expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
+  expect(JSON.parse(p.stdout.toString())).toEqual(["1", "2", "3"]);
+});
+
 test("node's crypto hashes and a Writable is written to", () => {
   const dir = fixture("node-stream");
   const node = buildNode();

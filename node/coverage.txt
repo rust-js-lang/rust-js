@@ -1,5 +1,5 @@
 # The node crate against @types/node: bun test test/node-coverage.test.ts
-# exports: 169 of 1538 (11.0%)
+# exports: 171 of 1538 (11.1%)
 # not bound by design (x): 3, TypeScript's own
 # assert 0 of 28
 - assert#Assert
@@ -1101,7 +1101,7 @@ x type buffer#WithImplicitCoercion
 - type repl#REPLWriter
 - repl#start
 - repl#writer
-# stream 1 of 33
+# stream 3 of 33
 - stream#addAbortSignal
 - type stream#ArrayOptions
 - stream#Duplex
@@ -1126,8 +1126,8 @@ x type buffer#WithImplicitCoercion
 - type stream#PipelineSourceFunction
 - type stream#PipelineTransform
 - type stream#PipelineTransformSource
-- stream#Readable
-- type stream#ReadableOptions
++ stream#Readable
++ type stream#ReadableOptions
 - stream#setDefaultHighWaterMark
 - type stream#StreamOptions
 - stream#Transform
