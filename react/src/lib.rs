@@ -1196,7 +1196,7 @@ pub trait Component<P: 'static = (), S: 'static = ()>: 'static {
     /// [`componentDidUpdate`](https://react.dev/reference/react/Component#componentdidupdate):
     /// called once it's re-rendered with new props or state, given the ones
     /// before.
-    fn component_did_update(self: &'static Self, prev_props: &'static P, prev_state: &'static S) {}
+    fn component_did_update(self: &'static Self, _prev_props: &'static P, _prev_state: &'static S) {}
 
     /// [`componentWillUnmount`](https://react.dev/reference/react/Component#componentwillunmount):
     /// called before it's removed from the screen.
