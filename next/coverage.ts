@@ -247,8 +247,9 @@ async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<M
         functions.push([d.name, names]);
       }
     }
-    if (d.kind === "export" && d.from !== undefined) await reexport(d.from, d.names, false);
-    if (d.kind === "export" && d.from === undefined) await exportOwn(d.names, false);
+    // `export type { .. }` is a list of the model's, `typeOnly` (ADR 0761, amended).
+    if (d.kind === "export" && d.from !== undefined) await reexport(d.from, d.names, Boolean(d.typeOnly));
+    if (d.kind === "export" && d.from === undefined) await exportOwn(d.names, Boolean(d.typeOnly));
     if (d.kind === "export-default") exported.set("default", (await own(d.name)) ?? { kind: "value" });
     if (d.kind === "other") {
       // The model leaves a class as text, after its doc comment.
