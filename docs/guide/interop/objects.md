@@ -102,6 +102,9 @@ export function scaledArea(side) {
   `Rect::scale(&mut rect, 2.0)`, so it's `Rect.scale(rect, 2)`.
 - **`self` is named after its type**, `rect`. By value, `&self` or
   `&mut self`, it's the object itself; `&mut self` changes it in place.
+  One a pointer holds, `self: &Rc<Self>`, `self: Box<Self>` or `self:
+  Pin<&mut Self>`, is named after its type too, `reply` of a `Reply`
+  ([ADR 0047](../../decisions/0047-methods.md), amended).
 - **The object is exported** where one of its methods is `pub`.
 
 ## Traits

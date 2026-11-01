@@ -36,7 +36,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0035 JS that throws is a `Result`; `?` returns early](0035-results-and-throwing-js.md) *(amended by 0637: a `match` of its `Result` is `try` and `catch`; 0643: its `unwrap()` is the call; amended: what `?` tries is read once)*
 - [0020 Structs are objects, tuples are arrays](0020-structs-and-tuples.md) *(amended by 0674: a literal's fields are listed as written; 0775: a `()` given to JS is `undefined`)*
 - [0049 Trait dictionaries, generics, and read-only trait objects](0049-traits-and-generics.md)
-- [0047 Methods are an object of functions named after their type](0047-methods.md) *(extended by 0761: a `#[rust_js::class]`'s are its prototype's; extended by 0943: a `#[rust_js::object]`'s its literal's own)*
+- [0047 Methods are an object of functions named after their type](0047-methods.md) *(extended by 0761: a `#[rust_js::class]`'s are its prototype's; extended by 0943: a `#[rust_js::object]`'s its literal's own; amended: a `self` a pointer holds is named after its type)*
 - [0014 `match` becomes an `if`/`else if` chain](0014-match-lowering.md) *(amended by 0629: a `match` of constants is a `switch`)*
 - [0048 Let chains: each part runs only once the ones before it held](0048-let-chains.md)
 - [0051 `Option<T>` in generic code: boxed only when it looks like `None`](0051-generic-options.md) *(amended: a type parameter bound by a function trait is a function; amended: a type parameter no call gives what may look like `None` is never boxed; amended: a function JS calls takes what JS gives as it gives it; by 1017: a local `Option` of an `Option` held where it's made is its payload; amended: a thread-local's closure's `Option`, as it gives it)*

@@ -143,8 +143,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && !continued.contains(&place.local)
             {
                 // A method's `self`, named after its type, `counter` for a
-                // `Counter`.
-                let name = match body.local_decls[place.local].ty.peel_refs().kind() {
+                // `Counter`, of one a pointer holds too, `self: &Rc<Self>`,
+                // `Box<Self>` or `Pin<&mut Self>`, as `&self` is (rd345).
+                let mut ty = body.local_decls[place.local].ty.peel_refs();
+                while let ty::Adt(adt, args) = ty.kind()
+                    && (adt.is_box()
+                        || adt.is_pin()
+                        || self.is_std_type(ty, crate::lower::recognition::StdItem::Rc)
+                        || self.is_std_type(ty, crate::lower::recognition::StdItem::Arc))
+                    && let Some(held) = args.types().next()
+                {
+                    ty = held.peel_refs();
+                }
+                let name = match ty.kind() {
                     ty::Adt(adt, _) if info.name.as_str() == "self" => {
                         crate::lower::lower_first(self.tcx.item_name(adt.did()).as_str())
                     }

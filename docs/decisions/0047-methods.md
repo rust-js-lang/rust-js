@@ -1,6 +1,6 @@
 # 0047. Methods are an object of functions named after their type
 
-Status: Accepted. Extends [0020](0020-structs-and-tuples.md).
+Status: Accepted. Extends [0020](0020-structs-and-tuples.md). Amended (2026-11-01): a `self` a pointer holds is named after its type too.
 Trait-method rejection is superseded by [0049](0049-traits-and-generics.md)
 for its supported subset; inherent methods keep this representation.
 
@@ -100,3 +100,18 @@ Counter.tick(counter);
 - A component's module that also has an `impl` exports an object besides
   its components, so it's no longer a Fast Refresh boundary. Types with
   methods belong in their own modules, as in React code.
+
+## Amended (2026-11-01): a `self` a pointer holds
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, a name.
+
+React's ReactFlightReplyClient, ported as a state struct whose methods
+share its fields (gap rd345), writes `fn resolve_to_json(self: &Rc<Self>,
+..)`, so a closure its methods make can hold the state; its `self` was
+named after the `Rc`, `resolveToJson(rc, key, value)`, where `&self`'s is
+`reply`. **A `self` an `Rc`, an `Arc`, a `Box` or a `Pin` holds is named
+after the type it holds**, `reply` (`mir/locals.rs`). Held by
+`test/lowering-mir-lets.test.ts`'s "a method's self of an Rc is named
+after its type" and the mutations `self-of-rc-named-rc` and
+`self-of-box-named-box` (`lower/mir/locals.ts`).
+

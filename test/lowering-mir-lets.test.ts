@@ -113,6 +113,42 @@ pub fn label(section: Section) -> String {
   expect(lib.label("home")).toBe("og-home");
 });
 
+// rd345: a `self` an `Rc` holds, `self: &Rc<Self>`, is named after its
+// type too, `reply` of a `Reply`, as `&self` is, not after the `Rc`.
+test("a method's self of an Rc is named after its type", async () => {
+  const dir = fixture("self-rc-name");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+use std::rc::Rc;
+
+struct Reply {
+    next_part_id: Cell<u32>,
+}
+
+impl Reply {
+    fn next(self: &Rc<Self>) -> u32 {
+        let id = self.next_part_id.get();
+        self.next_part_id.set(id + 1);
+        id
+    }
+
+    fn boxed(self: Box<Self>) -> u32 {
+        self.next_part_id.get()
+    }
+}
+
+pub fn ids() -> u32 {
+    let reply = Rc::new(Reply { next_part_id: Cell::new(1) });
+    reply.next() + reply.next() + Box::new(Reply { next_part_id: Cell::new(5) }).boxed()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  next(reply) {\n    const id = reply.nextPartId;\n");
+  expect(js).toContain("  boxed(reply) {\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.ids()).toBe(8);
+});
+
 // A pattern's binding of a variable, `if let Some(error) = raw`, a copy of
 // it MIR makes where the variable is borrowed, `const error = raw;`: the
 // variable itself where the block sets neither again, as react.dev's
