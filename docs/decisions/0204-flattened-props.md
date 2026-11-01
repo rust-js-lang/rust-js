@@ -4,7 +4,8 @@ Status: Accepted. Extends [0195](0195-rest-props.md) and [0196](0196-typescript-
 amended by [0205](0205-flattened-chains.md), which chains them and gives a
 name both have to the props; and by
 [0674](0674-a-struct-literals-fields-are-in-the-order-written.md): a flattened
-field made outside JSX is found by its name, where it's written.
+field made outside JSX is found by its name, where it's written. Amended
+below: a flattened field lent whole is its parent's object.
 
 Case: N, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -122,3 +123,51 @@ shared struct was made nested, `{ type: "article", base: { title } }`,
 where JS holds it flat, as Next.js's `OpenGraph` is. Making one flat, and
 matching it, is a variant's own work, not done yet. A lowering test
 refuses one; a mutation allows it.
+
+## Amendment: lent whole, it's its parent's object (2026-11-01)
+
+React DOM's legacy Fizz config's render state extends the Fizz config's:
+upstream copies each of its fields into a new object with one more,
+`generateStaticMarkup`, and gives that object to the Fizz config's own
+functions, `pushTextInstanceImpl(target, text, renderState, ..)`, which
+read the fields they know. Its port flattens the base into it:
+
+```rust
+pub struct RenderState {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub base: base::RenderState,
+    pub generate_static_markup: bool,
+}
+
+push_text_instance_impl(target, text, &render_state.base, text_embedded)
+```
+
+A flattened field read whole was an error, as JS's one object has no
+field that holds it. **Lent whole, `&state.base`, it's its parent's
+object** (`validation.rs`'s `reject_flatten_misuse`): the object has its
+fields, each where a read of it is, so what reads or sets them through
+the reference reads and sets the parent's, as Rust's do the field's.
+`pushTextInstanceImpl(target, text, renderState, textEmbedded)`.
+
+What would read more than its fields is refused:
+
+- **Of a type with `Clone`, `PartialEq`, `PartialOrd` or `Hash`**, whose
+  JS reads its object whole: a clone is `{ ...state }`, which would copy
+  the parent's fields too, and `==` compares every key.
+- **With a name its parent has**, or one a struct its parent is flattened
+  in has: JS's one object holds the parent's under it (ADR 0205).
+- **Lent mutably**, `&mut state.base`, which may replace it whole; and
+  read by value, as before.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A. Where it's allowed,
+the object has every field of the struct, with Rust's values, and what's
+read of it is only those. JS given it, a binding's parameter typed as the
+base, sees the parent's fields too, as a JS object that extends another
+is seen; ADR 0204's "what a JS caller gives besides is in it too".
+
+Held by the corpus's `flattened_state_lent`, against native Rust;
+`test/lowering.test.ts`'s "a flattened field lent whole is refused where
+its type reads it whole, or lent mutably", and `test/jsx-props.test.ts`'s
+chain lent whole; and mutations `flattened-lent-refused`,
+`flattened-lent-mutably`, `flattened-lent-read-whole` and
+`flattened-lent-shadow-unseen` (`analysis/validation.rs`).

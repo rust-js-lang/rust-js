@@ -233,7 +233,7 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
 
 | Rust | JS |
 |---|---|
-| struct | object, `{ x, y }` ([0020](../decisions/0020-structs-and-tuples.md)) |
+| struct | object, `{ x, y }` ([0020](../decisions/0020-structs-and-tuples.md)); a field marked `#[rust_js::flatten]` is its struct's fields in the parent's object, `{ ...createRenderState(prefix), generateStaticMarkup }`, read through as the parent's, `state.base.prefix` being `state.prefix`, and lent whole, `&state.base`, the parent's object itself, as a JS object that extends another is; not of a type whose `Clone`, `PartialEq`, `PartialOrd` or `Hash` reads it whole, nor one with a name its parent has too ([0204](../decisions/0204-flattened-props.md), amended) |
 | tuple, tuple struct | array, `[a, b]` |
 | unit struct, `()` | `undefined`; a unit struct named `#[rust_js::name = "click"]`, that string ([0223](../decisions/0223-webapi-event-and-tag-maps.md)) |
 | fieldless enum variant | its name, `"Green"` ([0013](../decisions/0013-fieldless-enums.md)); under a `#[repr(..)]` of an integer of 32 bits or fewer, its number, `0`, its module's `const`, read by its name, `const Empty = 0;` ([0722](../decisions/0722-a-repr-enums-variant-is-its-number.md)) |

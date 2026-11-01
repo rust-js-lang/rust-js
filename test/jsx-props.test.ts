@@ -701,8 +701,10 @@ pub fn App() -> JSX::Element {
     jsx! { <ButtonLink href="/a" props={Anchor { href: Some("/b"), ..Default::default() }} {..Default::default()}>{"A"}</ButtonLink> }
 }
 `, "`href`, which the props have too");
-  // The chain's field read whole.
-  refused(chained.replace("let title = props.html.title.unwrap_or(\"none\");", "let html = &props.html;\n    let title = html.title.unwrap_or(\"none\");"), "reading flattened props");
+  // The chain's field lent whole is the props' object (ADR 0204, amended).
+  const lent = compile(chained.replace("let title = props.html.title.unwrap_or(\"none\");", "let html = &props.html;\n    let title = html.title.unwrap_or(\"none\");"));
+  run(lent.args);
+  expect(readFileSync(join(lent.dir, "lib.jsx"), "utf8")).toContain('const html = props;\n  const title = html.title ?? "none";');
 });
 
 // A component's props are as written, its children last, then what a

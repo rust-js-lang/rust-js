@@ -299,4 +299,36 @@ export const mutations: Mutation[] = [
       "an ES class React renders"
     ]
   },
+  {
+    name: "flattened-lent-refused",
+    breaks: "a flattened field lent whole, `&state.base`, is refused, so a struct that extends another can't be given to its base's functions",
+    file: "src/lower/analysis/validation.rs",
+    find: "                        && !lent.contains(&e)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_lent.rs$"],
+  },
+  {
+    name: "flattened-lent-mutably",
+    breaks: "a flattened field lent mutably, which may replace it whole, is taken as its parent's object",
+    file: "src/lower/analysis/validation.rs",
+    find: "                    borrow_kind: rustc_middle::mir::BorrowKind::Shared,\n",
+    replace: "                    borrow_kind: _,\n",
+    tests: ["test/lowering.test.ts", "-t", "flattened field lent whole"],
+  },
+  {
+    name: "flattened-lent-read-whole",
+    breaks: "a flattened field of a type whose clone spreads it is lent whole, so its clone holds the parent's fields too",
+    file: "src/lower/analysis/validation.rs",
+    find: "                        && reads_whole(expr.ty) =>\n",
+    replace: "                        && false =>\n",
+    tests: ["test/lowering.test.ts", "-t", "flattened field lent whole"],
+  },
+  {
+    name: "flattened-lent-shadow-unseen",
+    breaks: "a flattened field lent whole whose parent has a name it has too is taken as its parent's object, whose name is the parent's",
+    file: "src/lower/analysis/validation.rs",
+    find: "            return Some(field.name);\n",
+    replace: "            return None;\n",
+    tests: ["test/lowering.test.ts", "-t", "flattened field lent whole"],
+  },
 ];

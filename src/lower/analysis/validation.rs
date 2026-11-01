@@ -292,6 +292,40 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
                 _ => None,
             })
             .collect();
+        // Whether a value of `ty` has an impl whose JS reads its object
+        // whole: a clone's spread, `==`'s `$eq`, a comparison's or a hash's.
+        let reads_whole = |ty: Ty<'tcx>| {
+            let ty::Adt(adt, _) = ty.kind() else {
+                return true;
+            };
+            let items = tcx.lang_items();
+            let hash = crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::Hash);
+            [
+                items.clone_trait(),
+                items.eq_trait(),
+                items.partial_ord_trait(),
+                Some(hash),
+            ]
+            .into_iter()
+            .flatten()
+            .any(|tr| {
+                tcx.all_impls(tr).any(|imp| {
+                    matches!(tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
+                            ty::Adt(of, _) if of.did() == adt.did())
+                })
+            })
+        };
+        // A flattened field lent whole, `&state.base`, is its parent's
+        // object, which has its fields (ADR 0204, amended).
+        let lent: HashSet<ExprId> = (thir.exprs.iter())
+            .filter_map(|expr| match expr.kind {
+                ExprKind::Borrow {
+                    borrow_kind: rustc_middle::mir::BorrowKind::Shared,
+                    arg,
+                } => Some(strip(thir, arg)),
+                _ => None,
+            })
+            .collect();
         for (e, expr) in thir.exprs.iter_enumerated() {
             match expr.kind {
                 ExprKind::Field { lhs, name, .. }
@@ -303,9 +337,42 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
                             .into(),
                     );
                 }
+                // Lent whole, it's its parent's object, which holds a name
+                // the parent, or what it's flattened in, has too as theirs
+                // (ADR 0205): refused.
+                ExprKind::Field { lhs, name, .. }
+                    if bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize())
+                        && lent.contains(&e)
+                        && let Some(shadowed) = shadowed_in(tcx, thir, lhs, expr.ty) =>
+                {
+                    refuse(
+                        expr.span,
+                        format!(
+                            "lending a flattened `{}` whole, its parent's object, whose `{shadowed}` is the parent's",
+                            expr.ty
+                        ),
+                    );
+                }
+                // Lent whole, it's its parent's object, which a clone spreads
+                // and `==` compares whole, the parent's fields too: of a type
+                // that has either, refused.
+                ExprKind::Field { lhs, name, .. }
+                    if bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize())
+                        && lent.contains(&e)
+                        && reads_whole(expr.ty) =>
+                {
+                    refuse(
+                        expr.span,
+                        format!(
+                            "lending a flattened `{}` whole, its parent's object, where its `Clone`, `PartialEq`, `PartialOrd` or `Hash` would read the parent's fields too",
+                            expr.ty
+                        ),
+                    );
+                }
                 ExprKind::Field { lhs, name, .. }
                     if bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize())
                         && !read_through.contains(&e)
+                        && !lent.contains(&e)
                         && !bases.contains(&e) =>
                 {
                     refuse(
@@ -318,6 +385,59 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
         }
     }
     valid
+}
+
+/// The names of `ty`'s fields its JS object has: a struct's own, and,
+/// through each flattened field, its struct's.
+fn object_names<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> HashSet<rustc_span::Symbol> {
+    let ty::Adt(adt, args) = ty.peel_refs().kind() else {
+        return HashSet::new();
+    };
+    if !adt.is_struct() {
+        return HashSet::new();
+    }
+    let mut names = HashSet::new();
+    for field in &adt.non_enum_variant().fields {
+        match bindings::is_flatten(tcx, field) {
+            true => names.extend(object_names(tcx, field.ty(tcx, args).skip_normalization())),
+            false => _ = names.insert(field.name),
+        }
+    }
+    names
+}
+
+/// Of a flattened field of type `lent`, lent whole from `of`, its parent,
+/// a name of its object's that its parent, or a struct that parent is
+/// flattened in, has as its own (ADR 0205), which JS's one object holds as
+/// theirs.
+fn shadowed_in<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    thir: &rustc_middle::thir::Thir<'tcx>,
+    mut of: ExprId,
+    lent: Ty<'tcx>,
+) -> Option<rustc_span::Symbol> {
+    let names = object_names(tcx, lent);
+    loop {
+        if let ty::Adt(adt, _) = thir[of].ty.peel_refs().kind()
+            && adt.is_struct()
+            && let Some(field) = (adt.non_enum_variant().fields.iter())
+                .find(|field| !bindings::is_flatten(tcx, field) && names.contains(&field.name))
+        {
+            return Some(field.name);
+        }
+        let mut lhs = strip(thir, of);
+        while let ExprKind::Deref { arg } = thir[lhs].kind {
+            lhs = strip(thir, arg);
+        }
+        match thir[lhs].kind {
+            ExprKind::Field { lhs: parent, name, .. }
+                if bindings::is_flatten_field(tcx, thir[parent].ty, name.as_usize()) =>
+            {
+                of = parent;
+            }
+            _ => return None,
+        }
+    }
 }
 
 /// Report each `#[rust_js::rest]` that isn't JS's rest parameter (ADR

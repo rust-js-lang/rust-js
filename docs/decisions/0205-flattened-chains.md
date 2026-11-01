@@ -30,7 +30,8 @@ export interface ButtonLinkProps extends Omit<Anchor, "href"> { href: string; }
 ```
 
 - **A flattened field is read through**, `props.html.title` is
-  `props.title`; read whole, it's still an error.
+  `props.title`; read whole, it's still an error, but lent whole, it's
+  the props' object (ADR 0204, amended), where no name is shadowed.
 - **In JSX, each level made there is its fields**, `<ButtonLink href="/a"
   target="_blank" id="i">`, but a name the props have, which a Rust caller
   giving it is an error: theirs is the one JS has.

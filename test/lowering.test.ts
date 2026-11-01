@@ -531,6 +531,48 @@ pub fn og() -> OpenGraph<'static> {
   expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support flattening an enum variant's field yet")]);
 });
 
+// ADR 0204, amended: a flattened field lent whole, `&state.base`, is its
+// parent's object (the corpus's flattened_state_lent). Of a type whose
+// clone spreads it or whose `==` compares it whole, the parent's fields
+// would be read too, so it's refused; lent mutably, which may replace it
+// whole, too; and where the parent has a name it has, which JS's object
+// holds as the parent's.
+test("a flattened field lent whole is refused where its type reads it whole, or lent mutably", () => {
+  const dir = fixture("flattened-lent");
+  const program = (derives: string, lend: string) => `${derives}
+pub struct Base {
+    pub prefix: String,
+}
+
+pub struct Legacy {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub base: Base,
+    pub generate_static_markup: bool,
+}
+
+fn len(base: ${lend === "&mut" ? "&mut Base" : "&Base"}) -> usize {
+    base.prefix.len()
+}
+
+pub fn legacy_len(legacy: &mut Legacy) -> usize {
+    len(${lend} legacy.base)
+}
+`;
+  const refusal = (derives: string, lend: string) => {
+    writeFileSync(join(dir, "lib.rs"), program(derives, lend));
+    const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], { cwd: root, stderr: "pipe" });
+    return [failed.exitCode === 0, failed.stderr.toString()];
+  };
+  expect(refusal("#[derive(Clone)]", "&")).toEqual([false, expect.stringContaining("rust-js does not support lending a flattened `Base` whole, its parent's object, where its `Clone`, `PartialEq`, `PartialOrd` or `Hash` would read the parent's fields too yet")]);
+  expect(refusal("#[derive(PartialEq)]", "&")).toEqual([false, expect.stringContaining("lending a flattened `Base` whole")]);
+  expect(refusal("", "&mut")).toEqual([false, expect.stringContaining("rust-js does not support reading flattened props whole")]);
+  expect(refusal("", "&")).toEqual([true, ""]);
+  // A name the parent has too is the parent's in JS's one object (ADR 0205).
+  writeFileSync(join(dir, "lib.rs"), program("", "&").replace("    pub generate_static_markup: bool,", "    pub generate_static_markup: bool,\n    pub prefix: String,"));
+  const shadowed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], { cwd: root, stderr: "pipe" });
+  expect([shadowed.exitCode === 0, shadowed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support lending a flattened `Base` whole, its parent's object, whose `prefix` is the parent's yet")]);
+});
+
 // A parameter of a \`&mut\` to a \`&mut [i32]\`, whose place JS can't share,
 // is refused: given a copy, \`*s = other\` would leave the caller's \`rest\`
 // as it was.
