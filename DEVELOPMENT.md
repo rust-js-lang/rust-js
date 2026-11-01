@@ -369,6 +369,7 @@ checked:
 | A mutant's tests that don't end on CI's machines, `mir-tidy-named-temporaries-off` (nightly of 2026-10-27, its run stopped at 20 min) and `spill-hyphenated-name` (2026-10-30, 2 min 28 s over 7 JSX files, no test failed) | A nightly red with an inconclusive mutation; each is caught here in seconds | Their log's end is now printed with the verdict: read it the next time, and fix what it waited on |
 | `test/node-bindings.test.ts`'s "node's modules are imported, and its globals called" | Builds the node crate in its own body, `buildNode()`, inside bun's 5 s: 7.8 s cold alone on the M3 Max (2026-11-02), 1.1 s once it's built; flaky in `check:fast` runs that start with no node crate built | `buildNode` in the file's `beforeAll`, as `buildReact` is, with a timeout that fits it |
 | `test/architecture.test.ts`'s "each runtime helper is asked for, or needed by another" | 0.8 s alone; past bun's 5 s beside `check:fast`'s other jobs, failing runs that passed with it alone, until its timeout was raised to 30 s; it reads every source and each helper's JS on each run | The sources read once for the file, shared by its tests, not again per test |
+| `test/runtime-package.test.ts`'s "room asked of a length, a resize's, a collect's or a hash table's, ends where wasm32's std ends it" | 2.5 s alone on the M3 Max (2026-11-02); killed at bun's 5 s in a loaded `check:fast --all`, its Node run reserving 117 MB | A timeout that fits it, as the snapshot tests declare |
 
 ## Working on `main`
 
