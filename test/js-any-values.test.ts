@@ -487,3 +487,17 @@ pub fn digits(value: &Unknown) -> f64 {
   expect(lib.hex(2n ** 70n)).toBe("400000000000000000");
   expect([lib.digits(-(10n ** 30n)), lib.digits(10n ** 400n)]).toEqual([31, Infinity]);
 });
+
+// ADR 0214: an untagged enum's variant given as a function, `.map(Src::Number)`,
+// makes its payload, as a call of it does: no tagged object of it. Of
+// compiler.test.ts's own `test/untagged.rs`, apart from its examples, which
+// a broken compiler may fail to build before any test runs (the mutation
+// `untagged-constructor-tagged`).
+test("an untagged enum's variant as a function makes its payload", async () => {
+  const dir = fixture("untagged-variant-function");
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const built = runSync([compiler, "test/untagged.rs", "-o", join(dir, "untagged.js"), ...withWeb], root, 600_000);
+  expect(built.code, built.stderr).toBe(0);
+  const untagged = await import(join(dir, "untagged.js"));
+  expect(untagged.numbers([1, 2])).toEqual([1, 2]);
+});

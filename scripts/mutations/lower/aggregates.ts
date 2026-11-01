@@ -39,8 +39,11 @@ export const mutations: Mutation[] = [
     find: "        } else if self.untagged(ty).is_some() || bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {\n",
     replace:
       "        } else if bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {\n",
+    // js-any-values' own build of `test/untagged.rs`, not compiler.test.ts's:
+    // the mutant may overflow its stack on that file's examples, a failure
+    // before any test, which says nothing of it and ends the run.
     tests: [
-      "test/compiler.test.ts",
+      "test/js-any-values.test.ts",
       "test/lowering-options.test.ts",
       "test/lowering-structs-enums.test.ts",
       "-t",

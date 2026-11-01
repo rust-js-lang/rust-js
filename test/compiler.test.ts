@@ -692,12 +692,14 @@ pub struct Tag(PhantomData<JsObject>);
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum Named<'a> {
     Tag(&'a Tag),
+    Date(&'a js::Date),
     Text(&'a str),
 }
 
 pub fn named(named: Named) -> String {
     match named {
         Named::Tag(_) => "tag".to_string(),
+        Named::Date(_) => "date".to_string(),
         Named::Text(text) => text.to_string(),
     }
 }
@@ -705,12 +707,14 @@ pub fn named(named: Named) -> String {
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum Link<'a> {
     Url(&'a Url),
+    Date(&'a js::Date),
     Text(&'a str),
 }
 
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum Drawn<'a> {
     Chart(&'a Chart),
+    Date(&'a js::Date),
     Charts(Vec<&'a Chart>),
     Name(&'a str),
 }
@@ -718,6 +722,7 @@ pub enum Drawn<'a> {
 pub fn link(link: Link) -> String {
     match link {
         Link::Url(_) => "url".to_string(),
+        Link::Date(_) => "date".to_string(),
         Link::Text(text) => text.to_string(),
     }
 }
@@ -740,6 +745,7 @@ pub fn pattern(pattern: Pattern) -> String {
 pub fn drawn(drawn: Drawn) -> String {
     match drawn {
         Drawn::Chart(_) => "chart".to_string(),
+        Drawn::Date(_) => "date".to_string(),
         Drawn::Charts(charts) => format!("{} charts", charts.len()),
         Drawn::Name(name) => name.to_string(),
     }
@@ -748,19 +754,19 @@ pub fn drawn(drawn: Drawn) -> String {
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  // A lone class is what the other kinds leave, no `instanceof` of a
-  // global the host may lack (ADR 1062); two are each told by theirs.
-  expect(js).toContain('return typeof link === "string" ? link : "url";');
+  // Each enum has a `Date` too: a lone class is what the other kinds
+  // leave, never tested (ADR 1062), so two are what's told by theirs.
+  expect(js).toContain("link instanceof URL");
   expect(js).not.toContain("instanceof Url");
   expect(js).not.toContain("instanceof Chart");
   const lib = await import(join(dir, "lib.js"));
   const { Chart } = await import(join(dir, "shapes.js"));
-  expect([lib.link(new URL("https://a.b")), lib.link("x")]).toEqual(["url", "x"]);
-  expect([lib.drawn(new Chart()), lib.drawn([new Chart(), new Chart()]), lib.drawn("pie")]).toEqual(["chart", "2 charts", "pie"]);
+  expect([lib.link(new URL("https://a.b")), lib.link(new Date(0)), lib.link("x")]).toEqual(["url", "date", "x"]);
+  expect([lib.drawn(new Chart()), lib.drawn(new Date(0)), lib.drawn([new Chart(), new Chart()]), lib.drawn("pie")]).toEqual(["chart", "date", "2 charts", "pie"]);
   expect(js).toContain("pattern instanceof RegExp");
   expect(js).toContain("pattern instanceof Intl.Collator");
   expect(js).not.toContain("instanceof Tag");
-  expect([lib.named({ any: "tag" }), lib.named("x")]).toEqual(["tag", "x"]);
+  expect([lib.named({ any: "tag" }), lib.named(new Date(0)), lib.named("x")]).toEqual(["tag", "date", "x"]);
   expect([lib.pattern(/a/), lib.pattern(new Intl.Collator()), lib.pattern("x")]).toEqual(["regex", "collator", "x"]);
 });
 
