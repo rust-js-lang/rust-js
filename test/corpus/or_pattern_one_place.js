@@ -58,11 +58,10 @@ function ReactPromise(status, value) {
 
 export function listen(chunk, id) {
   if (chunk.status === "pending" || chunk.status === "blocked") {
-    const value = chunk;
-    if (value.value == null) {
-      value.value = [id];
+    if (chunk.value == null) {
+      chunk.value = [id];
     } else {
-      const listeners = value.value;
+      const listeners = chunk.value;
       listeners.push(id);
     }
   }
@@ -71,9 +70,8 @@ export function listen(chunk, id) {
 export function take(chunk, text) {
   let listeners;
   if (chunk.status === "pending" || chunk.status === "blocked") {
-    const value = chunk;
-    const old = value.value;
-    value.value = null;
+    const old = chunk.value;
+    chunk.value = null;
     listeners = old;
   } else {
     listeners = undefined;

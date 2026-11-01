@@ -356,4 +356,14 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-cell-borrows.test.ts", "-t", "only a call's receiver"],
   },
+  {
+    name: "held-borrow-direct-unclassed",
+    breaks:
+      "a borrow of another class's cell while a guard is held, `to.items.borrow_mut()` while `from.items` is walked, is taken as meeting it, counted (rd482)",
+    file: "src/lower/drops/facts.rs",
+    find: "                    && theirs.class.is_some() =>\n",
+    replace: "                    && theirs.class.is_some()\n                    && false =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_borrow_of_own_cell.rs$"],
+    snapshots: true,
+  },
 ];

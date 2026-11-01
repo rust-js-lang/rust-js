@@ -6,6 +6,7 @@
 //! none of them borrows its cell (ADR 0328): `TIMER_QUEUE`'s while
 //! `TASK_QUEUE`'s is taken, or the heap's `push` runs.
 
+use super::cell_flow::CellClass;
 use crate::lower::Body;
 use crate::lower::bindings::{JsForm, is_binding, js_form, runs_nothing, runs_only_given};
 use crate::lower::body_queries::strip;
@@ -27,11 +28,25 @@ pub(in crate::lower) enum Cell<'tcx> {
 
 /// A borrow of a cell: which, and whether mutably. A shared borrow beside
 /// a shared one asks only whether it's mutably borrowed, which neither
-/// changes.
+/// changes. Of a cell of a type, the class its flow says it's of, where
+/// that's known (`CellFlow::class_of`, rd482): a borrow of one class never
+/// meets one of another.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub(in crate::lower) struct Borrow<'tcx> {
     pub(in crate::lower) cell: Cell<'tcx>,
     pub(in crate::lower) mutable: bool,
+    pub(in crate::lower) class: Option<CellClass>,
+}
+
+impl<'tcx> Borrow<'tcx> {
+    /// A borrow of `cell`, of no class known.
+    pub(in crate::lower) fn of(cell: Cell<'tcx>, mutable: bool) -> Self {
+        Borrow {
+            cell,
+            mutable,
+            class: None,
+        }
+    }
 }
 
 /// What running a body may borrow: its cells, and the values of its type
@@ -70,6 +85,10 @@ pub(in crate::lower) struct CellBorrows<'tcx> {
     seen: HashMap<DefId, HashSet<Borrow<'tcx>>>,
     /// Which cells each borrow can be of (ADR 0863, amended).
     flow: super::cell_flow::CellFlow,
+    /// What code rust-js can't see may borrow, by the crate's bodies it may
+    /// call and what they run that rust-js sees (`seen`): of a cell only
+    /// the crate's code reaches, only those (rd482). `None`, anything.
+    unseen: Option<HashSet<Borrow<'tcx>>>,
 }
 
 /// Each of the crate's ADTs' trait impls: the trait, and the impl.
@@ -110,6 +129,9 @@ impl<'tcx> CellBorrows<'tcx> {
             clones: clones.clone(),
             ..CellBorrows::default()
         };
+        // Which cells each borrow can be of, which each body's borrows are
+        // classed by: of std's code, what `std_runs` says of its impls.
+        found.flow = super::cell_flow::CellFlow::of_crate(recognition, &found, bodies);
         let direct: HashMap<DefId, Direct<'tcx>> = (bodies.iter())
             .filter(|body| body.root().is_some())
             .map(|body| {
@@ -122,8 +144,8 @@ impl<'tcx> CellBorrows<'tcx> {
                     body.def_id,
                     direct(
                         &recognition,
-                        (&found.impls, &found.pointers),
-                        &body.thir,
+                        (&found.impls, &found.pointers, &found.flow),
+                        (body.def_id, &body.thir),
                         (drops, &itself),
                     ),
                 )
@@ -168,7 +190,16 @@ impl<'tcx> CellBorrows<'tcx> {
             .collect();
         found.closed = closed_keys(tcx, bodies);
         found.seen = seen_borrows(tcx, &direct);
-        found.flow = super::cell_flow::CellFlow::of_crate(recognition, &found, bodies);
+        // What code rust-js can't see may run of the crate's: the bodies it
+        // may call, each what it runs that rust-js sees; the rest of what
+        // they run is what that code runs again.
+        found.unseen = (direct.keys())
+            .filter(|&&id| found.flow.opened(id) != Some(false))
+            .map(|id| found.seen.get(id).cloned())
+            .try_fold(HashSet::new(), |mut all, theirs| {
+                all.extend(theirs?);
+                Some(all)
+            });
         found
     }
 
@@ -189,8 +220,43 @@ impl<'tcx> CellBorrows<'tcx> {
             Cell::Key(key) if self.closed.contains(&key) => {
                 (self.later.iter()).any(|&theirs| asks(tcx, &self.closed, theirs, held))
             }
+            // Of a cell only the crate's code reaches, what of the crate's
+            // that code may call borrows (rd482).
+            Cell::Type(_) if let Some(CellClass::Own(_)) = held.class => match &self.unseen {
+                Some(unseen) => unseen.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held)),
+                None => true,
+            },
             _ => true,
         }
+    }
+
+    /// `borrowed`'s borrow of `call` in `body`'s THIR, of its cell's class
+    /// by its flow, where one's known (`CellFlow::class_of`, rd482).
+    pub(in crate::lower) fn borrowed_in(
+        &self,
+        recognition: &Recognition<'_, 'tcx>,
+        (body, thir): (DefId, &Thir<'tcx>),
+        call: ExprId,
+    ) -> Option<Borrow<'tcx>> {
+        let borrow = borrowed(recognition, thir, call)?;
+        Some(self.classed(borrow, (body, thir), call))
+    }
+
+    /// `borrow`, `call`'s, of its cell's class (`CellFlow::class_of`): a
+    /// thread-local's key's is its own.
+    fn classed(&self, borrow: Borrow<'tcx>, (body, thir): (DefId, &Thir<'tcx>), call: ExprId) -> Borrow<'tcx> {
+        match borrow.cell {
+            Cell::Type(_) => Borrow {
+                class: self.flow.class_of(thir, body, call),
+                ..borrow
+            },
+            Cell::Key(_) => borrow,
+        }
+    }
+
+    /// Whether `theirs`, a borrow, may meet `held`, held (`asks`).
+    pub(in crate::lower) fn borrow_asks(&self, tcx: TyCtxt<'tcx>, theirs: Borrow<'tcx>, held: Borrow<'tcx>) -> bool {
+        asks(tcx, &self.closed, theirs, held)
     }
 
     /// Whether calling `def_id`, of `args`, may ask of `held` by code
@@ -369,6 +435,7 @@ impl<'tcx> CellBorrows<'tcx> {
         let held = Borrow {
             cell: Cell::Type(cell),
             mutable: false,
+            class: None,
         };
         given.any
             || given.cells.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held))
@@ -796,7 +863,11 @@ fn called<'tcx>(
                 _ => return Called::Any,
             },
         };
-        return Called::Cell(Borrow { cell, mutable });
+        return Called::Cell(Borrow {
+            cell,
+            mutable,
+            class: None,
+        });
     }
     if call_runs_nothing(tcx, id) {
         return Called::Nothing;
@@ -878,6 +949,7 @@ fn std_given<'tcx>(
             given.cells.push(Borrow {
                 cell: Cell::Type(tcx.erase_and_anonymize_regions(cell)),
                 mutable: !recognition.is_std_type(cell, StdItem::RefCell),
+                class: None,
             });
         }
     }
@@ -970,6 +1042,7 @@ fn bound_runs<'tcx>(
             ty::Adt(..) if recognition.is_borrowed_cell(part) => given.cells.push(Borrow {
                 cell: Cell::Type(tcx.erase_and_anonymize_regions(part)),
                 mutable: !recognition.is_std_type(part, StdItem::RefCell),
+                class: None,
             }),
             ty::Adt(adt, adt_args) if adt.did().is_local() => {
                 let all = impls.get(&adt.did()).into_iter().flatten();
@@ -1119,8 +1192,12 @@ fn std_impl_bounds<'tcx>(
 /// it may drop, whose destructor runs.
 fn direct<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
-    (impls, pointers): (&Impls, &super::fn_pointers::FnPointers<'tcx>),
-    thir: &Thir<'tcx>,
+    (impls, pointers, flow): (
+        &Impls,
+        &super::fn_pointers::FnPointers<'tcx>,
+        &super::cell_flow::CellFlow,
+    ),
+    (body, thir): (DefId, &Thir<'tcx>),
     (drops, clones_itself): (&dyn Fn(Ty<'tcx>) -> bool, &dyn Fn(Ty<'tcx>) -> bool),
 ) -> Direct<'tcx> {
     let tcx = recognition.tcx;
@@ -1140,7 +1217,7 @@ fn direct<'tcx>(
         }
         Called::Any => found.any = true,
     };
-    for e in thir.exprs.iter() {
+    for (at, e) in thir.exprs.iter_enumerated() {
         match e.kind {
             ExprKind::Call { fun, ref args, .. } => match fn_def(thir[fun].ty) {
                 Some((id, generic_args)) => {
@@ -1151,6 +1228,19 @@ fn direct<'tcx>(
                         args.first().map(|&a| (thir, a)),
                         clones_itself,
                     );
+                    // A borrow of a cell of a type, of its class by its
+                    // flow (rd482).
+                    let called = match called {
+                        Called::Cell(
+                            cell @ Borrow {
+                                cell: Cell::Type(_), ..
+                            },
+                        ) => Called::Cell(Borrow {
+                            class: flow.class_of(thir, body, at),
+                            ..cell
+                        }),
+                        called => called,
+                    };
                     runs(&mut found, called);
                 }
                 // A fn pointer's, which runs what it may be (ADR 0907): a
@@ -1307,7 +1397,21 @@ fn is_thread_local_key(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// Whether a borrow asks of one `held`: of a cell that may be its, one of
 /// them mutable. `closed`, the keys only their own accesses reach.
 fn asks<'tcx>(tcx: TyCtxt<'tcx>, closed: &HashSet<DefId>, theirs: Borrow<'tcx>, held: Borrow<'tcx>) -> bool {
-    (theirs.mutable || held.mutable) && overlap(tcx, closed, theirs.cell, held.cell)
+    (theirs.mutable || held.mutable)
+        && overlap(tcx, closed, theirs.cell, held.cell)
+        && may_meet(theirs.class, held.class)
+}
+
+/// Whether cells of classes `a` and `b`, by their flow, may be one (rd482):
+/// two of the crate's own only of one class, and one of the crate's own
+/// never one code rust-js can't see may reach; of a class not known, any.
+fn may_meet(a: Option<CellClass>, b: Option<CellClass>) -> bool {
+    match (a, b) {
+        (Some(CellClass::Own(a)), Some(CellClass::Own(b))) => a == b,
+        (Some(CellClass::Own(_)), Some(CellClass::Anything { .. }))
+        | (Some(CellClass::Anything { .. }), Some(CellClass::Own(_))) => false,
+        _ => true,
+    }
 }
 
 /// Whether two cells may be one: a thread-local's and another's of its key,

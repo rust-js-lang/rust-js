@@ -1105,10 +1105,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // borrow asks of, and a `with_borrow_mut`'s or a `with`'s mutably (ADR
     // 0580, amended).
     let quiet = |given: plain_locals::Given<'tcx>, key: DefId, mutable: bool| {
-        let held = Borrow {
-            cell: Cell::Key(key),
-            mutable,
-        };
+        let held = Borrow::of(Cell::Key(key), mutable);
         match given {
             plain_locals::Given::Closure(closure) => {
                 closures.contains_key(&closure.to_def_id()) && !cell_borrows.body_asks(tcx, closure.to_def_id(), held)

@@ -22,7 +22,7 @@ use super::super::recognition::{Std, StdItem};
 use super::super::{fn_def, strip};
 use rustc_middle::middle::region;
 
-use super::super::analysis::{Borrow, CellBorrows, borrowed};
+use super::super::analysis::{Borrow, CellBorrows};
 use super::types::{DropQuery, Drops, describe};
 
 /// What a body does with its values that have destructors: what's
@@ -450,10 +450,15 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                 return;
             };
             match fn_def(self.thir[fun].ty).and_then(|(id, args)| recognition.classify(id, args)) {
-                Some(Std::Borrow { .. }) => match borrowed(recognition, self.thir, call) {
-                    Some(cell) => break (fun, cell),
-                    None => return,
-                },
+                Some(Std::Borrow { .. }) => {
+                    match self
+                        .borrows
+                        .borrowed_in(recognition, (self.body_owner, self.thir), call)
+                    {
+                        Some(cell) => break (fun, cell),
+                        None => return,
+                    }
+                }
                 Some(Std::UnwrapOk) => made = args[0],
                 _ => return,
             }
@@ -554,7 +559,10 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
         {
             return;
         }
-        let Some(cell) = borrowed(recognition, self.thir, call) else {
+        let Some(cell) = self
+            .borrows
+            .borrowed_in(recognition, (self.body_owner, self.thir), call)
+        else {
             return;
         };
         let mut moves = Moves {
@@ -604,6 +612,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             items: HashSet::new(),
             unmet: Vec::new(),
             seen_only: false,
+            ids: &self.ids,
         };
         quiet.items = quiet.items_of_own();
         quiet.visit_expr(&self.thir[receiver]);
@@ -630,6 +639,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             items: HashSet::new(),
             unmet: Vec::new(),
             seen_only: false,
+            ids: &self.ids,
         };
         quiet.items = quiet.items_of_own();
         for &stmt in stmts {
@@ -779,6 +789,8 @@ struct Quiet<'c, 'q, 'a, 'tcx> {
     /// Whether only what rust-js sees asks, of a call's arguments that
     /// run before `own`'s guard, its receiver, is held (ADR 0863, amended).
     seen_only: bool,
+    /// Each expression's id, by where it is.
+    ids: &'c HashMap<usize, ExprId>,
 }
 
 impl<'c, 'q, 'a, 'tcx> Quiet<'c, 'q, 'a, 'tcx> {
@@ -982,6 +994,10 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Quiet<'c, 'q, 'a, 'tcx> {
                 matches!(quiet.thir[quiet.through_reads(cell)].kind, ExprKind::VarRef { id } if quiet.unmet.contains(&id))
             })
         };
+        let borrow = |quiet: &Self| {
+            let call = *quiet.ids.get(&(std::ptr::from_ref(expr) as usize))?;
+            (quiet.borrows).borrowed_in(&quiet.cx.recognition, (quiet.owner, quiet.thir), call)
+        };
         let asks = match expr.kind {
             ExprKind::Call { fun, ref args, .. }
                 if fun != self.own
@@ -989,6 +1005,15 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Quiet<'c, 'q, 'a, 'tcx> {
                     && unmet(self, id, generic_args, args) =>
             {
                 false
+            }
+            // A borrow of a cell of a class of its own, by its flow, that
+            // can't be `own`'s (rd482).
+            ExprKind::Call { fun, .. }
+                if fun != self.own
+                    && let Some(theirs) = borrow(self)
+                    && theirs.class.is_some() =>
+            {
+                self.borrows.borrow_asks(self.cx.recognition.tcx, theirs, self.cell)
             }
             ExprKind::Call { fun, ref args, .. } if fun != self.own => self.call_asks(fun, args),
             ExprKind::InlineAsm(_) | ExprKind::Yield { .. } | ExprKind::Become { .. } => true,

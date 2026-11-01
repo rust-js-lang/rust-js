@@ -80,10 +80,12 @@ the JS does what each alternative does, one place's read or write.
 
 The Flight client's six `case PENDING: case BLOCKED:` places print one test
 of either, no box and no label. What's left reads worse than upstream and
-is filed apart: the arm's binding of a flattened state is `const value =
+is filed apart: the arm's binding of a flattened state was `const value =
 chunk; value.value`, where upstream reads `chunk.value` (a variant's field
-of a single alternative prints it too), and `value.take()` before a whole
-write sets `chunk.value = null` the write sets again.
+of a single alternative printed it too), now `chunk.value`
+([1058](1058-a-held-borrow-meets-only-its-own-class.md)); and
+`value.take()` before a whole write sets `chunk.value = null` the write
+sets again.
 
 Held by `test/corpus/or_pattern_one_place.rs`, run against native Rust (a
 tagged enum's, fields at other keys, `Circle { r } | Ring(r)`, kept apart,

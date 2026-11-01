@@ -164,12 +164,12 @@ pub(in crate::lower::mir) fn is_temporary(name: &str) -> bool {
 /// `let mut name`; one read nowhere, gone. A closure neither reads a
 /// temporary, its captures its own `const`s, nor sets what one's of between,
 /// which Rust's borrows forbid.
-pub(super) fn alias_variables(body: &mut Vec<Stmt>) {
+pub(super) fn alias_variables(body: &mut Vec<Stmt>, fixed: &HashSet<String>) {
     js::statement_lists(body, &mut |stmts| {
         let mut i = 0;
         while i < stmts.len() {
             if let StmtKind::Const(alias, value) = &stmts[i].kind
-                && is_temporary(alias)
+                && (is_temporary(alias) || fixed.contains(alias))
                 && let ExprKind::Var(of) = &value.kind
             {
                 let last = (i + 1..stmts.len())

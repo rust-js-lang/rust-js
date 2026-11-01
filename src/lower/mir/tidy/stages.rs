@@ -203,7 +203,7 @@ pub(super) const STAGES: &[Stage] = &[
     Stage {
         name: "names",
         passes: &[
-            pass("alias variables", |b, _| alias_variables(b)),
+            pass("alias variables", |b, h| alias_variables(b, &h.made.fixed)),
             pass("read handles", |b, _| read_handles(b)),
             pass("plain reads", |b, h| {
                 js::statement_lists(b, &mut |s| plain_reads(s, h.plain, &h.made.captured))
@@ -215,7 +215,7 @@ pub(super) const STAGES: &[Stage] = &[
             }),
             pass("rest parts", |b, _| js::statement_lists(b, &mut rest_parts)),
             // What an array made for its parts left, `const _5 = 6;`, too.
-            pass("parts' aliases", |b, _| alias_variables(b)),
+            pass("parts' aliases", |b, h| alias_variables(b, &h.made.fixed)),
             pass("named temporaries", |b, _| named_temporaries(b)),
             // `for (const i of (s..).step_by(n))` of a body that breaks
             // where `v.get(i)` is `None`: `for (let i = s; i < v.length; i
@@ -264,7 +264,7 @@ pub(super) const STAGES: &[Stage] = &[
             // A temporary of a variable those made a `const`, `const _42 =
             // queue;` of a `borrow_mut()` of an object's `RefCell`, which is
             // the object: the variable, where it's read (ADR 0883).
-            pass("declared aliases", |b, _| alias_variables(b)),
+            pass("declared aliases", |b, h| alias_variables(b, &h.made.fixed)),
             // What a `let` declared first holds now taken apart, a guard's
             // `try` too: a temporary's parts, `const [a, b] = f();`. Not a
             // pattern's one part of what the program names, `const front =

@@ -185,6 +185,28 @@ pub fn held(chunk: &ReactPromise, f: &dyn Fn()) -> bool {
 `,
     ),
   ).toContain("a flattened state lent, or borrowed where another borrow of it may be");
+  // rd482: what runs while it's held borrows a cell its flow says may be
+  // it, the same chunk's, as Rust's `borrow_mut` would panic of.
+  expect(
+    refused(
+      "flattened-state-held-reentered",
+      `${state}
+fn reject(chunk: &ReactPromise) {
+    *chunk.state.borrow_mut() = ChunkState::Errored { reason: None };
+}
+
+pub fn held(chunk: &ReactPromise) -> bool {
+    match &*chunk.state.borrow() {
+        ChunkState::Pending { .. } => {
+            reject(chunk);
+            true
+        }
+        _ => false,
+    }
+}
+`,
+    ),
+  ).toContain("a flattened state lent, or borrowed where another borrow of it may be");
   expect(
     refused(
       "flattened-state-plain-cell",
@@ -271,6 +293,10 @@ pub fn make() -> Rc<ReactPromise> {
 }
 `);
   expect(js).toContain('  if (chunk.status === "pending" || chunk.status === "blocked") {\n');
+  // rd482: the arm's `value` is the chunk's own key, never a name held
+  // for the chunk, `const value = chunk; value.value`.
+  expect(js).toContain("    if (chunk.value == null) {\n      chunk.value = [id];\n");
+  expect(js).not.toContain("const value = chunk");
   expect(js).not.toContain("get value()");
   expect(js).not.toMatch(/\bbb\d+:/);
   const chunk = lib.make();

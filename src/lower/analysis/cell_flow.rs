@@ -62,6 +62,8 @@ pub(in crate::lower) struct CellFlow {
 struct Classes {
     calls: HashMap<(DefId, BasicBlock), CellClass>,
     at: HashMap<(DefId, Span, DefId), Vec<CellClass>>,
+    /// The bodies code rust-js can't see may call.
+    opened: HashSet<DefId>,
 }
 
 impl CellFlow {
@@ -82,6 +84,36 @@ impl CellFlow {
     ) -> Option<&[CellClass]> {
         let found = self.classes.as_ref()?.at.get(&(body, span, callee))?;
         (found.len() == count).then_some(found.as_slice())
+    }
+
+    /// The class of the cell `call`, a borrow's call in `body`'s THIR,
+    /// borrows (`classes_at`): the one each of MIR's calls written where it
+    /// is borrows; `None` where they differ or aren't known.
+    pub(in crate::lower) fn class_of(
+        &self,
+        thir: &rustc_middle::thir::Thir<'_>,
+        body: DefId,
+        call: rustc_middle::thir::ExprId,
+    ) -> Option<CellClass> {
+        use rustc_middle::thir::ExprKind;
+        let callee = |e: &rustc_middle::thir::Expr<'_>| match e.kind {
+            ExprKind::Call { fun, .. } => crate::lower::fn_def(thir[fun].ty).map(|(id, _)| id),
+            _ => None,
+        };
+        let id = callee(&thir[call])?;
+        let span = thir[call].span;
+        let count = (thir.exprs.iter())
+            .filter(|e| e.span == span && callee(e) == Some(id))
+            .count();
+        let classes = self.classes_at((body, span, id), count)?;
+        let first = *classes.first()?;
+        classes.iter().all(|&class| class == first).then_some(first)
+    }
+
+    /// Whether code rust-js can't see may call `body`, of the crate's: what
+    /// it's given and gives is `TOP`. `None`, not known.
+    pub(in crate::lower) fn opened(&self, body: DefId) -> Option<bool> {
+        Some(self.classes.as_ref()?.opened.contains(&body))
     }
 
     /// Each body's cells' classes (ADR 0863, amended): `borrows` says what
@@ -171,6 +203,7 @@ impl CellFlow {
             classes.calls.insert((body, block), class);
             classes.at.entry((body, span, callee)).or_default().push(class);
         }
+        classes.opened = std::mem::take(&mut flow.open);
         CellFlow { classes: Some(classes) }
     }
 }

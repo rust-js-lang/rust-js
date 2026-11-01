@@ -8,12 +8,11 @@ export function entry() {
 
 function then(chunk, resolve, reject) {
   if (chunk.state.TAG === "Done") {
-    const value = chunk.state;
-    const value$1 = value._0;
+    const value = chunk.state._0;
     // A callback may read the chunk again, so it's called once the state
     // is no longer borrowed.
     if (resolve != null) {
-      resolve(value$1);
+      resolve(value);
     }
   } else {
     let reason;
@@ -25,11 +24,9 @@ function then(chunk, resolve, reject) {
       return;
     }
     if (chunk.state.TAG === "Failed") {
-      const value = chunk.state;
-      reason = value._0;
+      reason = chunk.state._0;
     } else {
-      const value = chunk.state;
-      reason = value._0;
+      reason = chunk.state._0;
     }
     if (reject != null) {
       reject(reason);

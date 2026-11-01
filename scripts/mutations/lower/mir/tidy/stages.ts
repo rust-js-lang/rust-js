@@ -94,9 +94,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`const _4 = e; if (_4 != null) { const found = _4; … }` stays, not `const found = e;`",
     file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("parts\' aliases", |b, _| alias_variables(b)),\n            pass("named temporaries", |b, _| named_temporaries(b)),\n',
+    find: '            pass("parts\' aliases", |b, h| alias_variables(b, &h.made.fixed)),\n            pass("named temporaries", |b, _| named_temporaries(b)),\n',
     replace:
-      '            pass("parts\' aliases", |b, _| alias_variables(b)),\n',
+      '            pass("parts\' aliases", |b, h| alias_variables(b, &h.made.fixed)),\n',
     tests: ["test/corpus.test.ts", "-t", "^tested_options.rs$"],
     snapshots: true,
   },
@@ -888,7 +888,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`const borrowMut = queue; borrowMut[$at(borrowMut, i)] = t;`, a temporary of a variable made a `const` late, kept (ADR 0883)",
     file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("declared aliases", |b, _| alias_variables(b)),\n',
+    find: '            pass("declared aliases", |b, h| alias_variables(b, &h.made.fixed)),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rc_counts.rs$"],
     snapshots: true,

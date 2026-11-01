@@ -696,4 +696,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "counted_guard_value_named"],
     snapshots: true,
   },
+  {
+    name: "fixed-alias-kept",
+    breaks:
+      "a `&mut` field binding of a flattened state, `Pending { value } | Blocked { value }`, holds its chunk under a name of its own, `const value = chunk; value.value ??= [];`, where upstream reads `chunk.value` (rd482)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                && (is_temporary(alias) || fixed.contains(alias))\n",
+    replace: "                && (is_temporary(alias) || fixed.is_empty() && fixed.contains(alias))\n",
+    tests: ["test/corpus.test.ts", "-t", "^or_pattern_one_place.rs$"],
+    snapshots: true,
+  },
 ];

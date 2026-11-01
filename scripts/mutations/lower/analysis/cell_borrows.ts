@@ -579,4 +579,43 @@ export const mutations: Mutation[] = [
     replace: "            Called::Body(..) => false,\n",
     tests: ["test/lowering-cell-borrows.test.ts", "-t", "only a call's receiver"],
   },
+  {
+    name: "classes-always-meet",
+    breaks:
+      "a borrow of a cell of one class by its flow is taken as meeting one of another, so `drain_into`'s walk of one queue's items while another's are pushed to is counted, `$borrow(from.items, true)`, where nothing can meet it (rd482)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "        (Some(CellClass::Own(a)), Some(CellClass::Own(b))) => a == b,\n",
+    replace: "        (Some(CellClass::Own(_)), Some(CellClass::Own(_))) => true,\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_borrow_of_own_cell.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "own-class-unseen-asks-nothing",
+    breaks:
+      "code rust-js can't see is taken as borrowing no cell only the crate's code reaches, so a thread-local's queue walked while a callback runs that borrows it by its key isn't counted, and its `try_borrow_mut` finds it free where Rust's finds it borrowed (rd482)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "                Some(unseen) => unseen.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held)),\n",
+    replace: "                Some(_) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_borrow_of_own_cell.rs$"],
+  },
+  {
+    name: "borrows-unclassed",
+    breaks:
+      "a body's borrows of a cell aren't classed by its flow, so a call that borrows only another queue's items is taken as meeting the walk of one's, counted (rd482)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "                            class: flow.class_of(thir, body, at),\n",
+    replace: "                            class: None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_borrow_of_own_cell.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "held-borrow-unclassed",
+    breaks:
+      "a held borrow isn't classed by its flow, so a walk of one queue's items while another's are pushed to is taken as meeting them, counted (rd482)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "                class: self.flow.class_of(thir, body, call),\n",
+    replace: "                class: self.flow.class_of(thir, body, call).filter(|_| false),\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_borrow_of_own_cell.rs$"],
+    snapshots: true,
+  },
 ];

@@ -603,14 +603,20 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
     .toThrow("as a `{ value }`");
   // A borrow held while the consumer borrows a cell that may be it runs
   // no code rust-js can't see, a cell's borrow running only its own check:
-  // counted, not refused (ADR 0863, amended).
+  // not refused (ADR 0863, amended).
   counting(out, "use std::cell::RefCell;\nuse std::rc::Rc;\n\nfn copy(from: &Rc<RefCell<Vec<String>>>, to: &Rc<RefCell<Vec<String>>>) {\n    for t in from.borrow().iter() {\n        to.borrow_mut().push(t.clone());\n    }\n}\n\npub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let types = t.types.borrow().clone().unwrap();\n    let mine = Rc::new(RefCell::new(Vec::new()));\n    copy(&types, &mine);\n    println!(\"{}\", mine.borrow().len());\n}\n");
-  // The held one counted; the other, `mine`, a cell of the consumer's own,
-  // is no cell the library's code reaches, so no borrow of it can meet the
-  // held one: unchecked (#445, ADR 0863, amended).
+  // The other, `mine`, a cell of the consumer's own, is no cell the
+  // library's code reaches, so no borrow of it can meet the held one, of a
+  // cell that code may reach, and nothing else runs while it's held:
+  // neither is checked (#445, ADR 0863, amended; ADR 1058).
   const copied = readFileSync(join(out, "counting", "lib.js"), "utf8");
-  expect(copied).toContain("const borrow = $borrow(from, true);");
-  expect(copied).toContain("      to.push(t);\n");
+  expect(copied).toContain("  for (let i = 0; i < from.length; i++) {\n    const t = from[i];\n    to.push(t);\n");
+  expect(copied).not.toContain("$borrow(from");
+  // Into another of the library's, a cell that may be the held one: the
+  // held one counted, not refused, as a cell's borrow runs only its own
+  // check.
+  counting(out, "use std::cell::RefCell;\nuse std::rc::Rc;\n\nfn copy(from: &Rc<RefCell<Vec<String>>>, to: &Rc<RefCell<Vec<String>>>) {\n    for t in from.borrow().iter() {\n        to.borrow_mut().push(t.clone());\n    }\n}\n\npub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let u = dep::start(None);\n    dep::add_type(&u, \"b\");\n    let types = t.types.borrow().clone().unwrap();\n    let theirs = u.types.borrow().clone().unwrap();\n    copy(&types, &theirs);\n    println!(\"{}\", theirs.borrow().len());\n}\n");
+  expect(readFileSync(join(out, "counting", "lib.js"), "utf8")).toContain("const borrow = $borrow(from, true);");
   // React's scheduleGesture, a type pushed only where it isn't there,
   // which it is where the two are one cell: neither borrow is counted.
   counting(out, "use std::cell::RefCell;\nuse std::rc::Rc;\n\nfn merge(types: &Rc<RefCell<Vec<String>>>, into: &Rc<RefCell<Vec<String>>>) {\n    for t in types.borrow().iter() {\n        if !into.borrow().contains(t) {\n            into.borrow_mut().push(t.clone());\n        }\n    }\n}\n\npub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let types = t.types.borrow().clone().unwrap();\n    merge(&types, &types);\n    println!(\"{}\", types.borrow().len());\n}\n");

@@ -15,18 +15,16 @@ function ReactPromise(status, value, reason) {
 
 function listen(chunk, id) {
   if (chunk.status === "pending") {
-    const value = chunk;
-    value.value ??= [];
-    value.value.push(id);
+    chunk.value ??= [];
+    chunk.value.push(id);
   }
 }
 
 function wake(chunk, value) {
   let listeners;
   if (chunk.status === "pending") {
-    const value = chunk;
-    const old = value.value;
-    value.value = undefined;
+    const old = chunk.value;
+    chunk.value = undefined;
     listeners = old;
   } else {
     listeners = undefined;
