@@ -1008,7 +1008,10 @@ export function twoLoggers() {
   variables share one object. A clone made to give a `move` closure its
   own, of a parameter or of what the closure around it captured by value,
   is read by that name, `() => flush(queue)` of `let queue =
-  Rc::clone(&queue); move || flush(&queue)`
+  Rc::clone(&queue); move || flush(&queue)`; so is one a closure makes of
+  a parameter it borrows that isn't `mut`, `self` too, which in a method is
+  `this`: `let chunk = Rc::clone(self);` in a promise's executor, then
+  `chunk.info` in its callback, is `this.info`
   ([ADR 0846](../../decisions/0846-a-parameters-clone-is-read-by-its-name.md),
   [0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md)).
 - **A `RefCell` of an array, a `Map`, a `Set` or an object is that

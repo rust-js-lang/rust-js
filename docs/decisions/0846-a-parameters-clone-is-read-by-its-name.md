@@ -1,7 +1,7 @@
 # 0846. A parameter's clone that is the same JS value is read by the parameter's name
 
 Status: Accepted. Extends tidy's `aliases`, of
-[0320](0320-counted-rcs.md)'s uncounted `Rc`, which is the value itself. Extended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): a clone of what a closure captured by value, which its maker never assigns again, is read by its name too.
+[0320](0320-counted-rcs.md)'s uncounted `Rc`, which is the value itself. Extended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): a clone of what a closure captured by value, which its maker never assigns again, is read by its name too. Amended: a clone of a binding not `mut` a closure borrowed, `self` among them, too.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. A `clone()` whose JS
 is the value itself, `const resolved = payload`, gives the variable the
@@ -117,3 +117,55 @@ stays, named as written; the rd189 rule is gone.** FragmentInstance's
 `const fragmentFiber = this.fragmentFiber;` is a port difference, the
 user's to accept. Held by `test/corpus/cell_clone_read_in_place.rs`, its
 `const fiber = holder.fiber;`.
+
+## Amendment: a clone of a binding a closure borrowed, `self` among them (rd515)
+
+React's Flight client's DEV `then` wraps its chunk in a native promise
+whose executor makes the two callbacks, each given its own handle on the
+chunk:
+
+```rust
+let wrapper_promise = js::promise::new(|res, rej| {
+    let (chunk, resolved) = (Rc::clone(self), Rc::clone(&wrapper));
+    resolve = Some(Rc::new(move |value| { .. chunk._debug_info .. }));
+    ..
+});
+```
+
+It printed `const chunk = this;` before each callback, and `chunk$1` for
+the second, where upstream reads `this._debugInfo` in its arrows. The
+executor borrows `self`, so 0879's rule, of what a closure took by value,
+didn't reach it: one borrowed may be given another value once the borrow
+ends.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, as above: the clone
+is the object the parameter holds, which nothing gives the parameter
+another of.
+
+**A clone of what a closure borrowed of a binding that isn't `mut` is
+read by the binding's name**: `self` of a method among them, borrowed
+shared and read through shared references alone
+(`analysis::borrowed_fixed_bindings`, of the closure's captures as rustc
+gives them, which `hints::kept_captures` adds to what's fixed in it).
+Rust never assigns such a binding while it's in scope, so every read of
+it, the callbacks' after the method returns too, is the value the clone
+was made of; a `let` a loop makes each turn is a `const` of the turn's
+block in JS too, each closure holding its own. In a method the parameter
+is `this`, which an arrow reads as its method's and a `function` nested
+in it through its `const` (ADR 0761's `read_as_this`): `this._debugInfo`,
+as upstream.
+
+- **A `mut` binding's stays**: it may be given another value once the
+  borrow ends, `let b = Rc::clone(&a); .. a = Rc::new(2);`, and the clone
+  keeps the old one (0879's case, a borrowed `let mut`, unchanged).
+- **A binding shadowed after**, `let a = Rc::new(2);`, is another
+  variable: tidy gives the old one's name to no new value while a closure
+  reads it (ADR 0650).
+
+Held by `test/corpus/clone_of_a_borrowed_parameter.rs`, against native
+Rust: a class's executor-like closure cloning `self` for two callbacks, a
+function's parameter cloned in a closure that borrows it, a loop's `let`
+cloned each turn, a `let` shadowed after its clone, and a `mut` parameter
+given another value after its clone. Mutations
+`fixed-borrow-of-mut-binding` (`analysis/closures.rs`) and
+`fixed-borrows-unread` (`mir/hints.rs`).

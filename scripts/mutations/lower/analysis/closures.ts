@@ -218,4 +218,12 @@ export const mutations: Mutation[] = [
       "^called_once_closure_drops_after.rs$",
     ],
   },
+  {
+    name: "fixed-borrow-of-mut-binding",
+    breaks: "a `mut` binding a closure borrowed is fixed in it, so a clone of it made there reads the value the parameter is given after: `20 + 2` where Rust says `21` (rd515, ADR 0846, amended)",
+    file: "src/lower/analysis/closures.rs",
+    find: "        matches!(pat.kind, PatKind::Binding(BindingMode(ByRef::No, Mutability::Not), ..))\n",
+    replace: "        matches!(pat.kind, PatKind::Binding(BindingMode(ByRef::No, _), ..))\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_of_a_borrowed_parameter.rs$"],
+  },
 ];

@@ -1397,7 +1397,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 returns: &state.facts.jumps().returns,
                 made: &made,
                 clones: &self.clone_names(mir_body, &state),
-                kept: &hints::kept_captures(&state),
+                kept: &hints::kept_captures(self.tcx, mir_body.source.def_id(), &state),
                 booleans: &booleans,
                 numbers: &numbers,
                 floats: &floats,

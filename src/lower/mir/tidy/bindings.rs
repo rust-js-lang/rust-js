@@ -732,35 +732,7 @@ pub(super) fn aliases(
     (params, kept): (&[js::Pattern], &HashSet<String>),
     (clones, given): (&HashSet<String>, &HashSet<String>),
 ) {
-    let fixed: HashSet<String> = (params.iter())
-        .flat_map(|param| param.names())
-        .chain(kept.iter().map(String::as_str))
-        .filter(|name| !rebinds(body, name))
-        .map(str::to_string)
-        .collect();
-    js::statement_lists(body, &mut |stmts| {
-        let mut i = 0;
-        while i < stmts.len() {
-            if let StmtKind::Const(b, value) = &stmts[i].kind
-                && let ExprKind::Var(a) = &value.kind
-                && fixed.contains(a)
-                && clones.contains(b)
-                && !rebinds(&stmts[i + 1..], b)
-            {
-                let (a, b) = (a.clone(), b.clone());
-                stmts.remove(i);
-                js::each_expr_mut(&mut stmts[i..], &mut |e| {
-                    if let ExprKind::Var(v) = &mut e.kind
-                        && *v == b
-                    {
-                        v.clone_from(&a);
-                    }
-                });
-                continue;
-            }
-            i += 1;
-        }
-    });
+    clone_aliases(body, (params, kept), clones);
     js::statement_lists(body, &mut |stmts| {
         let mut i = 0;
         while i < stmts.len() {
@@ -797,6 +769,48 @@ pub(super) fn aliases(
                 } else {
                     *a = b;
                 }
+            }
+            i += 1;
+        }
+    });
+}
+
+/// `const b = a;` that a `clone()` made, `clones`, of a parameter `a`
+/// nothing assigns or declares again, or of what's fixed in a closure,
+/// `kept`, is `a`, read where `b` was (ADRs 0846, 0879, amended): `aliases`'
+/// first rewrite, and again once a tuple of clones is read part by part,
+/// `const chunk = this` of `let (chunk, resolved) = (Rc::clone(self), ..)`
+/// (rd515).
+pub(super) fn clone_aliases(
+    body: &mut Vec<Stmt>,
+    (params, kept): (&[js::Pattern], &HashSet<String>),
+    clones: &HashSet<String>,
+) {
+    let fixed: HashSet<String> = (params.iter())
+        .flat_map(|param| param.names())
+        .chain(kept.iter().map(String::as_str))
+        .filter(|name| !rebinds(body, name))
+        .map(str::to_string)
+        .collect();
+    js::statement_lists(body, &mut |stmts| {
+        let mut i = 0;
+        while i < stmts.len() {
+            if let StmtKind::Const(b, value) = &stmts[i].kind
+                && let ExprKind::Var(a) = &value.kind
+                && fixed.contains(a)
+                && clones.contains(b)
+                && !rebinds(&stmts[i + 1..], b)
+            {
+                let (a, b) = (a.clone(), b.clone());
+                stmts.remove(i);
+                js::each_expr_mut(&mut stmts[i..], &mut |e| {
+                    if let ExprKind::Var(v) = &mut e.kind
+                        && *v == b
+                    {
+                        v.clone_from(&a);
+                    }
+                });
+                continue;
             }
             i += 1;
         }

@@ -509,6 +509,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/drops.rs": ["body", "branches", "locals", "pending"],
   "src/lower/mir/entries.rs": ["body", "locals", "thrown_writes"],
   "src/lower/mir/hints.rs": ["locals"],
+  "src/lower/mir/hints/clones.rs": ["locals"],
   "src/lower/mir/jsx_props.rs": ["body"],
   "src/lower/mir/locals.rs": ["body", "locals"],
   "src/lower/mir/operands.rs": ["body", "locals", "pending", "taken"],

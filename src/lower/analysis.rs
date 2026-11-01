@@ -51,7 +51,7 @@ use super::{Body, FnInfo, TestFn, module_path};
 use crate::lower::recognition::{
     Recognition, StdItem, is_js_object_deref, is_std_def, is_unlowered_impl, known_derive,
 };
-pub(super) use closures::{ClosureFacts, clone_shares};
+pub(super) use closures::{ClosureFacts, borrowed_fixed_bindings, clone_shares};
 use debug::{uses_debug_hex, uses_format_options, uses_pretty_debug};
 use drops::drop_params;
 pub(super) use mutation::{clone_bounded, clones_itself, copies_itself, copy_bounded};

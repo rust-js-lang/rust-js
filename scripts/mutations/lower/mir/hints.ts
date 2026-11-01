@@ -46,16 +46,6 @@ export const mutations: Mutation[] = [
     tests: ["test/port-scheduler.test.ts"],
   },
   {
-    name: "clone-names-unfound",
-    breaks:
-      "no local is told as a `clone()`'s, so an `Rc`'s clone stays `const resolved = payload` (ADR 0846)",
-    file: "src/lower/mir/hints.rs",
-    find: "self.tcx.is_lang_item(def_id, LangItem::CloneFn)",
-    replace: "self.tcx.is_lang_item(def_id, LangItem::Clone)",
-    tests: ["test/corpus.test.ts", "-t", "^rc_shared_by_closures.rs$"],
-    snapshots: true,
-  },
-  {
     name: "typeof-nullish-no-case",
     breaks:
       "`Kind::Undefined` and `Kind::Null`, which have no fields, aren't cases of a `switch (typeof value)`",
@@ -515,15 +505,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "kept-captures-of-borrows-too",
-    breaks:
-      "a capture a closure borrowed, which its maker gives another value later, is fixed in it, so a clone of it made in a call reads the new value (ADR 0879)",
-    file: "src/lower/mir/hints.rs",
-    find: "        .filter(|(_, place)| !place)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^branches_as_written.rs$"],
-  },
-  {
     name: "switch-falls-nowhere",
     breaks:
       "no guarded arm falls to the next arm's case, so React's `getComponentNameFromFiber` is an `if` chain",
@@ -694,5 +675,4 @@ export const mutations: Mutation[] = [
     replace: "                _ => return false,\n",
     tests: ["test/lowering-written-elses.test.ts", "-t", "panics is a guard"],
   },
-
 ];

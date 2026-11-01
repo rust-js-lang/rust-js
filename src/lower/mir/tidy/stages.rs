@@ -295,6 +295,11 @@ pub(super) const STAGES: &[Stage] = &[
                 let set_elsewhere = set_elsewhere(b);
                 js::statement_lists(b, &mut |s| tuple_reads(s, &changing, &set_elsewhere, &h.made.captured))
             }),
+            // A tuple of clones read part by part, `const chunk = this`:
+            // the value each is a clone of (rd515, ADR 0846, amended).
+            pass("tuple clones", |b, h| {
+                clone_aliases(b, (&h.params.borrow(), h.kept), h.clones)
+            }),
             // `dyn` values given to JS, `[{ value, impl }].map((item) =>
             // item.value)`: the values.
             pass("unwrapped values", |b, _| {

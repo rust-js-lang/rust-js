@@ -7,6 +7,8 @@
 use super::*;
 use crate::lower::body_queries::{self, PatternValue};
 
+mod clones;
+pub(super) use clones::kept_captures;
 mod constants;
 mod negations;
 mod present_breaks;
@@ -1333,30 +1335,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Some(self.tcx.item_name(adt.did()).to_string())
     }
 
-    /// The names of the locals a `clone()` makes, `let resolved =
-    /// payload.clone()`: where that's the value itself in JS, an uncounted
-    /// `Rc`'s, tidy reads it by the name it's of (ADR 0846).
-    pub(super) fn clone_names(
-        &self,
-        mir_body: &mir::Body<'tcx>,
-        state: &State<'_, 'tcx>,
-    ) -> std::collections::HashSet<String> {
-        (mir_body.basic_blocks.iter())
-            .filter_map(|block| match &block.terminator().kind {
-                mir::TerminatorKind::Call { func, destination, .. }
-                    if destination.projection.is_empty()
-                        && func
-                            .const_fn_def()
-                            .is_some_and(|(def_id, _)| self.tcx.is_lang_item(def_id, LangItem::CloneFn)) =>
-                {
-                    Some(state.locals.names[destination.local].clone())
-                }
-                _ => None,
-            })
-            .filter(|name| !name.is_empty())
-            .collect()
-    }
-
     /// The names each of whose locals is a `bool`, a shared reference to one
     /// too, which JS reads as it, of a closure what it captures too; the
     /// names each of whose locals is an integer; and those each of whose
@@ -1418,20 +1396,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         floats.retain(|name| !not_floats.contains(name));
         (booleans, numbers, floats)
     }
-}
-
-/// A closure's captures it took by value, each a variable its maker never
-/// assigns again from where it makes the closure (`mir_closure_fn`'s
-/// copy of one it does): as fixed in it as a parameter, which a clone of
-/// it may be read as (ADR 0879).
-pub(super) fn kept_captures(state: &State<'_, '_>) -> std::collections::HashSet<String> {
-    (state.facts.captures().iter())
-        .filter(|(_, place)| !place)
-        .filter_map(|(capture, _)| match &capture.kind {
-            js::ExprKind::Var(name) => Some(name.clone()),
-            _ => None,
-        })
-        .collect()
 }
 
 /// A type's name as a variable's, lower camel case, as JS names one:

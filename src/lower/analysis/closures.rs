@@ -164,6 +164,36 @@ pub(in crate::lower) fn clone_shares<'tcx>(
     !writes && (closure.upvar_tys().iter()).all(|t| t.is_freeze(tcx, typing_env) && !drops(t))
 }
 
+/// Of each capture of `closure`, by its index among them, whether it
+/// borrows a binding that holds one value for as long as it's in scope:
+/// one that isn't `mut`, `self` of a method among them, read through
+/// shared references alone, which nothing can give another value (ADRs
+/// 0846, 0879, amended, rd515). None of a closure of another crate's.
+pub(in crate::lower) fn borrowed_fixed_bindings(tcx: TyCtxt<'_>, closure: DefId) -> Vec<bool> {
+    use rustc_hir::{BindingMode, ByRef, Mutability, Node, PatKind};
+    let Some(local) = closure.as_local().filter(|_| tcx.is_closure_like(closure)) else {
+        return Vec::new();
+    };
+    let fixed = |captured: &&ty::CapturedPlace<'_>| {
+        let ty::UpvarCapture::ByRef(ty::BorrowKind::Immutable) = captured.info.capture_kind else {
+            return false;
+        };
+        let root = captured.get_root_variable();
+        let Node::Pat(pat) = tcx.hir_node(root) else {
+            return false;
+        };
+        let place = &captured.place;
+        matches!(pat.kind, PatKind::Binding(BindingMode(ByRef::No, Mutability::Not), ..))
+            && (0..place.projections.len()).all(|i| {
+                matches!(
+                    place.projections[i].kind,
+                    rustc_middle::hir::place::ProjectionKind::Deref
+                ) && matches!(place.ty_before_projection(i).kind(), ty::Ref(_, _, Mutability::Not))
+            })
+    };
+    tcx.closure_captures(local).iter().map(fixed).collect()
+}
+
 /// Whether any of `all_bodies` makes a function a `dyn Fn` that `drops`
 /// says has something to drop, or one of a type parameter's, given a
 /// closure: where a closure the crate makes has, or, where
