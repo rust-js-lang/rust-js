@@ -1453,3 +1453,34 @@ thread_local! {
   const { told } = await import(join(dir, "lib.js"));
   expect(told()).toEqual([false, 3]);
 });
+
+// React's noop renderer, `export const {..} = createReactNoop(ReactFiberReconciler,
+// true)`: a `pub` thread-local whose initializer gives a function a `dyn Fn`
+// it calls is made as its module loads, the `dyn Fn` followed to what the
+// call gave it, a function of the crate's, a closure, a binding (rd542, ADR
+// 1006, amended).
+test("a pub thread-local's dyn Fn is what its call gave it", async () => {
+  const dir = fixture("exported-dyn-fn-given");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "String")]
+fn text_of(value: f64) -> String {
+    unreachable!()
+}
+
+fn shout(name: &str) -> String {
+    name.to_uppercase()
+}
+
+fn make(name: &dyn Fn(&str) -> String, count: &dyn Fn(u32) -> u32, text: &dyn Fn(f64) -> String) -> String {
+    let named = name;
+    named("noop") + &count(1).to_string() + &text(2.0)
+}
+
+thread_local! {
+    pub static NAMED: String = make(&shout, &|n| n + 1, &text_of);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("export const NAMED = make(shout, (n) => (n + 1) >>> 0, String);\n");
+  const { NAMED } = await import(join(dir, "lib.js"));
+  expect(NAMED).toBe("NOOP22");
+});

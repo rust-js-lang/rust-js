@@ -45,10 +45,10 @@ function main() {
   }
   console.log(`${once()}`);
   const d = "d";
-  const d2 = ["d2"];
+  const d2 = "d2";
   console.log("made");
   console.log(`drop ${d}`);
-  console.log(`drop ${d2[0]}`);
+  console.log(`drop ${d2}`);
 
   const p = ["p"];
   const q = ["q"];

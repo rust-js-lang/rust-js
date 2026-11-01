@@ -672,7 +672,16 @@ pub(super) const STAGES: &[Stage] = &[
                             _ => None,
                         })
                         .collect();
-                    s.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if unread.contains(name)))
+                    s.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if unread.contains(name)));
+                    // A function made that nothing reads, which making does
+                    // nothing: a binding's value MIR held in a variable of
+                    // its function's type, whose `&` is read by the type,
+                    // `make(&text_of)` of a thread-local's initializer (rd542).
+                    s.retain(|stmt| {
+                        !matches!(&stmt.kind, StmtKind::Const(name, value)
+                            if !mentions.contains_key(name)
+                                && matches!(value.kind, js::ExprKind::Arrow(..) | js::ExprKind::AsyncArrow(..)))
+                    })
                 })
             }),
             // A `const` nothing reads, of a value made only to be dropped,

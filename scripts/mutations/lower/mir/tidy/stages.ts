@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-unused-let-kept",
     breaks: "a `let iter;` nothing assigns any more stays declared",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "                    s.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if unread.contains(name)))\n",
+    find: "                    s.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if unread.contains(name)));\n",
     replace: "                    let _ = &unread;\n",
     tests: [
       "test/lowering-loops.test.ts",
@@ -1123,5 +1123,14 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell.rs$"],
     snapshots: true,
+  },
+  {
+    name: "unread-arrow-const-kept",
+    breaks:
+      "a binding's value MIR held in a variable nothing reads is kept, `export const NAMED = (() => { const value = (value) => String(value); return make(String); })();` (rd542)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "                                && matches!(value.kind, js::ExprKind::Arrow(..) | js::ExprKind::AsyncArrow(..)))\n",
+    replace: "                                && false)\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "dyn Fn is what its call gave it"],
   },
 ];

@@ -1,6 +1,7 @@
 # 1006. A `pub` thread-local is made as its module loads
 
 Status: Accepted. The user's decision (2026-10-28, React port gap rd51).
+Amended (rd542): a `dyn Fn` its call is given is what that call gave it.
 Amends [0037](0037-thread-locals.md), whose amendment refusing a `pub`
 thread-local made where it's first used it replaces.
 
@@ -308,3 +309,53 @@ Held by `test/lowering-module-variables.test.ts`' "a thread-local that
 names a dyn Fn only as a type argument is made as its module loads", and
 mutations `type-argument-dyn-followed` and `fn-item-arguments-walked`
 (`analysis/lazy_locals.ts`).
+
+## Amendment: a `dyn Fn` its call is given is what that call gave it (rd542)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): B and D, as above: what
+it runs is followed, and refused where it can't be.
+
+React's noop renderer exports what `createReactNoop(ReactFiberReconciler,
+true)` makes as its module loads (rd293). Its Rust passes the reconciler's
+factory as a value, as upstream does, since React Test Renderer and ART
+pass their own:
+
+```rust
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::namespace)]
+    pub static REACT_NOOP: ReactNoop = create_react_noop(&react_fiber_reconciler, true);
+}
+
+fn create_react_noop(reconciler: &dyn Fn(&JsObject) -> &'static ReactFiberReconciler, ..) -> ReactNoop {
+    let noop_renderer = reconciler(host_config);
+    ..
+}
+```
+
+`loaded_by` took any `dyn Fn`'s call for what it can't follow, so the
+initializer was refused. **A `dyn Fn` a body calls is followed to what
+its call was given**: where the body's MIR says what it is, a closure or
+a function coerced to it there, or a parameter its call gave one so, each
+through copies and reborrows of a variable written once, each such
+function is what the call runs, followed as a direct call of it is: a
+body of the crate's, or a binding's call, here `react-reconciler#default`
+of a module that has loaded (ADR 1006's one rule of what a binding runs).
+A body reached from two calls giving it two such is followed once for each
+of them. Any other `dyn Fn`, of a field, a collection or a closure's
+capture, is still what rust-js can't follow.
+
+The other way, a namespace thread-local (rd293) made as its module loads
+whatever it runs, since only JS reads it, was not taken: its initializer
+runs as its module loads either way, so what it runs may still be a
+module of an import cycle that hasn't loaded; following it keeps that
+guarantee.
+
+Held by `test/lowering-module-variables.test.ts`'s "a pub thread-local's
+dyn Fn is what its call gave it", against native Rust, and
+`test/diagnostics.test.ts`'s refusals of a `dyn Fn` read from an array,
+of one lent mutably, of one std calls, and of a closure given that reads
+the thread-local;
+mutations in `scripts/mutations/lower/analysis/lazy_locals.ts`. A function
+made that nothing reads, a binding's value MIR holds in a variable of its
+function's type whose `&` is read by its type, is dropped (`unused lets`),
+so the initializer is `export const NAMED = make(String);`, not an IIFE.

@@ -58,9 +58,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what a `pub` thread-local's initializer calls of the crate's isn't asked, so one that runs a module in an import cycle with its own compiles, and reads what isn't made yet (ADR 0037, amended)",
     file: "src/lower/analysis/lazy_locals.rs",
-    find: "                                    ty::InstanceKind::Item(f) if bodies.contains_key(&f) => {\n                                        work.push((f, instance.args));\n",
-    replace:
-      "                                    ty::InstanceKind::Item(f) if bodies.contains_key(&f) => {\n",
+    find: "                                        called.push((f, instance.args, gives));\n",
+    replace: "                                        drop::<Given<'tcx>>(gives);\n",
     tests: [
       "test/diagnostics.test.ts",
       "-t",
@@ -92,7 +91,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/diagnostics.test.ts",
       "-t",
-      "a pub thread-local of a dyn Fn's call",
+      "a pub thread-local of a dyn Fn std calls",
     ],
   },
   {
@@ -120,5 +119,32 @@ export const mutations: Mutation[] = [
       "-t",
       "dyn Fn only as a type argument",
     ],
+  },
+  {
+    name: "dyn-given-followed-to-nothing",
+    breaks:
+      "a `dyn Fn` parameter is taken to run nothing its call gave it, so a `pub` thread-local whose `call(&|| N.with(..))` reads itself isn't refused (rd542)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "                [] => given.get(local.as_usize() - 1).cloned().flatten(),\n",
+    replace: "                [] => Some(Vec::new()),\n",
+    tests: ["test/diagnostics.test.ts", "-t", "whose dyn Fn reads it"],
+  },
+  {
+    name: "dyn-given-unfollowed",
+    breaks:
+      "a `dyn Fn`'s call is what rust-js can't follow, whatever its call gave it, so React's noop renderer's `pub` `REACT_NOOP = create_react_noop(&react_fiber_reconciler, true)` is refused (rd542)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "                [] => given.get(local.as_usize() - 1).cloned().flatten(),\n",
+    replace: "                [] => None,\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "dyn Fn is what its call gave it"],
+  },
+  {
+    name: "dyn-given-lent-mutably-followed",
+    breaks:
+      "a `dyn Fn` variable lent mutably, which a callee may set to anything, is followed to what it was first given (rd542)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "                && !lent.projection.iter().any(|step| matches!(step, PlaceElem::Deref))\n            {\n                return None;\n",
+    replace: "                && !lent.projection.iter().any(|step| matches!(step, PlaceElem::Deref))\n            {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "dyn Fn"],
   },
 ];

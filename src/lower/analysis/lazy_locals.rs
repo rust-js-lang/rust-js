@@ -12,8 +12,9 @@
 use std::collections::{HashMap, HashSet};
 
 use rustc_hir::def::DefKind;
-use rustc_middle::mir::TerminatorKind;
+use rustc_middle::mir::{self, CastKind, Local, Operand, PlaceElem, Rvalue, StatementKind, TerminatorKind};
 use rustc_middle::thir::ExprKind;
+use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::{DefId, LocalDefId};
 
@@ -121,9 +122,10 @@ impl Impls {
 /// through it may be of, and what each of those runs in turn; each
 /// thread-local, `static` and `const` they read by its name, and what the
 /// initializer of a thread-local read runs, which may make it there. `None`
-/// where it may run what rust-js can't follow: a `dyn Fn`'s or a type
-/// parameter's call of what it's given, a fn pointer that may be anything
-/// (ADR 0907), or a body whose MIR it can't read.
+/// where it may run what rust-js can't follow: a `dyn Fn`'s call but of
+/// what its call was given (`given_dyn`, rd542), a type parameter's call of
+/// what it's given, a fn pointer that may be anything (ADR 0907), or a body
+/// whose MIR it can't read.
 fn loaded_by<'tcx>(
     tcx: TyCtxt<'tcx>,
     (bodies, made_of, impls): (&HashMap<DefId, &Body<'tcx>>, &HashMap<DefId, DefId>, &Impls),
@@ -133,10 +135,16 @@ fn loaded_by<'tcx>(
     let typing_env = ty::TypingEnv::fully_monomorphized();
     let identity = |id: DefId| ty::GenericArgs::identity_for_item(tcx, id);
     let mut reached: Vec<DefId> = Vec::new();
-    let mut seen: HashSet<(DefId, ty::GenericArgsRef<'tcx>)> = HashSet::new();
+    let mut seen: HashSet<(DefId, ty::GenericArgsRef<'tcx>, Given<'tcx>)> = HashSet::new();
+    // Each body to follow, of its arguments, and what its call gave each
+    // `dyn Fn` parameter, where it said (`given_dyn`); one reached otherwise
+    // was given what may be anything.
+    let mut called: Vec<(DefId, ty::GenericArgsRef<'tcx>, Given<'tcx>)> = Vec::new();
     let mut work = vec![(init, identity(init))];
-    while let Some((id, args)) = work.pop() {
-        if !seen.insert((id, args)) {
+    loop {
+        let next = (work.pop().map(|(id, args)| (id, args, Vec::new()))).or_else(|| called.pop());
+        let Some((id, args, given_dyn)) = next else { break };
+        if !seen.insert((id, args, given_dyn.clone())) {
             continue;
         }
         if !reached.contains(&id) {
@@ -294,15 +302,41 @@ fn loaded_by<'tcx>(
         };
         for data in mir.basic_blocks.iter() {
             match &data.terminator().kind {
-                TerminatorKind::Call { func, .. } => {
+                TerminatorKind::Call {
+                    func, args: call_args, ..
+                } => {
                     let ty = of(func.ty(&mir.local_decls, tcx));
                     let called = match crate::lower::fn_def(ty) {
                         Some((callee, callee_args)) => {
                             match crate::lower::items::resolve_instance_in(tcx, typing_env, callee, callee_args) {
                                 Ok(Some(instance)) => match instance.def {
                                     ty::InstanceKind::Item(f) if bodies.contains_key(&f) => {
-                                        work.push((f, instance.args));
+                                        let gives = (call_args.iter())
+                                            .map(|arg| dyn_given(tcx, mir, &arg.node, &given_dyn, &of))
+                                            .collect();
+                                        called.push((f, instance.args, gives));
                                         true
+                                    }
+                                    // A `dyn Fn`'s, what its call was given.
+                                    ty::InstanceKind::Virtual(method, _)
+                                        if tcx
+                                            .trait_of_assoc(method)
+                                            .is_some_and(|t| tcx.fn_trait_kind_from_def_id(t).is_some()) =>
+                                    {
+                                        match (call_args.first())
+                                            .and_then(|receiver| dyn_given(tcx, mir, &receiver.node, &given_dyn, &of))
+                                        {
+                                            Some(functions) => {
+                                                functions.into_iter().all(|(f, f_args)| match bodies.contains_key(&f) {
+                                                    true => {
+                                                        work.push((f, f_args));
+                                                        true
+                                                    }
+                                                    false => runs_given(f, f_args, &mut work),
+                                                })
+                                            }
+                                            None => false,
+                                        }
                                     }
                                     ty::InstanceKind::Virtual(method, _) => implementors(method, &mut work),
                                     ty::InstanceKind::Item(f) => runs_given(f, instance.args, &mut work),
@@ -335,6 +369,96 @@ fn loaded_by<'tcx>(
     }
     reached.retain(|&id| id != init);
     Some(reached)
+}
+
+/// What a body's call gave each of its `dyn Fn` parameters, by position, of
+/// the functions and closures it may be; `None` of one it didn't say, and
+/// none at all of a body reached by no call that said (rd542).
+type Given<'tcx> = Vec<Option<Vec<(DefId, ty::GenericArgsRef<'tcx>)>>>;
+
+/// What `operand`, a pointer to a `dyn Fn` of `body`, may be, where the body
+/// says: a function or a closure coerced to it there, of its type, or what
+/// its call gave the parameter it is (`given`), through copies and
+/// reborrows of variables written once and lent nowhere. `None` where it
+/// doesn't, a field's, a collection's or a capture's (rd542). `of` gives a
+/// type of the body's in its arguments' terms.
+fn dyn_given<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    body: &mir::Body<'tcx>,
+    operand: &Operand<'tcx>,
+    given: &Given<'tcx>,
+    of: &dyn Fn(ty::Ty<'tcx>) -> ty::Ty<'tcx>,
+) -> Option<Vec<(DefId, ty::GenericArgsRef<'tcx>)>> {
+    let pointee = of(operand.ty(&body.local_decls, tcx)).builtin_deref(true)?;
+    let ty::Dynamic(predicates, ..) = pointee.kind() else {
+        return None;
+    };
+    tcx.fn_trait_kind_from_def_id(predicates.principal_def_id()?)?;
+    let place = operand.place()?;
+    if !place.projection.is_empty() {
+        return None;
+    }
+    let mut local = place.local;
+    for _ in 0..body.local_decls.len() {
+        let writes = writes_of(body, local)?;
+        // A parameter, which only its call gives.
+        if (1..=body.arg_count).contains(&local.as_usize()) {
+            return match writes.as_slice() {
+                [] => given.get(local.as_usize() - 1).cloned().flatten(),
+                _ => None,
+            };
+        }
+        let [written] = writes.as_slice() else { return None };
+        match written {
+            Rvalue::Cast(CastKind::PointerCoercion(PointerCoercion::Unsize, _), made, _) => {
+                return match *of(made.ty(&body.local_decls, tcx)).builtin_deref(true)?.kind() {
+                    ty::FnDef(f, f_args) => Some(vec![(f, f_args.skip_binder())]),
+                    ty::Closure(f, f_args) => Some(vec![(f, f_args)]),
+                    _ => None,
+                };
+            }
+            Rvalue::Use(Operand::Copy(from) | Operand::Move(from), _) if from.projection.is_empty() => {
+                local = from.local
+            }
+            Rvalue::Ref(_, _, from) | Rvalue::CopyForDeref(from) if from.projection[..] == [PlaceElem::Deref] => {
+                local = from.local
+            }
+            _ => return None,
+        }
+    }
+    None
+}
+
+/// What each write of `local` in `body` writes, its statements' whole:
+/// `None` where a call's result is written to it, a part of it is, or it's
+/// lent mutably or through a pointer.
+fn writes_of<'a, 'tcx>(body: &'a mir::Body<'tcx>, local: Local) -> Option<Vec<&'a Rvalue<'tcx>>> {
+    let mut writes = Vec::new();
+    for data in body.basic_blocks.iter() {
+        for statement in &data.statements {
+            let StatementKind::Assign(assign) = &statement.kind else {
+                continue;
+            };
+            if let Rvalue::RawPtr(_, lent) | Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, lent) = &assign.1
+                && lent.local == local
+                && !lent.projection.iter().any(|step| matches!(step, PlaceElem::Deref))
+            {
+                return None;
+            }
+            if assign.0.local == local {
+                match assign.0.projection.is_empty() {
+                    true => writes.push(&assign.1),
+                    false => return None,
+                }
+            }
+        }
+        match &data.terminator().kind {
+            TerminatorKind::Call { destination, .. } if destination.local == local => return None,
+            TerminatorKind::Yield { resume_arg, .. } if resume_arg.local == local => return None,
+            _ => {}
+        }
+    }
+    Some(writes)
 }
 
 /// The types of the values a value of `ty` may hold or be, itself among
