@@ -248,6 +248,7 @@ pub fn all() -> Vec<String> {
     let hi = Buffer::from_with_str("héllo", None);
     let hex = Buffer::from_with_str("ff00ab", Some(BufferEncoding::Hex));
     let bytes = Buffer::from(&[1, 2, 3]);
+    let copied = Buffer::from(&*bytes);
     let zeros = Buffer::alloc(4, None, None);
     zeros.write_uint16_be(0xbeef, Some(1));
     let both = Buffer::concat(&[&bytes, &hex], None);
@@ -277,7 +278,9 @@ pub fn all() -> Vec<String> {
         buffer::INSPECT_MAX_BYTES.to_string(),
         // Whether the host has \`Buffer\`, then its \`from\`: React DOM's
         // readAsDataURL's test, each part asked (ADR 0942).
-        (js::is_function(Buffer::new) && js::is_function(Buffer::from)).to_string(),
+        (js::is_function(Buffer::new) && js::is_function(Buffer::from::<&[u8]>)).to_string(),
+        // A Uint8Array's bytes copied, React's noop server's \`Buffer.from(buffer)\` (rd465).
+        copied.equals(&bytes).to_string(),
     ]
 }
 `);
@@ -297,7 +300,7 @@ console.log(JSON.stringify(all()));
   expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
   expect(JSON.parse(p.stdout.toString())).toEqual([
     "héllo", "6", "6", Buffer.from("ff00ab", "hex").toString("base64"), "010203ff00ab", "00beef00", "-5 1.5 7", "3 66051", "ababa".slice(0, 3) + "\u0000\u0000",
-    "3 4 false", "-1 true", "h", "3", "true true", "true false", "2", "50", "true",
+    "3 4 false", "-1 true", "h", "3", "true true", "true false", "2", "50", "true", "true",
   ]);
 });
 

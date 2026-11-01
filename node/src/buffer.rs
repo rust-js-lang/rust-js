@@ -33,10 +33,11 @@ pub type NonSharedBuffer = Buffer;
 pub type AllowSharedBuffer = Buffer;
 
 impl Buffer {
-    /// [`Buffer.from(array)`](https://nodejs.org/api/buffer.html#static-method-bufferfromarray):
-    /// a buffer of `array`'s bytes.
+    /// [`Buffer.from(data)`](https://nodejs.org/api/buffer.html#static-method-bufferfromarray):
+    /// a buffer of a copy of `data`'s bytes, an array's or a `Uint8Array`'s,
+    /// as @types/node's `from(data: Uint8Array | readonly number[])`.
     #[cfg_attr(rust_js, rust_js::link_name = "Buffer.from")]
-    pub fn from(array: &[u8]) -> &'static Buffer {
+    pub fn from<D: IntoBytes>(data: D) -> &'static Buffer {
         unreachable!()
     }
 
@@ -737,8 +738,20 @@ impl IntoTypedArrayOrArrayBuffer for &js::Float64Array {}
 impl IntoTypedArrayOrArrayBuffer for &js::BigInt64Array {}
 impl IntoTypedArrayOrArrayBuffer for &js::BigUint64Array {}
 
+/// What [`Buffer::from`] copies the bytes of: an array of them, or a
+/// `Uint8Array`, a `Buffer` among them, each as it is (ADR 0229).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not bytes")]
+#[cfg_attr(rust_js, rust_js::types = "Uint8Array | readonly number[]")]
+pub trait IntoBytes: sealed::Sealed {}
+impl IntoBytes for &[u8] {}
+impl<const N: usize> IntoBytes for &[u8; N] {}
+impl IntoBytes for &Uint8Array {}
+impl IntoBytes for &Buffer {}
+
 mod sealed {
     pub trait Sealed {}
+    impl Sealed for &[u8] {}
+    impl<const N: usize> Sealed for &[u8; N] {}
     impl Sealed for &str {}
     impl Sealed for &super::Buffer {}
     impl Sealed for &js::ArrayBuffer {}
