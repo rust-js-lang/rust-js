@@ -315,7 +315,11 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   DOM's `CURRENT.with_borrow(|c| c.clone())` of the reconciler's `export
   let current`, `current`, where what the closure runs can't borrow it;
   and a guard of an assignment's place, `*c.borrow_mut() = f(v);`, is held
-  only once `f(v)`, which Rust evaluates first, has run (0863, amended).
+  only once `f(v)`, which Rust evaluates first, has run (0863, amended);
+  and one that's only a call's receiver, `c.borrow_mut().push(f(v));`,
+  once the call's other arguments have, as JS evaluates them, where only
+  code rust-js sees in them asks of it (0863, amended, the user's
+  decision, rd360).
   A call of a fn pointer runs what the crate made one of that type of,
   `Math.clz32` or a fallback, unless a value of its type may come from
   JS or a library, an exported function's parameter say, which may be
@@ -1139,3 +1143,10 @@ React and JSX are [their own pages](README.md#react).
     counted. A destination whose `write` pushes to that array at once
     passes, as upstream's does, where Rust panics `already borrowed`
     (ADR 0262, the user's decision, 2026-11-01).
+39. A guard that's only a call's receiver, `target.borrow_mut().push(
+    show(value));`, is taken after the call's arguments run, as JS's
+    `target.push(show(value))` runs them, where Rust takes it first. Only
+    an argument whose code rust-js can't see, which calls back and
+    borrows the receiver's cell, sees the difference: it passes, as
+    upstream's does, where Rust panics `already borrowed` (ADR 0863,
+    amended, the user's decision, rd360).

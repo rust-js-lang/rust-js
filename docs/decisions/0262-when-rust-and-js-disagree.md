@@ -226,6 +226,18 @@ react.dev's TopNav passes the same closure instead.
   `test/lowering-cell-borrows.test.ts`'s "a write binding marked as running
   nothing leaves a flushed array unchecked". Listed in the guide's
   differences (`semantics.md`, 38).
+- **A guard that's only a call's receiver is held after the call's
+  arguments run**, the second case's, which the user decided (2026-11-01,
+  rd360, ADR 0863, amended): `target.borrow_mut().push(show(value));` is
+  `target.push(show(value))`, which JS evaluates in that order, as React
+  DOM's Fizz config's `stringToChunk(escapeTextForBrowser(value))` of a
+  prop does. Rust takes the guard first. Only an argument whose code
+  rust-js can't see, which calls back at once and borrows the receiver's
+  cell, tells them apart: Rust panics `already borrowed`, and the JS does
+  what upstream's does. A borrow rust-js sees in an argument still meets
+  the guard. Held by `test/lowering-cell-borrows.test.ts`'s "a guard
+  that's only a call's receiver is held while the call runs, not its
+  arguments". Listed in the guide's differences (`semantics.md`, 39).
 - **A global `static` tested again inside the `if` that tested it is
   decided there**, the first case's, which the user accepted (2026-10-28,
   gap pt6): React's `if (__DEV__) { .. if (__DEV__ && debugTask) { .. } }`

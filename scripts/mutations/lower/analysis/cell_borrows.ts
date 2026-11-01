@@ -560,4 +560,22 @@ export const mutations: Mutation[] = [
     replace: "                bodies.is_empty()\n",
     tests: ["test/corpus.test.ts", "-t", "^class_trait_field_held.rs$"],
   },
+  {
+    name: "seen-borrows-own-only",
+    breaks:
+      "what a body borrows by code rust-js sees leaves out the crate's bodies it runs, so `t.borrow_mut().push(size(t))` of a `size` that borrows `t` meets nothing",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "                next.extend(theirs.iter().map(|&borrow| of_args(tcx, borrow, args)));\n",
+    replace: "",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "only a call's receiver"],
+  },
+  {
+    name: "seen-asks-nothing",
+    breaks:
+      "a call's argument that borrows the receiver guard's cell by a body of the crate's is taken as meeting nothing",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "            Called::Body(body, args) => self.seen_asks(tcx, body, Some(args), held),\n",
+    replace: "            Called::Body(..) => false,\n",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "only a call's receiver"],
+  },
 ];

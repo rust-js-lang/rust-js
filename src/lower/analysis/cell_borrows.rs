@@ -64,6 +64,10 @@ pub(in crate::lower) struct CellBorrows<'tcx> {
     /// visible outside it, each use a read or a write of what it holds,
     /// never its cell lent, `with`'s, or handed on.
     closed: HashSet<DefId>,
+    /// What each body may borrow by code rust-js sees, its own and the
+    /// crate's bodies it runs, whatever else it may run: what a guard asks
+    /// of a call's arguments it's held after (ADR 0863, amended).
+    seen: HashMap<DefId, HashSet<Borrow<'tcx>>>,
 }
 
 /// Each of the crate's ADTs' trait impls: the trait, and the impl.
@@ -161,6 +165,7 @@ impl<'tcx> CellBorrows<'tcx> {
             .flat_map(|(_, d)| d.own.cells.iter().copied())
             .collect();
         found.closed = closed_keys(tcx, bodies);
+        found.seen = seen_borrows(tcx, &direct);
         found
     }
 
@@ -177,6 +182,71 @@ impl<'tcx> CellBorrows<'tcx> {
             }
             _ => true,
         }
+    }
+
+    /// Whether calling `def_id`, of `args`, may ask of `held` by code
+    /// rust-js sees (`seen`): what `call_asks` says, but of what it can't
+    /// see, nothing. What a guard held after the call's arguments asks of
+    /// them (ADR 0863, amended), where only code that calls back, not a
+    /// borrow the program wrote, may meet it.
+    pub(in crate::lower) fn call_asks_seen(
+        &self,
+        recognition: &Recognition<'_, 'tcx>,
+        (owner, def_id, args): (DefId, DefId, ty::GenericArgsRef<'tcx>),
+        receiver: Option<(&Thir<'tcx>, ExprId)>,
+        held: Borrow<'tcx>,
+    ) -> bool {
+        let tcx = recognition.tcx;
+        let itself = |ty| self.clones_itself(recognition, owner, ty);
+        match called(recognition, def_id, args, receiver, &itself) {
+            Called::Nothing | Called::Any => false,
+            Called::Cell(theirs) => asks(tcx, &self.closed, theirs, held),
+            Called::Body(body, args) => self.seen_asks(tcx, body, Some(args), held),
+            Called::Bodies(bodies) => {
+                (bodies.into_iter()).any(|(body, args)| self.seen_asks(tcx, body, Some(args), held))
+            }
+            Called::Std(id, args) => {
+                let given = std_given(recognition, &self.impls, id, args);
+                given.cells.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held))
+                    || (given.bodies.iter()).any(|&(body, args)| self.seen_asks(tcx, body, args, held))
+            }
+        }
+    }
+
+    /// Whether calling a fn pointer of type `ptr` may ask of `held` by code
+    /// rust-js sees (`call_asks_seen`): what any function or closure it may
+    /// be may; of one it may be any of, nothing seen.
+    pub(in crate::lower) fn pointer_call_asks_seen(
+        &self,
+        recognition: &Recognition<'_, 'tcx>,
+        ptr: Ty<'tcx>,
+        held: Borrow<'tcx>,
+    ) -> bool {
+        let tcx = recognition.tcx;
+        let Some(may_be) = self.pointers.may_be(tcx, ptr) else {
+            return false;
+        };
+        may_be.iter().any(|&(f, args)| match tcx.is_closure_like(f) {
+            true => self.seen_asks(tcx, f, Some(args), held),
+            false => self.call_asks_seen(recognition, (f, f, args), None, held),
+        })
+    }
+
+    /// Whether running `body`, of `args`, may ask of `held` by code rust-js
+    /// sees (`seen`), its type parameters' cells of the call's types.
+    fn seen_asks(
+        &self,
+        tcx: TyCtxt<'tcx>,
+        body: DefId,
+        args: Option<ty::GenericArgsRef<'tcx>>,
+        held: Borrow<'tcx>,
+    ) -> bool {
+        let Some(cells) = self.seen.get(&body) else {
+            return false;
+        };
+        cells
+            .iter()
+            .any(|&theirs| asks(tcx, &self.closed, of_args(tcx, theirs, args), held))
     }
 
     /// Whether `key`'s thread-local is one only its key reaches (`closed`):
@@ -411,6 +481,52 @@ impl<'tcx> Summary<'tcx> {
     }
 }
 
+/// What each body may borrow by code rust-js sees (`CellBorrows::seen`):
+/// its own borrows, and each of the crate's bodies' it runs, until what
+/// each runs holds, its type parameters' cells as the run's args make them.
+fn seen_borrows<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    direct: &HashMap<DefId, Direct<'tcx>>,
+) -> HashMap<DefId, HashSet<Borrow<'tcx>>> {
+    let mut seen: HashMap<DefId, HashSet<Borrow<'tcx>>> =
+        (direct.iter()).map(|(&id, d)| (id, d.own.cells.clone())).collect();
+    loop {
+        let mut changed = false;
+        for (&id, d) in direct {
+            let mut next = seen[&id].clone();
+            for &(run, args) in &d.runs {
+                let Some(theirs) = seen.get(&run) else { continue };
+                next.extend(theirs.iter().map(|&borrow| of_args(tcx, borrow, args)));
+            }
+            if next.len() != seen[&id].len() {
+                seen.insert(id, next);
+                changed = true;
+            }
+        }
+        if !changed {
+            return seen;
+        }
+    }
+}
+
+/// `borrow`, of a body's, as a run of it of `args` makes it: of a type
+/// parameter's cell, the run's type.
+fn of_args<'tcx>(tcx: TyCtxt<'tcx>, borrow: Borrow<'tcx>, args: Option<ty::GenericArgsRef<'tcx>>) -> Borrow<'tcx> {
+    match (borrow.cell, args) {
+        (Cell::Type(ty), Some(args)) if ty.has_param() => Borrow {
+            cell: Cell::Type(
+                tcx.erase_and_anonymize_regions(
+                    ty::EarlyBinder::bind(tcx, ty)
+                        .instantiate(tcx, args)
+                        .skip_normalization(),
+                ),
+            ),
+            ..borrow
+        },
+        _ => borrow,
+    }
+}
+
 /// A body's summary as a call of `args` runs it: its type parameters'
 /// cells and drops of the call's types; `None` where a drop known now runs
 /// a destructor, which may run anything.
@@ -441,13 +557,7 @@ fn instantiated<'tcx>(
         _ => ty,
     };
     let cells = (summary.cells.iter())
-        .map(|&borrow| Borrow {
-            cell: match borrow.cell {
-                Cell::Type(ty) => Cell::Type(of(ty)),
-                key => key,
-            },
-            ..borrow
-        })
+        .map(|&borrow| of_args(tcx, borrow, args))
         .collect();
     let mut kept = HashSet::new();
     for &ty in &summary.drops {

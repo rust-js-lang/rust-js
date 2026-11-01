@@ -1,6 +1,6 @@
 # 0863. A `RefCell` of an object is the object, and one no borrow of which can meet another is never checked
 
-Status: Accepted; amended below (`as_deref` of an `Option` of a guard). Amends [0328](0328-refcell-borrow-counts.md) (what a
+Status: Accepted; amended below (`as_deref` of an `Option` of a guard, and a guard that's only a call's receiver). Amends [0328](0328-refcell-borrow-counts.md) (what a
 `RefCell` is, and which of its borrows are counted),
 [0362](0362-refcell-fields-never-counted.md) (a field's plain cell, a
 library's too), [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md)
@@ -830,3 +830,53 @@ lends nothing, a borrow through its call is the field's, and its call
 held elsewhere lends the field. A default's call of a trait of classes'
 method, of a `Self` not known, runs what one of its classes' does
 ([ADR 1038](1038-a-trait-of-classes-method-that-gives-a-field-is-that-field.md)).
+
+## Amendment: a guard that's only a call's receiver (rd360)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): B, the user's decision
+(2026-11-01). React DOM's Fizz config pushes each attribute's chunks while
+it escapes the attribute's value, a prop, any value:
+
+```rust
+target.borrow_mut().extend([
+    chunk(&ATTRIBUTE_SEPARATOR),
+    string_to_chunk(name),
+    chunk(&ATTRIBUTE_ASSIGN),
+    string_to_chunk(&escape_text_for_browser(Some(value))),
+    chunk(&ATTRIBUTE_END),
+]);
+```
+
+Rust takes the guard before it evaluates the arguments, and a `toString`
+of the value, JS's, may call back and push to `target`, which Rust would
+meet with a panic. So the guard was held while code rust-js can't see
+runs, and with it every chunk array's borrow in the crate was counted:
+122 `$borrowMut`s in `try`/`finally`. Upstream's `target.push(..,
+stringToChunk(escapeTextForBrowser(value)), ..)` evaluates its arguments
+first.
+
+**A guard that's only the receiver of its statement's call is held while
+the call runs, not while its other arguments do** (`drops/facts.rs`'s
+`held_quietly_after`): `target.borrow_mut().push(show(value));` is
+`target.push(show(value))`, which runs `show` first. Its receiver, and
+the call itself, are asked as before. Of its other arguments, only what
+rust-js sees asks of the guard (`CellBorrows::call_asks_seen`): a borrow of
+the cell the program wrote, `c.borrow_mut().push(c.borrow().len())`, or one
+a body of the crate's that an argument calls makes, is still counted and
+panics as Rust's does. Code that may call back, a binding's or a
+library's, doesn't.
+
+Only an argument whose code rust-js can't see, which calls back at once
+and borrows the receiver's cell, tells them apart: Rust panics `already
+borrowed`, and the JS does what upstream's does, the callback's push
+first.
+Listed in ADR 0262's Consequences and the guide's differences
+(`semantics.md`, 39).
+
+Held by `test/lowering-cell-borrows.test.ts`'s "a guard that's only a
+call's receiver is held while the call runs, not its arguments", and by
+mutations `receiver-guard-held-through-arguments`,
+`receiver-guard-ignores-arguments`, `receiver-guard-ignores-call` and
+`receiver-guard-arguments-unseen` (`drops/facts.rs`), and
+`seen-borrows-own-only` and `seen-asks-nothing` (`analysis/cell_borrows.rs`).
+The corpus's `trie_of_counted_rcs` reads `cur.borrow().parent` uncounted.

@@ -945,3 +945,122 @@ pub fn flush(segment: &Segment, destination: &Destination) {
     delete globals.writeChunk;
   }
 });
+
+// ADR 0863, amended, the user's decision (2026-11-01): a guard that's only
+// a method call's receiver, `target.borrow_mut().push(show(value))`, is
+// held while the method runs, not while its other arguments do, as JS's
+// `target.push(show(value))` evaluates them first. So a `show` JS runs,
+// which may call back and push to `target`, leaves the array uncounted, as
+// React DOM's Fizz config's `stringToChunk(escapeTextForBrowser(value))` of
+// a prop. A borrow of the cell the program wrote in an argument, which
+// Rust's order meets, is still counted, and panics as Rust's does.
+test("a guard that's only a call's receiver is held while the call runs, not its arguments", async () => {
+  const dir = fixture("receiver-guard");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.show")]
+fn show(value: &js::Unknown) -> String {
+    let _ = value;
+    unreachable!()
+}
+
+pub struct Segment {
+    pub chunks: RefCell<Vec<String>>,
+}
+
+pub fn segment() -> Segment {
+    Segment { chunks: RefCell::new(Vec::new()) }
+}
+
+pub fn push_text(segment: &Segment, text: &str) {
+    segment.chunks.borrow_mut().push(text.to_owned());
+}
+
+pub fn push_value(segment: &Segment, value: &js::Unknown) {
+    segment.chunks.borrow_mut().push(show(value));
+}
+
+pub fn written(segment: &Segment) -> String {
+    segment.chunks.borrow().concat()
+}
+
+pub struct Counts {
+    pub seen: RefCell<Vec<usize>>,
+}
+
+pub fn counts() -> Counts {
+    Counts { seen: RefCell::new(Vec::new()) }
+}
+
+pub fn count(counts: &Counts) {
+    counts.seen.borrow_mut().push(counts.seen.borrow().len());
+}
+
+pub struct Tally {
+    pub items: RefCell<Vec<u8>>,
+}
+
+pub fn tally() -> Tally {
+    Tally { items: RefCell::new(Vec::new()) }
+}
+
+fn len(tally: &Tally) -> usize {
+    tally.items.borrow().len()
+}
+
+fn size(tally: &Tally) -> u8 {
+    len(tally) as u8
+}
+
+pub fn tally_size(tally: &Tally) {
+    tally.items.borrow_mut().push(size(tally));
+}
+
+pub struct Marks {
+    pub items: RefCell<Vec<i8>>,
+}
+
+pub fn marks() -> Marks {
+    Marks { items: RefCell::new(Vec::new()) }
+}
+
+fn add(items: &mut Vec<i8>, marks: &Marks) {
+    items.push(marks.items.borrow().len() as i8);
+}
+
+pub fn mark(marks: &Marks) {
+    add(&mut marks.items.borrow_mut(), marks);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("segment.chunks.push(globalThis.show(value));");
+  expect(js).not.toContain("$borrowMut(segment.chunks");
+  expect(js).toContain("$borrowMut(counts.seen");
+  expect(js).toContain("$borrowMut(tally.items");
+  expect(js).toContain("$borrowMut(marks.items");
+  const lib = await import(join(dir, "lib.js"));
+  const globals = globalThis as any;
+  const segment = lib.segment();
+  // A value whose text pushes to the array it's pushed to, once: JS's
+  // order, the callback's push first.
+  let pushed = false;
+  globals.show = (value: string) => {
+    if (!pushed) {
+      pushed = true;
+      lib.pushText(segment, "<b>");
+    }
+    return value;
+  };
+  try {
+    lib.pushValue(segment, "x");
+    expect(lib.written(segment)).toBe("<b>x");
+  } finally {
+    delete globals.show;
+  }
+  // A borrow of the cell the program wrote, in an argument, through a
+  // call, or in the call: Rust's order meets it.
+  expect(() => lib.count(lib.counts())).toThrow("RefCell already mutably borrowed");
+  expect(() => lib.tallySize(lib.tally())).toThrow("RefCell already mutably borrowed");
+  expect(() => lib.mark(lib.marks())).toThrow("RefCell already mutably borrowed");
+});

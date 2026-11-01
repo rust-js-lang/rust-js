@@ -81,8 +81,8 @@ export const mutations: Mutation[] = [
     name: "quiet-ignores-calls",
     breaks: "a call of the crate's beside a guard is taken as asking nothing",
     file: "src/lower/drops/facts.rs",
-    find: "                        self.borrows.call_asks(\n                            &self.cx.recognition,\n                            (self.owner, id, generic_args),\n                            receiver,\n                            self.cell,\n                            drops,\n                        )\n",
-    replace: "                        false\n",
+    find: "(self.borrows).call_asks(recognition, (self.owner, id, generic_args), receiver, self.cell, drops)",
+    replace: "false",
     tests: [
       "test/lowering-cells.test.ts",
       "-t",
@@ -241,8 +241,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a fn pointer's call while a guard is held asks nothing of its cell, so `report`'s borrow isn't counted while `f`, which may be `touch`, borrows it mutably, and nothing panics",
     file: "src/lower/drops/facts.rs",
-    find: "                    None => self\n                        .borrows\n                        .pointer_call_asks(&self.cx.recognition, self.thir[fun].ty, self.cell, drops),\n",
-    replace: "                    None => false,\n",
+    find: "            None => self.borrows.pointer_call_asks(recognition, ptr, self.cell, drops),\n",
+    replace: "            None => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^fn_pointer_borrows_held.rs$"],
   },
   {
@@ -319,5 +319,41 @@ export const mutations: Mutation[] = [
       "-t",
       "^called_once_closure_drops_after.rs$",
     ],
+  },
+  {
+    name: "receiver-guard-held-through-arguments",
+    breaks:
+      "a guard that's only a call's receiver is held while the call's other arguments run, so `target.borrow_mut().push(show(value))` counts the array",
+    file: "src/lower/drops/facts.rs",
+    find: "                    && (*receiver == e || self.stack.contains(receiver))\n",
+    replace: "                    && false\n",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "only a call's receiver"],
+  },
+  {
+    name: "receiver-guard-ignores-arguments",
+    breaks:
+      "a borrow of the receiver's cell the program wrote in an argument, `c.borrow_mut().push(c.borrow().len())`, is taken as meeting nothing",
+    file: "src/lower/drops/facts.rs",
+    find: "        for &arg in rest {\n            quiet.visit_expr(&self.thir[arg]);\n        }\n",
+    replace: "",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "only a call's receiver"],
+  },
+  {
+    name: "receiver-guard-ignores-call",
+    breaks:
+      "the call whose receiver holds a guard, `add(&mut m.borrow_mut(), m)` of an `add` that borrows `m`, is taken as asking nothing",
+    file: "src/lower/drops/facts.rs",
+    find: "        quiet.visit_call(call, method);\n",
+    replace: "",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "only a call's receiver"],
+  },
+  {
+    name: "receiver-guard-arguments-unseen",
+    breaks:
+      "a call's arguments run before its receiver's guard is held are asked as anything, so JS that may call back counts the array",
+    file: "src/lower/drops/facts.rs",
+    find: "        quiet.seen_only = true;\n",
+    replace: "",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "only a call's receiver"],
   },
 ];

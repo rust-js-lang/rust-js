@@ -148,35 +148,13 @@ function depth(node) {
   let depth = 0;
   try {
     let parent;
-    while (true) {
-      const borrow = $borrow(cur.value, true);
+    while ((parent = $upgrade($borrow(cur.value).parent)) != null) {
       try {
-        parent = $upgrade(borrow.parent);
-      } catch (error) {
-        $unborrow(borrow);
-        throw error;
+        $rcDrop(cur, dropNode);
+      } finally {
+        cur = parent;
       }
-      try {
-        $unborrow(borrow);
-      } catch (error) {
-        if (parent != null) {
-          $rcDrop(parent, dropNode);
-        }
-        throw error;
-      }
-      if (parent != null) {
-        try {
-          $rcDrop(cur, dropNode);
-        } finally {
-          cur = parent;
-        }
-        depth = (depth + 1) >>> 0;
-        continue;
-      }
-      if (parent != null) {
-        $rcDrop(parent, dropNode);
-      }
-      break;
+      depth = (depth + 1) >>> 0;
     }
     return depth;
   } finally {
@@ -244,7 +222,7 @@ function main() {
   }
   let borrow;
   try {
-    borrow = $borrow(root.value, true);
+    borrow = $borrow(root.value);
   } catch (error) {
     if (root$live) {
       $rcDrop(root, dropNode);
@@ -255,16 +233,6 @@ function main() {
   try {
     a = $rcClone($unwrap(borrow.children.get("a"), "no entry found for key"));
   } catch (error) {
-    $unborrow(borrow);
-    if (root$live) {
-      $rcDrop(root, dropNode);
-    }
-    throw error;
-  }
-  try {
-    $unborrow(borrow);
-  } catch (error) {
-    $rcDrop(a, dropNode);
     if (root$live) {
       $rcDrop(root, dropNode);
     }
@@ -272,7 +240,7 @@ function main() {
   }
   let tmp$1;
   try {
-    tmp$1 = $borrow(a.value, true);
+    tmp$1 = $borrow(a.value);
   } catch (error) {
     $rcDrop(a, dropNode);
     if (root$live) {
@@ -284,17 +252,6 @@ function main() {
   try {
     ab = $rcClone($unwrap(tmp$1.children.get("b"), "no entry found for key"));
   } catch (error) {
-    $unborrow(tmp$1);
-    $rcDrop(a, dropNode);
-    if (root$live) {
-      $rcDrop(root, dropNode);
-    }
-    throw error;
-  }
-  try {
-    $unborrow(tmp$1);
-  } catch (error) {
-    $rcDrop(ab, dropNode);
     $rcDrop(a, dropNode);
     if (root$live) {
       $rcDrop(root, dropNode);

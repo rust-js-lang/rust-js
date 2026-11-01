@@ -500,6 +500,23 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             {
                 vec![lhs]
             }
+            // A guard that's only the receiver of the statement's call,
+            // `target.borrow_mut().push(show(value));`, is held while the
+            // call runs, not while its other arguments do, as JS's
+            // `target.push(show(value))` evaluates them first (ADR 0863,
+            // amended, the user's decision): of them, only a borrow
+            // rust-js sees asks of it.
+            (None, Some(extent))
+                if let ExprKind::Call {
+                    fun: method, ref args, ..
+                } = self.thir[strip(self.thir, extent)].kind
+                    && let [receiver, rest @ ..] = &args[..]
+                    && (*receiver == e || self.stack.contains(receiver))
+                    && self.held_quietly_after((fun, cell), (strip(self.thir, extent), method, *receiver), rest) =>
+            {
+                self.facts.momentary.insert(fun);
+                return;
+            }
             (None, Some(extent)) => vec![extent],
             (None, None) => return,
         };
@@ -566,6 +583,38 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
         }
     }
 
+    /// Whether `fun`'s guard of `cell`, the receiver of `call`, a call of
+    /// `method`, meets no borrow that may ask of it while it's held: what
+    /// its receiver and the call do, and, of the call's other arguments,
+    /// which run before it's held (ADR 0863, amended), what rust-js sees.
+    fn held_quietly_after(
+        &mut self,
+        (fun, cell): (ExprId, Borrow<'tcx>),
+        (call, method, receiver): (ExprId, ExprId, ExprId),
+        rest: &[ExprId],
+    ) -> bool {
+        let mut quiet = Quiet {
+            cx: self.cx,
+            borrows: self.borrows,
+            thir: self.thir,
+            owner: self.body_owner,
+            own: fun,
+            cell,
+            quiet: true,
+            items: HashSet::new(),
+            unmet: Vec::new(),
+            seen_only: false,
+        };
+        quiet.items = quiet.items_of_own();
+        quiet.visit_expr(&self.thir[receiver]);
+        quiet.visit_call(call, method);
+        quiet.seen_only = true;
+        for &arg in rest {
+            quiet.visit_expr(&self.thir[arg]);
+        }
+        quiet.quiet
+    }
+
     /// Whether `fun`'s guard of `cell`, held while `stmts` and `exprs` run,
     /// meets no borrow that may ask of it (`Quiet`); if one may, whether
     /// only code rust-js sees runs while it's held (`Seen`), a fact of it.
@@ -580,6 +629,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             quiet: true,
             items: HashSet::new(),
             unmet: Vec::new(),
+            seen_only: false,
         };
         quiet.items = quiet.items_of_own();
         for &stmt in stmts {
@@ -726,6 +776,9 @@ struct Quiet<'c, 'q, 'a, 'tcx> {
     /// `own`'s where they're asked: in the `then` of `if
     /// !v.borrow().contains(t)` of such an item `t` (`unmet_in`).
     unmet: Vec<LocalVarId>,
+    /// Whether only what rust-js sees asks, of a call's arguments that
+    /// run before `own`'s guard, its receiver, is held (ADR 0863, amended).
+    seen_only: bool,
 }
 
 impl<'c, 'q, 'a, 'tcx> Quiet<'c, 'q, 'a, 'tcx> {
@@ -856,6 +909,47 @@ impl<'c, 'q, 'a, 'tcx> Quiet<'c, 'q, 'a, 'tcx> {
     }
 }
 
+impl<'c, 'q, 'a, 'tcx> Quiet<'c, 'q, 'a, 'tcx> {
+    /// Whether a call of `fun`, given `args`, may ask of `own`'s guard: what
+    /// it runs may (of what rust-js sees, where `seen_only`), or it drops a
+    /// value it's given with a destructor.
+    fn call_asks(&self, fun: ExprId, args: &[ExprId]) -> bool {
+        let drops = &|ty| self.drops(ty);
+        let recognition = &self.cx.recognition;
+        let ptr = self.thir[fun].ty;
+        let receiver = args.first().map(|&receiver| (self.thir, receiver));
+        let called = match fn_def(ptr) {
+            Some((id, generic_args)) if self.seen_only => {
+                (self.borrows).call_asks_seen(recognition, (self.owner, id, generic_args), receiver, self.cell)
+            }
+            Some((id, generic_args)) => {
+                (self.borrows).call_asks(recognition, (self.owner, id, generic_args), receiver, self.cell, drops)
+            }
+            // A fn pointer's, of what it may be (ADR 0907).
+            None if self.seen_only => self.borrows.pointer_call_asks_seen(recognition, ptr, self.cell),
+            None => self.borrows.pointer_call_asks(recognition, ptr, self.cell, drops),
+        };
+        called
+            || args.iter().any(|&a| match *self.thir[a].ty.kind() {
+                ty::Ref(_, inner, ty::Mutability::Mut) => self.drops(inner),
+                ty::Ref(..) => false,
+                _ => self.drops(self.thir[a].ty),
+            })
+    }
+
+    /// `call`, a call of `method` whose receiver holds `own`'s guard, as
+    /// it runs, not its arguments: whether it may ask of the guard.
+    fn visit_call(&mut self, call: ExprId, method: ExprId) {
+        let ExprKind::Call { ref args, .. } = self.thir[call].kind else {
+            self.quiet = false;
+            return;
+        };
+        if self.quiet && self.call_asks(method, args) {
+            self.quiet = false;
+        }
+    }
+}
+
 impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Quiet<'c, 'q, 'a, 'tcx> {
     fn thir(&self) -> &'a Thir<'tcx> {
         self.thir
@@ -896,31 +990,7 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Quiet<'c, 'q, 'a, 'tcx> {
             {
                 false
             }
-            ExprKind::Call { fun, ref args, .. } if fun != self.own => {
-                let drops = &|ty| self.drops(ty);
-                let called = match fn_def(self.thir[fun].ty) {
-                    Some((id, generic_args)) => {
-                        let receiver = args.first().map(|&receiver| (self.thir, receiver));
-                        self.borrows.call_asks(
-                            &self.cx.recognition,
-                            (self.owner, id, generic_args),
-                            receiver,
-                            self.cell,
-                            drops,
-                        )
-                    }
-                    // A fn pointer's, of what it may be (ADR 0907).
-                    None => self
-                        .borrows
-                        .pointer_call_asks(&self.cx.recognition, self.thir[fun].ty, self.cell, drops),
-                };
-                called
-                    || args.iter().any(|&a| match *self.thir[a].ty.kind() {
-                        ty::Ref(_, inner, ty::Mutability::Mut) => self.drops(inner),
-                        ty::Ref(..) => false,
-                        _ => self.drops(self.thir[a].ty),
-                    })
-            }
+            ExprKind::Call { fun, ref args, .. } if fun != self.own => self.call_asks(fun, args),
             ExprKind::InlineAsm(_) | ExprKind::Yield { .. } | ExprKind::Become { .. } => true,
             _ => false,
         };
