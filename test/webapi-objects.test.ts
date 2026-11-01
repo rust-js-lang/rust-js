@@ -424,3 +424,48 @@ pub fn parts(blob: &Blob, stream_prefix: String, part_json: String) -> &'static 
   expect(parts.getAll("S1")).toEqual(["{}", "{}"]);
   expect([parts.get("text") instanceof Blob, (parts.get("blob") as File).name, (parts.get("named") as File).name]).toEqual([true, "b.txt", "a.txt"]);
 });
+
+// rd506's audit: of an untagged enum of one class and kinds JS tells by
+// their value, a form entry's `File | string`, the class is what's left,
+// each other tested, `typeof entry === "string"`, so no `instanceof File`
+// runs where a host has no `File` global, Node 18 or a test's environment,
+// which would throw a ReferenceError where Rust runs on (the
+// coordinator's decision on the user's behalf).
+test("a union of one class is told apart by the others' tests, no instanceof of a global", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-lone-class");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{FormData, FormDataEntryValue};
+
+pub fn kind(data: &FormData, name: &str) -> u32 {
+    match data.get(name) {
+        Some(FormDataEntryValue::File(_)) => 1,
+        Some(FormDataEntryValue::Str(_)) => 2,
+        None => 0,
+    }
+}
+
+pub fn file_name(data: &FormData, name: &str) -> Option<String> {
+    if let Some(FormDataEntryValue::File(file)) = data.get(name) {
+        return Some(file.name());
+    }
+    None
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("instanceof");
+  expect(js).toContain('typeof get === "string"');
+  const lib = await import(join(dir, "lib.js"));
+  const form = (entries: Record<string, unknown>) => ({ get: (name: string) => entries[name] ?? null });
+  const file = { name: "a.txt" };
+  const data = form({ f: file, s: "text" });
+  const File = globalThis.File;
+  // @ts-ignore: a host without the global.
+  delete globalThis.File;
+  try {
+    expect([lib.kind(data, "f"), lib.kind(data, "s"), lib.kind(data, "x")]).toEqual([1, 2, 0]);
+    expect([lib.fileName(data, "f"), lib.fileName(data, "s"), lib.fileName(data, "x")]).toEqual(["a.txt", undefined, undefined]);
+  } finally {
+    globalThis.File = File;
+  }
+});

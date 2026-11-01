@@ -776,7 +776,12 @@ export function size(input) {
   theirs; a module's type, `types = "chart.js#Chart"`, is an object,
   `typeof value === "object"`, as no `instanceof` can name a class its
   module doesn't import, and so is a type that declares none, never
-  `instanceof` a class of its name JS may not have. `JsError`, what JS
+  `instanceof` a class of its name JS may not have. Of an enum of one
+  class beside kinds JS tells by the value alone, a form entry's `File |
+  string`, the class is what the others leave, `typeof entry ===
+  "string"` tested, so no `instanceof File` runs where a host has no
+  `File` ([ADR 1062](../../decisions/1062-a-unions-one-class-is-what-its-other-kinds-leave.md)).
+  `JsError`, what JS
   threw, may be any value, and is an error as a variant's payload
   ([ADR 0214](../../decisions/0214-untagged-enums.md), amended). A
   `js::Class`, a constructor, is a function, `typeof value === "function"`;

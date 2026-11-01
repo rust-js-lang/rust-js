@@ -748,7 +748,9 @@ pub fn drawn(drawn: Drawn) -> String {
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("link instanceof URL");
+  // A lone class is what the other kinds leave, no `instanceof` of a
+  // global the host may lack (ADR 1062); two are each told by theirs.
+  expect(js).toContain('return typeof link === "string" ? link : "url";');
   expect(js).not.toContain("instanceof Url");
   expect(js).not.toContain("instanceof Chart");
   const lib = await import(join(dir, "lib.js"));

@@ -9,6 +9,7 @@ use super::declarations::{Written, written_types};
 use super::recognition::{Recognition, StdItem, conversion_target, deref_target, serde_impl, std_item};
 use super::representation::{Num, is_string_enum};
 use crate::js::{self, Expr, Op, UnaryOp};
+use rustc_abi::VariantIdx;
 use rustc_hir as hir;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::{CtorKind, CtorOf, DefKind, Res};
@@ -796,6 +797,39 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             Ok([only]) => Some(only),
             Err(_) => None,
         }
+    }
+
+    /// The one variant of `adt` that's a class, where each other is a kind
+    /// JS tells by its value alone, `typeof`, `Array.isArray`, its length,
+    /// a literal or `undefined` and `null`: what a `match` of it leaves to
+    /// its last branch, tested by the others' tests, so no `instanceof` of
+    /// a global the host may lack runs, `File` of a form's entry where
+    /// Node 18 has none (rd506). None where two or more are classes, which
+    /// `instanceof` tells apart, or one is an object, a test function's or
+    /// a member's, whose test leaves a class out by `instanceof` too.
+    pub(super) fn lone_class_variant(&self, adt: AdtDef<'tcx>, args: GenericArgsRef<'tcx>) -> Option<VariantIdx> {
+        let mut class = None;
+        for (index, variant) in adt.variants().iter_enumerated() {
+            if bindings::is_otherwise(self.tcx, variant.def_id) {
+                return None;
+            }
+            match self.untagged_variant_kind(variant, args)? {
+                Kind::Class(..) if class.is_none() => class = Some(index),
+                Kind::String
+                | Kind::Number
+                | Kind::BigInt
+                | Kind::Boolean
+                | Kind::Symbol
+                | Kind::Array
+                | Kind::Tuple(_)
+                | Kind::Function
+                | Kind::Literal(_)
+                | Kind::Undefined
+                | Kind::Null => {}
+                _ => return None,
+            }
+        }
+        class
     }
 
     /// `variant`'s kind and the kinds of the others its test leaves out, as

@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "lone-class-branch-dropped",
+    breaks:
+      "an untagged enum's lone class, tested by the others' tests, is no branch: a form entry that's a `File` goes to the string's arm (a wrong answer, rd506's audit)",
+    file: "src/lower/mir/structure.rs",
+    find: "                    otherwise = Some(last).filter(|&b| reached(b));\n",
+    replace: "",
+    tests: ["test/webapi-objects.test.ts", "-t", "one class"],
+  },
+  {
     name: "self-handle-own-unnamed",
     breaks:
       "a closure's upgrade of its handle on itself is written nowhere, the local it gives read undeclared, not the closure's own name",

@@ -239,6 +239,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1059 An async iterator, and `Function.prototype.bind` as a value](1059-an-async-iterator-and-function-bind-as-a-value.md)
 - [1060 A loop from the end down to a computed start counts down](1060-a-loop-from-the-end-of-a-computed-start-counts-down.md)
 - [1061 A stream's reader is of the mode its options say, as TypeScript's overloads type it](1061-a-streams-reader-is-of-the-mode-its-options-say.md) *(amended: a form's `append` and `set` take text or a Blob, rd505)*
+- [1062 A union's one class is what its other kinds leave](1062-a-unions-one-class-is-what-its-other-kinds-leave.md)
 - [0205 Flattened structs chain, and the props' own name is theirs](0205-flattened-chains.md)
 - [0206 TypeScript, read and written by TypeScript's own parser and printer](0206-typescript-module.md)
 - [0207 A crate's `.d.ts` is printed by TypeScript](0207-declarations-printed-by-typescript.md)
@@ -248,7 +249,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0211 `Option::as_deref` of a `String` or a `Vec` is the option](0211-option-as-deref.md)
 - [0212 A props field's default is where JS takes them apart](0212-props-defaults.md)
 - [0213 A component's props are given as one flat list](0213-props-as-written.md)
-- [0214 An untagged enum is its payload: TS's `string | Blob`](0214-untagged-enums.md) *(amended by 0668: an `otherwise` of one `typeof` kind is tested as it; by 0676: a variant without fields may be `undefined` or `null`; amended: a `RefCell` of an object is the object, an `Rc` what it points at; a `SymbolFor` is a symbol, and `==` of primitives `===`; extended by 1036: a struct told by a member it declares; by 1039: a variant may hold another untagged enum; by 1046: arrays told by their length, and an enum of arrays changed in place)*
+- [0214 An untagged enum is its payload: TS's `string | Blob`](0214-untagged-enums.md) *(amended by 0668: an `otherwise` of one `typeof` kind is tested as it; by 0676: a variant without fields may be `undefined` or `null`; amended: a `RefCell` of an object is the object, an `Rc` what it points at; a `SymbolFor` is a symbol, and `==` of primitives `===`; extended by 1036: a struct told by a member it declares; by 1039: a variant may hold another untagged enum; by 1046: arrays told by their length, and an enum of arrays changed in place; amended by 1062: a lone class is what its other kinds leave)*
 - [0215 The webapi crate's unions are untagged enums](0215-webapi-unions.md)
 - [0216 A slice's `concat` of parts written out is an array of them, spread](0216-concat-spread.md)
 - [0217 `enumerate()` then a callback's method is the method, given each index](0217-enumerate-index.md)

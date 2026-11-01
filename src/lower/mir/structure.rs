@@ -469,6 +469,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         *test = self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, &variants, &spans, *present);
                     }
                 }
+                // An untagged enum of one class and kinds JS tells by their
+                // value, a form entry's `File | string`: the class's branch
+                // last, what's left, and each other's tested, so no
+                // `instanceof` of a global the host may lack runs (rd506).
+                if let Value::Discriminant(enum_value, enum_ty, present) = &subject
+                    && let ty::Adt(adt, args) = enum_ty.kind()
+                    && bindings::is_untagged(self.tcx, adt.did())
+                    && let Some(class) = self.recognition().lone_class_variant(*adt, args)
+                {
+                    let target_of = |variant: VariantIdx| {
+                        let target = targets.target_for_value(adt.discriminant_for_variant(self.tcx, variant).val);
+                        state.facts.held_arms().get(&target).copied().unwrap_or(target)
+                    };
+                    let last = target_of(class);
+                    let mut others: Vec<(BasicBlock, Vec<VariantIdx>)> = Vec::new();
+                    for variant in adt.variants().indices().filter(|&v| v != class) {
+                        let target = target_of(variant);
+                        if !reached(target) || target == last {
+                            continue;
+                        }
+                        match others.iter_mut().find(|(b, _)| *b == target) {
+                            Some((_, variants)) => variants.push(variant),
+                            None => others.push((target, vec![variant])),
+                        }
+                    }
+                    // In the order the program wrote their arms.
+                    others.sort_by_key(|&(b, _)| written_at(state.body, b));
+                    grouped = (others.into_iter())
+                        .map(|(target, variants)| {
+                            let test =
+                                self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, &variants, &[], *present);
+                            (test, target, Vec::new())
+                        })
+                        .collect();
+                    otherwise = Some(last).filter(|&b| reached(b));
+                }
                 let mut cases: Vec<(Expr, BasicBlock)> =
                     grouped.into_iter().map(|(test, target, _)| (test, target)).collect();
                 // Each case tested, an enum's `match`'s: its arms in the order

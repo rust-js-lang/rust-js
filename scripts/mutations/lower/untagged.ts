@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "lone-class-tested",
+    breaks:
+      "a form entry's `File | string` tests its class first, `entry instanceof File`, which throws a ReferenceError where the host has no `File` global (rd506's audit)",
+    file: "src/lower/untagged.rs",
+    find: "                Kind::Class(..) if class.is_none() => class = Some(index),\n",
+    replace: "                Kind::Class(..) => return None,\n",
+    tests: ["test/webapi-objects.test.ts", "-t", "one class"],
+  },
+  {
     name: "untagged-class-a-tuple",
     breaks:
       "an untagged enum's `js::Class` variant is tested `Array.isArray(value)`, as a tuple struct, so a class given is no `Class` (#303)",
