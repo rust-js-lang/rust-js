@@ -920,6 +920,13 @@ export async function open(other) {
   TypeScript's `any`, is an `Option<&dyn IntoUnknown>`, given as it is:
   `ErrorEventInit { error: Some(&error), .. }` is `{ error }`
   ([ADR 0654](../../decisions/0654-a-dictionary-member-of-any-value-is-a-dyn-into-unknown.md)).
+- **A record is what vouches it's one**, TypeScript's `Record<string, V>`:
+  a `js::Dict<V>`, or a struct of `V`s or `Option`s of them, `unsafe impl
+  Record for HeadersDescriptor { type Value = String; }`, so
+  `headers::new(Some(&descriptor))` is `new Headers(descriptor)`. Each
+  `None` is written `None` where the struct is made, so it's left out: a
+  record reads one a variable holds, `undefined`, as `"undefined"`
+  ([ADR 0102](../../decisions/0102-js-and-webapi.md), amended).
 - **A stream's source is TypeScript's**, where WebIDL's constructor takes an
   `object`: `readable_stream::new(Some(&UnderlyingByteSource { r#type: "bytes",
   pull: Some(&|controller| ..), cancel: Some(&|reason| ..), .. }), ..)` is

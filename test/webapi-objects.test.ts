@@ -185,3 +185,44 @@ pub fn cancelled() -> bool {
   expect((await lib.values().getReader().read()).done).toBe(true);
 });
 
+// rd453: a record a binding takes, TypeScript's \`Record<string, V>\`, is
+// what vouches it's one, a \`Dict<V>\` or a struct of \`Option<V>\`s each
+// \`None\` of which is written \`None\`, so it's left out: React's
+// Fizz \`new Headers(headersDescriptor)\` of its \`{ Link }\`, a
+// \`HeadersInit\`'s record member, which webapi left out.
+test("a struct that vouches it's a record is one, new Headers(descriptor)", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-record");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{Headers, Record, URLSearchParams, headers, url_search_params};
+
+pub struct HeadersDescriptor {
+    #[cfg_attr(rust_js, rust_js::name = "Link")]
+    pub link: Option<String>,
+}
+
+unsafe impl Record for HeadersDescriptor {
+    type Value = String;
+}
+
+pub fn linked(link: Option<String>) -> &'static Headers {
+    let descriptor = match link {
+        Some(link) => HeadersDescriptor { link: Some(link) },
+        None => HeadersDescriptor { link: None },
+    };
+    headers::new(Some(&descriptor))
+}
+
+pub fn query(params: &js::Dict<String>) -> &'static URLSearchParams {
+    url_search_params::new(Some(params))
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return new Headers(descriptor);");
+  expect(js).toContain("return new URLSearchParams(params);");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.linked("</a.css>; rel=preload").get("link")).toBe("</a.css>; rel=preload");
+  expect([...lib.linked(undefined).keys()]).toEqual([]);
+  expect(lib.query({ q: "x", n: "1" }).toString()).toBe("q=x&n=1");
+});
+

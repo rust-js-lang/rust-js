@@ -27416,7 +27416,7 @@ pub mod headers {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/Headers)
     #[cfg_attr(rust_js, rust_js::link_name = "new Headers")]
-    pub fn new(init: Option<&[&[String]]>) -> &'static Headers {
+    pub fn new(init: Option<&dyn IntoHeadersInit>) -> &'static Headers {
         unreachable!()
     }
 
@@ -29121,6 +29121,13 @@ impl PartialEq for ClipboardItem {
 impl Eq for ClipboardItem {}
 
 pub mod clipboard_item {
+    use super::*;
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ClipboardItem/ClipboardItem)
+    #[cfg_attr(rust_js, rust_js::link_name = "new ClipboardItem")]
+    pub fn new(items: &dyn Record<Value = Promise<StrOrBlob<'static>>>, options: Option<ClipboardItemOptions<'_>>) -> &'static ClipboardItem {
+        unreachable!()
+    }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ClipboardItem/supports)
     #[cfg_attr(rust_js, rust_js::link_name = "ClipboardItem.supports")]
@@ -71815,7 +71822,7 @@ pub mod url_search_params {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/URLSearchParams)
     #[cfg_attr(rust_js, rust_js::link_name = "new URLSearchParams")]
-    pub fn new(init: Option<&dyn IntoListOrStr>) -> &'static URLSearchParams {
+    pub fn new(init: Option<&dyn IntoListOrRecordOrStr>) -> &'static URLSearchParams {
         unreachable!()
     }
 
@@ -80710,7 +80717,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/Headers)
     /// `new window.Headers(..)`: this window's class, which is [`headers::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new Headers")]
-    pub fn new_headers(&self, init: Option<&[&[String]]>) -> &'static Headers {
+    pub fn new_headers(&self, init: Option<&dyn IntoHeadersInit>) -> &'static Headers {
         unreachable!()
     }
 
@@ -80802,6 +80809,13 @@ impl Window {
     /// `new window.URL(..)`: this window's class, which is [`url::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new URL")]
     pub fn new_url(&self, url: &str, base: Option<&str>) -> &'static URL {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ClipboardItem/ClipboardItem)
+    /// `new window.ClipboardItem(..)`: this window's class, which is [`clipboard_item::new`]'s only where the window is the global object.
+    #[cfg_attr(rust_js, rust_js::link_name = "new ClipboardItem")]
+    pub fn new_clipboard_item(&self, items: &dyn Record<Value = Promise<StrOrBlob<'static>>>, options: Option<ClipboardItemOptions<'_>>) -> &'static ClipboardItem {
         unreachable!()
     }
 
@@ -81955,7 +81969,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/URLSearchParams)
     /// `new window.URLSearchParams(..)`: this window's class, which is [`url_search_params::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new URLSearchParams")]
-    pub fn new_url_search_params(&self, init: Option<&dyn IntoListOrStr>) -> &'static URLSearchParams {
+    pub fn new_url_search_params(&self, init: Option<&dyn IntoListOrRecordOrStr>) -> &'static URLSearchParams {
         unreachable!()
     }
 
@@ -84426,6 +84440,7 @@ pub struct AudioWorkletNodeOptions<'a> {
     pub number_of_inputs: Option<f64>,
     pub number_of_outputs: Option<f64>,
     pub output_channel_count: Option<&'a [f64]>,
+    pub parameter_data: Option<&'a dyn Record<Value = f64>>,
 }
 
 unsafe impl Defined for AudioWorkletNodeOptions<'_> {}
@@ -84455,6 +84470,7 @@ unsafe impl Defined for AuthenticationExtensionsLargeBlobInputsJSON<'_> {}
 #[derive(Clone, Copy, Default)]
 pub struct AuthenticationExtensionsPRFInputsJSON<'a> {
     pub eval: Option<AuthenticationExtensionsPRFValuesJSON<'a>>,
+    pub eval_by_credential: Option<&'a dyn Record<Value = AuthenticationExtensionsPRFValuesJSON<'a>>>,
 }
 
 unsafe impl Defined for AuthenticationExtensionsPRFInputsJSON<'_> {}
@@ -84587,6 +84603,14 @@ pub struct ClipboardEventInit<'a> {
 }
 
 unsafe impl Defined for ClipboardEventInit<'_> {}
+
+/// The [`ClipboardItemOptions`](https://developer.mozilla.org/docs/Web/API/ClipboardItemOptions) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy, Default)]
+pub struct ClipboardItemOptions<'a> {
+    pub presentation_style: Option<&'a str>,
+}
+
+unsafe impl Defined for ClipboardItemOptions<'_> {}
 
 /// The [`ClipboardUnsanitizedFormats`](https://developer.mozilla.org/docs/Web/API/ClipboardUnsanitizedFormats) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Clone, Copy, Default)]
@@ -85524,6 +85548,7 @@ unsafe impl Defined for GPUDepthStencilState<'_> {}
 pub struct GPUDeviceDescriptor<'a> {
     pub label: Option<&'a str>,
     pub required_features: Option<&'a [String]>,
+    pub required_limits: Option<&'a dyn Record<Value = f64>>,
     pub default_queue: Option<GPUQueueDescriptor<'a>>,
 }
 
@@ -85554,6 +85579,7 @@ unsafe impl Defined for GPUExternalTextureDescriptor<'_> {}
 pub struct GPUFragmentState<'a> {
     pub module: &'a GPUShaderModule,
     pub entry_point: Option<&'a str>,
+    pub constants: Option<&'a dyn Record<Value = f64>>,
     pub targets: &'a [GPUColorTargetState<'a>],
 }
 
@@ -85615,6 +85641,7 @@ unsafe impl Defined for GPUPrimitiveState<'_> {}
 pub struct GPUProgrammableStage<'a> {
     pub module: &'a GPUShaderModule,
     pub entry_point: Option<&'a str>,
+    pub constants: Option<&'a dyn Record<Value = f64>>,
 }
 
 unsafe impl Defined for GPUProgrammableStage<'_> {}
@@ -85912,6 +85939,7 @@ unsafe impl Defined for GPUVertexBufferLayout<'_> {}
 pub struct GPUVertexState<'a> {
     pub module: &'a GPUShaderModule,
     pub entry_point: Option<&'a str>,
+    pub constants: Option<&'a dyn Record<Value = f64>>,
     pub buffers: Option<&'a [GPUVertexBufferLayout<'a>]>,
 }
 
@@ -87104,7 +87132,7 @@ unsafe impl Defined for ResizeObserverOptions<'_> {}
 pub struct ResponseInit<'a> {
     pub status: Option<f64>,
     pub status_text: Option<&'a str>,
-    pub headers: Option<&'a [&'a [String]]>,
+    pub headers: Option<HeadersInit<'a>>,
 }
 
 unsafe impl Defined for ResponseInit<'_> {}
@@ -87943,7 +87971,7 @@ unsafe impl Defined for WebTransportHash<'_> {}
 pub struct WebTransportOptions<'a> {
     pub allow_pooling: Option<bool>,
     pub require_unreliable: Option<bool>,
-    pub headers: Option<&'a [&'a [String]]>,
+    pub headers: Option<HeadersInit<'a>>,
     pub server_certificate_hashes: Option<&'a [WebTransportHash<'a>]>,
     pub congestion_control: Option<&'a str>,
     pub anticipated_concurrent_incoming_unidirectional_streams: Option<f64>,
@@ -88085,6 +88113,20 @@ unsafe impl Defined for UnderlyingDefaultSource<'_> {}
 pub trait IntoUnderlyingSource {}
 impl IntoUnderlyingSource for UnderlyingByteSource<'_> {}
 impl IntoUnderlyingSource for UnderlyingDefaultSource<'_> {}
+
+/// TypeScript's `Record<string, V>`: a JS object each of whose own properties is a `Value`, as a
+/// `Headers`' and a `URLSearchParams`' init is. A [`js::Dict`] is one, and a struct of `Value`s or
+/// of `Option`s of them vouches it is, `unsafe impl Record for HeadersDescriptor { type Value =
+/// String; }`, `new Headers(headersDescriptor)` (rd453). Unsafe, as what implements it says what
+/// JS reads of it: each `None` is written `None` where the struct is made, so it's left out (ADR
+/// 0280); one a variable holds is `undefined`, which a record reads as the text `"undefined"`.
+pub unsafe trait Record {
+    type Value;
+}
+
+unsafe impl<V> Record for js::Dict<V> {
+    type Value = V;
+}
 
 /// `AddEventListenerOptions | boolean`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
@@ -88567,6 +88609,7 @@ impl IntoBlobPart for &File {}
 impl IntoBlobPart for &str {}
 impl IntoBlobPart for BlobPart<'_> {}
 impl IntoBlobPart for FormDataEntryValue<'_> {}
+impl IntoBlobPart for StrOrBlob<'_> {}
 impl IntoBlobPart for ArrayBufferView<'_> {}
 impl IntoBlobPart for StrOrArrayBuffer<'_> {}
 impl IntoBlobPart for BufferSourceOrBlobOrStr<'_> {}
@@ -88798,6 +88841,7 @@ impl IntoBodyInit for &str {}
 impl IntoBodyInit for BodyInit<'_> {}
 impl IntoBodyInit for FormDataEntryValue<'_> {}
 impl IntoBodyInit for BlobPart<'_> {}
+impl IntoBodyInit for StrOrBlob<'_> {}
 impl IntoBodyInit for ArrayBufferView<'_> {}
 impl IntoBodyInit for FileOrStrOrFormData<'_> {}
 impl IntoBodyInit for StrOrArrayBuffer<'_> {}
@@ -89292,6 +89336,7 @@ impl IntoBufferSourceOrBlobOrStr for &str {}
 impl IntoBufferSourceOrBlobOrStr for BufferSourceOrBlobOrStr<'_> {}
 impl IntoBufferSourceOrBlobOrStr for FormDataEntryValue<'_> {}
 impl IntoBufferSourceOrBlobOrStr for BlobPart<'_> {}
+impl IntoBufferSourceOrBlobOrStr for StrOrBlob<'_> {}
 impl IntoBufferSourceOrBlobOrStr for ArrayBufferView<'_> {}
 impl IntoBufferSourceOrBlobOrStr for StrOrArrayBuffer<'_> {}
 impl IntoBufferSourceOrBlobOrStr for StrOrBufferSource<'_> {}
@@ -90329,6 +90374,7 @@ impl IntoDocumentOrXMLHttpRequestBodyInit for &str {}
 impl IntoDocumentOrXMLHttpRequestBodyInit for DocumentOrXMLHttpRequestBodyInit<'_> {}
 impl IntoDocumentOrXMLHttpRequestBodyInit for FormDataEntryValue<'_> {}
 impl IntoDocumentOrXMLHttpRequestBodyInit for BlobPart<'_> {}
+impl IntoDocumentOrXMLHttpRequestBodyInit for StrOrBlob<'_> {}
 impl IntoDocumentOrXMLHttpRequestBodyInit for ArrayBufferView<'_> {}
 impl IntoDocumentOrXMLHttpRequestBodyInit for FileOrStrOrFormData<'_> {}
 impl IntoDocumentOrXMLHttpRequestBodyInit for StrOrArrayBuffer<'_> {}
@@ -94268,6 +94314,7 @@ impl IntoFileSystemWriteChunkType for WriteParams<'_> {}
 impl IntoFileSystemWriteChunkType for FileSystemWriteChunkType<'_> {}
 impl IntoFileSystemWriteChunkType for FormDataEntryValue<'_> {}
 impl IntoFileSystemWriteChunkType for BlobPart<'_> {}
+impl IntoFileSystemWriteChunkType for StrOrBlob<'_> {}
 impl IntoFileSystemWriteChunkType for ArrayBufferView<'_> {}
 impl IntoFileSystemWriteChunkType for StrOrArrayBuffer<'_> {}
 impl IntoFileSystemWriteChunkType for BufferSourceOrBlobOrStr<'_> {}
@@ -95820,6 +95867,45 @@ impl<'a> GPUTextureOrGPUTextureView<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
     pub fn of(this: impl IntoGPUTextureOrGPUTextureView + 'a) -> GPUTextureOrGPUTextureView<'a> {
+        unreachable!()
+    }
+}
+
+/// `HeadersInit`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
+pub enum HeadersInit<'a> {
+    List(&'a [&'a [String]]),
+    Record(&'a dyn Record<Value = String>),
+}
+
+impl<'a> From<&'a [&'a [String]]> for HeadersInit<'a> {
+    fn from(value: &'a [&'a [String]]) -> Self {
+        HeadersInit::List(value)
+    }
+}
+
+impl<'a, R: Record<Value = String>> From<&'a R> for HeadersInit<'a> {
+    fn from(value: &'a R) -> Self {
+        HeadersInit::Record(value)
+    }
+}
+
+/// What a `HeadersInit` parameter takes: each member as it is, and the enum (ADR 0229);
+/// an optional one, `Option<&dyn IntoHeadersInit>`, each borrowed, `Some(&value)` (ADR 0443).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `HeadersInit`", note = "an optional one, `Option<&dyn IntoHeadersInit>`, takes `Some(&value)`")]
+#[cfg_attr(rust_js, rust_js::types = "HeadersInit")]
+pub trait IntoHeadersInit: sealed::Sealed {}
+impl IntoHeadersInit for &[&[String]] {}
+impl IntoHeadersInit for HeadersInit<'_> {}
+impl<R: Record<Value = String>> IntoHeadersInit for R {}
+/// A rest parameter of `HeadersInit`s takes each member (ADR 0640).
+impl<A: IntoHeadersInit> Takes<A> for dyn IntoHeadersInit {}
+
+impl<'a> HeadersInit<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    pub fn of(this: impl IntoHeadersInit + 'a) -> HeadersInit<'a> {
         unreachable!()
     }
 }
@@ -98015,41 +98101,49 @@ impl<'a> LineAndPositionSetting<'a> {
     }
 }
 
-/// `List | string`: each variant's value is the member itself (ADR 0215).
+/// `List | Record<string, String> | string`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 #[derive(Clone, Copy)]
-pub enum ListOrStr<'a> {
+pub enum ListOrRecordOrStr<'a> {
     List(&'a [&'a [String]]),
+    Record(&'a dyn Record<Value = String>),
     Str(&'a str),
 }
 
-impl<'a> From<&'a [&'a [String]]> for ListOrStr<'a> {
+impl<'a> From<&'a [&'a [String]]> for ListOrRecordOrStr<'a> {
     fn from(value: &'a [&'a [String]]) -> Self {
-        ListOrStr::List(value)
+        ListOrRecordOrStr::List(value)
     }
 }
 
-impl<'a> From<&'a str> for ListOrStr<'a> {
+impl<'a, R: Record<Value = String>> From<&'a R> for ListOrRecordOrStr<'a> {
+    fn from(value: &'a R) -> Self {
+        ListOrRecordOrStr::Record(value)
+    }
+}
+
+impl<'a> From<&'a str> for ListOrRecordOrStr<'a> {
     fn from(value: &'a str) -> Self {
-        ListOrStr::Str(value)
+        ListOrRecordOrStr::Str(value)
     }
 }
 
-/// What a `List | string` parameter takes: each member as it is, and the enum (ADR 0229);
-/// an optional one, `Option<&dyn IntoListOrStr>`, each borrowed, `Some(&value)` (ADR 0443).
-#[diagnostic::on_unimplemented(message = "`{Self}` is not a `List | string`", note = "an optional one, `Option<&dyn IntoListOrStr>`, takes `Some(&value)`")]
-#[cfg_attr(rust_js, rust_js::types = "List | string")]
-pub trait IntoListOrStr: sealed::Sealed {}
-impl IntoListOrStr for &[&[String]] {}
-impl IntoListOrStr for &str {}
-impl IntoListOrStr for ListOrStr<'_> {}
-/// A rest parameter of `List | string`s takes each member (ADR 0640).
-impl<A: IntoListOrStr> Takes<A> for dyn IntoListOrStr {}
+/// What a `List | Record<string, String> | string` parameter takes: each member as it is, and the enum (ADR 0229);
+/// an optional one, `Option<&dyn IntoListOrRecordOrStr>`, each borrowed, `Some(&value)` (ADR 0443).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `List | Record<string, String> | string`", note = "an optional one, `Option<&dyn IntoListOrRecordOrStr>`, takes `Some(&value)`")]
+#[cfg_attr(rust_js, rust_js::types = "List | Record<string, String> | string")]
+pub trait IntoListOrRecordOrStr: sealed::Sealed {}
+impl IntoListOrRecordOrStr for &[&[String]] {}
+impl IntoListOrRecordOrStr for &str {}
+impl IntoListOrRecordOrStr for ListOrRecordOrStr<'_> {}
+impl<R: Record<Value = String>> IntoListOrRecordOrStr for R {}
+/// A rest parameter of `List | Record<string, String> | string`s takes each member (ADR 0640).
+impl<A: IntoListOrRecordOrStr> Takes<A> for dyn IntoListOrRecordOrStr {}
 
-impl<'a> ListOrStr<'a> {
+impl<'a> ListOrRecordOrStr<'a> {
     /// The member a parameter was given, as its enum, to `match`: the value itself.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
-    pub fn of(this: impl IntoListOrStr + 'a) -> ListOrStr<'a> {
+    pub fn of(this: impl IntoListOrRecordOrStr + 'a) -> ListOrRecordOrStr<'a> {
         unreachable!()
     }
 }
@@ -101356,6 +101450,53 @@ impl<'a> StrOrAudioSinkOptions<'a> {
     }
 }
 
+/// `string | Blob`: each variant's value is the member itself (ADR 0215).
+#[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy)]
+pub enum StrOrBlob<'a> {
+    Str(&'a str),
+    Blob(&'a Blob),
+}
+
+impl<'a> From<&'a str> for StrOrBlob<'a> {
+    fn from(value: &'a str) -> Self {
+        StrOrBlob::Str(value)
+    }
+}
+
+impl<'a> From<&'a Blob> for StrOrBlob<'a> {
+    fn from(value: &'a Blob) -> Self {
+        StrOrBlob::Blob(value)
+    }
+}
+
+impl<'a> From<&'a File> for StrOrBlob<'a> {
+    fn from(value: &'a File) -> Self {
+        StrOrBlob::Blob(value)
+    }
+}
+
+/// What a `string | Blob` parameter takes: each member as it is, and the enum (ADR 0229);
+/// an optional one, `Option<&dyn IntoStrOrBlob>`, each borrowed, `Some(&value)` (ADR 0443).
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `string | Blob`", note = "an optional one, `Option<&dyn IntoStrOrBlob>`, takes `Some(&value)`")]
+#[cfg_attr(rust_js, rust_js::types = "string | Blob")]
+pub trait IntoStrOrBlob: sealed::Sealed {}
+impl IntoStrOrBlob for &str {}
+impl IntoStrOrBlob for &Blob {}
+impl IntoStrOrBlob for &File {}
+impl IntoStrOrBlob for StrOrBlob<'_> {}
+impl IntoStrOrBlob for FormDataEntryValue<'_> {}
+/// A rest parameter of `string | Blob`s takes each member (ADR 0640).
+impl<A: IntoStrOrBlob> Takes<A> for dyn IntoStrOrBlob {}
+
+impl<'a> StrOrBlob<'a> {
+    /// The member a parameter was given, as its enum, to `match`: the value itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    pub fn of(this: impl IntoStrOrBlob + 'a) -> StrOrBlob<'a> {
+        unreachable!()
+    }
+}
+
 /// `string | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer`: each variant's value is the member itself (ADR 0215).
 #[cfg_attr(rust_js, rust_js::untagged)]
 #[derive(Clone, Copy)]
@@ -102615,6 +102756,7 @@ mod sealed {
     impl Sealed for HTMLOptionElementOrHTMLOptGroupElement<'_> {}
     impl Sealed for HTMLOrSVGScriptElement<'_> {}
     impl Sealed for HTMLVideoElementOrVideoFrame<'_> {}
+    impl Sealed for HeadersInit<'_> {}
     impl Sealed for IDBObjectStoreOrIDBIndex<'_> {}
     impl Sealed for IDBObjectStoreOrIDBIndexOrIDBCursor<'_> {}
     impl Sealed for ImageBitmapSource<'_> {}
@@ -102625,7 +102767,7 @@ mod sealed {
     impl Sealed for KeyframeAnimationOptions<'_> {}
     impl Sealed for KeyframeEffectOptions<'_> {}
     impl Sealed for LineAndPositionSetting<'_> {}
-    impl Sealed for ListOrStr<'_> {}
+    impl Sealed for ListOrRecordOrStr<'_> {}
     impl Sealed for MediaListOrStr<'_> {}
     impl Sealed for MediaProvider<'_> {}
     impl Sealed for MediaStreamTrackOrStr<'_> {}
@@ -102661,6 +102803,7 @@ mod sealed {
     impl Sealed for SharedWorkerOptions<'_> {}
     impl Sealed for StrOrArrayBuffer<'_> {}
     impl Sealed for StrOrAudioSinkOptions<'_> {}
+    impl Sealed for StrOrBlob<'_> {}
     impl Sealed for StrOrBufferSource<'_> {}
     impl Sealed for StrOrCanvasGradientOrCanvasPattern<'_> {}
     impl Sealed for StrOrElementCreationOptions<'_> {}
@@ -102683,6 +102826,7 @@ mod sealed {
     impl Sealed for WriteParams<'_> {}
     impl Sealed for bool {}
     impl Sealed for f64 {}
+    impl<R: Record> Sealed for R {}
 }
 
 /// What an event of a name is on a target, from `@webref/events` (ADR 0223):

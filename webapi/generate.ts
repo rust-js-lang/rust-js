@@ -219,6 +219,22 @@ const TYPES_BY_HAND: Record<string, string[]> = {
 // the trait the constructor takes either by, as a union's is (ADR 0229).
 // React's Fizz `new ReadableStream({ type: 'bytes', pull, cancel }, ..)`
 // (rd452, the user's decision).
+const RECORD_BY_HAND = [
+  "/// TypeScript's `Record<string, V>`: a JS object each of whose own properties is a `Value`, as a",
+  "/// `Headers`' and a `URLSearchParams`' init is. A [`js::Dict`] is one, and a struct of `Value`s or",
+  "/// of `Option`s of them vouches it is, `unsafe impl Record for HeadersDescriptor { type Value =",
+  "/// String; }`, `new Headers(headersDescriptor)` (rd453). Unsafe, as what implements it says what",
+  "/// JS reads of it: each `None` is written `None` where the struct is made, so it's left out (ADR",
+  "/// 0280); one a variable holds is `undefined`, which a record reads as the text `\"undefined\"`.",
+  "pub unsafe trait Record {",
+  "    type Value;",
+  "}",
+  "",
+  "unsafe impl<V> Record for js::Dict<V> {",
+  "    type Value = V;",
+  "}",
+].join("\n");
+
 const SOURCES_BY_HAND = [
   "/// TypeScript's [`UnderlyingByteSource`](https://developer.mozilla.org/docs/Web/API/ReadableStream/ReadableStream#underlyingsource):",
   "/// what a byte stream reads from, its `type` `\"bytes\"`, each of its functions given the stream's",
@@ -690,6 +706,13 @@ function rustType(t: IdlType, at: Position): string | { skip: string } {
     const each = inner.nullable ? `Option<${item}>` : item;
     return t.generic === "sequence" ? `Vec<${each}>` : `&'static [${each}]`;
   }
+  // A record a function takes, TypeScript's `Record<string, V>`: what
+  // vouches it's a JS object of `V`s, a `Dict<V>` or a struct of them
+  // (\`Record\`, rd453).
+  if (t.generic === "record" && at === "param") {
+    const value = paramType((t.idlType as IdlType[])[1]);
+    return value ? `&dyn Record<Value = ${value === "&str" ? "String" : value}>` : { skip: t.generic };
+  }
   if (t.generic) return { skip: t.generic };
   const name = t.idlType as string;
   const aliased = typedefs.get(name);
@@ -914,6 +937,8 @@ function variantName(rust: string): string {
   if (kind === "number") return "Number";
   if (kind === "function") return promisedOf(rust) ?? "Listener";
   if (kind === "array") return "List";
+  // A record, what vouches it's one (rd453).
+  if (/^&('a )?dyn Record</.test(rust)) return "Record";
   return rust.replace(/^&/, "").replace(/<.*$/, "");
 }
 
@@ -922,6 +947,8 @@ function tsName(rust: string): string {
   const kind = kindOf(rust);
   if (kind === "string" || kind === "boolean" || kind === "number") return kind;
   if (kind === "function") return promisedOf(rust) ?? "EventListener";
+  const record = /dyn Record<Value = (.*)>$/.exec(rust);
+  if (record) return `Record<string, ${tsName(record[1])}>`;
   const name = variantName(rust);
   const idl = INTERFACES.find((n) => typeName(n) === name);
   return idl ? jsName(interfaces.get(idl)!) : name;
@@ -2508,6 +2535,8 @@ for (const [name, { fields, borrows }] of [...paramDictionaries].sort(([a], [b])
 
 line();
 line(SOURCES_BY_HAND);
+line();
+line(RECORD_BY_HAND);
 
 // The unions functions take (ADR 0215): untagged enums, each value the
 // member itself, as TypeScript's union is (ADR 0214). Each member converts
@@ -2521,6 +2550,8 @@ const ancestors = (name: string): string[] => {
 // the enum, which a function's parameter of it takes (ADR 0229): each the
 // value itself. Sealed, by a trait each of them has once.
 const sealed = new Set<string>();
+/** Each union's record member, of the type of its values (rd453). */
+const records: { union: string; value: string }[] = [];
 const promisedUnions = new Map<string, { generics: string; type: string }[]>();
 /** Whether a union holds a callback of a result JS resolves, sealed by a trait of its own. */
 const promisedUnionsOf = (union: Union) => union.variants.some((v) => promisedOf(v.type) !== undefined);
@@ -2539,6 +2570,19 @@ for (const union of [...unions.values()].sort((a, b) => a.name.localeCompare(b.n
   for (const v of union.variants) {
     const own = INTERFACES.find((n) => typeName(n) === v.name);
     const extending = own ? INTERFACES.filter((n) => n !== own && ancestors(n).find((a) => classes.has(a)) === own) : [];
+    // A record member is each type that vouches it's one, the object
+    // itself (\`Record\`, rd453).
+    const record = /dyn Record<Value = (.*)>$/.exec(v.type);
+    if (record) {
+      records.push({ union: union.name, value: record[1] });
+      line();
+      line(`impl<'a, R: Record<Value = ${record[1]}>> From<&'a R> for ${union.name}${lifetime} {`);
+      line(`    fn from(value: &'a R) -> Self {`);
+      line(`        ${union.name}::${v.name}(value)`);
+      line(`    }`);
+      line(`}`);
+      continue;
+    }
     for (const from of [v.type, ...extending.map((n) => `&'a ${typeName(n)}`)]) {
       members.push(elided(from));
       line();
@@ -2581,6 +2625,9 @@ for (const union of [...unions.values()].sort((a, b) => a.name.localeCompare(b.n
     for (const member of [...members, own]) {
       line(`impl Into${union.name} for ${member} {}`);
       sealed.add(member);
+    }
+    for (const { value } of records.filter((r) => r.union === union.name)) {
+      line(`impl<R: Record<Value = ${value}>> Into${union.name} for R {}`);
     }
     // A union whose each member is one of this one's is one too, as
     // TypeScript's is: an `AddEventListenerOptions | boolean` an
@@ -2636,6 +2683,7 @@ line(`    use super::*;`);
 line();
 line(`    pub trait Sealed {}`);
 for (const member of [...sealed].sort()) line(`    impl Sealed for ${member} {}`);
+if (records.length > 0) line(`    impl<R: Record> Sealed for R {}`);
 line(`}`);
 
 

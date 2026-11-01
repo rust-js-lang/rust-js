@@ -256,3 +256,24 @@ doesn't write (the user's decision). Case
 ([0262](0262-when-rust-and-js-disagree.md)): N. Held by
 `test/webapi-objects.test.ts` ("a byte stream reads from its byte
 source's pull").
+
+## Amended (2026-11-01): a record is what vouches it's one (rd453)
+
+WebIDL's `record<K, V>`, TypeScript's `Record<string, V>`, wasn't bound.
+A union with a record member left that member out: `HeadersInit` was its
+sequence alone, `headers::new(Option<&[&[String]]>)`, and a parameter or
+field of a record was skipped. React's Fizz writes `new
+Headers(headersDescriptor)` of its `{ Link }`. **A record is `&dyn Record<Value
+= V>`, of webapi's unsafe `Record` trait: a `js::Dict<V>` is one, and a
+struct of `V`s or of `Option`s of them vouches it is, `unsafe impl Record for
+HeadersDescriptor { type Value = String; }`. A union's record member takes
+each of them, `IntoHeadersInit` of a `T: Record<Value = String>`.** It's
+unsafe because what implements it says what JS reads of it. Each `None` is
+written `None` where the struct is made, so it's left out (ADR 0280). One a
+variable holds is `undefined`, and a record reads that as the text
+`"undefined"`. The trait is webapi's own, so its blanket impls stand beside
+each union's other members: no other crate may implement it for a type
+that's one. Records elsewhere are bound now too: `ClipboardItem`'s items and
+WebGPU's `constants`. Case ([0262](0262-when-rust-and-js-disagree.md)): N.
+Held by `test/webapi-objects.test.ts` ("a struct that vouches it's a
+record is one, new Headers(descriptor)").
