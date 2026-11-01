@@ -119,8 +119,8 @@ pub fn caused(errors: &[Option<&Unknown>], cause: &Unknown) -> &'static Aggregat
     aggregate_error::new(errors, Some("several"), Some(&ErrorOptions { cause: Some(cause) }))
 }
 
-pub fn bound_error(message: &str, cause: &'static Unknown) -> &'static dyn Fn() -> &'static Error {
-    function::bind(error::new, Some(&Kind::Null), (message.to_string(), Some(ErrorOptions { cause: Some(cause) })))
+pub fn bound_error(message: &'static str, cause: &'static Unknown) -> &'static dyn Fn() -> &'static Error {
+    function::bind(error::new, Some(&Kind::Null), (Some(message), Some(ErrorOptions { cause: Some(cause) })))
 }
 `,
   );
