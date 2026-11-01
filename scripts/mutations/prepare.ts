@@ -833,4 +833,12 @@ export const mutations: Mutation[] = [
       "a closure a symbol names is its method"
     ]
   },
+  {
+    name: "set-where-made-never",
+    breaks: "React's throwAndUnwindWorkLoop is `const didFatal$1 = throwException(..); .. didFatal = didFatal$1;` in its `try`, not `didFatal = throwException(..)` (rd534)",
+    file: "src/prepare.rs",
+    find: "    js::tried_set_where_made(body);\n",
+    replace: "",
+    tests: ["test/lowering-unwind-arms.test.ts", "-t", "sets its variable where"],
+  },
 ];

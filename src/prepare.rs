@@ -761,6 +761,7 @@ fn function_body(params: &mut [js::Pattern], body: &mut Vec<Stmt>) {
 /// Of `body`, which `ends` a function, its end a return, or doesn't.
 fn block(body: &mut Vec<Stmt>, ends: bool) {
     catches::try_catches(body, ends);
+    js::tried_set_where_made(body);
     left_out(body);
     for stmt in body.iter_mut() {
         if let Some(coalesced) = coalescing(stmt) {

@@ -16,7 +16,10 @@ declares, with no `let` before the `try`; and below (rd550): the payload
 is made where the `catch` first reads it, and resumed as what was thrown
 where nothing writes through it, as lowering says, not where it's only
 read as JS shows; and below (rd551): the `catch`'s binding is given apart
-from a `thrown` of the program's, which no longer keeps the helper.
+from a `thrown` of the program's, which no longer keeps the helper; and
+below (rd534): a closure's value a `try` keeps in a variable declared
+just before it sets the variable where the value is made, where nothing
+could see it set early.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A where what's read is
 the same value, `$unwinding($unwound(e))` being `e`; for `new Error()`,
@@ -441,3 +444,76 @@ after; `let_else_returns_in_arms` and
 are `try`s. Mutations `thrown-shadowed`, `tail-try-return-kept`
 (`prepare/catches.rs`), `tried-assigned-kept-applied`,
 `tried-kept-where-made` (`js/applied.rs`).
+
+## Amendment (2026-11-02): a closure's value a `try` keeps sets its variable where it's made (rd534)
+
+Since rd551 a closure of statements whose value an arm keeps in a
+variable is the closure's statements in the `try`, then `v = value;`.
+React's throwAndUnwindWorkLoop made its value a `let` of its own:
+
+```rust
+let did_fatal = match catch_unwind(AssertUnwindSafe(|| {
+    let did_fatal = throw_exception(root, ..);
+    if did_fatal {
+        panic_on_root_error(root, thrown_value);
+    }
+    did_fatal
+})) {
+    Ok(did_fatal) => did_fatal,
+    Err(error) => { .. resume_unwind(error) .. return; }
+};
+```
+
+which printed `let didFatal; try { const didFatal$1 = throwException(..);
+if (didFatal$1) { panicOnRootError(..); } didFatal = didFatal$1; }`, a copy
+of its own, where upstream writes `didFatal = throwException(..)`.
+
+**The variable is set where the value is made**, `didFatal =
+throwException(..); if (didFatal) { .. }`, the value's reads its reads,
+where that's the same program (`js::tried_set_where_made`, run by
+`prepare`'s blocks after their `try`s are made), each of these holding:
+
+- **The variable is declared just before the `try`**, a `let` with
+  nothing but `let`s after it: it's of the `try`'s block, and nothing
+  made before, a closure, sees it.
+- **What follows the value in the `try` never names the variable**, so
+  reads none of it set early, and **reads the value in no closure**,
+  `() => next`, which may run once the variable changes after.
+- **Where what follows may throw, nothing sees the variable set early**:
+  the `catch` never names it and never goes on, so leaves the block it's
+  of, by a `return`, a `throw` or a `break`; or it sets it before it
+  names it, `catch { value = 100; }`. A `catch` that goes on to what
+  reads it, `catch { note(6); } return done;`, reads it before it sets
+  it, or reads it as it leaves, `return done + 20;`, keeps the copy, so
+  sees the variable as it was. So does a variable declared outside a
+  loop whose `catch` breaks to what reads it.
+- **No function the block declares names it**, which runs where it's
+  called.
+
+An arm's own binding of the value, `const found = found$1; done =
+found;`, is a copy too, set where it's made in turn. A comment before the
+closure's value, `// What it found.`, stays where it was, after what
+follows the value, a `StmtKind::Comments` where the `v = value;` was.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The same program:
+the value is the variable's from where it's made, where nothing reads
+either apart from the other, and nothing sees the variable before the
+`try` would have set it.
+
+Held by `test/lowering-unwind-arms.test.ts`, "a closure's value a try
+keeps sets its variable where it's made", run in Node:
+throwAndUnwindWorkLoop's shape, its `panicOnRootError` throwing, and a
+variable with a value whose `catch` goes on, which keeps the copy.
+Corpus case `catch_unwind_value_set_where_made` against native Rust:
+throwAndUnwindWorkLoop's shape, its `catch` resuming or returning, with
+a comment before the value; a `catch` that sets the variable; and the
+shapes that keep the copy, each printing another answer where it's set
+early: a `catch` that reads the variable, as it leaves or before it sets
+it, or goes on to what reads it, a variable outside a loop whose `catch`
+breaks, a closure that reads the value, and a read of the variable after
+the value. Mutations `set-where-made-read-leaving`,
+`set-where-made-goes-on`, `set-where-made-read-before-set`,
+`set-where-made-declared-anywhere`, `set-where-made-read-between`,
+`set-where-made-closure-reads`, `set-where-made-throw-unasked`,
+`set-where-made-comment-lost` (`js/applied.rs`) and
+`set-where-made-never` (`prepare.rs`).

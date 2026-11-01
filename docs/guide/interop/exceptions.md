@@ -678,7 +678,13 @@ export function text(value) {
   two more frames where JS's stack is spent. A `try` that ends its
   function has no `return;` last, and a closure of statements whose
   value an arm keeps, `Ok(v) => result = v`, is its statements in the
-  `try`, then `result = v;` ([ADR 0706](../../decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md), amended).
+  `try`, then `result = v;`; or, where the closure's value is a `let` of
+  its own, `result` set where it's made, `didFatal = throwException(..)`,
+  as React's throwAndUnwindWorkLoop writes it: where `result` is declared
+  just before the `try`, what follows the value in the closure never
+  names `result` nor reads the value in a closure, and nothing could see
+  `result` set early where that throws, as the `catch` leaves, never
+  naming it, or sets it first ([ADR 0706](../../decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md), amended).
 - **`panic!` is the one way to throw a new `Error`**, `panic!("")` a `new
   Error()`: a JS value isn't `Send`, so rustc refuses `resume_unwind`
   and `panic_any` of a `&JsError`; a value JS already has is thrown by

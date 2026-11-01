@@ -575,3 +575,100 @@ shallow ["returned",null] 3 0
 named 1 big 5
 `);
 });
+
+// React's throwAndUnwindWorkLoop keeps the value its closure makes in the
+// function's `didFatal`, `didFatal = throwException(..)` in the `try`, where
+// it was `const didFatal$1 = throwException(..); .. didFatal = didFatal$1;`
+// (rd534): what follows the value may throw, `panicOnRootError(..)`, and
+// the `catch` never goes on, so nothing sees `didFatal` set early. Where
+// the `catch` goes on to what reads the variable, the copy stays, and the
+// variable is as it was. Run in Node.
+test("a closure's value a try keeps sets its variable where it's made", () => {
+  const { js, dir } = compiled(
+    "unwind-set-where-made",
+    `use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
+
+#[cfg_attr(rust_js, rust_js::link_name = "./host.js#throwException")]
+fn throw_exception(_x: u32) -> bool {
+    unreachable!()
+}
+#[cfg_attr(rust_js, rust_js::link_name = "./host.js#panicOnRootError")]
+fn panic_on_root_error(_x: u32) {
+    unreachable!()
+}
+#[cfg_attr(rust_js, rust_js::link_name = "./host.js#note")]
+fn note(_x: u32) {
+    unreachable!()
+}
+
+pub fn unwind(x: u32, return_fiber: Option<u32>) -> bool {
+    let did_fatal = match catch_unwind(AssertUnwindSafe(|| {
+        let did_fatal = throw_exception(x);
+        if did_fatal {
+            panic_on_root_error(x);
+        }
+        did_fatal
+    })) {
+        Ok(did_fatal) => did_fatal,
+        Err(error) => {
+            if let Some(return_fiber) = return_fiber {
+                note(return_fiber);
+                resume_unwind(error);
+            } else {
+                note(0);
+                return false;
+            }
+        }
+    };
+    if did_fatal {
+        note(5);
+        return true;
+    }
+    note(6);
+    false
+}
+
+pub fn kept(x: u32) -> bool {
+    let mut did_fatal = false;
+    match catch_unwind(AssertUnwindSafe(|| {
+        let found = throw_exception(x);
+        panic_on_root_error(x);
+        found
+    })) {
+        Ok(found) => did_fatal = found,
+        Err(_) => note(1),
+    }
+    did_fatal
+}
+`,
+  );
+  writeFileSync(
+    join(dir, "host.js"),
+    `export const log = [];
+export function throwException(x) { log.push("throw " + x); return x > 5; }
+export function panicOnRootError(x) { log.push("panic " + x); if (x > 7) throw new Error("root " + x); }
+export function note(x) { log.push("note " + x); }
+`,
+  );
+  const unwind = js.slice(js.indexOf("export function unwind"), js.indexOf("export function kept"));
+  expect(unwind).toContain("  let didFatal;\n  try {\n    didFatal = throwException(x);\n    if (didFatal) {\n      panicOnRootError(x);\n    }\n  } catch (error) {\n");
+  expect(unwind).not.toContain("$1");
+  const kept = js.slice(js.indexOf("export function kept"));
+  expect(kept).toContain("    const found = throwException(x);\n    panicOnRootError(x);\n    didFatal = found;\n");
+  writeFileSync(
+    join(dir, "main.mjs"),
+    `import * as lib from "./lib.js";
+import { log } from "./host.js";
+const thrown = (f) => { try { return f(); } catch (e) { return e.message; } };
+console.log(JSON.stringify([lib.unwind(1, null), lib.unwind(6, null), lib.unwind(9, null), thrown(() => lib.unwind(9, 4))]));
+console.log(JSON.stringify([lib.kept(1), lib.kept(6), lib.kept(9)]));
+console.log(log.join(", "));
+`,
+  );
+  const out = runSync([node!, join(dir, "main.mjs")], dir, 60_000);
+  expect(out.stderr).toBe("");
+  expect(out.stdout).toBe(`[false,true,false,"root 9"]
+[false,true,false]
+throw 1, note 6, throw 6, panic 6, note 5, throw 9, panic 9, note 0, throw 9, panic 9, note 4, throw 1, panic 1, throw 6, panic 6, throw 9, panic 9, note 1
+`);
+});

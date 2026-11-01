@@ -514,6 +514,128 @@ pub fn applied_tried(mut tried: Vec<Stmt>) -> Vec<Stmt> {
     }
 }
 
+/// Of `body`, each `try` whose closure's value `applied_tried` gave a
+/// variable declared just before it, `let didFatal; try { const didFatal$1 =
+/// throwException(..); ..; didFatal = didFatal$1; } catch ..`, that sets
+/// the variable where the value is made, `didFatal = throwException(..);
+/// ..`, as React's throwAndUnwindWorkLoop writes it (rd534, ADR 0706
+/// amended). Only where that's the same program: what follows the value
+/// in the `try` never names the variable, so reads none of it set early,
+/// and reads the value in no closure, which may run once the variable
+/// changes; and where what follows may throw, the variable set early is
+/// never seen: the `catch` never names it and never goes on, leaving the
+/// block the variable is of, or sets it before anything names it; and no
+/// function the block declares, which runs where it's called, names it.
+pub fn tried_set_where_made(body: &mut [Stmt]) {
+    for i in 1..body.len() {
+        let declared = body[..i]
+            .iter()
+            .rev()
+            .take_while(|s| matches!(s.kind, StmtKind::Let(_, None)))
+            .count();
+        let lets = &body[i - declared.max(1)..i];
+        let declared: Vec<String> = (lets.iter())
+            .filter_map(|s| match &s.kind {
+                StmtKind::Let(name, _) => Some(name.clone()),
+                _ => None,
+            })
+            .collect();
+        // A value its arm binds is a copy too, `const found = found$1;
+        // done = found;`, set where it's made in turn.
+        while let StmtKind::TryCatch(tried, binding, caught) = &body[i].kind {
+            let Some((made, set, variable)) = set_where_made(tried, binding.as_deref(), caught, |name| {
+                declared.iter().any(|n| n == name)
+            }) else {
+                break;
+            };
+            if body
+                .iter()
+                .any(|s| matches!(&s.kind, StmtKind::Function(f) if mentions_in(&f.body, &variable) > 0))
+            {
+                break;
+            }
+            set_at(&mut body[i], made, set, &variable);
+        }
+    }
+}
+
+/// `try`'s `v = value;` at `set` gone, `variable` set where the `const` at
+/// `made` makes the value.
+fn set_at(try_catch: &mut Stmt, made: usize, set: usize, variable: &str) {
+    let StmtKind::TryCatch(tried, ..) = &mut try_catch.kind else {
+        unreachable!("a try")
+    };
+    // A comment before the value, `// What it found.` above the closure's
+    // `did_fatal`, is where it was, after what follows.
+    let span = tried[set].span;
+    let StmtKind::Assign(to, _) = std::mem::replace(&mut tried[set].kind, StmtKind::Comments) else {
+        unreachable!("found by set_where_made")
+    };
+    if span.is_none() {
+        tried.remove(set);
+    }
+    let StmtKind::Const(value_name, value) = &tried[made].kind else {
+        unreachable!("found by set_where_made")
+    };
+    let value_name = value_name.clone();
+    tried[made].kind = StmtKind::Assign(to, value.clone());
+    renamed(&mut tried[made + 1..set], &value_name, variable);
+}
+
+/// Of a `try`'s `tried` and its `catch`, the `const` of the value made, the
+/// variable's `v = value;` and the variable, a `declared` one, where setting
+/// it where the value is made is the same program (`tried_set_where_made`).
+fn set_where_made(
+    tried: &[Stmt],
+    binding: Option<&str>,
+    caught: &[Stmt],
+    declared: impl Fn(&str) -> bool,
+) -> Option<(usize, usize, String)> {
+    tried.iter().enumerate().find_map(|(set, stmt)| {
+        let StmtKind::Assign(to, from) = &stmt.kind else {
+            return None;
+        };
+        let (ExprKind::Var(variable), ExprKind::Var(value)) = (&to.kind, &from.kind) else {
+            return None;
+        };
+        let made = tried[..set]
+            .iter()
+            .position(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == value))?;
+        let between = &tried[made + 1..set];
+        // The `catch` leaves the variable's block, naming it nowhere, or
+        // sets it before it names it.
+        let unseen = |caught: &[Stmt]| {
+            let leaves = caught.last().is_some_and(ends) && mentions_in(caught, variable) == 0;
+            let first_set = caught.iter().position(|s| {
+                matches!(&s.kind, StmtKind::Assign(t, v)
+                    if matches!(&t.kind, ExprKind::Var(n) if n == variable) && !v.mentions_var(variable))
+            });
+            leaves || first_set.is_some_and(|first| mentions_in(&caught[..first], variable) == 0)
+        };
+        let same = declared(variable)
+            && mentions_in(&tried[..set], variable) == 0
+            && !declares(between, variable)
+            && mentions_in(&tried[set + 1..], value) == 0
+            && !read_in_a_closure(between, value)
+            && (between.iter().all(Stmt::cannot_throw) || binding != Some(variable.as_str()) && unseen(caught));
+        same.then(|| (made, set, variable.clone()))
+    })
+}
+
+/// Whether a closure or function in `stmts` names `name`.
+fn read_in_a_closure(stmts: &[Stmt], name: &str) -> bool {
+    let mut read = false;
+    each_expr(stmts, &mut |e| match &e.kind {
+        ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => read |= mentions_in(body, name) > 0,
+        ExprKind::Function(function) => read |= mentions_in(&function.body, name) > 0,
+        _ => {}
+    });
+    each_list(stmts, &mut |list| {
+        read |= (list.iter()).any(|s| matches!(&s.kind, StmtKind::Function(f) if mentions_in(&f.body, name) > 0));
+    });
+    read
+}
+
 /// Whether `stmts` return, but in a closure of their own, and whether a
 /// `return` gives a value.
 pub fn returns(stmts: &[Stmt]) -> (bool, bool) {
