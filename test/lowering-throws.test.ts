@@ -215,3 +215,71 @@ for (const f of [status, twice, found]) {
   expect(ran.stderr).toBe("");
   expect(ran.stdout).toBe("1 4 6\ntrue\ntrue\ntrue\n");
 });
+
+test("a with whose closure throws, a switch case's value, is its throw", () => {
+  // A \`match\` of constants is a \`switch\`; the closure called in its
+  // place is its statements in each case where they still end it (rd378).
+  const { js, dir } = compiled("throw-with-case", `use js::Error;
+use std::cell::Cell;
+
+thread_local! {
+    pub static EXCEPTION: &'static Error = js::error::new("suspended", None);
+    static SEEN: Cell<u32> = const { Cell::new(0) };
+}
+
+pub fn seen() -> u32 {
+    SEEN.get()
+}
+
+pub fn track(status: Option<&str>) -> Option<f64> {
+    match status {
+        Some("fulfilled") => Some(1.0),
+        Some("pending") => SEEN.with(|seen| {
+            if seen.get() > 1 {
+                return Some(2.0);
+            }
+            seen.set(seen.get() + 10);
+            None
+        }),
+        Some("rejected") => None,
+        _ => {
+            SEEN.set(SEEN.get() + 1);
+            EXCEPTION.with(|exception| js::throw(exception.as_unknown()))
+        }
+    }
+}
+
+pub fn mark(n: u32) {
+    match n {
+        0 => SEEN.set(5),
+        1 => SEEN.with(|seen| {
+            if seen.get() == 0 {
+                seen.set(7);
+            }
+        }),
+        2 => SEEN.set(9),
+        _ => EXCEPTION.with(|exception| js::throw(exception.as_unknown())),
+    }
+}
+`);
+  expect(js).toContain(`    default:
+      SEEN = (SEEN + 1) >>> 0;
+      throw exception;
+  }`);
+  expect(js).toContain(`    case 1:
+      if (SEEN === 0) {
+        SEEN = 7;
+      }
+      break;`);
+  expect(js).not.toContain("=>");
+  writeFileSync(join(dir, "run.mjs"), `import { exception, mark, seen, track } from "./lib.js";
+console.log(track("fulfilled"), track("pending"), seen(), track("pending"), track("rejected"));
+try { track(undefined); } catch (x) { console.log(x === exception, seen()); }
+mark(1);
+console.log(seen());
+try { mark(3); } catch (x) { console.log(x === exception); }
+`);
+  const ran = runSync([node!, join(dir, "run.mjs")], root, 30_000);
+  expect(ran.stderr).toBe("");
+  expect(ran.stdout).toBe("1 undefined 10 2 undefined\ntrue 11\n11\ntrue\n");
+});

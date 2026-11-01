@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "applied-tail-switch-unseen",
+    breaks: "a closure called last in a `switch`'s case at the function's end stays `return ((e) => { throw e; })(e);` (rd378)",
+    file: "src/js/applied.rs",
+    find: "                if i + 1 == lists {\n                    return tail_applied(list, whole);\n",
+    replace: "                if i + 1 == lists {\n                    return false;\n",
+    tests: ["test/lowering-throws.test.ts", "-t", "switch case's value, is its throw"],
+  },
+  {
     name: "applied-return-not-broken",
     breaks: "a closure's `return;` in its loop isn't that loop's `break`, so one called before the function's end stays a closure",
     file: "src/js/applied.rs",

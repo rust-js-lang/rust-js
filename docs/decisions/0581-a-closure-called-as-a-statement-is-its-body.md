@@ -178,3 +178,22 @@ its own, which starts with no blank line, so it takes none. Held by
 `test/lowering-comments-items.test.ts` ("a blank line before a closure
 whose body is in its place is before its body") and the mutation
 `blank-before-closure-opening-unseen` (`to_oxc.ts`).
+
+## Amended (2026-11-01): a closure called last in a `switch`'s case (rd378)
+
+React's trackUsedThenable ends `match thenable.status().as_deref()` with
+`_ => { ..; SUSPENSE_EXCEPTION.with(|exception| js::throw(..)) }`. As
+`if` chains, the closure called at the function's end was its body,
+`throw exception;`. But `switches` (ADR 0629), which runs later, makes
+the chain a `switch`, and the closure was then a case's
+`return ((exception) => { throw exception; })(SuspenseException);`,
+because a call at the end was looked for in an `if`'s branches and not
+in a `switch`'s cases. **In a `switch` that ends the function, the
+closure called last in its last case is that case's statements, as an
+`if` branch's is. In any other case it is too, where those statements
+still end the case; one that would go on would fall into the next case,
+so it stays a closure** (`tail_applied`). No input found so far reaches
+that refusal: a closure whose value is returned ends on each path, even
+a `loop`. Held by `test/lowering-throws.test.ts` ("a with whose closure
+throws, a switch case's value, is its throw") and the mutation
+`applied-tail-switch-unseen` (`applied.ts`).

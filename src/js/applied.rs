@@ -84,6 +84,24 @@ fn tail_applied(stmts: &mut Vec<Stmt>, whole: &[Stmt]) -> bool {
             let branch = |b: &mut Option<Vec<Stmt>>| b.as_mut().is_some_and(|b| tail_applied(b, whole));
             tail_applied(then, whole) || branch(otherwise)
         }
+        // A `switch` that's last, a `match` of constants' (ADR 0629): its
+        // last case's, whose end is the function's, and each other's
+        // whose statements in its place still end it, as one that went on
+        // would fall to the next case (rd378).
+        StmtKind::Switch { cases, default, .. } => {
+            let lists = cases.len() + usize::from(default.is_some());
+            (case_lists_mut(cases, default).enumerate()).any(|(i, list)| {
+                if i + 1 == lists {
+                    return tail_applied(list, whole);
+                }
+                let mut inlined = list.clone();
+                let ended = tail_applied(&mut inlined, whole) && inlined.last().is_some_and(ends);
+                if ended {
+                    *list = inlined;
+                }
+                ended
+            })
+        }
         _ => false,
     }
 }
