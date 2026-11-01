@@ -230,8 +230,8 @@ export const mutations: Mutation[] = [
     name: "header-path-as-cargo-gives",
     breaks: "a module's header names its Rust as Cargo gave it, from the app, so a package's JS an app writes isn't its author's, `node_modules/.pnpm/..`",
     file: "src/output.rs",
-    find: "                .and_then(|(file, dir)| file.strip_prefix(dir).ok().map(std::path::Path::to_path_buf))\n",
-    replace: "                .and_then(|(file, dir)| file.strip_prefix(dir).ok().map(std::path::Path::to_path_buf).filter(|_| false))\n",
+    find: "                    |(file, dir)| PathBuf::from(relative_resolved(&dir, &file)),\n",
+    replace: "                    |_| rust_path.clone(),\n",
     tests: ["test/libraries.test.ts", "-t", "from npm into"],
   },
   {
@@ -337,5 +337,14 @@ export const mutations: Mutation[] = [
     find: "                lowered.modules.retain(|module| !entry_is_root(package, module));\n",
     replace: "                lowered.modules.retain(|module| !entry_is_root(package, module) || true);\n",
     tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
+  },
+  {
+    name: "header-path-as-cargo-spells",
+    breaks:
+      "a Cargo build's header names a module a `#[path]` reaches through `..` as Cargo's working directory spells it, `server/set/../Runtime.rs`, where it's past its crate's directory (m6-wife's report, ADR 0414)",
+    file: "src/output.rs",
+    find: "                    |(file, dir)| PathBuf::from(relative_resolved(&dir, &file)),\n",
+    replace: "                    |(file, dir)| file.strip_prefix(&dir).map_or_else(|_| rust_path.clone(), Path::to_path_buf),\n",
+    tests: ["test/cargo-in-source.test.ts", "-t", "through"],
   },
 ];
