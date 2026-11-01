@@ -9,7 +9,8 @@ Extended by [0848](0848-apply-is-functions-and-its-this-may-be-null.md):
 `function::bind`, a function of the one it binds' type. Amended by
 [0907](0907-a-fn-pointer-runs-what-the-crate-made-it-of.md) (2026-10-27):
 `bind` binds the function's first arguments too, `function::bind(f,
-this_arg, args)`, of none `()`.
+this_arg, args)`, of none `()`. Amended (2026-11-02, rd504):
+`function::object(f)`, the object a function is, a weak key.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: each is the JS
 property itself, read of the function JS has.
@@ -136,3 +137,55 @@ Held by `test/js-object.test.ts`, "a function bound to a this is a
 function of its signature": a frame's member bound to its frame, its
 `name` `bound react_stack_bottom_frame`, and a `&dyn Fn` bound to `null`
 and to `undefined`, each `this` seen by the JS function, run.
+
+## Amendment: a function is the object it is, `function::object` (2026-11-02, rd504)
+
+React's Flight reply client keys one `WeakMap` by every object it writes
+and by a server reference's function, which it writes as an id:
+
+```js
+const writtenObjects: WeakMap<Reference, string> = new WeakMap();
+..
+if (typeof value === 'function') {
+  ..
+  writtenObjects.set(value, serverReferenceId);
+```
+
+The port's `WeakMap<dyn WeakKey, String>` takes `kind.object()`'s
+`&JsObject` of an object or an array (ADR 0910), but `Kind::Function`'s
+`&dyn Fn() -> Option<&Unknown>` is unsized, so it can't be a `&dyn
+WeakKey`, and the port cast the function to a `&JsObject`.
+
+**`function::object(f)` is the object `f` is, a `&JsObject`, of any
+function, `F: AnyFunction<M> + ?Sized`**: the function itself in JS, as
+TypeScript's `object` takes a function.
+
+```rust
+match js::classify(value) {
+    Kind::Function(function) => Some(reference_of(function::object(function), id)),
+    kind => kind.object().map(|object| reference_of(object, id)),
+}
+```
+```js
+if (typeof value === "function") {
+  return referenceOf(value, id);
+}
+```
+
+- **Of the function `js::function` reads everything else of**: one view
+  of each signature, as `name` and `length` are, so a `dyn Fn(&str)` is
+  one as `Kind::Function`'s is.
+- **Not `kind.object()` of a function too**: that is `typeof value ===
+  "object" && value !== null`, upstream's own test, which a function
+  isn't; widening it would change what each `if let Some(object)` takes.
+- **Not a weak key of `dyn Fn` alone**: `WeakKey for dyn Fn() -> ..` keys
+  a map of functions of that shape (`knownServerReferences`), but no
+  unsized value is a `dyn WeakKey`, so one map of objects and functions
+  needs a sized view either way.
+- Case N ([0262](0262-when-rust-and-js-disagree.md)): the value is the
+  function, unchanged; a weak collection keys a function as it keys any
+  object.
+
+Held by `test/js-functions.test.ts`, "a function is the object it is, a
+weak key with objects": one `WeakMap<dyn WeakKey, String>` of functions
+and objects, run, and a `dyn Fn(&str)`'s `name` read through it.

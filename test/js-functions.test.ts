@@ -848,3 +848,46 @@ pub fn parent(text: &str) -> Option<&'static Unknown> {
   expect(lib.kept({ a: 1, b: 2 })).toBe('{"a":1}');
   expect(lib.parent('{"a":1,"b":2}')).toEqual({ a: 1, b: 1 });
 });
+
+// rd504: a function is an object, `function::object(f)`, the function
+// itself, so one weak map keys objects and functions alike, as React's
+// Flight reply client's `writtenObjects` keys a server reference's function
+// and every object it writes.
+test("a function is the object it is, a weak key with objects", async () => {
+  const { js, lib } = await compiled(
+    "function-object",
+    `use js::{Kind, Unknown, WeakKey, WeakMap, function};
+
+thread_local! {
+    static WRITTEN_OBJECTS: &'static WeakMap<dyn WeakKey, String> = js::weak_map::new();
+}
+
+fn reference_of(key: &dyn WeakKey, id: &str) -> String {
+    let existing_reference = WRITTEN_OBJECTS.with(|written_objects| written_objects.get(key));
+    if let Some(existing_reference) = existing_reference {
+        return existing_reference;
+    }
+    WRITTEN_OBJECTS.with(|written_objects| written_objects.set(key, id.to_owned()));
+    id.to_owned()
+}
+
+pub fn written(value: Option<&'static Unknown>, id: &str) -> Option<String> {
+    match js::classify(value) {
+        Kind::Function(function) => Some(reference_of(function::object(function), id)),
+        kind => kind.object().map(|object| reference_of(object, id)),
+    }
+}
+
+pub fn named(f: &dyn Fn(&str) -> u32) -> Option<&'static Unknown> {
+    js::get(function::object(f), "name")
+}
+`,
+  );
+  expect(js).toContain("return referenceOf(value, id);");
+  expect(js).toContain('return f.name;');
+  const action = () => 1;
+  const object = {};
+  expect([lib.written(action, "$h1"), lib.written(action, "$h2"), lib.written(object, "$3"), lib.written(object, "$4")]).toEqual(["$h1", "$h1", "$3", "$3"]);
+  expect([lib.written(() => 1, "$h5"), lib.written("text", "$6")]).toEqual(["$h5", undefined]);
+  expect(lib.named(function measure(text: string) { return text.length; })).toBe("measure");
+});

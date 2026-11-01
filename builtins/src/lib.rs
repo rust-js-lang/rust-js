@@ -542,6 +542,18 @@ pub mod function {
         unreachable!()
     }
 
+    /// The object `f` is, as every JS function is one, TypeScript's
+    /// `object` it's assignable to: the function itself. What keys a weak
+    /// collection of objects and functions alike, a `WeakMap<dyn WeakKey,
+    /// V>`, as [`super::Kind::object`] gives an object or an array to:
+    /// React's Flight reply client's `writtenObjects.set(value,
+    /// serverReferenceId)` of a server reference's function,
+    /// `written_objects.set(function::object(f), id)` (rd504).
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    pub fn object<F: AnyFunction<M> + ?Sized, M>(this: &F) -> &super::JsObject {
+        unreachable!()
+    }
+
     /// [`f.call(thisArg, ..args)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function/call):
     /// `f` called with `this_arg` as its `this`, any value, `None` of
     /// `undefined`, and `args`, a rest parameter of any values, as

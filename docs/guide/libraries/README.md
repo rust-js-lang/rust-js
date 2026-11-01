@@ -183,7 +183,9 @@ What it has:
   of any of them, `dyn WeakKey`
   ([ADR 0677](../../decisions/0677-a-weak-key-is-what-kind-holds.md));
   of an object or an array as one, `kind.object()`'s `&JsObject`
-  ([ADR 0910](../../decisions/0910-an-object-or-an-array-is-one-value-kind-object.md)).
+  ([ADR 0910](../../decisions/0910-an-object-or-an-array-is-one-value-kind-object.md)),
+  and of a function, `function::object(f)`'s, the function itself
+  ([ADR 0740](../../decisions/0740-a-functions-members-are-read-of-any-function.md)).
   A typed array is typed as TypeScript types it: each length, index,
   offset and element a number, an `f64`, given and taken, one it must be
   given any number that's an `f64`, `a.get(i)`, `int32_array::new(4)`,

@@ -2451,7 +2451,9 @@ export function pop() {
   arg_array)` `f.apply(thisArg, argArray)`, whose `this` is any value,
   `None` of `undefined` and `Some(&Kind::Null)`, the variant that is it,
   of `null`: `function::apply(r#fn, Some(&Kind::Null), Some(&args))` is
-  `fn.apply(null, args)`
+  `fn.apply(null, args)`; `function::object(f)` is the object a function
+  is, the function itself, a `&JsObject` that keys a weak map of objects
+  and functions alike
   ([ADRs 0740](../../decisions/0740-a-functions-members-are-read-of-any-function.md),
   [0848](../../decisions/0848-apply-is-functions-and-its-this-may-be-null.md)):
 
