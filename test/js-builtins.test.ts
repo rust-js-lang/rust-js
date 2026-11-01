@@ -756,14 +756,20 @@ pub fn manifest(version: Option<&'static str>) -> String {
         2,
     )
 }
+// A tuple is an array, ReactFizzHooks' key path, \`[parent, null, index]\`.
+pub fn key(parent: Option<&'static str>, index: f64) -> String {
+    json::stringify(&(parent, js::null::<&str>(), index))
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('dependencies: { react: "19", "react-dom": "19" },\n    },\n    null,\n    2,\n  );');
+  expect(js).toContain("return JSON.stringify([parent, null, index]);");
   const lib = await import(join(dir, "lib.js"));
   const want = { name: "react.dev", files: ["a.js"], dependencies: { react: "19", "react-dom": "19" } };
   expect(lib.manifest(undefined)).toBe(JSON.stringify(want, null, 2));
   expect(JSON.parse(lib.manifest("1")).version).toBe("1");
+  expect([lib.key("a", 1), lib.key(undefined, 2)]).toEqual(['["a",null,1]', "[null,null,2]"]);
 });
 
 // ADR 0225: JSON is a typed value, `js::Json`, as ReScript's `JSON.t` is,

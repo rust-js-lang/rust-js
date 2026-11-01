@@ -1450,6 +1450,8 @@ macro_rules! tuples {
         $(
             unsafe impl<$($t: StructuredClone),+> StructuredClone for ($($t,)+) {}
             unsafe impl<$($t),+> Defined for ($($t,)+) {}
+            // An array of its items, each JSON's.
+            unsafe impl<$($t: JsonText),+> JsonText for ($($t,)+) {}
         )*
     };
 }
