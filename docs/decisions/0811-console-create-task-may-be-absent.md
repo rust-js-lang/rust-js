@@ -1,7 +1,8 @@
 # 0811. `console.createTask` is a property the host may lack
 
 Status: Accepted. Amended: `#[rust_js::types]` is a TypeScript type, read
-into the declaration model, one it can't read an error. Extends [0597](0597-whether-the-host-has-a-global-is-is-defined.md):
+into the declaration model, one it can't read an error; and a `ConsoleTask`
+is `js::Defined` (rd417). Extends [0597](0597-whether-the-host-has-a-global-is-is-defined.md):
 a member no TypeScript lib declares.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none: the program reads
@@ -233,3 +234,15 @@ saying what it reads. Held by `test/declarations.test.ts`, "a
 #[rust_js::types] intersection is declared as written", and `A &` among
 the errors; mutations `intersection-unread` (`declarations/written.ts`) and
 `intersection-declared-union` (`declarations.ts`).
+
+## Amendment: a `ConsoleTask` is a value of any shape (rd417)
+
+React's Flight client keeps a task as any value, `js::unknown(task)`,
+where a `ConsoleTask`, declared by hand in `webapi/generate.ts`, had no
+`js::Defined`, which each interface the generator writes has. **It has
+it now, written where it's declared**: an object, never `undefined` nor
+`null`, so an `Option` of one is the task or `undefined`. js's `DataView`,
+written by `builtins/typed_arrays.ts`, has it too, as each typed array
+has. Case: N ([0262](0262-when-rust-and-js-disagree.md)). Held by
+`test/js-globals.test.ts`'s "a DataView and a ConsoleTask are values of
+any shape".

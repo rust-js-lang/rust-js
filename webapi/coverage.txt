@@ -1,6 +1,6 @@
 # The webapi crate against TypeScript's DOM (@types/web): bun test test/webapi-coverage.test.ts
 # classes: 699 of 701 (99.7%)
-# members: 8369 of 8419 (99.4%)
+# members: 8371 of 8419 (99.4%)
 AbortController.abort
 AbortController.constructor
 AbortController.signal
@@ -1192,6 +1192,7 @@ Clipboard.write
 Clipboard.writeText
 ClipboardEvent.clipboardData
 ClipboardEvent.constructor
+ClipboardItem.constructor
 ClipboardItem.getType
 ClipboardItem.presentationStyle
 ClipboardItem.static:supports
@@ -8257,6 +8258,7 @@ Window.scrollY
 Window.scrollbars
 Window.self
 Window.sessionStorage
+Window.setTimeout
 Window.speechSynthesis
 Window.status
 Window.statusbar

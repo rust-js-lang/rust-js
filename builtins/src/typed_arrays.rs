@@ -186,6 +186,9 @@ impl<B> ArrayBufferView<B> {
 #[cfg_attr(rust_js, rust_js::types = "DataView")]
 pub struct DataView<B = ArrayBuffer>(PhantomData<JsObject>, PhantomData<B>);
 
+// An object, never nullish, as each typed array is (rd417).
+unsafe impl<B> Defined for DataView<B> {}
+
 
 impl<B> Deref for DataView<B> {
     type Target = ArrayBufferView<B>;

@@ -106,7 +106,7 @@ pub fn made(message: &str) -> &'static Error {
 }
 
 pub fn all() -> &'static AggregateError {
-    aggregate_error::new(&[], Some("every one"))
+    aggregate_error::new(&[], Some("every one"), None)
 }
 
 pub fn named() -> String {
@@ -213,7 +213,7 @@ thread_local! {
 
 fn aggregate_errors(errors: &[Option<&'static Unknown>]) -> Option<&'static Unknown> {
     if errors.len() > 1 && js::is_defined(aggregate_error::new) {
-        return aggregate_error::new(errors, None).as_unknown();
+        return aggregate_error::new(errors, None, None).as_unknown();
     }
     errors.first().copied().flatten()
 }
@@ -229,7 +229,7 @@ pub fn thrown() -> Option<&'static Unknown> {
 }
 
 pub fn named(errors: Vec<Option<&'static Unknown>>) -> (String, String, usize, bool) {
-    let e = aggregate_error::new(&errors, Some("several"));
+    let e = aggregate_error::new(&errors, Some("several"), None);
     (e.name(), e.message(), e.errors().len(), e.is_error())
 }
 

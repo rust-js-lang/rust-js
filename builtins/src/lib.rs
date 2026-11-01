@@ -2489,13 +2489,14 @@ impl AggregateError {
 pub mod aggregate_error {
     use super::*;
 
-    /// [`new AggregateError(errors, message)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/AggregateError/AggregateError):
+    /// [`new AggregateError(errors, message, options)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/AggregateError/AggregateError):
     /// an `AggregateError` of `errors`, each of any value, TypeScript's
-    /// `Iterable<any>`, and of `message`, or none. It runs none of the
-    /// crate's code: it reads the array, not what's in it.
+    /// `Iterable<any>`, of `message`, or none, and of `options`, its
+    /// `cause`, or `None`, left out, as TypeScript's ES2022 types it (rd404).
+    /// It runs none of the crate's code: it reads the array, not what's in it.
     #[cfg_attr(rust_js, rust_js::link_name = "new AggregateError")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
-    pub fn new(errors: &[Option<&Unknown>], message: Option<&str>) -> &'static AggregateError {
+    pub fn new(errors: &[Option<&Unknown>], message: Option<&str>, options: Option<&ErrorOptions<'_>>) -> &'static AggregateError {
         unreachable!()
     }
 }

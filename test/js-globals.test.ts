@@ -77,3 +77,59 @@ pub fn symbols() -> (&'static Symbol, &'static Symbol, &'static Symbol) {
     "1",
   ]);
 });
+
+// rd417: a `DataView` and a `ConsoleTask` are objects, never nullish, so
+// `js::Defined`: of any shape, `js::unknown(view)`, as React's Flight client
+// hands each to what takes any value, and an `Option` of one the value or
+// `undefined`.
+test("a DataView and a ConsoleTask are values of any shape", async () => {
+  const dir = fixture("js-globals-defined");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use js::{DataView, Unknown};
+use webapi::ConsoleTask;
+
+pub fn of_view(view: &'static DataView) -> &'static Unknown {
+    js::unknown(view)
+}
+
+pub fn of_task(task: Option<&'static ConsoleTask>) -> Option<&'static Unknown> {
+    task.map(|task| js::unknown(task))
+}
+`,
+  );
+  const extern = [...withJs, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`];
+  const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...extern], root, 600_000);
+  expect(built.code, built.stderr).toBe(0);
+  const lib = await import(join(dir, "lib.js"));
+  const view = new DataView(new ArrayBuffer(1));
+  expect([lib.ofView(view), lib.ofTask(undefined)]).toEqual([view, undefined]);
+});
+
+// rd404: `new AggregateError(errors, message, options)`, as TypeScript's
+// ES2022 types it, its `cause` given to it; and a constructor bound as a
+// value, called without `new`, as React's Flight client's fake call stack
+// calls `Error.bind(null, message, options)`.
+test("an AggregateError is made of its options, and a constructor bound as a value", async () => {
+  const { js, lib } = await compiled(
+    "js-globals-errors",
+    `use js::{AggregateError, Error, ErrorOptions, Kind, Unknown, aggregate_error, error, function};
+
+pub fn caused(errors: &[Option<&Unknown>], cause: &Unknown) -> &'static AggregateError {
+    aggregate_error::new(errors, Some("several"), Some(&ErrorOptions { cause: Some(cause) }))
+}
+
+pub fn bound_error(message: &str, cause: &'static Unknown) -> &'static dyn Fn() -> &'static Error {
+    function::bind(error::new, Some(&Kind::Null), (message.to_string(), Some(ErrorOptions { cause: Some(cause) })))
+}
+`,
+  );
+  expect(js).toContain('new AggregateError(errors, "several", { cause })');
+  // A constructor's binding as a value is a function that constructs, bound.
+  expect(js).toContain("((message, options) => new Error(message, options)).bind(null, message, { cause })");
+  const cause = { why: 1 };
+  const made = lib.caused([1, 2], cause);
+  expect([made instanceof AggregateError, made.errors, made.message, made.cause]).toEqual([true, [1, 2], "several", cause]);
+  const error = lib.boundError("boom", cause)();
+  expect([error instanceof Error, error.message, error.cause]).toEqual([true, "boom", cause]);
+});

@@ -29,7 +29,7 @@ spawn(Box::new(async move {                            // runs, unawaited
   `Error`, `error::new(message, None)` `new Error(message)`, declared `Error` and a
   `&JsError` by `Deref` ([ADR 0283](../docs/decisions/0283-js-crate-covers-typescripts-es-library.md));
   `aggregate_error::new(errors,
-  None)` is `new AggregateError(errors)`, an `Error` of several, its `errors()`
+  None, None)` is `new AggregateError(errors)`, an `Error` of several, its `errors()`
   what it holds ([ADR 0867](../docs/decisions/0867-a-binding-that-runs-nothing-and-aggregate-error.md)).
 - `RegExp` is there for what Rust would use `regex` for: `reg_exp::new(r"^\d+$", "")`,
   and `reg_exp::replace(text, pattern, "$1")`. A replacer closure, and `matchAll`,

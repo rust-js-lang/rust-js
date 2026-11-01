@@ -82161,6 +82161,9 @@ pub struct Console(PhantomData<JsObject>);
 #[cfg_attr(rust_js, rust_js::types = "{ run<T>(f: () => T): T }")]
 pub struct ConsoleTask(PhantomData<JsObject>);
 
+// An object, never nullish, as each interface's is (rd417).
+unsafe impl Defined for ConsoleTask {}
+
 impl ConsoleTask {
     /// `task.run(f)`: `f` called, as part of the task, and what it gives.
     #[cfg_attr(rust_js, rust_js::link_name = "run")]

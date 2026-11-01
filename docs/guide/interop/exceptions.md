@@ -304,9 +304,10 @@ export function hasConfig(path) {
   reads its `message()` and `stack()` and is given where what's thrown is
   ([ADR 0283](../../decisions/0283-js-crate-covers-typescripts-es-library.md), amended).
 - **Several errors as one is an `AggregateError`**:
-  `js::aggregate_error::new(errors, message)` is `new
-  AggregateError(errors, message)`, `errors` a slice of any value,
-  `&[Option<&Unknown>]`, and `message` an `Option<&str>`; its `errors()`
+  `js::aggregate_error::new(errors, message, options)` is `new
+  AggregateError(errors, message, options)`, `errors` a slice of any value,
+  `&[Option<&Unknown>]`, `message` an `Option<&str>` and `options` an
+  `Option<&ErrorOptions>`, its `cause`, each left out where it's `None`; its `errors()`
   is what it holds, and it's an `&Error` by `Deref`, declared
   `AggregateError`, `as_unknown()` the value to throw. Making one runs none of your code, so a `RefCell`
   borrowed for it isn't counted ([ADR 0867](../../decisions/0867-a-binding-that-runs-nothing-and-aggregate-error.md)).
