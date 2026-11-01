@@ -269,8 +269,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // which a comment before its statement would be placed at.
             Operand::Constant(c) => {
                 let mut made = self.mir_const(state, c)?;
-                if made.span.is_none() && !c.span.from_expansion() && state.argument_spans.contains(&c.span) {
-                    made.span = self.js_span(c.span);
+                if made.span.is_none() {
+                    made.span = self.argument_span(state, c.span);
                 }
                 Ok(Value::Expr(made))
             }
@@ -415,7 +415,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 true => Some(self.js_global(def_id, c.span)),
                 false => (self.is_rust_fn(def_id)).then(|| self.named_fn_ref(def_id, None, c.span)),
             };
-            if let Some(referred) = referred {
+            if let Some(mut referred) = referred {
+                // Where it's a call's argument as written, so a comment
+                // above it in the call is (rd421), its own place, not only
+                // a handle's on it, which reading through the handle drops.
+                if referred.span.is_none() {
+                    referred.span = self.argument_span(state, c.span);
+                }
                 // A raw pointer to one, a handle on it (ADR 0407): of what isn't
                 // an object, a cell of its value, which nothing writes.
                 return Ok(match pointer {
@@ -450,6 +456,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             js::ExprKind::Num(_) => value.or_at(self.js_span(c.span)),
             _ => value,
         })
+    }
+
+    /// Where a constant written at `span` is in the map: where it's
+    /// written, of a call's argument the program wrote, which the map gives
+    /// a comment beside it the JS of (rd220, rd421); else nowhere, as of a
+    /// tuple's or a comparison's, which a comment before its statement would
+    /// be placed at.
+    fn argument_span(&self, state: &State<'_, 'tcx>, span: Span) -> js::Span {
+        match !span.from_expansion() && state.facts.argument_spans().contains(&span) {
+            true => self.js_span(span),
+            false => js::Span::NONE,
+        }
     }
 
     /// A JS global a binding names (ADR 0021), read as its name, as

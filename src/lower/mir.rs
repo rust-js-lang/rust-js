@@ -668,9 +668,6 @@ struct State<'m, 'tcx> {
     /// with comments before it that a branch jumps by: where what it does
     /// last is, and where the jump is (rd109, `tidy::commented_jumps`).
     commented_jumps: Vec<(js::Span, js::Span)>,
-    /// Where the arguments of the call being lowered are written, which a
-    /// constant among them is placed at in the map (rd220).
-    argument_spans: Vec<Span>,
     locals: Locals,
     /// Temporaries made and not yet used, in the order they were made.
     pending: Vec<(Local, Value<'tcx>)>,
@@ -1107,7 +1104,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             facts,
             left: Default::default(),
             commented_jumps: self.tail_if_comments(mir_body.source.def_id()),
-            argument_spans: Vec::new(),
             locals,
             pending: Vec::new(),
             taken: Vec::new(),

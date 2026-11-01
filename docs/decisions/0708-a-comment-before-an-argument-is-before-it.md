@@ -328,3 +328,38 @@ Held by the corpus case `object_field_comments` and the mutations
 `field-starts-unwritten` (`lower/aggregates.ts`),
 `field-comment-to-printed-first`, `arrow-value-taken-by-a-part` and
 `method-return-no-statement` (`to_oxc.ts`).
+
+## Amendment: a static argument is placed where it's written (2026-11-01, rd421)
+
+ReactART sets its mode with a comment above the argument, an extern
+static:
+
+```rust
+js::on_load! {
+    mode::set_current(
+        // Change to 'art/modes/dom' for easier debugging via SVG
+        FAST_NO_SIDE_EFFECTS,
+    );
+}
+```
+
+The comment was above the call, `// Change ..\nMode.setCurrent(FastNoSideEffects);`.
+MIR reads a static through a pointer to it, `_3 = const {alloc: *const
+&JsObject}`, made before the call, and the call is given `copy (*_3)`.
+rd220's place for a constant (ADR 0630, amended) was by the arguments of
+the call being lowered, which aren't known yet there; and its place was
+the pointer's, a handle `{ value: FastNoSideEffects }`, which the read
+through it drops. **A static, read as a call's argument the program wrote,
+is placed where it's written, by the arguments of every call of the body,
+its read's place and not only its handle's**, `Mode.setCurrent(\n  //
+Change ..\n  FastNoSideEffects,\n);` as upstream (`operands.rs`'s
+`argument_span`, which rd220's constant asks too; `argument_spans` is the
+body's, a fact of `local_facts.rs`). A tuple's or a comparison's constant
+is placed nowhere, as before.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, a comment's place.
+
+Held by `lowering-comments-inside`'s "a comment above a static given as an
+argument is above it in the call" and the mutations
+`static-argument-unplaced` (`lower/mir/operands.ts`) and
+`argument-spans-unknown` (`lower/mir/local_facts.ts`).

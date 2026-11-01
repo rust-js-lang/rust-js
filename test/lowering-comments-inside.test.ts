@@ -212,3 +212,45 @@ test("a comment above a _ arm that opens a block is before its default", async (
   tailMode("forwards", set);
   expect(seen).toEqual([2, 3]);
 });
+
+// React's ReactART sets its mode with a comment above the argument, an
+// extern static, `Mode.setCurrent(\n  // Change to 'art/modes/dom' ..\n
+// FastNoSideEffects,\n);`: there in the call, not above it, as one above a
+// variable or a constant is (ADR 0708; rd421), though MIR reads the static
+// through a pointer to it before the call.
+test("a comment above a static given as an argument is above it in the call", async () => {
+  const { js, lib } = await compiled("comment-above-a-static-argument", `use js::JsObject;
+
+unsafe extern "Rust" {
+    #[link_name = "Math"]
+    safe static MATH: &'static JsObject;
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "Object.isFrozen")]
+fn is_frozen(_object: &JsObject) -> bool {
+    unreachable!()
+}
+
+fn is_math(object: &JsObject) -> bool {
+    std::ptr::eq(object, MATH)
+}
+
+pub fn frozen() -> bool {
+    is_frozen(
+        // Change to 'art/modes/dom' for easier debugging via SVG
+        MATH,
+    )
+}
+
+pub fn math() -> bool {
+    is_math(
+        // The global one
+        MATH,
+    )
+}
+`);
+  expect(js).toContain("  return Object.isFrozen(\n    // Change to 'art/modes/dom' for easier debugging via SVG\n    Math,\n  );");
+  expect(js).toContain("  return isMath(\n    // The global one\n    Math,\n  );");
+  expect(lib.frozen()).toBe(false);
+  expect(lib.math()).toBe(true);
+});

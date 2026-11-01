@@ -277,9 +277,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a constant has no place in the map, so a line comment after a call's last argument, `true, // why`, is lost (rd220)",
     file: "src/lower/mir/operands.rs",
-    find: "                if made.span.is_none() && !c.span.from_expansion() && state.argument_spans.contains(&c.span) {\n",
-    replace:
-      "                if false && made.span.is_none() && !c.span.from_expansion() && state.argument_spans.contains(&c.span) {\n",
+    find: "                if made.span.is_none() {\n                    made.span = self.argument_span(state, c.span);\n",
+    replace: "                if false {\n                    made.span = self.argument_span(state, c.span);\n",
     tests: [
       "test/lowering-comments-ends.test.ts",
       "-t",
@@ -291,12 +290,25 @@ export const mutations: Mutation[] = [
     breaks:
       "every constant has a place in the map, so a comment before a tail tuple with one is inside its array, `return [ // why\n s, false ]` (rd220's follow-up)",
     file: "src/lower/mir/operands.rs",
-    find: " && state.argument_spans.contains(&c.span) {\n",
-    replace: " {\n",
+    find: "        match !span.from_expansion() && state.facts.argument_spans().contains(&span) {\n",
+    replace: "        match !span.from_expansion() {\n",
     tests: [
       "test/lowering-comments-ends.test.ts",
       "-t",
       "a comment before a tail tuple",
+    ],
+  },
+  {
+    name: "static-argument-unplaced",
+    breaks:
+      "a static read through a pointer to it has no place in the map, so a comment above it in a call is above the call, ReactART's `// Change to 'art/modes/dom' ..` (rd421)",
+    file: "src/lower/mir/operands.rs",
+    find: "                if referred.span.is_none() {\n",
+    replace: "                if false {\n",
+    tests: [
+      "test/lowering-comments-inside.test.ts",
+      "-t",
+      "a comment above a static given as an argument",
     ],
   },
 ];
