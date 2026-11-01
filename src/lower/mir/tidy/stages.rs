@@ -860,6 +860,13 @@ pub(super) const STAGES: &[Stage] = &[
             pass("returns through finally", |b, _| {
                 js::statement_lists(b, &mut unwinds::returned_through_finally)
             }),
+            // A block MIR made of the program's early `return`s that ends
+            // the `try` that ends the function: its `break`s those
+            // `return;`s, run through the `finally` (rd502).
+            pass("returns past blocks in finally", |b, h| {
+                let starts = statement_starts(b);
+                returns_past_blocks_in_try(b, &h.written.blocks, h.returns, &starts)
+            }),
             // What's left of a call that can't throw, a `catch_unwind`'s,
             // held apart for the drops a scope's `finally` didn't take: as it
             // runs (ADR 0873).

@@ -882,4 +882,23 @@ export const mutations: Mutation[] = [
     replace: "    } else if let Some(StmtKind::Try(body, _))",
     tests: ["test/lowering-labels.test.ts", "-t", "never printed empty"],
   },
+  {
+    name: "returns-past-blocks-in-try-skipped",
+    breaks:
+      "a block MIR made of the early returns that ends a drop guard's `try` keeps its label, `try { bb18: { if (..) { run(task); break bb18; } } } finally { .. }` (rd502)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "    tried.push(StmtKind::Return(None).at(js::Span::NONE));\n    returns_past_blocks(tried, written, returns, starts);\n",
+    replace: "    let _ = (written, returns, starts);\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_guard_early_returns\\.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "returns-past-blocks-in-try-end-kept",
+    breaks: "the `return;` a drop guard's `try` was given for its block's end stays, `run(root); return; } finally`",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "        tried.pop();\n    }\n}\n",
+    replace: "    }\n}\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_guard_early_returns\\.rs$"],
+    snapshots: true,
+  },
 ];

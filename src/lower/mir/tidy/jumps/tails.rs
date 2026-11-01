@@ -170,6 +170,35 @@ pub(in crate::lower::mir::tidy) fn returns_past_blocks(
     }
 }
 
+/// `try { l: { .. } } finally { .. }` that ends the function, its `finally`
+/// a scope's drops (`drop scopes`): the block's end goes on to the
+/// function's end, its `return;`, as `l: { .. } return;`'s does, and a
+/// `return;` in the `try` runs the `finally` as leaving the block does. So
+/// its `break`s are as `returns_past_blocks` writes them, the program's
+/// early `return`s, `if (task != null) { run(task); return; }`, not `break
+/// bb18` (rd502).
+pub(in crate::lower::mir::tidy) fn returns_past_blocks_in_try(
+    body: &mut [Stmt],
+    written: &[LabeledBlock],
+    returns: &[js::Span],
+    starts: &[u32],
+) {
+    let Some(StmtKind::Try(tried, _)) = body.last_mut().map(|s| &mut s.kind) else {
+        return;
+    };
+    if !matches!(tried.last().map(|s| &s.kind), Some(StmtKind::Labeled(..))) {
+        return;
+    }
+    tried.push(StmtKind::Return(None).at(js::Span::NONE));
+    returns_past_blocks(tried, written, returns, starts);
+    if tried
+        .last()
+        .is_some_and(|s| matches!(s.kind, StmtKind::Return(None)) && s.span.is_none())
+    {
+        tried.pop();
+    }
+}
+
 /// The `return`s the program wrote in `body`, a block MIR made that a
 /// `return;` of no place of its own follows, where MIR joined them into
 /// that one, each branch's `break` of the block: `if (tag === 1) { ..;

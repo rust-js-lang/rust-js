@@ -373,3 +373,25 @@ fall through the case's end would read `break;`. Case
 `test/lowering-labels.test.ts` ("a break the program wrote through drops is
 its label's") and the mutation `tail-jump-in-ending-block-kept`
 (`tidy/jumps/tails.ts`).
+
+## Amendment: a block that ends a drop guard's `try` is the program's returns too (2026-11-01, rd502)
+
+A function whose `Drop` guard is a `try { .. } finally { .. }` and that
+returns early from inside an `if`, React's Flight client's
+replayConsoleWithCallStack, printed MIR's block of the joined returns,
+`try { bb18: { if (task != null) { run(task); break bb18; } .. } } finally
+{ .. }`, where upstream writes `return;` in the `try`. The block's end,
+past the `try`'s, is the function's: `returns past blocks` never saw it,
+the guard's drop then between the block and its `return;`, and once
+`drop scopes` makes the `finally`, no `return;` follows the block.
+**A block MIR made that ends the `try` that ends the function, its
+`finally` a scope's drops, is read as `l: { .. } return;`**
+(`returns_past_blocks_in_try`, a pass after `returns through finally`):
+its `break`s the program's `return`s, as `returns_past_blocks` writes
+them, its statements the `try`'s. A `return;` in the `try` runs the
+`finally` as leaving the block does, and the function gives `undefined`
+either way. Case N (ADR 0262): the same jumps, as written.
+
+Held by the corpus case `drop_guard_early_returns`, against native Rust,
+and the mutations `returns-past-blocks-in-try-skipped` and
+`returns-past-blocks-in-try-end-kept` (`tidy/jumps/tails.ts`).
