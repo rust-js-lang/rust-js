@@ -249,8 +249,14 @@ person writes. Four things kept them so, each now as it should be:
   list, as ADR 0636 has it, and took them, so no `switch` was made.
 - **A branch a tail jump was all of is gone**: `drop_tail`, which takes a
   `break` that goes where the code goes on anyway, left `if (!on) {}
-  else { .. }`, which no chain reads; it now asks `emptied_branch`, the
-  one owner of an emptied branch, `if (on) { .. }`.
+  else { .. }`, which no chain reads; `emptied_branch`, the one owner of
+  an emptied branch, makes it `if (on) { .. }`. (Amended 2026-11-01:
+  `drop_tail` no longer asks it itself. The passes after it that ask it,
+  `branch_values`' first, write each such branch before any chain reads
+  it, so its own call changed no JS: its mutation
+  `tail-jump-branch-left-empty` survived the nightly, and `check:fast
+  --all`, the corpus's 1,370 cases with tidy's contracts that refuse an
+  empty `if` among them, passes without it. Removed with that mutation.)
 
 And **a `break;` that ends a branch of the `if` a case ends with is
 gone**, where the case doesn't fall: the case's end leaves the `switch`
@@ -269,9 +275,9 @@ the cases Rust's arms are, its guards run in Rust's order, each once; a
   falling to the next, one to nothing, are one switch", run against
   upstream's JS; `test/corpus/switch_guards_apart.rs` against native Rust.
 - Mutations `switch-negated-guard-unplaced`, `switch-guard-inner-if-apart`,
-  `switch-failing-guard-goes-after`, `switch-case-ending-break-kept`
-  (`tidy/switches.ts`) and `tail-jump-branch-left-empty`
-  (`tidy/jumps/tails.ts`).
+  `switch-failing-guard-goes-after` and `switch-case-ending-break-kept`
+  (`tidy/switches.ts`); `tail-jump-branch-left-empty` removed with the
+  call it held (amended above).
 
 ## Amendment: a fall-through the program says is said once (2026-10-26)
 

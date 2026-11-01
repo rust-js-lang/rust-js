@@ -109,11 +109,12 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-let-else-branch-ends",
     breaks:
-      "a `let … else`'s block takes its `throw` as an `else`, not a guard",
+      "a block that ends in what never goes on takes it as an `else`, not what's after a guard: `if (a || b) { .. } else { for (..) { .. } return; }` where ADR 0805's `or_before_a_returning_loop` writes the loop after the `if`, and a let chain's `else` of reads the same",
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "        .filter(|_| !exits)\n",
     replace: "",
-    tests: ["test/lowering-matches.test.ts", "-t", "let-else from MIR"],
+    tests: ["test/corpus.test.ts", "-t", "^(or_before_a_returning_loop|let_chain_else_of_reads)\\.rs$"],
+    snapshots: true,
   },
   {
     name: "mir-tidy-jump-ends-not-made",
@@ -655,15 +656,6 @@ export const mutations: Mutation[] = [
       "-t",
       "an if of returns the program wrote stays an if",
     ],
-  },
-  {
-    name: "tail-jump-branch-left-empty",
-    breaks:
-      "a branch a tail jump was all of stays, `if (!on) {} else { .. }`, so loop_branch_emptied's `chains` stage leaves an `if` of no statements, which tidy's contract refuses",
-    file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: '        let last = stmts.pop().expect("matched");\n        if let Some(kind) = emptied_branch(last.kind) {\n            stmts.push(kind.at(last.span));\n        }\n    } else if let Some(StmtKind::Try(body, _))',
-    replace: "    } else if let Some(StmtKind::Try(body, _))",
-    tests: ["test/corpus.test.ts", "-t", "^loop_branch_emptied\\.rs$"],
   },
   {
     name: "returned-call-not-one-value",
