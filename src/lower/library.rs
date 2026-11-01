@@ -913,6 +913,13 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         (self.dependencies.libraries.values()).any(|library| library.built.contains(&key))
     }
 
+    /// The specifier an import `from` is ordered by, where it isn't `from`:
+    /// a library's module by its package's subpath is where its file's
+    /// path put it (ADR 0770, amended).
+    pub(super) fn ordered_as(&self, from: &str) -> Option<String> {
+        self.dependencies.ordered_as.get(from).cloned()
+    }
+
     /// Is `krate` a library's, one rust-js built for this crate to use, not
     /// `@rust-js/std` (ADR 0100)?
     pub(super) fn is_library(&self, krate: rustc_span::def_id::CrateNum) -> bool {

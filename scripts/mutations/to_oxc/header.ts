@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "    if true {\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "right above the code are right above its JS"],
   },
+  {
+    name: "package-subpath-import-moved",
+    breaks: "a library's module imported by its package's subpath is ordered by that text, among the packages, where its file's path put it before, so JS loads its modules in another order, React's ReactFizzConfigDOM before ReactFizzServer (ADR 0770, amended)",
+    file: "src/to_oxc/header.rs",
+    find: "        let ordered_as = package.ordered_as.as_deref().unwrap_or(&package.from);\n",
+    replace: "        let ordered_as = package.from.as_str();\n",
+    tests: ["test/libraries.test.ts", "-t", "package's subpath"],
+  },
 ];

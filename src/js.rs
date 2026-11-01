@@ -327,6 +327,12 @@ pub struct Package {
     pub namespace: Option<String>,
     /// The `use` that makes it, as `Import::span` is.
     pub span: Span,
+    /// The specifier it's ordered by among the imports where it isn't
+    /// `from`: a library's module imported by its package's subpath,
+    /// `shared/ReactFeatureFlags`, is where its file's path,
+    /// `../shared/ReactFeatureFlags.js`, put it, as an import's order is
+    /// the order JS loads its modules in (ADR 0770, amended).
+    pub ordered_as: Option<String>,
 }
 
 #[derive(Clone, PartialEq)]

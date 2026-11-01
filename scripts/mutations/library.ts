@@ -102,8 +102,8 @@ export const mutations: Mutation[] = [
     name: "package-subpath-unread",
     breaks: "a dependency's module its package's `exports` resolves a subpath to is imported by its file, `../../shared/src/flags.js`, where upstream's `shared/src/flags` is what the user decided (ADR 0770, amended)",
     file: "src/library.rs",
-    find: "                let subpath = package.and_then(|package| package.subpath_specifier(path));\n",
-    replace: "                let subpath: Option<String> = package.and(None);\n",
+    find: "                match package.and_then(|package| package.subpath_specifier(path)) {\n",
+    replace: "                match package.and(None::<String>) {\n",
     tests: ["test/libraries.test.ts", "-t", "package's subpath"],
   },
   {

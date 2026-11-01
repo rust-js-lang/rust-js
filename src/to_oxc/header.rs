@@ -26,6 +26,7 @@ pub(super) fn header(module: &Module, comments: &std::collections::HashMap<u32, 
     // module's own relative ones, bindings and the crate's alike, each by
     // path; then what it imports for its effect, as written, its CSS after
     // what it styles; then the runtime's helpers.
+    // Each by the specifier it's ordered by, `ordered_as`.
     let mut named: Vec<(bool, &str, String, js::Span)> = Vec::new();
 
     let mut effects = Vec::new();
@@ -44,14 +45,15 @@ pub(super) fn header(module: &Module, comments: &std::collections::HashMap<u32, 
         let names = clause_of(&mut package.named.iter());
         let names = (!names.is_empty()).then(|| format!("{{ {} }}", names.join(", ")));
         let clause: Vec<String> = package.default.iter().cloned().chain(names).collect();
-        let relative = crate::program::is_relative_specifier(&package.from);
+        let ordered_as = package.ordered_as.as_deref().unwrap_or(&package.from);
+        let relative = crate::program::is_relative_specifier(ordered_as);
         if !clause.is_empty() {
             let line = import_line(&clause.join(", "), &package.from);
-            named.push((relative, &package.from, line, package.span));
+            named.push((relative, ordered_as, line, package.span));
         }
         if let Some(namespace) = &package.namespace {
             let line = import_line(&format!("* as {namespace}"), &package.from);
-            named.push((relative, &package.from, line, package.span));
+            named.push((relative, ordered_as, line, package.span));
         }
         if clause.is_empty() && package.namespace.is_none() {
             effects.push(format!("import {:?};\n", package.from));

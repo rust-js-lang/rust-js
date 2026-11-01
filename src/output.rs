@@ -112,6 +112,7 @@ impl OutputPlan {
                 .into_iter()
                 .map(|package| js::Package {
                     from: located(&package.from),
+                    ordered_as: package.ordered_as.as_deref().map(located),
                     ..package
                 })
                 .collect();

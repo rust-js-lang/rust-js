@@ -445,6 +445,10 @@ pub struct Exports {
 pub struct Dependencies {
     pub libraries: HashMap<String, Exports>,
     pub inputs: Vec<std::path::PathBuf>,
+    /// Each library's module imported by its package's subpath, by that
+    /// specifier, and its file's, which orders its import, as an import's
+    /// order is the order JS loads its modules in (ADR 0770, amended).
+    pub ordered_as: HashMap<String, String>,
 }
 
 impl Dependencies {
@@ -452,6 +456,7 @@ impl Dependencies {
     /// starts, for a crate whose JS is in `dir` and `output`'s.
     pub fn load(paths: &[std::path::PathBuf], output: &Path, dir: &Path) -> Result<Self, String> {
         let mut result = Self::default();
+        let ordered_as = std::cell::RefCell::new(HashMap::new());
         let mut needed: Vec<(String, String)> = Vec::new();
         let output = crate::paths::absolute(output)?;
         let parent = output.parent().ok_or("output has no parent")?;
@@ -525,8 +530,14 @@ impl Dependencies {
                 if !written.is_some_and(|written| manifest.artifacts.iter().any(|a| &a.file == written)) {
                     return Err("dependency module is not a fingerprinted artifact".into());
                 }
-                let subpath = package.and_then(|package| package.subpath_specifier(path));
-                Ok(subpath.unwrap_or_else(|| crate::paths::specifier(parent, &module.file)))
+                let file = crate::paths::specifier(parent, &module.file);
+                match package.and_then(|package| package.subpath_specifier(path)) {
+                    Some(subpath) => {
+                        ordered_as.borrow_mut().insert(subpath.clone(), file);
+                        Ok(subpath)
+                    }
+                    None => Ok(file),
+                }
             };
             // What its package's root re-exports, by the package's name,
             // where Node finds that package from the crate's JS (ADR 1008):
@@ -603,6 +614,7 @@ impl Dependencies {
         }
         result.inputs.sort();
         result.inputs.dedup();
+        result.ordered_as = ordered_as.into_inner();
         Ok(result)
     }
 }

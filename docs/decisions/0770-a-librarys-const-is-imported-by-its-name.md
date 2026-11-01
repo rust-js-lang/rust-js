@@ -129,12 +129,26 @@ which Node's ESM, Vite and jest all resolve. A hand-written import of a
 subpath with its extension, `'shared/ReactFeatureFlags.js'`, then names
 `ReactFeatureFlags.js.js`: write it without, as upstream does.
 
+**A bare specifier never moves an import** (the P1 found after it landed;
+ADR 0262's "results change, preserve"). An import's place is the order JS
+loads its modules in: React's ReactDOMFizzServerNode imports ReactFizzServer
+before ReactFizzConfigDOM, and jest's host-config mocks depend on that
+order. Imports were ordered by their specifiers' text, so a module's
+`shared/..` moved among the packages, before every relative one, and
+ReactFizzConfigDOM moved before ReactFizzServer, which broke 103 react-dom
+tests. Each import of a module by its package's subpath is ordered by its
+file's specifier, the one it had before, `js::Package::ordered_as`, which
+`library.rs` records as it chooses the subpath (`Dependencies::ordered_as`).
+Only its text changes.
+
 Held by `test/libraries.test.ts`, "a dependency's module is imported by
 its package's subpath where its exports resolve it": no `exports`, a
 pattern (run by Node), an exact key under the default condition beside
 another condition's pattern, a `null`, a longer pattern of another file,
 the root alone, a `node_modules` segment and the package not installed,
-each against native Rust. Mutations `package-subpath-any-target`,
+each against native Rust, and the same order of imports with `exports`
+as without, beside a binding's `../../a.js` and `../../t.js`. Mutations
+`package-subpath-import-moved` (`to_oxc/header.rs`), `package-subpath-any-target`,
 `package-subpath-pattern-shortest`, `package-subpath-exact-key-unread`,
 `package-subpath-segments-unchecked` (`packages.rs`) and
 `package-subpath-unread` (`library.rs`).

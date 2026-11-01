@@ -404,6 +404,27 @@ pub fn run() -> String {
   manifest({ "./*": "./*.js", "./src/symbols": null });
   expect(built().stderr).toBe("");
   imports("shared/src/flags", symbols);
+  // A bare specifier never moves an import, whose order is the order JS
+  // loads its modules in: each is where its file's path put it, as before
+  // (the user's "preserve", ADR 0262), only its text another, though a
+  // package's sorts before any relative one: React's ReactFizzServer
+  // still before ReactFizzConfigDOM.
+  for (const file of ["a", "t"]) {
+    writeFileSync(join(dir, `${file}.js`), `export function ${file}() {\n  return 1;\n}\n`);
+  }
+  const rust = readFileSync(join(dir, "dom", "src", "lib.rs"), "utf8");
+  const bound = (file: string) =>
+    `\n#[cfg_attr(rust_js, rust_js::link_name = "../../${file}.js#${file}")]\nfn ${file}() -> u32 {\n    unreachable!()\n}\n`;
+  writeFileSync(join(dir, "dom", "src", "lib.rs"), `${rust.replace("level() + one()", "level() + one() + a() + t()")}${bound("a")}${bound("t")}`);
+  const imported = () => [...js().matchAll(/^import (.*) from /gm)].map((line) => line[1]);
+  manifest();
+  expect(built().stderr).toBe("");
+  const byFile = imported();
+  manifest({ "./*": "./*.js" });
+  expect(built().stderr).toBe("");
+  expect(js()).toContain('from "shared/src/flags";\n');
+  expect(imported()).toEqual(byFile);
+  writeFileSync(join(dir, "dom", "src", "lib.rs"), rust);
   // A longer pattern's, `./src/*`'s, of the file without its extension,
   // which Node then doesn't find.
   manifest({ "./*": "./*.js", "./src/*": "./src/*" });

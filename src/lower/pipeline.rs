@@ -1076,6 +1076,7 @@ pub fn lower_crate<'tcx>(
                     named: Vec::new(),
                     namespace: None,
                     span: written(uses.package_at(tcx, &foreign, from)),
+                    ordered_as: foreign.ordered_as(from),
                 });
                 let local = import_names[&module][export].clone();
                 match name.as_str() {
@@ -1102,6 +1103,7 @@ pub fn lower_crate<'tcx>(
                         named: Vec::new(),
                         namespace: None,
                         span: js::Span::NONE,
+                        ordered_as: None,
                     });
                 }
             }
