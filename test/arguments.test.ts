@@ -132,7 +132,7 @@ test("a function that reads arguments names its parameters and is given each", a
   writeFileSync(join(dir, "lib.rs"), fill);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
   const out = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(out).toContain("export function LinearGradient(stops, x1, y1, x2, y2) {\n  this.args = Array.prototype.slice.call(arguments);\n}\n");
+  expect(out).toContain("const slice = Array.prototype.slice;\n\nexport function LinearGradient(stops, x1, y1, x2, y2) {\n  this.args = slice.call(arguments);\n}\n");
   expect(out).toContain("node.fillLinear.apply(node, this.args);");
   expect(out).toContain("return new LinearGradient(undefined, undefined, undefined, undefined, undefined);");
   expect(out).toContain("return given(undefined, undefined);");
