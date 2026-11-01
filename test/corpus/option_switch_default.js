@@ -6,7 +6,8 @@ export function entry() {
 
 function kinds(names) {
   const seen = [];
-  for (const name of names) {
+  for (let i = 0; i < names.length; i++) {
+    const name = names[i];
     let level = 0;
     switch (name) {
       case "a":
@@ -26,7 +27,8 @@ function kinds(names) {
 
 function lanes(values, limit) {
   const seen = [];
-  for (const value of values) {
+  for (let i = 0; i < values.length; i++) {
+    const value = values[i];
     let level = limit;
     const below = (n) => n < level;
     if (value === 1 || value === 2) {
@@ -46,7 +48,8 @@ function lanes(values, limit) {
 // A loop's `break` in the rest stays the loop's: no `default` of it.
 function stopped(values) {
   const seen = [];
-  for (const value of values) {
+  for (let i = 0; i < values.length; i++) {
+    const value = values[i];
     let level = 0;
     if (value === 1 || value === 2) {
       level = 1;

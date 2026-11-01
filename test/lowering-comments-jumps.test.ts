@@ -130,7 +130,7 @@ pub fn arm(xs: &[i32], out: &mut Vec<i32>) {
     }
 }
 `);
-  expect(js).toContain("  for (const x of xs) {\n    out.push(x);\n    // On to the next.\n  }\n");
+  expect(js).toContain("  for (let i = 0; i < xs.length; i++) {\n    const x = xs[i];\n    out.push(x);\n    // On to the next.\n  }\n");
   expect(js).toContain("    if (x === 0) {\n      out.push(0);\n      // Zero: the next.\n    } else {\n");
   const pushed = (f: string, xs: number[]) => {
     const out: number[] = [];
@@ -160,11 +160,32 @@ test("a comment before a match arm's break MIR made a return is in its branch", 
         i += 1;
     }
 }
+
+pub fn walked(xs: &[i32], out: &mut Vec<i32>) {
+    let mut i = 0;
+    loop {
+        match xs.get(i) {
+            Some(0) => break,
+            Some(&x) => out.push(x * 2),
+            None => {
+                // At the end.
+                break;
+            }
+        }
+        i += 1;
+    }
+}
 `);
   expect(js).toContain("    if (xs[i] === 0) {\n      // Zero: no more.\n");
+  // Of a `loop` the arm's `break` leaves at its end, MIR's `return;`.
+  expect(js).toContain("    if (x == null) {\n      // At the end.\n      return;\n    }\n");
   const out: number[] = [];
   lib.doubled([1, 2, 0, 3] as never, out as never);
   expect(out).toEqual([2, 4]);
+  const walked: number[] = [];
+  lib.walked([1, 2, 3] as never, walked as never);
+  lib.walked([4, 0, 5] as never, walked as never);
+  expect(walked).toEqual([2, 4, 6, 8]);
 });
 
 // React DOM's SimpleEventPlugin: a guarded arm that falls through to the

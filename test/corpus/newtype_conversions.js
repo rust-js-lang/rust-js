@@ -42,7 +42,8 @@ function maybe(lane) {
 
 function main() {
   const lanes = [0, 1, 8, -2147483648];
-  for (const lane of lanes) {
+  for (let i = 0; i < lanes.length; i++) {
+    const lane = lanes[i];
     const priority = current(lane);
     const value = back(priority);
     const arg = into(lane);

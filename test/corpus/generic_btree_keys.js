@@ -23,7 +23,8 @@ function distinct(xs, TOrd, TTreeSet) {
 
 function counts(xs, KOrd, KClone, KDebug, KTreeMap) {
   const seen = new KTreeMap();
-  for (const x of xs) {
+  for (let i = 0; i < xs.length; i++) {
+    const x = xs[i];
     const key = KClone.clone(x);
     const current = $orInsert(seen, key, 0);
     seen.set(key, (current + 1) >>> 0);

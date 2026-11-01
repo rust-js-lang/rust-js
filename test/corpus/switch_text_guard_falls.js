@@ -38,7 +38,8 @@ function ctor(name, n, log) {
 
 function scan(names, log) {
   let n = 0;
-  for (const name of names) {
+  for (let i = 0; i < names.length; i++) {
+    const name = names[i];
     if (name === "stop" && on(log, "stop", n > 2)) {
       break;
     }

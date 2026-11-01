@@ -141,7 +141,8 @@ function main() {
     JSON.parse("{}"),
     JSON.parse("null"),
   ];
-  for (const value of values) {
+  for (let i = 0; i < values.length; i++) {
+    const value = values[i];
     console.log(
       `${hasValue(value)} ${lacksValue(value)} ${valueBranch(value)} ${valueMatch(value)} ${((value) => (value == null ? "None" : `Some(${value})`))(valueTried(value))}`,
     );

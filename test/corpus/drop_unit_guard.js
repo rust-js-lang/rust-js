@@ -11,7 +11,8 @@ function flush(items) {
   if (!flushing) {
     flushing = true;
     try {
-      for (const item of items) {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
         if (item === 0) {
           throw new Error("zero");
         }

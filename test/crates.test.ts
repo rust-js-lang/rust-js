@@ -578,7 +578,7 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
   // React's scheduleGesture, a type pushed only where it isn't there,
   // which it is where the two are one cell: neither borrow is counted.
   counting(out, "use std::cell::RefCell;\nuse std::rc::Rc;\n\nfn merge(types: &Rc<RefCell<Vec<String>>>, into: &Rc<RefCell<Vec<String>>>) {\n    for t in types.borrow().iter() {\n        if !into.borrow().contains(t) {\n            into.borrow_mut().push(t.clone());\n        }\n    }\n}\n\npub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let types = t.types.borrow().clone().unwrap();\n    merge(&types, &types);\n    println!(\"{}\", types.borrow().len());\n}\n");
-  expect(readFileSync(join(out, "counting", "lib.js"), "utf8")).toContain("  for (const t of types) {\n    if (!into.includes(t)) {\n      into.push(t);\n");
+  expect(readFileSync(join(out, "counting", "lib.js"), "utf8")).toContain("  for (let i = 0; i < types.length; i++) {\n    const t = types[i];\n    if (!into.includes(t)) {\n      into.push(t);\n");
   // One whose generic code has a `RefCell<T>` of any `T` boxes each, and
   // one that holds a borrow while what it's given runs counts it: its
   // consumer boxes and checks them as it does.

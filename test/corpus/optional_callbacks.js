@@ -14,7 +14,8 @@ function flushSync(f) {
 
 function each(items, f) {
   let seen = 0;
-  for (const item of items) {
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
     if (f != null) {
       f(item);
       seen = (seen + 1) >>> 0;

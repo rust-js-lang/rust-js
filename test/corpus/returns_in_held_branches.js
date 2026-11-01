@@ -59,7 +59,8 @@ function ofABox(tag, legacy) {
 function fromALoop(tags) {
   const boundary = handler(tags.length & 255);
   if (boundary != null) {
-    for (const tag of tags) {
+    for (let i = 0; i < tags.length; i++) {
+      const tag = tags[i];
       if (tag === boundary.tag) {
         return (tag * 2) & 255;
       }

@@ -191,7 +191,7 @@ is while its `Iter` lives, so the array's iterator, which reads its length
 as it steps, steps the items `$iter` would. One asked anything else, its
 `len()`, a `rev()`, given on, or of items that may be `undefined`
 (`$nextSome`), is still `$iter`. MIR says which it is, `std_iterator`'s
-`Known::SliceItems`; `iterators::stepped_slices`, the last tidy pass,
+`Known::ArrayItems`; `iterators::stepped_slices`, the last tidy pass,
 makes it. Case ([0262](0262-when-rust-and-js-disagree.md)): none. Held by
 `lowering-iterators.test.ts`'s "a slice's iterator only stepped is the
 array's own" and the mutations `stepped-slices-length-kept` and

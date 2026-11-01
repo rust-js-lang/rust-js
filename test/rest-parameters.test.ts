@@ -439,7 +439,7 @@ pub fn cache(r#fn: &'static AnyFunction) -> impl Fn(&dyn Rest<dyn IntoUnknown>) 
   const out = readFileSync(join(dir, "lib.js"), "utf8");
   expect(out).toContain("  return (...args) => {\n");
   expect(out).toContain("      return fn.apply(null, args);\n");
-  expect(out).toContain("    for (const arg of args) {\n");
+  expect(out).toContain("    for (let i = 0; i < args.length; i++) {\n      const arg = args[i];\n");
   expect(out).toContain("const primitiveNode = primitiveCache.get(arg);");
   expect(out).toContain("      const result = fn.apply(null, args);\n");
   expect(out).toContain("      erroredNode.v = error;\n      throw error;\n");

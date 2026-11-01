@@ -8,7 +8,8 @@ export function entry() {
 
 function counts(items) {
   const map = new $KeyMap();
-  for (const item of items) {
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
     const current = $orInsert(map, item, 0);
     map.set(item, (current + 1) >>> 0);
   }

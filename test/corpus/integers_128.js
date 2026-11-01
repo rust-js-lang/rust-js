@@ -32,7 +32,8 @@ export function entry() {
 
 function fnv(bytes) {
   let hash = 144066263297769815596495629667062367629n;
-  for (const b of bytes) {
+  for (let i = 0; i < bytes.length; i++) {
+    const b = bytes[i];
     hash ^= BigInt(b);
     hash = BigInt.asUintN(128, hash * 309485009821345068724781371n);
   }

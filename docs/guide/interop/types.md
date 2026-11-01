@@ -1149,7 +1149,8 @@ pub fn changes(listeners: &[Listener]) -> usize {
 export function changes(listeners) {
   let previousInstance;
   let count = 0;
-  for (const { instance } of listeners) {
+  for (let i = 0; i < listeners.length; i++) {
+    const { instance } = listeners[i];
     if (instance !== previousInstance) {
       count = (count + 1) >>> 0;
     }
@@ -1878,7 +1879,8 @@ export function apply(f, x) {
 }
 
 export function each(items, f) {
-  for (const item of items) {
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
     f(item);
   }
 }

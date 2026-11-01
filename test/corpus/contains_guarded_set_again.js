@@ -10,7 +10,8 @@ function merge(types, other) {
   let into = other;
   const borrow = $borrow(types, true);
   try {
-    for (const t of borrow) {
+    for (let i = 0; i < borrow.length; i++) {
+      const t = borrow[i];
       if (!$borrow(into).includes(t)) {
         into = types;
         $borrowMut(into).push(t);

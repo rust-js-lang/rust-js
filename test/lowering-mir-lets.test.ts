@@ -78,7 +78,7 @@ test("a `let` a loop's body makes, from MIR, is declared in the body", async () 
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("  for (const end of ends) {\n    let start = 0;\n");
+  expect(js).toContain("  for (let j = 0; j < ends.length; j++) {\n    const end = ends[j];\n    let start = 0;\n");
   const lib = await import(join(dir, "mir.js"));
   expect(lib.starts(["ab", "c"], [1, 2])).toEqual([3, 5]);
 });
@@ -291,6 +291,6 @@ test("a let each turn assigns from MIR is the loop body's", async () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("  for (const x of v) {\n    let y;\n");
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("  for (let i = 0; i < v.length; i++) {\n    const x = v[i];\n    let y;\n");
   expect((await import(join(dir, "mir.js"))).named([0, 1, 7])).toEqual(["one", "7"]);
 });

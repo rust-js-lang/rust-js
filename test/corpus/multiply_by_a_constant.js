@@ -12,15 +12,17 @@ function double(n) {
 
 function main() {
   const edges = [2147483647, -2147483648, -1, 0, 123456789];
-  for (const n of edges) {
+  for (let i = 0; i < edges.length; i++) {
+    const n = edges[i];
     console.log(`${double(n)} ${(n * -2097152) | 0} ${(-7 * n) | 0} ${Math.imul(n, 2097153)}`);
   }
   // A named constant's value, which rustc knows, through `*`.
   const small = [1000, -7];
   console.log(`${(small[0] * SCALE) | 0} ${(small[1] * SCALE) | 0}`);
   const unsigned = [4294967295, (1 << 31) >>> 0, 7];
-  for (const n of unsigned) {
+  for (let i = 0; i < unsigned.length; i++) {
     // Past 2^21, a product past 2^53, rounded in a double: `Math.imul`.
+    const n = unsigned[i];
     console.log(
       `${(n * 3) >>> 0} ${(n * 2097152) >>> 0} ${Math.imul(n, 4194305) >>> 0} ${Math.imul(n, n) >>> 0}`,
     );

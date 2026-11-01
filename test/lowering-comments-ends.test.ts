@@ -251,7 +251,7 @@ pub fn pick(flag: bool) -> u8 {
   expect(js).toContain(
     "        ? // This was an Enter of a ViewTransition.\n          2 // TODO: Mark the name and find a pair.\n        : phase;",
   );
-  expect(js).toContain("  for (const phase of phases) {\n    const nextPhase");
+  expect(js).toContain("  for (let i = 0; i < phases.length; i++) {\n    const phase = phases[i];\n    const nextPhase");
   expect(js).toContain("return flag\n    ? 3 // The first.\n    : 4; // The second.");
   expect([lib.visit([1, 5] as never), lib.pick(true as never), lib.pick(false as never)]).toEqual([[2, 5], 3, 4]);
 });

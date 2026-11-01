@@ -8,9 +8,7 @@ import {
   $cmp,
   $debugF64,
   $debugStr,
-  $iter,
   $mutGet,
-  $next,
   $orInsert,
   $partialCmp,
   $toFixed,
@@ -42,9 +40,9 @@ function storeDisplay_fmt(store) {
   let f = "";
   const items = Array.from(store.stock);
   items.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
-  const iter = $iter(items);
+  const iter = items.values();
   let value;
-  while ((value = $next(iter)) != null) {
+  while ((value = iter.next().value) != null) {
     const name = value[0];
     const qty = value[1];
     f += `${name}=${qty} `;
@@ -131,7 +129,8 @@ export function report() {
     "Audit",
   ];
   let out = "";
-  for (const e of events) {
+  for (let i = 0; i < events.length; i++) {
+    const e = events[i];
     const apply = Store.apply(store, e);
     if (apply.TAG === "Err") {
       out += `error: ${apply._0}\n`;
@@ -147,7 +146,8 @@ export function report() {
     },
     { value: [10], impl: revenueRule },
   ];
-  for (const r of rules) {
+  for (let i = 0; i < rules.length; i++) {
+    const r = rules[i];
     const w = r.impl.check(r.value, store);
     if (w != null) {
       out += `[${r.impl.name(r.value)}] ${w}\n`;
@@ -193,7 +193,8 @@ export function report() {
 export function tallies(words) {
   const counts = new Map();
   const one = 1;
-  for (const w of words) {
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
     $orInsert(counts, w, 0);
     $mutGet(counts, w).value = ($mutGet(counts, w).value + one) >>> 0;
     const n = $mutGet(counts, "b");

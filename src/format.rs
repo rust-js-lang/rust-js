@@ -161,7 +161,16 @@ fn moved(
         if old != offset && code[old as usize..offset as usize].contains('\n') {
             return None;
         }
-        Some(new_lines.position(new + (offset - old)))
+        // As far into the node in the text, on its line there: none past
+        // it, where the formatter wrote less of the line than the code.
+        let to = new + (offset - old);
+        if text
+            .get(new as usize..to as usize)
+            .is_none_or(|moved| moved.contains('\n'))
+        {
+            return None;
+        }
+        Some(new_lines.position(to))
     };
     // Codegen coalesces identical mappings on one line: `return <button>`,
     // or `() => setCount((count) => ..)`, may have only the first's. A node
@@ -559,6 +568,30 @@ pub(crate) fn moved_positions(map: &SourceMap<'_>, to: impl Fn(u32, u32) -> (u32
 mod tests {
     use super::*;
     use std::path::Path;
+
+    /// A mapping inside a node the formatter wrote shorter, `a      + b`'s
+    /// `+`, is moved as far into it as it was, past where the next node,
+    /// `b`, now starts: the map's tokens are written in order of where they
+    /// are, which the encoder needs. A program rust-js prints maps its
+    /// nodes' starts, which the pairing keeps in order: this test, not a
+    /// mutation's, holds the sort (ADR 1042).
+    #[test]
+    fn moved_tokens_in_order() {
+        let (code, text) = ("f(a      + b, c);\n", "f(a + b, c);\n");
+        let mut map = SourceMapBuilder::default();
+        map.set_source_and_content("a.rs", "");
+        for col in [0, 9, 11, 14] {
+            map.add_token(0, col, 0, col, Some(0), None);
+        }
+        let map = map.into_sourcemap().to_json_string();
+        let (_, moved) = transformed(code, text.to_string(), &map, "a.js").expect("the same program");
+        let moved = SourceMap::from_json_string(&moved).expect("a map");
+        let at: Vec<_> = moved.get_tokens().map(|t| (t.get_dst_line(), t.get_dst_col())).collect();
+        let mut sorted = at.clone();
+        sorted.sort();
+        assert_eq!(at, sorted);
+        assert!(at.contains(&(0, 6)), "`b` where it is: {at:?}");
+    }
 
     /// Every snapshot of generated JS is as oxfmt would leave it: formatting
     /// it again changes nothing.

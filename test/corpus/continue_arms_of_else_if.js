@@ -49,7 +49,8 @@ function walk(eligible, modern, log) {
 // goes on, none after the `return`.
 function firstHidden(fibers) {
   let seen = 0;
-  for (const fiber of fibers) {
+  for (let i = 0; i < fibers.length; i++) {
+    const fiber = fibers[i];
     if (fiber.lanes === 9) {
       return seen;
     } else if (fiber.lanes > 4) {

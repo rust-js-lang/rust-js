@@ -35,7 +35,8 @@ function replay(queue, log) {
 }
 
 function keptElse(xs, out) {
-  for (const x of xs) {
+  for (let i = 0; i < xs.length; i++) {
+    const x = xs[i];
     if (x > 3) {
       out.push(x);
       continue;
@@ -63,7 +64,8 @@ function elseContinues(xs, out) {
 }
 
 function elseBreaks(xs, out) {
-  for (const x of xs) {
+  for (let i = 0; i < xs.length; i++) {
+    const x = xs[i];
     if (x > 3) {
       out.push(x);
     } else {
@@ -91,7 +93,8 @@ function roots(tree, out) {
 }
 
 function shadowed(tree, out) {
-  for (const [tag, hidden, value] of tree) {
+  for (let i = 0; i < tree.length; i++) {
+    const [tag, hidden, value] = tree[i];
     if (tag === 5) {
       const doubled = (value * 2) | 0;
       out.push(doubled);
@@ -107,7 +110,8 @@ function shadowed(tree, out) {
 }
 
 function lastContinue(xs, out) {
-  for (const x of xs) {
+  for (let i = 0; i < xs.length; i++) {
+    const x = xs[i];
     out.push(0);
     if (x > 3) {
       out.push(x);
@@ -117,7 +121,8 @@ function lastContinue(xs, out) {
 }
 
 function droppedAfter(xs) {
-  for (const x of xs) {
+  for (let i = 0; i < xs.length; i++) {
+    const x = xs[i];
     if (x > 3) {
       console.log(`big ${x}`);
     } else {
@@ -141,7 +146,8 @@ function inDev(xs, dev, out) {
       next = xs[next];
     }
   } else {
-    for (const x of xs) {
+    for (let i = 0; i < xs.length; i++) {
+      const x = xs[i];
       if (x === 0) {
         break;
       }

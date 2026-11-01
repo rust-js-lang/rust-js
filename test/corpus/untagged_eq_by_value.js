@@ -32,12 +32,14 @@ function main() {
     { key: undefined },
     { key: "7" },
   ];
-  for (const a of fibers) {
+  for (let i = 0; i < fibers.length; i++) {
+    const a = fibers[i];
     const row = fibers.map((b) => sameKey(a, b));
     console.log(`[${row.join(", ")}]`);
   }
   const sizes = [1, NaN, "1", null];
-  for (const a of sizes) {
+  for (let i = 0; i < sizes.length; i++) {
+    const a = sizes[i];
     const row = sizes.map((b) => a === b);
     console.log(`${sizeDebug_fmt(a)} [${row.join(", ")}]`);
   }

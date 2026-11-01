@@ -43,7 +43,8 @@ function frame(tag, child, viewTransitions, log) {
 /** Of a statement `match`, its `_` named, more after it. */
 function counted(tags, log) {
   let total = 0;
-  for (const tag of tags) {
+  for (let i = 0; i < tags.length; i++) {
+    const tag = tags[i];
     switch (tag) {
       case HOST:
         total = (total + 1) >>> 0;

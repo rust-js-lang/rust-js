@@ -73,7 +73,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0022 Closures are arrow functions](0022-closures.md)
 - [0023 Strings, references and shared state](0023-strings-references-shared-state.md)
 - [0024 The `webapi` crate: DOM bindings generated from WebIDL](0024-web-crate.md) *(extended by 0891: `new X` of a method)*
-- [0025 `Vec`, `for` loops, `RefCell` and `&mut` to objects](0025-vec-loops-refcell-mut.md)
+- [0025 `Vec`, `for` loops, `RefCell` and `&mut` to objects](0025-vec-loops-refcell-mut.md) *(extended by 1042: a loop over an array counts its indices)*
 - [0034 String methods are JS's; a `char` is a one-character string; `format!` is `+`](0034-strings-and-chars.md)
 - [0036 An iterator is a JS array; `Ordering` is -1, 0 or 1](0036-iterators-and-sorting.md) *(extended by 0748: a `for` of a slice's first items; amended: `collect()` into `()`)*
 - [0037 `thread_local!` is a variable of its module](0037-thread-locals.md) *(amended: a function of the crate's that only makes a value is made as its module loads; a boxed closure, `Box::new`, only makes a value; an initializer that reads what may change, prints, or gives std the crate's closure is made where it's first used, #376; a library's flag, and another module's, read as the module loads; a `pub` one made where it's first used refused; amended by 1006: a `pub` one is made as its module loads, then every one its module's load can make, rd120; what a binding's call runs is `loaded_by`'s)*
@@ -690,7 +690,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0901 A print throws only where its text does](0901-a-print-throws-only-where-its-text-does.md) *(extended by 0902: what never unwinds is read from MIR)*
 - [0902 What never unwinds is read from MIR](0902-what-never-unwinds-is-read-from-mir.md)
 - [0903 A `FlatMap` held is std's](0903-a-flat-map-held-is-stds.md)
-- [0904 A `for` over a slice or a range from its end counts down](0904-a-loop-from-the-end-counts-down.md)
+- [0904 A `for` over a slice or a range from its end counts down](0904-a-loop-from-the-end-counts-down.md) *(extended by 1042: a loop over an array counts its indices)*
 - [0905 A guarded arm whose constants the next arm names falls through to its case](0905-a-guarded-arm-falls-to-the-next.md) *(amended: a comment before an arm fallen to is before its `// Fallthrough`; amended: a guard that falls to nothing beside one that falls to the next is a case too; amended: a fall-through the program's comment says gets no `// Fallthrough`; a guard whose next arm's test is in its `else` falls through; amended: a guard's `break` reaches what's after the `switch` too, a wrong answer fixed; amended: a guarded arm that does nothing before one of its constants alone is that one's case; amended: a case of an arm that returns ends with its `return`; amended: a chain of guarded arms beside another is one `switch`; amended: a guard of `&&` tested in parts falls through too; amended: a `switch` that ends a function has its cases' `break`s; amended: a string's arms fall too; amended: a comment above an arm of patterns is above its first `case`)*
 - [0906 A library's facts are sets of named facts](0906-a-librarys-facts-are-sets.md) *(extended by 0863, amended: a struct's field's facts, `fields`, library ABI 7)*
 - [0907 A fn pointer runs what the crate made it of](0907-a-fn-pointer-runs-what-the-crate-made-it-of.md) *(amended: a type of a `dyn` from outside leaves the others as they are; amended: `bind` binds a function's first arguments, a binding's function itself; amended: a binding's method bound is the method; amended by 1007: a signature that holds a `dyn` is keyed; amended: `bind` of some arguments gives `&'l dyn Fn`, as with_this, rd209)*
@@ -823,6 +823,8 @@ reordered, and git merges this file by keeping both sides' lines
 - [1039 An untagged enum's variant may hold another untagged enum](1039-an-untagged-enum-may-hold-another.md) *(rd305)*
 - [1040 A `position` only tested is JS's own search: `indexOf`, `findIndex`, `-1` its `None`](1040-a-position-tested-is-jss-own-search.md) *(rd316)*
 - [1041 A class that implements a binding's class extends it, an ES class](1041-a-class-that-implements-a-bindings-class-extends-it.md) *(rd331: class components, the react crate's `Component`; amended: `self: &'static Self`; a class of no superclass keeps 0761's form; a class component is an element of `jsx!`, rd331i)*
+- [1041 A class that implements a binding's class extends it, an ES class](1041-a-class-that-implements-a-bindings-class-extends-it.md) *(rd331: class components, the react crate's `Component`)*
+- [1042 A loop over an array counts its indices: `for (let i = 0; i < v.length; i++)`](1042-a-loop-over-an-array-counts-its-indices.md)
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md) *(amended: a closure's handle on itself is its own name)*
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)

@@ -103,14 +103,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "moved-tokens-unsorted",
-    breaks: "a source map's tokens a pairing moved out of order are written so, and the encoder panics",
-    file: "src/format.rs",
-    find: "    placed.sort_by_key(|&(at, _)| at);\n",
-    replace: "",
-    tests: ["test/serde.test.ts", "-t", "hand-written Deserialize"],
-  },
-  {
     name: "object-of-one-field-not-broken",
     breaks: "an object of one field written across lines is on one line, as the printer writes it, where its struct literal is across lines (ADR 0835)",
     file: "src/format.rs",
@@ -141,5 +133,13 @@ export const mutations: Mutation[] = [
     find: "        .filter(|&(i, _)| !is_told(i + 1))\n",
     replace: "",
     tests: ["test/lowering-comments.test.ts", "-t", "a blank line is where the Rust has one"],
+  },
+  {
+    name: "mapping-past-its-line",
+    breaks: "a mapping on a line the formatter wrote shorter is moved past it, past the text's end too, and rust-js panics (ADR 1042)",
+    file: "src/format.rs",
+    find: "            .is_none_or(|moved| moved.contains('\\n'))\n",
+    replace: "            .is_some_and(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^repr_enum_numbers.rs$"],
   },
 ];

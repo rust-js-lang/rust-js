@@ -63,7 +63,8 @@ function doubled(limit) {
 // A loop's value made before its `break`, and a loop beside it that
 // declares that name in its own block.
 function merged(xs, limit) {
-  for (const x of xs) {
+  for (let i = 0; i < xs.length; i++) {
+    const x = xs[i];
     const last = (x + 1) >>> 0;
     console.log(`each ${last}`);
   }

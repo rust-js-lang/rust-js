@@ -168,7 +168,8 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
   // doesn't have. A bundler would bring them in; the playground has none.
   const imports = /^import (?:[^;]+? from )?"([^"]+)";/gm;
   const external = [];
-  for (const [path, code] of sources) {
+  for (let i = 0; i < sources.length; i++) {
+    const [path, code] = sources[i];
     for (const [, specifier] of Array.from(code.matchAll(imports))) {
       const target = resolve(path, specifier);
       if (!sources.some(([p]) => p === target) && !external.includes(specifier)) {

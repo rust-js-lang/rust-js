@@ -400,7 +400,8 @@ function main() {
     "(1 + 2",
     "1 2",
   ];
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const run = Calculator.run(calc, line);
     if (run.TAG === "Ok") {
       if (run._0 != null) {

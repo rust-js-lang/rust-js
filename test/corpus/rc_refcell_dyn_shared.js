@@ -68,7 +68,8 @@ function main() {
     $dynCell(logger, loggerListener),
     { value: { seen: [] }, impl: loggerListener },
   ];
-  for (const listener of listeners) {
+  for (let j = 0; j < listeners.length; j++) {
+    const listener = listeners[j];
     const receiver = $borrowMut(listener, true);
     try {
       receiver.impl.notify(receiver, "start");

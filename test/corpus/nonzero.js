@@ -63,7 +63,8 @@ function main() {
   const v = [$unwrap(9), a, $unwrap(1)];
   v.sort((a, b) => a - b);
   console.log(`[${v.join(", ")}] 8`);
-  for (const n of v) {
+  for (let i = 0; i < v.length; i++) {
+    const n = v[i];
     if (7 === n) {
       console.log("seven");
     } else if (1 === n) {

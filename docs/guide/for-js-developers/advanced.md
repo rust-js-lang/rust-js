@@ -88,7 +88,8 @@ export function apply(f, x) {
 }
 
 export function runAll(callbacks, msg) {
-  for (const cb of callbacks) {
+  for (let i = 0; i < callbacks.length; i++) {
+    const cb = callbacks[i];
     cb(msg);
   }
 }

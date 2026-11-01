@@ -1123,7 +1123,8 @@ pub fn paired(x: &str) -> String {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain(`  let stack = name + ": " + message;
-  for (const callSite of structuredStackTrace) {
+  for (let i = 0; i < structuredStackTrace.length; i++) {
+    const callSite = structuredStackTrace[i];
     stack += "\\n    at " + callSite.toString();
   }
 `);

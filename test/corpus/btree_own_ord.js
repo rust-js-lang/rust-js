@@ -90,7 +90,8 @@ function task(id, urgency, name) {
 
 function tally(items, KOrd, KClone, KDebug, KTreeMap) {
   const counts = new KTreeMap();
-  for (const item of items) {
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
     const key = KClone.clone(item);
     const current = $orInsert(counts, key, 0);
     counts.set(key, (current + 1) >>> 0);

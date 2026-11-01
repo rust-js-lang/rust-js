@@ -234,6 +234,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         (self.is_std_type(ty, StdItem::ArrayIntoIter) || owning || self.is_iter_empty(ty)).then_some(true)
     }
 
+    /// std's iterator over an array's items whose JS value is the array a
+    /// `Vec`, a slice or an array is: a slice's `Iter`, a `Vec`'s or an
+    /// array's `IntoIter`, each item its index's, `v[i]` (ADR 1042). Not a
+    /// map's or a set's, whose JS value may be the map.
+    pub(in crate::lower) fn steps_its_array(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty);
+        let ty::Adt(adt, _) = ty.kind() else { return false };
+        self.is_std_type(ty, StdItem::SliceIter)
+            || self.is_std_type(ty, StdItem::ArrayIntoIter)
+            || ([sym::alloc, sym::std].contains(&self.tcx.crate_name(adt.did().krate))
+                && std_path(self.tcx, adt.did()) == "std::vec::IntoIter")
+    }
+
     /// std's iterator adapter, `iter::Map` and the like: a JS iterator's,
     /// whose fields JS doesn't have.
     pub(in crate::lower) fn is_iter_adapter(&self, ty: Ty<'tcx>) -> bool {

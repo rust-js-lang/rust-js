@@ -176,7 +176,8 @@ export function keptWrapped(buttons, given) {
       given.call(this, event);
     }
   }
-  for (const button of buttons) {
+  for (let i = 0; i < buttons.length; i++) {
+    const button = buttons[i];
     button.addEventListener("custom", attached);
   }
   return attached;

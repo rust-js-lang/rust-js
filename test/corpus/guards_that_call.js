@@ -24,7 +24,8 @@ function big(n) {
 // Its guard's binding read by the arm too.
 function firsts(rows) {
   const seen = [];
-  for (const row of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
     let level = 0;
     if (row.length >= 1) {
       const n = row[0];
@@ -43,7 +44,8 @@ function firsts(rows) {
 // Guards of two calls, of one, and a test between.
 function sorted(pairs) {
   const out = [];
-  for (const [a, b] of pairs) {
+  for (let i = 0; i < pairs.length; i++) {
+    const [a, b] = pairs[i];
     let tmp;
     if (a === 0) {
       tmp = "zero";
@@ -70,7 +72,8 @@ function sorted(pairs) {
 // A guard that calls, then one that reads what the call changed.
 function counted(values) {
   const out = [];
-  for (const v of values) {
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
     let calls = 0;
     function bump(n) {
       calls = (calls + 1) >>> 0;
@@ -85,7 +88,8 @@ function counted(values) {
 // Of two `|`'s alternatives, each tested by the guard in turn.
 function either(pairs) {
   const seen = [];
-  for (const [a, b] of pairs) {
+  for (let i = 0; i < pairs.length; i++) {
+    const [a, b] = pairs[i];
     const level =
       (a === 1 && odd(b)) || (b === 1 && odd(a))
         ? 1
@@ -103,7 +107,8 @@ function either(pairs) {
 function eitherRead(pairs) {
   const seen = [];
   let x;
-  for (const [a, b] of pairs) {
+  for (let i = 0; i < pairs.length; i++) {
+    const [a, b] = pairs[i];
     let level;
     bb26: {
       if (a === 1 && odd(b)) {
@@ -128,7 +133,8 @@ function eitherRead(pairs) {
 // where the first fails.
 function sums(pairs) {
   const seen = [];
-  for (const [a, b] of pairs) {
+  for (let i = 0; i < pairs.length; i++) {
+    const [a, b] = pairs[i];
     let level = 1;
     bb26: {
       if (a !== 1 || !odd((a + b) >>> 0)) {
@@ -151,7 +157,8 @@ function sums(pairs) {
 // A guard whose call changes what it then reads: MIR's tree.
 function marked(rows) {
   const seen = [];
-  for (const row of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
     let done = false;
     function mark(n) {
       console.log(`mark ${n}`);
@@ -186,7 +193,8 @@ function marked(rows) {
 // to that arm is the tree's.
 function unmarked(rows) {
   const seen = [];
-  for (const row of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
     function mark(n) {
       console.log(`mark ${n}`);
       return n % 2 === 1;
@@ -209,7 +217,8 @@ function unmarked(rows) {
 // A guard that reads the value a closure reads.
 function below(rows) {
   const seen = [];
-  for (const row of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
     let level = 4;
     function under(n) {
       console.log(`under ${n}`);

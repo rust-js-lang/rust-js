@@ -193,7 +193,8 @@ function borrowed(items, seen) {
   let total = 0;
   const borrow = $borrow(items, true);
   try {
-    outer: for (const x of borrow) {
+    outer: for (let i = 0; i < borrow.length; i++) {
+      const x = borrow[i];
       for (let j = 0; j < 3; j++) {
         if (j === x) {
           continue outer;

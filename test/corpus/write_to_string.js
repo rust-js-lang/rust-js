@@ -8,7 +8,8 @@ export function entry() {
 
 function render(items) {
   let out = "";
-  for (const [name, n] of items) {
+  for (let i = 0; i < items.length; i++) {
+    const [name, n] = items[i];
     out += `${$pad(name, 6, "<")}${String(n).padStart(3)}\n`;
   }
   out += `total ${items.map(([, n]) => n).reduce((a, b) => (a + b) >>> 0, 0)}`;

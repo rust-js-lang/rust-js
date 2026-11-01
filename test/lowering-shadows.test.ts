@@ -162,6 +162,15 @@ pub fn trimmed(lines: &[&str]) -> Vec<usize> {
     out
 }
 
+pub fn split_trimmed(text: &str) -> Vec<usize> {
+    let mut out = Vec::new();
+    for part in text.split(',') {
+        let part = part.trim();
+        out.push(part.len());
+    }
+    out
+}
+
 pub fn chained(s: &str) -> String {
     let t = s.trim();
     let t = t.to_uppercase();
@@ -183,7 +192,9 @@ pub fn chained(s: &str) -> String {
   // A number where it was text.
   expect(js).toContain("  let text = `${d}1`;\n  text = $unwrapOk(");
   // The pattern's own, set.
-  expect(js).toContain("  for (let line of lines) {\n    line = $trim(line);\n");
+  expect(js).toContain("  for (let i = 0; i < lines.length; i++) {\n    let line = lines[i];\n    line = $trim(line);\n");
+  // One a `for…of` binds, an iterator's, set too.
+  expect(js).toMatch(/  for \(let part of [^\n]*\) \{\n    part = \$trim\(part\);\n/);
   expect(js).toContain("  let t = $trim(s);\n  t = t.toUpperCase();\n  return t + \"!\";\n");
   const lib = await import(join(dir, "lib.js"));
   const logged: string[] = [];
@@ -202,11 +213,12 @@ pub fn chained(s: &str) -> String {
     "b",
     ["drop b", "drop a"],
   ]);
-  expect([lib.retyped(4), lib.trimmed([" a ", "bc  "]), lib.chained(" ok "), lib.shouted("ab", 3)]).toEqual([
+  expect([lib.retyped(4), lib.trimmed([" a ", "bc  "]), lib.chained(" ok "), lib.shouted("ab", 3), lib.splitTrimmed(" a , bc")]).toEqual([
     42,
     [1, 2],
     "OK!",
     5,
+    [1, 2],
   ]);
 });
 
@@ -264,7 +276,7 @@ test("a binding of what take() gives names it", async () => {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  const hiddenUpdatesForLane = hiddenUpdates[index];\n  hiddenUpdates[index] = undefined;\n  if (hiddenUpdatesForLane != null) {\n    for (const update of hiddenUpdatesForLane) {\n");
+  expect(js).toContain("  const hiddenUpdatesForLane = hiddenUpdates[index];\n  hiddenUpdates[index] = undefined;\n  if (hiddenUpdatesForLane != null) {\n    for (let i = 0; i < hiddenUpdatesForLane.length; i++) {\n      const update = hiddenUpdatesForLane[i];\n");
   expect(js).not.toContain("old");
   const lib = await import(join(dir, "lib.js"));
   const hidden = [[1, 2], undefined];
@@ -631,10 +643,10 @@ pub fn flush(a: &[usize], b: &[usize]) -> usize {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).not.toMatch(/fiber\$|sortedNames\$/);
-  expect(js).toContain("  for (const fiber of b) {\n");
+  expect(js).toContain("  for (let i = 0; i < b.length; i++) {\n    const fiber = b[i];\n");
   expect(js).toContain("    const sortedNames = b.length;\n");
   // The module's `offset`, which the loop reads: its own name kept.
-  expect(js).toContain("  for (const offset$1 of a) {\n    total = (total + (Math.imul(offset$1, offset) >>> 0)) >>> 0;\n");
+  expect(js).toContain("  for (let i = 0; i < a.length; i++) {\n    const offset$1 = a[i];\n    total = (total + (Math.imul(offset$1, offset) >>> 0)) >>> 0;\n");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.flush([1, 2], [3])).toEqual(1 + 2 + 3 + 2 + 1 + 100 + 200);
 });

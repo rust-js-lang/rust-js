@@ -39,7 +39,8 @@ function classify(input) {
 }
 
 function firstEven(items) {
-  for (const item of items) {
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
     if (item != null && ((item % 2) | 0) === 0) {
       return item;
     }

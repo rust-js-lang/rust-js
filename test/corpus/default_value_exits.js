@@ -34,7 +34,8 @@ function kind(value) {
 // A value made `None` just before, which the arm that does nothing keeps.
 function found(pairs) {
   const all = [];
-  for (const [a, b] of pairs) {
+  for (let i = 0; i < pairs.length; i++) {
+    const [a, b] = pairs[i];
     let seen;
     if (a === 1 || b === 1) {
       seen = 7;
@@ -49,7 +50,8 @@ function found(pairs) {
 // Another arm leaves the loop: the flag is read after it.
 function broken(pairs) {
   let hit = false;
-  for (const [a, b] of pairs) {
+  for (let i = 0; i < pairs.length; i++) {
+    const [a, b] = pairs[i];
     if (a === 1 || b === 1) {
       hit = false;
     } else if (a === 2 && b === 2) {
@@ -65,7 +67,8 @@ function broken(pairs) {
 function continued(pairs) {
   const seen = [];
   let hit = false;
-  for (const [a, b] of pairs) {
+  for (let i = 0; i < pairs.length; i++) {
+    const [a, b] = pairs[i];
     seen.push(hit);
     if (a === 1 || b === 1) {
       hit = true;
@@ -83,7 +86,8 @@ function continued(pairs) {
 function returned(pairs) {
   let hit = false;
   const seen = [];
-  for (const [a, b] of pairs) {
+  for (let i = 0; i < pairs.length; i++) {
+    const [a, b] = pairs[i];
     function step() {
       if (a === 1 || b === 1) {
         hit = true;
@@ -104,7 +108,8 @@ function returned(pairs) {
 function unwound(pairs) {
   let hit = false;
   const seen = [];
-  for (const [a, b] of pairs) {
+  for (let i = 0; i < pairs.length; i++) {
+    const [a, b] = pairs[i];
     const caught = $catchUnwind(() => {
       if (a === 1 || b === 1) {
         hit = true;
@@ -124,7 +129,8 @@ function unwound(pairs) {
 // A call made before the value is given reads it, through a closure.
 function observed(pairs) {
   const seen = [];
-  for (const [a, b] of pairs) {
+  for (let i = 0; i < pairs.length; i++) {
+    const [a, b] = pairs[i];
     let level = 0;
     const look = () => (level * 10) >>> 0;
     if (a === 1 || b === 1) {
@@ -143,7 +149,8 @@ function observed(pairs) {
 // A guard's call before the value is given reads it, through a closure.
 function guarded(pairs) {
   const seen = [];
-  for (const [a, b] of pairs) {
+  for (let i = 0; i < pairs.length; i++) {
+    const [a, b] = pairs[i];
     let level = 4;
     const below = (n) => n < level;
     level = a === 1 || b === 1 ? 1 : a === 2 && b === 2 ? 2 : below(a) ? 3 : 5;
@@ -160,7 +167,8 @@ function odd(n) {
 // An `|` whose alternatives a guard that calls tests each.
 function oddOnes(pairs) {
   const seen = [];
-  for (const [a, b] of pairs) {
+  for (let i = 0; i < pairs.length; i++) {
+    const [a, b] = pairs[i];
     const level =
       (a === 1 && odd(b)) || (b === 1 && odd(a))
         ? 1
@@ -177,7 +185,8 @@ function oddOnes(pairs) {
 // Of numbers, `NaN` among them, and of three values.
 function floats(pairs) {
   const seen = [];
-  for (const [a, b] of pairs) {
+  for (let i = 0; i < pairs.length; i++) {
+    const [a, b] = pairs[i];
     let level = 0;
     if (a === 1 || b === 1) {
       level = 1;
@@ -211,7 +220,8 @@ function triple(rows) {
 function continuedRows(rows) {
   const seen = [];
   let hit = false;
-  for (const row of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
     seen.push(hit);
     if (row.length >= 1 && (row[0] === 1 || row[row.length - 1] === 1)) {
       hit = true;
@@ -229,7 +239,8 @@ function continuedRows(rows) {
 function returnedRows(rows) {
   let hit = false;
   const seen = [];
-  for (const row of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
     function step() {
       if (row.length >= 1 && (row[0] === 1 || row[row.length - 1] === 1)) {
         hit = true;
@@ -250,7 +261,8 @@ function returnedRows(rows) {
 function unwoundRows(rows) {
   let hit = false;
   const seen = [];
-  for (const row of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
     const caught = $catchUnwind(() => {
       if (row.length >= 1 && (row[0] === 1 || row[row.length - 1] === 1)) {
         hit = true;
@@ -270,7 +282,8 @@ function unwoundRows(rows) {
 // A call before the value is given reads it, through a closure.
 function observedRows(rows) {
   const seen = [];
-  for (const row of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
     let level = 0;
     const look = () => (level * 10) >>> 0;
     if (row.length >= 1 && (row[0] === 1 || row[row.length - 1] === 1)) {
@@ -289,7 +302,8 @@ function observedRows(rows) {
 // A guard's call before the value is given reads it, through a closure.
 function guardedRows(rows) {
   const seen = [];
-  for (const row of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
     let level = 4;
     const below = (n) => n < level;
     level =
@@ -335,7 +349,8 @@ function main() {
     ["object", 3, 3],
     ["number", 1, 1],
   ];
-  for (const value of values) {
+  for (let i = 0; i < values.length; i++) {
+    const value = values[i];
     console.log(
       `${value == null ? "None" : `Some((${$debugStr(value[0])}, ${value[1]}, ${value[2]}))`} ${kind(value)}`,
     );

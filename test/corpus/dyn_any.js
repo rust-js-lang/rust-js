@@ -52,7 +52,8 @@ function main() {
     { value: { x: 1 }, impl: { typeId: () => "lib::Point" } },
     { value: 1.5, impl: { typeId: () => "f64" } },
   ];
-  for (const item of items) {
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
     console.log(`${describe(item)}`);
   }
   const number = { value: 7, impl: u8Any };

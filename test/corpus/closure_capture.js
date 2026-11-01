@@ -16,7 +16,8 @@ function makeCounter() {
 }
 
 function apply(f, items) {
-  for (const x of items) {
+  for (let i = 0; i < items.length; i++) {
+    const x = items[i];
     f(x);
   }
 }

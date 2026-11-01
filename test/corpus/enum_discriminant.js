@@ -38,7 +38,8 @@ function main() {
     `${sameKind($index(shapes, 0), $index(shapes, 2))} ${sameKind($index(shapes, 0), $index(shapes, 1))}`,
   );
   const counts = new Map();
-  for (const shape of shapes) {
+  for (let i = 0; i < shapes.length; i++) {
+    const shape = shapes[i];
     const key = shape.TAG === "Circle" ? 0 : shape.TAG === "Square" ? 1 : 2;
     const current = $orInsert(counts, key, 0);
     counts.set(key, (current + 1) >>> 0);

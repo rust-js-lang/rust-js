@@ -8,7 +8,8 @@ export function entry() {
 
 function described(props, room) {
   let content = "";
-  for (const [name, value] of props) {
+  for (let i = 0; i < props.length; i++) {
+    const [name, value] = props[i];
     if (value === 0) {
       continue;
     }
@@ -33,7 +34,9 @@ function renamed(kind, names, room) {
       return "{}";
     }
     let properties = "";
-    for (let name of names) {
+    let name;
+    for (let i = 0; i < names.length; i++) {
+      let name = names[i];
       if (name.startsWith("_")) {
         continue;
       }

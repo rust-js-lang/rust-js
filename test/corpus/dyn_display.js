@@ -70,7 +70,8 @@ function main() {
     { value: "s", impl: display },
     { value: { x: 3, y: 4 }, impl: pointDisplay },
   ];
-  for (const d of all) {
+  for (let i = 0; i < all.length; i++) {
+    const d = all[i];
     $print(`${d.impl.fmt(d.value)} `);
   }
   console.log("");

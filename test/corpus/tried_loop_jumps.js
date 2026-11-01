@@ -97,7 +97,8 @@ function kept(reason) {
 // loop's own: none in the JS.
 function firstBig(rows) {
   let seen = 0;
-  for (const row of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
     if (row > 10) {
       break;
     }

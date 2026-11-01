@@ -702,7 +702,8 @@ pub fn described() -> f64 {
   } finally {
     REENTRY = false;
   }`);
-  expect(js).toContain(`    for (const tail of tails) {
+  expect(js).toContain(`    for (let i = 0; i < tails.length; i++) {
+      const tail = tails[i];
       const kind = tail.kind;
       const size = tail.size;
       total += globalThis.work(kind) + size;

@@ -9,7 +9,8 @@ export function entry() {
 function add(ids, into, other) {
   const borrow = $borrow(ids, true);
   try {
-    for (const _ of borrow) {
+    for (let i = 0; i < borrow.length; i++) {
+      const _ = borrow[i];
       if (!$borrow(into).includes(other)) {
         $borrowMut(into).push(other);
       }

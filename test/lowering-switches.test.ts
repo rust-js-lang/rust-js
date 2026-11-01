@@ -1453,7 +1453,7 @@ pub fn watched(observers: &[Observer], child: &Element) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  for (const observer of observers) {\n    observer.observe(child);\n  }\n");
+  expect(js).toContain("  for (let i = 0; i < observers.length; i++) {\n    const observer = observers[i];\n    observer.observe(child);\n  }\n");
   expect(js).toContain("function observerDisconnect(observer) {\n  observer.disconnect();\n}");
   expect(js).toContain("if (ready()) {");
   // Arms alike only in part keep their test.

@@ -18,14 +18,16 @@ function main() {
     Infinity,
     Math.fround(3.4028235e38),
   ];
-  for (const x of f32s) {
+  for (let i = 0; i < f32s.length; i++) {
+    const x = f32s[i];
     $print(
       `${$isNormal(x, 1.1754943508222875e-38) ? 1 : 0}${$isNormal(x, 1.1754943508222875e-38, true) ? 1 : 0} `,
     );
   }
   console.log("");
   const f64s = [1, 0, 2.2250738585072014e-308, 1e-310, 5e-324, 1e-40, NaN, -Infinity];
-  for (const x of f64s) {
+  for (let i = 0; i < f64s.length; i++) {
+    const x = f64s[i];
     $print(
       `${$isNormal(x, 2.2250738585072014e-308) ? 1 : 0}${$isNormal(x, 2.2250738585072014e-308, true) ? 1 : 0} `,
     );

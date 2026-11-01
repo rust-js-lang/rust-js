@@ -735,7 +735,7 @@ pub(in crate::lower) fn stepped_slices(body: &mut Vec<Stmt>) {
     js::each_list(body, &mut |stmts| {
         for stmt in stmts.iter() {
             if let StmtKind::Const(name, e) = &stmt.kind
-                && e.facts.has(js::Known::SliceItems)
+                && e.facts.has(js::Known::ArrayItems)
                 && fresh_iter_source(e).is_some()
             {
                 made.push(name.clone());

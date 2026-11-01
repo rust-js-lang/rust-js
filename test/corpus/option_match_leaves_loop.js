@@ -7,7 +7,8 @@ export function entry() {
 function first(items) {
   let hit = false;
   const seen = [];
-  for (const item of items) {
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
     if (item === 1 || item === 2) {
       hit = true;
     } else if (item === 3) {
@@ -23,7 +24,8 @@ function first(items) {
 
 function named(items) {
   const seen = [];
-  for (const item of items) {
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
     let level = 0;
     if (item === "a" || item === "b") {
       level = 1;

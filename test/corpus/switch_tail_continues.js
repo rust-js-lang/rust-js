@@ -6,7 +6,8 @@ export function entry() {
 
 function count(v) {
   let n = 0;
-  for (const x of v) {
+  for (let i = 0; i < v.length; i++) {
+    const x = v[i];
     switch (x) {
       case 0:
         break;

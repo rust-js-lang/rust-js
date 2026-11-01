@@ -484,7 +484,8 @@ pub fn named(names: &[&str]) -> (String, String) {
 ```js
 export function logged(fn) {
   return (...args) => {
-    for (const arg of args) {
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
       fn.last = arg;
     }
     return fn.apply(null, args);

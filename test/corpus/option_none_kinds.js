@@ -17,7 +17,8 @@ function set(slot, value) {
 /** Made here, `None` or `Some(i)`: its `None` is `undefined`. */
 function firstOver(items, limit) {
   let first;
-  for (const item of items) {
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
     if (first === undefined && item > limit) {
       first = item;
     }

@@ -28,7 +28,8 @@ function main() {
     total = (total + value) >>> 0;
   };
   const handlers = [noop, loud, quiet, counts];
-  for (const handler of handlers) {
+  for (let i = 0; i < handlers.length; i++) {
+    const handler = handlers[i];
     handler(1);
     const value = isNoop(handler);
     console.log(`${value} ${handler === loud} ${handler === quiet} ${handler === counts}`);

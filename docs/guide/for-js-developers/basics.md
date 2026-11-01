@@ -65,7 +65,8 @@ pub fn total(prices: &[f64], tax: f64) -> f64 {
 export function total(prices, tax) {
   const rate = 1 + tax;
   let sum = 0;
-  for (const price of prices) {
+  for (let i = 0; i < prices.length; i++) {
+    const price = prices[i];
     sum += price * rate;
   }
   return sum;
@@ -2300,7 +2301,8 @@ pub fn find_pair(grid: &[Vec<i32>], target: i32) -> Option<(usize, usize)> {
 
 ```js
 export function printAll(names) {
-  for (const name of names) {
+  for (let i = 0; i < names.length; i++) {
+    const name = names[i];
     console.log(`${name}`);
   }
 }
@@ -2428,6 +2430,12 @@ export function pairs(v) {
 }
 ```
 
+- A loop over an array's items, `for x in &v`, `v.iter()` or a `Vec` it
+  owns, counts its indices, as React writes it: `for (let i = 0; i <
+  v.length; i++) { const x = v[i]; .. }`, `j` for a loop inside one. JS's
+  own iterator steps the array the same way, so nothing changes, and an
+  ES5 build needs no iterator polyfill for it. A map's items and a string's
+  `chars()` stay `for…of` ([ADR 1042](../../decisions/1042-a-loop-over-an-array-counts-its-indices.md)).
 - A loop of an array's first items, `for x in xs.iter().take(LIMIT)`, is
   of that part of it, `for (const x of xs.slice(0, LIMIT))`, and of those
   past some, `xs.iter().skip(1)`, `xs.slice(1)`; with their indices,

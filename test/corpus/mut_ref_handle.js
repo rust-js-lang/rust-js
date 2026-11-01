@@ -144,7 +144,8 @@ function main() {
       },
     },
   ];
-  for (const r of refs) {
+  for (let k = 0; k < refs.length; k++) {
+    const r = refs[k];
     r.value = (r.value * 7) | 0;
   }
   console.log(`${i} ${j}`);

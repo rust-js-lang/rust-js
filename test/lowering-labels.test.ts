@@ -427,7 +427,7 @@ pub fn describe(value: Option<&Unknown>, indent: usize, out: &mut Vec<String>) -
   expect(js).not.toMatch(/^\s*\w+: \{$/m);
   expect(js).toContain('        desc = "null";\n      } else {\n        if ("type" in value) {\n');
   expect(js).toContain(
-    '          if (indent < 3 || (keys.length === 2 && keys[0] === "children" && keys[1] === "type")) {\n            desc = "<" + typeName + " … />";\n            break;\n          }\n          out.push("<" + typeName);\n          for (const key of keys) {\n',
+    '          if (indent < 3 || (keys.length === 2 && keys[0] === "children" && keys[1] === "type")) {\n            desc = "<" + typeName + " … />";\n            break;\n          }\n          out.push("<" + typeName);\n          for (let i = 0; i < keys.length; i++) {\n            const key = keys[i];\n',
   );
   expect(js).toContain('          out.push("/>");\n          return "";\n        }\n        const name = String(value);\n');
   const lib = await import(join(dir, "lib.js"));

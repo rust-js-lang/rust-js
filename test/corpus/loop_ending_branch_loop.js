@@ -143,7 +143,8 @@ function main() {
     rect(9, 0, 1, 1),
     rect(8, 0, 1, 1),
   ]);
-  for (const r of rects) {
+  for (let i = 0; i < rects.length; i++) {
+    const r = rects[i];
     console.log(
       `${$displayF64(r.x)} ${$displayF64(r.y)} ${$displayF64(r.width)} ${$displayF64(r.height)}`,
     );

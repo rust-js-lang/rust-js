@@ -149,7 +149,8 @@ pub fn object_name(object: Option<&Unknown>) -> String {
     return false;
   }
   const names = Object.getOwnPropertyNames(object);
-  for (const name of names) {
+  for (let i = 0; i < names.length; i++) {
+    const name = names[i];
     if (!(name in objectPrototype)) {
       return false;
     }

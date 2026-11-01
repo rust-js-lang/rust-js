@@ -28,7 +28,8 @@ function isTagValid(tag, parentTag, implicitRootScope) {
 function main() {
   const parents = [undefined, "select", "tbody", "thead", "h1", "h3", "#document", "div"];
   for (const tag of ["hr", "option", "tr", "script", "template", "h1", "h2", "html", "p"]) {
-    for (const parent of parents) {
+    for (let i = 0; i < parents.length; i++) {
+      const parent = parents[i];
       for (const scope of [false, true]) {
         $print(String(isTagValid(tag, parent, scope) ? 1 : 0));
       }

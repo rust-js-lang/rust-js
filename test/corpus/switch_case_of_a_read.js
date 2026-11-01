@@ -168,7 +168,8 @@ function got(n) {
 function main() {
   const log = [];
   const names = ["keypress", "keydown", "focusin", "animationend", "fixed", "scroll", "other"];
-  for (const name of names) {
+  for (let i = 0; i < names.length; i++) {
+    const name = names[i];
     const value = ctor(name, 1, log);
     const arg = ctor(name, 2, log);
     console.log(`${name} ${value} ${arg}`);

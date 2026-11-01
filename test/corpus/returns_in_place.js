@@ -38,7 +38,8 @@ function sumRows(rows) {
   let total = 0;
   for (const [i, row] of rows.entries()) {
     let seen = 0;
-    for (const cell of row) {
+    for (let j = 0; j < row.length; j++) {
+      const cell = row[j];
       if (cell === "stop") {
         break;
       }

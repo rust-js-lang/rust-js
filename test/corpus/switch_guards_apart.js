@@ -58,7 +58,8 @@ function described(tag, owned, flags, log) {
 /** A guarded arm that isn't last, whose failed guard goes on to nothing. */
 function counted(tags, log) {
   let total = 0;
-  for (const tag of tags) {
+  for (let i = 0; i < tags.length; i++) {
+    const tag = tags[i];
     switch (tag) {
       case HOST:
         total = (total + 1) >>> 0;

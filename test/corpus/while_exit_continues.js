@@ -53,7 +53,8 @@ function climbMarked(from, marked) {
   let node = from;
   while (true) {
     up: while (node.sibling == null) {
-      for (const name of marked) {
+      for (let i = 0; i < marked.length; i++) {
+        const name = marked[i];
         if (node.name === name) {
           const parent = $unwrap(node.return);
           node = parent;

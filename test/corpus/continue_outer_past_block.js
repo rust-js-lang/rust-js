@@ -6,7 +6,8 @@ export function entry() {
 
 function summed(items, keep) {
   let total = 0;
-  outer: for (const x of items) {
+  outer: for (let i = 0; i < items.length; i++) {
+    const x = items[i];
     if (!keep(x)) {
       continue;
     }

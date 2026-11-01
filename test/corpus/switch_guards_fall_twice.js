@@ -72,7 +72,8 @@ function main() {
     "scroll",
     "other",
   ];
-  for (const name of names) {
+  for (let i = 0; i < names.length; i++) {
+    const name = names[i];
     const value = ctor(name, 1, log);
     const value$1 = ctor(name, 2, log);
     const arg = ctor(name, 3, log);

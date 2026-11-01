@@ -7,7 +7,8 @@ export function entry() {
 }
 
 function updated(keys, next, log) {
-  for (const key of keys) {
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
     if (key && !key.startsWith("_")) {
       switch (key) {
         case "checked":
@@ -32,7 +33,8 @@ function updated(keys, next, log) {
 
 function extra(names, transitions) {
   const found = [];
-  for (const name of names) {
+  for (let i = 0; i < names.length; i++) {
+    const name = names[i];
     if (name !== "value" && name !== "checked") {
       if ((name === "vt-name" && transitions) || (name === "vt-update" && transitions)) {
         // Expected from the server.

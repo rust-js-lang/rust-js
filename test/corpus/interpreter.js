@@ -577,7 +577,8 @@ function run(src) {
   Env.set(globals, "upper", { TAG: "Builtin", _0: "upper", _1: upper });
   const interp = { depth: 0, calls: 0 };
   const out = [];
-  for (const stmt of program) {
+  for (let i = 0; i < program.length; i++) {
+    const stmt = program[i];
     if (stmt.TAG === "Let") {
       const result = Interp.eval(interp, stmt._1, globals);
       if (result.TAG === "Err") {

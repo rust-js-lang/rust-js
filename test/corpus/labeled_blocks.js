@@ -25,7 +25,8 @@ function firstEven(rows) {
       if (value != null) {
         const i = value[0];
         const row = value[1];
-        for (const x of row) {
+        for (let j = 0; j < row.length; j++) {
+          const x = row[j];
           if (x % 2 === 0) {
             found = [i, x];
             break search;

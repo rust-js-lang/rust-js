@@ -84,7 +84,8 @@ function largest(items, TPartialOrd) {
 export function tour() {
   let out = "";
   const pets = [{ impl: dogDescribe }, { value: { lives: 9 }, impl: catDescribe }];
-  for (const p of pets) {
+  for (let i = 0; i < pets.length; i++) {
+    const p = pets[i];
     out += `${p.impl.name(p.value)} ${p.impl.describe(p.value)} ${p.impl.shout(p.value)}\n`;
   }
   out += `${tLabeled_label(42, { fmt: String })} ${tLabeled_label("hi", { fmt: (value) => value })} ${tLabeled_label(2.5, { fmt: $displayF64 })}\n`;

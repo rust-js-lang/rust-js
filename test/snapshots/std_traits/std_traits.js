@@ -439,7 +439,8 @@ export function moreOrderings() {
   ];
   lists.sort((a, b) => $cmpItems(a, b, $cmp));
   const sizes = words.map((w) => Array.from(w[0]).length);
-  for (const list of lists) {
+  for (let i = 0; i < lists.length; i++) {
+    const list = lists[i];
     sizes.push(list.length);
   }
   const byKey = [

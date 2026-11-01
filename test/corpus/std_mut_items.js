@@ -122,7 +122,8 @@ function main() {
   }
   const cells = [1, 2, 3];
   const refs = $mutItems(cells).filter((c) => c.value !== 2);
-  for (const r of refs) {
+  for (let j = 0; j < refs.length; j++) {
+    const r = refs[j];
     r.value = -r.value | 0;
   }
   console.log(`${seen} ${found} [${cells.join(", ")}]`);

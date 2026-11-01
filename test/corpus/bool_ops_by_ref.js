@@ -18,7 +18,8 @@ function main() {
   const chunk = [true, true, false];
   let all = true;
   let any = false;
-  for (const c of chunk) {
+  for (let i = 0; i < chunk.length; i++) {
+    const c = chunk[i];
     all = !!(all & c);
     any = !!(any | c);
   }

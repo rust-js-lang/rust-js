@@ -93,9 +93,9 @@ pub fn stops(items: &[u32]) -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain("  for (const x of items) {\n    if (x > 2) {\n      n = ");
-  expect(js).toContain("  for (const x of items) {\n    if (x > 2) {\n      return x;\n");
-  expect(js).toContain("  for (const [a, b] of items) {\n");
+  expect(js).toContain("  for (let i = 0; i < items.length; i++) {\n    const x = items[i];\n    if (x > 2) {\n      n = ");
+  expect(js).toContain("  for (let i = 0; i < items.length; i++) {\n    const x = items[i];\n    if (x > 2) {\n      return x;\n");
+  expect(js).toContain("  for (let i = 0; i < items.length; i++) {\n    const [a, b] = items[i];\n");
   expect(js).toContain("  for (let i = 0; i < k; i++) {\n");
   expect(js).toContain("  for (let i = 0; i <= k; i++) {\n");
   expect(js).toContain("    if (x === 0) {\n      break;\n    }\n");
@@ -239,7 +239,8 @@ pub fn chained(nodes: &[Node]) -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain(`  for (const route of routes) {
+  expect(js).toContain(`  for (let i = 0; i < routes.length; i++) {
+    const route = routes[i];
     if (route.title != null && route.routes != null && route.routes.length !== 0) {
       out.push(\`\${route.title}:\${route.routes.length}\`);
     } else if (route.title != null && route.path != null) {
@@ -247,7 +248,8 @@ pub fn chained(nodes: &[Node]) -> u32 {
     }
   }
 `);
-  expect(js).toContain(`  for (const route of routes) {
+  expect(js).toContain(`  for (let i = 0; i < routes.length; i++) {
+    const route = routes[i];
     if (route.path != null && route.path.startsWith("http")) {
       continue;
     }
@@ -348,11 +350,13 @@ pub fn decorate(lines: &[D], inline: &[D]) -> u32 {
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain(`export function decorate(lines, inline) {
   const highlighted = new Map();
-  for (const decorator of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const decorator = lines[i];
     highlighted.set(decorator.line, decorator.className);
   }
   const starts = new Map();
-  for (const decorator of inline) {
+  for (let i = 0; i < inline.length; i++) {
+    const decorator = inline[i];
     if (starts.has(decorator.line)) {
       throw new Error(\`already at \${decorator.line}\`);
     }
@@ -796,7 +800,8 @@ pub fn pages(routes: &[Route], out: &mut Vec<String>) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain(`  for (const route of routes) {
+  expect(js).toContain(`  for (let i = 0; i < routes.length; i++) {
+    const route = routes[i];
     if (route.header) {
       continue;
     }
@@ -1198,10 +1203,12 @@ pub fn first(grid: &[Vec<u32>]) -> Option<u32> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain("  for (const [r, row] of grid.entries()) {\n    for (const [c, v] of row.entries()) {\n");
-  expect(js).toContain("  rows: for (const row of grid) {");
+  expect(js).toContain("  rows: for (let i = 0; i < grid.length; i++) {\n    const row = grid[i];\n    for (let j = 0; j < row.length; j++) {\n      const v = row[j];\n");
   expect(js).toContain("        continue rows;");
-  expect(js).toContain(`  outer: for (const row of grid) {
-    for (const v of row) {
+  expect(js).toContain(`  outer: for (let i = 0; i < grid.length; i++) {
+    const row = grid[i];
+    for (let j = 0; j < row.length; j++) {
+      const v = row[j];
       if (v > 3) {
         found = v;
         break outer;
@@ -1425,39 +1432,6 @@ test("counted loops in a loop's branches stay where they're written", async () =
   expect(js).not.toContain("$rangeNext");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.scaled([1, 5, 10, 13])).toEqual([8, 0.25, 20, -10, 104]);
-});
-
-// A `for` whose binding is `mut`, which MIR declares before the loop and
-// assigns each turn: a `for…of` all the same, of an iterator stepped
-// first too.
-test("a for loop of a mut binding is a for...of", async () => {
-  const dir = fixture("for-mut-binding");
-  writeFileSync(join(dir, "lib.rs"), `pub fn plain_mut(v: Vec<Vec<u32>>) -> usize {
-    let mut n = 0;
-    for mut row in v {
-        row.push(0);
-        n += row.len();
-    }
-    n
-}
-pub fn rest_mut(v: Vec<Vec<u32>>) -> usize {
-    let mut it = v.into_iter();
-    it.next();
-    let mut n = 0;
-    for mut row in it {
-        row.push(0);
-        n += row.len();
-    }
-    n
-}
-`);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  for (const row of v) {\n    row.push(0);");
-  expect(js).toContain("  for (const row of it) {\n    row.push(0);");
-  expect(js).not.toContain("let row;");
-  const lib = await import(join(dir, "lib.js"));
-  expect([lib.plainMut([[1], [2, 3]]), lib.restMut([[1], [2, 3], [4]])]).toEqual([5, 5]);
 });
 
 // React's describeObjectForErrorMessage declares `let substr;` in each

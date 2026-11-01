@@ -9,7 +9,8 @@ import { $pop, $some, $someAt, $someValue, $sort, $unwrap } from "@rust-js/runti
 /** `Some` of each element, counted: with `T = ()`, `Some(())` must be `Some`. */
 export function countSome(xs) {
   let n = 0;
-  for (const o of xs) {
+  for (let i = 0; i < xs.length; i++) {
+    const o = xs[i];
     if (o != null) {
       n = (n + 1) >>> 0;
     }
@@ -19,7 +20,8 @@ export function countSome(xs) {
 
 function countSomeBoxed(xs) {
   let n = 0;
-  for (const x of xs) {
+  for (let i = 0; i < xs.length; i++) {
+    const x = xs[i];
     const o = $some(x);
     if (o != null) {
       n = (n + 1) >>> 0;
@@ -43,7 +45,8 @@ function pickBoxed(x, keep) {
 /** Matching what `pick` made: `Some(None)` is `Some`. */
 export function kept(xs) {
   let n = 0;
-  for (const x of xs) {
+  for (let i = 0; i < xs.length; i++) {
+    const x = xs[i];
     if (pick(x, true) != null) {
       n = (n + 1) >>> 0;
     }
@@ -53,7 +56,8 @@ export function kept(xs) {
 
 function keptBoxed(xs) {
   let n = 0;
-  for (const x of xs) {
+  for (let i = 0; i < xs.length; i++) {
+    const x = xs[i];
     if (pickBoxed(x, true) != null) {
       n = (n + 1) >>> 0;
     }

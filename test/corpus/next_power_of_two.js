@@ -8,7 +8,8 @@ export function entry() {
 
 function main() {
   const xs = [0, 1, 3, 8, 9, 3000000000];
-  for (const x of xs) {
+  for (let i = 0; i < xs.length; i++) {
+    const x = xs[i];
     console.log(
       `${$nextPowerOfTwo(x, 32) ?? 0} ${((value) => (value == null ? "None" : `Some(${value})`))($nextPowerOfTwo(x, 32))}`,
     );

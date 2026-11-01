@@ -17,7 +17,8 @@ function createNode() {
 
 function lookup(keys, start) {
   let node = start ?? createNode();
-  for (const k of keys) {
+  for (let i = 0; i < keys.length; i++) {
+    const k = keys[i];
     let cache = node.o;
     if (cache == null) {
       cache = { value: k };
@@ -62,7 +63,8 @@ function kept(a, b) {
 // nothing that turn.
 function skipping(keys) {
   let node = createNode();
-  for (const k of keys) {
+  for (let i = 0; i < keys.length; i++) {
+    const k = keys[i];
     const node$1 = createNode();
     node$1.v = k;
     if (k % 2 === 0) {
@@ -101,7 +103,8 @@ function shown(a) {
 function longest() {
   return (names) => {
     let most = 0;
-    for (const name of names) {
+    for (let i = 0; i < names.length; i++) {
+      const name = names[i];
       most = Math.max(most, $byteLen(name));
     }
     return most;

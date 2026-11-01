@@ -31,9 +31,12 @@ pub(super) fn loops(
         };
         if let Some(made) = made {
             // What it names, its loop's `end` held say, taken: another
-            // loop's is another name.
+            // loop's is another name; but an array's counter, `i` of each
+            // loop over one, scoped to its loop (ADR 1042).
             for stmt in held.iter().chain(&made) {
-                if let StmtKind::Let(name, _) | StmtKind::Const(name, _) | StmtKind::For { name, .. } = &stmt.kind {
+                if let StmtKind::Let(name, _) | StmtKind::Const(name, _) | StmtKind::For { name, .. } = &stmt.kind
+                    && !counts(std::slice::from_ref(stmt), name)
+                {
                     *mentions.entry(name.clone()).or_default() += 1;
                 }
             }
@@ -334,6 +337,15 @@ pub(super) fn for_of(
                     step: js::Step::Down,
                     body,
                 }
+            } else if let Some((name, test, body)) = indexed(source, &iterable, &pattern, mutable, &body, mentions) {
+                StmtKind::For {
+                    label: label.clone(),
+                    name,
+                    start: Expr::int(0),
+                    test,
+                    step: js::Step::Up,
+                    body,
+                }
             } else {
                 StmtKind::ForOf {
                     label: label.clone(),
@@ -471,6 +483,97 @@ fn counted_range(
     out.push(looped.at(span));
     out.extend(exit);
     Some(out)
+}
+
+/// A `for…of` of an array's items, `source` a `$iter` of std's iterator
+/// over them from the start (`Known::ArrayItems`), as upstream writes it,
+/// an index loop: `for (let i = 0; i < v.length; i++) { const x = v[i];
+/// .. }`, its counter `i`, or `j` inside a loop of `i`, as a person names
+/// them (ADR 1042). The same steps: an array's iterator reads its length
+/// and its item at each step, as the loop does, of a `v` read the same each
+/// time, a variable the body doesn't assign: a `Vec` it owns may be given
+/// another meanwhile, `v = vec![x]`, which `for…of` doesn't step.
+fn indexed(
+    source: &Expr,
+    iterable: &Expr,
+    pattern: &js::Pattern,
+    mutable: bool,
+    body: &[Stmt],
+    mentions: &HashMap<String, usize>,
+) -> Option<(String, Expr, Vec<Stmt>)> {
+    let ExprKind::Var(array) = &iterable.kind else {
+        return None;
+    };
+    if !source.facts.has(js::Known::ArrayItems) || assigns(body, array) {
+        return None;
+    }
+    // A name the function doesn't mention, or only as the counter of a
+    // loop `body` holds, renamed: none the body reads is another's then.
+    let given = body;
+    let unread = |n: &str| !mentions.contains_key(n) || counts(given, n);
+    // The counters of the loops it holds, made first, inside out: each a
+    // letter on, `i` its own (ADR 1042).
+    let mut body = body.to_vec();
+    for (from, to) in [("j", "k"), ("i", "j")] {
+        if counts(&body, from) && !mentions.contains_key(to) && js::mentions_in(&body, to) == 0 {
+            js::renamed(&mut body, from, to);
+        }
+    }
+    let index = ["i", "j", "k"]
+        .into_iter()
+        .map(String::from)
+        .chain((1..).map(|k| format!("i${k}")))
+        .find(|n| unread(n) && js::mentions_in(&body, n) == 0)
+        .expect("a name");
+    let item = Expr::index(iterable.clone(), Expr::var(&index));
+    let bound = match (pattern, mutable) {
+        (js::Pattern::Name(name), false) => StmtKind::Const(name.clone(), item),
+        (js::Pattern::Name(name), true) => StmtKind::Let(name.clone(), Some(item)),
+        (pattern, mutable) => StmtKind::Destructure {
+            pattern: pattern.clone(),
+            value: item,
+            mutable,
+        },
+    };
+    let test = Expr::bin(Op::Lt, Expr::var(&index), Expr::member(iterable.clone(), "length"));
+    let mut stepped = vec![bound.at(js::Span::NONE)];
+    stepped.extend(body);
+    Some((index, test, stepped))
+}
+
+/// Whether `stmts` hold a loop `indexed` made counting with `name`: `for
+/// (let name = 0; name < v.length; name++) { const x = v[name]; .. }`,
+/// whose counter nothing else reads, as clippy's `needless_range_loop` has
+/// no program write it.
+fn counts(stmts: &[Stmt], name: &str) -> bool {
+    let mut found = false;
+    js::each_list(stmts, &mut |list| {
+        found |= list.iter().any(|s| match &s.kind {
+            StmtKind::For {
+                name: n,
+                start,
+                test,
+                step: js::Step::Up,
+                body,
+                ..
+            } if n == name && start.as_int() == Some(0) => {
+                let read = |e: &Expr| matches!(&e.kind, ExprKind::Index(_, at) if matches!(&at.kind, ExprKind::Var(v) if v == name));
+                let bound = match body.first().map(|s| &s.kind) {
+                    Some(StmtKind::Const(_, e) | StmtKind::Let(_, Some(e)) | StmtKind::Destructure { value: e, .. }) => {
+                        read(e)
+                    }
+                    _ => false,
+                };
+                matches!(&test.kind, ExprKind::Binary(Op::Lt, counter, length)
+                    if matches!(&counter.kind, ExprKind::Var(v) if v == name)
+                        && matches!(&length.kind, ExprKind::Member(_, l) if l == "length"))
+                    && bound
+                    && js::mentions_in(&body[1..], name) == 0
+            }
+            _ => false,
+        });
+    });
+    found
 }
 
 /// A `for…of` of `iterable`, binding `pattern`, `mutable`, as a `for` that

@@ -726,10 +726,12 @@ pub enum Known {
     /// (`mir_iter_call`, ADR 0871): a step past that call, which takes its
     /// form apart, reads it here, not from its form.
     InPlace,
-    /// A `$iter` of a slice's own `Iter`, of the array it steps from its
-    /// start, as Rust's types tell: what the array's `values()` steps too,
-    /// `iterators::stepped_slices`'s (rd270).
-    SliceItems,
+    /// A `$iter` of std's iterator over an array's items, a slice's `Iter`
+    /// or a `Vec`'s `IntoIter` (`steps_its_array`), of the array it steps from
+    /// its start, as Rust's types tell: what the array's `values()` steps
+    /// too, `iterators::stepped_slices`'s (rd270), and an index loop, `for
+    /// (let i = 0; i < v.length; i++)`, of a `for` (ADR 1042).
+    ArrayItems,
     /// One of the program's functions, its own or a library's, by its
     /// name, `noop` (`items.rs::fn_ref`): a binding nothing assigns, the
     /// same function wherever and whenever it's read (`Expr::is_fixed`,

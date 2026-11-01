@@ -56,7 +56,8 @@ function main() {
   );
   console.log(`${(BOXED.x + BOXED.y) | 0} ${COMPUTED} ${counted()}`);
   console.log(`${pointDebug_fmt(CORNER)} [${Shapes.SIDES.join(", ")}] ${Shapes.NAME}`);
-  for (const name of NAMES) {
+  for (let i = 0; i < NAMES.length; i++) {
+    const name = NAMES[i];
     $print(`${name} `);
   }
   console.log("");

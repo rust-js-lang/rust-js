@@ -40,7 +40,8 @@ function publish(bus, msg) {
   try {
     const ids = Array.from(b.handlers.keys());
     ids.sort($cmp);
-    for (const id of ids) {
+    for (let i = 0; i < ids.length; i++) {
+      const id = ids[i];
       $unwrap(b.handlers.get(id), "no entry found for key")(msg);
     }
   } finally {

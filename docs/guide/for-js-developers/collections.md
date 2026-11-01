@@ -906,7 +906,8 @@ pub fn same_listener(a: &Listener, b: &Listener) -> bool {
 ```js
 export function updated(fibers) {
   const updated = new Set();
-  for (const fiber of fibers) {
+  for (let i = 0; i < fibers.length; i++) {
+    const fiber = fibers[i];
     updated.add(fiber);
   }
   const count = updated.size;
@@ -974,7 +975,8 @@ import { $id, $keyMap, $orInsert } from "@rust-js/runtime";
 
 export function pending(keys) {
   const pending = new ($keyMap((key) => ({ ...key, fiber: $id(key.fiber) })))();
-  for (const key of keys) {
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
     const current = $orInsert(pending, key, 0);
     pending.set(key, (current + 1) | 0);
   }
@@ -1260,7 +1262,8 @@ export function safePrefix(s) {
 
 export function build(names) {
   let out = "";
-  for (const name of names) {
+  for (let i = 0; i < names.length; i++) {
+    const name = names[i];
     out += name + ";";
   }
   return out;

@@ -68,7 +68,8 @@ function main() {
     -Infinity,
     NaN,
   ];
-  for (const a of values) {
+  for (let i = 0; i < values.length; i++) {
+    const a = values[i];
     console.log(
       `f64 ${f64Bits(a)}: round ${f64Bits(Math.floor(a))} ${f64Bits(Math.ceil(a))} ${f64Bits($round(a))} ${f64Bits(Math.trunc(a))} ${f64Bits(a - Math.trunc(a))} abs ${f64Bits(Math.abs(a))} ${f64Bits($signum(a))} ${f64Bits(a * (180 / Math.PI))} sqrt ${f64Bits(Math.sqrt(a))} powi ${f64Bits($powi(a, 3))} ${f64Bits($powi(a, -2))} recip ${f64Bits(1 / a)} neg ${f64Bits(-a)} clamp ${f64Bits($clampFloat(a, -1, 1, $debugF64))}`,
     );
@@ -84,7 +85,8 @@ function main() {
     console.log(
       `f64 ${f64Bits(a)}: as ${$f64ToInt(a, -128, 127)} ${$f64ToInt(a, -2147483648, 2147483647)} ${$f64ToBig(a, -9223372036854775808n, 9223372036854775807n)} ${$f64ToBig(a, -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)} ${$f64ToInt(a, 0, 255)} ${$f64ToInt(a, 0, 4294967295)} ${$f64ToBig(a, 0n, 18446744073709551615n)} ${$f64ToBig(a, 0n, 340282366920938463463374607431768211455n)} f32 ${f32Bits(Math.fround(a))} f64 ${f64Bits(a)}`,
     );
-    for (const b of values) {
+    for (let j = 0; j < values.length; j++) {
+      const b = values[j];
       const value = f64Bits(a);
       const value$1 = f64Bits(b);
       const value$2 = f64Bits(a + b);
@@ -126,7 +128,8 @@ function main() {
     -Infinity,
     NaN,
   ];
-  for (const a of values) {
+  for (let i = 0; i < values.length; i++) {
+    const a = values[i];
     console.log(
       `f32 ${f32Bits(a)}: round ${f32Bits(Math.floor(a))} ${f32Bits(Math.ceil(a))} ${f32Bits($round(a))} ${f32Bits(Math.trunc(a))} ${f32Bits(a - Math.trunc(a))} abs ${f32Bits(Math.abs(a))} ${f32Bits($signum(a))} ${f32Bits(Math.fround(a * 57.295780181884766))} sqrt ${f32Bits(Math.fround(Math.sqrt(a)))} powi ${f32Bits($powiF32(a, 3))} ${f32Bits($powiF32(a, -2))} recip ${f32Bits(Math.fround(1 / a))} neg ${f32Bits(-a)} clamp ${f32Bits($clampFloat(a, -1, 1, $debugF32))}`,
     );
@@ -142,7 +145,8 @@ function main() {
     console.log(
       `f32 ${f32Bits(a)}: as ${$f64ToInt(a, -128, 127)} ${$f64ToInt(a, -2147483648, 2147483647)} ${$f64ToBig(a, -9223372036854775808n, 9223372036854775807n)} ${$f64ToBig(a, -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)} ${$f64ToInt(a, 0, 255)} ${$f64ToInt(a, 0, 4294967295)} ${$f64ToBig(a, 0n, 18446744073709551615n)} ${$f64ToBig(a, 0n, 340282366920938463463374607431768211455n)} f32 ${f32Bits(a)} f64 ${f64Bits(a)}`,
     );
-    for (const b of values) {
+    for (let j = 0; j < values.length; j++) {
+      const b = values[j];
       const value = f32Bits(a);
       const value$1 = f32Bits(b);
       const value$2 = f32Bits(Math.fround(a + b));

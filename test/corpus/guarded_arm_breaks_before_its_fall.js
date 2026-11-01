@@ -13,7 +13,8 @@ function on(log, n) {
 
 function tally(tags, log) {
   let n = 0;
-  for (const t of tags) {
+  for (let i = 0; i < tags.length; i++) {
+    const t = tags[i];
     if (t === 1 && on(log, n)) {
       break;
     }

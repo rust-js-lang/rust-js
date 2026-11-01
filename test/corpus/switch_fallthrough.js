@@ -67,7 +67,8 @@ function name(tag, ty, flags, log) {
  */
 function counted(tags, log) {
   let total = 0;
-  for (const tag of tags) {
+  for (let i = 0; i < tags.length; i++) {
+    const tag = tags[i];
     if (tag === 1) {
       total = (total + 1) >>> 0;
     } else if (tag === 2 && on(log, "two", total % 2 === 0)) {

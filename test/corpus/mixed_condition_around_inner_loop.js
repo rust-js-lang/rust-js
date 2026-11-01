@@ -6,7 +6,8 @@ export function entry() {
 
 function changed(keys, seen, last) {
   const out = [];
-  for (const key of keys) {
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
     if (key > 0 && (!seen || last !== key)) {
       for (const part of [key, -key | 0]) {
         out.push(part);
@@ -18,7 +19,8 @@ function changed(keys, seen, last) {
 
 function written(keys, seen, last) {
   const out = [];
-  for (const key of keys) {
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
     if (key > 0) {
       if (seen && last === key) {
         continue;
@@ -33,7 +35,8 @@ function written(keys, seen, last) {
 
 function negated(keys, seen, last) {
   const out = [];
-  for (const key of keys) {
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
     if (!(key > 0 && (!seen || last !== key))) {
       continue;
     }
@@ -46,7 +49,8 @@ function negated(keys, seen, last) {
 
 function skippedAfter(keys, seen, last) {
   const out = [];
-  for (const key of keys) {
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
     if (key === 5) {
       continue;
     }

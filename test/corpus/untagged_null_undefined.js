@@ -56,7 +56,8 @@ function isMissing(slot) {
 
 function main() {
   const fields = ["a", 2, undefined, null];
-  for (const field of fields) {
+  for (let i = 0; i < fields.length; i++) {
+    const field = fields[i];
     const value = describe(field);
     const value$1 = nothing(field);
     console.log(`${value} ${fieldDebug_fmt(field)} ${value$1}`);
@@ -65,14 +66,16 @@ function main() {
   console.log(`${undefined === null} ${null === null} ${undefined === undefined}`);
   // An `Option` of one: `Some(Missing)` isn't `None`.
   const found = [undefined, $some(undefined), $some(null), 1];
-  for (const field of found) {
+  for (let i = 0; i < found.length; i++) {
+    const field = found[i];
     const arg = (field != null ? describe($someValue(field)) : undefined) ?? "";
     console.log(
       `${field == null ? "None" : `Some(${fieldDebug_fmt($someValue(field))})`} ${field != null} ${arg}`,
     );
   }
   const slots = [[1], undefined, null];
-  for (const slot of slots) {
+  for (let i = 0; i < slots.length; i++) {
+    const slot = slots[i];
     const arg = isMissing(slot);
     console.log(`${slotDebug_fmt(slot)} ${arg} ${slot === null}`);
   }

@@ -112,7 +112,8 @@ function paymentDeserialize_deserialize(json) {
 /** Each account's total, in cents. */
 export function balances(entries) {
   const totals = new $BTreeMap();
-  for (const [account, cents] of entries) {
+  for (let i = 0; i < entries.length; i++) {
+    const [account, cents] = entries[i];
     const current = $orInsert(totals, account, 0n);
     totals.set(account, BigInt.asIntN(64, current + cents));
   }

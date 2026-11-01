@@ -47,7 +47,8 @@ function main() {
     ["control", (n) => n <= 31 || n === 127],
     ["ascii", (n) => n <= 127],
   ];
-  for (const [name, test] of tests) {
+  for (let i = 0; i < tests.length; i++) {
+    const [name, test] = tests[i];
     const count = $lazyRange(0, 256)
       .filter((b) => test(b))
       .reduce((n) => n + 1, 0);

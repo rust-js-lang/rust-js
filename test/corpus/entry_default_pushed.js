@@ -17,7 +17,8 @@ export function entry() {
 
 function grouped(items) {
   let groups = new Map();
-  for (const [key, value] of items) {
+  for (let i = 0; i < items.length; i++) {
+    const [key, value] = items[i];
     if (!groups.has(key)) {
       groups.set(key, []);
     }
@@ -34,7 +35,8 @@ function grouped(items) {
 
 function ordered(items) {
   const by = new $BTreeMap();
-  for (const [key, c] of items) {
+  for (let i = 0; i < items.length; i++) {
+    const [key, c] = items[i];
     const current = $orInsert(by, key, "");
     by.set(key, current + c);
   }
@@ -44,7 +46,8 @@ function ordered(items) {
 function madeApart(items) {
   let made = 0;
   const by = new $BTreeMap();
-  for (const item of items) {
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
     const key = `k${item % 2}`;
     $orInsertWith(by, key, () => {
       made = (made + 1) >>> 0;
@@ -62,7 +65,8 @@ function fresh(made) {
 function eachMade(items) {
   let made = 0;
   const by = new Map();
-  for (const item of items) {
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
     const entry = $entry(by, item % 2);
     const made$1 = { value: made };
     const value = fresh(made$1);

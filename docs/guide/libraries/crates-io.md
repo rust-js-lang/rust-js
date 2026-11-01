@@ -145,7 +145,8 @@ export function firstComma(text) {
 
 export function counts(words) {
   const counts = new Map();
-  for (const word of words) {
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
     const current = $orInsert(counts, word, 0);
     counts.set(word, (current + 1) >>> 0);
   }

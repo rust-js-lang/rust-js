@@ -277,7 +277,8 @@ export function report() {
     "null",
     '{"z":1,"a":2}',
   ];
-  for (const t of texts) {
+  for (let i = 0; i < texts.length; i++) {
+    const t = texts[i];
     const value = $fromJson(t, $json.value);
     if (value.TAG === "Ok") {
       out += `${$jsonValueText(value._0, false)} | ${$debugJsonValue(value._0)} | ${describe(value._0)}\n`;

@@ -61,7 +61,8 @@ function noisyDrop_drop(noisy) {
 
 function main() {
   const values = [Value.int(7), Value.float(2.5), Value.int(0), Value.float(0)];
-  for (const v of values) {
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
     console.log(`${Value.show(v)} ${Value.isZero(v)}`);
   }
   // A copy is a union of its own: writing one leaves the other.

@@ -8,7 +8,8 @@ export function entry() {
 
 function main() {
   const xs = [0.5, 1.5, 2.5, 3.5, -0.5, -1.5, -2.5, -3.5, 2.4, 2.6, -2.6, 1e16, NaN, Infinity, -0];
-  for (const x of xs) {
+  for (let i = 0; i < xs.length; i++) {
+    const x = xs[i];
     const roundTiesEven = $roundTiesEven(x);
     const arg = $round(x);
     console.log(`${$debugF64(x)} ${$debugF64(roundTiesEven)} ${$debugF64(arg)}`);

@@ -618,7 +618,8 @@ export function item(items, at) {
 }
 
 export function firstText(values) {
-  for (const value of values) {
+  for (let i = 0; i < values.length; i++) {
+    const value = values[i];
     try {
       return "" + value;
     } catch {}

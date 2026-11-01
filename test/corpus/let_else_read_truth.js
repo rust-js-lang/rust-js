@@ -55,7 +55,8 @@ function main() {
     },
     {},
   ];
-  for (const config of configs) {
+  for (let i = 0; i < configs.length; i++) {
+    const config = configs[i];
     console.log(`${label(config)} ${kept(config)} ${enabled(config)}`);
   }
   for (const enabled of [true, false, undefined]) {

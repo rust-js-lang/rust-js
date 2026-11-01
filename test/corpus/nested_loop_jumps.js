@@ -17,7 +17,8 @@ export function entry() {
 
 function scores(words) {
   let total = 0;
-  for (const word of words) {
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
     let last = 0;
     for (const c of word) {
       const score = /^\p{Uppercase}$/u.test(c) ? 2 : last;

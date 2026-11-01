@@ -48,7 +48,8 @@ function main() {
     "/usr/lib/libc.so.6",
     "dir/.hidden.txt",
   ];
-  for (const p of cases) {
+  for (let i = 0; i < cases.length; i++) {
+    const p = cases[i];
     const parent = $pathParent(p);
     const fileName = $pathFileName(p);
     const fileStem = $pathFileStem(p);

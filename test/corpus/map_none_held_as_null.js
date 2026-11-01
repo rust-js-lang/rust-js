@@ -30,23 +30,27 @@ function pair(names, exits) {
     fmt: (value) => (value == null ? "None" : `Some(${elementDebug_fmt(value)})`),
   };
   const appearing = new Map();
-  for (const name of names) {
+  for (let i = 0; i < names.length; i++) {
+    const name = names[i];
     appearing.set(name, { name });
   }
-  for (const exit of exits) {
+  for (let i = 0; i < exits.length; i++) {
+    const exit = exits[i];
     const paired = appearing.get(exit);
     if (paired != null) {
       console.log(`${exit} pairs with ${paired.name}`);
       appearing.set(exit, null);
     }
   }
-  for (const name of names) {
+  for (let i = 0; i < names.length; i++) {
+    const name = names[i];
     const claimed = appearing.get(name) === null;
     console.log(`${name} claimed ${claimed}`);
   }
   // A `None` read, `null`, is the `None` the program writes, `undefined`.
   const none = undefined;
-  for (const name of names) {
+  for (let i = 0; i < names.length; i++) {
+    const name = names[i];
     const value = appearing.get(name);
     const arg = $eq(value, none);
     console.log(`${name} none ${arg} ${value == null}`);

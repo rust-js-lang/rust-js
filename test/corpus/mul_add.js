@@ -40,7 +40,8 @@ function main() {
     [Infinity, 0, 1],
     [NaN, 1, 1],
   ];
-  for (const [a, b, c] of cases) {
+  for (let i = 0; i < cases.length; i++) {
+    const [a, b, c] = cases[i];
     show($mulAdd(a, b, c));
   }
   show($mulAdd(Infinity, 1, -Infinity));

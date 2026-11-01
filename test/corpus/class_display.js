@@ -43,7 +43,8 @@ function main() {
     { value: positions[1], impl: positionDisplay },
     { value: 3, impl: { fmt: (value, options) => $formatted(String(value), options, true) } },
   ];
-  for (const item of shown) {
+  for (let i = 0; i < shown.length; i++) {
+    const item = shown[i];
     console.log(`${item.impl.fmt(item.value)}`);
   }
   const text = positions[2].toString();

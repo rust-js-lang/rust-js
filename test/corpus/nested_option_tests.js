@@ -8,7 +8,8 @@ export function entry() {
 
 function lastOf(items) {
   let last;
-  for (const item of items) {
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
     last = item ?? null;
   }
   let out = "";
@@ -33,7 +34,8 @@ function lastOf(items) {
 // Of `Some(Some(2))`, no `Some(None)`: its box, compared as it is.
 function lastIsTwo(items) {
   let last;
-  for (const item of items) {
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
     last = $some(item);
   }
   return last === 2;

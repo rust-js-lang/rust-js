@@ -126,7 +126,8 @@ function main() {
     console.log(`${at.file}:${at.line}:${at.column}`);
   }
   const objects = [{ impl: unitTracked }, { value: [false], impl: flagTracked }];
-  for (const object of objects) {
+  for (let i = 0; i < objects.length; i++) {
+    const object = objects[i];
     const fromDefault = object.impl.fromDefault(object.value, {
       file: "test/corpus/track_caller_traits.rs",
       line: 129,

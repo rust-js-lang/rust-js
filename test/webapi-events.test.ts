@@ -48,7 +48,7 @@ test("event methods and reusable listeners emit direct JavaScript", () => {
 // \`with_this(..)\`'s function itself (rd209).
 test("a function of its this is kept as a listener, the function itself", async () => {
   const js = compileEvents();
-  expect(js).toContain('  function attached(event) {\n    globalThis.record(20);\n    if (typeof given === "function") {\n      given.call(this, event);\n    }\n  }\n  for (const button of buttons) {\n    button.addEventListener("custom", attached);\n  }\n  return attached;');
+  expect(js).toContain('  function attached(event) {\n    globalThis.record(20);\n    if (typeof given === "function") {\n      given.call(this, event);\n    }\n  }\n  for (let i = 0; i < buttons.length; i++) {\n    const button = buttons[i];\n    button.addEventListener("custom", attached);\n  }\n  return attached;');
   const out = join(fixture("webapi-events"), "events.js");
   writeFileSync(out, js);
   const { keptWrapped } = await import(out);

@@ -71,8 +71,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-unused-let-kept",
     breaks: "a `let iter;` nothing assigns any more stays declared",
     file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("unused lets", |b, _| {\n                let mentions = mentions(b);\n                js::statement_lists(b, &mut |s| {\n                    s.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if !mentions.contains_key(name)))\n                })\n            }),\n',
-    replace: "",
+    find: "                    s.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if unread.contains(name)))\n",
+    replace: "                    let _ = &unread;\n",
     tests: [
       "test/lowering-loops.test.ts",
       "-t",
@@ -1093,5 +1093,14 @@ export const mutations: Mutation[] = [
     find: "                crate::lower::passed_on::held_functions(b, h.forwarding)\n",
     replace: "                let _ = (b, h);\n",
     tests: ["test/webapi-events.test.ts", "-t", "reusable listeners"],
+  },
+  {
+    name: "redeclared-let-kept",
+    breaks:
+      "a `let x;` whose every read is in a block that declares `x` again, an index loop's item, `const x = v[i];`, stays before the loop, read by nothing (ADR 1042)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "                                    || declared.get(name).is_some_and(|&n| n > 1) && redeclared_only(s, name) =>\n",
+    replace: "                                    =>\n",
+    tests: ["test/lowering-index-loops.test.ts", "-t", "a for loop of a mut binding"],
   },
 ];

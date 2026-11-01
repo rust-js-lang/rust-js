@@ -116,13 +116,15 @@ const Inventory = {
       return { TAG: "Err", _0: "EmptyOrder" };
     }
     const lines = [];
-    for (const [sku, quantity] of order) {
+    for (let i = 0; i < order.length; i++) {
+      const [sku, quantity] = order[i];
       const reserve = Inventory.reserve(inventory, sku, quantity);
       if (reserve.TAG === "Ok") {
         lines.push(reserve._0);
       } else {
         // Put back what this order took before failing.
-        for (const line of lines) {
+        for (let j = 0; j < lines.length; j++) {
+          const line = lines[j];
           const item = inventory.items.get(line.sku);
           if (item != null) {
             item.stock = (item.stock + line.quantity) >>> 0;
@@ -212,7 +214,8 @@ function main() {
     $cmpIn(["Tools", "Garden", "Kitchen"], a, b),
   )) {
     console.log(`[${categoryDisplay_fmt(category, { width: 9, align: "Center" })}]`);
-    for (const item of items) {
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
       console.log(
         `  ${$pad(item.name, 8, "<")}|${$pad(money(BigInt(item.priceCents)), 8, ">")}|${String(item.stock).padStart(4)}`,
       );

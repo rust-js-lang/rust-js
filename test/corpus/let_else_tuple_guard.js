@@ -34,7 +34,8 @@ function sum(roots, containers, i) {
 
 function sums(pairs) {
   let total = 0;
-  for (const pair of pairs) {
+  for (let i = 0; i < pairs.length; i++) {
+    const pair = pairs[i];
     if (pair[0] == null || pair[1] == null) {
       console.log("skipped");
       continue;

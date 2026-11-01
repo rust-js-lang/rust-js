@@ -833,7 +833,7 @@ test("constants are the values rustc computed, by name", async () => {
   expect(js).toContain("  return (SIZE / 1024) >>> 0;");
   // std's are written in place.
   expect(js).toContain("  return [4294967295, -2147483648];");
-  expect(js).toContain("  for (const p of PRIMES) {");
+  expect(js).toContain("  for (let i = 0; i < PRIMES.length; i++) {\n    const p = PRIMES[i];");
 });
 
 // ADR 0030: `Some(x)` is `x`, `None` is `undefined`, and `null` counts as `None`.

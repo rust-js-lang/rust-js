@@ -64,7 +64,8 @@ function main() {
   if (r != null) {
     r.value = (r.value + 5) | 0;
   }
-  for (const r of refs) {
+  for (let i = 0; i < refs.length; i++) {
+    const r = refs[i];
     r.value = (r.value + 10) | 0;
   }
   let c = 3;

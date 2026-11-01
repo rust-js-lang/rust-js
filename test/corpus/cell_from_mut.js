@@ -7,7 +7,8 @@ export function entry() {
 }
 
 function bumpAll(cells) {
-  for (const cell of cells) {
+  for (let i = 0; i < cells.length; i++) {
+    const cell = cells[i];
     cell.value = (cell.value * 10) | 0;
   }
 }

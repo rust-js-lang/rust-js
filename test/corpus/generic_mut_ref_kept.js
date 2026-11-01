@@ -43,7 +43,8 @@ function toRefs(list) {
 }
 
 function setAll(refs, v) {
-  for (const r of refs) {
+  for (let i = 0; i < refs.length; i++) {
+    const r = refs[i];
     r.value = v;
   }
 }

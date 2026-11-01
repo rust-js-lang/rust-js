@@ -45,7 +45,8 @@ export function pair() {
 
 export function primeSum() {
   let sum = 0;
-  for (const p of PRIMES) {
+  for (let i = 0; i < PRIMES.length; i++) {
+    const p = PRIMES[i];
     sum = (sum + p) >>> 0;
   }
   return sum;

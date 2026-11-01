@@ -12,8 +12,10 @@ function tests(a, b) {
 
 function main() {
   const values = [1, 2, -0, 0, NaN, Infinity];
-  for (const a of values) {
-    for (const b of values) {
+  for (let i = 0; i < values.length; i++) {
+    const a = values[i];
+    for (let j = 0; j < values.length; j++) {
+      const b = values[j];
       const arg = tests(a, b);
       console.log(`${$displayF64(a)} ${$displayF64(b)} [${arg.join(", ")}]`);
     }

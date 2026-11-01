@@ -478,7 +478,7 @@ pub fn counted(n: u32) -> String {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), ...withWeb]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain("return useText ? text : other;");
-  expect(js).toContain("for (const part of parts) {\n    result += String(part);");
+  expect(js).toContain("for (let i = 0; i < parts.length; i++) {\n    const part = parts[i];\n    result += String(part);");
   expect(js).toContain("return String(n);");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.message("a", 1, true), lib.message("a", 1, false), lib.message("a", undefined, false)]).toEqual(["a", 1, undefined]);

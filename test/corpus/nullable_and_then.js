@@ -30,7 +30,8 @@ function maybeLogged(info) {
 
 function main() {
   const infos = [{ source: { id: 3 } }, { source: { id: 1 } }, { source: null }];
-  for (const info of infos) {
+  for (let i = 0; i < infos.length; i++) {
+    const info = infos[i];
     const value = logged(info);
     const value$1 = maybeLogged(info);
     console.log(

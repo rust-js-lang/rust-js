@@ -34,7 +34,8 @@ function main() {
   }
   console.log(`${(touch(root) + pushed(root)) >>> 0}`);
   const reports = [quiet, quiet, touch];
-  for (const f of reports) {
+  for (let i = 0; i < reports.length; i++) {
+    const f = reports[i];
     console.log(`${report(root, f)}`);
   }
 }

@@ -55,7 +55,8 @@ function f32Bits(x) {
 function main() {
   let values = [-128, -127, -1, 0, 1, 2, 7, 126, 127];
   let bits = 8;
-  for (const a of values) {
+  for (let i = 0; i < values.length; i++) {
+    const a = values[i];
     const value = Math.clz32(a & 255) - 24;
     const value$1 = $trailingZeros(a & 255, 8);
     const value$2 = $countOnes(a & 255);
@@ -100,7 +101,8 @@ function main() {
     console.log(
       `i8 ${a}: signed ${value$19} ${value$20} ${value$21 == null ? "None" : `Some(${value$21})`} ${Math.abs(a)}`,
     );
-    for (const b of values) {
+    for (let j = 0; j < values.length; j++) {
+      const b = values[j];
       const quotient =
         $checkedDiv(a, b, -128) == null
           ? "-"
@@ -128,7 +130,8 @@ function main() {
   }
   values = [-32768, -32767, -1, 0, 1, 2, 7, 32766, 32767];
   bits = 16;
-  for (const a of values) {
+  for (let i = 0; i < values.length; i++) {
+    const a = values[i];
     const value = Math.clz32(a & 65535) - 16;
     const value$1 = $trailingZeros(a & 65535, 16);
     const value$2 = $countOnes(a & 65535);
@@ -173,7 +176,8 @@ function main() {
     console.log(
       `i16 ${a}: signed ${value$19} ${value$20} ${value$21 == null ? "None" : `Some(${value$21})`} ${Math.abs(a)}`,
     );
-    for (const b of values) {
+    for (let j = 0; j < values.length; j++) {
+      const b = values[j];
       const quotient =
         $checkedDiv(a, b, -32768) == null
           ? "-"
@@ -201,7 +205,8 @@ function main() {
   }
   values = [-2147483648, -2147483647, -1, 0, 1, 2, 7, 2147483646, 2147483647];
   bits = 32;
-  for (const a of values) {
+  for (let i = 0; i < values.length; i++) {
+    const a = values[i];
     const value = Math.clz32(a);
     const value$1 = $trailingZeros(a, 32);
     const value$2 = $countOnes(a);
@@ -244,7 +249,8 @@ function main() {
     console.log(
       `i32 ${a}: signed ${value$17} ${value$18} ${value$19 == null ? "None" : `Some(${value$19})`} ${Math.abs(a)}`,
     );
-    for (const b of values) {
+    for (let j = 0; j < values.length; j++) {
+      const b = values[j];
       const quotient =
         $checkedDiv(a, b, -2147483648) == null
           ? "-"
@@ -283,7 +289,8 @@ function main() {
     9223372036854775807n,
   ];
   bits = 64;
-  for (const a of values) {
+  for (let i = 0; i < values.length; i++) {
+    const a = values[i];
     const value = $bigLeadingZeros(a);
     const value$1 = $bigTrailingZeros(a);
     const value$2 = $bigCountOnes(a);
@@ -341,7 +348,8 @@ function main() {
     console.log(
       `i64 ${a}: signed ${value$25} ${value$26} ${value$27 == null ? "None" : `Some(${value$27})`} ${$bigAbs(a)}`,
     );
-    for (const b of values) {
+    for (let j = 0; j < values.length; j++) {
+      const b = values[j];
       const quotient =
         $bigCheckedDiv(a, b, -9223372036854775808n) == null
           ? "-"
@@ -403,7 +411,8 @@ function main() {
     170141183460469231731687303715884105727n,
   ];
   bits = 128;
-  for (const a of values) {
+  for (let i = 0; i < values.length; i++) {
+    const a = values[i];
     const value = $bigLeadingZeros(a, 128);
     const value$1 = $bigTrailingZeros(a, 128);
     const value$2 = $bigCountOnes(a, 128);
@@ -480,7 +489,8 @@ function main() {
     console.log(
       `i128 ${a}: signed ${value$26} ${value$27} ${value$28 == null ? "None" : `Some(${value$28})`} ${$bigAbs(a)}`,
     );
-    for (const b of values) {
+    for (let j = 0; j < values.length; j++) {
+      const b = values[j];
       const quotient =
         $bigCheckedDiv(a, b, -170141183460469231731687303715884105728n) == null
           ? "-"
@@ -556,7 +566,8 @@ function main() {
   }
   values = [0, 1, 255, 0, 1, 2, 7, 254, 255];
   bits = 8;
-  for (const a of values) {
+  for (let i = 0; i < values.length; i++) {
+    const a = values[i];
     const value = Math.clz32(a) - 24;
     const value$1 = $trailingZeros(a, 8);
     const value$2 = $countOnes(a);
@@ -596,7 +607,8 @@ function main() {
       );
     }
     console.log(`u8 ${a}: unsigned ${a !== 0 && (a & (a - 1)) === 0}`);
-    for (const b of values) {
+    for (let j = 0; j < values.length; j++) {
+      const b = values[j];
       const quotient =
         $checkedDiv(a, b, 0) == null ? "-" : `${$div(a, b) & 255} ${$rem(a, b) & 255}`;
       const value = $checked(a + b, 0, 255);
@@ -622,7 +634,8 @@ function main() {
   }
   values = [0, 1, 65535, 0, 1, 2, 7, 65534, 65535];
   bits = 16;
-  for (const a of values) {
+  for (let i = 0; i < values.length; i++) {
+    const a = values[i];
     const value = Math.clz32(a) - 16;
     const value$1 = $trailingZeros(a, 16);
     const value$2 = $countOnes(a);
@@ -662,7 +675,8 @@ function main() {
       );
     }
     console.log(`u16 ${a}: unsigned ${a !== 0 && (a & (a - 1)) === 0}`);
-    for (const b of values) {
+    for (let j = 0; j < values.length; j++) {
+      const b = values[j];
       const quotient =
         $checkedDiv(a, b, 0) == null ? "-" : `${$div(a, b) & 65535} ${$rem(a, b) & 65535}`;
       const value = $checked(a + b, 0, 65535);
@@ -688,7 +702,8 @@ function main() {
   }
   values = [0, 1, 4294967295, 0, 1, 2, 7, 4294967294, 4294967295];
   bits = 32;
-  for (const a of values) {
+  for (let i = 0; i < values.length; i++) {
+    const a = values[i];
     const value = Math.clz32(a);
     const value$1 = $trailingZeros(a, 32);
     const value$2 = $countOnes(a);
@@ -726,7 +741,8 @@ function main() {
       );
     }
     console.log(`u32 ${a}: unsigned ${a !== 0 && (a & (a - 1)) === 0}`);
-    for (const b of values) {
+    for (let j = 0; j < values.length; j++) {
+      const b = values[j];
       const quotient =
         $checkedDiv(a, b, 0) == null ? "-" : `${$div(a, b) >>> 0} ${$rem(a, b) >>> 0}`;
       const value = Math.imul(a, b) >>> 0;
@@ -763,7 +779,8 @@ function main() {
     18446744073709551615n,
   ];
   bits = 64;
-  for (const a of values) {
+  for (let i = 0; i < values.length; i++) {
+    const a = values[i];
     const value = $bigLeadingZeros(a);
     const value$1 = $bigTrailingZeros(a);
     const value$2 = $bigCountOnes(a);
@@ -810,7 +827,8 @@ function main() {
       );
     }
     console.log(`u64 ${a}: unsigned ${a !== 0n && (a & (a - 1n)) === 0n}`);
-    for (const b of values) {
+    for (let j = 0; j < values.length; j++) {
+      const b = values[j];
       const quotient = $bigCheckedDiv(a, b) == null ? "-" : `${$bigDiv(a, b)} ${$bigRem(a, b)}`;
       const value = BigInt.asUintN(64, a + b);
       const value$1 = BigInt.asUintN(64, a - b);
@@ -864,7 +882,8 @@ function main() {
     340282366920938463463374607431768211455n,
   ];
   bits = 128;
-  for (const a of values) {
+  for (let i = 0; i < values.length; i++) {
+    const a = values[i];
     const value = $bigLeadingZeros(a, 128);
     const value$1 = $bigTrailingZeros(a, 128);
     const value$2 = $bigCountOnes(a, 128);
@@ -914,7 +933,8 @@ function main() {
       );
     }
     console.log(`u128 ${a}: unsigned ${a !== 0n && (a & (a - 1n)) === 0n}`);
-    for (const b of values) {
+    for (let j = 0; j < values.length; j++) {
+      const b = values[j];
       const quotient = $bigCheckedDiv(a, b) == null ? "-" : `${$bigDiv(a, b)} ${$bigRem(a, b)}`;
       const value = BigInt.asUintN(128, a + b);
       const value$1 = BigInt.asUintN(128, a - b);

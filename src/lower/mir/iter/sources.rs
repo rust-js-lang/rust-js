@@ -241,11 +241,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else if made_array(&value) || self.steps_an_array(ty) {
             // An array made of it, `s.split(",")`'s, or one `steps_an_array`
             // lists, a `VecDeque`'s say: a `$iter` of it, as of an array's;
-            // a slice's, said so (`Known::SliceItems`).
-            let slice = self.is_std_type(ty, StdItem::SliceIter);
+            // std's over an array's items, said so (`Known::ArrayItems`).
+            let items = self.recognition().steps_its_array(ty);
             let mut it = self.stepped_items(value);
-            if slice {
-                it.facts = it.facts.with(js::Known::SliceItems);
+            if items {
+                it.facts = it.facts.with(js::Known::ArrayItems);
             }
             it
         } else {

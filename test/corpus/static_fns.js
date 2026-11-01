@@ -30,7 +30,8 @@ const ADD = (x) => (x + 10) | 0;
 
 function main() {
   console.log(`${F(2)} ${G(2)}`);
-  for (const [name, f] of TABLE) {
+  for (let i = 0; i < TABLE.length; i++) {
+    const [name, f] = TABLE[i];
     const arg = f(5);
     console.log(`${name} ${arg}`);
   }

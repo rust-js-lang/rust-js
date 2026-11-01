@@ -51,7 +51,8 @@ function main() {
   const value = $unwrap($next(each));
   value.value += "!";
   const rest = Array.from(each);
-  for (const name of rest) {
+  for (let i = 0; i < rest.length; i++) {
+    const name = rest[i];
     name.value = $insertStr(name.value, 0, ">");
   }
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);

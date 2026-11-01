@@ -52,7 +52,8 @@ function main() {
       { TAG: "Text", _0: "no" },
       "Other",
     ];
-    for (const kind of kinds) {
+    for (let i = 0; i < kinds.length; i++) {
+      const kind = kinds[i];
       $print(`${check(name, kind)} `);
     }
     console.log(

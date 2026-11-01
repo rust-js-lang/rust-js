@@ -21,7 +21,8 @@ export function entry() {
 
 function counts(items, TPartialEq, THash, TMap) {
   const counts = new TMap();
-  for (const item of items) {
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
     const current = $orInsert(counts, item, 0);
     counts.set(item, (current + 1) >>> 0);
   }

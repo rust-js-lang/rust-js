@@ -18,7 +18,8 @@ function main() {
   console.log(`[${doubled.join(", ")}] ${total}`);
   let items = [{ name: "a", count: 1 }];
   items = bumped(items);
-  for (const item of items) {
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
     console.log(`${item.name} ${item.count}`);
   }
 }

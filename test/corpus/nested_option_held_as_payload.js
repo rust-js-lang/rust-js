@@ -23,7 +23,8 @@ function dispatched(listeners, stopAt) {
 function changes(plains) {
   let previous;
   let count = 0;
-  for (const { instance } of plains) {
+  for (let i = 0; i < plains.length; i++) {
+    const { instance } = plains[i];
     const option = instance ?? null;
     if (option !== previous) {
       count = (count + 1) >>> 0;
@@ -64,7 +65,8 @@ function lookups(values, wanted) {
 
 function escapes(values) {
   let last;
-  for (const value of values) {
+  for (let i = 0; i < values.length; i++) {
+    const value = values[i];
     last = $some(value);
   }
   return describe(last);
@@ -73,7 +75,8 @@ function escapes(values) {
 function points(points) {
   let previous;
   let runs = 0;
-  for (const point of points) {
+  for (let i = 0; i < points.length; i++) {
+    const point = points[i];
     const option = point ?? null;
     if (
       !(previous === undefined || option === undefined
@@ -90,7 +93,8 @@ function points(points) {
 function boxes(boxes) {
   let previous;
   let runs = 0;
-  for (const boxed of boxes) {
+  for (let i = 0; i < boxes.length; i++) {
+    const boxed = boxes[i];
     const option = boxed ?? null;
     if (option !== previous) {
       runs = (runs + 1) >>> 0;
@@ -103,7 +107,8 @@ function boxes(boxes) {
 function texts(words) {
   let previous;
   let runs = 0;
-  for (const word of words) {
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
     const option = word ?? null;
     if (previous !== option) {
       runs = (runs + 1) >>> 0;

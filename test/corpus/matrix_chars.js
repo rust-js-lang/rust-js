@@ -58,7 +58,8 @@ const CHARS = [
 ];
 
 function main() {
-  for (const c of CHARS) {
+  for (let i = 0; i < CHARS.length; i++) {
+    const c = CHARS[i];
     const isAlphabetic = /^\p{Alphabetic}$/u.test(c);
     const isNumeric = /^\p{N}$/u.test(c);
     const isAlphanumeric = /^[\p{Alphabetic}\p{N}]$/u.test(c);
@@ -95,7 +96,8 @@ function main() {
     console.log(
       `${$debugStr(c, "'")}: case ${$debugStr(collect)} ${$debugStr(value)} ${$debugStr(asciiUppercase, "'")} ${$debugStr(asciiLowercase, "'")} digit ${digit == null ? "None" : `Some(${digit})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} len ${$byteLen(c)} ${c.length} as ${value$3} ${value$4} ${$debugStr(value$5, "'")} ${value$6 == null ? "None" : `Some(${$debugStr(value$6, "'")})`} fmt [${$pad(c, 4, ">")}] [${$pad(c, 3, "<")}] ${$byteLen(c)}`,
     );
-    for (const d of CHARS) {
+    for (let j = 0; j < CHARS.length; j++) {
+      const d = CHARS[j];
       const cmp = $cmp(c, d);
       const value = $cmp(c, d) < 0;
       const max = $cmp(c, d) > 0 ? c : d;

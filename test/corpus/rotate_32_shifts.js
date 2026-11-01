@@ -8,13 +8,15 @@ export function entry() {
 
 function main() {
   const xs = [0, 1, 0x80000001, 0xdeadbeef];
-  for (const x of xs) {
+  for (let i = 0; i < xs.length; i++) {
+    const x = xs[i];
     console.log(
       `${((x << 15) | (x >>> 17)) >>> 0} ${((x << 19) | (x >>> 13)) >>> 0} ${x} ${x} ${((x << 31) | (x >>> 1)) >>> 0} ${((x << 31) | (x >>> 1)) >>> 0}`,
     );
   }
   const ys = [0, -1, -2147483648, -123456789];
-  for (const y of ys) {
+  for (let i = 0; i < ys.length; i++) {
+    const y = ys[i];
     console.log(
       `${(y << 15) | (y >>> 17)} ${(y << 19) | (y >>> 13)} ${(y << 1) | (y >>> 31)} ${(y << 1) | (y >>> 31)}`,
     );

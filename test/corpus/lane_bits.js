@@ -88,8 +88,10 @@ function priorities() {
     console.log(`upgraded ${lanes} ${tag} ${disabled}: ${arg}`);
   }
   const all = [0, 2, 8, -2147483648];
-  for (const a of all) {
-    for (const b of all) {
+  for (let i = 0; i < all.length; i++) {
+    const a = all[i];
+    for (let j = 0; j < all.length; j++) {
+      const b = all[j];
       const value = isHigherEventPriority(a, b);
       const eventPriority = lowerEventPriority(a, b);
       const value$1 = ($cmp(a, b) > 0 ? a : b) === b;
@@ -106,7 +108,8 @@ function priorities() {
 function main() {
   priorities();
   const edges = [0, 1, 6, -1, -2147483648, 2147483647, 1 << 30];
-  for (const lanes of edges) {
+  for (let i = 0; i < edges.length; i++) {
+    const lanes = edges[i];
     const value = removed(lanes, 1);
     const value$1 = masked(lanes, lanes);
     const value$2 = highestPriorityLane(lanes);

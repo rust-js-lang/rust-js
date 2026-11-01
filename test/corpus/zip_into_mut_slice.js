@@ -31,7 +31,8 @@ function main() {
   console.log(`[${v.join(", ")}]`);
   const w = [1, 1];
   const pairs = $zip([7, 8], $mutItems(w));
-  for (const [x, y] of pairs) {
+  for (let i = 0; i < pairs.length; i++) {
+    const [x, y] = pairs[i];
     y.value = (y.value + x) | 0;
   }
   console.log(`[${w.join(", ")}]`);

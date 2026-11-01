@@ -37,7 +37,8 @@ function main() {
   const read = "ij";
   console.log(`${read}`);
   const mapped = ["kl"].map((s) => ({ value: s }));
-  for (const text of mapped) {
+  for (let i = 0; i < mapped.length; i++) {
+    const text = mapped[i];
     text.value = $asciiCase(text.value, true);
     console.log(`${text.value}`);
   }
@@ -49,7 +50,8 @@ function main() {
   bump(r);
   console.log(`${r.value}`);
   const counts = [{ value: 1 }];
-  for (const count of counts) {
+  for (let i = 0; i < counts.length; i++) {
+    const count = counts[i];
     count.value = (count.value + 1) | 0;
     console.log(`${count.value}`);
   }

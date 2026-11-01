@@ -628,11 +628,31 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| applied_values(s, &set, h.plain, &mut taken))
             }),
             // A `let` declared first, in the body or a block of it, that
-            // nothing's left to assign or read.
+            // nothing's left to assign or read; or only a block that
+            // declares its name again, an index loop's item (ADR 1042).
             pass("unused lets", |b, _| {
                 let mentions = mentions(b);
+                let mut declared: HashMap<String, usize> = HashMap::new();
+                js::each_list(b, &mut |s| {
+                    for stmt in s {
+                        if let StmtKind::Let(name, _) | StmtKind::Const(name, _) = &stmt.kind {
+                            *declared.entry(name.clone()).or_default() += 1;
+                        }
+                    }
+                });
                 js::statement_lists(b, &mut |s| {
-                    s.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if !mentions.contains_key(name)))
+                    let unread: Vec<String> = (s.iter())
+                        .filter_map(|stmt| match &stmt.kind {
+                            StmtKind::Let(name, None)
+                                if !mentions.contains_key(name)
+                                    || declared.get(name).is_some_and(|&n| n > 1) && redeclared_only(s, name) =>
+                            {
+                                Some(name.clone())
+                            }
+                            _ => None,
+                        })
+                        .collect();
+                    s.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if unread.contains(name)))
                 })
             }),
             // A `const` nothing reads, of a value made only to be dropped,
@@ -1097,4 +1117,23 @@ mod tests {
         let unique: std::collections::HashSet<_> = names.iter().collect();
         assert_eq!(unique.len(), names.len());
     }
+}
+
+/// Whether each read and write of `name` in `stmts`, past its own `let
+/// name;`, is in a block that declares it again, a loop's item, `const row
+/// = v[i];`, so none is of the `let`'s.
+fn redeclared_only(stmts: &[Stmt], name: &str) -> bool {
+    let mut rest: Vec<Stmt> = (stmts.iter())
+        .filter(|s| !matches!(&s.kind, StmtKind::Let(n, None) if n == name))
+        .cloned()
+        .collect();
+    js::statement_lists(&mut rest, &mut |list| {
+        if list
+            .iter()
+            .any(|s| matches!(&s.kind, StmtKind::Let(n, _) | StmtKind::Const(n, _) if n == name))
+        {
+            list.clear();
+        }
+    });
+    js::mentions_in(&rest, name) == 0
 }

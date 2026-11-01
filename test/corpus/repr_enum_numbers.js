@@ -55,7 +55,8 @@ function levelName(level) {
 
 function main() {
   const kinds = [kindOf(0, false), kindOf(2, false), kindOf(2, true), kindOf(9, true)];
-  for (const kind of kinds) {
+  for (let i = 0; i < kinds.length; i++) {
+    const kind = kinds[i];
     const arg = describe(kind);
     console.log(
       `${["Empty", "Complex", "Primitive", "Entries"][kind]} ${arg} ${kind} ${(kind + 1) | 0}`,
@@ -96,7 +97,8 @@ function main() {
   const seen = new Set(kinds);
   console.log(`${seen.has(Primitive)} ${seen.size}`);
   const maybe = [undefined, Empty, Entries];
-  for (const kind of maybe) {
+  for (let i = 0; i < maybe.length; i++) {
+    const kind = maybe[i];
     console.log(
       `${
         kind == null ? "None" : `Some(${["Empty", "Complex", "Primitive", "Entries"][kind]})`

@@ -6,7 +6,8 @@ export function entry() {
 
 function numbers(xs) {
   const out = [];
-  for (const x of xs) {
+  for (let i = 0; i < xs.length; i++) {
+    const x = xs[i];
     switch (x) {
       case 0:
         out.push(1);

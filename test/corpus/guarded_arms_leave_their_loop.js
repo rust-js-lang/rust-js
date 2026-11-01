@@ -14,7 +14,8 @@ function on(log, name, holds) {
 function scan(codes, log) {
   let i = 0;
   let n = 0;
-  for (const code of codes) {
+  for (let j = 0; j < codes.length; j++) {
+    const code = codes[j];
     if (code === 97 && on(log, "a", n > 3)) {
       break;
     }

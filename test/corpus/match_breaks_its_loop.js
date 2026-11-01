@@ -116,8 +116,10 @@ function shadowed(codes) {
 
 function labeled(rows) {
   let n = 0;
-  rows: for (const row of rows) {
-    for (const b of row) {
+  rows: for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    for (let j = 0; j < row.length; j++) {
+      const b = row[j];
       switch (b) {
         case 0:
           break rows;

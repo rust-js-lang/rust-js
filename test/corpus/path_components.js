@@ -45,7 +45,8 @@ function show(p, PAsRefPath) {
 
 function main() {
   const made = ["RootDir", { TAG: "Normal", _0: "usr" }, "ParentDir"];
-  for (const c of made) {
+  for (let i = 0; i < made.length; i++) {
+    const c = made[i];
     console.log(
       `${kind(c)} ${c === "RootDir" ? "RootDir" : c === "CurDir" ? "CurDir" : c === "ParentDir" ? "ParentDir" : `Normal(${$debugStr(c._0)})`} ${$debugStr($componentText(c))}`,
     );

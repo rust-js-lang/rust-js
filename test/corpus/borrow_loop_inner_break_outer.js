@@ -10,7 +10,8 @@ function borrowed(items, keep) {
   let total = 0;
   const borrow = $borrow(items, true);
   try {
-    outer: for (const x of borrow) {
+    outer: for (let i = 0; i < borrow.length; i++) {
+      const x = borrow[i];
       if (!keep(x)) {
         continue;
       }

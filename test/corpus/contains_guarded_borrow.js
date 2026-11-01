@@ -7,7 +7,8 @@ export function entry() {
 }
 
 function merge(types, into) {
-  for (const t of types) {
+  for (let i = 0; i < types.length; i++) {
+    const t = types[i];
     if (!into.includes(t)) {
       into.push(t);
     }

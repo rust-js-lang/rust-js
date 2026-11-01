@@ -8,7 +8,8 @@ export function entry() {
 
 function collect(values) {
   let found;
-  for (const value of values) {
+  for (let i = 0; i < values.length; i++) {
+    const value = values[i];
     if (value > 1) {
       if (found != null) {
         found.push(value);
@@ -22,7 +23,8 @@ function collect(values) {
 
 function lastWord(words) {
   let seen;
-  for (const word of words) {
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
     if (seen != null) {
       const seen$1 = {
         get value() {
@@ -44,7 +46,8 @@ function lastWord(words) {
 
 function named(values) {
   let found;
-  for (const v of values) {
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
     if (found != null) {
       found.push(v);
     } else {

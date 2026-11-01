@@ -49,7 +49,8 @@ export async function load(stat) {
   const examples = loadExamples();
   const [modules, styles] = await packages;
   const crateFiles = [];
-  for (const [name, file] of crates) {
+  for (let i = 0; i < crates.length; i++) {
+    const [name, file] = crates[i];
     crateFiles.push([name, await file]);
   }
   const loaded = {
@@ -80,12 +81,14 @@ async function loadSysroot(start, stat) {
   const names = await (await window.fetch("./sysroot.json")).json();
   // Every file's download starts before the first is awaited.
   const downloads = [];
-  for (const name of names) {
+  for (let i = 0; i < names.length; i++) {
+    const name = names[i];
     downloads.push(loadSysrootFile(name));
   }
   const entries = [];
   let size = 0;
-  for (const download of downloads) {
+  for (let i = 0; i < downloads.length; i++) {
+    const download = downloads[i];
     const entry = await download;
     size += entry[1].data.length;
     entries.push(entry);
@@ -136,11 +139,13 @@ async function fetchExampleFile(name, path) {
 export async function loadExample(name, paths) {
   // All at once: each download starts as it's made (ADR 0029).
   const downloads = [];
-  for (const path of paths) {
+  for (let i = 0; i < paths.length; i++) {
+    const path = paths[i];
     downloads.push(fetchExampleFile(name, path));
   }
   const texts = [];
-  for (const download of downloads) {
+  for (let i = 0; i < downloads.length; i++) {
+    const download = downloads[i];
     texts.push(await download);
   }
   return texts;

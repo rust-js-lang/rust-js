@@ -17,7 +17,6 @@ import {
   $heapRetain,
   $insert,
   $iter,
-  $next,
   $nthBack,
   $retain,
   $retainMap,
@@ -83,9 +82,9 @@ function main() {
     const e = "Empty";
     try {
       try {
-        const iter = $iter([s, e]);
+        const iter = [s, e].values();
         let shape;
-        while ((shape = $next(iter)) != null) {
+        while ((shape = iter.next().value) != null) {
           if (shape.TAG === "Three") {
             console.log(`three ${shape._0[0]} ${shape._1[0]} ${shape._2[0]}`);
           }

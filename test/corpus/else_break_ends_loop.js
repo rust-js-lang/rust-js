@@ -31,7 +31,8 @@ function describe(start) {
 // another way.
 function firstLong(words) {
   let seen = 0;
-  for (const word of words) {
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
     if ($byteLen(word) > 5) {
       return seen;
     } else if ($byteLen(word) > 1) {

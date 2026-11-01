@@ -49,7 +49,8 @@ function main() {
     { TAG: "Rect", w: 1, h: 1 },
     { TAG: "Square", _0: 1 },
   ];
-  for (const s of shapes) {
+  for (let j = 0; j < shapes.length; j++) {
+    const s = shapes[j];
     const seen$1 = { value: seen };
     const value = describe(s, seen$1);
     seen = seen$1.value;
@@ -63,7 +64,8 @@ function main() {
     }
   }
   let tries = 0;
-  for (const s of shapes) {
+  for (let j = 0; j < shapes.length; j++) {
+    const s = shapes[j];
     let label;
     if (s.TAG === "Rect") {
       tries = (tries + 1) | 0;

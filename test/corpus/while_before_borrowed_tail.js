@@ -25,7 +25,8 @@ function describe(node, first, f) {
   }
   const tail = $borrow(node.tail, true);
   try {
-    for (const item of tail) {
+    for (let i = 0; i < tail.length; i++) {
+      const item = tail[i];
       content += f(item);
     }
     return content;

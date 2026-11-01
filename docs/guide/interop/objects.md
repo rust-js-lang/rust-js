@@ -322,7 +322,8 @@ import { $index } from "@rust-js/runtime";
 
 export function largest(shapes) {
   let best = $index(shapes, 0);
-  for (const shape of shapes) {
+  for (let i = 0; i < shapes.length; i++) {
+    const shape = shapes[i];
     if (shape.impl.area(shape.value) > best.impl.area(best.value)) {
       best = shape;
     }

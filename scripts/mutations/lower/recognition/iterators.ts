@@ -926,4 +926,13 @@ export const mutations: Mutation[] = [
       "^collection_taken_drops_what_is_left.rs$",
     ],
   },
+  {
+    name: "owned-vec-items-unsaid",
+    breaks: "a `for` over a `Vec` it owns, `for s in v`, is a `for…of`, where one over its slice counts (ADR 1042)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "                && std_path(self.tcx, adt.did()) == \"std::vec::IntoIter\")\n",
+    replace: "                && false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^array_counted_loops.rs$"],
+    snapshots: true,
+  },
 ];

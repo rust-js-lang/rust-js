@@ -97,7 +97,8 @@ function main() {
     "no frames here",
     "Error: other\n    at jsx\n    at react_stack_bottom_frame",
   ];
-  for (const stack of stacks) {
+  for (let i = 0; i < stacks.length; i++) {
+    const stack = stacks[i];
     console.log(`[${formatOwnerStack(stack)}]`);
   }
   for (const s of ["hello world", "héllo wörld", "日本 語", "🦀 crab", "", "none"]) {

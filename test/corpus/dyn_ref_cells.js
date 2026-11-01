@@ -64,7 +64,8 @@ function total(shapes) {
 }
 
 function growAll(shapes, by) {
-  for (const s of shapes) {
+  for (let i = 0; i < shapes.length; i++) {
+    const s = shapes[i];
     const receiver = $borrowMut(s, true);
     try {
       receiver.impl.grow(receiver, by);
@@ -81,7 +82,8 @@ function main() {
   growAll(shapes, 1);
   // Through the concrete `Rc`, the same cell.
   $borrowMut(circle).value.r = 10;
-  for (const s of shapes) {
+  for (let i = 0; i < shapes.length; i++) {
+    const s = shapes[i];
     const receiver = $borrow(s, true);
     try {
       const name = receiver.impl.name(receiver.value);

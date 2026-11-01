@@ -79,7 +79,8 @@ function main() {
     { TAG: "Rect", w: 4, h: 1 },
     { TAG: "Line", w: 5 },
   ];
-  for (const s of shapes) {
+  for (let i = 0; i < shapes.length; i++) {
+    const s = shapes[i];
     console.log(`${$displayF64(size(s))}`);
   }
   console.log(`${pick([0, 7])} ${pick([8, 0])} ${pick([2, 3])}`);

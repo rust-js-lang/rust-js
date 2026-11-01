@@ -25,7 +25,8 @@ function readingDebug_fmt(reading) {
 
 function total(values, zero, TAdd) {
   let sum = zero;
-  for (const v of values) {
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
     sum = TAdd.add(sum, v);
   }
   return sum;

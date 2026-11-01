@@ -89,7 +89,8 @@ function main() {
     false,
     [1, 2],
   ];
-  for (const value of values) {
+  for (let i = 0; i < values.length; i++) {
+    const value = values[i];
     console.log(`${describe(value)} | ${valueDebug_fmt(value)}`);
   }
 

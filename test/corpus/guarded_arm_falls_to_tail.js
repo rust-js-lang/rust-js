@@ -35,7 +35,8 @@ function clear(items) {
 
 function codes(items) {
   const out = [];
-  for (const [code, keep] of items) {
+  for (let i = 0; i < items.length; i++) {
+    const [code, keep] = items[i];
     switch (code) {
       case 1:
       case 2:
@@ -55,7 +56,8 @@ function codes(items) {
 
 function kinds(items) {
   const out = [];
-  for (const [name, keep] of items) {
+  for (let i = 0; i < items.length; i++) {
+    const [name, keep] = items[i];
     if (name === "A") {
       out.push("a");
     } else {
@@ -81,7 +83,8 @@ function kinds(items) {
  */
 function owned(items) {
   const out = [];
-  for (const [name, keep] of items) {
+  for (let i = 0; i < items.length; i++) {
+    const [name, keep] = items[i];
     if (name !== "A") {
       if (name === "B") {
         out.push("b");
@@ -96,7 +99,8 @@ function owned(items) {
 
 function apart(items) {
   const out = [];
-  for (const [name, keep] of items) {
+  for (let i = 0; i < items.length; i++) {
+    const [name, keep] = items[i];
     if ((name === "C" && keep) || name === "A") {
       continue;
     }

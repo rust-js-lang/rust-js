@@ -9,7 +9,8 @@ export function entry() {
 function merge(values, into) {
   const borrow = $borrow(values, true);
   try {
-    for (const v of borrow) {
+    for (let i = 0; i < borrow.length; i++) {
+      const v = borrow[i];
       if ($borrow(into).indexOf(v) < 0) {
         $borrowMut(into).push(v);
       }

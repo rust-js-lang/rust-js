@@ -9,7 +9,8 @@ export function entry() {
 function total(log) {
   const v = log;
   let total = 0;
-  for (const x of v) {
+  for (let i = 0; i < v.length; i++) {
+    const x = v[i];
     total = (total + x) | 0;
   }
   return [total, v.length];

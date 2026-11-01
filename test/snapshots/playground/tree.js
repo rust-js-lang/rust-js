@@ -6,7 +6,8 @@ import { $cmp, $rsplitOnce } from "@rust-js/runtime";
 
 export function buildTree(paths) {
   const tree = [];
-  for (const path of paths) {
+  for (let i = 0; i < paths.length; i++) {
+    const path = paths[i];
     let folder = tree;
     const rsplitOnce = $rsplitOnce(path, "/");
     let name;

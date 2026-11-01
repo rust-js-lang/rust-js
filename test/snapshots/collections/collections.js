@@ -89,10 +89,12 @@ export function lengths(n) {
 export function iterate(n) {
   const v = evens(n);
   let total = 0;
-  for (const x of v) {
+  for (let i = 0; i < v.length; i++) {
+    const x = v[i];
     total = (total + x) >>> 0;
   }
-  for (const x of v) {
+  for (let i = 0; i < v.length; i++) {
+    const x = v[i];
     total = (total + ((x * 100) >>> 0)) >>> 0;
   }
   for (const [k, w] of [
@@ -143,7 +145,8 @@ export function toggled(n) {
   $retain(todos, (t) => !t.done);
   let ids = 0;
   let done = 0;
-  for (const todo of todos) {
+  for (let i = 0; i < todos.length; i++) {
+    const todo = todos[i];
     ids = (ids + todo.id) >>> 0;
     if (todo.done) {
       done = (done + 1) >>> 0;
@@ -173,7 +176,8 @@ export function shared(times) {
   }
   const v = log;
   let total = 0;
-  for (const x of v) {
+  for (let j = 0; j < v.length; j++) {
+    const x = v[j];
     total = (total + x) | 0;
   }
   return [total, v.length];

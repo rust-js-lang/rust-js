@@ -75,7 +75,8 @@ export function dijkstra(edges, n, src) {
   const item = [];
   $roomFor(n, 12);
   const adj = Array.from({ length: n }, () => item.slice());
-  for (const [a, b, w] of edges) {
+  for (let i = 0; i < edges.length; i++) {
+    const [a, b, w] = edges[i];
     $index(adj, a).push([b, w]);
     $index(adj, b).push([a, w]);
   }
@@ -116,7 +117,8 @@ export function bfsOrder(n, edges) {
   let u;
   while ((u = q.shift()) != null) {
     order.push(u);
-    for (const [a, b] of edges) {
+    for (let i = 0; i < edges.length; i++) {
+      const [a, b] = edges[i];
       if (a === u && !$index(seen, b)) {
         seen[$at(seen, b)] = true;
         q.push(b);

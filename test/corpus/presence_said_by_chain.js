@@ -12,7 +12,8 @@ const C = "c";
 
 function levels(values) {
   const seen = [];
-  for (const value of values) {
+  for (let i = 0; i < values.length; i++) {
+    const value = values[i];
     let level;
     if (value === "a" || value === "b") {
       level = 1;
@@ -29,7 +30,8 @@ function levels(values) {
 
 function counted(values) {
   const seen = [];
-  for (const value of values) {
+  for (let i = 0; i < values.length; i++) {
+    const value = values[i];
     let level;
     if (value === 1 || value === 2) {
       level = 10;
@@ -46,7 +48,8 @@ function counted(values) {
 
 function picked(values) {
   const seen = [];
-  for (const value of values) {
+  for (let i = 0; i < values.length; i++) {
+    const value = values[i];
     let level;
     if (value === 1) {
       level = 10;
@@ -63,7 +66,8 @@ function picked(values) {
 
 function shadowed(values) {
   const seen = [];
-  for (const value of values) {
+  for (let i = 0; i < values.length; i++) {
+    const value = values[i];
     let level = seen.length;
     seen.push(level);
     if (value === "a" || value === "b") {
@@ -81,7 +85,8 @@ function shadowed(values) {
 
 function halves(values) {
   const seen = [];
-  for (const value of values) {
+  for (let i = 0; i < values.length; i++) {
+    const value = values[i];
     let level;
     if (value === 1) {
       level = 10;
@@ -98,7 +103,8 @@ function halves(values) {
 
 function tallied(values) {
   const seen = [];
-  for (const value of values) {
+  for (let i = 0; i < values.length; i++) {
+    const value = values[i];
     let level;
     switch (value) {
       case 1:

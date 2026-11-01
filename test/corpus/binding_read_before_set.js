@@ -15,7 +15,8 @@ function node(value) {
 function linked(values) {
   let first;
   let newLast;
-  for (const value of values) {
+  for (let i = 0; i < values.length; i++) {
+    const value = values[i];
     const clone = node(value);
     if (newLast == null) {
       first = clone;
@@ -32,7 +33,8 @@ function linked(values) {
 function chosen(values, flip) {
   let current = node(100);
   let sum = 0;
-  for (const value of values) {
+  for (let i = 0; i < values.length; i++) {
+    const value = values[i];
     const next = node(value);
     if (current == null) {
       current = next;
@@ -53,7 +55,8 @@ function chosen(values, flip) {
 function copied(steps) {
   let total = 0;
   let at = 1;
-  for (const step of steps) {
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
     const before = at;
     at = (at + step) | 0;
     total = (((total + ((before * 10) | 0)) | 0) + at) | 0;

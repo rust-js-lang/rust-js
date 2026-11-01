@@ -45,7 +45,8 @@ function main() {
   describe(JSON.parse('{"margin":"4px","inner":"a"}'), out);
   describe(JSON.parse('{"margin":"10px"}'), out);
   describe(JSON.parse("{}"), out);
-  for (const line of out) {
+  for (let i = 0; i < out.length; i++) {
+    const line = out[i];
     console.log(`${line}`);
   }
 }

@@ -415,9 +415,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a slice's iterator only stepped is `$iter(items)` and `$next(it)`, helpers a page's inline script can't carry, not `items.values()` (rd270)",
     file: "src/lower/mir/iter/sources.rs",
-    find: "            let slice = self.is_std_type(ty, StdItem::SliceIter);\n",
-    replace:
-      "            let slice = false && self.is_std_type(ty, StdItem::SliceIter);\n",
+    find: "            let items = self.recognition().steps_its_array(ty);\n",
+    replace: "            let items = false;\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "only stepped"],
   },
   {

@@ -25,7 +25,8 @@ function main() {
     margin: "1px",
   };
   describe(own, out);
-  for (const line of out) {
+  for (let i = 0; i < out.length; i++) {
+    const line = out[i];
     console.log(`${line}`);
   }
 }

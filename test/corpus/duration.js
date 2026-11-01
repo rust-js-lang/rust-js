@@ -28,7 +28,8 @@ function main() {
     0n,
     $durationNew(0n, 1),
   ];
-  for (const m of made) {
+  for (let i = 0; i < made.length; i++) {
+    const m = made[i];
     console.log(`${$debugDuration(m)} ${m === 0n} ${m / 1000000000n}`);
   }
   console.log(

@@ -1,6 +1,7 @@
 // A `loop` that ends an `if`'s branch, whose `else` follows: the loop's
 // `break` is its own, and the `else` stays, with no label (ADR 0859). A
-// `break 'rows` in a loop inside it is the loop's, by the program's label.
+// `break 'rows` in a loop inside it is the loop's, by the program's label,
+// a loop over a slice's items or a `for…of` over a text's `chars()`.
 
 fn walk(items: &[u32], kind: &str, out: &mut Vec<u32>) -> u32 {
     let mut count = 0;
@@ -54,6 +55,26 @@ fn nested(items: &[u32], kind: &str) -> u32 {
     count + 1
 }
 
+fn letters(text: &str, kind: &str) -> u32 {
+    let mut count = 0;
+    if kind == "rows" {
+        'rows: loop {
+            for c in text.chars() {
+                if c == '.' {
+                    break 'rows;
+                }
+                count += c.len_utf8() as u32;
+            }
+            if count > 10 {
+                break;
+            }
+        }
+    } else if kind == "none" {
+        count = 100;
+    }
+    count + 1
+}
+
 fn main() {
     let mut out = Vec::new();
     for kind in ["array", "iterable", "object", "other"] {
@@ -68,5 +89,6 @@ fn main() {
             nested(&[5, 1], kind),
             nested(&[9, 9], kind)
         );
+        println!("{kind}: {} {}", letters("ab.c", kind), letters("é", kind));
     }
 }

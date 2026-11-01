@@ -89,7 +89,8 @@ function main() {
     { value: [undefined], impl: outerError },
     { impl: oldError },
   ];
-  for (const e of errors) {
+  for (let i = 0; i < errors.length; i++) {
+    const e = errors[i];
     console.log(`${shown(e)}`);
   }
 }

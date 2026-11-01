@@ -455,7 +455,8 @@ pub fn unhooked() {
 ```js
 function prepareStackTrace(error, structuredStackTrace) {
   let stack = error.name + ": " + error.message;
-  for (const callSite of structuredStackTrace) {
+  for (let i = 0; i < structuredStackTrace.length; i++) {
+    const callSite = structuredStackTrace[i];
     stack += "\n    at " + callSite.toString();
   }
   return stack;

@@ -49,7 +49,8 @@ function bitsOf(x) {
 
 function longest(words) {
   let best = "";
-  for (const word of words) {
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
     if ($byteLen(word) > $byteLen(best)) {
       // Only its lifetime changes.
       best = word;

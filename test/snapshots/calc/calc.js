@@ -69,7 +69,8 @@ function prec(op) {
 export function toRpn(tokens) {
   const out = [];
   const stack = [];
-  for (const t of tokens) {
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i];
     if (t.TAG === "Num") {
       out.push(t);
     } else if (t.TAG === "Op") {
@@ -107,7 +108,8 @@ function eval$(src) {
   }
   const rpn = toRpn(result._0);
   const st = [];
-  for (const t of rpn) {
+  for (let i = 0; i < rpn.length; i++) {
+    const t = rpn[i];
     if (t.TAG === "Num") {
       st.push(t._0);
       continue;
