@@ -322,3 +322,12 @@ refusal of one read whole; mutations `flattened-by-name-unread`
 (`js_given.ts`), `flattened-by-name-compiled-here` (`instances.ts`) and
 `flattened-by-name-boxed` (`calls.ts`).
 
+
+Since by its name a flattened call is its library's too, a call through a
+value counted as one by its name is its library's still where it's
+flattened; where it isn't, it's compiled in the consumer, refused for its
+library's private state rather than for what JS's value can't be. So
+`through-library-compiled` is held by "a library's namespace method
+through a value whose call needs a copy is refused unless its result is
+flattened", whose refusal it changes, not by the flattened run, which it
+no longer changes (main's survivor, 96feaca3a).

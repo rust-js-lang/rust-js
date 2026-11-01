@@ -216,11 +216,11 @@ export const mutations: Mutation[] = [
   {
     name: "through-library-compiled",
     breaks:
-      "a library's namespace's method called through a value is compiled into the consumer (ADR 0914), and refused there for its library's private state (rd311)",
+      "a library's namespace's method called through a value is one called by its name, compiled into the consumer where its call needs a copy (ADR 0914), and refused there for its library's private state, not for the copy JS's value can't be (rd311)",
     file: "src/lower/instances.rs",
     find: "                through.then_some((callee, generic, *fn_span, destination.local))\n",
     replace: "                through.then_some((callee, generic, *fn_span, destination.local)).filter(|_| false)\n",
-    tests: ["test/namespaces.test.ts", "-t", "exact where its result is flattened"],
+    tests: ["test/namespaces.test.ts", "-t", "through a value whose call needs a copy is refused"],
   },
   {
     name: "through-library-unrefused",
