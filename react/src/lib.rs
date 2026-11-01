@@ -1178,7 +1178,7 @@ pub trait ComponentType<P, M> {}
 /// fields are what the instance gains after React constructs it,
 /// `undefined` until set: each an `Option`, or a `Cell` of one. React makes
 /// and keeps the instance, as any JS object, so each method is given it as
-/// `&'static`, `self: &'static Self`, which a ref callback it makes may
+/// `&'static`, `&'static self`, which a ref callback it makes may
 /// hold, `ref={move |r| self.tag_ref.set(r)}`.
 ///
 /// ```ignore
@@ -1186,7 +1186,7 @@ pub trait ComponentType<P, M> {}
 /// pub struct Greeting {}
 ///
 /// impl Component<GreetingProps> for Greeting {
-///     fn render(self: &'static Self) -> JSX::Element {
+///     fn render(&'static self) -> JSX::Element {
 ///         jsx! { <h1>{"Hello, "}{self.props().name}</h1> }
 ///     }
 /// }
@@ -1195,32 +1195,32 @@ pub trait ComponentType<P, M> {}
 pub trait Component<P: 'static = (), S: 'static = ()>: 'static {
     /// [`render`](https://react.dev/reference/react/Component#render): what
     /// it renders, of `self.props()`.
-    fn render(self: &'static Self) -> Element;
+    fn render(&'static self) -> Element;
 
     /// [`componentDidMount`](https://react.dev/reference/react/Component#componentdidmount):
     /// called once it's on the screen.
-    fn component_did_mount(self: &'static Self) {}
+    fn component_did_mount(&'static self) {}
 
     /// [`componentDidUpdate`](https://react.dev/reference/react/Component#componentdidupdate):
     /// called once it's re-rendered with new props or state, given the ones
     /// before.
-    fn component_did_update(self: &'static Self, _prev_props: &'static P, _prev_state: &'static S) {}
+    fn component_did_update(&'static self, _prev_props: &'static P, _prev_state: &'static S) {}
 
     /// [`componentWillUnmount`](https://react.dev/reference/react/Component#componentwillunmount):
     /// called before it's removed from the screen.
-    fn component_will_unmount(self: &'static Self) {}
+    fn component_will_unmount(&'static self) {}
 
     /// [`this.props`](https://react.dev/reference/react/Component#props):
     /// what it was given, React's to set.
     #[cfg_attr(rust_js, rust_js::link_name = "get props")]
-    fn props(self: &'static Self) -> &'static P {
+    fn props(&'static self) -> &'static P {
         unreachable!()
     }
 
     /// [`forceUpdate`](https://react.dev/reference/react/Component#forceupdate):
     /// renders it again, though its props and state are as they were.
     #[cfg_attr(rust_js, rust_js::link_name = "forceUpdate")]
-    fn force_update(self: &'static Self) {
+    fn force_update(&'static self) {
         unreachable!()
     }
 }

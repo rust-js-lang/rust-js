@@ -71,16 +71,16 @@ pub struct Counter {
 }
 
 impl Component<CounterProps> for Counter {
-    fn component_did_mount(self: &'static Self) {
+    fn component_did_mount(&'static self) {
         self._mounts.set(Some(self._mounts.get().unwrap_or(0.0) + 1.0));
         println!("mount {}", self.props().label);
     }
 
-    fn component_did_update(self: &'static Self, prev_props: &CounterProps, _prev_state: &()) {
+    fn component_did_update(&'static self, prev_props: &CounterProps, _prev_state: &()) {
         println!("update {} to {}", prev_props.label, self.props().label);
     }
 
-    fn render(self: &'static Self) -> JSX::Element {
+    fn render(&'static self) -> JSX::Element {
         let props = self.props();
         jsx! { <p>{props.label}</p> }
     }
@@ -369,3 +369,11 @@ Held by `test/class-components.test.ts`'s "a class component's impl is
 beside its struct, or it's refused there" and the mutations
 `subclass-impl-apart-from-its-struct` (`lower/classes/subclasses.rs`) and
 `class-elsewhere-unrefused` (`jsx_syntax/parser.rs`).
+
+## Amendment: the receiver is written `&'static self`
+
+`self: &'static Self` is what clippy's `needless_arbitrary_self_type`, a
+default lint, asks to write `&'static self`: the port's ReactART was
+refused by `-D warnings` where this ADR's examples, the guide's and the
+react crate's trait wrote the long form. The same receiver; each is
+written `fn render(&'static self)` now, as rustfmt and clippy leave it.

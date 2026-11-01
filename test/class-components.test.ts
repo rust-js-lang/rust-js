@@ -60,20 +60,20 @@ pub struct Counter {
 }
 
 impl Component<CounterProps> for Counter {
-    fn component_did_mount(self: &'static Self) {
+    fn component_did_mount(&'static self) {
         self._mounts.set(Some(self._mounts.get().unwrap_or(0.0) + 1.0));
         println!("mount {} {}", self.props().label, self._paragraph.get().is_some());
     }
 
-    fn component_did_update(self: &'static Self, prev_props: &CounterProps, _prev_state: &()) {
+    fn component_did_update(&'static self, prev_props: &CounterProps, _prev_state: &()) {
         println!("update {} to {}", prev_props.label, self.props().label);
     }
 
-    fn component_will_unmount(self: &'static Self) {
+    fn component_will_unmount(&'static self) {
         println!("unmount {}", self.props().label);
     }
 
-    fn render(self: &'static Self) -> JSX::Element {
+    fn render(&'static self) -> JSX::Element {
         let props = self.props();
         jsx! { <p ref={move |p| self._paragraph.set(p)}>{props.label}</p> }
     }
@@ -101,11 +101,11 @@ impl Label {
 }
 
 impl Component<LabelProps> for Label {
-    fn component_did_mount(self: &'static Self) {
+    fn component_did_mount(&'static self) {
         self.force_update();
     }
 
-    fn render(self: &'static Self) -> JSX::Element {
+    fn render(&'static self) -> JSX::Element {
         self.renders.set(self.renders.get() + 1.0);
         jsx! { <span>{self.props().text}{" "}{self.renders.get()}</span> }
     }
@@ -223,7 +223,7 @@ pub struct Made {
 }
 
 impl Component<P> for Made {
-    fn render(self: &'static Self) -> JSX::Element {
+    fn render(&'static self) -> JSX::Element {
         jsx! { <p>{self.count}</p> }
     }
 }
@@ -234,11 +234,11 @@ impl Component<P> for Made {
 pub struct Own {}
 
 impl Component<P> for Own {
-    fn props(self: &'static Self) -> &'static P {
+    fn props(&'static self) -> &'static P {
         unreachable!()
     }
 
-    fn render(self: &'static Self) -> JSX::Element {
+    fn render(&'static self) -> JSX::Element {
         jsx! { <p /> }
     }
 }
@@ -256,7 +256,7 @@ impl Two {
 }
 
 impl Component<P> for Two {
-    fn render(self: &'static Self) -> JSX::Element {
+    fn render(&'static self) -> JSX::Element {
         jsx! { <p /> }
     }
 }
@@ -269,7 +269,7 @@ pub struct Hidden {
 }
 
 impl Component<P> for Hidden {
-    fn render(self: &'static Self) -> JSX::Element {
+    fn render(&'static self) -> JSX::Element {
         jsx! { <p /> }
     }
 }
@@ -282,13 +282,13 @@ pub struct Q {}
 pub struct Both {}
 
 impl Component<P> for Both {
-    fn render(self: &'static Self) -> JSX::Element {
+    fn render(&'static self) -> JSX::Element {
         jsx! { <p /> }
     }
 }
 
 impl Component<Q> for Both {
-    fn render(self: &'static Self) -> JSX::Element {
+    fn render(&'static self) -> JSX::Element {
         jsx! { <p /> }
     }
 }
@@ -304,7 +304,7 @@ test("a class component is in the module its impl is, which imports what it exte
     pub struct Alone {}
 
     impl Component for Alone {
-        fn render(self: &'static Self) -> JSX::Element {
+        fn render(&'static self) -> JSX::Element {
             jsx! { <hr /> }
         }
     }
@@ -330,7 +330,7 @@ test("a class component is in the module its impl is, which imports what it exte
         use react::{Component, JSX, jsx};
 
         impl Component for super::Apart {
-            fn render(self: &'static Self) -> JSX::Element {
+            fn render(&'static self) -> JSX::Element {
                 jsx! { <hr /> }
             }
         }
@@ -351,7 +351,7 @@ test("a class component's impl is beside its struct, or it's refused there", () 
         use react::{Component, JSX, jsx};
 
         impl Component for super::Gauge {
-            fn render(self: &'static Self) -> JSX::Element {
+            fn render(&'static self) -> JSX::Element {
                 jsx! { <hr /> }
             }
         }
@@ -391,7 +391,7 @@ test("a class component is an element jsx! renders, its class given its props", 
     pub struct Surface {}
 
     impl Component<SurfaceProps> for Surface {
-        fn render(self: &'static Self) -> JSX::Element {
+        fn render(&'static self) -> JSX::Element {
             let props = self.props();
             jsx! { <i title={props.title}>{props.width}</i> }
         }
@@ -414,7 +414,7 @@ test("a class component is an element jsx! renders, its class given its props", 
     }
 
     impl Component<LabelProps> for Label {
-        fn render(self: &'static Self) -> JSX::Element {
+        fn render(&'static self) -> JSX::Element {
             jsx! { <b>{self.text.as_str()}</b> }
         }
     }
@@ -423,7 +423,7 @@ test("a class component is an element jsx! renders, its class given its props", 
     pub struct Rule {}
 
     impl Component for Rule {
-        fn render(self: &'static Self) -> JSX::Element {
+        fn render(&'static self) -> JSX::Element {
             jsx! { <hr /> }
         }
     }
@@ -489,7 +489,7 @@ impl Noted {
 }
 
 impl Component for Noted {
-    fn render(self: &'static Self) -> JSX::Element {
+    fn render(&'static self) -> JSX::Element {
         jsx! { <hr /> }
     }
 }
@@ -524,11 +524,11 @@ pub struct Surface {
 }
 
 impl Component<SurfaceProps> for Surface {
-    fn component_did_mount(self: &'static Self) {
+    fn component_did_mount(&'static self) {
         println!("surface {}", self._tag_ref.get().map_or(String::new(), |e| e.tag_name()));
     }
 
-    fn render(self: &'static Self) -> JSX::Element {
+    fn render(&'static self) -> JSX::Element {
         let props = self.props();
         let Tag = props.tag;
         jsx! {
@@ -556,11 +556,11 @@ pub struct Note {
 }
 
 impl Component<NoteProps> for Note {
-    fn component_did_mount(self: &'static Self) {
+    fn component_did_mount(&'static self) {
         println!("note {}", self._node.get().map_or(String::new(), |n| n.tag_name()));
     }
 
-    fn render(self: &'static Self) -> JSX::Element {
+    fn render(&'static self) -> JSX::Element {
         let T = NOTE;
         jsx! {
             <T {...self.props()} ref={move |n| self._node.set(n)}>
@@ -632,7 +632,7 @@ pub struct GaugeProps {
 pub struct Gauge {}
 
 impl Component<GaugeProps> for Gauge {
-    fn render(self: &'static Self) -> JSX::Element {
+    fn render(&'static self) -> JSX::Element {
         jsx! { <b>{self.props().label}</b> }
     }
 }
@@ -690,7 +690,7 @@ use react::{Component, JSX, jsx};
 pub struct Gauge {}
 
 impl Component for Gauge {
-    fn render(self: &'static Self) -> JSX::Element {
+    fn render(&'static self) -> JSX::Element {
         jsx! { <hr /> }
     }
 }
@@ -721,12 +721,12 @@ pub struct Mounted {
 }
 
 impl Component for Mounted {
-    fn component_did_mount(self: &'static Self) {
+    fn component_did_mount(&'static self) {
         _ = self._root.set(Rc::new(Root { label: "root".to_owned() }));
         println!("{}", self._root.get().unwrap().label);
     }
 
-    fn render(self: &'static Self) -> JSX::Element {
+    fn render(&'static self) -> JSX::Element {
         jsx! { <hr /> }
     }
 }

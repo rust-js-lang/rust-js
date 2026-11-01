@@ -449,7 +449,7 @@ pub struct Note {
 }
 
 impl Component<NoteProps> for Note {
-    fn render(self: &'static Self) -> JSX::Element {
+    fn render(&'static self) -> JSX::Element {
         let T = NOTE;
         jsx! { <T {...self.props()} ref={move |n| self._node.set(n)}>{"A note"}</T> }
     }

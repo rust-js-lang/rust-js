@@ -637,17 +637,17 @@ pub struct Clock {
 }
 
 impl Component<ClockProps> for Clock {
-    fn component_did_mount(self: &'static Self) {
+    fn component_did_mount(&'static self) {
         self._ticks.set(Some(0.0));
     }
 
-    fn component_did_update(self: &'static Self, prev_props: &ClockProps, _prev_state: &()) {
+    fn component_did_update(&'static self, prev_props: &ClockProps, _prev_state: &()) {
         if prev_props.label != self.props().label {
             self._ticks.set(Some(self._ticks.get().unwrap_or(0.0) + 1.0));
         }
     }
 
-    fn render(self: &'static Self) -> JSX::Element {
+    fn render(&'static self) -> JSX::Element {
         jsx! { <p>{self.props().label}</p> }
     }
 }
@@ -694,7 +694,7 @@ export function Clocks() {
   lifecycle methods React calls, `component_did_mount` as
   `componentDidMount`; one it doesn't write its class doesn't have, so
   React does what it does of none.
-- **Each method is given `self: &'static Self`**: React makes and keeps
+- **Each method is given `&'static self`**: React makes and keeps
   the instance, as any JS object, so a ref callback may hold it,
   `ref={move |r| self.tag_ref.set(r)}`, `ref={(r) => { this.tagRef = r;
   }}`.
