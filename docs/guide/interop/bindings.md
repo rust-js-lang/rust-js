@@ -367,6 +367,12 @@ export function initial() {
   `nodeRequire.call(module, "timers")`; in an ES module, which has no
   `module`, the read throws, which `catch_unwind` catches, a `try`
   ([ADR 0305, amended](../../decisions/0305-require.md#amendment-a-require-no-bundler-sees)).
+- **A private `use` that renames a global is the module's `const`**:
+  `use js::array::SLICE as slice;` is `const slice =
+  Array.prototype.slice;`, and `function::call(slice, ..)` is
+  `slice.call(..)`, read as the module loads; by its own name, `use
+  js::object::keys;`, it's read where it's called, `Object.keys(value)`
+  ([ADR 0622, amended](../../decisions/0622-a-global-binding-a-module-names-is-its-const.md)).
 - **Named through a module that holds it, it's read through that
   module**: where `assign.rs` holds `Object.assign` as its default, a
   call of `crate::assign::assign` imports it, `import assign from
@@ -385,16 +391,18 @@ classes keep theirs
 ([ADR 1048](../../decisions/1048-a-function-that-reads-arguments-is-given-each.md)):
 
 ```rust excerpt
+use js::array::SLICE as slice;
+
 pub fn new(_stops: Option<&Unknown>, _x1: Option<&Unknown>, _y1: Option<&Unknown>) -> Self {
     LinearGradient {
-        args: function::call(js::array::SLICE, Some(js::arguments()), ()),
+        args: function::call(slice, Some(js::arguments()), ()),
     }
 }
 ```
 
 ```js
 export function LinearGradient(stops, x1, y1) {
-  this.args = Array.prototype.slice.call(arguments);
+  this.args = slice.call(arguments);
 }
 ```
 

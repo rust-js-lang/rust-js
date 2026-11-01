@@ -1135,7 +1135,7 @@ test("what a module exports an item as is exported_as's alone", () => {
   // has one and the binding it holds; the module's own made, its
   // `module_default`, once, with what it re-exports (rd116).
   const asking = lowering.filter((file) => /default_exports::default_exports\(/.test(read(file)));
-  expect(asking.sort()).toEqual(["src/lower/analysis.rs", "src/lower/bindings.rs"]);
+  expect(asking.sort()).toEqual(["src/lower/analysis.rs", "src/lower/bindings/held.rs"]);
   const made = lowering.filter((file) => /default_exports::module_default\(/.test(read(file)));
   expect(made).toEqual(["src/lower/pipeline.rs"]);
   expect(read("src/lower/library.rs")).toContain(".then(|| super::default_exports::exported_as(tcx, id, info.exported()))");

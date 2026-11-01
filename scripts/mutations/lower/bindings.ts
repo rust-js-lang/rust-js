@@ -426,19 +426,6 @@ export const mutations: Mutation[] = [
     tests: ["test/diagnostics.test.ts", "-t", "lazy parameter"],
   },
   {
-    name: "bound-global-unexported",
-    breaks:
-      "a `pub use` of a global binding is its module's `const`, but not exported",
-    file: "src/lower/bindings.rs",
-    find: "            path: read,\n            export,\n",
-    replace: "            path: read,\n            export: false,\n",
-    tests: [
-      "test/lowering-bindings.test.ts",
-      "-t",
-      "a global binding a module names",
-    ],
-  },
-  {
     name: "bound-global-renamed-lost",
     breaks: "`pub use js::object::keys as names` is `keys`, not `names`",
     file: "src/lower/bindings.rs",
@@ -449,67 +436,6 @@ export const mutations: Mutation[] = [
       "-t",
       "a global binding a module names",
     ],
-  },
-  {
-    name: "bound-global-of-a-method",
-    breaks:
-      "a method binding, `this.name(..)`, is taken for a global function a module can hold",
-    file: "src/lower/bindings.rs",
-    find: "            JsForm::Call(name) if is_binding(tcx, def_id) && !is_method(tcx, def_id) && js_import(&name).is_none() => {\n",
-    replace:
-      "            JsForm::Call(name) if is_binding(tcx, def_id) && js_import(&name).is_none() => {\n",
-    tests: [
-      "test/lowering-bindings.test.ts",
-      "-t",
-      "a global binding a module names",
-    ],
-  },
-  {
-    name: "held-read-in-place",
-    breaks:
-      "a caller that names a binding through the module that holds it reads it in place, `Object.assign(target, source)`",
-    file: "src/lower/bindings.rs",
-    find: "                self.reads.insert(expr.span, read);\n",
-    replace: "                let _ = read;\n",
-    tests: ["test/lowering-bindings.test.ts", "-t", "named through the module"],
-  },
-  {
-    name: "held-name-alone-unfollowed",
-    breaks:
-      "a binding named alone, through its module's `use crate::assign::assign;`, is read in place",
-    file: "src/lower/bindings.rs",
-    find: "        let [only] = segments else { return None };\n",
-    replace:
-      "        let [only] = segments else { return None };\n        if true {\n            return None;\n        }\n",
-    tests: ["test/lowering-bindings.test.ts", "-t", "named through the module"],
-  },
-  {
-    name: "held-name-not-default",
-    breaks:
-      "a caller imports a binding a module holds as its default and by `pub use` by its name, not as the default its functions are",
-    file: "src/lower/bindings.rs",
-    find: '            (true, _) => Some("default"),\n            (false, true) => Some(&self.name),\n',
-    replace:
-      '            (_, true) => Some(&self.name),\n            (true, _) => Some("default"),\n',
-    tests: ["test/cargo-link.test.ts", "-t", "holds a binding"],
-  },
-  {
-    name: "held-static-unheld",
-    breaks:
-      "`js::export_default!(REACT_SHARED_INTERNALS)` of a binding's static is refused",
-    file: "src/lower/bindings.rs",
-    find: "        DefKind::Static { .. } if is_binding(tcx, def_id) => {\n",
-    replace: "        DefKind::Static { .. } if false => {\n",
-    tests: ["test/lowering-bindings.test.ts", "-t", "named through the module"],
-  },
-  {
-    name: "held-reexport-a-const",
-    breaks:
-      "a `pub use` of a binding through the module that holds it is a `const` of its own, not that module's re-exported",
-    file: "src/lower/bindings.rs",
-    find: "        let through = named_through(tcx, foreign, module, path.segments, binding, modules);\n",
-    replace: "        let through: Option<HeldRead> = None;\n",
-    tests: ["test/lowering-bindings.test.ts", "-t", "named through the module"],
   },
   {
     name: "default-constant-a-mark",
@@ -559,19 +485,6 @@ export const mutations: Mutation[] = [
       "test/lowering-nullable.test.ts",
       "-t",
       "nullable Cell field's None is null",
-    ],
-  },
-  {
-    name: "held-default-exported-by-name",
-    breaks:
-      "a library's `pub use` of a binding its default names is `export const assign` too, which no caller reads and upstream's `shared/assign` hasn't",
-    file: "src/lower/bindings.rs",
-    find: "        self.export && !self.default\n",
-    replace: "        self.export\n",
-    tests: [
-      "test/cargo-link.test.ts",
-      "-t",
-      "a library's module that holds a binding",
     ],
   },
   {

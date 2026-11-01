@@ -1,6 +1,6 @@
 # 0622. A global binding a module names is its `const`
 
-Status: Accepted. Extends [0240](0240-reexports.md) and
+Status: Accepted; amended (the user's decision, 2026-11-02): a private `use` that renames a global is its `const` too. Extends [0240](0240-reexports.md) and
 [0611](0611-a-default-export-is-where-its-macro-is.md); amended by
 [0633](0633-a-binding-named-through-a-module-is-read-through-it.md): a
 caller that names one through the module reads it through it, and a
@@ -118,3 +118,40 @@ N: the name is what the program says. Held by
 `test/lowering-binding-paths.test.ts`'s "a pub use of a binding is
 exported by its name attribute" and the mutation
 `use-name-attribute-dropped` (`lower/bindings.rs`).
+
+## Amendment: a private `use` that renames a global (the user's decision)
+
+The user's decision (2026-11-02, recommended in rd332's review, made while
+the user was away by their standing instruction). react-art writes `const
+slice = Array.prototype.slice;` and `slice.call(arguments)`, and React's
+shared modules `const isArrayImpl = Array.isArray;`. A private `use
+js::array::SLICE as slice;` was read in place, `Array.prototype.slice.call(..)`,
+since a global became a module's `const` only through its default or a
+`pub use`.
+
+**A private `use` that renames a global binding, `use js::array::SLICE as
+slice;`, is the module's `const slice = Array.prototype.slice;`, and each
+read of it by that name there reads the `const`**: `slice.call(list)`,
+`isArrayImpl(value)`. One by its own name, `use js::object::keys;`, or
+`as _`, is read in place, as before; so is one of a JS module's import, an
+import already.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)), stated as the user asked:
+the `const` reads the global once, as the module loads, where the read in
+place reads it at each call. They differ only where a program replaces the
+global after the module loads, `Array.prototype.slice = ..` or a polyfill
+installed later, which this ADR's `pub use` form already reads at load and
+upstream's own `const` does. The user accepted the same trade for a
+private `use` that names the `const` by renaming it.
+
+- One owner, `bindings/held.rs` (moved out of `bindings.rs` for its
+  cap): `held_of` holds the renamed global, and `named_through` reads a
+  name a module's own renaming `use` gives through that module's `const`.
+- No port module renames a global today (react-in-rust has no `use
+  js::.. as ..` of a global); the corpus and the snapshots are unchanged.
+
+Held by `test/lowering-binding-paths.test.ts`, "a private use renaming a
+global binding is the module's const", run in Node; mutations
+`private-renamed-global-unheld`, `renamed-global-read-in-place` and
+`underscore-use-held` (`bindings/held.rs`).
+

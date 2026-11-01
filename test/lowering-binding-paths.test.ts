@@ -140,3 +140,37 @@ pub use crate::bound::E as EULER;
   const loaded = await import(join(dir, "api.js"));
   expect([loaded.Pi, loaded.Euler, loaded.Transform.name]).toEqual([Math.PI, Math.E, "Transform"]);
 });
+
+// A private `use` that renames a global binding is the module's `const` of
+// it, read by that name, as upstream writes React's `const slice =
+// Array.prototype.slice;` and `const isArrayImpl = Array.isArray;`, read as
+// the module loads (the user's decision, ADR 0622, amended). One by its own
+// name, or `as _`, is read in place, as before.
+test("a private use renaming a global binding is the module's const", async () => {
+  const dir = fixture("renamed-globals");
+  writeFileSync(join(dir, "lib.rs"), `use js::array::SLICE as slice;
+use js::array::is_array as is_array_impl;
+use js::object::keys;
+use js::{Unknown, function};
+
+pub fn copy(list: &Unknown) -> Option<&'static Unknown> {
+    function::call(slice, Some(list), ())
+}
+
+pub fn both(value: Option<&Unknown>) -> bool {
+    is_array_impl(value) && is_array_impl(value)
+}
+
+pub fn names(value: &js::JsObject) -> Vec<String> {
+    keys(value)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const slice = Array.prototype.slice;\nconst isArrayImpl = Array.isArray;\n");
+  expect(js).toContain("  return slice.call(list);\n");
+  expect(js).toContain("  return isArrayImpl(value) && isArrayImpl(value);\n");
+  expect(js).toContain("  return Object.keys(value);\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.copy({ length: 2, 0: "a", 1: "b" }), lib.both([1]), lib.both("x"), lib.names({ a: 1 })]).toEqual([["a", "b"], true, false, ["a"]]);
+});
