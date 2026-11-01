@@ -1157,4 +1157,12 @@ export const mutations: Mutation[] = [
     replace: "    for held in (held.iter()).filter(|held| held.through.is_none()) {\n",
     tests: ["test/lowering-binding-paths.test.ts", "-t", "private use renaming a global"],
   },
+  {
+    name: "namespace-value-undeclared",
+    breaks: "a namespace thread-local's fields aren't declared in its `.d.ts`, so TypeScript finds none of its module's exports (rd293, ADR 1037, amended)",
+    file: "src/lower/declarations.rs",
+    find: "            items.extend(out.namespace_fields(def_id));\n",
+    replace: "            items.extend(Vec::<Value>::new());\n",
+    tests: ["test/namespace-values.test.ts", "-t", "fields are its module's exports"],
+  },
 ];

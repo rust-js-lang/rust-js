@@ -113,6 +113,10 @@ pub(super) fn module<'tcx>(
             items.extend(out.namespace_functions(def_id, forwarded));
             continue;
         }
+        if super::classes::is_value_namespace(tcx, def_id) {
+            items.extend(out.namespace_fields(def_id));
+            continue;
+        }
         let declaration = match tcx.def_kind(def_id) {
             DefKind::Fn if !is_binding(tcx, def_id) => Some(out.function(def_id)),
             DefKind::Struct if super::classes::is_class(tcx, def_id) => {
@@ -1103,6 +1107,24 @@ impl<'tcx> Declarations<'_, 'tcx> {
             "rust-js: a declared struct's field is named by another module's symbol, which its `.d.ts` can't name yet: name it by a symbol its own module holds, or JS's own, `js::symbol::async_iterator` (ADR 1051)",
         );
         json!(self.tcx.def_path_str(item))
+    }
+
+    /// `export const render: (..) => void;`, each field of a namespace
+    /// thread-local's value, its module's exports (ADR 1037, amended).
+    fn namespace_fields(&mut self, key: DefId) -> Vec<Value> {
+        let ty::Adt(_, args) = self.tcx.type_of(key).instantiate_identity().skip_normalization().kind() else {
+            return Vec::new();
+        };
+        let ty::Adt(adt, held) = args.type_at(0).kind() else {
+            return Vec::new();
+        };
+        let names = super::classes::value_namespace_exports(self.tcx, key).unwrap_or_default();
+        (adt.non_enum_variant().fields.iter().zip(names))
+            .map(|(field, name)| {
+                let ty = self.ts(field.ty(self.tcx, held).skip_normalization());
+                json!({ "kind": "const", "name": name, "exported": true, "declare": false, "type": ty })
+            })
+            .collect()
     }
 
     fn constant(&mut self, def_id: DefId) -> Value {

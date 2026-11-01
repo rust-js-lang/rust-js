@@ -153,6 +153,7 @@ fn visit(module: &mut LoweredModule, visitor: &mut Visitor<'_>) {
             }
             Item::Const(constant) => {
                 visitor.name(&constant.name);
+                constant.fields.iter().for_each(|field| visitor.name(field));
                 expr(&mut constant.value, visitor);
             }
             Item::Statements(stmts) => block(stmts, visitor),

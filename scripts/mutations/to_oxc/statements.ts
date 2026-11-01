@@ -429,4 +429,12 @@ export const mutations: Mutation[] = [
       "prototype replaced at load"
     ]
   },
+  {
+    name: "namespace-value-fields-unprinted",
+    breaks: "a namespace thread-local's `const` declares its own name, `export const noop = create(3);`, not its value's fields, its module's exports (rd293, ADR 1037, amended)",
+    file: "src/to_oxc/statements.rs",
+    find: "        let id = match c.fields.is_empty() {\n",
+    replace: "        let id = match c.fields.is_empty() || true {\n",
+    tests: ["test/namespace-values.test.ts", "-t", "fields are its module's exports"],
+  },
 ];

@@ -655,4 +655,12 @@ export const mutations: Mutation[] = [
     replace: "                    && !tcx.associated_item_def_ids(id).is_empty()\n",
     tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
   },
+  {
+    name: "namespace-value-of-anything",
+    breaks: "a namespace thread-local of what's no struct of named fields, a `u32`, is let through, whose module then exports nothing it says (rd293, ADR 1037, amended)",
+    file: "src/lower/classes.rs",
+    find: "                if !thread_local || value_namespace_exports(tcx, id).is_none() || !tcx.visibility(id).is_public() {\n",
+    replace: "                if !thread_local || !tcx.visibility(id).is_public() {\n",
+    tests: ["test/namespace-values.test.ts", "-t", "no struct of named fields"],
+  },
 ];

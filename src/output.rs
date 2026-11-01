@@ -830,14 +830,20 @@ fn entry_is_root(package: &crate::packages::Package, module: &program::LoweredMo
 fn exports(module: &program::LoweredModule) -> Vec<String> {
     let own = module.items.iter().filter_map(|item| match item {
         js::Item::Function(function) if function.export => Some(function.name.clone()),
-        js::Item::Const(constant) if constant.export => Some(constant.name.clone()),
+        js::Item::Const(constant) if constant.export && constant.fields.is_empty() => Some(constant.name.clone()),
         js::Item::Namespace(namespace) if namespace.export => Some(namespace.name.clone()),
         _ => None,
+    });
+    // A namespace's value's fields (ADR 1037, amended).
+    let fields = module.items.iter().flat_map(|item| match item {
+        js::Item::Const(constant) if constant.export => constant.fields.clone(),
+        _ => Vec::new(),
     });
     let reexported =
         (module.reexports.iter()).flat_map(|reexport| reexport.named.iter().map(|(_, alias)| alias.clone()));
     let default = module.default_export.as_ref().map(|_| "default".to_string());
     let aliased = module.aliases.iter().map(|(_, exported)| exported.clone());
+    let own = own.chain(fields);
     own.chain(reexported).chain(default).chain(aliased).collect()
 }
 

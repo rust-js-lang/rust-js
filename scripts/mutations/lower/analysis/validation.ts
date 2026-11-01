@@ -346,4 +346,12 @@ export const mutations: Mutation[] = [
     replace: ".any(|_| true)",
     tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
   },
+  {
+    name: "namespace-value-read-allowed",
+    breaks: "a Rust read of a namespace thread-local, `NOOP.with(..)`, is lowered as a cell's, which no JS variable is (rd293, ADR 1037, amended)",
+    file: "src/lower/analysis/validation.rs",
+    find: "                && crate::lower::classes::is_value_namespace(tcx, def_id)\n",
+    replace: "                && false\n",
+    tests: ["test/namespace-values.test.ts", "-t", "Rust reads is refused"],
+  },
 ];

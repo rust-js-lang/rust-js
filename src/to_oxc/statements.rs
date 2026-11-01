@@ -413,7 +413,13 @@ impl<'a> Cx<'a> {
     pub(super) fn constant(&self, c: &js::Const) -> Statement<'a> {
         let b = &self.b;
         let sp = span(c.span);
-        let id = BindingPattern::new_binding_identifier(SPAN, self.name(&c.name), b);
+        let id = match c.fields.is_empty() {
+            true => BindingPattern::new_binding_identifier(SPAN, self.name(&c.name), b),
+            false => {
+                let named = |field: &String| (field.clone(), js::Pattern::Name(field.clone()), None);
+                self.pattern(&js::Pattern::Object(c.fields.iter().map(named).collect(), None))
+            }
+        };
         // `let cached;`: a variable set later starts `undefined` by itself.
         let init = match (&c.value.kind, c.mutable) {
             (ExprKind::Undefined, true) => None,

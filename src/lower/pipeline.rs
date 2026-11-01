@@ -338,6 +338,7 @@ pub fn lower_crate<'tcx>(
             name: info.name.clone(),
             value,
             mutable: false,
+            fields: Vec::new(),
             export: tcx.visibility(named).is_public() || called_from_elsewhere.contains(&named.to_def_id()),
             span: sources.item_span(tcx, named),
         };
@@ -742,6 +743,7 @@ pub fn lower_crate<'tcx>(
                 name,
                 value,
                 mutable: false,
+                fields: Vec::new(),
                 export,
                 span,
             };
@@ -817,6 +819,8 @@ pub fn lower_crate<'tcx>(
                     name: info.name.clone(),
                     value,
                     mutable: false,
+                    // A namespace's, its module's exports (ADR 1037, amended).
+                    fields: super::classes::namespace_fields(tcx, key.to_def_id()),
                     // A `const { .. }` block has no visibility: it's its function's alone.
                     export: (tcx.def_kind(key) != DefKind::AnonConst && tcx.visibility(key).is_public())
                         || called_from_elsewhere.contains(&key.to_def_id()),
@@ -935,6 +939,7 @@ pub fn lower_crate<'tcx>(
             name: info.name.clone(),
             value: super::bindings::variant_tag(tcx, adt.variant_with_id(id)),
             mutable: false,
+            fields: Vec::new(),
             export,
             span: sources.item_span(tcx, variant),
         });
@@ -1167,6 +1172,7 @@ pub fn lower_crate<'tcx>(
                         }),
                         export: held.exported_by_name(),
                         mutable: false,
+                        fields: Vec::new(),
                         span: held.span.map_or(js::Span::NONE, |span| sources.span(span)),
                     }),
             );

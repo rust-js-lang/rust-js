@@ -1471,6 +1471,52 @@ export function updateContainer(n) {
   method of `&self`; a method that reads `self` but to call another; and
   the attribute on one of the struct and its impl alone.
 
+### A namespace that's a value
+
+A `pub` thread-local of a struct marked `#[cfg_attr(rust_js,
+rust_js::namespace)]` is its module's namespace as a value: what its
+initializer makes as the module loads, whose fields are the module's
+exports, as React's noop renderer's entries are `export const { .. } =
+createReactNoop(..)`
+([ADR 1037](../../decisions/1037-a-module-namespace-is-a-unit-struct-of-its-functions.md), amended):
+
+```rust
+pub mod noop {
+    pub struct Renderer {
+        pub render: Box<dyn Fn(u32) -> u32>,
+        pub act: Option<fn()>,
+    }
+
+    pub fn create(scale: u32) -> Renderer {
+        Renderer {
+            render: Box::new(move |n| n * scale),
+            act: None,
+        }
+    }
+}
+
+use noop::{Renderer, create};
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::namespace)]
+    pub static NOOP: Renderer = create(3);
+}
+```
+
+```js
+// src/lib.js
+import { create } from "./noop.js";
+
+export const { render, act } = create(3);
+```
+
+- **Each field is an export**, by its JS name, `#[rust_js::name]`'s too,
+  declared in its `.d.ts`; a `None` the value leaves out is an export
+  that's `undefined`, as upstream's `act` is.
+- **Made as its module loads**, never where it's first used.
+- **JS reads it, Rust doesn't**: a Rust read, `NOOP.with(..)`, is
+  refused; so is one of no struct of named fields, or not `pub`.
+
 ## Constants, statics and thread-locals
 
 ```rust

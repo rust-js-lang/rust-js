@@ -166,6 +166,30 @@ pub(super) fn static_of(thir: &Thir<'_>, e: ExprId) -> Option<DefId> {
     }
 }
 
+/// Report a read of a namespace thread-local, `NOOP.with(..)`, whose
+/// value's fields are its module's exports, which JS reads: no cell holds
+/// it (rd293, ADR 1037, amended). False if there was one.
+pub(super) fn reject_namespace_value_reads(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]) -> bool {
+    let mut valid = true;
+    for body in all_bodies {
+        for expr in body.thir.exprs.iter() {
+            if let ExprKind::NamedConst { def_id, .. } = expr.kind
+                && crate::lower::classes::is_value_namespace(tcx, def_id)
+            {
+                tcx.dcx().span_err(
+                    expr.span,
+                    format!(
+                        "rust-js: `{}` is its module's namespace, whose fields are the module's exports, which JS reads: Rust reads the value it's made of, `create_react_noop(..)`, or calls what it holds where it's made (ADR 1037)",
+                        tcx.item_name(def_id)
+                    ),
+                );
+                valid = false;
+            }
+        }
+    }
+    valid
+}
+
 /// `thread_local!` (ADR 0037) is a `const NAME: LocalKey<T>` whose block holds
 /// `fn __rust_std_internal_init_fn() -> T { init }`, then std's storage for
 /// it. In JS, it's a variable of its module, made from `init`.

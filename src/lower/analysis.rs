@@ -75,8 +75,8 @@ use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use type_facts::type_fact_params;
 use validation::{
-    in_thread_local, reject_flatten_misuse, reject_parameter_name_misuse, reject_rest_misuse, reject_static_references,
-    reject_unsupported,
+    in_thread_local, reject_flatten_misuse, reject_namespace_value_reads, reject_parameter_name_misuse,
+    reject_rest_misuse, reject_static_references, reject_unsupported,
 };
 pub(super) use validation::{init_of, is_thread_local};
 
@@ -680,6 +680,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
 
     if !reject_unsupported(tcx, &foreign, &markers)
         || !reject_static_references(tcx, &all_bodies)
+        || !reject_namespace_value_reads(tcx, &all_bodies)
         || !reject_flatten_misuse(tcx, &all_bodies)
         || !reject_rest_misuse(tcx)
         || !reject_parameter_name_misuse(tcx)

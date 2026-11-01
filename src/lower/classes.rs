@@ -110,6 +110,44 @@ pub(crate) fn refuse_through(tcx: TyCtxt<'_>, id: DefId, span: rustc_span::Span,
     tcx.dcx().span_err(span, message);
 }
 
+/// Is `key`, a `thread_local!`'s, its module's namespace, marked
+/// `#[rust_js::namespace]`: the value it holds, made as its module loads,
+/// whose fields are the module's exports (rd293, ADR 1061)?
+pub(crate) fn is_value_namespace(tcx: TyCtxt<'_>, key: DefId) -> bool {
+    matches!(tcx.def_kind(key), DefKind::Const { .. }) && marked_namespace(tcx, key)
+}
+
+/// The exports of `key`'s module, a namespace thread-local's: its struct's
+/// fields, by their JS names, in the order it declares them. None where it
+/// holds no struct of named fields, each named by text.
+pub(crate) fn value_namespace_exports(tcx: TyCtxt<'_>, key: DefId) -> Option<Vec<String>> {
+    let ty::Adt(local_key, args) = tcx.type_of(key).instantiate_identity().skip_normalization().kind() else {
+        return None;
+    };
+    if !crate::lower::recognition::is_std_def(tcx, local_key.did(), crate::lower::recognition::StdItem::LocalKey) {
+        return None;
+    }
+    let ty::Adt(adt, _) = args.type_at(0).kind() else {
+        return None;
+    };
+    let variant = adt.is_struct().then(|| adt.non_enum_variant())?;
+    if variant.fields.is_empty() || variant.ctor.is_some() {
+        return None;
+    }
+    (variant.fields.iter())
+        .map(|field| Some(crate::lower::bindings::field_key(tcx, field).name()?.to_string()))
+        .collect()
+}
+
+/// A namespace thread-local's exports, `value_namespace_exports`'s, or
+/// none of any other `const`.
+pub(crate) fn namespace_fields(tcx: TyCtxt<'_>, key: DefId) -> Vec<String> {
+    (is_value_namespace(tcx, key)
+        .then(|| value_namespace_exports(tcx, key))
+        .flatten())
+    .unwrap_or_default()
+}
+
 /// The namespace an impl is of, if it's one's.
 fn namespace_of_impl(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
     match tcx.type_of(imp).instantiate_identity().skip_normalization().kind() {
@@ -1102,6 +1140,16 @@ fn reject_namespace_misuse(tcx: TyCtxt<'_>) -> bool {
                     refuse(
                         span,
                         "isn't a `#[rust_js::class]` or `#[rust_js::object]` too: its value is its module's namespace",
+                    );
+                }
+            }
+            // A thread-local, its module's namespace as a value (rd293).
+            DefKind::Const { .. } if marked_namespace(tcx, id) => {
+                let thread_local = crate::lower::analysis::is_thread_local(tcx, def_id);
+                if !thread_local || value_namespace_exports(tcx, id).is_none() || !tcx.visibility(id).is_public() {
+                    refuse(
+                        span,
+                        "thread-local is of a struct of named fields, its module's exports, and `pub`: `thread_local! { #[cfg_attr(rust_js, rust_js::namespace)] pub static NOOP: ReactNoop = create_react_noop(..); }`",
                     );
                 }
             }

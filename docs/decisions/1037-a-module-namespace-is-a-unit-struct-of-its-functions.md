@@ -1,7 +1,9 @@
 # 1037. A module's namespace is a unit struct of its functions
 
 Status: Accepted (the user's decision, rd292, option A); amended below
-(rd292b, the user's decision: a method that only passes its parameters
+(rd293: a thread-local's value may be a module's namespace, its fields
+the module's exports;
+rd292b, the user's decision: a method that only passes its parameters
 on is the function it calls; its import named by a `use`; rd311: a
 library's method through a value is its library's, and a flattened
 result exact; rd324: by its name too, each call flattened). Extends
@@ -354,3 +356,75 @@ namespace's methods only; a plain function keeps its arrow.
 Held by `test/namespaces.test.ts`'s "a library's namespace method by its
 name is its library's, exact where its result is flattened", `return
 flushSync;`, run; mutation `flattened-forwarding-unseen` (`passed_on.ts`).
+
+## Amendment: a module's namespace may be a value, whose fields are its exports (rd293)
+
+Taken on the user's behalf while away (the coordinator's request, logged),
+reversible: one attribute's second placement. Case
+([0262](0262-when-rust-and-js-disagree.md)): none where JS reads the
+module, its exports the value's fields read once as it loads; a Rust
+read, which might see it made later, as a thread-local is, is refused.
+
+React's noop renderer's two entries are one statement each:
+
+```js
+export const {
+  _Scheduler, getChildren, .., act, dumpTree, getRoot,
+  unstable_runWithPriority,
+} = createReactNoop(ReactFiberReconciler, true);
+```
+
+Rust has no pattern for a module's items, and no form of rust-js's said
+"this module's exports are this value's fields". A thread-local of the
+struct `create_react_noop` gives, with a `pub fn` forwarding to each
+field, prints wrappers: each export another function, of another
+`length`, none `undefined` where upstream's is (`act`, which the object
+lacks). So both modules stayed JS, the last of the noop renderer's.
+
+**A `pub` thread-local of a struct marked `#[cfg_attr(rust_js,
+rust_js::namespace)]` is its module's namespace as a value: what its
+initializer makes, as the module loads, whose fields are the module's
+exports, each by its JS name, in the order the struct declares them.**
+
+```rust
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::namespace)]
+    pub static REACT_NOOP: ReactNoop = create_react_noop(..);
+}
+```
+
+```js
+export const { _Scheduler, getChildren, .., getRoot } = createReactNoop(..);
+```
+
+- **One attribute, one meaning**: `rust_js::namespace` says "this is the
+  module's namespace", of a unit struct, whose methods are its functions,
+  and of a thread-local's value, whose fields are its exports. No second
+  attribute, macro or synonym.
+- **Made as its module loads**, never where it's first used: a module's
+  exports are there when it's imported, as every `pub` thread-local is
+  (ADR 1006, which refuses one its module's load can't make).
+- **Each field an export**, `#[rust_js::name]`'s too; its `.d.ts`
+  declares each, `export const render: (..) => void;`. A field the value
+  leaves out, an `Option`'s `None`, is an export that's `undefined`, as
+  upstream's `act` is.
+- **JS reads it, Rust doesn't**: a Rust read of the thread-local, `with`
+  and the rest, is refused, naming it (`reject_namespace_value_reads`).
+  One of no struct of named fields, or not `pub`, is refused
+  (`reject_namespace_misuse`).
+- **Its own name is no JS's**: the thread-local is the namespace, as a
+  unit struct's value is.
+
+Alternatives: a new attribute, `#[rust_js::exports]`, is a synonym of what
+`namespace` says of a module (rejected, one way); a `pub fn` per field,
+forwarding to the thread-local, gives each export another function and
+none `undefined` (rejected); a macro `js::export!{ {a, b} = make() }` is
+no Rust item and a second way to export (rejected).
+
+Held by `test/namespace-values.test.ts`: the destructuring, its
+`.d.ts`, run in Node (made once, `act` `undefined` and an export), a Rust
+read refused, and one of no struct refused. Mutations
+`namespace-value-fields-unprinted`
+(`to_oxc/statements.rs`), `namespace-value-read-allowed`
+(`analysis/validation.rs`), `namespace-value-of-anything` (`classes.rs`)
+and `namespace-value-undeclared` (`declarations.rs`).

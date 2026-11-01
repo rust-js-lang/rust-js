@@ -272,6 +272,10 @@ pub struct Const {
     pub export: bool,
     /// `let`: a thread-local its module sets (ADR 0270).
     pub mutable: bool,
+    /// Of a namespace thread-local's, its value's fields, each one of its
+    /// module's exports, which it declares: `export const { render, act } =
+    /// createReactNoop(..);`, its own `name` no JS's (ADR 1037, amended).
+    pub fields: Vec<String>,
     /// The whole `const` item.
     pub span: Span,
 }
@@ -1342,6 +1346,7 @@ mod tests {
             value,
             export: false,
             mutable: false,
+            fields: Vec::new(),
             span: Span::NONE,
         })];
         let mut lists = 0;
