@@ -102,7 +102,13 @@ pub fn thrown(value: &JsError) -> String {
 }
 
 pub fn made(message: &str) -> &'static Error {
-    error::new(message, None)
+    error::new(Some(message), None)
+}
+
+// React's Flight thenables stash \`new Error()\`, TypeScript's \`message?\`
+// left out: no \`message\` of its own, where \`new Error("")\` has one (rd474).
+pub fn unnamed() -> &'static Error {
+    error::new(None, None)
 }
 
 pub fn all() -> &'static AggregateError {
@@ -134,6 +140,10 @@ pub fn restacked(from: &JsError, frames: bool) -> &'static Error {
   const lib = await import(join(dir, "lib.js"));
   expect(lib.named()).toBe("Error boom every one");
   expect(lib.made("x")).toBeInstanceOf(Error);
+  expect(js).toContain("return new Error();");
+  expect(Object.hasOwn(lib.unnamed(), "message")).toBe(false);
+  expect(Object.hasOwn(lib.made(""), "message")).toBe(true);
+  expect(declarations).toContain("export function unnamed(): Error;");
   // An error's frames another's, or none: React's cloneRecoverableErrorAsFatal.
   expect(js).toContain("error.stack = undefined;");
   const from = new Error("x");

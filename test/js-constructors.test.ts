@@ -540,11 +540,11 @@ test("an Error is made of its message and options, its cause", async () => {
   const { js, lib } = await compiled("error-cause", `use js::{Error, ErrorOptions, Unknown};
 
 pub fn wrapped(message: &str, error: &Unknown) -> &'static Error {
-    js::error::new(message, Some(&ErrorOptions { cause: Some(error) }))
+    js::error::new(Some(message), Some(&ErrorOptions { cause: Some(error) }))
 }
 
 pub fn plain(message: &str) -> &'static Error {
-    js::error::new(message, None)
+    js::error::new(Some(message), None)
 }
 `);
   expect(js).toContain("  return new Error(message, { cause: error });\n");

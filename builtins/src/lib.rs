@@ -2461,10 +2461,12 @@ pub mod error {
     use super::*;
 
     /// [`new Error(message, options)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error/Error):
-    /// an `Error` of `message`, to reject a promise with, or to throw; of
+    /// an `Error` of `message`, to reject a promise with, or to throw, as
+    /// TypeScript's `message?: string`: of `None`, `new Error()`, which has
+    /// no `message` of its own, where `new Error("")`'s is `""`; of
     /// `options`, its `cause`, what it was made of, or `None`, left out.
     #[cfg_attr(rust_js, rust_js::link_name = "new Error")]
-    pub fn new(message: &str, options: Option<&ErrorOptions<'_>>) -> &'static Error {
+    pub fn new(message: Option<&str>, options: Option<&ErrorOptions<'_>>) -> &'static Error {
         unreachable!()
     }
 }

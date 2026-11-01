@@ -273,3 +273,20 @@ values are `&'static Unknown`, as every value JS gives is**, so a trap
 gives back what it's given. Closures written before compile as they did.
 Held by `test/js-builtins.test.ts` ("Reflect and Proxy are JS's",
 `provided`).
+
+## Amendment (2026-11-01): `error::new`'s message is optional (rd474)
+
+React's Flight server stashes `new Error()` on a thenable's DEV
+`_stacks`. `js::error::new(message: &str, ..)` made `new Error("")`,
+which differs: its `message` is an own property, where `new Error()`'s
+is the prototype's. Case C ([0262](0262-when-rust-and-js-disagree.md)):
+`Object.hasOwn(error, "message")` differs, so the binding is TypeScript's
+`new (message?: string, options?: ErrorOptions)`, as `aggregate_error::new`,
+`DOMException` and the other error constructors already are:
+**`error::new(message: Option<&str>, options)`**, `None` left out,
+`new Error()`. Every caller moved to `Some(message)`; their JS is
+unchanged. Held by `test/js-errors.test.ts`'s "an Error object is
+declared Error, and what's thrown any", run in Node: `new Error()` has
+no own `message`, `new Error("")` has. A binding's signature only: no
+compiler change, so no mutation.
+

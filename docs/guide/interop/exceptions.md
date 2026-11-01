@@ -296,9 +296,12 @@ export function hasConfig(path) {
   ([ADR 0782](../../decisions/0782-a-promises-executor-borrows-and-then-takes-two-handlers.md#amendment-what-was-caught-is-a-value-of-any-shape-as_unknown)).
   How V8 writes a `stack` is a hook of the node crate's,
   `Error.prepareStackTrace` ([`node`](../libraries/README.md#node-nodejs)).
-- **An `Error` object is a `&js::Error`**: `js::error::new(message, None)` is
-  `new Error(message)`, and `js::error::new(message, Some(&ErrorOptions {
-  cause: Some(error) }))` is `new Error(message, { cause: error })`. A function given one takes a `&Error`, which
+- **An `Error` object is a `&js::Error`**: `js::error::new(Some(message), None)` is
+  `new Error(message)`, and `js::error::new(Some(message), Some(&ErrorOptions {
+  cause: Some(error) }))` is `new Error(message, { cause: error })`. Its
+  message is TypeScript's `message?`: `js::error::new(None, None)` is
+  `new Error()`, which has no `message` of its own, where `new Error("")`
+  has an empty one. A function given one takes a `&Error`, which
   its declaration says is TypeScript's `Error`, where a `&JsError` is
   `any`, as anything may be thrown. It's a `&JsError` by `Deref`, which
   reads its `message()` and `stack()` and is given where what's thrown is

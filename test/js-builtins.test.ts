@@ -252,7 +252,7 @@ pub fn matched(text: &str) -> Option<(String, u32, String, bool)> {
     Some((m.get(2).unwrap_or_default(), m.index(), word + &m.full_match(), pattern.global()))
 }
 pub fn errors() -> (String, String, f64, f64) {
-    let e = error::new("boom", None);
+    let e = error::new(Some("boom"), None);
     (e.name(), e.message(), parse_int("42px", Some(10)), parse_int("0x1f", None))
 }
 pub fn symbols() -> (bool, Option<String>, Option<String>) {
@@ -388,13 +388,13 @@ pub async fn made() -> u32 {
     promise::new(|resolve, _| resolve(1)).then(|n: u32| promise::resolve(n + 1)).await
 }
 pub async fn caught() -> String {
-    promise::reject::<String>(Some(error::new("boom", None))).catch(|e| promise::resolve(e.message())).finally(|| {}).await
+    promise::reject::<String>(Some(error::new(Some("boom"), None))).catch(|e| promise::resolve(e.message())).finally(|| {}).await
 }
 pub async fn paired() -> (u32, String) {
     promise::all2((promise::resolve(1), promise::resolve("a".to_string()))).await
 }
 pub async fn settled() -> Vec<String> {
-    let all = promise::all_settled(vec![promise::resolve(1), promise::reject(Some(error::new("no", None)))]).await;
+    let all = promise::all_settled(vec![promise::resolve(1), promise::reject(Some(error::new(Some("no"), None)))]).await;
     all.into_iter()
         .map(|r| match r {
             PromiseSettledResult::Fulfilled { value } => value.to_string(),
@@ -911,13 +911,13 @@ pub fn silenced(maybe_promise: &'static Unknown) {
     unsafe { js::cast::<Promise<Option<&'static Unknown>>>(Some(maybe_promise)) }.catch(|_| {});
 }
 pub async fn valued() -> u32 {
-    promise::reject::<u32>(Some(error::new("no", None))).catch(|_| 7).await
+    promise::reject::<u32>(Some(error::new(Some("no"), None))).catch(|_| 7).await
 }
 pub async fn promised() -> String {
-    promise::reject::<String>(Some(error::new("no", None))).catch(|e| promise::resolve(e.message())).await
+    promise::reject::<String>(Some(error::new(Some("no"), None))).catch(|e| promise::resolve(e.message())).await
 }
 pub async fn nothing() -> Option<u32> {
-    promise::reject::<Option<u32>>(Some(error::new("no", None))).catch(|_| {}).await
+    promise::reject::<Option<u32>>(Some(error::new(Some("no"), None))).catch(|_| {}).await
 }
 `);
   const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], root, 600_000);
@@ -1004,7 +1004,7 @@ pub fn stash() -> Debug {
 
 pub async fn settled(fail: bool) -> String {
     let value = match fail {
-        true => promise::reject::<u32>(Some(error::new("no", None))),
+        true => promise::reject::<u32>(Some(error::new(Some("no"), None))),
         false => promise::resolve(7),
     };
     value.then_with(|n| n.to_string(), |e| e.message()).await
