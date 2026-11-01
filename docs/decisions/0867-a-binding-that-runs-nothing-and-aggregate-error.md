@@ -9,7 +9,7 @@ rd380). Extended by
 [0898](0898-a-binding-that-runs-only-what-its-given.md): a binding that runs only
 what it's given, `#[rust_js::runs_only_given]`, given only numbers and
 text, borrows nothing. Extended by
-[1045](1045-a-js-collection-keeps-what-its-given-only-in-itself.md): a
+[1046](1046-a-js-collection-keeps-what-its-given-only-in-itself.md): a
 binding that runs nothing and keeps what it's given only in its collection,
 `#[rust_js::keeps_in_collection]`. Extended by [0277](0277-shadow-aliases.md),
 amended: a call of either sets none of the program's variables.

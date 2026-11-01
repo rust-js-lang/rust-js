@@ -1731,7 +1731,7 @@ export function shared() {
   goes: a cell the crate made and gave no code rust-js can't see, kept in
   a `Vec`, an `Rc`, a closure, a thread-local or a JS `Map`, whose
   methods keep what they're given only in the map
-  ([ADR 1045](../../decisions/1045-a-js-collection-keeps-what-its-given-only-in-itself.md)),
+  ([ADR 1046](../../decisions/1046-a-js-collection-keeps-what-its-given-only-in-itself.md)),
   is no other cell of its type. A tag cache held while a getter runs is
   checked, and a batch JS gives, of the same type, is still its plain
   array. A cell JS gives, or is given, or a library's, a `dyn`'s or a

@@ -26,8 +26,7 @@ mod whole;
 
 pub(super) use effects::{
     called_constructs, cannot_throw, gives_back, gives_plain_data, iterates_receiver, keeps_in_collection,
-    reject_unkept_collections,
-    runs_nothing, runs_only_given,
+    reject_unkept_collections, runs_nothing, runs_only_given,
 };
 pub(super) use forms::{Asked, JsForm, js_form};
 pub(super) use given_before::reject_made_in_place;

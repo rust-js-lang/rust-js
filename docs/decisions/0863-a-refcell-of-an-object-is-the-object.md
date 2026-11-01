@@ -915,7 +915,7 @@ Steensgaard's unification over its bodies' MIR:
   `CellBorrows::std_runs`. Std's code can't reach inside the crate's own
   types: it moves one whole. So is a binding that keeps what it's given in
   its collection, a JS `Map`'s `get` and `set`
-  ([1045](1045-a-js-collection-keeps-what-its-given-only-in-itself.md)).
+  ([1046](1046-a-js-collection-keeps-what-its-given-only-in-itself.md)).
 - **What code rust-js can't see is given, or gives, is `TOP`**: a
   binding's call, a library's, a `dyn`'s, a fn pointer's, one rustc can't
   resolve, and std's code that may run any; a value made a `dyn`, a
