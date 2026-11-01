@@ -144,20 +144,12 @@ export const mutations: Mutation[] = [
   {
     name: "mir-written-return-past-drops",
     breaks:
-      "a `return` the program wrote, reached through drops, isn't known as written",
+      "a `break` the program wrote of a block it labeled, reached through the drops of what the block owns, isn't known as written, an `else` it didn't write after it",
     file: "src/lower/mir/structure.rs",
     find: "            && let [only] = preds[block].as_slice()\n",
     replace:
       "            && let [only] = preds[block].as_slice().get(..0).unwrap_or_default()\n",
-    tests: [
-      "test/jsx-children.test.ts",
-      "test/jsx-evaluation-order.test.ts",
-      "test/jsx-events.test.ts",
-      "test/jsx-props.test.ts",
-      "test/jsx-react-dev.test.ts",
-      "test/jsx-types.test.ts",
-      "test/jsx.test.ts",
-    ],
+    tests: ["test/lowering-labels.test.ts", "-t", "a break the program wrote through drops is its label's"],
   },
   {
     name: "mir-variant-test-not-bool",

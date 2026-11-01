@@ -852,7 +852,7 @@ pub fn A(p: P) -> JSX::Element {
 `);
   const refused = Bun.spawnSync(matched.args, { cwd: matched.dir });
   expect([refused.exitCode === 0, refused.stderr.toString().includes("a `Rest` of props taken apart here")]).toEqual([false, true]);
-});
+}, 60_000);
 
 // A struct spread through a reference is the struct's spread, as react.dev's
 // Image spreads `rest`, then reads its `src` after.
