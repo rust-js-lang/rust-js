@@ -89,6 +89,40 @@ as React DOM's Fizz instruction set does, whose ES5 build polyfilled each
   forms over happy-dom's lists and over a list built as WebIDL specifies
   one, read live through a getter.
 
+## A `Vec`'s `extend` of an indexed list (amended, the user's decision, 2026-11-01)
+
+The Fizz instruction set's `suspensey_images.extend(node_list::iter(appearing_images))`
+printed `$extend(suspenseyImages, Iterator.from(appearingImages))`, and
+Closure's ES5 build polyfilled `Iterator.from` and its iteration, about
+3.6 KB. Upstream pushes each image itself.
+
+- **A `Vec`'s `extend` of an indexed list is an index loop that pushes
+  each item:** `for (let i = 0; i < list.length; i++) { v.push(list[i]);
+  }`, of a `NodeList`'s `Iterator.from(list)` or of std's iterator over an
+  array's items made where it's extended, `v.extend(xs.iter())`: what
+  `Known::ArrayItems` says where the iterator is made. A list that isn't a
+  variable is held first, `const items = made(2);`, as is a collection
+  that isn't one; a `&T` pushed onto `T`s is copied in the loop, `{
+  ...points[i] }`, as `copied_into` would copy it.
+- **Not yet of a slice or a `Vec` given whole,** `v.extend(&xs)`, which
+  stays `$extend(v, xs)`: a trait's dictionary, `Vec<T>: Extend<A>`'s
+  generic `extend`, is lowered once of the type it's first made with and
+  given any iterable after (`test/corpus/generic_extend.rs`, whose range
+  an index loop of its first array's type read as `length` 0). The type
+  where `extend` is called can't say it's an array there; a fact where the
+  array is made would.
+- **Not `push.apply(v, list)` or `v.push(...list)`**, which upstream writes
+  in places: they pass each item as an argument, and throw a `RangeError`
+  past the engine's limit of a call's arguments, where Rust's `extend`
+  never fails. The user chose correctness. The loop pushes as many as the
+  list has; `test/lowering-index-loops.test.ts` extends by 300,000.
+- **Equivalence:** the same as the `for`'s. `$extend` stepped the list's
+  own iterator, which reads `length` and `list[i]` at each step, as the
+  loop does; pushing onto the `Vec` changes no `NodeList`, and Rust lets
+  no list be the `Vec` it extends (`extend_from_within` is another
+  function). Case N of ADR 0262. Native comparison:
+  `test/corpus/vec_extend_indexed.rs`.
+
 ## What it doesn't do yet
 
 - `enumerate()`, `for (const [i, x] of v.entries())`, stays as it is.

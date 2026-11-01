@@ -135,3 +135,61 @@ test("#[rust_js::indexed] of anything but a struct is refused", () => {
   expect(p.code).not.toBe(0);
   expect(p.stderr).toContain("`#[rust_js::indexed]` is of a binding's struct");
 });
+
+// React DOM's Fizz instruction set's `suspenseyImages.push(...)` of each
+// image a `NodeList` holds: a `Vec`'s `extend` of an indexed list, a
+// `NodeList`'s, an array's or a slice's, is an index loop that pushes each
+// item, as many as the list has. Not `push.apply(v, list)` or
+// `push(...list)`, which throw a `RangeError` past the engine's limit of
+// arguments, where Rust's `extend` never fails; and no `Iterator.from` an
+// ES5 build polyfills (the user's decision, 2026-11-01).
+test("a Vec's extend of an indexed list pushes each in an index loop", () => {
+  const dir = fixture("indexed-extend");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{Element, NodeList, node_list};
+
+pub fn gathered(list: &NodeList<Element>) -> Vec<String> {
+    let mut images: Vec<&Element> = Vec::new();
+    // Each image, in order.
+    images.extend(node_list::iter(list));
+    images.iter().map(|e| e.tag_name()).collect()
+}
+
+pub fn appended(xs: &[u32], more: Vec<u32>) -> Vec<u32> {
+    let mut out = vec![0];
+    out.extend(xs);
+    out.extend(xs.iter());
+    out.extend(more);
+    out
+}
+
+pub fn huge(n: usize) -> usize {
+    let items = vec![1u8; n];
+    let mut out: Vec<u8> = Vec::new();
+    out.extend(items.iter());
+    out.len()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  // Each image, in order.\n  for (let i = 0; i < list.length; i++) {\n    images.push(list[i]);\n  }\n");
+  // Of a slice's iterator made here, the slice's; of a slice or a `Vec`
+  // given whole, which a trait's dictionary may be given of any type, its
+  // own iteration still.
+  expect(js).toContain("  $extend(out, xs);\n  for (let i = 0; i < xs.length; i++) {\n    out.push(xs[i]);\n  }\n  $extend(out, more);\n");
+  expect(js).toContain("  for (let i = 0; i < items.length; i++) {\n    out.push(items[i]);\n  }\n");
+  writeFileSync(join(dir, "driver.test.js"), `import { expect, test } from "bun:test";
+import { appended, gathered, huge } from "./lib.js";
+
+test("as Rust's extend", () => {
+  const div = document.createElement("div");
+  div.innerHTML = "<img><b></b><img>";
+  expect(gathered(div.childNodes)).toEqual(["IMG", "B", "IMG"]);
+  expect(appended([1, 2], [3])).toEqual([0, 1, 2, 1, 2, 3]);
+  // Past any engine's limit of a call's arguments.
+  expect(huge(300000)).toBe(300000);
+});
+`);
+  const p = Bun.spawnSync(["bun", "test", "--preload", "./test/happydom.ts", join(dir, "driver.test.js")], { cwd: root, stderr: "pipe" });
+  const output = p.stdout.toString() + p.stderr.toString();
+  expect([p.exitCode, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "1"]);
+});

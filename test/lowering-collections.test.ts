@@ -560,7 +560,8 @@ pub fn queued(queue: &mut VecDeque<u32>) {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('  properties.push(["-" + line, desc], ["+" + line, desc]);');
-  expect(js).toContain("$extend(xs, ys)");
+  // An iterator over an array's items, each pushed in an index loop (ADR 1042).
+  expect(js).toContain("  for (let i = 0; i < ys.length; i++) {\n    xs.push(ys[i]);\n  }\n");
   expect(js).toContain("$extendMap(seen, [1, 2], true)");
   expect(js).toContain("$extend(queue, [1, 2])");
   const lib = await import(join(dir, "lib.js"));

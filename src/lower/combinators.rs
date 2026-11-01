@@ -1072,7 +1072,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let items = self.extended_items(items, (iterable, into), span, out)?;
+        let (source, list) = self.extended_items(items, (iterable, into), span, out)?;
+        // Each `&T` pushed onto a collection of `T`s, its copy (`copied_into`).
+        let copied = match *self.iterable_item(iterable).kind() {
+            ty::Ref(_, item, _) if self.slice_item(into) == Some(item) && self.needs_clone(item) => Some(item),
+            _ => None,
+        };
+        let items = self.copied_into(
+            source.clone(),
+            self.iterable_item(iterable),
+            self.slice_item(into),
+            span,
+        )?;
         if self.is_std_type(into, crate::lower::recognition::StdItem::BinaryHeap) {
             let item = self
                 .slice_item(into)
@@ -1094,27 +1105,76 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 written.into_iter().map(Expr::given_item).collect(),
             ));
         }
+        // Onto a `Vec`, an indexed list's items, a `NodeList`'s, an array's
+        // or a slice's, `v.extend(&xs)`: an index loop that pushes each, `for
+        // (let i = 0; i < xs.length; i++) { v.push(xs[i]); }`, reading the
+        // list's `length` and items at each step as its iterator does, as
+        // many as it has, where `push(...xs)` throws past the engine's limit
+        // of arguments (the user's decision, ADR 1042, amended).
+        if self.is_std_type(into.peel_refs(), crate::lower::recognition::StdItem::Vec)
+            && let Some(list) = list
+        {
+            let collection = match collection.reads_same() {
+                true => collection,
+                false => self.spill("collection", collection, out),
+            };
+            let list = match list.reads_same() {
+                true => list,
+                false => self.spill("items", list, out),
+            };
+            let i = self.fresh("i");
+            let mut body = Vec::new();
+            let item = Expr::index(list.clone(), Expr::var(&i));
+            let item = match copied {
+                Some(ty) => self.clone_value(item, ty, span, &mut body)?,
+                None => item,
+            };
+            body.push(StmtKind::Expr(Expr::call(Expr::member(collection, "push"), vec![item])).at(js::Span::NONE));
+            out.push(
+                StmtKind::For {
+                    label: None,
+                    name: i.clone(),
+                    start: Expr::int(0),
+                    test: Expr::bin(Op::Lt, Expr::var(&i), Expr::member(list, "length")),
+                    step: js::Step::Up,
+                    body,
+                }
+                // Where the call is written, which the comments above it
+                // are before.
+                .at(self.js_span(span)),
+            );
+            return Ok(Expr::undefined());
+        }
         Ok(Expr::call_helper("$extend", vec![collection, items]))
     }
 
     /// What `extend` of `items`, of type `iterable`, pushes onto a
     /// collection of type `into`: each as it's stepped; of an array's
-    /// iterator made here, the array; of `&T`s, a copy where it needs one
-    /// (`copied_into`).
+    /// iterator made here, the array. Not yet copied, as `&T`s onto `T`s
+    /// are where they need one (`copied_into`). And the list it steps by
+    /// index from its start, if it's said to: `Known::ArrayItems`, of the
+    /// type of the iterator where it's made, never of a type parameter's
+    /// value, which a trait's dictionary is given whatever its type.
     fn extended_items(
         &mut self,
         items: Expr,
         (iterable, into): (Ty<'tcx>, Ty<'tcx>),
         span: Span,
         out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
+    ) -> R<(Expr, Option<Expr>)> {
         let items = self.iterable_items(items, iterable, span, out)?;
         let items = match self.collects_by_fold(into) {
             true => self.by_its_fold(items, iterable),
             false => items,
         };
+        // Of an array's items from its start, `$iter(xs)` made here or a
+        // binding's `Iterator.from(list)` of an indexed list, the list.
+        let list = (items.facts.has(js::Known::ArrayItems))
+            .then(|| super::iterators::fresh_iter_source(&items).or_else(|| super::iterators::iterator_from(&items)))
+            .flatten()
+            .cloned();
         let items = super::iterators::fresh_iter_source(&items).cloned().unwrap_or(items);
-        self.copied_into(items, self.iterable_item(iterable), self.slice_item(into), span)
+        Ok((items, list))
     }
 }
 

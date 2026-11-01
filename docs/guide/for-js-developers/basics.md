@@ -2439,6 +2439,10 @@ export function pairs(v) {
   own iterator steps the array the same way, so nothing changes, and an
   ES5 build needs no iterator polyfill for it. A map's items and a string's
   `chars()` stay `for…of` ([ADR 1042](../../decisions/1042-a-loop-over-an-array-counts-its-indices.md)).
+  A `Vec`'s `extend` of a `NodeList`'s items or of `xs.iter()` pushes
+  each the same way, `for (let i = 0; i < xs.length; i++) {
+  out.push(xs[i]); }`: never `out.push(...xs)`, which throws past the
+  engine's limit of a call's arguments, where Rust's `extend` never fails.
 - A loop of an array's first items, `for x in xs.iter().take(LIMIT)`, is
   of that part of it, `for (const x of xs.slice(0, LIMIT))`, and of those
   past some, `xs.iter().skip(1)`, `xs.slice(1)`; with their indices,

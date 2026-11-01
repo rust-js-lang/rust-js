@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	1406
-lines	138820
+files	1407
+lines	138881
 temporaries	1	0.1
 labeled blocks	14	1
 while (true)	123	8.9
-$iter	1174	84.6
+$iter	1174	84.5
 Iterator.from	116	8.4
 return;	150	10.8
-renamed x$1	8572	617.5
+renamed x$1	8575	617.4
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1
 test/corpus/adapter_drops.js	1976	0	0	1	17	3	1	133
 test/corpus/adapter_functions_dropped.js	206	0	0	0	6	0	0	35
@@ -481,7 +481,7 @@ test/corpus/generic_deref.js	41	0	0	0	0	0	0	0
 test/corpus/generic_deref_mut.js	220	0	0	0	0	0	0	16
 test/corpus/generic_double_ended.js	142	0	0	1	7	1	2	10
 test/corpus/generic_drops_nothing.js	108	0	0	0	0	0	1	0
-test/corpus/generic_extend.js	84	0	0	0	1	0	0	6
+test/corpus/generic_extend.js	86	0	0	0	1	0	0	6
 test/corpus/generic_fmt_traits.js	57	0	0	0	0	0	0	0
 test/corpus/generic_folds_unwind.js	588	0	0	1	10	1	0	2
 test/corpus/generic_from.js	53	0	0	0	0	0	0	0
@@ -1311,6 +1311,7 @@ test/corpus/value_read_in_a_guards_try.js	112	0	0	0	0	0	0	6
 test/corpus/vec_capacity.js	40	0	0	0	0	0	0	0
 test/corpus/vec_destructors.js	279	0	0	0	1	0	0	15
 test/corpus/vec_edits.js	102	0	0	0	1	0	0	4
+test/corpus/vec_extend_indexed.js	59	0	0	0	0	0	0	3
 test/corpus/vec_from_items.js	33	0	0	0	0	0	0	0
 test/corpus/vec_into_array.js	38	0	0	0	0	0	0	2
 test/corpus/vec_item_written_whole.js	56	0	0	0	0	0	0	0

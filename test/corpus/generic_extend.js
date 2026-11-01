@@ -77,7 +77,9 @@ function main() {
   // A `Vec` extended by another's items, copied as they're stepped.
   const sources = [1];
   const more = [2, 3];
-  $extend(sources, more);
+  for (let i = 0; i < more.length; i++) {
+    sources.push(more[i]);
+  }
   console.log(`[${sources.join(", ")}] [${more.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map
