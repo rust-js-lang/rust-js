@@ -739,4 +739,12 @@ export const mutations: Mutation[] = [
     replace: "        if trait_impls.contains(&def_id) && names.contains(&js_name) {\n",
     tests: ["test/corpus.test.ts", "-t", "impl_named_like_a_function"],
   },
+  {
+    name: "default-static-own-name",
+    breaks: "a binding crate's static of a default export is imported by its Rust name, `import FAST_NO_SIDE_EFFECTS from \"art-fast\"`, not the `#[rust_js::name]` it gives, `FastNoSideEffects` (rd422)",
+    file: "src/lower/analysis/naming.rs",
+    find: "                    bindings::given_name(tcx, **only).unwrap_or_else(|| camel_case(tcx.item_name(**only).as_str())),\n",
+    replace: "                    camel_case(tcx.item_name(**only).as_str()),\n",
+    tests: ["test/lowering-binding-paths.test.ts", "-t", "default import is named"],
+  },
 ];

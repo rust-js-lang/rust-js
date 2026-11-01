@@ -327,7 +327,8 @@ export function flushed() {
 - **A binding's `#[rust_js::name]` names its import**, `import {
   NotPendingTransition as NoPendingHostTransition }`, as React's
   ReactFiberHooks imports it: the name it's read by in the module that
-  imports it, of a name or a default export. A global's, or a member's,
+  imports it, of a name or a default export, a binding crate's static
+  too, art's `FastNoSideEffects` of `FAST_NO_SIDE_EFFECTS`. A global's, or a member's,
   which no import of its name holds, is an error
   ([ADR 0028](../../decisions/0028-js-module-imports.md), amended):
 

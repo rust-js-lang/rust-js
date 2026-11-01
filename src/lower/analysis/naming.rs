@@ -254,9 +254,12 @@ pub(super) fn name_imports(
                 .unwrap_or_default()
                 .as_slice()
             {
-                [only] if matches!(tcx.def_kind(**only), DefKind::Static { .. }) => {
-                    Some(camel_case(tcx.item_name(**only).as_str()))
-                }
+                // A static's, by what its binding names it, art's
+                // `#[rust_js::name = "FastNoSideEffects"] FAST_NO_SIDE_EFFECTS`,
+                // `import FastNoSideEffects from ..` (rd422), else its own name.
+                [only] if matches!(tcx.def_kind(**only), DefKind::Static { .. }) => Some(
+                    bindings::given_name(tcx, **only).unwrap_or_else(|| camel_case(tcx.item_name(**only).as_str())),
+                ),
                 // A component's, `next/image#default` of `fn Image`, is its
                 // name, `import Image from "next/image"`, as JSX needs one
                 // that's capitalized (ADR 0192).

@@ -196,3 +196,21 @@ import"; mutations `binding-given-name-unread`,
 `global-given-name-ignored`, `member-given-name-ignored`,
 `two-given-import-names`, `held-binding-name-refused` and
 `given-import-name-of-another-module` (`analysis/naming.ts`).
+
+## Amendment: a binding crate's static of a default export is imported by the name it gives (rd422)
+
+react-art's ART binding declares `#[rust_js::name = "FastNoSideEffects"]
+#[link_name = "art/modes/fast-noSideEffects#default"] pub safe static
+FAST_NO_SIDE_EFFECTS: &'static JsObject;`, and react-art printed `import
+FAST_NO_SIDE_EFFECTS from 'art/modes/fast-noSideEffects';`, where upstream
+imports `FastNoSideEffects`. A binding's `#[rust_js::name]` named the import
+only where the importing module declared the binding itself.
+
+**A default import held by one static is named as the static names it,
+its `#[rust_js::name]`, else its own name**, wherever the static is
+declared: `import FastNoSideEffects from ..`. A `use` that renames it
+still names it in its module, as before. Case N
+([0262](0262-when-rust-and-js-disagree.md)): a local's name. Held by
+`test/lowering-binding-paths.test.ts`, "a default import is named as the
+static that binds it names it", a binding crate's two statics run, and
+the mutation `default-static-own-name` (`lower/analysis/naming.ts`).

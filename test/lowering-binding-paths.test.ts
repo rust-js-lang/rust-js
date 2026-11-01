@@ -4,7 +4,7 @@
 // server's inline scripts set.
 
 import { beforeAll, expect, test } from "bun:test";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
@@ -173,4 +173,42 @@ pub fn names(value: &js::JsObject) -> Vec<String> {
   expect(js).toContain("  return Object.keys(value);\n");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.copy({ length: 2, 0: "a", 1: "b" }), lib.both([1]), lib.both("x"), lib.names({ a: 1 })]).toEqual([["a", "b"], true, false, ["a"]]);
+});
+
+// A binding crate's static of a module's default export, art's
+// `#[rust_js::name = "FastNoSideEffects"] FAST_NO_SIDE_EFFECTS`, is
+// imported by the name it gives, `import FastNoSideEffects from
+// "art/modes/fast-noSideEffects"`, as react-art's upstream (rd422);
+// one that gives none, by its own.
+test("a default import is named as the static that binds it names it", async () => {
+  const dir = fixture("default-static-name");
+  for (const [name, fast] of [["art-fast", true], ["art-slow", false]] as const) {
+    mkdirSync(join(dir, "node_modules", name), { recursive: true });
+    writeFileSync(join(dir, "node_modules", name, "package.json"), `{ "name": "${name}", "type": "module", "main": "index.js" }\n`);
+    writeFileSync(join(dir, "node_modules", name, "index.js"), `export default { fast: ${fast} };\n`);
+  }
+  mkdirSync(join(dir, "dep"), { recursive: true });
+  writeFileSync(join(dir, "dep.rs"), `unsafe extern "Rust" {
+    #[cfg_attr(rust_js, rust_js::name = "FastNoSideEffects")]
+    #[link_name = "art-fast#default"]
+    pub safe static FAST_NO_SIDE_EFFECTS: &'static js::JsObject;
+    #[link_name = "art-slow#default"]
+    pub safe static SLOW: &'static js::JsObject;
+}
+`);
+  run([compiler, join(dir, "dep.rs"), "-o", join(dir, "dep", "lib.js"), "--library", "--manifest", join(dir, "dep", "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(dir, "libdep.rmeta")}`, ...externs.slice(1)]);
+  mkdirSync(join(dir, "app"), { recursive: true });
+  writeFileSync(join(dir, "app", "lib.rs"), `pub fn modes() -> (&'static js::JsObject, &'static js::JsObject) {
+    (dep::FAST_NO_SIDE_EFFECTS, dep::SLOW)
+}
+`);
+  run([compiler, join(dir, "app", "lib.rs"), "-o", join(dir, "app", "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
+    "--", "--crate-name", "app", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir, ...externs.slice(1)]);
+  const js = readFileSync(join(dir, "app", "lib.js"), "utf8");
+  expect(js).toContain('import FastNoSideEffects from "art-fast";');
+  expect(js).toContain('import SLOW from "art-slow";');
+  expect(js).toContain("return [FastNoSideEffects, SLOW];");
+  const lib = await import(join(dir, "app", "lib.js"));
+  expect(lib.modes()).toEqual([{ fast: true }, { fast: false }]);
 });
