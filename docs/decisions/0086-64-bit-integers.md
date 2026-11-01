@@ -100,3 +100,10 @@ expected u64`), and a `Value`'s `as_u64()` and `as_i64()` work.
   literals from the start: `{ A: 9007199254740993n }[b]`, where a table of
   numbers had lost what's past 2^53 before it became a BigInt. Found in
   review (`enum_discriminants_wide.rs`).
+
+## Amended (2026-11-02): a `bigint` `classify` tells is a `js::BigInt` (rd512)
+
+`Kind::BigInt` held an `i64`, which a `bigint` wider than 64 bits isn't. It
+holds a `&js::BigInt` now, of any size, with `to_string(radix)` its
+`toString` and `js::number::from_big_int` its `Number`. See
+[1057](1057-a-bigint-kind-is-a-bigint-of-any-size.md).

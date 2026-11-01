@@ -1,7 +1,8 @@
 // What the js crate's functions of a value of any shape do as JS does
 // them: `js::keys_in` of what may be `null` or `undefined` (ADR 0719,
 // amended), JS's loose equality, `js::loose_equals` (ADR 1012), and its
-// global `eval`, `js::eval` (ADR 1033, amended). Each
+// global `eval`, `js::eval` (ADR 1033, amended), and a `bigint` of any size
+// `classify` tells (ADR 1057). Each
 // test is a program of its own, compiled and run in Node, as no native
 // Rust has these values.
 
@@ -392,4 +393,41 @@ pub fn kind(chunk: &Chunk) -> &'static str {
   expect(chunks.map((chunk) => given((f) => lib.settle(chunk, f)))).toStrictEqual([[undefined], [null], [0], [{ a: 1 }]]);
   expect(given((f) => lib.settle({ fulfilled: false, value: 1 }, f))).toEqual([]);
   expect([...chunks, { fulfilled: false }].map(lib.kind)).toEqual(["undefined", "null", "value", "value", "pending"]);
+});
+
+// rd512 (ADR 1057): a `bigint` `classify` tells is a `&js::BigInt`, of any
+// size, never an `i64`, which wraps past 2^63: its digits are
+// `n.toString(radix)`, React's Flight reply client's `value.toString(10)`,
+// and its number `Number(n)`, the reply server's estimate of its digits,
+// `Infinity` of one past `f64::MAX`.
+test("a bigint classify tells is one of any size, its toString and Number", async () => {
+  const { js, lib } = await compiled("bigint-kind", `use js::{Kind, Unknown, classify};
+
+pub fn sent(value: &Unknown) -> String {
+    match classify(Some(value)) {
+        Kind::BigInt(n) => format!("$n{}", n.to_string(Some(10))),
+        _ => String::new(),
+    }
+}
+
+pub fn hex(value: &Unknown) -> String {
+    match classify(Some(value)) {
+        Kind::BigInt(n) => n.to_string(Some(16)),
+        _ => String::new(),
+    }
+}
+
+pub fn digits(value: &Unknown) -> f64 {
+    match classify(Some(value)) {
+        Kind::BigInt(n) => js::number::from_big_int(n).abs().log10().floor() + 1.0,
+        _ => 0.0,
+    }
+}
+`);
+  expect(js).toContain("value.toString(10)");
+  expect(js).toContain("value.toString(16)");
+  expect(js).toContain("Math.abs(Number(value))");
+  expect([lib.sent(2n ** 70n), lib.sent(-12n), lib.sent(1)]).toEqual(["$n1180591620717411303424", "$n-12", ""]);
+  expect(lib.hex(2n ** 70n)).toBe("400000000000000000");
+  expect([lib.digits(-(10n ** 30n)), lib.digits(10n ** 400n)]).toEqual([31, Infinity]);
 });

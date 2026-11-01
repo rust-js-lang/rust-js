@@ -317,3 +317,9 @@ read `this`, the object holding the key": a `Date`'s holder read before
 its `toJSON`, a closure leaving a key out, the keys kept, and a reviver
 reading its parent.
 
+## Amended (2026-11-02): a `bigint` `classify` tells is a `js::BigInt` (rd512)
+
+`Kind::BigInt` held an `i64`, which a `bigint` wider than 64 bits isn't. It
+holds a `&js::BigInt` now, of any size, with `to_string(radix)` its
+`toString` and `js::number::from_big_int` its `Number`. See
+[1057](1057-a-bigint-kind-is-a-bigint-of-any-size.md).

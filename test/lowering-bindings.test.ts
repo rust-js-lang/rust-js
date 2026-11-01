@@ -265,7 +265,7 @@ fn show(value: Option<&Unknown>) -> String {
         Kind::Undefined | Kind::Null => "null".to_string(),
         Kind::String(text) => format!("'{text}'"),
         Kind::Number(n) => n.to_string(),
-        Kind::BigInt(n) => format!("{n}n"),
+        Kind::BigInt(n) => format!("{}n", n.to_string(None)),
         Kind::Bool(b) => b.to_string(),
         Kind::Symbol(symbol) => symbol.to_string(),
         Kind::Function(_) => "fn".to_string(),

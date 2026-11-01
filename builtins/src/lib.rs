@@ -266,8 +266,9 @@ impl Unknown {
 pub enum Kind<'a> {
     String(&'a str),
     Number(f64),
-    /// A `bigint`, as an `i64` is one (ADR 0086): one wider isn't wrapped.
-    BigInt(i64),
+    /// A `bigint`, of any size, a [`BigInt`], never read as an `i64`,
+    /// which wraps past ±2^63 where a `bigint` may be wider (rd512).
+    BigInt(&'a BigInt),
     Bool(bool),
     /// A symbol, `typeof value === "symbol"`.
     Symbol(&'a Symbol),
@@ -858,6 +859,19 @@ pub struct BigInt(PhantomData<JsObject>);
 
 // A value, never `undefined`.
 unsafe impl Defined for BigInt {}
+
+impl BigInt {
+    /// [`n.toString(radix)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigInt/toString):
+    /// its digits in base `radix`, 2 to 36, or ten where it's `None`,
+    /// TypeScript's `radix?: number`, a `-` before them of one below 0:
+    /// `to_string(Some(10))` is `n.toString(10)`, as React's Flight reply
+    /// client writes a `bigint` it sends (rd512). Another radix throws a
+    /// `RangeError`.
+    #[cfg_attr(rust_js, rust_js::link_name = "toString")]
+    pub fn to_string(&self, radix: Option<u32>) -> String {
+        unreachable!()
+    }
+}
 
 /// [`BigInt(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigInt/BigInt):
 /// a `bigint` of `value`: of text, the integer it writes, `"12"`, `"0x1f"`
@@ -2277,6 +2291,18 @@ pub mod string {
 
 /// A JS number's methods, for where Rust's own `format!` isn't what's wanted.
 pub mod number {
+    use super::BigInt;
+
+    /// [`Number(n)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number/Number):
+    /// a `bigint` as the nearest number, `Infinity` of one past
+    /// `f64::MAX`, as React's Flight reply server estimates a `bigint`'s
+    /// digits, `Math.abs(Number(value))` (rd489), where an `i64`'s `as f64`
+    /// can't be of one wider.
+    #[cfg_attr(rust_js, rust_js::link_name = "Number")]
+    pub fn from_big_int(n: &BigInt) -> f64 {
+        unreachable!()
+    }
+
     /// [`x.toFixed(digits)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number/toFixed):
     /// `x` with `digits` decimals, as JS rounds, a tie away from zero:
     /// `2.5` is `"3"`, where `format!("{:.0}", 2.5)` is `"2"`, to even, as

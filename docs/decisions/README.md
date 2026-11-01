@@ -53,7 +53,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0062 Combinators and adapters: the closure's body in place](0062-combinators.md)
 - [0063 `char`'s questions are Unicode regular expressions; `parse` is a `Result` of Rust's message](0063-text.md)
 - [0064 Numbers' methods are `Math`'s, where JS agrees; operators call their impl](0064-numbers.md) *(extended by 0887: their functions as values)*
-- [0086 An `i64` or a `u64` is a BigInt, wrapped as release Rust wraps it](0086-64-bit-integers.md)
+- [0086 An `i64` or a `u64` is a BigInt, wrapped as release Rust wraps it](0086-64-bit-integers.md) *(amended by 1057: a `bigint` `classify` tells is a `js::BigInt`, never an `i64`)*
 - [0087 `println!` is `console.log`; `print!` writes as it is where JS can](0087-printing.md)
 - [0090 rustc checks programs for `wasm32-unknown-unknown`, whose `usize` is rust-js's](0090-wasm32-front-end.md)
 - [0065 The JS is formatted as oxfmt formats it, and the source map follows](0065-format-with-oxfmt.md) *(amended by 0835: an object is across lines where its struct literal is)*
@@ -234,6 +234,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1053 A guard's take of a field read no more is gone, and a comment runs nothing](1053-a-guards-take-of-a-field-read-no-more-is-gone.md)
 - [1055 A `match` of what a `match` made is one dispatch](1055-a-match-of-what-a-match-made-is-one-dispatch.md)
 - [1056 A stream's general source is TypeScript's `UnderlyingSource`](1056-a-streams-general-source-is-typescripts.md)
+- [1057 A `bigint` `classify` tells is a `js::BigInt`, of any size](1057-a-bigint-kind-is-a-bigint-of-any-size.md)
 - [0205 Flattened structs chain, and the props' own name is theirs](0205-flattened-chains.md)
 - [0206 TypeScript, read and written by TypeScript's own parser and printer](0206-typescript-module.md)
 - [0207 A crate's `.d.ts` is printed by TypeScript](0207-declarations-printed-by-typescript.md)
@@ -254,7 +255,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0222 An editor checks the app through rust-js](0222-editor-check.md) *(amended by 0888: one Cargo check with `rust-js clippy`'s)*
 - [0223 The webapi crate knows each event's type and each tag's element](0223-webapi-event-and-tag-maps.md)
 - [0224 A tag's element reaches its handlers and its `ref`](0224-typed-intrinsic-elements.md)
-- [0225 A JS value of unknown shape is a `js::Unknown`](0225-unknown-values.md) *(extended by 0909: `js::any_of`, a type parameter's value; amended by 0668: `Kind::Symbol`, and a `match` of `Kind` a `switch (typeof value)`; by 0673: `js::unknown` of a function; by 0676: `classify` takes an `Option<&Unknown>`, and `Kind` has `Undefined` and `Null`; by 0677: `Kind::Object` holds a `&JsObject`; by 0695: `js::new`; by 0697: `js::delete`; amended: `()` is a clone's `undefined`, and `Kind::Array`'s slice is the array; by 0775: any `()` given to JS is `undefined`; by 0776: `get`, `has` and `set` take any value; extended by 0884: a `Map`'s `get` of an `Option` is told by `has`, as a `Dict<Option<_>>`'s by its own key; amended: a JSON replacer and reviver are functions, which may read `this`, rd346)*
+- [0225 A JS value of unknown shape is a `js::Unknown`](0225-unknown-values.md) *(extended by 0909: `js::any_of`, a type parameter's value; amended by 0668: `Kind::Symbol`, and a `match` of `Kind` a `switch (typeof value)`; by 0673: `js::unknown` of a function; by 0676: `classify` takes an `Option<&Unknown>`, and `Kind` has `Undefined` and `Null`; by 0677: `Kind::Object` holds a `&JsObject`; by 0695: `js::new`; by 0697: `js::delete`; amended: `()` is a clone's `undefined`, and `Kind::Array`'s slice is the array; by 0775: any `()` given to JS is `undefined`; by 0776: `get`, `has` and `set` take any value; extended by 0884: a `Map`'s `get` of an `Option` is told by `has`, as a `Dict<Option<_>>`'s by its own key; amended: a JSON replacer and reviver are functions, which may read `this`, rd346; amended by 1057: `Kind::BigInt` is a `&js::BigInt`)*
 - [0226 A component looks inside its children as React's `Children` does](0226-react-children.md)
 - [0227 The react crate's types have @types/react's names](0227-react-type-names.md)
 - [0228 A tag takes the attributes @types/react gives it](0228-per-tag-attributes.md)

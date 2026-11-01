@@ -2013,7 +2013,10 @@ A JS value of any shape, TypeScript's `unknown`, is a `js::Unknown`. It's
 never `undefined` or `null`: an `Option<&Unknown>` is `None` of those.
 `js::classify` tells what an `Option<&Unknown>` is, as a `js::Kind` to
 `match` ([ADR 0225](../../decisions/0225-unknown-values.md)): a variant
-for each kind `typeof` tells, `Undefined`, `String`, `Number`, `BigInt`,
+for each kind `typeof` tells, `Undefined`, `String`, `Number`, `BigInt`, a
+`&js::BigInt` of any size, `n.to_string(Some(10))` its `n.toString(10)`
+and `js::number::from_big_int(n)` its `Number(n)`
+([ADR 1057](../../decisions/1057-a-bigint-kind-is-a-bigint-of-any-size.md)),
 `Bool`, `Symbol`, `Function` and `Object`, an object neither `null` nor
 an array, a `&JsObject`, TypeScript's `object`, which reads as the
 `Unknown` it is and keys a weak collection
@@ -2035,7 +2038,7 @@ pub fn describe(value: Option<&Unknown>) -> String {
         Kind::Undefined | Kind::Null => "nothing".to_string(),
         Kind::String(text) => format!("text of {} bytes", text.len()),
         Kind::Number(n) => format!("the number {n}"),
-        Kind::BigInt(n) => format!("the bigint {n}"),
+        Kind::BigInt(n) => format!("the bigint {}", n.to_string(Some(10))),
         Kind::Bool(b) => format!("{b}"),
         Kind::Symbol(symbol) => symbol.to_string(),
         Kind::Function(_) => "a function".to_string(),
@@ -2064,7 +2067,7 @@ export function describe(value) {
     case "number":
       return `the number ${$displayF64(value)}`;
     case "bigint":
-      return `the bigint ${value}`;
+      return `the bigint ${value.toString(10)}`;
     case "boolean":
       return String(value);
     case "symbol":
