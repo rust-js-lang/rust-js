@@ -43,17 +43,17 @@ function shout(text) {
 }
 
 function main() {
-  const counter = { len: 2 };
+  let len$1 = 2;
 
   function extend(n) {
-    const len = counter.len;
+    const len = len$1;
     const guard = {
       value: {
         get value() {
-          return counter.len;
+          return len$1;
         },
         set value(value) {
-          counter.len = value;
+          len$1 = value;
         },
       },
       data: len,
@@ -68,7 +68,7 @@ function main() {
   }
 
   extend(3);
-  console.log(`${counter.len}`);
+  console.log(`${len$1}`);
   let a = 1;
   let b = 10;
   let r = {

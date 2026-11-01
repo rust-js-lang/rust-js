@@ -77,11 +77,11 @@ function main() {
   grid[0] = 3;
   grid[1] = (grid[1] + 3) | 0;
   console.log(`[${grid.join(", ")}] ${grid[2]}`);
-  const counter = { hits: 0 };
+  let hits = 0;
 
   function hit() {
-    counter.hits = (counter.hits + 1) >>> 0;
-    return counter.hits;
+    hits = (hits + 1) >>> 0;
+    return hits;
   }
 
   hit();

@@ -20,47 +20,45 @@ function noted(why) {
 }
 
 function main() {
-  const surface = {
-    canvas: undefined,
-    size: undefined,
-  };
+  let canvas;
+  let size$1;
 
   function mount(name) {
-    surface.canvas = name;
-    const line = shown(surface.canvas, 2);
+    canvas = name;
+    const line = shown(canvas, 2);
     console.log(`${line}`);
-    surface.size = 3;
-    let size = surface.size;
+    size$1 = 3;
+    let size = size$1;
     console.log(`${$displayF64(size)}`);
     // A message that runs code runs it still.
-    surface.size = size + 1;
-    size = $unwrap(surface.size, noted("set again"));
+    size$1 = size + 1;
+    size = $unwrap(size$1, noted("set again"));
     console.log(`${$displayF64(size)}`);
     // Through a block that only binds, `_ = ..`'s.
-    surface.canvas = "framed";
-    surface.size = $byteLen(shown(surface.canvas, size));
-    console.log(`${surface.size == null ? "None" : `Some(${$debugF64(surface.size)})`}`);
+    canvas = "framed";
+    size$1 = $byteLen(shown(canvas, size));
+    console.log(`${size$1 == null ? "None" : `Some(${$debugF64(size$1)})`}`);
   }
 
   // Read back as what the body gives.
   function framed() {
-    surface.canvas = "tail";
-    return shown(surface.canvas, 0.5);
+    canvas = "tail";
+    return shown(canvas, 0.5);
   }
 
   function unset() {
-    surface.canvas = undefined;
+    canvas = undefined;
     return 1;
   }
 
   function remount() {
     // Another cell's read back is no read of this one.
-    surface.size = 4;
-    const other = $unwrap(surface.canvas);
+    size$1 = 4;
+    const other = $unwrap(canvas);
     console.log(`${other}`);
     // A call that runs first may unset it, here as an argument before.
-    surface.canvas = "again";
-    const line = joined(unset(), $unwrap(surface.canvas));
+    canvas = "again";
+    const line = joined(unset(), $unwrap(canvas));
     console.log(`${line}`);
   }
 

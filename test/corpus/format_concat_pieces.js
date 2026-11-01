@@ -54,11 +54,11 @@ function main() {
   show(7, 3.14159, "a", "b");
   console.log("a{b");
   console.log("p is " + `${pointDisplay_fmt({ x: 1, y: -2 })}`);
-  const c = { n: 0 };
+  let n = 0;
 
   function bump() {
-    c.n = (c.n + 1) >>> 0;
-    return c.n;
+    n = (n + 1) >>> 0;
+    return n;
   }
 
   const value = bump();
@@ -68,8 +68,8 @@ function main() {
       `${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
   let s = "";
-  const one = c.n;
-  const two = (c.n + 1) >>> 0;
+  const one = n;
+  const two = (n + 1) >>> 0;
   s += "w " + `${one}`;
   s += " l " + `${two}\n`;
   $print(s);

@@ -67,12 +67,12 @@ function polled(codes, log) {
 }
 
 function stepped(codes, log) {
-  const c = { at: 0, codes, log };
+  let at = 0;
 
   function nextCode() {
-    c.at = (c.at + 1) >>> 0;
-    c.log.push(`next:${c.at}`);
-    return c.codes[(c.at - 1) >>> 0] ?? 0;
+    at = (at + 1) >>> 0;
+    log.push(`next:${at}`);
+    return codes[(at - 1) >>> 0] ?? 0;
   }
 
   let n = 0;

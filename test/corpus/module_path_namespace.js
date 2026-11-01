@@ -15,10 +15,10 @@ function extractEvents(n) {
 }
 
 function main() {
-  const other = { seen: 3 };
+  const seen$1 = 3;
 
   function seen() {
-    return other.seen;
+    return seen$1;
   }
 
   const doubled = [1, 2, 3].map(Plugin.doubled);

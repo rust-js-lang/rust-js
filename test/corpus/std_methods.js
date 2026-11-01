@@ -81,19 +81,19 @@ function main() {
   console.log(
     `${taken == null ? "None" : `Some(${taken})`} ${a == null ? "None" : `Some(${a})`} ${old == null ? "None" : `Some(${old})`} ${b == null ? "None" : `Some(${b})`} ${first == null ? "None" : `Some(${$debugStr(first)})`} ${second == null ? "None" : `Some(${$debugStr(second)})`} ${slot == null ? "None" : `Some(${$debugStr(slot)})`}`,
   );
-  const stack = {};
+  let head;
 
   function push(value) {
-    const next = stack.head;
-    stack.head = undefined;
-    stack.head = { value, next };
+    const next = head;
+    head = undefined;
+    head = { value, next };
   }
 
   function pop() {
-    const old = stack.head;
-    stack.head = undefined;
+    const old = head;
+    head = undefined;
     function map(node) {
-      stack.head = node.next;
+      head = node.next;
       return node.value;
     }
     return old != null ? map(old) : undefined;

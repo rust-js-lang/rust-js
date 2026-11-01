@@ -112,10 +112,11 @@ export function scaledArea(side) {
 
 A private struct whose one value a function makes, which only its own
 methods and that function's closures hold, is that function's scope: its
-methods are functions declared in it, after the value's `let`, closing
-over the value and calling each other by name, as a JS function's nested
-functions read its variables
-([ADR 1043](../../decisions/1043-a-functions-scope-struct-is-its-scope.md)).
+methods are functions declared in it, after the value's `let`, calling
+each other by name, and its fields are the function's variables, which
+they read and write, as a JS function's nested functions read its
+variables
+([ADR 1043](../../decisions/1043-a-functions-scope-struct-is-its-scope.md), amended).
 
 ```rust
 use std::cell::Cell;
@@ -144,11 +145,11 @@ pub fn process_reply(depth: u32) -> String {
 
 ```js
 export function processReply(depth) {
-  const reply = { nextId: 1 };
+  let nextId = 1;
 
   function part(depth) {
-    const id = reply.nextId;
-    reply.nextId = (id + 1) >>> 0;
+    const id = nextId;
+    nextId = (id + 1) >>> 0;
     if (depth === 0) {
       return `$${id}`;
     } else {
@@ -169,6 +170,9 @@ export function processReply(depth) {
   function's outermost block, itself or in an `Rc::new`; and it's given to
   no call but its methods', nor given back. Any other struct's methods are
   its type's object, as above.
+- **A field is a `const`** where nothing writes it, and the parameter it's
+  given where nothing assigns that. Where the JS reads the value whole, a
+  tuple struct's array say, it keeps its object, `reply.nextId`.
 
 ## Traits
 

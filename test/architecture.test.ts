@@ -446,6 +446,9 @@ const owners: Record<string, string[]> = {
   // lowered, the variable it closes over, its `self`'s.
   "self.scope_functions": ["src/lower/mir/calls.rs", "src/lower/mir/scopes.rs"],
   "self.scope_self": ["src/lower/mir/locals.rs", "src/lower/mir/scopes.rs"],
+  // And each scope's value's variable, whose fields its function's body,
+  // once lowered, makes its variables (ADR 1043, amended).
+  "self.scope_values": ["src/lower/mir.rs", "src/lower/mir/scopes.rs"],
 };
 // The rest of a function's context, which each module may read, and why:
 // what it lowers and where (set entering a body, `bodies.rs`), the names it

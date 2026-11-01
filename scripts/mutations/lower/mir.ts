@@ -567,4 +567,13 @@ export const mutations: Mutation[] = [
       "^called_once_closure_drops_after.rs$",
     ],
   },
+  {
+    name: "scope-fields-kept-an-object",
+    breaks: "a function's scope struct's fields stay its object's properties, `reply.nextPartId`, not its variables",
+    file: "src/lower/mir.rs",
+    find: "            scopes::scope_fields(&value, &params, &mut out);",
+    replace: "            let _ = (value, &params);",
+    tests: ["test/corpus.test.ts", "-t", "scope_struct_functions"],
+    snapshots: true,
+  },
 ];

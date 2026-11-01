@@ -12,6 +12,7 @@ struct Reply {
     pending: Cell<u32>,
     parts: RefCell<Vec<String>>,
     settled: Cell<bool>,
+    limit: u32,
 }
 
 impl Reply {
@@ -21,7 +22,7 @@ impl Reply {
     }
 
     fn resolve_to_json(self: &Rc<Self>, key: &str, depth: u32) -> String {
-        if depth > 0 {
+        if depth > 0 && depth <= self.limit {
             let id = self.next_part_id.get();
             self.next_part_id.set(id + 1);
             let inner = self.serialize_model(key, depth - 1);
@@ -34,7 +35,7 @@ impl Reply {
     fn serialize_model(self: &Rc<Self>, key: &str, depth: u32) -> String {
         self.pending.set(self.pending.get() + 1);
         let reply = Rc::clone(self);
-        let later = move |k: &str| reply.resolve_to_json(k, 0);
+        let later = move |k: &str| format!("{}{}", reply.resolve_to_json(k, 0), reply.pending.get());
         let json = self.resolve_to_json(key, depth);
         format!("{json}/{}", later("x"))
     }
@@ -47,6 +48,7 @@ fn process_reply(root: &str, prefix: &str, depth: u32) -> String {
         pending: Cell::new(0),
         parts: RefCell::new(Vec::new()),
         settled: Cell::new(false),
+        limit: depth,
     });
     let json = reply.serialize_model(root, depth);
     let parts = reply.parts.borrow().join(",");
@@ -58,6 +60,7 @@ fn process_reply(root: &str, prefix: &str, depth: u32) -> String {
 struct Counter {
     count: u32,
     step: u32,
+    times: u32,
 }
 
 impl Counter {
@@ -72,19 +75,20 @@ impl Counter {
         for _ in 0..counter {
             self.tick();
         }
-        self.count
+        self.count + self.times
     }
 }
 
-fn count_up(step: u32, n: u32) -> u32 {
-    let mut counter = Counter { count: 0, step };
-    let first = counter.ticks(n);
+fn count_up(mut step: u32, n: u32) -> u32 {
+    let mut counter = Counter { count: n, step, times: n };
+    let first = counter.ticks(n - 1);
+    step += 1;
     counter.tick();
-    first * 100 + counter.count
+    first * 100 + counter.count + step + n
 }
 
 fn main() {
-    println!("{}", process_reply("a", "p:", 2));
+    println!("{}", process_reply("a", "p:", 3));
     println!("{}", process_reply("b", "q:", 1));
     println!("{} {}", count_up(2, 3), count_up(5, 1));
 }

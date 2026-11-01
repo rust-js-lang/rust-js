@@ -11,15 +11,15 @@ function main() {
   const length = v.length;
   const pop = v.pop();
   console.log(`${length} ${pop == null ? "None" : `Some(${pop})`} ${v.length}`);
-  const c = { n: 0 };
+  let n = 0;
 
   function bump() {
-    c.n = (c.n + 1) >>> 0;
-    return c.n;
+    n = (n + 1) >>> 0;
+    return n;
   }
 
   function get() {
-    return c.n;
+    return n;
   }
 
   const value = get();

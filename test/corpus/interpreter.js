@@ -456,7 +456,8 @@ function run(src) {
   const globals = [{ vars: new Map() }];
   Env.set(globals, "len", { TAG: "Builtin", _0: "len", _1: len });
   Env.set(globals, "upper", { TAG: "Builtin", _0: "upper", _1: upper });
-  const interp = { depth: 0, calls: 0 };
+  let depth = 0;
+  let calls = 0;
 
   function eval$(e, env) {
     let value;
@@ -543,7 +544,7 @@ function run(src) {
           return result$1;
         }
         const args = result$1._0;
-        interp.calls = (interp.calls + 1) >>> 0;
+        calls = (calls + 1) >>> 0;
         if (f.TAG === "Closure") {
           if (f._0.length !== args.length) {
             return { TAG: "Err", _0: `expected ${f._0.length} arguments, got ${args.length}` };
@@ -552,9 +553,9 @@ function run(src) {
           for (const [p, a] of $lazyZip($iter(f._0), args)) {
             Env.set(scope, p, a);
           }
-          interp.depth = (interp.depth + 1) >>> 0;
+          depth = (depth + 1) >>> 0;
           const result = eval$(f._1, scope);
-          interp.depth = (interp.depth - 1) >>> 0;
+          depth = (depth - 1) >>> 0;
           if (result.TAG === "Err") {
             return result;
           }
@@ -593,7 +594,7 @@ function run(src) {
       out.push(valueDisplay_fmt(result._0));
     }
   }
-  out.push(`calls=${interp.calls} depth=${interp.depth}`);
+  out.push(`calls=${calls} depth=${depth}`);
   return { TAG: "Ok", _0: out };
 }
 

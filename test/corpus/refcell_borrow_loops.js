@@ -34,10 +34,10 @@ function main() {
   if (noisy != null) {
     console.log(`drop ${noisy[0]}`);
   }
-  const list = { items: [1, 4, 2, 8, 5] };
+  const items$1 = [1, 4, 2, 8, 5];
 
   function findLast(f) {
-    const borrow = $borrow(list.items, true);
+    const borrow = $borrow(items$1, true);
     try {
       for (let i = borrow.length - 1; i >= 0; i--) {
         const item = borrow[i];
@@ -53,7 +53,7 @@ function main() {
   // A range over the borrow, which it changes: React Float's
   // hydrateHoistable, its `for (let i = 0; ..)` in one `try` (rd200).
   function takeFirst(f) {
-    const items = $borrowMut(list.items, true);
+    const items = $borrowMut(items$1, true);
     try {
       const end = items.length;
       for (let i = 0; i < end; i++) {
@@ -74,7 +74,7 @@ function main() {
     let taken;
     get: {
       if (made > 0) {
-        const items = $borrowMut(list.items, true);
+        const items = $borrowMut(items$1, true);
         try {
           const end = items.length;
           for (let i = 0; i < end; i++) {
@@ -88,14 +88,14 @@ function main() {
           $unborrow(items);
         }
       }
-      $borrowMut(list.items).push(made);
+      $borrowMut(items$1).push(made);
       taken = made;
     }
     return taken;
   }
 
   function any(f) {
-    const borrow = $borrow(list.items, true);
+    const borrow = $borrow(items$1, true);
     try {
       for (let i = 0; i < borrow.length; i++) {
         const item = borrow[i];
@@ -119,20 +119,20 @@ function main() {
   console.log(
     `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
-  $borrowMut(list.items).push(8);
+  $borrowMut(items$1).push(8);
   console.log(`${takeOrPush((x) => x === 8, 5)} ${takeOrPush((x) => x === 99, 6)}`);
   console.log(`${takeOrPush((x) => x === 6, 0)}`);
-  console.log(`${any((x) => x === 7 || $borrow(list.items).length > 9)}`);
-  $borrowMut(list.items).push(7);
+  console.log(`${any((x) => x === 7 || $borrow(items$1).length > 9)}`);
+  $borrowMut(items$1).push(7);
   const pushed = $catchUnwind(() =>
     any((x) => {
-      $borrowMut(list.items).push(x);
+      $borrowMut(items$1).push(x);
       return false;
     }),
   );
   console.log(`pushed while borrowed: ${pushed.TAG === "Err"}`);
   // Released as the panic left the loop: it's borrowed again.
-  $borrowMut(list.items).push(9);
-  console.log(`[${$borrow(list.items).join(", ")}]`);
+  $borrowMut(items$1).push(9);
+  console.log(`[${$borrow(items$1).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

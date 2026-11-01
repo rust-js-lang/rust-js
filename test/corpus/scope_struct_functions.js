@@ -5,69 +5,68 @@ export function entry() {
 }
 
 function processReply(root, prefix, depth) {
-  const reply = {
-    prefix,
-    nextPartId: 1,
-    pending: 0,
-    parts: [],
-    settled: false,
-  };
+  let nextPartId = 1;
+  let pending = 0;
+  const parts$1 = [];
+  let settled$1 = false;
 
   function resolve(value) {
-    reply.settled = true;
-    return reply.prefix + value;
+    settled$1 = true;
+    return prefix + value;
   }
 
-  function resolveToJson(key, depth) {
-    if (depth > 0) {
-      const id = reply.nextPartId;
-      reply.nextPartId = (id + 1) >>> 0;
-      const inner = serializeModel(key, depth - 1);
-      reply.parts.push(inner);
+  function resolveToJson(key, depth$1) {
+    if (depth$1 > 0 && depth$1 <= depth) {
+      const id = nextPartId;
+      nextPartId = (id + 1) >>> 0;
+      const inner = serializeModel(key, depth$1 - 1);
+      parts$1.push(inner);
       return `$${id}`;
     }
     return key.toUpperCase();
   }
 
-  function serializeModel(key, depth) {
-    reply.pending = (reply.pending + 1) >>> 0;
-    const later = (k) => resolveToJson(k, 0);
-    const json = resolveToJson(key, depth);
+  function serializeModel(key, depth$1) {
+    pending = (pending + 1) >>> 0;
+    const later = (k) => resolveToJson(k, 0) + String(pending);
+    const json = resolveToJson(key, depth$1);
     const arg = later("x");
     return `${json}/${arg}`;
   }
 
   const json = serializeModel(root, depth);
-  const parts = reply.parts.join(",");
-  const settled = reply.settled;
+  const parts = parts$1.join(",");
+  const settled = settled$1;
   const resolve$1 = resolve(json);
-  return `${resolve$1} [${parts}] ${reply.pending} ${settled} ${reply.settled}`;
+  return `${resolve$1} [${parts}] ${pending} ${settled} ${settled$1}`;
 }
 
 function countUp(step, n) {
-  const counter = { count: 0, step };
+  let count = n;
+  const step$1 = step;
 
   /** Adds its step. */
   function tick() {
-    counter.count = (counter.count + counter.step) >>> 0;
+    count = (count + step$1) >>> 0;
   }
 
   /** Ticks `n` times. */
-  function ticks(n) {
-    const counter$1 = n;
-    for (let i = 0; i < counter$1; i++) {
+  function ticks(n$1) {
+    const counter = n$1;
+    for (let i = 0; i < counter; i++) {
       tick();
     }
-    return counter.count;
+    return (count + n) >>> 0;
   }
 
-  const first = ticks(n);
+  const first = ticks(n - 1);
+  step++;
   tick();
-  return (((first * 100) >>> 0) + counter.count) >>> 0;
+  return (((((((first * 100) >>> 0) + count) >>> 0) + step) >>> 0) + n) >>> 0;
 }
 
 function main() {
-  console.log(`${processReply("a", "p:", 2)}`);
+  console.log(`${processReply("a", "p:", 3)}`);
   console.log(`${processReply("b", "q:", 1)}`);
   console.log(`${countUp(2, 3)} ${countUp(5, 1)}`);
 }

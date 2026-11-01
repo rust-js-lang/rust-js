@@ -553,6 +553,10 @@ struct FnCx<'a, 'tcx> {
     /// While one of them is lowered, the name of the variable it closes
     /// over, its `self`'s.
     scope_self: Option<String>,
+    /// Once a function's body is lowered, the variable of each of its
+    /// scope structs' values, by the function, whose fields are then its
+    /// variables (ADR 1043, amended).
+    scope_values: Vec<(DefId, String)>,
 }
 
 /// What a body being lowered has of its own, which a nested one, a

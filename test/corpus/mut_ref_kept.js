@@ -40,15 +40,15 @@ function main() {
     `${gridIndexUsize_index(g, 0)} ${gridIndexUsize_index(g, 1)} ${gridIndexUsize_index(g, 2)}`,
   );
 
-  const c = { n: 1 };
+  let n$1 = 1;
 
   function getMut() {
     return {
       get value() {
-        return c.n;
+        return n$1;
       },
       set value(value) {
-        c.n = value;
+        n$1 = value;
       },
     };
   }
@@ -57,7 +57,7 @@ function main() {
   value$1.value = (value$1.value + 41) | 0;
   const n = getMut();
   n.value = (n.value * 2) | 0;
-  console.log(`${c.n}`);
+  console.log(`${n$1}`);
 
   let a = 1;
   const h = {

@@ -560,7 +560,7 @@ pub fn lower_crate<'tcx>(
         }
         // A function's scope struct's methods, functions declared in it, by
         // names none of its variables hide (ADR 1043).
-        let scope_functions: HashMap<DefId, String> = (scopes.of_function(def_id).into_iter())
+        let scope_functions: HashMap<DefId, String> = (scopes.of_function(def_id))
             .flat_map(|scope| scope.methods.iter())
             .map(|&method| (method, crate::names::fresh_in(&mut names, &fns[&method].name)))
             .collect();
@@ -591,6 +591,7 @@ pub fn lower_crate<'tcx>(
             drop_state: Default::default(),
             scope_functions,
             scope_self: None,
+            scope_values: Vec::new(),
         };
         let result = match body {
             // Each body, a function's or an initializer's, from its MIR (ADR 0364).

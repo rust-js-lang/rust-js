@@ -9,15 +9,15 @@ export function entry() {
 function main() {
   let s = "";
   s += "abc-7";
-  const log = { text: "" };
+  let text = "";
 
   function add(line) {
-    log.text += line;
-    log.text += "\n";
+    text += line;
+    text += "\n";
   }
 
   add("one");
   add(s);
-  $print(log.text);
+  $print(text);
 }
 //# sourceMappingURL=case.js.map

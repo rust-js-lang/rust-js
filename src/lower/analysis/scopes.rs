@@ -95,9 +95,9 @@ impl Scopes {
         Scopes { scopes }
     }
 
-    /// The scope `function` makes, if any.
-    pub(crate) fn of_function(&self, function: DefId) -> Option<&Scope> {
-        self.scopes.iter().find(|s| s.function == function)
+    /// The scopes `function` makes, in the order their structs are written.
+    pub(crate) fn of_function(&self, function: DefId) -> impl Iterator<Item = &Scope> {
+        self.scopes.iter().filter(move |s| s.function == function)
     }
 
     /// The scope `method` is a method of, if any.
