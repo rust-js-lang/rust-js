@@ -139,12 +139,7 @@ What it has:
   `Result<T, &JsError>`, `js_error::to_string(e)` is `String(e)`, and
   `e.message()` an `Error`'s ([Errors](../interop/exceptions.md)).
 - **`json`** is `JSON.parse` and `JSON.stringify`; a Rust value's JSON is
-  serde's, below. `stringify(value)` is `JSON.stringify(value)`, a
-  `String` of a value whose JSON is exact, a `JsonText`, and of any value
-  what may throw or be `undefined`; `stringify_with` is given a replacer
-  or an indentation, `JSON.stringify(value, null, 2)`, and never neither,
-  which is `stringify` ([ADR 0102](../../decisions/0102-js-and-webapi.md),
-  amended). Its replacer is the keys an object keeps,
+  serde's, below. `stringify_with`'s replacer is the keys an object keeps,
   `Some(&["a"][..])`, `None` of all, or a function of each key and value,
   and `parse_with`'s reviver one too: a closure, or one
   `function::with_this` makes, whose `this` is the object holding the key,

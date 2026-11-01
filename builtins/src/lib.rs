@@ -2269,15 +2269,11 @@ pub mod json {
         unreachable!()
     }
 
-    /// [`JSON.stringify(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify):
-    /// `value`'s JSON, on one line: of a value whose JSON is exact, a
-    /// [`JsonText`], its text, a string's in quotes with its `"`, `\` and
-    /// control characters escaped, which is a JS string literal too; of any
-    /// value, an [`Unknown`], what may throw or be `undefined`, as
-    /// [`stringify_with`] gives it. Its replacer and its indentation are
-    /// [`stringify_with`]'s, which isn't given neither.
+    /// [`JSON.stringify(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify):
+    /// `text`'s JSON, in quotes, with its `"`, `\` and control characters
+    /// escaped, which is a JS string literal too.
     #[cfg_attr(rust_js, rust_js::link_name = "JSON.stringify")]
-    pub fn stringify<T: Stringify + ?Sized>(value: &T) -> T::Stringified {
+    pub fn stringify(text: &str) -> String {
         unreachable!()
     }
 

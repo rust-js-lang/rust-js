@@ -193,11 +193,15 @@ pub fn add_value_to_properties(
                 let kind = get_array_kind(array);
                 if kind == ArrayKind::Primitive || kind == ArrayKind::Empty {
                     break 'desc if did_truncate {
-                        js::json::stringify(js::unknown(
-                            &[&array[..OBJECT_WIDTH_LIMIT], &[Some(js::unknown("…"))]].concat(),
-                        ))
+                        js::json::stringify_with(
+                            js::unknown(
+                                &[&array[..OBJECT_WIDTH_LIMIT], &[Some(js::unknown("…"))]].concat(),
+                            ),
+                            None,
+                            0,
+                        )
                     } else {
-                        js::json::stringify(value)
+                        js::json::stringify_with(value, None, 0)
                     }
                     .unwrap()
                     .unwrap();

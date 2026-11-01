@@ -127,8 +127,8 @@ pub fn held(text: &str, first: bool) -> Option<&'static Unknown> {
 
 // ADR 0747: a throwing call's `Result` made in each branch of an `if`, and
 // unwrapped where it's made, is each call itself, as React's ported
-// addValueToProperties' `if did_truncate { stringify(..) } else {
-// stringify(value) }.unwrap()` is. A branch that isn't a
+// addValueToProperties' `if did_truncate { stringify_with(..) } else {
+// stringify_with(value, ..) }.unwrap()` is. A branch that isn't a
 // throwing call, or one that runs something past its call, keeps `$try`'s.
 test("unwrap of a throwing call each branch makes is each call", async () => {
   const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
@@ -139,9 +139,9 @@ pub fn either(text: &str, other: &str, first: bool) -> Option<&'static Unknown> 
 }
 pub fn shown(value: &Unknown, short: bool) -> Option<String> {
     if short {
-        json::stringify(js::unknown("…"))
+        json::stringify_with(js::unknown("…"), None, 0)
     } else {
-        json::stringify(value)
+        json::stringify_with(value, None, 0)
     }
     .unwrap()
 }
@@ -182,7 +182,7 @@ pub fn dropped(first: bool) -> Option<&'static Unknown> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return first ? JSON.parse(text) : JSON.parse(other);");
-  expect(js).toContain('return short ? JSON.stringify("…") : JSON.stringify(value);');
+  expect(js).toContain('return short ? JSON.stringify("…", null, 0) : JSON.stringify(value, null, 0);');
   expect(js.match(/\$unwrapOk\(/g)?.length).toBe(4);
   const lib = await import(join(dir, "lib.js"));
   expect([lib.either("[1]", "{", true), lib.either("{", "2", false)]).toEqual([[1], 2]);
@@ -200,7 +200,7 @@ pub fn dropped(first: bool) -> Option<&'static Unknown> {
   // React's: what may be `undefined` keeps its `unwrap()`, `$unwrap`.
   const described = performanceTrack()("addValueToProperties");
   expect(described).toContain("desc = $unwrap(\n              didTruncate\n                ? JSON.stringify(");
-  expect(described).toContain("                : JSON.stringify(value),\n");
+  expect(described).toContain("                : JSON.stringify(value, null, 0),\n");
   expect(described).not.toContain("$try");
 }, 60_000);
 
