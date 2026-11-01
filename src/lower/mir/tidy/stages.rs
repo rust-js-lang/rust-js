@@ -261,6 +261,10 @@ pub(super) const STAGES: &[Stage] = &[
             // written once.
             pass("sunk lets", |b, _| js::statement_lists(b, &mut sunk_lets)),
             pass("declarations", |b, _| declarations(b)),
+            // A handle those made a `const`, a let chain's `borrow_mut()`
+            // of a flattened state, declared before its `if` and written in
+            // it: its place, where its `value` is read (rd533).
+            pass("declared handles", |b, _| read_handles(b)),
             // A temporary of a variable those made a `const`, `const _42 =
             // queue;` of a `borrow_mut()` of an object's `RefCell`, which is
             // the object: the variable, where it's read (ADR 0883).

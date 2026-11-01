@@ -47,6 +47,16 @@ function halt(state) {
   state.value = { status: "halted" };
 }
 
+// Its two fields written through one borrow a let chain holds, as the
+// Flight client's initializeModelChunk puts its deferred listeners back:
+// each the chunk's own key (rd533).
+function requeue(chunk, deferred, rejects) {
+  if (deferred != null && chunk.status === "pending") {
+    chunk.value = deferred;
+    chunk.reason = rejects;
+  }
+}
+
 function read(chunk) {
   chunk.reads = (chunk.reads + 1) >>> 0;
   if (chunk.status === "pending") {
@@ -70,6 +80,10 @@ function main() {
     status: "pending",
   });
   console.log(`${read(chunk)}`);
+  requeue(chunk, undefined, [9]);
+  requeue(chunk, [7], [8]);
+  console.log(`${read(chunk)}`);
+  requeue(chunk, []);
   listen(chunk, 1);
   listen(chunk, 2);
   console.log(`${read(chunk)}`);

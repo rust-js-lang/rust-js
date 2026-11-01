@@ -1114,4 +1114,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^let_chain_settled_and.rs$"],
     snapshots: true,
   },
+  {
+    name: "declared-handles-kept",
+    breaks:
+      "a let chain's `borrow_mut()` of a flattened state, `const borrowMut = { get value() .., set value(value) .. }`, kept, one write through it aliased and the other not, where each is the chunk's key (rd533)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: '            pass("declared handles", |b, _| read_handles(b)),\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell.rs$"],
+    snapshots: true,
+  },
 ];

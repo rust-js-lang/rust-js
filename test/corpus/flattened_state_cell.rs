@@ -68,6 +68,18 @@ fn halt(state: &mut ChunkState) {
     *state = ChunkState::Halted;
 }
 
+// Its two fields written through one borrow a let chain holds, as the
+// Flight client's initializeModelChunk puts its deferred listeners back:
+// each the chunk's own key (rd533).
+fn requeue(chunk: &Chunk, deferred: Option<Vec<u32>>, rejects: Option<Vec<u32>>) {
+    if deferred.is_some()
+        && let ChunkState::Pending { value, reason } = &mut *chunk.state.borrow_mut()
+    {
+        *value = deferred;
+        *reason = rejects;
+    }
+}
+
 fn read(chunk: &Chunk) -> String {
     chunk.reads.set(chunk.reads.get() + 1);
     match &*chunk.state.borrow() {
@@ -90,6 +102,10 @@ fn main() {
         reason: None,
     });
     println!("{}", read(&chunk));
+    requeue(&chunk, None, Some(vec![9]));
+    requeue(&chunk, Some(vec![7]), Some(vec![8]));
+    println!("{}", read(&chunk));
+    requeue(&chunk, Some(vec![]), None);
     listen(&chunk, 1);
     listen(&chunk, 2);
     println!("{}", read(&chunk));

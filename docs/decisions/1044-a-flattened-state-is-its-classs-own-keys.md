@@ -1,6 +1,7 @@
 # 1044. A flattened state is its class's own keys
 
-Status: Accepted (the user's decisions, rd380, 2026-11-01). Extends
+Status: Accepted (the user's decisions, rd380, 2026-11-01). Amended
+(rd533): a let chain's borrow of it is its object too. Extends
 [0204](0204-flattened-props.md), whose flattened field was a struct of
 named fields or a JS object, to a `RefCell` of a discriminated union
 ([0284](0284-discriminated-unions.md)), and
@@ -134,3 +135,40 @@ first declared (`bindings::flattened_state`).
   (`representation.rs`), `flattened-std-struct-allowed` and
   `reads-whole-by-any-impl` (`analysis/validation.rs`), and
   `in-place-setter-assigns` (`prepare.rs`).
+
+## Amended (rd533): a let chain's borrow of it is its object too
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
+difference: the handle's getter gives the object, and nothing writes the
+state whole through it.
+
+The Flight client's initializeModelChunk puts its deferred listeners back
+through one borrow a let chain holds:
+
+```rust
+if deferred.is_some()
+    && let ChunkState::Blocked { value, reason } = &mut *cyclic_chunk.state.borrow_mut()
+{
+    *value = deferred;
+    *reason = reject_listeners;
+}
+```
+
+MIR declares a let chain's guard before its `if`, written in it, so its
+handle on the chunk was a `let` when tidy's `read handles` asked for a
+`const` of one, and stayed: `const borrowMut = { get value() .., set
+value(value) .. }`, `const value = borrowMut.value; borrowMut.value.value
+= deferred; value.reason = rejectListeners;`, one write through the
+alias and one not. **Tidy reads handles again once `declarations` has
+made that `let` a `const`** (`declared handles`), so each is the chunk's
+key, and the `if`s join, as `if let` of the borrow alone printed:
+
+```js
+if (deferred != null && cyclicChunk.status === "blocked") {
+  cyclicChunk.value = deferred;
+  cyclicChunk.reason = rejectListeners;
+}
+```
+
+Held by the corpus's `flattened_state_cell`'s `requeue`, against native
+Rust; mutation `declared-handles-kept` (`tidy/stages.ts`).
