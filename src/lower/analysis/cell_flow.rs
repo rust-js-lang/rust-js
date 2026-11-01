@@ -15,10 +15,13 @@
 //! exported function, a trait's method or a closure that code may call is
 //! given and gives; a raw pointer's cast, a transmute; a static. Each node
 //! beneath `TOP` is a cell that code may reach, and any such cell may be any
-//! other of its type, as the crate's types said of every cell before. A
-//! cell no path from `TOP` reaches is reached only by the crate's own code,
-//! along the paths unification followed: one no borrow of which is counted
-//! is never checked, whatever another of its type's borrows are.
+//! other of its type, as the crate's types said of every cell before. So is
+//! each beneath `CONSTANT`, what a constant but a static holds, which the
+//! flow doesn't follow either; but that holds no cell that code has, so a
+//! library's consumer, which is such code, reaches none of it (#456). A
+//! cell no path from either reaches is reached only by the crate's own
+//! code, along the paths unification followed: one no borrow of which is
+//! counted is never checked, whatever another of its type's borrows are.
 //!
 //! A crate any of whose bodies has no MIR here has no classes: every cell
 //! is by its type, as before.
@@ -37,12 +40,14 @@ use rustc_span::def_id::DefId;
 use std::collections::{HashMap, HashSet};
 
 /// The cells a borrow may be of: those only the crate's code reaches, by
-/// their flow's class, or any a code rust-js can't see reaches, of a type
-/// that may be its own.
+/// their flow's class, or any code rust-js can't see reaches, or a
+/// constant's value may be, of a type that may be its own. `shared`,
+/// whether code rust-js can't see may reach it, a library's consumer, which
+/// may then hold a borrow of it while the library's code runs (#456).
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub(in crate::lower) enum CellClass {
     Own(u32),
-    Anything,
+    Anything { shared: bool },
 }
 
 /// Each borrow of a `RefCell` the crate's MIR makes, by its body and the
@@ -140,7 +145,7 @@ impl CellFlow {
             }
         }
         loop {
-            let reached = flow.graph.reached(TOP);
+            let reached = flow.graph.reached(&[TOP]);
             let more: Vec<DefId> = (flow.values_of.iter())
                 .filter(|&&(node, id)| !flow.open.contains(&id) && reached.contains(&flow.graph.find(node)))
                 .map(|&(_, id)| id)
@@ -152,12 +157,15 @@ impl CellFlow {
                 flow.open(id);
             }
         }
-        let reached = flow.graph.reached(TOP);
+        let reached = flow.graph.reached(&[TOP, CONSTANT]);
+        let shared = flow.graph.reached(&[TOP]);
         let mut classes = Classes::default();
         for (body, block, span, callee, cell) in std::mem::take(&mut flow.borrow_calls) {
             let root = flow.graph.find(cell);
             let class = match reached.contains(&root) {
-                true => CellClass::Anything,
+                true => CellClass::Anything {
+                    shared: shared.contains(&root),
+                },
                 false => CellClass::Own(root),
             };
             classes.calls.insert((body, block), class);
@@ -169,6 +177,11 @@ impl CellFlow {
 
 /// The node every value code rust-js can't see has or is given is.
 const TOP: u32 = 0;
+
+/// The node every constant's value is, but a static's: Rust refuses one
+/// that refers to memory a cell may change, and promotes none, so it holds
+/// no cell code rust-js can't see has; but what it holds isn't followed.
+const CONSTANT: u32 = 1;
 
 /// What a node's child is of it: what it points at, a field of its
 /// variant, what a std type or a JS object holds of a type parameter, by
@@ -191,9 +204,9 @@ struct Graph {
 impl Graph {
     fn new() -> Self {
         Graph {
-            parent: vec![TOP],
-            size: vec![1],
-            children: vec![HashMap::new()],
+            parent: vec![TOP, CONSTANT],
+            size: vec![1, 1],
+            children: vec![HashMap::new(), HashMap::new()],
         }
     }
 
@@ -254,11 +267,10 @@ impl Graph {
         }
     }
 
-    /// Each root beneath `from`, and it.
-    fn reached(&mut self, from: u32) -> HashSet<u32> {
-        let start = self.find(from);
-        let mut seen = HashSet::from([start]);
-        let mut pending = vec![start];
+    /// Each root beneath one of `from`, and each of them.
+    fn reached(&mut self, from: &[u32]) -> HashSet<u32> {
+        let mut pending: Vec<u32> = from.iter().map(|&node| self.find(node)).collect();
+        let mut seen: HashSet<u32> = pending.iter().copied().collect();
         while let Some(at) = pending.pop() {
             let children: Vec<u32> = self.children[at as usize].values().copied().collect();
             for child in children {
@@ -483,7 +495,8 @@ impl<'r, 'tcx> Flow<'r, 'tcx> {
 
     /// A constant's node: a thread-local's key, its storage's; a reference
     /// to one; a static's, which code rust-js can't see may reach, `TOP`;
-    /// any other that may hold a cell, `TOP`; else a value of its own.
+    /// any other that may hold a cell, `CONSTANT`, which holds no cell that
+    /// code has (#456); else a value of its own.
     fn constant(&mut self, at: usize, constant: &mir::ConstOperand<'tcx>) -> u32 {
         let tcx = self.tcx();
         let ty = constant.ty();
@@ -513,7 +526,10 @@ impl<'r, 'tcx> Flow<'r, 'tcx> {
             self.graph.unify(pointee, key);
             return node;
         }
-        TOP
+        match constant.check_static_ptr(tcx) {
+            Some(_) => TOP,
+            None => CONSTANT,
+        }
     }
 
     /// The constant a body's promoted constant `promoted` refers to, `&KEY`'s

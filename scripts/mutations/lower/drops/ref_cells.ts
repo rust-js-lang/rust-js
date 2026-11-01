@@ -497,8 +497,26 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's cell its consumer may share is quiet by its flow, so its contract lists a type it borrows unchecked that a consumer's held borrow may be, and the consumer is refused (ADR 0863, amended)",
     file: "src/lower/drops/ref_cells.rs",
-    find: "            CellClass::Anything if self.library => return self.quiet(recognition, borrows, (ty, false), drops),\n",
+    find: "            CellClass::Anything { shared: true } if self.library => {\n                return self.quiet(recognition, borrows, (ty, false), drops);\n            }\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "a library checks a cell its consumer may share"],
+  },
+  {
+    name: "class-unshared-by-type-in-a-library",
+    breaks:
+      "a library's cell only its own code and constants reach is checked by its type, as one its consumer may hold a borrow of, so its JS isn't its program's: `$borrowMut(items).push(3)` (#456)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "            CellClass::Anything { shared: true } if self.library => {",
+    replace: "            CellClass::Anything { .. } if self.library => {",
+    tests: ["test/crates.test.ts", "-t", "constants reach"],
+  },
+  {
+    name: "library-borrowed-unshared",
+    breaks:
+      "a library's contract lists as borrowed unchecked the type of a cell only its own code and constants reach, so a consumer holding a borrow of its own cell of that type while the library's code runs is refused (#456)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "classes.contains(&CellClass::Anything { shared: true })",
+    replace: "classes.iter().any(|class| matches!(class, CellClass::Anything { .. }))",
+    tests: ["test/crates.test.ts", "-t", "constants reach"],
   },
 ];

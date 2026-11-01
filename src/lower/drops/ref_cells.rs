@@ -44,10 +44,10 @@ pub(in crate::lower) struct RefCells<'tcx> {
     classed: HashSet<(DefId, rustc_span::Span, DefId)>,
     /// Whether the crate is a library, whose consumers may hold a borrow
     /// of a cell it shares while its code runs: of one such, a class code
-    /// rust-js can't see may reach, its contract counts by type.
+    /// rust-js can't see may reach itself, its contract counts by type.
     library: bool,
     /// Each the crate's bodies borrow of a cell code rust-js can't see may
-    /// reach, or whose class isn't known: what a library shares.
+    /// reach itself, or whose class isn't known: what a library shares.
     borrowed: HashSet<Ty<'tcx>>,
     /// Each its types' fields hold, and its exported functions take and give.
     handed: HashSet<Ty<'tcx>>,
@@ -121,8 +121,9 @@ impl<'tcx> RefCells<'tcx> {
     ) -> crate::library::RefCellFacts {
         let tcx = recognition.tcx;
         let shapes = |tys: &HashSet<Ty<'tcx>>| crate::lower::library::shapes(tcx, tys.iter().copied());
-        // Of a cell that may be a consumer's, one it reaches: a borrow of one
-        // only the library's code reaches is never one of the consumer's. A
+        // Of a cell that may be a consumer's, one it reaches itself: a borrow
+        // of one only the library's code reaches is never one of the
+        // consumer's, though code rust-js can't see runs it (#456). A
         // library's borrow of one is quiet only where its type is
         // (`quiet_class`), so its type says.
         let unchecked: HashSet<Ty<'tcx>> = (self.borrowed.iter())
@@ -211,7 +212,9 @@ impl<'tcx> RefCells<'tcx> {
     /// one a library counts. Of either, its own impls borrow nothing that
     /// may be it, as `quiet` asks. A borrow none of whose cell's borrows
     /// can meet another is never checked, whatever another cell of its
-    /// type's borrows are.
+    /// type's borrows are. In a library, one that code may reach itself, a
+    /// consumer's, is as its type says; one it reaches only through the
+    /// library's own code is as in a program (#456).
     pub(in crate::lower) fn quiet_class(
         &self,
         recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
@@ -228,9 +231,11 @@ impl<'tcx> RefCells<'tcx> {
             // A library's consumer's borrow of a cell it shares may be held
             // while the library's code runs, which then checks it as the
             // contract's types say: as by its type alone (ADR 0863).
-            CellClass::Anything if self.library => return self.quiet(recognition, borrows, (ty, false), drops),
+            CellClass::Anything { shared: true } if self.library => {
+                return self.quiet(recognition, borrows, (ty, false), drops);
+            }
             CellClass::Own(class) => self.counted_classes.contains(&class) || may_be(&self.counted_unknown),
-            CellClass::Anything => {
+            CellClass::Anything { .. } => {
                 let library_counts = self.library_has(tcx, ty, |f| &f.counted).is_some();
                 library_counts || may_be(&self.counted_reached) || may_be(&self.counted_unknown)
             }
@@ -446,7 +451,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     classes
                 });
-                if classes.is_none_or(|classes| classes.contains(&CellClass::Anything)) {
+                if classes.is_none_or(|classes| classes.contains(&CellClass::Anything { shared: true })) {
                     borrowed.insert(found.cell);
                 }
                 // Of a thread-local's own cell only its key reaches, which no
@@ -465,7 +470,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             for &class in classes {
                                 match class {
                                     CellClass::Own(class) => _ = counted_classes.insert(class),
-                                    CellClass::Anything => _ = counted_reached.insert(found.cell),
+                                    CellClass::Anything { .. } => _ = counted_reached.insert(found.cell),
                                 }
                             }
                         }

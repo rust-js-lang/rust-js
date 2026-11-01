@@ -4,6 +4,7 @@ import type { Mutation } from "../../../mutations";
 
 const corpus = (name: string) => ["test/corpus.test.ts", "-t", `^${name}.rs$`];
 const flow = (name: string) => ["test/lowering-cell-flow.test.ts", "-t", name];
+const crates = (name: string) => ["test/crates.test.ts", "-t", name];
 
 export const mutations: Mutation[] = [
   {
@@ -86,5 +87,32 @@ export const mutations: Mutation[] = [
     find: "            && adt.has_dtor(tcx)\n",
     replace: "            && adt.has_dtor(tcx)\n            && false\n",
     tests: corpus("refcell_let_guard_meets"),
+  },
+  {
+    name: "flow-constant-unseen",
+    breaks:
+      "a constant's value is what code rust-js can't see has, so a library's cell only a constant of its own may be is one its consumer may hold a borrow of, checked by its type, and its library JS isn't its program's (#456)",
+    file: "src/lower/analysis/cell_flow.rs",
+    find: "            None => CONSTANT,",
+    replace: "            None => TOP,",
+    tests: crates("constants reach"),
+  },
+  {
+    name: "flow-static-a-constant",
+    breaks:
+      "a static is read as a constant, which holds no cell code rust-js can't see has, so a library's `pub static` its consumer names is quiet by its flow, unchecked where the consumer may hold a borrow of it (#456)",
+    file: "src/lower/analysis/cell_flow.rs",
+    find: "            Some(_) => TOP,",
+    replace: "            Some(_) => CONSTANT,",
+    tests: crates("constants reach"),
+  },
+  {
+    name: "flow-shared-unread",
+    breaks:
+      "every cell code rust-js can't see may reach, or a constant may be, is one that code may reach, so a library's cell only a constant of its own may be is checked by its type (#456)",
+    file: "src/lower/analysis/cell_flow.rs",
+    find: "                    shared: shared.contains(&root),",
+    replace: "                    shared: true,",
+    tests: crates("constants reach"),
   },
 ];

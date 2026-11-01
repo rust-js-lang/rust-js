@@ -1738,6 +1738,9 @@ export function shared() {
   trait's method's, may be any such cell of its type, and in a library
   is counted by its type, as its consumers read its manifest
   ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md), amended).
+  So may one a constant may be, `count(&Stock::One(4))`'s, but that's no
+  cell a consumer reaches: in a library it's as in a program, and a
+  borrow of it for a moment is plain.
   A borrow only where a test finds the loop's own item isn't there meets
   none: `for t in types.borrow().iter() { if !into.borrow().contains(t) {
   into.borrow_mut().push(t.clone()); } }`, of strings, integers, `bool`s

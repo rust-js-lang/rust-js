@@ -1,6 +1,6 @@
 # 0863. A `RefCell` of an object is the object, and one no borrow of which can meet another is never checked
 
-Status: Accepted; amended below (`as_deref` of an `Option` of a guard, and a guard that's only a call's receiver). Amends [0328](0328-refcell-borrow-counts.md) (what a
+Status: Accepted; amended below (`as_deref` of an `Option` of a guard, a guard that's only a call's receiver, a held borrow counts the cells that can be its own (#445), and a library's cell only its own code and constants reach is its flow's (#456)). Amends [0328](0328-refcell-borrow-counts.md) (what a
 `RefCell` is, and which of its borrows are counted),
 [0362](0362-refcell-fields-never-counted.md) (a field's plain cell, a
 library's too), [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md)
@@ -1011,4 +1011,93 @@ export function reveal(batch) {
   `class-own-of-no-unknown`, `class-reached-uncounted`,
   `class-reached-ignores-library-counted`,
   `class-reached-precise-in-a-library` and `class-flow-unread`
+  (`drops/ref_cells.rs`).
+
+## Amendment: a library's cell only its own code and constants reach is its flow's (#456)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, the user's decision
+(2026-11-02). Leaving out a check that can't fail changes no run.
+
+**In a library, only a cell its consumer may reach is counted by its
+type; one only the library's own code reaches is as in a program.**
+#445's rule counted by its type each cell of a class `TOP` reaches. `TOP`
+was also every constant's value but a thread-local key's. So the corpus's
+`untagged_ref_cells`, whose `total(&Shared::One(4.0))` gives a promoted
+constant where `total(&shared)` gives its own cell, printed
+`$borrow(shared).reduce(..)` and `$borrowMut(shared).push(3)` as a
+library, where its program printed `shared.reduce(..)` and
+`shared.push(3)`. Each of its items is private: no consumer can reach
+`shared`.
+
+What a consumer reaches of a library is what its API takes and gives:
+an exported function's parameters and result, a trait's method, which
+its generic code may call, a coroutine, a `pub` thread-local, a static,
+and every field of what it holds. Each is `TOP` already
+(`library::reachable`, rustc's own answer, for the functions). So is what
+JS, a binding, another library, a `dyn` or a fn pointer is given and
+gives: JS may hand a consumer what the library gave it. A constant isn't
+any of these:
+
+- **A constant's value holds no cell another code has.** Rust refuses a
+  constant that refers to memory a cell may change, and promotes no
+  value with a cell in it. A constant's value is a new one where it's
+  read, or memory no cell is in.
+- **A static is the exception**: its memory is the one each reader
+  names, the library's and its consumer's. `check_static_ptr`'s.
+
+So a constant's value is `CONSTANT`, a node of its own, and a static's
+`TOP` (`analysis/cell_flow.rs`). A cell beneath `CONSTANT` is still one
+whose flow isn't followed, `Anything`, as before, so a program's classes
+and JS are what they were. Only `shared`, whether `TOP` reaches it,
+tells a library which of those its consumer may reach
+(`CellClass::Anything { shared }`):
+
+- **One `TOP` reaches** is counted by its type, as #445 said.
+- **One only `CONSTANT` reaches** is quiet where no borrow of a type that
+  may be it of such a cell is counted, as in a program
+  (`RefCells::quiet_class`).
+- **Its contract's `unchecked`** lists only types of cells `TOP` reaches:
+  a consumer's borrow is never of another (`RefCells::borrowed`). A
+  library's manifest may list fewer types than before, so its consumers
+  are rebuilt against it; its form is the same.
+
+Built as a library, `untagged_ref_cells` is now its program's JS.
+
+### Alternatives
+
+- **A `pub` struct's private field as no consumer's.** Rust lets no
+  consumer name one, so the decision's list of what a consumer reaches
+  names only `pub` fields. But JS reaches each property of a value it
+  holds, as a library's `Tally.cell(tally)`, a private method, is a
+  property of its exported `Tally`. A struct JS may make holds what JS
+  made, and a `#[repr(transparent)]` struct's value, an untagged enum's
+  and a flattened field's are their field's. A flow that left out
+  private fields would have to know each of those, which the
+  representation owns. Not done: such a cell is checked by its type, as
+  before, and the test says so.
+- **Constants as cells of their own, `Own`**: sound, as a constant's
+  value holds no cell another code has, and would leave out more checks
+  in programs too. That's a change of the program's classes, not of what
+  a library shares: not this issue's.
+- **Each constant a fresh node**: the same, and more nodes.
+
+### What holds it
+
+- `test/crates.test.ts`, "a library's cell only its own code and
+  constants reach is its flow's, as a program's", pair
+  `ref_cells_flow_reach`, against native Rust: a cell an exported
+  function takes or gives, a `pub` static's, a `pub` field's and a `pub`
+  struct's private one are checked; `Stock`'s and `Label`'s, which only
+  `stocked` and `labelled` and a constant reach, are plain; and the
+  contract lists no type borrowed unchecked, so its consumer, holding a
+  borrow of a `RefCell<Vec<String>>` of its own while the library's code
+  runs, isn't refused.
+- The corpus's `untagged_ref_cells`, built as a library, as the nightly
+  builds every case, is its program's JS.
+- `test/crates.test.ts`' "a library checks a cell its consumer may share
+  as its type says" and "a library's RefCells are the values they hold",
+  and `test/lowering-cell-flow.test.ts`, as before.
+- Mutations: `flow-constant-unseen`, `flow-static-a-constant` and
+  `flow-shared-unread` (`analysis/cell_flow.rs`);
+  `class-unshared-by-type-in-a-library` and `library-borrowed-unshared`
   (`drops/ref_cells.rs`).

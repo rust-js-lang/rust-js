@@ -639,6 +639,29 @@ test("a library checks a cell its consumer may share as its type says", () => {
   expect(contract(out).ref_cells.unchecked).toBeUndefined();
 }, 300_000);
 
+// ADR 0863, amended (#456): a library's cell its consumer may reach, one
+// its API takes or gives, a `pub` static, or a struct it gives holds, a
+// private field's too, is counted by its type. One only its own code and a constant of its
+// own may be is its flow's, as in a program: borrowed for a moment, never
+// checked. Nor does its contract list that type as borrowed unchecked, so
+// a consumer holding a borrow of its own `RefCell<Vec<String>>` isn't
+// refused.
+test("a library's cell only its own code and constants reach is its flow's, as a program's", () => {
+  const out = chain(pairs, "ref_cells_flow_reach", ["dep", "app"]);
+  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  // Taken, given, a static's, or a struct's the consumer holds: checked.
+  expect(dep).toContain("  $borrowMut(cell).push(1);\n");
+  expect(dep).toContain("  $borrowMut(cell).push(5);\n");
+  expect(dep).toContain("  $borrowMut(itemsOf(open)).push(2);\n");
+  expect(dep).toContain("    $borrowMut(Tally.cell(tally)).push(n);\n");
+  expect(dep).toContain("$borrowMut(LOG).push(n)");
+  // Only the crate's and a constant's: plain.
+  expect(dep).toContain("  return stock.TAG === \"Many\" ? stock._0.reduce(");
+  expect(dep).toContain("    stock._0.push(3);\n");
+  expect(dep).toContain("    label._0.push(\"b\");\n");
+  expect(contract(out).ref_cells.unchecked).toBeUndefined();
+}, 300_000);
+
 // ADR 0863, amended: a thread-local is a place of its own, as a struct's
 // field is. A crate whose generic code makes a `RefCell<T>` of any value,
 // `{ value }`, beside thread-locals of the `RefCell` type its library shares
