@@ -4,7 +4,8 @@ Status: Accepted. Extends the js crate (ADR 0102) and its `Unknown` (ADR
 0225). Amended by [0639](0639-concat-text-of-any-value-may-throw.md):
 `concat_text` of a value of any shape gives a `Result`, as it may throw.
 Extended by [0860](0860-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md):
-`number::to_string(x, radix)`, its radix TypeScript's `radix?`.
+`number::to_string(x, radix)`, its radix TypeScript's `radix?`. Amended
+below (rd564): `js::subtract`, JS's binary `-` of any value.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -128,3 +129,53 @@ Rejected: `.map_or(f64::NAN, js::to_number)`, Rust bent to a missing
 `test/js-any-values.test.ts`'s "to_number is JS's unary +, which throws of
 a BigInt", run in Node of text, `""` and `undefined`. A binding's `impl`
 only: no compiler change, so no mutation.
+
+## Amendment (2026-11-02): `js::subtract`, JS's binary `-` of any value (rd564)
+
+React's Flight action server's decodeFormState subtracts one from the
+arity of what the client sent, a value of any shape:
+
+```js
+const boundArity = bound.length - 1;
+```
+
+The port wrote `js::to_number(js::get(bound, "length")).unwrap() - 1.0`,
+`+bound.length - 1`, as no binding was JS's binary `-`. The two answer
+alike but of a `BigInt` length, which each throws a `TypeError` of, of
+another message: `+`'s "Cannot convert a BigInt value to a number", and
+`-`'s "Cannot mix BigInt and other types, use explicit conversions".
+Case C ([0262](0262-when-rust-and-js-disagree.md)): what's thrown is
+observable, so JS's own operator is bound, as `+` was.
+
+**`js::subtract(value, n)` is `value - n`**, a link form of its own,
+`"-"`, beside `to_number`'s `"+"`, of what `to_number` takes, its result
+by `ToNumber`'s associated type: of text an `f64`, `"5" - 1` 4; of a value
+of any shape, `Result<f64, &'static JsError>`, whose `unwrap()` is the
+operator, `bound.length - 1`, and whose `match` or `is_ok()` is JS's
+`try`. `n` is a number, so what `-` makes is one, never a `BigInt`: JS's
+`-` of two `BigInt`s is a `BigInt`, which an `f64` can't be, so `-` of
+two values of any shape stays `to_number`'s, `+a - +b`. Rust evaluates
+both before the call, which then coerces `value`; JS's `-` evaluates
+both, then coerces each, `value` by its `valueOf`, `n` running nothing:
+the same order.
+
+```rust
+js::subtract(js::get(bound, "length"), 1.0).unwrap()
+```
+
+```js
+bound.length - 1;
+```
+
+Rejected: printing `to_number(x).unwrap() - n` as `x - n`, which throws
+another message where Rust's call says `+`'s; and an `impl Sub<f64>` for
+`&Unknown`, which can't be of `Option<&Unknown>`, a property's read,
+`js::get`'s, as the orphan rule refuses it, nor of text.
+
+Held by `test/js-any-values.test.ts`'s "subtract is JS's binary -, whose
+TypeError of a BigInt is its own", run in Node of a function, an array,
+text, an object by its `valueOf`, one with no `length`, a `BigInt` and a
+symbol, with V8's messages, and of `null`'s read; and the mutations
+`binary-minus-a-call` (`lower/bindings/forms.rs`) and
+`subtract-of-number` (`lower/binding_calls.rs`), which prints `+length -
+1`.

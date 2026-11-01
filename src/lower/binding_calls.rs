@@ -263,6 +263,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (JsForm::TypeOf, Some(this)) if args.is_empty() => Expr::unary(UnaryOp::Typeof, this),
             (JsForm::Text, Some(this)) if args.is_empty() => Expr::bin(Op::Add, Expr::str(""), this),
             (JsForm::Number, Some(this)) if args.is_empty() => Expr::unary(UnaryOp::Plus, this),
+            (JsForm::Subtract, Some(this)) if args.len() == 1 => Expr::bin(Op::Sub, this, args.remove(0)),
             (JsForm::SetIndex, Some(this)) if args.len() == 2 => {
                 let (key, value) = (args.remove(0), args.remove(0));
                 out.push(StmtKind::Assign(keyed(this, key), value).at(self.js_span(span)));

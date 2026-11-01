@@ -838,6 +838,16 @@ export const mutations: Mutation[] = [
     tests: ["test/js-any-values.test.ts", "-t", "to_number is JS's unary"],
   },
   {
+    name: "subtract-of-number",
+    breaks:
+      "`js::subtract(length, 1.0)` is `+length - 1`, whose TypeError of a BigInt says it can't be made a number, where `length - 1`'s says it can't be mixed with one (rd564)",
+    file: "src/lower/binding_calls.rs",
+    find: "            (JsForm::Subtract, Some(this)) if args.len() == 1 => Expr::bin(Op::Sub, this, args.remove(0)),\n",
+    replace:
+      "            (JsForm::Subtract, Some(this)) if args.len() == 1 => Expr::bin(Op::Sub, Expr::unary(UnaryOp::Plus, this), args.remove(0)),\n",
+    tests: ["test/js-any-values.test.ts", "-t", "subtract is JS's binary"],
+  },
+  {
     name: "indexed-list-iterator-unsaid",
     breaks:
       "`Iterator.from(list)` of a `NodeList` isn't said to step an array's items, and its `for` stays a `for…of`, not upstream's index loop (ADR 1042)",

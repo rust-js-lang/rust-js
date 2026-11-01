@@ -17,14 +17,14 @@ beforeAll(buildReact, 600_000);
 
 const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
 
-/** `source` compiled, its JS, and the module it is, loaded. */
-async function compiled(name: string, source: string): Promise<{ js: string; lib: any; warnings: string[] }> {
+/** `source` compiled, its JS, the module it is, loaded, and its directory. */
+async function compiled(name: string, source: string): Promise<{ js: string; lib: any; warnings: string[]; dir: string }> {
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), source);
   const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs], root, 600_000);
   expect(built.code, built.stderr).toBe(0);
   const warnings = built.stderr.split("\n").filter((line) => line.startsWith("warning:") && !/warnings? emitted/.test(line));
-  return { js: readFileSync(join(dir, "lib.js"), "utf8"), lib: await import(join(dir, "lib.js")), warnings };
+  return { js: readFileSync(join(dir, "lib.js"), "utf8"), lib: await import(join(dir, "lib.js")), warnings, dir };
 }
 
 // ADR 0719, amended (React port gap rd71): `keys_in` takes any value, an
@@ -209,6 +209,62 @@ pub fn width_of(size: &Size) -> f64 {
   expect(js).toContain("return +line;");
   expect([lib.lineOf("3", "4"), lib.lineOf("", "4"), lib.lineOf(undefined, "5"), lib.lineOf(undefined, undefined)]).toEqual([3, 4, 5, NaN]);
   expect([lib.ownedLine("7"), lib.ownedLine(undefined)]).toEqual([7, NaN]);
+});
+
+// rd564: JS's binary `-` of any value, React's Flight action server's
+// `bound.length - 1`, `js::subtract`: not `+bound.length - 1`,
+// `js::to_number`'s, whose TypeError of a BigInt is another, run in Node,
+// V8's messages. Of a value of any shape a `Result`, whose `unwrap()` is the
+// operator; of text, a number.
+test("subtract is JS's binary -, whose TypeError of a BigInt is its own", async () => {
+  const { js, dir } = await compiled("js-subtract", `use js::Unknown;
+
+pub fn arity(bound: Option<&Unknown>) -> f64 {
+    js::subtract(js::get(bound, "length"), 1.0).unwrap()
+}
+
+pub fn less(value: &Unknown, by: f64) -> bool {
+    js::subtract(value, by * 2.0).is_ok()
+}
+
+pub fn left(text: &str) -> f64 {
+    js::subtract(text, 1.0) * 2.0
+}
+`);
+  expect(js).toContain("return bound.length - 1;");
+  expect(js).toContain("function less(value, by) {\n  try {\n    value - by * 2;\n    return true;\n  } catch {\n    return false;\n  }\n}");
+  expect(js).toContain("return (text - 1) * 2;");
+  expect(js).not.toContain("+");
+  const run = runSync(
+    [
+      "node",
+      "--input-type=module",
+      "-e",
+      `import * as lib from ${JSON.stringify(join(dir, "lib.js"))};
+const thrown = (f) => { try { f(); return "none"; } catch (e) { return e.constructor.name + ": " + e.message; } };
+console.log(JSON.stringify([
+  lib.arity(function (a, b) {}), lib.arity([1, 2, 3]), lib.arity({ length: "4" }), lib.arity({ length: { valueOf: () => 6 } }), lib.arity({}),
+  thrown(() => lib.arity({ length: 1n })), thrown(() => lib.arity({ length: Symbol("s") })), thrown(() => lib.arity(null)),
+  [1n, Symbol("s"), "a", null, {}].map((value) => lib.less(value, 1)),
+  [lib.left("  12 "), lib.left(""), lib.left("0x10"), lib.left("1px")],
+]));`,
+    ],
+    root,
+    60_000,
+  );
+  expect(run.code, run.stderr).toBe(0);
+  expect(JSON.parse(run.stdout)).toEqual([
+    1,
+    2,
+    3,
+    5,
+    null,
+    "TypeError: Cannot mix BigInt and other types, use explicit conversions",
+    "TypeError: Cannot convert a Symbol value to a number",
+    "TypeError: Cannot read properties of null (reading 'length')",
+    [false, false, true, true, true],
+    [22, -2, 30, null],
+  ]);
 });
 
 // rd339: JS's global `eval`, `js::eval`, called as React's

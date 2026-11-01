@@ -941,7 +941,8 @@ pub fn concat_text<T: ToText>(this: T) -> T::Text {
 }
 
 /// What JS's unary `+` makes a number of: text, `+"  12 "` 12, `+""` 0,
-/// `+"0x10"` 16, where Rust's `str::parse` is an `Err`; or any value.
+/// `+"0x10"` 16, where Rust's `str::parse` is an `Err`; or any value. What
+/// [`subtract`]'s `-` takes too, which makes a number of each alike.
 pub trait ToNumber {
     /// What [`to_number`] gives of it: a number, of text; of a value of any
     /// shape, a `Result`, as JS's `+` throws of a `BigInt` and a symbol, and
@@ -986,6 +987,19 @@ impl ToNumber for Option<&Unknown> {
 /// its `unwrap()` is `+value`, what JS threw going on as itself.
 #[cfg_attr(rust_js, rust_js::link_name = "+")]
 pub fn to_number<T: ToNumber>(this: T) -> T::Number {
+    unreachable!()
+}
+
+/// [`this - n`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/Subtraction):
+/// a number less `n`, as JS's binary `-` makes it of any value, React's
+/// Flight action server's `bound.length - 1`: `NaN` of `None` and of text
+/// that's no number, an object's by its `valueOf`. Not `+this - n`,
+/// [`to_number`]'s, whose `TypeError` of a `BigInt` says it can't be made a
+/// number, where `-`'s says a `BigInt` can't be mixed with one. Of a value
+/// of any shape, a `Result`, as [`to_number`]'s is: its `unwrap()` is
+/// `this - n`, what JS threw going on as itself.
+#[cfg_attr(rust_js, rust_js::link_name = "-")]
+pub fn subtract<T: ToNumber>(this: T, n: f64) -> T::Number {
     unreachable!()
 }
 

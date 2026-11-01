@@ -159,4 +159,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/js-any-values.test.ts", "-t", "to_number is JS's unary"],
   },
+  {
+    name: "binary-minus-a-call",
+    breaks: "`js::subtract`'s `-` form is read as a call of a function named `-`, not JS's `bound.length - 1` (rd564)",
+    file: "src/lower/bindings/forms.rs",
+    find: "        \"-\" => return JsForm::Subtract,\n",
+    replace: "",
+    tests: ["test/js-any-values.test.ts", "-t", "subtract is JS's binary"],
+  },
 ];

@@ -673,6 +673,7 @@ The program's own type says it by its `ptr::eq` alone, which rust-js reads
 | `"!!"` | `!!this` | `js::truthy` |
 | `"\"\" +"` | `"" + this` | `js::concat_text` |
 | `"+"` | `+this` | `js::to_number` |
+| `"-"` | `this - n` | `js::subtract` |
 | `"get []"`, `"set []"`, `"in []"` | `this[key]`, `this[key] = v`, `key in this`, of a key of text, a number (an `f64` too, `queue[i + 1]`) or a JS value | `js::get`, `js::set`, `js::has` |
 | `"{}"`, `"{label, value}"` | `{}`, `{ label, value }` | an object of the arguments |
 | `"{...}"` | `{ ...value }`, or of a tuple `{ ...a, ...b }` | `js::object::spread` ([ADR 0967](../../decisions/0967-an-object-spread-a-splice-and-a-set-by-any-key.md)) |
@@ -734,8 +735,14 @@ a number as `+` makes it: of text, an `f64`, `+"0x10"` 16, and of text or
 none, `Option<&str>` or `Option<String>`, `NaN` of `None`; of a value of
 any shape, a `Result`, as `+` throws of a `BigInt` and a symbol, whose
 `unwrap()` is `+value`. It isn't `Number(value)`, which makes `1` of `1n`
-(ADR 0310, amended). Text joined to it is `+`, `"require".to_owned() +
-&js::concat_text(n)` is `"require" + n`, and a `String` appended to,
+(ADR 0310, amended). `js::subtract(value, n)` is JS's binary `-`,
+`value - n`, React's Flight action server's `bound.length - 1`, of what
+`to_number` takes and a number, its result as `to_number`'s is, a
+`Result` of a value of any shape: not `+value - n`, whose `TypeError` of
+a `BigInt` is `+`'s, "Cannot convert a BigInt value to a number", where
+`-`'s is "Cannot mix BigInt and other types" (ADR 0310, amended). Text
+joined to it is `+`, `"require".to_owned() + &js::concat_text(n)` is
+`"require" + n`, and a `String` appended to,
 `s += &js::concat_text(n)`, `s += n`. JS's `a && b` of a value of any
 shape is `if js::truthy(a) { b } else { a }`, and `a || b` its other
 way round, `if js::truthy(a) { a } else { b }`
@@ -762,6 +769,10 @@ pub fn will_coercion_throw(value: Option<&Unknown>) -> bool {
 
 pub fn area(width: &Unknown, height: &Unknown) -> f64 {
     js::to_number(width).unwrap() * js::to_number(height).unwrap()
+}
+
+pub fn arity(bound: Option<&Unknown>) -> f64 {
+    js::subtract(js::get(bound, "length"), 1.0).unwrap()
 }
 
 pub fn require_string() -> String {
@@ -801,6 +812,10 @@ export function willCoercionThrow(value) {
 
 export function area(width, height) {
   return +width * +height;
+}
+
+export function arity(bound) {
+  return bound.length - 1;
 }
 
 export function requireString() {
