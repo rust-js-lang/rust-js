@@ -905,3 +905,43 @@ test("what an object is refused says what to write", () => {
     expect(refused(name, rust)).toContain(message);
   }
 });
+
+// rd325: react-test-renderer's `class ReactTestInstance`, its module's own,
+// which the package's `export *` never exposes: a private class is no
+// export, though its methods are `pub`, and its instances still work.
+test("a private class is its module's own", async () => {
+  const { js, dir } = compiled(
+    "class-private",
+    `use std::rc::Rc;
+
+#[cfg_attr(rust_js, rust_js::class)]
+struct Wrapper {
+    #[cfg_attr(rust_js, rust_js::name = "_value")]
+    value: f64,
+}
+
+unsafe impl js::Defined for Wrapper {}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Wrapper {
+    fn new(value: f64) -> Self {
+        Wrapper { value }
+    }
+
+    #[cfg_attr(rust_js, rust_js::getter)]
+    pub fn doubled(&self) -> f64 {
+        self.value * 2.0
+    }
+}
+
+pub fn wrap(value: f64) -> &'static js::Unknown {
+    js::unknown_of(Rc::new(Wrapper::new(value)))
+}
+`,
+  );
+  expect(js).toContain("\nfunction Wrapper(value) {\n");
+  expect(js).not.toContain("export function Wrapper");
+  const lib = await import(join(dir, "lib.js"));
+  expect(Object.keys(lib)).toEqual(["wrap"]);
+  expect(lib.wrap(2).doubled).toBe(4);
+});

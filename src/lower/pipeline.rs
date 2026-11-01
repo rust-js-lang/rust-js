@@ -829,10 +829,10 @@ pub fn lower_crate<'tcx>(
                 let copies = copies.into_iter().map(|copy| copy.function);
                 lowered.function.export |= called_from_elsewhere.contains(&def_id);
                 match &fns[&def_id].owner {
-                    // Its type's object is exported if any of its methods is.
                     Some(owner) => {
                         let namespace = js::Namespace::of(pass.namespaces.entry(module).or_default(), owner);
-                        namespace.export |= lowered.function.export;
+                        let (export, elsewhere) = (lowered.function.export, called_from_elsewhere.contains(&def_id));
+                        namespace.export |= super::classes::exports_its_type(tcx, def_id, export, elsewhere);
                         if let Some(member) = member {
                             let class = namespace.class.get_or_insert_with(|| js::Class {
                                 declared: (super::classes::class_of(tcx, def_id).and_then(|adt| adt.as_local()))

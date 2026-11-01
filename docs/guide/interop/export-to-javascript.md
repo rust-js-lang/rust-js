@@ -646,8 +646,12 @@ A struct and its impl marked `#[cfg_attr(rust_js, rust_js::class)]` are a
 JS class, written as JS wrote one before `class`: a constructor function
 and its prototype ([ADR 0761](../../decisions/0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md)).
 JS's `class X extends Component` runs it, `super(props)` its constructor,
-and `this.setState(..)` its prototype's method. React's `Component`, and
-its `PureComponent`, whose prototype inherits `Component`'s:
+and `this.setState(..)` its prototype's method. Its constructor is
+exported where its struct is `pub`; a private one is its module's own,
+`function ReactTestInstance(..)`, though its methods are `pub`
+([ADR 0761](../../decisions/0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md),
+amended). React's `Component`, and its `PureComponent`, whose prototype
+inherits `Component`'s:
 
 ```rust
 use js::object::assign;

@@ -15,7 +15,7 @@ const __Trait = {
   LIMIT: 9,
 };
 
-export const S = {
+const S = {
   ID: (s) => s,
   id(s) {
     return S.ID(s);

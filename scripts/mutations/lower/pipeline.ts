@@ -384,7 +384,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a type's object is exported though none of its methods is, `export const Tally`, where only its module uses it",
     file: "src/lower/pipeline.rs",
-    find: "                        namespace.export |= lowered.function.export;\n",
+    find: "                        namespace.export |= super::classes::exports_its_type(tcx, def_id, export, elsewhere);\n",
     replace: "                        namespace.export = true;\n",
     tests: [
       "test/modules.test.ts",

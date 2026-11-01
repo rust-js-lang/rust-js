@@ -138,6 +138,23 @@ pub(crate) fn property(tcx: TyCtxt<'_>, def_id: DefId) -> String {
     crate::lower::bindings::fn_name(tcx, def_id)
 }
 
+/// Whether `method`, exported or not, exports its type's object or class,
+/// as any of its methods does:
+/// of a type that's `pub`, or that another module calls, `elsewhere`; a
+/// private class is its module's own, though its methods are `pub` (rd325,
+/// ADR 0761, amended).
+pub(crate) fn exports_its_type(tcx: TyCtxt<'_>, method: DefId, exported: bool, elsewhere: bool) -> bool {
+    let public = (tcx.impl_of_assoc(method))
+        .and_then(|imp| {
+            tcx.type_of(imp)
+                .instantiate_identity()
+                .skip_normalization()
+                .ty_adt_def()
+        })
+        .is_none_or(|adt| tcx.visibility(adt.did()).is_public());
+    exported && (public || elsewhere)
+}
+
 /// The methods of `adt`, an object of methods, each its literal's own
 /// property, in the order its impls write them (ADR 0943); none of what's
 /// no object.

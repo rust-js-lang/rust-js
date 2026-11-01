@@ -1,6 +1,6 @@
 # 0761. A `#[rust_js::class]` is a constructor function and its prototype
 
-Status: Accepted, by the user's decision of 2026-10-24. Extends
+Status: Accepted, by the user's decision of 2026-10-24; amended (rd325): a private class is its module's own. Extends
 [0047](0047-methods.md), whose object of functions stays every other
 struct's impl. Amended: its struct's comments, its `///` doc, are its
 constructor function's (below). Amended (2026-10-26, the user's
@@ -426,3 +426,25 @@ constructor's own call is `T::new(..)`.
 ## Amendment: a trait of classes (rd283)
 
 A class implements the crate's trait each impl of which is a class's: each of its methods, the impl's or the trait's default, is the class's prototype's, a default compiled for each class and shared where alike ([ADR 1035](1035-a-trait-of-classes-is-each-classs-prototypes.md)).
+
+## Amendment: a private class is its module's own (rd325)
+
+react-test-renderer's `class ReactTestInstance` is its module's own, and
+the package's `index.js`, `export * from './src/ReactTestRenderer'`,
+never exposes it. Its port's struct is private, its getters `pub`; the
+type's object, a class's constructor too, was exported where any of its
+methods was, so `export function ReactTestInstance(..)` added a value to
+the package upstream's lacks, which `Object.keys` and `import *` see.
+
+**A type's object or class is exported where one of its methods is and
+the type is `pub`, or another module of the crate calls it**: a private
+class is `function ReactTestInstance(..)`, unexported, its instances
+whole. Held by `test/classes.test.ts`'s "a private class is its module's
+own", run; mutation `private-class-exported` (`classes.ts`). A private
+struct's object of methods is unexported so too, the corpus's
+`impl_fn_consts`' `const S`.
+
+Not decided here: native `cargo clippy` calls a private class's methods
+that only JS calls dead code, as `#[rust_js::getter]` is seen by rust-js
+alone; the port keeps its struct `pub` for that, or writes `#[allow]`.
+

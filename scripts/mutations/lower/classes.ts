@@ -536,4 +536,13 @@ export const mutations: Mutation[] = [
     replace: "        Ok(None) => (implementations(tcx, callee).into_iter().flatten().filter(|_| false))\n",
     tests: ["test/corpus.test.ts", "-t", "^class_trait_field_borrows.rs$"],
   },
+  {
+    name: "private-class-exported",
+    breaks:
+      "a private `#[rust_js::class]` whose methods are `pub` is exported, `export function Wrapper`, which a package's `export *` exposes where upstream's module keeps it (rd325)",
+    file: "src/lower/classes.rs",
+    find: "    exported && (public || elsewhere)\n",
+    replace: "    exported\n",
+    tests: ["test/classes.test.ts", "-t", "a private class is its module's own"],
+  },
 ];
