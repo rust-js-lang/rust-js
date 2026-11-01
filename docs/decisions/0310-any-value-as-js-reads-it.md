@@ -110,3 +110,21 @@ a BigInt", run in Node of text, objects, `undefined`, a `BigInt` and a
 symbol, and the mutations `to-number-of-number`
 (`lower/binding_calls.rs`), `unary-plus-a-call` (`lower/bindings/forms.rs`)
 and `unary-plus-negates` (`to_oxc/expressions.rs`).
+
+## Amendment (2026-11-01): of text or none, `NaN` of `None` (rd472)
+
+React's Flight server parses a V8 stack frame's line as `+(parsed[3] ||
+parsed[6])`, either group of its match possibly missing, so `+undefined`,
+`NaN`. `js::to_number` took text and any value, but not an
+`Option<String>` or `Option<&str>`, a `RegExpMatch::get`'s. Case A
+([0262](0262-when-rust-and-js-disagree.md)): JS's `+` of text or
+`undefined` never throws, so **of `Option<&str>` and `Option<String>` it's
+an `f64`**, `NaN` of `None`, as `+undefined` is, not a `Result`.
+`js::to_number(first.filter(|line| !line.is_empty()).as_deref().or(second))`
+is `+(first || second)`.
+
+Rejected: `.map_or(f64::NAN, js::to_number)`, Rust bent to a missing
+`impl`, printing a conditional upstream doesn't write. Held by
+`test/js-any-values.test.ts`'s "to_number is JS's unary +, which throws of
+a BigInt", run in Node of text, `""` and `undefined`. A binding's `impl`
+only: no compiler change, so no mutation.

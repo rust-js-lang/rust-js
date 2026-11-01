@@ -663,7 +663,8 @@ amended).
 value of any shape, a `Result`, as `+` throws of a symbol and of an object
 whose `valueOf` throws (ADR 0639). A `match` of it, or its `is_err()`, is
 JS's `try`. `js::to_number` is JS's unary `+value`, react-art's `+width`,
-a number as `+` makes it: of text, an `f64`, `+"0x10"` 16; of a value of
+a number as `+` makes it: of text, an `f64`, `+"0x10"` 16, and of text or
+none, `Option<&str>` or `Option<String>`, `NaN` of `None`; of a value of
 any shape, a `Result`, as `+` throws of a `BigInt` and a symbol, whose
 `unwrap()` is `+value`. It isn't `Number(value)`, which makes `1` of `1n`
 (ADR 0310, amended). Text joined to it is `+`, `"require".to_owned() +

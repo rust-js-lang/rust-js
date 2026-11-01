@@ -842,6 +842,14 @@ impl ToNumber for &str {
 impl ToNumber for String {
     type Number = f64;
 }
+/// Text or none, `NaN` of `None` as `+undefined` is, Flight's
+/// `+(parsed[3] || parsed[6])` of a match's groups.
+impl ToNumber for Option<&str> {
+    type Number = f64;
+}
+impl ToNumber for Option<String> {
+    type Number = f64;
+}
 /// What a reference holds, as a field taken apart from a borrowed struct
 /// is, `let SurfaceProps { width, .. } = self.props();`'s `&&Unknown`.
 impl<T: ToNumber> ToNumber for &T {

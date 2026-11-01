@@ -171,6 +171,16 @@ pub fn parsed(text: &str) -> f64 {
     js::to_number(text) + 1.0
 }
 
+// A match's group or the next, as React's Flight parses a stack frame's
+// line, \`+(parsed[3] || parsed[6])\`: \`NaN\` of neither.
+pub fn line_of(first: Option<String>, second: Option<&str>) -> f64 {
+    js::to_number(first.filter(|line| !line.is_empty()).as_deref().or(second))
+}
+
+pub fn owned_line(line: Option<String>) -> f64 {
+    js::to_number(line)
+}
+
 pub struct Size {
     pub width: &'static Unknown,
 }
@@ -194,6 +204,10 @@ pub fn width_of(size: &Size) -> f64 {
   const throwing = { valueOf() { throw new Error("no"); } };
   expect([1n, Symbol("s"), throwing, "a", null, {}].map(lib.numeric)).toEqual([false, false, false, true, true, true]);
   expect([lib.parsed("  12 "), lib.parsed(""), lib.parsed("0x10"), lib.parsed("1px")]).toEqual([13, 1, 17, NaN]);
+  expect(js).toContain("return +(first || second);");
+  expect(js).toContain("return +line;");
+  expect([lib.lineOf("3", "4"), lib.lineOf("", "4"), lib.lineOf(undefined, "5"), lib.lineOf(undefined, undefined)]).toEqual([3, 4, 5, NaN]);
+  expect([lib.ownedLine("7"), lib.ownedLine(undefined)]).toEqual([7, NaN]);
 });
 
 // rd339: JS's global `eval`, `js::eval`, called as React's

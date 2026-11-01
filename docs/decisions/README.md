@@ -330,7 +330,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0307 A trait's binding method is read of the value itself](0307-binding-trait-methods.md)
 - [0308 A function written in a body is that body's](0308-local-functions.md) *(amended by 0696: in the block it's written in, after its comments; extended by 1043: a scope struct's methods)*
 - [0309 A `match` that only gives a value is one expression](0309-value-matches.md)
-- [0310 Any value is read as JS reads it](0310-any-value-as-js-reads-it.md) *(amended by 0639: `concat_text` of any value may throw; extended by 0860: `number::to_string`'s radix; amended: `js::to_number`, JS's unary `+`)*
+- [0310 Any value is read as JS reads it](0310-any-value-as-js-reads-it.md) *(amended by 0639: `concat_text` of any value may throw; extended by 0860: `number::to_string`'s radix; amended: `js::to_number`, JS's unary `+`, of text or none too)*
 - [0311 `.flatten()` of a read of items that may be `None` is the read](0311-flattened-reads.md)
 - [0312 `js::shown` is any value as a template shows it](0312-shown.md)
 - [0313 Loops, spreads and calls as a person writes them](0313-console-forms.md) *(amended by 0640: `console` takes a tuple; amended: prepare's rule is the one that leaves an argument out)*
