@@ -38,9 +38,11 @@
 //!   `async`, taking and giving nothing else of the struct, and not a
 //!   class's, an object's or a namespace's (ADRs 0761, 0943, 1037);
 //! - the crate writes one literal of it, in a function's own body, not a
-//!   closure's nor one of its methods', nor a generic or `async` one's,
-//!   held by a `let` of that body's outermost block, which each call runs
-//!   once, itself or in an `Rc::new` (`Arc::new`);
+//!   closure's nor one of its methods', nor an `async` one's, held by a
+//!   `let` of that body's outermost block, which each call runs once,
+//!   itself or in an `Rc::new` (`Arc::new`). A generic function's is one
+//!   too (rd536): the struct and its methods are of no type parameter, so
+//!   each of its lowerings, a copy its callers need too, declares them;
 //! - and nothing holds it but that function, its methods and the closures
 //!   made in them: in each of them, what holds it, or a reference to it, or
 //!   an `Rc` of it, is given to no call but its methods', as their `self`,
@@ -170,7 +172,6 @@ fn scope_of<'tcx>(
     let body = of.get(&function)?;
     if !matches!(tcx.def_kind(function), DefKind::Fn | DefKind::AssocFn)
         || methods.contains(&function)
-        || tcx.generics_of(function).requires_monomorphization(tcx)
         || tcx.asyncness(function).is_async()
     {
         return None;

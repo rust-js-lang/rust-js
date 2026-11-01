@@ -23,6 +23,15 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "scope-of-a-generic-function-refused",
+    breaks: "a generic function's scope struct, of `impl Fn` callbacks, is its type's object, not functions declared in it (rd536)",
+    file: "src/lower/analysis/scopes.rs",
+    find: "        || methods.contains(&function)",
+    replace: "        || methods.contains(&function)\n        || tcx.generics_of(function).requires_monomorphization(tcx)",
+    tests: scopes,
+    snapshots: true,
+  },
+  {
     name: "scope-of-two-literals",
     breaks: "a struct the crate writes two literals of is the first one's function's scope, the second's methods given the first",
     file: "src/lower/analysis/scopes.rs",

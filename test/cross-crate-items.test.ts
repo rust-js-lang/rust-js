@@ -1032,6 +1032,46 @@ test("a consumer cloning what isn't its own clone compiles its own of the functi
   expect(apart()).toEqual([[1], [1, 2]]);
 });
 
+// A library's generic function whose scope struct is its scope (ADR 1043,
+// amended), its methods functions declared in it: a consumer that compiles
+// its own, giving it what isn't its own clone, compiles the struct's methods
+// with it, as their object, which no scope of its own crate is.
+test("a consumer's own of a library's generic function with a scope struct has its methods", async () => {
+  const dir = fixture("cross-crate-generic-scope");
+  const { dep, app } = compiled(dir, `use std::cell::Cell;
+
+struct Counter {
+    count: Cell<usize>,
+}
+
+impl Counter {
+    fn add(&self, n: usize) {
+        self.count.set(self.count.get() + n);
+    }
+}
+
+pub fn counted<T: Clone>(value: &T, times: usize, on_each: impl Fn(&T)) -> (T, usize) {
+    let counter = Counter { count: Cell::new(0) };
+    for _ in 0..times {
+        on_each(value);
+        counter.add(2);
+    }
+    (value.clone(), counter.count.get())
+}
+`, `pub fn apart() -> (Vec<u32>, Vec<u32>, usize) {
+    let original = vec![1u32];
+    let (mut copy, count) = dep::counted(&original, 3, |v| assert_eq!(v.len(), 1));
+    copy.push(2);
+    (original, copy, count)
+}
+`);
+  expect(dep).toContain("export function counted(value, times, onEach) {\n  let count = 0;\n\n  function add(n) {");
+  expect(app).toContain("function counted(value, times, onEach, TClone) {");
+  expect(app).toContain("Counter.add(counter, 2);");
+  const { apart } = await import(join(dir, "app", "lib.js"));
+  expect(apart()).toEqual([[1], [1, 2], 6]);
+});
+
 // A library's generic function its own crate gives nothing that may look
 // like \`None\` makes its \`Some\` the value, as React's reconciler's
 // flushSyncFromReconciler gives its JS caller what the callback gives; a

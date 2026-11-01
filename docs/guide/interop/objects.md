@@ -170,6 +170,9 @@ export function processReply(depth) {
   function's outermost block, itself or in an `Rc::new`; and it's given to
   no call but its methods', nor given back. Any other struct's methods are
   its type's object, as above.
+- **Its function may be generic**, taking its callbacks as `impl Fn`, as
+  processReply's `resolve` and `reject`: the struct and its methods are of
+  no type parameter, so each of the function's lowerings declares them.
 - **A field is a `const`** where nothing writes it, and the parameter it's
   given where nothing assigns that. Where the JS reads the value whole, a
   tuple struct's array say, it keeps its object, `reply.nextId`.

@@ -1,7 +1,8 @@
 # 1043. A function's scope struct is its scope: its methods are functions declared in it
 
 Status: Accepted (the user's rd345 decision, B1, 2026-11-01). Amended
-(B2, the same decision): its fields are the function's variables. Extends
+(B2, the same decision): its fields are the function's variables.
+Amended (rd536): its function may be generic. Extends
 [0047](0047-methods.md), whose object of a type's methods stays every
 other struct's, and [0308](0308-local-functions.md), whose functions
 declared in a body are written there.
@@ -110,7 +111,7 @@ lowered from, and finds a struct a scope where:
   `async`, given and giving nothing else of the struct, and no class's,
   object's or namespace's (ADRs 0761, 0943, 1037).
 - **One value each call**: the crate writes one literal of it, in a
-  function's own body, not generic, nor `async`, held by a `let` of that
+  function's own body, generic too (amended), not `async`, held by a `let` of that
   body's outermost block, which each call runs once, itself or in an
   `Rc::new`.
 - **Nothing else holds it**: in that function, its methods and the
@@ -232,3 +233,38 @@ name, a parameter assigned after the literal, written fields `let`s; and
 `scope_struct_read_whole.rs`, whose objects stay. Mutations in
 `scripts/mutations/lower/mir/scopes.ts`.
 
+## Amended (rd536): its function may be generic
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
+difference, as above.
+
+ReactFlightReplyClient's `processReply` takes upstream's `resolve` and
+`reject` callbacks as `impl Fn`, as the Rust book teaches a callback
+parameter, `on_resolve: impl Fn(&'static Unknown) + 'static`, boxed into
+its `Reply`'s field. That made the function generic, and a generic
+function's struct was no scope, so `Reply` was ADR 0047's object of
+methods, `Reply.serializeModel(reply, root, 0)`, where upstream declares
+its functions in processReply. With `Box<dyn Fn>` parameters, Rust bent
+to fit, it printed upstream's form. **A generic function's scope struct is
+its scope too**:
+
+- **The struct and its methods are of no type parameter** (the
+  conditions above), so nothing in a method depends on the function's: a
+  method is lowered in each of the function's lowerings, of its own typing
+  environment, given no dictionary of the function's (ADR 0049).
+- **Each lowering of the function declares them**: its own JS, and each
+  copy its callers need besides (ADR 0051, amended, `countSomeBoxed`),
+  lowered of the same MIR, each closing over its own call's value.
+- **A consumer that compiles its own of a library's generic function**
+  (ADR 0914), given what isn't its own clone, compiles the struct's
+  methods as their object with it: a crate's scopes are of its own
+  structs, so that one's literal is an object and its calls the object's,
+  as before, while the library's own JS keeps its functions.
+
+`scopes.rs`'s `scope_of` no longer asks `requires_monomorphization` of the
+function. Held by `test/corpus/scope_struct_generic.rs`, run against
+native Rust: a function of `impl Fn` callbacks and a `T: Display`'s
+dictionary, and a `pub` one whose crate's call of an `Option` calls a copy
+that boxes; and `test/cross-crate-items.test.ts`'s "a consumer's own of a
+library's generic function with a scope struct has its methods". The
+mutation `scope-of-a-generic-function-refused` puts the condition back.
