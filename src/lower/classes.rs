@@ -1283,14 +1283,23 @@ pub(super) fn set_prototypes(
             ));
             continue;
         }
-        // What runs as the module loads between them would see it
-        // replaced first: a literal's `const` runs nothing.
-        let between = (items[class + 1..set].iter()).find_map(|item| match item {
-            js::Item::Function(_) | js::Item::Namespace(_) => None,
-            js::Item::Const(constant) if constant.value.is_constant() => None,
-            js::Item::Const(constant) => Some(format!("`{}`", constant.name)),
-            js::Item::Statements(_) => Some("another `js::on_load!`".to_owned()),
-        });
+        // What runs as the module loads written between them would see it
+        // replaced first: a literal's `const` runs nothing. One written
+        // after the load, made before it as what the class's methods
+        // read, is made after it, as it's written.
+        let (from, to) = (items[class].written_at(), items[set].written_at());
+        let written_between = |item: &js::Item| {
+            item.written_at()
+                .is_some_and(|at| from.is_some_and(|from| from < at) && to.is_some_and(|to| at < to))
+        };
+        let between = (items.iter())
+            .filter(|item| written_between(item))
+            .find_map(|item| match item {
+                js::Item::Function(_) | js::Item::Namespace(_) => None,
+                js::Item::Const(constant) if constant.value.is_constant() => None,
+                js::Item::Const(constant) => Some(format!("`{}`", constant.name)),
+                js::Item::Statements(_) => Some("another `js::on_load!`".to_owned()),
+            });
         if let Some(between) = between {
             refuse(format!(
                 "after {between}, which its module makes as it loads: write the `js::on_load!` right after the class's impl"
@@ -1298,6 +1307,7 @@ pub(super) fn set_prototypes(
             continue;
         }
         let statements = items.remove(set);
+        let class = class - usize::from(set < class);
         items.insert(class + 1, statements);
         if let js::Item::Namespace(js::Namespace { class: Some(class), .. }) = &mut items[class] {
             class.prototype_set = true;

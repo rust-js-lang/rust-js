@@ -175,8 +175,33 @@ impl<'a> Cx<'a> {
         }
         out.extend(self.stmts(prototype_set));
         let prototype = || js::Expr::member(js::Expr::var(&n.name), "prototype");
+        // Of a prototype its load replaced, each own member defined on it,
+        // `Object.defineProperty(ReactPromise.prototype, "then", { writable:
+        // true, enumerable: true, configurable: true, value: .. })`, as an
+        // assignment makes it, where an assignment would throw of one the
+        // prototype it inherits holds unwritable, Promise.prototype's
+        // `then` frozen by SES's lockdown (#448, rd393).
+        let defined = |name: &str, value: js::Expr, at: js::Span| {
+            let field = |key: &str, value| js::Prop::Field(key.to_owned(), value);
+            let descriptor = js::Expr::object(vec![
+                field("writable", js::Expr::bool(true)),
+                field("enumerable", js::Expr::bool(true)),
+                field("configurable", js::Expr::bool(true)),
+                field("value", value),
+            ]);
+            let define = js::Expr::member(js::Expr::var("Object"), "defineProperty");
+            js::StmtKind::Expr(js::Expr::call(
+                define,
+                vec![prototype(), js::Expr::str(name), descriptor],
+            ))
+            .at(at)
+        };
         let mut assigned = Vec::new();
         for c in &n.constants {
+            if class.prototype_set {
+                assigned.push(defined(&c.name, c.value.clone(), c.span));
+                continue;
+            }
             let to = js::Expr::member(prototype(), c.name.clone());
             assigned.push(js::StmtKind::Assign(to, c.value.clone()).at(c.span));
         }
@@ -213,8 +238,18 @@ impl<'a> Cx<'a> {
             // the later first, as upstream chains them,
             // `ReactDOMHydrationRoot.prototype.render =
             // ReactDOMRoot.prototype.render = function (..) { .. }` (rd283).
-            let mut target = js::Expr::member(of, f.name.clone());
             let shared = class.shared.iter().find(|(method, _)| *method == f.name);
+            if class.prototype_set && class.prototype.contains(&f.name) {
+                assigned.push(defined(&f.name, value, f.span));
+                // Each other class that shares it, its own prototype's.
+                for other in shared.into_iter().flat_map(|(_, others)| others) {
+                    let to = js::Expr::member(js::Expr::member(js::Expr::var(other), "prototype"), f.name.clone());
+                    let own = js::Expr::member(prototype(), f.name.clone());
+                    assigned.push(js::StmtKind::Assign(to, own).at(f.span));
+                }
+                continue;
+            }
+            let mut target = js::Expr::member(of, f.name.clone());
             for other in shared.into_iter().flat_map(|(_, others)| others) {
                 value = js::Expr {
                     span: f.span,

@@ -184,6 +184,11 @@ impl Item {
         spans.into_iter().filter(|span| !span.is_none()).collect()
     }
 
+    /// Where it's first written in the crate's sources, of one that is.
+    pub fn written_at(&self) -> Option<u32> {
+        self.spans().iter().map(|span| span.lo).min()
+    }
+
     /// The variable it declares at its module's top that another item can
     /// read: a `const`'s, a type's.
     pub fn declared(&self) -> Option<&str> {

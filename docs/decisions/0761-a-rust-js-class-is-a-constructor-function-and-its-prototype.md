@@ -568,6 +568,33 @@ saying why, where:
 A class of no prototype methods, `ComponentDummy`'s, is replaced where its
 load is, as before.
 
+**Its prototype's own members are defined on it** (rd393), each as an
+assignment makes one, writable, enumerable and configurable, as React's
+Flight client defines its `then`:
+
+```js
+Object.defineProperty(ReactPromise.prototype, "then", {
+  writable: true,
+  enumerable: true,
+  configurable: true,
+  value: function (resolve, reject) { .. },
+});
+```
+
+An assignment, `ReactPromise.prototype.then = ..`, throws where the
+prototype it inherits holds the name unwritable, Promise.prototype's
+`then` frozen by SES's lockdown, and the module never loads: a result
+that changes, so Rust's, a method the class has, is kept (0262's third
+case). Elsewhere the two make the same property, and the class's
+methods are still assigned where its prototype is its own, as before.
+So the port writes `then` as the class's method, `pub fn then(&self,
+resolve: Option<..>, reject: Option<..>)`, and calls it as one,
+`chunk.then(resolve, reject)`, where it read `then` off the chunk with
+`js::get`. Mutations `replaced-prototype-method-assigned`,
+`replaced-prototype-constant-assigned` and
+`replaced-prototype-method-not-writable` (`to_oxc/statements.rs`), held by
+the same test's run in Node of Promise.prototype frozen.
+
 Alternatives: a class attribute naming the prototype, `#[rust_js::class(
 prototype = ..)]`, a second way to say what `set_prototype` says; the
 methods each `Object.defineProperty`'d after the load, which reads

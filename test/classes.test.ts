@@ -1037,6 +1037,8 @@ pub struct ReactPromise {
 
 #[cfg_attr(rust_js, rust_js::class)]
 impl ReactPromise {
+    pub const KIND: &'static str = "chunk";
+
     pub fn new(status: &'static str, value: f64) -> Self {
         ReactPromise {
             status: Cell::new(status),
@@ -1061,19 +1063,39 @@ pub fn doubled(chunk: &ReactPromise) -> f64 {
 ${after}`;
 
 test("a class's prototype replaced at load is set before its methods", async () => {
+  // A thread-local written after it is made after it, as it's written.
   const { js, dir } = compiled(
     "class-prototype-replaced",
-    reactPromise(`js::on_load! {
+    reactPromise(
+      `js::on_load! {
     // We subclass Promise.prototype so that we get other methods like .catch
     js::class::<ReactPromise>().set_prototype(js::object::create(
         Some(js::class::<js::Promise<()>>().prototype()),
         None,
     ));
-}`),
+}`,
+      `
+thread_local! {
+    pub static LOADED: f64 = js::date::now();
+}
+`,
+    ),
   );
+  // Each method defined on it, as upstream's `then` is: assigned, it
+  // would throw where Promise.prototype is frozen, by SES's lockdown.
   expect(js).toContain(
-    "  this.value = value;\n}\n\n// We subclass Promise.prototype so that we get other methods like .catch\nReactPromise.prototype = Object.create(Promise.prototype);\n\nReactPromise.prototype.then = function (resolve) {\n",
+    '  this.value = value;\n}\n\n// We subclass Promise.prototype so that we get other methods like .catch\nReactPromise.prototype = Object.create(Promise.prototype);\n\nObject.defineProperty(ReactPromise.prototype, "kind", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: "chunk",\n});\n\nObject.defineProperty(ReactPromise.prototype, "then", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: function (resolve) {\n',
   );
+  writeFileSync(
+    join(dir, "frozen.mjs"),
+    `Object.freeze(Promise.prototype);
+const { ReactPromise, doubled } = await import("./lib.js");
+const chunk = new ReactPromise("fulfilled", 4);
+console.log(chunk instanceof Promise, doubled(chunk), Object.keys(ReactPromise.prototype).join());`,
+  );
+  const frozen = runSync([node ?? "node", join(dir, "frozen.mjs")], dir, 30_000);
+  expect(frozen.stderr).toBe("");
+  expect(frozen.stdout).toBe("true 8 kind,then\n");
   expect(js.match(/ReactPromise\.prototype = /g)?.length).toBe(1);
   const { ReactPromise, doubled } = await import(join(dir, "lib.js"));
   const chunk = new ReactPromise("fulfilled", 21);

@@ -1100,15 +1100,21 @@ export function ReactPromise(status, value) {
 // We subclass Promise.prototype so that we get other methods like .catch
 ReactPromise.prototype = Object.create(Promise.prototype);
 
-ReactPromise.prototype.then = function (resolve) {
-  if (this.status === "fulfilled") {
-    resolve(this.value);
-  }
-};
+Object.defineProperty(ReactPromise.prototype, "then", {
+  writable: true,
+  enumerable: true,
+  configurable: true,
+  value: function (resolve) {
+    if (this.status === "fulfilled") {
+      resolve(this.value);
+    }
+  },
+});
 ```
 
 Each chunk is a Promise, `chunk instanceof Promise`, and its `then` is the
-class's. Refused, saying why: one that reads what the module makes, a
+class's, defined on the prototype, as an assignment would make it, where an
+assignment would throw of Promise.prototype frozen (SES's lockdown). Refused, saying why: one that reads what the module makes, a
 function or a `const`, which may not be made yet there; one with what the
 module runs as it loads between it and the class, which would see it
 replaced first; a load of other statements beside it; another module's

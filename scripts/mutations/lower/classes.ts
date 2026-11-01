@@ -691,4 +691,16 @@ export const mutations: Mutation[] = [
       "prototype replaced"
     ]
   },
+  {
+    "name": "class-prototype-set-past-a-later-load",
+    "breaks": "a class's prototype set at load is refused of a thread-local written after its `on_load!`, which is made after it either way (#448)",
+    "file": "src/lower/classes.rs",
+    "find": "            .filter(|item| written_between(item))\n",
+    "replace": "",
+    "tests": [
+      "test/classes.test.ts",
+      "-t",
+      "prototype replaced at load"
+    ]
+  },
 ];
