@@ -262,3 +262,14 @@ T`: an object, of its target's type, a weak key as its target is. So is
 `revocable`'s, `RevocableProxy<T>::proxy()`. A handler's traps are given
 the target as any value, as before. Held by `test/js-builtins.test.ts`'
 "Reflect and Proxy are JS's", a proxy keying a `WeakMap`.
+
+## Amended (2026-11-01): a proxy's trap is given JS values (rd471)
+
+React's Flight temporary references proxy a function whose `get` trap
+answers `'Provider'` with its receiver, `return receiver;`. `ProxyHandler`'s
+traps took `&Unknown` of any lifetime, so a trap couldn't give one back as
+the `&'static Unknown` it returns. **Each trap's target, key, receiver and
+values are `&'static Unknown`, as every value JS gives is**, so a trap
+gives back what it's given. Closures written before compile as they did.
+Held by `test/js-builtins.test.ts` ("Reflect and Proxy are JS's",
+`provided`).

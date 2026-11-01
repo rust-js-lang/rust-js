@@ -48,30 +48,32 @@ impl<T: ?Sized> RevocableProxy<T> {
 /// (ADR 0666), of a closure JS keeps for each trap, `ProxyHandler { get:
 /// Some(Box::new(|target, key, receiver| ..)), ..Default::default() }`; an
 /// operation without one is its target's. Each takes the target, and a
-/// key is a string or a symbol.
+/// key is a string or a symbol, each a JS value, `&'static`, as what JS
+/// gives is, so a trap may give one back, `get`'s `receiver`, React's
+/// Flight `case 'Provider': return receiver;`.
 #[derive(Default)]
 #[allow(clippy::type_complexity)]
 pub struct ProxyHandler {
     /// `apply(target, this, args)`: a call of the proxy.
-    pub apply: Option<Box<dyn Fn(&Unknown, Option<&Unknown>, &[Option<&Unknown>]) -> Option<&'static Unknown>>>,
+    pub apply: Option<Box<dyn Fn(&'static Unknown, Option<&'static Unknown>, &[Option<&'static Unknown>]) -> Option<&'static Unknown>>>,
     /// `construct(target, args, newTarget)`: `new` of the proxy, an object.
-    pub construct: Option<Box<dyn Fn(&Unknown, &[Option<&Unknown>], &Unknown) -> &'static Unknown>>,
-    pub define_property: Option<Box<dyn Fn(&Unknown, &Unknown, &PropertyDescriptor<'_>) -> bool>>,
-    pub delete_property: Option<Box<dyn Fn(&Unknown, &Unknown) -> bool>>,
+    pub construct: Option<Box<dyn Fn(&'static Unknown, &[Option<&'static Unknown>], &'static Unknown) -> &'static Unknown>>,
+    pub define_property: Option<Box<dyn Fn(&'static Unknown, &'static Unknown, &PropertyDescriptor<'_>) -> bool>>,
+    pub delete_property: Option<Box<dyn Fn(&'static Unknown, &'static Unknown) -> bool>>,
     /// `get(target, key, receiver)`: `proxy[key]`.
-    pub get: Option<Box<dyn Fn(&Unknown, &Unknown, &Unknown) -> Option<&'static Unknown>>>,
-    pub get_own_property_descriptor: Option<Box<dyn Fn(&Unknown, &Unknown) -> Option<PropertyDescriptor<'static>>>>,
+    pub get: Option<Box<dyn Fn(&'static Unknown, &'static Unknown, &'static Unknown) -> Option<&'static Unknown>>>,
+    pub get_own_property_descriptor: Option<Box<dyn Fn(&'static Unknown, &'static Unknown) -> Option<PropertyDescriptor<'static>>>>,
     /// `getPrototypeOf(target)`: an object; a trap's `None` would be
     /// `undefined`, which JS throws a `TypeError` of, where `null` isn't.
-    pub get_prototype_of: Option<Box<dyn Fn(&Unknown) -> &'static Unknown>>,
+    pub get_prototype_of: Option<Box<dyn Fn(&'static Unknown) -> &'static Unknown>>,
     /// `has(target, key)`: `key in proxy`.
-    pub has: Option<Box<dyn Fn(&Unknown, &Unknown) -> bool>>,
-    pub is_extensible: Option<Box<dyn Fn(&Unknown) -> bool>>,
-    pub own_keys: Option<Box<dyn Fn(&Unknown) -> Vec<&'static Unknown>>>,
-    pub prevent_extensions: Option<Box<dyn Fn(&Unknown) -> bool>>,
+    pub has: Option<Box<dyn Fn(&'static Unknown, &'static Unknown) -> bool>>,
+    pub is_extensible: Option<Box<dyn Fn(&'static Unknown) -> bool>>,
+    pub own_keys: Option<Box<dyn Fn(&'static Unknown) -> Vec<&'static Unknown>>>,
+    pub prevent_extensions: Option<Box<dyn Fn(&'static Unknown) -> bool>>,
     /// `set(target, key, value, receiver)`: `proxy[key] = value`, whether
     /// it was.
-    pub set: Option<Box<dyn Fn(&Unknown, &Unknown, Option<&Unknown>, &Unknown) -> bool>>,
+    pub set: Option<Box<dyn Fn(&'static Unknown, &'static Unknown, Option<&'static Unknown>, &'static Unknown) -> bool>>,
     /// `setPrototypeOf(target, prototype)`, `None` of `null`.
-    pub set_prototype_of: Option<Box<dyn Fn(&Unknown, Option<&Unknown>) -> bool>>,
+    pub set_prototype_of: Option<Box<dyn Fn(&'static Unknown, Option<&'static Unknown>) -> bool>>,
 }

@@ -448,6 +448,18 @@ pub fn proxied(o: &'static JsObject) -> (String, String, bool) {
     p.revoke();
     (seen.0, seen.1, reflect::get_prototype_of(o).is_none())
 }
+// A trap gives back what it's given, a JS value: Flight's temporary
+// reference's \`case 'Provider': return receiver;\` (rd471).
+pub fn provided(o: &'static JsObject) -> &'static JsObject {
+    let handler = ProxyHandler {
+        get: Some(Box::new(|target, key, receiver| match js::classify(Some(key)) {
+            js::Kind::String("Provider") => Some(receiver),
+            _ => reflect::get(target, key, None),
+        })),
+        ..Default::default()
+    };
+    proxy::new(o, &handler)
+}
 // A proxy is an object of its target's type, which a \`WeakMap\` keys (rd347).
 pub fn keyed(id: u32) -> (&'static JsObject, &'static WeakMap<JsObject, u32>) {
     let known: &'static WeakMap<JsObject, u32> = weak_map::new();
@@ -466,6 +478,8 @@ pub fn keyed(id: u32) -> (&'static JsObject, &'static WeakMap<JsObject, u32>) {
   const lib = await import(join(dir, "lib.js"));
   expect(lib.reflected({ a: 1 })).toEqual([true, "fixed", 2, false, true]);
   expect(lib.proxied(Object.assign(Object.create(null), { a: 1 }))).toEqual(["1", "missing", true]);
+  const provided = lib.provided({ a: 1 });
+  expect([provided.Provider === provided, provided.a]).toEqual([true, 1]);
   expect(js).toContain("known.set(reference, id);");
   expect(js).not.toContain("typeof reference");
   const [reference, known] = lib.keyed(7);
