@@ -24,7 +24,7 @@ function unitTracked_onlyImpl(unit, location) {
   return location;
 }
 
-function unitTracked_boxed(box, location) {
+function unitTracked_boxed(unit, location) {
   return location;
 }
 
@@ -58,7 +58,7 @@ function flagTracked_onlyImpl(flag) {
   return { file: "test/corpus/track_caller_traits.rs", line: 76, column: 9 };
 }
 
-function flagTracked_boxed(box, location) {
+function flagTracked_boxed(flag, location) {
   return location;
 }
 

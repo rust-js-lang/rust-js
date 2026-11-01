@@ -7,8 +7,8 @@ export function entry() {
 }
 
 const Counter = {
-  bump(pin) {
-    const this$ = pin;
+  bump(counter) {
+    const this$ = counter;
     this$.count = (this$.count + 1) >>> 0;
     return this$.count;
   },

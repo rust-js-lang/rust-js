@@ -849,8 +849,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a fn pointer that may only be the crate's function is given a trailing `undefined`, `DISPATCHER.marked(1, undefined)` of a unit struct, not React's `dispatcher.useState()`",
     file: "src/lower/mir/dispatch.rs",
-    find: "        if !pointers.rust_only(self.tcx, fn_ptr) {\n",
-    replace: "        if true || !pointers.rust_only(self.tcx, fn_ptr) {\n",
+    find: "        match pointers.rust_only(self.tcx, fn_ptr) {\n",
+    replace: "        match false && pointers.rust_only(self.tcx, fn_ptr) {\n",
     tests: [
       "test/runtime-package.test.ts",
       "-t",
