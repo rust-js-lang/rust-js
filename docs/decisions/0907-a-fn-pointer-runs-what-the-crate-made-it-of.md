@@ -6,7 +6,8 @@ rust-js can't see". Amended: a fn pointer type of a `dyn` from outside
 leaves the other types as they are, below; and (2026-10-27, the user's
 decision) `function::bind` binds a function's first arguments too, its
 `this` a binding's function itself, below; and (rd294) a JS function of
-any shape is bound to a slice or a `Vec` of arguments, below.
+any shape is bound to a slice or a `Vec` of arguments, below; and (rd412)
+text a `&str` parameter borrows is kept as a `String`, below.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. A borrow left
 uncounted is one no other borrow of its cell can meet: a fn pointer only
@@ -462,3 +463,28 @@ bound to a slice of arguments, spread" (run: an object's method bound to
 its object and two arguments, called with a third; a `Vec`'s, `this`
 `undefined`), and the guide's bindToConsole. No mutation: a binding's
 signature, whose JS is the variadic spread's.
+
+## Amendment: text a `&str` parameter borrows is kept as a `String` (rd412)
+
+React's Flight client binds `console.createTask` to a task's name it
+makes, `console.createTask.bind(console, getTaskName(type))`: a
+`String`, which `createTask`'s `&str` parameter borrows. `Keeps` had a
+value of a `Copy` type, or the `T` a `&T` borrows, a `String` of a
+`&String` but not of a `&str`, so the draft wrote a closure.
+
+- **A `String` is kept for a `&str` parameter**, each call lent it, as a
+  closure `move || create_task(&name)` lends what it keeps: JS's string
+  itself, `labelled.bind(null, taskName(kind))`. Not an `Option<String>`
+  for an `Option<&str>`: a `None` given as it is, of no type, would be
+  either, which rustc can't choose between.
+- An `Rc` is kept for the `&Rc<T>` a parameter borrows, as before, which
+  each call is lent; one a parameter takes by value isn't: rustc can't
+  tell `Rc<T>` from a `Copy` `T` there (an overlap std may make), and a
+  parameter that takes it whole would be given one value each call, which
+  Rust's ownership has no form of. `addAsyncInfo.bind(null, chunk,
+  asyncInfo)` binds a function of `chunk: &Chunk`.
+
+Case: none ([0262](0262-when-rust-and-js-disagree.md)'s first): the
+same function, given the same text. Held by `test/js-functions.test.ts`'s
+"a function of text is bound to a String it keeps". No mutation: the
+change is the js crate's declarations, which rustc checks.

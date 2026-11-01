@@ -2397,7 +2397,8 @@ export const callRenderInDev = callRender.react_stack_bottom_frame.bind(callRend
 - **Of some, it's a `&dyn Fn(..)` of the parameters `f` has left**, the
   JS function itself, as `with_this`'s is, which JS keeps as long as what
   it keeps: each argument a value of a `Copy` type,
-  or what a parameter borrows, an `Rc` of a `&Rc`, an `Option<Rc>` of an
+  or what a parameter borrows, an `Rc` of a `&Rc`, a `String` of a `&str`,
+  an `Option<Rc>` of an
   `Option<&Rc>`, lent to each call as a closure lends what it keeps. A
   function of up to 16 parameters binds any number of them. `Rc::from`
   shares it, and a binding's function bound is its JS function itself

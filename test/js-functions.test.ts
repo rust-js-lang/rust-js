@@ -765,6 +765,33 @@ pub fn bound_vec(method: &'static dyn Fn() -> Option<&'static Unknown>, args: Ve
   expect(g(3)).toEqual([true, 1, 2, 3]);
 });
 
+// rd412: a function of a `&str` is bound to a `String`, which the bound
+// function keeps and lends each call, as React's Flight client's
+// `console.createTask.bind(console, getTaskName(type))`.
+test("a function of text is bound to a String it keeps", async () => {
+  const { js, lib } = await compiled("bind-string", `use js::{Kind, Unknown, function};
+
+pub fn labelled(label: &str, rest: f64) -> String {
+    format!("{label}:{rest}")
+}
+
+pub fn task_name(kind: &str) -> String {
+    format!("<{kind}>")
+}
+
+pub fn bound(kind: &str) -> &'static dyn Fn(f64) -> String {
+    function::bind(labelled, Some(&Kind::Null), (task_name(kind),))
+}
+
+pub fn held(kind: &str) -> &'static Unknown {
+    js::unknown_of(function::bind(labelled, Some(&Kind::Null), (task_name(kind), 1.0)))
+}
+`);
+  expect(js).toContain("  return labelled.bind(null, taskName(kind));\n");
+  expect(lib.bound("a")(2)).toBe("<a>:2");
+  expect(lib.held("b")()).toBe("<b>:1");
+});
+
 // rd346: JSON's replacer and reviver are functions of each key and its
 // value, a closure or one that reads its `this`, the object holding the
 // key, as ReactFlightReplyClient's `JSON.stringify(model, resolveToJSON)`

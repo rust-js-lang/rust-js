@@ -608,6 +608,9 @@ pub mod function {
     impl<T: Copy> Keeps<T> for T {}
     impl<T> Keeps<&T> for T {}
     impl<T> Keeps<Option<&T>> for Option<T> {}
+    // Text a `&str` borrows, `console.createTask.bind(console, name)` of a
+    // `String` (rd412).
+    impl Keeps<&str> for String {}
 
     /// `Bound` of one signature, each count of its first parameters bound
     /// but none: `$k`, each kept as an `$x`, and `$r` left.
