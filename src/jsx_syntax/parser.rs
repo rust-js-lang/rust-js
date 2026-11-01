@@ -941,7 +941,42 @@ pub(super) fn component(
         format!("#[allow_internal_unstable(stmt_expr_attributes)] macro {ident} {body}"),
         item.span,
     );
-    let mut parser = Parser::new(&sess.psess, tokens, Some("JSX component props"));
+    companion_item(sess, tokens, "JSX component props", item)
+}
+
+/// The companion of a `#[rust_js::class]` struct whose impl of react's
+/// `Component` isn't beside it, which has no element: one written is
+/// refused where it is, saying to move the impl, not rustc's `cannot find
+/// macro` (ADR 1041, amended). Another module's impl names the struct
+/// through its own `use`s, which this expansion, before names resolve,
+/// can't pair with it.
+pub(super) fn class_elsewhere(sess: &Session, item: &ast::Item, classes: &Classes) -> Option<Box<ast::Item>> {
+    let attrs = super::configured_attrs(sess, &item.attrs)?;
+    let ItemKind::Struct(ident, ..) = &item.kind else {
+        return None;
+    };
+    if classes.contains_key(ident.as_str())
+        || !ident.as_str().starts_with(char::is_uppercase)
+        || !attrs.iter().any(|attr| super::is_rust_js_attr(attr, "class"))
+    {
+        return None;
+    }
+    let message = format!(
+        "rust-js: `{ident}` is an element of `jsx!` where it implements react's `Component` beside its struct: move `impl Component<..> for {ident}` into the module its struct is in (ADR 1041)"
+    );
+    let tokens = template(
+        sess,
+        format!(
+            "#[allow(unused_macros)] macro {ident} {{ ($($tokens:tt)*) => {{ ::core::compile_error!({message:?}) }} }}"
+        ),
+        item.span,
+    );
+    companion_item(sess, tokens, "JSX class component", item)
+}
+
+/// A companion's macro, parsed of `tokens`, of `item`'s visibility.
+fn companion_item(sess: &Session, tokens: TokenStream, what: &'static str, item: &ast::Item) -> Option<Box<ast::Item>> {
+    let mut parser = Parser::new(&sess.psess, tokens, Some(what));
     match parser.parse_item(ForceCollect::No, AllowConstBlockItems::No) {
         Ok(Some(mut companion)) => {
             companion.vis = item.vis.clone();
@@ -1239,18 +1274,7 @@ pub(super) fn props_companion(
         arms
     };
     let source = format!("macro {name} {{ {} }}", arms.join(", ")).replace("NAME", &name);
-    let mut parser = Parser::new(&sess.psess, template(sess, source, item.span), Some("JSX props"));
-    match parser.parse_item(ForceCollect::No, AllowConstBlockItems::No) {
-        Ok(Some(mut companion)) => {
-            companion.vis = item.vis.clone();
-            Some(companion)
-        }
-        Ok(None) => None,
-        Err(e) => {
-            e.emit();
-            None
-        }
-    }
+    companion_item(sess, template(sess, source, item.span), "JSX props", item)
 }
 
 /// A props struct's `'static` form, `impl ::react::Lifetimes for P<'a> { type

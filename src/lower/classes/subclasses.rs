@@ -96,12 +96,23 @@ pub(super) fn starts_undefined(tcx: TyCtxt<'_>, field: &ty::FieldDef) -> bool {
 }
 
 /// What `imp`, `class`'s impl of the binding's class it extends, is
-/// refused of, where: written in another module than its constructor's;
-/// a method of the binding's, `props`, written; a method named as a
-/// field (rd331).
+/// refused of, where: written in another module than its struct's, where
+/// `jsx!` renders it, refused at the struct (ADR 1041, amended), or than its
+/// constructor's; a method of the binding's, `props`, written; a method
+/// named as a field (rd331).
 pub(super) fn impl_misuse(tcx: TyCtxt<'_>, imp: DefId, class: DefId) -> Vec<(rustc_span::Span, String)> {
     let mut out = Vec::new();
     let module = tcx.parent_module_from_def_id(imp.expect_local());
+    if tcx.parent_module_from_def_id(class.expect_local()) != module {
+        out.push((
+            tcx.def_span(class),
+            format!(
+                "that extends a binding's class implements it beside its struct, where `jsx!` renders it: move `impl {}<..> for {}` into the module its struct is in",
+                tcx.item_name(tcx.impl_trait_id(imp)),
+                tcx.item_name(class)
+            ),
+        ));
+    }
     if home(tcx, class) != Some(module) {
         out.push((
             tcx.def_span(imp),

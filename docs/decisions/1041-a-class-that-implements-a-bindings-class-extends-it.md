@@ -331,7 +331,7 @@ another module than its struct. The companion, a macro beside the struct
 that `use` imports with it, is written before names resolve, of the
 impl's props as its module names them; another module's impl names the
 struct through its own `use`s, which the expansion would have to resolve
-as rustc does to pair them.
+as rustc does to pair them: refused at the struct since (below).
 
 ## Amendment: an optional `OnceCell` is a field set after (rd331l)
 
@@ -348,3 +348,24 @@ React mounts the instance once; its `get().unwrap()` is `$unwrap`. Held by
 `test/class-components.test.ts`'s "a class React constructs holds an
 optional OnceCell, set once" and the mutation `class-once-cell-refused`
 (`lower/classes/subclasses.rs`).
+
+## Amendment: its impl of the class it extends is beside its struct
+
+Decided by the user (2026-11-01). A class whose impl of `Component` is in
+another module than its struct had no element: `<Gauge />` was rustc's
+`cannot find macro Gauge`, as its companion is written beside the struct
+before names resolve, of the props its impl names there, and another
+module's impl names the struct through its own `use`s, which pairing would
+resolve as rustc does, globs too. **The impl is beside the struct, or the
+class is refused at its struct**, saying to move `impl Component<..> for
+Gauge` into the struct's module, as one that writes its constructor is
+refused an impl apart from it (one module per class component). An
+element of one written meanwhile is refused where it's written, by the
+companion a `#[rust_js::class]` struct of no impl beside it has, which
+says the same, not rustc's word. Rejected: resolving the impl's `use`s in
+the expansion and re-exporting a companion written in the impl's module,
+a second resolver of paths beside rustc's for a layout one move fixes.
+Held by `test/class-components.test.ts`'s "a class component's impl is
+beside its struct, or it's refused there" and the mutations
+`subclass-impl-apart-from-its-struct` (`lower/classes/subclasses.rs`) and
+`class-elsewhere-unrefused` (`jsx_syntax/parser.rs`).

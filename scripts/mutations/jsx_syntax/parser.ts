@@ -402,4 +402,12 @@ export const mutations: Mutation[] = [
     replace: "    } else if let ItemKind::Struct(class, ..) = &item.kind\n        && false\n    {\n",
     tests: ["test/class-components.test.ts", "-t", "ref is its instance"],
   },
+  {
+    name: "class-elsewhere-unrefused",
+    breaks: "an element of a class whose impl of `Component` is in another module than its struct is rustc's `cannot find macro`, not rust-js's word to move the impl (ADR 1041, amended)",
+    file: "src/jsx_syntax/parser.rs",
+    find: "    if classes.contains_key(ident.as_str())\n        || !ident.as_str().starts_with(char::is_uppercase)\n",
+    replace: "    if true\n        || !ident.as_str().starts_with(char::is_uppercase)\n",
+    tests: ["test/class-components.test.ts", "-t", "beside its struct"],
+  },
 ];

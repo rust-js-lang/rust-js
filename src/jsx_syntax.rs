@@ -369,6 +369,7 @@ impl Expand<'_> {
                         .push(self.allow(Symbol::intern("private_interfaces"), item.span));
                 }
             }
+            companions.extend(parser::class_elsewhere(self.sess, item, &classes));
         }
         items.extend(companions);
     }

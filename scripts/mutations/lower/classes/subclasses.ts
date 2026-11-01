@@ -75,4 +75,12 @@ export const mutations: Mutation[] = [
     replace: "            false\n",
     tests: ["test/class-components.test.ts", "-t", "optional OnceCell"],
   },
+  {
+    name: "subclass-impl-apart-from-its-struct",
+    breaks: "a class component may implement react's `Component` in another module than its struct, where `jsx!` has no element of it, rustc's `cannot find macro` (ADR 1041, amended)",
+    file: "src/lower/classes/subclasses.rs",
+    find: "    if tcx.parent_module_from_def_id(class.expect_local()) != module {\n",
+    replace: "    if false {\n",
+    tests: ["test/class-components.test.ts", "-t", "beside its struct"],
+  },
 ];

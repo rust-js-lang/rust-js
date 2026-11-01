@@ -339,6 +339,41 @@ test("a class component is in the module its impl is, which imports what it exte
 `)).toContain("rust-js: a `#[rust_js::class]` implements the class it extends in the module its constructor is in, where its class is");
 }, 60_000);
 
+// A class whose impl of `Component` is in another module than its struct
+// has no element `jsx!` can write: it's refused at the struct, saying to
+// move the impl, as one that writes its constructor is (ADR 1041, amended).
+test("a class component's impl is beside its struct, or it's refused there", () => {
+  const apart = `pub mod gauge {
+    #[cfg_attr(rust_js, rust_js::class)]
+    pub struct Gauge {}
+
+    pub mod rendered {
+        use react::{Component, JSX, jsx};
+
+        impl Component for super::Gauge {
+            fn render(self: &'static Self) -> JSX::Element {
+                jsx! { <hr /> }
+            }
+        }
+    }
+}
+`;
+  const moved = "move `impl Component<..> for Gauge` into the module its struct is in";
+  const alone = refused("class-component-impl-apart", apart);
+  expect(alone).toContain(`rust-js: a \`#[rust_js::class]\` that extends a binding's class implements it beside its struct, where \`jsx!\` renders it: ${moved}`);
+  expect(alone).toContain("pub struct Gauge {}");
+  // Rendered, it's refused where it's written, not rustc's `cannot find macro`.
+  const rendered = refused("class-component-impl-apart-rendered", `${apart}
+use react::{JSX, jsx};
+
+pub fn shown() -> JSX::Element {
+    jsx! { <gauge::Gauge /> }
+}
+`);
+  expect(rendered).toContain(`rust-js: \`Gauge\` is an element of \`jsx!\` where it implements react's \`Component\` beside its struct: ${moved}`);
+  expect(rendered).not.toContain("cannot find macro");
+}, 60_000);
+
 // rd331i: a class component is an element of `jsx!`, as JSX's `<Surface
 // width={2} />` is `createElement(Surface, { width: 2 })`: its class, of its
 // impl's props, which a `use` imports with it, as a component function's.
