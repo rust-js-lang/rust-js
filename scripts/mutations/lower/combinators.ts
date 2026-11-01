@@ -737,4 +737,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^option_of_a_ref_as_deref.rs$"],
     snapshots: true,
   },
+  {
+    name: "pushed-none-left-out",
+    breaks: "`v.extend([Some(2), None])` is `v.push(2)`, its last item left out, a wrong answer (ADR 0330, amended)",
+    file: "src/lower/combinators.rs",
+    find: ".map(Expr::given_item)",
+    replace: ".map(|item| item)",
+    tests: ["test/corpus.test.ts", "-t", "^trailing_none_items.rs$"],
+  },
 ];

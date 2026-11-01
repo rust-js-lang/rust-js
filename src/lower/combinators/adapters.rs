@@ -568,6 +568,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// `v.splice(at, 0, value)`; else `$insertAt`, which refuses an index past
 /// the end.
 pub(in crate::lower) fn inserted(subject: Expr, at: Expr, value: Expr, in_bounds: bool) -> Expr {
+    // An item, never left out, as `splice` counts them (ADR 0330, amended).
+    let value = value.given_item();
     match at.as_int() {
         Some(0) => Expr::call(Expr::member(subject, "unshift"), vec![value]),
         _ if in_bounds => Expr::call(Expr::member(subject, "splice"), vec![at, Expr::int(0), value]),

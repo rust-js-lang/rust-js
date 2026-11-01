@@ -431,4 +431,12 @@ export const mutations: Mutation[] = [
     replace: "                let args = vec![items, next()];\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
+  {
+    name: "inserted-none-left-out",
+    breaks: "`v.insert(1, None)` is `v.splice(1, 0)`, which inserts nothing, a wrong answer (ADR 0330, amended)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "    let value = value.given_item();\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^trailing_none_items.rs$"],
+  },
 ];

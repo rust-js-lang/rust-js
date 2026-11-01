@@ -503,6 +503,20 @@ impl Expr {
     }
 
     /// A call of the runtime's helper `name`, `$cmp(a, b)`.
+    /// `self` as an item JS's own method is given, `push(a, undefined)`:
+    /// an `undefined` a value, `GivenUndefined`, which no rule leaves out,
+    /// as a method that counts what it's given, `push`, `splice`, would
+    /// count one fewer (ADR 0330, amended).
+    pub fn given_item(self) -> Expr {
+        match self.kind {
+            ExprKind::Undefined => Expr {
+                kind: ExprKind::GivenUndefined,
+                ..self
+            },
+            _ => self,
+        }
+    }
+
     pub fn call_helper(name: &'static str, args: Vec<Expr>) -> Expr {
         Expr::call(Expr::helper(name), args)
     }

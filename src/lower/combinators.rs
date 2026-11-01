@@ -1089,7 +1089,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let js::ExprKind::Array(written) = items.kind else {
                 unreachable!("matched")
             };
-            return Ok(Expr::call(Expr::member(collection, "push"), written));
+            return Ok(Expr::call(
+                Expr::member(collection, "push"),
+                written.into_iter().map(Expr::given_item).collect(),
+            ));
         }
         Ok(Expr::call_helper("$extend", vec![collection, items]))
     }

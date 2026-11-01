@@ -1,6 +1,6 @@
 # 0330. An `undefined` given to JS is an argument
 
-Status: Accepted. Amends [0313](0313-console-forms.md); extends
+Status: Accepted. Amended (2026-11-01): an item a std call gives JS's own method is given, `v.splice(1, 0, undefined)` (ADR 0313, amended). Amends [0313](0313-console-forms.md); extends
 [0021](0021-js-interop.md). Amended: a `fold`'s start (below); a fn
 pointer that may only be the crate's functions (the user's decision,
 2026-10-27).
@@ -87,3 +87,17 @@ holds only its own Rust functions is one of rust-js's own too, React DOM's
 `Children.forEach(props.children, fn)`; and whether a call is one is
 `FnPointers::rust_only`'s answer. See
 [1007](1007-a-libraries-own-fn-pointers-are-rust-functions.md).
+
+## Amended (2026-11-01): an item given JS's own method
+
+A wrong answer: `v.insert(1, None)` of a `Vec<Option<T>>` was `v.splice(1,
+0)`, which inserts nothing, and `v.extend([Some(2), None])` `v.push(2)`:
+lowering wrote their items as rust-js's own `undefined`, which the one
+rule leaves out after another argument (ADR 0313). **An item a std call
+gives JS's own method is what JS is given, `GivenUndefined`**
+(`Expr::given_item`), never left out: `v.splice(1, 0, undefined)`,
+`v.push(2, undefined)`. Case: third ([0262](0262-when-rust-and-js-disagree.md)),
+results change: Rust's. Held by the corpus's `trailing_none_items`,
+against native Rust, and the mutations `pushed-none-left-out` and
+`inserted-none-left-out`.
+
