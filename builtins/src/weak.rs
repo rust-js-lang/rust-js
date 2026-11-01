@@ -29,6 +29,7 @@ impl<K: WeakKey + ?Sized, V> WeakMap<K, V> {
     /// `Some(None)` of a key whose value is `None`, as a [`Map`]'s.
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn get(&self, key: &K) -> Option<V> {
         unreachable!()
     }
@@ -37,6 +38,7 @@ impl<K: WeakKey + ?Sized, V> WeakMap<K, V> {
     /// `value` its value of `key`.
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn set(&self, key: &K, value: V) {
         unreachable!()
     }
@@ -45,6 +47,7 @@ impl<K: WeakKey + ?Sized, V> WeakMap<K, V> {
     /// whether it has a value of `key`.
     #[cfg_attr(rust_js, rust_js::link_name = "has")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn has(&self, key: &K) -> bool {
         unreachable!()
     }
@@ -53,6 +56,7 @@ impl<K: WeakKey + ?Sized, V> WeakMap<K, V> {
     /// `key` and its value gone; whether it had them.
     #[cfg_attr(rust_js, rust_js::link_name = "delete")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn delete(&self, key: &K) -> bool {
         unreachable!()
     }
@@ -65,6 +69,7 @@ pub mod weak_map {
     /// one of nothing.
     #[cfg_attr(rust_js, rust_js::link_name = "new WeakMap")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn new<K: WeakKey + ?Sized, V>() -> &'static WeakMap<K, V> {
         unreachable!()
     }
@@ -111,6 +116,7 @@ impl<K: ?Sized, V> Map<K, V> {
     /// each: `$someGet(map, key)` (ADR 0884).
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn get(&self, key: &K) -> Option<V> {
         unreachable!()
     }
@@ -119,6 +125,7 @@ impl<K: ?Sized, V> Map<K, V> {
     /// `value` its value of `key`.
     #[cfg_attr(rust_js, rust_js::link_name = "set")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn set(&self, key: &K, value: V) {
         unreachable!()
     }
@@ -127,6 +134,7 @@ impl<K: ?Sized, V> Map<K, V> {
     /// whether it has a value of `key`.
     #[cfg_attr(rust_js, rust_js::link_name = "has")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn has(&self, key: &K) -> bool {
         unreachable!()
     }
@@ -135,6 +143,7 @@ impl<K: ?Sized, V> Map<K, V> {
     /// `key` and its value gone; whether it had them.
     #[cfg_attr(rust_js, rust_js::link_name = "delete")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn delete(&self, key: &K) -> bool {
         unreachable!()
     }
@@ -142,6 +151,7 @@ impl<K: ?Sized, V> Map<K, V> {
     /// [`map.size`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/size):
     /// how many keys it has.
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn size(&self) -> u32 {
         unreachable!()
     }
@@ -150,6 +160,7 @@ impl<K: ?Sized, V> Map<K, V> {
     /// each key and its value gone.
     #[cfg_attr(rust_js, rust_js::link_name = "clear")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn clear(&self) {
         unreachable!()
     }
@@ -174,6 +185,7 @@ impl<K: ?Sized + 'static, V> Map<K, V> {
     /// its values, in the order their keys were set, a JS iterator (ADR 0140).
     #[cfg_attr(rust_js, rust_js::link_name = "values")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn values(&self) -> Box<dyn Iterator<Item = V>> {
         unreachable!()
     }
@@ -182,6 +194,7 @@ impl<K: ?Sized + 'static, V> Map<K, V> {
     /// its keys, in the order they were set, a JS iterator.
     #[cfg_attr(rust_js, rust_js::link_name = "keys")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn keys(&self) -> Box<dyn Iterator<Item = &'static K>> {
         unreachable!()
     }
@@ -192,6 +205,7 @@ impl<K: ?Sized + 'static, V> Map<K, V> {
     #[cfg_attr(rust_js, rust_js::link_name = "entries")]
     #[cfg_attr(rust_js, rust_js::iterates_receiver)]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn entries(&self) -> Box<dyn Iterator<Item = (&'static K, V)>> {
         unreachable!()
     }
@@ -205,6 +219,7 @@ pub mod map {
     /// nothing, `None`, as TypeScript's `new Map(entries?)` (ADR 0875).
     #[cfg_attr(rust_js, rust_js::link_name = "new Map")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn new<'a, K: ?Sized, V>(entries: Option<&dyn crate::Iterable<(&'a K, V)>>) -> &'static Map<K, V> {
         unreachable!()
     }
@@ -226,6 +241,7 @@ impl<T: ?Sized> Set<T> {
     /// `value` held, once.
     #[cfg_attr(rust_js, rust_js::link_name = "add")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn add(&self, value: &T) {
         unreachable!()
     }
@@ -234,6 +250,7 @@ impl<T: ?Sized> Set<T> {
     /// whether it holds `value`.
     #[cfg_attr(rust_js, rust_js::link_name = "has")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn has(&self, value: &T) -> bool {
         unreachable!()
     }
@@ -242,6 +259,7 @@ impl<T: ?Sized> Set<T> {
     /// `value` gone; whether it held it.
     #[cfg_attr(rust_js, rust_js::link_name = "delete")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn delete(&self, value: &T) -> bool {
         unreachable!()
     }
@@ -249,6 +267,7 @@ impl<T: ?Sized> Set<T> {
     /// [`set.size`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Set/size):
     /// how many values it holds.
     #[cfg_attr(rust_js, rust_js::link_name = "get size")]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn size(&self) -> u32 {
         unreachable!()
     }
@@ -257,6 +276,7 @@ impl<T: ?Sized> Set<T> {
     /// each value gone.
     #[cfg_attr(rust_js, rust_js::link_name = "clear")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn clear(&self) {
         unreachable!()
     }
@@ -280,6 +300,7 @@ impl<T: ?Sized + 'static> Set<T> {
     #[cfg_attr(rust_js, rust_js::link_name = "values")]
     #[cfg_attr(rust_js, rust_js::iterates_receiver)]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn values(&self) -> Box<dyn Iterator<Item = &'static T>> {
         unreachable!()
     }
@@ -289,6 +310,7 @@ impl<T: ?Sized + 'static> Set<T> {
     #[cfg_attr(rust_js, rust_js::link_name = "keys")]
     #[cfg_attr(rust_js, rust_js::iterates_receiver)]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn keys(&self) -> Box<dyn Iterator<Item = &'static T>> {
         unreachable!()
     }
@@ -298,6 +320,7 @@ impl<T: ?Sized + 'static> Set<T> {
     /// its value, a JS iterator.
     #[cfg_attr(rust_js, rust_js::link_name = "entries")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn entries(&self) -> Box<dyn Iterator<Item = (&'static T, &'static T)>> {
         unreachable!()
     }
@@ -311,6 +334,7 @@ pub mod set {
     /// TypeScript's `new Set(values?)`.
     #[cfg_attr(rust_js, rust_js::link_name = "new Set")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn new<'a, T: ?Sized>(values: Option<&dyn crate::Iterable<&'a T>>) -> &'static Set<T> {
         unreachable!()
     }
@@ -326,6 +350,7 @@ impl<T: WeakKey + ?Sized> WeakSet<T> {
     /// `value` held.
     #[cfg_attr(rust_js, rust_js::link_name = "add")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn add(&self, value: &T) {
         unreachable!()
     }
@@ -334,6 +359,7 @@ impl<T: WeakKey + ?Sized> WeakSet<T> {
     /// whether it holds `value`.
     #[cfg_attr(rust_js, rust_js::link_name = "has")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn has(&self, value: &T) -> bool {
         unreachable!()
     }
@@ -342,6 +368,7 @@ impl<T: WeakKey + ?Sized> WeakSet<T> {
     /// `value` gone; whether it held it.
     #[cfg_attr(rust_js, rust_js::link_name = "delete")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn delete(&self, value: &T) -> bool {
         unreachable!()
     }
@@ -354,6 +381,7 @@ pub mod weak_set {
     /// one of nothing.
     #[cfg_attr(rust_js, rust_js::link_name = "new WeakSet")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
     pub fn new<T: WeakKey + ?Sized>() -> &'static WeakSet<T> {
         unreachable!()
     }

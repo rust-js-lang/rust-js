@@ -6,7 +6,7 @@ mod callers_decide;
 mod cell_borrows;
 
 pub(super) use cell_borrows::{
-    Borrow, Cell, CellBorrows, binding_call_runs_nothing, borrowed, may_be_cell, unsized_in_place,
+    Borrow, Cell, CellBorrows, binding_call_runs_nothing, binding_runs_nothing, borrowed, may_be_cell, unsized_in_place,
 };
 mod clones;
 mod closures;
@@ -725,13 +725,11 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     if !super::classes::reject_constructors_as_values(tcx, &all_bodies) {
         return None;
     }
-    if !super::bindings::reject_made_in_place(tcx, &all_bodies) {
-        return None;
-    }
-    if !super::bindings::reject_value_only_calls(tcx, &all_bodies) {
-        return None;
-    }
-    if !super::bindings::reject_nullable_held(&classes_recognition, &all_bodies) {
+    if !super::bindings::reject_made_in_place(tcx, &all_bodies)
+        || !super::bindings::reject_value_only_calls(tcx, &all_bodies)
+        || !super::bindings::reject_nullable_held(&classes_recognition, &all_bodies)
+        || !super::bindings::reject_unkept_collections(&classes_recognition)
+    {
         return None;
     }
     // The impls that get a dictionary: not `From`'s (ADR 0052), nor serde's,
