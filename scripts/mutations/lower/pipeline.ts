@@ -894,4 +894,16 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "scope_struct"],
   },
+  {
+    "name": "class-prototype-set-beside-others",
+    "breaks": "a class's prototype set by an `on_load!` of other statements moves alone to its constructor, apart from the `let` it reads (#448)",
+    "file": "src/lower/pipeline.rs",
+    "find": "                                [set] => pass.prototypes_set.push((module, class, at, set.span)),\n",
+    "replace": "                                [set, ..] => pass.prototypes_set.push((module, class, at, set.span)),\n",
+    "tests": [
+      "test/classes.test.ts",
+      "-t",
+      "prototype replaced"
+    ]
+  },
 ];

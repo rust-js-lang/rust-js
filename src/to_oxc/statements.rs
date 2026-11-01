@@ -158,8 +158,11 @@ impl<'a> Cx<'a> {
     /// `function` reading `this`, `Component.prototype.setState = function
     /// (partialState) { .. };`, a getter `Object.defineProperty(
     /// QueenPosition.prototype, "leftDiagonal", { get() { .. } });`; and its
-    /// statics, `Component.from = function (..) { .. };`.
-    pub(super) fn class(&self, n: &js::Namespace, class: &js::Class) -> Vec<Statement<'a>> {
+    /// statics, `Component.from = function (..) { .. };`. Its prototype,
+    /// where its module's load replaces it, `prototype_set`, set right
+    /// after its constructor, `ReactPromise.prototype =
+    /// Object.create(Promise.prototype);`, before the methods (#448).
+    pub(super) fn class(&self, n: &js::Namespace, class: &js::Class, prototype_set: &[js::Stmt]) -> Vec<Statement<'a>> {
         if let Some(extends) = &class.extends {
             return self.subclass(n, class, extends);
         }
@@ -170,6 +173,7 @@ impl<'a> Cx<'a> {
             constructor.export = n.export;
             out.push(self.function(&constructor, false));
         }
+        out.extend(self.stmts(prototype_set));
         let prototype = || js::Expr::member(js::Expr::var(&n.name), "prototype");
         let mut assigned = Vec::new();
         for c in &n.constants {

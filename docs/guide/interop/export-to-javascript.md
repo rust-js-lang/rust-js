@@ -1044,9 +1044,78 @@ export function Keys() {
   method of
   `self` by value; a method or constant named as a field, which
   `this.name` would hide; a class of no `new`; the prototype of a class
-  with prototype methods replaced, `set_prototype`, which would drop them
-  ([ADR 0761](../../decisions/0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md),
-  amended, #448); and the attribute on one of the struct and its impl alone.
+  with prototype methods replaced where it can't be set before them,
+  [below](#a-prototype-its-load-replaces); and the attribute on one of the
+  struct and its impl alone.
+
+### A prototype its load replaces
+
+A `js::on_load!` whose one statement replaces a class's prototype, of
+globals and imports alone, is printed right after the class's constructor,
+before its methods are assigned to the prototype it makes, as React's
+Flight client subclasses Promise
+([ADR 0761](../../decisions/0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md),
+amended, #448):
+
+```rust
+use std::cell::Cell;
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct ReactPromise {
+    pub status: Cell<&'static str>,
+    pub value: Cell<f64>,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl ReactPromise {
+    pub fn new(status: &'static str, value: f64) -> Self {
+        ReactPromise {
+            status: Cell::new(status),
+            value: Cell::new(value),
+        }
+    }
+
+    pub fn then(&self, resolve: &dyn Fn(f64)) {
+        if self.status.get() == "fulfilled" {
+            resolve(self.value.get());
+        }
+    }
+}
+
+js::on_load! {
+    // We subclass Promise.prototype so that we get other methods like .catch
+    js::class::<ReactPromise>().set_prototype(js::object::create(
+        Some(js::class::<js::Promise<()>>().prototype()),
+        None,
+    ));
+}
+```
+
+```js
+export function ReactPromise(status, value) {
+  this.status = status;
+  this.value = value;
+}
+
+// We subclass Promise.prototype so that we get other methods like .catch
+ReactPromise.prototype = Object.create(Promise.prototype);
+
+ReactPromise.prototype.then = function (resolve) {
+  if (this.status === "fulfilled") {
+    resolve(this.value);
+  }
+};
+```
+
+Each chunk is a Promise, `chunk instanceof Promise`, and its `then` is the
+class's. Refused, saying why: one that reads what the module makes, a
+function or a `const`, which may not be made yet there; one with what the
+module runs as it loads between it and the class, which would see it
+replaced first; a load of other statements beside it; another module's
+class; an ES class, which extends a binding's; and one replaced where a
+function runs, after the methods were assigned, which would drop them. A
+class of no prototype methods, `ComponentDummy` above, is replaced where
+its load is.
 
 ### A state flattened into a class
 

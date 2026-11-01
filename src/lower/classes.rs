@@ -1213,6 +1213,98 @@ pub(crate) fn with_prototype_members(tcx: TyCtxt<'_>) -> Vec<DefId> {
         .collect()
 }
 
+/// Each class's prototype its module's load replaces, a `js::on_load!` of
+/// `set_prototype` alone, `ReactPromise.prototype =
+/// Object.create(Promise.prototype)`, given as `(class, its namespace's name,
+/// where, its statement's place)`: its item moved to follow the class's,
+/// which prints it right after the constructor, before the methods are
+/// assigned to the prototype it makes, as upstream orders it
+/// (`js::Class::prototype_set`). Refused, saying why, where it's made of
+/// what the module makes, which isn't made there, where what the module
+/// runs as it loads is between them, which would see the prototype
+/// replaced first, and of another module's class or an ES class's, whose
+/// `prototype` JS doesn't let be written (#448, ADR 0761 amended).
+pub(super) fn set_prototypes(
+    tcx: TyCtxt<'_>,
+    items: &mut Vec<js::Item>,
+    sets: Vec<(DefId, &str, rustc_span::Span, js::Span)>,
+) {
+    for (adt, owner, at, place) in sets {
+        let refuse = |why: String| {
+            let what = format!(
+                "replacing the prototype of `{}`, a `#[rust_js::class]` with prototype methods, {why} (#448)",
+                tcx.item_name(adt)
+            );
+            super::refusal::refuse(tcx, at, super::refusal::Refused::Feature(&what));
+        };
+        let set = (items.iter()).position(
+            |item| matches!(item, js::Item::Statements(stmts) if stmts.first().is_some_and(|s| s.span == place)),
+        );
+        let class = (items.iter())
+            .position(|item| matches!(item, js::Item::Namespace(n) if n.name == owner && n.class.is_some()));
+        let (Some(set), Some(class)) = (set, class) else {
+            refuse(
+                "in another module than its class's: replace it in a `js::on_load!` of the class's module".to_owned(),
+            );
+            continue;
+        };
+        if let js::Item::Namespace(js::Namespace {
+            class: Some(js::Class {
+                extends: Some(extends), ..
+            }),
+            ..
+        }) = &items[class]
+        {
+            refuse(format!(
+                "an ES class extending `{extends}`, whose `prototype` JS doesn't let be written"
+            ));
+            continue;
+        }
+        // What the module makes, which isn't made yet right after the
+        // constructor: a function too, which may read it.
+        let made: std::collections::HashSet<&str> = (items.iter())
+            .filter_map(|item| match item {
+                js::Item::Function(function) => Some(function.name.as_str()),
+                item => item.declared(),
+            })
+            .filter(|&name| name != owner)
+            .collect();
+        let mut read = None;
+        if let js::Item::Statements(stmts) = &items[set] {
+            js::visit_stmts(stmts, &mut |name| {
+                if read.is_none() && made.contains(name) {
+                    read = Some(name.to_owned());
+                }
+            });
+        }
+        if let Some(name) = read {
+            refuse(format!(
+                "of `{name}`, its module's: set right after its constructor, before its methods, it's made of globals and imports alone"
+            ));
+            continue;
+        }
+        // What runs as the module loads between them would see it
+        // replaced first: a literal's `const` runs nothing.
+        let between = (items[class + 1..set].iter()).find_map(|item| match item {
+            js::Item::Function(_) | js::Item::Namespace(_) => None,
+            js::Item::Const(constant) if constant.value.is_constant() => None,
+            js::Item::Const(constant) => Some(format!("`{}`", constant.name)),
+            js::Item::Statements(_) => Some("another `js::on_load!`".to_owned()),
+        });
+        if let Some(between) = between {
+            refuse(format!(
+                "after {between}, which its module makes as it loads: write the `js::on_load!` right after the class's impl"
+            ));
+            continue;
+        }
+        let statements = items.remove(set);
+        items.insert(class + 1, statements);
+        if let js::Item::Namespace(js::Namespace { class: Some(class), .. }) = &mut items[class] {
+            class.prototype_set = true;
+        }
+    }
+}
+
 /// Where `class`'s member `name` is written, as `member` is of it: its
 /// constructor function, its prototype's method or getter; the rest, its
 /// statics and constants, written where they are.

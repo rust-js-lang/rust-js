@@ -252,6 +252,12 @@ pub struct Class {
     /// Component { .. }`, as `extends` and `super(props)` are written
     /// (rd331); `None` of a constructor function.
     pub extends: Option<String>,
+    /// Whether the item after it, a `js::on_load!`'s one statement,
+    /// replaces its prototype, `ReactPromise.prototype =
+    /// Object.create(Promise.prototype)`: printed right after its
+    /// constructor, before its methods are assigned to the prototype it
+    /// makes, as upstream orders it (#448, ADR 0761 amended).
+    pub prototype_set: bool,
 }
 
 /// `const SIZE = 4096;`, maybe exported.

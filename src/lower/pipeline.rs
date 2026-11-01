@@ -51,6 +51,9 @@ struct Pass {
     /// Each method a class takes of a trait of classes' default, its
     /// prototype's, by the class (rd283).
     class_defaults: Vec<(DefId, js::Function)>,
+    /// Each class's prototype a `js::on_load!` replaces: its module, the
+    /// class, where, and its statement's place (#448).
+    prototypes_set: Vec<(LocalModId, DefId, rustc_span::Span, js::Span)>,
 }
 
 /// How the crate is built, as its command asks.
@@ -858,6 +861,21 @@ pub fn lower_crate<'tcx>(
                         namespace.methods.extend(copies);
                     }
                     None if super::bindings::is_on_load(tcx, def_id) => {
+                        // One replacing a class's prototype, set right after
+                        // its constructor, alone (#448, ADR 0761 amended).
+                        if let Some((class, at)) = lowered.dependencies.prototype_set {
+                            match lowered.function.body.as_slice() {
+                                [set] => pass.prototypes_set.push((module, class, at, set.span)),
+                                _ => {
+                                    let what = format!(
+                                        "replacing the prototype of `{}`, a `#[rust_js::class]` with prototype methods, beside other statements: replace it in a `js::on_load!` of its own (#448)",
+                                        tcx.item_name(class)
+                                    );
+                                    super::refusal::refuse(tcx, at, super::refusal::Refused::Feature(&what));
+                                    failed = true;
+                                }
+                            }
+                        }
                         pass.statements.entry(module).or_default().push(lowered.function.body)
                     }
                     // Named in itself alone, as the Rust names it, unless
@@ -1236,6 +1254,16 @@ pub fn lower_crate<'tcx>(
                 types_only: false,
                 reexports_alone: module == CRATE_MOD_ID && super::reexports::reexports_alone(tcx, module),
             };
+            // A class's prototype its load replaces, set right after its
+            // constructor (#448, ADR 0761 amended).
+            let sets = (pass.prototypes_set.iter())
+                .filter(|&&(at, ..)| at == module)
+                .filter_map(|&(_, class, at, place)| {
+                    let owner = fns[&super::classes::constructor_of(tcx, class)?].owner.as_deref()?;
+                    Some((class, owner, at, place))
+                })
+                .collect();
+            super::classes::set_prototypes(tcx, &mut lowered.items, sets);
             // One of types alone has no JS of its own: what it imports is
             // what its items read, of which it has none (the user's
             // decision, ADR 1005). Not the crate's root, its entry, which a

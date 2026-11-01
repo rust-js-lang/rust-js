@@ -191,8 +191,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (JsForm::Get(name), None) if args.is_empty() => self.js_ref(&name).or_at(fun_span).answered_by_a_getter(),
             (JsForm::Set(name), Some(this)) if args.len() == 1 && !name.contains('#') => {
                 // A crate's class's prototype replaced, `js::class::<T>().set_prototype(..)`:
-                // its methods are assigned to the prototype its module made,
-                // which the new one hasn't (#448, ADR 0761 amended).
+                // its methods are assigned to the prototype its module made.
+                // Its module's load sets it, a `js::on_load!`'s own statement,
+                // right after its constructor, before they're assigned, as
+                // React's Flight client's `ReactPromise.prototype =
+                // Object.create(Promise.prototype)` is (the pipeline's,
+                // `prototype_set`); a function's would drop them, refused
+                // (#448, ADR 0761 amended).
                 if name == "prototype"
                     && let Some(adt) = (super::classes::with_prototype_members(self.tcx).into_iter()).find(|&adt| {
                         super::classes::member_naming(self.tcx, adt).is_some_and(
@@ -200,11 +205,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         )
                     })
                 {
-                    let what = format!(
-                        "replacing the prototype of `{}`, a `#[rust_js::class]` with prototype methods, which are assigned to the prototype it replaces (#448)",
-                        self.tcx.item_name(adt)
-                    );
-                    return Err(self.unsupported(span, &what));
+                    if !(self.frame.owner == self.item && super::bindings::is_on_load(self.tcx, self.item)) {
+                        let what = format!(
+                            "replacing the prototype of `{}`, a `#[rust_js::class]` with prototype methods, where a function runs, which drops them: replace it in a `js::on_load!` of its own (#448)",
+                            self.tcx.item_name(adt)
+                        );
+                        return Err(self.unsupported(span, &what));
+                    }
+                    self.dependencies.borrow_mut().prototype_set = Some((adt, span));
                 }
                 let value = args.remove(0);
                 // A setter may answer it, which may do anything, throw

@@ -1,6 +1,6 @@
 # 0761. A `#[rust_js::class]` is a constructor function and its prototype
 
-Status: Accepted, by the user's decision of 2026-10-24; amended (rd325): a private class is its module's own; amended (#448): a prototype of methods isn't replaced at load; amended (2026-11-01, the user's decision): a class whose `new` isn't `pub` is its type alone. Extends
+Status: Accepted, by the user's decision of 2026-10-24; amended (rd325): a private class is its module's own; amended (#448): a prototype of methods isn't replaced at load; amended (#448, the user's decision of 2026-11-01): a load's prototype set right after its constructor; amended (2026-11-01, the user's decision): a class whose `new` isn't `pub` is its type alone. Extends
 [0047](0047-methods.md), whose object of functions stays every other
 struct's impl. Amended: its struct's comments, its `///` doc, are its
 constructor function's (below). Amended (2026-10-26, the user's
@@ -507,17 +507,79 @@ class React constructs, which writes neither.
 
 ## Amendment: a prototype of methods isn't replaced at load (#448)
 
+*Superseded by the next amendment, which sets it before the methods.*
+
 A class's methods are assigned to the prototype its module makes,
 `ReactPromise.prototype.then = function (..) { .. }`, where its
 constructor is; a `js::on_load!` runs after, so its
 `js::class::<ReactPromise>().set_prototype(object::create(..))` replaced
 that prototype, and every instance made after had no `then`: a wrong
-answer, Rust calling a method JS's object hasn't. **Replacing the
-prototype of a class with prototype methods or getters is refused**,
-naming it; one of none, `ComponentDummy`'s, is replaced as before. React's
-Flight client's `ReactPromise.prototype = Object.create(Promise.prototype)`
-before its `then` needs a form that says so where the class is declared,
-not yet. Case: a refusal ([0262](0262-when-rust-and-js-disagree.md)'s
-last). Held by `test/classes.test.ts`'s "a class's prototype with methods
-replaced at load is refused"; mutation `class-prototype-replaced-allowed`
-(`binding_calls.rs`).
+answer, Rust calling a method JS's object hasn't. Replacing the
+prototype of a class with prototype methods or getters was refused,
+naming it; one of none, `ComponentDummy`'s, is replaced as before.
+
+## Amendment: a load's prototype set right after its constructor (#448)
+
+The user's decision of 2026-11-01. React's Flight client subclasses
+Promise as JS did before `class`:
+
+```js
+function ReactPromise(status, value, reason) { this.status = status; .. }
+// We subclass Promise.prototype so that we get other methods like .catch
+ReactPromise.prototype = Object.create(Promise.prototype);
+```
+
+and its methods after. **A `js::on_load!` whose one statement replaces
+the prototype of a class of the module, of globals and imports alone,
+is printed right after the class's constructor, before its methods are
+assigned to the prototype it makes**, as upstream orders it:
+
+```rust
+js::on_load! {
+    // We subclass Promise.prototype so that we get other methods like .catch
+    js::class::<ReactPromise>().set_prototype(js::object::create(
+        Some(js::class::<js::Promise<()>>().prototype()),
+        None,
+    ));
+}
+```
+
+Its comment comes with it. Lowering records which class a load's
+statement replaces the prototype of (`Dependencies::prototype_set`,
+`binding_calls.rs`); the pipeline moves its item to follow the class's,
+`classes::set_prototypes`, and marks the class `js::Class::prototype_set`,
+which the printer reads to print it after the constructor. Every pass
+between sees the statement as the module's load's, where it now is.
+
+Moving it is safe only where nothing sees it move, so it's refused,
+saying why, where:
+
+- what it reads is the module's own, a function or a `const`, which
+  may not be made yet right after the constructor;
+- something the module runs as it loads is between them, a `const`
+  made by a call or another `js::on_load!`, which would see the
+  prototype replaced first (a literal's `const` runs nothing);
+- the load has other statements, a `let` it reads say: one of its own;
+- the class is another module's, or an ES class's, which extends a
+  binding's, whose `prototype` JS doesn't let be written;
+- a function replaces it as it runs, after the methods were assigned:
+  that would drop them, as before.
+
+A class of no prototype methods, `ComponentDummy`'s, is replaced where its
+load is, as before.
+
+Alternatives: a class attribute naming the prototype, `#[rust_js::class(
+prototype = ..)]`, a second way to say what `set_prototype` says; the
+methods each `Object.defineProperty`'d after the load, which reads
+nothing like upstream. Case: none of [0262](0262-when-rust-and-js-disagree.md)'s
+differences: the JS does what the Rust says, the load's statement made
+before the methods, which nothing sees. Held by `test/classes.test.ts`'s
+"a class's prototype replaced at load is set before its methods", run in
+Node (`chunk instanceof Promise`, `chunk.then(..)`, `await chunk`), and
+"a class's prototype replaced where it isn't yet made is refused";
+mutations `class-prototype-replaced-allowed`,
+`class-prototype-replaced-where-a-function-runs` (`binding_calls.rs`),
+`class-prototype-set-of-the-module`, `class-prototype-set-past-a-load`,
+`class-prototype-set-left-in-place` (`classes.rs`),
+`class-prototype-set-beside-others` (`pipeline.rs`),
+`class-prototype-set-dropped` (`to_oxc/statements.rs`).

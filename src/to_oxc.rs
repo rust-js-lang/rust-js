@@ -139,8 +139,21 @@ pub fn emit(
     let mut items = module.items.as_slice();
     while let [item, rest @ ..] = items {
         match item {
+            // A class whose prototype the next item, an `on_load!`'s,
+            // replaces: set right after its constructor (#448).
+            js::Item::Namespace(n)
+                if let Some(class) = &n.class
+                    && class.prototype_set =>
+            {
+                let [js::Item::Statements(set), more @ ..] = rest else {
+                    unreachable!("a class's prototype set is the item after it")
+                };
+                body.extend(cx.class(n, class, set));
+                items = more;
+                continue;
+            }
             js::Item::Namespace(n) => match &n.class {
-                Some(class) => body.extend(cx.class(n, class)),
+                Some(class) => body.extend(cx.class(n, class, &[])),
                 None => body.push(cx.namespace(n)),
             },
             // A constant declared as the default is its value (ADR 0625).

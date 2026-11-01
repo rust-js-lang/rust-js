@@ -655,4 +655,40 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
   },
+  {
+    "name": "class-prototype-set-of-the-module",
+    "breaks": "a class's prototype set at load of a function of its module moves to its constructor, where what it reads may not be made yet (#448)",
+    "file": "src/lower/classes.rs",
+    "find": "                if read.is_none() && made.contains(name) {\n",
+    "replace": "                if false {\n",
+    "tests": [
+      "test/classes.test.ts",
+      "-t",
+      "prototype replaced"
+    ]
+  },
+  {
+    "name": "class-prototype-set-past-a-load",
+    "breaks": "a class's prototype set at load moves past a thread-local made as its module loads, which would see it replaced first (#448)",
+    "file": "src/lower/classes.rs",
+    "find": "            js::Item::Const(constant) => Some(format!(\"`{}`\", constant.name)),\n",
+    "replace": "            js::Item::Const(_) => None,\n",
+    "tests": [
+      "test/classes.test.ts",
+      "-t",
+      "prototype replaced"
+    ]
+  },
+  {
+    "name": "class-prototype-set-left-in-place",
+    "breaks": "a class's prototype set at load stays where its `on_load!` is, after the methods assigned to the prototype it replaces, `chunk.then` undefined (#448)",
+    "file": "src/lower/classes.rs",
+    "find": "            class.prototype_set = true;\n",
+    "replace": "",
+    "tests": [
+      "test/classes.test.ts",
+      "-t",
+      "prototype replaced"
+    ]
+  },
 ];

@@ -498,6 +498,10 @@ struct Dependencies {
     /// namespace of, which re-exports it, `Plugin.registerEvents` (rd137):
     /// an import of that module, where the function's own is another's.
     reexporters: HashSet<(LocalModId, LocalModId)>,
+    /// The class a `js::on_load!` body replaces the prototype of, where:
+    /// set right after its constructor, before its methods (#448, ADR
+    /// 0761 amended).
+    prototype_set: Option<(DefId, rustc_span::Span)>,
 }
 
 struct FnCx<'a, 'tcx> {

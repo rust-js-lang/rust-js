@@ -381,4 +381,16 @@ export const mutations: Mutation[] = [
       "an ES class React renders"
     ]
   },
+  {
+    "name": "class-prototype-set-dropped",
+    "breaks": "a class's prototype set at load isn't printed, its instances no Promises (#448)",
+    "file": "src/to_oxc/statements.rs",
+    "find": "        out.extend(self.stmts(prototype_set));\n",
+    "replace": "",
+    "tests": [
+      "test/classes.test.ts",
+      "-t",
+      "prototype replaced"
+    ]
+  },
 ];

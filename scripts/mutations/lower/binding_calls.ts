@@ -854,4 +854,16 @@ export const mutations: Mutation[] = [
     replace: "                if false\n",
     tests: ["test/classes.test.ts", "-t", "replaced at load"],
   },
+  {
+    "name": "class-prototype-replaced-where-a-function-runs",
+    "breaks": "a class's prototype replaced where a function runs compiles, after its methods were assigned, dropping them (#448)",
+    "file": "src/lower/binding_calls.rs",
+    "find": "                    if !(self.frame.owner == self.item && super::bindings::is_on_load(self.tcx, self.item)) {\n",
+    "replace": "                    if false {\n",
+    "tests": [
+      "test/classes.test.ts",
+      "-t",
+      "prototype replaced"
+    ]
+  },
 ];

@@ -1020,40 +1020,131 @@ pub fn wrap(value: f64) -> Rc<Wrapper> {
   expect([lib.wrap(2).doubled, lib.wrap(2).tripled(), lib.Made.of(5).amount]).toEqual([4, 6, 5]);
 });
 
-// #448: a class's prototype replaced at load, `js::class::<T>().set_prototype(..)`,
-// would drop the methods its module assigned to the one it replaces,
-// `chunk.then` undefined: refused, naming it. A class of no prototype
-// methods, `PureComponent`'s `ComponentDummy`, is replaced as before.
-test("a class's prototype with methods replaced at load is refused", () => {
-  const error = refused(
-    "class-prototype-replaced",
-    `use std::cell::Cell;
+// #448: a class's prototype replaced at load, React's Flight client's
+// `ReactPromise.prototype = Object.create(Promise.prototype)`, is set
+// right after its constructor, before its methods are assigned to it, as
+// upstream orders it: its `then` is the new prototype's, which inherits
+// Promise's (the user's decision, ADR 0761 amended). One that reads what
+// the module makes, which isn't made yet there, is refused, as is one
+// made where a function runs, after the methods were assigned.
+const reactPromise = (load: string, after = "") => `use std::cell::Cell;
 
 #[cfg_attr(rust_js, rust_js::class)]
 pub struct ReactPromise {
     pub status: Cell<&'static str>,
+    pub value: Cell<f64>,
 }
 
 #[cfg_attr(rust_js, rust_js::class)]
 impl ReactPromise {
-    pub fn new(status: &'static str) -> Self {
-        ReactPromise { status: Cell::new(status) }
+    pub fn new(status: &'static str, value: f64) -> Self {
+        ReactPromise {
+            status: Cell::new(status),
+            value: Cell::new(value),
+        }
     }
 
-    pub fn then(&self, resolve: &dyn Fn()) {
+    pub fn then(&self, resolve: &dyn Fn(f64)) {
         if self.status.get() == "fulfilled" {
-            resolve();
+            resolve(self.value.get());
         }
     }
 }
 
-js::on_load! {
-    let promise_prototype = js::get(js::class::<js::Promise<()>>(), "prototype");
-    js::class::<ReactPromise>().set_prototype(js::object::create(promise_prototype, None));
+${load}
+
+pub fn doubled(chunk: &ReactPromise) -> f64 {
+    let total = Cell::new(0.0);
+    chunk.then(&|value| total.set(value * 2.0));
+    total.get()
+}
+${after}`;
+
+test("a class's prototype replaced at load is set before its methods", async () => {
+  const { js, dir } = compiled(
+    "class-prototype-replaced",
+    reactPromise(`js::on_load! {
+    // We subclass Promise.prototype so that we get other methods like .catch
+    js::class::<ReactPromise>().set_prototype(js::object::create(
+        Some(js::class::<js::Promise<()>>().prototype()),
+        None,
+    ));
+}`),
+  );
+  expect(js).toContain(
+    "  this.value = value;\n}\n\n// We subclass Promise.prototype so that we get other methods like .catch\nReactPromise.prototype = Object.create(Promise.prototype);\n\nReactPromise.prototype.then = function (resolve) {\n",
+  );
+  expect(js.match(/ReactPromise\.prototype = /g)?.length).toBe(1);
+  const { ReactPromise, doubled } = await import(join(dir, "lib.js"));
+  const chunk = new ReactPromise("fulfilled", 21);
+  expect(chunk instanceof Promise).toBe(true);
+  expect(doubled(chunk)).toBe(42);
+  let seen = 0;
+  chunk.then((value: number) => (seen = value));
+  expect(seen).toBe(21);
+  // Promise's own methods, inherited: `.catch` calls the chunk's `then`.
+  expect(typeof chunk.catch).toBe("function");
+  expect(await chunk).toBe(21);
+});
+
+test("a class's prototype replaced where it isn't yet made is refused", () => {
+  const later = refused(
+    "class-prototype-replaced-later",
+    reactPromise(
+      `js::on_load! {
+    js::class::<ReactPromise>().set_prototype(js::object::create(Some(base()), None));
+}`,
+      `
+pub fn base() -> &'static js::Unknown {
+    js::class::<js::Promise<()>>().prototype()
 }
 `,
+    ),
   );
-  expect(error).toContain(
-    "replacing the prototype of `ReactPromise`, a `#[rust_js::class]` with prototype methods, which are assigned to the prototype it replaces (#448)",
+  expect(later).toContain(
+    "replacing the prototype of `ReactPromise`, a `#[rust_js::class]` with prototype methods, of `base`, its module's: set right after its constructor, before its methods, it's made of globals and imports alone (#448)",
+  );
+  const between = refused(
+    "class-prototype-replaced-between",
+    reactPromise(`thread_local! {
+    pub static LOADED: f64 = js::date::now();
+}
+
+js::on_load! {
+    js::class::<ReactPromise>().set_prototype(js::object::create(
+        Some(js::class::<js::Promise<()>>().prototype()),
+        None,
+    ));
+}`),
+  );
+  expect(between).toContain(
+    "replacing the prototype of `ReactPromise`, a `#[rust_js::class]` with prototype methods, after `LOADED`, which its module makes as it loads: write the `js::on_load!` right after the class's impl (#448)",
+  );
+  const beside = refused(
+    "class-prototype-replaced-beside",
+    reactPromise(`js::on_load! {
+    let prototype = js::class::<js::Promise<()>>().prototype();
+    js::class::<ReactPromise>().set_prototype(js::object::create(Some(prototype), None));
+}`),
+  );
+  expect(beside).toContain(
+    "replacing the prototype of `ReactPromise`, a `#[rust_js::class]` with prototype methods, beside other statements: replace it in a `js::on_load!` of its own (#448)",
+  );
+  const run = refused(
+    "class-prototype-replaced-run",
+    reactPromise(
+      "",
+      `
+pub fn subclass() {
+    js::class::<ReactPromise>().set_prototype(js::object::create(
+        Some(js::class::<js::Promise<()>>().prototype()),
+        None,
+    ));
+}
+`,
+    ),
+  );
+  expect(run).toContain(
+    "replacing the prototype of `ReactPromise`, a `#[rust_js::class]` with prototype methods, where a function runs, which drops them: replace it in a `js::on_load!` of its own (#448)",
   );
 });
