@@ -554,3 +554,49 @@ pub fn plain(message: &str) -> &'static Error {
   expect([error.message, error.cause]).toEqual(["view transition", thrown]);
   expect("cause" in lib.plain("plain")).toBe(false);
 });
+
+// rd400: a function's arity is one list of up to 16 parameters (ADR 1044):
+// React's Flight client's ResponseInstance takes 14, createResponse's, so
+// its `Class::of(function::with_this(..))` and `new` of it take them, each
+// checked as a call's is.
+test("a constructor function takes as many parameters as a function", async () => {
+  const names = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n"];
+  const typed = names.map(() => "f64").join(", ");
+  const { js, lib } = await compiled(
+    "constructor-fourteen-parameters",
+    `use std::cell::Cell;
+
+use js::{Class, function};
+
+pub struct Response {
+    pub sum: Cell<f64>,
+}
+
+unsafe impl js::Defined for Response {}
+
+pub type ResponseClass = Class<fn(${typed}) -> Response>;
+
+pub fn create() -> &'static ResponseClass {
+    #[cfg_attr(rust_js, rust_js::name = "ResponseInstance")]
+    let response_instance = Class::of(function::with_this(
+        |this, (${names.join(", ")}): (${typed})| {
+            // Safety: \`new\` gives its constructor the response it makes.
+            let this: &'static Response = unsafe { js::cast(this) };
+            this.sum.set(${names.map((n, i) => `${n} * ${i + 1}.0`).join(" + ")});
+            this
+        },
+    ));
+    response_instance
+}
+
+pub fn made(ctor: &'static ResponseClass) -> f64 {
+    js::new(ctor, (${names.map((_, i) => `${i + 1}.0`).join(", ")})).sum.get()
+}
+`,
+  );
+  expect(js).toContain(`function ResponseInstance(${names.join(", ")}) {`);
+  expect(js).toContain(`new ctor(${names.map((_, i) => i + 1).join(", ")})`);
+  const expected = names.reduce((sum, _, i) => sum + (i + 1) * (i + 1), 0);
+  expect(lib.made(lib.create())).toBe(expected);
+  expect(new (lib.create())(...names.map(() => 1)).sum).toBe(names.reduce((sum, _, i) => sum + i + 1, 0));
+});

@@ -17,6 +17,34 @@
 
 use core::marker::PhantomData;
 
+/// Each arity of a function rust-js types, the tuple of its parameters'
+/// type names, `()` to sixteen: one list, so a function, its `with_this`,
+/// its `Class`, its `new`, a method, a static and rest arguments each take
+/// as many (rd400). `$m!` is given the list.
+macro_rules! arities {
+    ($m:ident) => {
+        $m! {
+            ()
+            (A)
+            (A, B)
+            (A, B, C)
+            (A, B, C, D)
+            (A, B, C, D, E)
+            (A, B, C, D, E, F1)
+            (A, B, C, D, E, F1, G)
+            (A, B, C, D, E, F1, G, H)
+            (A, B, C, D, E, F1, G, H, I)
+            (A, B, C, D, E, F1, G, H, I, J)
+            (A, B, C, D, E, F1, G, H, I, J, K)
+            (A, B, C, D, E, F1, G, H, I, J, K, L)
+            (A, B, C, D, E, F1, G, H, I, J, K, L, M)
+            (A, B, C, D, E, F1, G, H, I, J, K, L, M, N)
+            (A, B, C, D, E, F1, G, H, I, J, K, L, M, N, O)
+            (A, B, C, D, E, F1, G, H, I, J, K, L, M, N, O, P)
+        }
+    };
+}
+
 pub mod atomics;
 pub use atomics::{AtomicArray, WaitAsyncResult, WaitAsyncValue, WaitResult, WaitableArray};
 pub mod date;
@@ -501,7 +529,7 @@ pub mod function {
     /// closure keeps, `'l`, as webapi's `listener(..)`'s
     /// is: a listener, a property's function, a constructor, each as it is,
     /// never a box the program would leak (rd209). Of each tuple of up to
-    /// 12. No program names it.
+    /// 16. No program names it.
     #[diagnostic::on_unimplemented(
         message = "`{Self}` isn't a tuple of the parameters a JS function takes",
         note = "a function `with_this` makes is given its `this` and a tuple of its parameters: `|this, (a, b)|`, `|this, (a,)|` of one, `|this, ()|` of none"
@@ -511,7 +539,7 @@ pub mod function {
         type Function;
     }
 
-    /// `Parameters` of each tuple of up to 12.
+    /// `Parameters` of each tuple of up to 16.
     macro_rules! parameters {
         ($(($($a:ident),*))*) => {
             $(
@@ -523,21 +551,7 @@ pub mod function {
         };
     }
 
-    parameters! {
-        ()
-        (A)
-        (A, B)
-        (A, B, C)
-        (A, B, C, D)
-        (A, B, C, D, E)
-        (A, B, C, D, E, F1)
-        (A, B, C, D, E, F1, G)
-        (A, B, C, D, E, F1, G, H)
-        (A, B, C, D, E, F1, G, H, I)
-        (A, B, C, D, E, F1, G, H, I, J)
-        (A, B, C, D, E, F1, G, H, I, J, K)
-        (A, B, C, D, E, F1, G, H, I, J, K, L)
-    }
+    arities! { parameters }
 
     /// What a function `F`, of the signature `M`, a `fn` pointer's, is with
     /// its first arguments `L` bound, [`bind`]'s: of none, `F` itself, and
@@ -629,25 +643,7 @@ pub mod function {
     }
 }
 
-functions! {
-    ()
-    (A)
-    (A, B)
-    (A, B, C)
-    (A, B, C, D)
-    (A, B, C, D, E)
-    (A, B, C, D, E, F1)
-    (A, B, C, D, E, F1, G)
-    (A, B, C, D, E, F1, G, H)
-    (A, B, C, D, E, F1, G, H, I)
-    (A, B, C, D, E, F1, G, H, I, J)
-    (A, B, C, D, E, F1, G, H, I, J, K)
-    (A, B, C, D, E, F1, G, H, I, J, K, L)
-    (A, B, C, D, E, F1, G, H, I, J, K, L, M)
-    (A, B, C, D, E, F1, G, H, I, J, K, L, M, N)
-    (A, B, C, D, E, F1, G, H, I, J, K, L, M, N, O)
-    (A, B, C, D, E, F1, G, H, I, J, K, L, M, N, O, P)
-}
+arities! { functions }
 
 /// Whether `value` is [truthy](https://developer.mozilla.org/docs/Glossary/Truthy),
 /// as JS's `if (value)` asks: `None`, `""`, `0`, `NaN` and `false` aren't,
@@ -902,7 +898,7 @@ pub fn method<P: Method<M>, M>(path: P) -> P::Function {
 
 /// What [`method`] reads: a path of a value and a method of it, of the
 /// signature `M`, the method's `fn` pointer's, its `this` first. Of each
-/// method of up to 12 parameters. No program names it.
+/// method of up to 16 parameters. No program names it.
 #[diagnostic::on_unimplemented(
     message = "`{Self}` isn't a path of a value and its method",
     note = "a method is read of a value it's a method of: `js::method((element, HTMLElement::focus))`"
@@ -912,7 +908,7 @@ pub trait Method<M>: sealed::Path {
     type Function: Copy;
 }
 
-/// `Method` of each path of a value and a method of up to 12 parameters.
+/// `Method` of each path of a value and a method of up to 16 parameters.
 macro_rules! methods {
     ($(($($a:ident),*))*) => {
         $(
@@ -926,21 +922,7 @@ macro_rules! methods {
     };
 }
 
-methods! {
-    ()
-    (A)
-    (A, B)
-    (A, B, C)
-    (A, B, C, D)
-    (A, B, C, D, E)
-    (A, B, C, D, E, F1)
-    (A, B, C, D, E, F1, G)
-    (A, B, C, D, E, F1, G, H)
-    (A, B, C, D, E, F1, G, H, I)
-    (A, B, C, D, E, F1, G, H, I, J)
-    (A, B, C, D, E, F1, G, H, I, J, K)
-    (A, B, C, D, E, F1, G, H, I, J, K, L)
-}
+arities! { methods }
 
 /// [`this || other`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/Logical_OR):
 /// `this` where it's [truthy](truthy), else `other`, as JS's `||` of any
@@ -1019,7 +1001,7 @@ impl<A: Rest<dyn IntoUnknown>> Construct<A> for Unknown {
     type Instance = &'static Unknown;
 }
 
-/// `Construct` of each typed `Class` of up to 12 parameters.
+/// `Construct` of each typed `Class` of up to 16 parameters.
 macro_rules! constructs {
     ($(($($a:ident),*))*) => {
         $(
@@ -1033,21 +1015,7 @@ macro_rules! constructs {
     };
 }
 
-constructs! {
-    ()
-    (A)
-    (A, B)
-    (A, B, C)
-    (A, B, C, D)
-    (A, B, C, D, E)
-    (A, B, C, D, E, F)
-    (A, B, C, D, E, F, G)
-    (A, B, C, D, E, F, G, H)
-    (A, B, C, D, E, F, G, H, I)
-    (A, B, C, D, E, F, G, H, I, J)
-    (A, B, C, D, E, F, G, H, I, J, K)
-    (A, B, C, D, E, F, G, H, I, J, K, L)
-}
+arities! { constructs }
 
 /// What [`Class::call_static`] calls: a static method's or a constructor's
 /// binding, given the tuple of its arguments, `A`, and what it gives. No
@@ -1061,7 +1029,7 @@ pub trait Static<A> {
     type Output;
 }
 
-/// `Static` of each function of up to 12 parameters.
+/// `Static` of each function of up to 16 parameters.
 macro_rules! statics {
     ($(($($a:ident),*))*) => {
         $(
@@ -1072,28 +1040,14 @@ macro_rules! statics {
     };
 }
 
-statics! {
-    ()
-    (A)
-    (A, B)
-    (A, B, C)
-    (A, B, C, D)
-    (A, B, C, D, E)
-    (A, B, C, D, E, G)
-    (A, B, C, D, E, G, H)
-    (A, B, C, D, E, G, H, I)
-    (A, B, C, D, E, G, H, I, J)
-    (A, B, C, D, E, G, H, I, J, K)
-    (A, B, C, D, E, G, H, I, J, K, L)
-    (A, B, C, D, E, G, H, I, J, K, L, M)
-}
+arities! { statics }
 
 /// What [`Class::of`] makes of a function's signature, `fn(A, B) -> R`: the
 /// class's, `fn(A, B) -> T`, `T` what `new` of it makes ([`Made`]). No
 /// program names it.
 #[diagnostic::on_unimplemented(
     message = "a function of `{Self}` is no constructor `Class::of` types",
-    note = "a constructor takes up to 12 parameters and gives `this`, a `&'static T`, or nothing"
+    note = "a constructor takes up to 16 parameters and gives `this`, a `&'static T`, or nothing"
 )]
 pub trait Signature {
     /// The class's signature.
@@ -1394,25 +1348,7 @@ macro_rules! rest {
     };
 }
 
-rest! {
-    ()
-    (A)
-    (A, B)
-    (A, B, C)
-    (A, B, C, D)
-    (A, B, C, D, E)
-    (A, B, C, D, E, F)
-    (A, B, C, D, E, F, G)
-    (A, B, C, D, E, F, G, H)
-    (A, B, C, D, E, F, G, H, I)
-    (A, B, C, D, E, F, G, H, I, J)
-    (A, B, C, D, E, F, G, H, I, J, K)
-    (A, B, C, D, E, F, G, H, I, J, K, L)
-    (A, B, C, D, E, F, G, H, I, J, K, L, M)
-    (A, B, C, D, E, F, G, H, I, J, K, L, M, N)
-    (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O)
-    (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P)
-}
+arities! { rest }
 
 /// A value that's never `undefined` nor `null` in JS, as `None` is: an
 /// `Option` of one is the value or `undefined`, not a box (ADR 0051), so

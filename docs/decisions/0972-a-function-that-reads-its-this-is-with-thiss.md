@@ -7,6 +7,7 @@ Status: Accepted (the user's decision, 2026-10-27, th1). Amends
 rest parameter (below). Amended by
 [1009](1009-a-constructor-is-held-as-a-typed-class.md): held by
 `Class::of`, its function is a constructor closed over what it captures.
+Amended: it takes as many parameters as a function, sixteen (rd400).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none for the function:
 its `this` is a parameter Rust sees, so what it reads is what JS gives it.
@@ -316,3 +317,30 @@ in place", which calls each, and the guide's suspensey resources
 (`interop/async.md`); mutations `module-function-const`,
 `module-function-mutable-declared`, `this-alias-kept`,
 `this-alias-nested-read` and `this-no-path`.
+
+## Amendment: as many parameters as a function, sixteen (rd400)
+
+React's Flight client's `ResponseInstance` is a constructor function of
+14 parameters, createResponse's, `Class::of(function::with_this(|this,
+(bundler_config, .., debug_end_time)| ..))`, which rustc refused: a tuple
+of `Parameters`, and a `Class`'s `Construct`, `Method` and `Static`, were
+each of up to 12, where a function's own `AnyFunction`, its rest
+arguments and `bind` took 16, each its own list.
+
+- **One list, `arities!` in the js crate, of each tuple of parameters
+  from `()` to sixteen**, is what each of them is implemented for:
+  `with_this`'s `Parameters`, `Class::of`'s `Signature` and `new`'s
+  `Construct`, `js::method`'s `Method`, `call_static`'s `Static`, a rest
+  parameter's tuple and `AnyFunction`. `bind`'s `Bound`, which pairs each
+  parameter with what it keeps, keeps its own list of the same sixteen.
+  A function takes as many through each, so a larger one is one list's
+  change, never a second form.
+- Nothing in rust-js counts them: lowering makes a tuple of any length a
+  function's parameters, `function ResponseInstance(a, .., n)`.
+
+Case: none ([0262](0262-when-rust-and-js-disagree.md)'s first): a
+declaration's limit, rustc's to check. Held by
+`test/js-constructors.test.ts`'s "a constructor function takes as many
+parameters as a function", which constructs one of 14 from Rust and from
+JS. No mutation: the change is the js crate's declarations, which rustc
+checks, not a compiler source's.
