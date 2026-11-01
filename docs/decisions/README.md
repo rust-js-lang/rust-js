@@ -266,7 +266,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0244 A value taken apart through a shared reference is destructured](0244-destructuring-through-references.md)
 - [0245 next/legacy/image, and a module's imports named by its own](0245-legacy-image-and-module-import-names.md)
 - [0246 A type parameter of a function needs no copy of its own](0246-function-parameters-need-no-copy.md)
-- [0247 JS's string methods are the builtins crate's `string`](0247-js-string-methods.md) *(amended by 0642: for JS's own indexes, std's methods for a place found)*
+- [0247 JS's string methods are the builtins crate's `string`](0247-js-string-methods.md) *(amended by 0642: for JS's own indexes, std's methods for a place found; amended: `repeat` of a number, rd406)*
 - [0248 A `thread_local!` is a module's default export too](0248-thread-local-default-export.md)
 - [0249 An element's key may be none](0249-optional-keys.md)
 - [0250 Props updated from a reference are a spread](0250-reference-base-spread.md) *(amended by 0674: the fields after it as written)*

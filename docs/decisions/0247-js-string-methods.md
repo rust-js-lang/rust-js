@@ -2,7 +2,8 @@
 
 Status: Accepted. Extends [0102](0102-js-and-webapi.md); amended by
 [0642](0642-a-place-found-in-a-string-is-js-units.md): its search and slice
-are for JS's own indexes, std's for a place found in a string.
+are for JS's own indexes, std's for a place found in a string. Amended:
+`repeat` of a number (rd406).
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -71,3 +72,17 @@ Rust string and cutting it at what's found is std's, one way. `index_of`,
 `last_index_of` and `slice` stay the binding of JS's own API, for an index
 a JS API gives or takes, `selectionStart` or `setSelectionRange`'s, or one
 counted from the end, `slice(0, -1)`.
+
+## Amendment: `repeat` of a number (rd406)
+
+React's Flight client indents a stack by `' '.repeat(indent)`, `indent` a
+number it counts. Rust's `str::repeat` takes a `usize`, so `" ".repeat(indent
+as usize)` was `" ".repeat($f64ToInt(indent, 0, 4294967295))`, the cast
+saturating as Rust's does. **`js::string::repeat(text, count)` is
+`text.repeat(count)`**, of a number as TypeScript's `count: number`, its
+fraction dropped as JS converts it; a count below zero or infinite JS's
+`RangeError`, a panic. Rust's `repeat` of a `usize` keeps Rust's meaning.
+
+Case: N ([0262](0262-when-rust-and-js-disagree.md)), JS's own method.
+Held by `test/js-strings.test.ts`'s "a string's repeat takes a number, as
+JS's does".

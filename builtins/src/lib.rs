@@ -2117,6 +2117,16 @@ pub mod string {
         unreachable!()
     }
 
+    /// [`text.repeat(count)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/repeat):
+    /// `text` `count` times, a number, TypeScript's, its fraction dropped,
+    /// as JS converts it, where Rust's `str::repeat` takes a `usize`: React
+    /// Flight's `' '.repeat(indent)` of a number it counts (rd406). What JS
+    /// throws of a count below zero or infinite, a `RangeError`, a panic.
+    #[cfg_attr(rust_js, rust_js::link_name = "repeat")]
+    pub fn repeat(this: &str, count: f64) -> String {
+        unreachable!()
+    }
+
     /// `text.localeCompare(that)`: how `text` sorts beside `that` in the
     /// default locale, as an Intl collator gives it, -1, 0 or 1.
     #[cfg_attr(rust_js, rust_js::link_name = "localeCompare")]

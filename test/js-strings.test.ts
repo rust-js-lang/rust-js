@@ -52,3 +52,22 @@ pub fn turkish(text: &str) -> (String, String) {
   expect(lib.lowered("DIV")).toBe("div");
   expect(lib.turkish("Iİi")).toEqual(["ıii", "Iİİ"]);
 });
+
+// rd406: JS's `repeat` of a number, as React's Flight client indents by
+// `' '.repeat(indent)`: its fraction dropped, a count below zero JS's
+// `RangeError`, where Rust's `str::repeat` takes a `usize`, a cast.
+test("a string's repeat takes a number, as JS's does", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("string-repeat");
+  writeFileSync(join(dir, "lib.rs"), `use js::string;
+
+pub fn indented(indent: f64, line: &str) -> String {
+    string::repeat(" ", indent) + line
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('  return " ".repeat(indent) + line;\n');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.indented(2, "a"), lib.indented(1.9, "b"), lib.indented(0, "c")]).toEqual(["  a", " b", "c"]);
+  expect(() => lib.indented(-1, "d")).toThrow(RangeError);
+});
