@@ -1073,3 +1073,27 @@ whose turn gives its variable is after it"), run against native Rust's
 `given-around-way-out-unseen`, `given-around-way-out-captured`,
 `given-let-in-try-unseen` and `given-let-kept-in-loop`
 (`tidy/jumps/labels.ts`).
+
+## Amendment: a way out in a `catch` MIR made is where what it holds is (rd499, 2026-11-02)
+
+React's Fizz flushSubtree writes `for next_child in children.iter() {
+while (chunk_idx as f64) < next_child.index { write_chunk(..); chunk_idx
++= 1; } r = flush_segment(..); }` over borrows tracked at run time. MIR's
+way out of the inner loop, the call and the outer loop's `continue`, is
+the call in a `try` MIR made, `try { r = flushSegment(..); } catch (error)
+{ $unborrow(children); $unborrow(chunks); throw error; }`, which says no
+place of its own: `exit_after` took the way out as nothing written after
+the loop, and printed `bb28: while (..) { while (true) { if (!(..)) { r =
+flushSegment(..); continue bb28; } .. } }`, a label the port's gate
+rejects. **A `try .. catch` of no span is where what it holds is written**,
+as a block MIR made already was (`exit_after`'s `held`): the call is after
+the inner loop, `while (chunkIdx < nextChild.index) { .. } r =
+flushSegment(..);`, as written. Its `catch` unborrows what's live there,
+after the inner loop as in it: the inner loop declares nothing it drops.
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same jumps.
+
+Held by the corpus case `inner_while_exit_in_catch`, against native Rust,
+with an inner loop the program `break`s too; `test/lowering-labels.test.ts`
+("what a loop inside another does after it, in a catch MIR made, is after
+it"); and the mutation `exit-after-held-in-catch-unwritten`
+(`tidy/jumps/labels.ts`).

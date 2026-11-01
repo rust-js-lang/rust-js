@@ -872,7 +872,7 @@ pub(super) const STAGES: &[Stage] = &[
             // `return;`s, run through the `finally` (rd502).
             pass("returns past blocks in finally", |b, h| {
                 let starts = statement_starts(b);
-                returns_past_blocks_in_try(b, &h.written.blocks, h.returns, &starts)
+                returns_past_blocks_in_try(b, h.written, h.returns, &starts)
             }),
             // What's left of a call that can't throw, a `catch_unwind`'s,
             // held apart for the drops a scope's `finally` didn't take: as it
@@ -998,9 +998,7 @@ const JUMPS: &[Pass] = &[
     // written (ADR 0742, amended).
     pass("returns past blocks", |b, h| {
         let starts = statement_starts(b);
-        js::statement_lists(b, &mut |s| {
-            returns_past_blocks(s, &h.written.blocks, h.returns, &starts)
-        })
+        js::statement_lists(b, &mut |s| returns_past_blocks(s, h.written, h.returns, &starts))
     }),
     // A `return` of an `if` the program wrote, `return if c { a } else { b
     // };`: its value, `return c ? a : b;`, before a shared tail takes its

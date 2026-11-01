@@ -51,10 +51,13 @@ pub(super) fn exit_after(
         .filter(|l| !crate::lower::mir::is_block_label(l))
         .map(str::to_string);
     // The spans of what a block MIR made holds, which has none of its own:
-    // where it's written is where they are.
+    // where it's written is where they are. A `try` MIR made of what a
+    // borrow tracked at run time unborrows if it throws too, `try { r =
+    // flushSegment(..); } catch (error) { $unborrow(children); throw error;
+    // }` at an inner loop's way out (rd499).
     let held = |s: &Stmt| {
         let mut spans = Vec::new();
-        if s.span.is_none() && matches!(s.kind, StmtKind::Labeled(..)) {
+        if s.span.is_none() && matches!(s.kind, StmtKind::Labeled(..) | StmtKind::TryCatch(..)) {
             js::each_list(std::slice::from_ref(s), &mut |list| {
                 spans.extend(list.iter().map(|t| t.span).filter(|t| !t.is_none()))
             });

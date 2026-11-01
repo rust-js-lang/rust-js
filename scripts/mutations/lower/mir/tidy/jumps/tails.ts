@@ -439,21 +439,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/lowering-labels.test.ts",
       "-t",
-      "a block MIR made followed by a return",
-    ],
-  },
-  {
-    name: "returns-into-branches-else-kept",
-    breaks:
-      "a branch a `return` some paths go on to leaves with nothing is an `else {}`, which keeps the chain of a string's literals guarded by its `typeof`",
-    file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "                if rest.is_empty() {\n                    *otherwise = None;\n",
-    replace:
-      "                if false {\n                    *otherwise = None;\n",
-    tests: [
-      "test/lowering-labels.test.ts",
-      "-t",
-      "a block MIR made followed by a return",
+      "guarded arms that return calls fall through in one labeled switch",
     ],
   },
   {
@@ -730,8 +716,8 @@ export const mutations: Mutation[] = [
     breaks:
       "returns the program wrote in each branch, which MIR joins into one `return;` after a block, keep that block and its `break`s, `bb33: { if (tag === 1) { .. } else { break bb33; } .. } return; }` (rd100, rd98)",
     file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "        let joins = (joined.is_none())\n",
-    replace: "        let joins = (joined.is_none() && false)\n",
+    find: "        let joins = if joined.is_none() {\n            joined_returns(body, label, returns, starts)\n",
+    replace: "        let joins = if joined.is_none() {\n            None\n",
     tests: ["test/corpus.test.ts", "-t", "^returns_joined_past_blocks.rs$"],
     snapshots: true,
   },
@@ -740,9 +726,60 @@ export const mutations: Mutation[] = [
     breaks:
       "a `return` the program wrote once, the last arm's `_ => { // We've found all. return; }`, which a guard's failing goes on to too, is copied to each way, its comment lost (rd100)",
     file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "        let joins = (joined.is_none())\n",
-    replace: "        let joins = (true)\n",
+    find: "        let joins = if joined.is_none() {\n",
+    replace: "        let joins = if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^match_arm_guard_first.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "returns-past-blocks-inner-joined-unseen",
+    breaks:
+      "a block MIR made inside one whose `break`s are the program's `return`s, the `return;` after it given the place of one written in it, keeps its label: React's Fizz renderNode's `bb51: { .. if (out.length <= 1) { break bb51; } .. }` (rd499)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "        } else if joined_past.contains(label.as_str()) {\n",
+    replace: "        } else if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^let_else_returns_in_arms\\.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "returns-past-blocks-inner-blocks-unsought",
+    breaks:
+      "the blocks a `break` of a block of joined returns follows aren't sought, so the `return;` that `break` becomes is taken as written after them: React's Fizz renderNode's `bb51: { .. break bb51; .. }` stays (rd499)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "                    && *l == label\n",
+    replace: "                    && *l == label && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^let_else_returns_in_arms\\.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "returned-as-written-let-else-threaded",
+    breaks:
+      "a `let … else`'s `else`, which MIR puts after the rest, is gone on to from the rest's end, past every `return` written, so its `return;` says no place and stays `if (preamble != null) { .. } else { return; }`, or joins the test before it, `if (root.value === 7 || request.preamble == null)`, its comment outside the closure: React's Fizz flushCompletedQueues (rd499)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "    fits.then_some(e.lo)\n",
+    replace: "    fits.then_some(e.lo).filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^let_else_returns_in_arms\\.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "returns-past-blocks-inner-taken-counted",
+    breaks:
+      "a block inside one of joined returns counts the `return`s already a way out of the outer one as its own, so a `return` written once after `if`s whose failing tests go on to it is copied to each: `if (a != null) { if (a > 2) { if (..) { ..; return; } // ..\n return; } return; } return;` (rd499)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: ".filter(|r| !taken.contains(r))",
+    replace: ".filter(|r| taken.is_empty() || r.lo > 0)",
+    tests: ["test/corpus.test.ts", "-t", "^let_else_returns_in_arms\\.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "returned-as-written-left-block-furthest",
+    breaks:
+      "a block its own `break`s leave, before a `break` of joined returns, is gone on from by the furthest written in it, so the `_` arm's `return` of a `match` guard is lost to the rest nested in `if (target != null && ..) { .. }`, its comment above: React DOM's FormActionEventPlugin (rd499)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "            _ if !stmt.span.is_none() => at = at.max(stmt.span.hi),\n",
+    replace:
+      "            StmtKind::Labeled(own, body) if js::names_jump(body, own) => {\n                js::each_list(body, &mut |list| {\n                    for s in list.iter().filter(|s| !s.span.is_none()) {\n                        at = at.max(s.span.hi);\n                    }\n                });\n            }\n            _ if !stmt.span.is_none() => at = at.max(stmt.span.hi),\n",
+    tests: ["test/corpus.test.ts", "-t", "^let_else_returns_in_arms\\.rs$"],
     snapshots: true,
   },
   {
@@ -781,11 +818,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "            at = stmt.span.lo;\n",
     replace: "            at = at.max(stmt.span.lo);\n",
-    tests: [
-      "test/lowering-early-exits.test.ts",
-      "-t",
-      "early returns joined to its end are each a guard first",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^let_else_guard_released\\.rs$"],
+    snapshots: true,
   },
   {
     name: "returns-past-blocks-placed-past-branch",
@@ -809,20 +843,6 @@ export const mutations: Mutation[] = [
     find: "                if then.last().is_some_and(ends) && !(test.span.is_none() && stmt.span.is_none()) =>\n",
     replace:
       "                if then.last().is_some_and(ends) && !test.span.is_none() =>\n",
-    tests: [
-      "test/lowering-early-exits.test.ts",
-      "-t",
-      "written guards joined to its end are each where written",
-    ],
-  },
-  {
-    name: "returns-past-blocks-left-block-one-place",
-    breaks:
-      "a block its own `break`s leave is gone on from by its last `if`'s test alone: diffHydratedStyles' `return` after both its guards is the first's, which merges them into `if (a === b || (c && d)) { return; }` and loses the second's comment",
-    file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "            StmtKind::Labeled(own, body) if js::names_jump(body, own) => {\n",
-    replace:
-      "            StmtKind::Labeled(own, body) if false && js::names_jump(body, own) => {\n",
     tests: [
       "test/lowering-early-exits.test.ts",
       "-t",

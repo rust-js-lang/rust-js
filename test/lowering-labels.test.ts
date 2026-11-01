@@ -985,3 +985,156 @@ pub fn r#use(usable: Option<&'static Unknown>) -> Option<&'static Unknown> {
   expect(() => lib.use(null)).toThrow("An unsupported type was passed to use(): null");
   expect(() => lib.use(3)).toThrow("An unsupported type was passed to use(): 3");
 });
+
+// React's Fizz flushSubtree: `for` over a borrow tracked at run time, whose
+// `while` writes chunks up to each child before the call after it. MIR's
+// way out of the inner loop, the call and the outer loop's `continue`, is
+// in a `catch` MIR made, which says no place of its own: it's where what it
+// holds is written, after the inner loop, so it's put there, `while
+// (chunkIdx < nextChild.index) { .. } r = flush(..);`, never `bb7: while
+// (..) { while (true) { if (!(..)) { r = flush(..); continue bb7; } .. } }`
+// (rd499).
+test("what a loop inside another does after it, in a catch MIR made, is after it", async () => {
+  const dir = fixture("inner-while-exit-in-catch");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Segment {
+    pub index: f64,
+    pub chunks: RefCell<Vec<u32>>,
+    pub children: RefCell<Vec<Rc<Segment>>>,
+}
+
+pub fn segment(index: f64, chunks: Vec<u32>, children: Vec<Rc<Segment>>) -> Rc<Segment> {
+    Rc::new(Segment { index, chunks: RefCell::new(chunks), children: RefCell::new(children) })
+}
+
+fn write_chunk(out: &mut Vec<u32>, chunk: u32) {
+    out.push(chunk);
+}
+
+fn flush_segment(out: &mut Vec<u32>, segment: &Segment) -> bool {
+    out.push(1000);
+    segment.children.borrow_mut().clear();
+    segment.chunks.borrow_mut().push(3);
+    segment.index > 1.0
+}
+
+pub fn flush_subtree(out: &mut Vec<u32>, segment: &Segment) -> bool {
+    let mut r = true;
+    let chunks = segment.chunks.borrow();
+    let mut chunk_idx = 0;
+    let children = segment.children.borrow();
+    for next_child in children.iter() {
+        while (chunk_idx as f64) < next_child.index {
+            write_chunk(out, chunks[chunk_idx]);
+            chunk_idx += 1;
+        }
+        r = flush_segment(out, next_child);
+    }
+    while chunk_idx < chunks.len() {
+        write_chunk(out, chunks[chunk_idx]);
+        chunk_idx += 1;
+    }
+    r
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toMatch(/\bbb\d+/);
+  expect(js).toMatch(/\n(\s+)while \(chunkIdx < nextChild\.index\) \{\n[^]*?\n\1\}\n\1r = flushSegment\(out, nextChild\);\n/);
+  const lib = await import(join(dir, "lib.js"));
+  const root = lib.segment(0, [1, 2, 3, 4], [lib.segment(1, [], []), lib.segment(3, [], [])]);
+  const out: number[] = [];
+  expect(lib.flushSubtree(out, root)).toBe(true);
+  expect(out).toEqual([1, 1000, 2, 3, 1000, 4]);
+});
+
+// React's Fizz renderNode: a `let .. else { return; }` first in each arm
+// of a `match`, whose arms return early from inside their `if`s too, and
+// go on to what's after the `match`. MIR joins the returns into one, past
+// a block of each arm and a block of the `if`s inside it: the inner
+// block's `return`s are each as written as the outer's are, `if
+// (out.length > 3) { log(out, "many"); return; }`, never `bb51: { ..
+// break bb51; .. }` (rd499).
+test("returns MIR joined past a block in a block that returns are each as written", async () => {
+  const dir = fixture("let-else-returns-in-arms");
+  writeFileSync(join(dir, "lib.rs"), `use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
+
+fn render(n: u32) -> u32 {
+    if n < 2 {
+        panic!("small {n}");
+    }
+    n
+}
+
+fn log(out: &mut Vec<String>, s: &str) {
+    out.push(s.to_string());
+}
+
+pub fn render_node(out: &mut Vec<String>, segment: Option<u32>, n: u32, aborted: bool) {
+    let thrown;
+    match segment {
+        None => {
+            let Err(thrown_value) = catch_unwind(AssertUnwindSafe(|| render(n))) else {
+                return;
+            };
+            log(out, "replay");
+            thrown = thrown_value;
+            if aborted {
+            } else if n == 0 {
+                if out.len() > 3 {
+                    log(out, "many");
+                    return;
+                }
+                if out.len() > 1 {
+                    log(out, "some");
+                    return;
+                }
+            }
+        }
+        Some(segment) => {
+            let Err(thrown_value) = catch_unwind(AssertUnwindSafe(|| render(n + segment))) else {
+                return;
+            };
+            log(out, "render");
+            thrown = thrown_value;
+            if aborted {
+                if out.len() > 3 {
+                    log(out, "many");
+                    return;
+                }
+            } else if n == 0 {
+                log(out, "zero");
+                return;
+            }
+        }
+    }
+    log(out, "rethrow");
+    resume_unwind(thrown);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toMatch(/\bbb\d+/);
+  expect(js).toMatch(/if \(out\.length > 3\) \{\n\s+log\(out, "many"\);\n\s+return;\n\s+\}\n\s+if \(out\.length > 1\) \{\n\s+log\(out, "some"\);\n\s+return;\n/);
+  const lib = await import(join(dir, "lib.js"));
+  const outcome = (segment: number | undefined, n: number, aborted: boolean, out: string[]) => {
+    try {
+      lib.renderNode(out, segment, n, aborted);
+      return out;
+    } catch {
+      return [...out, "threw"];
+    }
+  };
+  expect(outcome(undefined, 5, false, [])).toEqual([]);
+  expect(outcome(undefined, 0, false, [])).toEqual(["replay", "rethrow", "threw"]);
+  expect(outcome(undefined, 0, false, ["a"])).toEqual(["a", "replay", "some"]);
+  expect(outcome(undefined, 0, false, ["a", "b", "c"])).toEqual(["a", "b", "c", "replay", "many"]);
+  expect(outcome(undefined, 0, true, ["a", "b"])).toEqual(["a", "b", "replay", "rethrow", "threw"]);
+  expect(outcome(0, 1, false, [])).toEqual(["render", "rethrow", "threw"]);
+  expect(outcome(0, 0, false, [])).toEqual(["render", "zero"]);
+  expect(outcome(1, 0, true, ["a", "b", "c"])).toEqual(["a", "b", "c", "render", "many"]);
+  expect(outcome(1, 0, true, [])).toEqual(["render", "rethrow", "threw"]);
+  expect(outcome(4, 0, true, [])).toEqual([]);
+});

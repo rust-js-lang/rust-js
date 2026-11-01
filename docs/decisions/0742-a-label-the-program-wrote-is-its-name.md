@@ -399,3 +399,81 @@ stays there, unplaced: `tail_returns` takes it away as it does any unwritten
 `return;` that ends the function. Taking it away here too was dead code,
 which no corpus case's JS showed, once ADR 0879's amendment of 2026-11-02
 read the `if` before it as written.
+
+## Amendment: a block inside a block of joined returns is one too (2026-11-02, rd499)
+
+React's Fizz renderNode writes `let Err(thrown_value) = catch_unwind(..)
+else { return; };` first in each arm of a `match`, then `if`s that return
+early, `if request.aborted.get() { .. } else if .. { if .. { ..; return; }
+.. }`, and goes on to what's after the `match`. MIR joins every `return`
+into one, past a block of the arms, `bb59: { .. } return;`, and past a
+block of the `if`s inside an arm, `bb57: { .. break bb57; .. } break
+bb59;`. `returns past blocks` made `bb59`'s `break`s the program's
+`return`s, each given the place of the one written for it, so the one
+after `bb57` had the place of the last `return` written in `bb57`; and a
+block a `return` with a place follows was taken as one the program wrote
+after it, which its ways go on to. `bb57` stayed, and with it the block
+of the arms' ends, `bb368: { .. break bb368; .. }` in the port.
+**A `return;` that was a `break` of a block around, which MIR joined
+into the `return` the inner block's own `break`s go to, is that join
+too**: once `returns past blocks` makes the outer block's `break`s
+`return`s, the blocks inside it that one of them followed are each read
+again as one a `return;` of no place follows (`returns_past`'s
+`joined_past`), and their `break`s are each the `return` written for it,
+`if (out.length > 3) { log(out, "many"); return; }`: of the `return`s
+written in it that aren't a way out of the block around already, so a
+`return` written once after `if`s whose failing tests go on to it, `if
+let Some(x) = a { if x > 2 && .. { ..; return; } } // .. return;`, stays
+theirs, never copied to each. A `return` the
+program wrote after a block, which its ways go on to, was never a `break`
+of a block around, and stays theirs: React's commitNewChildToFragmentInstances'
+`if (a || b) { return; }` keeps its `||`, which a first try that went by
+the `return`'s place alone broke, as it did the corpus case
+`match_arm_guard_first`. Case ([0262](0262-when-rust-and-js-disagree.md)):
+N, the same jumps.
+
+React's flushCompletedQueues' `let .. else { return; }` in a
+`catch_unwind` closure, the notes' `bb97`, printed none once rd502 and
+rd503 landed; but read again, a block inside the `if let` of the root
+whose `break`s are its `if`'s `return` and the `let .. else`'s, its
+`else`'s `return;` said no place: **a `let … else`'s `else`, which MIR
+puts after the rest, `if (p != null) { ..; break bb43; } else { break
+bb78; }`, is gone on to from where it's written, after its `let` and
+before the rest** (`returned_as_written`'s `let_else_of`, of the `let …
+else`s `Written` holds), not from the rest's end, past every `return`
+written. Its `return` is the `else`'s, and `let else first` writes it as
+written, `if (completedPreambleSegments == null) { // The preamble isn't
+ready .. return; }`, where it was `if (status === POSTPONED ||
+request.completedPreambleSegments == null) { return; }`, its comment
+printed outside the closure; each arm of renderNode's `let Err(..) = ..
+else { return; };` is `if (value.TAG !== "Err") { return; }` too.
+
+Held by the corpus case `let_else_returns_in_arms`, against native Rust,
+of both; `test/lowering-labels.test.ts` ("returns MIR joined past a block
+in a block that returns are each as written"); and the mutations
+`returns-past-blocks-inner-joined-unseen`,
+`returns-past-blocks-inner-blocks-unsought`,
+`returns-past-blocks-inner-taken-counted` and
+`returned-as-written-let-else-threaded` (`tidy/jumps/tails.ts`). The
+blocks inside are made `return`s here now where `returns into branches`
+made them later, so `returns-into-branches-at-ends-not`, of the string
+`match`'s test, is held by the guarded arms' labeled `switch` test, and
+`returns-past-blocks-placed-past-earlier`, of #435's `let … else`, which
+`let_else_of` places first now, by the corpus case
+`let_else_guard_released`.
+
+Two rules this does the job of are gone, each one way of it too many
+(AGENTS.md, "one way"): `returned_as_written`'s reading of a block its
+own `break`s leave as gone on from by the furthest written in it, made
+for React's diffHydratedStyles, whose blocks `returns_past` now takes
+apart; and `returns into branches`' taking out of an `else` it left
+empty, which the later passes take out anyway. Without either, no corpus
+case's JS, no lowering test's and none of the four React crates' moved,
+but React DOM's FormActionEventPlugin's `match maybe_target_inst {
+Some(t) if .. => t, _ => { // If we're inside a parent root .. return; }
+}` and ReactFizzConfigDOM's reserved names: the first rule nested their
+rest in `if (maybeTargetInst != null && ..) { .. }` under the comment,
+where upstream returns early, `if (!maybeTargetInst || ..) { // .. return;
+}`, as they now do. Held by `let_else_returns_in_arms`' extractEvents and
+the mutation `returned-as-written-left-block-furthest`, which puts the
+rule back.

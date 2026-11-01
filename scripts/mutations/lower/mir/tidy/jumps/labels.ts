@@ -13,6 +13,16 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "exit-after-held-in-catch-unwritten",
+    breaks:
+      "a `try` MIR made, no span of its own, of a call a borrow tracked at run time unborrows past, at an inner loop's way out isn't taken as written after the loop: React's Fizz flushSubtree's `bb7: while (..) { while (true) { if (!(..)) { r = flushSegment(..); continue bb7; } .. } }` (rd499)",
+    file: "src/lower/mir/tidy/jumps/labels.rs",
+    find: "matches!(s.kind, StmtKind::Labeled(..) | StmtKind::TryCatch(..))",
+    replace: "matches!(s.kind, StmtKind::Labeled(..))",
+    tests: ["test/corpus.test.ts", "-t", "^inner_while_exit_in_catch\\.rs$"],
+    snapshots: true,
+  },
+  {
     name: "exit-after-nested-loops-unsought",
     breaks:
       "a labeled loop left from a loop inside it, `break 'outer`, keeps the function's tail in that inner loop, `while (true) { if (node !== root) { .. continue outer; } .. return count; }`, not `break outer;` and the tail after the outer loop (rd148)",
