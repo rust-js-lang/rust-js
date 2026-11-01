@@ -17,6 +17,7 @@ mod forms;
 mod given_before;
 mod given_names;
 mod imports;
+mod indexed;
 mod nullable;
 mod paths;
 mod rest_values;
@@ -31,6 +32,8 @@ pub(super) use given_before::reject_made_in_place;
 pub(in crate::lower) use given_names::alias_cased;
 pub(super) use given_names::{given_let_names, given_parameter_name, named_lets, named_parameters};
 pub(super) use imports::{Export, file_stem, js_import, module_binding, namespace_name, stem_binding};
+use indexed::indexed_refused;
+pub(in crate::lower) use indexed::is_indexed_list;
 pub(super) use nullable::{
     holds_none_as_null, is_js_null, is_nullable, is_optional, null_result, null_where_made, nullable_bindings,
     nullable_const_refused, nullable_init, nullable_items, nullable_local, nullable_option, nullable_params,
@@ -146,6 +149,11 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
         // `#[rust_js::whole]` is a range of whole numbers a binding's `f64`
         // is in (ADR 0302, amended); `position` was one, `indexOf`'s.
         if let Some(message) = whole_refused(tcx, def.to_def_id()) {
+            tcx.dcx().span_err(tcx.def_span(def), message);
+            valid = false;
+        }
+        // An indexed list is a binding's type (ADR 1042).
+        if let Some(message) = indexed_refused(tcx, def.to_def_id()) {
             tcx.dcx().span_err(tcx.def_span(def), message);
             valid = false;
         }

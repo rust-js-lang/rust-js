@@ -730,7 +730,9 @@ pub enum Known {
     /// or a `Vec`'s `IntoIter` (`steps_its_array`), of the array it steps from
     /// its start, as Rust's types tell: what the array's `values()` steps
     /// too, `iterators::stepped_slices`'s (rd270), and an index loop, `for
-    /// (let i = 0; i < v.length; i++)`, of a `for` (ADR 1042).
+    /// (let i = 0; i < v.length; i++)`, of a `for` (ADR 1042). Or a
+    /// binding's `Iterator.from(list)` of an indexed list, a `NodeList`'s,
+    /// whose iteration is an array's (`#[rust_js::indexed]`).
     ArrayItems,
     /// One of the program's functions, its own or a library's, by its
     /// name, `noop` (`items.rs::fn_ref`): a binding nothing assigns, the

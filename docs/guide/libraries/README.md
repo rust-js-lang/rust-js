@@ -307,6 +307,16 @@ How WebIDL maps to Rust, one rule for each:
   on it throws JS's `TypeError`, not Rust's panic; `item(i)`, an
   `Option`, asks
   ([ADR 1011](../../decisions/1011-a-bindings-index-signature-is-index.md)).
+- **A `for` over an indexed list counts its indices:** a `NodeList`'s,
+  an `HTMLCollection`'s, a `DOMTokenList`'s, each of the types WebIDL
+  gives an indexed getter and a `length`, which the crate marks
+  `#[rust_js::indexed]`: `for el in node_list::iter(list)` is `for (let i
+  = 0; i < list.length; i++) { const el = list[i]; .. }`, as upstream
+  writes it. WebIDL makes such a list's iterator `Array.prototype.values`,
+  which reads `length`, then `list[i]`, at each step, so a live list, one
+  the loop's body changes, is stepped the same. A list the loop reads anew,
+  `node_list::iter(root.query_selector_all("b"))`, of no variable, stays a
+  `for…of` ([ADR 1042](../../decisions/1042-a-loop-over-an-array-counts-its-indices.md), amended).
 - **A named property is `get`, `set` and `delete`:** an element's
   `dataset`, a `DOMStringMap`, is `dataset.get("precedence")`,
   `dataset["precedence"]`, an `Option<String>`, `None` of a name it

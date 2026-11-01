@@ -352,7 +352,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             js::ExprKind::Call(..) if super::bindings::iterates_receiver(self.tcx, def_id) => value.receiver_iterated(),
             _ => value,
         };
+        // `Iterator.from(list)` of an indexed list, a `NodeList`'s
+        // `node_list::iter(list)`: its items from the start, each `list[i]`,
+        // as an array's (ADR 1042).
+        let value = match super::iterators::iterator_from(&value) {
+            Some(_) if self.of_indexed_list(def_id, generic_args) => {
+                let mut value = value;
+                value.facts = value.facts.with(js::Known::ArrayItems);
+                value
+            }
+            _ => value,
+        };
         Ok(self.catching(def_id, generic_args, value))
+    }
+
+    /// Whether binding `def_id`, of `generic_args`, is given an indexed
+    /// list first, `node_list::iter(&NodeList<T>)` (ADR 1042).
+    fn of_indexed_list(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> bool {
+        let sig = self
+            .tcx
+            .fn_sig(def_id)
+            .instantiate(self.tcx, generic_args)
+            .skip_normalization();
+        (sig.skip_binder().inputs().first()).is_some_and(|&ty| super::bindings::is_indexed_list(self.tcx, ty))
     }
 
     /// Does binding `def_id`, of `generic_args`, give an `Option` of a

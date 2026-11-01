@@ -505,17 +505,26 @@ pub(super) fn is_js_iterator(e: &Expr) -> bool {
     }
 }
 
-/// What `Iterator.from(x)` makes a JS iterator of, `x`: `Ok` of it, or
-/// `Err` of `e` itself, of anything else.
-pub(super) fn from_iterator(e: Expr) -> Result<Expr, Expr> {
-    match e.kind {
-        js::ExprKind::Call(callee, mut args)
-            if args.len() == 1
+/// What `Iterator.from(x)`, as `e` is, makes a JS iterator of: `x`.
+pub(in crate::lower) fn iterator_from(e: &Expr) -> Option<&Expr> {
+    match &e.kind {
+        js::ExprKind::Call(callee, args)
+            if let [x] = args.as_slice()
                 && matches!(&callee.kind, js::ExprKind::Member(object, name)
                     if name == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Iterator")) =>
         {
-            Ok(args.pop().expect("one"))
+            Some(x)
         }
+        _ => None,
+    }
+}
+
+/// What `Iterator.from(x)` makes a JS iterator of, `x`: `Ok` of it, or
+/// `Err` of `e` itself, of anything else.
+pub(super) fn from_iterator(e: Expr) -> Result<Expr, Expr> {
+    let from = iterator_from(&e).is_some();
+    match e.kind {
+        js::ExprKind::Call(_, mut args) if from => Ok(args.pop().expect("one")),
         kind => Err(Expr {
             facts: js::Facts::NONE,
             kind,
@@ -659,17 +668,9 @@ pub(in crate::lower) fn stepped_range(e: &Expr) -> Option<SteppedRange<'_>> {
 /// What `for (x of e)` steps through of `e`, `$iter(xs)`'s or
 /// `Iterator.from(xs)`'s: `xs` itself.
 pub(in crate::lower) fn iterated(e: Expr) -> Expr {
+    let from = iterator_from(&e).is_some();
     match e.kind {
-        js::ExprKind::Call(callee, mut args)
-            if args.len() == 1
-                && match &callee.kind {
-                    _ if callee.helper_name().is_some() => callee.helper_name() == Some("$iter"),
-                    js::ExprKind::Member(object, from) => {
-                        from == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Iterator")
-                    }
-                    _ => false,
-                } =>
-        {
+        js::ExprKind::Call(callee, mut args) if from || args.len() == 1 && callee.helper_name() == Some("$iter") => {
             args.pop().expect("one")
         }
         kind => Expr {

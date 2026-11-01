@@ -839,4 +839,13 @@ export const mutations: Mutation[] = [
       "            (JsForm::Number, Some(this)) if args.is_empty() => Expr::call(Expr::var(\"Number\"), vec![this]),\n",
     tests: ["test/js-any-values.test.ts", "-t", "to_number is JS's unary"],
   },
+  {
+    name: "indexed-list-iterator-unsaid",
+    breaks:
+      "`Iterator.from(list)` of a `NodeList` isn't said to step an array's items, and its `for` stays a `for…of`, not upstream's index loop (ADR 1042)",
+    file: "src/lower/binding_calls.rs",
+    find: "            Some(_) if self.of_indexed_list(def_id, generic_args) => {\n",
+    replace: "            Some(_) if false => {\n",
+    tests: ["test/lowering-index-loops.test.ts", "-t", "NodeList's items is an index loop"],
+  },
 ];

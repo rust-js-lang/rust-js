@@ -1188,6 +1188,30 @@ function iterated(i: Interface): string | undefined {
   return parent ? iterated(parent) : undefined;
 }
 
+/** Whether `i` is an indexed list: it supports indexed properties, WebIDL's
+ * `getter T item(unsigned long index)`, with an integer `length`, its own or
+ * its parent's, and iterates no pairs, map or set. WebIDL makes its
+ * `[Symbol.iterator]` `%Array.prototype.values%`, which reads `length` and
+ * then `list[i]` at each step, as an index loop does: a `for` over it is
+ * one (ADR 1042). */
+function indexedList(i: Interface): boolean {
+  const members: Member[] = [];
+  for (let at: Interface | undefined = i; at; at = at.parent ? interfaces.get(at.parent) : undefined) {
+    members.push(...at.members.map(({ member }) => member));
+  }
+  const index = (m: Member) => m.arguments?.length === 1 && m.arguments[0].idlType.idlType === "unsigned long";
+  const getter = members.some((m) => m.type === "operation" && m.special === "getter" && index(m));
+  const integer = (t?: IdlType) => typeof t?.idlType === "string" && !t.nullable && /^(unsigned )?(long|short|long long)$/.test(t.idlType);
+  const length = members.some((m) => m.type === "attribute" && m.name === "length" && integer(m.idlType));
+  const paired = members.some(
+    (m) =>
+      m.type === "maplike" ||
+      m.type === "setlike" ||
+      (m.type === "iterable" && ((m as unknown as { idlType: IdlType[] }).idlType.length === 2 || (m as unknown as { async?: boolean }).async)),
+  );
+  return getter && length && !paired;
+}
+
 /** What a named property's unnamed special is (#429): its getter,
  * `get(name)`, `this[name]`, of what the name holds, `None` where it holds
  * nothing, `undefined`; its setter, `set(name, value)`, `this[name] =
@@ -2013,6 +2037,8 @@ for (const name of INTERFACES) {
   if (jsName(i) !== type) line(`#[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(jsName(i))})]`);
   // What it is to TypeScript: its DOM lib's interface of the same name.
   line(`#[cfg_attr(rust_js, rust_js::types = ${JSON.stringify(listOf ? "NodeListOf<T>" : (i.ts ?? jsName(i)))})]`);
+  // An indexed list, whose `for` is an index loop (ADR 1042).
+  if (indexedList(i)) line(`#[cfg_attr(rust_js, rust_js::indexed)]`);
   line(listOf ? `pub struct ${type}<T = Node>(PhantomData<JsObject>, PhantomData<T>);` : `pub struct ${type}(PhantomData<JsObject>);`);
   // Equal only to itself, as JS's `===` has an object: `ptr::eq`, the
   // binding of `===`, `a == b` and `v.contains(&a)` its `includes(a)`

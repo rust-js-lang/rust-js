@@ -4888,6 +4888,7 @@ impl DocumentFragment {
 
 /// [`DOMTokenList`](https://developer.mozilla.org/docs/Web/API/DOMTokenList)
 #[cfg_attr(rust_js, rust_js::types = "DOMTokenList")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct DOMTokenList(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -5012,6 +5013,7 @@ impl DOMTokenList {
 
 /// [`NodeList`](https://developer.mozilla.org/docs/Web/API/NodeList)
 #[cfg_attr(rust_js, rust_js::types = "NodeListOf<T>")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct NodeList<T = Node>(PhantomData<JsObject>, PhantomData<T>);
 
 /// `a === b`: the same object.
@@ -5088,6 +5090,7 @@ impl<T> NodeList<T> {
 
 /// [`HTMLCollection`](https://developer.mozilla.org/docs/Web/API/HTMLCollection)
 #[cfg_attr(rust_js, rust_js::types = "HTMLCollection")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct HTMLCollection(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -8029,6 +8032,7 @@ impl HTMLDivElement {
 
 /// [`HTMLFormElement`](https://developer.mozilla.org/docs/Web/API/HTMLFormElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLFormElement")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct HTMLFormElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -9854,6 +9858,7 @@ impl HTMLParagraphElement {
 
 /// [`HTMLSelectElement`](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement)
 #[cfg_attr(rust_js, rust_js::types = "HTMLSelectElement")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct HTMLSelectElement(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -20394,6 +20399,7 @@ impl PointerEvent {
 
 /// [`CSSStyleDeclaration`](https://developer.mozilla.org/docs/Web/API/CSSStyleDeclaration)
 #[cfg_attr(rust_js, rust_js::types = "CSSStyleDeclaration")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct CSSStyleDeclaration(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -20478,6 +20484,7 @@ impl CSSStyleDeclaration {
 
 /// [`CSSStyleProperties`](https://developer.mozilla.org/docs/Web/API/CSSStyleProperties)
 #[cfg_attr(rust_js, rust_js::types = "CSSStyleProperties")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct CSSStyleProperties(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -28116,6 +28123,7 @@ impl Touch {
 
 /// [`TouchList`](https://developer.mozilla.org/docs/Web/API/TouchList)
 #[cfg_attr(rust_js, rust_js::types = "TouchList")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct TouchList(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -39134,6 +39142,7 @@ impl CSSCounterStyleRule {
 
 /// [`CSSFontFaceDescriptors`](https://developer.mozilla.org/docs/Web/API/CSSFontFaceDescriptors)
 #[cfg_attr(rust_js, rust_js::types = "CSSFontFaceDescriptors")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct CSSFontFaceDescriptors(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -39631,6 +39640,7 @@ impl CSSKeyframeRule {
 
 /// [`CSSKeyframesRule`](https://developer.mozilla.org/docs/Web/API/CSSKeyframesRule)
 #[cfg_attr(rust_js, rust_js::types = "CSSKeyframesRule")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct CSSKeyframesRule(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -40608,6 +40618,7 @@ impl CSSNumericValue {
 
 /// [`CSSPageDescriptors`](https://developer.mozilla.org/docs/Web/API/CSSPageDescriptors)
 #[cfg_attr(rust_js, rust_js::types = "CSSPageDescriptors")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct CSSPageDescriptors(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -40860,6 +40871,7 @@ impl CSSPerspective {
 
 /// [`CSSPositionTryDescriptors`](https://developer.mozilla.org/docs/Web/API/CSSPositionTryDescriptors)
 #[cfg_attr(rust_js, rust_js::types = "CSSPositionTryDescriptors")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct CSSPositionTryDescriptors(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -41649,6 +41661,7 @@ impl CSSRule {
 
 /// [`CSSRuleList`](https://developer.mozilla.org/docs/Web/API/CSSRuleList)
 #[cfg_attr(rust_js, rust_js::types = "CSSRuleList")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct CSSRuleList(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -45888,6 +45901,7 @@ impl DOMQuad {
 
 /// [`DOMRectList`](https://developer.mozilla.org/docs/Web/API/DOMRectList)
 #[cfg_attr(rust_js, rust_js::types = "DOMRectList")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct DOMRectList(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -45939,6 +45953,7 @@ impl DOMRectList {
 
 /// [`DOMStringList`](https://developer.mozilla.org/docs/Web/API/DOMStringList)
 #[cfg_attr(rust_js, rust_js::types = "DOMStringList")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct DOMStringList(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -46073,6 +46088,7 @@ impl DataTransferItem {
 
 /// [`DataTransferItemList`](https://developer.mozilla.org/docs/Web/API/DataTransferItemList)
 #[cfg_attr(rust_js, rust_js::types = "DataTransferItemList")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct DataTransferItemList(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -47941,6 +47957,7 @@ impl External {
 
 /// [`FileList`](https://developer.mozilla.org/docs/Web/API/FileList)
 #[cfg_attr(rust_js, rust_js::types = "FileList")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct FileList(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -51628,6 +51645,7 @@ impl GeolocationPositionError {
 
 /// [`HTMLAllCollection`](https://developer.mozilla.org/docs/Web/API/HTMLAllCollection)
 #[cfg_attr(rust_js, rust_js::types = "HTMLAllCollection")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct HTMLAllCollection(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -51806,6 +51824,7 @@ impl HTMLFontElement {
 
 /// [`HTMLFormControlsCollection`](https://developer.mozilla.org/docs/Web/API/HTMLFormControlsCollection)
 #[cfg_attr(rust_js, rust_js::types = "HTMLFormControlsCollection")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct HTMLFormControlsCollection(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -52558,6 +52577,7 @@ impl HTMLMarqueeElement {
 
 /// [`HTMLOptionsCollection`](https://developer.mozilla.org/docs/Web/API/HTMLOptionsCollection)
 #[cfg_attr(rust_js, rust_js::types = "HTMLOptionsCollection")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct HTMLOptionsCollection(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -57420,6 +57440,7 @@ impl MediaKeys {
 
 /// [`MediaList`](https://developer.mozilla.org/docs/Web/API/MediaList)
 #[cfg_attr(rust_js, rust_js::types = "MediaList")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct MediaList(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -58647,6 +58668,7 @@ impl MimeType {
 
 /// [`MimeTypeArray`](https://developer.mozilla.org/docs/Web/API/MimeTypeArray)
 #[cfg_attr(rust_js, rust_js::types = "MimeTypeArray")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct MimeTypeArray(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -58828,6 +58850,7 @@ impl MutationRecord {
 
 /// [`NamedNodeMap`](https://developer.mozilla.org/docs/Web/API/NamedNodeMap)
 #[cfg_attr(rust_js, rust_js::types = "NamedNodeMap")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct NamedNodeMap(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -62848,6 +62871,7 @@ impl PictureInPictureWindow {
 
 /// [`Plugin`](https://developer.mozilla.org/docs/Web/API/Plugin)
 #[cfg_attr(rust_js, rust_js::types = "Plugin")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct Plugin(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -62924,6 +62948,7 @@ impl Plugin {
 
 /// [`PluginArray`](https://developer.mozilla.org/docs/Web/API/PluginArray)
 #[cfg_attr(rust_js, rust_js::types = "PluginArray")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct PluginArray(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -65508,6 +65533,7 @@ impl RTCTrackEvent {
 
 /// [`RadioNodeList`](https://developer.mozilla.org/docs/Web/API/RadioNodeList)
 #[cfg_attr(rust_js, rust_js::types = "RadioNodeList")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct RadioNodeList(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -66890,6 +66916,7 @@ impl SVGLength {
 
 /// [`SVGLengthList`](https://developer.mozilla.org/docs/Web/API/SVGLengthList)
 #[cfg_attr(rust_js, rust_js::types = "SVGLengthList")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct SVGLengthList(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -67013,6 +67040,7 @@ impl SVGNumber {
 
 /// [`SVGNumberList`](https://developer.mozilla.org/docs/Web/API/SVGNumberList)
 #[cfg_attr(rust_js, rust_js::types = "SVGNumberList")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct SVGNumberList(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -67107,6 +67135,7 @@ impl SVGNumberList {
 
 /// [`SVGPointList`](https://developer.mozilla.org/docs/Web/API/SVGPointList)
 #[cfg_attr(rust_js, rust_js::types = "SVGPointList")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct SVGPointList(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -67279,6 +67308,7 @@ impl SVGPreserveAspectRatio {
 
 /// [`SVGStringList`](https://developer.mozilla.org/docs/Web/API/SVGStringList)
 #[cfg_attr(rust_js, rust_js::types = "SVGStringList")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct SVGStringList(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -67465,6 +67495,7 @@ impl SVGTransform {
 
 /// [`SVGTransformList`](https://developer.mozilla.org/docs/Web/API/SVGTransformList)
 #[cfg_attr(rust_js, rust_js::types = "SVGTransformList")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct SVGTransformList(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -69449,6 +69480,7 @@ impl SpeechRecognitionEvent {
 
 /// [`SpeechRecognitionResult`](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionResult)
 #[cfg_attr(rust_js, rust_js::types = "SpeechRecognitionResult")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct SpeechRecognitionResult(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -69506,6 +69538,7 @@ impl SpeechRecognitionResult {
 
 /// [`SpeechRecognitionResultList`](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionResultList)
 #[cfg_attr(rust_js, rust_js::types = "SpeechRecognitionResultList")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct SpeechRecognitionResultList(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -70474,6 +70507,7 @@ impl StyleSheet {
 
 /// [`StyleSheetList`](https://developer.mozilla.org/docs/Web/API/StyleSheetList)
 #[cfg_attr(rust_js, rust_js::types = "StyleSheetList")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct StyleSheetList(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -71244,6 +71278,7 @@ impl TextTrackCue {
 
 /// [`TextTrackCueList`](https://developer.mozilla.org/docs/Web/API/TextTrackCueList)
 #[cfg_attr(rust_js, rust_js::types = "TextTrackCueList")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct TextTrackCueList(PhantomData<JsObject>);
 
 /// `a === b`: the same object.
@@ -71295,6 +71330,7 @@ impl TextTrackCueList {
 
 /// [`TextTrackList`](https://developer.mozilla.org/docs/Web/API/TextTrackList)
 #[cfg_attr(rust_js, rust_js::types = "TextTrackList")]
+#[cfg_attr(rust_js, rust_js::indexed)]
 pub struct TextTrackList(PhantomData<JsObject>);
 
 /// `a === b`: the same object.

@@ -57,13 +57,40 @@ build paid for the polyfills.
 - **One form for one construct**: a loop over an array's items counts its
   indices, from the start as from the end (ADR 0904).
 
+## Indexed lists (amended, rd274)
+
+A `NodeList` and the DOM's other indexed lists are stepped by their
+binding's `Iterator.from(list)`, `node_list::iter(list)`. Upstream counts
+their indices too, `for (let j = 0; j < appearingElements.length; j++)`,
+as React DOM's Fizz instruction set does, whose ES5 build polyfilled each
+`for…of` of them.
+
+- **The fact:** WebIDL gives such a list an indexed getter, `getter T
+  item(unsigned long index)`, and an integer `length`, its own or its
+  parent's, and makes its `[Symbol.iterator]` `%Array.prototype.values%`,
+  unless it iterates pairs, a map or a set. The webapi generator reads it
+  from WebIDL (`indexedList`) and marks each such struct
+  `#[rust_js::indexed]`: 37 of them, `NodeList`, `HTMLCollection`,
+  `DOMTokenList`, `HTMLSelectElement`, `CSSStyleDeclaration` and the rest.
+  The attribute is refused of anything but a struct.
+- **The loop:** a binding's call of `Iterator.from(list)` given an indexed
+  list (`bindings::is_indexed_list` of its first parameter) is said to
+  step an array's items, `Known::ArrayItems`, and its `for` is the same
+  index loop, under the same conditions: a variable the body doesn't
+  assign.
+- **Equivalence, live lists too:** `Array.prototype.values` reads the
+  list's `length`, then `list[i]`, at each step, as `i < list.length` and
+  `list[i]` do. A live list, `childNodes` or `children`, that the body
+  shrinks, `element.remove()`, is stepped the same by both: each skips the
+  item that took the removed one's index. `Iterator.from` of the list's
+  own iterator gives it as it is, and an array iterator's `return`, which
+  a `break` calls, does nothing. Case N of ADR 0262: nothing observable
+  changes. Held by `test/lowering-index-loops.test.ts`, which runs both
+  forms over happy-dom's lists and over a list built as WebIDL specifies
+  one, read live through a getter.
+
 ## What it doesn't do yet
 
-- A live `NodeList` (`node_list::iter(list)`) and a `js::Array` are
-  stepped by their binding's `Iterator.from(..)`. Saying one is an indexed
-  list needs a fact about the binding, WebIDL's indexed getter with a
-  `length`, and those loops stay `for…of` until bindings carry it. That
-  is the next step of this decision.
 - `enumerate()`, `for (const [i, x] of v.entries())`, stays as it is.
 
 ## Consequences
