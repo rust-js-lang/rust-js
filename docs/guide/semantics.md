@@ -1132,3 +1132,10 @@ React and JSX are [their own pages](README.md#react).
     runs. react-art's LinearGradient, RadialGradient and Pattern, which
     upstream writes as ES classes, are its (ADR 0262, the user's
     decision, 2026-11-01).
+38. A binding marked `#[rust_js::runs_nothing]` is taken at its word,
+    though it runs what it's given: React DOM's Fizz config's
+    `writeChunk(destination, chunk)`, which calls the destination's
+    `write`, is so marked, and a borrow of the array it flushes isn't
+    counted. A destination whose `write` pushes to that array at once
+    passes, as upstream's does, where Rust panics `already borrowed`
+    (ADR 0262, the user's decision, 2026-11-01).

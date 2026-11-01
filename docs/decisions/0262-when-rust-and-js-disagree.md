@@ -207,6 +207,25 @@ react.dev's TopNav passes the same closure instead.
   runs. Only such a host tells them apart, and there the port goes on
   where upstream would stop. Listed in the guide's differences
   (`semantics.md`, 36) and global values (`interop/global-scope.md`).
+- **A stream's write marked as running none of the crate's code**, the
+  second case's, which the user decided (2026-11-01, React DOM's Fizz
+  config): its stream config's `writeChunk(destination, chunk)` and
+  `writeChunkAndReturn` are bindings marked `#[rust_js::runs_nothing]`
+  (ADR 0867), though each calls the destination's `write`, the user's
+  stream. Its flushes hold each chunk array's borrow while they write it,
+  `for &chunk in chunks.borrow().iter() { write_chunk(destination, chunk)
+  }`, and without the mark every chunk array's borrow in the crate is
+  counted (ADR 0863), about 250 lines of `$borrowMut` in `try`/`finally`
+  where upstream pushes to plain arrays. Only a destination whose `write`
+  calls back into the same request at once and pushes to the array being
+  flushed tells them apart: Rust would panic `already borrowed`, and the
+  JS does what upstream's does, its `for` reaching the pushed chunk. So
+  it's harmless: what runs is upstream's behavior, and Node's and the
+  web's streams call back later, on `drain`, not in `write`. No compiler
+  change: the mark is the port's. Held by
+  `test/lowering-cell-borrows.test.ts`'s "a write binding marked as running
+  nothing leaves a flushed array unchecked". Listed in the guide's
+  differences (`semantics.md`, 38).
 - **A global `static` tested again inside the `if` that tested it is
   decided there**, the first case's, which the user accepted (2026-10-28,
   gap pt6): React's `if (__DEV__) { .. if (__DEV__ && debugTask) { .. } }`

@@ -874,3 +874,74 @@ pub fn later(queue: RefCell<Vec<u32>>) -> impl Fn() -> usize {
   expect([lib.held(kept, () => {}), kept]).toEqual([[4, 5], []]);
   expect(lib.later([6, 7, 8])()).toBe(3);
 });
+
+// ADR 0262, the user's decision (2026-11-01): React DOM's Fizz config
+// flushes each chunk array while it holds the array's borrow, `for &chunk in
+// chunks.borrow().iter() { write_chunk(destination, chunk) }`, and its
+// stream config's `writeChunk` is marked `#[rust_js::runs_nothing]`, though
+// it calls the destination's `write`, the user's. So the arrays are plain
+// arrays, as upstream's, and a destination whose `write` pushes to the
+// array being flushed passes, where Rust would panic `already borrowed`.
+test("a write binding marked as running nothing leaves a flushed array unchecked", async () => {
+  const dir = fixture("write-runs-nothing");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::marker::PhantomData;
+
+pub struct Destination(PhantomData<js::JsObject>);
+
+unsafe impl js::Defined for Destination {}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.writeChunk")]
+#[cfg_attr(rust_js, rust_js::runs_nothing)]
+fn write_chunk(destination: &Destination, chunk: &str) {
+    let _ = (destination, chunk);
+    unreachable!()
+}
+
+pub struct Segment {
+    pub chunks: RefCell<Vec<&'static str>>,
+}
+
+pub fn segment() -> Segment {
+    Segment { chunks: RefCell::new(Vec::new()) }
+}
+
+pub fn push(segment: &Segment, chunk: &'static str) {
+    segment.chunks.borrow_mut().push(chunk);
+}
+
+pub fn flush(segment: &Segment, destination: &Destination) {
+    for &chunk in segment.chunks.borrow().iter() {
+        write_chunk(destination, chunk);
+    }
+    segment.chunks.borrow_mut().clear();
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("$borrow");
+  expect(js).toContain("segment.chunks.push(chunk);");
+  const lib = await import(join(dir, "lib.js"));
+  const globals = globalThis as any;
+  const written: string[] = [];
+  const segment = lib.segment();
+  globals.writeChunk = (destination: { write(chunk: string): void }, chunk: string) => destination.write(chunk);
+  try {
+    lib.push(segment, "<p>");
+    // A write that pushes to the array being flushed, once: Rust panics.
+    let pushed = false;
+    lib.flush(segment, {
+      write(chunk: string) {
+        written.push(chunk);
+        if (!pushed) {
+          pushed = true;
+          lib.push(segment, "</p>");
+        }
+      },
+    });
+    expect(written).toEqual(["<p>", "</p>"]);
+    expect(segment.chunks).toEqual([]);
+  } finally {
+    delete globals.writeChunk;
+  }
+});
