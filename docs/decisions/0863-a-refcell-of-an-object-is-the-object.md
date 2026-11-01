@@ -946,14 +946,18 @@ A crate any of whose bodies has no MIR has no classes, and every cell is
 counted by its type.
 
 **A library's contract stays per type.** `RefCellFacts.counted` is each
-type some borrow of which is counted, as before. A consumer counts each of
-them, and a cell the library shares is one `TOP` reaches in both crates.
-`unchecked` is each type the library borrows of a cell `TOP` reaches, or
-whose class isn't known, and quiet so. A borrow of a cell only the
-library's code reaches is never a consumer's. So `unchecked` may list a
-type now that some of its cells are counted and others aren't, and a
-consumer holding a borrow of one across the library's code is refused,
-as before.
+type some borrow of which is counted, as before, and a consumer counts
+each. A cell a library shares is one `TOP` reaches in both crates. A
+consumer may hold a borrow of one while the library's code runs, and the
+library has only its contract's types to say so. So in a library, a
+borrow of a cell `TOP` reaches is quiet only where its type is, as
+before. Only its own cells, which no consumer reaches, are each their
+class. `unchecked` is each type the library borrows quietly of a cell
+`TOP` reaches, or whose class isn't known. A borrow of a cell only the
+library's code reaches is never a consumer's, so it isn't listed.
+React's reconciler holds a `RefCell<Vec<Rc<Fiber>>>` of its own across
+code. Were its shared cells of that type unchecked, React DOM, which holds
+one across the reconciler's code, would be refused.
 
 **Not a rule of where a cell was made.** "A cell in an `Rc` the crate
 made is never a binding's" doesn't hold: `Rc::new(batch)` of a `Batch` JS
@@ -993,11 +997,14 @@ export function reveal(batch) {
   can't be the held one are plain. Snapshots `untagged_ref_cells` and
   `refcell_borrows` lose the checks they no longer need.
 - `test/crates.test.ts`: a consumer's own cell beside a library's held one
-  is unchecked.
+  is unchecked; "a library checks a cell its consumer may share as its
+  type says", pair `ref_cells_flow`, against native Rust.
 - Mutations: `flow-std-moves-nothing`, `flow-closure-arguments-apart`,
   `flow-key-init-apart`, `flow-binding-keeps-in-collection`,
   `flow-collection-unseen`, `flow-exports-closed`,
   `flow-given-functions-closed`, `flow-unresolved-call-closed` and
   `flow-destructor-closed` (`analysis/cell_flow.rs`); `class-own-uncounted`,
-  `class-own-of-no-unknown`, `class-reached-uncounted` and
-  `class-flow-unread` (`drops/ref_cells.rs`).
+  `class-own-of-no-unknown`, `class-reached-uncounted`,
+  `class-reached-ignores-library-counted`,
+  `class-reached-precise-in-a-library` and `class-flow-unread`
+  (`drops/ref_cells.rs`).

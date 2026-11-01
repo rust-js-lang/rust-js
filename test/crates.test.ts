@@ -593,6 +593,18 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
   expect(consumer).toContain("        $borrowMut(list.value).value.push(n);\n");
 }, 300_000);
 
+// ADR 0863, amended (#445): a library's cell its consumer may share is
+// counted by its type, whatever its own cells' flows are, so its contract
+// lists no type it borrows unchecked that a consumer's held borrow may be:
+// a crate holding a borrow while the library borrows a cell it gave isn't
+// refused, and the library checks that borrow.
+test("a library checks a cell its consumer may share as its type says", () => {
+  const out = chain(pairs, "ref_cells_flow", ["dep", "app"]);
+  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  expect(dep).toContain("$borrowMut(cell).push(1);");
+  expect(contract(out).ref_cells.unchecked).toBeUndefined();
+}, 300_000);
+
 // ADR 0863, amended: a thread-local is a place of its own, as a struct's
 // field is. A crate whose generic code makes a `RefCell<T>` of any value,
 // `{ value }`, beside thread-locals of the `RefCell` type its library shares

@@ -489,4 +489,13 @@ export const mutations: Mutation[] = [
     replace: "                may_be(&self.counted_reached)",
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
   },
+  {
+    name: "class-reached-precise-in-a-library",
+    breaks:
+      "a library's cell its consumer may share is quiet by its flow, so its contract lists a type it borrows unchecked that a consumer's held borrow may be, and the consumer is refused (ADR 0863, amended)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "            CellClass::Anything if self.library => return self.quiet(recognition, borrows, (ty, false), drops),\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "a library checks a cell its consumer may share"],
+  },
 ];

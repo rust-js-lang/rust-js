@@ -42,6 +42,10 @@ pub(in crate::lower) struct RefCells<'tcx> {
     /// its MIR says, as many as its THIR has, each of which `counted_in`
     /// read: by its body, where it's written and its callee.
     classed: HashSet<(DefId, rustc_span::Span, DefId)>,
+    /// Whether the crate is a library, whose consumers may hold a borrow
+    /// of a cell it shares while its code runs: of one such, a class code
+    /// rust-js can't see may reach, its contract counts by type.
+    library: bool,
     /// Each the crate's bodies borrow of a cell code rust-js can't see may
     /// reach, or whose class isn't known: what a library shares.
     borrowed: HashSet<Ty<'tcx>>,
@@ -222,6 +226,10 @@ impl<'tcx> RefCells<'tcx> {
             (counted.iter()).any(|&counted| crate::lower::analysis::may_be_cell(tcx, counted, ty))
         };
         let counted = match class {
+            // A library's consumer's borrow of a cell it shares may be held
+            // while the library's code runs, which then checks it as the
+            // contract's types say: as by its type alone (ADR 0863).
+            CellClass::Anything if self.library => return self.quiet(recognition, borrows, (ty, false), drops),
             CellClass::Own(class) => self.counted_classes.contains(&class) || may_be(&self.counted_unknown),
             CellClass::Anything => {
                 let library_counts = self.library_has(tcx, ty, |f| &f.counted).is_some();
@@ -591,6 +599,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             counted_reached,
             counted_unknown,
             classed,
+            library: self.krate.library,
             borrowed,
             handed: self.handed_ref_cells(),
             libraries: self.krate.foreign.ref_cell_facts(),

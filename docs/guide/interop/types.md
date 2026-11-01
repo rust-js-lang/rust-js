@@ -1735,7 +1735,8 @@ export function shared() {
   is no other cell of its type. A tag cache held while a getter runs is
   checked, and a batch JS gives, of the same type, is still its plain
   array. A cell JS gives, or is given, or a library's, a `dyn`'s or a
-  trait's method's, may be any such cell of its type
+  trait's method's, may be any such cell of its type, and in a library
+  is counted by its type, as its consumers read its manifest
   ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md), amended).
   A borrow only where a test finds the loop's own item isn't there meets
   none: `for t in types.borrow().iter() { if !into.borrow().contains(t) {
