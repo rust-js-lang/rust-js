@@ -453,11 +453,12 @@ export const mutations: Mutation[] = [
   {
     name: "switch-guard-inner-if-apart",
     breaks:
-      "a guard MIR tests in part in an `if` inside, `if (!info)`, isn't the guard's, so the arm goes on and the `match` is labeled blocks",
+      "a guard MIR tests in part in an `if` inside, `if (!info)`, isn't the guard's, so the arm goes on and the `match` is no `switch`: React DOM's clearContainerSparingly is `if (name === \"HTML\" || ..) { .. } else if (name !== \"SCRIPT\" && ..) { if (name === \"LINK\") { .. } .. }`",
     file: "src/lower/mir/tidy/switches.rs",
     find: "            && of_guard(test)\n",
     replace: "            && false\n",
-    tests: twoGuards,
+    tests: ["test/corpus.test.ts", "-t", "^guarded_arm_falls_to_tail\\.rs$"],
+    snapshots: true,
   },
   {
     name: "fallen-to-own-case-not-absorbed",

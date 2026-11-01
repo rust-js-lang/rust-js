@@ -312,7 +312,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/cell.rs",
     find: "            Std::Borrow { lock: false, .. } if unchecked || self.quiet_ref_cell(tys[0].peel_refs(), false) => {\n",
     replace: "            Std::Borrow { lock: false, .. } if unchecked => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^refcell_quiet_borrows.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(refcell_quiet_borrows|cell_const)\\.rs$"],
     snapshots: true,
   },
   {
