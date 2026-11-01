@@ -123,7 +123,10 @@ export const mutations: Mutation[] = [
     find: "            None => (self.library_quiet).contains_key(&crate::lower::library::item_key(tcx, field)),\n",
     replace:
       "            None => false && (self.library_quiet).contains_key(&crate::lower::library::item_key(tcx, field)),\n",
-    tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
+    // Since #445 a consumer's own borrows of a library's cell are judged
+    // by their flow, so the field's fact shows where the consumer reads the
+    // library's quiet field of a context it makes: `context.currentValue`.
+    tests: ["test/cross-crate-items.test.ts", "-t", "a generic function's clone and its Rc are judged by what its callers give"],
   },
   {
     name: "value-cell-never",
