@@ -220,7 +220,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/labels.rs",
     find: "            } else if then.is_empty() && els.as_ref().is_none_or(|els| els.is_empty()) {\n",
     replace: "            } else if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^drop_scope_empty_if.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^loop_branch_emptied\\.rs$"],
+    snapshots: true,
   },
   {
     name: "never-taken-true-kept",
