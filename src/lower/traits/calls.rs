@@ -340,6 +340,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let method = Expr::member(this, bindings::fn_name(self.tcx, id));
             return Ok(Some(Expr::call(method, values)));
         }
+        // A method of the binding's class a class extends, its prototype's
+        // where its impl writes it: called on its value, `surface.render()`
+        // (rd331). One it doesn't write, a lifecycle method's default, has
+        // no JS, and its call is refused where the crate's calls are.
+        if crate::lower::classes::base_class(self.tcx, trait_id).is_some() && !bindings::is_binding(self.tcx, id) {
+            let mut values = values;
+            let this = values.remove(0);
+            let method = Expr::member(this, bindings::fn_name(self.tcx, id));
+            return Ok(Some(Expr::call(method, values)));
+        }
         // `x.to_string()` is std's, as its `Display` shows it, or a generic
         // `T: ToString`'s dictionary's, which the string call decides: of a
         // `dyn ToString` too, which has no pair to call through.

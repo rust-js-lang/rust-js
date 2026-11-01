@@ -14,7 +14,11 @@ names it. Extended by [0943](0943-an-object-of-methods-reading-this.md): a
 `#[rust_js::object]`'s methods are its literal's own, not a prototype's.
 Amended by [1009](1009-a-constructor-is-held-as-a-typed-class.md):
 `js::Class` takes its constructor's signature, `Class<fn(A, B) -> T>`,
-`js::class::<T>()` the untyped one it defaults to.
+`js::class::<T>()` the untyped one it defaults to. Amended by
+[1041](1041-a-class-that-implements-a-bindings-class-extends-it.md): a
+class that implements a binding's class, react's `Component`, extends it,
+an ES class, `class Surface extends Component { .. }`, which supersedes
+this ADR's rejection of an ES class and of an `extends` for such a class.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A for what's kept, a
 value's fields and its methods' meaning; and a compile error where Rust's
@@ -484,3 +488,19 @@ exports its type alone" (run: its getter, its method and the other class's
 static) and `test/typescript.test.ts`'s export lists; mutations
 `class-value-of-any-member`, `class-value-not-of-static` (`classes.ts`)
 and `class-type-alone-exported` (`declarations.ts`).
+
+## Amendment: a class that extends a binding's is an ES class (rd331)
+
+Decided by the user (2026-11-01): class components. **A class that
+implements a binding's class, react's `Component<P, S>`, extends it, an ES
+class**, `class Surface extends Component { componentDidMount() { .. }
+render() { .. } }`, its constructor, where it writes one,
+`constructor(props) { super(props); .. }`
+([1041](1041-a-class-that-implements-a-bindings-class-extends-it.md)).
+It supersedes the Alternatives' "An ES class" and
+"`#[rust_js::class(extends = Component)]`" for such a class: `extends` and
+`super` are written only in an ES class, and what it extends is said by
+the trait impl rustc checks, not an attribute. A class that extends
+nothing is a constructor function, as above. Its refusals of a class of
+no `fn new` and of the attribute on the struct alone don't hold of a
+class React constructs, which writes neither.

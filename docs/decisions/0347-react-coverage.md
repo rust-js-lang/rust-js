@@ -1,7 +1,10 @@
 # 0347. The react crate's types are measured against @types/react, and only grow
 
 Status: Accepted. Extends [0346](0346-next-coverage.md)'s ratchet to the
-react crate; its values stay [0043](0043-react-versions.md)'s.
+react crate; its values stay [0043](0043-react-versions.md)'s. Amended by
+[1041](1041-a-class-that-implements-a-bindings-class-extends-it.md):
+`Component` is bound, a trait a class component implements, and a value
+a trait's `types` names counts as bound.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

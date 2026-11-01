@@ -16,7 +16,10 @@ use rustc_span::Symbol;
 use rustc_span::def_id::DefId;
 
 mod namespaces;
+mod subclasses;
 pub(crate) use namespaces::{names_namespace, unread_namespaces};
+pub(crate) use subclasses::{base_class, js_class, subclass_impl_class, superclass};
+use subclasses::{starts_undefined, superclass_impls};
 
 /// The name of a class's constructor, Rust's own for one, `fn new(..) ->
 /// Self`: the crate's item, not std's.
@@ -157,16 +160,24 @@ pub(crate) fn exports_its_type(tcx: TyCtxt<'_>, method: DefId, exported: bool, e
         .is_none_or(|adt| tcx.visibility(adt.did()).is_public());
     let through_its_value =
         class_of(tcx, method).is_none() || matches!(member(tcx, method), Some(Member::Constructor | Member::Static));
-    exported && (public || elsewhere) && through_its_value
+    // A method of the binding's class it extends, `componentDidMount`,
+    // which React calls on the instance it constructs: its class is what
+    // JS is given, exported as its struct is (rd331).
+    let extending = tcx
+        .impl_of_assoc(method)
+        .is_some_and(|imp| subclass_impl_class(tcx, imp).is_some());
+    ((exported && through_its_value) || extending) && (public || elsewhere)
 }
 
 /// Whether `class`, a `pub` class, is a value its module's TypeScript
 /// exports, not its type alone: where a `pub` member exports it, as
-/// [`exports_its_type`] has it (ADR 0761, amended).
+/// [`exports_its_type`] has it (ADR 0761, amended), or it extends a
+/// binding's class, which React constructs (rd331).
 pub(crate) fn exports_its_value(tcx: TyCtxt<'_>, class: DefId) -> bool {
-    (tcx.inherent_impls(class).iter())
-        .flat_map(|&imp| tcx.associated_item_def_ids(imp).iter().copied())
-        .any(|item| exports_its_type(tcx, item, tcx.visibility(item).is_public(), false))
+    superclass(tcx, class).is_some()
+        || (tcx.inherent_impls(class).iter())
+            .flat_map(|&imp| tcx.associated_item_def_ids(imp).iter().copied())
+            .any(|item| exports_its_type(tcx, item, tcx.visibility(item).is_public(), false))
 }
 
 /// The methods of `adt`, an object of methods, each its literal's own
@@ -261,10 +272,15 @@ pub(crate) fn trait_impl_class(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
 }
 
 /// The class whose prototype's method `def_id` is, a method of its impl
-/// of a trait of classes (rd283); `None` of any other item.
+/// of a trait of classes (rd283), or of the binding's class it extends,
+/// `componentDidMount` of `impl Component<P> for Surface` (rd331); `None`
+/// of any other item.
 pub(crate) fn trait_member_class(tcx: TyCtxt<'_>, def_id: DefId) -> Option<DefId> {
     (tcx.def_kind(def_id) == DefKind::AssocFn)
-        .then(|| trait_impl_class(tcx, tcx.trait_impl_of_assoc(def_id)?))
+        .then(|| {
+            let imp = tcx.trait_impl_of_assoc(def_id)?;
+            trait_impl_class(tcx, imp).or_else(|| subclass_impl_class(tcx, imp))
+        })
         .flatten()
 }
 
@@ -303,7 +319,7 @@ pub(crate) fn implementations<'tcx>(
 /// of its prototype (rd304, ADR 1035 amended). `None` of any other.
 pub(crate) fn field_accessor(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Vec<(rustc_abi::FieldIdx, DefId)>> {
     use rustc_middle::ty::adjustment::{Adjust, DerefAdjustKind};
-    trait_member_class(tcx, def_id)?;
+    trait_impl_class(tcx, tcx.trait_impl_of_assoc(def_id)?)?;
     let local = def_id.as_local()?;
     let body = tcx.hir_body_owned_by(local);
     let [this, ..] = body.params else { return None };
@@ -442,7 +458,9 @@ pub(crate) fn constructor_of(tcx: TyCtxt<'_>, adt: DefId) -> Option<DefId> {
 /// its struct is another module's, React's `Fiber` of ReactInternalTypes
 /// made in ReactFiber (ADR 0761, amended); `None` of what's no class.
 pub(crate) fn home(tcx: TyCtxt<'_>, adt: DefId) -> Option<rustc_span::def_id::LocalModId> {
-    Some(tcx.parent_module_from_def_id(constructor_of(tcx, adt)?.as_local()?))
+    // Of one React constructs, where its impl of the class it extends is (rd331).
+    let made = constructor_of(tcx, adt).or_else(|| superclass(tcx, adt).map(|(imp, _)| imp))?;
+    Some(tcx.parent_module_from_def_id(made.as_local()?))
 }
 
 /// The class `module`'s item `item` declares: a class's struct, where its
@@ -519,8 +537,36 @@ pub(super) fn reject_misuse<'tcx>(
                         "has no type or const parameters: JS's prototype is one for every value",
                     );
                 }
-                if constructor_of(tcx, id).is_none() {
-                    refuse(span, "is made by its constructor, `fn new(..) -> Self`, in its impl");
+                let extends = superclass_impls(tcx, id);
+                if extends.len() > 1 {
+                    refuse(
+                        span,
+                        "extends one class, a binding's it implements, `impl Component<P> for Surface`, not two",
+                    );
+                }
+                match constructor_of(tcx, id) {
+                    None if extends.is_empty() => refuse(
+                        span,
+                        "is made by its constructor, `fn new(..) -> Self`, in its impl, or by the class it extends, a binding's it implements, `impl Component<P> for Surface`",
+                    ),
+                    // Made by the class it extends, React's of a component:
+                    // each field is what the instance is given after,
+                    // `undefined` until then (rd331).
+                    None => {
+                        for field in &variant.fields {
+                            let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+                            if !starts_undefined(tcx, ty) {
+                                refuse(
+                                    tcx.def_span(field.did),
+                                    &format!(
+                                        "that its superclass constructs has fields set after, `undefined` until then: `{}` is an `Option`, or a `Cell` or a `RefCell` of one, or the class writes its constructor, `fn new(props: P) -> Self`",
+                                        field.name
+                                    ),
+                                );
+                            }
+                        }
+                    }
+                    Some(_) => {}
                 }
             }
             DefKind::Enum | DefKind::Union | DefKind::Fn | DefKind::Trait if marked(tcx, id) => {
@@ -593,6 +639,14 @@ pub(super) fn reject_misuse<'tcx>(
                             if sig.output() != own {
                                 refuse(item_span, "constructor, `fn new(..) -> Self`, gives `Self`");
                             }
+                            // `super(props)`: what its superclass is
+                            // constructed with, its own parameter (rd331).
+                            if superclass(tcx, class).is_some() && sig.inputs().len() != 1 {
+                                refuse(
+                                    item_span,
+                                    "constructor of a class that extends one takes what it's constructed with, its props, `fn new(props: P) -> Self`, which `super(props)` gives the class it extends",
+                                );
+                            }
                         }
                         _ => {}
                     }
@@ -637,6 +691,13 @@ pub(super) fn reject_misuse<'tcx>(
                             "takes a trait's method that takes rest arguments as the trait's default gives it, not its own",
                         );
                     }
+                }
+            }
+            // An impl of the binding's class it extends: the methods it
+            // writes its class's, the rest the class it extends' (rd331).
+            DefKind::Impl { of_trait: true } if let Some(class) = subclass_impl_class(tcx, id) => {
+                for (at, what) in subclasses::impl_misuse(tcx, id, class) {
+                    refuse(at, &what);
                 }
             }
             DefKind::Trait if is_class_trait(tcx, id) => {
@@ -1099,7 +1160,23 @@ pub(super) fn as_member(
     match member {
         // Its instance a handle may be kept on the place of, a field's, as
         // a method's `this` (#359).
-        Member::Constructor => set_this(&mut function.body).map(|()| this_outside_accessors(class, &mut function.body)),
+        Member::Constructor => {
+            set_this(&mut function.body)?;
+            this_outside_accessors(class, &mut function.body);
+            // Of a class that extends one, the class it extends constructs
+            // `this` first, given what it's given, `super(props);` (rd331).
+            if class_of(tcx, def_id).is_some_and(|adt| superclass(tcx, adt).is_some()) {
+                let given = (function.params.iter())
+                    .map(|param| match param {
+                        Pattern::Name(name) => Ok(Expr::var(name)),
+                        _ => Err("constructor of a class that extends one names its parameter, `props`, which `super(props)` is given"),
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
+                let first = StmtKind::Expr(Expr::call(Expr::super_(), given)).at(js::Span::NONE);
+                function.body.insert(0, first);
+            }
+            Ok(())
+        }
         Member::Method | Member::Getter => {
             this_outside_accessors(class, &mut function.body);
             Ok(())

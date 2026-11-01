@@ -357,4 +357,28 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^switch_guard_skips_its_case.rs$"],
     snapshots: true,
   },
+  {
+    name: "subclass-a-constructor-function",
+    breaks: "a class that extends one is a constructor function, `function Label(props) { super(props); .. }`, which can't extend",
+    file: "src/to_oxc/statements.rs",
+    find: "        if let Some(extends) = &class.extends {\n",
+    replace: "        if let Some(extends) = class.extends.as_ref().filter(|_| false) {\n",
+    tests: [
+      "test/class-components.test.ts",
+      "-t",
+      "an ES class React renders"
+    ]
+  },
+  {
+    name: "subclass-static-on-the-prototype",
+    breaks: "a class component's function of no `self`, `Label.greeting()`, is its prototype's, undefined on the class",
+    file: "src/to_oxc/statements.rs",
+    find: "                    !class.prototype.contains(&f.name),\n",
+    replace: "                    false,\n",
+    tests: [
+      "test/class-components.test.ts",
+      "-t",
+      "an ES class React renders"
+    ]
+  },
 ];

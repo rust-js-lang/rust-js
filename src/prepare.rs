@@ -1449,6 +1449,7 @@ fn expr(e: &mut Expr) {
         | ExprKind::GivenUndefined
         | ExprKind::Null
         | ExprKind::This
+        | ExprKind::Super
         | ExprKind::Var(_)
         | ExprKind::Symbol(_)
         | ExprKind::ItemHole(_)

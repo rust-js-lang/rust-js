@@ -358,6 +358,7 @@ impl Walk {
             | ExprKind::Written(_)
             | ExprKind::Null
             | ExprKind::This
+            | ExprKind::Super
             | ExprKind::Symbol(_)
             | ExprKind::Regex(_)
             | ExprKind::ItemHole(_)

@@ -1124,5 +1124,4 @@ export const mutations: Mutation[] = [
       "a namespace's methods are its module's functions",
     ],
   },
-
 ];

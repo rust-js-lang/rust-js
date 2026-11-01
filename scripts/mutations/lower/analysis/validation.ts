@@ -287,4 +287,16 @@ export const mutations: Mutation[] = [
     replace: "                    .is_some_and(|_| true)\n",
     tests: ["test/classes-traits.test.ts"],
   },
+  {
+    name: "subclass-impl-refused",
+    breaks: "a class's impl of react's `Component` is refused, as any binding trait's is",
+    file: "src/lower/analysis/validation.rs",
+    find: "                    || crate::lower::classes::subclass_impl_class(tcx, def_id.to_def_id()).is_some()\n",
+    replace: "                    || false\n",
+    tests: [
+      "test/class-components.test.ts",
+      "-t",
+      "an ES class React renders"
+    ]
+  },
 ];

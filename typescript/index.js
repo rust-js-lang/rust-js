@@ -25,7 +25,7 @@ import * as f from "typescript/ast/factory";
  *   | { kind: "export-default", name: string }
  *   | { kind: "export", from?: string, names: [string, string][], typeOnly?: boolean }
  *   | { kind: "namespace", name: string, exported: boolean, declare: boolean, declarations: Declaration[] }
- *   | { kind: "class", name: string, exported: boolean, declare: boolean, members: ClassMember[], docs?: string }
+ *   | { kind: "class", name: string, exported: boolean, declare: boolean, extends?: Type, members: ClassMember[], docs?: string }
  *   | { kind: "other", text: string }} Declaration
  *
  * @typedef {{ kind: "property", name: string, optional: boolean, readonly: boolean, type: Type, docs?: string }
@@ -645,7 +645,17 @@ function statement(declaration) {
         modifiers(declaration),
         id(declaration.name),
         undefined,
-        undefined,
+        // What it extends, a binding's, `extends Component<SurfaceProps>` (rd331).
+        declaration.extends
+          ? [
+              f.createHeritageClause(SyntaxKind.ExtendsKeyword, [
+                f.createExpressionWithTypeArguments(
+                  entity(declaration.extends.name),
+                  declaration.extends.args?.length ? declaration.extends.args.map(typeNode) : undefined,
+                ),
+              ]),
+            ]
+          : undefined,
         declaration.members.map(classMember),
       );
     case "namespace":

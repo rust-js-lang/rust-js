@@ -103,20 +103,34 @@ impl<'tcx> Declarations<'_, 'tcx> {
         let mut members = Vec::new();
         for imp in self.tcx.hir_crate_items(()).definitions() {
             let imp = imp.to_def_id();
-            if crate::lower::classes::trait_impl_class(self.tcx, imp) != Some(class) {
+            // Of the binding's class it extends, only what its impl writes:
+            // the rest is that class's (rd331).
+            let extending = crate::lower::classes::subclass_impl_class(self.tcx, imp) == Some(class);
+            if crate::lower::classes::trait_impl_class(self.tcx, imp) != Some(class) && !extending {
                 continue;
             }
             let trait_id = self.tcx.impl_trait_id(imp);
             if !self.tcx.visibility(trait_id).is_public() {
                 continue;
             }
-            for &item in self.tcx.associated_item_def_ids(trait_id) {
+            // Of the class it extends, what its impl writes, in its order.
+            let items: Vec<DefId> = match extending {
+                true => (self.tcx.associated_item_def_ids(imp).iter())
+                    .filter(|&&own| self.tcx.def_kind(own) == rustc_hir::def::DefKind::AssocFn)
+                    .filter_map(|&own| self.tcx.trait_item_of(own))
+                    .collect(),
+                false => self.tcx.associated_item_def_ids(trait_id).to_vec(),
+            };
+            for item in items {
                 // One its impl gives a field with is that field (rd304).
                 let given = self.tcx.impl_item_implementor_ids(imp).get(&item).copied();
                 if given.is_some_and(|own| crate::lower::classes::field_accessor(self.tcx, own).is_some()) {
                     continue;
                 }
-                let function = self.function(item);
+                // Of the class it extends, its impl's own, of its props' type and
+                // its doc, not the trait's (rd331).
+                let declaring = given.filter(|_| extending).unwrap_or(item);
+                let function = self.function(declaring);
                 let mut params = function["params"].as_array().cloned().unwrap_or_default();
                 if !params.is_empty() {
                     params.remove(0);
@@ -129,7 +143,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     "params": params,
                     "returns": function["returns"],
                 });
-                members.push(documented(declared, self.tcx, item));
+                members.push(documented(declared, self.tcx, declaring));
             }
         }
         members

@@ -611,3 +611,85 @@ export function Panel() {
 
 State setters are `Copy`, so every handler can `move` one in. See
 [hooks](hooks.md).
+
+## Class components
+
+A component that must be a class, as a library's that React or a JS
+caller extends or constructs, is a `#[cfg_attr(rust_js, rust_js::class)]`
+struct that implements `react::Component<P, S>`, its props `P` and state
+`S` as @types/react's `Component<P, S>` types them. It's an ES class that
+extends React's `Component`, as a class component is written by hand
+([ADR 1041](../../decisions/1041-a-class-that-implements-a-bindings-class-extends-it.md)):
+
+```rust
+use std::cell::Cell;
+
+use react::{Component, JSX, jsx};
+
+pub struct ClockProps {
+    pub label: &'static str,
+}
+
+/// Counts the times its label changes.
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Clock {
+    _ticks: Cell<Option<f64>>,
+}
+
+impl Component<ClockProps> for Clock {
+    fn component_did_mount(&self) {
+        self._ticks.set(Some(0.0));
+    }
+
+    fn component_did_update(&self, prev_props: &ClockProps, _prev_state: &()) {
+        if prev_props.label != self.props().label {
+            self._ticks.set(Some(self._ticks.get().unwrap_or(0.0) + 1.0));
+        }
+    }
+
+    fn render(&self) -> JSX::Element {
+        jsx! { <p>{self.props().label}</p> }
+    }
+}
+```
+
+```jsx
+import { Component } from "react";
+
+/** Counts the times its label changes. */
+export class Clock extends Component {
+  componentDidMount() {
+    this._ticks = 0;
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    if (prevProps.label !== this.props.label) {
+      this._ticks = (this._ticks ?? 0) + 1;
+    }
+  }
+
+  render() {
+    return <p>{this.props.label}</p>;
+  }
+}
+```
+
+- **Each method its impl writes is its class's**, `render` and the
+  lifecycle methods React calls, `component_did_mount` as
+  `componentDidMount`; one it doesn't write its class doesn't have, so
+  React does what it does of none.
+- **`self.props()` is `this.props`**, typed `&P`, and `self.force_update()`
+  `this.forceUpdate()`: the class it extends has them, so an impl can't
+  write them.
+- **React constructs it**: each field is what the instance is given
+  after, `undefined` until set, an `Option` or a `Cell` or `RefCell` of
+  one. Or the class writes its constructor, `fn new(props: &P) -> Self`
+  in its `#[rust_js::class]` impl, which is `constructor(props) {
+  super(props); .. }`, and its fields are set as it sets them.
+- A class that implements no binding's class is a constructor function
+  and its prototype, as [JS classes](../interop/export-to-javascript.md#js-classes)
+  are.
+
+Not yet: an element of one in `jsx!`, `<Clock label="x" />`, as a struct
+isn't a value in Rust (JS renders it, `createElement(Clock, ..)`);
+`this.state` and `setState`; `PureComponent`.

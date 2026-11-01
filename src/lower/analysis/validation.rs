@@ -101,7 +101,10 @@ pub(super) fn reject_unsupported(
                     .instantiate_identity()
                     .skip_normalization()
                     .def_id;
-                if traits::implementable(tcx, foreign, trait_id) {
+                // A class's of the binding's class it extends (rd331).
+                if traits::implementable(tcx, foreign, trait_id)
+                    || crate::lower::classes::subclass_impl_class(tcx, def_id.to_def_id()).is_some()
+                {
                     continue;
                 }
                 let what = format!("user implementations of `{}`", tcx.def_path_str(trait_id));

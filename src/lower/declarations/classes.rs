@@ -95,12 +95,22 @@ impl Declarations<'_, '_> {
             members.push(json!({ "kind": "method", "name": "toString", "static": false, "typeParameters": [], "params": [], "returns": returns }));
         }
         members.splice(0..0, constructor);
-        json!({
+        let mut class = json!({
             "kind": "class",
             "name": type_name(self.tcx, def_id),
             "exported": true,
             "declare": true,
             "members": members,
-        })
+        });
+        // What it extends, the binding's class it implements, as
+        // TypeScript types it, `extends Component<SurfaceProps, undefined>`
+        // (rd331).
+        if let Some((imp, _)) = crate::lower::classes::superclass(self.tcx, def_id) {
+            let trait_ref = self.tcx.impl_trait_ref(imp).instantiate_identity().skip_normalization();
+            if let Some(written) = super::written_types(self.tcx, trait_ref.def_id) {
+                class["extends"] = self.written(trait_ref.def_id, &written, trait_ref.args);
+            }
+        }
+        class
     }
 }

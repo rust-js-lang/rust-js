@@ -124,8 +124,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a class of no `fn new` compiles, no constructor function to make it",
     file,
-    find: "                if constructor_of(tcx, id).is_none() {\n",
-    replace: "                if false {\n",
+    find: "                    None if extends.is_empty() => refuse(\n",
+    replace: "                    None if false => refuse(\n",
     tests: refusals,
   },
   {
@@ -223,8 +223,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a handle on a constructor's instance's field, `bump(&fiber.reads)`, reads the handle's `this`, `{ get value() { return this.reads; } }`",
     file,
-    find: "        Member::Constructor => set_this(&mut function.body).map(|()| this_outside_accessors(class, &mut function.body)),\n",
-    replace: "        Member::Constructor => set_this(&mut function.body),\n",
+    find: "            set_this(&mut function.body)?;\n            this_outside_accessors(class, &mut function.body);\n",
+    replace: "            set_this(&mut function.body)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^class_constructor_statements.rs$"],
   },
   {
@@ -252,8 +252,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a class whose struct is another module's is declared nowhere, `createFiber(): any`",
     file,
-    find: "    Some(tcx.parent_module_from_def_id(constructor_of(tcx, adt)?.as_local()?))\n",
-    replace: "    Some(tcx.parent_module_from_def_id(adt.as_local()?))\n",
+    find: "    Some(tcx.parent_module_from_def_id(made.as_local()?))\n",
+    replace: "    Some(tcx.parent_module_from_def_id(made.as_local().and(adt.as_local())?))\n",
     tests: ["test/classes.test.ts", "-t", "constructor's statements set this"],
   },
   {
@@ -541,8 +541,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a private `#[rust_js::class]` whose methods are `pub` is exported, `export function Wrapper`, which a package's `export *` exposes where upstream's module keeps it (rd325)",
     file: "src/lower/classes.rs",
-    find: "    exported && (public || elsewhere) && through_its_value\n",
-    replace: "    exported && through_its_value\n",
+    find: "    ((exported && through_its_value) || extending) && (public || elsewhere)\n",
+    replace: "    (exported && through_its_value) || extending\n",
     tests: ["test/classes.test.ts", "-t", "a private class is its module's own"],
   },
   {
@@ -562,5 +562,109 @@ export const mutations: Mutation[] = [
     find: "        class_of(tcx, method).is_none() || matches!(member(tcx, method), Some(Member::Constructor | Member::Static));\n",
     replace: "        class_of(tcx, method).is_none() || matches!(member(tcx, method), Some(Member::Constructor));\n",
     tests: ["test/classes.test.ts", "-t", "exports its type alone"],
+  },
+  {
+    name: "subclass-methods-not-the-prototypes",
+    breaks: "a class component's `componentDidMount` is no method of its class, which React never calls",
+    file: "src/lower/classes.rs",
+    find: "            trait_impl_class(tcx, imp).or_else(|| subclass_impl_class(tcx, imp))\n",
+    replace: "            trait_impl_class(tcx, imp)\n",
+    tests: [
+      "test/class-components.test.ts",
+      "-t",
+      "an ES class React renders"
+    ]
+  },
+  {
+    name: "subclass-unexported",
+    breaks: "a `pub` class component whose impl is react's `Component`'s alone isn't exported, so nothing can render it",
+    file: "src/lower/classes.rs",
+    find: "    ((exported && through_its_value) || extending) && (public || elsewhere)\n",
+    replace: "    exported && through_its_value && (public || elsewhere)\n",
+    tests: [
+      "test/class-components.test.ts",
+      "-t",
+      "an ES class React renders"
+    ]
+  },
+  {
+    name: "subclass-homeless",
+    breaks: "a class component React constructs, of no `new`, is in no module: its superclass imported nowhere",
+    file: "src/lower/classes.rs",
+    find: "    let made = constructor_of(tcx, adt).or_else(|| superclass(tcx, adt).map(|(imp, _)| imp))?;\n",
+    replace: "    let made = constructor_of(tcx, adt)?;\n",
+    tests: [
+      "test/class-components.test.ts",
+      "-t",
+      "the module its impl is"
+    ]
+  },
+  {
+    name: "subclass-of-two-allowed",
+    breaks: "a class that implements react's `Component` twice extends whichever comes first, `this.props` of the other's type",
+    file: "src/lower/classes.rs",
+    find: "                if extends.len() > 1 {\n",
+    replace: "                if false {\n",
+    tests: [
+      "test/class-components.test.ts",
+      "-t",
+      "what a class that extends one is refused"
+    ]
+  },
+  {
+    name: "subclass-without-new-refused",
+    breaks: "a class component React constructs is refused for having no `fn new`, though React makes it",
+    file: "src/lower/classes.rs",
+    find: "                    None if extends.is_empty() => refuse(\n",
+    replace: "                    None if true => refuse(\n",
+    tests: [
+      "test/class-components.test.ts",
+      "-t",
+      "an ES class React renders"
+    ]
+  },
+  {
+    name: "subclass-field-set-after-allowed",
+    breaks: "a class component React constructs may have an `f64` field, which is `undefined` until set, no number",
+    file: "src/lower/classes.rs",
+    find: "                            if !starts_undefined(tcx, ty) {\n",
+    replace: "                            if false {\n",
+    tests: [
+      "test/class-components.test.ts",
+      "-t",
+      "what a class that extends one is refused"
+    ]
+  },
+  {
+    name: "subclass-new-of-any-arity",
+    breaks: "a class component's `fn new(props, more)` is allowed, its `super(props, more)` given what React never passes",
+    file: "src/lower/classes.rs",
+    find: "                            if superclass(tcx, class).is_some() && sig.inputs().len() != 1 {\n",
+    replace: "                            if false {\n",
+    tests: [
+      "test/class-components.test.ts",
+      "-t",
+      "what a class that extends one is refused"
+    ]
+  },
+  {
+    name: "subclass-super-unconstructed",
+    breaks: "a class component's constructor never calls `super(props)`, so `this` is a ReferenceError and `this.props` unset",
+    file: "src/lower/classes.rs",
+    find: "                function.body.insert(0, first);\n",
+    replace: "                drop(first);\n",
+    tests: [
+      "test/class-components.test.ts",
+      "-t",
+      "an ES class React renders"
+    ]
+  },
+  {
+    name: "subclass-declared-its-type-alone",
+    breaks: "a `pub` class component of no `pub` constructor is declared `declare class Counter` and `export type { Counter }`, though its JS exports the class React constructs",
+    file: "src/lower/classes.rs",
+    find: "    superclass(tcx, class).is_some()\n        || (tcx.inherent_impls(class).iter())\n",
+    replace: "    false\n        || (tcx.inherent_impls(class).iter())\n",
+    tests: ["test/class-components.test.ts", "-t", "an ES class React renders"],
   },
 ];

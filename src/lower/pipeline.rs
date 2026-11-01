@@ -837,7 +837,7 @@ pub fn lower_crate<'tcx>(
                             let class = namespace.class.get_or_insert_with(|| js::Class {
                                 declared: (super::classes::class_of(tcx, def_id).and_then(|adt| adt.as_local()))
                                     .map_or(js::Span::NONE, |adt| sources.item_span(tcx, adt)),
-                                ..Default::default()
+                                ..super::classes::js_class(tcx, def_id, &import_names[&module])
                             });
                             super::classes::place(member, class, &lowered.function.name);
                         }

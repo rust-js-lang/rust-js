@@ -494,4 +494,16 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/classes-traits.test.ts"],
   },
+  {
+    name: "subclass-method-called-on-its-impl",
+    breaks: "a Rust call of a class component's method, `label.render()`, is `Label.render(label)`, which its class has no static of",
+    file: "src/lower/traits/calls.rs",
+    find: "        if crate::lower::classes::base_class(self.tcx, trait_id).is_some() && !bindings::is_binding(self.tcx, id) {\n",
+    replace: "        if false && !bindings::is_binding(self.tcx, id) {\n",
+    tests: [
+      "test/class-components.test.ts",
+      "-t",
+      "an ES class React renders"
+    ]
+  },
 ];

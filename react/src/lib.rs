@@ -1161,6 +1161,60 @@ pub fn static_component<P: Lifetimes, M>(component: impl ComponentType<P::Static
 /// `M` only tells them apart.
 pub trait ComponentType<P, M> {}
 
+/// [`Component`](https://react.dev/reference/react/Component), a class
+/// component's base: a `#[rust_js::class]` struct that implements it is an
+/// ES class that extends React's, `class Surface extends Component {
+/// componentDidMount() { .. } render() { .. } }`, `P` its props and `S` its
+/// state, as @types/react's `Component<P, S>` types them. Each method its
+/// impl writes is its class's, which React calls; one it doesn't write its
+/// class doesn't have, so React does what it does of none. The struct's
+/// fields are what the instance gains after React constructs it,
+/// `undefined` until set: each an `Option`, or a `Cell` of one.
+///
+/// ```ignore
+/// #[cfg_attr(rust_js, rust_js::class)]
+/// pub struct Greeting {}
+///
+/// impl Component<GreetingProps> for Greeting {
+///     fn render(&self) -> JSX::Element {
+///         jsx! { <h1>{"Hello, "}{self.props().name}</h1> }
+///     }
+/// }
+/// ```
+#[cfg_attr(rust_js, rust_js::types = "react#Component<P, S>")]
+pub trait Component<P = (), S = ()> {
+    /// [`render`](https://react.dev/reference/react/Component#render): what
+    /// it renders, of `self.props()`.
+    fn render(&self) -> Element;
+
+    /// [`componentDidMount`](https://react.dev/reference/react/Component#componentdidmount):
+    /// called once it's on the screen.
+    fn component_did_mount(&self) {}
+
+    /// [`componentDidUpdate`](https://react.dev/reference/react/Component#componentdidupdate):
+    /// called once it's re-rendered with new props or state, given the ones
+    /// before.
+    fn component_did_update(&self, prev_props: &P, prev_state: &S) {}
+
+    /// [`componentWillUnmount`](https://react.dev/reference/react/Component#componentwillunmount):
+    /// called before it's removed from the screen.
+    fn component_will_unmount(&self) {}
+
+    /// [`this.props`](https://react.dev/reference/react/Component#props):
+    /// what it was given, React's to set.
+    #[cfg_attr(rust_js, rust_js::link_name = "get props")]
+    fn props(&self) -> &P {
+        unreachable!()
+    }
+
+    /// [`forceUpdate`](https://react.dev/reference/react/Component#forceupdate):
+    /// renders it again, though its props and state are as they were.
+    #[cfg_attr(rust_js, rust_js::link_name = "forceUpdate")]
+    fn force_update(&self) {
+        unreachable!()
+    }
+}
+
 /// What a component function renders: an [`Element`], or an `Option` of
 /// one, `undefined` where it renders nothing, JS's `return null` (ADR 0286).
 pub trait Rendered {}

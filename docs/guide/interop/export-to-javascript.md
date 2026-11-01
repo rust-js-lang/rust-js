@@ -654,8 +654,12 @@ alone: its module's `function ReactTestInstance(..)`, and in its `.d.ts`
 `declare class ReactTestInstance { .. }` and `export type {
 ReactTestInstance };`
 ([ADR 0761](../../decisions/0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md),
-amended). React's `Component`, and its `PureComponent`, whose prototype
-inherits `Component`'s:
+amended). A class that implements a binding's class, react's `Component`,
+extends it instead, an ES class, `class Surface extends Component { .. }`:
+see [class components](../react/components.md#class-components) ([ADR
+1041](../../decisions/1041-a-class-that-implements-a-bindings-class-extends-it.md)).
+React's `Component`, and its `PureComponent`, whose prototype inherits
+`Component`'s:
 
 ```rust
 use js::object::assign;

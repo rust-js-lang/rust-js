@@ -572,4 +572,16 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^class_trait_field_borrows.rs$"],
   },
+  {
+    name: "superclass-unimported",
+    breaks: "a class component's module never imports the class it extends, `class Counter extends Component` of no `Component`",
+    file: "src/lower/analysis.rs",
+    find: "            uses.imported.entry(export).or_default().insert(home);\n",
+    replace: "            drop((export, home));\n",
+    tests: [
+      "test/class-components.test.ts",
+      "-t",
+      "an ES class React renders"
+    ]
+  },
 ];

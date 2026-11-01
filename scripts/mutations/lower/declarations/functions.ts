@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a class's `.d.ts` leaves out the methods a trait of classes gives its prototype (rd283)",
     file: "src/lower/declarations/functions.rs",
-    find: "            if crate::lower::classes::trait_impl_class(self.tcx, imp) != Some(class) {\n",
+    find: "            if crate::lower::classes::trait_impl_class(self.tcx, imp) != Some(class) && !extending {\n",
     replace: "            if true {\n",
     tests: ["test/classes-traits.test.ts"],
   },
@@ -118,5 +118,29 @@ export const mutations: Mutation[] = [
     find: "                if given.is_some_and(|own| crate::lower::classes::field_accessor(self.tcx, own).is_some()) {\n",
     replace: "                if given.is_some_and(|own| crate::lower::classes::field_accessor(self.tcx, own).is_none()) {\n",
     tests: ["test/classes-traits.test.ts", "-t", "prototype's"],
+  },
+  {
+    name: "subclass-declared-of-the-traits-generics",
+    breaks: "a class component's `componentDidUpdate` is declared of the trait's `P`, `prevProps: P`, no type the module has",
+    file: "src/lower/declarations/functions.rs",
+    find: "                let declaring = given.filter(|_| extending).unwrap_or(item);\n",
+    replace: "                let declaring = item;\n",
+    tests: [
+      "test/class-components.test.ts",
+      "-t",
+      "an ES class React renders"
+    ]
+  },
+  {
+    name: "subclass-declares-the-traits-defaults",
+    breaks: "a class component declares every method of react's `Component`, `props()` and lifecycle methods it doesn't write",
+    file: "src/lower/declarations/functions.rs",
+    find: "            let items: Vec<DefId> = match extending {\n",
+    replace: "            let items: Vec<DefId> = match false {\n",
+    tests: [
+      "test/class-components.test.ts",
+      "-t",
+      "an ES class React renders"
+    ]
   },
 ];

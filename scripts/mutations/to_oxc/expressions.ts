@@ -431,4 +431,16 @@ export const mutations: Mutation[] = [
     replace: "            n => format!(\"\\\\u{n:04x}\"),\n",
     tests: ["test/lowering-strings.test.ts", "-t", "written as its escape"],
   },
+  {
+    name: "super-printed-as-this",
+    breaks: "a class component's `super(props)` is `this(props)`, a TypeError",
+    file: "src/to_oxc/expressions.rs",
+    find: "            ExprKind::Super => Expression::new_super(sp, b),\n",
+    replace: "            ExprKind::Super => Expression::new_this_expression(sp, b),\n",
+    tests: [
+      "test/class-components.test.ts",
+      "-t",
+      "an ES class React renders"
+    ]
+  },
 ];

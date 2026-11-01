@@ -17,6 +17,11 @@ impl Expr {
         Expr::new(ExprKind::This)
     }
 
+    /// `super`, a class's that extends one, called `super(props)` (rd331).
+    pub fn super_() -> Expr {
+        Expr::new(ExprKind::Super)
+    }
+
     /// `of.method(args)`, of a `str` or a slice `of` as Rust's types tell.
     pub fn read(of: Expr, method: &str, args: Vec<Expr>) -> Expr {
         Expr {

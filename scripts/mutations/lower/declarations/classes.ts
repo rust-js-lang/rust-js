@@ -17,4 +17,17 @@ export const mutations: Mutation[] = [
     find: "    if crate::lower::classes::exports_its_value(tcx, class) || declared[\"exported\"] != true {\n",
     replace: "    if true {\n",
     tests: ["test/classes.test.ts", "-t", "exports its type alone"],
-  },];
+  },
+  {
+    name: "subclass-declared-extending-nothing",
+    breaks: "a class component's declaration extends nothing, so TypeScript has no `props` or `setState` of it",
+    file: "src/lower/declarations/classes.rs",
+    find: "                class[\"extends\"] = self.written(trait_ref.def_id, &written, trait_ref.args);\n",
+    replace: "                drop(written);\n",
+    tests: [
+      "test/class-components.test.ts",
+      "-t",
+      "an ES class React renders"
+    ]
+  },
+];

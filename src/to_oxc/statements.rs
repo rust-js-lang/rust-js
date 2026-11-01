@@ -2,6 +2,9 @@
 //! namespace, a constant, a pattern, and each statement.
 
 use super::*;
+use oxc_ast::ast::{
+    ClassBody, ClassElement, ClassHeritage, ClassType, Function, MethodDefinitionKind, MethodDefinitionType,
+};
 
 impl<'a> Cx<'a> {
     pub(super) fn params(&self, kind: FormalParameterKind, patterns: &[js::Pattern]) -> FormalParameters<'a> {
@@ -157,6 +160,9 @@ impl<'a> Cx<'a> {
     /// QueenPosition.prototype, "leftDiagonal", { get() { .. } });`; and its
     /// statics, `Component.from = function (..) { .. };`.
     pub(super) fn class(&self, n: &js::Namespace, class: &js::Class) -> Vec<Statement<'a>> {
+        if let Some(extends) = &class.extends {
+            return self.subclass(n, class, extends);
+        }
         let mut out = Vec::new();
         if let Some(constructor) = n.methods.iter().find(|f| f.name == class.constructor) {
             let mut constructor = constructor.clone();
@@ -214,6 +220,83 @@ impl<'a> Cx<'a> {
             }
             assigned.push(js::StmtKind::Assign(target, value).at(f.span));
         }
+        out.extend(self.stmts(&assigned));
+        out
+    }
+
+    /// A class that extends one, a binding's (rd331): an ES class, as
+    /// `extends` and `super(props)` are written, `class Surface extends
+    /// Component { constructor(props) { super(props); .. } componentDidMount()
+    /// { .. } render() { .. } }`: its constructor, where it writes one, its
+    /// methods, getters and statics, each in the order its impls have it;
+    /// then its constants, its prototype's, as a constructor function's
+    /// are, `Surface.prototype.limit = 3;`.
+    fn subclass(&self, n: &js::Namespace, class: &js::Class, extends: &str) -> Vec<Statement<'a>> {
+        let b = &self.b;
+        let elements = n.methods.iter().map(|f| {
+            let (kind, key, is_static) = match f.name == class.constructor {
+                true => (MethodDefinitionKind::Constructor, "constructor", false),
+                false if class.getters.contains(&f.name) => (MethodDefinitionKind::Get, f.name.as_str(), false),
+                false => (
+                    MethodDefinitionKind::Method,
+                    f.name.as_str(),
+                    !class.prototype.contains(&f.name),
+                ),
+            };
+            let params = self.params_at(FormalParameterKind::UniqueFormalParameters, &f.params, &f.param_spans);
+            let body = self.function_body(&f.body);
+            let value = Function::boxed(
+                span(f.span),
+                FunctionType::FunctionExpression,
+                None,
+                false, // generator
+                f.is_async,
+                false, // declare
+                None,  // type parameters
+                None,  // this param
+                ArenaBox::new_in(params, b),
+                None, // return type
+                Some(ArenaBox::new_in(body, b)),
+                b,
+            );
+            let key = PropertyKey::new_static_identifier(span(f.name_span), self.name(key), b);
+            ClassElement::new_method_definition(
+                span(f.span),
+                MethodDefinitionType::MethodDefinition,
+                ArenaVec::new_in(b),
+                key,
+                value,
+                kind,
+                false, // computed
+                is_static,
+                false, // override
+                false, // optional
+                None,  // accessibility
+                b,
+            )
+        });
+        let heritage = ClassHeritage::new(Expression::new_identifier(SPAN, self.name(extends), b), None, b);
+        let decl = Declaration::new_class_declaration(
+            span(class.declared),
+            ClassType::ClassDeclaration,
+            ArenaVec::new_in(b),
+            Some(BindingIdentifier::new(SPAN, self.name(&n.name), b)),
+            None, // type parameters
+            Some(heritage),
+            ArenaVec::new_in(b),
+            ClassBody::boxed(SPAN, ArenaVec::from_iter_in(elements, b), b),
+            false, // abstract
+            false, // declare
+            b,
+        );
+        let mut out = vec![match n.export {
+            true => Statement::new_export_declaration(span(class.declared), decl, b),
+            false => decl.into(),
+        }];
+        let prototype = || js::Expr::member(js::Expr::var(&n.name), "prototype");
+        let assigned: Vec<js::Stmt> = (n.constants.iter())
+            .map(|c| js::StmtKind::Assign(js::Expr::member(prototype(), c.name.clone()), c.value.clone()).at(c.span))
+            .collect();
         out.extend(self.stmts(&assigned));
         out
     }

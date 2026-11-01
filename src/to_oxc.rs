@@ -1416,6 +1416,10 @@ fn statement_spans(module: &Module) -> (Vec<(u32, u32)>, std::collections::HashS
 /// 0761): `/** Base class helpers .. */ function Component(..)`.
 fn declared_class(n: &js::Namespace) -> Option<(js::Span, js::Span)> {
     let class = n.class.as_ref().filter(|class| !class.declared.is_none())?;
+    // An ES class, which is where its struct is (rd331).
+    if class.extends.is_some() {
+        return Some((class.declared, class.declared));
+    }
     let constructor = n.methods.iter().find(|f| f.name == class.constructor)?;
     Some((class.declared, constructor.span))
 }

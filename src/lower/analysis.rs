@@ -817,6 +817,21 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             uses.named.insert(export, tcx.item_name(adt).to_string());
         }
     }
+    // The binding's class a class extends, imported where the class is,
+    // `import { Component } from "react"` of `class Surface extends
+    // Component` (rd331).
+    for adt in tcx.hir_crate_items(()).definitions().map(|def| def.to_def_id()) {
+        if tcx.def_kind(adt) == DefKind::Struct
+            && let Some((imp, export)) = super::classes::superclass(tcx, adt)
+            && let Some(home) = super::classes::home(tcx, adt)
+        {
+            uses.bound_to
+                .entry(export.clone())
+                .or_default()
+                .insert(tcx.impl_trait_id(imp));
+            uses.imported.entry(export).or_default().insert(home);
+        }
+    }
     // A binding a library's module holds, named after its `const` there.
     for held in foreign.all_held() {
         let export = (held.from.clone(), held.export.clone());

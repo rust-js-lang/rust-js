@@ -31,11 +31,12 @@ export type Module = { name: string; exports: { name: string; kind: Kind; bound:
 // What isn't bound by design, each list with why: `x`, counted apart.
 const UNBOUND: Record<string, string> = Object.fromEntries(
   Object.entries({
-    // A class component and what types one: Rust's components are
-    // functions, the user's choice (2026-10-10). An error boundary is
-    // next/error's `catchError`, or a JS component's binding.
+    // What types a class component: Rust's components are functions, the
+    // user's choice (2026-10-10), and a class one implements `Component`,
+    // bound since (2026-11-01, ADR 1041), as rustc types it. An error
+    // boundary is next/error's `catchError`, or a JS component's binding.
     "class components": [
-      "Component", "PureComponent", "ComponentClass", "ClassicComponent", "ClassicComponentClass", "ClassicElement", "CElement",
+      "PureComponent", "ComponentClass", "ClassicComponent", "ClassicComponentClass", "ClassicElement", "CElement",
       "ComponentElement", "ComponentLifecycle", "NewLifecycle", "DeprecatedLifecycle", "StaticLifecycle", "ComponentState",
       "GetDerivedStateFromError", "GetDerivedStateFromProps", "ReactInstance", "ClassType", "ClassAttributes", "LegacyRef",
       "JSX.ElementClass", "JSX.ElementAttributesProperty", "JSX.IntrinsicClassAttributes",
@@ -160,7 +161,9 @@ export async function measure(): Promise<Module[]> {
       .map(([e, kind]) => ({
         name: e,
         kind,
-        bound: kind === "value" ? links.has(`${name}#${e}`) : types.has(`${name}#${e}`) || items.has(e.split(".").pop()!),
+        // A class is a value its trait's `types` binds too, react's
+        // `Component`, the class a class component extends (rd331).
+        bound: kind === "value" ? links.has(`${name}#${e}`) || types.has(`${name}#${e}`) : types.has(`${name}#${e}`) || items.has(e.split(".").pop()!),
         unbound: `${name}#${e}` in UNBOUND,
       }));
     modules.push({ name, exports });

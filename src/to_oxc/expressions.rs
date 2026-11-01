@@ -89,6 +89,7 @@ impl<'a> Cx<'a> {
             ExprKind::Undefined | ExprKind::GivenUndefined => Expression::new_identifier(sp, "undefined", b),
             ExprKind::Null => Expression::new_null_literal(sp, b),
             ExprKind::This => Expression::new_this_expression(sp, b),
+            ExprKind::Super => Expression::new_super(sp, b),
             ExprKind::Symbol(_) => unreachable!("linking resolves every module symbol before emission"),
             ExprKind::OptionalMember(..) | ExprKind::OptionalIndex(..) | ExprKind::OptionalCall(..) => {
                 unreachable!("a chain is printed whole, above")

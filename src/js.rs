@@ -240,8 +240,13 @@ pub struct Class {
     /// ReactDOMRoot.prototype.render = function (children) { .. };` (rd283).
     pub shared: Vec<(String, Vec<String>)>,
     /// Where its struct is declared: the comments before it, its `///`
-    /// doc, are the constructor function's (ADR 0761).
+    /// doc, are the constructor function's (ADR 0761), or an ES class's.
     pub declared: Span,
+    /// The class it extends, a binding's, by the name its module imports
+    /// it as, `Component` of react's: an ES class, `class Surface extends
+    /// Component { .. }`, as `extends` and `super(props)` are written
+    /// (rd331); `None` of a constructor function.
+    pub extends: Option<String>,
 }
 
 /// `const SIZE = 4096;`, maybe exported.
@@ -980,6 +985,9 @@ pub enum ExprKind {
     /// `this`: a class's own, its constructor's and its prototype's
     /// methods', Rust's `self` (ADR 0761).
     This,
+    /// `super`, called first in the constructor of a class that extends one,
+    /// `super(props)` (rd331).
+    Super,
     Symbol(Symbol),
     /// `object.property`, e.g. `Math.imul` or `math.add`.
     Member(Box<Expr>, String),

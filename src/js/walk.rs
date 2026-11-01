@@ -194,6 +194,7 @@ macro_rules! walks {
                     | ExprKind::GivenUndefined
                     | ExprKind::Null
                     | ExprKind::This
+                    | ExprKind::Super
                     | ExprKind::Symbol(_)
                     | ExprKind::ItemHole(_)
                     | ExprKind::Import(_)

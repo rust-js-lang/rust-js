@@ -366,7 +366,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0344 `extract_if` is a lazy JS iterator](0344-extract-if.md)
 - [0345 A B-tree's `first_entry` and `last_entry`](0345-btree-end-entries.md)
 - [0346 The next crate binds all of Next.js, and coverage only grows](0346-next-coverage.md)
-- [0347 The react crate's types are measured against @types/react, and only grow](0347-react-coverage.md)
+- [0347 The react crate's types are measured against @types/react, and only grow](0347-react-coverage.md) *(amended by 1041: `Component` is bound)*
 - [0348 `unwrap_or_default()` of a call is its `??`](0348-unwrap-or-default-once.md) *(amended: a map of a literal's value and its fallback is one conditional)*
 - [0349 A body's `js::directive!` is its function's or its closure's](0349-body-directives.md)
 - [0350 Next.js's metadata is typed as Next.js types it, its tagged unions one struct](0350-next-metadata.md)
@@ -616,7 +616,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0754 A `return` some arms go on to is in each, not a block's end](0754-a-return-arms-go-on-to-is-in-each.md)
 - [0755 A `return` a block MIR made leads to is each of its `break`s](0755-a-shared-return-is-each-breaks.md)
 - [0760 `js::throw(value)` is `throw value`, the one way to throw a JS value](0760-js-throw-is-throw-of-a-js-value.md)
-- [0761 A `#[rust_js::class]` is a constructor function and its prototype](0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md) *(amended: its struct's `///` doc is its constructor function's; a constructor of statements, its instance `this`; named by its struct's `#[rust_js::name]`, declared where its constructor is; a `PartialEq` and `Hash` of its address allowed; extended by 0911: a binding's class is the global TypeScript names; extended by 0943: a `#[rust_js::object]`'s methods are its literal's own; amended by 1009: `js::Class` takes its constructor's signature; amended by 1035: a trait of classes; a private class is its module's own, rd325; a class whose `new` isn't `pub` is its type alone, `export type { .. }`)*
+- [0761 A `#[rust_js::class]` is a constructor function and its prototype](0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md) *(amended: its struct's `///` doc is its constructor function's; a constructor of statements, its instance `this`; named by its struct's `#[rust_js::name]`, declared where its constructor is; a `PartialEq` and `Hash` of its address allowed; extended by 0911: a binding's class is the global TypeScript names; extended by 0943: a `#[rust_js::object]`'s methods are its literal's own; amended by 1009: `js::Class` takes its constructor's signature; amended by 1035: a trait of classes; a private class is its module's own, rd325; a class whose `new` isn't `pub` is its type alone, `export type { .. }`; amended by 1041: a class that implements a binding's class extends it, an ES class)*
 - [0770 A library's `const` is imported by its name, as its crate reads it](0770-a-librarys-const-is-imported-by-its-name.md)
 - [0771 An `==` of a value read as the registry's symbol is its `matches!`](0771-an-equality-of-a-registered-symbol-is-its-match.md) *(amended: a `let` of the read that's only compared)*
 - [0772 A nullable `Cell` field's `None` is `null`, made and written](0772-a-nullable-cell-field-writes-null.md) *(amended by 0791: through a reference or a helper too; extended by 0810: an optional one is absent until set; amended by 0863: a nullable `RefCell` field)*
@@ -822,6 +822,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1038 A trait of classes' method that gives a field is that field](1038-a-trait-of-classes-method-that-gives-a-field-is-that-field.md) *(rd304)*
 - [1039 An untagged enum's variant may hold another untagged enum](1039-an-untagged-enum-may-hold-another.md) *(rd305)*
 - [1040 A `position` only tested is JS's own search: `indexOf`, `findIndex`, `-1` its `None`](1040-a-position-tested-is-jss-own-search.md) *(rd316)*
+- [1041 A class that implements a binding's class extends it, an ES class](1041-a-class-that-implements-a-bindings-class-extends-it.md) *(rd331: class components, the react crate's `Component`)*
 - [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md) *(amended: a closure's handle on itself is its own name)*
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
