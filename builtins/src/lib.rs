@@ -321,15 +321,22 @@ pub mod array {
         pub safe static prototype: &'static Unknown;
     }
 
-    /// [`array.splice(start, deleteCount)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array/splice):
+    /// [`array.splice(start, deleteCount, ...items)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array/splice):
     /// of any value an array, `deleteCount` of its items from `start`
-    /// removed in place, as JS's `splice` does: each a number, as JS's is,
-    /// made a whole one, a negative `start` counted from the end, past it
-    /// none; what it removed. Of a value with no `splice`, JS's
-    /// `TypeError`, a panic (ADR 0967, amended). An array Rust owns is a
-    /// `Vec`, whose `remove` and `drain` say this.
+    /// removed in place and `items` put there, as JS's `splice` does: each a
+    /// number, as JS's is, made a whole one, a negative `start` counted from
+    /// the end, past it none, a count past the end to it; `items` a tuple
+    /// of any values, `()` of none; what it removed. Of a value with no
+    /// `splice`, JS's `TypeError`, a panic (ADR 0967, amended). An array
+    /// Rust owns is a `Vec`, whose `remove`, `drain` and `splice` say this.
     #[cfg_attr(rust_js, rust_js::link_name = "splice")]
-    pub fn splice(this: &Unknown, start: f64, delete_count: f64) -> Vec<Option<&'static Unknown>> {
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    pub fn splice(
+        this: &Unknown,
+        start: f64,
+        delete_count: f64,
+        items: impl Rest<dyn IntoUnknown>,
+    ) -> Vec<Option<&'static Unknown>> {
         unreachable!()
     }
 

@@ -241,3 +241,15 @@ is `{}`**. Case N of ADR 0262: the same object either way. Held by
 key are JS's" (run: two objects, each `{}`, not one) and mutation
 `spread-of-none-written` (`mir/calls.ts`).
 
+
+## Amended (2026-11-01): what a splice puts in its place (rd468)
+
+Flight's console config writes `args.splice(offset, 4, unbadgedFormat)`:
+it removes the badge's arguments and puts the format back.
+`js::array::splice` removed alone. **`js::array::splice(value, start,
+count, items)` is JS's `splice` whole, `items` a tuple of any values, `()`
+of none, variadic as `function::call`'s arguments are: `(format,)` is
+`value.splice(start, 4, format)`, and a count past the end removes to it.**
+One binding, extended. Its callers that put nothing back say `()`, which
+adds no argument. Held by `test/js-any-values.test.ts` ("an object spread,
+a splice and a set by any key are JS's"), which the file cap moved there.

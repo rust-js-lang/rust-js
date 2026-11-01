@@ -669,7 +669,7 @@ export const mutations: Mutation[] = [
     find: '                        "..." => self.spread_into(value, ty, span, out, &mut fields)?,\n',
     replace:
       '                        "..." => fields.push(Prop::Field(key, self.value_expr(value, span)?)),\n',
-    tests: ["test/js-object.test.ts", "-t", "an object spread, a splice"],
+    tests: ["test/js-any-values.test.ts", "-t", "an object spread, a splice"],
   },
   {
     name: "object-spread-tuple-whole",
@@ -964,7 +964,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/calls.rs",
     find: "            if !matches!(value.kind, js::ExprKind::Undefined | js::ExprKind::Null) {\n                fields.push(Prop::Spread(value));\n            }\n",
     replace: "            fields.push(Prop::Spread(value));\n",
-    tests: ["test/js-object.test.ts", "-t", "an object spread, a splice"],
+    tests: ["test/js-any-values.test.ts", "-t", "an object spread, a splice"],
   },
   {
     name: "nullable-entries-undefined",

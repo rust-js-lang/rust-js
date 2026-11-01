@@ -17,12 +17,13 @@ beforeAll(buildReact, 600_000);
 const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
 
 /** `source` compiled, its JS, and the module it is, loaded. */
-async function compiled(name: string, source: string): Promise<{ js: string; lib: any }> {
+async function compiled(name: string, source: string): Promise<{ js: string; lib: any; warnings: string[] }> {
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), source);
   const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs], root, 600_000);
   expect(built.code, built.stderr).toBe(0);
-  return { js: readFileSync(join(dir, "lib.js"), "utf8"), lib: await import(join(dir, "lib.js")) };
+  const warnings = built.stderr.split("\n").filter((line) => line.startsWith("warning:") && !/warnings? emitted/.test(line));
+  return { js: readFileSync(join(dir, "lib.js"), "utf8"), lib: await import(join(dir, "lib.js")), warnings };
 }
 
 // ADR 0719, amended (React port gap rd71): `keys_in` takes any value, an
@@ -240,4 +241,87 @@ pub fn shadowing(tagged: u32) -> u32 {
   // A variable of the name a path reads unbound is another's.
   (globalThis as { tagged?: () => number }).tagged = () => 5;
   expect(lib.shadowing(1)).toBe(6);
+});
+
+// ADR 0967: React's DEV copyWithDelete (ReactFiberReconciler.js), `const
+// updated = isArray(obj) ? obj.slice() : {...obj};`, then `updated.splice(key,
+// 1)` or `delete updated[key]`, and `updated[key] = ..` of a string or a
+// number key. `js::object::spread` is `{ ...value }`, which defines a
+// `__proto__` key as its own, where `Object.assign({}, value)` sets the
+// prototype; `js::array::splice` is `value.splice(start, n)`, of numbers as
+// JS's, a negative start from the end; `js::set` takes a key as `js::get`
+// does.
+test("an object spread, a splice and a set by any key are JS's", async () => {
+  const { js, lib, warnings } = await compiled("js-object-spread", `use js::{Kind, Unknown};
+
+fn copy_with_delete_impl(obj: &'static Unknown, path: &[&'static Unknown], index: usize) -> &'static Unknown {
+    let key = path[index];
+    let updated: &Unknown = match js::classify(Some(obj)) {
+        Kind::Array(items) => js::unknown_of(items.to_vec()),
+        _ => js::object::spread(Some(obj)),
+    };
+    if index + 1 == path.len() {
+        if js::array::is_array(Some(updated)) {
+            if let Kind::Number(at) = js::classify(Some(key)) {
+                js::array::splice(updated, at, 1.0, ());
+            }
+        } else {
+            js::delete(updated, key);
+        }
+        return updated;
+    }
+    let inner = js::get(obj, key).expect("a path");
+    js::set(updated, key, copy_with_delete_impl(inner, path, index + 1));
+    updated
+}
+
+pub fn copy_with_delete(obj: &'static Unknown, path: &[&'static Unknown]) -> &'static Unknown {
+    copy_with_delete_impl(obj, path, 0)
+}
+
+pub fn copied(value: Option<&Unknown>) -> &'static js::JsObject {
+    js::object::spread(value)
+}
+
+// What's put in its place too, Flight's unbadgeConsole's
+// \`args.splice(offset, 4, unbadgedFormat)\`, past the end only to it.
+pub fn unbadged(args: &Unknown, offset: f64, format: &str) {
+    js::array::splice(args, offset, 4.0, (format,));
+}
+
+pub fn keyframes() -> Vec<&'static js::JsObject> {
+    vec![js::object::spread(None), js::object::spread(None)]
+}
+`);
+  expect(warnings).toEqual([]);
+  expect(js).toContain("  const updated = Array.isArray(obj) ? obj.slice() : { ...obj };\n");
+  expect(js).toContain("        updated.splice(key, 1);\n");
+  expect(js).not.toContain("$f64ToInt");
+  expect(js).toContain("      delete updated[key];\n");
+  expect(js).toContain("  args.splice(offset, 4, format);\n");
+  const args = ["%c%s%c", "style", " Server ", "", "a"];
+  lib.unbadged(args as never, 0 as never, "x" as never);
+  expect(args).toEqual(["x", "a"]);
+  const short = ["f", "b"];
+  lib.unbadged(short as never, 1 as never, "y" as never);
+  expect(short).toEqual(["f", "y"]);
+  expect(js).toContain("  updated[key] = copyWithDeleteImpl(inner, path, (index + 1) >>> 0);\n");
+  const state = { a: { b: [1, 2, 3], c: 4 }, d: 5 };
+  const copy = lib.copyWithDelete(state as never, ["a", "b", 1] as never) as any;
+  expect(copy).toEqual({ a: { b: [1, 3], c: 4 }, d: 5 });
+  expect(state).toEqual({ a: { b: [1, 2, 3], c: 4 }, d: 5 });
+  expect(lib.copyWithDelete(state as never, ["a", "c"] as never)).toEqual({ a: { b: [1, 2, 3] }, d: 5 });
+  // A negative start counts from the end, as JS's `splice` does; a
+  // fractional one is its whole part.
+  expect((lib.copyWithDelete(state as never, ["a", "b", -1] as never) as any).a.b).toEqual([1, 2]);
+  expect((lib.copyWithDelete(state as never, ["a", "b", 1.5] as never) as any).a.b).toEqual([1, 3]);
+  // A `__proto__` key is the copy's own, its prototype `Object.prototype`.
+  const keyed = JSON.parse('{"__proto__": {"x": 1}, "y": 2}');
+  const spread = lib.copied(keyed as never) as any;
+  expect([Object.getPrototypeOf(spread) === Object.prototype, Object.keys(spread), spread.x]).toEqual([true, ["__proto__", "y"], undefined]);
+  expect(lib.copied(undefined as never)).toEqual({});
+  // Of \`None\`, a new object of nothing, \`{}\`: animateGesture's \`[{}, {}]\` (rd210).
+  expect(js).toContain("  return [{}, {}];\n");
+  const [a, b] = lib.keyframes() as unknown[];
+  expect([a, a === b]).toEqual([{}, false]);
 });

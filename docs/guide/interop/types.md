@@ -2076,8 +2076,9 @@ export function forget(props) {
   enumerable properties, and of `None` written, `{}`, a new object of
   none, as animation keyframes' `[{}, {}]` are; a `__proto__` key one of them, where
   `Object.assign({}, value)` would set the prototype; `js::array::splice(
-  value, start, n)` is `value.splice(start, n)` of any value an array,
-  each a number, as JS's is, a negative `start` counted from the end; and
+  value, start, n, items)` is `value.splice(start, n, ...items)` of any
+  value an array, each a number, as JS's is, a negative `start` counted
+  from the end, `items` a tuple, `()` of none; and
   `js::set` takes a key as `js::get` does, text, a number or a JS value
   ([ADR 0967](../../decisions/0967-an-object-spread-a-splice-and-a-set-by-any-key.md)),
   as React's DevTools copies a value with one key gone:
@@ -2092,7 +2093,7 @@ pub fn copy_with_delete(obj: &'static Unknown, key: &'static Unknown) -> &'stati
     };
     match js::classify(Some(key)) {
         Kind::Number(at) if js::array::is_array(Some(updated)) => {
-            js::array::splice(updated, at, 1.0);
+            js::array::splice(updated, at, 1.0, ());
         }
         _ => {
             js::delete(updated, key);
