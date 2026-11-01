@@ -2,7 +2,8 @@
 
 Status: Accepted. Extends [0484](0484-a-returned-closure-carries-its-drop.md)
 and [0098](0098-destructors.md). Amended: a type parameter's function is
-one that may be, below.
+one that may be, below; and a borrowed function made a `dyn Fn` carries
+no drop, below.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): what's dropped, and
 when, as std's.
@@ -112,3 +113,48 @@ Rust, `dyn_fn_once_drops_itself.rs` unchanged, and the mutations
 `fn-made-dyn-fn-once-unconsumed`, `fn-once-closure-consumed-twice`,
 `fn-once-dyn-consumed-again` (`lower/traits/dyns.ts`) and
 `dropping-once-not-on-unwind` (`runtime/dropping.ts`).
+
+## Amendment: a borrowed function made a `dyn Fn` carries no drop (rd495)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, Rust's drops, where
+they were wrong.
+
+A `dyn Fn` is the JS function itself, and its drop, `$dispose(f)`, runs
+what that function carries. A borrowed function made one, `let shared:
+Rc<dyn Fn(u32) -> u32 + '_> = Rc::new(&*greet);` of a `Box<dyn Fn>` whose
+closure holds a `Noisy`, was `greet` itself: the `Rc`'s drop ran the drop
+`greet` carries, printing `drop boxed` while `greet` was still held, and
+again as `greet` was dropped. `Rc::new(&greet)`, of the `Box`, and
+`Box::new(&count)`, of an `impl Fn` its maker gave back, did the same.
+And a `Box<dyn Fn>` boxed again, `Box::new(greeter("twice"))` as a
+`Box<dyn Fn>`, was given a drop of disposing itself, `$dropping(f, () => {
+$dispose(f); })`, whose call never ended.
+
+**A function made a `dyn Fn` that borrows one that may carry a drop, a
+`dyn Fn`, a closure that carries its drop, a `Box` of one or a type
+parameter's, is a function of its own that calls it, `$borrowed(f)`,
+where the crate's `dyn Fn`s drop** (`fn_dyns_drop`): a reference drops
+nothing. A counted `Rc`'s is in its cell, `{ value: $borrowed(greet),
+strong: 1, weak: 0 }`. Where no `dyn Fn` drops, nothing runs a carried
+drop, and the function is as it is, so an `Rc<dyn Fn>` of a bound
+function is the function (rd231). **A `Box` of a function that carries
+its drop is that function**, its drop the one it carries
+(`dyns.rs`, `carries_own_drop`).
+
+Found while asking whether React's Fizz server's `dyn Fn`s drop
+(rd495): they do, a task's pings holding an `Rc<Request>` and a
+`Weak<Task>` that are counted, as `Rc::new_cyclic` and `Weak::upgrade`
+ask a `Task`'s count (ADR 0843), and a `Request` holds `Rc<Task>`s.
+
+### What holds it
+
+- `test/corpus/dyn_fn_of_a_borrowed_function.rs`, against native Rust:
+  an `Rc` of a borrowed `dyn Fn`, cloned, and of a borrowed `Box<dyn Fn>`,
+  a `Box<dyn FnOnce>` of one, a `Box<dyn Fn>` of a borrowed `impl Fn`, and
+  a `Box<dyn Fn>` boxed again.
+- Mutations `borrowed-fn-dyn-carries-its-drop`,
+  `borrowed-box-fn-dyn-carries-its-drop`,
+  `borrowed-closure-fn-dyn-carries-its-drop`,
+  `borrowed-fn-dyn-in-counted-rc-unwrapped` and
+  `boxed-fn-dyn-boxed-again-drops-itself` (`lower/traits/dyns.ts`), and
+  `borrowed-is-the-function` (`runtime/dropping.ts`).

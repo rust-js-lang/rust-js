@@ -1601,6 +1601,10 @@ export function share(doc) {
   Fn()>` listeners are an array of functions beside `react`'s `dyn Fn`s
   ([ADR 0521](../../decisions/0521-a-dyn-fn-carries-its-drop.md),
   [ADR 0626](../../decisions/0626-what-a-library-hands-a-crate.md), amended).
+  A `dyn Fn` of a borrowed function, `Rc::new(&f)`'s or `Box::new(&f)`'s,
+  drops nothing of `f`: where `f` may carry a drop, it's a function of its
+  own that calls `f`, `$borrowed(f)`; a `Box<dyn Fn>` boxed again is the
+  same function (ADR 0521, amended).
   A library's own `dyn Fn`s drop by the same rule, as its contract says,
   and a crate whose may hold what drops is refused where it uses a
   library holding a `dyn Fn` whose don't, which would drop nothing of the

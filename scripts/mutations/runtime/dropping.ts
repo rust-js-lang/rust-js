@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "    const result = f(...args);\n    drop();\n    return result;\n",
     tests: ["test/corpus.test.ts", "-t", "^fn_boxed_once_drops.rs$"],
   },
+  {
+    name: "borrowed-is-the-function",
+    breaks: "`$borrowed(f)` gives back `f` itself, and a `dyn Fn` of a borrowed function runs the drop `f` carries as it's dropped",
+    file: "src/runtime/dropping.js",
+    find: "  return (...args) => f(...args);\n",
+    replace: "  return f;\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_of_a_borrowed_function.rs$"],
+  },
 ];

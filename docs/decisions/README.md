@@ -927,7 +927,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0518 A held `filter_map`, and `$closing` a JS iterator](0518-filter-map-held-and-closing-iterators.md)
 - [0519 A `Cell` or a `OnceCell` of what has a destructor](0519-a-cell-of-what-has-a-destructor.md)
 - [0520 A counted `Rc<dyn T>` is its pair](0520-a-counted-rc-of-a-dyn-is-its-pair.md) *(amended: an upcast of a counted `Rc<dyn Sub>` shares its count)*
-- [0521 A `dyn Fn` carries its drop](0521-a-dyn-fn-carries-its-drop.md) *(amended by 0873: one handed to JS carries none, and an `FnOnce`'s own body drops what it took; amended: a type parameter's function is one that may be)*
+- [0521 A `dyn Fn` carries its drop](0521-a-dyn-fn-carries-its-drop.md) *(amended by 0873: one handed to JS carries none, and an `FnOnce`'s own body drops what it took; amended: a type parameter's function is one that may be; amended: a borrowed function made a `dyn Fn` carries no drop, and a `Box` of one that carries its drop is that function)*
 - [0522 A closure cloned apart is made again](0522-a-closure-cloned-apart-is-made-again.md)
 - [0523 Libraries share one counted `Rc` representation](0523-libraries-share-one-counted-rc.md) *(amended by 0844: a library that reads no count counts none; by 0852: the types each counts, which its contract lists)*
 - [0524 A library's `dyn` in its consumer](0524-a-librarys-dyn-in-its-consumer.md)

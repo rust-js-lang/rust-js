@@ -14,6 +14,13 @@ function $dispose(f) {
   f[$disposeKey]?.();
 }
 
+// A borrowed function made a `dyn Fn`, `Rc::new(&f)`'s: one of its own that
+// calls it, carrying no drop, as what it borrows isn't its to drop (ADR
+// 0521, amended).
+function $borrowed(f) {
+  return (...args) => f(...args);
+}
+
 // A `Fn` or an `FnMut` closure made a `dyn FnOnce`: its call consumes it,
 // so what it took drops as the call returns or unwinds, as std's
 // `call_once` shim drops it; dropped uncalled, its drop too (#409).

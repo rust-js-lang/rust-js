@@ -458,4 +458,50 @@ export const mutations: Mutation[] = [
     replace: "                ty::Dynamic(..) => true,\n",
     tests: ["test/webapi-bindings.test.ts", "-t", "calls once moves"],
   },
+  {
+    name: "borrowed-fn-dyn-carries-its-drop",
+    breaks:
+      "a `dyn Fn` of a borrowed function, `Rc::new(&*greet)`, is that function, and the `Rc`'s drop runs the drop it carries, so `drop boxed` prints while `greet` is still held",
+    file: "src/lower/traits/dyns.rs",
+    find: "                && facts.fn_dyns_drop\n                && self.may_carry_a_drop(borrowed)\n",
+    replace: "                && facts.fn_dyns_drop\n                && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_of_a_borrowed_function.rs$"],
+  },
+  {
+    name: "borrowed-box-fn-dyn-carries-its-drop",
+    breaks:
+      "a `dyn Fn` of a borrowed `Box<dyn Fn>`, `Rc::new(&greet)`, is its function, and the `Rc`'s drop runs the drop it carries, so `drop boxed` prints while `greet` is still held",
+    file: "src/lower/traits/dyns.rs",
+    find: "            _ if function.is_box() => self.carries_own_drop(function.expect_boxed_ty()),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_of_a_borrowed_function.rs$"],
+  },
+  {
+    name: "borrowed-closure-fn-dyn-carries-its-drop",
+    breaks:
+      "a `dyn Fn` of a borrowed `impl Fn`, `Box::new(&count)`, is its function, and the `Box`'s drop runs the drop it carries, so `drop returned` prints while `count` is still held",
+    file: "src/lower/traits/dyns.rs",
+    find: "            ty::Closure(id, _) => self.krate.closure_facts.carries_its_drop(self.tcx, id),\n",
+    replace: "            ty::Closure(..) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_of_a_borrowed_function.rs$"],
+  },
+  {
+    name: "borrowed-fn-dyn-in-counted-rc-unwrapped",
+    breaks:
+      "a counted `Rc` of a borrowed function made a `dyn Fn` keeps the function itself in its cell, `{ value: greet, .. }`, whose last drop runs the drop `greet` carries",
+    file: "src/lower/traits/dyns.rs",
+    find: "                    *held = Expr::call_helper(\"$borrowed\", vec![std::mem::replace(held, Expr::undefined())]);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_of_a_borrowed_function.rs$"],
+  },
+  {
+    name: "boxed-fn-dyn-boxed-again-drops-itself",
+    breaks:
+      "a `Box<dyn Fn>` boxed again, `Box::new(greeter(\"twice\"))`, carries a drop that disposes itself, `$dropping(f, () => { $dispose(f); })`, and its drop never ends",
+    file: "src/lower/traits/dyns.rs",
+    find: "            let carried = self.carries_own_drop(function);\n",
+    replace:
+      "            let carried = matches!(function.kind(), ty::Closure(..) | ty::Dynamic(..)) && self.carries_own_drop(function);\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_of_a_borrowed_function.rs$"],
+  },
 ];

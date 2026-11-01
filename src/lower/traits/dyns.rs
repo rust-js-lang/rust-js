@@ -330,6 +330,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         target.is_ref() || target.is_box() || self.is_rc(target)
     }
 
+    /// Does a function of type `function` own a JS function that carries its
+    /// drop, which is the function's: a `dyn Fn`, a closure that carries its
+    /// drop (ADR 0521), or a `Box` of one?
+    fn carries_own_drop(&self, function: Ty<'tcx>) -> bool {
+        match *function.kind() {
+            ty::Closure(id, _) => self.krate.closure_facts.carries_its_drop(self.tcx, id),
+            ty::Dynamic(..) => true,
+            _ if function.is_box() => self.carries_own_drop(function.expect_boxed_ty()),
+            _ => false,
+        }
+    }
+
+    /// May a function of type `function`, borrowed, be a JS function that
+    /// carries a drop: one that carries its own, a borrowed one's, or a
+    /// type parameter's, which may be either?
+    fn may_carry_a_drop(&self, function: Ty<'tcx>) -> bool {
+        match *function.kind() {
+            ty::Ref(_, borrowed, _) => self.may_carry_a_drop(borrowed),
+            ty::Param(..) | ty::Alias(..) => true,
+            _ => self.carries_own_drop(function),
+        }
+    }
+
     /// An unsizing JS can't make: of a pointer of the crate's own, or to a
     /// struct whose last field is a `dyn`.
     pub(in crate::lower) fn check_unsize(&self, target: Ty<'tcx>, span: Span) -> R<()> {
@@ -476,8 +499,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let function = self.pointee(source);
             let facts = &self.krate.closure_facts;
             let handed = matches!(function.kind(), ty::Closure(id, _) if facts.handed_to_js(*id));
-            let carried = matches!(function.kind(), ty::Closure(id, _) if facts.carries_its_drop(self.tcx, *id))
-                || matches!(function.kind(), ty::Dynamic(..));
+            // One whose JS function carries its drop, a `Box<dyn Fn>` boxed
+            // again too: the same function, its drop the one it carries.
+            let carried = self.carries_own_drop(function);
+            // A borrowed one, `Rc::new(&f)`'s, drops nothing, where the
+            // function it borrows may carry a drop, which `$dispose` would
+            // run: a function of its own that calls it, `$borrowed(f)`,
+            // where the crate's `dyn Fn`s drop (ADR 0521, amended). A
+            // counted `Rc`'s, in its cell, which its clones share.
+            if let ty::Ref(_, borrowed, _) = *function.kind()
+                && facts.fn_dyns_drop
+                && self.may_carry_a_drop(borrowed)
+            {
+                if self.counted_rc(source).is_none() {
+                    return Ok(Expr::call_helper("$borrowed", vec![value]));
+                }
+                // One made here, `{ value: $borrowed(f), strong: 1, weak: 0 }`.
+                let mut value = value;
+                if let js::ExprKind::Object(props, _) = &mut value.kind
+                    && let Some(js::Prop::Field(_, held)) =
+                        (props.iter_mut()).find(|prop| matches!(prop, js::Prop::Field(name, _) if name == js::HELD))
+                {
+                    *held = Expr::call_helper("$borrowed", vec![std::mem::replace(held, Expr::undefined())]);
+                    return Ok(value);
+                }
+                let rc = match value.reads_same() {
+                    true => value,
+                    false => self.spill("rc", value, out),
+                };
+                let held = Expr::held(rc.clone());
+                out.push(StmtKind::Assign(held.clone(), Expr::call_helper("$borrowed", vec![held])).at(js::Span::NONE));
+                return Ok(rc);
+            }
             // Of a `Fn` or an `FnMut` made a `dyn FnOnce`, whose call
             // consumes it, as std's `call_once` shim does: what it took
             // dropped as the call returns, or unwinds, `$droppingOnce(f,
@@ -489,7 +542,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // what has something to drop (ADR 0626, amended).
             let dropping = match function.kind() {
                 ty::Dynamic(..) => facts.fn_dyns_drop,
-                _ => carried || self.drops(function) != crate::lower::drops::Drops::Nothing,
+                ty::Closure(..) => carried || self.drops(function) != crate::lower::drops::Drops::Nothing,
+                _ => self.drops(function) != crate::lower::drops::Drops::Nothing,
             };
             if once && !handed && dropping {
                 let f = self.spill("f", value, out);
