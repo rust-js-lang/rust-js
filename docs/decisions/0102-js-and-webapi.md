@@ -216,3 +216,21 @@ each of them, so the `None` was never read.
 Held by `test/webapi-objects.test.ts`'s "a dictionary a function gives has
 the members TypeScript's DOM requires" and `test/web_forms.rs`'s
 `into.written`.
+
+## Amended (2026-11-01): `json::stringify` of any value
+
+`json::stringify` took a `&str` alone, so a port stringifying anything
+else wrote `stringify_with(value, None, 0)`, `JSON.stringify(value, null,
+0)`, where React writes `JSON.stringify(value)`: ReactFizzHooks'
+`JSON.stringify(keyPath)`, ReactFizzConfigDOM's import map, and
+ReactPerformanceTrackProperties' arrays. **`json::stringify(value)` is
+`JSON.stringify(value)` of any value `stringify_with` takes: a `String` of
+a value whose JSON is exact, a `JsonText`, and of any value, an `Unknown`,
+what may throw or be `undefined`, as `stringify_with` gives each. Case
+([0262](0262-when-rust-and-js-disagree.md)): N, JS's own call. One way:
+`stringify_with` is given a replacer or an indentation, never neither**,
+which `test/architecture.test.ts` ("JSON of no replacer and no indentation
+is stringify's") rejects, naming `json::stringify`, in the repository's
+Rust, its tests' and the guide's. Held by `test/js-builtins.test.ts`
+("unwrap of a throwing call each branch makes is each call") and
+`test/webapi-bindings.test.ts`.

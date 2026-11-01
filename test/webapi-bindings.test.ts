@@ -213,7 +213,7 @@ pub fn wake(port: &webapi::MessagePort) {
 }
 pub fn listed(value: Option<&js::Unknown>) -> Option<String> {
     match js::classify(value) {
-        js::Kind::Array(items) if items.len() < 100 => js::json::stringify_with(js::unknown(items), None, 0).unwrap(),
+        js::Kind::Array(items) if items.len() < 100 => js::json::stringify(js::unknown(items)).unwrap(),
         _ => None,
     }
 }
@@ -234,7 +234,7 @@ pub fn report(error: &js::JsError) {
   // \`()\` is \`undefined\`, which the browser copies as it is (ADR 0225 amended).
   expect(js).toContain("port.postMessage(undefined);");
   // \`Kind::Array\`'s slice is the array, its value \`js::unknown(items)\` (ADR 0225 amended).
-  expect(js).toContain("return JSON.stringify(value, null, 0);");
+  expect(js).toContain("return JSON.stringify(value);");
   expect(js).toContain("window.reportError(error);");
   for (const [written, error] of [
     ["window.structured_clone(|| (), None)", "the trait `js::StructuredClone` is not implemented for closure"],
