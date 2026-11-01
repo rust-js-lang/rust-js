@@ -1,6 +1,8 @@
 //! JS's iterator protocol, TypeScript's `Iterator<T>` and
 //! `IteratorResult<T>`: what an iterable's `[Symbol.iterator]()` gives,
-//! stepped by its `next()` (ADR 0860).
+//! stepped by its `next()` (ADR 0860); and its async one,
+//! `AsyncIterator<T>`, whose `next()` gives a promise of each step
+//! (ADR 1059).
 
 use core::marker::PhantomData;
 
@@ -24,7 +26,25 @@ impl<T> Iterator<T> {
     }
 }
 
-/// What an [`Iterator`]'s `next()` gives, TypeScript's `IteratorResult<T>`:
+/// [An async iterator](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Iteration_protocols#the_async_iterator_and_async_iterable_protocols),
+/// TypeScript's `AsyncIterator<T>`: an object whose `next()` gives a
+/// promise of each of its steps, as an async iterable's
+/// `[Symbol.asyncIterator]()` makes one, an async generator's too. Only the
+/// protocol, as [`Iterator`] is: React's Flight reply client's
+/// `iterator.next().then(progress, reject)`.
+#[cfg_attr(rust_js, rust_js::types = "AsyncIterator<T>")]
+pub struct AsyncIterator<T>(PhantomData<JsObject>, PhantomData<T>);
+
+impl<T> AsyncIterator<T> {
+    /// [`iterator.next()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Iteration_protocols#next_2):
+    /// a promise of its next step.
+    #[cfg_attr(rust_js, rust_js::link_name = "next")]
+    pub fn next(&self) -> crate::Promise<IteratorResult<T>> {
+        unreachable!()
+    }
+}
+
+/// What an [`Iterator`]'s `next()` gives, an [`AsyncIterator`]'s promise, TypeScript's `IteratorResult<T>`:
 /// a step's `value`, or, `done`, the end. `done` is TypeScript's `done?:
 /// boolean`, left out of a step that isn't the end, `IteratorYieldResult`'s
 /// `done?: false`, which `step.done == Some(true)` reads as JS's protocol

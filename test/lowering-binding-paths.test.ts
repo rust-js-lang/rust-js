@@ -175,6 +175,28 @@ pub fn names(value: &js::JsObject) -> Vec<String> {
   expect([lib.copy({ length: 2, 0: "a", 1: "b" }), lib.both([1]), lib.both("x"), lib.names({ a: 1 })]).toEqual([["a", "b"], true, false, ["a"]]);
 });
 
+// rd510: React's Flight reply client's `const FunctionBind =
+// Function.prototype.bind;`, its `FunctionBind.apply(this, arguments)` of
+// a server reference's `bind`, by the `use`'s name attribute.
+test("Function.prototype.bind is a value a private use names", async () => {
+  const dir = fixture("function-bind-value");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::name = "FunctionBind")]
+use js::function::BIND as FUNCTION_BIND;
+use js::{Unknown, function};
+
+pub fn bound(f: &Unknown, this_arg: &Unknown) -> Option<&'static Unknown> {
+    function::call(FUNCTION_BIND, Some(f), (this_arg,))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const FunctionBind = Function.prototype.bind;\n");
+  expect(js).toContain("  return FunctionBind.call(f, thisArg);\n");
+  const lib = await import(join(dir, "lib.js"));
+  const g = lib.bound(function (this: { n: number }) { return this.n; }, { n: 3 });
+  expect(g()).toBe(3);
+});
+
 // A binding crate's static of a module's default export, art's
 // `#[rust_js::name = "FastNoSideEffects"] FAST_NO_SIDE_EFFECTS`, is
 // imported by the name it gives, `import FastNoSideEffects from

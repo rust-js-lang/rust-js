@@ -222,6 +222,11 @@ What it has:
   `loop { let step = iterator.next(); if step.done.unwrap_or(false) {
   break; } .. }` is `let step; while (!(step = iterator.next()).done) { .. }`
   ([ADR 0860](../../decisions/0860-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md)).
+  `js::AsyncIterator<T>` is TypeScript's `AsyncIterator<T>`, what an async
+  iterable's `[Symbol.asyncIterator]()` gives, whose `next()` is a
+  `js::Promise<IteratorResult<T>>`: `iterator.next().then::<(), _>(|step|
+  ..)` is `iterator.next().then((step) => ..)`
+  ([ADR 1059](../../decisions/1059-an-async-iterator-and-function-bind-as-a-value.md)).
 - **The module's own JS:** `js::import!` imports a file for its effects or
   an item lazily, `js::import_module!` a module, `js::export_default!` a
   module's default export, `js::directive!("use client")` its directive,

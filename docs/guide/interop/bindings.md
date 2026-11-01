@@ -374,6 +374,9 @@ export function initial() {
   `slice.call(..)`, read as the module loads; by its own name, `use
   js::object::keys;`, it's read where it's called, `Object.keys(value)`
   ([ADR 0622, amended](../../decisions/0622-a-global-binding-a-module-names-is-its-const.md)).
+  `#[rust_js::name = "FunctionBind"] use js::function::BIND as
+  FUNCTION_BIND;` is `const FunctionBind = Function.prototype.bind;`
+  ([ADR 1059](../../decisions/1059-an-async-iterator-and-function-bind-as-a-value.md)).
 - **Named through a module that holds it, it's read through that
   module**: where `assign.rs` holds `Object.assign` as its default, a
   call of `crate::assign::assign` imports it, `import assign from

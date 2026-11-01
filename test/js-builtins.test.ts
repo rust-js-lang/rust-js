@@ -1297,3 +1297,35 @@ pub fn decimal(n: f64) -> String {
   expect(lib.read([4, 5].values())).toEqual([4, 5]);
   expect([lib.decimal(1e21), lib.decimal(Infinity), lib.decimal(0.5)]).toEqual(["1e+21", "Infinity", "0.5"]);
 });
+
+// rd507: TypeScript's `AsyncIterator<T>`, whose `next()` gives a promise
+// of each step, as React's Flight reply client steps what an async
+// iterable's `[Symbol.asyncIterator]()` gives: `iterator.next().then(..)`,
+// each step until its end, an async generator's in Node.
+test("an async iterator's next gives a promise of each step", async () => {
+  const dir = fixture("js-async-iterator");
+  writeFileSync(join(dir, "lib.rs"), `use std::rc::Rc;
+
+pub fn each(iterator: &'static js::AsyncIterator<f64>, f: Rc<dyn Fn(f64)>, done: Rc<dyn Fn()>) {
+    iterator.next().then::<(), _>(move |step| {
+        if step.done.unwrap_or(false) {
+            done();
+        } else {
+            f(step.value);
+            each(iterator, f, done);
+        }
+    });
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  iterator.next().then((step) => {\n    if (step.done) {\n");
+  const lib = await import(join(dir, "lib.js"));
+  async function* counted() {
+    yield 1;
+    yield 2;
+  }
+  const seen: number[] = [];
+  await new Promise<void>((resolve) => lib.each(counted(), (n: number) => seen.push(n), resolve));
+  expect(seen).toEqual([1, 2]);
+});

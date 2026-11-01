@@ -51,7 +51,7 @@ pub mod date;
 pub use date::Date;
 pub mod intl;
 mod iterator;
-pub use iterator::{Iterable, Iterator, IteratorResult};
+pub use iterator::{AsyncIterator, Iterable, Iterator, IteratorResult};
 pub mod promise;
 pub use promise::{Fulfils, PromiseSettledResult, PromiseWithResolvers};
 pub mod proxy;
@@ -505,6 +505,19 @@ macro_rules! functions {
 /// (ADR 0740): `function::name(f)` is `f.name`.
 pub mod function {
     use super::AnyFunction;
+
+    unsafe extern "Rust" {
+        /// [`Function.prototype.bind`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function/bind)
+        /// as a value, a function of a function `this`, TypeScript's
+        /// `Function`, as [`super::array::SLICE`] is `Array.prototype.slice`:
+        /// React's Flight reply client's `const FunctionBind =
+        /// Function.prototype.bind;` of `use js::function::BIND as
+        /// FUNCTION_BIND;` named `FunctionBind`, whose
+        /// `FunctionBind.apply(this, arguments)` is `function::apply(FUNCTION_BIND,
+        /// this, Some(js::arguments()))` (rd510).
+        #[link_name = "Function.prototype.bind"]
+        pub safe static BIND: &'static dyn Fn() -> Option<&'static super::Unknown>;
+    }
 
     /// [`f.name`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function/name):
     /// its name, `""` of an anonymous one, as TypeScript's `string` has it.
@@ -2932,6 +2945,7 @@ unsafe impl Defined for Error {}
 unsafe impl Defined for AggregateError {}
 unsafe impl<T> Defined for Promise<T> {}
 unsafe impl<T> Defined for Iterator<T> {}
+unsafe impl<T> Defined for AsyncIterator<T> {}
 unsafe impl<K: ?Sized, V> Defined for Map<K, V> {}
 unsafe impl<T: ?Sized> Defined for Set<T> {}
 unsafe impl<K: WeakKey + ?Sized, V> Defined for WeakMap<K, V> {}
