@@ -574,6 +574,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.settle_reads(state, block, &mut out);
                     let cleanup = self.mir_unwind(state, *unwind)?;
                     self.unwinding(dropped, cleanup, self.js_span(span), &mut out);
+                } else if place.projection.is_empty() && self.is_guard(state.body.local_decls[place.local].ty) {
+                    self.settle_guard_reads(state, (block, place.local), &mut out);
                 }
                 out.extend(self.mir_branch(state, block, *target)?);
             }

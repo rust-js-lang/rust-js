@@ -1,6 +1,6 @@
 # 0451. A guard in generic code: its `Deref` a dictionary's, its drop given, what's read before it
 
-Status: Accepted. Extends [0098](0098-destructors.md), [0328](0328-refcell-borrow-counts.md),
+Status: Accepted; amended (what's read through a guard whose drop writes nothing, #452). Extends [0098](0098-destructors.md), [0328](0328-refcell-borrow-counts.md),
 [0394](0394-a-deref-bound.md) and [0397](0397-a-refcell-of-a-dyn.md).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N for a guard's
@@ -123,3 +123,41 @@ the old placement it printed `undefined.`. Mutations settling past any
 drop and skipping the settling are caught, and `kept_read_past_branch`
 now holds what the playground held for a read in a branch that's done
 with, which isn't settled again past a later test, `root.slice(0, -3);`.
+
+## Amendment: what's read through a guard whose drop writes nothing (#452)
+
+A P0, a wrong answer. Case ([0262](0262-when-rust-and-js-disagree.md)):
+results change, preserve Rust's. `let Some(chunk) =
+handler.chunk.borrow().clone() else { return 0.0; }; touch(handler);
+chunk.id`, of a field `RefCell<Option<Rc<Chunk>>>` tracked at run time,
+printed `const borrow = $borrow($fieldCell(handler, "chunk")); ..
+touch(handler); return borrow.value.id;`. The `Rc`'s clone is the value
+(`copies.rs`), read in place as what reads the same anywhere, since a
+guard, `Ref<T>`, is plain data while it lives. But its drop, which writes
+nothing where nothing counts the cell, settled nothing: only a drop that
+prints something did (`settle_reads`). So the value was read after
+`touch` had emptied the cell. Native Rust prints 5; the JS threw a
+TypeError.
+
+**A guard's drop that writes nothing settles each value kept in place
+that reads through that guard and is read past it**
+(`temporaries::settle_guard_reads`, from `structure.rs`'s `Drop`). Values
+read through any other reference keep waiting for a drop that writes
+something, as before: settling them at a quiet drop put the assignment
+in one branch where another reads the variable
+(`returns_joined_past_blocks`, `root ${parent.tag}` of a `parent` never
+set). So the clone is read where Rust makes it: `const chunk =
+borrow.value; touch(handler); return chunk.id;`.
+
+Held by the corpus's `guard_value_read_before_write` against native Rust,
+a temporary guard and a named one dropped by `drop`, and
+`let_else_guard_released`'s `const y = value.value;`. Mutations
+`guard-drop-reads-unsettled` (`structure.rs`) and
+`guard-settle-any-reference` (`temporaries.rs`). A sweep of the corpus and
+snapshots for a guard read past its `$unborrow` finds only reads right
+after it, with nothing that could write the cell in between.
+
+Not reproduced here: the Flight client's `const {value: _12} =
+$borrow($fieldCell(handler, 'chunk', true)); const chunk = _12;`, which
+reads the value right away (correct) but leaks MIR's name. That's a
+counted guard's form, another cause, left for naming.

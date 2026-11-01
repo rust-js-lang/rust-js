@@ -526,4 +526,12 @@ export const mutations: Mutation[] = [
     replace: "                    Value::Expr(e) if false && state.facts.found_index_items(block) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^position_index_of.rs$"],
   },
+  {
+    name: "guard-drop-reads-unsettled",
+    breaks: "what's read through a guard whose drop writes nothing is read where it's used, past a call that writes its cell, `borrow.value.id` after `touch` emptied it (#452)",
+    file: "src/lower/mir/structure.rs",
+    find: "                } else if place.projection.is_empty() && self.is_guard(state.body.local_decls[place.local].ty) {\n",
+    replace: "                } else if false && place.projection.is_empty() && self.is_guard(state.body.local_decls[place.local].ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "guard_value_read_before_write"],
+  },
 ];

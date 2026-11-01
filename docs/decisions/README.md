@@ -854,7 +854,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0448 A `transmute` to or from a `#[repr(transparent)]` struct is it made or read](0448-a-transparent-struct-is-its-field.md)
 - [0449 A `PoisonError` gives its guard, and a lock's `Ok` is its guard however it's unwrapped](0449-a-poison-errors-guard.md)
 - [0450 A std holder's `Deref`, `extend` and `collect` are written in place whatever it holds](0450-a-holders-std-call-in-generic-code.md)
-- [0451 A guard in generic code: its `Deref` a dictionary's, its drop given, what's read before it](0451-a-guard-in-generic-code.md)
+- [0451 A guard in generic code: its `Deref` a dictionary's, its drop given, what's read before it](0451-a-guard-in-generic-code.md) *(amended: what's read through a guard whose drop writes nothing, #452)*
 - [0452 `{:?}` of a `PhantomData` of a type parameter shows the name its caller gives](0452-a-phantom-datas-name.md)
 - [0453 `{:?}` of a slice's iterator is what's left of it](0453-a-slice-iterators-debug.md)
 - [0454 A `&mut` given as a type parameter's value is a box](0454-a-mut-given-as-a-type-parameter.md)

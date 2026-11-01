@@ -139,7 +139,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (ADR 0451). Not one read only before it, as a branch's that's done
     /// with, whose reference isn't there.
     pub(super) fn settle_reads(&mut self, state: &mut State<'_, 'tcx>, block: BasicBlock, out: &mut Vec<Stmt>) {
-        self.settle(state, &[block], out);
+        self.settle(state, &[block], None, out);
+    }
+
+    /// Each value kept to be read in place that reads through `guard`, a
+    /// guard of a `RefCell` or a lock whose drop `block` writes nothing, one
+    /// nothing counts: read here, as another may write its cell past it,
+    /// `let Some(chunk) = handler.chunk.borrow().clone() else ..` read
+    /// before `touch` empties the cell (#452).
+    pub(super) fn settle_guard_reads(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (block, guard): (BasicBlock, Local),
+        out: &mut Vec<Stmt>,
+    ) {
+        let guard = state.locals.names[guard].clone();
+        self.settle(state, &[block], Some(&guard), out);
     }
 
     /// As `block`'s switch branches, its test made, each value kept to be
@@ -170,20 +185,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => false,
             })
             .collect();
-        self.settle(state, &drops, out);
+        self.settle(state, &drops, None, out);
     }
 
     /// Each value kept to be read in place that reads through a shared
-    /// reference and is read past one of `drops`: assigned here.
-    fn settle(&mut self, state: &mut State<'_, 'tcx>, drops: &[BasicBlock], out: &mut Vec<Stmt>) {
+    /// reference, or `guard` alone where it's given, and is read past one of
+    /// `drops`: assigned here.
+    fn settle(&mut self, state: &mut State<'_, 'tcx>, drops: &[BasicBlock], guard: Option<&str>, out: &mut Vec<Stmt>) {
         if drops.is_empty() {
             return;
         }
-        let references: HashSet<&str> = (state.body.local_decls.iter_enumerated())
-            .filter(|(_, decl)| decl.ty.is_ref())
-            .map(|(local, _)| state.locals.names[local].as_str())
-            .filter(|name| self.locals.mir.plain.contains(*name))
-            .collect();
+        let references: HashSet<&str> = match guard {
+            Some(guard) => HashSet::from([guard]),
+            None => (state.body.local_decls.iter_enumerated())
+                .filter(|(_, decl)| decl.ty.is_ref())
+                .map(|(local, _)| state.locals.names[local].as_str())
+                .filter(|name| self.locals.mir.plain.contains(*name))
+                .collect(),
+        };
         let reads_reference = |e: &Expr| {
             // Not an element or an object made where it's used, which reads
             // what a branch after sets (`capture_jsx`).

@@ -512,4 +512,12 @@ export const mutations: Mutation[] = [
       "value of a function's type",
     ],
   },
+  {
+    name: "guard-settle-any-reference",
+    breaks: "a guard's drop that writes nothing settles every read through any reference, set past where another branch reads it, `root ${parent.tag}` of an unset `parent` (#452)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "        self.settle(state, &[block], Some(&guard), out);\n    }\n",
+    replace: "        self.settle(state, &[block], None, out);\n    }\n",
+    tests: ["test/corpus.test.ts", "-t", "returns_joined_past_blocks"],
+  },
 ];

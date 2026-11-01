@@ -66,7 +66,8 @@ function main() {
       }
       return;
     }
-    console.log(`${value.value}`);
+    const y = value.value;
+    console.log(`${y}`);
   } else {
     $unborrow(borrow);
     return;
