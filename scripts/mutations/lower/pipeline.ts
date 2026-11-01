@@ -148,16 +148,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "own-alias-dropped",
-    breaks:
-      "`pub use self::current_time as unstable_now` exports nothing by `unstable_now`",
-    file: "src/lower/pipeline.rs",
-    find: "            Some((alias.item, (info.name.clone(), alias.exported.clone())))\n",
-    replace:
-      "            Some((alias.item, (info.name.clone(), alias.exported.clone()))).filter(|_| false)\n",
-    tests: ["test/modules.test.ts", "-t", "another name of the module's own"],
-  },
-  {
     name: "own-alias-exported-by-name",
     breaks:
       "a function its module exports as `unstable_now` is `export function getCurrentTime` too (ADR 0596, amended)",
@@ -829,20 +819,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "export-named-apart-unaliased",
-    breaks:
-      "an export named apart, `delete$`, is never written `export { delete$ as delete }`, so its module exports nothing by `delete` (#338)",
-    file: "src/lower/pipeline.rs",
-    find: "        .filter_map(|(&id, info)| Some((id, (info.name.clone(), info.export.clone()?))))\n",
-    replace:
-      "        .filter_map(|(&id, info)| Some((id, (info.name.clone(), info.export.clone().filter(|_| false)?))))\n",
-    tests: [
-      "test/lowering-module-variables.test.ts",
-      "-t",
-      "an export its module names apart is exported by its own name",
-    ],
-  },
-  {
     name: "export-named-apart-imported-apart",
     breaks:
       "another module of the crate imports an export named apart by its module's name for it, `import { delete$ }`, which its module doesn't export (#338)",
@@ -893,17 +869,5 @@ export const mutations: Mutation[] = [
     find: "        .filter(|b| scopes.of_method(b.def_id).is_none())\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "scope_struct"],
-  },
-  {
-    "name": "class-prototype-set-beside-others",
-    "breaks": "a class's prototype set by an `on_load!` of other statements moves alone to its constructor, apart from the `let` it reads (#448)",
-    "file": "src/lower/pipeline.rs",
-    "find": "                                [set] => pass.prototypes_set.push((module, class, at, set.span)),\n",
-    "replace": "                                [set, ..] => pass.prototypes_set.push((module, class, at, set.span)),\n",
-    "tests": [
-      "test/classes.test.ts",
-      "-t",
-      "prototype replaced"
-    ]
   },
 ];

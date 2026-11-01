@@ -234,3 +234,31 @@ pub(super) fn module_default(
     }
     default
 }
+
+/// `module`'s own items it exports by other names, `export { getCurrentTime
+/// as unstable_now };`, each `(local, exported)` and the item, in the order
+/// its `pub use`s are written: by those alone, not by its own name (ADR
+/// 0596, amended; `own_aliases`).
+pub(super) fn aliases(
+    tcx: TyCtxt<'_>,
+    module: LocalModId,
+    fns: &std::collections::HashMap<DefId, super::FnInfo>,
+) -> Vec<(DefId, (String, String))> {
+    let own = own_aliases(tcx, module);
+    let mut aliases: Vec<_> = (own.iter())
+        .filter_map(|alias| {
+            let info = fns.get(&alias.item).filter(|info| info.owner.is_none())?;
+            Some((alias.item, (info.name.clone(), alias.exported.clone())))
+        })
+        .collect();
+    // And each it names apart, `delete$`, by its own name, `export {
+    // delete$ as delete }`, where no `pub use` exports it (#338), in the
+    // order they're written.
+    let mut apart: Vec<_> = (fns.iter())
+        .filter(|(id, info)| info.module == module && !own.iter().any(|alias| alias.item == **id))
+        .filter_map(|(&id, info)| Some((id, (info.name.clone(), info.export.clone()?))))
+        .collect();
+    apart.sort_by_key(|&(id, _)| tcx.def_span(id));
+    aliases.extend(apart);
+    aliases
+}

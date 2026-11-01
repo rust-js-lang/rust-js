@@ -137,4 +137,28 @@ export const mutations: Mutation[] = [
       "a module's own item a pub use renames is imported by that name",
     ],
   },
+  {
+    name: "own-alias-dropped",
+    breaks:
+      "`pub use self::current_time as unstable_now` exports nothing by `unstable_now`",
+    file: "src/lower/default_exports.rs",
+    find: "            Some((alias.item, (info.name.clone(), alias.exported.clone())))\n",
+    replace:
+      "            Some((alias.item, (info.name.clone(), alias.exported.clone()))).filter(|_| false)\n",
+    tests: ["test/modules.test.ts", "-t", "another name of the module's own"],
+  },
+  {
+    name: "export-named-apart-unaliased",
+    breaks:
+      "an export named apart, `delete$`, is never written `export { delete$ as delete }`, so its module exports nothing by `delete` (#338)",
+    file: "src/lower/default_exports.rs",
+    find: "        .filter_map(|(&id, info)| Some((id, (info.name.clone(), info.export.clone()?))))\n",
+    replace:
+      "        .filter_map(|(&id, info)| Some((id, (info.name.clone(), info.export.clone().filter(|_| false)?))))\n",
+    tests: [
+      "test/lowering-module-variables.test.ts",
+      "-t",
+      "an export its module names apart is exported by its own name",
+    ],
+  },
 ];

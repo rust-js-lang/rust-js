@@ -10,7 +10,7 @@ use self::load_cycles::{ModuleJs, module_imports};
 use self::reached::written_where_reached;
 use super::analysis::{AnalyzedCrate, analyze_crate, is_thread_local, renamed_in};
 use super::bindings::Export;
-use super::{Body, CrateFacts, FnCx, FnInfo, Locals, const_js, located, module_file, module_symbol, static_value};
+use super::{Body, CrateFacts, FnCx, Locals, const_js, located, module_file, module_symbol, static_value};
 use crate::js::{self, Expr, Prop, StmtKind};
 use crate::program::{ImportRequest, LoweredModule, Unlinked, UnlinkedModule};
 use rustc_hir::def::DefKind;
@@ -51,9 +51,8 @@ struct Pass {
     /// Each method a class takes of a trait of classes' default, its
     /// prototype's, by the class (rd283).
     class_defaults: Vec<(DefId, js::Function)>,
-    /// Each class's prototype a `js::on_load!` replaces: its module, the
-    /// class, where, and its statement's place (#448).
-    prototypes_set: Vec<(LocalModId, DefId, rustc_span::Span, js::Span)>,
+    /// Each class's prototype a `js::on_load!` replaces (#448).
+    prototypes_set: Vec<super::classes::PrototypeSet>,
 }
 
 /// How the crate is built, as its command asks.
@@ -863,19 +862,9 @@ pub fn lower_crate<'tcx>(
                     None if super::bindings::is_on_load(tcx, def_id) => {
                         // One replacing a class's prototype, set right after
                         // its constructor, alone (#448, ADR 0761 amended).
-                        if let Some((class, at)) = lowered.dependencies.prototype_set {
-                            match lowered.function.body.as_slice() {
-                                [set] => pass.prototypes_set.push((module, class, at, set.span)),
-                                _ => {
-                                    let what = format!(
-                                        "replacing the prototype of `{}`, a `#[rust_js::class]` with prototype methods, beside other statements: replace it in a `js::on_load!` of its own (#448)",
-                                        tcx.item_name(class)
-                                    );
-                                    super::refusal::refuse(tcx, at, super::refusal::Refused::Feature(&what));
-                                    failed = true;
-                                }
-                            }
-                        }
+                        let set = lowered.dependencies.prototype_set;
+                        pass.prototypes_set
+                            .extend(super::classes::set_alone(tcx, module, set, &lowered.function.body));
                         pass.statements.entry(module).or_default().push(lowered.function.body)
                     }
                     // Named in itself alone, as the Rust names it, unless
@@ -1158,7 +1147,7 @@ pub fn lower_crate<'tcx>(
                 },
                 reexports,
             ) = reexported.remove(&module).expect("each module's re-exports");
-            let aliased_items = aliases(tcx, module, &fns);
+            let aliased_items = super::default_exports::aliases(tcx, module, &fns);
             // A binding it holds, its `const` of what the binding reads (ADRs
             // 0622, 0633); not one it re-exports from another that holds it.
             let names = import_names.get(&module);
@@ -1256,14 +1245,8 @@ pub fn lower_crate<'tcx>(
             };
             // A class's prototype its load replaces, set right after its
             // constructor (#448, ADR 0761 amended).
-            let sets = (pass.prototypes_set.iter())
-                .filter(|&&(at, ..)| at == module)
-                .filter_map(|&(_, class, at, place)| {
-                    let owner = fns[&super::classes::constructor_of(tcx, class)?].owner.as_deref()?;
-                    Some((class, owner, at, place))
-                })
-                .collect();
-            super::classes::set_prototypes(tcx, &mut lowered.items, sets);
+            let owner_of = |constructor| fns[&constructor].owner.clone();
+            super::classes::set_prototypes(tcx, &mut lowered.items, module, &pass.prototypes_set, owner_of);
             // One of types alone has no JS of its own: what it imports is
             // what its items read, of which it has none (the user's
             // decision, ADR 1005). Not the crate's root, its entry, which a
@@ -1490,30 +1473,6 @@ pub fn lower_crate<'tcx>(
             tests,
         })
     }))
-}
-
-/// `module`'s own items it exports by other names, `export { getCurrentTime
-/// as unstable_now };`, each `(local, exported)` and the item, in the order
-/// its `pub use`s are written: by those alone, not by its own name (ADR
-/// 0596, amended; `default_exports::own_aliases`).
-fn aliases(tcx: TyCtxt<'_>, module: LocalModId, fns: &HashMap<DefId, FnInfo>) -> Vec<(DefId, (String, String))> {
-    let own = super::default_exports::own_aliases(tcx, module);
-    let mut aliases: Vec<_> = (own.iter())
-        .filter_map(|alias| {
-            let info = fns.get(&alias.item).filter(|info| info.owner.is_none())?;
-            Some((alias.item, (info.name.clone(), alias.exported.clone())))
-        })
-        .collect();
-    // And each it names apart, `delete$`, by its own name, `export {
-    // delete$ as delete }`, where no `pub use` exports it (#338), in the
-    // order they're written.
-    let mut apart: Vec<_> = (fns.iter())
-        .filter(|(id, info)| info.module == module && !own.iter().any(|alias| alias.item == **id))
-        .filter_map(|(&id, info)| Some((id, (info.name.clone(), info.export.clone()?))))
-        .collect();
-    apart.sort_by_key(|&(id, _)| tcx.def_span(id));
-    aliases.extend(apart);
-    aliases
 }
 
 /// The variables a statement declares where it is: `const x`, `let [a, b]`.

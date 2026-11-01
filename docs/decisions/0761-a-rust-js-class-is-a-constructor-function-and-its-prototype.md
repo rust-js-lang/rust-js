@@ -547,7 +547,7 @@ js::on_load! {
 Its comment comes with it. Lowering records which class a load's
 statement replaces the prototype of (`Dependencies::prototype_set`,
 `binding_calls.rs`); the pipeline moves its item to follow the class's,
-`classes::set_prototypes`, and marks the class `js::Class::prototype_set`,
+`classes::set_prototypes` (`classes/prototypes.rs`), and marks the class `js::Class::prototype_set`,
 which the printer reads to print it after the constructor. Every pass
 between sees the statement as the module's load's, where it now is.
 
@@ -556,9 +556,11 @@ saying why, where:
 
 - what it reads is the module's own, a function or a `const`, which
   may not be made yet right after the constructor;
-- something the module runs as it loads is between them, a `const`
-  made by a call or another `js::on_load!`, which would see the
-  prototype replaced first (a literal's `const` runs nothing);
+- something the module runs as it loads is written between them, a
+  `const` made by a call or another `js::on_load!`, which would see the
+  prototype replaced first (a literal's `const` runs nothing); one
+  written after the load, which the module makes before it as what the
+  class's methods read, is made after it, as it's written;
 - the load has other statements, a `let` it reads say: one of its own;
 - the class is another module's, or an ES class's, which extends a
   binding's, whose `prototype` JS doesn't let be written;
@@ -607,6 +609,6 @@ Node (`chunk instanceof Promise`, `chunk.then(..)`, `await chunk`), and
 mutations `class-prototype-replaced-allowed`,
 `class-prototype-replaced-where-a-function-runs` (`binding_calls.rs`),
 `class-prototype-set-of-the-module`, `class-prototype-set-past-a-load`,
-`class-prototype-set-left-in-place` (`classes.rs`),
-`class-prototype-set-beside-others` (`pipeline.rs`),
+`class-prototype-set-past-a-later-load`, `class-prototype-set-left-in-place`,
+`class-prototype-set-beside-others` (`classes/prototypes.rs`),
 `class-prototype-set-dropped` (`to_oxc/statements.rs`).

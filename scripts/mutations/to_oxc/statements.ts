@@ -382,48 +382,48 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "class-prototype-set-dropped",
-    "breaks": "a class's prototype set at load isn't printed, its instances no Promises (#448)",
-    "file": "src/to_oxc/statements.rs",
-    "find": "        out.extend(self.stmts(prototype_set));\n",
-    "replace": "",
-    "tests": [
+    name: "class-prototype-set-dropped",
+    breaks: "a class's prototype set at load isn't printed, its instances no Promises (#448)",
+    file: "src/to_oxc/statements.rs",
+    find: "        out.extend(self.stmts(prototype_set));\n",
+    replace: "",
+    tests: [
       "test/classes.test.ts",
       "-t",
       "prototype replaced"
     ]
   },
   {
-    "name": "replaced-prototype-method-assigned",
-    "breaks": "a method of a class whose prototype its load replaced is assigned, which throws where Promise.prototype is frozen (SES), the module never loading (#448, rd393)",
-    "file": "src/to_oxc/statements.rs",
-    "find": "            if class.prototype_set && class.prototype.contains(&f.name) {\n",
-    "replace": "            if false {\n",
-    "tests": [
+    name: "replaced-prototype-method-assigned",
+    breaks: "a method of a class whose prototype its load replaced is assigned, which throws where Promise.prototype is frozen (SES), the module never loading (#448, rd393)",
+    file: "src/to_oxc/statements.rs",
+    find: "            if class.prototype_set && class.prototype.contains(&f.name) {\n",
+    replace: "            if false {\n",
+    tests: [
       "test/classes.test.ts",
       "-t",
       "prototype replaced at load"
     ]
   },
   {
-    "name": "replaced-prototype-constant-assigned",
-    "breaks": "a constant of a class whose prototype its load replaced is assigned, which throws where what it inherits holds it unwritable (#448, rd393)",
-    "file": "src/to_oxc/statements.rs",
-    "find": "            if class.prototype_set {\n                assigned.push(defined(&c.name, c.value.clone(), c.span));\n",
-    "replace": "            if false {\n                assigned.push(defined(&c.name, c.value.clone(), c.span));\n",
-    "tests": [
+    name: "replaced-prototype-constant-assigned",
+    breaks: "a constant of a class whose prototype its load replaced is assigned, which throws where what it inherits holds it unwritable (#448, rd393)",
+    file: "src/to_oxc/statements.rs",
+    find: "            if class.prototype_set {\n                assigned.push(defined(&c.name, c.value.clone(), c.span));\n",
+    replace: "            if false {\n                assigned.push(defined(&c.name, c.value.clone(), c.span));\n",
+    tests: [
       "test/classes.test.ts",
       "-t",
       "prototype replaced at load"
     ]
   },
   {
-    "name": "replaced-prototype-method-not-writable",
-    "breaks": "a method defined on a replaced prototype isn't writable, where an assignment's would be (#448, rd393)",
-    "file": "src/to_oxc/statements.rs",
-    "find": "                field(\"writable\", js::Expr::bool(true)),\n",
-    "replace": "",
-    "tests": [
+    name: "replaced-prototype-method-not-writable",
+    breaks: "a method defined on a replaced prototype isn't writable, where an assignment's would be (#448, rd393)",
+    file: "src/to_oxc/statements.rs",
+    find: "                field(\"writable\", js::Expr::bool(true)),\n",
+    replace: "",
+    tests: [
       "test/classes.test.ts",
       "-t",
       "prototype replaced at load"
