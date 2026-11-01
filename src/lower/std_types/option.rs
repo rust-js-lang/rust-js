@@ -151,7 +151,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::IsNone => Expr::presence(arg(), false),
             Std::Unwrap => {
                 // `expect` has a message too.
-                let list = (0..tys.len()).map(|_| arg()).collect();
+                let list: Vec<Expr> = (0..tys.len()).map(|_| arg()).collect();
+                // Of a cell's `get` read right after it's set to a `Some`,
+                // which nothing could take out between: its value (rd331e).
+                if self.frame.facts.set_then_unwrapped.contains(&span) && !list[1..].iter().any(Expr::has_effects) {
+                    let value = list.into_iter().next().expect("the `Option`");
+                    return Ok(Some(match self.boxed_payload(generic_args.type_at(0)) {
+                        true => self.some_value(value),
+                        false => value,
+                    }));
+                }
                 let unwrapped = Expr::call(Expr::helper("$unwrap"), list);
                 if self.boxed_payload(generic_args.type_at(0)) {
                     self.some_value(unwrapped)

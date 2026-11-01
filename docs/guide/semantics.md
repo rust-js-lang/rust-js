@@ -721,6 +721,13 @@ missing key, `unreachable!`, `todo!` ([0012](../decisions/0012-panics-and-runtim
   `let`-`else`, `if let` chains, match guards, `let` guards; an `if` the
   program wrote stays, its comment with it, where an earlier test decides
   it ([0564](../decisions/0564-a-std-body-is-tidied-as-the-apps-are.md)).
+- **An `unwrap()` that can't fail is the value:** a cell's
+  `get().unwrap()` that the statement after its `set(Some(..))` runs
+  before any other code, `self.surface.set(Some(make()));
+  create(self.surface.get().unwrap())`, is `this.surface = make();
+  create(this.surface);`, as nothing could take the `Some` out between; a
+  call that runs first, or a statement between, keeps the check, `$unwrap`
+  ([0294](../decisions/0294-unwrap-unchecked.md), amended).
 
 Differences:
 

@@ -16,6 +16,7 @@ use std::collections::{HashMap, HashSet};
 
 mod constants;
 mod ranges;
+mod set_reads;
 mod whole_casts;
 
 use constants::constant_patterns;
@@ -143,6 +144,9 @@ pub(super) struct BodyFacts<'tcx> {
     pub(super) held_guards: HashSet<Span>,
     /// Where each call is whose value is told present, `present_calls`'s.
     pub(super) present_calls: HashSet<Span>,
+    /// Where each `unwrap` or `expect` is of a cell's `get` read right
+    /// after it's set to a `Some`, `set_then_unwrapped`'s (rd331e).
+    pub(super) set_then_unwrapped: HashSet<Span>,
     /// Where each `rev()`, `enumerate()` or `map()` is whose adapter a std
     /// iterator's method steps where it's made, and where each such method
     /// is, `in_place_adapters`'s.
@@ -174,6 +178,7 @@ impl<'tcx> BodyFacts<'tcx> {
             registered_equalities: registered_equalities(tcx, thir),
             held_guards: held_guards(tcx, thir),
             present_calls: present_calls(tcx, thir),
+            set_then_unwrapped: set_reads::set_then_unwrapped(tcx, thir),
             in_place_adapters,
             in_place_adapter_steps,
             constant_patterns: constant_patterns(tcx, thir),
