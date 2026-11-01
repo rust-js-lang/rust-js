@@ -140,7 +140,20 @@ pub fn numeric(value: &Unknown) -> bool {
 pub fn parsed(text: &str) -> f64 {
     js::to_number(text) + 1.0
 }
+
+pub struct Size {
+    pub width: &'static Unknown,
+}
+
+// A field taken apart from a borrowed struct, a \`&&Unknown\`, as react-art's
+// \`const { height, width } = this.props;\` is.
+pub fn width_of(size: &Size) -> f64 {
+    let Size { width } = size;
+    js::to_number(width).unwrap()
+}
 `);
+  expect(js).toContain("return +width;");
+  expect(lib.widthOf({ width: "7" })).toBe(7);
   expect(js).toContain("return +width * +height;");
   expect(js).toContain("function numeric(value) {\n  try {\n    +value;\n    return true;\n  } catch {\n    return false;\n  }\n}");
   expect(js).toContain("return +text + 1;");

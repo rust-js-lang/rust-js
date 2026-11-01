@@ -99,7 +99,9 @@ as `concat_text`'s is by `ToText`'s (ADR 0639): of text, `&str` or a
 `&JsObject`, `Result<f64, &'static JsError>`, whose `unwrap()` is the call
 (ADR 0643), `+width`, what JS threw going on as itself, and whose `match`
 or `is_ok()` is JS's `try`. Not of a number or a `bool`, whose `+` Rust
-writes already, `x` and `f64::from(u8::from(b))`.
+writes already, `x` and `f64::from(u8::from(b))`. Of a reference to what it takes,
+its value's, as a field taken apart from borrowed props is, `let
+SurfaceProps { width, .. } = self.props();`'s `&&Unknown`.
 
 Rejected: `js::number`, a name a reader takes for `Number(value)`; and
 `Number(value)` itself, whose `BigInt` result differs. Held by

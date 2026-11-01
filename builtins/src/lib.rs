@@ -776,11 +776,13 @@ pub trait ToNumber {
 impl ToNumber for &str {
     type Number = f64;
 }
-impl ToNumber for &String {
-    type Number = f64;
-}
 impl ToNumber for String {
     type Number = f64;
+}
+/// What a reference holds, as a field taken apart from a borrowed struct
+/// is, `let SurfaceProps { width, .. } = self.props();`'s `&&Unknown`.
+impl<T: ToNumber> ToNumber for &T {
+    type Number = T::Number;
 }
 impl ToNumber for &Unknown {
     type Number = Result<f64, &'static JsError>;
