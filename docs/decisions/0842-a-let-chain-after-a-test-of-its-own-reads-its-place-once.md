@@ -3,7 +3,7 @@
 Status: Accepted. Amends tidy's `and tests`, which
 [0672](0672-a-property-a-test-reads-is-read-once.md) amended for a getter's
 read. Amended below: a binding read before a test that runs code stays
-before it.
+before it; and a chain whose `if`s `settle branches` made is joined.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: the nested `if`s
 are the JS MIR made of the chain, its tests in the order written and each
@@ -136,3 +136,31 @@ as before, nothing between able to change what it read.
 
 Held by `let_chain_binding_past_a_call.rs` against native Rust, and the
 mutation `chain-binding-read-past-code` (`tidy/logicals.ts`).
+
+## Amendment: a chain whose `if`s `settle branches` made is joined (2026-11-02)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Joining nested `if`s
+with no `else` into one `&&` runs the same tests in the same order, each
+short-circuiting.
+
+React Fizz's `use(usable)` is `if let Some(usable) = usable &&
+js::type_of(Some(usable)) == "object" { .. }`. Upstream writes it
+`usable !== null && typeof usable === 'object'`, one test. It printed
+`if (usable != null) { if (typeof usable === "object") { .. } }`. When an
+arm makes a value with a drop, such as `let context: Rc<Context> = ..;
+return read(&context);`, MIR leaves the chain as guard `break`s out of a
+block. `settle branches` (the `chains` stage) turns those into the nested
+`if`s, but only after `and tests` has already run, and no second `chains`
+run follows in a function with no drops left to unwind. **`and tests` runs
+again right after `settle branches`** (`and tests settled`). It is the same
+rule with the same checks, so a chain the first run left apart, such as
+one that would read a place twice, stays apart. No other corpus case's JS
+changed. The playground's result frame did change. Its `match
+message_data(e) { Some(report) if from_frame && report.run == Some(run) =>
+report, _ => return }` was two nested `if`s; it is now one guard, `if
+(report == null || !fromFrame || report.run !== run) { return; }`, as its
+`_ => return` is written. Its two `frame` bindings, now in one block,
+became a `let` read again, which runs the same.
+
+Held by the corpus case `let_chain_settled_and` against native Rust, and
+the mutation `and-tests-settled-skipped` (`lower/mir/tidy/stages.ts`).

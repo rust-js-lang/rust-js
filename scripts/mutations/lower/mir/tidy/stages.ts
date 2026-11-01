@@ -1094,4 +1094,14 @@ export const mutations: Mutation[] = [
     replace: "                                    =>\n",
     tests: ["test/lowering-index-loops.test.ts", "-t", "a for loop of a mut binding"],
   },
+  {
+    name: "and-tests-settled-skipped",
+    breaks:
+      "a let chain's tests that `settle branches` made `if`s of, its guard `break`s, stay nested, `if (usable != null) { if (kindOf(usable) === \"object\") { .. } }`, not `&&` as written (Fizz's `use(usable)`)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "            pass(\"and tests settled\", |b, h| {\n                bottom_up(b, &mut |s| and_tests(s, &h.written.conditions, &h.written.switches))\n",
+    replace: "            pass(\"and tests settled\", |b, h| {\n                let _ = (b, h);\n",
+    tests: ["test/corpus.test.ts", "-t", "^let_chain_settled_and.rs$"],
+    snapshots: true,
+  },
 ];

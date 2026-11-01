@@ -513,6 +513,13 @@ pub(super) const STAGES: &[Stage] = &[
             // 0755).
             pass("guarded chains", |b, _| js::statement_lists(b, &mut guarded_chains)),
             pass("settle branches", |b, _| settle_jumps(b)),
+            // A chain's tests again, of the `if`s `settle branches` made of
+            // a let chain's guard `break`s, `if (usable != null) { if
+            // (typeof usable === "object") { .. } }`: `if (a && b)`, as
+            // written (Fizz's `use(usable)`).
+            pass("and tests settled", |b, h| {
+                bottom_up(b, &mut |s| and_tests(s, &h.written.conditions, &h.written.switches))
+            }),
             pass("declarations", |b, _| declarations(b)),
             // A loop's early `break`s, its tests read in place now, and its test.
             pass("early breaks", |b, h| {

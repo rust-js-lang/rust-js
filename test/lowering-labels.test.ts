@@ -935,8 +935,8 @@ test("a break the program wrote through drops is its label's", async () => {
 // React's Fizz `use(usable)`: a let chain whose body's `if` chain returns
 // or throws in each branch, past MIR's block of it. Taking the block's tail
 // jump out of a branch it was all of leaves no empty branch: `if (usable !=
-// null) { if (typeof usable === "object") { .. } }`, never `if (usable ==
-// null) {} else if (..)`, as `emptied_branch` writes it.
+// null && typeof usable === "object") { .. }`, as upstream's one test, never
+// `if (usable == null) {} else if (..)`, as `emptied_branch` writes it.
 test("a branch a tail jump was all of is never printed empty", async () => {
   const dir = fixture("emptied-branch");
   writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
@@ -976,7 +976,7 @@ pub fn r#use(usable: Option<&'static Unknown>) -> Option<&'static Unknown> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).not.toMatch(/\) \{\n\s*\} else/);
-  expect(js).toContain('  if (usable != null) {\n    if (typeof usable === "object") {');
+  expect(js).toContain('  if (usable != null && typeof usable === "object") {\n');
   const lib = await import(join(dir, "lib.js"));
   expect(lib.use({ then() {}, value: 4 })).toBe(4);
   expect(lib.use({ context: true, _currentValue: 5 })).toBe(5);

@@ -32,26 +32,24 @@ export function ResultFrame({ program, onOutcome }) {
         window,
         "message",
         (e) => {
-          const frame$1 = frame.current;
+          let frame$1 = frame.current;
           const fromFrame = frame$1 != null && Object.is(e.source, frame$1.contentWindow);
           const report = readReport(e);
-          if (report != null && fromFrame) {
-            if (report.run === run) {
-              // As tall as its page, from the height it starts with.
-              const height = report.height;
-              const frame$1 = frame.current;
-              if (height != null && frame$1 != null) {
-                const style = `height: ${$displayF64($f64Min($f64Max(height, 280), 4000))}px`;
-                frame$1.setAttribute("style", style);
-                return;
-              }
-              const outcome = outcome$1(report);
-              if (outcome != null) {
-                reported = true;
-                onOutcome(outcome);
-              }
-              return;
-            }
+          if (report == null || !fromFrame || report.run !== run) {
+            return;
+          }
+          // As tall as its page, from the height it starts with.
+          const height = report.height;
+          frame$1 = frame.current;
+          if (height != null && frame$1 != null) {
+            const style = `height: ${$displayF64($f64Min($f64Max(height, 280), 4000))}px`;
+            frame$1.setAttribute("style", style);
+            return;
+          }
+          const outcome = outcome$1(report);
+          if (outcome != null) {
+            reported = true;
+            onOutcome(outcome);
           }
         },
         controller,
