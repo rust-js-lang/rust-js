@@ -66,4 +66,22 @@ export const mutations: Mutation[] = [
     replace: "                if false\n                    && let Some((line, column)) = next() =>\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "call chain"],
   },
+  {
+    name: "setter-comment-after-equals",
+    breaks:
+      "a block comment ending the line before a setter's link is after its `=`, `internals.p = /* CurrentUpdatePriority */ priority`, not before it as upstream's ReactDOMFlushSync has it",
+    file: "src/to_oxc/trailing.rs",
+    find: "                    assigned.then(|| (t.get_dst_line(), place.trim_end().len() as u32 + 1))\n",
+    replace: "                    (assigned && false).then(|| (t.get_dst_line(), place.trim_end().len() as u32 + 1))\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "setter"],
+  },
+  {
+    name: "setter-comment-before-any-equals",
+    breaks:
+      "a block comment before a method whose JS is an `===`, `name /* c */\\n.eq(other)`, goes past the operator, `name ===/* c */ other`, not after the name it's written after",
+    file: "src/to_oxc/trailing.rs",
+    find: "                    let assigned = !place.ends_with(|c: char| \"=!<>+-*/%&|^?\".contains(c));\n",
+    replace: "                    let assigned = true;\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "setter"],
+  },
 ];

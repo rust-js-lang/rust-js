@@ -26,8 +26,10 @@ pub(super) struct Trailing {
     pub(super) after_param: Option<(u32, u32)>,
     /// Of a block comment ending a line whose next line goes on with a
     /// call chain's link, `.d() /* .. */` then `.r(form)`: that line, its
-    /// comment before the link's `.` (rd63).
-    pub(super) before_link: Option<u32>,
+    /// comment before the link's `.` (rd63); and the column past the link's
+    /// `(`, where a setter's value is, `internals /* .. */` then
+    /// `.set_p(priority)`, its comment before the `=`.
+    pub(super) before_link: Option<(u32, u32)>,
 }
 
 /// Where each function's parameter starts, by where it ends: a line
@@ -135,10 +137,30 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
             ends.entry(found.0).or_default().push((found.1, &comment.text));
             continue;
         }
+        // One ending the line before a setter's link, of the place it
+        // sets: after that place, before its `=`, found back from the JS of
+        // the value it's given, `internals.p /* CurrentUpdatePriority */ =
+        // priority`, as upstream has it.
+        if let Some((next, value)) = comment.before_link
+            && let Some(found) = (map.get_tokens())
+                .filter(|t| t.get_src_line() == next && t.get_src_col() == value)
+                .find_map(|t| {
+                    let text = generated_lines.get(t.get_dst_line() as usize)?;
+                    let place = text[..in_bytes(text, t.get_dst_col())].trim_end().strip_suffix('=')?;
+                    let assigned = !place.ends_with(|c: char| "=!<>+-*/%&|^?".contains(c));
+                    assigned.then(|| (t.get_dst_line(), place.trim_end().len() as u32 + 1))
+                })
+        {
+            inside
+                .entry(found.0)
+                .or_default()
+                .push((found.1, Inside::BeforeCode, &comment.text));
+            continue;
+        }
         // One ending a call chain's link's line, before the `.` of the
         // next's, found back from that line's first code, past its `(` and
         // its name: `internals.d /* CurrentDispatcher */.r(form)` (rd63).
-        if let Some(next) = comment.before_link
+        if let Some((next, _)) = comment.before_link
             && let Some(found) = (map.get_tokens())
                 .filter(|t| t.get_src_line() == next)
                 .min_by_key(|t| t.get_src_col())

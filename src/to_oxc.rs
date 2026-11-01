@@ -556,12 +556,17 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                 let after_argument = sources.text[line_start..c.lo as usize].trim_end().ends_with(',');
                 let inside = block && (!sources.text[c.hi as usize..line_end].trim().is_empty() || after_argument);
                 // One ending its line before a call chain's next link, `.d()
-                // /* .. */` then `.r(form)`, is before that link (rd63).
+                // /* .. */` then `.r(form)`, is before that link (rd63), or
+                // a setter's `=`, `.set_p(priority)`'s, by where its value is.
                 let before_link = (block && !inside)
                     .then(|| sources.text.get(line_end + 1..)?.lines().next())
                     .flatten()
                     .filter(|next| next.trim_start().starts_with('.'))
-                    .map(|_| line + 1);
+                    .map(|next| {
+                        let open = next.find('(').map_or(0, |at| at + 1);
+                        let value = open + (next[open..].len() - next[open..].trim_start().len());
+                        (line + 1, value as u32)
+                    });
                 // One right after an `=`, an initializer's or an assignment's,
                 // not `==`'s, `<=`'s or `+=`'s, is before the value it gives,
                 // `= /* .. */ 0b0000000` (ADR 0630, amended).

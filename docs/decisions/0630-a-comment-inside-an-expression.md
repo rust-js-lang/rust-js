@@ -4,7 +4,7 @@ Status: Accepted. Extends [0444](0444-a-comment-is-where-its-code-is.md),
 whose rule 2 was of a comment at its line's end. Amended below: one after
 an `=` is before the value; amended again: and one on a line of its own
 between an `=` and its value; and a block comment after an argument's `,` is
-after the argument.
+after the argument; and one before a setter's link is before its `=`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: comments, which
 nothing runs.
@@ -218,3 +218,26 @@ statement would be placed at it, inside the array of
 a constant, is after it" and "a comment before a tail tuple with a
 constant is never inside its array", and the mutations `constant-unplaced`
 and `constant-placed-anywhere` (`lower/mir/operands.ts`).
+
+## Amendment: a comment before a setter's link is before its `=` (2026-11-02)
+
+React's ReactDOMFlushSync writes `ReactDOMSharedInternals.p /*
+ReactDOMCurrentUpdatePriority */ = DiscreteEventPriority;`.
+ReactFizzConfigDOM and ReactFiberConfigDOM write
+`ReactDOMSharedInternals.d /* ReactDOMCurrentDispatcher */ = { .. }`. The
+port writes the comment where rustfmt keeps it, ending the receiver's line
+before the setter's link: `REACT_DOM_SHARED_INTERNALS /*
+ReactDOMCurrentUpdatePriority */` then `.set_p(..)`. A call chain's link
+there puts the comment before the link's `.` (rd63). A setter's JS has no
+`.` there, so the comment fell to the value, `.p = /* .. */ v`. **A block
+comment ending the line before a setter's link goes after the place the
+setter sets, before its `=`** (`trailing::placed`). The map's token of the
+value, written right after the link's `(`, finds it: `internals.p /*
+CurrentUpdatePriority */ = priority`. This needs an `=` that assigns. A
+method whose JS is a comparison, `name /* c */` then `.eq(other)`, keeps
+the comment after the name, `name /* c */ === other`.
+
+Held by `lowering-comments-inside.test.ts`'s "a block comment before a
+setter's link is before its `=`", run, and the mutations
+`setter-comment-after-equals` and `setter-comment-before-any-equals`
+(`to_oxc/trailing.ts`).

@@ -148,6 +148,56 @@ pub fn reset(internals: &Internals, form: f64) {
   expect(reset).toEqual([3]);
 });
 
+// React's ReactDOMFlushSync, `ReactDOMSharedInternals.p /*
+// ReactDOMCurrentUpdatePriority */ = DiscreteEventPriority;`, and
+// ReactFizzConfigDOM's `ReactDOMSharedInternals.d /* ReactDOMCurrentDispatcher
+// */ = { .. }`: a block comment ending the line before a setter's link, of
+// what the setter sets, is after that place, before its `=`, as upstream has
+// it, not after the `=`; not before an `==` a method's JS ends with.
+test("a block comment before a setter's link is before its `=`", async () => {
+  const { js, lib } = await compiled("comment-before-a-setter", `use std::marker::PhantomData;
+
+pub struct Internals(PhantomData<js::JsObject>);
+
+impl Internals {
+    #[cfg_attr(rust_js, rust_js::link_name = "set p")]
+    pub fn set_p(&self, p: f64) {
+        let _ = p;
+        unreachable!()
+    }
+    #[cfg_attr(rust_js, rust_js::link_name = "set d")]
+    pub fn set_d(&self, d: &'static [f64]) {
+        let _ = d;
+        unreachable!()
+    }
+}
+
+pub fn set(internals: &Internals, priority: f64) {
+    internals /* CurrentUpdatePriority */
+        .set_p(priority);
+}
+
+pub fn same(name: &str, other: &str) -> bool {
+    name /* the tag's */
+        .eq(other)
+}
+
+pub fn dispatch(internals: &Internals) {
+    internals /* CurrentDispatcher */
+        .set_d(&[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0]);
+}
+`);
+  expect(js).toContain("  internals.p /* CurrentUpdatePriority */ = priority;\n");
+  expect(js).toContain("  internals.d /* CurrentDispatcher */ = [1, 2,");
+  const internals: { p?: number; d?: number[] } = {};
+  (lib.set as (internals: unknown, priority: number) => void)(internals, 2);
+  (lib.dispatch as (internals: unknown) => void)(internals);
+  expect([internals.p, internals.d?.length]).toEqual([2, 16]);
+  // Not an `==` a method's JS is: there it's a comment as any other.
+  expect(js).toContain("  return name /* the tag's */ === other;\n");
+  expect([(lib.same as (a: string, b: string) => boolean)("a", "a"), (lib.same as (a: string, b: string) => boolean)("a", "b")]).toEqual([true, false]);
+});
+
 // And of an argument given by reference, `&str`, a reborrow MIR makes of
 // it, which is where it's written too (rd205).
 test("a block comment before an argument given by reference is before it", async () => {
