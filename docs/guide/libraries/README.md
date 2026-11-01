@@ -139,7 +139,12 @@ What it has:
   `Result<T, &JsError>`, `js_error::to_string(e)` is `String(e)`, and
   `e.message()` an `Error`'s ([Errors](../interop/exceptions.md)).
 - **`json`** is `JSON.parse` and `JSON.stringify`; a Rust value's JSON is
-  serde's, below.
+  serde's, below. `stringify_with`'s replacer is the keys an object keeps,
+  `Some(&["a"][..])`, `None` of all, or a function of each key and value,
+  and `parse_with`'s reviver one too: a closure, or one
+  `function::with_this` makes, whose `this` is the object holding the key,
+  `JSON.stringify(model, function (key, value) { .. this[key] .. })`
+  ([ADR 0225](../../decisions/0225-unknown-values.md), amended).
 - **`RegExp`**, made by `reg_exp::new`, a literal `/^\d+$/` of a pattern
   written out, and `new RegExp(pattern)` of one made at run time and no
   flags, `""` ([ADR 0243](../../decisions/0243-regex-literals.md),

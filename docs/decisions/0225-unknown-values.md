@@ -24,7 +24,8 @@ and each of the js crate's objects, a `Set`, a `Map`, a `Promise`, is
 Extended by [0884](0884-a-maps-value-is-any-value.md): a `Dict<Option<_>>`'s
 `get`, `Some(None)` of a `null` apart from `None` of a missing key, is a
 keyed read's rule, a `js::Map`'s `get` of an `Option` told by `has`,
-`$someGet`, as its value is any value.
+`$someGet`, as its value is any value. Amended (2026-11-01, rd346): a JSON replacer and reviver are
+functions, which may read `this`.
 
 Case: N, C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -283,3 +284,36 @@ whatever a `throw` threw, `undefined` too.
 
 Held by `test/lowering-any-shape.test.ts`, run, whose program doesn't
 compile without them, E0277 of `js::Set<js::Unknown>: js::AnyShape<_>`.
+
+## Amended (2026-11-01): a replacer and a reviver are functions, which may read `this`
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, none; the same
+`JSON.stringify` and `JSON.parse`, given what TypeScript's overloads take.
+
+ReactFlightReplyClient serializes each part with `JSON.stringify(model,
+resolveToJSON)`, a replacer that reads `this`, the object holding the key,
+to see a value before its `toJSON` ran, a `Date`'s; React's Flight client
+parses each row with `JSON.parse(json, response._fromJSON)`, a reviver
+that reads `this` too (gap rd346). `stringify_with` took a replacer of the
+keys an object keeps alone, and `parse_with` a `Box<dyn Fn>`, given no
+`this`.
+
+- **`stringify_with`'s replacer is TypeScript's either**: the keys,
+  `Option<&[&str]>`, `None` of all, `null`, as before; or a function of
+  each key and its value, giving what's written, `None` leaving the
+  property out (`json::Replacer`, one trait of both, as `reg_exp::replace`'s
+  `Replacement` is, ADR 0310). Given a function, what it gives may throw
+  or be `undefined`, whatever the value: `Result<Option<String>,
+  &JsError>`.
+- **`parse_with`'s reviver is any such function**, not a `Box`: a
+  closure, or a `Box` of one as before.
+- **Either reads `this`** where it's one `function::with_this` makes (ADR
+  0972): `function (key, value) { .. }`, its `this` the object holding the
+  key, as JS calls it. Its key is a `&'static str`, as what JS gives is
+  JS's own.
+
+Held by `test/js-functions.test.ts`'s "JSON's replacer and reviver may
+read `this`, the object holding the key": a `Date`'s holder read before
+its `toJSON`, a closure leaving a key out, the keys kept, and a reviver
+reading its parent.
+

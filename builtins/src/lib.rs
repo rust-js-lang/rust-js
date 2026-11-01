@@ -2256,11 +2256,15 @@ pub mod json {
     /// the value `text` is, each part of it given to `reviver` with its
     /// key, innermost first, and made what that gives; a property it gives
     /// `None` of is left out. Of JSON a program made itself: JSON that
-    /// isn't throws, a panic.
+    /// isn't throws, a panic. The reviver is any function of the key and
+    /// the value, a closure, or one [`function::with_this`] makes, whose
+    /// `this` is the object holding the key, as TypeScript's `(this: any,
+    /// key: string, value: any) => any` has it: React's Flight client's
+    /// `JSON.parse(json, response._fromJSON)`.
     #[cfg_attr(rust_js, rust_js::link_name = "JSON.parse")]
     pub fn parse_with(
         text: &str,
-        reviver: Box<dyn Fn(&str, Option<&'static Unknown>) -> Option<&'static Unknown>>,
+        reviver: impl Fn(&'static str, Option<&'static Unknown>) -> Option<&'static Unknown>,
     ) -> Option<&'static Unknown> {
         unreachable!()
     }
@@ -2275,15 +2279,36 @@ pub mod json {
 
     /// [`JSON.stringify(value, replacer, space)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify):
     /// `value`'s JSON, each level indented by `space` spaces, up to 10, or
-    /// on one line of 0. An object has only the properties `replacer` names,
-    /// if it names any.
+    /// on one line of 0. Its `replacer`, as TypeScript's overloads take
+    /// either: the properties an object keeps, if it names any, `None` of
+    /// all; or a function each key and its value are given, its result
+    /// what's written, `None` leaving the property out, a closure, or one
+    /// [`function::with_this`] makes, whose `this` is the object holding
+    /// the key: ReactFlightReplyClient's `JSON.stringify(model,
+    /// resolveToJSON)`.
     ///
-    /// Of any value, an [`Unknown`], what may throw, of a cycle or a
-    /// `BigInt`, or be `undefined`, of a function (ADR 0310).
+    /// Of any value, an [`Unknown`], or given a function, what may throw,
+    /// of a cycle or a `BigInt`, or be `undefined`, of a function (ADR 0310).
     #[cfg_attr(rust_js, rust_js::link_name = "JSON.stringify")]
     #[cfg_attr(rust_js, rust_js::nullable(replacer))]
-    pub fn stringify_with<T: Stringify + ?Sized>(value: &T, replacer: Option<&[&str]>, space: u32) -> T::Stringified {
+    pub fn stringify_with<T: Stringify + ?Sized, R: Replacer<T>>(value: &T, replacer: R, space: u32) -> R::Stringified {
         unreachable!()
+    }
+
+    /// What [`stringify_with`] is given as its replacer: the properties an
+    /// object keeps, `Option<&[&str]>`, giving what `T` gives; or a
+    /// function of each key and value, whose result may be anything, so
+    /// what it gives may throw or be `undefined`.
+    pub trait Replacer<T: ?Sized> {
+        type Stringified;
+    }
+
+    impl<T: Stringify + ?Sized> Replacer<T> for Option<&[&str]> {
+        type Stringified = T::Stringified;
+    }
+
+    impl<T: ?Sized, F: Fn(&'static str, Option<&'static Unknown>) -> Option<&'static Unknown>> Replacer<T> for F {
+        type Stringified = Result<Option<String>, &'static JsError>;
     }
 
     /// What [`stringify_with`] gives of a value: the text of one whose JSON

@@ -764,3 +764,60 @@ pub fn bound_vec(method: &'static dyn Fn() -> Option<&'static Unknown>, args: Ve
   }, [1, 2]);
   expect(g(3)).toEqual([true, 1, 2, 3]);
 });
+
+// rd346: JSON's replacer and reviver are functions of each key and its
+// value, a closure or one that reads its `this`, the object holding the
+// key, as ReactFlightReplyClient's `JSON.stringify(model, resolveToJSON)`
+// reads the value before its `toJSON` ran, and React's Flight client's
+// `JSON.parse(json, response._fromJSON)` its parent.
+test("JSON's replacer and reviver may read `this`, the object holding the key", async () => {
+  const { js, lib } = await compiled(
+    "json-this",
+    `use js::{Unknown, function, json};
+
+pub fn kinds(value: &'static Unknown) -> Option<String> {
+    json::stringify_with(
+        value,
+        function::with_this(|this: Option<&'static Unknown>, (key, value): (&str, Option<&'static Unknown>)| {
+            match (key, this) {
+                ("", _) | (_, None) => value,
+                (key, Some(holder)) => Some(js::unknown_of(js::type_of(js::get(holder, key)))),
+            }
+        }),
+        0,
+    )
+    .ok()
+    .flatten()
+}
+
+pub fn without(value: &'static Unknown, left_out: &'static str) -> Option<String> {
+    json::stringify_with(value, move |key: &str, value| if key == left_out { None } else { value }, 0)
+        .ok()
+        .flatten()
+}
+
+pub fn kept(value: &'static Unknown) -> Option<String> {
+    json::stringify_with(value, Some(&["a"][..]), 0).ok().flatten()
+}
+
+pub fn parent(text: &str) -> Option<&'static Unknown> {
+    json::parse_with(
+        text,
+        function::with_this(|this: Option<&'static Unknown>, (key, value): (&str, Option<&'static Unknown>)| {
+            match (key, this) {
+                ("b", Some(holder)) => js::get(holder, "a"),
+                _ => value,
+            }
+        }),
+    )
+}
+`,
+  );
+  expect(js).toMatch(/JSON\.stringify\(\s*value,\s*function \(key, value\) \{/);
+  expect(js).toContain('JSON.stringify(value, ["a"], 0)');
+  expect(js).toContain("JSON.parse(text, function (key, value) {");
+  expect(lib.kinds({ d: new Date(0), n: 1 })).toBe('{"d":"object","n":"number"}');
+  expect(lib.without({ a: 1, x: 2 }, "x")).toBe('{"a":1}');
+  expect(lib.kept({ a: 1, b: 2 })).toBe('{"a":1}');
+  expect(lib.parent('{"a":1,"b":2}')).toEqual({ a: 1, b: 1 });
+});
