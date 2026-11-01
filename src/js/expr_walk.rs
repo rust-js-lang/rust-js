@@ -33,6 +33,7 @@ impl Expr {
             | ExprKind::OptionalMember(a, _)
             | ExprKind::Unary(_, a)
             | ExprKind::Await(a)
+            | ExprKind::Unbound(a)
             | ExprKind::Spread(a)
             | ExprKind::Stringed(a)
             | ExprKind::Handle(a, _)
@@ -223,6 +224,7 @@ impl Expr {
             ExprKind::OptionalCall(f, args) => ExprKind::OptionalCall(one(f)?, all(args)?),
             ExprKind::New(f, args) => ExprKind::New(one(f)?, all(args)?),
             ExprKind::Await(a) => ExprKind::Await(one(a)?),
+            ExprKind::Unbound(a) => ExprKind::Unbound(one(a)?),
             ExprKind::Spread(a) => ExprKind::Spread(one(a)?),
             ExprKind::Stringed(a) => ExprKind::Stringed(one(a)?),
             ExprKind::Template(texts, values, layout) => {
@@ -598,7 +600,9 @@ impl Expr {
             | ExprKind::Function(_) => false,
             // It lets other code run meanwhile, and loads a module.
             ExprKind::Await(_) | ExprKind::Import(_) => true,
-            ExprKind::Spread(a) | ExprKind::Stringed(a) | ExprKind::DropArgument(_, _, a) => a.has_effects(),
+            ExprKind::Spread(a) | ExprKind::Stringed(a) | ExprKind::DropArgument(_, _, a) | ExprKind::Unbound(a) => {
+                a.has_effects()
+            }
             ExprKind::Member(object, _) | ExprKind::OptionalMember(object, _) => object.has_effects(),
             // Making one reads nothing: its getter does, later.
             ExprKind::Handle(_, _) => false,

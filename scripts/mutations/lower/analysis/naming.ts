@@ -723,4 +723,12 @@ export const mutations: Mutation[] = [
       "a namespace's methods are its module's functions",
     ],
   },
+  {
+    name: "unbound-global-unreserved",
+    breaks: "a variable named as the global a path reads unbound, `tagged` of `(0, tagged)`, keeps its name, and the call calls it (ADR 1033, amended)",
+    file: "src/lower/analysis/naming.rs",
+    find: "bindings::first_name(bindings::unbound(path).unwrap_or(path))",
+    replace: "bindings::first_name(path)",
+    tests: ["test/js-any-values.test.ts", "-t", "eval is the global eval, called indirectly"],
+  },
 ];

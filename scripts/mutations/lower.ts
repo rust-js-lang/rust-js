@@ -479,4 +479,12 @@ export const mutations: Mutation[] = [
       "a namespace's methods are its module's functions",
     ],
   },
+  {
+    name: "unbound-path-read-as-a-name",
+    breaks: "a binding's path read unbound, `(0, eval)`, is read as a name, not `(0, eval)`",
+    file: "src/lower.rs",
+    find: "    if let Some(inner) = bindings::unbound(name) {\n",
+    replace: "    if let Some(inner) = bindings::unbound(name).filter(|_| false) {\n",
+    tests: ["test/js-any-values.test.ts", "-t", "eval is the global eval, called indirectly"],
+  },
 ];

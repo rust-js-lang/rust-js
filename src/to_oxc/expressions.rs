@@ -276,6 +276,12 @@ impl<'a> Cx<'a> {
             }
             ExprKind::DropArgument(..) => unreachable!("the pipeline keeps each drop argument or leaves it out"),
             ExprKind::Await(promise) => Expression::new_await_expression(sp, self.expr(promise), b),
+            // `(0, f)`: `f` read unbound, `(0, eval)`, an indirect eval
+            // (ADR 1033, amended).
+            ExprKind::Unbound(f) => {
+                let zero = Expression::new_numeric_literal(sp, 0.0, None, NumberBase::Decimal, b);
+                Expression::new_sequence_expression(sp, ArenaVec::from_iter_in([zero, self.expr(f)], b), b)
+            }
             ExprKind::Spread(_) => unreachable!("`...items` is an array's item or a call's argument, which they write"),
             ExprKind::Call(callee, args) => {
                 let args = args.iter().map(argument);

@@ -1078,8 +1078,11 @@ fn path_read(path: &str, required: &HashSet<Export>, import: impl FnOnce(&Export
 }
 
 /// A JS global, like `document`, or a path from one, like `console.log`
-/// or `window['$RT']` (ADR 1033).
+/// or `window['$RT']` (ADR 1033), or one read unbound, `(0, eval)`.
 fn global(name: &str) -> Expr {
+    if let Some(inner) = bindings::unbound(name) {
+        return Expr::unbound(global(inner));
+    }
     let first = bindings::first_name(name);
     bindings::read_path(Expr::var(first), &name[first.len()..])
 }

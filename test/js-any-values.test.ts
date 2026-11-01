@@ -1,6 +1,7 @@
 // What the js crate's functions of a value of any shape do as JS does
 // them: `js::keys_in` of what may be `null` or `undefined` (ADR 0719,
-// amended), and JS's loose equality, `js::loose_equals` (ADR 1012). Each
+// amended), JS's loose equality, `js::loose_equals` (ADR 1012), and its
+// global `eval`, `js::eval` (ADR 1033, amended). Each
 // test is a program of its own, compiled and run in Node, as no native
 // Rust has these values.
 
@@ -164,4 +165,51 @@ pub fn width_of(size: &Size) -> f64 {
   const throwing = { valueOf() { throw new Error("no"); } };
   expect([1n, Symbol("s"), throwing, "a", null, {}].map(lib.numeric)).toEqual([false, false, false, true, true, true]);
   expect([lib.parsed("  12 "), lib.parsed(""), lib.parsed("0x10"), lib.parsed("1px")]).toEqual([13, 1, 17, NaN]);
+});
+
+// rd339: JS's global `eval`, `js::eval`, called as React's
+// ReactClientDebugConfig checks it's there, `(0, eval)('null')`: an
+// indirect eval, which runs in the global scope, as Rust's call can't see
+// its caller's variables; by its name alone it'd be a direct one, which
+// reads them, `source` here. Its `Result` caught where the program tests it.
+test("eval is the global eval, called indirectly", async () => {
+  const { js, lib } = await compiled("js-eval", `use std::cell::Cell;
+
+use js::Unknown;
+
+thread_local! {
+    static HAS_CONFIRMED_EVAL: Cell<bool> = const { Cell::new(false) };
+}
+
+pub fn check_eval_availability_once_dev() -> bool {
+    if !HAS_CONFIRMED_EVAL.get() {
+        HAS_CONFIRMED_EVAL.set(true);
+        if js::eval("null").is_err() {
+            return false;
+        }
+    }
+    true
+}
+
+pub fn evaluated(source: &str) -> Option<&'static Unknown> {
+    js::eval(source).unwrap()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "(0, tagged)")]
+fn tagged() -> u32 {
+    unreachable!()
+}
+
+pub fn shadowing(tagged: u32) -> u32 {
+    tagged + crate::tagged()
+}
+`);
+  expect(js).toContain('(0, eval)("null");');
+  expect(js).toContain("(0, eval)(source)");
+  expect(lib.checkEvalAvailabilityOnceDev()).toBe(true);
+  expect([lib.evaluated("1 + 2"), lib.evaluated("typeof source")]).toEqual([3, "undefined"]);
+  expect(() => lib.evaluated("(")).toThrow(SyntaxError);
+  // A variable of the name a path reads unbound is another's.
+  (globalThis as { tagged?: () => number }).tagged = () => 5;
+  expect(lib.shadowing(1)).toBe(6);
 });

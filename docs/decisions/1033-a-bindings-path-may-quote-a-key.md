@@ -1,6 +1,6 @@
 # 1033. A binding's path may quote a key, which a minifier keeps
 
-Status: Accepted.
+Status: Accepted. Amended (2026-11-01): a path read unbound, `(0, eval)`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): third, results change:
 `window.$RT` and `window['$RT']` read the same property, but a minifier
@@ -96,3 +96,51 @@ The printer writes every string in double quotes, so upstream's
   `asked-quoted-key-named` (`mir/calls.ts`).
 - The port writes `#[link_name = "window['$RT']"]` and `"set
   window['$RT']"` for each global the inline scripts share.
+
+## Amended (2026-11-01): a path read unbound, `(0, eval)`
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): third, results change:
+`eval(source)` and `(0, eval)(source)` run the same text, but a call of
+`eval` by its name is a direct eval, which reads and writes the caller's
+variables, and any other an indirect one, run in the global scope.
+
+React's ReactClientDebugConfigs check that the host allows `eval` (gap
+rd339), as upstream writes it:
+
+```js
+try {
+  // eslint-disable-next-line no-eval
+  (0, eval)('null');
+} catch {
+  console.error('eval() is not supported in this environment. ..');
+}
+```
+
+and the js crate had no `eval`. A binding of the name, `#[link_name =
+"eval"]`, would print `eval(source)`, a direct eval in the function that
+calls it, whose `source`, `json` or any variable the source names it would
+read, where a Rust call can't see its caller's.
+
+**A global's path may be written `(0, path)`, read unbound**: its value,
+which a call gives no `this`, and which of `eval` is an indirect eval. The
+js crate binds `eval(source: &str) -> Result<Option<&'static Unknown>,
+&'static JsError>` so, `(0, eval)(source)`, its `Err` what the source
+threw, a `SyntaxError`, or the `EvalError` of a host that forbids it; a
+program's `if js::eval("null").is_err()` is upstream's `try { (0,
+eval)("null"); } catch { .. }` (ADR 0637). The JS tree says it,
+`ExprKind::Unbound`, printed as JS's comma expression; `paths::unbound` reads
+the form, which `global_refused` checks as a global's path; and the global
+it names is reserved as any binding's global is, so a parameter `eval` is
+`eval$`, never the function called.
+
+Alternatives: `globalThis.eval(source)`, also indirect, which isn't what
+upstream writes; a binding attribute of its own for an indirect call, a
+second way to say what a path says.
+
+Held by `test/js-any-values.test.ts`, "eval is the global eval, called
+indirectly", run in Node: `typeof source` is `"undefined"` in it, where a
+direct eval's is `"string"`; `paths.rs`'s unit test; and the mutations
+`unbound-printed-bound` (`to_oxc/expressions.rs`), `unbound-path-read-as-a-name`
+(`lower.rs`), `unbound-global-unreserved` (`analysis/naming.rs`) and
+`unbound-path-refused` (`bindings/paths.rs`).
+

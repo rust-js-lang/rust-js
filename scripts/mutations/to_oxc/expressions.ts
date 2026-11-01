@@ -451,4 +451,12 @@ export const mutations: Mutation[] = [
     replace: "                    UnaryOp::Plus => UnaryOperator::UnaryNegation,\n",
     tests: ["test/js-any-values.test.ts", "-t", "to_number is JS's unary"],
   },
+  {
+    name: "unbound-printed-bound",
+    breaks: "`(0, eval)(source)` prints `eval(source)`, a direct eval, which reads the caller's variables (ADR 1033, amended)",
+    file: "src/to_oxc/expressions.rs",
+    find: "                Expression::new_sequence_expression(sp, ArenaVec::from_iter_in([zero, self.expr(f)], b), b)\n",
+    replace: "                { let _ = zero; self.expr(f) }\n",
+    tests: ["test/js-any-values.test.ts", "-t", "eval is the global eval, called indirectly"],
+  },
 ];

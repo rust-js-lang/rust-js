@@ -1335,6 +1335,7 @@ fn expr(e: &mut Expr) {
         | ExprKind::OptionalMember(a, _)
         | ExprKind::Unary(_, a)
         | ExprKind::Await(a)
+        | ExprKind::Unbound(a)
         | ExprKind::Spread(a)
         | ExprKind::Stringed(a)
         | ExprKind::Handle(a, _)

@@ -368,6 +368,7 @@ impl Walk {
             | ExprKind::Spread(a)
             | ExprKind::Unary(_, a)
             | ExprKind::Await(a)
+            | ExprKind::Unbound(a)
             | ExprKind::DropArgument(_, _, a)
             | ExprKind::Handle(a, _)
             | ExprKind::Stepped(_, a) => self.expr(a),

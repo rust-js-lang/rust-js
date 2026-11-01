@@ -78,9 +78,19 @@ pub(in crate::lower) fn read(object: Expr, path: &str) -> Expr {
     steps.into_iter().fold(object, |object, step| step.of(object))
 }
 
+/// The path `path` reads unbound, `eval` of `(0, eval)`: its value, which
+/// a call gives no `this`, and which of `eval` is an indirect one, run in
+/// the global scope, as React's `checkEvalAvailabilityOnceDev` writes it
+/// (ADR 1033, amended).
+pub(in crate::lower) fn unbound(path: &str) -> Option<&str> {
+    path.strip_prefix("(0, ")?.strip_suffix(')')
+}
+
 /// Why `path`, the global path a binding reads, `console.log` or
-/// `window['$RT']`, isn't one: it starts from a JS name.
+/// `window['$RT']`, or one read unbound, `(0, eval)`, isn't one: it starts
+/// from a JS name.
 pub(in crate::lower) fn global_refused(path: &str) -> Option<String> {
+    let path = unbound(path).unwrap_or(path);
     let first = first_name(path);
     if !crate::names::is_identifier(first) {
         return Some(format!("`{first}` isn't a JS name, which a global's path starts from"));
@@ -107,5 +117,8 @@ mod tests {
         assert!(steps("['']").is_err());
         assert!(global_refused("window['$RT']").is_none());
         assert!(global_refused("['$RT']").is_some());
+        assert_eq!(unbound("(0, eval)"), Some("eval"));
+        assert!(global_refused("(0, eval)").is_none());
+        assert!(global_refused("(0, ['eval'])").is_some());
     }
 }

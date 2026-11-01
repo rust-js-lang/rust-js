@@ -40,7 +40,7 @@ pub(super) use nullable::{
     nullable_result, nullable_tuple_item, nullable_values, of_type_parameter, optional_result, reads_a_nullable_value,
     reject_nullable_held, takes_nullable, takes_nullable_entries,
 };
-pub(in crate::lower) use paths::{Step, first_name, has_steps, read as read_path, steps};
+pub(in crate::lower) use paths::{Step, first_name, has_steps, read as read_path, steps, unbound};
 pub(super) use rest_values::{is_rest_value, reads_rest_value, rest_items};
 pub(super) use value_only::reject_value_only_calls;
 use whole::whole_refused;

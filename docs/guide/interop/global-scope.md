@@ -146,7 +146,8 @@ members through its `Deref`, as TypeScript's `typeof globalThis` is (rd319, [ADR
 
 The crates bind the standard ones, called bare:
 
-- `js`: `parse_int`, `parse_float`, `encode_uri_component`, `is_nan`, the
+- `js`: `parse_int`, `parse_float`, `encode_uri_component`, `is_nan`,
+  `eval`, the global one, `(0, eval)(source)`, the
   timers `set_timeout`, `set_interval` and their `clear_*`, a window's
   too ([Timers](async.md#timers)); a timer's delay is an `Option`, left out
   where it's `None`, as JS's is optional

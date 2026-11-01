@@ -40,4 +40,12 @@ export const mutations: Mutation[] = [
     replace: "            if key.is_empty() {\n",
     tests,
   },
+  {
+    name: "unbound-path-refused",
+    breaks: "a binding's path `(0, eval)` isn't one, `js::eval` refused where it's declared",
+    file: "src/lower/bindings/paths.rs",
+    find: "    let path = unbound(path).unwrap_or(path);\n    let first = first_name(path);\n",
+    replace: "    let first = first_name(path);\n",
+    tests: ["test/js-any-values.test.ts", "-t", "eval is the global eval, called indirectly"],
+  },
 ];

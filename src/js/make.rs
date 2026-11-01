@@ -928,6 +928,11 @@ impl Expr {
         Expr::new(ExprKind::AsyncArrow(params, body))
     }
 
+    /// `(0, f)`: `f` read unbound (`ExprKind::Unbound`).
+    pub fn unbound(f: Expr) -> Expr {
+        Expr::new(ExprKind::Unbound(Box::new(f)))
+    }
+
     pub fn await_(promise: Expr) -> Expr {
         Expr::new(ExprKind::Await(Box::new(promise)))
     }

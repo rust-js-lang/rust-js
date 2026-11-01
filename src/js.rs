@@ -1040,6 +1040,10 @@ pub enum ExprKind {
     /// crate's number and its index there, one of a library's the crate
     /// compiles itself too (ADR 0914).
     DropArgument((u32, u32), u32, Box<Expr>),
+    /// `(0, f)`: `f` read as a value, unbound, which a call gives no
+    /// `this`, and which of `eval` is an indirect eval, run in the global
+    /// scope: a binding's path `(0, eval)`, `js::eval`'s (ADR 1033, amended).
+    Unbound(Box<Expr>),
     /// `await p`: `.await` (ADR 0029).
     Await(Box<Expr>),
     /// `<div className="hero">..</div>`, `<Counter initial={1} />` or `<>..</>` (ADR 0040).

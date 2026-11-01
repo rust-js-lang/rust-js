@@ -222,6 +222,7 @@ are properties ([ADR 0028](../../decisions/0028-js-module-imports.md)).
 | `"react-dom#* as ReactDOM.flushSync"` | `import * as ReactDOM from "react-dom"`, then `ReactDOM.flushSync` |
 | `"chart.js#Chart.register"` | `import { Chart } from "chart.js"`, then `Chart.register` |
 | `"window['$RT']"` | `window["$RT"]`, a property by a quoted key |
+| `"(0, eval)"` | `(0, eval)`, a global read unbound, `js::eval`'s indirect eval |
 
 A property is `.name`, by its name, or `['key']`, by a quoted key, as JS
 writes one. Quote a property another script reads by its name: a minifier
@@ -230,6 +231,14 @@ never `window["$RT"]`, which React's Fizz runtime shares with the server's
 inline scripts. A key that isn't a JS name is quoted too, `['worker-bundle']`.
 A method's property is its name, never quoted
 ([ADR 1033](../../decisions/1033-a-bindings-path-may-quote-a-key.md)).
+
+A global's path written `(0, path)` is read unbound: its call is given no
+`this`, and of `eval` is an indirect one, run in the global scope, which a
+call of `eval` by its name alone isn't: a direct eval reads the caller's
+variables. `js::eval(source)` is `(0, eval)(source)`, as React's
+`checkEvalAvailabilityOnceDev` writes it, and a variable of the name it
+reads, a parameter `eval`, is renamed so the call reads the global ([ADR
+1033](../../decisions/1033-a-bindings-path-may-quote-a-key.md), amended).
 
 A relative module, `./greet.js`, is relative to the crate root's JS file;
 each module that imports it gets the path from its own directory. The

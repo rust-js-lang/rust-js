@@ -747,6 +747,19 @@ pub fn parse_int<T: ToText>(text: T, radix: Option<u32>) -> f64 {
     unreachable!()
 }
 
+/// [`(0, eval)(source)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/eval):
+/// `source` run as a script, in the global scope, and what its last
+/// statement gives, any value; an `Err` of what it threw, a `SyntaxError`
+/// of what isn't JS, an `EvalError` where the host forbids it, a Content
+/// Security Policy's. An indirect eval, `(0, eval)`, as React's
+/// `checkEvalAvailabilityOnceDev` writes it: called by its name alone,
+/// `eval(source)`, JS's would be a direct one, which reads the caller's
+/// variables (ADR 1033, amended).
+#[cfg_attr(rust_js, rust_js::link_name = "(0, eval)")]
+pub fn eval(source: &str) -> Result<Option<&'static Unknown>, &'static JsError> {
+    unreachable!()
+}
+
 /// [`parseFloat(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/parseFloat):
 /// the number `text` starts with, `NaN` of none. Of any value, of its text.
 #[cfg_attr(rust_js, rust_js::link_name = "parseFloat")]
