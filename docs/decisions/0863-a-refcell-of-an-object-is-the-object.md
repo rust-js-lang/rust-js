@@ -882,3 +882,122 @@ mutations `receiver-guard-held-through-arguments`,
 `receiver-guard-arguments-unseen` (`drops/facts.rs`), and
 `seen-borrows-own-only` and `seen-asks-nothing` (`analysis/cell_borrows.rs`).
 The corpus's `trie_of_counted_rcs` reads `cur.borrow().parent` uncounted.
+
+## Amendment: a held borrow counts the cells that can be its own (#445)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, the user's decision
+(2026-11-01). Leaving out a check that can't fail changes no run. A borrow
+that can fail is still checked and panics where Rust's does.
+
+A held borrow counted every cell of its type: `counted` held types, and
+`quiet` asked `may_be_cell` of each. React DOM's `hydrateHoistable` holds a
+tag cache's `nodes.borrow_mut()` across a prop's getter. The cache is a
+`Rc<RefCell<Vec<&Element>>>` kept in a JS `Map`. Fizz's `Batch` is a
+`RefCell` of the same type that JS gives, `RB`. So Fizz's loop over a batch
+printed `$borrow(batch)[i]`, `$borrowMut(batch).length = 0` and
+`$stepBy(..)`, where alone it printed `for (let i = 0; i < batch.length;
+i += 2)` (rd201). No batch is ever a tag cache.
+
+**A borrow is counted only where a cell it can be is borrowed while code
+that may borrow that cell runs** (`analysis/cell_flow.rs`, `CellFlow`).
+Which cells a borrow can be of is a value-flow of the crate's cells,
+Steensgaard's unification over its bodies' MIR:
+
+- **Each value is a node**, and what it's made of a node beneath it: a
+  struct's or a tuple's field, a closure's capture, what a reference or a
+  `Box` points at, an array's items, and what a std type or a JS object
+  holds of each of its type parameters. A move, a copy, a reference, an
+  aggregate, a call of a body of the crate's and its result make two nodes
+  one, and what's beneath them with them.
+- **A call of std's moves a `T` only where a `T` goes**, so each value of
+  a type it's given or gives is one with each other of that type. That
+  includes what a closure or impl std runs is given and gives, by
+  `CellBorrows::std_runs`. Std's code can't reach inside the crate's own
+  types: it moves one whole. So is a binding that keeps what it's given in
+  its collection, a JS `Map`'s `get` and `set`
+  ([1045](1045-a-js-collection-keeps-what-its-given-only-in-itself.md)).
+- **What code rust-js can't see is given, or gives, is `TOP`**: a
+  binding's call, a library's, a `dyn`'s, a fn pointer's, one rustc can't
+  resolve, and std's code that may run any; a value made a `dyn`, a
+  pointer's cast, a transmute, a static. So is what an exported function,
+  a trait's method or a coroutine is given and gives. To a fixed point, so
+  is what a function or closure whose value `TOP` reaches is given and
+  gives. And so is a value of a type whose destructor isn't std's, which
+  runs given it.
+- **A cell's class is its node.** One `TOP` reaches may be any other such
+  cell of its type, as every cell was before. One `TOP` doesn't reach is
+  reached only along the flows unification followed.
+
+`RefCells` keeps, beside the types counted, each counted borrow's class
+(`counted_classes`), and the types of those `TOP` reaches
+(`counted_reached`) or whose class isn't known (`counted_unknown`). A
+borrow's THIR call is its MIR's by where it's written and what it calls,
+where the counts of each agree. **A borrow of a class `TOP` doesn't reach
+is quiet where none of its class's borrows is counted, and none whose
+class isn't known may be it.** One `TOP` reaches is quiet where none of a
+type that may be it that `TOP` reaches, or not known, is counted, nor one a
+library counts. Either is quiet only if its own impls borrow nothing that
+may be it (`quiet_class`). MIR's `QuietCells` marks such a borrow and its
+guard, which releases nothing, as it marks a quiet field's
+(`local_facts.rs`). What asks by type, a guard's drop by its type, a
+field, a thread-local's own cell, is what it was.
+
+A crate any of whose bodies has no MIR has no classes, and every cell is
+counted by its type.
+
+**A library's contract stays per type.** `RefCellFacts.counted` is each
+type some borrow of which is counted, as before. A consumer counts each of
+them, and a cell the library shares is one `TOP` reaches in both crates.
+`unchecked` is each type the library borrows of a cell `TOP` reaches, or
+whose class isn't known, and quiet so. A borrow of a cell only the
+library's code reaches is never a consumer's. So `unchecked` may list a
+type now that some of its cells are counted and others aren't, and a
+consumer holding a borrow of one across the library's code is refused,
+as before.
+
+**Not a rule of where a cell was made.** "A cell in an `Rc` the crate
+made is never a binding's" doesn't hold: `Rc::new(batch)` of a `Batch` JS
+handed in moves JS's own array into the `Rc`. Flow follows the array, so
+that `Rc`'s cell is one `TOP` reaches.
+
+```js
+export function reveal(batch) {
+  let total = 0;
+  for (let i = 0; i < batch.length; i += 2) {
+    total = (total + batch[i]) >>> 0;
+  }
+  batch.length = 0;
+  return total;
+}
+```
+
+### Alternatives
+
+- **Per module**: a cell given across modules is the same cell. Unsound.
+- **Flow-sensitive, or per call site**: more precise, and much more to
+  prove. Unification is linear, and its classes are what the port needs.
+
+### What holds it
+
+- `test/lowering-cell-flow.test.ts`: "a held borrow counts the cells that
+  can be its own, not every cell of its type", the tag cache in a `Map`
+  checked and panicking, the batch plain; "a cell JS gives may be any cell
+  of its type JS reaches"; and "a cell given to JS may be any cell JS
+  gives back".
+- Corpus, against native Rust, each of which must panic: cases
+  `refcell_flow_through_std` (a `Vec`, a `HashMap`, `get`, `cloned`, `map`
+  and a closure), `refcell_flow_thread_local`,
+  `refcell_flow_thread_local_init`, `refcell_flow_lent_key`,
+  `refcell_flow_reaches_unseen` (a generic `f()`) and
+  `refcell_flow_through_dyn`. Cells of the same type beside them that
+  can't be the held one are plain. Snapshots `untagged_ref_cells` and
+  `refcell_borrows` lose the checks they no longer need.
+- `test/crates.test.ts`: a consumer's own cell beside a library's held one
+  is unchecked.
+- Mutations: `flow-std-moves-nothing`, `flow-closure-arguments-apart`,
+  `flow-key-init-apart`, `flow-binding-keeps-in-collection`,
+  `flow-collection-unseen`, `flow-exports-closed`,
+  `flow-given-functions-closed`, `flow-unresolved-call-closed` and
+  `flow-destructor-closed` (`analysis/cell_flow.rs`); `class-own-uncounted`,
+  `class-own-of-no-unknown`, `class-reached-uncounted` and
+  `class-flow-unread` (`drops/ref_cells.rs`).

@@ -35,6 +35,7 @@ mod patterns;
 mod places;
 mod positions;
 mod queries;
+pub(in crate::lower) use queries::referred_constant;
 mod rvalues;
 mod scopes;
 mod std_calls;

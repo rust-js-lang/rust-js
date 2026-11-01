@@ -28,7 +28,7 @@ function track(state, item) {
 }
 
 function total(shared) {
-  return Array.isArray(shared) ? $borrow(shared).reduce((a, b) => a + b, -0) : shared;
+  return Array.isArray(shared) ? shared.reduce((a, b) => a + b, -0) : shared;
 }
 
 function main() {
@@ -46,7 +46,7 @@ function main() {
   }
   const shared = [1, 2.5];
   if (Array.isArray(shared)) {
-    $borrowMut(shared).push(3);
+    shared.push(3);
   }
   console.log(`${$displayF64(total(shared))} ${$displayF64(total(4))}`);
 }

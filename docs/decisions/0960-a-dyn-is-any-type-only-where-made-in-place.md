@@ -3,7 +3,7 @@
 Status: Accepted. Amends [0863](0863-a-refcell-of-an-object-is-the-object.md),
 which cells may be one another (`may_be_cell`), and [0397](0397-a-refcell-of-a-dyn.md)'s
 `RefCell<dyn T>` that shares its cell. Fixes #374. Amended (2026-10-27): a thread-local's own
-cell only its key reaches is no other cell of its type; and either way round, a field's borrow held while the key's runs.
+cell only its key reaches is no other cell of its type; and either way round, a field's borrow held while the key's runs. Narrowed by [0863](0863-a-refcell-of-an-object-is-the-object.md), amended (#445): `may_be_cell` is asked only of cells code rust-js can't see may reach, or whose class isn't known; a cell only the crate's code reaches is each its flow can be.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. Which borrows are
 checked is rust-js's own judgment of which can meet; a cell no borrow of
@@ -144,3 +144,14 @@ filter `anything_asks` kept for it is gone, as `overlap` answers it.
   `$fieldCell`, run beside native Rust), `test/lowering-cell-borrows.test.ts`
   "only its key reaches is no cell", and the mutation `own-key-cell-a-fields`,
   which replaces `closed-key-type-borrow-asks`.
+
+## Amendment: which cells a type's rule is asked of (#445)
+
+`may_be_cell` says which cell types may be one another's cell. Since ADR
+0863's amendment (#445), it's asked only of cells that code rust-js can't
+see may reach, a `dyn`'s among them, or whose class isn't known. A cell
+only the crate's code reaches is each cell its flow can be, a class of its
+own (`analysis/cell_flow.rs`). A value made a `dyn` is one that code may
+reach, so a `RefCell<Circle>` made a `RefCell<dyn Shape>` is still one
+cell, by this ADR's rule. A thread-local's own cell, only its key's,
+counts its key's borrows as before (`key_counted`).

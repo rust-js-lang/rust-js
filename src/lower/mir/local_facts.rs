@@ -714,6 +714,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         quiet.guards.insert(destination.local);
                     }
                 }
+                // One of a cell none of whose borrows can meet another, by
+                // its flow, whatever another cell of its type's borrows are
+                // (ADR 0863, amended): unchecked, its guard releasing nothing.
+                Some(Std::Borrow { lock: false, .. })
+                    if destination.projection.is_empty()
+                        && let Some(cell) = first.node.ty(body, tcx).builtin_deref(true)
+                        && self.quiet_cell_borrow(
+                            (body.source.def_id(), block),
+                            (data.terminator().source_info.span, def_id),
+                            cell,
+                        ) =>
+                {
+                    quiet.calls.insert(block);
+                    quiet.guards.insert(destination.local);
+                }
                 // One held only while nothing can ask, of a cell another
                 // borrow is counted of: checked, and not counted (rd218).
                 Some(Std::Borrow { lock: false, .. })

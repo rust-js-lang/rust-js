@@ -4,6 +4,8 @@ pub(super) mod arguments;
 mod back_stepped;
 mod callers_decide;
 mod cell_borrows;
+mod cell_flow;
+pub(super) use cell_flow::CellClass;
 
 pub(super) use cell_borrows::{
     Borrow, Cell, CellBorrows, binding_call_runs_nothing, binding_runs_nothing, borrowed, may_be_cell, unsized_in_place,

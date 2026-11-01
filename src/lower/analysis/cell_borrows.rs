@@ -68,6 +68,8 @@ pub(in crate::lower) struct CellBorrows<'tcx> {
     /// crate's bodies it runs, whatever else it may run: what a guard asks
     /// of a call's arguments it's held after (ADR 0863, amended).
     seen: HashMap<DefId, HashSet<Borrow<'tcx>>>,
+    /// Which cells each borrow can be of (ADR 0863, amended).
+    flow: super::cell_flow::CellFlow,
 }
 
 /// Each of the crate's ADTs' trait impls: the trait, and the impl.
@@ -166,7 +168,14 @@ impl<'tcx> CellBorrows<'tcx> {
             .collect();
         found.closed = closed_keys(tcx, bodies);
         found.seen = seen_borrows(tcx, &direct);
+        found.flow = super::cell_flow::CellFlow::of_crate(recognition, &found, bodies);
         found
+    }
+
+    /// Which cells each of the crate's borrows can be of, by their flow
+    /// (`CellFlow`, ADR 0863, amended).
+    pub(in crate::lower) fn flow(&self) -> &super::cell_flow::CellFlow {
+        &self.flow
     }
 
     /// Whether code rust-js can't see, JS's or a library's, may ask of

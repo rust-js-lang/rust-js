@@ -444,4 +444,40 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
     snapshots: true,
   },
+  {
+    name: "class-own-uncounted",
+    breaks:
+      "a cell only the crate's code reaches is quiet whatever its class's borrows count, so one taken again through a map, a `Vec` and a closure while one is held runs on where Rust panics (ADR 0863, amended)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "            CellClass::Own(class) => self.counted_classes.contains(&class) || may_be(&self.counted_unknown),",
+    replace: "            CellClass::Own(_) => may_be(&self.counted_unknown),",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_flow_through_std.rs$"],
+  },
+  {
+    name: "class-own-of-no-unknown",
+    breaks:
+      "a cell only the crate's code reaches is quiet beside a counted borrow whose class isn't known, a thread-local's `with_borrow_mut` held while what it lends is borrowed, which runs on where Rust panics (ADR 0863, amended)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "            CellClass::Own(class) => self.counted_classes.contains(&class) || may_be(&self.counted_unknown),",
+    replace: "            CellClass::Own(class) => self.counted_classes.contains(&class),",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_flow_lent_key.rs$"],
+  },
+  {
+    name: "class-reached-uncounted",
+    breaks:
+      "a cell code rust-js can't see may reach is quiet beside a counted borrow of another such cell of its type, so a borrow of a binding's batch while JS's batch is held runs on where Rust panics (ADR 0863, amended)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "                may_be(&self.counted_reached)\n                    || may_be(&self.counted_unknown)",
+    replace: "                may_be(&self.counted_unknown)",
+    tests: ["test/lowering-cell-flow.test.ts", "-t", "a cell JS gives may be any cell of its type JS reaches"],
+  },
+  {
+    name: "class-flow-unread",
+    breaks:
+      "a borrow is quiet only by its type, so Fizz's batch, of the type of a tag cache held across a getter, is checked where no borrow of it can meet another (#445)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "        ref_cells.classed.contains(&(body, span, callee))\n",
+    replace: "        false\n",
+    tests: ["test/lowering-cell-flow.test.ts", "-t", "a held borrow counts the cells that can be its own"],
+  },
 ];

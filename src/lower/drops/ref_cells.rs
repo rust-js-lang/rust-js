@@ -8,7 +8,7 @@
 //! agree or are refused.
 
 use super::*;
-use crate::lower::analysis::{Borrow, Cell};
+use crate::lower::analysis::{Borrow, Cell, CellClass};
 
 /// What the crate's bodies do with its `RefCell`s: by type, each of its
 /// regions erased, those some borrow of which is counted, held while code
@@ -30,7 +30,20 @@ pub(in crate::lower) struct RefCells<'tcx> {
     /// own writes count it, not a borrow of any cell of its type (ADR
     /// 0960, amended).
     key_counted: HashSet<Ty<'tcx>>,
-    /// Each the crate's bodies borrow.
+    /// Of those counted, each borrow's cell's class, where its flow says
+    /// it's one only the crate's code reaches (`CellFlow`, ADR 0863,
+    /// amended); and the types of those of a cell code rust-js can't see
+    /// may reach, and of those whose class isn't known, which may be any
+    /// of their type.
+    counted_classes: HashSet<u32>,
+    counted_reached: HashSet<Ty<'tcx>>,
+    counted_unknown: HashSet<Ty<'tcx>>,
+    /// Each body's borrows of a callee written at a place whose classes
+    /// its MIR says, as many as its THIR has, each of which `counted_in`
+    /// read: by its body, where it's written and its callee.
+    classed: HashSet<(DefId, rustc_span::Span, DefId)>,
+    /// Each the crate's bodies borrow of a cell code rust-js can't see may
+    /// reach, or whose class isn't known: what a library shares.
     borrowed: HashSet<Ty<'tcx>>,
     /// Each its types' fields hold, and its exported functions take and give.
     handed: HashSet<Ty<'tcx>>,
@@ -104,8 +117,13 @@ impl<'tcx> RefCells<'tcx> {
     ) -> crate::library::RefCellFacts {
         let tcx = recognition.tcx;
         let shapes = |tys: &HashSet<Ty<'tcx>>| crate::lower::library::shapes(tcx, tys.iter().copied());
+        // Of a cell that may be a consumer's, one it reaches: a borrow of one
+        // only the library's code reaches is never one of the consumer's.
         let unchecked: HashSet<Ty<'tcx>> = (self.borrowed.iter())
-            .filter(|&&ty| self.quiet(recognition, borrows, (ty, true), drops))
+            .filter(|&&ty| {
+                self.quiet(recognition, borrows, (ty, true), drops)
+                    || self.quiet_class(recognition, borrows, (ty, CellClass::Anything), drops)
+            })
             .copied()
             .collect();
         crate::library::RefCellFacts {
@@ -178,8 +196,54 @@ impl<'tcx> RefCells<'tcx> {
         {
             return false;
         }
+        !self.impls_ask_of(recognition, borrows, ty, drops)
+    }
+
+    /// Whether a borrow of a cell of `class`, by its flow (`CellFlow`), of
+    /// type `ty`, is one no borrow of which can meet another (ADR 0863,
+    /// amended): of a class only the crate's code reaches, none of its
+    /// borrows is counted, nor one whose class isn't known of a type that
+    /// may be it; of one code rust-js can't see may reach, none of a type
+    /// that may be it whose cell that code may reach too, or not known, nor
+    /// one a library counts. Of either, its own impls borrow nothing that
+    /// may be it, as `quiet` asks. A borrow none of whose cell's borrows
+    /// can meet another is never checked, whatever another cell of its
+    /// type's borrows are.
+    pub(in crate::lower) fn quiet_class(
+        &self,
+        recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+        borrows: &crate::lower::analysis::CellBorrows<'tcx>,
+        (ty, class): (Ty<'tcx>, CellClass),
+        drops: &dyn Fn(Ty<'tcx>) -> bool,
+    ) -> bool {
+        let tcx = recognition.tcx;
+        let ty = tcx.erase_and_anonymize_regions(ty);
+        let may_be = |counted: &HashSet<Ty<'tcx>>| {
+            (counted.iter()).any(|&counted| crate::lower::analysis::may_be_cell(tcx, counted, ty))
+        };
+        let counted = match class {
+            CellClass::Own(class) => self.counted_classes.contains(&class) || may_be(&self.counted_unknown),
+            CellClass::Anything => {
+                may_be(&self.counted_reached)
+                    || may_be(&self.counted_unknown)
+                    || self.library_has(tcx, ty, |f| &f.counted).is_some()
+            }
+        };
+        !counted && !self.impls_ask_of(recognition, borrows, ty, drops)
+    }
+
+    /// Whether `ty`'s own `Clone`, `PartialEq`, `PartialOrd`, `Ord` and
+    /// `Debug` may borrow it (`CellBorrows::impls_ask`), found when first
+    /// asked.
+    fn impls_ask_of(
+        &self,
+        recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+        borrows: &crate::lower::analysis::CellBorrows<'tcx>,
+        ty: Ty<'tcx>,
+        drops: &dyn Fn(Ty<'tcx>) -> bool,
+    ) -> bool {
         if let Some(&asks) = self.impls_ask.borrow().get(&ty) {
-            return !asks;
+            return asks;
         }
         let recognition = crate::lower::recognition::Recognition {
             typing_env: ty::TypingEnv::fully_monomorphized(),
@@ -187,7 +251,7 @@ impl<'tcx> RefCells<'tcx> {
         };
         let asks = borrows.impls_ask(&recognition, ty, drops);
         self.impls_ask.borrow_mut().insert(ty, asks);
-        !asks
+        asks
     }
 }
 
@@ -274,6 +338,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.ref_cells().quiet_field(self.tcx, field)
     }
 
+    /// Whether the borrow of a `RefCell` of type `ty` that `body`'s call of
+    /// `callee` at `span` makes, ending `block` of its MIR, is of a cell no
+    /// borrow of which can meet another, by its flow (`RefCells::quiet_class`,
+    /// ADR 0863, amended): one `counted_in` read, of a class it found.
+    pub(in crate::lower) fn quiet_cell_borrow(
+        &self,
+        (body, block): (DefId, rustc_middle::mir::BasicBlock),
+        (span, callee): (rustc_span::Span, DefId),
+        ty: Ty<'tcx>,
+    ) -> bool {
+        let ref_cells = self.ref_cells();
+        let Some(class) = self.krate.cell_borrows.flow().call_class(body, block) else {
+            return false;
+        };
+        let recognition = self.recognition();
+        ref_cells.classed.contains(&(body, span, callee))
+            && ref_cells.quiet_class(&recognition, self.krate.cell_borrows, (ty, class), &|t| {
+                super::drop_runs(
+                    recognition,
+                    (self.krate.library, self.krate.closure_facts),
+                    self.krate.counted,
+                    t,
+                )
+            })
+    }
+
     /// A `RefCell` type no borrow of which can meet another (ADR 0863): none
     /// is counted, held while code that may borrow it runs, of it or of a
     /// type that may be it, and its own impls, which borrow it while what
@@ -307,6 +397,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut counted = HashSet::new();
         let mut key_counted = HashSet::new();
         let mut borrowed = HashSet::new();
+        let (mut counted_classes, mut counted_reached, mut counted_unknown) =
+            (HashSet::new(), HashSet::new(), HashSet::new());
+        let mut classed = HashSet::new();
+        let flow = self.krate.cell_borrows.flow();
         let mut unseen: Vec<(Ty<'tcx>, rustc_span::Span)> = Vec::new();
         let bodies = (self.krate.bodies.values().copied()).chain(self.krate.closures.values().copied());
         for body in bodies {
@@ -329,8 +423,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             );
             let thir = &body.thir;
             let facts = find_facts(&query, self.krate.cell_borrows, thir, body.def_id);
-            for found in self.counted_in(&recognition, thir, &facts) {
-                borrowed.insert(found.cell);
+            let founds = self.counted_in(&recognition, thir, &facts);
+            // How many of a callee's borrows are written at each place: its
+            // MIR's of as many there are its cells' classes (`CellFlow`).
+            let mut written: HashMap<(rustc_span::Span, DefId), usize> = HashMap::new();
+            for found in &founds {
+                if let Some(callee) = found.callee {
+                    *written.entry((found.span, callee)).or_default() += 1;
+                }
+            }
+            for found in founds {
+                let classes = (found.callee).and_then(|callee| {
+                    let classes = flow.classes_at((body.def_id, found.span, callee), written[&(found.span, callee)]);
+                    if classes.is_some() {
+                        classed.insert((body.def_id, found.span, callee));
+                    }
+                    classes
+                });
+                if classes.is_none_or(|classes| classes.contains(&CellClass::Anything)) {
+                    borrowed.insert(found.cell);
+                }
                 // Of a thread-local's own cell only its key reaches, which no
                 // borrow of a `&RefCell` of its type can be: its key's borrows
                 // alone, each checked as its own, `COMMIT_HOOKS`' while its
@@ -342,6 +454,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 if found.counted && !own {
                     counted.insert(found.cell);
+                    match classes {
+                        Some(classes) => {
+                            for &class in classes {
+                                match class {
+                                    CellClass::Own(class) => _ = counted_classes.insert(class),
+                                    CellClass::Anything => _ = counted_reached.insert(found.cell),
+                                }
+                            }
+                        }
+                        None => _ = counted_unknown.insert(found.cell),
+                    }
                     for &field in &found.fields {
                         counted_fields.entry(field).or_insert(found.span);
                     }
@@ -452,6 +575,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let counted = erased(counted);
         let key_counted = erased(key_counted);
         let borrowed = erased(borrowed);
+        let (counted_reached, counted_unknown) = (erased(counted_reached), erased(counted_unknown));
         // Whether a struct's field may be one some borrow of which meets
         // another: not one no body lends, binds, moves or holds a borrow of,
         // nor a library's its contract says is quiet.
@@ -464,6 +588,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut found = RefCells {
             counted,
             key_counted,
+            counted_classes,
+            counted_reached,
+            counted_unknown,
+            classed,
             borrowed,
             handed: self.handed_ref_cells(),
             libraries: self.krate.foreign.ref_cell_facts(),
@@ -836,6 +964,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 found.push(Found {
                     cell,
+                    callee: Some(def_id),
                     key: borrow.and_then(|borrow| match borrow.cell {
                         Cell::Key(key) => Some(key),
                         Cell::Type(_) => None,
@@ -861,6 +990,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         tcx.adt_def(crate::lower::recognition::std_item(tcx, StdItem::RefCell)),
                         tcx.mk_args(&[held.into()]),
                     ),
+                    callee: None,
                     key: None,
                     fields: Vec::new(),
                     counted: true,
@@ -878,6 +1008,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// runs while it's held.
 struct Found<'tcx> {
     cell: Ty<'tcx>,
+    /// What's called, of a call of a `RefCell`'s or a thread-local's; not
+    /// of a borrow given as a function.
+    callee: Option<DefId>,
     /// Of a thread-local's own cell, borrowed by its key, the key.
     key: Option<DefId>,
     /// Of a struct's field, or of what a call that gives one may be.

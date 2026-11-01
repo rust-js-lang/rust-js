@@ -571,10 +571,12 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
   // no code rust-js can't see, a cell's borrow running only its own check:
   // counted, not refused (ADR 0863, amended).
   counting(out, "use std::cell::RefCell;\nuse std::rc::Rc;\n\nfn copy(from: &Rc<RefCell<Vec<String>>>, to: &Rc<RefCell<Vec<String>>>) {\n    for t in from.borrow().iter() {\n        to.borrow_mut().push(t.clone());\n    }\n}\n\npub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let types = t.types.borrow().clone().unwrap();\n    let mine = Rc::new(RefCell::new(Vec::new()));\n    copy(&types, &mine);\n    println!(\"{}\", mine.borrow().len());\n}\n");
-  // The momentary one checked alone, as 3901c815a makes it, the other counted.
+  // The held one counted; the other, `mine`, a cell of the consumer's own,
+  // is no cell the library's code reaches, so no borrow of it can meet the
+  // held one: unchecked (#445, ADR 0863, amended).
   const copied = readFileSync(join(out, "counting", "lib.js"), "utf8");
   expect(copied).toContain("const borrow = $borrow(from, true);");
-  expect(copied).toContain("$borrowMut(to).push(t);");
+  expect(copied).toContain("      to.push(t);\n");
   // React's scheduleGesture, a type pushed only where it isn't there,
   // which it is where the two are one cell: neither borrow is counted.
   counting(out, "use std::cell::RefCell;\nuse std::rc::Rc;\n\nfn merge(types: &Rc<RefCell<Vec<String>>>, into: &Rc<RefCell<Vec<String>>>) {\n    for t in types.borrow().iter() {\n        if !into.borrow().contains(t) {\n            into.borrow_mut().push(t.clone());\n        }\n    }\n}\n\npub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let types = t.types.borrow().clone().unwrap();\n    merge(&types, &types);\n    println!(\"{}\", types.borrow().len());\n}\n");

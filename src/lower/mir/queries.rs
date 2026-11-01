@@ -894,7 +894,7 @@ pub(super) fn count_rvalue(locals: &mut Locals, rvalue: &Rvalue<'_>, frozen: boo
 
 /// The constant a promoted body refers to, `_1 = const LOG; _0 = &_1`, if
 /// that's all it is.
-pub(super) fn referred_constant<'tcx>(body: &mir::Body<'tcx>) -> Option<ConstOperand<'tcx>> {
+pub(in crate::lower) fn referred_constant<'tcx>(body: &mir::Body<'tcx>) -> Option<ConstOperand<'tcx>> {
     if body.basic_blocks.len() != 1 {
         return None;
     }
