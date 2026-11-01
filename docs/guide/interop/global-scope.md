@@ -7,7 +7,11 @@ Your crate's own state lives in its modules, as a JS module's variables do.
 ## Global values
 
 A global value is a `static` in an `unsafe extern "Rust"` block. Its
-`#[link_name]` is its JS name, or a path from a global.
+`#[link_name]` is its JS name, or a path from a global. One named as its
+global is, `safe static __DEV__: bool;` of the bundler's `__DEV__`, needs
+none: without a `#[link_name]` its Rust name is the global's. So a value a
+module exports, an import, always has one, `"module#name"`: left out, it
+would be read as a global of its Rust name that nothing defines.
 
 ```rust
 unsafe extern "Rust" {
