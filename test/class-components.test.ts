@@ -433,3 +433,35 @@ test("React constructs each class it's given", () => {
 `);
   expect([ran.code, ran.passed], ran.output).toEqual([0, "1"]);
 }, 60_000);
+
+// `super(props)` is its constructor's first statement, before what the
+// constructor writes first, a comment too, as ReactART's Text's `super(props);
+// // We allow reading these props..`.
+test("a constructor's comment comes after super(props)", () => {
+  const { js } = compiled("class-component-comment", `use react::{Component, JSX, jsx};
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Noted {}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Noted {
+    pub fn new(_props: &()) -> Self {
+        let noted = Noted {};
+        // Said after it's made.
+        println!("made");
+        noted
+    }
+}
+
+impl Component for Noted {
+    fn render(self: &'static Self) -> JSX::Element {
+        jsx! { <hr /> }
+    }
+}
+`);
+  expect(js).toContain(`  constructor(props) {
+    super(props);
+    // Said after it's made.
+    console.log("made");
+  }`);
+}, 60_000);

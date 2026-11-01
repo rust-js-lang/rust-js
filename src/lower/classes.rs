@@ -1163,8 +1163,8 @@ pub(super) fn as_member(
         Member::Constructor => {
             set_this(&mut function.body)?;
             this_outside_accessors(class, &mut function.body);
-            // Of a class that extends one, the class it extends constructs
-            // `this` first, given what it's given, `super(props);` (rd331).
+            // Of a class that extends one, its superclass constructs `this` first,
+            // `super(props);`, at its name: a comment its body starts with follows.
             if class_of(tcx, def_id).is_some_and(|adt| superclass(tcx, adt).is_some()) {
                 let given = (function.params.iter())
                     .map(|param| match param {
@@ -1172,7 +1172,7 @@ pub(super) fn as_member(
                         _ => Err("constructor of a class that extends one names its parameter, `props`, which `super(props)` is given"),
                     })
                     .collect::<Result<Vec<_>, _>>()?;
-                let first = StmtKind::Expr(Expr::call(Expr::super_(), given)).at(js::Span::NONE);
+                let first = StmtKind::Expr(Expr::call(Expr::super_(), given)).at(function.name_span);
                 function.body.insert(0, first);
             }
             Ok(())

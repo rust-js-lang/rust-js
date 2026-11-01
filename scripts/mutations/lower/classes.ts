@@ -667,4 +667,12 @@ export const mutations: Mutation[] = [
     replace: "    false\n        || (tcx.inherent_impls(class).iter())\n",
     tests: ["test/class-components.test.ts", "-t", "an ES class React renders"],
   },
+  {
+    name: "super-placed-nowhere",
+    breaks: "`super(props)` has no place, so a comment its constructor's body starts with is printed before it, where ReactART's Text writes it after (rd331)",
+    file: "src/lower/classes.rs",
+    find: "StmtKind::Expr(Expr::call(Expr::super_(), given)).at(function.name_span);",
+    replace: "StmtKind::Expr(Expr::call(Expr::super_(), given)).at(js::Span::NONE);",
+    tests: ["test/class-components.test.ts", "-t", "comment comes after super"],
+  },
 ];

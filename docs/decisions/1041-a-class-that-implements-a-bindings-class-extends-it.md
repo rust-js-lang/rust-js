@@ -294,3 +294,12 @@ of one React constructs, one that writes its constructor and one of no
 props, across modules, and the mutations `class-component-props-unread`,
 `class-component-of-no-class` (`jsx_syntax/parser.rs`) and
 `class-named-by-its-constructor-alone` (`lower/classes/subclasses.rs`).
+
+## Amendment: `super(props)` comes before what the constructor's body writes first
+
+`super(props)` had no place, so a comment Text's constructor starts with,
+`// We allow reading these props..`, printed before it, where upstream
+writes it after. `super(props)` is placed where the constructor is named,
+before its body, so all its body writes, a comment too, follows it. Held
+by `test/class-components.test.ts`'s "a constructor's comment comes after
+super(props)" and the mutation `super-placed-nowhere` (`lower/classes.rs`).
