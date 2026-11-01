@@ -165,7 +165,8 @@ What it has:
   the other global functions. A weak collection is typed as TypeScript
   types it, `WeakMap<K, V>`, its key a `js::WeakKey`: an object, what
   `js::Kind` holds of an object (a `&JsObject`, TypeScript's `object`), an
-  array or a function, or a symbol; of any of them, `dyn WeakKey`
+  array or a function, a web API object, `WeakMap<Blob, ..>`, or a symbol;
+  of any of them, `dyn WeakKey`
   ([ADR 0677](../../decisions/0677-a-weak-key-is-what-kind-holds.md));
   of an object or an array as one, `kind.object()`'s `&JsObject`
   ([ADR 0910](../../decisions/0910-an-object-or-an-array-is-one-value-kind-object.md)).

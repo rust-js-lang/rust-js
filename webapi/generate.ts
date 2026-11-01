@@ -2637,12 +2637,14 @@ for (const name of INTERFACES) {
 }
 
 // What WebIDL marks `[Serializable]`, a `Blob` say, the browser's structured
-// clone copies (ADR 0225); and an object is never nullish.
+// clone copies (ADR 0225); an object is never nullish; and an object is what
+// a `WeakMap` or a `WeakSet` holds, TypeScript's `WeakKey` (ADR 0677, #446).
 line();
 for (const name of INTERFACES) {
   const serializable = read.some((d) => d.type === "interface" && d.name === name && (d.extAttrs ?? []).some((a) => a.name === "Serializable"));
   if (serializable) line(`unsafe impl StructuredClone for ${typeName(name)} {}`);
   line(`unsafe impl Defined for ${typeName(name)} {}`);
+  line(`unsafe impl js::WeakKey for ${typeName(name)} {}`);
 }
 
 // Each member `THROWS` names is one this crate binds: a name gone from

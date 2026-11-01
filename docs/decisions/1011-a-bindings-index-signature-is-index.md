@@ -57,5 +57,5 @@ owns its JS (`"get []"`, `"set []"`, `"delete []"`). A `delete` gives
 dataset.delete("x")`, gives nothing, as Rust's does. A document's and a
 window's named getters, of what JS names on them, and a form's, a union,
 are still skipped. Case ([0262](0262-when-rust-and-js-disagree.md)):
-none. Held by `webapi-bindings.test.ts`'s "a DOMStringMap's named
+none. Held by `webapi-objects.test.ts`'s "a DOMStringMap's named
 properties are get, set and delete, dataset[name]", run in Node.

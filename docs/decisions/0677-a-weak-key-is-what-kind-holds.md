@@ -105,3 +105,16 @@ export const propsParents: WeakMap<object, unknown>;
   holds": each kind's key, run in Node, and the `.d.ts`.
 - The mutation `js-object-itself-unknown` in
   `scripts/mutations/lower/recognition/types.ts`.
+
+## Amendment: a web API object is a weak key (2026-11-01, #446)
+
+webapi's interfaces were no `WeakKey`, so a `WeakMap` or `WeakSet` of a
+`Blob`, a `Document` or an `Element` was refused, though each is a JS
+object, as TypeScript's `WeakKey` takes: React DOM's Fizz config caches a
+Blob's data URL by the Blob, `blobCache: WeakMap<Blob, Thenable<string>>`.
+**Each interface webapi binds is a `WeakKey`**, `unsafe impl js::WeakKey
+for Blob {}`, as the generator says each is `Defined`. A dictionary, a
+struct of fields the program makes, is a key only as its `impl` says, as
+any struct is. Held by `webapi-objects.test.ts`'s "a web API object is a
+WeakKey, a WeakMap's key", run in Node.
+
