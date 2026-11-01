@@ -256,7 +256,7 @@ pub fn errors() -> (String, String, f64, f64) {
     (e.name(), e.message(), parse_int("42px", Some(10)), parse_int("0x1f", None))
 }
 pub fn symbols() -> (bool, Option<String>, Option<String>) {
-    let local = symbol::new("local");
+    let local = symbol::new(Some(&"local"));
     (js::object::is(local, local), symbol::key_for(local), local.description())
 }
 pub struct State {

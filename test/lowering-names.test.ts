@@ -902,7 +902,7 @@ test("a thread-local of a primitive is named as a constant", async () => {
 use js::Symbol;
 
 thread_local! {
-    pub static OWNER_SYMBOL: &'static Symbol = js::symbol::new("owner");
+    pub static OWNER_SYMBOL: &'static Symbol = js::symbol::new(Some(&"owner"));
     pub static FRAME_YIELD_MS: f64 = js::math::random() * 0.0 + 5.0;
     pub static LOCAL_NOW: fn() -> f64 = js::date::now;
     pub static CLICK_COUNT: Cell<u32> = const { Cell::new(0) };

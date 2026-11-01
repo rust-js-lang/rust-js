@@ -312,6 +312,15 @@ pub mod array {
         unreachable!()
     }
 
+    unsafe extern "Rust" {
+        /// [`Array.prototype`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array):
+        /// what an array inherits from, as a value, as [`object::prototype`]
+        /// is a plain object's: React's Flight client's
+        /// `getPrototypeOf(value) === ArrayPrototype` (rd399).
+        #[link_name = "Array.prototype"]
+        pub safe static prototype: &'static Unknown;
+    }
+
     /// [`array.splice(start, deleteCount)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array/splice):
     /// of any value an array, `deleteCount` of its items from `start`
     /// removed in place, as JS's `splice` does: each a number, as JS's is,
@@ -755,6 +764,41 @@ pub fn parse_int<T: ToText>(text: T, radix: Option<u32>) -> f64 {
 pub fn eval(source: &str) -> Result<Option<&'static Unknown>, &'static JsError> {
     unreachable!()
 }
+
+/// A [`bigint`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigInt),
+/// TypeScript's, an integer of any size, as [`big_int`] makes one: never
+/// read as an `i64`, which is a `bigint` of 64 bits (ADR 0086), as this
+/// may be wider.
+#[cfg_attr(rust_js, rust_js::types = "bigint")]
+pub struct BigInt(PhantomData<JsObject>);
+
+// A value, never `undefined`.
+unsafe impl Defined for BigInt {}
+
+/// [`BigInt(value)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigInt/BigInt):
+/// a `bigint` of `value`: of text, the integer it writes, `"12"`, `"0x1f"`
+/// or `""`'s 0; of a number, an integer one; of a `bool`, 0 or 1; of a
+/// `bigint`, itself, as TypeScript's `bigint | boolean | number | string`.
+/// What JS throws of text that's no integer or a number that's none, a
+/// `SyntaxError` or a `RangeError`, a panic. React's Flight client's
+/// `BigInt(value.slice(2))` (rd399).
+#[cfg_attr(rust_js, rust_js::link_name = "BigInt")]
+pub fn big_int(value: impl IntoBigIntOrBoolOrNumberOrStr) -> &'static BigInt {
+    unreachable!()
+}
+
+/// What a `bigint | boolean | number | string` parameter takes, `BigInt`'s:
+/// each as it is (ADR 0229), a 64-bit integer a `bigint` too.
+#[diagnostic::on_unimplemented(message = "`{Self}` is not a `bigint | boolean | number | string`")]
+#[cfg_attr(rust_js, rust_js::types = "bigint | boolean | number | string")]
+pub trait IntoBigIntOrBoolOrNumberOrStr: sealed::Sealed {}
+impl IntoBigIntOrBoolOrNumberOrStr for &BigInt {}
+impl IntoBigIntOrBoolOrNumberOrStr for i64 {}
+impl IntoBigIntOrBoolOrNumberOrStr for u64 {}
+impl IntoBigIntOrBoolOrNumberOrStr for bool {}
+impl IntoBigIntOrBoolOrNumberOrStr for f64 {}
+impl IntoBigIntOrBoolOrNumberOrStr for &str {}
+impl IntoBigIntOrBoolOrNumberOrStr for &String {}
 
 /// [`parseFloat(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/parseFloat):
 /// the number `text` starts with, `NaN` of none. Of any value, of its text.
@@ -1631,6 +1675,9 @@ mod sealed {
     impl Sealed for &String {}
     impl Sealed for f64 {}
     impl Sealed for bool {}
+    impl Sealed for i64 {}
+    impl Sealed for u64 {}
+    impl Sealed for &super::BigInt {}
     impl<F: FnOnce() + 'static> Sealed for F {}
 }
 

@@ -172,7 +172,11 @@ What it has:
 - **The rest of the ES library:** `Date`, `Intl`'s formatters, typed arrays
   and `ArrayBuffer`, `Atomics`, `Symbol`, `WeakMap`, `WeakRef`,
   `FinalizationRegistry`, `Proxy`, `Reflect`, `encode_uri_component` and
-  the other global functions. A weak collection is typed as TypeScript
+  the other global functions. `js::big_int(text)` is `BigInt(text)`, a
+  `js::BigInt`, a `bigint` of any size, never an `i64`, which is one of 64
+  bits; `js::symbol::new(None)` is `Symbol()`
+  ([ADR 0283](../../decisions/0283-js-crate-covers-typescripts-es-library.md)).
+  A weak collection is typed as TypeScript
   types it, `WeakMap<K, V>`, its key a `js::WeakKey`: an object, what
   `js::Kind` holds of an object (a `&JsObject`, TypeScript's `object`), an
   array or a function, a web API object, `WeakMap<Blob, ..>`, or a symbol;

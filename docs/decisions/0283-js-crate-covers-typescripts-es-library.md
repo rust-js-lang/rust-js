@@ -12,6 +12,8 @@ is JS's `Map` of weak keys. Amended by [0666](0666-the-js-crate-binds-objects-re
 TypeScript types it, and what `js::Kind` holds is a `WeakKey`. Amended by
 [0782](0782-a-promises-executor-borrows-and-then-takes-two-handlers.md):
 `promise::new`'s executor may borrow, and `then_with` is `then(f, g)`.
+Amended: a `bigint` of any size is a `js::BigInt`, `Symbol()` takes an
+optional description, and `Array.prototype` is bound (rd399).
 Extended by [0887](0887-std-items-that-are-math-are-math.md): `Math`, left out as Rust's own, is
 std's items as values too, `f64::ln` as a `fn` `Math.log`.
 
@@ -212,3 +214,33 @@ any value, a `&dyn IntoUnknown`, given as it is (ADR 0654). Every
 Held by `test/js-constructors.test.ts`'s "an Error is made of its message
 and options, its cause".
 
+
+## Amendment: a `bigint` of any size, `Symbol()`, and `Array.prototype` (rd399)
+
+React's Flight client reads a model's `$n` as `BigInt(value.slice(2))`,
+its `$D` as `new Date(Date.parse(value.slice(2)))`, asks of an array
+`getPrototypeOf(value) === ArrayPrototype`, `Array.prototype`, and makes
+its response's key `Symbol()`, of no description. Its draft named each
+by a global path of its own, as no binding had them but `Date`'s.
+
+- **`js::big_int(value)` is `BigInt(value)`, a `&'static js::BigInt`**,
+  TypeScript's `bigint` of any size, of what TypeScript's `bigint |
+  boolean | number | string` takes (`IntoBigIntOrBoolOrNumberOrStr`, an
+  `i64` and a `u64` a `bigint` too). Not an `i64`: an `i64` is a `bigint`
+  of 64 bits (ADR 0086), which Rust's arithmetic on wraps, and text may
+  name a wider one, which an `i64` would hold where none can. What JS
+  throws of text or a number that's no integer is a panic.
+- **`js::symbol::new(description)` takes TypeScript's optional `string |
+  number`**, `Option<&dyn IntoStrOrNumber>`, as `date::new` takes its
+  optional union (ADR 0443): `symbol::new(None)` is `Symbol()`,
+  `symbol::new(Some(&"id"))` `Symbol("id")`. One function for each, as
+  every `symbol::new("id")` reads `symbol::new(Some(&"id"))` now.
+- **`js::array::prototype` is `Array.prototype`**, a value of any shape,
+  as `js::object::prototype` is `Object.prototype`.
+- `Date.parse` and `new Date(time)` were bound, `date::parse` and
+  `date::new(Some(&time))`; V8's `Error.stackTraceLimit` is the node
+  crate's, `node::js_error::stack_trace_limit` (ADR 0648).
+
+Case: N ([0262](0262-when-rust-and-js-disagree.md)), each JS's own
+function, typed as TypeScript's lib, never narrower. Held by
+`test/js-globals.test.ts`, which runs each.

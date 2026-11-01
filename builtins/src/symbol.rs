@@ -7,7 +7,7 @@ use super::{Defined, JsObject, PropertyKey, Unknown};
 use core::marker::PhantomData;
 
 /// [`Symbol`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Symbol):
-/// any symbol, `symbol::new("id")` a new one; the registry's is a
+/// any symbol, `symbol::new(Some(&"id"))` a new one; the registry's is a
 /// [`SymbolFor`].
 #[cfg_attr(rust_js, rust_js::types = "symbol")]
 pub struct Symbol(PhantomData<JsObject>);
@@ -95,10 +95,32 @@ unsafe extern "Rust" {
 }
 
 /// [`Symbol(description)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Symbol/Symbol):
-/// a new symbol, unlike every other.
+/// a new symbol, unlike every other, of a description, text or a number,
+/// `Some(&"id")`, or of none, `None`, `Symbol()`, as TypeScript's optional
+/// `string | number` (rd399).
 #[cfg_attr(rust_js, rust_js::link_name = "Symbol")]
-pub fn new(description: &str) -> &'static Symbol {
+pub fn new(description: Option<&dyn IntoStrOrNumber>) -> &'static Symbol {
     unreachable!()
+}
+
+/// What a `string | number` parameter takes, `Symbol`'s description: each
+/// as it is (ADR 0229); an optional one, `Option<&dyn IntoStrOrNumber>`,
+/// takes `Some(&value)` (ADR 0443).
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` is not a `string | number`",
+    note = "an optional one, `Option<&dyn IntoStrOrNumber>`, takes `Some(&value)`"
+)]
+#[cfg_attr(rust_js, rust_js::types = "string | number")]
+pub trait IntoStrOrNumber: sealed::Sealed {}
+impl IntoStrOrNumber for &str {}
+impl IntoStrOrNumber for &String {}
+impl IntoStrOrNumber for f64 {}
+
+mod sealed {
+    pub trait Sealed {}
+    impl Sealed for &str {}
+    impl Sealed for &String {}
+    impl Sealed for f64 {}
 }
 
 /// Gone (ADR 0634): the registry's symbol of `key` is a value,

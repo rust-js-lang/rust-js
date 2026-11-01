@@ -2865,7 +2865,8 @@ A symbol of JS's registry, `Symbol.for(key)`, is a `js::SymbolFor`: a
 value of its key, so a `const` holds one and a `match` names it, as
 React's tags are. Two are equal where their keys are, as `===` finds
 them; its key, `.0`, is `Symbol.keyFor(symbol)`. Any other symbol, one of
-its own, `js::symbol::new("id")`, or a well-known one,
+its own, `js::symbol::new(Some(&"id"))`, `Symbol("id")`, or `None`'s,
+`Symbol()`, or a well-known one,
 `js::symbol::iterator`, is a `&js::Symbol`
 ([ADR 0634](../../decisions/0634-a-registered-symbol-is-a-const.md)).
 
