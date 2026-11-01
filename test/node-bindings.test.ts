@@ -1063,7 +1063,8 @@ process.exit(0);
 
 // ADR 0272, amended: `crypto`'s hash and `stream`'s `Writable`, as React's
 // server stream config for Node hashes a key and writes its chunks, text
-// and bytes, to the response; `util`'s `TextEncoder` is the global's.
+// and bytes, to the response; `util`'s `TextEncoder` is imported from
+// `util`, as a host may have no global one.
 test("node's crypto hashes and a Writable is written to", () => {
   const dir = fixture("node-stream");
   const node = buildNode();
@@ -1091,6 +1092,7 @@ pub fn close(destination: &Writable) {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('import { createHash } from "crypto";');
   expect(js).toContain('const hash = createHash("md5");\n  hash.update(input);\n  return hash.digest("hex");');
+  expect(js).toContain('import { TextEncoder } from "util";');
   expect(js).toContain("const bytes = new TextEncoder().encode(text);");
   expect(js).toContain("destination.end();");
   writeFileSync(join(dir, "package.json"), '{ "type": "module" }');

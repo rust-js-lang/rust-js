@@ -6,8 +6,32 @@ use js::Promise;
 
 /// [`util.TextEncoder`](https://nodejs.org/api/util.html#class-utiltextencoder)
 /// and [`util.TextDecoder`](https://nodejs.org/api/util.html#class-utiltextdecoder)
-/// are the globals, webapi's.
-pub use webapi::{TextDecoder, TextEncoder, text_decoder, text_encoder};
+/// are the WHATWG classes, webapi's types, made by `util`'s own constructors,
+/// imported from `util`: where a host has no global `TextEncoder`, a test
+/// environment's, `util`'s is still there.
+pub use webapi::{TextDecoder, TextEncoder};
+
+pub mod text_encoder {
+    use super::TextEncoder;
+
+    /// [`new util.TextEncoder()`](https://nodejs.org/api/util.html#class-utiltextencoder):
+    /// an encoder of text as UTF-8.
+    #[cfg_attr(rust_js, rust_js::link_name = "new util#TextEncoder")]
+    pub fn new() -> &'static TextEncoder {
+        unreachable!()
+    }
+}
+
+pub mod text_decoder {
+    use super::TextDecoder;
+
+    /// [`new util.TextDecoder()`](https://nodejs.org/api/util.html#class-utiltextdecoder):
+    /// a decoder of UTF-8 text.
+    #[cfg_attr(rust_js, rust_js::link_name = "new util#TextDecoder")]
+    pub fn new() -> &'static TextDecoder {
+        unreachable!()
+    }
+}
 
 /// What [`promisify`] makes of a function that takes its callback last,
 /// `(err, value) => void` or `(err) => void`, as @types/node's overloads of
