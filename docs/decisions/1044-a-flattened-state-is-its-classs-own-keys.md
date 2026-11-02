@@ -184,11 +184,8 @@ another borrow may meet it** (`RefCells::loud_at`, what made the field
 loud), the declaration only where no such place is known. Nothing it
 compiles changes.
 
-A named borrow, `let state = &mut *chunk.state.borrow_mut();`, is still
-refused where the `let`'s guard is counted: its `&mut` is the chunk, and a
-whole write through it, `*state = Blocked { .. }`, would be `$assign`'s,
-which deletes the chunk's other keys; it needs a write of the state's
-keys first.
+A named borrow, `let state = &mut *chunk.state.borrow_mut();`, was still
+refused where the `let`'s guard is counted; the amendment below lifts it.
 
 Held by `test/classes-flattened-state.test.ts`'s "a flattened state given
 or taken whole, lent or held is refused", the held borrow's line; mutation
@@ -227,3 +224,51 @@ declares its keys"; mutations `state-keys-undeclared`,
 `state-key-of-a-variant-without-it-never` and
 `state-key-of-any-value-a-union` (`declarations/classes.ts`).
 
+## Amended (2026-11-02, rd432, #478): a `&mut` to it is a handle, lent or held
+
+A wrong answer, P0 (#478), and a refusal, P2 (rd432). A `&mut` to a
+flattened state was the class's object whenever its enum's every variant
+has fields (`written_in_place`), so a function it was lent to that wrote
+it whole, `fn finish(state: &mut ChunkState) { *state = .. }` of
+`finish(&mut chunk.state.borrow_mut())`, was `$assign(chunk, ..)`, which
+deleted the instance's other keys, `name` and `reads`: Node printed
+`undefined fulfilled x reads 0` where Rust prints `a fulfilled x reads 5`.
+An enum with a unit variant, the corpus's `Halted`, was a cell already,
+so it was right only by chance. And the Flight client's named borrow, `let
+state = &mut *chunk.state.borrow_mut(); .. *state = Blocked { .. }`, was
+refused.
+
+- **A `&mut` to a flattened state's enum is a handle** (`is_boxable`): the
+  enums the crate's classes flatten, `bindings::flattened_states`, kept in
+  the crate's facts, are cell pointees, as a value JS can't change in
+  place is, whatever their variants. Lent, it's `{ value: chunk }`, and
+  what it writes back is each key (ADR 0074's copy back); a variable's own
+  value of the enum is a cell of it too, as a number's is. One rule, in
+  representation, where `written_in_place` and `$assign` ask it.
+- **A `let` of the guard's deref holds the guard** (`drops/facts.rs::let_held`,
+  `guarded_borrow`): `&mut *call` or `&*call`, the guard a temporary Rust
+  extends to the block's end, is held until then, `drop` of the borrow
+  ending nothing, and is quiet where nothing after it asks its cell, as
+  ADR 0863's `let v = c.borrow_mut();` is.
+- **Its handle written whole is the object's keys**
+  (`tidy/values.rs::read_handles`): a handle's `const` written whole
+  through, `borrowMut.value = ..`, of a place that reads the same, is the
+  handle itself where it's used, so each whole write is each key set on
+  the chunk (`handles_in_place`), `chunk.status = "blocked"; chunk.value =
+  listeners;`, and each read the chunk, `chunk.status === "pending"`.
+
+Not yet: a library's flattened enum, lent in a crate that uses it, isn't in
+that crate's facts.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior: every key but the state's is the instance's own, kept.
+
+Held by corpus `flattened_state_lent_mut` (#478's repro: each variant of
+fields, lent as the guard's deref and through a `let`, written whole and
+in a field, and a variable's own state lent the same) and
+`flattened_state_let_borrow` (rd432's: tested, taken from and replaced
+whole through the `let`, the class's `name` and `reads` kept), each
+against native Rust, and `flattened_state_cell`; mutations
+`flattened-state-mut-the-object` (`representation.ts`),
+`let-held-through-unseen` (`drops/facts.ts`) and
+`in-place-handle-kept-whole` (`tidy/values.ts`).

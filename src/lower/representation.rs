@@ -288,9 +288,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && !self.is_generic_iter(inner);
             return self.is_cell_pointee(inner) || plain_object;
         }
-        // A counted `Rc` or its `Weak` is an object its owners share: a `&mut`
-        // to one is a cell, so `*r = v` gives the place another (ADR 0523).
-        let shared = self.counted_rc(ty).is_some() || self.counted_weak(ty).is_some();
+        // A counted `Rc` or its `Weak`, an object its owners share (ADR 0523), or a
+        // flattened state, its class's keys (#478): a `&mut` to one is a cell.
+        let flattened = matches!(ty.kind(), ty::Adt(adt, _) if self.krate.flattened_states.contains(&adt.did()));
+        let shared = self.counted_rc(ty).is_some() || self.counted_weak(ty).is_some() || flattened;
         !self.is_unknown(ty)
             && (!self.is_object(ty) || shared)
             // A `&mut dyn FnMut()` is the function (ADR 0099).

@@ -1153,7 +1153,12 @@ keys: its tag and each key a variant has. A borrow reads the object, a
 whole write sets the new variant's tag and fields, and its
 constructor takes the keys, as React's Flight client's chunk is
 `new ReactPromise("pending", null, null)`. A key an earlier variant set
-stays, as upstream's do; Rust reads it only through its variant. Its
+stays, as upstream's do; Rust reads it only through its variant. A
+borrow a `let` names, `let state = &mut *chunk.state.borrow_mut();`, is
+the chunk too, each whole write through it the keys; a `&mut` to the
+state lent to a function, `finish(&mut chunk.state.borrow_mut())`, is a
+cell of it, `{ value: chunk }`, whose value is written back key by key,
+so the class's other fields stay, whatever its variants hold (#478). Its
 `replace`, `take`, `swap` and `get_mut` are refused, and so is the cell
 lent, `&chunk.state`, or borrowed where another borrow of it may be, as
 its object counts no borrows
@@ -1204,6 +1209,15 @@ pub fn resolve(chunk: &ReactPromise, value: String) -> Vec<u32> {
     *chunk.state.borrow_mut() = ChunkState::Initialized { value };
     listeners.unwrap_or_default()
 }
+
+pub fn settle(chunk: &ReactPromise, value: String) -> bool {
+    let state = &mut *chunk.state.borrow_mut();
+    if let ChunkState::Pending { .. } = state {
+        *state = ChunkState::Initialized { value };
+        return true;
+    }
+    false
+}
 ```
 
 ```js
@@ -1227,6 +1241,15 @@ export function resolve(chunk, value) {
   chunk.status = "fulfilled";
   chunk.value = value;
   return listeners ?? [];
+}
+
+export function settle(chunk, value) {
+  if (chunk.status === "pending") {
+    chunk.status = "fulfilled";
+    chunk.value = value;
+    return true;
+  }
+  return false;
 }
 ```
 

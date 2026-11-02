@@ -94,19 +94,11 @@ function main() {
   fail(chunk, "boom");
   console.log(`${read(chunk)}`);
   console.log(`reads ${chunk.reads}`);
-  const borrowMut = {
-    get value() {
-      return chunk;
-    },
-    set value(value) {
-      chunk.status = value.status;
-      chunk.value = value.value;
-      chunk.reason = value.reason;
-    },
-  };
-  const state = { value: borrowMut.value };
+  const state = { value: chunk };
   halt(state);
-  borrowMut.value = state.value;
+  chunk.status = state.value.status;
+  chunk.value = state.value.value;
+  chunk.reason = state.value.reason;
   console.log(`${read(chunk)} ${chunk.reads}`);
   const halted = made({ status: "halted" });
   console.log(`${read(halted)}`);

@@ -341,6 +341,9 @@ struct ItemScope<'tcx> {
 /// Immutable analysis inputs shared by function lowering.
 struct CrateFacts<'a, 'tcx> {
     sources: &'a sources::CapturedSources,
+    /// The enums its classes hold as a flattened state, a `&mut` to each a
+    /// handle (`bindings::flattened_states`, #478).
+    flattened_states: &'a HashSet<DefId>,
     mutated: &'a HashSet<Ty<'tcx>>,
     /// The `Rc`s counted (ADR 0320).
     counted: &'a analysis::Counted<'tcx>,

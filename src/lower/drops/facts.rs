@@ -548,6 +548,34 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
         }
     }
 
+    /// Of `e`, a borrow of what a guard guards, `&mut *c.borrow_mut()` or
+    /// `&*c.borrow()`, through its `Deref`: the call that makes the guard.
+    fn guarded_borrow(&self, e: ExprId) -> Option<ExprId> {
+        let thir = self.thir;
+        let ExprKind::Borrow { arg, .. } = thir[strip(thir, e)].kind else {
+            return None;
+        };
+        let ExprKind::Deref { arg } = thir[strip(thir, arg)].kind else {
+            return None;
+        };
+        let ExprKind::Call { fun, ref args, .. } = thir[strip(thir, arg)].kind else {
+            return None;
+        };
+        let derefs = fn_def(thir[fun].ty).is_some_and(|(id, generic_args)| {
+            matches!(
+                handle_step(self.cx.recognition.tcx, id, generic_args),
+                Some(HandleStep::GuardDeref | HandleStep::GuardDerefMut)
+            )
+        });
+        match args[..] {
+            [lent] if derefs => match thir[strip(thir, lent)].kind {
+                ExprKind::Borrow { arg: guard, .. } => Some(strip(thir, guard)),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+
     /// Whether `arg`, a call's argument, is only what `guard` guards, read
     /// through it: lent, `&*guard`, a copy, `*guard`, or a clone or an
     /// `Option`'s `as_deref()` of it lent (rd427).
@@ -605,10 +633,16 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             return;
         };
         let recognition = &self.cx.recognition;
-        let call = strip(self.thir, init);
+        // Or a borrow of what it guards, `let state = &mut
+        // *chunk.state.borrow_mut();`: its guard a temporary the `let` holds
+        // to its block's end, as Rust extends it, whatever the borrow does,
+        // which can't outlive it (rd432).
+        let through = self.guarded_borrow(init);
+        let call = through.unwrap_or_else(|| strip(self.thir, init));
         let ExprKind::Call { fun, .. } = self.thir[call].kind else {
             return;
         };
+        let ty = if through.is_some() { self.thir[call].ty } else { ty };
         if !recognition.is_guard(ty)
             || !matches!(
                 fn_def(self.thir[fun].ty).and_then(|(id, args)| recognition.classify(id, args)),
@@ -630,19 +664,22 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             moved: false,
         };
         // Held until a statement of its block drops it, `drop(v);`, or
-        // its block ends.
-        let (rest, value) = match rest.iter().position(|&stmt| match self.thir[stmt].kind {
-            ThirStmt::Expr { expr, .. } => moves.drops_it(expr),
+        // its block ends; a borrow of what it guards, until its block ends.
+        let dropped = rest.iter().position(|&stmt| match self.thir[stmt].kind {
+            ThirStmt::Expr { expr, .. } => through.is_none() && moves.drops_it(expr),
             ThirStmt::Let { .. } => false,
-        }) {
+        });
+        let (rest, value) = match dropped {
             Some(at) => (&rest[..at], None),
             None => (rest, value),
         };
-        for &stmt in rest {
-            moves.visit_stmt(&self.thir[stmt]);
-        }
-        if let Some(value) = value {
-            moves.visit_expr(&self.thir[value]);
+        if through.is_none() {
+            for &stmt in rest {
+                moves.visit_stmt(&self.thir[stmt]);
+            }
+            if let Some(value) = value {
+                moves.visit_expr(&self.thir[value]);
+            }
         }
         if !moves.moved && self.held_quietly((fun, cell), rest, value.as_slice()) {
             self.facts.let_held.insert(fun);

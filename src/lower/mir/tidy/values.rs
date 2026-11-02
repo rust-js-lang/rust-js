@@ -660,6 +660,29 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool) {
             }
         }
     });
+    // There, it's the handle itself where it's used, made of its place,
+    // which reads the same: each whole write through it sets the object's
+    // keys there (`handles_in_place`), each read is the object (#478).
+    let whole: Vec<(String, Expr)> = (handles.iter())
+        .filter(|(name, _, _, storage)| matches!(storage, js::Storage::InPlace(_)) && written_whole.contains(name))
+        .map(|(name, place, _, storage)| (name.clone(), Expr::stored_handle(place.clone(), *storage)))
+        .collect();
+    if !whole.is_empty() {
+        let of = |name: &str| whole.iter().find(|(n, _)| n == name).map(|(_, handle)| handle);
+        js::statement_lists(body, &mut |stmts| {
+            stmts.retain(|stmt| !matches!(&stmt.kind, StmtKind::Const(name, _) if of(name).is_some()));
+        });
+        js::each_expr_mut(body, &mut |e| {
+            if let ExprKind::Var(v) = &e.kind
+                && let Some(handle) = of(v)
+            {
+                *e = Expr {
+                    span: e.span,
+                    ..handle.clone()
+                };
+            }
+        });
+    }
     handles
         .retain(|(name, _, _, storage)| !(matches!(storage, js::Storage::InPlace(_)) && written_whole.contains(name)));
     handles.retain(|(name, place, at_once, _)| {

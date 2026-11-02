@@ -913,4 +913,13 @@ export const mutations: Mutation[] = [
       "a registry's symbol names a field"
     ]
   },
+  {
+    name: "flattened-state-mut-the-object",
+    breaks:
+      "a `&mut` to a class's flattened state is the class's object, so what it's lent to writing it whole `$assign`s the chunk, deleting its `name` and `reads` (#478)",
+    file: "src/lower/representation.rs",
+    find: "|| self.counted_weak(ty).is_some() || flattened;\n",
+    replace: "|| self.counted_weak(ty).is_some();\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_lent_mut.rs$"],
+  },
 ];

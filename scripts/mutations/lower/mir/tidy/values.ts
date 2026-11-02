@@ -368,4 +368,14 @@ export const mutations: Mutation[] = [
     replace: "            !handled.contains(name) && !finally_read.contains(name)\n",
     tests: ["test/corpus.test.ts", "-t", "^taken_and_returned.rs$"],
   },
+  {
+    name: "in-place-handle-kept-whole",
+    breaks:
+      "a flattened state's handle written whole through stays an object of a getter and a setter, `const borrowMut = { get value() .., set value(value) { chunk.status = .. } }`, where each write is the chunk's keys (#478)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "    if !whole.is_empty() {\n",
+    replace: "    if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_let_borrow.rs$"],
+    snapshots: true,
+  },
 ];

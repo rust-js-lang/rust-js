@@ -401,4 +401,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^held_borrow_of_own_cell.rs$"],
     snapshots: true,
   },
+  {
+    name: "let-held-through-unseen",
+    breaks:
+      "a `let` of a borrow of what a guard guards, `let state = &mut *chunk.state.borrow_mut();`, is never held quietly, so a flattened state borrowed so is refused (rd432)",
+    file: "src/lower/drops/facts.rs",
+    find: "        let through = self.guarded_borrow(init);\n",
+    replace: "        let through: Option<ExprId> = None;\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_let_borrow.rs$"],
+  },
 ];

@@ -434,7 +434,9 @@ pub fn lower_crate<'tcx>(
         )
         .collect();
     let struct_literals = super::aggregates::struct_literals(tcx);
+    let flattened_states = super::bindings::flattened_states(tcx);
     let crate_facts = CrateFacts {
+        flattened_states: &flattened_states,
         foreign: &foreign,
         library: export_library,
         compiled_once: exports_reachable,

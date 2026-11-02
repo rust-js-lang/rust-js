@@ -923,6 +923,33 @@ pub(super) fn flattened_state<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(
     Some((*state, keys))
 }
 
+/// The enums the crate's classes hold as a flattened state
+/// (`flattened_state`), each its object's own keys (rd380, ADR 1044): a
+/// `&mut` to one is a handle, whose setter writes each key there, wherever
+/// it's given, never the object, which holds the class's other keys too
+/// (#478).
+pub(super) fn flattened_states(tcx: TyCtxt<'_>) -> std::collections::HashSet<DefId> {
+    let mut states = std::collections::HashSet::new();
+    for id in tcx.hir_crate_items(()).definitions() {
+        if tcx.def_kind(id) != rustc_hir::def::DefKind::Struct {
+            continue;
+        }
+        for field in tcx
+            .adt_def(id)
+            .non_enum_variant()
+            .fields
+            .iter()
+            .filter(|f| is_flatten(tcx, f))
+        {
+            let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+            if let Some((state, _)) = flattened_state(tcx, ty) {
+                states.insert(state.did());
+            }
+        }
+    }
+    states
+}
+
 /// Whether field `i` of `ty`, a struct, is flattened (ADR 0204).
 pub(super) fn is_flatten_field(tcx: TyCtxt<'_>, ty: Ty<'_>, i: usize) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct()
