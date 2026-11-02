@@ -119,7 +119,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     };
                     let bytes = expr_bytes(&template)
                         .ok_or_else(|| this.unsupported(span, "this format string, from its MIR"))?;
-                    let Value::List(mut items) = items else {
+                    let Value::List(mut items, _) = items else {
                         return Err(this.unsupported(span, "these format arguments, from its MIR"));
                     };
                     let template = crate::lower::format_args::decode_template(&bytes)

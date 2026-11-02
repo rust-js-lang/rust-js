@@ -100,10 +100,6 @@ pub(super) struct LocalFacts<'m, 'tcx> {
     /// Each shared reference whose referent Rust can't change while the
     /// body runs (`mir_lasting`).
     lasting: HashSet<Local>,
-    /// Where the arguments of the body's calls are written, which a
-    /// constant among them is placed at in the map (rd220), and a static
-    /// read into one, though MIR reads it before the call (rd421).
-    argument_spans: HashSet<Span>,
 }
 
 /// Of a body's calls of a `RefCell`'s, those of a place no borrow of which
@@ -129,10 +125,6 @@ pub(super) struct QuietCells {
 }
 
 impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
-    pub(super) fn argument_spans(&self) -> &HashSet<Span> {
-        &self.argument_spans
-    }
-
     pub(super) fn awaits(&self) -> &'m HashSet<BasicBlock> {
         self.awaits
     }
@@ -394,13 +386,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             tried_ints: self.mir_tried_ints(body),
             found_indexes: self.mir_found_indexes(body),
             lasting: self.mir_lasting(body),
-            argument_spans: (body.basic_blocks.iter())
-                .filter_map(|block| match &block.terminator().kind {
-                    mir::TerminatorKind::Call { args, .. } => Some(args.iter().map(|arg| arg.span)),
-                    _ => None,
-                })
-                .flatten()
-                .collect(),
         };
         Ok((facts, bindings))
     }

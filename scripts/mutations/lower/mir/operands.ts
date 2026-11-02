@@ -164,11 +164,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/operands.rs",
     find: "            js::ExprKind::Num(_) => value.or_at(self.js_span(c.span)),\n",
     replace: "",
-    tests: [
-      "test/lowering-numbers.test.ts",
-      "-t",
-      "a number literal keeps its base and its exponent",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^generic_bitwise_operators.rs$"],
+    snapshots: true,
   },
   {
     name: "promoted-some-unnamed",
@@ -277,25 +274,12 @@ export const mutations: Mutation[] = [
     breaks:
       "a constant has no place in the map, so a line comment after a call's last argument, `true, // why`, is lost (rd220)",
     file: "src/lower/mir/operands.rs",
-    find: "                if made.span.is_none() {\n                    made.span = self.argument_span(state, c.span);\n",
-    replace: "                if false {\n                    made.span = self.argument_span(state, c.span);\n",
+    find: "                if made.span.is_none() {\n                    made.span = self.written_span(c.span);\n",
+    replace: "                if false {\n                    made.span = self.written_span(c.span);\n",
     tests: [
       "test/lowering-comments-ends.test.ts",
       "-t",
       "a comment after a call's last argument, a constant",
-    ],
-  },
-  {
-    name: "constant-placed-anywhere",
-    breaks:
-      "every constant has a place in the map, so a comment before a tail tuple with one is inside its array, `return [ // why\n s, false ]` (rd220's follow-up)",
-    file: "src/lower/mir/operands.rs",
-    find: "        match !span.from_expansion() && state.facts.argument_spans().contains(&span) {\n",
-    replace: "        match !span.from_expansion() {\n",
-    tests: [
-      "test/lowering-comments-ends.test.ts",
-      "-t",
-      "a comment before a tail tuple",
     ],
   },
   {

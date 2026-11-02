@@ -488,12 +488,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
-        // What's made is where its Rust is, for the source map.
+        // What's made is where its Rust is, for the source map: an array
+        // too, `&[key], // path` of a call's arguments, the line's JS
+        // (ADR 0444, amended).
         let value = match value {
             Value::Expr(mut e) if e.span.is_none() => {
                 e.span = self.js_span(span);
                 Value::Expr(e)
             }
+            Value::List(items, at) if at.is_none() => Value::List(items, self.js_span(span)),
             value => value,
         };
         // A write's result a function gives, of what it called last, that
@@ -696,10 +699,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => ty,
         };
         let places = match &value {
-            Value::List(items) => (items.iter().enumerate())
+            Value::List(items, at) => (items.iter().enumerate())
                 .map(|(i, item)| held(item, item_ty(i)))
                 .collect::<Option<Vec<_>>>()
-                .map(|items| Value::List(items.into_iter().map(Value::Place).collect())),
+                .map(|items| Value::List(items.into_iter().map(Value::Place).collect(), *at)),
             value => held(value, ty).map(Value::Place),
         };
         if one && let Some(places) = places {
@@ -709,7 +712,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // One read by its fields, each once, a `format_args!`'s tuple: a list
         // whose items are each read where its field is.
         let parts = match &value {
-            Value::List(items) => {
+            Value::List(items, _) => {
                 let mut read = state.locals.fields[local].clone();
                 read.sort();
                 read == (0..items.len()).collect::<Vec<_>>()

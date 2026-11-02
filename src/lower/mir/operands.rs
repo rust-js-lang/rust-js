@@ -89,7 +89,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let field = field.as_usize();
         let pending = state.pending.iter().find(|(l, _)| *l == place.local).map(|(_, v)| v);
-        let Some(Value::List(items)) = pending else {
+        let Some(Value::List(items, _)) = pending else {
             return Ok(None);
         };
         // Read out of order, or one that does something before others that
@@ -115,13 +115,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             state.pending = rest;
             let span = state.body.local_decls[place.local].source_info.span;
             for k in acting {
-                let Value::List(items) = &mut state.pending[0].1 else {
+                let Value::List(items, _) = &mut state.pending[0].1 else {
                     unreachable!("a list")
                 };
                 let item = std::mem::replace(&mut items[k], Value::Expr(Expr::undefined()));
                 let item = self.value_expr(item, span)?;
                 let held = self.spill(tidy::HELD_ARG, item, out);
-                let Value::List(items) = &mut state.pending[0].1 else {
+                let Value::List(items, _) = &mut state.pending[0].1 else {
                     unreachable!("a list")
                 };
                 items[k] = Value::Expr(held);
@@ -141,7 +141,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .iter()
             .position(|(l, _)| *l == place.local)
             .expect("admitted");
-        let Value::List(items) = &mut state.pending[at].1 else {
+        let Value::List(items, _) = &mut state.pending[at].1 else {
             unreachable!("a list")
         };
         let item = std::mem::replace(&mut items[field], Value::Expr(Expr::undefined()));
@@ -263,14 +263,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 Ok(Value::Expr(self.mir_closure(state, c.ty(), Vec::new(), c.span, out)?))
             }
-            // A call's argument where it's written, which the map gives a
-            // line comment after it on its line the JS of, `true, // why` of
-            // a call's last (rd220); not another, a tuple's or a comparison's,
-            // which a comment before its statement would be placed at.
+            // A constant where it's written, a call's argument's, which the
+            // map gives a line comment after it on its line the JS of, `true,
+            // // why` of a call's last (rd220).
             Operand::Constant(c) => {
                 let mut made = self.mir_const(state, c)?;
                 if made.span.is_none() {
-                    made.span = self.argument_span(state, c.span);
+                    made.span = self.written_span(c.span);
                 }
                 Ok(Value::Expr(made))
             }
@@ -416,11 +415,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => (self.is_rust_fn(def_id)).then(|| self.named_fn_ref(def_id, None, c.span)),
             };
             if let Some(mut referred) = referred {
-                // Where it's a call's argument as written, so a comment
+                // Where it's written, a call's argument's too, so a comment
                 // above it in the call is (rd421), its own place, not only
                 // a handle's on it, which reading through the handle drops.
                 if referred.span.is_none() {
-                    referred.span = self.argument_span(state, c.span);
+                    referred.span = self.written_span(c.span);
                 }
                 // A raw pointer to one, a handle on it (ADR 0407): of what isn't
                 // an object, a cell of its value, which nothing writes.
@@ -459,12 +458,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Where a constant written at `span` is in the map: where it's
-    /// written, of a call's argument the program wrote, which the map gives
-    /// a comment beside it the JS of (rd220, rd421); else nowhere, as of a
-    /// tuple's or a comparison's, which a comment before its statement would
-    /// be placed at.
-    fn argument_span(&self, state: &State<'_, 'tcx>, span: Span) -> js::Span {
-        match !span.from_expansion() && state.facts.argument_spans().contains(&span) {
+    /// written, as a value a statement makes is (`mir_store`), so a comment
+    /// beside a call's argument is beside its JS (rd220, rd421); nowhere of
+    /// a macro's. A tuple or an array it's in is at its own statement's
+    /// place, which a comment before that statement is before, not before
+    /// the constant inside it (ADR 0444, amended).
+    fn written_span(&self, span: Span) -> js::Span {
+        match !span.from_expansion() {
             true => self.js_span(span),
             false => js::Span::NONE,
         }

@@ -392,3 +392,26 @@ pub fn walk(id: u32) -> usize {
   expect(js).toContain('    id,\n    [""], // path\n    "root", // name\n    true,\n  );');
   expect((lib.walk as (id: number) => number)(1)).toBe(7);
 });
+
+// The same of an array that isn't promoted, `&[key], // path`: made where
+// it's written, its JS is there, as a value a statement makes is, so the
+// map has its line's JS to put the comment after; it had none, its line's
+// JS carried the argument before it's place, `id`'s, and the comment was
+// lost.
+test("a comment after an array argument made of a variable is after it", async () => {
+  const { js, lib } = await compiled("comment-after-an-array-argument", `pub fn visit(id: u32, path: &[&str], name: &str, deep: bool) -> usize {
+    id as usize + path.len() + path[0].len() + name.len() + usize::from(deep)
+}
+
+pub fn walk(id: u32, key: &str) -> usize {
+    visit(
+        id,
+        &[key], // path
+        "root", // name
+        true,
+    )
+}
+`);
+  expect(js).toContain('    id,\n    [key], // path\n    "root", // name\n    true,\n  );');
+  expect((lib.walk as (id: number, key: string) => number)(1, "ab")).toBe(9);
+});

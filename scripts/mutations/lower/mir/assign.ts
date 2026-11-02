@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "made-array-unplaced",
+    breaks:
+      "an array a statement makes is where its Rust is, `&[key], // path` of a call's arguments, whose line's JS the comment is after (ADR 0444, amended)",
+    file: "src/lower/mir/assign.rs",
+    find: "            Value::List(items, at) if at.is_none() => Value::List(items, self.js_span(span)),\n",
+    replace: "",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "array argument made of a variable"],
+  },
+  {
     name: "valued-arrow-unmarked",
     breaks:
       "a `let` of an `Rc` or a `Box` of a closure is a function declared, `function commitHook(n) { .. }`, not a `const` of its arrow (ADR 0882, amended)",

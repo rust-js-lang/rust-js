@@ -125,7 +125,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             value => self.value_expr(value, span)?,
         };
         let list = match values.next() {
-            Some(Value::List(items)) => items,
+            Some(Value::List(items, _)) => items,
             Some(Value::Expr(e)) if matches!(e.kind, js::ExprKind::Undefined) => Vec::new(),
             // The arguments' tuple, made before: each of its items.
             Some(Value::Expr(tuple) | Value::Place(tuple))
@@ -399,7 +399,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(());
         };
         let parts = match value {
-            Value::List(items) => items,
+            Value::List(items, _) => items,
             value => match self.value_expr(value, span)? {
                 Expr {
                     kind: js::ExprKind::Array(items),

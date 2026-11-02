@@ -26,11 +26,7 @@ function isEnd(code) {
 }
 
 function tabs() {
-  return [
-    9,
-    9,
-    9, // a block's last, before its `}`
-  ];
+  return [9, 9, 9]; // a block's last, before its `}`
 }
 
 function main() {

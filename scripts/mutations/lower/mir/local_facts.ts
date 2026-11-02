@@ -198,17 +198,4 @@ export const mutations: Mutation[] = [
     replace: "        self.offsets.in_units(local)\n",
     tests: ["test/corpus.test.ts", "-t", "^position_index_of.rs$"],
   },
-  {
-    name: "argument-spans-unknown",
-    breaks:
-      "the body's calls' arguments are unknown where a static is read before its call, so a comment above it in the call is above the call (rd421)",
-    file: "src/lower/mir/local_facts.rs",
-    find: "                    mir::TerminatorKind::Call { args, .. } => Some(args.iter().map(|arg| arg.span)),\n",
-    replace: "                    mir::TerminatorKind::Call { args, .. } if false => Some(args.iter().map(|arg| arg.span)),\n",
-    tests: [
-      "test/lowering-comments-inside.test.ts",
-      "-t",
-      "a comment above a static given as an argument",
-    ],
-  },
 ];

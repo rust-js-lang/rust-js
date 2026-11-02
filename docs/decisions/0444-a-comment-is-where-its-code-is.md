@@ -762,6 +762,44 @@ string only. Held by `lowering-comments-items.test.ts`'s "a comment after
 a promoted array argument is after it", run, and the mutation
 `promoted-argument-comment-past-call` (`to_oxc/trailing.ts`).
 
-An array that isn't promoted, `&[key], // path`, still loses its
-comment: its JS has the span of the argument before it, `id`'s, so no JS
-of the comment's line is there to be after (to fix in its lowering).
+An array that isn't promoted, `&[key], // path`, still lost its
+comment: its JS had no place of its own, and the formatter, laying the
+call's arguments a line each, carried the place of the argument before
+it, `id`'s, onto its line, so no JS of the comment's line was there to be
+after. Fixed below.
+
+## Amendment: an array a statement makes is where its Rust is (2026-11-02)
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): comments and the
+source map.
+
+A value a MIR statement makes is placed where that statement's Rust is
+(`mir_store`), so a call's argument a temporary holds, `id`, maps to its
+line. An array or a tuple MIR makes is a list of its items until it's
+read (`Value::List`, so `format_args!`'s arguments and a tuple's fields
+can be read one by one), and had no place: `[key]` of `&[key], // path`
+was JS of no Rust, and its comment was lost. **A list is placed where the
+statement that makes it is, as any value is, and its array, once it's
+JS, is there**: `[key], // path`, as upstream's `[key], // path`. Of an
+array that is a block's last value, `[9, 9, 9] // ..`, the statement is
+on one line, as written, `return [9, 9, 9]; // ..`, where the formatter
+split it to keep the comment after its last item. Held by
+`lowering-comments-items.test.ts`'s "a comment after an array argument
+made of a variable is after it", run, the corpus's
+`array_trailing_comments`, and the mutation `made-array-unplaced`
+(`lower/mir/assign.ts`).
+
+**A constant is placed where it's written, wherever it is.** ADR 0630's
+amendment placed a constant only as a call's argument (`argument_spans`,
+a fact of the body's calls), and ADR 0708's a static so too, because a
+tuple's had no place: a comment above `(s, false)` went before `false`,
+inside its array. The tuple's array now has its statement's place, which
+that comment is before, so the restriction made nothing: placing every
+constant the program wrote, none a macro's, the corpus, the snapshots,
+the guide and React's ports print the same, and its mutation,
+`constant-placed-anywhere`, survived every comment test. It's removed,
+and `argument_spans` with it: a constant is placed as any value a
+statement makes is, `operands.rs`'s `written_span`. Numbers and strings
+were already where written; what moves is a `bool`'s, a unit's or a
+static's place in the source map. "a comment before a tail tuple with a
+constant is never inside its array" holds it still.

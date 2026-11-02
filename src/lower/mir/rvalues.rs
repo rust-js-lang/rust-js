@@ -356,7 +356,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     {
                         let wrapping = op.overflowing_to_wrapping().expect("an overflowing operation");
                         let value = self.binary(wrapping, l, r, known, ty, span)?;
-                        return Ok(Value::List(vec![Value::Expr(value), Value::Expr(Expr::bool(false))]));
+                        return Ok(Value::List(
+                            vec![Value::Expr(value), Value::Expr(Expr::bool(false))],
+                            js::Span::NONE,
+                        ));
                     }
                     BinOp::AddWithOverflow | BinOp::SubWithOverflow | BinOp::MulWithOverflow => {
                         return Err(self.unsupported(span, "arithmetic checked for overflow, from its MIR"));
@@ -806,9 +809,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let values: Vec<Value<'tcx>> = taken.into_iter().map(|v| v.expect("each operand read")).collect();
         let operands: Vec<&Operand<'tcx>> = operands.iter().collect();
         match kind {
-            AggregateKind::Array(_) => Ok(Value::List(values)),
+            AggregateKind::Array(_) => Ok(Value::List(values, js::Span::NONE)),
             AggregateKind::Tuple if values.is_empty() => Ok(Value::Expr(Expr::undefined())),
-            AggregateKind::Tuple => Ok(Value::List(values)),
+            AggregateKind::Tuple => Ok(Value::List(values, js::Span::NONE)),
             // A union, holding its one field (ADR 0406).
             AggregateKind::Adt(did, _, args, _, Some(field)) => {
                 let ty = Ty::new_adt(self.tcx, self.tcx.adt_def(*did), args);

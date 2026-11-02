@@ -344,7 +344,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         (state.pending.iter())
             .map(|(_, value)| match value {
-                Value::List(items) => items.iter().filter(|value| item(state, value)).count(),
+                Value::List(items, _) => items.iter().filter(|value| item(state, value)).count(),
                 value => usize::from(!movable(state, value)),
             })
             .sum()
@@ -634,12 +634,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Value::Fmt(Std::FmtDisplay, ty, e) => self.display_string(e, ty, span)?,
             Value::Fmt(Std::FmtDebug, ty, e) => self.debug_string(e, ty, span)?,
             Value::Fmt(_, _, e) => e,
-            Value::List(items) => Expr::array(
+            Value::List(items, at) => Expr::array(
                 items
                     .into_iter()
                     .map(|v| self.value_expr(v, span))
                     .collect::<R<Vec<_>>>()?,
-            ),
+            )
+            .or_at(at),
             // An enum's discriminant held as a value, as rustc's MIR does
             // where jump threading reads it in two blocks: its number, of
             // the variant `switch_test` finds it is (ADR 0899).

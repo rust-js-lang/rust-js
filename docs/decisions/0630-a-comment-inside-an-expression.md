@@ -267,3 +267,11 @@ Held by `lowering-comments-inside.test.ts`'s "a block comment between an
 mutations `comment-before-block-lost` and
 `comment-before-block-of-a-while-unseen` (`to_oxc/trailing.ts`).
 
+
+## Amendment: every constant is where it is written (2026-11-02)
+
+`argument_spans`, which placed a constant or a static only as a call's
+argument, is gone: a tuple's or an array's array is placed where its
+statement is, so a comment above it is before it, and every constant the
+program wrote, none a macro's, is placed where it's written
+([0444](0444-a-comment-is-where-its-code-is.md), amended the same day).

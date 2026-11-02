@@ -427,11 +427,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "named-const-unplaced",
-    breaks: "a `const` read by its name is placed nowhere but as a call's argument, which `argument_spans` places, so a comment before it as an operand, `/*    */ SnapshotStatic | MaySuspendCommit`, is lost",
+    breaks: "a `const` read by its name is placed nowhere, so a comment before it as an operand, `/*    */ SnapshotStatic | MaySuspendCommit`, is lost",
     file: "src/lower.rs",
     find: "            let mut place = place.or_at(self.js_span(span));\n",
     replace: "            let mut place = place;\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "a comment on its own line between an = and its value"],
+    tests: ["test/lowering-switch-symbols.test.ts", "-t", "a value some arms of a match of symbols give is given where they give it"],
   },
   {
     name: "getter-value-unread",

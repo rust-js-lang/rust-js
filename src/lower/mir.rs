@@ -404,8 +404,9 @@ enum Value<'tcx> {
     Expr(Expr),
     /// An argument of a `format_args!`: how it's shown, its type, and it.
     Fmt(Std, Ty<'tcx>, Expr),
-    /// An array of values, `format_args!`'s arguments among them.
-    List(Vec<Value<'tcx>>),
+    /// An array of values, `format_args!`'s arguments among them, and
+    /// where it's made, which its JS is at, as a value's is (`mir_store`).
+    List(Vec<Value<'tcx>>, js::Span),
     /// The variant of an enum, read to choose a branch: the enum, its type,
     /// and whether it's an untagged one given of what's there, never
     /// `undefined` nor `null`, `classify(Some(value))`'s (ADR 0676).

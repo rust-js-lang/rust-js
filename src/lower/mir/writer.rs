@@ -181,7 +181,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             operands.extend(args.iter().map(|a| &a.node));
             let mut values = self.take_operands(state, &operands, out)?;
             let callee = values.remove(0);
-            let written = self.mir_closure_call(vec![callee, Value::List(values)], &arg_tys, Some(at), span, None)?;
+            let written = self.mir_closure_call(
+                vec![callee, Value::List(values, js::Span::NONE)],
+                &arg_tys,
+                Some(at),
+                span,
+                None,
+            )?;
             let written = self.value_expr(written, span)?;
             self.flush(state, out)?;
             crate::lower::display::append_written(&Expr::var(&name), written, false, self.js_span(span), out);
