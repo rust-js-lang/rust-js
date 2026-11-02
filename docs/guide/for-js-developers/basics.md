@@ -3062,7 +3062,12 @@ export function isAdult(p) {
   slot.count = n; slot.value = Some(n);` is `const old = slot.value;
   slot.count = n; slot.value = n;`, and so is a flattened state's whole
   write after its take, `chunk.status = "fulfilled"; chunk.value = text;`
-  (ADR 0996, amended).
+  (ADR 0996, amended). A take returned, of a variable of the function's
+  own its closures only write or append to, is the variable:
+  `result.take()` of an `Rc<RefCell<String>>` a kept `push` appends to
+  is `return result;`, as no one can read it after; a closure that reads
+  it keeps the take's reset, `const old = result; result = ""; return
+  old;` (ADR 0996, amended).
 - rustc won't let you use an `Option<u32>` as a `u32`: you can't forget the
   missing case.
 - An `Option<bool>` that's `Some(true)`, `flag.is_some_and(|&on| on)` or

@@ -615,6 +615,80 @@ mod tests {
         StmtKind::Assign(Expr::var(x), value).at(js::Span::NONE)
     }
 
+    /// A take of the body's `let`, returned, which nothing reads after the
+    /// `return`: the variable returned (rd598); not where a closure reads
+    /// it, a `finally` does, a handle is made on it, an append may be to an
+    /// object, or the variable isn't the body's own.
+    #[test]
+    fn unread_resets_returned() {
+        use super::values::unread_resets;
+        let s = |kind: StmtKind| kind.at(js::Span::NONE);
+        let take = |reset: Expr| {
+            vec![
+                s(StmtKind::Const("old".into(), Expr::var("result"))),
+                assign("result", reset),
+                s(StmtKind::Return(Some(Expr::var("old")))),
+            ]
+        };
+        let declared = s(StmtKind::Let("result".into(), Some(Expr::str(""))));
+        let closure = |body: Vec<Stmt>| s(StmtKind::Const("push".into(), Expr::arrow(Vec::new(), body)));
+        let append = assign("result", Expr::bin(Op::Add, Expr::var("result"), Expr::var("chunk")));
+        let returned = |mut body: Vec<Stmt>| {
+            unread_resets(&mut body);
+            matches!(body.last().map(|stmt| &stmt.kind),
+                Some(StmtKind::Return(Some(e))) if matches!(&e.kind, ExprKind::Var(v) if v == "result"))
+        };
+        // Accepted: a closure that only appends, or only writes.
+        assert!(returned(
+            [
+                vec![declared.clone(), closure(vec![append.clone()])],
+                take(Expr::str(""))
+            ]
+            .concat()
+        ));
+        let written = assign("result", Expr::var("chunk"));
+        assert!(returned(
+            [vec![declared.clone(), closure(vec![written])], take(Expr::undefined())].concat()
+        ));
+        // Refused: a closure that reads it.
+        let read = s(StmtKind::Return(Some(Expr::var("result"))));
+        assert!(!returned(
+            [vec![declared.clone(), closure(vec![read])], take(Expr::str(""))].concat()
+        ));
+        // Refused: an append to what a reset of `undefined` leaves, which
+        // may be an object, its `toString` called.
+        assert!(!returned(
+            [vec![declared.clone(), closure(vec![append])], take(Expr::undefined())].concat()
+        ));
+        // Refused: a `finally` that reads it after the `return`.
+        let shown = s(StmtKind::Expr(Expr::call(Expr::var("show"), vec![Expr::var("result")])));
+        let tried = s(StmtKind::Try(take(Expr::str("")), vec![shown]));
+        assert!(!matches!(
+            {
+                let mut body = vec![declared.clone(), tried];
+                unread_resets(&mut body);
+                body
+            }
+            .last()
+            .map(|stmt| &stmt.kind),
+            Some(StmtKind::Try(body, _)) if body.len() == 1
+        ));
+        // Refused: a handle made on it.
+        let handled = s(StmtKind::Expr(Expr::call(
+            Expr::var("keep"),
+            vec![Expr::handle(Expr::var("result"))],
+        )));
+        assert!(!returned(
+            [vec![declared.clone(), handled], take(Expr::str(""))].concat()
+        ));
+        // Refused: a variable the body doesn't declare, or declares again.
+        assert!(!returned(take(Expr::str(""))));
+        let again = s(StmtKind::Let("result".into(), None));
+        assert!(!returned(
+            [vec![declared, closure(vec![again])], take(Expr::str(""))].concat()
+        ));
+    }
+
     /// A temporary a drop guard's `try` sets, read as a `const` after it
     /// (#444): not where it's set again, nor read in the `try` first.
     #[test]

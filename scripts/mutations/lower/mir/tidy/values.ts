@@ -349,4 +349,23 @@ export const mutations: Mutation[] = [
     replace: "    place.reads_same()\n",
     tests: ["test/js-constructors.test.ts", "-t", "RefCell field sets"],
   },
+  {
+    name: "unread-resets-off",
+    breaks:
+      "a take of a cell, returned, that no closure reads after it, writes its reset, `const old = result; result = \"\"; return old;`, where upstream's is `return result;` (rd598)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "    if lets.is_empty() {\n        return;\n    }\n",
+    replace: "    if true {\n        return;\n    }\n",
+    tests: ["test/corpus.test.ts", "-t", "^taken_and_returned.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "unread-resets-past-closure-reads",
+    breaks:
+      "a take's reset is dropped where a closure kept past the take reads the cell, which then sees what was taken, not what the take left (rd598)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "            !handled.contains(name) && !finally_read.contains(name) && !read_by_closures(body, name, *appended)\n",
+    replace: "            !handled.contains(name) && !finally_read.contains(name)\n",
+    tests: ["test/corpus.test.ts", "-t", "^taken_and_returned.rs$"],
+  },
 ];

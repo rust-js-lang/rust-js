@@ -169,3 +169,73 @@ against native Rust), the changed `flattened_state_cell`,
 `overwritten-past-its-read`, `overwritten-same-field-between`,
 `overwritten-branch-tail-unchecked`
 and `overwritten-takes-off` (`lower/mir/tidy/options.ts`).
+
+## Amendment: a take returned, whose reset nothing reads, is its value (2026-11-02)
+
+rd598, P3. React's renderToString collects its chunks through its
+destination's `push`, which the request keeps, and returns them:
+
+```rust
+let result = Rc::new(RefCell::new(String::new()));
+let destination = Destination {
+    push: {
+        let result = Rc::clone(&result);
+        Rc::new(move |chunk| {
+            if let Some(chunk) = chunk {
+                result.borrow_mut().push_str(chunk);
+            }
+            true
+        })
+    },
+    ..
+};
+..
+result.take()
+```
+
+The cell is a variable (ADR 0287), and its take was
+`const old = result; result = ''; return old;`, where upstream's is
+`return result;`.
+
+**A take of a `let` the body declares at its top, and nowhere else,
+returned, `const old = x; x = c; return old;` of a constant `c`, is
+`return x;` where no closure, nor a function declared in the body,
+reads `x`** (`tidy/values.rs::unread_resets`, the "unread resets" pass,
+after "plain cells" and "overwritten takes"). Once the body returns,
+only its closures can reach the variable, the `let` being the body's;
+a closure that only writes it, `x = e`, or, of text or a number the take
+left, appends to it, `x = x + e` or `x += e`, of an `e` that reads
+nothing of it, sees nothing of what it holds. So no read follows the
+reset, and a write nothing reads changes nothing. A `replace` of a
+variable, `mem::take(&mut text)`, returned, is the same.
+
+- **What keeps the reset**: a closure that reads the variable, kept past
+  the take, `peek` of `move || result.borrow().clone()`, which sees what
+  the take left; a `finally` that reads it, which runs after the
+  `return`; a handle made on it (ADR 0099), which what it's given may
+  read; an append where the take left `undefined`, which may be an
+  object, whose `toString` the append calls; and a variable another
+  closure or block declares again, or the body doesn't declare.
+- **No lowering fact.** Unlike the overwritten take's, this is a fact of
+  the JS alone: JS's scoping says what can reach a `let`, and each read of
+  it is in the tree. A `Rc<Cell<u32>>`'s `count.set(count.get() + 1)`,
+  `count = (count + 1) >>> 0`, reads it, so keeps its reset.
+- The last three have no bun test that reaches them, and so no mutation:
+  Rust's borrows keep a handle from outliving the body, a drop that reads
+  a cell has it in a struct, which keeps it a box, and lowering makes no
+  append of an `Option`. The unit test `unread_resets_returned`
+  (`mir/tidy.rs`, `cargo test`) holds each.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. Only a read of the
+variable after the `return` could tell the reset was there, and nothing
+can make one. JS's limit on a string's length, which an append past the
+take reaches from what was taken, not from `""`, is one rust-js models
+nowhere.
+
+Held by corpus `taken_and_returned` (React's destination kept past the
+take, a closure called before it, a sum and an `Option` its kept
+closures write, and a `mem::take`, each the variable returned; a reader
+kept past the take, an appender beside a reader, a drop that reads the
+cell, and a count its closure reads to bump, each against native Rust),
+the unit test, and the mutations `unread-resets-off` and
+`unread-resets-past-closure-reads` (`lower/mir/tidy/values.ts`).

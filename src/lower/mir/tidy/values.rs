@@ -898,6 +898,138 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
     });
 }
 
+/// `const old = result; result = ""; return old;`, a take of a cell, a
+/// `replace` of a variable, returned: `return result;`, as React's
+/// renderToString's `result.take()` is upstream's `return result;` (rd598).
+/// The write is of a `let` the body declares at its top, declared nowhere
+/// else, so once the body returns, only its closures can see the variable:
+/// where none reads it, each only writing it, `result = chunk` or, of text
+/// or a number the take left, `result += chunk`, nothing reads it after
+/// the `return`, and a write nothing reads changes nothing. Not where a
+/// handle is made on it, nor where a `finally` reads it, which runs after
+/// the `return`. Case none (ADR 0262): no program can tell it was written.
+pub(super) fn unread_resets(body: &mut Vec<Stmt>) {
+    let mut declared: HashMap<String, usize> = HashMap::new();
+    js::each_declared(body, &mut |name| *declared.entry(name.to_string()).or_default() += 1);
+    let lets: HashSet<&String> = (body.iter())
+        .filter_map(|stmt| match &stmt.kind {
+            StmtKind::Let(name, _) if declared.get(name) == Some(&1) => Some(name),
+            _ => None,
+        })
+        .collect();
+    if lets.is_empty() {
+        return;
+    }
+    let mut mentions: HashMap<String, usize> = HashMap::new();
+    js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
+    // Each reset returned, the variable's name and whether the take left
+    // text or a number, which an append reads only to write.
+    let mut resets: Vec<(String, bool)> = Vec::new();
+    js::each_list(body, &mut |stmts| {
+        for window in stmts.windows(3) {
+            if let Some((name, reset)) = returned_reset(window, &mentions)
+                && lets.contains(name)
+            {
+                let appended = matches!(
+                    reset.kind,
+                    ExprKind::Str(_) | ExprKind::Num(_) | ExprKind::BigInt(_) | ExprKind::BigUint(_)
+                );
+                resets.push((name.clone(), appended));
+            }
+        }
+    });
+    if resets.is_empty() {
+        return;
+    }
+    let handled = js::Writes::of(body).handled;
+    let mut finally_read: HashSet<String> = HashSet::new();
+    js::each_list(body, &mut |stmts| {
+        for stmt in stmts {
+            if let StmtKind::Try(_, finally) = &stmt.kind {
+                js::visit_stmts(finally, &mut |name| {
+                    finally_read.insert(name.to_string());
+                });
+            }
+        }
+    });
+    let unread: HashSet<String> = (resets.into_iter())
+        .filter(|(name, appended)| {
+            !handled.contains(name) && !finally_read.contains(name) && !read_by_closures(body, name, *appended)
+        })
+        .map(|(name, _)| name)
+        .collect();
+    if unread.is_empty() {
+        return;
+    }
+    js::statement_lists(body, &mut |stmts| {
+        let mut i = 0;
+        while i + 2 < stmts.len() {
+            match returned_reset(&stmts[i..i + 3], &mentions) {
+                Some((name, _)) if unread.contains(name) => {
+                    let StmtKind::Const(_, value) = &stmts[i].kind else {
+                        unreachable!("a reset's read")
+                    };
+                    let returned = StmtKind::Return(Some(value.clone())).at(stmts[i + 2].span);
+                    stmts.splice(i..i + 3, [returned]);
+                }
+                _ => {}
+            }
+            i += 1;
+        }
+    });
+}
+
+/// `const old = x; x = c; return old;` of a constant `c`, `old` read
+/// nowhere else: `x`, and `c`.
+fn returned_reset<'a>(stmts: &'a [Stmt], mentions: &HashMap<String, usize>) -> Option<(&'a String, &'a Expr)> {
+    let [read, written, returned] = stmts else { return None };
+    let StmtKind::Const(old, value) = &read.kind else {
+        return None;
+    };
+    let ExprKind::Var(name) = &value.kind else { return None };
+    let StmtKind::Assign(target, reset) = &written.kind else {
+        return None;
+    };
+    let StmtKind::Return(Some(of)) = &returned.kind else {
+        return None;
+    };
+    let same = matches!(&target.kind, ExprKind::Var(v) if v == name) && name != old;
+    let read_once = matches!(&of.kind, ExprKind::Var(v) if v == old) && mentions.get(old) == Some(&1);
+    (same && read_once && reset.is_constant()).then_some((name, reset))
+}
+
+/// Whether a closure in `body`, or a function declared in it, reads
+/// `name`, past writing it with what reads nothing of it, or appending to
+/// it where `appended`.
+fn read_by_closures(body: &[Stmt], name: &str, appended: bool) -> bool {
+    let unread = |value: &Expr| !value.mentions_var(name);
+    let of_it = |target: &Expr| matches!(&target.kind, ExprKind::Var(v) if v == name);
+    // `x = x + e`, which preparation writes `x += e`.
+    let append = |value: &Expr| matches!(&value.kind, ExprKind::Binary(Op::Add, to, more) if of_it(to) && unread(more));
+    let mut body = body.to_vec();
+    js::each_block_mut(&mut body, &mut |stmts| {
+        stmts.retain(|stmt| match &stmt.kind {
+            StmtKind::Assign(target, value) => !(of_it(target) && (unread(value) || appended && append(value))),
+            StmtKind::Compound(Op::Add, target, value) => !(appended && of_it(target) && unread(value)),
+            _ => true,
+        })
+    });
+    let mut read = false;
+    js::each_expr(&body, &mut |e| {
+        if let ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) | ExprKind::Function(_) = &e.kind {
+            read |= e.mentions_var(name);
+        }
+    });
+    js::each_block_mut(&mut body, &mut |stmts| {
+        for stmt in stmts.iter() {
+            if let StmtKind::Function(function) = &stmt.kind {
+                function.visit_vars(&mut |v| read |= v == name);
+            }
+        }
+    });
+    read
+}
+
 /// `const tick = () => { … }; useEffect(tick, [count]);`, a closure only a
 /// hook's function is: written there, a function its `let` names, `function
 /// tick() { … }`, unless it reads that name (ADR 0297).

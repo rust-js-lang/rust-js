@@ -638,6 +638,9 @@ pub(super) const STAGES: &[Stage] = &[
             pass("overwritten takes", |b, _| {
                 js::statement_lists(b, &mut overwritten_takes)
             }),
+            // A take of a variable, returned, which no closure reads after
+            // it: the variable returned, its reset gone (rd598).
+            pass("unread resets", |b, _| unread_resets(b)),
             // A value a function given it reads more than once, held where
             // it's made: `const _$1 = f(); .. _$1.TAG ..`, not `((r) =>
             // ..)(f())`.
