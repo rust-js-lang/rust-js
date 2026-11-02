@@ -60,9 +60,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure given to a setter under a drop guard stays a temporary, `function value() { .. } channel.port1.onmessage = value;`, as the setter's target reads a getter first (#393)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "        StmtKind::Assign(target, _) if stable || !target.has_effects() => {\n",
+    find: "        StmtKind::Assign(target, _) if stable || !target.has_effects_before_assigned() => {\n",
     replace:
-      "        StmtKind::Assign(target, _) if !target.has_effects() => {\n",
+      "        StmtKind::Assign(target, _) if !target.has_effects_before_assigned() => {\n",
     tests: ["test/lowering-moves.test.ts", "-t", "under a drop guard"],
   },
   {

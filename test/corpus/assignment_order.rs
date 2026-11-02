@@ -1,7 +1,8 @@
 //@ run-fail: index out of bounds: the len is 0 but the index is 0
 // `place = value` runs the value, then the place, and so does `place op=
 // value` of primitives; one that calls `AddAssign` runs the place first. A
-// place that panics, an index out of bounds, panics only after the value.
+// place that panics, an index out of bounds, panics only after the value,
+// and a field of what a call gives is the call's after the value too.
 // Found by a generated program (seed 1476).
 use std::ops::AddAssign;
 
@@ -42,6 +43,11 @@ fn reset(c: &mut Counter) -> i32 {
     2
 }
 
+fn first(ps: &mut [P]) -> &mut P {
+    println!("first: place");
+    &mut ps[0]
+}
+
 fn set(r: &mut [i32; 2]) {
     r[index("through a reference", 0)] = value("through a reference", 8);
 }
@@ -61,6 +67,8 @@ fn main() {
     set(&mut a);
     let mut rows = vec![vec![0, 0]];
     rows[index("rows row", 0)][index("rows column", 1)] = value("rows", 9);
+    // A field of what a call gives: the value, then the call (rd633).
+    first(&mut ps).x = value("a call's field =", ps[0].x + 10);
     println!("{v:?} {a:?} {} {:?} {rows:?}", ps[0].x, totals[0]);
     // The value is read before the place changes it. Found in review.
     let mut x = 1;

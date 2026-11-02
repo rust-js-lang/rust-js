@@ -467,3 +467,51 @@ pub fn made() -> u32 {
     else delete host.createTask;
   }
 });
+
+// rd633: a JS object's field given a getter's function's call,
+// `this._debug_root_task.set(Some(console::create_task().unwrap()(&name)))`
+// of React Flight's ResponseInstance, is `this.task = console.createTask(..)`:
+// JS reads the target's object, then the value, the callee before its
+// arguments, and runs the field's setter last, as Rust reads the getter,
+// then the argument, calls, and sets. An argument that changes the getter
+// calls the function read before it, in both.
+test("a field set to a getter's function's call reads the getter where it's called", async () => {
+  const { js, lib } = await compiled(
+    "getter-unwrapped-set",
+    `use js::Unknown;
+use std::cell::Cell;
+use webapi::{ConsoleTask, console};
+
+pub struct Response {
+    pub task: Cell<Option<&'static ConsoleTask>>,
+}
+
+pub fn root(this: Option<&'static Unknown>, env: &str, named: &dyn Fn(&str) -> String) {
+    // SAFETY: the caller gives a \`Response\`.
+    let this: &'static Response = unsafe { js::cast(this) };
+    this.task.set(Some(console::create_task().unwrap()(&named(env))));
+}
+`,
+  );
+  expect(js).toContain("this$.task = console.createTask(named(env));");
+  const before = Object.getOwnPropertyDescriptor(console, "createTask");
+  const log: string[] = [];
+  try {
+    const first = (name: string) => (log.push(`first ${name}`), name);
+    Object.defineProperty(console, "createTask", { configurable: true, get: () => (log.push("get"), first) });
+    const response = {
+      set task(task: unknown) {
+        log.push(`set ${task}`);
+      },
+    };
+    lib.root(response, "a", (env: string) => {
+      log.push("arg");
+      Object.defineProperty(console, "createTask", { configurable: true, value: () => "second" });
+      return env.toUpperCase();
+    });
+    expect(log).toEqual(["get", "arg", "first A", "set A"]);
+  } finally {
+    if (before) Object.defineProperty(console, "createTask", before);
+    else delete (console as unknown as { createTask?: unknown }).createTask;
+  }
+});

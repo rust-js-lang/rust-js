@@ -1,7 +1,7 @@
 # 0750. A temporary is read past a method, and in the block after it
 
 Status: Accepted. Extends [0689](0689-a-moves-decision-is-apart-from-the-move.md):
-two more places `moves.rs` reads a temporary in its place. Amended below: a value that's the same anywhere is read past what a target does (#393); one that can't throw is read in the `try` after it (rd233).
+two more places `moves.rs` reads a temporary in its place. Amended below: a value that's the same anywhere is read past what a target does (#393); one that can't throw is read in the `try` after it (rd233); a target's own setter runs after its value (rd633).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): it can't be observed:
 JS runs the same code in the same order.
@@ -267,3 +267,37 @@ the `const`'s, where it was. Held by the corpus case
 `unwrapped_cell_in_a_chain` (a resource of no state never unwrapped), and
 `cell_reached_through_a_call`'s `get(c).value = 5;`, and the mutation
 `fixed-place-holder-kept` (`mir/tidy/moves.ts`).
+
+## Amendment: a target's own setter runs after its value (rd633, 2026-11-02)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
+difference: JS evaluates an assignment's target's object and key, then
+its value, then sets, its setter running last; Rust makes the value,
+then sets the place. Only what the target's object and key do runs
+before the value.
+
+React Flight's ResponseInstance sets its root task, `this._debug_root_task
+.set(Some(console::create_task().unwrap()(&("\"use ".to_owned() + ..))))`,
+and printed `const createTask = console.createTask; this._debugRootTask =
+createTask('"use ' + ..);` where upstream writes
+`this._debugRootTask = console.createTask('"use ' + ..)`. The getter's
+read, which does something, is MIR's temporary; `read_of` moved it into
+no assignment whose target does something, and `this._debugRootTask`,
+a field of a value JS made (`js::cast`), may be a setter
+(`Known::Getter`), so the target did. A field of a plain value read the
+same was moved as before.
+
+**What an assignment's target does before its value is what its object
+and key do** (`Expr::has_effects_before_assigned`): a value is moved
+into an assignment whose own member may be a setter, `this.task =
+console.createTask(named(env))`, which reads the getter, then runs
+`named(env)`, calls the function it read, and sets, as Rust does; one
+whose object is a getter's read, `channel.port1.onmessage = ..`, still
+moves only a `stable` value (#393).
+
+Held by `test/js-globals.test.ts`'s "a field set to a getter's
+function's call reads the getter where it's called", which runs it with
+a getter, an argument that replaces the function, and a setter, logging
+`get`, `arg`, the first function's call, then `set`; and the mutations
+`assigned-field-setter-first` and `assigned-field-object-unread`
+(`js/expr_walk.ts`). No corpus case's JS changes: a setter is JS's.

@@ -293,10 +293,12 @@ fn tested_in_place(value: &Expr, expr: &Expr, name: &str, reads: usize) -> bool 
 /// it may be moved: its value, an `if`'s test, or an assignment's target
 /// whose object it is, `_25[k] = v`: JS reads a target's object first,
 /// then its key, then the value, so the temporary runs where it ran, whatever it
-/// does, `window.document.title = t` (#188). A value of a target that does
-/// something, a setter's of a getter's object, only where it's `stable`,
-/// read the same after what the target does as before it, a closure given
-/// to a setter, `channel.port1.onmessage = () => { .. }` (#393).
+/// does, `window.document.title = t` (#188). A value of a target whose
+/// object or key does something, a setter's of a getter's object, only
+/// where it's `stable`, read the same after what the target does as before
+/// it, a closure given to a setter, `channel.port1.onmessage = () => { ..
+/// }` (#393); a setter of its own runs after the value, as Rust's set does,
+/// `this.task = console.createTask(name)` (rd633).
 fn read_of(stmt: &Stmt, name: &str, stable: bool) -> Option<Read> {
     match &stmt.kind {
         StmtKind::Const(..)
@@ -305,7 +307,7 @@ fn read_of(stmt: &Stmt, name: &str, stable: bool) -> Option<Read> {
         | StmtKind::Return(Some(_))
         | StmtKind::Throw(_)
         | StmtKind::Destructure { .. } => Some(Read::Value),
-        StmtKind::Assign(target, _) if stable || !target.has_effects() => {
+        StmtKind::Assign(target, _) if stable || !target.has_effects_before_assigned() => {
             let mut in_target = false;
             target.visit_vars(&mut |v| in_target |= v == name);
             let mut root = target;

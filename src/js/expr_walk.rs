@@ -592,6 +592,20 @@ impl Expr {
         only
     }
 
+    /// Whether assigning to this, `target = value`, does anything before
+    /// `value` is evaluated: what its object and key do, which JS
+    /// evaluates first. Its own setter, a binding's field's or a JS
+    /// object's, runs once the value is made, as Rust sets a place once
+    /// its value is: `this.task = console.createTask(name)` reads the
+    /// getter, then `name`, calls, and sets, as Rust's `set` (rd633).
+    pub fn has_effects_before_assigned(&self) -> bool {
+        match &self.kind {
+            ExprKind::Member(object, _) => object.has_effects(),
+            ExprKind::Index(object, index) => object.has_effects() || index.has_effects(),
+            _ => self.has_effects(),
+        }
+    }
+
     pub fn has_effects(&self) -> bool {
         // A read a getter may answer, which may do anything (ADRs 0672, 0750).
         if self.facts.has(Known::Getter) {

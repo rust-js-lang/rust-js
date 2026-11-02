@@ -3,6 +3,24 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "assigned-field-setter-first",
+    breaks:
+      "a JS object's field set to a getter's function's call spills the getter, `const createTask = console.createTask; this$.task = createTask(name)`, as if the field's setter ran before the value (rd633)",
+    file: "src/js/expr_walk.rs",
+    find: "            ExprKind::Member(object, _) => object.has_effects(),\n            ExprKind::Index(object, index) => object.has_effects() || index.has_effects(),\n            _ => self.has_effects(),\n",
+    replace: "            _ => self.has_effects(),\n",
+    tests: ["test/js-globals.test.ts", "-t", "reads the getter where it's called"],
+  },
+  {
+    name: "assigned-field-object-unread",
+    breaks:
+      "a value moved past a target whose object does something, `first(ps).x = value(..)`, which then calls `first` before the value, as if the object's evaluation did nothing (#393, rd633)",
+    file: "src/js/expr_walk.rs",
+    find: "            ExprKind::Member(object, _) => object.has_effects(),\n            ExprKind::Index(object, index) => object.has_effects() || index.has_effects(),\n            _ => self.has_effects(),\n",
+    replace: "            ExprKind::Member(..) | ExprKind::Index(..) => false,\n            _ => self.has_effects(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^assignment_order.rs$"],
+  },
+  {
     name: "closure-reads-unseen",
     breaks: "a helper only a closure calls isn't imported, and the module throws when the closure runs",
     file: "src/js/expr_walk.rs",

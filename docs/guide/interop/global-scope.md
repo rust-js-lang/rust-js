@@ -478,7 +478,10 @@ export function renderIn(task, render) {
 Where the program asks it's there first, as React's `supportsCreateTask`
 does, and unwraps it where it calls it, or binds it, the `unwrap()` is
 the read: `console.createTask(name)` and `console.createTask.bind(console,
-name)`, as upstream writes them. Of a host without it, the call throws a
+name)`, as upstream writes them, wherever the call's value goes, a JS
+object's field set to it too, `this._debugRootTask =
+console.createTask(..)`, whose setter runs after the call, as Rust's
+`set` does. Of a host without it, the call throws a
 `TypeError` where Rust's `unwrap()` panics; one kept or given on keeps
 `$unwrap`'s check (the user's decision,
 [ADR 1066](../../decisions/1066-a-getters-function-unwrapped-where-its-called-is-the-read.md),

@@ -34,6 +34,15 @@ function reset(c) {
   return 2;
 }
 
+function first(ps) {
+  console.log("first: place");
+  const length = ps.length;
+  if (0 >= length) {
+    throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
+  }
+  return ps[0];
+}
+
 function set(r) {
   const value$2 = value("through a reference", 8);
   const value$1 = index("through a reference", 0);
@@ -79,27 +88,30 @@ function main() {
   const items = $index(rows, index("rows row", 0));
   const index$3 = index("rows column", 1);
   items[$at(items, index$3)] = value$11;
-  const value$12 = $index(ps, 0).x;
+  // A field of what a call gives: the value, then the call (rd633).
+  const value$12 = value("a call's field =", ($index(ps, 0).x + 10) | 0);
+  first(ps).x = value$12;
+  const value$13 = $index(ps, 0).x;
   const arg = $index(totals, 0);
   console.log(
-    `[${v.join(", ")}] [${a.join(", ")}] ${value$12} ${totalDebug_fmt(arg)} [${rows.map((item) => `[${item.join(", ")}]`).join(", ")}]`,
+    `[${v.join(", ")}] [${a.join(", ")}] ${value$13} ${totalDebug_fmt(arg)} [${rows.map((item) => `[${item.join(", ")}]`).join(", ")}]`,
   );
   // The value is read before the place changes it. Found in review.
   let x = 1;
   const one = [0];
-  const value$13 = x;
+  const value$14 = x;
   x = 2;
-  one[0] = value$13;
+  one[0] = value$14;
   let y = 1;
   const w = [0];
-  const value$14 = y;
+  const value$15 = y;
   y = 2;
-  w[$at(w, 0)] = value$14;
+  w[$at(w, 0)] = value$15;
   let z = 1;
   const u = [0];
-  const value$15 = z;
+  const value$16 = z;
   z = 2;
-  u[$at(u, 0)] = (u[0] + value$15) | 0;
+  u[$at(u, 0)] = (u[0] + value$16) | 0;
   const c = { n: 1 };
   const t = [0];
   const n = c.n;
@@ -109,15 +121,15 @@ function main() {
   // `+=` reads its place after the value, which may change it. Found in
   // review.
   const d = { n: 1 };
-  const value$16 = reset(d);
-  d.n = (d.n + value$16) | 0;
+  const value$17 = reset(d);
+  d.n = (d.n + value$17) | 0;
   let e = 1;
   function inc() {
     e = (e + 10) | 0;
     return 2;
   }
-  const value$17 = inc();
-  e = (e + value$17) | 0;
+  const value$18 = inc();
+  e = (e + value$18) | 0;
   console.log(`${d.n} ${e}`);
   // A `Vec`'s index is `index_mut(&mut *cur, i)`, which takes `*cur`
   // before `i` runs; an array's is the place `(*cur)[i]`, which follows
@@ -125,23 +137,23 @@ function main() {
   a = [1, 2];
   let b = [10, 20];
   let cur = a;
-  const value$18 = cur;
-  cur = b;
-  value$18[$at(value$18, 0)] = (value$18[0] + 1) | 0;
-  console.log(`[${a.join(", ")}] [${b.join(", ")}]`);
-  a = [1, 2];
-  b = [10, 20];
-  cur = a;
   const value$19 = cur;
   cur = b;
-  value$19[$at(value$19, 0)] = 7;
+  value$19[$at(value$19, 0)] = (value$19[0] + 1) | 0;
   console.log(`[${a.join(", ")}] [${b.join(", ")}]`);
   a = [1, 2];
   b = [10, 20];
   cur = a;
   const value$20 = cur;
   cur = b;
-  value$20[$at(value$20, 0)] = (value$20[0] + 1) | 0;
+  value$20[$at(value$20, 0)] = 7;
+  console.log(`[${a.join(", ")}] [${b.join(", ")}]`);
+  a = [1, 2];
+  b = [10, 20];
+  cur = a;
+  const value$21 = cur;
+  cur = b;
+  value$21[$at(value$21, 0)] = (value$21[0] + 1) | 0;
   console.log(`[${a.join(", ")}] [${b.join(", ")}]`);
   a = [1, 2].slice();
   b = [10, 20].slice();
@@ -149,8 +161,8 @@ function main() {
   cur$1[0] = (cur$1[0] + 1) | 0;
   console.log(`[${a.join(", ")}] [${b.join(", ")}]`);
   const empty = [];
-  const value$21 = value("out of bounds", 8);
+  const value$22 = value("out of bounds", 8);
   const index$5 = index("out of bounds", 0);
-  empty[$at(empty, index$5)] = (value$21 << 24) >> 24;
+  empty[$at(empty, index$5)] = (value$22 << 24) >> 24;
 }
 //# sourceMappingURL=case.js.map
