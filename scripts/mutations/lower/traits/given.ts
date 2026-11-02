@@ -155,4 +155,13 @@ export const mutations: Mutation[] = [
     ],
     snapshots: true,
   },
+  {
+    name: "its-own-is-its-impls",
+    breaks:
+      "a fact a method asks of its own type parameter, a fold's `B`, is taken for its impl's, which a caller of a type it knows gives, so it's given one of `()` (#475)",
+    file: "src/lower/traits/given.rs",
+    find: "            || self.facts_asked(id).iter().any(|&(index, _)| index >= impls)\n",
+    replace: "",
+    tests: ["test/diagnostics.test.ts", "-t", "own fold asking of its own type parameter"],
+  },
 ];

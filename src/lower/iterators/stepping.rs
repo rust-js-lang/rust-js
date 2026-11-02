@@ -382,9 +382,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its `nth_back`, std's `Rev`'s `fold` and `nth`, and std's `last`, a
     /// fold (#217). Through a `&mut`, std passes `nth` and `nth_back` on,
     /// but its folds are the iterator's `try_fold` and `try_rfold`, and its
-    /// `last` its fold's (#216). One that takes evidence besides its
-    /// drops, a bound's dictionary, can't be given what each caller would:
-    /// refused.
+    /// `last` its fold's (#216). One that takes evidence of its impl's
+    /// parameters besides its drops, the sides' dictionaries of either's
+    /// `Either<L, R>`, is a function of what the runtime gives that gives
+    /// it those of `ty` (#475); of its own, which no caller would give the
+    /// same, refused.
     pub(in crate::lower) fn own_methods(
         &mut self,
         ty: ty::Ty<'tcx>,
@@ -425,25 +427,43 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // Given no drops: what std's consumers fold, through the
         // runtime, is a JS value whose type it can't name (#162).
-        if self.takes_more_than_drops(written) {
-            return Err(self.unsupported(span, &format!("an iterator's own `{name}` given a dictionary")));
+        if self.takes_of_its_own(written) {
+            return Err(self.unsupported(
+                span,
+                &format!("an iterator's own `{name}` given a dictionary of its own type parameter"),
+            ));
         }
         Ok(Some(written))
     }
 
-    /// `own_method_id`'s, the function itself.
-    fn own_method(&self, ty: ty::Ty<'tcx>, method: (&str, bool), span: Span) -> R<Option<Expr>> {
-        Ok(self
-            .own_method_id(ty, method, span)?
-            .map(|written| self.fn_ref(written)))
+    /// `own_method_id`'s, the function itself; one that takes its impl's
+    /// evidence, a function of the iterator and `n`, `nth`'s and
+    /// `nth_back`'s, that gives it those of `ty` (`user_method`, #475).
+    fn own_method(&mut self, ty: ty::Ty<'tcx>, (name, of_back): (&str, bool), span: Span) -> R<Option<Expr>> {
+        let Some(written) = self.own_method_id(ty, (name, of_back), span)? else {
+            return Ok(None);
+        };
+        if !self.takes_more_than_drops(written) {
+            return Ok(Some(self.fn_ref(written)));
+        }
+        let trait_id = match of_back {
+            true => (self.recognition().double_ended_iterator()).expect("a `DoubleEndedIterator`'s method"),
+            false => std_item(self.tcx, StdItem::Iterator),
+        };
+        let params: &[&str] = match name {
+            "last" => &[],
+            _ => &["n"],
+        };
+        Ok(Some(self.user_method(ty, trait_id, name, params, span)?.0))
     }
 
     /// The crate's iterator `ty`'s own `fold` or `rfold`, `name`, where
     /// `folds`: what it takes after its function is what the runtime's
     /// fold gives it, `unwind`, its accumulator's drop (#423), its `B`'s.
     /// The function itself where that's its first drop; else, its impl's
-    /// type parameters' drops before it, `fold_entry`'s, given those as
-    /// `ty` has them.
+    /// type parameters' drops before it, or its impl's evidence, its sides'
+    /// dictionaries of an `Either<L, R>` (#475), `fold_entry`'s, given those
+    /// as `ty` has them.
     fn own_fold(&mut self, ty: ty::Ty<'tcx>, (name, folds): (&str, bool), span: Span) -> R<Option<Expr>> {
         if !folds {
             return Ok(None);
@@ -456,8 +476,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let trait_id = self
             .tcx
             .trait_of_assoc(self.tcx.trait_item_of(written).unwrap_or(written));
-        match (before, trait_id.and_then(|trait_id| self.fold_of(ty, (trait_id, name)))) {
+        let given = self.takes_more_than_drops(written);
+        let fold = trait_id.and_then(|trait_id| self.fold_of(ty, (trait_id, name)));
+        match (before || given, fold) {
             (true, Some(found)) => self.fold_entry(found, span).map(Some),
+            (true, None) if given => {
+                let what = format!("an iterator's own `{name}` given a dictionary");
+                Err(self.unsupported(span, &what))
+            }
             _ => Ok(Some(self.fn_ref(written))),
         }
     }

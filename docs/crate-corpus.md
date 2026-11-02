@@ -25,8 +25,8 @@ newest release its requirement allows.
 | Crate | Verdict | First refusals in its graph |
 |---|---|---|
 | strum 0.27 (`derive`) | runs | |
-| either 1.15 | runs (compiles: #475) | measured 2026-10-21, after ADR 0554; on 2026-11-02, at 1.19.0, its probe is refused: an iterator's own `rfold` given a dictionary |
-| itertools 0.14 | compiles (refused: #473) | on 2026-11-02 refused: a module's `use` of `None` as `ProductEnded` beside its import by its name; measured 2026-10-22, after ADR 0552's amendment: its probe is refused at `collect_vec()` of a `chunk_by` group's `copied()`, a `Group` whose `Drop` the library's `collect_vec` takes none of |
+| either 1.15 | runs | measured 2026-11-02, at 1.19.0, after ADR 0687's amendment (#475): its own `rfold` and `nth_back` given its sides' dictionaries |
+| itertools 0.14 | compiles (refused: #473) | on 2026-11-02 refused: a `FilterMap` of an iterator given as it is, `FilterMapOk::rfold`'s, stepped from its back; measured 2026-10-22, after ADR 0552's amendment: its probe is refused at `collect_vec()` of a `chunk_by` group's `copied()`, a `Group` whose `Drop` the library's `collect_vec` takes none of |
 | indexmap 2.11 | runs | a `Map`, rustc builds it (ADR 0424) |
 | bitflags 2.9 | runs | |
 | smallvec 1.15 | runs (compiles: #476) | on 2026-11-02, at 1.16.4, its probe is refused: `size_of` of a type parameter |

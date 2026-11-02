@@ -107,3 +107,34 @@ fold takes is dropped once.
 [ADR 0711](0711-what-stops-early-steps-by-try-fold.md): what stops early,
 `any`, `all`, `find`, `position`, `try_fold` and `eq`, steps by std's
 `try_fold`, which `skip` makes its source's `nth(n - 1)`.
+
+## Amendment (2026-11-02): its own methods given its impl's dictionaries (#475)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; valid Rust was
+refused. either's `impl<L, R> DoubleEndedIterator for Either<L, R> where
+L: DoubleEndedIterator, R: DoubleEndedIterator<Item = L::Item>` writes its
+own `rfold` and `nth_back`, each taking `L`'s and `R`'s dictionaries, so its
+probe's `evens_or_odds(false).rev().collect()` was refused, "an
+iterator's own `rfold` given a dictionary", and itertools' own `fold`s
+with it.
+
+**An iterator's own `fold`, `nth`, `last`, `rfold` and `nth_back` that
+take evidence of its impl's parameters are given the evidence of the type
+stepped, by a function of what the runtime gives them**: a fold's
+`(iterator, init, f, unwind) => twoDoubleEndedIterator_rfold(iterator,
+init, f, { next: $next }, { next_back: $nextBack }, ..)`, `fold_entry`'s,
+as one taking its impl's drops before its own was; an `nth`'s `(iterator,
+n) => ..`, `user_method`'s. Evidence of the method's own parameters, a
+fact of a fold's `B`, which the runtime's fold gives no type of, is still
+refused, "given a dictionary of its own type parameter"
+(`takes_of_its_own`, `traits/given.rs`).
+
+- Held by `test/crates/pairs/own_back_methods_given_dictionaries`, a
+  consumer stepping the library's `Two<L, R>` of two filters from either
+  end, and corpus `own_back_methods_given_dictionaries`, the crate's own,
+  each against native Rust; the diagnostics test "an iterator's own fold
+  asking of its own type parameter"; the crate corpus's either probe, which
+  runs the same as native. Mutations `own-fold-impl-dictionaries-ungiven`,
+  `own-nth-impl-dictionaries-ungiven`, `own-method-of-its-own-ungiven`
+  (`lower/iterators/stepping.ts`) and `its-own-is-its-impls`
+  (`lower/traits/given.ts`).

@@ -186,6 +186,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || !self.facts_asked(id).is_empty()
     }
 
+    /// Whether what `id`, an impl's method, takes besides its drops is of
+    /// its own parameters, not only its impl's: a const's value, a bound's
+    /// dictionary or a fact of one, `B: Clone` of a fold's `B`. What it takes
+    /// of its impl's a caller gives of the type it knows, the sides'
+    /// dictionaries of an `Either<L, R>`'s `rfold` (#475); of its own, a
+    /// caller giving it no type of them, the runtime's fold, can't.
+    pub(in crate::lower) fn takes_of_its_own(&self, id: DefId) -> bool {
+        let impls = self.tcx.generics_of(id).parent_count as u32;
+        let of_its_own = |ty: Ty<'tcx>| {
+            ty.walk()
+                .filter_map(|arg| arg.as_type())
+                .any(|part| matches!(part.kind(), ty::Param(param) if param.index >= impls))
+        };
+        const_params(self.tcx, id).iter().any(|param| param.index >= impls)
+            || bounds(self.tcx, self.krate.foreign, self.krate.given, id)
+                .iter()
+                .any(|tr| tr.args.types().any(of_its_own))
+            || self.facts_asked(id).iter().any(|&(index, _)| index >= impls)
+    }
+
     /// What a body takes after its own parameters, `evidence_slots`'
     /// order, each named and given to what lowers it: its caller's
     /// location, `location` (ADR 0427); a const parameter's value, `N` (ADR

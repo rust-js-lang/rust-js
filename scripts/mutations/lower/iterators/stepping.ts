@@ -327,4 +327,31 @@ export const mutations: Mutation[] = [
       "^own_folds_unwind.rs$|^own_folds_unwind with",
     ],
   },
+  {
+    name: "own-fold-impl-dictionaries-ungiven",
+    breaks:
+      "an iterator's own `fold` or `rfold` that takes its impl's dictionaries, either's `Either<L, R>`'s, is called by the runtime given none of them, and throws on `undefined.next_back` (#475)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "        match (before || given, fold) {\n",
+    replace: "        match (before, fold) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_back_methods_given_dictionaries.rs$"],
+  },
+  {
+    name: "own-nth-impl-dictionaries-ungiven",
+    breaks:
+      "an iterator's own `nth` or `nth_back` that takes its impl's dictionaries is called by the runtime given none of them (#475)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "        if !self.takes_more_than_drops(written) {\n            return Ok(Some(self.fn_ref(written)));\n",
+    replace: "        if true {\n            return Ok(Some(self.fn_ref(written)));\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_back_methods_given_dictionaries.rs$"],
+  },
+  {
+    name: "own-method-of-its-own-ungiven",
+    breaks:
+      "an iterator's own `fold` asking a fact of its own `B`, which the runtime's fold gives no type of, is given one of `()` (#475)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "        if self.takes_of_its_own(written) {\n",
+    replace: "        if false {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "own fold asking of its own type parameter"],
+  },
 ];
