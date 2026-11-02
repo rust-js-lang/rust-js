@@ -3,7 +3,8 @@
 Status: Accepted. Amends tidy's `and tests`, which
 [0672](0672-a-property-a-test-reads-is-read-once.md) amended for a getter's
 read. Amended below: a binding read before a test that runs code stays
-before it; and a chain whose `if`s `settle branches` made is joined.
+before it; a chain whose `if`s `settle branches` made is joined; a chain
+with an `else` is one `if`; and a getter's value stays bound (#485).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: the nested `if`s
 are the JS MIR made of the chain, its tests in the order written and each
@@ -210,3 +211,31 @@ chain, which reads it where `__DEV__` is false (Alternatives above).
 Held by the corpus case `let_chain_else_of_an_optional_read` against
 native Rust, and the mutations of `tidy/logicals/chains.ts` and
 `optional-path-not-a-read` (`tidy/logicals.ts`).
+
+## Amendment: a getter's value stays bound (2026-11-02, #485)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results changed.
+The amendment above folded a chain's binding into each test that reads
+it, its value a path of properties (`read_of_a_path`), but asked nothing
+of how often a getter would then run. React DOM's
+`hasSelectionCapabilities`, `node_name == "input" &&
+matches!(input.r#type().as_str(), "text" | "search" | ..)` inside an `||`,
+printed `nodeName === "input" && (elem.type === "text" || elem.type ===
+"search" || ..)`, the getter read once for each alternative, with a dead
+`const type = elem.type;` in the branch (rd636). Of a getter that counts
+its reads, `matches!(input.kind(), 2 | 1)` read `1` then `2` and answered
+`false` where Rust, reading `1` once, answers `true`.
+
+**A read a getter may answer (`Known::Getter`) is no path the fold, or
+ADR 0946's `skipped`, writes in a test's place**: `read_of_a_path` is
+false of it, so the chain keeps its `if`s and the `const` reads it once,
+where Rust does, as before rd614 b: `if (nodeName === "input") { const
+type = elem.type; if (type === "text" || ..) { return true; } }`.
+Upstream's single expression reads `elem.type` once for each test, which
+Rust doesn't. The two passes' lists of what runs code, which differed by
+`++`, are one, `logicals::runs_code`; a getter's read in a test isn't in
+it, as it changes nothing a binding, which reads no getter now, reads.
+
+Held by `test/lowering-or-patterns.test.ts`'s "an or-pattern of a
+getter's value inside a chain reads it once", which counts the getter's
+reads, and the mutation `getter-read-a-path` (`tidy/logicals.ts`).

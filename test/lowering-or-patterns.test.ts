@@ -128,6 +128,29 @@ pub fn settled<T: Thenable>(thenable: &T) -> bool {
   expect([lib.settled(thenable), reads]).toEqual([true, 1]);
 });
 
+// React DOM's hasSelectionCapabilities: the `matches!` between a chain's
+// tests, its getter's value bound between them, is read once, where Rust
+// reads it, not once for each alternative the chain's one `if` tests
+// (rd636, #485).
+test("an or-pattern of a getter's value inside a chain reads it once", async () => {
+  const { js, dir } = compiled("or-pattern-getter-chained", `pub trait Input {
+    #[cfg_attr(rust_js, rust_js::link_name = "get kind")]
+    fn kind(&self) -> u32 {
+        unreachable!()
+    }
+}
+
+pub fn capable<T: Input>(name: &str, input: &T, editable: bool) -> bool {
+    !name.is_empty() && ((name == "input" && matches!(input.kind(), 2 | 1)) || name == "textarea" || editable)
+}
+`);
+  expect(js.match(/input\.kind/g)).toHaveLength(1);
+  const lib = await import(join(dir, "lib.js"));
+  let reads = 0;
+  const input = { get kind() { reads += 1; return reads; } };
+  expect([lib.capable("input", input, false), reads]).toEqual([true, 1]);
+});
+
 // React DOM's updateInput: two `!matches!(js::classify(..), Kind::Function(_)
 // | Kind::Symbol(_) | Kind::Bool(_))` in one function, `type`'s and
 // `name`'s, each `typeof v !== "function" && .. "symbol" && .. "boolean"`,

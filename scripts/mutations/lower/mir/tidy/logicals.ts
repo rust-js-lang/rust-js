@@ -623,6 +623,15 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "getter-read-a-path",
+    breaks:
+      "a let chain's binding of a getter's value, `matches!(input.kind(), 2 | 1)` between its tests, is written into each test, `input.kind !== 2 && input.kind !== 1`, the getter read once for each where Rust reads it once (#485, rd636)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "    if reads_a_getter(e) {\n        return false;\n    }\n    match &e.kind {\n",
+    replace: "    match &e.kind {\n",
+    tests: ["test/lowering-or-patterns.test.ts", "-t", "inside a chain reads it once"],
+  },
+  {
     name: "negated-and-untruthed",
     breaks:
       "a value's test negated is the value, not its truth: `!o ? false : f()` is `o && f()`, `undefined` where `o` is, not `false`, and `!o ? false : true` is `o`, the object, not `true`",

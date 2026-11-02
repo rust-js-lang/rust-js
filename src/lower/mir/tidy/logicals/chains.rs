@@ -93,12 +93,7 @@ fn chained(list: &[Stmt], label: &str) -> Option<(usize, Vec<Stmt>)> {
             return false;
         };
         let mut found = false;
-        let mut called = |e: &Expr| {
-            found |= matches!(
-                e.kind,
-                ExprKind::Call(..) | ExprKind::New(..) | ExprKind::Assigned(..) | ExprKind::Await(_)
-            )
-        };
+        let mut called = |e: &Expr| found |= runs_code(e);
         test.each(&mut called);
         let k = (then.iter())
             .take_while(|s| matches!(&s.kind, StmtKind::Const(_, value) if read_of_a_path(value)))

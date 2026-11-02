@@ -3125,7 +3125,10 @@ export function isAdult(p) {
   options.channel.readable; .. } else { .. }`, not the code after it
   copied into an early `return`
   ([ADR 0842](../../decisions/0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md),
-  amended).
+  amended). A binding of a value a getter may give, a binding's property,
+  `matches!(input.r#type().as_str(), "text" | "url")`, stays a `const`
+  read once, `const type = elem.type; if (type === "text" || type ===
+  "url")`, as Rust reads it once (#485).
 - A `let` the program wrote stays as it wrote it, one an `if let` then
   takes apart too, `let types = prev.types.borrow().clone(); if dev &&
   let Some(types) = types && ..`: `const types = prev.types; if (dev &&
