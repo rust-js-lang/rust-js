@@ -551,4 +551,22 @@ export const mutations: Mutation[] = [
     replace: "        Some(_) => tcx.crate_name(krate),\n",
     tests: ["test/crates.test.ts", "-t", "crate_named_core"],
   },
+  {
+    name: "owned-by-return-of-a-library-unread",
+    breaks:
+      "a library's function whose return alone owns a callback is taken to keep it apart, so its consumer's callbacks count the library's request, which a library that counts none hands it: refused",
+    file: "src/lower/library.rs",
+    find: "            .is_some_and(|item| item.calling.owned_by_return.contains(&index))\n",
+    replace: "            .is_some_and(|item| item.calling.owned_by_return.contains(&index) && false)\n",
+    tests: ["test/crates.test.ts", "-t", "owns its callbacks alone"],
+  },
+  {
+    name: "owned-by-return-unexported",
+    breaks:
+      "a library's contract says nothing of what its functions' returns own, so its consumer's callbacks count the library's request: refused",
+    file: "src/lower/library.rs",
+    find: "                owned_by_return: owned_by_return.of(id),\n",
+    replace: "                owned_by_return: Vec::new(),\n",
+    tests: ["test/crates.test.ts", "-t", "owns its callbacks alone"],
+  },
 ];

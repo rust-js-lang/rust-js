@@ -1938,6 +1938,12 @@ export function rename(payload, name) {
 - **A `OnceCell` of its own is `{ value }`**, and one only its function
   reads and sets is its `let`. `get_or_init` and `get_mut` of a field
   have a handle on it.
+- **Callbacks' `Rc<OnceCell<Weak<T>>>`, set once right after the call
+  they're given to returns the `Rc<T>`**, and read by `cell.get()
+  .and_then(Weak::upgrade)`, is that `Rc`'s `let`, `let request; ..
+  request = createRequest(..)`, where what the call returns alone owns
+  them ([ADR 0317](../../decisions/0317-once-cells.md#amendment-callbacks-handle-on-what-owns-them-is-its-let);
+  [an example](../for-js-developers/advanced.md)).
 - What's set to a cell of a `()` or an `Option`, which look like `None`,
   is boxed, so the cell set is never `undefined`
   ([ADR 0317](../../decisions/0317-once-cells.md)).

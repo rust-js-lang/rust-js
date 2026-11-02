@@ -115,14 +115,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // Its handle on itself, where it reads one: its `Rc`'s variable, its
         // own name, and the cell it captured no JS (`analysis/self_handles.rs`,
-        // ADR 0843, amended).
+        // ADR 0843, amended); or on what owns it, its owner's `let` (ADR
+        // 0317, amended).
         let mut captured = captured;
         let own = match self.krate.self_handles.made_of(state.body.source.def_id(), def_id) {
-            Some(handle) => {
-                if let Some(cell) = captured.get_mut(handle.capture) {
+            Some((capture, handle)) => {
+                if let Some(cell) = captured.get_mut(capture) {
                     *cell = Value::Expr(Expr::undefined());
                 }
-                Some(Expr::var(&state.locals.names[handle.handle]))
+                Some(Expr::var(&state.locals.names[handle]))
             }
             None => None,
         };

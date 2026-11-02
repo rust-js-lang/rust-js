@@ -552,4 +552,13 @@ export const mutations: Mutation[] = [
     replace: "                                bindings::reads_a_nullable_value(self.tcx, def_id, args)\n",
     tests: ["test/corpus.test.ts", "-t", "^untagged_null_option_held.rs$"],
   },
+  {
+    name: "owner-handle-undeclared",
+    breaks:
+      "an owner handle's cell is no `let`, so the call that makes the request assigns a variable never declared, which a module's strict JS throws at",
+    file: "src/lower/mir/structure.rs",
+    find: "                out.push(StmtKind::Let(name, None).at(self.js_span(span)));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^owner_handle.rs$"],
+  },
 ];

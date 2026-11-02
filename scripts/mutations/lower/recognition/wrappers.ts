@@ -429,4 +429,24 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rc_from_box.rs$"],
   },
+  {
+    name: "unwrap-or-else-unrecognized",
+    breaks:
+      "an `Option`'s `unwrap_or_else` isn't known to give its payload, so a request made of a callback's `Some` doesn't own it, and its callbacks' handle is counted where nothing counts it",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "        \"as_ref\" | \"and_then\" | \"unwrap\" | \"unwrap_or\" | \"unwrap_or_else\" | \"unwrap_or_default\" | \"expect\"\n",
+    replace: "        \"as_ref\" | \"and_then\" | \"unwrap\" | \"unwrap_or\" | \"unwrap_or_default\" | \"expect\"\n",
+    tests: ["test/corpus.test.ts", "-t", "^owner_handle.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "once-get-unrecognized",
+    breaks:
+      "a `OnceCell`'s `get` isn't known as its read, so a callback's read of its owner's cell isn't found, and its handle is counted where nothing counts it",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "        Some(OnceOp::Get) if tcx.item_name(id).as_str() == \"get\" => return Some(HandleStep::OnceGet),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^owner_handle.rs$"],
+    snapshots: true,
+  },
 ];

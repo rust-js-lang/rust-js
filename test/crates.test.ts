@@ -253,6 +253,24 @@ test("a library that reads no count counts no Rc, and a crate counting one it ha
   expect(contract(holder).counted_rcs).toEqual([{}]);
 }, 300_000);
 
+// ADR 0317, amended: a library's request owns the callbacks it's given
+// alone, and its contract says so; its consumer's callbacks, made before the
+// request and reading it through a `OnceCell` of its `Weak`, close over the
+// request's `let`, as React's Fizz server's entries do upstream.
+test("a library's request that owns its callbacks alone is its consumer's callbacks' let", () => {
+  const out = chain(pairs, "owner_handle", ["dep", "app"]);
+  const createRequest = contract(out).items.find((item: { rust_path: string }) => item.rust_path === "dep::create_request");
+  expect(createRequest.owned_by_return).toEqual([1, 2]);
+  // Of a public field, which another crate may clone, none.
+  const openRequest = contract(out).items.find((item: { rust_path: string }) => item.rust_path === "dep::open_request");
+  expect(openRequest.owned_by_return).toBeUndefined();
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toContain("  let request;\n  const onAllReady = () => {\n");
+  expect(app).toContain("  request = createRequest(name, onAllReady, onShellReady);\n  return request;\n");
+  expect(app).not.toContain("strong");
+  expect(readFileSync(join(out, "dep", "lib.js"), "utf8")).not.toContain("strong");
+}, 300_000);
+
 // #374, ADR 0960: a library checks its hooks' `RefCell<Vec<Rc<dyn Fn()>>>`,
 // borrowed while they run; its consumer's `RefCell<Vec<Rc<Node>>>` isn't one
 // that may be it, a `Vec`'s `dyn` no `Node`, so its borrows aren't checked.

@@ -27,6 +27,7 @@ mod namespaces;
 pub(super) use namespaces::{Through, module_paths, namespace_in, namespace_of};
 mod naming;
 mod only_called;
+pub(super) mod owned_by_return;
 mod plain_locals;
 mod rc_counts;
 mod scopes;
@@ -539,8 +540,8 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub mutated: HashSet<Ty<'tcx>>,
     /// The `Rc`s counted, whose counts the crate reads (ADR 0320).
     pub counted: Counted<'tcx>,
-    /// Each closure's handle on itself, of those uncounted (ADR 0843,
-    /// amended).
+    /// Each closure's handle on itself, and closures' on what owns them,
+    /// of those uncounted (ADRs 0843 and 0317, amended).
     pub self_handles: SelfHandles<'tcx>,
     /// Each function's scope struct, whose methods are functions declared
     /// in it (ADR 1043).
@@ -958,9 +959,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // counts none of, which that library's contract decides for every
     // consumer, refusing one that would count it: only what the crate's
     // own calls give (ADR 0852, amended).
-    // Each closure's handle on itself, whose upgrades ask no count (ADR
-    // 0843, amended).
-    let mut self_handles = SelfHandles::new(tcx, all_bodies);
+    // Each closure's handle on itself or on what owns them, whose upgrades
+    // ask no count (ADRs 0843, 0317, amended), a library's owner by contract.
+    let mut self_handles = SelfHandles::new(tcx, all_bodies, &|id, index| foreign.owned_by_return(id, index));
     let counted_with = |closure_facts: &ClosureFacts| {
         let mut given: HashSet<(DefId, u32)> = HashSet::new();
         loop {

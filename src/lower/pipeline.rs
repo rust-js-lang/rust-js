@@ -1475,6 +1475,7 @@ pub fn lower_crate<'tcx>(
                         eq_by_address: &eq_by_address,
                         gives_argument: &gives_argument,
                         built: cell_borrows.pointers().built().collect(),
+                        owned_by_return: self_handles.owned_by_return(),
                     },
                     (&trait_impls, &held.modules),
                     dependencies,

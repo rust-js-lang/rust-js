@@ -353,7 +353,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0314 Each std data structure works or is refused, and coverage only grows](0314-std-data-structures.md)
 - [0315 A `Vec`'s capacity does nothing, and its edits are std's](0315-vec-capacity-and-edits.md) *(amended by 0774: the room asked is checked)*
 - [0316 A `LinkedList` is an array, as a `VecDeque` is](0316-linked-list.md)
-- [0317 A `OnceCell` is a `{ value }` of an `Option`, set once](0317-once-cells.md) *(amended by 0847: in a field it's the property; a `set` of one still empty is assigned, else tested, without `$onceSet`)*
+- [0317 A `OnceCell` is a `{ value }` of an `Option`, set once](0317-once-cells.md) *(amended by 0847: in a field it's the property; a `set` of one still empty is assigned, else tested, without `$onceSet`; amended: callbacks' `Rc<OnceCell<Weak<T>>>` of what owns them, set once after the call, is its `let`)*
 - [0318 A `LazyCell` makes its value when it's first used, as Rust's does](0318-lazy-cells.md)
 - [0319 A `Cow` is its enum, made owned by a clone of what it borrowed](0319-cows.md)
 - [0320 An `Rc` whose counts are read is counted, as Rust counts it](0320-counted-rcs.md) *(amended by 0843: a `Weak` nothing upgrades counts nothing)*
@@ -845,7 +845,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1042 A loop over an array counts its indices: `for (let i = 0; i < v.length; i++)`](1042-a-loop-over-an-array-counts-its-indices.md) *(amended: an indexed list, a `NodeList`, `#[rust_js::indexed]`, rd274; a `Vec`'s `extend` of one pushes each in an index loop)*
 - [1043 A function's scope struct is its scope: its methods are functions declared in it](1043-a-functions-scope-struct-is-its-scope.md) *(rd345, the user's decision, B1; amended, B2: its fields are the function's variables; amended, rd536: its function may be generic)*
 - [1046 An untagged enum's arrays are told by their length, and changed in place](1046-an-untagged-enums-arrays-are-told-by-their-length.md) *(rd490)*
-- [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md) *(amended: a closure's handle on itself is its own name)*
+- [0843 A `Weak` nothing upgrades is the value itself](0843-a-weak-nothing-upgrades-is-the-value-itself.md) *(amended: a closure's handle on itself is its own name; extended by 0317's amendment: callbacks' upgrade of what alone owns them asks no count)*
 - [0844 A library that reads no count counts no `Rc`](0844-a-library-that-reads-no-count-counts-no-rc.md) *(extended by 0850: an `Rc` is `Defined`, a counted one given to JS refused; amended by 0852: each type's `Rc`s counted apart, and its contract lists them)*
 - [0845 An `Rc`'s declaration is what it points at](0845-an-rcs-declaration-is-what-it-points-at.md)
 - [0847 A `OnceCell` in a field is the property, absent until it's set](0847-a-oncecell-field-is-absent-until-set.md)

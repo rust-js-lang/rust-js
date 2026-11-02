@@ -735,14 +735,25 @@ pub(crate) fn holds_a_function<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
 }
 
 /// What a call of std's does in a closure's handle on itself, an `Rc` of a
-/// `RefCell` of the `Weak` its own `Rc` was made of (ADR 0843, amended):
-/// each step of making the cell, setting it and reading it back.
+/// `RefCell` of the `Weak` its own `Rc` was made of (ADR 0843, amended),
+/// or on what owns it, an `Rc` of a `OnceCell` of the `Weak` of the `Rc`
+/// it's given to (ADR 0317, amended): each step of making the cell,
+/// setting it and reading it back, and of what owns it, making it.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum HandleStep {
     /// `Rc::new` or `Arc::new`.
     RcNew,
     /// `RefCell::new`.
     CellNew,
+    /// `OnceCell::new` or `OnceLock::new`.
+    OnceNew,
+    /// A `OnceCell`'s or a `OnceLock`'s `get`.
+    OnceGet,
+    /// A `OnceCell`'s or a `OnceLock`'s `set`.
+    OnceSet,
+    /// `Option::unwrap_or`, `unwrap_or_else`, `unwrap_or_default` or
+    /// `expect`: its payload, or what's made in its place.
+    UnwrapOr,
     /// An `Rc`'s `Clone::clone`.
     RcClone,
     /// An `Rc`'s `Deref::deref`.
@@ -796,6 +807,12 @@ pub(crate) fn handle_step<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericA
     if is_rc_new(tcx, id) {
         return Some(HandleStep::RcNew);
     }
+    match once_method(tcx, id) {
+        Some(OnceOp::New) => return Some(HandleStep::OnceNew),
+        Some(OnceOp::Set) => return Some(HandleStep::OnceSet),
+        Some(OnceOp::Get) if tcx.item_name(id).as_str() == "get" => return Some(HandleStep::OnceGet),
+        _ => {}
+    }
     let imp = tcx.inherent_impl_of_assoc(id)?;
     let owner = tcx.type_of(imp).instantiate_identity().skip_normalization();
     let name = tcx.item_name(id);
@@ -811,13 +828,14 @@ pub(crate) fn handle_step<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericA
                 _ => HandleStep::BorrowMut,
             })
         }
-        "as_ref" | "and_then" | "unwrap"
+        "as_ref" | "and_then" | "unwrap" | "unwrap_or" | "unwrap_or_else" | "unwrap_or_default" | "expect"
             if adt_of(Some(owner)).is_some_and(|adt| tcx.is_lang_item(adt, LangItem::Option)) =>
         {
             Some(match name.as_str() {
                 "as_ref" => HandleStep::AsRef,
                 "and_then" => HandleStep::AndThen,
-                _ => HandleStep::Unwrap,
+                "unwrap" => HandleStep::Unwrap,
+                _ => HandleStep::UnwrapOr,
             })
         }
         _ => None,

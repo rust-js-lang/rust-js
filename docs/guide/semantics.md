@@ -290,6 +290,11 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   cell it captured and set right after it's made, always gives that `Rc`,
   as the closure runs only borrowed from it: it asks no count, and is the
   closure's own name ([0843](../decisions/0843-a-weak-nothing-upgrades-is-the-value-itself.md#amendment-a-closures-handle-on-itself-is-its-own-name)).
+  Callbacks' upgrade of the `Weak` in an `Rc<OnceCell<..>>` they share,
+  set once right after the call they're given to returns its `Rc`, gives
+  that `Rc` once it's set and `None` before, where what the call returns
+  alone owns them, so they run only while it's alive: it asks no count,
+  and the cell is the `Rc`'s `let` ([0317](../decisions/0317-once-cells.md#amendment-callbacks-handle-on-what-owns-them-is-its-let)).
 - **A `&mut` std gives to a number or a string in a collection is a
   handle on it,** where it's used as a value: `iter_mut()`, `values_mut()`,
   `get_mut`, `last_mut()` and a `for` over `&mut m`, each writing the slot

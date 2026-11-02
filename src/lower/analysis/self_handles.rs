@@ -38,6 +38,10 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 use std::collections::{HashMap, HashSet};
 
+mod owners;
+use super::owned_by_return::OwnedByReturn;
+use owners::{OwnerHandle, once_weak, owner_made};
+
 /// A closure's handle on itself, of its maker and of the closure.
 pub(crate) struct SelfHandle<'tcx> {
     /// The body that makes the closure, its cell and its `Rc`.
@@ -64,22 +68,38 @@ pub(crate) struct SelfHandle<'tcx> {
     upgrades: Vec<Span>,
 }
 
-/// Each closure's handle on itself the crate makes.
+/// Each closure's handle on itself the crate makes, and closures' on what
+/// owns them (`owners`), and what the crate's functions' returns alone own,
+/// which proves the latter.
 #[derive(Default)]
 pub(crate) struct SelfHandles<'tcx> {
     handles: Vec<SelfHandle<'tcx>>,
+    owners: Vec<OwnerHandle<'tcx>>,
+    owned: OwnedByReturn,
 }
 
 impl<'tcx> SelfHandles<'tcx> {
-    /// What `bodies` make, read of their MIR.
-    pub(crate) fn new(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> SelfHandles<'tcx> {
+    /// What `bodies` make, read of their MIR; `foreign` says whether what
+    /// a library's function returns alone owns its parameter, as its
+    /// contract does (`owned_by_return`).
+    pub(crate) fn new(
+        tcx: TyCtxt<'tcx>,
+        bodies: &[&Body<'tcx>],
+        foreign: &dyn Fn(DefId, u32) -> bool,
+    ) -> SelfHandles<'tcx> {
+        let owned_by_return = OwnedByReturn::new(tcx, bodies, foreign);
+        let owned = |id: DefId, index| owned_by_return.owns(id, index) || foreign(id, index);
+        let owned: &dyn Fn(DefId, u32) -> bool = &owned;
         let of: HashMap<DefId, &mir::Body<'tcx>> = (bodies.iter())
             .filter_map(|body| Some((body.def_id, &body.mir.as_ref()?.body)))
             .collect();
-        let mut handles = Vec::new();
+        let mut handles: Vec<SelfHandle<'tcx>> = Vec::new();
+        let mut owners: Vec<OwnerHandle<'tcx>> = Vec::new();
         for (&maker, &body) in &of {
             let cells: Vec<Local> = (body.local_decls.iter_enumerated())
-                .filter(|(_, decl)| user_variable(decl) && held_weak(tcx, decl.ty).is_some())
+                .filter(|(_, decl)| {
+                    user_variable(decl) && (held_weak(tcx, decl.ty).is_some() || once_weak(tcx, decl.ty).is_some())
+                })
                 .map(|(local, _)| local)
                 .collect();
             if cells.is_empty() {
@@ -89,38 +109,84 @@ impl<'tcx> SelfHandles<'tcx> {
             for cell in cells {
                 if let Some(mut handle) = made(tcx, (maker, body, &uses), cell)
                     && let Some(&closure) = of.get(&handle.closure)
-                    && let Some((read, own, upgrades)) = read(tcx, closure, handle.capture)
+                    && let Some((read, own, upgrades)) = read(tcx, closure, (handle.capture, false))
                 {
                     handle.read = read;
                     handle.own = own;
                     handle.upgrades = upgrades;
                     handles.push(handle);
                 }
+                if let Some(owner) = owner_made(tcx, (maker, body, &uses), cell, (&of, owned)) {
+                    owners.push(owner);
+                }
             }
         }
-        SelfHandles { handles }
+        // A closure reads one handle at most, its own or its owner's.
+        let read: Vec<DefId> = (handles.iter().map(|h| h.closure))
+            .chain(owners.iter().flat_map(|o| o.closures.iter().map(|&(c, _)| c)))
+            .collect();
+        let once = |closure: &DefId| read.iter().filter(|&c| c == closure).count() == 1;
+        handles.retain(|h| once(&h.closure));
+        owners.retain(|o| o.closures.iter().all(|(c, _)| once(c)));
+        SelfHandles {
+            handles,
+            owners,
+            owned: owned_by_return,
+        }
+    }
+
+    /// What the crate's functions' returns alone own, which its contract
+    /// says (ADR 0317, amended).
+    pub(crate) fn owned_by_return(&self) -> &OwnedByReturn {
+        &self.owned
     }
 
     /// Does the `Weak::upgrade` written at `span`, in `body`, ask no count:
-    /// one of a handle's chain, which always gives its `Rc` (`counted_rcs`)?
+    /// one of a handle's chain, which always gives its `Rc`, or of an owner
+    /// handle's, which gives it once it's set (`counted_rcs`)?
     pub(crate) fn asks_no_count(&self, body: DefId, span: Span) -> bool {
         (self.handles.iter()).any(|h| h.closure == body && h.upgrades.contains(&span))
+            || (self.owners.iter()).any(|o| o.upgrades.contains(&(body, span)))
     }
 
     /// Keep those `counts` doesn't count, which are no JS; a counted one is
     /// lowered as the program wrote it.
     pub(crate) fn uncounted(&mut self, counts: impl Fn(Ty<'tcx>) -> bool) {
         self.handles.retain(|h| !counts(h.pointee));
+        self.owners.retain(|o| !counts(o.pointee));
     }
 
-    /// The handle `body` makes of `closure`, if any.
-    pub(crate) fn made_of(&self, body: DefId, closure: DefId) -> Option<&SelfHandle<'tcx>> {
-        (self.handles.iter()).find(|h| h.maker == body && h.closure == closure)
+    /// The handle `body` makes of `closure`, if any: which of its captures
+    /// is the cell's clone, no JS, and the local of the `Rc` that names it,
+    /// the closure's own, or its owner's the cell is the variable of.
+    pub(crate) fn made_of(&self, body: DefId, closure: DefId) -> Option<(usize, Local)> {
+        let own = (self.handles.iter()).find(|h| h.maker == body && h.closure == closure);
+        own.map(|h| (h.capture, h.handle)).or_else(|| {
+            (self.owners.iter().filter(|o| o.maker == body)).find_map(|o| {
+                let &(_, capture) = o.closures.iter().find(|&&(c, _)| c == closure)?;
+                Some((capture, o.handle))
+            })
+        })
     }
 
-    /// The handle `closure` reads itself by, if any.
-    pub(crate) fn read_by(&self, closure: DefId) -> Option<&SelfHandle<'tcx>> {
-        self.handles.iter().find(|h| h.closure == closure)
+    /// Each block of `closure` whose call gives the `Rc` its handle names,
+    /// its own or its owner's, to the local it gives it to, if any.
+    pub(crate) fn read_by(&self, closure: DefId) -> Option<&HashMap<BasicBlock, Local>> {
+        let own = self.handles.iter().find(|h| h.closure == closure);
+        own.map(|h| &h.own).or_else(|| {
+            self.owners
+                .iter()
+                .find_map(|o| o.read.get(&closure).map(|(_, own)| own))
+        })
+    }
+
+    /// The blocks of `body` whose call makes an owner handle's cell, each
+    /// the `let` of the local of the `Rc` it's the variable of.
+    pub(crate) fn declared(&self, body: DefId) -> HashMap<BasicBlock, Local> {
+        (self.owners.iter())
+            .filter(|o| o.maker == body)
+            .map(|o| (o.declared, o.handle))
+            .collect()
     }
 
     /// What `body` writes nothing of: its handles' cells' making and
@@ -135,6 +201,14 @@ impl<'tcx> SelfHandles<'tcx> {
                 at.extend(&h.read);
             }
         }
+        for o in &self.owners {
+            if o.maker == body {
+                at.extend(&o.made);
+            }
+            if let Some((read, _)) = o.read.get(&body) {
+                at.extend(read);
+            }
+        }
         at
     }
 }
@@ -142,13 +216,13 @@ impl<'tcx> SelfHandles<'tcx> {
 /// Where each local is assigned whole, and where it's read or written
 /// through, of `body`: what says nothing, a storage marker, a fake read or
 /// a type's ascription, neither.
-struct Uses {
+pub(super) struct Uses {
     defs: HashMap<Local, Vec<Location>>,
     uses: HashMap<Local, Vec<Location>>,
 }
 
 impl Uses {
-    fn of(body: &mir::Body<'_>) -> Uses {
+    pub(super) fn of(body: &mir::Body<'_>) -> Uses {
         let mut uses = Uses {
             defs: HashMap::new(),
             uses: HashMap::new(),
@@ -208,16 +282,21 @@ impl Uses {
         uses
     }
 
-    fn uses(&self, local: Local) -> &[Location] {
+    pub(super) fn uses(&self, local: Local) -> &[Location] {
         self.uses.get(&local).map_or(&[], Vec::as_slice)
     }
 
     /// Its one def, where it has one.
-    fn def(&self, local: Local) -> Option<Location> {
+    pub(super) fn def(&self, local: Local) -> Option<Location> {
         match self.defs.get(&local).map(Vec::as_slice) {
             Some(&[at]) => Some(at),
             _ => None,
         }
+    }
+
+    /// Each place it's assigned whole.
+    pub(super) fn defs_of(&self, local: Local) -> &[Location] {
+        self.defs.get(&local).map_or(&[], Vec::as_slice)
     }
 }
 
@@ -233,7 +312,7 @@ impl<'tcx> mir::visit::Visitor<'tcx> for Locals<'_> {
 }
 
 /// What says nothing that runs, of a statement.
-fn inert(kind: &StatementKind<'_>) -> bool {
+pub(super) fn inert(kind: &StatementKind<'_>) -> bool {
     matches!(
         kind,
         StatementKind::FakeRead(_)
@@ -256,7 +335,7 @@ fn rvalue_locals(rvalue: &Rvalue<'_>) -> Vec<Local> {
 }
 
 /// The local an operand moves or copies whole.
-fn whole(operand: &Operand<'_>) -> Option<Local> {
+pub(super) fn whole(operand: &Operand<'_>) -> Option<Local> {
     operand.place().filter(|p| p.projection.is_empty()).map(|p| p.local)
 }
 
@@ -289,7 +368,10 @@ fn call_at<'a, 'tcx>(
 }
 
 /// The statement at `at`, an assignment of a local whole.
-fn assign_at<'a, 'tcx>(body: &'a mir::Body<'tcx>, at: Location) -> Option<(&'a Place<'tcx>, &'a Rvalue<'tcx>)> {
+pub(super) fn assign_at<'a, 'tcx>(
+    body: &'a mir::Body<'tcx>,
+    at: Location,
+) -> Option<(&'a Place<'tcx>, &'a Rvalue<'tcx>)> {
     let data = &body.basic_blocks[at.block];
     match &data.statements.get(at.statement_index)?.kind {
         StatementKind::Assign(assign) => Some((&assign.0, &assign.1)),
@@ -298,7 +380,7 @@ fn assign_at<'a, 'tcx>(body: &'a mir::Body<'tcx>, at: Location) -> Option<(&'a P
 }
 
 /// Whether the terminator at `at` drops a place of `local`.
-fn drops(body: &mir::Body<'_>, at: Location, local: Local) -> bool {
+pub(super) fn drops(body: &mir::Body<'_>, at: Location, local: Local) -> bool {
     let data = &body.basic_blocks[at.block];
     at.statement_index == data.statements.len()
         && matches!(&data.terminator().kind, TerminatorKind::Drop { place, .. } if place.local == local)
@@ -477,7 +559,12 @@ fn made<'tcx>(
         .iter()
         .map(|&(at, _)| at)
         .find(|at| !body.basic_blocks[at.block].is_cleanup)?;
-    if !set_next(body, (uses.def(handle)?, first_set), &made, &moved) {
+    let after = uses.def(handle)?;
+    let after = Location {
+        statement_index: after.statement_index + 1,
+        ..after
+    };
+    if !set_next(body, (after, first_set), &made, &moved) {
         return None;
     }
     Some(SelfHandle {
@@ -533,11 +620,12 @@ fn held_weak<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     weak_pointee(tcx, args.type_at(0))
 }
 
-/// Whether from `from`, the handle's def, MIR goes on to `to`, the cell's
-/// setting, by `made`'s steps alone, and what runs nothing: a storage
-/// marker, or the drop of what was `moved` into the handle.
+/// Whether from `from`, what's next after the handle's def, MIR goes on to
+/// `to`, the cell's setting, by `made`'s steps alone, and what runs
+/// nothing: a storage marker, or the drop of what was `moved` into the
+/// handle.
 fn set_next(body: &mir::Body<'_>, (from, to): (Location, Location), made: &HashSet<Location>, moved: &[Local]) -> bool {
-    let (mut block, mut index) = (from.block, from.statement_index + 1);
+    let (mut block, mut index) = (from.block, from.statement_index);
     // Each block once at most: past that, it's gone round.
     for _ in 0..=body.basic_blocks.len() {
         let data = &body.basic_blocks[block];
@@ -555,6 +643,9 @@ fn set_next(body: &mir::Body<'_>, (from, to): (Location, Location), made: &HashS
             index += 1;
         }
         let at = body.terminator_loc(block);
+        if at == to {
+            return true;
+        }
         block = match &data.terminator().kind {
             TerminatorKind::Goto { target } => *target,
             TerminatorKind::Call {
@@ -582,12 +673,14 @@ fn set_next(body: &mir::Body<'_>, (from, to): (Location, Location), made: &HashS
 /// .and_then(Weak::upgrade).unwrap()`, and each guard's drop; the blocks
 /// whose `unwrap` gives its own `Rc`, to the local each gives it to; and
 /// where each `Weak::upgrade` is written. None where it reads the cell
-/// otherwise.
+/// otherwise. Of a `OnceCell`'s, `once`, each read is `cell.get()
+/// .and_then(Weak::upgrade)`, and the blocks those give its owner's `Rc`
+/// or `None`, to the local each gives it to (`owners`).
 #[allow(clippy::type_complexity)]
 fn read<'tcx>(
     tcx: TyCtxt<'tcx>,
     body: &mir::Body<'tcx>,
-    capture: usize,
+    (capture, once): (usize, bool),
 ) -> Option<(HashSet<Location>, HashMap<BasicBlock, Local>, Vec<Span>)> {
     let env = Local::from_usize(1);
     let uses = Uses::of(body);
@@ -658,20 +751,30 @@ fn read<'tcx>(
             if args.first().and_then(|a| whole(a)) != Some(local) {
                 return None;
             }
+            // What's given its own `Rc`, or its owner's: a local of its
+            // own, set once.
+            let owned = destination != mir::RETURN_PLACE && uses.def(destination) == Some(at);
             match (step, &args[..]) {
-                (HandleStep::RcDeref | HandleStep::Borrow | HandleStep::GuardDeref | HandleStep::AsRef, [_]) => {
+                (HandleStep::RcDeref | HandleStep::Borrow | HandleStep::GuardDeref | HandleStep::AsRef, [_])
+                    if !once =>
+                {
                     slice.push(destination);
                 }
+                (HandleStep::RcDeref | HandleStep::OnceGet, [_]) if once => slice.push(destination),
                 (HandleStep::AndThen, [_, Operand::Constant(upgrade)])
                     if fn_def(upgrade.ty())
                         .is_some_and(|(id, generics)| handle_step(tcx, id, generics) == Some(HandleStep::Upgrade))
-                        && !upgrade.span.from_expansion() =>
+                        && !upgrade.span.from_expansion()
+                        && (!once || owned) =>
                 {
                     upgrades.push(upgrade.span);
-                    slice.push(destination);
+                    if once {
+                        own.insert(at.block, destination);
+                    } else {
+                        slice.push(destination);
+                    }
                 }
-                // Its own `Rc`, to a local of its own, set once.
-                (HandleStep::Unwrap, [_]) if destination != mir::RETURN_PLACE && uses.def(destination) == Some(at) => {
+                (HandleStep::Unwrap, [_]) if !once && owned => {
                     own.insert(at.block, destination);
                 }
                 _ => return None,

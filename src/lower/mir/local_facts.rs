@@ -78,8 +78,13 @@ pub(super) struct LocalFacts<'m, 'tcx> {
     unlowered: HashSet<mir::Location>,
     /// Of a closure that reads its handle on itself: each block whose
     /// `unwrap` gives its own `Rc`, the local it gives it to, and its own
-    /// name, which that local is.
+    /// name, which that local is; of one that reads its owner's, each
+    /// whose `and_then` gives its owner's `Rc`, and the variable that is.
     own: Option<(HashMap<BasicBlock, Local>, Expr)>,
+    /// Each block whose call makes an owner handle's cell, no JS but the
+    /// `let` of the `Rc` it's the variable of, that local
+    /// (`analysis/self_handles/owners.rs`, ADR 0317, amended).
+    declares: HashMap<BasicBlock, Local>,
     /// Each `f64` or `Option<f64>` whose number is a whole one, as a
     /// `#[rust_js::whole]` binding's is (`mir_wholes`).
     wholes: HashSet<Local>,
@@ -240,10 +245,17 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
     }
 
     /// Of a block whose call gives the closure's own `Rc`, the local it's
-    /// given to and the closure's own name.
+    /// given to and the closure's own name; or its owner's, and the
+    /// variable that is.
     pub(super) fn own(&self, block: BasicBlock) -> Option<(Local, &Expr)> {
         let (blocks, name) = self.own.as_ref()?;
         blocks.get(&block).map(|&local| (local, name))
+    }
+
+    /// Of a block whose call makes an owner handle's cell, the local whose
+    /// `let` it is.
+    pub(super) fn declares(&self, block: BasicBlock) -> Option<Local> {
+        self.declares.get(&block).copied()
     }
 
     /// Whether `local` is what the program's own `Rc::new`, `Arc::new` or
@@ -332,7 +344,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let body = &mir.body;
         let def_id = body.source.def_id();
         let handles = self.krate.self_handles;
-        let own = own.and_then(|name| Some((handles.read_by(def_id)?.own.clone(), name)));
+        let own = own.and_then(|name| Some((handles.read_by(def_id)?.clone(), name)));
         let options = self.mir_option_writes(body, &mir.promoted, locals, result_held);
         // Of a closure whose maker reads what it gives back as its payload,
         // its own writes of it make it so, as its maker read of its MIR.
@@ -376,6 +388,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             quiet_cells: self.mir_quiet_cells(body, &mir.promoted),
             unlowered,
             own,
+            declares: handles.declared(def_id),
             wholes: self.mir_wholes(body, locals),
             made_pointers: self.mir_made_pointers(body),
             tried_ints: self.mir_tried_ints(body),

@@ -68,6 +68,12 @@ pub struct Calling {
     /// its name (ADR 0906).
     #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
     pub facts: BTreeSet<ItemFact>,
+    /// The parameters, by index, what it returns alone owns: each moved
+    /// into a field of the struct its `Rc` points at, which nothing reads
+    /// but to call through it (ADR 0317, amended). A consumer's closure
+    /// given one runs only while that `Rc` is alive.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub owned_by_return: Vec<u32>,
 }
 
 /// A fact of a library's function its consumers' calls read (ADR 0906):

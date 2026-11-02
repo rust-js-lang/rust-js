@@ -350,6 +350,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let Some((own, name)) = state.facts.own(block) {
                 state.in_place.insert(own, name.clone());
             }
+            // An owner handle's cell: the `let` of its owner's `Rc`, which
+            // the call that makes it assigns (`analysis/self_handles/owners.rs`,
+            // ADR 0317, amended).
+            if let Some(declared) = state.facts.declares(block) {
+                self.flush(state, &mut out)?;
+                state.locals.declared[declared] = true;
+                let name = state.locals.names[declared].clone();
+                out.push(StmtKind::Let(name, None).at(self.js_span(span)));
+            }
             out.extend(self.mir_branch(state, block, *target)?);
             return Ok(out);
         }

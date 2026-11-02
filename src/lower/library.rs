@@ -103,6 +103,9 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) gives_argument: &'a [DefId],
     /// The structs its code makes values of (ADR 1022, amended).
     pub(super) built: Vec<DefId>,
+    /// What each function's return alone owns of what it's given (ADR
+    /// 0317, amended).
+    pub(super) owned_by_return: &'a super::analysis::owned_by_return::OwnedByReturn,
 }
 
 /// What `id` asks of each of its type parameters that it asks anything of,
@@ -252,6 +255,7 @@ pub(super) fn exports<'tcx>(
         eq_by_address,
         gives_argument,
         built,
+        owned_by_return,
     } = contracts;
     let crate_name = tcx.crate_name(LOCAL_CRATE);
     let mut items: Vec<_> = functions
@@ -294,6 +298,7 @@ pub(super) fn exports<'tcx>(
                 .into_iter()
                 .filter_map(|(fact, holds)| holds.then_some(fact))
                 .collect(),
+                owned_by_return: owned_by_return.of(id),
             },
         })
         .collect();
@@ -773,6 +778,13 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// `#[rust_js::rest]` (ADR 0664)?
     pub(super) fn takes_rest(&self, id: DefId) -> bool {
         self.item(id).is_some_and(|item| item.calling.has(ItemFact::Rest))
+    }
+
+    /// Does what `id`, a library's function, returns alone own its
+    /// parameter `index`, as its contract says (ADR 0317, amended)?
+    pub(super) fn owned_by_return(&self, id: DefId, index: u32) -> bool {
+        self.item(id)
+            .is_some_and(|item| item.calling.owned_by_return.contains(&index))
     }
 
     /// Does `id`, a library's function, read `js::arguments()`, as its

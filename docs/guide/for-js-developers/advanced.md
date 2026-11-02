@@ -210,6 +210,80 @@ export function countdown(step) {
 }
 ```
 
+Callbacks made before the value they need, given to the call that makes
+it, as React's server entries make `onAllReady` before the request it
+flows, share a cell of its `Weak`, set once right after the call
+returns, so the value, which owns them, and they, which read it, make no
+cycle. Where what the call returns alone owns them, each runs only while
+the value is alive, and the cell is the value's `let`, which they close
+over: `undefined`, `None`, until it's set, so a callback called before
+reads `None`, and its `unwrap` panics as Rust's does
+([ADR 0317](../../decisions/0317-once-cells.md#amendment-callbacks-handle-on-what-owns-them-is-its-let)).
+One kept apart from the value, by a clone, a list or a field read but to
+call it, or a cell set again or read otherwise, is counted, as written.
+
+```rust
+use std::cell::OnceCell;
+use std::rc::{Rc, Weak};
+
+pub struct Request {
+    pub name: String,
+    on_all_ready: Rc<dyn Fn()>,
+}
+
+pub fn create_request(name: &str, on_all_ready: Rc<dyn Fn()>) -> Rc<Request> {
+    Rc::new(Request {
+        name: name.to_string(),
+        on_all_ready,
+    })
+}
+
+pub fn complete_all(request: &Request) {
+    let on_all_ready = &request.on_all_ready;
+    on_all_ready();
+}
+
+pub fn render(name: &str) -> Rc<Request> {
+    let request_cell: Rc<OnceCell<Weak<Request>>> = Rc::new(OnceCell::new());
+    let on_all_ready: Rc<dyn Fn()> = {
+        let cell = Rc::clone(&request_cell);
+        Rc::new(move || {
+            let request = cell.get().and_then(Weak::upgrade).unwrap();
+            println!("{} is ready", request.name);
+        })
+    };
+    let request = create_request(name, on_all_ready);
+    let _ = request_cell.set(Rc::downgrade(&request));
+    request
+}
+```
+
+```js
+import { $unwrap } from "@rust-js/runtime";
+
+export function createRequest(name, onAllReady) {
+  return {
+    name,
+    onAllReady,
+  };
+}
+
+export function completeAll(request) {
+  const onAllReady = request.onAllReady;
+  onAllReady();
+}
+
+export function render(name) {
+  let request;
+  const onAllReady = () => {
+    const request$1 = $unwrap(request);
+    console.log(`${request$1.name} is ready`);
+  };
+  request = createRequest(name, onAllReady);
+  return request;
+}
+```
+
 ## Classes
 
 A class is a `struct` for its fields and an `impl` block for its methods.

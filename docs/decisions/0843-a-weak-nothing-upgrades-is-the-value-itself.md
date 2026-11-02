@@ -3,7 +3,10 @@
 Status: Accepted. Amends [0320](0320-counted-rcs.md), whose every `Weak`
 counted the `Rc` it was made of; and fixes its counted `Weak::new()`, two
 of which weren't `Weak::ptr_eq`. Amended below (the user's decision, rd96):
-a closure's handle on itself is its own name.
+a closure's handle on itself is its own name. Extended by
+[0317](0317-once-cells.md#amendment-callbacks-handle-on-what-owns-them-is-its-let)'s
+amendment (rd573): callbacks' upgrade of what owns them asks no count
+either, where what owns them alone is proven.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A for a `Weak` nothing
 asks whether it's alive; C for a counted one's `Weak::new()`.
