@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a filter or a map a type holds, asked to be double-ended by the call that asks it of that type, isn't made knowing its back",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "                            stepped.extend(back_stepped_adapter(tcx, recognition, held, given || held_rev, &drops));\n",
+    find: "                            stepped.extend(back_stepped_adapter(tcx, recognition, held, made_apart, &drops));\n",
     replace: "",
     tests: [
       "test/corpus.test.ts",
@@ -123,7 +123,7 @@ export const mutations: Mutation[] = [
     breaks:
       "the adapter a `rev()` asks to be double-ended is made knowing its back where it's made, not by its `rev()`",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "                        if held != asked\n                            || given\n                            || held_rev\n                            || dropping_items(recognition, held, &drops)\n",
+    find: "                        if held != asked\n                            || given\n                            || held_rev\n                            || held_arg\n                            || dropping_items(recognition, held, &drops)\n",
     replace: "                        if true\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_lazy_range.rs$"],
     snapshots: true,
@@ -133,9 +133,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`rev()` of a map of a `Vec`'s items with a destructor, held in a variable, isn't made knowing its back where it's made, `$mapEnds`, but reversed after, `$rev($closing(..)).map(f)` (#205)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "                        if held != asked\n                            || given\n                            || held_rev\n                            || dropping_items(recognition, held, &drops)\n",
+    find: "                        if held != asked\n                            || given\n                            || held_rev\n                            || held_arg\n                            || dropping_items(recognition, held, &drops)\n",
     replace:
-      "                        if held != asked\n                            || given\n                            || held_rev\n",
+      "                        if held != asked\n                            || given\n                            || held_rev\n                            || held_arg\n",
     tests: ["test/corpus.test.ts", "-t", "^(rev_lazy_drops|std_rev).rs$"],
     snapshots: true,
   },
@@ -208,5 +208,52 @@ export const mutations: Mutation[] = [
     find: "    let filtered = filtered_source(tcx, adapter).or_else(|| filter_mapped_source(tcx, adapter));\n",
     replace: "    let filtered = filtered_source(tcx, adapter);\n",
     tests: ["test/corpus.test.ts", "-t", "^filter_map_of_given_from_its_back.rs$"],
+  },
+  {
+    name: "held-given-unrecorded",
+    breaks:
+      "an adapter held in a variable and given to what steps it from its back, `kept.rev()` of a `let kept = v.into_iter().filter_map(Some)`, isn't made knowing its back where it's made, and is refused (#484)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                            || held_arg\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^held_filter_map_reversed.rs$"],
+  },
+  {
+    name: "held-given-of-items-native",
+    breaks:
+      "a map of an array's items held in a variable and reversed is taken to step from its back by its own form, which a variable doesn't show, and is refused (#484)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                            let made_apart = given || held_rev || held_arg;\n",
+    replace: "                            let made_apart = given || held_rev;\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_filter_map_reversed.rs$"],
+  },
+  {
+    name: "made-in-place-taken-held",
+    breaks:
+      "an adapter made where it's reversed, `v.iter().filter(p).rev()`, is taken to be held, and made knowing its back, `$rev($filterEnds(..))`, where its own form reverses the array's items, `v.toReversed().filter(p)` (#484)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                                && !matches!(through(arg).kind, ExprKind::Call { .. })\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^held_filter_map_reversed.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "held-through-borrows-unseen",
+    breaks:
+      "what a call gives, borrowed, `it.by_ref().rev()`, is taken to be held where it's given, and the map `it` holds, std's struct, is made knowing its back besides, `$knowing($knowing(it, ..), ..)` where it was `$knowing($lent(it), ..)` (#484)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                    ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => e = arg,\n                    _ => break &body.thir[e],\n",
+    replace: "                    _ => break &body.thir[e],\n",
+    tests: ["test/corpus.test.ts", "-t", "^backs_given_behind_impls.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "path-call-uncalled",
+    breaks:
+      "a function called by its path, `last(doubled)`, isn't found as the call of its callee, so an adapter held in a variable it's given, which it steps from its back, isn't made knowing it, and is refused (#484)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                } => Some((strip(&body.thir, fun), (fn_span, &**args))),\n",
+    replace: "                } => Some((fun, (fn_span, &**args))),\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_filter_map_reversed.rs$"],
   },
 ];

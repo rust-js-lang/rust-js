@@ -218,3 +218,41 @@ $someValue)` after it where a kept value looks like `None`.**
   (`lower/iterators/knowing.ts`), `filter-map-unstepped-from-back`
   (`lower/analysis/back_stepped.ts`) and `filter-map-made-unknowing`
   (`lower/mir/std_calls.ts`).
+
+## Amendment (2026-11-02): one held, given to a `rev()` or generic code (#484)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; valid Rust was
+refused. `let kept = v.into_iter().filter_map(Some); kept.rev()` was
+refused, "a `FilterMap<..>` as a `DoubleEndedIterator`, which rust-js
+can't step from its back", and so was a held `map`'s or `filter`'s
+`rev()`, `let more = v.iter().map(f); more.rev()`, and a held adapter
+given to a function bound by `DoubleEndedIterator`, `last(doubled)`. The
+`rev()` was made in place, so `held_rev` didn't hold; the type it asked
+was its argument's own, `held == asked`; so nothing marked the adapter,
+and the variable held it made without its back, which no form of
+`rev()`'s reads. `next_back()` of the same variable ran: the analysis
+marks what `DoubleEndedIterator`'s own methods are called on.
+
+**What a call asks to be double-ended, given it held, a variable's, a
+field's or a place's, not made where it's given, is made knowing its back
+where it's made, as one given behind an `impl` is.**
+
+- The back-stepped analysis reads each call's arguments: one of the type
+  a clause asks `DoubleEndedIterator` of, which isn't, through its
+  borrows, what a call gives, is held. `it.by_ref().rev()`'s is
+  `by_ref()`'s, std's struct `it` holds, stepped by its dictionaries as
+  before. Not of `ExactSizeIterator` alone, and not of
+  `DoubleEndedIterator`'s own methods, whose adapters the analysis's
+  second rule decides of, of its own form where it has one.
+- One made in place, `v.iter().filter(p).rev()`, keeps its form,
+  `v.toReversed().filter(p)`.
+- A call by its path, `last(doubled)`, is found as its callee's, its
+  `fun` stripped of its scope; a `rev()` called so is too.
+- `test/corpus/held_filter_map_reversed.rs` checks a held `filter_map`
+  of `Some`, of a closure and of a function, reversed and stepped; a
+  held map of an array's items and a filter of a range, reversed; a held
+  `filter_map` given to generic code that steps it from its back; and one
+  made where it's reversed, against native Rust.
+- The mutations are `held-given-unrecorded`, `held-given-of-items-native`,
+  `made-in-place-taken-held`, `held-through-borrows-unseen` and
+  `path-call-uncalled` (`lower/analysis/back_stepped.ts`).

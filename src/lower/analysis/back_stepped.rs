@@ -7,6 +7,7 @@
 //! one owner, before lowering: so one held in a variable before it's
 //! stepped, as a library's drop flags make one, still steps from its back.
 
+use crate::lower::body_queries::strip;
 use crate::lower::recognition::{
     Recognition, back_stepped_source, copied_source, enumerated_source, filter_mapped_source, filtered_source,
     flattened_source, inspected_source, is_double_ended, is_exact_size, is_iter_adapter_def, mapped_source,
@@ -33,9 +34,11 @@ pub(super) fn back_stepped<'tcx>(
         // by its dictionary, not one a std iterator's method steps where
         // it's made, which the recognizers reverse (ADR 0871).
         let in_place = &body.facts.in_place_adapters;
-        let called: HashMap<ExprId, rustc_span::Span> = (body.thir.exprs.iter())
+        let called: HashMap<ExprId, (rustc_span::Span, &[ExprId])> = (body.thir.exprs.iter())
             .filter_map(|e| match e.kind {
-                ExprKind::Call { fun, fn_span, .. } => Some((fun, fn_span)),
+                ExprKind::Call {
+                    fun, fn_span, ref args, ..
+                } => Some((strip(&body.thir, fun), (fn_span, &**args))),
                 _ => None,
             })
             .collect();
@@ -43,7 +46,32 @@ pub(super) fn back_stepped<'tcx>(
             let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
                 continue;
             };
-            let held_rev = Some(callee) == rev && called.get(&at).is_none_or(|span| !in_place.contains(span));
+            let held_rev = Some(callee) == rev && called.get(&at).is_none_or(|(span, _)| !in_place.contains(span));
+            // `DoubleEndedIterator`'s own method, `next_back()`, which asks
+            // it of what it's called on: below, of each adapter.
+            let own_method = tcx.trait_of_assoc(callee).is_some_and(|tr| is_double_ended(tcx, tr));
+            // Whether what asks its back, `rev()` or generic code, is given
+            // a value of type `asked` that a variable, a field or a place
+            // holds, not one made where it's given: `kept.rev()` of a `let
+            // kept = v.iter().filter_map(f)`, which no form of the call's
+            // steps from its back (#484). Through its borrows: what a call
+            // gives, `it.by_ref()`'s, is that call's.
+            let through = |mut e: ExprId| loop {
+                e = strip(&body.thir, e);
+                match body.thir[e].kind {
+                    ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => e = arg,
+                    _ => break &body.thir[e],
+                }
+            };
+            let given_held = |asked: Ty<'tcx>| {
+                !own_method
+                    && called.get(&at).is_some_and(|(_, args)| {
+                        (args.iter()).any(|&arg| {
+                            body.thir[arg].ty.peel_refs() == asked
+                                && !matches!(through(arg).kind, ExprKind::Call { .. })
+                        })
+                    })
+            };
             // What it asks to be double-ended holds such a type, as an
             // `Either` of filters does, stepped from its back by the impl
             // that asks it of what it holds; the type asked itself is its
@@ -67,6 +95,10 @@ pub(super) fn back_stepped<'tcx>(
                 // One a function gives behind an `impl`, which its caller
                 // can't make knowing its back: made so where it's made.
                 let given = hidden != asked;
+                // One held where it's given, made knowing its back where
+                // it's made, as one given behind an `impl` is: asked its
+                // back, not its length alone.
+                let held_arg = !length && given_held(hidden);
                 // Not through a std adapter, whose own call steps what it
                 // holds: `filter(p).map(f).rev()`'s is `rev()`'s.
                 let mut walk = asked.walk();
@@ -83,10 +115,12 @@ pub(super) fn back_stepped<'tcx>(
                         if held != asked
                             || given
                             || held_rev
+                            || held_arg
                             || dropping_items(recognition, held, &drops)
                             || closure_drops(tcx, held, &drops)
                         {
-                            stepped.extend(back_stepped_adapter(tcx, recognition, held, given || held_rev, &drops));
+                            let made_apart = given || held_rev || held_arg;
+                            stepped.extend(back_stepped_adapter(tcx, recognition, held, made_apart, &drops));
                         }
                         // Given behind an `impl`, each it holds too, made
                         // where it's made, which no call of the caller's
@@ -97,7 +131,7 @@ pub(super) fn back_stepped<'tcx>(
                     }
                 }
             }
-            if !tcx.trait_of_assoc(callee).is_some_and(|tr| is_double_ended(tcx, tr)) {
+            if !own_method {
                 continue;
             }
             let Some(hidden) = args.types().next().map(|ty| ty.peel_refs()) else {
