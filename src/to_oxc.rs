@@ -117,6 +117,7 @@ pub fn emit(
         closing,
         reexport_starts,
         imports,
+        own_places,
     } = comments_of(module, sources);
     let cx = Cx {
         b: AstBuilder::new(&allocator),
@@ -173,6 +174,14 @@ pub fn emit(
     for c in comments.iter_mut() {
         if let Some(&at) = moved.get(&c.attached_to) {
             c.attached_to = at;
+        }
+    }
+    // Each statement that starts where one it's in starts, its comments
+    // inside it at a place of its own (rd630).
+    let places = placed::own_places(&mut body, comments.iter().map(|c| c.attached_to).collect(), &own_places);
+    for c in comments.iter_mut() {
+        if let Some(i) = (0..own_places.len()).find(|&i| owned(i) == c.attached_to) {
+            c.attached_to = places[i].unwrap_or(own_places[i].0);
         }
     }
     // A blank line between two statements where the Rust has one between
@@ -437,6 +446,10 @@ struct Commented {
     /// The comments before each import's `use`, by where it's written: in
     /// the header, above its line (rd92).
     imports: std::collections::HashMap<u32, Vec<String>>,
+    /// Each statement, by its span, that starts where one it's in starts and
+    /// has comments inside it of its own, before nothing printed of it,
+    /// which are at a place of its own (`placed::own_places`, rd630).
+    own_places: Vec<(u32, u32)>,
 }
 
 fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented {
@@ -449,6 +462,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
     let mut imports: std::collections::HashMap<u32, Vec<String>> = std::collections::HashMap::new();
     let mut trailing = Vec::new();
     let mut arm_comments = Vec::new();
+    let mut inner: Vec<(crate::program::Comment, (u32, u32))> = Vec::new();
     let (spans, comment_ends) = statement_spans(module);
     // Where each class's struct is, and its constructor function, which
     // what's before the struct is before.
@@ -840,10 +854,14 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                 // And a type alias's, an item with no JS, `pub type
                 // ActivityInstance = Unknown;` (ADR 0444, amended);
                 // and a `use` that makes no import, a type's (rd92).
+                // Not past a whole match arm, whose value has no start of
+                // its own: the comment is the arm's, inside the statement
+                // its value is of (rd630).
                 let only_starts = lets
                     .iter()
                     .all(|s| s.starts_with("let ") || type_alias(s) || use_item(s))
                     && !rest.contains([';', '}'])
+                    && !openings::whole_arm(rest)
                     && opens;
                 only_starts.then_some((*c, at))
             })
@@ -942,18 +960,28 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             })
             .map(|span| (span.lo, span.hi))
             .collect();
-        let unattached: Vec<(crate::program::Comment, u32)> = (file.comments.iter())
+        let unattached: Vec<(crate::program::Comment, (u32, u32))> = (file.comments.iter())
             .filter(|c| c.lo >= past && !after_code(c) && !before_value(c) && !ends.iter().any(|e| e.lo == c.lo))
             .filter(|c| !attached.iter().any(|(a, _)| a.lo == c.lo) && !ending.iter().any(|e| e.lo == c.lo))
             .filter(|c| !closed.contains(&c.lo))
             .filter_map(|c| {
-                let (lo, _) = (spans.iter())
+                let innermost = (spans.iter())
                     .filter(|&&(lo, hi)| lo < c.lo && c.hi <= hi && in_file(lo) && !items.contains(&(lo, hi)))
                     .min_by_key(|&&(lo, hi)| hi - lo)?;
-                Some((*c, *lo))
+                Some((*c, *innermost))
             })
             .collect();
-        attached.extend(unattached);
+        // Of a statement that starts where one it's in starts, a `try`'s
+        // value of a `match`'s `Ok` arm, `match js::eval(code) { // c\n
+        // Ok(v) => v,`'s `value = (0, eval)(code);`: at a place of its own,
+        // the statement's (`placed::own_places`), as what's at its start is
+        // before the first printed there, the outer one (rd630).
+        for (c, (lo, hi)) in unattached {
+            match spans.iter().any(|&(l, h)| l == lo && h != hi) {
+                true => inner.push((c, (lo, hi))),
+                false => attached.push((c, lo)),
+            }
+        }
         let mut starts_and_end: Vec<(u32, Vec<crate::program::Comment>)> = (starts.iter())
             .filter(|&&at| in_file(at))
             .map(|&at| (at, attached.iter().filter(|(_, a)| *a == at).map(|(c, _)| *c).collect()))
@@ -1170,6 +1198,32 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         }
     }
     cases::fallthroughs(module, &said_fallen, &mut text, &mut found);
+    // Each comment of a statement's place of its own, keyed by which of
+    // `own_places` it's of until the statement's place is given (`owned`).
+    let mut own_places: Vec<(u32, u32)> = Vec::new();
+    for (c, statement) in inner.into_iter().filter(|(c, _)| c.written) {
+        let key = match own_places.iter().position(|&s| s == statement) {
+            Some(i) => i,
+            None => {
+                own_places.push(statement);
+                own_places.len() - 1
+            }
+        };
+        let js = crate::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]);
+        let lo = text.len() as u32;
+        text.push_str(&js);
+        let kind = match (js.starts_with("/*"), js.contains('\n')) {
+            (false, _) => CommentKind::Line,
+            (true, false) => CommentKind::SingleLineBlock,
+            (true, true) => CommentKind::MultiLineBlock,
+        };
+        let mut made = oxc_ast::Comment::new(lo, text.len() as u32, kind);
+        made.attached_to = owned(key);
+        made.position = CommentPosition::Leading;
+        made.set_preceded_by_newline(true);
+        made.set_followed_by_newline(true);
+        found.push(made);
+    }
     // Each re-export, printed first (ADR 0240), at a place of its own before
     // every other's, its comments with it: at its own, where it's written,
     // the comments oxc keeps of a block of only comments before it, which
@@ -1201,7 +1255,14 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         closing,
         reexport_starts,
         imports,
+        own_places,
     }
+}
+
+/// Where a comment of `own_places`' `i`th statement is kept until that
+/// statement's place is given: past every place the Rust has.
+fn owned(i: usize) -> u32 {
+    u32::MAX - i as u32
 }
 
 /// `comments`, each of `body`'s statements but the first with a blank line

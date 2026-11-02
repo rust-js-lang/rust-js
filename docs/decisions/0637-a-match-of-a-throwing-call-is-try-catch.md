@@ -257,3 +257,50 @@ place its body, so that test holds without this rule; a JS call's `$try`
 still needs it: `lowering-unwind-arms.test.ts`'s "a try's assignment of a
 JS call's Ok value maps to the call", `value = (0, eval)(code);` mapped to
 the call's line, not the `Ok` arm's, is the mutation's test now.
+
+## Amendment: a comment above the `Ok` arm is above its value in the `try` (2026-11-02, rd630)
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): a comment's place,
+which nothing runs, though ESLint reads it.
+
+`let value = match js::eval(code) { // eslint-disable-next-line
+no-eval\n Ok(v) => v, Err(_) => None }` printed the comment in the
+`catch`, above `value = undefined;`, and `catch_unwind(|| parse(s))`'s
+the same. The `Ok` arm's value `v` has no JS of its own, so the comment's
+next start was the `Err` arm's value, and nothing between said otherwise.
+Where the value's statement, `value = (0, eval)(code);`, is mapped stays
+the call's, the `match`'s line (the amendment above), and the `try`
+starts there too, so a comment keyed to its start would be printed above
+the `try`, the first node there.
+
+**The statement made of the `Ok` arm's value is of the `match`'s head
+through that arm** (`try_catch`'s `held`, its span's end the arm's;
+`js::applied_tried`'s, of a closure's value, the same): its Rust really
+is that, not the `Err` arm's. The comment placement then needs no fact
+of `try`s, only three general rules of where a comment's Rust is
+(`to_oxc.rs`'s `comments_of`, ADR 0444):
+
+- a comment isn't attached past a whole match arm, `Ok(h) => h,`, to the
+  next arm's start (`openings::whole_arm`): it's the arm's, and an arm
+  with no start of its own is inside the statement its value is of;
+- one inside a statement, before nothing printed of it, is before the
+  innermost statement it's in, as before;
+- where that statement starts where one it's in starts, its comments are
+  at a place of its own, the statement's (`placed::own_places`), mapped
+  to nothing, as the outer one's start maps the same place.
+
+So it's `try { // eslint-disable-next-line no-eval\n value = (0,
+eval)(code); } catch { value = undefined; }`, and a comment above the
+`Err` arm stays in the `catch`. The map test of the amendment above
+holds. A statement given a key past its arm, a `Comments` block in the
+`try`, was tried first and dropped: it's printed after the value by
+where each starts, and it kept `js::applied_tried` from inlining the
+closure, `href = (() => parse(s))();`.
+
+Held by `lowering-comments-jumps.test.ts`'s "a comment above a match's Ok
+arm is above its value in the try", run, both paths and an `Err` arm's
+comment, and the mutations `held-assignment-without-its-arm`
+(`prepare/catches.ts`), `tried-closure-value-without-its-arm`
+(`js/applied.ts`), `comment-attached-past-a-whole-arm`,
+`inner-comment-at-the-outer-start` (`to_oxc.ts`), `whole-arm-unseen`
+(`to_oxc/openings.ts`) and `own-place-not-given` (`to_oxc/placed.ts`).

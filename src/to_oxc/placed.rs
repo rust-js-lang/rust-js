@@ -10,6 +10,11 @@
 //! comment is, and its comments are there. A statement's place maps to
 //! nothing: what it holds keeps its spans, and its map. One copied from
 //! before its function is before every comment printed after it.
+//!
+//! And a statement that starts where one it's in starts, a `try`'s value of
+//! a `match`'s `Ok` arm, whose comments inside it, above the arm, are its
+//! own, not the outer one's, which oxc would print them before (rd630):
+//! at a place of its own, mapped to nothing, as the outer one maps its start.
 
 use std::collections::{HashMap, HashSet};
 
@@ -158,5 +163,53 @@ impl<'a> VisitMut<'a> for Placing {
     fn visit_switch_case(&mut self, it: &mut SwitchCase<'a>) {
         walk_mut::walk_switch_case(self, it);
         self.ended(&mut it.span);
+    }
+}
+
+/// Of `body`, each statement of `spans`, by its span, at a place of its
+/// own, none of `keys` nor where a node starts: what each was given, none
+/// where none is printed.
+pub(super) fn own_places(body: &mut [Statement<'_>], keys: HashSet<u32>, spans: &[(u32, u32)]) -> Vec<Option<u32>> {
+    if spans.is_empty() {
+        return Vec::new();
+    }
+    let mut starts = Starts {
+        keys,
+        function: None,
+        copied: false,
+    };
+    body.iter().for_each(|statement| starts.visit_statement(statement));
+    let mut owning = Owning {
+        keys: starts.keys,
+        spans,
+        given: vec![None; spans.len()],
+    };
+    body.iter_mut().for_each(|statement| owning.visit_statement(statement));
+    owning.given
+}
+
+/// Where comments are and nodes start, the statements given places of
+/// their own, and what each was given.
+struct Owning<'s> {
+    keys: HashSet<u32>,
+    spans: &'s [(u32, u32)],
+    given: Vec<Option<u32>>,
+}
+
+impl<'a> VisitMut<'a> for Owning<'_> {
+    fn visit_statement(&mut self, it: &mut Statement<'a>) {
+        let span = it.span();
+        if let Some(i) = self.spans.iter().position(|&s| s == (span.start, span.end))
+            && self.given[i].is_none()
+        {
+            let mut place = span.start + 1;
+            while self.keys.contains(&place) {
+                place += 1;
+            }
+            self.keys.insert(place);
+            self.given[i] = Some(place);
+            *it.span_mut() = Span::new(place, place);
+        }
+        walk_mut::walk_statement(self, it);
     }
 }

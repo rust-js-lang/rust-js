@@ -519,3 +519,70 @@ pub fn settle(chunk: &Chunk, out: &mut Vec<u32>) {
   for (const n of [0, 1, 2, 5]) settle(make(n), out);
   expect(out).toEqual([0, 7, 0, 1, 0, 2, 0, 105]);
 });
+
+// React's Flight client's `let value = match js::eval(code) { //
+// eslint-disable-next-line no-eval\n Ok(v) => v, .. }`, and a `catch_unwind`'s
+// `Ok` arm of the same: a comment written above the `Ok` arm is above the
+// statement in the `try` that holds the arm's value, which maps to the call
+// it's made of; one above the `Err` arm stays in the `catch` (rd630).
+test("a comment above a match's Ok arm is above its value in the try", async () => {
+  const { js, lib } = await compiled("comment-above-tried-arm", `use std::panic::catch_unwind;
+
+fn parse(s: &str) -> String {
+    if s.is_empty() {
+        panic!("empty");
+    }
+    s.to_uppercase()
+}
+
+pub fn href(s: &str, fallback: &str) -> String {
+    let href = match catch_unwind(|| parse(s)) {
+        // The parsed value.
+        Ok(h) => h,
+        // The fallback.
+        Err(_) => fallback.to_string(),
+    };
+    href + "!"
+}
+
+pub fn evaluated(code: &str) -> bool {
+    let value = match js::eval(code) {
+        // eslint-disable-next-line no-eval
+        Ok(v) => v,
+        Err(_) => None,
+    };
+    value.is_some()
+}
+`);
+  expect(js).toContain(
+    "  let href;\n  try {\n    // The parsed value.\n    href = parse(s);\n  } catch {\n    // The fallback.\n    href = fallback;\n  }\n",
+  );
+  expect(js).toContain(
+    "  let value;\n  try {\n    // eslint-disable-next-line no-eval\n    value = (0, eval)(code);\n  } catch {\n    value = undefined;\n  }\n",
+  );
+  const href = lib.href as (s: string, fallback: string) => unknown;
+  const evaluated = lib.evaluated as (code: string) => unknown;
+  expect([href("a", "f"), href("", "f"), evaluated("1 + 2"), evaluated("(")]).toEqual(["A!", "f!", true, false]);
+});
+
+// A comment above a later arm, `// c\n None => given`, of a `match` read as
+// `n ?? given`: the arm's code is between it and the operand, so it's not
+// the operand's, `n ?? // c\n given`, but the statement's (ADR 0444,
+// amended); where the arm is the first, the whole arm before says so too.
+test("a comment above a later arm read as an operand is above its statement", async () => {
+  const { js, lib } = await compiled("comment-above-operand-arm", `use std::cell::Cell;
+
+pub fn kept_else(n: Option<u32>, given: Option<u32>) -> Option<u32> {
+    let current = Cell::new(None);
+    current.set(match n {
+        Some(n) => Some(n),
+        // Else the one given.
+        None => given,
+    });
+    current.get()
+}
+`);
+  expect(js).toContain("  // Else the one given.\n  let current = n ?? given;\n");
+  const kept = lib.keptElse as (n?: number, given?: number) => unknown;
+  expect([kept(1, 2), kept(undefined, 2)]).toEqual([1, 2]);
+});

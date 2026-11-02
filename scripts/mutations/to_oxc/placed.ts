@@ -52,4 +52,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests,
   },
+  {
+    name: "own-place-not-given",
+    breaks: "a statement whose comments are at a place of its own is given none, so they're printed where it starts, above `let value;` (rd630)",
+    file: "src/to_oxc/placed.rs",
+    find: "            self.given[i] = Some(place);\n            *it.span_mut() = Span::new(place, place);\n",
+    replace: "            self.given[i] = Some(place);\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "Ok arm is above its value"],
+  },
 ];

@@ -599,13 +599,18 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     // href = match catch_unwind(|| { // c\n parse(s) }) { Ok(h) => h, .. }`'s
     // `href = parse(s)`, which is where that value is, the call's, after
     // the comment in the closure (rd545).
+    // An assignment's Rust is the `match`'s head through its `Ok` arm,
+    // `match js::eval(code) { // c\n Ok(v) => v,`: where it's mapped, the
+    // call's, and the comments inside it, above the arm, which are above it
+    // in the `try`, not the `Err` arm's, the `catch`'s (rd630).
     let held = match ok {
         [stmt] => kept(stmt).map(|kind| {
             let written = matches!(stmt.kind, StmtKind::Return(_))
                 && !stmt.span.is_none()
                 && !made.span.is_none()
                 && stmt.span.lo >= made.span.hi;
-            (kind, written.then_some(stmt.span))
+            let arm = (!written && !stmt.span.is_none()).then_some(stmt.span.hi);
+            (kind, written.then_some(stmt.span), arm)
         }),
         _ => None,
     };
@@ -672,8 +677,15 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     let alone = StmtKind::Expr(call.clone()).at(span);
     let cannot_throw = |stmt: &Stmt| cannot_throw(stmt);
     // The `Ok`'s value kept is the call's too, `return f(x)`.
-    if let Some((held, written)) = held {
-        return Some((vec![caught(vec![held.at(written.unwrap_or(span))])], taken));
+    if let Some((held, written, arm)) = held {
+        let through_arm = match arm {
+            Some(hi) if span.lo < hi => js::Span {
+                lo: span.lo,
+                hi: hi.max(span.hi),
+            },
+            _ => span,
+        };
+        return Some((vec![caught(vec![held.at(written.unwrap_or(through_arm))])], taken));
     }
     // A value the program never named, a literal the closure returns that
     // the `Ok` arms test, `Ok(true) => return 0`: each arm where the closure

@@ -829,7 +829,11 @@ export function described(value) {
   `finally` ([ADR 0660](../../decisions/0660-catch-unwind-catches-what-js-throws.md#amended-2026-10-25-a-return-in-the-closure-of-a-try-that-ends-the-function)).
   A comment above the `match` is above the `try`, and an `Err` arm of
   only comments, `Err(_) => { // .. }`, is the `catch`'s, `} catch { //
-  .. }`, as React DOM's commitMount writes them (ADR 0660, amended).
+  .. }`, as React DOM's commitMount writes them (ADR 0660, amended). One
+  above the `Ok` arm, `// eslint-disable-next-line no-eval\n Ok(v) =>
+  v,`, is in the `try`, above the value it sets, `value = (0,
+  eval)(code);`; one above the `Err` arm, in the `catch`
+  ([ADR 0637](../../decisions/0637-a-match-of-a-throwing-call-is-try-catch.md#amendment-a-comment-above-the-ok-arm-is-above-its-value-in-the-try-2026-11-02-rd630)).
 - **A flag the closure gives to return from its function is the `try` it
   returns from**: a closure can't return from its function, so the flag
   comes out, `if let Ok(true) = r { return false; }`; that's `try { ..;

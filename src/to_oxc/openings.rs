@@ -26,6 +26,31 @@ pub(super) fn leading_statements(code: &str) -> (Vec<&str>, &str) {
     (statements, &code[from..])
 }
 
+/// Whether `code`, what's between a comment and the next start, holds a
+/// whole match arm, its pattern, `=>`, its value and its `,`, before the
+/// next arm's `=>`: `Ok(h) => h,\n Err(_) => `, an arm whose value has no
+/// start of its own, whose comment is its, not the next arm's (rd630).
+pub(super) fn whole_arm(code: &str) -> bool {
+    let mut depth = 0u32;
+    let mut arrows = 0;
+    let mut ended = false;
+    for (at, c) in code.char_indices() {
+        match c {
+            '{' | '(' | '[' => depth += 1,
+            ')' | ']' | '}' if depth > 0 => depth -= 1,
+            ',' if depth == 0 && arrows > 0 => ended = true,
+            '=' if depth == 0 && code[at..].starts_with("=>") => {
+                if ended {
+                    return true;
+                }
+                arrows += 1;
+            }
+            _ => {}
+        }
+    }
+    false
+}
+
 /// Whether `statement`, one of `leading_statements`, is a type alias, `pub
 /// type ActivityInstance = Unknown`, its attributes first: an item with no
 /// JS, so what's before it is before the next item that has (ADR 0444,

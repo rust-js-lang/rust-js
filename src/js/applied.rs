@@ -543,8 +543,17 @@ pub fn applied_tried(mut tried: Vec<Stmt>) -> Vec<Stmt> {
                     StmtKind::Assign(to, _) => StmtKind::Assign(to.clone(), value),
                     _ => unreachable!("matched above"),
                 };
-                // Where the `return` was, after what's said before it.
-                let span = if last.span.is_none() { tried[0].span } else { last.span };
+                // Where the `return` was, after what's said before it;
+                // through what the statement it's of is of, a `match`'s `Ok`
+                // arm, `href = match catch_unwind(|| parse(s)) { Ok(h) => h,
+                // .. }`'s, whose comments are its (rd630).
+                let span = match last.span.is_none() {
+                    true => tried[0].span,
+                    false => Span {
+                        lo: last.span.lo,
+                        hi: last.span.hi.max(tried[0].span.hi),
+                    },
+                };
                 body.push(kept.at(span));
                 tried.splice(0..1, body);
                 tried

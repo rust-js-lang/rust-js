@@ -462,8 +462,8 @@ export const mutations: Mutation[] = [
     breaks:
       "the `return` a `try` makes of an `Ok` arm's `return function;` is placed at the call, in the `if`'s test, so the `// eslint-disable-next-line no-eval` above it is lost (rd525)",
     file: "src/prepare/catches.rs",
-    find: "            (kind, written.then_some(stmt.span))\n",
-    replace: "            (kind, written.then_some(stmt.span).filter(|_| false))\n",
+    find: "            (kind, written.then_some(stmt.span), arm)\n",
+    replace: "            (kind, written.then_some(stmt.span).filter(|_| false), arm)\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "above the call's return in the try"],
   },
   {
@@ -558,5 +558,13 @@ export const mutations: Mutation[] = [
     replace: "        if at.is_none() {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_arms_where_returned.rs$"],
     snapshots: true,
+  },
+  {
+    name: "held-assignment-without-its-arm",
+    breaks: "a `try`'s assignment of a `match`'s `Ok` value is of the call alone, so the comment above `Ok(v) => v,` is in no statement and lost (rd630)",
+    file: "src/prepare/catches.rs",
+    find: "            let arm = (!written && !stmt.span.is_none()).then_some(stmt.span.hi);\n",
+    replace: "            let arm: Option<u32> = None;\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "Ok arm is above its value"],
   },
 ];

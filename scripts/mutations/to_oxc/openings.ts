@@ -53,4 +53,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before a let read in place"],
   },
+  {
+    name: "whole-arm-unseen",
+    breaks: "a whole match arm between a comment and the next start isn't seen, so the comment above `Ok(h) => h,` is the `Err` arm's, in the `catch` (rd630)",
+    file: "src/to_oxc/openings.rs",
+    find: "                if ended {\n",
+    replace: "                if false {\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "Ok arm is above its value"],
+  },
 ];

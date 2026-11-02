@@ -803,3 +803,16 @@ statement makes is, `operands.rs`'s `written_span`. Numbers and strings
 were already where written; what moves is a `bool`'s, a unit's or a
 static's place in the source map. "a comment before a tail tuple with a
 constant is never inside its array" holds it still.
+
+## Amendment: a comment isn't past a whole match arm, and an inner statement's are its own (2026-11-02, rd630)
+
+A comment above a match arm whose value has no start of its own, `//
+c\n Ok(h) => h,`, was attached to the next arm's start, past the whole
+arm. It's the arm's: **a comment isn't attached past a whole arm**, and
+it's inside the statement the arm's value is of, before the innermost
+statement it's in. **Where that statement starts where one it's in
+starts, its comments are at a place of its own**, mapped to nothing,
+since oxc prints what's at a start before the first node there, the
+outer one. The case, a `try`'s value of a `match`'s `Ok` arm, and its
+tests are in [ADR 0637](0637-a-match-of-a-throwing-call-is-try-catch.md)'s
+amendment of the same date.
