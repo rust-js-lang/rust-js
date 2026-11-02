@@ -181,3 +181,40 @@ knowing its back, `f` called on each item as Rust's `Inspect` gives it.
   in too.
 - The mutations are `inspect-made-here-backless` and
   `inspect-back-stepped-unmade`.
+
+## Amendment (2026-11-02): a `filter_map(f)` too (#473)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; valid Rust was
+refused. itertools' `FilterMapOk::rfold`, `self.iter.filter_map(|v|
+transpose_result(v.map(&mut f))).rfold(init, fold_f)`, of an `I:
+DoubleEndedIterator` a struct holds as it is, was refused, "a
+`FilterMap<I, ..>` as a `DoubleEndedIterator`, which rust-js can't step
+from its back". A `filter_map` of a source that knows its back was made
+knowing it, `$filterEnds($mapEnds(..))` (ADR 0526); of a source given as
+it is, it was made `src.map(f).filter(present)`, with no back.
+453619635 took away the line that said such a map knew its back
+(`made_knowing`), which said so of a value made without it: put back, its
+fold threw, `it.back is not a function`. A refusal was right; this is the
+form.
+
+**A `filter_map(f)` is stepped from its back as a map filtered: `$filterEnds`
+of `$mapEnds` of its source made knowing its back, `$mapEnds(..,
+$someValue)` after it where a kept value looks like `None`.**
+
+- `as_double_ended` reads a `filter_map` made in place, `.map(f).filter(present)`,
+  each kept `Some` unboxed after, `.map($someValue)`, before its "already
+  knows its back" answer, as it reads a map's.
+- The back-stepped analysis records a `FilterMap` as it does a filter, and
+  it's made knowing its back where it's made, as an `inspect(f)` is: a
+  library's, held in a variable before it's folded, too.
+- `test/corpus/filter_map_of_given_from_its_back.rs` checks a struct's
+  `rfold` of a held `I`'s `filter_map`, and one whose kept values look like
+  `None`, against native Rust, as a program and as a library; the crate
+  corpus's itertools compiles. `held_filter_map_back_refused.rs`, a
+  `filter_map` held in a variable that a held map steps from its back,
+  refused since #218 (and in ADR 0871), runs now, against native Rust, as
+  `held_filter_map_from_its_back.rs`.
+- The mutations are `filter-map-ends-unmade`, `given-filter-map-ends-boxed`
+  (`lower/iterators/knowing.ts`), `filter-map-unstepped-from-back`
+  (`lower/analysis/back_stepped.ts`) and `filter-map-made-unknowing`
+  (`lower/mir/std_calls.ts`).

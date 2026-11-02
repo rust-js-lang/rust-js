@@ -38,9 +38,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a copy given to generic code as `Copied<I>` and stepped from its back there isn't made knowing its back: `next_back()` of a lazy or generic `Copied` is refused (#385)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "    let source = (mapped.or_else(|| filtered_source(tcx, adapter)).or(copied))?.peel_refs();\n",
+    find: "    let source = (mapped.or(filtered).or(copied))?.peel_refs();\n",
     replace:
-      "    let source = (mapped.or_else(|| filtered_source(tcx, adapter)))?.peel_refs();\n",
+      "    let source = (mapped.or(filtered))?.peel_refs();\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_given_to_generic_backs.rs$"],
   },
   {
@@ -178,14 +178,14 @@ export const mutations: Mutation[] = [
   {
     name: "stepped-sources-any-adapter",
     breaks:
-      "a held `filter_map` a back-stepped map steps is marked, and steps a JS iterator with no back, which throws, where it's refused (#218)",
+      "each held adapter a back-stepped one steps is marked, whatever it is, and steps a JS iterator with no back (#218)",
     file: "src/lower/analysis/back_stepped.rs",
-    find: "            if mapped_source(tcx, held).is_some()\n                || filtered_source(tcx, held).is_some()\n                || copied_source(tcx, held).is_some()\n                || inspected_source(tcx, held).is_some()\n            {\n",
+    find: "            if mapped_source(tcx, held).is_some()\n                || filtered_source(tcx, held).is_some()\n                || filter_mapped_source(tcx, held).is_some()\n                || copied_source(tcx, held).is_some()\n                || inspected_source(tcx, held).is_some()\n            {\n",
     replace: "            if true {\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
-      "^(back_stepped_adapter_sources|held_filter_map_back_refused).rs$",
+      "^(back_stepped_adapter_sources|held_filter_map_from_its_back).rs$",
     ],
   },
   {
@@ -200,5 +200,13 @@ export const mutations: Mutation[] = [
       "-t",
       "^(range_mapped_by_a_function|held_revs_of_lazy_sources).rs$",
     ],
+  },
+  {
+    name: "filter-map-unstepped-from-back",
+    breaks: "a `filter_map` the crate steps from its back isn't one the analysis marks, so one held in a variable before it's stepped, a library's, isn't made knowing its back, and is refused (#473)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "    let filtered = filtered_source(tcx, adapter).or_else(|| filter_mapped_source(tcx, adapter));\n",
+    replace: "    let filtered = filtered_source(tcx, adapter);\n",
+    tests: ["test/corpus.test.ts", "-t", "^filter_map_of_given_from_its_back.rs$"],
   },
 ];

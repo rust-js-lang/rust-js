@@ -17,8 +17,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `inspect(f)` the crate steps from its back, held in a variable, isn't made knowing it where it's made: `TypeError: it.back is not a function`",
     file: "src/lower/mir/std_calls.rs",
-    find: "IterComb::Flatten | IterComb::FlatMap | IterComb::Inspect)",
-    replace: "IterComb::Flatten | IterComb::FlatMap)",
+    find: "                        IterComb::Inspect,\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^inspect_from_back.rs$"],
   },
   {
@@ -897,5 +897,13 @@ export const mutations: Mutation[] = [
     replace:
       "                        false if comb.holds_its_sources() => this.closing(it, iter_ty, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
+  },
+  {
+    name: "filter-map-made-unknowing",
+    breaks: "a `filter_map` the crate steps from its back, held in a variable before it's stepped, isn't made knowing it where it's made, and is refused as a library (#473)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                        IterComb::FilterMap,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^filter_map_of_given_from_its_back.rs$"],
   },
 ];

@@ -8,8 +8,8 @@
 //! stepped, as a library's drop flags make one, still steps from its back.
 
 use crate::lower::recognition::{
-    Recognition, back_stepped_source, copied_source, enumerated_source, filtered_source, flattened_source,
-    inspected_source, is_double_ended, is_exact_size, is_iter_adapter_def, mapped_source,
+    Recognition, back_stepped_source, copied_source, enumerated_source, filter_mapped_source, filtered_source,
+    flattened_source, inspected_source, is_double_ended, is_exact_size, is_iter_adapter_def, mapped_source,
 };
 use crate::lower::{Body, fn_def};
 use rustc_middle::thir::{ExprId, ExprKind};
@@ -187,7 +187,10 @@ fn back_stepped_adapter<'tcx>(
     // An `inspect(f)` is made as a map, stepped from its back as one is.
     let mapped = mapped_source(tcx, adapter).or_else(|| inspected_source(tcx, adapter));
     let copied = copied_source(tcx, adapter);
-    let source = (mapped.or_else(|| filtered_source(tcx, adapter)).or(copied))?.peel_refs();
+    // A `filter_map`, made as a map filtered, steps from its back as a
+    // filter does, by no form of its own (#473).
+    let filtered = filtered_source(tcx, adapter).or_else(|| filter_mapped_source(tcx, adapter));
+    let source = (mapped.or(filtered).or(copied))?.peel_refs();
     // A map of an array's items steps from its back by its own form, its
     // source's last item mapped, and a copy of them by its items'; a
     // filter's has none. A copy of another, a type parameter's, `Copied<I>`
@@ -211,6 +214,7 @@ fn with_stepped_sources<'tcx>(tcx: TyCtxt<'tcx>, stepped: HashSet<Ty<'tcx>>) -> 
         while let Some(held) = source.map(|held| held.peel_refs()) {
             if mapped_source(tcx, held).is_some()
                 || filtered_source(tcx, held).is_some()
+                || filter_mapped_source(tcx, held).is_some()
                 || copied_source(tcx, held).is_some()
                 || inspected_source(tcx, held).is_some()
             {

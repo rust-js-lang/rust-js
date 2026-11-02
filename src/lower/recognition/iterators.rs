@@ -1106,38 +1106,26 @@ pub(crate) fn unstable_sort_items<'tcx>(
 /// What a `Copied` steps, its `I` of a `Copied<I>`, whose JS iterator it is,
 /// each item a number or what's copied as it is (ADR 0480).
 pub(crate) fn copied_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-    match ty.kind() {
-        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Copied" => Some(args.type_at(0)),
-        _ => None,
-    }
+    adapter_source(tcx, ty, "std::iter::Copied")
 }
 
 /// What std's `Cloned` adapter of type `ty` clones each item of, `I` of
 /// `Cloned<I>`.
 pub(crate) fn cloned_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-    match ty.kind() {
-        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Cloned" => Some(args.type_at(0)),
-        _ => None,
-    }
+    adapter_source(tcx, ty, "std::iter::Cloned")
 }
 
 /// What std's `Map` adapter of type `ty` maps, `I` of `Map<I, F>`, which a
 /// map steps from either end where it knows its back (ADR 0455).
 pub(crate) fn mapped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-    match ty.kind() {
-        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Map" => Some(args.type_at(0)),
-        _ => None,
-    }
+    adapter_source(tcx, ty, "std::iter::Map")
 }
 
 /// Of std's `Inspect<I, F>` of type `ty`, its source: made as a map whose
 /// function gives each item back once `f` has seen it, so stepped from
 /// either end as a map is, `f` called as each item is given.
 pub(crate) fn inspected_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-    match ty.kind() {
-        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Inspect" => Some(args.type_at(0)),
-        _ => None,
-    }
+    adapter_source(tcx, ty, "std::iter::Inspect")
 }
 
 /// Of std's `Flatten<I>` or `FlatMap<I, U, F>` of type `ty`, its source,
@@ -1155,10 +1143,7 @@ pub(crate) fn flattened_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<
 
 /// Of std's `StepBy<I>` of type `ty`, its source.
 pub(crate) fn stepped_by_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-    match ty.kind() {
-        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::StepBy" => Some(args.type_at(0)),
-        _ => None,
-    }
+    adapter_source(tcx, ty, "std::iter::StepBy")
 }
 
 /// Of std's `Chain<A, B>` of type `ty`, its two sources.
@@ -1216,16 +1201,25 @@ pub(crate) enum Parted {
 
 /// What std's `Rev` adapter of type `ty` reverses, `I` of `Rev<I>`.
 pub(crate) fn reversed_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-    match ty.kind() {
-        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Rev" => Some(args.type_at(0)),
-        _ => None,
-    }
+    adapter_source(tcx, ty, "std::iter::Rev")
 }
 
 /// What std's `Filter` adapter of type `ty` filters, `I` of `Filter<I, P>`.
 pub(crate) fn filtered_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    adapter_source(tcx, ty, "std::iter::Filter")
+}
+
+/// Of std's `FilterMap<I, F>` of type `ty`, its source: made as a map
+/// filtered, `$filterEnds($mapEnds(..))` from either end (ADR 0526).
+pub(crate) fn filter_mapped_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    adapter_source(tcx, ty, "std::iter::FilterMap")
+}
+
+/// Of std's adapter `path` of type `ty`, its source, its first type
+/// argument: `I` of `Map<I, F>`.
+fn adapter_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, path: &str) -> Option<Ty<'tcx>> {
     match ty.kind() {
-        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Filter" => Some(args.type_at(0)),
+        ty::Adt(adt, args) if std_path(tcx, adt.did()) == path => Some(args.type_at(0)),
         _ => None,
     }
 }
@@ -1365,10 +1359,7 @@ pub(crate) fn counted_adapter<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(
 
 /// What std's `Cycle` adapter of type `ty` cycles, `I` of `Cycle<I>`.
 pub(crate) fn cycled_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-    match ty.kind() {
-        ty::Adt(adt, args) if std_path(tcx, adt.did()) == "std::iter::Cycle" => Some(args.type_at(0)),
-        _ => None,
-    }
+    adapter_source(tcx, ty, "std::iter::Cycle")
 }
 
 /// What std's `Zip` adapter of type `ty` zips, `A` and `B` of `Zip<A, B>`.

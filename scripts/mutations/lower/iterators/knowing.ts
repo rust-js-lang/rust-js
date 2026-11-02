@@ -709,4 +709,20 @@ export const mutations: Mutation[] = [
       "the committed @rust-js/std is std|^generic_folds_unwind with",
     ],
   },
+  {
+    name: "filter-map-ends-unmade",
+    breaks: "a `filter_map` made of a source given as it is, stepped from its back, isn't made knowing it: itertools' `self.iter.filter_map(..).rfold(..)` is refused, \"can't step from its back\" (#473)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                let some = Expr::call_helper(\"$filterEnds\", vec![mapped, present.clone()]);\n",
+    replace: "                let some = Expr::call_helper(\"$filterEnds\", vec![mapped, present.clone()]);\n                return Err(self.unsupported(span, \"a mutated filter_map\"));\n",
+    tests: ["test/corpus.test.ts", "-t", "^filter_map_of_given_from_its_back.rs$"],
+  },
+  {
+    name: "given-filter-map-ends-boxed",
+    breaks: "a `filter_map` made knowing its back keeps each kept `Some` in its box, where it looks like `None`, and folds `{ value }`s (#473)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                    Some(unbox) => Expr::call_helper(\"$mapEnds\", vec![some, unbox.clone()]),\n",
+    replace: "                    Some(_) => some,\n",
+    tests: ["test/corpus.test.ts", "-t", "^filter_map_of_given_from_its_back.rs$"],
+  },
 ];

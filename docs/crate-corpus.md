@@ -31,7 +31,7 @@ and `bun scripts/crate-corpus.ts` refuses a row of no exact release (ADR
 |---|---|---|
 | strum 0.27.2 (`std`, `derive`) | runs | |
 | either 1.19.0 | runs | measured 2026-11-02, at 1.19.0, after ADR 0687's amendment (#475): its own `rfold` and `nth_back` given its sides' dictionaries |
-| itertools 0.14.0 | compiles (refused: #473) | on 2026-11-02 refused: a `FilterMap` of an iterator given as it is, `FilterMapOk::rfold`'s, stepped from its back; measured 2026-10-22, after ADR 0552's amendment: its probe is refused at `collect_vec()` of a `chunk_by` group's `copied()`, a `Group` whose `Drop` the library's `collect_vec` takes none of |
+| itertools 0.14.0 | compiles | measured 2026-11-02, after ADRs 0202, 0687 and 0545 amended (#473): its probe is refused at a closure that holds part of a value with a destructor; on 2026-10-22, after ADR 0552's amendment, at `collect_vec()` of a `chunk_by` group's `copied()`, a `Group` whose `Drop` the library's `collect_vec` takes none of |
 | indexmap 2.14.2 | runs | a `Map`, rustc builds it (ADR 0424) |
 | bitflags 2.13.2 | runs | |
 | smallvec 1.16.4 | runs | measured 2026-11-02, at 1.16.4, after ADRs 0145, 0099 and 0914 amended (#476): `size_of::<A::Item>()` of a library's dictionary, a `&mut usize` of a tuple given on, `.map(Self)` |

@@ -423,6 +423,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let source_value = self.as_double_ended((**source_value).clone(), source.peel_refs(), span)?;
             return Ok(Expr::call_helper("$mapEnds", vec![source_value, f.clone()]));
         }
+        // A `filter_map` made here, `src.map(f).filter(present)`, each kept
+        // `Some` taken out of its box after, `.map($someValue)`, where it
+        // looks like `None`: its source's items `f` gives a value of, from
+        // either end, as Rust's `FilterMap` steps them, as one made of a
+        // source that knows its back is (`iter_comb`, ADR 0526): made so
+        // where it's made, of one the crate steps from its back, itertools'
+        // `self.iter.filter_map(..).rfold(..)` of a source given as it is
+        // (#473).
+        if let Some(source) = crate::lower::recognition::filter_mapped_source(self.tcx, ty) {
+            let (kept, unboxed) = match &value.kind {
+                js::ExprKind::Call(callee, args)
+                    if let js::ExprKind::Member(kept, method) = &callee.kind
+                        && method == "map"
+                        && let [unbox] = args.as_slice()
+                        && unbox.helper_name() == Some("$someValue") =>
+                {
+                    (&**kept, Some(unbox))
+                }
+                _ => (&value, None),
+            };
+            if let js::ExprKind::Call(callee, args) = &kept.kind
+                && let js::ExprKind::Member(mapped, method) = &callee.kind
+                && method == "filter"
+                && let [present] = args.as_slice()
+                && let js::ExprKind::Call(map_callee, map_args) = &mapped.kind
+                && let js::ExprKind::Member(source_value, map) = &map_callee.kind
+                && map == "map"
+                && let [f] = map_args.as_slice()
+            {
+                let source_value = self.as_double_ended((**source_value).clone(), source.peel_refs(), span)?;
+                let mapped = Expr::call_helper("$mapEnds", vec![source_value, f.clone()]);
+                let some = Expr::call_helper("$filterEnds", vec![mapped, present.clone()]);
+                return Ok(match unboxed {
+                    Some(unbox) => Expr::call_helper("$mapEnds", vec![some, unbox.clone()]),
+                    None => some,
+                });
+            }
+        }
         // The crate's, made knowing its back.
         if self.is_user_iterator(ty) {
             return self.user_iterator_knowing(value, ty, (true, false), span);
