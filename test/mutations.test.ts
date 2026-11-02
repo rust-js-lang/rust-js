@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { judge, lists, mutate, mutations, syncTree } from "../scripts/mutations";
+import { judge, lists, mutate, mutations, site, syncTree, unmatched, unparsed } from "../scripts/mutations";
 import type { Exit } from "./child";
 import { fixture, root } from "./support";
 
@@ -18,6 +18,32 @@ test("every mutation applies to the compiler as it is, once", () => {
     expect([m.name, typeof mutated === "string" ? "applies" : mutated.problem]).toEqual([m.name, "applies"]);
     expect(m.tests.length).toBeGreaterThan(0);
   }
+});
+
+// Each lexes, built alone and in a build of many, so a build of many fails
+// only where a mutation's own code does: eight of one function, its site
+// cut at a pattern's `{` in its signature, split four of 2026-11-02's
+// nightly shards' builds down to one each, and said nothing of which (#479).
+test("every mutation's build lexes, alone and in a build of many", () => {
+  const read = (file: string) => readFileSync(join(root, file), "utf8");
+  const sources = [...new Bun.Glob("src/**/*.rs").scanSync(root)];
+  expect(sources.filter((file) => unmatched(read(file)) !== undefined)).toEqual([]);
+  const files = new Map<string, string>();
+  const cached = (file: string) => files.get(file) ?? files.set(file, read(file)).get(file)!;
+  const unlexed = mutations.flatMap((m) => {
+    const problem = unparsed(m, site(m, cached), cached);
+    return problem ? [`${m.name}: ${problem}`] : [];
+  });
+  expect(unlexed).toEqual([]);
+});
+
+test("a mutation's build that wouldn't lex says where", () => {
+  const read = (source: string) => () => source;
+  const m = { name: "x", breaks: "", file: "a.rs", find: "let a = (1);", replace: "let a = (1;", tests: ["t"] };
+  expect(unparsed(m, undefined, read("fn f() {\n    let a = (1);\n}\n"))).toBe("doesn't lex: a.rs with it has an unexpected closing delimiter `}` on line 3");
+  // What's in strings, chars and comments is no delimiter.
+  expect(unmatched('fn f() { let _ = ("}", \'{\', r#"("#); /* { /* ] */ */ } // )\nfn g<\'a>(_: &\'a ()) {}')).toBeUndefined();
+  expect(unmatched("fn f() { (")).toBe("unclosed delimiter `(` on line 1");
 });
 
 // The tests a mutation names are there: a `-t` of the corpus names one of

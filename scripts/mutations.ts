@@ -245,6 +245,65 @@ export function mutate(source: string, mutation: Mutation): string | { problem: 
   return source.slice(0, at) + mutation.replace + source.slice(at + mutation.find.length);
 }
 
+/** Rust's delimiters in `source`, each `(`, `[`, `{`, `)`, `]` or `}` and
+ * where it is, past its comments, strings and chars: what rustc's lexer
+ * matches before it parses anything. */
+export function delimiters(source: string): { char: string; at: number }[] {
+  const found: { char: string; at: number }[] = [];
+  // From each token that matters to the next, past what's between.
+  const next = /\/\/|\/\*|[bc]?r#*"|"|'|[()[\]{}]/g;
+  const char = /'(?:\\(?:x[0-9a-fA-F]{2}|u\{[0-9a-fA-F]{1,6}\}|.)|[^\\'\n])'/uy;
+  for (let m = next.exec(source); m; m = next.exec(source)) {
+    const [token] = m;
+    const i = m.index;
+    if (token === "//") {
+      const end = source.indexOf("\n", i);
+      next.lastIndex = end < 0 ? source.length : end;
+    } else if (token === "/*") {
+      // Block comments nest.
+      let depth = 1;
+      let at = i + 2;
+      while (at < source.length && depth > 0) {
+        if (source.startsWith("/*", at)) (depth++, (at += 2));
+        else if (source.startsWith("*/", at)) (depth--, (at += 2));
+        else at++;
+      }
+      next.lastIndex = at;
+    } else if (token.endsWith('"') && token !== '"') {
+      // A raw string, where its `r` starts no identifier's tail.
+      if (/\w/.test(source[i - 1] ?? "")) {
+        next.lastIndex = i + token.length - 1;
+        continue;
+      }
+      const hashes = token.slice(token.indexOf("r") + 1, -1);
+      const end = source.indexOf(`"${hashes}`, i + token.length);
+      next.lastIndex = end < 0 ? source.length : end + 1 + hashes.length;
+    } else if (token === '"') {
+      let at = i + 1;
+      while (at < source.length && source[at] !== '"') at += source[at] === "\\" ? 2 : 1;
+      next.lastIndex = at + 1;
+    } else if (token === "'") {
+      // A char, or a lifetime's or a label's quote.
+      char.lastIndex = i;
+      if (char.test(source)) next.lastIndex = char.lastIndex;
+    } else found.push({ char: token, at: i });
+  }
+  return found;
+}
+
+/** Why `source`'s delimiters don't match, as rustc's lexer would say before
+ * it parses anything, or nothing where they do: a mutation's build that
+ * doesn't is no build of what it says it is (#479). */
+export function unmatched(source: string, firstLine = 1): string | undefined {
+  const open: { char: string; at: number }[] = [];
+  const line = (at: number) => firstLine - 1 + source.slice(0, at).split("\n").length;
+  for (const d of delimiters(source)) {
+    if ("([{".includes(d.char)) open.push(d);
+    else if (open.pop()?.char !== { ")": "(", "]": "[", "}": "{" }[d.char]) return `unexpected closing delimiter \`${d.char}\` on line ${line(d.at)}`;
+  }
+  return open.length > 0 ? `unclosed delimiter \`${open[open.length - 1].char}\` on line ${line(open[open.length - 1].at)}` : undefined;
+}
+
 /** Where a mutation goes in a build of many (ADR 1031): the text of the
  * crate's `file` from `start` to `end`, a function's body or the
  * `include_str!` of a runtime helper, which that build has once for each of
@@ -276,18 +335,45 @@ export function site(mutation: Mutation, read: (file: string) => string): Site |
   const [from, to] = enclosingFunction(source, first, first + mutation.find.split("\n").length - 1);
   if (!/\bfn\s/.test(lines[from - 1] ?? "") || to <= from) return undefined;
   const offset = (line: number) => lines.slice(0, line - 1).reduce((n, text) => n + text.length + 1, 0);
-  // Its body: from the `{` that ends its signature, as rustfmt lays one
-  // out, to the `}` at its indent.
+  // Its body: from the `{` that ends its signature, the first outside its
+  // parameters' parentheses, as a struct's pattern there has one of its own
+  // (#479), to the `}` at its indent.
+  const close = offset(to) + lines[to - 1].indexOf("}");
   let open = -1;
-  for (let line = from; line < to && open < 0; line++) {
-    const text = lines[line - 1].trimEnd();
-    if (text.endsWith("{")) open = offset(line) + text.length - 1;
+  let depth = 0;
+  for (const { char, at } of delimiters(source.slice(offset(from), close))) {
+    if (char === "(" || char === "[") depth++;
+    else if (char === ")" || char === "]") depth--;
+    else if (char === "{" && depth === 0) {
+      open = offset(from) + at;
+      break;
+    }
   }
   if (open < 0) return undefined;
-  const close = offset(to) + lines[to - 1].indexOf("}");
   if (/\bconst\s+(?:unsafe\s+)?fn\b|->\s*impl\b/.test(source.slice(offset(from), open))) return undefined;
   if (at <= open || at + mutation.find.length > close) return undefined;
   return { file: mutation.file, start: open + 1, end: close };
+}
+
+/** Why `mutation`'s build wouldn't lex, as its file with it in place, and,
+ * `at` its site in a build of many, as that site and its arm there; or
+ * nothing where both would. A build that fails lexing is no build of what
+ * the mutation says it is: of 2026-11-02's nightly, eight of one function,
+ * whose site was cut at a pattern's `{` in its signature, made four
+ * shards' every build of them split down to one, twenty minutes each (#479). */
+export function unparsed(mutation: Mutation, at: Site | undefined, read: (file: string) => string): string | undefined {
+  if (!mutation.file.endsWith(".rs")) return undefined;
+  const mutated = mutate(read(mutation.file), mutation);
+  if (typeof mutated !== "string") return undefined;
+  const alone = unmatched(mutated);
+  if (alone) return `doesn't lex: ${mutation.file} with it has an ${alone}`;
+  if (!at) return undefined;
+  const text = read(at.file);
+  const original = text.slice(at.start, at.end);
+  const arm = mutate(original, mutation);
+  const from = text.slice(0, at.start).split("\n").length;
+  const site = unmatched(original, from) ?? (typeof arm === "string" ? unmatched(arm, from) : undefined);
+  return site && `doesn't lex in a build of many: its site, of ${at.file} from line ${from}, has an ${site}`;
 }
 
 /** `sited` in builds of at most `size`, in the order they're given: each
@@ -672,9 +758,17 @@ async function main() {
   // `--batch=1` builds each alone.
   const size = Number(args.find((arg) => arg.startsWith("--batch="))?.slice("--batch=".length)) || 32;
   const read = (file: string) => readFileSync(join(root, file), "utf8");
-  const sited: Sited[] = chosen.map((mutation) => ({ mutation, site: size > 1 ? site(mutation, read) : undefined }));
-  const queue: Sited[][] = [...batches(sited, size), ...sited.filter((s) => s.site === undefined).map((s) => [s])];
   const results = new Map<Mutation, string>();
+  // One whose build wouldn't lex is said so by name, not built: a build of
+  // many with it in splits down to it, twenty minutes of a shard (#479).
+  const sited: Sited[] = [];
+  for (const mutation of chosen) {
+    const at = size > 1 ? site(mutation, read) : undefined;
+    const problem = unparsed(mutation, at, read);
+    if (problem) results.set(mutation, problem);
+    else sited.push({ mutation, site: at });
+  }
+  const queue: Sited[][] = [...batches(sited, size), ...sited.filter((s) => s.site === undefined).map((s) => [s])];
   // What each took, its build's share and its tests, in seconds.
   const took = new Map<Mutation, { build: number; tests: number }>();
   const original = readFileSync(join(root, "runtime", "index.js"), "utf8");

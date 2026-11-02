@@ -100,3 +100,27 @@ What a run waited on next were its own steps:
 
 A shard of 502 took 532 s, against 969 s, on a Mac loaded by two other
 builds, with the same verdicts: 499 caught, the same 3 survived.
+
+## Amendment: a site is its function's body, and each mutation's build lexes
+
+2026-11-02's nightly (run 41417626908, #479) spent twenty minutes of four
+shards each splitting a build of 32 down to two that didn't build,
+`unexpected closing delimiter`, and then built each of the two alone,
+which did. A site began at the first line of its function ending in `{`,
+and `evidence_args_given` takes a struct's pattern, `GivenEvidence {
+bounds: given, .. }: GivenEvidence`, so its eight mutations' site began
+inside its parameters: each built in place, and every build of many with
+one of them in it was unbalanced.
+
+- **A site's body begins at the first `{` outside its signature's
+  parentheses and brackets**, found past comments, strings and chars
+  (`delimiters`).
+- **A mutation whose build wouldn't lex isn't built: the run names it**,
+  as `doesn't lex`, with the file and line, of its file with it in place,
+  or of its site and its arm in a build of many (`unparsed`). The split of
+  a build of many that fails stays, for what lexes and still doesn't build.
+- **`test/mutations.test.ts` holds every mutation to it**, "every
+  mutation's build lexes, alone and in a build of many", in 1.5 s, so a
+  mutation, or a site, that doesn't lex fails the check of the change that
+  makes it, not the nightly after. It holds the compiler's sources to it
+  too, so the lexer is checked against what rustc lexes.

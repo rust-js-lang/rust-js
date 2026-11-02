@@ -189,6 +189,11 @@ test("a mutation goes in a build of many where it's in a function's body that ca
   expect(site(inProgram("twice-thrice", "n * 2", "n * 3"), readProgram)).toBeUndefined();
   expect(site(inProgram("sum-signature", "fn sum(values: &[u32]) -> u32 {", "fn sum(values: &[u32]) -> u32 {"), readProgram)).toBeUndefined();
   expect(site(inProgram("nowhere", "not in the program", ""), readProgram)).toBeUndefined();
+  // A struct's pattern in its parameters has a `{` of its own, no body's:
+  // cut there, a build of many didn't build (#479).
+  const destructured = "struct P {\n    x: u32,\n}\n\nfn x(\n    P {\n        x,\n    }: P,\n) -> u32 {\n    x + 1\n}\n";
+  const at = site(inProgram("x-off", "x + 1", "x + 2"), () => destructured);
+  expect(destructured.slice(at!.start, at!.end)).toBe("\n    x + 1\n");
 });
 
 test("a build of many has each site once, with all its mutations, and no site inside another", () => {

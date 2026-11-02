@@ -284,7 +284,9 @@ What keeps them there:
   by the name of its copy of it: on CI, where one built alone took 28 s, a
   build of many takes about as long as one. `--batch=1` builds each alone.
   A build of many that fails is built again as two halves, so a mutation
-  that doesn't build alone says so. The controls run each file the
+  that doesn't build alone says so; one whose build wouldn't lex isn't
+  built, and is named as `doesn't lex`, which `test/mutations.test.ts`
+  checks of every mutation in the check (#479). The controls run each file the
   mutations name once as the compiler is and once broken, read from its
   JUnit report; a build's mutants test on every core (`--tests=N`) while
   the next builds; and each mutant's run stops at its first failure

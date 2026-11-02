@@ -1004,7 +1004,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0044 The playground on React, one component per file](0044-playground-on-react.md)
 - [0045 The playground is a Vite app, with React Compiler and Tailwind](0045-playground-on-vite.md)
 - [1030 What only the nightly runs](1030-what-only-the-nightly-runs.md)
-- [1031 Mutations are built many to a build](1031-mutations-are-built-many-to-a-build.md)
+- [1031 Mutations are built many to a build](1031-mutations-are-built-many-to-a-build.md) *(amended: a site is its function's body, and each mutation's build lexes)*
 - [1067 Regression nets the nightly casts](1067-regression-nets-the-nightly-casts.md)
 - [1032 An `if` whose branches are alike is its branch](1032-an-if-whose-branches-are-alike-is-its-branch.md)
 
