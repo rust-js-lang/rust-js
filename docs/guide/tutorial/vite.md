@@ -121,8 +121,8 @@ pub fn greet(name: &str) -> String {
 
 ```jsx
 // src/App.jsx
-import { useState } from "react";
 import { greet } from "./greeting.js";
+import { useState } from "react";
 
 export function App() {
   const [count, setCount] = useState(0);

@@ -11,7 +11,7 @@ pub fn import_line(clause: &str, from: &str) -> String {
 }
 
 /// What's above a module's code: its header, directives, imports, one block
-/// as a person orders it (ADR 0295), each after the comments before the
+/// in the order its `use`s are written (ADR 1063), each after the comments before the
 /// `use` that makes it, `comments`, and re-exports. Layout, as
 /// `format::spaced`'s blank lines are, of what the module says.
 pub(super) fn header(module: &Module, comments: &std::collections::HashMap<u32, Vec<String>>) -> String {
@@ -22,11 +22,12 @@ pub(super) fn header(module: &Module, comments: &std::collections::HashMap<u32, 
     let packages = &module.packages;
     // Sorted already, and each once, as the artifact planner chose them.
     let helpers = &module.helpers;
-    // One block, as a person orders it (ADR 0295): packages, then the
-    // module's own relative ones, bindings and the crate's alike, each by
-    // path; then what it imports for its effect, as written, its CSS after
-    // what it styles; then the runtime's helpers.
-    // Each by the specifier it's ordered by, `ordered_as`.
+    // One block, in the order the module's `use`s are written (ADR 1063):
+    // each import where the first `use` that makes it is, as JS loads its
+    // modules in its imports' order; one no `use` makes after, packages
+    // then relative ones, each by its specifier; then what it imports for
+    // its effect, as written, its CSS after what it styles; then the
+    // runtime's helpers.
     let mut named: Vec<(bool, &str, String, js::Span)> = Vec::new();
 
     let mut effects = Vec::new();
@@ -45,29 +46,27 @@ pub(super) fn header(module: &Module, comments: &std::collections::HashMap<u32, 
         let names = clause_of(&mut package.named.iter());
         let names = (!names.is_empty()).then(|| format!("{{ {} }}", names.join(", ")));
         let clause: Vec<String> = package.default.iter().cloned().chain(names).collect();
-        let ordered_as = package.ordered_as.as_deref().unwrap_or(&package.from);
-        let relative = crate::program::is_relative_specifier(ordered_as);
+        let relative = crate::program::is_relative_specifier(&package.from);
         if !clause.is_empty() {
             let line = import_line(&clause.join(", "), &package.from);
-            named.push((relative, ordered_as, line, package.span));
+            named.push((relative, &package.from, line, package.span));
         }
         if let Some(namespace) = &package.namespace {
             let line = import_line(&format!("* as {namespace}"), &package.from);
-            named.push((relative, ordered_as, line, package.span));
+            named.push((relative, &package.from, line, package.span));
         }
         if clause.is_empty() && package.namespace.is_none() {
             effects.push(format!("import {:?};\n", package.from));
         }
     }
     for import in &module.imports {
-        let ordered_as = import.ordered_as.as_deref().unwrap_or(&import.from);
-        let relative = crate::program::is_relative_specifier(ordered_as);
+        let relative = crate::program::is_relative_specifier(&import.from);
         // The module itself, its own line after what's named, as a
         // package's (rd114, ADR 1018).
         let namespace = (import.namespace.iter()).map(|namespace| {
             (
                 relative,
-                ordered_as,
+                import.from.as_str(),
                 import_line(&format!("* as {namespace}"), &import.from),
                 import.span,
             )
@@ -86,10 +85,12 @@ pub(super) fn header(module: &Module, comments: &std::collections::HashMap<u32, 
             (None, _) => format!("{{ {} }}", names.join(", ")),
         };
         let line = import_line(&clause, &import.from);
-        named.push((relative, ordered_as, line, import.span));
+        named.push((relative, &import.from, line, import.span));
         named.extend(namespace);
     }
-    named.sort_by(|a, b| (a.0, a.1).cmp(&(b.0, b.1)));
+    // Of two one `use` makes, `use crate::{a::x, b::y};`, by specifier.
+    let written = |span: js::Span| (span.is_none(), span.lo);
+    named.sort_by(|a, b| (written(a.3), a.0, a.1).cmp(&(written(b.3), b.0, b.1)));
     // Each after the comments of its `use`, on lines of their own, once: of
     // two imports one `use` makes, above the first printed.
     let mut said: std::collections::HashSet<u32> = std::collections::HashSet::new();

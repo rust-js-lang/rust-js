@@ -404,11 +404,9 @@ pub fn run() -> String {
   manifest({ "./*": "./*.js", "./src/symbols": null });
   expect(built().stderr).toBe("");
   imports("shared/src/flags", symbols);
-  // A bare specifier never moves an import, whose order is the order JS
-  // loads its modules in: each is where its file's path put it, as before
-  // (the user's "preserve", ADR 0262), only its text another, though a
-  // package's sorts before any relative one: React's ReactFizzServer
-  // still before ReactFizzConfigDOM.
+  // A subpath never moves an import, whose order is the order JS loads
+  // its modules in: each is where its `use` is, and one no `use` makes, a
+  // binding's of the crate's own, after them (ADR 1063).
   for (const file of ["a", "t"]) {
     writeFileSync(join(dir, `${file}.js`), `export function ${file}() {\n  return 1;\n}\n`);
   }
@@ -447,8 +445,8 @@ pub fn run() -> String {
 // upstream writes it, where its `exports` resolves the subpath to the
 // module's JS and Node finds the package from the importing module, as a
 // dependency's module is (ADR 0770, amended); one in the importer's own
-// package, by its file, as before; and the import stays where its file's
-// path put it.
+// package, by its file, as before; and the import stays where its `use`
+// is (ADR 1063).
 test("a crate's module in another package is imported by that package's subpath", () => {
   const dir = fixture("own-module-subpaths");
   mkdirSync(join(dir, "dom", "src"), { recursive: true });
@@ -505,7 +503,7 @@ fn a() -> u32 {
   run(["rustc", "--edition=2024", join(native, "main.rs"), "-o", join(native, "program"), "--extern", `dom=${join(native, "libdom.rlib")}`, "-L", `dependency=${native}`]);
   const nativeRun = run([join(native, "program")]).trim();
   expect(nativeRun).toBe("7");
-  const byFile = ["../../a.js", "../../shared/fragment.js", "./zeta.js"];
+  const byFile = ["../../shared/fragment.js", "./zeta.js", "../../a.js"];
   // No `exports`, or Node finds no copy of the package: by its file.
   manifest({ "./*": "./*.js" });
   expect(built().stderr).toBe("");
@@ -515,13 +513,13 @@ fn a() -> u32 {
   expect(built().stderr).toBe("");
   expect(imported()).toEqual(byFile);
   expect(ran()).toBe(nativeRun);
-  // By its package's subpath, where its file's path put it among the
-  // imports, as JS loads them in that order; its types by the same
+  // By its package's subpath, where its `use` put it among the imports,
+  // as JS loads them in that order; its types by the same
   // specifier; the module in `shared` imports `dom`'s by its file, `dom`
   // exporting none.
   manifest({ "./*": "./*.js" });
   expect(built().stderr).toBe("");
-  expect(imported()).toEqual(["../../a.js", "shared/fragment", "./zeta.js"]);
+  expect(imported()).toEqual(["shared/fragment", "./zeta.js", "../../a.js"]);
   const types = readFileSync(join(dir, "dom", "src", "lib.d.ts"), "utf8");
   expect(types).toContain('from "shared/fragment";\n');
   expect(readFileSync(join(dir, "shared", "fragment.js"), "utf8")).toContain('from "../dom/src/level.js";\n');
@@ -532,11 +530,60 @@ fn a() -> u32 {
   dom({ "./*": "./*.js" });
   symlinkSync(join(dir, "dom"), join(dir, "node_modules", "dom"), "dir");
   expect(built().stderr).toBe("");
-  expect(imported()).toEqual(["../../a.js", "shared/fragment", "./zeta.js"]);
+  expect(imported()).toEqual(["shared/fragment", "./zeta.js", "../../a.js"]);
   expect(readFileSync(join(dir, "shared", "fragment.js"), "utf8")).toContain('from "dom/src/level";\n');
   expect(ran()).toBe(nativeRun);
   // A pattern of another file, which Node then doesn't find: by its file.
   manifest({ "./*": "./*" });
   expect(built().stderr).toBe("");
   expect(imported()).toEqual(byFile);
+}, 600_000);
+
+// A module's imports are in the order its `use`s are written, as JS loads
+// its modules in its imports' order (the user's decision, ADR 1063): React
+// DOM's ReactDOMFizzServerNode imports ReactFizzServer, a binding's JS
+// module, before ReactFizzConfigDOM, a library's module by its package's
+// subpath, whose load sets what the other's reads in jest's cycle (rd570).
+// Whichever `use` group comes first, its module loads first.
+test("imports are in the order of the uses that make them, a binding's and a library module's alike", () => {
+  const dir = fixture("use-ordered-imports");
+  writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["server", "config", "dom"]\nresolver = "3"\n');
+  const crate = (name: string, more = "") => {
+    mkdirSync(join(dir, name, "src"), { recursive: true });
+    writeFileSync(join(dir, name, "Cargo.toml"), `[package]\nname = "${name}"\nversion = "0.1.0"\nedition = "2024"\n${more}`);
+    writeFileSync(join(dir, name, "package.json"), JSON.stringify({ name, private: true, type: "module", exports: { "./*": "./*.js" } }));
+  };
+  crate("server");
+  crate("config");
+  crate("dom", '\n[dependencies]\nserver = { path = "../server" }\nconfig = { path = "../config" }\n');
+  // Each JS module notes its load.
+  const noted = (name: string, value: number) =>
+    `globalThis.loaded = [...(globalThis.loaded ?? []), "${name}"];\n\nexport function ${name}() {\n  return ${value};\n}\n`;
+  writeFileSync(join(dir, "server", "src", "Fizz.js"), noted("start", 1));
+  writeFileSync(join(dir, "server", "src", "lib.rs"), "pub mod task;\n");
+  writeFileSync(join(dir, "server", "src", "task.rs"), '#[cfg_attr(rust_js, rust_js::link_name = "server/src/Fizz#start")]\npub fn start() -> u32 {\n    unreachable!()\n}\n');
+  writeFileSync(join(dir, "config", "src", "mark.js"), noted("mark", 2));
+  writeFileSync(join(dir, "config", "src", "lib.rs"), "pub mod setup;\n");
+  writeFileSync(join(dir, "config", "src", "setup.rs"), '#[cfg_attr(rust_js, rust_js::link_name = "./mark.js#mark")]\nfn mark() -> u32 {\n    unreachable!()\n}\n\npub fn make() -> u32 {\n    mark() * 2\n}\n');
+  mkdirSync(join(dir, "node_modules", "@rust-js"), { recursive: true });
+  for (const name of ["server", "config"]) symlinkSync(join(dir, name), join(dir, "node_modules", name), "dir");
+  symlinkSync(join(root, "runtime"), join(dir, "node_modules", "@rust-js", "runtime"), "dir");
+  symlinkSync(join(root, "std"), join(dir, "node_modules", "@rust-js", "std"), "dir");
+  const lib = join(dir, "dom", "src", "lib.js");
+  const imported = () => [...readFileSync(lib, "utf8").matchAll(/^import .* from "(.*)";$/gm)].map((line) => line[1]);
+  const loaded = () =>
+    run([node ?? "node", "--input-type=module", "--eval", `const dom = await import(${JSON.stringify(lib)}); console.log(dom.run(), globalThis.loaded.join());`]).trim();
+  const written = (first: string, second: string) => {
+    writeFileSync(join(dir, "dom", "src", "lib.rs"), `${first}\n\n${second}\n\npub fn run() -> u32 {\n    start() + make()\n}\n`);
+    expect(build(join(dir, "dom")).stderr).toBe("");
+  };
+  // ReactDOMFizzServerNode's order: the binding's, then the library's.
+  written("use server::task::start;", "use config::setup::make;");
+  expect(imported()).toEqual(["server/src/Fizz", "config/src/setup"]);
+  expect(loaded()).toBe("5 start,mark");
+  // The other way round, the library's module first, which a sort by the
+  // specifier, or by its file, would put after the binding's.
+  written("use config::setup::make;", "use server::task::start;");
+  expect(imported()).toEqual(["config/src/setup", "server/src/Fizz"]);
+  expect(loaded()).toBe("5 mark,start");
 }, 600_000);

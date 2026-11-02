@@ -199,3 +199,13 @@ pattern of another file, and the import's place beside a binding's
 `../../a.js`. Mutations `own-subpath-same-package`,
 `own-subpath-not-installed` (`output.rs`), `own-subpath-ordered-by-text`
 (`to_oxc/header.rs`) and `scope-past-nearest` (`packages.rs`).
+
+## Its imports' order replaced (rd570, ADR 1063)
+
+The order above, a subpath's import kept where its file's specifier put
+it (`js::Package::ordered_as`, `js::Import::ordered_as`,
+`Dependencies::ordered_as`, and the mutations `package-subpath-import-moved`
+and `own-subpath-ordered-by-text`), is replaced by
+[1063](1063-imports-are-in-the-order-of-their-uses.md): every import is
+where its `use` is, a subpath's too, and those keys are gone. The
+specifiers this ADR chooses are as they were.

@@ -448,11 +448,11 @@ pub fn html() -> String {
 ```
 
 ```jsx
-import { StrictMode } from "react";
-import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
+import { createPortal } from "react-dom";
 import { renderToString } from "react-dom/server";
 import { App } from "./app.jsx";
+import { StrictMode } from "react";
 
 export function Modal({ children }) {
   const body = window.document.body;

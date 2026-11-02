@@ -240,6 +240,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1060 A loop from the end down to a computed start counts down](1060-a-loop-from-the-end-of-a-computed-start-counts-down.md)
 - [1061 A stream's reader is of the mode its options say, as TypeScript's overloads type it](1061-a-streams-reader-is-of-the-mode-its-options-say.md) *(amended: a form's `append` and `set` take text or a Blob, rd505)*
 - [1062 A union's one class is what its other kinds leave](1062-a-unions-one-class-is-what-its-other-kinds-leave.md)
+- [1063 Imports are in the order of their `use`s](1063-imports-are-in-the-order-of-their-uses.md)
 - [0205 Flattened structs chain, and the props' own name is theirs](0205-flattened-chains.md)
 - [0206 TypeScript, read and written by TypeScript's own parser and printer](0206-typescript-module.md)
 - [0207 A crate's `.d.ts` is printed by TypeScript](0207-declarations-printed-by-typescript.md)
@@ -330,7 +331,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0292 An index a condition shows in bounds is read as it is](0292-known-bounds.md)
 - [0293 A `Cell` a `let` takes apart and reads at once is its value](0293-cells-read-at-once.md)
 - [0294 `unwrap_unchecked()` is the value, as TypeScript's `x!` is](0294-unwrap-unchecked.md)
-- [0295 A module's imports are one block, packages first](0295-import-order.md)
+- [0295 A module's imports are one block, packages first](0295-import-order.md) *(its order replaced by 1063: the `use`s')*
 - [0296 A function a block makes and gives is a named function expression](0296-named-function-expressions.md)
 - [0297 A closure a `let` names for a hook is the hook's named function](0297-named-hook-functions.md)
 - [0298 An Option of a value never falsy is tested by its truth](0298-truthy-options.md) *(amended: an `Option<bool>`'s `Some(true)` is tested by its truth, `x ?? false` as `x`; amended again, reversed: every `Option` is tested `o != null`; amended a third time: by what its payload may be, its truth where it's never falsy, `o != null` where it may be; amended: that truth is a test of being set, `p ? p.x : undefined` is `p?.x`; amended by the user, superseding the truth tests: every `Option` is tested against `null`, one form; amended: no test that it's there after a `typeof` test that decides it; amended by the user: a test says the `None` it can be, `=== undefined` or `=== null` where it's only one; amended: a binding's `and_then` is an optional chain)*
@@ -634,7 +635,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0755 A `return` a block MIR made leads to is each of its `break`s](0755-a-shared-return-is-each-breaks.md)
 - [0760 `js::throw(value)` is `throw value`, the one way to throw a JS value](0760-js-throw-is-throw-of-a-js-value.md)
 - [0761 A `#[rust_js::class]` is a constructor function and its prototype](0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md) *(amended: its struct's `///` doc is its constructor function's; a constructor of statements, its instance `this`; named by its struct's `#[rust_js::name]`, declared where its constructor is; a `PartialEq` and `Hash` of its address allowed; extended by 0911: a binding's class is the global TypeScript names; extended by 0943: a `#[rust_js::object]`'s methods are its literal's own; amended by 1009: `js::Class` takes its constructor's signature; amended by 1035: a trait of classes; a private class is its module's own, rd325; a class whose `new` isn't `pub` is its type alone, `export type { .. }`; amended by 1041: a class that implements a binding's class extends it, an ES class; amended: a load's prototype set right after its constructor, #448)*
-- [0770 A library's `const` is imported by its name, as its crate reads it](0770-a-librarys-const-is-imported-by-its-name.md) *(amended: a dependency's module is imported by its package's subpath where its `exports` resolves it; amended: so is a crate's own module whose JS is in another package)*
+- [0770 A library's `const` is imported by its name, as its crate reads it](0770-a-librarys-const-is-imported-by-its-name.md) *(amended: a dependency's module is imported by its package's subpath where its `exports` resolves it; amended: so is a crate's own module whose JS is in another package; their imports' order replaced by 1063)*
 - [0771 An `==` of a value read as the registry's symbol is its `matches!`](0771-an-equality-of-a-registered-symbol-is-its-match.md) *(amended: a `let` of the read that's only compared)*
 - [0772 A nullable `Cell` field's `None` is `null`, made and written](0772-a-nullable-cell-field-writes-null.md) *(amended by 0791: through a reference or a helper too; extended by 0810: an optional one is absent until set; amended by 0863: a nullable `RefCell` field)*
 - [0773 A binding a module's default names is exported as the default alone](0773-a-held-default-is-exported-once.md) *(amended: every importer asks what a module exports an item as)*

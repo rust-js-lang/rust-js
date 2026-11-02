@@ -9,18 +9,18 @@
 //       ◄── on_compile, on_open, on_delete, on_outcome ──┘
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { compileInWorker } from "../../compiler-client.js";
-import { outputState, sourceState } from "../codemirror.js";
-import { load, loadExample, mb, ms } from "../compiler.js";
-import { prepare } from "../programs.js";
-import { Project, jsName } from "../projects.js";
-import { buildTree } from "../tree.js";
 import { Editor } from "./editor.jsx";
 import { FileTree } from "./file_tree.jsx";
 import { Pane } from "./pane.jsx";
 import { ResultFrame } from "./result_frame.jsx";
 import { StatsTable } from "./stats_table.jsx";
 import { Toolbar } from "./toolbar.jsx";
+import { outputState, sourceState } from "../codemirror.js";
+import { load, loadExample, mb, ms } from "../compiler.js";
+import { prepare } from "../programs.js";
+import { Project, jsName } from "../projects.js";
+import { buildTree } from "../tree.js";
+import { compileInWorker } from "../../compiler-client.js";
 import { $rsplitOnce, $stripSuffix, $trim } from "@rust-js/runtime";
 
 function say(text, tone) {

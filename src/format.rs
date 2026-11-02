@@ -447,7 +447,7 @@ pub(crate) fn laid_out(code: String, map: String, js_file_name: &str, across_lin
 /// where either is a function or spans lines, but after a `let x;` of no
 /// value, as a person separates them, of those the source doesn't tell of,
 /// `told`, its last statements' (ADR 0444, amended),
-/// and `map` moved to match. Its imports stay one block (ADR 0295). Read
+/// and `map` moved to match. Its imports stay one block (ADR 1063). Read
 /// from its parse, so a line of a template literal is never taken for one.
 fn spaced(code: String, map: String, js_file_name: &str, told: &[bool]) -> (String, String) {
     let blank = blank_lines_before(&code, told);

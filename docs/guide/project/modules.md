@@ -130,9 +130,20 @@ and a value that may hold a function, `Box<dyn Fn()>`, is read by its
 name, so a call of it gives the function no `this`
 ([ADR 1018](../../decisions/1018-a-function-called-through-its-module-is-read-through-its-namespace.md)).
 
-Imports are one block, in the order a person writes them: packages, then
-the crate's own modules, then imports for their effect, then
-`@rust-js/runtime` ([ADR 0295](../../decisions/0295-import-order.md)).
+Imports are one block, in the order the module's `use`s are written,
+as JS loads a module's imports in their order: each import where the
+first `use` that makes it is, a binding's JS module, a library's module
+and the crate's own alike. rustfmt sorts the `use`s of one group, the
+lines between blank ones, and keeps the groups as written, so a module
+whose imports must load in an order writes them in groups, as React DOM's
+ReactDOMFizzServerNode writes `use react_server::..;`, a blank line, then
+`use react_dom_bindings::..;`, for upstream's ReactFizzServer before
+ReactFizzConfigDOM. An import no `use` makes, of what's named by its
+path, comes after, packages then relative modules, each by its
+specifier; then imports for their effect, as written; then
+`@rust-js/runtime`
+([ADR 1063](../../decisions/1063-imports-are-in-the-order-of-their-uses.md),
+which replaces [ADR 0295](../../decisions/0295-import-order.md)'s order).
 
 A `use .. as` names the import as it renames the item, cased as the
 item's own name is, a thread-local's camelCase, `use shared::object_is::OBJECT_IS

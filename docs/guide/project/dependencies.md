@@ -374,8 +374,9 @@ import { level } from "shared/src/flags";
   upstream writes it, where `shared`'s `exports` resolves it and Node finds
   `shared` from them. A module in the importer's own package is imported
   by its file, as before.
-- **Its place among the imports** is its file's, `../../shared/..`: JS
-  loads a module's imports in their order, which a bare specifier never
+- **Its place among the imports** is its `use`'s, as every import's is
+  ([ADR 1063](../../decisions/1063-imports-are-in-the-order-of-their-uses.md)):
+  JS loads a module's imports in their order, which a subpath never
   moves.
 
 ## Versions

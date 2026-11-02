@@ -183,10 +183,11 @@ pub fn named() -> String {
     format!("{} {}", owner_name(), Rc::new(count.get()))
 }
 `);
-  expect(js).toContain(`// A type's, which makes no import.
-import { ownerName } from "./fiber.js";
-// TODO: direct imports like some-package/src/* are bad. Fix me.
+  // In the `use`s' order (ADR 1063).
+  expect(js).toContain(`// TODO: direct imports like some-package/src/* are bad. Fix me.
 import { lane } from "./lanes.js";
+// A type's, which makes no import.
+import { ownerName } from "./fiber.js";
 `);
   expect((lib.named as () => string)()).toBe("App 1");
   const alone = await compiled("comment-above-a-type-use", `use std::cell::Cell;
@@ -252,11 +253,11 @@ pub fn named() -> String {
     format!("{} {}", owner_name(), count.get())
 }
 `);
-  expect(tree.js).toContain(`// Of a module.
-import * as Flags from "./common/flags.js";
-// Both.
+  expect(tree.js).toContain(`// Both.
 import { ownerName } from "./fiber.js";
 import { lane } from "./lanes.js";
+// Of a module.
+import * as Flags from "./common/flags.js";
 `);
   expect((tree.lib.named as () => string)()).toBe("App 3");
 });

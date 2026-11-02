@@ -4,8 +4,8 @@
 // `jsx!`, which rust-js prints as the JSX you'd write by hand, and a `main`
 // that renders it into the page's `#app`.
 
-import { useState } from "react";
 import { createRoot } from "react-dom/client";
+import { useState } from "react";
 import { $unwrap } from "@rust-js/runtime";
 
 export function Counter() {

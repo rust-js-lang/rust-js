@@ -5,9 +5,9 @@
 // WebAssembly, the same compiler the page runs (see ../compile-rust.ts), and
 // main.ts calls `start`.
 
-import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./components/app.jsx";
+import { StrictMode } from "react";
 import { $unwrap } from "@rust-js/runtime";
 
 /** Render the page into `#app`. */

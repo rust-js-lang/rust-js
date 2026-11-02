@@ -292,9 +292,6 @@ pub struct Import {
     /// package's subpath, `shared/ReactDOMFragmentRefShared`, of a module
     /// whose file is in that package (ADR 0770, amended).
     pub from: String,
-    /// The specifier it's ordered by among the imports where it isn't
-    /// `from`, its file's, as `Package::ordered_as` is.
-    pub ordered_as: Option<String>,
     /// The `use` that makes it, the first of the module's naming what it
     /// imports, which its comments are before; `Span::NONE` of none.
     pub span: Span,
@@ -338,12 +335,6 @@ pub struct Package {
     pub namespace: Option<String>,
     /// The `use` that makes it, as `Import::span` is.
     pub span: Span,
-    /// The specifier it's ordered by among the imports where it isn't
-    /// `from`: a library's module imported by its package's subpath,
-    /// `shared/ReactFeatureFlags`, is where its file's path,
-    /// `../shared/ReactFeatureFlags.js`, put it, as an import's order is
-    /// the order JS loads its modules in (ADR 0770, amended).
-    pub ordered_as: Option<String>,
 }
 
 #[derive(Clone, PartialEq)]

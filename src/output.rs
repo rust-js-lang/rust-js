@@ -88,19 +88,12 @@ impl OutputPlan {
             let specified = |imports: &[program::LoweredImport]| {
                 imports
                     .iter()
-                    .map(|import| {
-                        let file = self.specifier(&module.path, &import.path);
-                        let (from, ordered_as) = match self.scope_specifier(&module.path, &import.path) {
-                            Some(subpath) => (subpath, Some(file)),
-                            None => (file, None),
-                        };
-                        js::Import {
-                            named: import.named.clone(),
-                            namespace: import.namespace.clone(),
-                            from,
-                            ordered_as,
-                            span: import.span,
-                        }
+                    .map(|import| js::Import {
+                        named: import.named.clone(),
+                        namespace: import.namespace.clone(),
+                        from: (self.scope_specifier(&module.path, &import.path))
+                            .unwrap_or_else(|| self.specifier(&module.path, &import.path)),
+                        span: import.span,
                     })
                     .collect::<Vec<_>>()
             };
@@ -126,7 +119,6 @@ impl OutputPlan {
                 .into_iter()
                 .map(|package| js::Package {
                     from: located(&package.from),
-                    ordered_as: package.ordered_as.as_deref().map(located),
                     ..package
                 })
                 .collect();

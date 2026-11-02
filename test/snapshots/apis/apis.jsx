@@ -3,6 +3,9 @@
 // React's and React DOM's APIs beyond the basics (ADR 0043), each in a
 // component that test/apis.jsx renders with React 19.3 and checks.
 
+import { createRoot } from "react-dom/client";
+import { renderToReadableStream, renderToString } from "react-dom/server";
+import { createPortal, flushSync, useFormStatus } from "react-dom";
 import {
   Activity,
   Fragment,
@@ -24,9 +27,6 @@ import {
   useSyncExternalStore,
   useTransition,
 } from "react";
-import { createPortal, flushSync, useFormStatus } from "react-dom";
-import { createRoot } from "react-dom/client";
-import { renderToReadableStream, renderToString } from "react-dom/server";
 
 /** `use` a promise: Suspense shows the fallback until it resolves. */
 export function Greeting() {

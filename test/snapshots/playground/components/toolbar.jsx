@@ -2,10 +2,10 @@
 
 // Above the editors: the example, Compile and Test, and the status line.
 
-import { cancelCompile } from "../../compiler-client.js";
-import { CONTROL } from "../styles.js";
 import { ExamplePicker } from "./example_picker.jsx";
 import { StatusLine } from "./status_line.jsx";
+import { CONTROL } from "../styles.js";
+import { cancelCompile } from "../../compiler-client.js";
 
 export function Toolbar({ examples, example, onExample, ready, compiling, onCompile, status }) {
   return (

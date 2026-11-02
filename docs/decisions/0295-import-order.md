@@ -1,6 +1,7 @@
 # 0295. A module's imports are one block, packages first
 
-Status: Accepted. Orders what ADRs 0028, 0103 and 0110 import.
+Status: Accepted; its order replaced by [1063](1063-imports-are-in-the-order-of-their-uses.md),
+the `use`s' (the user's decision). Orders what ADRs 0028, 0103 and 0110 import.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)), except for imports for
 an effect, whose order a program can observe and which keep it.
