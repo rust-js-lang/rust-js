@@ -100,7 +100,8 @@ What it has:
 
 - **A value of any shape is a `js::Unknown`,** TypeScript's `unknown`:
   what `json::parse` gives, or a binding's `any`. `classify(value)` tells
-  what an `Option<&Unknown>` is, a `Kind` to `match`, by `typeof`, `===
+  what an `Option<&Unknown>` is, or an `Option<&dyn IntoUnknown>`, a
+  dictionary's member of `any`, a `Kind` to `match`, by `typeof`, `===
   null` and `Array.isArray`, `undefined` and `null` too (ADR 0676);
   `get(value, key)`, `set(value, key, to)` and `has(value, key)` are
   `value[key]` and `key in value`; `object::keys` is `Object.keys`
@@ -124,7 +125,12 @@ What it has:
   `PropertyDescriptor` is a dictionary, a struct of `Option`s:
   `PropertyDescriptor { value: Some(&prev), ..props }` is `{ ...props,
   value: prev }`; its `set` is given any value JS gives, so a function
-  `function::with_this` makes, which reads its `this`, is one. What
+  `function::with_this` makes, which reads its `this`, is one. One
+  `get_own_property_descriptor` gives is read as it's written, and its
+  `value`, any value, `Option<&dyn IntoUnknown>`, is told by `classify`,
+  as an `Option<&Unknown>` is: `if let Kind::Function(original) =
+  js::classify(descriptor.value)` is `typeof descriptor.value ===
+  "function"` (rd576). What
   `define_properties` and `create` take is a
   `PropertyDescriptorMap`, a `Dict` of descriptors or a struct of them,
   `unsafe impl PropertyDescriptorMap for Logs<'_> {}`

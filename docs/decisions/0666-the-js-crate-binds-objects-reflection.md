@@ -4,7 +4,8 @@ Status: Accepted. Amends [0283](0283-js-crate-covers-typescripts-es-library.md),
 whose `PropertyDescriptor` and `ProxyHandler` were made empty, `{}`, and
 given what's set, and whose measure counted no `Object`. Amended below: a
 dictionary's keys written out are any text; a setter is given a `'static`
-value; three of `Object`'s statics take any value.
+value; three of `Object`'s statics take any value; a descriptor's `value` is
+told by `classify` (rd576).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: each is JS's own
 function, given and giving what TypeScript types it as.
@@ -111,7 +112,8 @@ property descriptor is one dictionary, a struct, shared by `Object` and
 - **A descriptor's `value` read back is a `dyn IntoUnknown`**, which a
   program can't read as a JS value: what `getOwnPropertyDescriptor` gives
   is read for its `get`, `set`, `enumerable`, `configurable` and
-  `writable`. `reflect::get` reads the property itself.
+  `writable`. `reflect::get` reads the property itself. (Amended, rd576:
+  `classify` tells it, below.)
 - **`Object.defineProperty`'s throw is a panic**, as a binding's that
   doesn't say it throws is; `reflect::define_property` gives `false`.
 - **`Object.create`'s `Some(object::prototype)` is
@@ -216,3 +218,58 @@ value, what js::get gives", run, a `TypeError` of `undefined`; and the
 tests and ports moved. A binding's signature has no mutation: the test
 doesn't compile without it.
 
+
+## Amendment (rd576): a descriptor's `value` is told by `classify`
+
+React's Flight server patches `console`'s methods as upstream does:
+
+```js
+const descriptor = Object.getOwnPropertyDescriptor(consoleInst, methodName);
+if (descriptor != null && (descriptor.configurable || descriptor.writable)) {
+  const originalMethod = descriptor.value;
+  if (typeof originalMethod === 'function') { .. }
+```
+
+Its port read the descriptor's `configurable` and `writable`, but its
+`value` was a `&dyn IntoUnknown`, which no function of the js crate read:
+the Consequences above, "which a program can't read as a JS value". The
+port read the property off the descriptor again, `js::get(descriptor,
+"value")` (gap rd576).
+
+**`js::classify` tells any value, an `Option<&T>` of `T: AnyValue`: an
+`Unknown`, what JS gave, or a `dyn IntoUnknown`, what a dictionary's
+member of `any` holds, a descriptor's `value`**, which JS may have given
+too. `if let Kind::Function(original_method) =
+js::classify(descriptor.value)` is `typeof descriptor.value ===
+"function"`, and `original_method` the function itself. `AnyValue` is
+sealed, of those two. Its other members were readable already, as
+TypeScript types them: `get` and `set` the functions they are, called
+through `function::call`, `writable`, `enumerable` and `configurable`
+`Option<bool>`s; and `js::get`, `js::set`, `js::strict_equals` take any
+value, its `value` too.
+
+**One descriptor type, read and written.** TypeScript has one
+`PropertyDescriptor`, which `getOwnPropertyDescriptor` gives and
+`defineProperty` takes, and programs give back what they read:
+React's component stack frame restores the `props` descriptor it read,
+`define_property(prototype, "props", &prev_props)`; the Flight
+references' proxy trap returns what `get_own_property_descriptor` gave
+it, or one it writes, from one `Option`; and patchConsole sets its
+wrapper's `name` to the descriptor it read of the original. A second
+type for a descriptor read, its `value` an `Option<&'static Unknown>`,
+would refuse each of them, or need a conversion to write it back; a
+`value` of `Option<&Unknown>` alone would need a cast of each Rust value
+written, `Some(js::unknown(&disabled_log))`, where `dyn IntoUnknown`
+takes any (ADR 0654). So the field is as it was, and what reads any value
+reads it. Case N ([0262](0262-when-rust-and-js-disagree.md)): the value
+itself, told as JS's `typeof` tells it.
+
+- `classify(value)` of `&Unknown` alone, not an `Option`, says what it
+  expects as rustc says it of a generic: "expected `Option<&_>`, found
+  `&Unknown`", with its help, `Some(value)`.
+- Held by `test/js-any-values.test.ts`, "a descriptor JS gives has its
+  value read, console an object of any shape": patchConsole as upstream
+  writes it, run in Node, `console.log` wrapped and called through, and a
+  descriptor's `value` classified of a number, a string, a function,
+  `undefined`, `null`, a getter's descriptor and none. A binding's
+  signature has no mutation: the test doesn't compile without it.

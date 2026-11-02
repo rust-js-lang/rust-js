@@ -83257,6 +83257,9 @@ pub mod web_assembly {
 #[cfg_attr(rust_js, rust_js::types = "Console")]
 pub struct Console(PhantomData<JsObject>);
 
+unsafe impl Defined for Console {}
+unsafe impl js::WeakKey for Console {}
+
 /// [`ConsoleTask`](https://developer.chrome.com/docs/devtools/console/api#createtask): what
 /// [`console::create_task`]'s function makes, a task whose `run` DevTools shows the stack of
 /// where it was made. No TypeScript lib declares it: it's typed as React's Flow declares it,

@@ -116,7 +116,8 @@ pub fn set_prototype_of(target: &Unknown, prototype: Option<&Unknown>) -> bool {
 /// }`, which is `{ ...props, value: prev }`. What one `define_property` is
 /// given leaves out stays as it was; one of both a value and a getter JS
 /// throws a `TypeError` of. Its `value` is any value, as a dictionary's
-/// member of `any` is (ADR 0654).
+/// member of `any` is (ADR 0654), one JS gave read by [`classify`](crate::classify),
+/// `typeof descriptor.value` (ADR 0666, amended).
 #[derive(Clone, Copy, Default)]
 pub struct PropertyDescriptor<'a> {
     pub configurable: Option<bool>,

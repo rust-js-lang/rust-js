@@ -517,7 +517,7 @@ test("classify of a value that's there is of its Some", () => {
 `);
   const out = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()], root, 120_000);
   expect(out.code).not.toBe(0);
-  expect(out.stderr).toContain("expected `Option<&Unknown>`, found `&Unknown`");
+  expect(out.stderr).toContain("expected `Option<&_>`, found `&Unknown`");
   expect(out.stderr).toContain("Some(value)");
 });
 

@@ -6,7 +6,8 @@ global at each call, and extends [0640](0640-a-rest-parameter-is-a-tuple.md),
 whose rest arguments were a tuple, a slice or a `Vec`. Amended by
 [0851](0851-a-closure-of-rest-arguments-is-jss-rest-parameter.md): a
 closure's last parameter of rest arguments as a value is JS's rest
-parameter, and a call through a `dyn Fn` of them spreads them.
+parameter, and a call through a `dyn Fn` of them spreads them. Amended
+(rd577): `Console` is an object, never nullish, below.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): C, results would change:
 a `fn` is fixed where it's taken, so it's the function read there, and a
@@ -140,3 +141,27 @@ crate's `Rest` trait, rest arguments as a value (`bindings::rest_attr`).
   `rest-value-arrow-unspread`, `rest-value-passed-on-unseen`,
   `rest-value-pointer-call-unspread`, `rest-value-parameter-allowed`,
   `rest-value-dyn-fn-allowed`.
+
+## Amendment (rd577): `Console` is an object, never nullish
+
+React's Flight server reads `Object.getOwnPropertyDescriptor(console,
+methodName)` and sets `Object.defineProperty(console, methodName, ..)`.
+`get_own_property_descriptor` takes any value, `Option<&Unknown>`, which
+`js::unknown(webapi::console)` makes of an object; but `Console` was no
+`js::Defined`, so it wasn't a value of any shape, and the port read the
+object as `js::get(webapi::global_this, "console")` (gap rd577). Each
+interface webapi binds is `Defined` and a `WeakKey`, an object, never
+nullish (rd417, ADR 0677); the generator's struct of a namespace's value,
+`Console`, the one of its globals that isn't an interface's, was neither.
+
+**A namespace's value is an object as an interface's is: `unsafe impl
+Defined for Console {}` and `unsafe impl js::WeakKey for Console {}`**,
+which the generator writes beside the struct
+(`webapi/generate.ts`). `js::unknown(webapi::console)` is `console`. Case
+N ([0262](0262-when-rust-and-js-disagree.md)): the object itself.
+
+Held by `test/js-any-values.test.ts`, "a descriptor JS gives has its
+value read, console an object of any shape", `patchConsole(console,
+"log")`, run in Node; and `test/webapi-coverage.test.ts`, "the webapi crate
+is what its generator writes". A binding's marker has no mutation: the
+test doesn't compile without it.

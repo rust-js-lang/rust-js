@@ -2458,6 +2458,10 @@ for (const name of NAMESPACES) {
     line(`/// The \`${name}\` namespace as a value, the \`${name}\` global's: its functions are the \`${snake(name)}\` module's.`);
     line(`#[cfg_attr(rust_js, rust_js::types = "${value}")]`);
     line(`pub struct ${value}(PhantomData<JsObject>);`);
+    // An object, never nullish, as each interface's is (rd577).
+    line();
+    line(`unsafe impl Defined for ${value} {}`);
+    line(`unsafe impl js::WeakKey for ${value} {}`);
   }
   for (const t of TYPES_BY_HAND[name] ?? []) {
     line();

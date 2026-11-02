@@ -2,8 +2,9 @@
 // them: `js::keys_in` of what may be `null` or `undefined` (ADR 0719,
 // amended), JS's loose equality, `js::loose_equals` (ADR 1012), and its
 // global `eval`, `js::eval` (ADR 1033, amended), and a `bigint` of any size
-// `classify` tells (ADR 1057), and a type a program vouches extends
-// another, `js::upcast` (ADR 1065). Each
+// `classify` tells (ADR 1057), a type a program vouches extends another,
+// `js::upcast` (ADR 1065), and a descriptor's `value`, any value,
+// `classify` reads too (ADR 0666, amended). Each
 // test is a program of its own, compiled and run in Node, as no native
 // Rust has these values.
 
@@ -16,7 +17,7 @@ import { buildReact, compiler, fixture, root, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
-const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "-L", target];
 
 /** `source` compiled, its JS, the module it is, loaded, and its directory. */
 async function compiled(name: string, source: string): Promise<{ js: string; lib: any; warnings: string[]; dir: string }> {
@@ -560,4 +561,85 @@ pub fn same(promise: &'static Promise<u32>) -> &'static Thenable {
   expect(failing.status).toBe("rejected");
   const p = Promise.resolve(3);
   expect(lib.same(p)).toBe(p);
+
+// React's Flight server's `patchConsole` (rd576, rd577): a descriptor JS
+// gives is read as TypeScript's `PropertyDescriptor`, its `value` any value,
+// `typeof descriptor.value === 'function'` its `classify`; and `console`
+// itself is an object, never nullish, `js::unknown(webapi::console)`.
+test("a descriptor JS gives has its value read, console an object of any shape", async () => {
+  const { js, lib, warnings } = await compiled("js-object-patch-console", `use std::cell::Cell;
+
+use js::{Kind, PropertyDescriptor, Unknown, function, object};
+
+thread_local! {
+    static CALLS: Cell<u32> = const { Cell::new(0) };
+}
+
+fn patch_console(console_inst: &'static Unknown, method_name: &str) {
+    let descriptor = object::get_own_property_descriptor(Some(console_inst), method_name);
+    if let Some(descriptor) = descriptor
+        && (descriptor.configurable.unwrap_or(false) || descriptor.writable.unwrap_or(false))
+        && let Kind::Function(original_method) = js::classify(descriptor.value)
+    {
+        let wrapper_method = function::with_this(move |this: Option<&'static Unknown>, ()| {
+            CALLS.set(CALLS.get() + 1);
+            function::apply(original_method, this.map(|this| this as &dyn js::IntoUnknown), Some(js::arguments()))
+        });
+        object::define_property(
+            console_inst,
+            method_name,
+            &PropertyDescriptor {
+                value: Some(&wrapper_method),
+                ..Default::default()
+            },
+        );
+    }
+}
+
+pub fn patch() {
+    patch_console(js::unknown(webapi::console), "log");
+    patch_console(js::unknown(webapi::console), "missing");
+}
+
+pub fn calls() -> u32 {
+    CALLS.get()
+}
+
+pub fn kind_of(given: &'static Unknown, key: &str) -> String {
+    let Some(descriptor) = object::get_own_property_descriptor(Some(given), key) else {
+        return "none".to_string();
+    };
+    match js::classify(descriptor.value) {
+        Kind::Undefined => "undefined".to_string(),
+        Kind::Null => "null".to_string(),
+        Kind::Function(_) => "function".to_string(),
+        Kind::Number(n) => format!("number {n}"),
+        Kind::String(s) => format!("string {s}"),
+        _ => "other".to_string(),
+    }
+}
+`);
+  expect(warnings).toEqual([]);
+  expect(js).toContain("descriptor.value");
+  expect(js).toContain('patchConsole(console, "log");');
+  const saved = console.log;
+  try {
+    lib.patch();
+    expect(console.log).not.toBe(saved);
+    console.log("patched");
+    expect(lib.calls()).toBe(1);
+    expect((console as any).missing).toBeUndefined();
+  } finally {
+    console.log = saved;
+  }
+  const getter = Object.defineProperty({}, "g", { get: () => 1 });
+  expect([lib.kindOf({ n: 2 }, "n"), lib.kindOf({ s: "x" }, "s"), lib.kindOf({ f() {} }, "f"), lib.kindOf({ u: undefined }, "u"), lib.kindOf({ z: null }, "z"), lib.kindOf(getter, "g"), lib.kindOf({}, "x")]).toEqual([
+    "number 2",
+    "string x",
+    "function",
+    "undefined",
+    "null",
+    "undefined",
+    "none",
+  ]);
 });

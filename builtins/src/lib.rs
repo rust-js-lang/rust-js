@@ -440,11 +440,23 @@ impl core::ops::Deref for Arguments {
 
 /// What `value` is: `match classify(value) { Kind::String(s) => .., .. }`,
 /// a `typeof` of it in JS; of `None`, `Undefined` or `Null`, and of one
-/// that's there, `classify(Some(value))` (ADR 0676). The value itself.
+/// that's there, `classify(Some(value))` (ADR 0676). The value itself, any
+/// value ([`AnyValue`]): one JS gave, an `Option<&Unknown>`, or one a
+/// dictionary's member holds, an `Option<&dyn IntoUnknown>`, a descriptor's
+/// `value` (ADR 0666, amended).
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
-pub fn classify(this: Option<&Unknown>) -> Kind<'_> {
+pub fn classify<T: AnyValue + ?Sized>(this: Option<&T>) -> Kind<'_> {
     unreachable!()
 }
+
+/// Any value, as TypeScript's `any` reads one: what JS gave, an
+/// [`Unknown`], or what a dictionary's member of `any` holds, a `dyn
+/// IntoUnknown`, which JS may have given too, a descriptor's `value` that
+/// [`object::get_own_property_descriptor`] gives (ADR 0666, amended). What
+/// [`classify`] tells of an `Option` of a reference to one.
+pub trait AnyValue: sealed::AnyValue {}
+impl AnyValue for Unknown {}
+impl AnyValue for dyn IntoUnknown + '_ {}
 
 /// `value` as a JS value of any shape, which it is: what's never `undefined`
 /// nor `null` ([`AnyShape`]), text or a number, say, or a function, as any
@@ -1867,6 +1879,10 @@ impl IntoStrOrNumberOrBool for bool {}
 
 mod sealed {
     pub trait Sealed {}
+    /// What [`AnyValue`](crate::AnyValue) is of: a JS value, read or given.
+    pub trait AnyValue {}
+    impl AnyValue for super::Unknown {}
+    impl AnyValue for dyn super::IntoUnknown + '_ {}
     /// What [`function::Parameters`](crate::function::Parameters) is of: a
     /// tuple alone, so what `with_this` makes is a `&dyn Fn`, never a
     /// fn pointer, which a call through what holds it gives no `this` of

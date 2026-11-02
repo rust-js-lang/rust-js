@@ -152,7 +152,9 @@ function that takes them is refused: its rest is its last slice marked
 `#[rust_js::rest]`
 ([ADR 0667](../../decisions/0667-console-is-a-value-and-rest-arguments-are-one.md),
 [0851](../../decisions/0851-a-closure-of-rest-arguments-is-jss-rest-parameter.md)).
-`console` itself is `webapi::console`:
+`console` itself is `webapi::console`, an object, never nullish, as each
+interface's value is: `js::unknown(webapi::console)` is `console`, which
+`object::get_own_property_descriptor` takes (rd577):
 
 ```rust
 use std::cell::Cell;
