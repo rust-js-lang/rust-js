@@ -147,4 +147,22 @@ export const mutations: Mutation[] = [
     replace: "                && !lent.projection.iter().any(|step| matches!(step, PlaceElem::Deref))\n            {\n",
     tests: ["test/diagnostics.test.ts", "-t", "dyn Fn"],
   },
+  {
+    name: "closure-clone-runs-it",
+    breaks:
+      "a clone of a closure is taken to run it, so React's noop renderer's `export const { .. } = createReactNoop(..)`, whose createReactNoop clones a closure that calls what rust-js can't follow, is refused (rd542)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "                                        cloned(tcx, of, impls, &mut work);\n                                        true\n",
+    replace: "                                        given(&[of], &mut work)\n",
+    tests: ["test/lowering-constants.test.ts", "-t", "clones a closure"],
+  },
+  {
+    name: "closure-clone-runs-nothing",
+    breaks:
+      "a clone of a closure is taken to run nothing, though the clone of a captured value of the crate's runs its `Clone`, which may read the thread-local before it's made (rd542)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "            if trait_id == clone {\n",
+    replace: "            if trait_id == clone && false {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "closure's clone reads it"],
+  },
 ];

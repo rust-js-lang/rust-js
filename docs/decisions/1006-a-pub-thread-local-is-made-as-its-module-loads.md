@@ -1,7 +1,8 @@
 # 1006. A `pub` thread-local is made as its module loads
 
 Status: Accepted. The user's decision (2026-10-28, React port gap rd51).
-Amended (rd542): a `dyn Fn` its call is given is what that call gave it.
+Amended (rd542): a `dyn Fn` its call is given is what that call gave it,
+and a clone of a closure runs none of it.
 Amends [0037](0037-thread-locals.md), whose amendment refusing a `pub`
 thread-local made where it's first used it replaces.
 
@@ -359,3 +360,15 @@ mutations in `scripts/mutations/lower/analysis/lazy_locals.ts`. A function
 made that nothing reads, a binding's value MIR holds in a variable of its
 function's type whose `&` is read by its type, is dropped (`unused lets`),
 so the initializer is `export const NAMED = make(String);`, not an IIFE.
+
+**A clone of a closure runs none of it** (rd542, the porter's
+createReactNoop): std's clone of a closure clones what it captured, so
+it runs only those clones, each `Clone` of the crate's among the types of
+what it captured, a derived one's too, and no function it holds. Its
+`get_or_create_root_container.clone()`, boxed into what it returns, was
+followed as a call of the closure, which calls the reconciler's
+`createContainer` given a `dyn Fn`, so the initializer was refused. Held
+by `test/lowering-constants.test.ts`'s "a pub thread-local whose
+initializer clones a closure doesn't run it" and `diagnostics.test.ts`'s
+"a pub thread-local whose closure's clone reads it"; mutations
+`closure-clone-runs-it` and `closure-clone-runs-nothing`.

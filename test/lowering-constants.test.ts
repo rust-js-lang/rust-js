@@ -501,3 +501,49 @@ pub mod z {
   const a = await import(join(dir, "a.js"));
   expect(a.scale()).toBe(14);
 });
+
+// React's noop renderer's createReactNoop clones the closure it makes,
+// `get_or_create_root_container.clone()`, and boxes it in what it returns:
+// a clone of a closure runs none of it, only the clones of what it
+// captured, so a `pub` thread-local made of it is made as its module
+// loads, though the closure calls what rust-js can't follow, there a
+// binding given a `dyn Fn` (rd542, ADR 1006, amended).
+test("a pub thread-local whose initializer clones a closure doesn't run it", async () => {
+  const dir = fixture("exported-closure-cloned");
+  writeFileSync(join(dir, "later.js"), "export const later = (f) => f();\n");
+  writeFileSync(join(dir, "lib.rs"), `use std::rc::Rc;
+
+#[cfg_attr(rust_js, rust_js::link_name = "./later.js#later")]
+fn later(f: &dyn Fn() -> u32) -> u32 {
+    f()
+}
+
+pub struct Noop {
+    pub run: Box<dyn Fn() -> u32>,
+    pub again: Box<dyn Fn() -> u32>,
+}
+
+fn make(base: u32) -> Noop {
+    let counted = Rc::new(base);
+    let run = move || later(&|| *counted + 1);
+    Noop {
+        run: Box::new(run.clone()),
+        again: Box::new(run),
+    }
+}
+
+thread_local! {
+    pub static NOOP: Noop = make(41);
+}
+
+pub fn twice() -> u32 {
+    NOOP.with(|noop| (noop.run)() + (noop.again)())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("export const noop = make(41);\n");
+  const lib = await import(join(dir, "lib.js"));
+  // Native Rust's, `later` calling what it's given.
+  expect(lib.twice()).toBe(84);
+});
+

@@ -340,7 +340,14 @@ fn loaded_by<'tcx>(
                                     }
                                     ty::InstanceKind::Virtual(method, _) => implementors(method, &mut work),
                                     ty::InstanceKind::Item(f) => runs_given(f, instance.args, &mut work),
-                                    // A shim of std's, a closure's, a clone's or
+                                    // A clone of a closure, or of what holds
+                                    // one, runs no function it holds: only the
+                                    // clones of what it holds (rd542).
+                                    ty::InstanceKind::Shim(ty::ShimKind::Clone(_, of)) => {
+                                        cloned(tcx, of, impls, &mut work);
+                                        true
+                                    }
+                                    // Another shim of std's, a closure's or
                                     // a drop's, runs what it's of.
                                     _ => given(&instance.args.types().collect::<Vec<_>>(), &mut work),
                                 },
@@ -369,6 +376,31 @@ fn loaded_by<'tcx>(
     }
     reached.retain(|&id| id != init);
     Some(reached)
+}
+
+/// What std's clone of a value of `ty` runs of the crate's, `work`: a
+/// closure's is the clone of each value it captured, a function's or a
+/// pointer's none, and of each type of the crate's among them, its own
+/// `Clone`'s methods, a derived one's too, which a clone of what holds it
+/// may call (rd542). A function a closure holds isn't called by its clone.
+fn cloned<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>, impls: &Impls, work: &mut Vec<(DefId, ty::GenericArgsRef<'tcx>)>) {
+    let Some(clone) = tcx.lang_items().clone_trait() else {
+        return;
+    };
+    // A closure's type holds what it captured, as its arguments' types do.
+    for part in ty.walk().filter_map(|part| part.as_type()) {
+        let ty::Adt(adt, _) = part.kind() else { continue };
+        for &(trait_id, imp) in impls.of_type.get(&adt.did()).into_iter().flatten() {
+            if trait_id == clone {
+                let methods = tcx.associated_item_def_ids(imp).iter().copied();
+                work.extend(
+                    methods
+                        .filter(|&m| tcx.def_kind(m) == DefKind::AssocFn)
+                        .map(|m| (m, ty::GenericArgs::identity_for_item(tcx, m))),
+                );
+            }
+        }
+    }
 }
 
 /// What a body's call gave each of its `dyn Fn` parameters, by position, of
