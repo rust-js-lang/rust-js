@@ -557,9 +557,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a let chain's binding between its tests keeps the chain a labeled block, `bb11: { if (lanes == null) { break bb11; } .. }`, not React's `if (lanes != null && root != null) { .. } else { .. }` (ADR 0946, amended)",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "            StmtKind::Const(_, value) if read_of_a_path(value) && body.get(k + 1).is_some_and(guard) => {\n",
+    find: "            StmtKind::Const(_, value) if rereadable(value) && body.get(k + 1).is_some_and(guard) => {\n",
     replace:
-      "            StmtKind::Const(_, value) if false && read_of_a_path(value) && body.get(k + 1).is_some_and(guard) => {\n",
+      "            StmtKind::Const(_, value) if false && rereadable(value) && body.get(k + 1).is_some_and(guard) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_of_reads.rs$"],
     snapshots: true,
   },
@@ -568,8 +568,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding its test held set, `options?.debugChannel?.readable != null`, is read in the body with its `?.`, `const readable = options?.debugChannel?.readable;`, where upstream reads `options.debugChannel.readable` (rd614 b)",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "            StmtKind::Const(_, value) if read_of_a_path(value) => unchain(value, &set),\n",
-    replace: "            StmtKind::Const(_, value) if read_of_a_path(value) => {}\n",
+    find: "            StmtKind::Const(_, value) if rereadable(value) => unchain(value, &set),\n",
+    replace: "            StmtKind::Const(_, value) if rereadable(value) => {}\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_of_an_optional_read.rs$"],
     snapshots: true,
   },
@@ -627,8 +627,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a let chain's binding of a getter's value, `matches!(input.kind(), 2 | 1)` between its tests, is written into each test, `input.kind !== 2 && input.kind !== 1`, the getter read once for each where Rust reads it once (#485, rd636)",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "    if reads_a_getter(e) {\n        return false;\n    }\n    match &e.kind {\n",
-    replace: "    match &e.kind {\n",
+    find: "    read_of_a_path(e) && e.reads_same()\n",
+    replace: "    read_of_a_path(e)\n",
     tests: ["test/lowering-or-patterns.test.ts", "-t", "inside a chain reads it once"],
   },
   {

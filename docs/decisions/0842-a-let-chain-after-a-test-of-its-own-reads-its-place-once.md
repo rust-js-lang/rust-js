@@ -227,7 +227,8 @@ its reads, `matches!(input.kind(), 2 | 1)` read `1` then `2` and answered
 `false` where Rust, reading `1` once, answers `true`.
 
 **A read a getter may answer (`Known::Getter`) is no path the fold, or
-ADR 0946's `skipped`, writes in a test's place**: `read_of_a_path` is
+ADR 0946's `skipped`, writes in a test's place**: `rereadable`, a path
+that reads the same however often it's read (`Expr::reads_same`), is
 false of it, so the chain keeps its `if`s and the `const` reads it once,
 where Rust does, as before rd614 b: `if (nodeName === "input") { const
 type = elem.type; if (type === "text" || ..) { return true; } }`.
@@ -239,3 +240,16 @@ it, as it changes nothing a binding, which reads no getter now, reads.
 Held by `test/lowering-or-patterns.test.ts`'s "an or-pattern of a
 getter's value inside a chain reads it once", which counts the getter's
 reads, and the mutation `getter-read-a-path` (`tidy/logicals.ts`).
+
+A binding before the chain's tests is read where it's bound, once, a
+getter's too: `chained` takes those it follows by `read_of_a_path`, and
+only those between its tests, which it sinks, by `rereadable`. Read the
+first way for both, React DOM's getNextHydratable, `let data =
+comment.data(); if data == A || .. || data == G { break; } if data == END
+|| .. { return null }`, lost its fold and printed the test negated, `if
+(data !== A && ..) { if (..) { return null; } } else { break; }` (rd639);
+it's upstream's again, `const data = current.data; if (data === A || ..)
+{ break; } if (..) { return null; }`. Held by "a getter's value bound
+before an or of its tests is tested as written", which counts its reads,
+and the mutation `chain-binding-before-a-getter-unread`
+(`tidy/logicals/chains.ts`).

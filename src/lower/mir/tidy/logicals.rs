@@ -836,7 +836,7 @@ fn skipped(body: &[Stmt], label: &str, within: &dyn Fn(js::Span) -> bool) -> Opt
     while let Some(stmt) = body.get(k) {
         match &stmt.kind {
             _ if guard(stmt) => tree.push(stmt.clone()),
-            StmtKind::Const(_, value) if read_of_a_path(value) && body.get(k + 1).is_some_and(guard) => {
+            StmtKind::Const(_, value) if rereadable(value) && body.get(k + 1).is_some_and(guard) => {
                 bound.push(stmt.clone())
             }
             _ => break,
@@ -913,7 +913,7 @@ pub(super) fn unchained_past(test: &mut Expr, body: &mut [Stmt]) {
     parts(test, &mut set);
     for stmt in body {
         match &mut stmt.kind {
-            StmtKind::Const(_, value) if read_of_a_path(value) => unchain(value, &set),
+            StmtKind::Const(_, value) if rereadable(value) => unchain(value, &set),
             _ => break,
         }
     }
@@ -954,14 +954,20 @@ fn runs_code(e: &Expr) -> bool {
     )
 }
 
+/// Whether `e`, a let chain's binding between its tests, may be read again
+/// in a test's place or its body's, as each part of the fold reads it: a
+/// path of properties (`read_of_a_path`) that reads the same however
+/// often it's read (`Expr::reads_same`), not a read a getter may answer
+/// (`Known::Getter`), which would run once for each test of the binding
+/// where Rust reads it once (#485). One bound before the chain's tests,
+/// read where it is, may be a getter's (rd639).
+fn rereadable(e: &Expr) -> bool {
+    read_of_a_path(e) && e.reads_same()
+}
+
 /// Whether `e` reads a variable, or a path of properties from one, `a.b`,
-/// `a?.b` too, each the same however often it's read: not a read a getter
-/// may answer (`Known::Getter`), which a let chain's tests would read once
-/// for each test of its binding, where Rust reads it once (#485).
+/// `a?.b` too.
 fn read_of_a_path(e: &Expr) -> bool {
-    if reads_a_getter(e) {
-        return false;
-    }
     match &e.kind {
         ExprKind::Var(_) | ExprKind::Symbol(_) => true,
         ExprKind::Member(object, _) | ExprKind::OptionalMember(object, _) => read_of_a_path(object),

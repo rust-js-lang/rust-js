@@ -80,7 +80,9 @@ fn chain_if(chain: &[Stmt], label: &str, span: js::Span) -> Stmt {
 /// Of `list`, a block's: how many bindings its chain follows, and the
 /// chain, `or_chain`'s, of a let chain's bindings between its tests, each
 /// `const x = y;` of a variable, out of it (`hoisted`), where the tests call
-/// nothing, so the variable reads the same before them.
+/// nothing, so the variable reads the same before them. Those it follows
+/// stay where they are, read once, a getter's too (rd639); those between
+/// its tests are sunk, read again, of what reads the same (`rereadable`).
 fn chained(list: &[Stmt], label: &str) -> Option<(usize, Vec<Stmt>)> {
     let k = (list.iter())
         .take_while(|s| matches!(&s.kind, StmtKind::Const(_, value) if read_of_a_path(value)))
@@ -96,7 +98,7 @@ fn chained(list: &[Stmt], label: &str) -> Option<(usize, Vec<Stmt>)> {
         let mut called = |e: &Expr| found |= runs_code(e);
         test.each(&mut called);
         let k = (then.iter())
-            .take_while(|s| matches!(&s.kind, StmtKind::Const(_, value) if read_of_a_path(value)))
+            .take_while(|s| matches!(&s.kind, StmtKind::Const(_, value) if rereadable(value)))
             .count();
         then[..k].iter().for_each(|s| {
             if let StmtKind::Const(_, value) = &s.kind {
@@ -124,7 +126,7 @@ fn sunk(stmt: &mut Stmt, mut carried: Vec<Stmt>) {
         return;
     };
     let k = (then.iter())
-        .take_while(|s| matches!(&s.kind, StmtKind::Const(_, value) if read_of_a_path(value)))
+        .take_while(|s| matches!(&s.kind, StmtKind::Const(_, value) if rereadable(value)))
         .count();
     if !matches!(
         &then[k..],

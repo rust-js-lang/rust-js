@@ -60,4 +60,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_inside_if.rs$"],
     snapshots: true,
   },
+  {
+    name: "chain-binding-before-a-getter-unread",
+    breaks:
+      "a getter's value bound before a chain's tests, `const data = current.data; if (data === 1 || ..) { break; }`, stops the fold, and the test is its negation with the `break` in an `else` (rd639)",
+    file: "src/lower/mir/tidy/logicals/chains.rs",
+    find: "    let k = (list.iter())\n        .take_while(|s| matches!(&s.kind, StmtKind::Const(_, value) if read_of_a_path(value)))\n",
+    replace: "    let k = (list.iter())\n        .take_while(|s| matches!(&s.kind, StmtKind::Const(_, value) if rereadable(value)))\n",
+    tests: ["test/lowering-or-patterns.test.ts", "-t", "bound before an or of its tests"],
+  },
 ];

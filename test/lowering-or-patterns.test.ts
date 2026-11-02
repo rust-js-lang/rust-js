@@ -151,6 +151,50 @@ pub fn capable<T: Input>(name: &str, input: &T, editable: bool) -> bool {
   expect([lib.capable("input", input, false), reads]).toEqual([true, 1]);
 });
 
+// React DOM's getNextHydratable: a getter's value bound before the tests
+// of it, `let data = comment.data(); if data == A || .. { break; }`, stays
+// where it's bound, read once, and the test is as written, not its
+// negation with the `break` in an `else` (rd639).
+test("a getter's value bound before an or of its tests is tested as written", async () => {
+  const { js, dir } = compiled("or-of-a-bound-getter", `pub trait Node {
+    #[cfg_attr(rust_js, rust_js::link_name = "get data")]
+    fn data(&self) -> u32 {
+        unreachable!()
+    }
+    #[cfg_attr(rust_js, rust_js::link_name = "get nodeType")]
+    fn node_type(&self) -> u32 {
+        unreachable!()
+    }
+}
+
+pub fn next<T: Node>(nodes: &[T]) -> Option<usize> {
+    let mut i = 0;
+    while i < nodes.len() {
+        let current = &nodes[i];
+        if current.node_type() == 8 {
+            let data = current.data();
+            if data == 1 || data == 2 || data == 3 {
+                break;
+            }
+            if data == 4 || data == 5 {
+                return None;
+            }
+        }
+        i += 1;
+    }
+    Some(i)
+}
+`);
+  expect(js).toContain(`const data = current.data;
+      if (data === 1 || data === 2 || data === 3) {
+        break;
+      }`);
+  const lib = await import(join(dir, "lib.js"));
+  let reads = 0;
+  const node = (data: number) => ({ nodeType: 8, get data() { reads += 1; return data; } });
+  expect([lib.next([node(9), node(2)]), reads]).toEqual([1, 2]);
+});
+
 // React DOM's updateInput: two `!matches!(js::classify(..), Kind::Function(_)
 // | Kind::Symbol(_) | Kind::Bool(_))` in one function, `type`'s and
 // `name`'s, each `typeof v !== "function" && .. "symbol" && .. "boolean"`,
