@@ -256,4 +256,22 @@ export const mutations: Mutation[] = [
     replace: "        &|_| true,\n",
     tests: ["test/corpus.test.ts", "-t", "^unboxed_type_params.rs$"],
   },
+  {
+    name: "closure-write-through-capture-unseen",
+    breaks:
+      "a closure's write of a `Copy` struct it took by reference, `|x| p = Point { x }`, doesn't change its type in place, so `let q = p;` isn't copied and the closure's `$assign` changes `q` too (#469)",
+    file: "src/lower/analysis/mutation.rs",
+    find: "            && matches!(captured.info.capture_kind, ty::UpvarCapture::ByRef(_))\n",
+    replace: "            && matches!(captured.info.capture_kind, ty::UpvarCapture::ByValue)\n",
+    tests: ["test/corpus.test.ts", "-t", "^captured_copy_written_whole.rs$"],
+  },
+  {
+    name: "closure-field-write-through-capture-unseen",
+    breaks:
+      "a closure's write of a field it took alone, `|x| pair.a = Point { x }`, is taken as a write of what it didn't take, so `let q = pair.a;` isn't copied and the closure's `$assign` changes `q` too (#469)",
+    file: "src/lower/analysis/mutation.rs",
+    find: "            && captured.place.projections.len() == fields.len()\n",
+    replace: "            && captured.place.projections.is_empty()\n",
+    tests: ["test/corpus.test.ts", "-t", "^captured_copy_written_whole.rs$"],
+  },
 ];

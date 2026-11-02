@@ -252,9 +252,12 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
 - **A move never copies:** Rust won't let the old name be used again.
 - **A `Copy` value is copied only if its type is changed in place
   somewhere,** `{ ...p }`; otherwise sharing the object can't be told apart
-  from copying it. A derived `clone()` copies what needs copying, and
-  `vec![x; n]` makes `n` separate values
-  ([0052](../decisions/0052-std-trait-impls.md),
+  from copying it. A whole write through a `&mut` changes it in place, and
+  so does a closure's write of what it took by reference, `|x| p = Point {
+  x }`: `let q = p;` before it is `const q = { ...p };`. A derived
+  `clone()` copies what needs copying, and `vec![x; n]` makes `n` separate
+  values ([0052](../decisions/0052-std-trait-impls.md),
+  [0147](../decisions/0147-replacing-through-mut.md),
   [`copy_mutation`](../../test/corpus/copy_mutation.rs)).
 - **`&T` is the value. `&mut` to an object is the object**, changed in place
   ([0025](../decisions/0025-vec-loops-refcell-mut.md)). A `&mut` to a number, a

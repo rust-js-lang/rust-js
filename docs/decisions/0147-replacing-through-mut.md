@@ -1,6 +1,6 @@
 # 0147. Replacing a value whole through a `&mut`: an object in place, an enum by its place
 
-Status: Accepted; amended (std's enums too, and an `Rc`'s place, below). Extends [0025](0025-vec-loops-refcell-mut.md),
+Status: Accepted; amended (std's enums too, an `Rc`'s place, and a closure's write of what it took by reference, #469, below). Extends [0025](0025-vec-loops-refcell-mut.md),
 [0033](0033-enums-with-fields.md) and [0099](0099-mut-references.md).
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)).
@@ -239,3 +239,28 @@ both forms and `taken_parts` reads them, as a module variable's take does
 its items spliced out" and the mutation `taken-array-copied`
 (`lower/std_types/cell.ts`).
 
+
+## Amendment: a closure's write of what it took by reference (#469)
+
+`let q = p; let mut set = |x| p = Point { x }; set(8);` of a `Copy`
+`Point` made `q` 8 where native Rust keeps it 0: the read was `const q =
+p;`, no copy, and the closure's write `$assign(p, { x })`, the object `q`
+shares made the value. MIR writes it as any `*r = v`, `(*(_1.0)) = ..`
+through the capture's `&mut`, which this ADR makes `$assign`; but the
+types changed in place (`analysis/mutation.rs`'s `mutated_types`, which
+copies are made by, ADR 0020) took `*r = v` from THIR, whose write in the
+closure is of the variable, `Assign { lhs: UpvarRef }`, no `Deref`. So
+`Point` was never changed in place, and nothing copied it. A wrong
+answer, ADR 0262's "results change" case: Rust's behavior is kept.
+
+A closure's write of a place it took by reference, the variable or the
+field it took alone, `|x| pair.a = Point { x }` of a closure that takes
+`pair.a`, changes its type in place now (`written_through_capture`), as
+a `*r = v` does: `const q = { ...p };`. A field of what it took, `pair.a`
+where it took `pair`, is the field's write, its object's type changed, as
+before.
+
+- `test/corpus/captured_copy_written_whole.rs` checks a variable, a field
+  taken alone and a copy kept in an array against native Rust.
+- The mutations are `closure-write-through-capture-unseen` and
+  `closure-field-write-through-capture-unseen` (`analysis/mutation.rs`).

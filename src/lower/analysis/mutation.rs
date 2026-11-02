@@ -7,7 +7,7 @@ use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::BorrowKind;
-use rustc_middle::thir::ExprKind;
+use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty;
 use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_span::def_id::DefId;
@@ -77,10 +77,15 @@ pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>])
                 _ => {}
             }
             // `*r = v` through a `&mut` changes an object in place (ADR 0147),
-            // as `mem::swap`, `mem::replace` and `mem::take` of one do.
+            // as `mem::swap`, `mem::replace` and `mem::take` of one do. So
+            // does a closure's write of what it took by reference, `|x| p =
+            // Point { x }`, THIR's of the variable, MIR's `*(_1.0) = ..`
+            // through the capture's `&mut` (#469).
             if let ExprKind::Assign { lhs, .. } = expr.kind
-                && let ExprKind::Deref { arg } = body.thir[strip(&body.thir, lhs)].kind
-                && matches!(body.thir[arg].ty.kind(), ty::Ref(_, _, Mutability::Mut))
+                && (match body.thir[strip(&body.thir, lhs)].kind {
+                    ExprKind::Deref { arg } => matches!(body.thir[arg].ty.kind(), ty::Ref(_, _, Mutability::Mut)),
+                    _ => written_through_capture(tcx, &body.thir, strip(&body.thir, lhs)),
+                })
                 && object_like(tcx, body.thir[lhs].ty)
             {
                 mutated.insert(body.thir[lhs].ty);
@@ -126,6 +131,41 @@ pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>])
         }
     }
     mutated
+}
+
+/// Whether `place`, a closure's, is a variable or a field of one it took
+/// by reference, that place itself: `p` of `|x| p = ..`, `pair.a` of
+/// `|x| pair.a = ..`, which takes `pair.a` alone. Its write is through the
+/// capture's `&mut`. Not a field of what it took, `pair.a` where it took
+/// `pair`, whose write is of the field.
+fn written_through_capture(tcx: TyCtxt<'_>, thir: &rustc_middle::thir::Thir<'_>, mut place: ExprId) -> bool {
+    use rustc_middle::hir::place::ProjectionKind;
+    let mut fields = Vec::new();
+    let (closure, var) = loop {
+        match thir[place].kind {
+            ExprKind::Field { lhs, name, .. } => {
+                fields.push(name);
+                place = lhs;
+            }
+            ExprKind::Scope { value, .. } => place = value,
+            ExprKind::UpvarRef {
+                closure_def_id,
+                var_hir_id,
+            } => break (closure_def_id, var_hir_id.0),
+            _ => return false,
+        }
+    };
+    fields.reverse();
+    let Some(closure) = closure.as_local() else {
+        return false;
+    };
+    tcx.closure_captures(closure).iter().any(|captured| {
+        captured.get_root_variable() == var
+            && matches!(captured.info.capture_kind, ty::UpvarCapture::ByRef(_))
+            && captured.place.projections.len() == fields.len()
+            && (captured.place.projections.iter().zip(&fields))
+                .all(|(projection, field)| matches!(projection.kind, ProjectionKind::Field(at, _) if at == *field))
+    })
 }
 
 /// May `ty` be a JS object, which a `&mut` replaces in place (ADR 0147)? A
