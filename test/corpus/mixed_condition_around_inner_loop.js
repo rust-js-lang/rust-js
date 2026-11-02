@@ -54,7 +54,7 @@ function skippedAfter(keys, seen, last) {
     if (key === 5) {
       continue;
     }
-    if (key <= 0 || (seen && last === key)) {
+    if (!(key > 0 && (!seen || last !== key))) {
       // Neither new nor positive.
       continue;
     }

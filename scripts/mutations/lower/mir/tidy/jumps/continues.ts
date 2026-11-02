@@ -13,28 +13,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `if` ending a loop's body, of `&&`, `||` and `!` mixed, around a loop, is `if (a) { if (b && c === d) { continue; } for .. }`, a `continue` the program didn't write (rd72b, validateShorthandPropertyCollisionInDev)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                if !continue_tested(&inner, guards)\n                    && let Some(test)",
-    replace: "                if false\n                    && let Some(test)",
-    tests: ["test/corpus.test.ts", "-t", "^mixed_condition_around_inner_loop.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "negated-continue-nested",
-    breaks:
-      "a `continue` the program wrote of a negated chain, `if !(a && (!b || c)) { continue; }`, is `if (a) { if (b && !c) { continue; } .. }`, tests it didn't nest (rd72c)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                if let Some((test, then, at)) = negated_continue(&block, &inner, guards) {\n",
-    replace: "                if false && let Some((test, then, at)) = negated_continue(&block, &inner, guards) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^mixed_condition_around_inner_loop.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "written-continue-of-a-mixed-condition-folded",
-    breaks:
-      "an `if` of a `continue` the program wrote, `if (seen && last === key) { continue; }`, is folded into the `if` around the rest, `if (key > 0 && (!seen || last !== key))`, a test it didn't write",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                if !continue_tested(&inner, guards)\n",
-    replace: "                if true\n",
+    find: "                if let Some(test) = logicals::skipped_test(&block, &inner, logicals) {\n",
+    replace: "                if false && let Some(test) = logicals::skipped_test(&block, &inner, logicals) {\n",
     tests: ["test/corpus.test.ts", "-t", "^mixed_condition_around_inner_loop.rs$"],
     snapshots: true,
   },
@@ -190,6 +170,17 @@ export const mutations: Mutation[] = [
     find: "        turned_continue(stmts, &written.continues);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^written_jumps_kept.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "continued-blocks-of-block-ending-loops-only",
+    breaks:
+      "`continued` run again in `chains` only of a loop whose body ends in a block MIR made leaves a written `if !(a && (!b || c)) { continue; }` after another `continue` for the written jumps to turn, after the written negations, De Morgan's `if (a <= 0 || (b && !c))` (rd72c)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "        if let Some((looped, body)) = looped(stmt) {\n            continued_loop(looped, body, (guards, logicals), Some(elses));\n",
+    replace:
+      "        if let Some((looped, body)) = looped(stmt)\n            && matches!(body.last().map(|s| &s.kind), Some(StmtKind::Labeled(..)))\n        {\n            continued_loop(looped, body, (guards, logicals), Some(elses));\n",
+    tests: ["test/corpus.test.ts", "-t", "^mixed_condition_around_inner_loop.rs$"],
     snapshots: true,
   },
   {
@@ -438,7 +429,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/corpus.test.ts",
       "-t",
-      "^(rev_loops|mut_ref_loop|inclusive_range_loops)\\.rs$",
+      "^(rev_loops|mut_ref_loop|inclusive_range_loops|switch_guarded_or_pattern)\\.rs$",
     ],
     snapshots: true,
   },
@@ -653,26 +644,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/continues.rs",
     find: "                    && !kept.is_some_and(|elses| written_else(body.last().expect(\"matched\"), elses))\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^while_test_continues_of_chain.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "continued-blocks-of-every-loop",
-    breaks:
-      "`continued` run again in `chains` of a loop whose body ends in no block MIR made turns the program's `if (key > 0 && (!seen || last !== key)) { out.push(key); }` into `if (key <= 0 || (seen && last === key)) { continue; } out.push(key);`, a `continue` it didn't write (rd530)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "        if let Some((looped, body)) = looped(stmt)\n            && ends_in_block(body)\n",
-    replace: "        if let Some((looped, body)) = looped(stmt)\n            && (ends_in_block(body) || true)\n",
-    tests: ["test/corpus.test.ts", "-t", "^mixed_condition_around_inner_loop.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "continued-blocks-past-elses-unread",
-    breaks:
-      "a loop's body whose block MIR made is in the `else` of the `if` it ends with, `if (node.status === 5) { ..; continue; } else { ..; bb39: { .. } }`, is no block the body ends in, so `bb39: { .. break bb39; }` stays where the program wrote `continue;` (rd530)",
-    file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "            Some(StmtKind::If(_, _, Some(otherwise))) => ends_in_block(otherwise),\n",
-    replace: "            Some(StmtKind::If(_, _, Some(_))) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^while_test_continues_of_chain.rs$"],
     snapshots: true,
   },

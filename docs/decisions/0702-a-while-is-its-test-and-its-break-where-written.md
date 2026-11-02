@@ -1130,3 +1130,19 @@ Held by the corpus case `while_test_continues_of_chain`, against native
 Rust, of both shapes, and the mutations `continued-else-chain-unlinked`,
 `continued-blocks-of-every-loop`, `continued-blocks-past-elses-unread`
 (`tidy/jumps/continues.ts`) and `chains-continued-off` (`tidy/stages.ts`).
+
+## Amendment: `continued_blocks` of every loop (2026-11-02, rd72c)
+
+`continued_blocks` took only a loop whose body ends in a block MIR made,
+through the `else`s it ends with. So `if (key > 0 && (!seen || last !==
+key)) { out.push(key); }`, of a written `if !(..) { continue; }` after
+another `continue`, was left for the written jumps pass, which runs after
+the written negations and printed De Morgan's negation. **It takes every
+loop**: a loop's turned `if` is only ever of a `continue` the program
+wrote (`Written::continues`), so one it doesn't end in still stays as
+written, and the negation is written by its pass, after
+([0946](0946-an-if-of-mixed-logicals-is-its-one-test.md), amended). The
+corpus, the snapshots, the guide, the tidy stages and React's ports print
+nothing else differently. Its mutations `continued-blocks-of-every-loop`
+and `continued-blocks-past-elses-unread`, of the restriction, go; it's
+held by `continued-blocks-of-block-ending-loops-only`.

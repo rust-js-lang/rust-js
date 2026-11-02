@@ -21,27 +21,20 @@ pub(in crate::lower::mir::tidy) fn continued(
 
 /// `continued` again, once `chains` has read in place a loop's test MIR
 /// read into temporaries first, `const _19 = value.$$typeof; if (_19 ===
-/// LAZY)`, and `while tests` made it the loop's: of each loop whose body
-/// ends in a block MIR made, `if (c) { ..; continue; } else { ..; l: { ..
-/// } }`'s too, only (rd530). The `if .. else` chains `written elses` has
-/// made as the program wrote them by now are kept so.
+/// LAZY)`, and `while tests` made it the loop's (rd530): of each loop,
+/// whose body may end in a block MIR made, `if (c) { ..; continue; } else
+/// { ..; l: { .. } }`'s too. The `if .. else` chains `written elses` has
+/// made as the program wrote them by now are kept so. (Of only a loop that
+/// ends in such a block once: a `continue` this turns of a written
+/// negation is as written since the written jumps write it so, rd72c.)
 pub(in crate::lower::mir::tidy) fn continued_blocks(
     stmts: &mut [Stmt],
     guards: &[(js::Span, js::Span)],
     logicals: &[js::Span],
     elses: &[(js::Span, js::Span, js::Span)],
 ) {
-    fn ends_in_block(body: &[Stmt]) -> bool {
-        match body.last().map(|s| &s.kind) {
-            Some(StmtKind::Labeled(..)) => true,
-            Some(StmtKind::If(_, _, Some(otherwise))) => ends_in_block(otherwise),
-            _ => false,
-        }
-    }
     for stmt in stmts.iter_mut() {
-        if let Some((looped, body)) = looped(stmt)
-            && ends_in_block(body)
-        {
+        if let Some((looped, body)) = looped(stmt) {
             continued_loop(looped, body, (guards, logicals), Some(elses));
         }
     }
@@ -81,20 +74,11 @@ fn continued_loop(
                 };
                 // A condition the program wrote, of `&&`, `||` and
                 // `!` mixed, whose tests leave the block: its `if`, as
-                // written, not a `continue` it didn't write.
-                if !continue_tested(&inner, guards)
-                    && let Some(test) = logicals::skipped_test(&block, &inner, logicals)
-                {
+                // written. One it wrote as a `continue` of its negation,
+                // `if !(a && (!b || c)) { continue; }`, the written jumps
+                // give back, its test as written (`kept_in_turn`, rd72c).
+                if let Some(test) = logicals::skipped_test(&block, &inner, logicals) {
                     body.push(test);
-                    break;
-                }
-                // One the program wrote as a `continue` of its negation,
-                // `if (!(a && (!b || c))) { continue; }`, every test of
-                // it in the written `if`'s: that `if`, then what it
-                // skips, not the tests nested (rd72c).
-                if let Some((test, then, at)) = negated_continue(&block, &inner, guards) {
-                    body.push(StmtKind::If(test, vec![StmtKind::Continue(None).at(at)], None).at(span));
-                    body.extend(then);
                     break;
                 }
                 let clashes = declared(&inner).any(|name| declared(body).any(|n| n == name));
@@ -135,19 +119,6 @@ fn continued_loop(
             _ => break,
         }
     }
-}
-
-/// Whether an `if` of `stmts`, or of their `if`s', tests a `continue` the
-/// program wrote (`Written::continues`).
-fn continue_tested(stmts: &[Stmt], guards: &[(js::Span, js::Span)]) -> bool {
-    stmts.iter().any(|s| match &s.kind {
-        StmtKind::If(_, then, otherwise) => {
-            tests_continue(guards, s.span)
-                || continue_tested(then, guards)
-                || otherwise.as_deref().is_some_and(|o| continue_tested(o, guards))
-        }
-        _ => false,
-    })
 }
 
 /// Whether `span` is of the test of an `if` of a `continue` the program
@@ -1161,29 +1132,4 @@ pub(in crate::lower::mir::tidy) fn present(test: &Expr, item: &str) -> bool {
         ExprKind::Var(v) => v == item,
         _ => js::null_test(test, true).is_some_and(|e| matches!(&e.kind, ExprKind::Var(v) if v == item)),
     }
-}
-
-/// Of a block `label` a loop's body ends in, `inner`, whose tests are
-/// each in the condition of an `if` of a `continue` the program wrote
-/// (`Written::continues`), `if !(a && (!b || c)) { continue; }`: the test
-/// of that `continue`, the negation of the one under which what follows
-/// runs (`logicals::skipped_test`), what follows, and where the `continue`
-/// is written.
-fn negated_continue(
-    label: &str,
-    inner: &[Stmt],
-    guards: &[(js::Span, js::Span)],
-) -> Option<(Expr, Vec<Stmt>, js::Span)> {
-    let tests: Vec<js::Span> = guards.iter().map(|&(test, _)| test).collect();
-    let Stmt {
-        kind: StmtKind::If(test, then, None),
-        span,
-    } = logicals::skipped_test(label, inner, &tests)?
-    else {
-        return None;
-    };
-    let &(_, at) = guards
-        .iter()
-        .find(|(test, _)| test.lo <= span.lo && span.hi <= test.hi)?;
-    Some((test.negated_test(), then, at))
 }

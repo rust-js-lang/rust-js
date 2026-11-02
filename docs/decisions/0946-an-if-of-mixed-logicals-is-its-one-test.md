@@ -196,5 +196,35 @@ written negations pass gives back the `!( .. )` as written. Case (ADR
 the mutation `negated-continue-nested`.
 
 The same test after an earlier `continue` in the body, `skipped_after`
-there, still prints De Morgan's form, `if (key <= 0 || (seen && last ===
-key)) { continue; }`. Another pass makes it, after the written negations.
+there, still printed De Morgan's form, `if (key <= 0 || (seen && last ===
+key)) { continue; }`. Another pass made it, after the written negations.
+Fixed below.
+
+## Amendment: one that follows another `continue` too, and one rule of it (2026-11-02, rd72c)
+
+After an earlier `continue`, the body doesn't end in the block above:
+tidy has `if (key > 0 && (!seen || last !== key)) { out.push(key); }`
+there, which `continued`, run again in `chains` (`continued_blocks`, ADR
+0702, amended), took only of a loop whose body ends in a block MIR made.
+So the written jumps pass (`kept_jumps`, ADR 0684, amended) turned it
+back into the written `continue` after the written negations pass had
+run, and its negation was De Morgan's. **`continued_blocks` takes every
+loop**: it turns that `if` into the written `continue`, `if (<negation>)
+{ continue; } out.push(key);`, before the written negations pass, which
+writes the negation as the program did, `if (!(key > 0 && (!seen || last
+!== key))) { continue; }`. One owner writes a negation as written, that
+pass; a test the program wrote otherwise is as `negated_test` makes it.
+
+With it, `continued`'s own `if` of the negation (`negated_continue`,
+above) and its check that no test of the block is of a written
+`continue` before it takes the mixed condition (`continue_tested`) made
+nothing: without them, `negated` is the mixed `if` around the rest
+first, turned back into its written `continue` the same way; the corpus,
+the snapshots, the guide, the tidy stages and React's ports print the
+same, and their mutations, `negated-continue-nested` and
+`written-continue-of-a-mixed-condition-folded`, survived. Both are
+removed with their mutations; `mixed-condition-ending-a-loop-continued`
+is of `skipped_test`'s `if` itself now. Case (ADR 0262): N, as above.
+Held by `mixed_condition_around_inner_loop.rs`'s `negated` and
+`skipped_after` (native-compared) and the mutation
+`continued-blocks-of-block-ending-loops-only`.
