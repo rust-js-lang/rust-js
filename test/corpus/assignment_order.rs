@@ -10,6 +10,13 @@ struct P {
     x: i32,
 }
 
+impl P {
+    fn tenth(&self) -> i32 {
+        println!("a call's field =: value");
+        self.x + 10
+    }
+}
+
 #[derive(Debug)]
 struct Total(i32);
 
@@ -68,7 +75,7 @@ fn main() {
     let mut rows = vec![vec![0, 0]];
     rows[index("rows row", 0)][index("rows column", 1)] = value("rows", 9);
     // A field of what a call gives: the value, then the call (rd633).
-    first(&mut ps).x = value("a call's field =", ps[0].x + 10);
+    first(&mut ps).x = ps[0].tenth();
     println!("{v:?} {a:?} {} {:?} {rows:?}", ps[0].x, totals[0]);
     // The value is read before the place changes it. Found in review.
     let mut x = 1;
