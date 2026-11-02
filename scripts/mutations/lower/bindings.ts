@@ -568,7 +568,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "                    true => paths::global_refused(&key),\n",
     replace: "                    true => None,\n",
-    tests: ["test/js-builtins.test.ts", "-t", "an async iterable's"],
+    tests: ["test/js-globals.test.ts", "-t", "an async iterable's"],
   },
   {
     name: "keyed-function-unrefused",
@@ -577,7 +577,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings.rs",
     find: "                    false => Some(\"a key, `[Symbol.asyncIterator]`, is a method's, of `&self` or `this`\".to_string()),\n",
     replace: "                    false => None,\n",
-    tests: ["test/js-builtins.test.ts", "-t", "an async iterable's"],
+    tests: ["test/js-globals.test.ts", "-t", "an async iterable's"],
   },
   {
     name: "binding-path-unchecked",

@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "                let method = Expr::index(this, self.js_ref(&key)).binding();\n",
     replace: "                let method = Expr::member(this, key).binding();\n",
-    tests: ["test/js-builtins.test.ts", "-t", "an async iterable's"],
+    tests: ["test/js-globals.test.ts", "-t", "an async iterable's"],
   },
   {
     name: "static-constructor-refused",

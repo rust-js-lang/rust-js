@@ -348,10 +348,10 @@ ASYNC_ITERATOR = Symbol.asyncIterator`; a binding's key is the global it
 names, so the port's JS reads `iterable[Symbol.asyncIterator]()`.
 
 Held by `test/js-globals.test.ts`'s "Promise.prototype is its class's
-prototype" and `test/js-builtins.test.ts`' "a then handler gives a promise
-or nothing, as void | PromiseLike<void>", "an async iterator's throw is its
-optional method" and "an async iterable's [Symbol.asyncIterator]() is its
-iterator", each run in Node; the compiler's two forms by the mutations
+prototype", "a then handler gives a promise or nothing, as void |
+PromiseLike<void>", "an async iterator's throw is its optional method" and
+"an async iterable's [Symbol.asyncIterator]() is its iterator", each run in
+Node; the compiler's two forms by the mutations
 `method-throw-a-statement`, `this-throw-a-member`, `keyed-method-a-call`,
 `keyed-method-a-member`, `keyed-method-quoted`, `keyed-method-key-unchecked` and
 `keyed-function-unrefused`. `coverage.txt` is unchanged: `prototype` and

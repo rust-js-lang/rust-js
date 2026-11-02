@@ -174,7 +174,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings/forms.rs",
     find: '        "throw" if !of_self(tcx, def_id) => return JsForm::Throw,\n',
     replace: '        "throw" => return JsForm::Throw,\n',
-    tests: ["test/js-builtins.test.ts", "-t", "an async iterator's throw is its optional method"],
+    tests: ["test/js-globals.test.ts", "-t", "an async iterator's throw is its optional method"],
   },
   {
     name: "this-throw-a-member",
@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings/forms.rs",
     find: "    tcx.def_kind(def_id) == DefKind::AssocFn && tcx.associated_item(def_id).is_method()\n",
     replace: "    super::is_method(tcx, def_id)\n",
-    tests: ["test/js-builtins.test.ts", "-t", "an async iterator's throw is its optional method"],
+    tests: ["test/js-globals.test.ts", "-t", "an async iterator's throw is its optional method"],
   },
   {
     name: "keyed-method-a-call",
@@ -191,15 +191,15 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings/forms.rs",
     find: "        return JsForm::CallKeyed(key.to_string());\n",
     replace: "        let _ = key;\n",
-    tests: ["test/js-builtins.test.ts", "-t", "an async iterable's"],
+    tests: ["test/js-globals.test.ts", "-t", "an async iterable's"],
   },
   {
     name: "keyed-method-quoted",
     breaks:
       "a method's quoted name, `['matchMedia']`, is taken for a key, refused as no global's path, not as a method's property named, `matchMedia` (ADR 1033)",
     file: "src/lower/bindings/forms.rs",
-    find: "        .filter(|key| !key.starts_with(['\\'', '\"']))\n",
-    replace: "",
+    find: "    if let Some(key) = key.filter(|key| !key.starts_with(['\\'', '\"'])) {\n",
+    replace: "    if let Some(key) = key {\n",
     tests: ["test/lowering-binding-paths.test.ts", "-t", "naming the quoted key"],
   },
 ];

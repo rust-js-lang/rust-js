@@ -194,9 +194,8 @@ pub(in crate::lower) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
     }
     // A key, not a quoted name, `['matchMedia']`, which a method's link
     // name writes as its name, refused (ADR 1033).
-    if let Some(key) = (name.strip_prefix('[').and_then(|t| t.strip_suffix(']')))
-        .filter(|key| !key.starts_with(['\'', '"']))
-    {
+    let key = name.strip_prefix('[').and_then(|t| t.strip_suffix(']'));
+    if let Some(key) = key.filter(|key| !key.starts_with(['\'', '"'])) {
         return JsForm::CallKeyed(key.to_string());
     }
     if let Some(prop) = name.strip_prefix("prop ") {
