@@ -24,7 +24,6 @@ function wake(chunk, value) {
   let listeners;
   if (chunk.status === "pending") {
     const old = chunk.value;
-    chunk.value = undefined;
     listeners = old;
   } else {
     listeners = undefined;

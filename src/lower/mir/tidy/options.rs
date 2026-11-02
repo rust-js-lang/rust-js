@@ -106,6 +106,98 @@ pub(super) fn taken_options(stmts: &mut Vec<Stmt>) {
     }
 }
 
+/// A `take()`'s write of `None` over a place rust-js made (`Known::Taken`)
+/// the program writes again before anything could see it: React's Flight
+/// client's `let listeners = match &mut *chunk.state.borrow_mut() {
+/// Pending { value } | Blocked { value } => value.take(), _ => None };
+/// *chunk.state.borrow_mut() = Initialized { value: text };`, whose
+/// `chunk.value = null;` is written over by `chunk.value = text;` (rd524):
+/// dropped, as upstream's `const listeners = chunk.value; chunk.status =
+/// 'fulfilled'; chunk.value = text;` never writes it. The place is a path
+/// nothing but a read of it sees (`js::taken_place`, a plain data property
+/// or a variable), so of what runs between, only a read of its object, or
+/// what may run or throw, a call's or a getter's, could see it: each
+/// statement between, past the end of an `if`'s branch the write is in too,
+/// writes a variable, or another of the object's fields, a constant or a
+/// variable, its object named nowhere else. Case none (ADR 0262): no
+/// program can tell the `None` was there.
+pub(super) fn overwritten_takes(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        let rest = &stmts[i + 1..];
+        // Of the write itself, in this list; or of one ending a branch of
+        // an `if`, past which this list goes on.
+        let dropped = match &stmts[i].kind {
+            StmtKind::Assign(target, none) if taken_over(target, none, &[], rest) => Some(None),
+            StmtKind::If(_, then, otherwise) => {
+                let ending = |branch: &[Stmt]| {
+                    (0..branch.len()).rev().find(|&k| match &branch[k].kind {
+                        StmtKind::Assign(target, none) => taken_over(target, none, &branch[k + 1..], rest),
+                        _ => false,
+                    })
+                };
+                match (ending(then), otherwise.as_deref().and_then(ending)) {
+                    (Some(k), _) => Some(Some((true, k))),
+                    (None, Some(k)) => Some(Some((false, k))),
+                    (None, None) => None,
+                }
+            }
+            _ => None,
+        };
+        match dropped {
+            Some(None) => {
+                stmts.remove(i);
+                continue;
+            }
+            Some(Some((then, k))) => {
+                if let StmtKind::If(_, branch, otherwise) = &mut stmts[i].kind {
+                    let branch = match then {
+                        true => branch,
+                        false => otherwise.as_mut().expect("the branch it's in"),
+                    };
+                    branch.remove(k);
+                }
+                continue;
+            }
+            None => i += 1,
+        }
+    }
+}
+
+/// Whether `target = none`, a take's write (`Known::Taken`) of a field of a
+/// variable, is written over before anything sees it, `after` it in its
+/// branch and then `rest` (`overwritten_takes`).
+fn taken_over(target: &Expr, none: &Expr, after: &[Stmt], rest: &[Stmt]) -> bool {
+    let ExprKind::Member(object, key) = &target.kind else {
+        return false;
+    };
+    let ExprKind::Var(root) = &object.kind else {
+        return false;
+    };
+    if !none.facts.has(js::Known::Taken) || !js::taken_place(target) {
+        return false;
+    }
+    // A value whose making runs nothing, of no mention of the object.
+    let quiet = |value: &Expr| value.is_constant() || matches!(&value.kind, ExprKind::Var(name) if name != root);
+    // Another field of the object written, or a variable.
+    let between = |stmt: &Stmt| match &stmt.kind {
+        StmtKind::Assign(written, value) if quiet(value) => match &written.kind {
+            ExprKind::Var(name) => name != root,
+            ExprKind::Member(of, other) => {
+                other != key && matches!(&of.kind, ExprKind::Var(name) if name == root) && js::taken_place(written)
+            }
+            _ => false,
+        },
+        _ => false,
+    };
+    if !after.iter().all(between) {
+        return false;
+    }
+    let past = rest.iter().take_while(|stmt| between(stmt)).count();
+    matches!(rest.get(past).map(|stmt| &stmt.kind),
+        Some(StmtKind::Assign(written, value)) if quiet(value) && js::same_path(written, target) && js::taken_place(written))
+}
+
 /// `taken_options`'s rewrite of `made`, `const c = place;`, `written`, the
 /// take's `place = undefined;`, and `tested`, the `if` of `c`, before
 /// `rest`.

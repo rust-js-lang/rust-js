@@ -71,7 +71,6 @@ export function take(chunk, text) {
   let listeners;
   if (chunk.status === "pending" || chunk.status === "blocked") {
     const old = chunk.value;
-    chunk.value = null;
     listeners = old;
   } else {
     listeners = undefined;

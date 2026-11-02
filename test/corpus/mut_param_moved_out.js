@@ -21,7 +21,6 @@ function reverse(head) {
   while (head != null) {
     const node = head;
     const old = node.next;
-    node.next = undefined;
     head = old;
     node.next = reversed;
     reversed = node;

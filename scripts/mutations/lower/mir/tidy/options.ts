@@ -72,4 +72,62 @@ export const mutations: Mutation[] = [
     replace: "{\n",
     tests: ["test/js-object.test.ts", "-t", "beside a closure's own of its name"],
   },
+  {
+    name: "overwritten-any-write",
+    breaks:
+      "a write the program makes twice, `slot.count = 1; slot.count = 2;`, loses its first, which no take wrote (rd524)",
+    file: "src/lower/mir/tidy/options.rs",
+    find: "    if !none.facts.has(js::Known::Taken) || !js::taken_place(target) {\n",
+    replace: "    if !js::taken_place(target) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^taken_then_overwritten.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "overwritten-past-a-call",
+    breaks:
+      "a take's `None` is dropped past a call given its object, which shows the old value where Rust's shows `None` (rd524)",
+    file: "src/lower/mir/tidy/options.rs",
+    find: "        _ => false,\n    };\n    if !after.iter().all(between) {\n",
+    replace: "        _ => true,\n    };\n    if !after.iter().all(between) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^taken_then_overwritten.rs$"],
+  },
+  {
+    name: "overwritten-past-its-read",
+    breaks:
+      "a take's `None` is dropped past a write of another field of what's read of it, `slot.seen = format!(\"{:?}\", slot.value)`, which reads the old value (rd524)",
+    file: "src/lower/mir/tidy/options.rs",
+    find: "    let quiet = |value: &Expr| value.is_constant() || matches!(&value.kind, ExprKind::Var(name) if name != root);\n",
+    replace: "    let quiet = |_: &Expr| true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^taken_then_overwritten.rs$"],
+  },
+  {
+    name: "overwritten-same-field-between",
+    breaks:
+      "a take's `None` written over is kept where the write over it counts as a write between (rd524)",
+    file: "src/lower/mir/tidy/options.rs",
+    find: "                other != key && matches!(&of.kind, ExprKind::Var(name) if name == root) && js::taken_place(written)\n",
+    replace: "                matches!(&of.kind, ExprKind::Var(name) if name == root) && js::taken_place(written)\n",
+    tests: ["test/corpus.test.ts", "-t", "^taken_then_overwritten.rs$"],
+    snapshots: true,
+  },
+
+  {
+    name: "overwritten-branch-tail-unchecked",
+    breaks:
+      "a take's `None` in an `if`'s branch is dropped past a read of it in the branch (rd524)",
+    file: "src/lower/mir/tidy/options.rs",
+    find: "    if !after.iter().all(between) {\n        return false;\n    }\n",
+    replace: "    if false {\n        return false;\n    }\n",
+    tests: ["test/corpus.test.ts", "-t", "^taken_then_overwritten.rs$"],
+  },
+  {
+    name: "overwritten-takes-off",
+    breaks:
+      "a take's `None` written over by a flattened state's whole write is written, `chunk.value = null;`, where upstream's isn't (rd524)",
+    file: "src/lower/mir/tidy/options.rs",
+    find: "    while i < stmts.len() {\n        let rest = &stmts[i + 1..];\n",
+    replace: "    while false && i < stmts.len() {\n        let rest = &stmts[i + 1..];\n",
+    tests: ["test/corpus.test.ts", "-t", "^taken_then_overwritten.rs$"],
+    snapshots: true,
+  },
 ];

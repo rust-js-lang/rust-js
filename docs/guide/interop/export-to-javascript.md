@@ -1216,7 +1216,6 @@ export function resolve(chunk, value) {
   let listeners;
   if (chunk.status === "pending") {
     const old = chunk.value;
-    chunk.value = null;
     listeners = old;
   } else {
     listeners = undefined;

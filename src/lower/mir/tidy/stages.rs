@@ -633,6 +633,11 @@ pub(super) const STAGES: &[Stage] = &[
                 }
             }),
             pass("handles in place", |b, _| handles_in_place(b)),
+            // A take's `None` written over before anything sees it, a
+            // flattened state's whole write's too, in place now: gone (rd524).
+            pass("overwritten takes", |b, _| {
+                js::statement_lists(b, &mut overwritten_takes)
+            }),
             // A value a function given it reads more than once, held where
             // it's made: `const _$1 = f(); .. _$1.TAG ..`, not `((r) =>
             // ..)(f())`.

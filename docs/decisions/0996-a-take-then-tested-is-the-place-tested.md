@@ -92,3 +92,80 @@ mutations `option-take-unmarked` (`lower/mir/entries.ts`),
 (`lower/mir/tidy/stages.ts`), `taken-place-any` (`js/stmt_walk.ts`),
 `nullable-field-taken-undefined` and `nullable-reborrow-unfollowed`
 (`lower/mir/rvalues.ts`).
+
+## Amendment: a take written over before it's seen is no write (2026-11-02)
+
+rd524, P3. React's Flight client takes a chunk's listeners and makes it
+fulfilled, its state a `RefCell` its class's fields flatten (ADR 1044):
+
+```rust
+let listeners = match &mut *chunk.state.borrow_mut() {
+    ChunkState::Pending { value } | ChunkState::Blocked { value } => value.take(),
+    _ => None,
+};
+*chunk.state.borrow_mut() = ChunkState::Initialized { value: text };
+```
+
+```js
+if (chunk.status === "pending" || chunk.status === "blocked") {
+  const old = chunk.value;
+  chunk.value = null;
+  listeners = old;
+} else {
+  listeners = undefined;
+}
+chunk.status = "fulfilled";
+chunk.value = text;
+```
+
+Upstream's `const listeners = chunk.value; chunk.status = 'fulfilled';
+chunk.value = text;` writes no `null`: nothing reads it.
+
+**A take's write of `None` over a place rust-js made (`Known::Taken`),
+a field of a variable, that the program writes again before anything
+could see it is no write** (`tidy/options.rs::overwritten_takes`, the
+"overwritten takes" pass, after "handles in place", which makes a
+flattened state's whole write its fields'). Between it and the write
+over it, past the end of the `if` branch it's in too, each statement
+writes a variable other than the object's, or another field of the
+object, of a constant or another variable: nothing that reads the
+object, the old value or anything else, runs code or throws.
+
+```js
+if (chunk.status === "pending" || chunk.status === "blocked") {
+  const old = chunk.value;
+  listeners = old;
+} else {
+  listeners = undefined;
+}
+chunk.status = "fulfilled";
+chunk.value = text;
+```
+
+- **The fact is lowering's** (`Known::Taken`, above): the place is a
+  plain data property or a variable, never a binding's, which a setter
+  may answer, nor a cell's value read through its borrow: run 8 thought
+  this needed a fact of MIR's, but the one this decision gives the take's
+  write already says the place is rust-js's own.
+- **What it doesn't drop**: a write the program makes twice, `s.n = 1;
+  s.n = 2;`, which is no take's; a take past which a call runs, the
+  object or the place is read, or the variable is made another's
+  (`slot = other`); one only another field is written after. The last
+  but one has no mutation: lowering marks no take of a variable the body
+  assigns again, so the pass's own test of it is never what refuses, as
+  the corpus's `moved_on` shows.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. Only a read of the
+place could tell the `None` was there, and none runs before it's written
+again.
+
+Held by corpus `taken_then_overwritten` (the Flight client's take and
+whole write; a struct's field taken and set again past another field;
+one read between, in its branch too, given to a call, made another's,
+only another field written after, and a field the program writes twice,
+against native Rust), the changed `flattened_state_cell`,
+`or_pattern_one_place` and `mut_param_moved_out`, and the mutations
+`overwritten-any-write`, `overwritten-past-a-call`,
+`overwritten-past-its-read`, `overwritten-same-field-between`,
+`overwritten-branch-tail-unchecked`
+and `overwritten-takes-off` (`lower/mir/tidy/options.ts`).

@@ -3056,6 +3056,13 @@ export function isAdult(p) {
   variable or a field of your struct; a `#[rust_js::nullable]` field's
   take writes `null`
   ([ADR 0996](../../decisions/0996-a-take-then-tested-is-the-place-tested.md)).
+  A take whose `None` is written over before anything could see it, past
+  only writes of variables and of the object's other fields, a constant
+  or a variable each, is no write: `let old = slot.value.take();
+  slot.count = n; slot.value = Some(n);` is `const old = slot.value;
+  slot.count = n; slot.value = n;`, and so is a flattened state's whole
+  write after its take, `chunk.status = "fulfilled"; chunk.value = text;`
+  (ADR 0996, amended).
 - rustc won't let you use an `Option<u32>` as a `u32`: you can't forget the
   missing case.
 - An `Option<bool>` that's `Some(true)`, `flag.is_some_and(|&on| on)` or
