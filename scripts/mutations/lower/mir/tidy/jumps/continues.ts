@@ -450,11 +450,10 @@ export const mutations: Mutation[] = [
     find: "            jump @ StmtKind::Return(_) if returns_one_value(&stmts[i + 1]) => jump.clone(),\n",
     replace:
       "            jump @ StmtKind::Return(_) if false && returns_one_value(&stmts[i + 1]) => jump.clone(),\n",
-    tests: [
-      "test/lowering-labels.test.ts",
-      "-t",
-      "a block MIR made followed by a return",
-    ],
+    // Its labeled-block tests' blocks no longer reach it, others' rules
+    // leaving no block there; a let chain's value and a loop's return do.
+    tests: ["test/corpus.test.ts", "-t", "^(let_chain_values|match_arm_guard_first)\\.rs$"],
+    snapshots: true,
   },
   {
     name: "jumps-past-blocks-return-at-tails",

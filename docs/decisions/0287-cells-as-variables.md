@@ -58,3 +58,17 @@ return () => { clearTimeout(timeout); };
 
 - The corpus, examples and the playground lose their `{ value }`s of
   counters and flags: `let calls = 0; calls = (calls + 1) | 0;`.
+
+## Amendment: a closure's cells are its own body's (2026-11-02)
+
+`plain_cells` finds the cells and clones of the body it's given in that
+body's own statement lists, not in its closures'. A closure's body is
+tidied on its own before its function's, so a closure's cell is already
+its `let` by the time the function is tidied. The nightly of 2026-11-02
+(run 41360040940) found the mutation `mir-tidy-plain-cells-not-in-closures`
+surviving: the function's walk into its closures changed nothing. A probe
+that logged each closure's clone it found, of a cell, that the body's own
+lists didn't have saw none: not in `check:fast --all`, and not in the
+React port's 13 crates. The mutation is gone. lowering-cells' "a cell
+cloned in a closure is its function's let" still holds `let running =
+false;` and `let total = 0;`.

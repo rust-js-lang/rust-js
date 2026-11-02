@@ -778,12 +778,13 @@ pub(super) fn first_cell_values(stmts: &mut Vec<Stmt>) {
 /// `const n = { value: x }`, a cell, and `const m = n`, its clones, whose
 /// `value` alone is read and set, by those names: `let n = x`, `n` where
 /// each reads its `value` (ADR 0287). Nothing else has it, so nothing else
-/// sees it change; its closures, which share the `let`, too.
+/// sees it change; its closures, which share the `let`, too. A cell or a
+/// clone a closure makes is its own body's, tidied before its function's.
 pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
     let mut cells: Vec<String> = Vec::new();
     let mut clones: HashMap<String, String> = HashMap::new();
-    js::each_block_mut(&mut body.clone(), &mut |stmts| {
-        for stmt in stmts.iter() {
+    js::each_list(body, &mut |stmts| {
+        for stmt in stmts {
             match &stmt.kind {
                 StmtKind::Const(name, value)
                     if matches!(&value.kind, ExprKind::Object(props, ..)

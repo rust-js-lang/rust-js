@@ -516,10 +516,6 @@ pub(super) const STAGES: &[Stage] = &[
             pass("returns into branches", |b, _| {
                 js::statement_lists(b, &mut |s| returns_into_branches(s))
             }),
-            // A chain those leave guarded by what each of its tests says,
-            // `typeof s === "string"` of `s === "a"`'s: the chain alone (ADR
-            // 0755).
-            pass("guarded chains", |b, _| js::statement_lists(b, &mut guarded_chains)),
             pass("settle branches", |b, _| settle_jumps(b)),
             // A chain's tests again, of the `if`s `settle branches` made of
             // a let chain's guard `break`s, `if (usable != null) { if

@@ -139,3 +139,19 @@ if (objectName === "Promise") {
   test's chain as `if let`s, whose `===` of each string has no `typeof`
   before it to remove, and a `match` of them as a `switch`, that test told
   none of the three apart.
+
+## Amendment: `guarded chains` is `branch_values`' alone (2026-11-02)
+
+The late `guarded chains` pass is gone, and its mutation
+`guarded-chains-late-off` with it. The nightly of 2026-11-02 (run
+41360040940) found that mutation surviving. Neither labeled-block test
+leaves a chain guarded that late now: `branch_values` already reads the
+port's `typeof status === "string"` away, in `jumps/branch values`, which
+runs the same `guarded_chains`. A probe saw the late pass change a tree,
+but in no body that is printed. With the pass removed, none of the
+following changed: the JS or source maps of 1,387 corpus cases, std's
+package, or any of the React port's 13 crates. Its tests still hold it:
+"a block MIR made followed by a return is each break's return" has no
+`typeof status`. `jumps-past-blocks-returns-kept` is held by the snapshots
+of `let_chain_values` and `match_arm_guard_first`, which a `bbN:` block
+prints in without it. The labeled-block tests no longer reach it either.

@@ -803,7 +803,7 @@ pub(super) fn implies(by: &Expr, test: &Expr) -> bool {
 /// `if (x != null) { if (x === "a") { s } else if (x === "b") { t } }`,
 /// and `if (typeof x === "string") { .. }` of the same chain, which no
 /// string literal's `===` needs: the chains alone, which say it (ADR 0755).
-pub(super) fn guarded_chains(stmts: &mut Vec<Stmt>) {
+fn guarded_chains(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i < stmts.len() {
         match &stmts[i].kind {

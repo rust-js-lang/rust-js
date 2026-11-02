@@ -66,7 +66,7 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-and-tests-off",
     breaks:
-      "`if (a) { if (b) { s } }` of one condition stays nested, not `if (a && b)`",
+      "`if (a) { if (b) { s } }` of one condition is one test only after `written elses`, so a let chain's written `else` in a loop is `if (a && b) { s; continue; } t`",
     file: "src/lower/mir/tidy/stages.rs",
     find: '            pass("and tests", |b, h| {\n                bottom_up(b, &mut |s| and_tests(s, &h.written.conditions, &h.written.switches))\n            }),\n',
     replace: "",
@@ -804,19 +804,6 @@ export const mutations: Mutation[] = [
       "test/lowering-labels.test.ts",
       "-t",
       "React's addObjectDiffToProperties has no block MIR made",
-    ],
-  },
-  {
-    name: "guarded-chains-late-off",
-    breaks:
-      'a chain of a string\'s literals that `returns into branches` leaves guarded by `typeof s === "string"` keeps its `typeof`',
-    file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("guarded chains", |b, _| js::statement_lists(b, &mut guarded_chains)),\n',
-    replace: "",
-    tests: [
-      "test/lowering-labels.test.ts",
-      "-t",
-      "a block MIR made followed by a return",
     ],
   },
   {

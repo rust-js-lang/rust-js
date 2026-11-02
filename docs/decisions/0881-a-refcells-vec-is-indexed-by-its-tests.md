@@ -175,3 +175,16 @@ Rust. It writes an addition, a negation and a cast, and a division by
 zero panics before the bounds check, as Rust's does. Mutations
 `written-at-once-of-an-operation-held`, `-a-negation-held` and
 `-a-cast-held` (`mir/bounds.ts`).
+
+## Amendment: a drain in bounds is never stepped to start with (2026-11-02)
+
+`iterators::discarded_iterator` is gone, and its mutation
+`discarded-iterator-kept` with it. It turned a statement `$iter(v.splice(0,
+i));` into `v.splice(0, i);`, but no lowering makes that statement any
+more: a discarded `drain(..i)`, `let _ =` of one and `drop(..)` of one are
+already `queue.splice(0, i);` where they're made. The nightly of 2026-11-02
+(run 41360040940) found the mutation surviving. A probe that logged each
+time the rule was taken saw it taken nowhere: not in the corpus, not in
+`check:fast --all`, and not in the React port's 13 crates.
+`refcell_vec_bounds` still holds `queue.splice(0, i);` against its
+snapshot and native Rust.

@@ -122,15 +122,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "mir-tidy-plain-cells-not-in-closures",
-    breaks: "MIR's cell cloned in a closure stays a `{ value }`",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "    let mut clones: HashMap<String, String> = HashMap::new();\n    js::each_block_mut(&mut body.clone(), &mut |stmts| {\n",
-    replace:
-      "    let mut clones: HashMap<String, String> = HashMap::new();\n    js::statement_lists(&mut body.clone(), &mut |stmts| {\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "a cell cloned in a closure"],
-  },
-  {
     name: "mir-tidy-handle-read-early",
     breaks:
       "MIR's handle on a `Cell` field is read where it's made, though set before it's read",
