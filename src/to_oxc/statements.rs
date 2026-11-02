@@ -659,9 +659,10 @@ impl<'a> Cx<'a> {
                     // Where a case falls through to it, where its comment
                     // says so is (ADR 0905); else, of more than one value,
                     // where its first is written, which a comment above
-                    // the arm is before (rd143, `cases::pattern_starts`);
-                    // one before an arm of one value is its body's (ADR 0590).
-                    let first = (!stacked.is_empty() && !case.values[0].span.is_none())
+                    // the arm is before (rd143, `cases::pattern_starts`), and
+                    // of one whose arm does nothing (rd136); one before an
+                    // arm of one value is its body's (ADR 0590).
+                    let first = (super::cases::at_its_value(case) && !case.values[0].span.is_none())
                         .then(|| Span::new(case.values[0].span.lo, case.values[0].span.lo));
                     // Of one value whose arm opens a block, `"meta" => {`,
                     // where its first statement is, so a comment above the

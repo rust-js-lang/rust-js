@@ -125,15 +125,26 @@ pub(super) fn says_fallthrough(comment: &str) -> bool {
 /// `// Unlike commitLayoutEffectsOnFiber ..` above `case HostSingleton:`,
 /// and a blank line there (rd143), where its first is printed
 /// (`Cx::stmt`'s `switch`). Not of a case of one, whose comment above its
-/// arm is its body's (ADR 0590), printed at no start of its own.
+/// arm is its body's (ADR 0590), printed at no start of its own; but of
+/// one whose arm does nothing, `"value" => {}`, a body of nothing written
+/// (`at_its_value`), whose comment above it is the case's (rd136).
 pub(super) fn pattern_starts(module: &Module) -> Vec<u32> {
     let mut starts = Vec::new();
     each_switch(module, &mut |cases, _| {
-        let stacked = cases.iter().filter(|case| case.values.len() > 1);
+        let stacked = cases.iter().filter(|case| at_its_value(case));
         let values = stacked.flat_map(|case| case.values.iter());
         starts.extend(values.filter(|v| !v.span.is_none()).map(|v| v.span.lo));
     });
     starts
+}
+
+/// Whether `case` is printed where its first value is written: one of more
+/// than one value (rd139, rd143), or of one whose arm does nothing, its
+/// body nothing the program wrote, `case "value": break;` of `"value" =>
+/// {}`, a comment above which is before it, not above the loop's first
+/// statement (rd136).
+pub(crate) fn at_its_value(case: &js::Case) -> bool {
+    case.values.len() > 1 || (!case.values.is_empty() && case.body.iter().all(|s| s.span.is_none()))
 }
 
 /// Where each case a case falls through to starts, of `module`'s

@@ -913,3 +913,17 @@ the `switch`'s `break`. Case N (ADR 0262): `break` and `continue` go to
 the same place there either way; this is how it reads. Held by the
 corpus's `switch_guarded_or_pattern`'s `sources`, run against native
 Rust, and the mutation `written-continue-broken` (`switches.ts`).
+
+## Amended: a comment above an arm that does nothing is its case's (rd136)
+
+`// Controlled attributes are not validated.` above `"value" => {}`, the
+first arm of React DOM's diffHydratedProperties's `match`, printed above
+the loop's `const name = names[i];`: a comment above an arm of one value
+is its body's (ADR 0590), and this body has nothing the program wrote, no
+start to be before, so the comment went to the nearest printed before it.
+**A case of one value whose body is nothing written is printed where its
+value is written**, as a case of more than one is (rd143), so the comment
+is before its `case "value":` (`cases::at_its_value`, which the printer's
+`switch` and `pattern_starts` both ask). Case N (ADR 0262): comments
+only. Held by the corpus's `switch_guarded_or_pattern`, and the mutation
+`empty-arm-case-at-no-value` (`to_oxc/cases.ts`).

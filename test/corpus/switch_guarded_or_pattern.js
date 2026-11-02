@@ -21,9 +21,9 @@ function note(what) {
 function extra(names, transitions) {
   const found = [];
   for (let i = 0; i < names.length; i++) {
-    // Controlled attributes are not validated.
     const name = names[i];
     switch (name) {
+      // Controlled attributes are not validated.
       case "value":
         break;
       case "checked":

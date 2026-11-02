@@ -1697,6 +1697,43 @@ export function timeout(level) {
 }
 ```
 
+One before an arm that does nothing is before its `case`
+([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md), amended):
+
+```rust
+pub fn unchecked(names: &[&str]) -> usize {
+    let mut found = 0;
+    for &name in names {
+        match name {
+            // Controlled attributes are not validated.
+            "value" => {}
+            "checked" => {}
+            _ => found += 1,
+        }
+    }
+    found
+}
+```
+
+```js
+export function unchecked(names) {
+  let found = 0;
+  for (let i = 0; i < names.length; i++) {
+    const name = names[i];
+    switch (name) {
+      // Controlled attributes are not validated.
+      case "value":
+        break;
+      case "checked":
+        break;
+      default:
+        found = (found + 1) >>> 0;
+    }
+  }
+  return found;
+}
+```
+
 A `match` of an `Option`'s text, `Some("fulfilled")`, or of its number
 or `char`, `Some(7)`, is a `switch` of the value: no case takes `None`,
 which goes to the `default`, as it does in Rust, with no test that it's

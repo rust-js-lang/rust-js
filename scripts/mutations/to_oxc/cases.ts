@@ -47,8 +47,8 @@ export const mutations: Mutation[] = [
     name: "stacked-case-starts-of-one-pattern",
     breaks: "a comment before an arm of one pattern, which ADR 0590 puts in its body, is before a start no clause is printed at, and lost, `// Track the input node that has focus.` (rd143)",
     file: "src/to_oxc/cases.rs",
-    find: "        let stacked = cases.iter().filter(|case| case.values.len() > 1);\n",
-    replace: "        let stacked = cases.iter().filter(|case| !case.values.is_empty());\n",
+    find: "    case.values.len() > 1 || (!case.values.is_empty() && case.body.iter().all(|s| s.span.is_none()))\n",
+    replace: "    !case.values.is_empty()\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_guard_skips_its_case.rs$"],
     snapshots: true,
   },
@@ -97,5 +97,15 @@ export const mutations: Mutation[] = [
     find: "    (head.starts_with(\"let \") && head.ends_with('=')).then_some(line)\n",
     replace: "    (head.starts_with(\"let \") && head.ends_with(';')).then_some(line)\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "opens with a `let`"],
+  },
+  {
+    name: "empty-arm-case-at-no-value",
+    breaks:
+      "a comment above an arm that does nothing, `// Controlled attributes are not validated.` above `\"value\" => {}`, is above the loop's `const name = names[i];`, not its `case \"value\":` (rd136)",
+    file: "src/to_oxc/cases.rs",
+    find: "    case.values.len() > 1 || (!case.values.is_empty() && case.body.iter().all(|s| s.span.is_none()))\n",
+    replace: "    case.values.len() > 1\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_guarded_or_pattern\\.rs$"],
+    snapshots: true,
   },
 ];
