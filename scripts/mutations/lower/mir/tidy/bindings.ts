@@ -3,6 +3,25 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "clone-alias-of-a-variable-kept",
+    breaks:
+      "an `Rc`'s clone of a variable bound once is a variable of its own, `const closing = response;`, where it's the same object, read by its name (the user's decision, rd616; ADR 0846 amended)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace(a))\n",
+    replace: "        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace(a) && false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_clone_aliases.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "clone-alias-of-a-variable-set-again",
+    breaks:
+      "a clone of a variable set after is read by the variable's name, its new value: `close 4` where Rust's clone closes the first `Rc`, `close 3` (rd616)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace(a))\n",
+    replace: "        .filter(|(_, a)| bindings(body, a, false) == 1)\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_clone_aliases.rs$"],
+  },
+  {
     name: "clone-alias-kept",
     breaks:
       "an `Rc`'s clone of a parameter is a variable of its own, `const resolved = payload`, where it's the same object, read by its name (ADR 0846)",

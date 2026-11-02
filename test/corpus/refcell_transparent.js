@@ -116,14 +116,13 @@ function metersDebug_fmt(meters) {
 
 function newtypes() {
   const lines = ["one"];
-  const alias = lines;
-  $borrowMut(alias).push("two");
+  $borrowMut(lines).push("two");
   let old = $take($borrowMut(lines), ["three"]);
   const borrow = $borrow(lines);
-  console.log(`${linesDebug_fmt(old)} ${linesDebug_fmt(borrow)} ${lines === alias}`);
-  $assign($borrowMut(alias), []);
+  console.log(`${linesDebug_fmt(old)} ${linesDebug_fmt(borrow)} ${lines === lines}`);
+  $assign($borrowMut(lines), []);
   const taken = $borrowMut(lines).splice(0);
-  const value = $borrow(alias);
+  const value = $borrow(lines);
   console.log(`${linesDebug_fmt(taken)} ${linesDebug_fmt(value)}`);
   let length = 1.5;
   const before = length;

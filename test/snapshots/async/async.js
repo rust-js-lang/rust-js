@@ -78,11 +78,10 @@ export async function doubled(x) {
  */
 export function spawned() {
   const log = [];
-  const taskLog = log;
   (async () => {
-    taskLog.push(1);
+    log.push(1);
     await setTimeout(0, 0);
-    taskLog.push(3);
+    log.push(3);
   })();
   log.push(2);
   return log;
@@ -94,11 +93,10 @@ export function spawned() {
  */
 export function started() {
   const log = [];
-  const taskLog = log;
   async function loading() {
-    taskLog.push(1);
+    log.push(1);
     await setTimeout(0, 0);
-    taskLog.push(3);
+    log.push(3);
   }
   loading();
   log.push(2);

@@ -89,7 +89,7 @@ pub(super) struct Hints<'h> {
     /// The `const`s MIR's lowering made that are as its temporaries.
     pub(super) made: &'h super::Made,
     /// The variables a `clone()` made (`hints.rs::clone_names`).
-    pub(super) clones: &'h HashSet<String>,
+    pub(super) clones: &'h crate::lower::mir::hints::Clones,
     /// Of a closure, the variables it captured by value, which its maker
     /// never assigns again from where it makes it (ADR 0879).
     pub(super) kept: &'h HashSet<String>,

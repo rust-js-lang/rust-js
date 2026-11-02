@@ -1491,7 +1491,8 @@ export function isHook(hooks, hook) {
 ```
 
 A clone of a parameter's `Rc` moved into a closure is the same object, so
-the closure reads it by the parameter's name
+the closure reads it by the parameter's name, as it does a clone of a
+variable bound once and never set again
 ([ADR 0846](../../decisions/0846-a-parameters-clone-is-read-by-its-name.md)):
 
 ```rust

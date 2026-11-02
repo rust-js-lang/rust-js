@@ -35,9 +35,8 @@ function total(shared, f) {
 
 function main() {
   const stats = { value: { hits: 0, names: [] } };
-  const other = stats;
   record(stats, "a");
-  record(other, "b");
+  record(stats, "b");
   const value = $lock(stats, true);
   const hits = value.value.hits;
   $unborrow(value);
@@ -52,8 +51,7 @@ function main() {
   const value$2 = $lock(count, true);
   value$2.value = (value$2.value + 2) >>> 0;
   $unborrow(value$2);
-  const seen = count;
-  const value$3 = $lock(seen, true);
+  const value$3 = $lock(count, true);
   value$3.value = (value$3.value * 3) >>> 0;
   $unborrow(value$3);
   const value$4 = $lock(count, true);

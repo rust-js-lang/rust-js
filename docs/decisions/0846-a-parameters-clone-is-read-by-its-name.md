@@ -169,3 +169,39 @@ cloned each turn, a `let` shadowed after its clone, and a `mut` parameter
 given another value after its clone. Mutations
 `fixed-borrow-of-mut-binding` (`analysis/closures.rs`) and
 `fixed-borrows-unread` (`mir/hints.rs`).
+
+## Amendment: a clone of a variable bound once (rd616, the user's decision, 2026-11-02)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, as above: the clone
+is the same object, so either name reads it.
+
+React Flight's DOM clients clone a response into each callback, `let
+closing = Rc::clone(&response); start_reading_from_stream(&response,
+stream, Rc::new(move || close(&closing)))`, of a `response` the function
+made, not a parameter, so the clone kept its name, `const closing =
+response;`, and `const fulfilled = response; const rejected = response;`
+before `promiseForResponse.then(..)`, where upstream reads `response`
+itself. **The user's decision: a `let` of a clone, `Rc::clone(&x)` or
+`x.clone()`, whose JS is `x` itself, an uncounted `Rc`'s, is `x`, read by
+its name, where `x` is a variable the body binds once and never sets
+again, nor its closures** (tidy's `variable clones` pass,
+`bindings::variable_clones`: one declaration, `bindings`'s count, a
+closure's parameter among them, and no write that replaces it,
+`js::Writes`): as a parameter's clone was. It runs once the passes before
+have read in place what they read so, a pattern's guard binding among
+them: run with the parameter's rule, first, `binding_read_before_set`'s
+`const old = held;` became `held`, which then stayed a `const` of its
+own twice and broke its `else if`. Only an `Rc`'s clone
+(`hints::Clones::rcs`), as the user decided it; a `String`'s or a
+function's `const b = a` stays. One of a variable set again keeps its name, and the
+value it was a clone of: `let mut response = make(n); let closing =
+Rc::clone(&response); response = make(n + 1);` is `const closing =
+response;`. Rust needs the clone only for the `move` closure to own a
+handle of its own; JS has nothing to own. This merges a name the program
+wrote, `closing`, into the one it's of, which the user chose (rd616, A).
+
+Held by the corpus case `rc_clone_aliases` (a clone into an `Rc` closure,
+two clones into a promise's two callbacks, one the inner callback clones
+again, and a variable set again, whose alias stays), run against native
+Rust; and the mutations `clone-alias-of-a-variable-kept` and
+`clone-alias-of-a-variable-set-again` (`mir/tidy/bindings.ts`).

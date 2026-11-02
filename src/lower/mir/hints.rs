@@ -8,7 +8,7 @@ use super::*;
 use crate::lower::body_queries::{self, PatternValue};
 
 mod clones;
-pub(super) use clones::kept_captures;
+pub(super) use clones::{Clones, kept_captures};
 mod constants;
 mod negations;
 mod present_breaks;

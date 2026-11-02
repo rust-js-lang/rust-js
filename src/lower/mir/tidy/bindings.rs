@@ -556,11 +556,17 @@ pub(super) fn declares(stmts: &[Stmt], name: &str) -> bool {
 }
 
 fn binds(stmts: &[Stmt], name: &str, assigned: bool) -> bool {
+    bindings(stmts, name, assigned) > 0
+}
+
+/// How many times `stmts` declare `name`, a closure's parameter too, and
+/// set it, where `assigned`: as `binds` finds them.
+fn bindings(stmts: &[Stmt], name: &str, assigned: bool) -> usize {
     let own = |stmts: &[Stmt]| {
-        let mut found = false;
+        let mut found = 0;
         js::each_list(stmts, &mut |list| {
             for stmt in list.iter() {
-                found |= match &stmt.kind {
+                found += usize::from(match &stmt.kind {
                     StmtKind::Const(n, _) | StmtKind::Let(n, _) => n == name,
                     StmtKind::Destructure { pattern, .. } | StmtKind::ForOf { pattern, .. } => {
                         pattern.names().contains(&name)
@@ -568,7 +574,7 @@ fn binds(stmts: &[Stmt], name: &str, assigned: bool) -> bool {
                     StmtKind::For { name: n, .. } => n == name,
                     StmtKind::Assign(target, _) => assigned && matches!(&target.kind, ExprKind::Var(v) if v == name),
                     _ => false,
-                };
+                });
             }
         });
         found
@@ -576,7 +582,7 @@ fn binds(stmts: &[Stmt], name: &str, assigned: bool) -> bool {
     let mut found = own(stmts);
     js::each_expr(stmts, &mut |e| {
         if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &e.kind {
-            found |= params.iter().any(|p| p.names().contains(&name)) || own(body);
+            found += (params.iter()).filter(|p| p.names().contains(&name)).count() + own(body);
         }
     });
     found
@@ -736,7 +742,7 @@ pub(super) fn aliases(
     body: &mut Vec<Stmt>,
     captured: &HashSet<String>,
     (params, kept): (&[js::Pattern], &HashSet<String>),
-    (clones, given): (&HashSet<String>, &HashSet<String>),
+    (clones, given): (&crate::lower::mir::hints::Clones, &HashSet<String>),
 ) {
     clone_aliases(body, (params, kept), clones);
     js::statement_lists(body, &mut |stmts| {
@@ -790,7 +796,7 @@ pub(super) fn aliases(
 pub(super) fn clone_aliases(
     body: &mut Vec<Stmt>,
     (params, kept): (&[js::Pattern], &HashSet<String>),
-    clones: &HashSet<String>,
+    clones: &crate::lower::mir::hints::Clones,
 ) {
     let fixed: HashSet<String> = (params.iter())
         .flat_map(|param| param.names())
@@ -798,6 +804,28 @@ pub(super) fn clone_aliases(
         .filter(|name| !rebinds(body, name))
         .map(str::to_string)
         .collect();
+    clones_read_as(body, &fixed, &clones.all);
+}
+
+/// `const b = a;` that a `clone()` of an uncounted `Rc` made,
+/// `clones.rcs`, of a variable `a` the body declares once and never
+/// replaces, its closures neither (`Writes`), `const response =
+/// createResponse(options)`, is `a`, read where `b` was: the same object
+/// (the user's decision, rd616; ADR 0846, amended). Once the passes before
+/// have read in place what they read in place, a binding of a pattern's
+/// guard among them, `const old = current;` whose `current` is set again.
+pub(super) fn variable_clones(body: &mut Vec<Stmt>, clones: &crate::lower::mir::hints::Clones) {
+    let writes = js::Writes::of(body);
+    let fixed: HashSet<String> = (cloned_from(body, &clones.rcs).into_iter())
+        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace(a))
+        .map(|(_, a)| a)
+        .collect();
+    clones_read_as(body, &fixed, &clones.rcs);
+}
+
+/// Each `const b = a;` of `body`'s own lists, `b` one of `clones` and `a`
+/// one of `fixed`, gone, `b` read as `a` after it.
+fn clones_read_as(body: &mut Vec<Stmt>, fixed: &HashSet<String>, clones: &HashSet<String>) {
     js::statement_lists(body, &mut |stmts| {
         let mut i = 0;
         while i < stmts.len() {
@@ -821,6 +849,23 @@ pub(super) fn clone_aliases(
             i += 1;
         }
     });
+}
+
+/// Each `const b = a;` of `body`'s own lists that a `clone()` made,
+/// `clones`: `b` and `a`.
+fn cloned_from(body: &mut Vec<Stmt>, clones: &HashSet<String>) -> Vec<(String, String)> {
+    let mut found = Vec::new();
+    js::statement_lists(body, &mut |stmts| {
+        for stmt in stmts.iter() {
+            if let StmtKind::Const(b, value) = &stmt.kind
+                && let ExprKind::Var(a) = &value.kind
+                && clones.contains(b)
+            {
+                found.push((b.clone(), a.clone()));
+            }
+        }
+    });
+    found
 }
 
 /// A `let x;` MIR declares first, where it's first named: before the first

@@ -41,7 +41,6 @@ function main() {
   const second = handle(seen, log);
   console.log(`${first("a")} ${first("b")} ${second("c")}`);
   console.log(`[${log.map((item) => $debugStr(item)).join(", ")}] ${seen.length}`);
-  const again = first;
-  console.log(`${again("d")} ${again === first}`);
+  console.log(`${first("d")} ${first === first}`);
 }
 //# sourceMappingURL=case.js.map

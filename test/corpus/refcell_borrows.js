@@ -84,8 +84,7 @@ function main() {
   hit();
   console.log(`${hit()}`);
   const shared = { value: "a" };
-  const other = shared;
-  const borrowMut = $borrowMut(other);
+  const borrowMut = $borrowMut(shared);
   borrowMut.value += "b";
   for (let i = 0; i < 2; i++) {
     let tmp;
@@ -110,7 +109,7 @@ function main() {
   }
   let tmp;
   try {
-    tmp = $borrow(other);
+    tmp = $borrow(shared);
   } catch (error) {
     if (writing$live) {
       $unborrow(writing);

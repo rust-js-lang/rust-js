@@ -266,7 +266,6 @@ export function App() {
   }
   const outputTree = useMemo(() => buildTree(outputPaths), [output]);
   const examples = loaded != null ? loaded.examples : [];
-  const submit = onCompile;
   const children =
     outputTree.length === 0 ? (
       <li className="flex items-center px-2 py-0.5 text-muted">(none)</li>
@@ -325,7 +324,7 @@ export function App() {
               state={current}
               view={source}
               onSubmit={() => {
-                submit(false);
+                onCompile(false);
               }}
             />
           }

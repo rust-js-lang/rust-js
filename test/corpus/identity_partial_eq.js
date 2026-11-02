@@ -16,13 +16,12 @@ function main() {
   const partialEq = { eq: (a, b) => a === b };
   const first = { lane: 1 };
   const alike = { lane: 1 };
-  const again = first;
-  console.log(`${first === again} ${first === alike} ${first === alike}`);
+  console.log(`${first === first} ${first === alike} ${first === alike}`);
   console.log(
-    `${differ(first, again)} ${differ(first, alike)} ${differ(undefined, first)} ${differ(undefined)}`,
+    `${differ(first, first)} ${differ(first, alike)} ${differ(undefined, first)} ${differ(undefined)}`,
   );
   const updates = [first, alike];
-  console.log(`${has(updates, again, partialEq)} ${updates.includes(alike)}`);
+  console.log(`${has(updates, first, partialEq)} ${updates.includes(alike)}`);
   const lone = { lane: 2 };
   console.log(`${has([lone], lone, partialEq)} ${(lone.lane + first.lane) >>> 0}`);
 }

@@ -25,9 +25,8 @@ function bump(holder) {
 
 function main() {
   const log = [];
-  const writer = log;
   for (let i = 0; i < 4; i++) {
-    writer.push(i * i);
+    log.push(i * i);
   }
   const value = total(log);
   console.log(`(${value[0]}, ${value[1]})`);

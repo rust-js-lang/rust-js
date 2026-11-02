@@ -15,11 +15,10 @@ function differ(a, b) {
 function main() {
   const first = { lane: 1 };
   const second = { lane: 1 };
-  const again = first;
-  console.log(`${first === again} ${first === second}`);
+  console.log(`${first === first} ${first === second}`);
   const some = first;
   console.log(
-    `${differ(some, again)} ${differ(some, second)} ${differ(some)} ${differ(undefined)}`,
+    `${differ(some, first)} ${differ(some, second)} ${differ(some)} ${differ(undefined)}`,
   );
   // Read through it, as `&*` of it is what the `Rc` points at.
   const lane = first.lane;
@@ -70,8 +69,7 @@ function main() {
               );
 
               const a = { lane: 2 };
-              const b = a;
-              console.log(`${a === b} ${(a.lane + b.lane) >>> 0}`);
+              console.log(`${a === a} ${(a.lane + a.lane) >>> 0}`);
             } finally {
               $rcDrop(k);
             }

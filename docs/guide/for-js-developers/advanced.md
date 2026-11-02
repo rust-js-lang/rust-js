@@ -1080,9 +1080,10 @@ export function twoLoggers() {
 
 - **An `Rc` is the value itself,** and `Rc::clone` shares it, as two JS
   variables share one object. A clone made to give a `move` closure its
-  own, of a parameter or of what the closure around it captured by value,
-  is read by that name, `() => flush(queue)` of `let queue =
-  Rc::clone(&queue); move || flush(&queue)`; so is one a closure makes of
+  own, of a parameter, of a variable bound once and never set again, or
+  of what the closure around it captured by value, is read by that name,
+  `() => flush(queue)` of `let queue = Rc::clone(&queue); move ||
+  flush(&queue)`; so is one a closure makes of
   a parameter it borrows that isn't `mut`, `self` too, which in a method is
   `this`: `let chunk = Rc::clone(self);` in a promise's executor, then
   `chunk.info` in its callback, is `this.info`

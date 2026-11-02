@@ -203,17 +203,15 @@ function textsIn(folder, prefix, found) {
  */
 export async function compile(loaded, sources, rootFile, test) {
   const stderr = [];
-  const stdoutLines = stderr;
-  const stderrLines = stderr;
   const outDir = new PreopenDirectory("/out", new Map());
   const sysrootDir = new Directory(loaded.sysroot);
   const fds = [
     new OpenFile(new File([])), // stdin
     ConsoleStdout.lineBuffered((line) => {
-      stdoutLines.push(line);
+      stderr.push(line);
     }), // stdout
     ConsoleStdout.lineBuffered((line) => {
-      stderrLines.push(line);
+      stderr.push(line);
     }), // stderr
     new PreopenDirectory("/in", directoryOf(sources)),
     outDir,

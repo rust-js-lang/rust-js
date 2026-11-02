@@ -303,6 +303,9 @@ pub(super) const STAGES: &[Stage] = &[
             pass("tuple clones", |b, h| {
                 clone_aliases(b, (&h.params.borrow(), h.kept), h.clones)
             }),
+            // A clone of an `Rc` of a variable bound once, `const closing =
+            // response;`: that variable (the user's decision, rd616).
+            pass("variable clones", |b, h| variable_clones(b, h.clones)),
             // `dyn` values given to JS, `[{ value, impl }].map((item) =>
             // item.value)`: the values.
             pass("unwrapped values", |b, _| {

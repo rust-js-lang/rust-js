@@ -188,12 +188,11 @@ function main() {
   );
   check("settle after none", () => settleAfter(after, 5, () => {}), debug);
 
-  const cleared = queue;
   check(
     "called between",
     () =>
       calledBetween(queue, () => {
-        cleared.length = 0;
+        queue.length = 0;
       }),
     debug,
   );
@@ -206,12 +205,11 @@ function main() {
     queue.push(9);
     check("cleared by its guard", () => clearedByItsGuard(queue, 0), debug);
     queue.push(10);
-    const cleared = queue;
     check(
       "tested before",
       () =>
         testedBefore(queue, () => {
-          cleared.length = 0;
+          queue.length = 0;
         }),
       debug,
     );

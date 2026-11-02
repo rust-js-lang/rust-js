@@ -10,11 +10,7 @@ impl<'tcx> FnCx<'_, 'tcx> {
     /// `Rc`'s, tidy reads it by the name it's of (ADR 0846). And each a
     /// tuple of clones gives a pattern of it, `let (chunk, resolved) =
     /// (Rc::clone(self), Rc::clone(&wrapper));`'s `chunk` (rd515).
-    pub(in crate::lower::mir) fn clone_names(
-        &self,
-        mir_body: &mir::Body<'tcx>,
-        state: &State<'_, 'tcx>,
-    ) -> std::collections::HashSet<String> {
+    pub(in crate::lower::mir) fn clone_names(&self, mir_body: &mir::Body<'tcx>, state: &State<'_, 'tcx>) -> Clones {
         let cloned: std::collections::HashSet<Local> = (mir_body.basic_blocks.iter())
             .filter_map(|block| match &block.terminator().kind {
                 mir::TerminatorKind::Call { func, destination, .. }
@@ -61,11 +57,29 @@ impl<'tcx> FnCx<'_, 'tcx> {
             _ => None,
         });
         let locals: Vec<Local> = cloned.iter().copied().chain(taken).collect();
-        (locals.into_iter())
-            .map(|local| state.locals.names[local].clone())
-            .filter(|name| !name.is_empty())
-            .collect()
+        let names = |locals: &mut dyn Iterator<Item = Local>| -> std::collections::HashSet<String> {
+            (locals.map(|local| state.locals.names[local].clone()))
+                .filter(|name| !name.is_empty())
+                .collect()
+        };
+        // Of an `Rc` JS holds as the object itself, one not counted.
+        let uncounted = |local: &Local| {
+            let ty = mir_body.local_decls[*local].ty;
+            self.is_rc(ty) && self.counted_rc(ty).is_none()
+        };
+        Clones {
+            rcs: names(&mut cloned.iter().copied().filter(uncounted)),
+            all: names(&mut locals.into_iter()),
+        }
     }
+}
+
+/// The locals a `clone()` makes (`clone_names`): each, and those of an
+/// uncounted `Rc`, the object itself, which a variable bound once is read
+/// as (the user's decision, rd616).
+pub(in crate::lower::mir) struct Clones {
+    pub all: std::collections::HashSet<String>,
+    pub rcs: std::collections::HashSet<String>,
 }
 
 /// A closure's captures it took by value, each a variable its maker never

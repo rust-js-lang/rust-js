@@ -109,14 +109,13 @@ export function main() {
   // Typing a title and pressing Enter adds it.
   const input = create("input");
   input.placeholder = "What needs to be done?";
-  const adding = state;
   input.addEventListener("keydown", (e) => {
     let title = input.value;
     title = $trim(title);
     if (e.key === "Enter" && title) {
-      add($borrowMut(adding), title);
+      add($borrowMut(state), title);
       input.value = "";
-      render(adding, view);
+      render(state, view);
     }
   });
 

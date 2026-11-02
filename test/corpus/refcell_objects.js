@@ -35,18 +35,17 @@ function add(totals, name, n) {
 
 function main() {
   const shared = [1, 2];
-  const other = shared;
-  $borrowMut(other).push(3);
+  $borrowMut(shared).push(3);
   const old = $take($borrowMut(shared), [9]);
   const borrow = $borrow(shared);
-  const value = $borrow(other);
+  const value = $borrow(shared);
   console.log(`[${old.join(", ")}] [${borrow.join(", ")}] [${value.join(", ")}]`);
-  const taken = $borrowMut(other).splice(0);
+  const taken = $borrowMut(shared).splice(0);
   const value$1 = $borrow(shared);
-  console.log(`[${taken.join(", ")}] ${value$1.length === 0} ${shared === other}`);
+  console.log(`[${taken.join(", ")}] ${value$1.length === 0} ${shared === shared}`);
   $borrowMut(shared).push(4, 5);
   const before = $replaceWith(shared, (v) => v.map((n) => (n * 2) | 0), false, true);
-  const value$2 = $borrow(other);
+  const value$2 = $borrow(shared);
   console.log(`[${before.join(", ")}] [${value$2.join(", ")}]`);
 
   const left = new Map([["a", 1]]);

@@ -170,9 +170,8 @@ export function cell(times) {
 /** Shared through an `Rc`, a `RefCell<Vec<_>>` is one array everyone changes. */
 export function shared(times) {
   const log = [];
-  const writer = log;
   for (let i = 0; i < times; i++) {
-    writer.push(Math.imul(i, i));
+    log.push(Math.imul(i, i));
   }
   const v = log;
   let total = 0;

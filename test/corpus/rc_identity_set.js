@@ -17,9 +17,8 @@ function main() {
   addUpdater(root, a);
   addUpdater(root, a);
   addUpdater(root, b);
-  const again = a;
   console.log(
-    `${root.memoizedUpdaters.size} ${root.memoizedUpdaters.has(again)} ${a === again} ${a === b}`,
+    `${root.memoizedUpdaters.size} ${root.memoizedUpdaters.has(a)} ${a === a} ${a === b}`,
   );
   root.memoizedUpdaters.delete(b);
   console.log(`${root.memoizedUpdaters.size} ${(a.lanes + b.lanes) >>> 0}`);
