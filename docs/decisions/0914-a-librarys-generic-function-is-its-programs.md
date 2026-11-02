@@ -813,3 +813,26 @@ calls are; one its JS exports by name is called by it, as before.
   Rust, and the crate corpus's rust_decimal probe, which runs the same as
   native. Mutation `operator-through-dictionary-refused`
   (`lower/traits/calls.ts`).
+
+## Amendment: a struct of no fields its optimized MIR names as a constant is made (#474)
+
+Since this ADR's first amendment (9e9295569), a consumer of base64 compiles
+`Engine::encode`, a trait's generic default, and the function inside it,
+from base64's optimized MIR. There `&mut buf[..]` indexes by `const
+RangeFull`, a value of a struct of no fields, `ConstValue::ZeroSized`,
+where the crate's own MIR says the same `..` as a struct made. A value tree
+of a std struct says nothing of its JS (`const_js_by` gives none of one that
+isn't its fields), so base64's probe was refused, "this constant, from its
+MIR".
+
+**A struct of no fields that a body's MIR names as a constant no value
+tree says is what making one is, `adt_value`'s, as of an aggregate of it**:
+the JS is the same of a library's optimized MIR as of the crate's own.
+
+- Case N ([0262](0262-when-rust-and-js-disagree.md)): a value with no
+  fields, made as Rust makes it.
+- Held by `test/crates/pairs/unit_struct_of_instance`, against native Rust:
+  a consumer calls a library trait's generic default whose inner function
+  indexes by `..` and gives a unit struct; and the crate corpus's base64
+  probe, which runs the same as native. Mutation
+  `mir-const-unit-struct-refused` (`lower/mir/operands.ts`).

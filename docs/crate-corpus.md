@@ -43,7 +43,7 @@ newest release its requirement allows.
 | chrono 0.4 (`alloc`) | runs | measured 2026-11-02, after ADR 0592's and 0051's amendments (#467): its `date` module's dictionaries, in a cycle with `time_delta`'s constants, and `format::parse`'s call of `parse_internal` |
 | time 0.3 (`alloc`) | blocked | powerfmt: a `Formatter` of its own; its `MaybeUninit` buffer's pointers compile (ADR 0562); deranged compiles (ADR 0165) |
 | heck 0.5 | runs | a callable that writes is a writer (ADR 0460) |
-| base64 0.22 | runs (compiles: #474) | on 2026-11-02 its probe is refused: "this constant, from its MIR"; an `io::Error` a value, its writer's errors thrown (ADR 0462) |
+| base64 0.22 | runs | measured 2026-11-02, after ADR 0914's amendment (#474); an `io::Error` a value, its writer's errors thrown (ADR 0462) |
 | hex 0.4 | runs | measured 2026-10-21 |
 | num-traits 0.2 | compiles | a float's `log`, `sin_cos`, `rem_euclid` and the like (ADR 0064) |
 

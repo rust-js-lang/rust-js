@@ -452,6 +452,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 return self.const_as_code(Mir::new(tcx, state.facts.promoted()[promoted].clone(), IndexVec::new()));
             }
+            // A struct of no fields, a constant in optimized MIR, a library's
+            // a consumer compiles (ADR 0914), `const RangeFull` of `&mut
+            // buf[..]`, which no value tree says as JS: as making one is.
+            None if matches!(c.const_, Const::Val(mir::ConstValue::ZeroSized, _))
+                && matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct()) =>
+            {
+                return self.adt_value(ty, VariantIdx::ZERO, Vec::new(), &[], None, c.span);
+            }
             None => return Err(self.unsupported(c.span, "this constant, from its MIR")),
         };
         // A string is as its literal is written, across lines or in
