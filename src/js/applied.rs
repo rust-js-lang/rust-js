@@ -474,6 +474,22 @@ fn sets(stmts: &[Stmt], name: &str) -> bool {
     set
 }
 
+/// Where a `try`'s statement of a value is, made of `value`, where the
+/// value is written, and of what it's `made_of`, a `match`'s head through
+/// its `Ok` arm: from the value's start through the end of either, so the
+/// comments above the arm, inside it, are its (rd630). Either alone where
+/// the other has no place, `made_of` where the value has none.
+pub fn tried_extent(value: Span, made_of: Span) -> Span {
+    match (value.is_none(), made_of.is_none()) {
+        (true, _) => made_of,
+        (false, true) => value,
+        (false, false) => Span {
+            lo: value.lo,
+            hi: value.hi.max(made_of.hi),
+        },
+    }
+}
+
 /// What a `try` holds, `tried`, a block of its own, with a closure of
 /// nothing called where it's made, `catch_unwind(|| ..)`'s (ADR 0660),
 /// as its body: `return (() => { .. })();` its body, each `return` of it
@@ -547,13 +563,7 @@ pub fn applied_tried(mut tried: Vec<Stmt>) -> Vec<Stmt> {
                 // through what the statement it's of is of, a `match`'s `Ok`
                 // arm, `href = match catch_unwind(|| parse(s)) { Ok(h) => h,
                 // .. }`'s, whose comments are its (rd630).
-                let span = match last.span.is_none() {
-                    true => tried[0].span,
-                    false => Span {
-                        lo: last.span.lo,
-                        hi: last.span.hi.max(tried[0].span.hi),
-                    },
-                };
+                let span = tried_extent(last.span, tried[0].span);
                 body.push(kept.at(span));
                 tried.splice(0..1, body);
                 tried
@@ -989,4 +999,27 @@ fn returns_as_breaks(stmts: &mut [Stmt]) -> bool {
         StmtKind::Switch { cases, default, .. } => !case_lists(cases, default).any(|body| returns(body).0),
         _ => true,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn at(lo: u32, hi: u32) -> Span {
+        Span { lo, hi }
+    }
+
+    #[test]
+    fn tried_extent_is_the_value_through_its_arm() {
+        // `match catch_unwind(|| parse(s)) { // c\n Ok(h) => h,`: the value's
+        // start through the `Ok` arm's end.
+        assert_eq!(tried_extent(at(224, 233), at(208, 283)), at(224, 283));
+        // What it's made of inside the value: the value.
+        assert_eq!(tried_extent(at(10, 50), at(20, 30)), at(10, 50));
+        // A value with no place: what it's made of, as `applied_tried`
+        // places a closure's `return` that has none.
+        assert_eq!(tried_extent(Span::NONE, at(208, 283)), at(208, 283));
+        // Nothing it's made of placed: the value.
+        assert_eq!(tried_extent(at(224, 233), Span::NONE), at(224, 233));
+    }
 }

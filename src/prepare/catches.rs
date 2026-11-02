@@ -609,7 +609,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
                 && !stmt.span.is_none()
                 && !made.span.is_none()
                 && stmt.span.lo >= made.span.hi;
-            let arm = (!written && !stmt.span.is_none()).then_some(stmt.span.hi);
+            let arm = (!written).then_some(stmt.span);
             (kind, written.then_some(stmt.span), arm)
         }),
         _ => None,
@@ -679,10 +679,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     // The `Ok`'s value kept is the call's too, `return f(x)`.
     if let Some((held, written, arm)) = held {
         let through_arm = match arm {
-            Some(hi) if span.lo < hi => js::Span {
-                lo: span.lo,
-                hi: hi.max(span.hi),
-            },
+            Some(arm) if span.lo < arm.hi => js::tried_extent(span, arm),
             _ => span,
         };
         return Some((vec![caught(vec![held.at(written.unwrap_or(through_arm))])], taken));

@@ -563,8 +563,8 @@ export const mutations: Mutation[] = [
     name: "held-assignment-without-its-arm",
     breaks: "a `try`'s assignment of a `match`'s `Ok` value is of the call alone, so the comment above `Ok(v) => v,` is in no statement and lost (rd630)",
     file: "src/prepare/catches.rs",
-    find: "            let arm = (!written && !stmt.span.is_none()).then_some(stmt.span.hi);\n",
-    replace: "            let arm: Option<u32> = None;\n",
+    find: "            let arm = (!written).then_some(stmt.span);\n",
+    replace: "            let arm: Option<js::Span> = None;\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "Ok arm is above its value"],
   },
 ];
