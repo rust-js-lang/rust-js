@@ -131,3 +131,29 @@ that make them", a binding declared between two `use` groups loading
 between them, and `test/modules.test.ts`'s bindings declared in their
 order; mutation `imports-declared-unordered`.
 
+## Amendment: a binding named through the module that holds it (rd609)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, as above.
+
+A `use` that names a binding through a module that holds it, shared's
+`use shared::internals::REACT_SHARED_INTERNALS;` or `use
+shared::assign::assign;` (ADR 0633), makes that module's import,
+`import ReactSharedInternals from 'shared/ReactSharedInternals'`, which
+no rule placed: `UsesWritten` asked what the `use` names, the binding,
+whose JS module, `react` or none, isn't what's imported, so the import
+fell to the fallback after every `use`'s, where ReactCurrentFiber,
+ReactFiberAct, ReactFiberClassComponent and others import it first.
+
+**Such a `use` makes its holder's import**: of each binding it names,
+the module its path names it through, where that module holds it, a
+library's as its manifest says or the crate's own (`Held::use_holder`,
+`held_by`'s rule of a path, ADR 0633), is what the `use` places
+(`UsesWritten::package_at`, `module_at`), and not the binding's own JS
+module, which the module doesn't import there. A `use` of the binding
+itself, `use js::object::assign;`, is the binding's as before.
+
+Held by `test/cargo-link.test.ts`'s "a library's module that holds a
+binding is what a consumer reads it through", a library's holder and the
+crate's own each before what sorts first, and `react`'s import where its
+binding is declared; mutations `imports-held-library-unplaced`,
+`imports-held-module-unplaced` and `imports-held-binding-own`.

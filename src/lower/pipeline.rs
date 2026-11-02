@@ -1065,7 +1065,7 @@ pub fn lower_crate<'tcx>(
         .into_iter()
         .map(|module| {
             // Where each import's `use` is, which its comments are before.
-            let uses = super::analysis::UsesWritten::of(tcx, module);
+            let uses = super::analysis::UsesWritten::of(tcx, module, &foreign, &held);
             let written = |at: Option<rustc_span::Span>| at.map_or(js::Span::NONE, |at| sources.span(at));
             // One `import` per JS module, of what this file uses from it.
             let mut packages: BTreeMap<&str, js::Package> = BTreeMap::new();

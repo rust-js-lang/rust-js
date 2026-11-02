@@ -638,8 +638,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a comment above a `use` tree, `use crate::{a::x, b::y};`, is lost: each import it makes is where its leaf's path is (rd92)",
     file: "src/lower/analysis/naming.rs",
-    find: "                Some((statement(item.span), named))\n",
-    replace: "                Some((item.span, named))\n",
+    find: "                Some((statement(item.span), named, holders))\n",
+    replace: "                Some((item.span, named, holders))\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "above a use"],
   },
   {
@@ -755,5 +755,32 @@ export const mutations: Mutation[] = [
     find: "            .chain(declared)\n",
     replace: "",
     tests: ["test/libraries.test.ts", "-t", "uses that make them"],
+  },
+  {
+    name: "imports-held-library-unplaced",
+    breaks:
+      "a `use` of a binding through a library's module that holds it, `use shared::internals::REACT_SHARED_INTERNALS;`, places no import, so ReactCurrentFiber's `shared/ReactSharedInternals` goes after every `use`'s (rd609, ADR 1063, amended)",
+    file: "src/lower/analysis/naming.rs",
+    find: "            |holder| matches!(holder, bindings::Holder::Library(of) if of == from),\n",
+    replace: "            |_| false,\n",
+    tests: ["test/cargo-link.test.ts", "-t", "holds a binding"],
+  },
+  {
+    name: "imports-held-module-unplaced",
+    breaks:
+      "a `use` of a binding through the crate's module that holds it, `use crate::held::assign;`, places no import, which goes after every `use`'s (rd609, ADR 1063, amended)",
+    file: "src/lower/analysis/naming.rs",
+    find: "            |holder| matches!(holder, bindings::Holder::Module(of) if *of == target),\n",
+    replace: "            |_| false,\n",
+    tests: ["test/cargo-link.test.ts", "-t", "holds a binding"],
+  },
+  {
+    name: "imports-held-binding-own",
+    breaks:
+      "a binding a `use` names through a module that holds it is taken for its own JS module's too, so a `use shared::internals::REACT_SHARED_INTERNALS;` places `react`'s import, which the module doesn't make there (rd609, ADR 1063, amended)",
+    file: "src/lower/analysis/naming.rs",
+    find: "                        Some(holder) => holders.push(holder),\n",
+    replace: "                        Some(holder) => {\n                            holders.push(holder);\n                            named.push(id);\n                        }\n",
+    tests: ["test/cargo-link.test.ts", "-t", "holds a binding"],
   },
 ];

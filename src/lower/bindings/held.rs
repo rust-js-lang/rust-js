@@ -211,16 +211,32 @@ fn held_by<'tcx>(
     modules: &mut HashMap<LocalModId, Vec<HeldBinding>>,
 ) -> Option<HeldRead> {
     let Some(local) = module.as_local() else {
-        let held = foreign.held(module, ident, binding)?;
-        return Some(HeldRead {
-            holder: Holder::Library(held.from.clone()),
-            import: held.export.clone(),
-            name: held.name.clone(),
-            binding,
-        });
+        return library_held(foreign, module, ident, binding);
     };
     let module = LocalModId::new_unchecked(local);
-    let held = module_held(tcx, foreign, module, modules);
+    found_in(module, module_held(tcx, foreign, module, modules), ident, binding)
+}
+
+/// How a library's `module` holds `binding` by `ident`, as its manifest
+/// says.
+fn library_held(
+    foreign: &crate::lower::library::Foreign<'_, '_>,
+    module: DefId,
+    ident: Symbol,
+    binding: DefId,
+) -> Option<HeldRead> {
+    let held = foreign.held(module, ident, binding)?;
+    Some(HeldRead {
+        holder: Holder::Library(held.from.clone()),
+        import: held.export.clone(),
+        name: held.name.clone(),
+        binding,
+    })
+}
+
+/// How the crate's `module`, of what it holds, `held`, holds `binding` by
+/// `ident`, and exports it.
+fn found_in(module: LocalModId, held: &[HeldBinding], ident: Symbol, binding: DefId) -> Option<HeldRead> {
     let found = held.iter().find(|h| h.binding == binding && h.ident == ident)?;
     Some(HeldRead {
         holder: Holder::Module(module),
@@ -228,6 +244,32 @@ fn held_by<'tcx>(
         name: found.name.clone(),
         binding,
     })
+}
+
+impl Held {
+    /// The module a `use` names `binding` through where that module holds
+    /// it, its path's last but one, `shared::assign` of `use
+    /// shared::assign::assign;`, the crate's or a library's: what its
+    /// import is of, placed where the `use` is (rd609, ADR 1063, amended).
+    pub(in crate::lower) fn use_holder(
+        &self,
+        foreign: &crate::lower::library::Foreign<'_, '_>,
+        segments: &[rustc_hir::PathSegment<'_>],
+        binding: DefId,
+    ) -> Option<Holder> {
+        let [.., module, last] = segments else { return None };
+        let Res::Def(DefKind::Mod, module) = module.res else {
+            return None;
+        };
+        let read = match module.as_local() {
+            None => library_held(foreign, module, last.ident.name, binding),
+            Some(local) => {
+                let local = LocalModId::new_unchecked(local);
+                found_in(local, self.modules.get(&local)?, last.ident.name, binding)
+            }
+        };
+        read.map(|read| read.holder)
+    }
 }
 
 /// Each binding `module` names as a value of its own, its default or a

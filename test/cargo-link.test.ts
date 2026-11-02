@@ -234,6 +234,51 @@ pub fn direct<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
   expect(app).toContain("  return ReactSharedInternals;\n");
   expect(app).toContain("  return Object.assign(target, source);\n");
   expect(app).not.toContain('"react"');
+  // Each import where the `use` that names it through its holder is, as
+  // any `use`'s (ADR 1063, amended): ReactCurrentFiber's
+  // `ReactSharedInternals` first, before what sorts first, the holder's
+  // import, not `react`'s, which its binding is of (rd609).
+  mkdirSync(join(dir, "first"), { recursive: true });
+  writeFileSync(join(dir, "first/lib.rs"), `use shared::internals::REACT_SHARED_INTERNALS;
+use js::Unknown;
+use shared::assign::assign;
+
+pub fn internals() -> &'static shared::Internals {
+    REACT_SHARED_INTERNALS
+}
+
+pub fn merged<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
+    assign(target, (source,))
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "react#version")]
+fn version() -> u32 {
+    unreachable!()
+}
+
+pub fn versioned() -> u32 {
+    version()
+}
+`);
+  const first = join(dir, "first/lib.js");
+  run([compiler, join(dir, "first/lib.rs"), "-o", first, "--dependency", libraryManifest, "--", "--crate-name", "first", "--extern", `shared=${metadata}`, ...extern]);
+  expect(readFileSync(first, "utf8")).toContain('import ReactSharedInternals from "../shared/internals.js";\nimport assign from "../shared/assign.js";\nimport { version } from "react";\n');
+  // And of the crate's own module that holds it, before what sorts first.
+  mkdirSync(join(dir, "own"), { recursive: true });
+  writeFileSync(join(dir, "own/lib.rs"), "pub mod aaa;\npub mod held;\npub mod user;\n");
+  writeFileSync(join(dir, "own/aaa.rs"), "pub fn a() -> u32 {\n    1\n}\n");
+  writeFileSync(join(dir, "own/held.rs"), "pub use js::object::assign;\n\njs::export_default!(assign);\n");
+  writeFileSync(join(dir, "own/user.rs"), `use crate::held::assign;
+use crate::aaa::a;
+use js::Unknown;
+
+pub fn merged<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
+    let _ = a();
+    assign(target, (source,))
+}
+`);
+  run([compiler, join(dir, "own/lib.rs"), "-o", join(dir, "own/lib.js"), "--", "--crate-name", "own", "--crate-type", "lib", ...extern]);
+  expect(readFileSync(join(dir, "own/user.js"), "utf8")).toContain('import assign from "./held.js";\nimport { a } from "./aaa.js";\n');
   mkdirSync(join(dir, "node_modules/react"), { recursive: true });
   writeFileSync(join(dir, "node_modules/react/package.json"), '{ "name": "react", "type": "module", "main": "index.js" }\n');
   writeFileSync(join(dir, "node_modules/react/index.js"), "export const __CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE = { H: null };\n");

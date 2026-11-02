@@ -133,7 +133,8 @@ name, so a call of it gives the function no `this`
 Imports are one block, in the order the module's `use`s are written,
 as JS loads a module's imports in their order: each import where the
 first `use` that makes it is, a binding's JS module, a library's module
-and the crate's own alike. rustfmt sorts the `use`s of one group, the
+and the crate's own alike, and a module that holds a binding the `use`
+names through it, `use shared::assign::assign;`'s `shared/assign`. rustfmt sorts the `use`s of one group, the
 lines between blank ones, and keeps the groups as written, so a module
 whose imports must load in an order writes them in groups, as React DOM's
 ReactDOMFizzServerNode writes `use react_server::..;`, a blank line, then
