@@ -6,7 +6,9 @@ that may have a destructor, not a `T: Copy`, where a body holds it, through
 the fields of what it holds. Amended by
 [0852](0852-each-types-rcs-are-counted-apart.md): it counts the `Rc`s
 of what it may be, not every one, and only where a body owns it, not
-behind a reference or a `Weak`.
+behind a reference or a `Weak`. Amended by
+[0626](0626-what-a-library-hands-a-crate.md): an `Rc` of a closure owns what
+the closure captures, not its function's type arguments.
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): what's dropped, and
 when, as std's, by the last clone of an `Rc`.

@@ -239,7 +239,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/rc_counts.rs",
     find: "            made_with.contains(&from) && !made_apart.contains(&from)\n        }\n        ty::Closure(id, _) => {",
     replace: "            false\n        }\n        ty::Closure(id, _) => {",
-    tests: ["test/cross-crate-items.test.ts", "-t", "bound function, compared"],
+    tests: ["test/cross-crate-dyn-fns.test.ts", "-t", "bound function, compared"],
   },
   {
     name: "rc-of-shared-reference-made-with",
@@ -249,7 +249,7 @@ export const mutations: Mutation[] = [
     find: "                        false => made_apart.insert(erased(from)),\n                    };\n                }",
     replace:
       "                        false => made_with.insert(erased(from)),\n                    };\n                }",
-    tests: ["test/cross-crate-items.test.ts", "-t", "bound function, compared"],
+    tests: ["test/cross-crate-dyn-fns.test.ts", "-t", "bound function, compared"],
   },
   {
     name: "rc-made-of-counted-uncounted",
@@ -259,5 +259,23 @@ export const mutations: Mutation[] = [
     find: "                .filter(|(from, to)| counted.types.contains(from) && !counted.types.contains(to))\n",
     replace: "                .filter(|(from, to)| false && counted.types.contains(from) && !counted.types.contains(to))\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_fn_made_of_a_counted_rc.rs$"],
+  },
+  {
+    name: "rc-of-closure-holds-its-generics",
+    breaks:
+      "an `Rc` of a generic function's closure that captures nothing, React's decodeBoundActionMetaData<M>'s `Rc::new(|_| {})`, is taken to own a value of `M`, which its type names, so it's counted, and the `Rc<dyn Fn>`s it's made, and the closures that hold one drop, which react_isomorphic's `dyn Fn`s refuse (rd597, ADR 0626, amended)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "                Some(t) if let ty::Closure(_, args) = *t.kind() => {\n",
+    replace: "                Some(t) if false && let ty::Closure(_, args) = *t.kind() => {\n",
+    tests: ["test/cross-crate-dyn-fns.test.ts", "-t", "holds none of its type parameters"],
+  },
+  {
+    name: "rc-of-closure-holds-nothing",
+    breaks:
+      "an `Rc` of a generic function's closure that captures a `T` given one that drops, or a `Box<T>`, isn't counted, so its first drop drops what it captured, before Rust's last does (rd597, ADR 0626, amended)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "                    held.extend(args.as_closure().upvar_tys());\n",
+    replace: "                    let _ = args;\n",
+    tests: ["test/cross-crate-dyn-fns.test.ts", "-t", "holds none of its type parameters"],
   },
 ];

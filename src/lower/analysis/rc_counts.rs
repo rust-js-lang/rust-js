@@ -418,7 +418,8 @@ fn behind_pointer(thir: &Thir<'_>, id: ExprId) -> bool {
 /// destructor, `given` by its index, or of an associated type of one that
 /// may have a destructor where `env` types it, itself, not behind a
 /// reference or a `Weak`, which drop nothing of it, through the fields of
-/// the crates' types: not a `T: Copy`.
+/// the crates' types and what a closure captures: not a `T: Copy`, nor a
+/// closure that captures none of it (ADR 0626, amended).
 fn owns_dropping_param<'tcx>(
     tcx: TyCtxt<'tcx>,
     (env, given): (ty::TypingEnv<'tcx>, &dyn Fn(u32) -> bool),
@@ -442,6 +443,13 @@ fn owns_dropping_param<'tcx>(
                     }
                 }
                 Some(t) if known_by_bounds(t) && t.needs_drop(tcx, env) => return true,
+                // A closure holds what it captures, not its function's type
+                // arguments nor its signature's types, which its type names:
+                // a generic function's `Rc::new(|_| {})` holds nothing (rd597).
+                Some(t) if let ty::Closure(_, args) = *t.kind() => {
+                    held.extend(args.as_closure().upvar_tys());
+                    walk.skip_current_subtree();
+                }
                 Some(t)
                     if let ty::Adt(adt, args) = *t.kind()
                         && !is_std_crate(tcx, adt.did()) =>

@@ -1,9 +1,10 @@
-//@ library-differs
 // An `Rc` of a closure made an `Rc<dyn Fn>` is one allocation: where the
-// closure's `Rc` is counted, as a library counts one holding what it may
-// drop, the `dyn Fn`'s is too, so a call through it reads its `value`; it
-// was called as the function, `TypeError: callback is not a function`
-// (#458). The program build counts neither.
+// closure's `Rc` is counted, here as its count is read, the `dyn Fn`'s is
+// too, so a call through it reads its `value`; it was called as the
+// function, `TypeError: callback is not a function` (#458). A library
+// counted it as one holding a type parameter's value, its type naming
+// `make`'s `impl Fn`, which it holds none of: neither build does now
+// (rd597).
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -12,7 +13,9 @@ fn make(run: impl Fn(&mut dyn FnMut(&str))) -> Vec<Rc<dyn Fn(&str) -> String>> {
     let mut made: Vec<Rc<dyn Fn(&str) -> String>> = Vec::new();
     run(&mut |prefix| {
         let prefix = prefix.to_string();
-        made.push(Rc::new(move |v| format!("{prefix} {v}")));
+        let callback = Rc::new(move |v: &str| format!("{prefix} {v}"));
+        println!("{}", Rc::strong_count(&callback));
+        made.push(callback);
     });
     made
 }

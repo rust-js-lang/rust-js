@@ -6,7 +6,8 @@ library" this narrows to what it uses of it. Amended: a closure of the
 crate's a library's function is given hands nothing, below; and a
 library's `dyn Fn` drops where a library makes one of what drops, below;
 and a library's own `dyn Fn`s drop as a program's do, a consumer that would
-hand it one that drops refused, below.
+hand it one that drops refused, below; and an `Rc` of a closure owns what
+the closure captures, below.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): R where it was wrong,
 a library's `dyn Fn` dropped as nothing; else none: a refusal lifted.
@@ -152,7 +153,7 @@ is made a `dyn Fn`, every `dyn Fn` does. Here none is.
 
 ### What holds it
 
-- `test/cross-crate-items.test.ts`, "a library's dyn Fn drops in its
+- `test/cross-crate-dyn-fns.test.ts`, "a library's dyn Fn drops in its
   consumer only where a library makes one of what drops": the library's
   contract says it makes none, the crate's shim and a generic function's
   boxed closure carry no drop, and they run; "a library's dyn Fn of what
@@ -252,7 +253,7 @@ pub fn run(n: u32) -> u32 {
 
 ### What holds it
 
-- `test/cross-crate-items.test.ts`, "a library drops a consumer's dyn Fn
+- `test/cross-crate-dyn-fns.test.ts`, "a library drops a consumer's dyn Fn
   where its own drop, and refuses one it would drop nothing of".
 - Mutations `dropping-dyn-fn-given-unrefused` and
   `dropping-dyn-fn-library-refused` (`analysis.rs`), and
@@ -260,3 +261,56 @@ pub fn run(n: u32) -> u32 {
   `library-dyn-unreached` and `library-reached-any`, rewritten; the
   amendment above's `library-fn-dyns-drop-unless-made` went with the rule
   it held.
+
+## Amendment: an `Rc` of a closure owns what the closure captures (rd597)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; a refusal lifted,
+the JS the same.
+
+React's ReactFlightActionServer, its decodeAction and decodeFormState made
+generic over the bundler's server manifest, `M: js::Defined + ?Sized`, as
+createResponse is, was refused: "this crate's `dyn Fn`s may hold a value
+with a destructor, ... but `react_isomorphic`, a rust-js library whose
+`dyn Fn`s drop nothing, holds one of them". Neither closure it makes holds
+an `M`. But decodeBoundActionMetaData<M>'s `ref_promise.then(Some(Rc::new(|_|
+{})), None)` made an `Rc` of a closure whose type names `M` among its
+function's type arguments. ADR 0494's rule (an `Rc` of a type parameter's
+value is counted where a caller gives it one that drops, as react-server's
+consumers may) walked the whole closure type: its parent's arguments, its
+signature and its captures. So it counted that `Rc`, and the `Rc<dyn Fn>` it
+was made, and then every closure holding an `Rc<dyn Fn>`. ReplyServer's
+parse_readable_stream closures were among them, and they were made `dyn Fn`s
+that drop.
+
+**What an `Rc` of a closure owns is what the closure captures**, as ADR
+0521, amended above, already has it for a closure made a `dyn Fn`. It is
+not its function's type arguments or its signature's types, which its type
+names but holds no value of. `rc_counts::owns_dropping_param` walks a
+closure's captures, not its type. One that captures a `T`, or a `Box<T>`,
+given one that drops is still counted, and its last clone drops it. A
+generic function's closure made a `dyn Fn` that captures one is still a
+type parameter's, and refused where a library whose `dyn Fn`s drop nothing
+would hold it.
+
+Found alongside it, and filed apart: #464. A function that gives back
+`Rc<impl Fn>` of a closure that drops disposes the closure where it makes
+the `Rc`.
+
+### What holds it
+
+- `test/cross-crate-dyn-fns.test.ts`, "a generic function's closure that
+  holds none of its type parameters makes no dyn Fn drop". A generic
+  function given a `Manifest` that drops makes `Rc::new(|x| x + 1)`, an
+  `Rc<dyn Fn>` that a closure given to `dep`, whose `dyn Fn`s drop nothing,
+  holds. It compiles, nothing is counted, and it runs as native Rust does.
+  One that captures the `T`, or a `Box<T>`, is refused. An `Rc` of one that
+  captures a `T` is counted, its drop at the last clone.
+- Mutations `rc-of-closure-holds-its-generics` (the closure's type walked
+  whole, so the crate is refused) and `rc-of-closure-holds-nothing` (its
+  captures unwalked, so it drops at the first clone's drop), in
+  `analysis/rc_counts.rs`.
+- Corpus `rc_fn_made_of_a_counted_rc` (#458). As a library, it counted
+  its closures' `Rc`s only because their type named `make`'s `impl Fn`.
+  Its closure's count is read now, so both builds count it, and
+  `rc-made-of-counted-uncounted` still holds it. Its `library-differs`
+  went.

@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "src/library.rs",
     find: "                makes_dropping_fn_dyns: library.makes_dropping_fn_dyns,\n",
     replace: "                makes_dropping_fn_dyns: false,\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "a library's dyn Fn of what drops is dropped"],
+    tests: ["test/cross-crate-dyn-fns.test.ts", "-t", "a library's dyn Fn of what drops is dropped"],
   },
   {
     name: "package-imported-wherever-installed",

@@ -469,7 +469,7 @@ export const mutations: Mutation[] = [
     find: "    let drops = (reached.fn_dyns_of.iter()).any(|name| foreign.drops_fn_dyns(name))\n",
     replace: "    let drops = !reached.fn_dyns_of.is_empty()\n",
     tests: [
-      "test/cross-crate-items.test.ts",
+      "test/cross-crate-dyn-fns.test.ts",
       "-t",
       "a library's dyn Fn drops in its consumer only where",
     ],
@@ -483,7 +483,7 @@ export const mutations: Mutation[] = [
     replace:
       "    let drops = false && (reached.fn_dyns_of.iter()).any(|name| foreign.drops_fn_dyns(name))\n",
     tests: [
-      "test/cross-crate-items.test.ts",
+      "test/cross-crate-dyn-fns.test.ts",
       "-t",
       "a library's dyn Fn of what drops is dropped",
     ],
@@ -497,7 +497,7 @@ export const mutations: Mutation[] = [
     replace:
       "    if drops && let Some(name) = (reached.fn_dyns_of.iter()).find(|name| !foreign.drops_fn_dyns(name) && false) {\n",
     tests: [
-      "test/cross-crate-items.test.ts",
+      "test/cross-crate-dyn-fns.test.ts",
       "-t",
       "and refuses one it would drop nothing of",
     ],
@@ -511,7 +511,7 @@ export const mutations: Mutation[] = [
     replace:
       "    if drops && let Some(name) = (reached.fn_dyns_of.iter()).next() {\n",
     tests: [
-      "test/cross-crate-items.test.ts",
+      "test/cross-crate-dyn-fns.test.ts",
       "-t",
       "and refuses one it would drop nothing of",
     ],

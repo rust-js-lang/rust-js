@@ -382,7 +382,7 @@ export const mutations: Mutation[] = [
     find: "        makes_dropping_fn_dyns: *makes_dropping_fn_dyns,\n",
     replace: "        makes_dropping_fn_dyns: false,\n",
     tests: [
-      "test/cross-crate-items.test.ts",
+      "test/cross-crate-dyn-fns.test.ts",
       "-t",
       "a library's dyn Fn of what drops is dropped",
     ],

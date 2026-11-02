@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
     find: "        ty::Closure(_, args) => (args.as_closure().upvar_tys().iter()).any(|t| t.has_non_region_param()),\n",
     replace: "        ty::Closure(..) => ty.has_non_region_param(),\n",
     tests: [
-      "test/cross-crate-items.test.ts",
+      "test/cross-crate-dyn-fns.test.ts",
       "-t",
       "a library's dyn Fn drops in its consumer only where",
     ],
@@ -186,7 +186,7 @@ export const mutations: Mutation[] = [
     find: "        ty::Dynamic(..) => false,\n",
     replace: "",
     tests: [
-      "test/cross-crate-items.test.ts",
+      "test/cross-crate-dyn-fns.test.ts",
       "-t",
       "a library's dyn Fn drops in its consumer only where",
     ],

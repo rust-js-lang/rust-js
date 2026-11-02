@@ -133,7 +133,7 @@ Rust's `ptr_eq` and nothing is counted. One made of a reference given it,
 `Rc`s of one function, which Rust tells apart and JS wouldn't: counted,
 as before.
 
-Held by `test/cross-crate-items.test.ts`'s "an Rc of a bound function,
+Held by `test/cross-crate-dyn-fns.test.ts`'s "an Rc of a bound function,
 compared, makes no dyn Fn drop" (a library whose `dyn Fn`s drop nothing
 given a closure holding one, run; and one reference made two `Rc`s,
 `ptr_eq` false, as native Rust's), by react-in-rust's react-reconciler and
