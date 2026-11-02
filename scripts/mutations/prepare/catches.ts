@@ -485,11 +485,11 @@ export const mutations: Mutation[] = [
   {
     name: "tried-assignment-where-its-arm-is",
     breaks:
-      "an `Ok` arm's value, `Ok(h) => h`, kept as the `try`'s `href = parse(s)`, is where that arm is, so a comment above the value in the `catch_unwind` closure is above `let href;` (rd545)",
+      "an `Ok` arm's value, `Ok(v) => v`, kept as the `try`'s `value = (0, eval)(code)`, is where that arm is, so it maps to the arm's line, not the call's where the value is made (rd545); since a `catch_unwind`'s closure is called and applied in place (#462), only a JS call's `$try` tells",
     file: "src/prepare/catches.rs",
     find: "            let written = matches!(stmt.kind, StmtKind::Return(_))\n",
     replace: "            let written = true\n",
-    tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment in a catch_unwind closure is above its value"],
+    tests: ["test/lowering-unwind-arms.test.ts", "-t", "a try's assignment of a JS call's Ok value maps to the call"],
   },
   {
     name: "value-in-place-never",

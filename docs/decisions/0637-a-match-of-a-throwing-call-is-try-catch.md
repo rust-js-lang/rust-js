@@ -251,4 +251,9 @@ of the arm's value, which the `let` makes, is where the value is, the
 closure's call, after the comment. Held by
 `lowering-comments-jumps.test.ts`'s "a comment in a catch_unwind closure
 is above its value in the try", run, and the mutation
-`tried-assignment-where-its-arm-is` (`catches.ts`).
+`tried-assignment-where-its-arm-is` (`catches.ts`). Since ADR 0776's
+amendment (#462) a `catch_unwind`'s closure is called and applied arrows
+place its body, so that test holds without this rule; a JS call's `$try`
+still needs it: `lowering-unwind-arms.test.ts`'s "a try's assignment of a
+JS call's Ok value maps to the call", `value = (0, eval)(code);` mapped to
+the call's line, not the `Ok` arm's, is the mutation's test now.

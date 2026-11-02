@@ -1057,3 +1057,54 @@ pub fn again(n: u32) -> u32 {
   // Line 11, 1-based, of `match catch_unwind(|| inner(n)) {`, at `inner(n)`.
   expect(mapped && [mapped.srcLine + 1, mapped.srcCol]).toEqual([11, 26]);
 });
+
+// A JS call's `Result` matched, `let value = match js::eval(code) { Ok(v)
+// => v, Err(_) => None };`: the `try`'s `value = (0, eval)(code);` is where
+// that value is made, the call's line, not where the `Ok` arm is written,
+// which only a `return` the program wrote there is (rd525, rd545). Run in
+// Node.
+test("a try's assignment of a JS call's Ok value maps to the call", async () => {
+  const { js, dir } = compiled(
+    "tried-assignment-mapped",
+    `use js::Unknown;
+
+#[cfg_attr(rust_js, rust_js::link_name = "./host.js#note")]
+fn note(_v: Option<&'static Unknown>) {
+    unreachable!()
+}
+
+pub fn assigned(code: &str) -> Option<&'static Unknown> {
+    let value = match js::eval(code) {
+        Ok(v) => v,
+        Err(_) => None,
+    };
+    note(value);
+    value
+}
+`,
+  );
+  writeFileSync(join(dir, "host.js"), "export const log = [];\nexport function note(v) { log.push(v); }\n");
+  expect(js).toContain("  let value;\n  try {\n    value = (0, eval)(code);\n  } catch {\n    value = undefined;\n  }\n");
+  const { decodeMappings } = await import("./sourcemap");
+  const lines = js.split("\n");
+  const at = lines.findIndex((line) => line.includes("value = (0, eval)(code);"));
+  const map = JSON.parse(readFileSync(join(dir, "lib.js.map"), "utf8"));
+  const column = lines[at].indexOf("value");
+  // What the statement's start is mapped to, its own or the last before it.
+  const mapped = decodeMappings(map.mappings)
+    .filter((s) => s.jsLine < at || (s.jsLine === at && s.jsCol <= column))
+    .at(-1);
+  // Line 9, 1-based, of `let value = match js::eval(code) {`; not line 10's
+  // `Ok(v) => v,`.
+  expect(mapped && mapped.srcLine + 1).toBe(9);
+  writeFileSync(
+    join(dir, "main.mjs"),
+    `import * as lib from "./lib.js";
+import { log } from "./host.js";
+console.log(JSON.stringify([lib.assigned("1 + 2"), lib.assigned("("), log]));
+`,
+  );
+  const out = runSync([node!, join(dir, "main.mjs")], dir, 60_000);
+  expect(out.stderr).toBe("");
+  expect(out.stdout).toBe("[3,null,[3,null]]\n");
+});
