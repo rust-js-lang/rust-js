@@ -140,3 +140,15 @@ given a closure holding one, run; and one reference made two `Rc`s,
 react-dom-bindings building, and mutations
 `rc-of-bound-function-made-apart`, `rc-of-shared-reference-made-with`
 (`analysis/rc_counts.ts`).
+
+## Amendment: a closure made an `Rc`'s is its own function only where the crate compares one (rd313, rd420)
+
+A closure an `Rc` was made of, `Rc::new(move |e, i| renderer.default_on_uncaught_error(e, i))`, kept its arrow everywhere, so `Rc::ptr_eq` could tell two of them apart, even in a crate that compares none. createReactNoop's error handlers, an `Rc<OnError>` since rd308, printed `(error, errorInfo) => { NoopRenderer.defaultOnUncaughtError(error, errorInfo); }` at six sites, where upstream passes `NoopRenderer.defaultOnUncaughtError`. React ART's three default handlers printed the same.
+
+**A closure made an `Rc`'s keeps its arrow only where the crate compares an `Rc<dyn Fn>` it doesn't count.** `counted_rcs` already knows the pointees `Rc::ptr_eq` is asked of (`asked`). `Counted::compared_uncounted` says whether any of those is left uncounted, where an `Rc`'s identity is its JS function's. Elsewhere the closure is what ADR 0605's takers make it: the function it passes everything on to, or the one it calls ignoring what it's given, as a `Box`'s is. A counted `Rc`'s identity is its box's, whatever the function is. So a crate that compares none has no answer that changes. A crate that compares one keeps every such arrow, which is conservative: `Rc<dyn Fn()>` and `Rc<dyn Fn(u32)>` are all `dyn Fn` to `may_be`, as above. A library's contract needs nothing new. A consumer's `ptr_eq` of what a library hands it is of what the consumer counts (ADR 0852), and a library compares its own as its own `Counted` says.
+
+A thunk, `Rc::new(move || close(&closing))`, stays an arrow, `() => close(response)`. ADR 0605's bind rule takes only a closure with parameters of its own, and the user kept that rule (option A, 2026-11-02): React Flight's Node client's `close.bind(null, response)` is an accepted port difference.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A where the crate compares none (nothing observes an uncounted `Rc`'s identity); otherwise as before.
+
+Held by `test/namespaces.test.ts`'s "a closure that passes all it's given to a namespace's function through a value is that function" (an `Rc<dyn Fn>` field, `onError: renderer.discreteUpdates`, run), and corpus `rc_fn_ptr_eq_of_forwarding` (two `Rc::new(|| ping())` compared, `false` as native's, each its own arrow), with the other `rc_fn_ptr_eq*` cases unchanged. Mutations `compared-uncounted-always`, `compared-uncounted-never` (`analysis/rc_counts.ts`) and `counted-closure-ungated` (`passed_on.ts`).

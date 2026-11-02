@@ -1599,6 +1599,13 @@ export function isHook(hooks, hook) {
 }
 ```
 
+In a crate like this one, which compares an `Rc<dyn Fn>` it doesn't count,
+a closure an `Rc` is made of is a function of its own, even where it only
+passes its call on. In a crate that compares none, it's the function it
+passes on to, as a `Box`'s is: `Rc::new(move |e, i|
+renderer.default_on_uncaught_error(e, i))` is `renderer.defaultOnUncaughtError`
+(ADR 0959, amended, rd313).
+
 A clone of a parameter's `Rc` moved into a closure is the same object, so
 the closure reads it by the parameter's name, as it does a clone of a
 variable bound once and never set again

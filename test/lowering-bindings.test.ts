@@ -637,13 +637,13 @@ fn submit(flag: bool) {
 }
 
 pub fn Page() -> JSX::Element {
-    let next = move || {
-        record(3);
+    let next = move |n: i32| {
+        record(n);
     };
     jsx! {
         <Card
             onSubmit={Box::new(|| submit(false))}
-            onNext={Rc::new(move || next())}
+            onNext={Rc::new(move || next(3))}
             onNote={Some(Box::new(|| noted(4)))}
             onParse={Box::new(|| { parse_int("7"); })}
             onRecord={Box::new(|| record(5))}
@@ -654,7 +654,7 @@ pub fn Page() -> JSX::Element {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(js).toContain("onSubmit={() => submit(false)}");
-  expect(js).toContain("onNext={() => next()}");
+  expect(js).toContain("onNext={() => next(3)}");
   expect(js).toContain("onNote={() => globalThis.record(4)}");
   expect(js).toContain('onParse={() => {\n        parseInt("7");\n      }}');
   expect(js).toContain("onRecord={() => {\n        globalThis.record(5);\n      }}");

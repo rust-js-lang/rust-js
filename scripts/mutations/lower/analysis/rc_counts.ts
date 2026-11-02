@@ -278,4 +278,22 @@ export const mutations: Mutation[] = [
     replace: "                    let _ = args;\n",
     tests: ["test/cross-crate-dyn-fns.test.ts", "-t", "holds none of its type parameters"],
   },
+  {
+    name: "compared-uncounted-always",
+    breaks:
+      "a crate that compares no uncounted `Rc<dyn Fn>` is taken to compare one, so `Rc::new(move |a, b| renderer.discrete_updates(a, b))` stays an arrow, not `renderer.discreteUpdates` (rd313)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "    counted.compared_uncounted = !counted.all && asked.iter().any(|pointee| !counted.types.contains(pointee));\n",
+    replace: "    counted.compared_uncounted = true;\n",
+    tests: ["test/namespaces.test.ts", "-t", "through a value is that function"],
+  },
+  {
+    name: "compared-uncounted-never",
+    breaks:
+      "a crate that compares uncounted `Rc<dyn Fn>`s is taken to compare none, so `Rc::new(|| ping())` twice is `ping` twice, and `Rc::ptr_eq` of the two is true where native gives false (rd313, ADR 0959)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "    counted.compared_uncounted = !counted.all && asked.iter().any(|pointee| !counted.types.contains(pointee));\n",
+    replace: "    counted.compared_uncounted = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_fn_ptr_eq_of_forwarding.rs$"],
+  },
 ];

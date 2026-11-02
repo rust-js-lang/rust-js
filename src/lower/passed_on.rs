@@ -544,9 +544,16 @@ fn optional_handler(value: &Expr) -> Option<Expr> {
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether the closure written at `span` is made an `Rc`'s or an
     /// `Arc`'s, `Rc::new(|| one())`, whose pointer `Rc::ptr_eq` compares
-    /// (ADR 0959): a function of its own wherever it's made, as two such are
-    /// two `Rc`s to Rust.
+    /// (ADR 0959), where the crate compares an `Rc<dyn Fn>` it doesn't
+    /// count (`Counted::compared_uncounted`, rd313): a function of its own
+    /// wherever it's made, as two such are two `Rc`s to Rust. Where it
+    /// compares none, nothing asks an uncounted one's identity, and it's
+    /// the function it passes on to, as a `Box`'s is; a counted one's is
+    /// its box's.
     pub(in crate::lower) fn counted_closure(&self, span: rustc_span::Span) -> bool {
+        if !self.krate.counted.compared_uncounted {
+            return false;
+        }
         let thir = self.frame.thir;
         thir.exprs.iter().any(|e| {
             let ExprKind::Call { fun, ref args, .. } = e.kind else {

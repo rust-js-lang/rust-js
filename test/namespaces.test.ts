@@ -652,11 +652,14 @@ test("a closure that passes all it's given to a namespace's function through a v
     `pub mod reconciler;
 pub mod work_loop;
 
+use std::rc::Rc;
+
 use reconciler::Reconciler;
 
 pub struct Api {
     pub batched_updates: Box<dyn Fn(&dyn Fn(u32) -> u32, u32) -> u32>,
     pub discrete_updates: Box<dyn Fn(u32, u32) -> u32>,
+    pub on_error: Rc<dyn Fn(u32, u32) -> u32>,
     pub update_container: Box<dyn Fn(u32) -> u32>,
 }
 
@@ -664,6 +667,8 @@ pub fn make(renderer: &'static Reconciler) -> Api {
     Api {
         batched_updates: Box::new(move |f, a| renderer.batched_updates(f, a)),
         discrete_updates: Box::new(move |a, b| renderer.discrete_updates(a, b)),
+        // An \`Rc\`'s, whose pointer the crate never compares (rd313).
+        on_error: Rc::new(move |a, b| renderer.discrete_updates(a, b)),
         // Not all it's given: a function of its own.
         update_container: Box::new(move |n| renderer.discrete_updates(n, 1)),
     }
@@ -673,12 +678,12 @@ pub fn make(renderer: &'static Reconciler) -> Api {
   run([compiler, ...flags(dir)]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain(
-    "  return {\n    batchedUpdates: renderer.batchedUpdates,\n    discreteUpdates: renderer.discreteUpdates,\n    // Not all it's given: a function of its own.\n    updateContainer: (n) => renderer.discreteUpdates(n, 1),\n  };\n",
+    "  return {\n    batchedUpdates: renderer.batchedUpdates,\n    discreteUpdates: renderer.discreteUpdates,\n    // An \`Rc\`'s, whose pointer the crate never compares (rd313).\n    onError: renderer.discreteUpdates,\n    // Not all it's given: a function of its own.\n    updateContainer: (n) => renderer.discreteUpdates(n, 1),\n  };\n",
   );
   const lib = await import(join(dir, "lib.js"));
   const namespace = await import(join(dir, "reconciler.js"));
   const api = lib.make(namespace);
-  expect([api.batchedUpdates((n: number) => n + 1, 2), api.discreteUpdates(3, 4), api.updateContainer(5)]).toEqual([3, 43, 15]);
+  expect([api.batchedUpdates((n: number) => n + 1, 2), api.discreteUpdates(3, 4), api.onError(3, 4), api.updateContainer(5)]).toEqual([3, 43, 43, 15]);
   // Another instance's, as Jest's mock gives.
   const mocked = lib.make({ batchedUpdates: () => 100, discreteUpdates: (a: number, b: number) => a - b });
   expect([mocked.batchedUpdates(() => 0, 0), mocked.updateContainer(5)]).toEqual([100, 4]);

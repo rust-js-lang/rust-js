@@ -25,6 +25,12 @@ pub struct Counted<'tcx> {
     /// What each counted `Rc` points at, a generic one's of its
     /// parameters: `Slot<T>`'s counts every `Slot`'s.
     pub types: HashSet<Ty<'tcx>>,
+    /// Whether the crate compares an `Rc<dyn Fn>` it doesn't count,
+    /// `Rc::ptr_eq` of one whose pointee is in `asked` and not counted:
+    /// its identity is its JS function's (ADR 0959), so a closure made an
+    /// `Rc`'s stays a function of its own (`passed_on`'s
+    /// `counted_closure`, rd313).
+    pub compared_uncounted: bool,
 }
 
 impl<'tcx> Counted<'tcx> {
@@ -285,6 +291,7 @@ pub(super) fn counted_rcs<'tcx>(
     pointees.extend(counted.iter().copied());
     let mut counted = Counted {
         all: false,
+        compared_uncounted: false,
         types: counted,
     };
     loop {
@@ -318,6 +325,7 @@ pub(super) fn counted_rcs<'tcx>(
     }
     // An `Rc` of a type parameter's value may be of any type.
     counted.all = counted.types.iter().any(|&t| head(tcx, t).is_none());
+    counted.compared_uncounted = !counted.all && asked.iter().any(|pointee| !counted.types.contains(pointee));
     counted
 }
 

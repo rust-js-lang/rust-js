@@ -1111,7 +1111,10 @@ React and JSX are [their own pages](README.md#react).
     its name, `|r#fn| ReactFiberReconciler.flush_sync_from_reconciler(r#fn)
     .flatten()`, `flushSyncFromReconciler` (ADR 1037, amended, the user's
     decision, 2026-11-01). Not a closure an `Rc` is made of,
-    `Rc::new(|| ping())`, whose pointer `Rc::ptr_eq` compares; nor one of
+    `Rc::new(|| ping())`, in a crate that compares an `Rc<dyn Fn>` it
+    doesn't count with `Rc::ptr_eq`, whose pointer is that function's; in
+    one that compares none, it's the function too (ADR 0959, amended,
+    rd313). Nor one of
     a function Rust could have named there, which the program wrote to be
     a function of its own.
 28. A `RegExp`'s `test` and `reg_exp::replace` take text, as TypeScript

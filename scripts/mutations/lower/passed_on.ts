@@ -571,6 +571,15 @@ export const mutations: Mutation[] = [
     tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
   },
   {
+    name: "counted-closure-ungated",
+    breaks:
+      "a closure made an `Rc`'s keeps its arrow where the crate compares no uncounted `Rc<dyn Fn>`, `Rc::new(move |a, b| renderer.discrete_updates(a, b))` not `renderer.discreteUpdates` (rd313)",
+    file: "src/lower/passed_on.rs",
+    find: "        if !self.krate.counted.compared_uncounted {\n            return false;\n        }\n",
+    replace: "",
+    tests: ["test/namespaces.test.ts", "-t", "through a value is that function"],
+  },
+  {
     name: "own-callback-params-none",
     breaks:
       "a `dyn Fn` parameter each of the crate's calls fills with its own function isn't one, `on(() => { onEnd(); })` where React Flight's Node client gives `stream.on('end', onEnd)` (rd616)",
