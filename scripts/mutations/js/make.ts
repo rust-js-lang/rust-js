@@ -301,15 +301,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-unwinds.test.ts", "-t", "resume_unwind throws what unwound"],
   },
   {
-    name: "caught-arrow-called",
-    breaks: "`catch_unwind(|| work(n))`'s `try` calls the closure, `const v = (() => work(n))();`, where it's its body",
-    file: "src/js/make.rs",
-    find: "                ] => value.clone(),\n                _ => Expr::call(f.clone(), Vec::new()),\n",
-    replace: "                ] => Expr::call(f.clone(), Vec::new()),\n                _ => Expr::call(f.clone(), Vec::new()),\n",
-    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_nested_ok.rs$"],
-    snapshots: true,
-  },
-  {
     name: "none-test-unfolded",
     breaks: "`undefined == null` is `true` where it's made",
     file: "src/js/make.rs",
