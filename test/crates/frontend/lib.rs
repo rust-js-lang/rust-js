@@ -1,6 +1,6 @@
 //! The app (ADR 0100): it uses `models`, and through it `validation`, as
 //! rust-js compiles each on its own. Native Rust runs the same `main`.
-use models::{Bag, Email, Point, Role, User};
+use models::{Bag, Email, Note, Point, Role, User};
 
 struct Loud(&'static str);
 
@@ -47,6 +47,10 @@ pub fn main() {
     let mut read: User = serde_json::from_str(&json).unwrap();
     read.age += 1;
     println!("{read:?}");
+    // One `models` never changes, read and changed here (#341).
+    let mut note: Note = serde_json::from_str(r#"{"text": "hi", "tags": ["a"]}"#).unwrap();
+    note.tags.push("b".to_string());
+    println!("{note:?} {}", serde_json::to_string(&note).unwrap());
     // Found by what `models` reads a field with, and what reads its text.
     for text in [r#"{"name": 5}"#, r#"{"name": "a", "email": "b", "age": -1, "role": "Admin"}"#] {
         match serde_json::from_str::<User>(text) {

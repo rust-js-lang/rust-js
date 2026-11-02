@@ -36,6 +36,14 @@ impl User {
     }
 }
 
+/// Read from JSON and changed in place by `frontend` alone, never by
+/// `models`: its codec is `models`' all the same (#341).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Note {
+    pub text: String,
+    pub tags: Vec<String>,
+}
+
 /// A `Copy` type, and a constant of it that `origin` hands out.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Point {
