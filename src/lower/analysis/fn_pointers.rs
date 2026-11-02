@@ -848,7 +848,10 @@ impl<'tcx> Made<'_, '_, 'tcx> {
     /// `Box::new(move || ..)`, `Cell::new(|| {})`: never a with_this one. Or
     /// what the field held, `r: previous.r`, a thread-local's too,
     /// `PREVIOUS.with(|p| p.r)`, or one of those where a branch says, which
-    /// writes it nothing new (rd579).
+    /// writes it nothing new (rd579). Or a variable bound once to one,
+    /// `let error: Rc<Listen> = Rc::new(move |e| ..)` (`let_value`), which
+    /// holds that one wherever it's moved, but where it holds a `Cell`,
+    /// which may be set through it (rd655).
     fn own_function(&self, value: &'tcx hir::Expr<'tcx>, field: DefId) -> bool {
         let tcx = self.recognition.tcx;
         let value = match value.kind {
@@ -861,6 +864,15 @@ impl<'tcx> Made<'_, '_, 'tcx> {
                 return self.own_function(then, field) && self.own_function(otherwise, field);
             }
             hir::ExprKind::Block(block, _) if let Some(tail) = block.expr => return self.own_function(tail, field),
+            hir::ExprKind::Path(ref qpath)
+                if let Res::Local(var) = self.results.qpath_res(qpath, value.hir_id)
+                    && let Some(init) = crate::lower::passed_on::let_value(tcx, var)
+                    && !(self.results.node_type(var).walk().filter_map(|part| part.as_type()))
+                        .any(|part| is_cell(tcx, part))
+                    && self.own_function(init, field) =>
+            {
+                return true;
+            }
             hir::ExprKind::MethodCall(_, _, [closure], _)
                 if let hir::ExprKind::Closure(closure) = closure.kind
                     && (self.results.type_dependent_def_id(value.hir_id))

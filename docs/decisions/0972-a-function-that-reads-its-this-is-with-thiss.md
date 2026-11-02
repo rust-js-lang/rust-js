@@ -10,6 +10,8 @@ rest parameter (below); amended (#449): a place of its `this` is never read in a
 Amended: it takes as many parameters as a function, sixteen (rd400).
 Amended (rd579): a JS function the program's own data holds is called
 with no `this`, `(0, s.f)()`, the one form of a call with none (below).
+Amended (rd655): a field written a variable bound once to the crate's own
+closure holds that closure (below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none for the function:
 its `this` is a parameter Rust sees, so what it reads is what JS gives it.
@@ -483,3 +485,53 @@ reply `controller.error(error)`, in the one form, `(0, destination.destroy)(erro
 where they were `const destroy = destination.destroy; destroy(error);`.
 React DOM's dispatchers, `previousDispatcher.r(form)` and the rest, and
 ART's `instance._subscriptions[type]()`, read as before.
+
+## Amendment (rd655): a variable bound once to the crate's own closure
+
+React's Flight reply server makes its stream controller's `error` first,
+for its other closures to call, and writes it as a variable,
+`FlightStreamController { enqueue_model: Rc::new(..), close: Rc::new(..),
+error }` of `let error: Rc<Listen> = Rc::new(move |error| ..)`. Its fields
+are private and built only of the crate's closures, yet
+`(controller.error)(error)` printed `(0, controller.error)(error)`, where
+upstream writes `controller.error(error)`. The cause: #405's
+`own_function` took a write of a variable for one that may hold any
+function, and `Listen`'s signature is one a JS function has elsewhere in
+the crate, a chunk's listener (`js_dyns`), so rd579 called it with no
+`this`. Neither the field's visibility nor `chunk.reason`'s untagged
+membership is the cause, nor needs consulting: a field the crate fills with its own closures
+alone holds no JS function wherever its struct comes from, the program's
+own data given back, as #405 decided; a struct of the crate's that JS or
+another crate builds is called through its object as before.
+
+**A write of a variable bound once, never `mut` nor by reference, of a
+`let` whose initializer is one of the crate's own closures (`own_function`,
+recursively), is a write of that closure** (`passed_on::let_value`, the
+one owner of a `let`'s unchanging value, which passed_on's own callbacks
+already asked; `FnPointers::own_function`): the variable holds that closure
+wherever it's moved, so the field is called through its object,
+`controller.error(error)`. Case ([0262](0262-when-rust-and-js-disagree.md)):
+none, the first: a Rust closure reads no `this`, so the one JS gives it
+changes nothing. What's left as it was, called with none, `(0, s.f)()`:
+
+- a variable of a parameter, `let error = listener`, what the caller gave,
+  which may be a JS function (rd579's `create_request`);
+- a `let mut` written again, `error = listener`, which `let_value` never
+  follows;
+- a variable that holds a `Cell`, `let check = Cell::new(unchecked);
+  check.set(given)`, which may be set anew through a shared borrow;
+- a variable of what a call gives or of a with_this function, as #405's
+  `held()` holds.
+
+This supersedes #405's "a write of a variable .. may be any" for a variable
+bound once to one of the crate's own closures.
+
+Held by `test/js-functions.test.ts`, "a field written a variable of the
+crate's own closure is called through its object", run with JS functions
+that read their `this`, and the corpus case
+`dyn_fn_field_of_an_own_variable.rs`, compared with native Rust: a
+controller's `error` and `close` of variables, `controller.error(4)`, beside
+a binding's `Math.abs` of the same signature in a field,
+`(0, listener.listen)(-2.5)`. Mutations `own-field-variable-unfollowed` and
+`own-field-variable-cell-unset` (`analysis/fn_pointers.ts`), and
+`let-value-of-mut` (`passed_on.ts`).

@@ -523,4 +523,30 @@ export const mutations: Mutation[] = [
       "a JS function the program's own data holds is called with no this",
     ],
   },
+  {
+    name: "own-field-variable-unfollowed",
+    breaks:
+      "a field written a variable bound once to the crate's own closure, React's Flight reply's `FlightStreamController { .., error }`, is taken for one that may hold a JS function, so its call is `(0, controller.error)()`, where upstream calls it through its object (rd655)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "                    && let Some(init) = crate::lower::passed_on::let_value(tcx, var)\n",
+    replace: "                    && let Some(init) = crate::lower::passed_on::let_value(tcx, var).filter(|_| false)\n",
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a field written a variable of the crate's own closure is called through its object",
+    ],
+  },
+  {
+    name: "own-field-variable-cell-unset",
+    breaks:
+      "a field written a variable of a `Cell` the crate set anew, `check.set(given)`, of what may be a JS function, is taken for one of the crate's own functions, `hooks.check()`, which gives it `hooks` as its `this` (rd655)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "                        .any(|part| is_cell(tcx, part))\n",
+    replace: "                        .any(|_| false)\n",
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a field written a variable of the crate's own closure is called through its object",
+    ],
+  },
 ];

@@ -769,6 +769,102 @@ pub fn lent() -> bool {
   expect([lib.stop(lib.tracker(2)), lib.held(), lib.lent()]).toEqual([true, false, false]);
 });
 
+// rd655: React's Flight reply server makes its controller's `error` first,
+// `let error: Rc<Listen> = Rc::new(move |error| ..)`, for its other closures
+// to call, and writes it `FlightStreamController { .., error }`. Of a
+// signature JS gives too, a chunk's listener, `(controller.error)(error)`
+// printed `(0, controller.error)(error)`, where upstream writes
+// `controller.error(error)`. A variable bound once, never `mut`, to one of
+// the crate's own closures holds that closure: the field is called through
+// its object. One bound to what the caller gave, one written again, and a
+// `Cell` that's set may hold a JS function, called with no `this`.
+test("a field written a variable of the crate's own closure is called through its object", async () => {
+  const { js, lib } = await compiled("dyn-fn-field-own-variable", `use std::cell::Cell;
+use std::rc::Rc;
+
+use js::Unknown;
+
+type Listen = dyn Fn(Option<&'static Unknown>) -> u32;
+
+pub struct Chunk {
+    pub listener: Rc<Listen>,
+}
+
+pub fn chunk(listener: Rc<Listen>) -> Chunk {
+    Chunk { listener }
+}
+
+pub fn notify(chunk: &Chunk) -> u32 {
+    (chunk.listener)(None)
+}
+
+struct Controller {
+    error: Rc<Listen>,
+    close: Rc<Listen>,
+}
+
+pub fn controlled(n: u32) -> u32 {
+    let error: Rc<Listen> = Rc::new(move |error| if error.is_some() { n } else { n + 1 });
+    let close = Rc::new({
+        let error = Rc::clone(&error);
+        move |reason| error(reason) * 2
+    });
+    let controller = Controller { close, error };
+    (controller.error)(None) + (controller.close)(None)
+}
+
+struct Passed {
+    error: Rc<Listen>,
+}
+
+pub fn passed(listener: Rc<Listen>) -> u32 {
+    let error = listener;
+    let passed = Passed { error };
+    (passed.error)(None)
+}
+
+struct Rewritten {
+    error: Rc<Listen>,
+}
+
+pub fn rewritten(listener: Rc<Listen>, given: bool) -> u32 {
+    let mut error: Rc<Listen> = Rc::new(|_| 1);
+    if given {
+        error = listener;
+    }
+    let rewritten = Rewritten { error };
+    (rewritten.error)(None)
+}
+
+struct Hooks {
+    check: Cell<fn() -> bool>,
+}
+
+fn unchecked() -> bool {
+    false
+}
+
+pub fn celled(given: fn() -> bool) -> bool {
+    let check: Cell<fn() -> bool> = Cell::new(unchecked);
+    check.set(given);
+    let hooks = Hooks { check };
+    (hooks.check.get())()
+}
+`);
+  expect(js).toContain("return (0, chunk.listener)();");
+  expect(js).toContain("return (controller.error() + controller.close()) >>> 0;");
+  expect(js).toContain("return (0, passed.error)();");
+  expect(js).toContain("return (0, rewritten.error)();");
+  expect(js).toContain("return (0, hooks.check)();");
+  function unbound(this: unknown) {
+    return this === undefined ? 7 : 9;
+  }
+  function bare(this: unknown) {
+    return this === undefined;
+  }
+  expect([lib.controlled(2), lib.passed(unbound), lib.rewritten(unbound, true), lib.rewritten(unbound, false), lib.celled(bare)]).toEqual([9, 7, 7, 1, true]);
+});
+
 // React's `callback()`: a trailing `None` given a function value, a `dyn Fn`,
 // a pointer or one `function::bind` makes, is no argument, as a person
 // leaves an optional one out (ADR 0443, amended). The user's exception, ADR

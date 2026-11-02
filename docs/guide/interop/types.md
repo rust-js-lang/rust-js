@@ -2884,7 +2884,12 @@ export function bindToConsole(methodName, args) {
   it writes, or an item of a tuple or a collection, as React's Flight
   server calls `(0, request.environmentName)()` (rd579). A closure of the
   crate's, or a `dyn Fn` no JS function can be, is called as it is,
-  `tracker.stop()`. A JS function of a field the program never writes, an
+  `tracker.stop()`, also where the field is written a variable bound once,
+  never `mut`, to the closure, React's Flight reply's
+  `FlightStreamController { .., error }` of `let error: Rc<Listen> =
+  Rc::new(move |error| ..)`, `controller.error(error)` (rd655); a variable
+  of what the caller gave, one written again or a `Cell` set anew may be a
+  JS function, called with none. A JS function of a field the program never writes, an
   object JS made's own method, is called through its object,
   `handle.play()`, which is its `this`, as JS calls it, also where its
   arguments need statements first: `const d = internals.d; ..; d.L(..)`

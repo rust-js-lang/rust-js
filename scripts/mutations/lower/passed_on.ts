@@ -652,8 +652,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a parameter given on to another, `ended_by(on_end)`, isn't seen to be what its own calls fill it with (rd616)",
     file: "src/lower/passed_on.rs",
-    find: "                hir::def::Res::Local(var) => params.contains(&var) || self.let_value(var).is_some_and(inner),\n",
-    replace: "                hir::def::Res::Local(var) => self.let_value(var).is_some_and(inner),\n",
+    find: "                hir::def::Res::Local(var) => params.contains(&var) || let_value(self.tcx, var).is_some_and(inner),\n",
+    replace: "                hir::def::Res::Local(var) => let_value(self.tcx, var).is_some_and(inner),\n",
     tests: ownCallbacks,
     snapshots: true,
   },
@@ -729,5 +729,18 @@ export const mutations: Mutation[] = [
     find: "    if !function.export || function.noinline || commented {\n",
     replace: "    if !function.export || commented {\n",
     tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
+  },
+  {
+    name: "let-value-of-mut",
+    breaks:
+      "a `let mut` written again, `error = listener`, is taken for what its initializer is, so a field written it is taken for one of the crate's own closures, `rewritten.error()`, which gives the caller's JS function `rewritten` as its `this` (rd655)",
+    file: "src/lower/passed_on.rs",
+    find: "    let hir::PatKind::Binding(hir::BindingMode(hir::ByRef::No, rustc_hir::Mutability::Not), _, _, None) = pat.kind\n",
+    replace: "    let hir::PatKind::Binding(hir::BindingMode(hir::ByRef::No, _), _, _, None) = pat.kind\n",
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a field written a variable of the crate's own closure is called through its object",
+    ],
   },
 ];

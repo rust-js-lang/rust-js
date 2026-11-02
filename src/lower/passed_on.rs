@@ -734,7 +734,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// function bound may read what it's given more.
     fn bound_own(&self, var: rustc_hir::HirId) -> bool {
         let own = self.own_callbacks();
-        own.contains(&var) || self.let_value(var).is_some_and(|init| self.own_callback(init, 0, own))
+        own.contains(&var) || let_value(self.tcx, var).is_some_and(|init| self.own_callback(init, 0, own))
     }
 
     /// The parameters that are such a function at every call (rd616): of a
@@ -840,7 +840,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             hir::ExprKind::Block(block, _) => block.expr.is_some_and(inner),
             hir::ExprKind::AddrOf(_, _, of) => inner(of),
             hir::ExprKind::Path(ref qpath) => match results.qpath_res(qpath, e.hir_id) {
-                hir::def::Res::Local(var) => params.contains(&var) || self.let_value(var).is_some_and(inner),
+                hir::def::Res::Local(var) => params.contains(&var) || let_value(self.tcx, var).is_some_and(inner),
                 _ => false,
             },
             // A function bound, or one `with_this` makes that reads no
@@ -870,23 +870,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             )
     }
 
-    /// What variable `var` is, of a `let` that never changes it: its
-    /// initializer.
-    fn let_value(&self, var: rustc_hir::HirId) -> Option<&'tcx rustc_hir::Expr<'tcx>> {
-        use rustc_hir as hir;
-        let hir::Node::Pat(pat) = self.tcx.hir_node(var) else {
-            return None;
-        };
-        let hir::PatKind::Binding(hir::BindingMode(hir::ByRef::No, rustc_hir::Mutability::Not), _, _, None) = pat.kind
-        else {
-            return None;
-        };
-        match self.tcx.parent_hir_node(var) {
-            hir::Node::LetStmt(local) => local.init,
-            _ => None,
-        }
-    }
-
     /// Whether `e` is a bound function of what `own_target` says, through
     /// variables that never change, at `depth`.
     fn bound_value(&self, e: &'tcx rustc_hir::Expr<'tcx>, depth: usize) -> bool {
@@ -897,9 +880,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let results = self.tcx.typeck(e.hir_id.owner.def_id);
         match e.peel_drop_temps().kind {
             hir::ExprKind::Path(ref qpath) => match results.qpath_res(qpath, e.hir_id) {
-                hir::def::Res::Local(var) => self
-                    .let_value(var)
-                    .is_some_and(|init| self.bound_value(init, depth + 1)),
+                hir::def::Res::Local(var) => {
+                    let_value(self.tcx, var).is_some_and(|init| self.bound_value(init, depth + 1))
+                }
                 _ => false,
             },
             hir::ExprKind::Call(callee, [target, ..]) => match *results.expr_ty_adjusted(callee).kind() {
@@ -952,7 +935,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         match e.peel_drop_temps().kind {
             hir::ExprKind::Path(ref qpath) => match results.qpath_res(qpath, e.hir_id) {
-                hir::def::Res::Local(var) => self.let_value(var).is_some_and(|init| self.own_target(init, depth + 1)),
+                hir::def::Res::Local(var) => {
+                    let_value(self.tcx, var).is_some_and(|init| self.own_target(init, depth + 1))
+                }
                 _ => false,
             },
             hir::ExprKind::Call(callee, _) => match *results.expr_ty_adjusted(callee).kind() {
@@ -1060,5 +1045,26 @@ fn ignores_this(tcx: TyCtxt<'_>, e: &rustc_hir::Expr<'_>) -> bool {
             matches!(tcx.hir_body(closure.body).params.first(), Some(param) if matches!(param.pat.kind, hir::PatKind::Wild))
         }
         _ => false,
+    }
+}
+
+/// What variable `var` is, of a `let` that never changes it, never `mut`
+/// nor bound by reference: its initializer. A value of a `Cell` it holds
+/// may still be set through it.
+pub(in crate::lower) fn let_value<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    var: rustc_hir::HirId,
+) -> Option<&'tcx rustc_hir::Expr<'tcx>> {
+    use rustc_hir as hir;
+    let hir::Node::Pat(pat) = tcx.hir_node(var) else {
+        return None;
+    };
+    let hir::PatKind::Binding(hir::BindingMode(hir::ByRef::No, rustc_hir::Mutability::Not), _, _, None) = pat.kind
+    else {
+        return None;
+    };
+    match tcx.parent_hir_node(var) {
+        hir::Node::LetStmt(local) => local.init,
+        _ => None,
     }
 }
