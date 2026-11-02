@@ -169,6 +169,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 Expr::call(method.or_at(fun_span), args)
             }
+            // A method keyed by a global's value, a well-known symbol,
+            // `iterable[Symbol.asyncIterator]()`, called of its receiver
+            // (rd585).
+            (JsForm::CallKeyed(key), Some(this)) => {
+                let method = Expr::index(this, self.js_ref(&key)).binding();
+                Expr::call(method.or_at(fun_span), args)
+            }
             (JsForm::Call(name), None) => Expr::call(self.binding_ref(&name, named).or_at(fun_span), args),
             (JsForm::New(name), None) => Expr::new_(self.js_ref(&name).or_at(fun_span), args),
             // A constructor its receiver holds, a window's, `new

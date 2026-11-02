@@ -16,6 +16,10 @@ Amended: a `bigint` of any size is a `js::BigInt`, `Symbol()` takes an
 optional description, and `Array.prototype` is bound (rd399).
 Extended by [0887](0887-std-items-that-are-math-are-math.md): `Math`, left out as Rust's own, is
 std's items as values too, `f64::ln` as a `fn` `Math.log`.
+Amended (rd580, rd581, rd584, rd585): `Promise.prototype` is its
+class's, a `then` handler of a `()`'s may give an `Option<Promise<()>>`,
+`AsyncIterator::throw`, and `js::AsyncIterable<T>`, whose
+`[Symbol.asyncIterator]()` is a method keyed by a global's value.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -290,3 +294,65 @@ declared Error, and what's thrown any", run in Node: `new Error()` has
 no own `message`, `new Error("")` has. A binding's signature only: no
 compiler change, so no mutation.
 
+
+## Amendment (2026-11-02): React's Flight server's promise and async iteration (rd580, rd581, rd584, rd585)
+
+React's react-server-dom-webpack server, ported, needed four things the
+crate didn't say how to write. Its drafts named each by a binding of their
+own or read it off a value of any shape, `getAsyncIterator.call(iterable)`,
+where upstream writes `iterable[ASYNC_ITERATOR]()`.
+
+- **`Promise.prototype` is its class's, `js::class::<Promise<()>>().prototype()`**
+  (rd580): `Object.create(Promise.prototype)`, and a proxy's
+  `getPrototypeOf` trap that gives it. No `js::promise::prototype` beside
+  it: a class's prototype is `js::class::<T>().prototype()`, the one way,
+  which React's Flight client and reply server already write;
+  `js::array::prototype` and `js::object::prototype` are bound because
+  `Vec` and an object are Rust's own types, of no `Classed`. Case N
+  ([0262](0262-when-rust-and-js-disagree.md)): JS's own value, read as JS
+  reads it.
+- **A `then` handler of a `()`'s may give an `Option<Promise<()>>`**
+  (rd581), TypeScript's `void | PromiseLike<void>`: `Some(promise)`,
+  which JS waits for, or `None`, `undefined`. Upstream's debug channel
+  reader returns the next read's promise from `progress`, `return
+  reader.read().then(progress).catch(error);`, and nothing once it's done;
+  its port dropped the `return`, so the first read's promise settled
+  before the last read's chain. `impl Fulfils<()> for Option<Promise<()>>`,
+  only of a `()`'s: a general `Option<Promise<T>>` of what `()` fulfils,
+  an `Option`'s too, makes a handler's `None` of `catch(|_| None)` either
+  `Option`, which rustc can't tell (E0283). What it fulfils is told as
+  `then`'s is: of a function's result, `Option<Promise<()>>`, or an
+  annotated promise, `let _: Promise<()> = ..`. Case N: the same chain JS
+  makes.
+- **`AsyncIterator::throw(&self, e: Option<&dyn IntoUnknown>) ->
+  Promise<IteratorResult<T>>`** (rd584), TypeScript's optional `throw?(e?:
+  any)`, asked as any optional method is, `js::is_function((iterator,
+  AsyncIterator::<T>::throw))`, `typeof iterator.throw === "function"`. Its
+  link name `throw` was the `throw` statement's form, `js::throw(value)`'s:
+  **of a Rust method, of `self`, `throw` is its member**, as each method's
+  link name is; of a function whose `this` is its parameter it's still the
+  statement. `return?(value?)` isn't bound: no port calls it yet.
+- **`js::AsyncIterable<T>`** (rd585), TypeScript's `AsyncIterable<T>`, a
+  JS object's type as `AsyncIterator<T>` is, where `Iterable<T>` is a trait:
+  Rust's own collections are given where an iterable is, and nothing of
+  Rust's is async iterable. Its `async_iterator()` is
+  `iterable[Symbol.asyncIterator]()`, a method keyed by a global's value:
+  **a link name `"[path]"`, as TypeScript declares the member, is a
+  method's call by that key**, `this[Symbol.asyncIterator](..)`, its `this`
+  the receiver. The key is a global's path, as a static's is (ADR 1033), a quoted name, `['matchMedia']`, still refused as a method's,
+  and only a method's, of `&self` or `this`: `"[1]"` and a key of a
+  function of no receiver are refused, naming why.
+
+React's ReactSymbols names the symbol `ASYNC_ITERATOR`, `const
+ASYNC_ITERATOR = Symbol.asyncIterator`; a binding's key is the global it
+names, so the port's JS reads `iterable[Symbol.asyncIterator]()`.
+
+Held by `test/js-globals.test.ts`'s "Promise.prototype is its class's
+prototype" and `test/js-builtins.test.ts`' "a then handler gives a promise
+or nothing, as void | PromiseLike<void>", "an async iterator's throw is its
+optional method" and "an async iterable's [Symbol.asyncIterator]() is its
+iterator", each run in Node; the compiler's two forms by the mutations
+`method-throw-a-statement`, `this-throw-a-member`, `keyed-method-a-call`,
+`keyed-method-a-member`, `keyed-method-quoted`, `keyed-method-key-unchecked` and
+`keyed-function-unrefused`. `coverage.txt` is unchanged: `prototype` and
+the iterator protocol's interfaces aren't measured.

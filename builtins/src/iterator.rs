@@ -42,6 +42,38 @@ impl<T> AsyncIterator<T> {
     pub fn next(&self) -> crate::Promise<IteratorResult<T>> {
         unreachable!()
     }
+
+    /// [`iterator.throw(e)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Iteration_protocols#throwexception):
+    /// a promise of the step it takes once `e` is thrown where it waits,
+    /// any value, or none, TypeScript's `throw?(e?: any)`. An iterator
+    /// needn't have one, as TypeScript's `?` says: `js::is_function((iterator,
+    /// AsyncIterator::throw))` asks, as React's Flight reply server's `typeof
+    /// iterator.throw === 'function'` does, before `iterator.throw(reason)`
+    /// (rd584).
+    #[cfg_attr(rust_js, rust_js::link_name = "throw")]
+    pub fn throw(&self, e: Option<&dyn crate::IntoUnknown>) -> crate::Promise<IteratorResult<T>> {
+        unreachable!()
+    }
+}
+
+/// [An async iterable](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Iteration_protocols#the_async_iterator_and_async_iterable_protocols),
+/// TypeScript's `AsyncIterable<T>`: an object whose `[Symbol.asyncIterator]()`
+/// makes an [`AsyncIterator`] of its items, as an async generator, a
+/// `ReadableStream` and any `{ [Symbol.asyncIterator]() { .. } }` do. A JS
+/// object's type, as [`AsyncIterator`] is, where [`Iterable`] is a trait:
+/// Rust's own collections are given where an iterable is, and nothing of
+/// Rust's is async iterable.
+#[cfg_attr(rust_js, rust_js::types = "AsyncIterable<T>")]
+pub struct AsyncIterable<T>(PhantomData<JsObject>, PhantomData<T>);
+
+impl<T> AsyncIterable<T> {
+    /// [`iterable[Symbol.asyncIterator]()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Symbol/asyncIterator):
+    /// an iterator of its items, as `for await` steps it: React's Flight
+    /// reply server's `iterable[ASYNC_ITERATOR]()` (rd585).
+    #[cfg_attr(rust_js, rust_js::link_name = "[Symbol.asyncIterator]")]
+    pub fn async_iterator(&self) -> &'static AsyncIterator<T> {
+        unreachable!()
+    }
 }
 
 /// What an [`Iterator`]'s `next()` gives, an [`AsyncIterator`]'s promise, TypeScript's `IteratorResult<T>`:

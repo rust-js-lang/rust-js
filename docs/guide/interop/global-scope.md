@@ -347,7 +347,9 @@ selection.extend === "function"`, as React feature-tests a selection, and
 amended). A method of an `impl Trait` parameter, which no turbofish
 names, is a step as the `fn` pointer it's cast to, `(style,
 CSSStyleDeclaration::set_property as fn(_, _, &'static str, _))`, `typeof
-style.setProperty === "function"`.
+style.setProperty === "function"`; one of a generic type, as rustc
+can't tell its argument from the value, names it, `(iterator,
+AsyncIterator::<T>::throw)`, `typeof iterator.throw === "function"`.
 
 `js::method` of such a path is the method read as a value, the JS
 function itself, called with `function::call`, which gives its `this`:

@@ -59,16 +59,24 @@ impl<T> Promise<T> {
 /// What a handler gives that fulfils a promise of `T`, TypeScript's
 /// `TResult | PromiseLike<TResult>`: a `T`, or a promise of one, which JS
 /// waits for; of an `Option`'s, nothing too, `()`, which is `undefined`,
-/// its `None` (ADR 0698).
+/// its `None` (ADR 0698); and of a `()`'s, a promise of one or none,
+/// `Option<Promise<()>>`, TypeScript's `void | PromiseLike<void>`: React's
+/// Flight debug channel's `progress`, which gives the next read's promise,
+/// `return reader.read().then(progress)`, and nothing once it's done
+/// (rd581).
 #[diagnostic::on_unimplemented(
     message = "`{Self}` doesn't fulfil a promise of `{T}`",
-    note = "a handler gives a `{T}`, or a `Promise<{T}>`; of an `Option`'s, nothing"
+    note = "a handler gives a `{T}`, or a `Promise<{T}>`; of an `Option`'s, nothing; of a `()`'s, an `Option<Promise<()>>` too"
 )]
 pub trait Fulfils<T> {}
 
 impl<T> Fulfils<T> for T {}
 impl<T> Fulfils<T> for Promise<T> {}
 impl<T> Fulfils<Option<T>> for () {}
+/// Only of a `()`'s: of an `Option`'s, `Option<Promise<Option<T>>>`, a
+/// handler's `None` would be either `Option`, and rustc couldn't tell which
+/// of `catch(|_| None)`.
+impl Fulfils<()> for Option<Promise<()>> {}
 
 /// [What `allSettled` gives](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled#return_value)
 /// of each promise, told apart by its `status`, TypeScript's

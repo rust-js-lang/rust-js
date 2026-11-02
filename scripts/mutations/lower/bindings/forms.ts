@@ -167,4 +167,39 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/js-any-values.test.ts", "-t", "subtract is JS's binary"],
   },
+  {
+    name: "method-throw-a-statement",
+    breaks:
+      "`AsyncIterator::throw`, a method of `&self`, is the `throw` statement's form, `iterator.throw(reason)` an error where React's Flight reply server calls it (rd584)",
+    file: "src/lower/bindings/forms.rs",
+    find: '        "throw" if !of_self(tcx, def_id) => return JsForm::Throw,\n',
+    replace: '        "throw" => return JsForm::Throw,\n',
+    tests: ["test/js-builtins.test.ts", "-t", "an async iterator's throw is its optional method"],
+  },
+  {
+    name: "this-throw-a-member",
+    breaks: "`js::throw(value)`, a function whose `this` is its parameter, is `value.throw()`, not `throw value` (rd584)",
+    file: "src/lower/bindings/forms.rs",
+    find: "    tcx.def_kind(def_id) == DefKind::AssocFn && tcx.associated_item(def_id).is_method()\n",
+    replace: "    super::is_method(tcx, def_id)\n",
+    tests: ["test/js-builtins.test.ts", "-t", "an async iterator's throw is its optional method"],
+  },
+  {
+    name: "keyed-method-a-call",
+    breaks:
+      "`AsyncIterable::async_iterator`'s `[Symbol.asyncIterator]` is a method named `[Symbol.asyncIterator]`, refused, not `iterable[Symbol.asyncIterator]()` (rd585)",
+    file: "src/lower/bindings/forms.rs",
+    find: "        return JsForm::CallKeyed(key.to_string());\n",
+    replace: "        let _ = key;\n",
+    tests: ["test/js-builtins.test.ts", "-t", "an async iterable's"],
+  },
+  {
+    name: "keyed-method-quoted",
+    breaks:
+      "a method's quoted name, `['matchMedia']`, is taken for a key, refused as no global's path, not as a method's property named, `matchMedia` (ADR 1033)",
+    file: "src/lower/bindings/forms.rs",
+    find: "        .filter(|key| !key.starts_with(['\\'', '\"']))\n",
+    replace: "",
+    tests: ["test/lowering-binding-paths.test.ts", "-t", "naming the quoted key"],
+  },
 ];

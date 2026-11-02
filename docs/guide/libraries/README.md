@@ -112,7 +112,12 @@ What it has:
 - **`object` is `Object`'s statics,** each as TypeScript types it:
   `define_property`, `define_properties`, `get_own_property_descriptor`,
   `get_own_property_names`, `create`, `freeze`, `has_own`, `group_by` and
-  the rest, and `object::prototype` is `Object.prototype`; one TypeScript
+  the rest, and `object::prototype` is `Object.prototype`, as
+  `array::prototype` is `Array.prototype`: Rust's own types, no class's.
+  A class's is `js::class::<T>().prototype()`, the one way, a global
+  class's too, `Object.create(Promise.prototype)` of
+  `object::create(Some(js::class::<Promise<()>>().prototype()), None)`
+  (rd580). One TypeScript
   types `o: any`, `get_own_property_descriptor`,
   `get_own_property_names`, `get_prototype_of`, takes any value,
   `Option<&Unknown>`, what `js::get` gives. A
@@ -229,6 +234,14 @@ What it has:
   `js::Promise<IteratorResult<T>>`: `iterator.next().then::<(), _>(|step|
   ..)` is `iterator.next().then((step) => ..)`
   ([ADR 1059](../../decisions/1059-an-async-iterator-and-function-bind-as-a-value.md)).
+  Its optional `throw?(e?: any)` is `iterator.throw(Some(&reason))`,
+  `iterator.throw(reason)`, asked first as any optional method is,
+  `js::is_function((iterator, AsyncIterator::<T>::throw))`, `typeof
+  iterator.throw === "function"`. `js::AsyncIterable<T>` is TypeScript's
+  `AsyncIterable<T>`, a JS object's type as `AsyncIterator` is, whose
+  `async_iterator()` is `iterable[Symbol.asyncIterator]()`
+  ([ADR 0283](../../decisions/0283-js-crate-covers-typescripts-es-library.md),
+  amended, rd584, rd585).
 - **The module's own JS:** `js::import!` imports a file for its effects or
   an item lazily, `js::import_module!` a module, `js::export_default!` a
   module's default export, `js::directive!("use client")` its directive,

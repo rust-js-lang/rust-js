@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "keyed-method-a-member",
+    breaks:
+      "a method keyed by a global's value, `[Symbol.asyncIterator]`, is read as a property of its name, `iterable.Symbol.asyncIterator()`, not React's `iterable[ASYNC_ITERATOR]()` (rd585)",
+    file: "src/lower/binding_calls.rs",
+    find: "                let method = Expr::index(this, self.js_ref(&key)).binding();\n",
+    replace: "                let method = Expr::member(this, key).binding();\n",
+    tests: ["test/js-builtins.test.ts", "-t", "an async iterable's"],
+  },
+  {
     name: "static-constructor-refused",
     breaks:
       "`class.call_static(js::weak_map::new, ())` of a held class is refused, where React writes `new PossiblyWeakMap()`",

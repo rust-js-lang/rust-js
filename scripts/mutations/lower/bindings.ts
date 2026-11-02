@@ -563,6 +563,23 @@ export const mutations: Mutation[] = [
     ],
   },
   {
+    name: "keyed-method-key-unchecked",
+    breaks: "a method's key that's no global's path, `[1]`, is taken and printed `this[1]()`, not refused (rd585)",
+    file: "src/lower/bindings.rs",
+    find: "                    true => paths::global_refused(&key),\n",
+    replace: "                    true => None,\n",
+    tests: ["test/js-builtins.test.ts", "-t", "an async iterable's"],
+  },
+  {
+    name: "keyed-function-unrefused",
+    breaks:
+      "a key, `[Symbol.iterator]`, of a function of no receiver is taken, where it has no `this` to key, not refused (rd585)",
+    file: "src/lower/bindings.rs",
+    find: "                    false => Some(\"a key, `[Symbol.asyncIterator]`, is a method's, of `&self` or `this`\".to_string()),\n",
+    replace: "                    false => None,\n",
+    tests: ["test/js-builtins.test.ts", "-t", "an async iterable's"],
+  },
+  {
     name: "binding-path-unchecked",
     breaks:
       "a binding's path that isn't JS's, `window.$R-T`, is taken and printed as a subtraction, not refused naming its quoted key",

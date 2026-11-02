@@ -665,7 +665,8 @@ The program's own type says it by its `ptr::eq` alone, which rust-js reads
 | `link_name` | JS | of |
 |---|---|---|
 | `"f"`, `"a.b.f"` | `f(..)`, `a.b.f(..)` | a function |
-| `"f"`, with `&self` or `this` | `this.f(..)` | a method |
+| `"f"`, with `&self` or `this` | `this.f(..)` | a method; of `&self`, `"throw"` too, `iterator.throw(e)` |
+| `"[Symbol.asyncIterator]"`, with `&self` | `this[Symbol.asyncIterator](..)` | a method keyed by a global's value, as TypeScript declares it ([ADR 0283](../../decisions/0283-js-crate-covers-typescripts-es-library.md), amended) |
 | `"get x"` | `this.x`, or `X.x` without `this` | a getter, or a static property |
 | `"set x"` | `this.x = v`, or `a.x = v` of a global | a setter |
 | `"new X"` | `new X(..)`, or `new this.X(..)` with `&self` or `this` | a constructor, or one its receiver holds, a window's ([ADR 0891](../../decisions/0891-a-windows-constructor-is-the-windows.md)) |

@@ -51,7 +51,7 @@ pub mod date;
 pub use date::Date;
 pub mod intl;
 mod iterator;
-pub use iterator::{AsyncIterator, Iterable, Iterator, IteratorResult};
+pub use iterator::{AsyncIterable, AsyncIterator, Iterable, Iterator, IteratorResult};
 pub mod promise;
 pub use promise::{Fulfils, PromiseSettledResult, PromiseWithResolvers};
 pub mod proxy;
@@ -2975,6 +2975,7 @@ unsafe impl Defined for AggregateError {}
 unsafe impl<T> Defined for Promise<T> {}
 unsafe impl<T> Defined for Iterator<T> {}
 unsafe impl<T> Defined for AsyncIterator<T> {}
+unsafe impl<T> Defined for AsyncIterable<T> {}
 unsafe impl<K: ?Sized, V> Defined for Map<K, V> {}
 unsafe impl<T: ?Sized> Defined for Set<T> {}
 unsafe impl<K: WeakKey + ?Sized, V> Defined for WeakMap<K, V> {}

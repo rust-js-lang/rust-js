@@ -3,6 +3,7 @@
 //! asked of a global, `typeof X === "function"`.
 
 use super::js_name;
+use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
 
@@ -10,6 +11,10 @@ use rustc_span::def_id::DefId;
 pub(in crate::lower) enum JsForm {
     /// `name(..)`, or `this.name(..)` for a method.
     Call(String),
+    /// `[Symbol.asyncIterator]`: `this[Symbol.asyncIterator](..)`, a
+    /// method keyed by the value of a global's path, a well-known
+    /// symbol's, as TypeScript declares `AsyncIterable`'s (rd585).
+    CallKeyed(String),
     /// `this.name`.
     Get(String),
     /// `this.name = value`.
@@ -77,7 +82,9 @@ pub(in crate::lower) enum JsForm {
     /// loop (ADR 0719).
     KeysIn,
     /// `throw`: `throw this`, a JS value thrown as it is, `js::throw`'s
-    /// (ADR 0760).
+    /// (ADR 0760). Of a function's, `this` its parameter: a Rust method's
+    /// `throw`, of `&self`, is its member, `iterator.throw(e)`, as each
+    /// method's name is (rd584).
     Throw,
     /// `class`: the constructor function of the class its type argument
     /// is, `Component`, `js::class::<Component>()`'s (ADR 0761).
@@ -168,7 +175,7 @@ pub(in crate::lower) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "import()" => return JsForm::Import { module: false },
         "import(*)" => return JsForm::Import { module: true },
         "for in" => return JsForm::KeysIn,
-        "throw" => return JsForm::Throw,
+        "throw" if !of_self(tcx, def_id) => return JsForm::Throw,
         "class" => return JsForm::Class,
         "null" => return JsForm::Null,
         "typeof object" => return JsForm::TypeofObject,
@@ -184,6 +191,13 @@ pub(in crate::lower) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
     if let Some(keys) = name.strip_prefix('{').and_then(|t| t.strip_suffix('}')) {
         let keys = keys.split(',').map(str::trim).filter(|k| !k.is_empty());
         return JsForm::Object(keys.map(str::to_string).collect());
+    }
+    // A key, not a quoted name, `['matchMedia']`, which a method's link
+    // name writes as its name, refused (ADR 1033).
+    if let Some(key) = (name.strip_prefix('[').and_then(|t| t.strip_suffix(']')))
+        .filter(|key| !key.starts_with(['\'', '"']))
+    {
+        return JsForm::CallKeyed(key.to_string());
     }
     if let Some(prop) = name.strip_prefix("prop ") {
         return JsForm::Prop(Some(prop.to_string()));
@@ -202,4 +216,10 @@ pub(in crate::lower) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         }
     }
     JsForm::Call(name)
+}
+
+/// Whether `def_id` is a Rust method, of a `self`, called `value.f(..)`, not
+/// a function whose `this` is its first parameter, `js::throw(value)`.
+fn of_self(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    tcx.def_kind(def_id) == DefKind::AssocFn && tcx.associated_item(def_id).is_method()
 }

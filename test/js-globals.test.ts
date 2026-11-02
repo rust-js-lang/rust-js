@@ -79,6 +79,45 @@ pub fn symbols() -> (&'static Symbol, &'static Symbol, &'static Symbol) {
   ]);
 });
 
+// rd580: ReactFlightWebpackReferences' client proxy pretends to be a
+// promise, its `getPrototypeOf` trap giving `Promise.prototype`, and React's
+// Flight reply server makes its chunks of it, `Object.create(Promise.prototype)`.
+// A class's prototype is `js::class::<T>().prototype()`, the one way, of a
+// global class's too: no `js::promise::prototype` beside it, as `Array` and
+// `Object`, which are Rust's own types, no class's, have theirs.
+test("Promise.prototype is its class's prototype", async () => {
+  const { js, dir } = await compiled(
+    "js-globals-promise-prototype",
+    `use js::{JsObject, Promise, ProxyHandler, Unknown, proxy};
+
+pub fn chunk() -> &'static Unknown {
+    js::object::create(Some(js::class::<Promise<()>>().prototype()), None)
+}
+
+pub fn pretending(target: &'static JsObject) -> &'static JsObject {
+    let handler = ProxyHandler {
+        get_prototype_of: Some(Box::new(|_target| js::class::<Promise<()>>().prototype())),
+        ..Default::default()
+    };
+    proxy::new(target, &handler)
+}
+`,
+  );
+  expect(js).toContain("return Object.create(Promise.prototype);");
+  expect(js).toContain("getPrototypeOf: (_target) => Promise.prototype,");
+  writeFileSync(
+    join(dir, "run.mjs"),
+    `import * as lib from "./lib.js";
+const chunk = lib.chunk();
+console.log(Object.getPrototypeOf(chunk) === Promise.prototype, chunk instanceof Promise, typeof chunk.then);
+console.log(Object.getPrototypeOf(lib.pretending({})) === Promise.prototype, lib.pretending({}) instanceof Promise);
+`,
+  );
+  const ran = runSync([node ?? "node", join(dir, "run.mjs")], root, 30_000);
+  expect(ran.stderr).toBe("");
+  expect(ran.stdout).toBe("true true function\ntrue true\n");
+});
+
 // rd417: a `DataView` and a `ConsoleTask` are objects, never nullish, so
 // `js::Defined`: of any shape, `js::unknown(view)`, as React's Flight client
 // hands each to what takes any value, and an `Option` of one the value or

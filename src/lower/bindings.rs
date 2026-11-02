@@ -298,7 +298,8 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
 /// Why a binding's path isn't one (ADR 1033): a static's, or a function's
 /// it calls, reads, writes, constructs or asks `instanceof` of, starts from
 /// a JS name, each property after it `.name` or a quoted key, `['$RT']`; a
-/// method's names its property, never quoted.
+/// method's names its property, never quoted, or its key, a global's path,
+/// `[Symbol.asyncIterator]` (rd585).
 fn path_refused(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
     let path = match tcx.def_kind(def_id) {
         DefKind::Static { .. } if tcx.is_foreign_item(def_id) => js_name(tcx, def_id),
@@ -308,6 +309,13 @@ fn path_refused(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
             | JsForm::Set(path)
             | JsForm::New(path)
             | JsForm::InstanceOf(path) => path,
+            JsForm::CallKeyed(key) => {
+                let why = match is_method(tcx, def_id) {
+                    true => paths::global_refused(&key),
+                    false => Some("a key, `[Symbol.asyncIterator]`, is a method's, of `&self` or `this`".to_string()),
+                };
+                return why.map(|why| format!("rust-js: `[{key}]` isn't a binding's path: {why} (ADR 1033)"));
+            }
             _ => return None,
         },
         _ => return None,
