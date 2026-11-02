@@ -540,8 +540,7 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub mutated: HashSet<Ty<'tcx>>,
     /// The `Rc`s counted, whose counts the crate reads (ADR 0320).
     pub counted: Counted<'tcx>,
-    /// Each closure's handle on itself, and closures' on what owns them,
-    /// of those uncounted (ADRs 0843 and 0317, amended).
+    /// Each closure's handle on itself, or on what owns it, of those uncounted (ADRs 0843, 0317).
     pub self_handles: SelfHandles<'tcx>,
     /// Each function's scope struct, whose methods are functions declared
     /// in it (ADR 1043).
