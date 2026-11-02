@@ -40,5 +40,7 @@ pub fn report() -> String {
     sorted.sort();
     lines.push(format!("{sorted:?}"));
     lines.push(format!("{:?}", Decimal::from_str("abc")));
+    // Its digits an `ArrayVec`, arrayvec's code compiled with it (#468).
+    lines.push(Decimal::from_str_exact("12.3450").unwrap().to_string());
     lines.join("\n")
 }

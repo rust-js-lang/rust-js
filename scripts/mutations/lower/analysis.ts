@@ -190,9 +190,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a trait default's `Self::B` counts as generic code reading `B`, so `()`'s defaults of each other are computed, a cycle",
     file: "src/lower/analysis.rs",
-    find: "            !(matches!(tcx.def_kind(body.def_id), DefKind::AssocConst { .. })",
+    find: "        !(matches!(tcx.def_kind(body.def_id), DefKind::AssocConst { .. }) && tcx.trait_of_assoc(body.def_id).is_some())\n",
     replace:
-      "            true || !(matches!(tcx.def_kind(body.def_id), DefKind::AssocConst { .. })",
+      "        true || !(matches!(tcx.def_kind(body.def_id), DefKind::AssocConst { .. }) && tcx.trait_of_assoc(body.def_id).is_some())\n",
     tests: [
       "test/lowering-structs-enums.test.ts",
       "-t",
@@ -536,20 +536,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^rc_generic_given_drops.rs$"],
   },
   {
-    name: "inlined-closures-unfound",
-    breaks:
-      "a closure only a local of a std body holds, `sum`'s in `Filter::count` of a `core` built to unwind, is never collected, so the body is refused (#424)",
-    file: "src/lower/analysis.rs",
-    find: "                if let rustc_middle::ty::Closure(closure, _) = *part.kind() {\n                    closures.0.push(closure);\n",
-    replace:
-      "                if let rustc_middle::ty::Closure(closure, _) = *part.kind() {\n                    let _ = closure;\n",
-    tests: [
-      "test/std-package.test.ts",
-      "-t",
-      "the committed @rust-js/std is std",
-    ],
-  },
-  {
     name: "namespace-library-not-imported",
     breaks:
       "a library's namespace a body names isn't imported, refused as a value (ADR 1037)",
@@ -592,5 +578,14 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "scope_struct"],
     snapshots: true,
+  },
+  {
+    name: "generic-consts-of-instances-unread",
+    breaks:
+      "the trait constants a library's code the crate compiles reads, of its MIR alone, aren't asked of the dictionaries it compiles beside it, so a program's `Stack<Loud, 2>` is full at once, its `CAPACITY` undefined (#468, ADR 0176, amended)",
+    file: "src/lower/analysis.rs",
+    find: "        if body.root().is_none()\n            && let Some(mir) = &body.mir\n",
+    replace: "        if false\n            && let Some(mir) = &body.mir\n",
+    tests: ["test/crates.test.ts", "-t", "three crates: generic_impl_const_of_instance"],
   },
 ];

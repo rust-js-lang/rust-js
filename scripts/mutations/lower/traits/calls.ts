@@ -506,4 +506,14 @@ export const mutations: Mutation[] = [
       "an ES class React renders"
     ]
   },
+  {
+    name: "operator-through-dictionary-refused",
+    breaks:
+      "`a * b` of a library's type whose `mul` its JS reaches only through the dictionary it exports, rust_decimal's `Decimal`'s, is refused, `calling std::ops::Mul::mul`, where it's `digitsMul.mul(a, b)` (#468, ADR 0914, amended)",
+    file: "src/lower/traits/calls.rs",
+    find: "            if let Some((instance, entry)) = self.dictionary_entry(id, generic_args, values.len(), span)? {\n",
+    replace:
+      "            if false\n                && let Some((instance, entry)) = self.dictionary_entry(id, generic_args, values.len(), span)?\n            {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: operator_through_dictionary"],
+  },
 ];

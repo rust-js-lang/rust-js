@@ -271,4 +271,13 @@ export const mutations: Mutation[] = [
     replace: "            typing_env: ty::TypingEnv::fully_monomorphized(),\n",
     tests: ["test/crates.test.ts", "-t", "two crates: const_generic"],
   },
+  {
+    name: "instance-impl-consts-unasked",
+    breaks:
+      "a library's trait impl a consumer compiles itself is compiled without its constants, so a library that compiles arrayvec's `impl<T, const CAP: usize> ArrayVecImpl for ArrayVec<T, CAP>`, rust_decimal, is refused at its `CAPACITY = CAP`, which has no initializer to lower (#468, ADR 0176, amended)",
+    file: "src/lower/instances.rs",
+    find: "                    DefKind::AssocConst { .. } => true,\n",
+    replace: "                    DefKind::AssocConst { .. } => false,\n",
+    tests: ["test/crates.test.ts", "-t", "three crates: generic_impl_const_of_instance"],
+  },
 ];

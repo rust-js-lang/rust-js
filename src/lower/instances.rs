@@ -58,14 +58,21 @@ impl Instances {
 /// What the crate's lowering asked for of its libraries that their JS
 /// doesn't export (`Foreign::compiles`), each where it was first asked: a
 /// trait impl, or its method, the impl with each of its methods, beside
-/// it, whose dictionary names them (ADR 0914, amended).
+/// it, whose dictionary names them (ADR 0914, amended), and its constants,
+/// whose initializers it lowers where rustc can't compute them, `CAPACITY
+/// = CAP` of arrayvec's `impl<T, const CAP: usize> ArrayVecImpl for
+/// ArrayVec<T, CAP>` (ADR 0176, amended).
 pub(super) fn asked(tcx: TyCtxt<'_>, asked: Vec<(DefId, LocalModId)>) -> Vec<(DefId, LocalModId)> {
     let mut more: Vec<(DefId, LocalModId)> = Vec::new();
     for (id, module) in asked {
         let id = tcx.trait_impl_of_assoc(id).unwrap_or(id);
         let methods = match tcx.def_kind(id) {
             DefKind::Impl { of_trait: true } => (tcx.associated_item_def_ids(id).iter().copied())
-                .filter(|&method| tcx.def_kind(method) == DefKind::AssocFn && tcx.is_mir_available(method))
+                .filter(|&item| match tcx.def_kind(item) {
+                    DefKind::AssocFn => tcx.is_mir_available(item),
+                    DefKind::AssocConst { .. } => true,
+                    _ => false,
+                })
                 .collect(),
             _ => Vec::new(),
         };

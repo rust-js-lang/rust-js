@@ -787,3 +787,29 @@ its own as before.
   the library changes too, and whose `potSize` reads a `Pot` it never
   changes through a `Box`, both imported. Mutations `library-changed-unshared`
   (`lower/instances.ts`) and `library-changed-unwritten` (`lower/library.ts`).
+
+## Amendment: an operator of a library's type is called through the dictionary it exports (#468)
+
+Since ADR 0477's amendment (ab401359e), a library writes an operator's
+impl, and the other impls only generic code reads a dictionary of, only
+where it's reached. rust_decimal's `impl Mul for Decimal` is reached by
+its dictionary alone, `CheckedMul`'s supertrait, so its JS exports
+`decimalMul = { mul: decimalMul_mul }` and no `decimalMul_mul`. A
+consumer's `a * b` of two `Decimal`s, of known types, went to std's
+operator, written in place, which has none for a struct: "calling
+`std::ops::Mul::mul`". Its impl isn't one the consumer compiles, as its
+dictionary is exported (`Foreign::compiles`), and `impl_call`'s route
+through that dictionary (`dictionary_entry`) wasn't asked of an operator's
+call.
+
+**An operator's or a conversion's call of known types that resolves to a
+library's impl's method its JS reaches only through the impl's exported
+dictionary is called through it, `decimalMul.mul(a, b)`**, as `impl_call`'s
+calls are; one its JS exports by name is called by it, as before.
+
+- Case N ([0262](0262-when-rust-and-js-disagree.md)): the library's own
+  method, called through the dictionary it exports.
+- Held by `test/crates/pairs/operator_through_dictionary`, against native
+  Rust, and the crate corpus's rust_decimal probe, which runs the same as
+  native. Mutation `operator-through-dictionary-refused`
+  (`lower/traits/calls.ts`).

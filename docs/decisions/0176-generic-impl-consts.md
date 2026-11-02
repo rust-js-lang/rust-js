@@ -74,3 +74,53 @@ read: `{ EMPTY: "" }`. Held by `test/corpus/impl_const_string.rs`.
 An initializer is kept only where the constant has a body: a `type const`
 has none, and lowering one crashed. Held by `test/diagnostics.test.ts`'s
 type-constant test.
+
+## Amendment: a library's impl a consumer compiles has its constants (#468)
+
+A consumer compiles a library's trait impl itself where the library's JS
+has none it can call (ADR 0914, amended), and since c3ab99271 rust_decimal
+compiled arrayvec's `impl<T, const CAP: usize> ArrayVecImpl for
+ArrayVec<T, CAP>`. Its `const CAPACITY: usize = CAP;` is a getter of the
+dictionary, its initializer lowered there, but only a body of the crate's
+own had one: rust_decimal was refused at "a generic impl's constant of its
+parameters". A program, which writes only the constants generic code reads,
+read them of its own THIR alone, so its dictionary had no `CAPACITY` at
+all, and `Self::CAPACITY - len` of the code it compiled was `NaN >>> 0`: a
+`Stack<Loud, 2>` full at once.
+
+**An impl a consumer compiles is compiled with its constants, each of the
+MIR its library's metadata keeps of it, the one rustc evaluates it from
+(`mir_for_ctfe`), as a function's is of its optimized MIR; and the
+constants the code it compiles reads, of its MIR, are those its
+dictionaries have:**
+
+```js
+function arrayVecArrayVecImpl(CAP, dropT) {
+  return $traitImpl($arrayVecArrayVecImpl, [CAP, dropT], () => ({
+    get CAPACITY() {
+      return CAP;
+    },
+```
+
+- Case N ([0262](0262-when-rust-and-js-disagree.md)): the getter is the
+  library's own, as its JS writes it, read where generic code asks.
+- `instances::asked` places an impl with its constants beside it, as with
+  its methods; `analysis::foreign_bodies` reads each's MIR
+  (`foreign_mir`); `analysis::generic_consts` reads the constants a body
+  of MIR alone names, `Const::Unevaluated` of a trait's constant at
+  generic arguments, as it reads a THIR's `NamedConst`.
+- Not rustc's value at the instance's arguments, `const_eval_resolve`:
+  the dictionary is compiled once, a function of `CAP`, and called with
+  each caller's, so there are no concrete arguments to evaluate it at. One
+  rustc can compute, of no parameter, is its value as before.
+
+### What holds it
+
+- `test/crates/triples/generic_impl_const_of_instance`, against native
+  Rust: `mid`, a library, compiles `dep`'s `Stack<(), 2>`'s impl, as
+  rust_decimal does arrayvec's; `app`, a program, its `Stack<Loud, 2>`'s.
+- The crate corpus's rust_decimal probe, which reads
+  `Decimal::from_str_exact(..).to_string()` now: runs, the same as native.
+- Mutations `instance-impl-consts-unasked` (`lower/instances.ts`),
+  `foreign-const-without-mir` and `generic-consts-of-instances-unread`
+  (`lower/analysis.ts`).

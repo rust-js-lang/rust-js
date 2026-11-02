@@ -584,6 +584,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || conversion)
             && (!tr.args.has_non_region_param() || (conversion && self.evidence_for(tr).is_none()))
         {
+            // A library's impl's method its JS reaches only through the
+            // impl's dictionary, which it exports, `a * b` of rust_decimal's
+            // `Decimal`, whose `Mul` its `CheckedMul` reads: called through
+            // it, `decimalMul.mul(a, b)`, as `impl_call`'s are (ADR 0914,
+            // amended).
+            if let Some((instance, entry)) = self.dictionary_entry(id, generic_args, values.len(), span)? {
+                let called = Expr::call(entry, values);
+                return Ok(Some(self.fmt_result_value(instance.def_id(), instance.args, called)));
+            }
             // In a copied default, the call is the trait's, of `Self`, which std's
             // path doesn't see as the number it is here: `self - Self::one()`.
             if self.given.self_args.is_some()
