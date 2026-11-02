@@ -836,3 +836,25 @@ the JS is the same of a library's optimized MIR as of the crate's own.
   indexes by `..` and gives a unit struct; and the crate corpus's base64
   probe, which runs the same as native. Mutation
   `mir-const-unit-struct-refused` (`lower/mir/operands.ts`).
+
+## Amendment: a library's constructor given as a function is made in place (#476)
+
+A function as a value asked first whether it's a library's that its
+manifest doesn't list (`Foreign::unlisted`), then whether it's a
+constructor. A manifest lists no constructor, so a library's was refused,
+"`dep::Wrap` isn't one of the items `dep`'s manifest exports": a
+consumer's `.map(dep::Wrap)` of a public tuple struct, and since this
+ADR, the `.map(Self)` of smallvec's private `ConstNonNull::new` in code
+its consumer compiles from smallvec's MIR, which kept smallvec's probe
+from running.
+
+**A constructor given as a function is the arrow that makes its value,
+`(value) => [value]`, whichever crate's it is** (`constructor_value`), as
+the crate's own is: it reads nothing of the library's JS.
+
+- Case N ([0262](0262-when-rust-and-js-disagree.md)): the value is made
+  as Rust makes it.
+- Held by `test/crates/pairs/library_constructor_value`, against native
+  Rust: a consumer compiling a library function whose private struct's
+  `new` gives `.map(Self)`, and its own `.map(dep::Wrap)`. Mutation
+  `library-constructor-value-unlisted` (`lower.ts`).

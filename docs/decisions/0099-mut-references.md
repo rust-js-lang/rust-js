@@ -568,3 +568,31 @@ the box's `value`, as its reborrow is:** given where a box goes, the box,
   and a `&mut u32` given on to a private function, each compiled by a
   consumer that gives a value with a destructor.
 - Mutation `given-box-boxed-again` (`mir/assign.rs`).
+
+## Amendment: any `&mut` to a cell held as a value is given on as the box it is (#476)
+
+The amendment above gave on as it is only a box the function was given, by
+its name (`naming.boxes()`). smallvec's `extend`, which a consumer giving
+it a value with a destructor compiles from smallvec's optimized MIR (ADR
+0914), destructures `triple_mut()`'s `(ptr, len_ptr, cap)` and gives
+`len_ptr`, a `&mut usize`, to `SetLenOnDrop::new`: `move _7` of a local
+that holds the box, no parameter's. `boxed_args` boxed it again as if it
+were the place, `SetLenOnDrop.new({ .. set value(value) { lenPtr = value;
+} })`, and the program threw, "Assignment to constant variable", where
+native Rust runs. ADR 0262's "results change" case: Rust's behavior is
+kept.
+
+**A value given for an argument whose type is a `&mut` to what's a cell
+(`is_cell_pointee`), a generic `&mut Self` or a `&mut usize`, is the box
+itself, a `&mut` to its place, the box's `value`, as its reborrow is**, by
+the argument's type, whatever holds it: one the function was given, a
+tuple's field, a call's result. The rule by the box's name is gone, as
+this covers it.
+
+- `test/crates/pairs/mut_ref_of_tuple_given_on`, against native Rust: a
+  library's `extend` giving a tuple's `&mut usize` to a guard that writes
+  through it as it's dropped, compiled by a consumer; and
+  `library_default_mut_self_instance`, as before. The crate corpus's
+  smallvec probe runs the same as native.
+- Mutation `given-box-boxed-again` (`mir/assign.rs`), retargeted to the
+  rule, held by both pairs.

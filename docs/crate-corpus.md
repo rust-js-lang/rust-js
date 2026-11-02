@@ -34,7 +34,7 @@ and `bun scripts/crate-corpus.ts` refuses a row of no exact release (ADR
 | itertools 0.14.0 | compiles (refused: #473) | on 2026-11-02 refused: a `FilterMap` of an iterator given as it is, `FilterMapOk::rfold`'s, stepped from its back; measured 2026-10-22, after ADR 0552's amendment: its probe is refused at `collect_vec()` of a `chunk_by` group's `copied()`, a `Group` whose `Drop` the library's `collect_vec` takes none of |
 | indexmap 2.14.2 | runs | a `Map`, rustc builds it (ADR 0424) |
 | bitflags 2.13.2 | runs | |
-| smallvec 1.16.4 | runs (compiles: #476) | on 2026-11-02, at 1.16.4, its probe is refused: `size_of` of a type parameter |
+| smallvec 1.16.4 | runs | measured 2026-11-02, at 1.16.4, after ADRs 0145, 0099 and 0914 amended (#476): `size_of::<A::Item>()` of a library's dictionary, a `&mut usize` of a tuple given on, `.map(Self)` |
 | arrayvec 0.7.8 | runs | measured 2026-11-02, after #468's fix |
 | hashbrown 0.17.1 | runs | its maps std's, rustc builds it (ADR 0423) |
 | thiserror 2.0.21 | runs | |

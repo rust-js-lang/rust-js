@@ -969,7 +969,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         state: &mut State<'_, 'tcx>,
         (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
-        values: Vec<Value<'tcx>>,
+        (values, arg_tys): (Vec<Value<'tcx>>, &[Ty<'tcx>]),
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Vec<Expr>> {
@@ -1012,14 +1012,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let mut exprs: Vec<Expr> = Vec::new();
         for (i, value) in values.into_iter().enumerate() {
-            // A box this function was given, its `&mut` given on as it is,
-            // `items(copy _1)` of a library's MIR, optimized, where the MIR
-            // built of the crate's own reborrows it, `&mut *self`: a `&mut` to
-            // its place, the box's `value`, as the reborrow is (#472).
+            // A `&mut` to what's a cell, held as a value, the box it is, given
+            // on as it is: one this function was given, `items(copy _1)` of a
+            // library's MIR, optimized, where the MIR built of the crate's own
+            // reborrows it, `&mut *self` (#472), or a tuple's `len_ptr` of
+            // smallvec's `triple_mut()` given on to its `SetLenOnDrop::new`
+            // (#476). A `&mut` to its place, the box's `value`, as a reborrow
+            // is.
+            let held_box = |cx: &Self| {
+                arg_tys.get(i).is_some_and(
+                    |&ty| matches!(*ty.kind(), ty::Ref(_, pointee, ty::Mutability::Mut) if cx.is_cell_pointee(pointee)),
+                )
+            };
             let value = match value {
-                Value::Expr(boxed) if matches!(&boxed.kind, js::ExprKind::Var(name) if state.naming.boxes().contains(name)) => {
-                    Value::Ref(Expr::held(boxed))
-                }
+                Value::Expr(boxed) if held_box(self) => Value::Ref(Expr::held(boxed)),
                 value => value,
             };
             let object = !matches!(value, Value::Ref(_));

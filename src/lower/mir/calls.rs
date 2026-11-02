@@ -502,7 +502,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
-        let mut exprs = self.boxed_args(state, (def_id, generic_args), values, span, out)?;
+        let mut exprs = self.boxed_args(state, (def_id, generic_args), (values, arg_tys), span, out)?;
         // A callback it calls once, `impl FnOnce(A0, A1) -> T`, an arrow that
         // only passes on what it's given: the function it passes on to,
         // React's `runWithFiberInDEV(fiber, commitCallbacks, queue, instance)`,

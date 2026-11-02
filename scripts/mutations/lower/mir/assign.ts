@@ -1052,11 +1052,11 @@ export const mutations: Mutation[] = [
   {
     name: "given-box-boxed-again",
     breaks:
-      "a box a function was given, its `&mut` given on as it is in a library's optimized MIR, `items(copy _1)`, is boxed again, `SelfBounded.items({ get value() { return self; } })`, so a consumer's instance of a trait default taking `&mut self` throws where native runs (#472, P0)",
+      "a box a function was given, or a `&mut` to a cell held as a value, given on as it is in a library's optimized MIR, `items(copy _1)` or smallvec's `SetLenOnDrop::new(len_ptr)`, is boxed again, `{ get value() { return self; } }`, so a consumer's instance throws where native runs (#472, #476)",
     file: "src/lower/mir/assign.rs",
-    find: "                Value::Expr(boxed) if matches!(&boxed.kind, js::ExprKind::Var(name) if state.naming.boxes().contains(name)) => {\n",
-    replace: "                Value::Expr(boxed) if false && matches!(&boxed.kind, js::ExprKind::Var(name) if state.naming.boxes().contains(name)) => {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_default_mut_self_instance"],
+    find: "                Value::Expr(boxed) if held_box(self) => Value::Ref(Expr::held(boxed)),\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: (library_default_mut_self_instance|mut_ref_of_tuple_given_on)$"],
   },
   {
     name: "held-reference-place-rewritten",

@@ -338,11 +338,14 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cell-method-value-reboxed",
-    breaks: "a trait's method of a `&mut` to a number, a cell already, as a value boxes the cell again",
+    breaks: "a trait's method of a `&mut` to a number, a cell already, as a value is the arrow of its call, not the method itself",
     file: "src/lower.rs",
     find: "                    |t| matches!(*t.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if !self.is_cell_pointee(inner)),\n",
     replace: "                    |t| matches!(*t.kind(), ty::Ref(_, _, ty::Mutability::Mut)),\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer.rs$"],
+    // The call's arrow gives the cell on as it is too (#476): only the JS
+    // differs, the arrow for the method itself.
+    snapshots: true,
   },
   {
     name: "pointer-shim-given-location",
@@ -507,5 +510,13 @@ export const mutations: Mutation[] = [
     find: "        if let Some(name) = bindings::const_link_name(self.tcx, def_id) {\n",
     replace: "        if let Some(name) = None::<rustc_span::Symbol> {\n",
     tests: ["test/webapi-objects.test.ts", "-t", "webapi constant is read by its JS name"],
+  },
+  {
+    name: "library-constructor-value-unlisted",
+    breaks: "a library's constructor given as a function, `.map(dep::Wrap)` or its compiled `.map(Self)` of smallvec's private `ConstNonNull`, is asked of its manifest, which lists no constructor, and refused (#476)",
+    file: "src/lower.rs",
+    find: "        if matches!(self.tcx.def_kind(def_id), DefKind::Ctor(_, CtorKind::Fn)) {\n            return self.constructor_value(def_id, args, span).map(Some);\n        }\n        // A library's function its manifest doesn't list; not a trait's\n        // method, `Zero::is_zero`, which is its impl's, as a call of it is.\n        if self.tcx.trait_of_assoc(def_id).is_none()\n            && let Some(why) = self.krate.foreign.unlisted(def_id)\n        {\n            return Err(self.tcx.dcx().span_err(span, why));\n        }\n",
+    replace: "        if self.tcx.trait_of_assoc(def_id).is_none()\n            && let Some(why) = self.krate.foreign.unlisted(def_id)\n        {\n            return Err(self.tcx.dcx().span_err(span, why));\n        }\n        if matches!(self.tcx.def_kind(def_id), DefKind::Ctor(_, CtorKind::Fn)) {\n            return self.constructor_value(def_id, args, span).map(Some);\n        }\n",
+    tests: ["test/crates.test.ts", "-t", "library_constructor_value"],
   },
 ];
