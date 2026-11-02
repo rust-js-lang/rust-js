@@ -260,4 +260,42 @@ export const mutations: Mutation[] = [
       "an index an item is there at counts on without its wrap",
     ],
   },
+  {
+    name: "length-arm-unknown",
+    breaks:
+      "an arm of a number of a `match list.len()` knows nothing of the slice's length, `case 1: return $index(list, 0);`, not upstream's `list[0]` (rd21)",
+    file: "src/lower/body_queries/ranges/narrowing.rs",
+    find: "            && let Some(least) = value.or(any.then_some(*passed))\n",
+    replace: "            && let Some(least) = any.then_some(*passed)\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_of_a_length\\.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "length-arms-not-passed",
+    breaks:
+      "a `_` arm after arms of 0, 1 and 2 of a `match list.len()` knows nothing of its length, `$slice(list, 0, (list.length - 1) >>> 0)` (rd21)",
+    file: "src/lower/body_queries/ranges/narrowing.rs",
+    find: "            *passed += 1;\n",
+    replace: "            *passed += 0;\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_of_a_length\\.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "length-arm-guard-passed",
+    breaks:
+      "a guarded arm of a `match list.len()`, `1 if skip`, is taken for one the arms after it passed, so `_ => list[1]` reads past a list of one, `undefined`, where Rust panics (rd21)",
+    file: "src/lower/body_queries/ranges/narrowing.rs",
+    find: "        if arm.guard.is_none() && value == Some(*passed) {\n",
+    replace: "        if value == Some(*passed) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_of_a_length\\.rs$"],
+  },
+  {
+    name: "length-arm-not-next-passed",
+    breaks:
+      "an arm of a number not next of a `match list.len()`, `1 =>` first, is taken for 0's, so `_ => list[0]` reads an empty list's `undefined`, where Rust panics (rd21)",
+    file: "src/lower/body_queries/ranges/narrowing.rs",
+    find: "        if arm.guard.is_none() && value == Some(*passed) {\n",
+    replace: "        if arm.guard.is_none() && value.is_some() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_of_a_length\\.rs$"],
+  },
 ];

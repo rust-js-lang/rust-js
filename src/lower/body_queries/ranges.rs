@@ -599,10 +599,15 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 }
                 let found = self.expr(scrutinee, known);
                 let before = known.take();
+                // Of a slice's `len()`, what each arm knows of it (rd21).
+                let (length, mut passed) = (self.length_matched(scrutinee), 0);
                 for &arm in arms.iter() {
                     let mut here = before.clone();
                     self.forget_bound(&thir[arm].pattern, &mut here);
                     self.found_index_bound(&thir[arm].pattern, found.clone(), &mut here);
+                    if let Some(slice) = &length {
+                        self.length_arm(slice, &thir[arm], &mut passed, &mut here);
+                    }
                     if let Some(guard) = thir[arm].guard {
                         self.expr(guard, &mut here);
                     }

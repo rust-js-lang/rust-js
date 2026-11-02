@@ -14,9 +14,9 @@ function describe(keys, indent, out) {
     } else {
       if (
         indent < 3 ||
-        (keys.length === 2 && $index(keys, 0) === "children" && $index(keys, 1) === "type")
+        (keys.length === 2 && keys[0] === "children" && $index(keys, 1) === "type")
       ) {
-        desc = `<${$index(keys, 0)} … />`;
+        desc = `<${keys[0]} … />`;
         break desc;
       }
       let width = (keys.length * 10) >>> 0;

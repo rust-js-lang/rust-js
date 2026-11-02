@@ -89,6 +89,38 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         }
     }
 
+    /// The slice whose `len()` `scrutinee`, a `match`'s, is (rd21).
+    pub(super) fn length_matched(&self, scrutinee: ExprId) -> Option<Slice> {
+        match self.asks(scrutinee) {
+            Some((SliceLength::Len, items)) => self.slice(items),
+            _ => None,
+        }
+    }
+
+    /// Of an arm of a `match` of `slice`'s `len()`, `match list.len() { 1 =>
+    /// list[0], .. }`, what it knows of the length: an arm of a number, the
+    /// slice that long; one that takes any, after arms of 0 to n - 1, none
+    /// guarded, `passed` of them, at least n long, `list[list.len() - 1]` of
+    /// `_` after `0`, `1` and `2` (rd21).
+    pub(super) fn length_arm(&self, slice: &Slice, arm: &thir::Arm<'tcx>, passed: &mut i128, here: &mut Option<Known>) {
+        let value = match pattern_value(self.tcx, &arm.pattern) {
+            Some(PatternValue::Bits(_, n)) => i128::try_from(n).ok(),
+            _ => None,
+        };
+        let any = matches!(
+            arm.pattern.kind,
+            PatKind::Wild | PatKind::Binding { subpattern: None, .. }
+        );
+        if let Some(k) = here.as_mut()
+            && let Some(least) = value.or(any.then_some(*passed))
+        {
+            k.at_least(&(slice.clone(), Below::LENGTH), least);
+        }
+        if arm.guard.is_none() && value == Some(*passed) {
+            *passed += 1;
+        }
+    }
+
     /// The integer `e` is through each `as` that keeps it, `s` of `s as
     /// usize` where `s >= 0`, and `xs.len()` of `xs.len() as isize` of
     /// sized items (ADR 0701): what it is, the integer it's of is.

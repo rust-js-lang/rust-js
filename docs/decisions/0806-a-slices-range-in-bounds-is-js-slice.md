@@ -90,3 +90,25 @@ if (kind === "Primitive" || kind === "Empty") {
   panicking as Rust's does; `test/port-performance-track.test.ts`'s
   "addValueToProperties slices a truncated array as JS does"; mutations
   of `judge_range`, `up_to` and the tests' forgetting.
+
+## Amendment: a `match` of a slice's length (rd21, 2026-11-02)
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): the same reads, where
+each is shown in bounds.
+
+`match list.len() { 0 => .., 1 => list[0].to_owned(), 2 => .., _ =>
+list[..list.len() - 1].join(", ") + .. + list[list.len() - 1] }`, as
+React's Flight client joins a list and upstream writes `switch
+(list.length) { case 0: .. case 1: return list[0]; ..`, kept `$index(list,
+0)` and `$slice(list, 0, (list.length - 1) >>> 0)`: a `match`'s arms told
+the ranges nothing of the length, where an `if list.len() == 1` does.
+**An arm of a number of a `match` of a slice's `len()` knows the slice
+that long, and an arm that takes any value after arms of 0 to n - 1, none
+guarded, at least n long** (`narrowing::length_arm`): `list[0]`,
+`list.slice(0, list.length - 1)`, `list[list.length - 1]`. A guarded arm,
+or one of a number that isn't the next, `1 =>` first, tells the arms after
+it nothing, so `_ => list[1]` after `1 if skip` is `$index(list, 1)`,
+which panics where Rust's does. Held by the corpus's `match_of_a_length`,
+run against native Rust (with each panic), and the mutations
+`length-arm-unknown`, `length-arms-not-passed`, `length-arm-guard-passed`
+and `length-arm-not-next-passed` (`body_queries/ranges/narrowing.ts`).
