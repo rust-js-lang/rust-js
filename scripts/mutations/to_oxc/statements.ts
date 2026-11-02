@@ -227,14 +227,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts", "-t", "guard dropped around catch_unwind"],
   },
   {
-    name: "namespace-reexport-as-a-name",
-    breaks: "a `pub use` of a module's namespace is `export { * as ns } from`, which isn't JS, not `export * as ns from` (ADR 0240, amended)",
-    file: "src/to_oxc/statements.rs",
-    find: "            && namespace == \"*\"\n",
-    replace: "            && namespace == \"\"\n",
-    tests: ["test/modules.test.ts", "-t", "re-exported as written"],
-  },
-  {
     name: "commented-else-if",
     breaks: "an `else`'s block that starts with a comment before its only `if`, `// Nothing has been pinged.`, is an `else if`, and the comment lost",
     file: "src/to_oxc/statements.rs",

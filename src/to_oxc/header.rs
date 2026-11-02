@@ -10,10 +10,11 @@ pub fn import_line(clause: &str, from: &str) -> String {
     format!("import {clause} from {from:?};\n")
 }
 
-/// What's above a module's code: its header, directives, imports, one block
-/// in the order its `use`s are written (ADR 1063), each after the comments before the
-/// `use` that makes it, `comments`, and re-exports. Layout, as
-/// `format::spaced`'s blank lines are, of what the module says.
+/// What's above a module's code: its header, directives, imports and
+/// re-exports, one block in the order its `use`s are written (ADR 1063,
+/// amended, rd620), each after the comments before the `use` that makes it,
+/// `comments`. Layout, as `format::spaced`'s blank lines are, of what the
+/// module says.
 pub(super) fn header(module: &Module, comments: &std::collections::HashMap<u32, Vec<String>>) -> String {
     let mut code = format!("{}\n", module.header);
     for directive in &module.directives {
@@ -89,6 +90,17 @@ pub(super) fn header(module: &Module, comments: &std::collections::HashMap<u32, 
         let line = import_line(&clause, &import.from);
         named.push((relative, &import.from, line, import.span, import.span));
         named.extend(namespace);
+    }
+    // Each re-export where it's placed among them (`Reexport::at`), after
+    // an import placed there too, JS's load order either way (rd620).
+    for reexport in &module.reexports {
+        let relative = crate::program::is_relative_specifier(&reexport.from);
+        let clause = match reexport.named.as_slice() {
+            [(namespace, alias)] if namespace == "*" => format!("* as {alias}"),
+            named => format!("{{ {} }}", clause_of(&mut named.iter()).join(", ")),
+        };
+        let line = format!("export {clause} from {:?};\n", reexport.from);
+        named.push((relative, &reexport.from, line, reexport.at, reexport.span));
     }
     // Of two one `use` makes, `use crate::{a::x, b::y};`, by specifier.
     let written = |span: js::Span| (span.is_none(), span.lo);

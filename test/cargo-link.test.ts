@@ -333,3 +333,41 @@ pub fn run() -> u32 {
   expect(imports).toEqual(["../shared/recon.js", "tools-pkg", "../shared/aaa.js"]);
 }, 120_000);
 
+// A re-export is among the imports, where the source names what it's from
+// (ADR 1063, amended, rd620): React's reconciler's `use crate::react_portal;`
+// is where its namespace's forwarding method's `export { createPortal } from`
+// goes, before the imports of the `use`s after it, as upstream writes it; a
+// `pub use` where it's written, with its doc comment's JSDoc.
+test("a namespace's forwarding method's re-export is where its module's use is", () => {
+  const dir = fixture("forwarded-reexport-placed");
+  const extern = ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  writeFileSync(join(dir, "lib.rs"), "pub mod aaa;\npub mod portal;\npub mod reconciler;\npub mod selectors;\n");
+  writeFileSync(join(dir, "aaa.rs"), "pub fn a() -> u32 {\n    1\n}\n");
+  writeFileSync(join(dir, "portal.rs"), "pub fn create_portal() -> u32 {\n    2\n}\n");
+  writeFileSync(join(dir, "selectors.rs"), "pub fn find() -> u32 {\n    3\n}\n");
+  writeFileSync(join(dir, "reconciler.rs"), `use crate::portal;
+use crate::aaa::a;
+
+/// Found by its name.
+pub use crate::selectors::find;
+
+#[cfg_attr(rust_js, rust_js::namespace)]
+pub struct Reconciler;
+
+#[cfg_attr(rust_js, rust_js::namespace)]
+impl Reconciler {
+    pub fn create_portal(&self) -> u32 {
+        portal::create_portal()
+    }
+
+    pub fn run(&self) -> u32 {
+        a() + 1
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-name", "own", "--crate-type", "lib", ...extern]);
+  expect(readFileSync(join(dir, "reconciler.js"), "utf8")).toContain(
+    'export { createPortal } from "./portal.js";\nimport { a } from "./aaa.js";\n/** Found by its name. */\nexport { find } from "./selectors.js";\n\n',
+  );
+}, 120_000);
+

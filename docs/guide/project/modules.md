@@ -92,10 +92,9 @@ pub fn page() -> String {
 
 ```js
 // src/lib.js
-import * as Format from "./format.js";
 import { hello } from "./greet.js";
-
 export { hello } from "./greet.js";
+import * as Format from "./format.js";
 
 export function welcome(name) {
   return Format.shout(hello(name));
@@ -143,7 +142,13 @@ ReactDOMFizzServerNode writes `use react_server::..;`, a blank line, then
 `use react_dom_bindings::..;`, for upstream's ReactFizzServer before
 ReactFizzConfigDOM. A binding the module declares itself, a
 `#[rust_js::link_name = "./config.js#name"]` function, is named where
-it's declared, so its import goes there among the `use`s'. An import the
+it's declared, so its import goes there among the `use`s'. A re-export
+is in the block too, as JS loads it in the same order: a `pub use`
+where it's written, and a namespace's forwarding method's or a
+forwarder's `export { .. } from` at the `use` of its module, React's
+reconciler's `use crate::react_portal;`. A `pub use` places the import
+of what it names for the module's own code where no other `use` does,
+`pub use shapes::area;`'s `import { area }`, before its `export`. An import the
 source names neither way, of what's read by its path, comes after,
 packages then relative modules, each by its specifier; then imports for
 their effect, as written; then
@@ -332,9 +337,8 @@ pub mod units {
 ```
 
 ```js
-import { hello } from "./greet.js";
-
 export { px as pixels, BASE } from "./format/units.js";
+import { hello } from "./greet.js";
 export { hello } from "./greet.js";
 
 function greetAll(names) {
@@ -424,13 +428,12 @@ pub use crate::cache::cache;
 ```
 
 ```js
-import { jsxDev as _jsxDEV } from "./runtime.js";
-
 // Hooks
 export { useId, useCacheRefresh as unstable_useCacheRefresh } from "./hooks.js";
 export * as __COMPILER_RUNTIME from "./runtime.js";
 // DEV-only
 export { cache } from "./server.js";
+import { jsxDev as _jsxDEV } from "./runtime.js";
 
 export function element() {
   return _jsxDEV(1);

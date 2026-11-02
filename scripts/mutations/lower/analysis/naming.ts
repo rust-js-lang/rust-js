@@ -638,8 +638,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a comment above a `use` tree, `use crate::{a::x, b::y};`, is lost: each import it makes is where its leaf's path is (rd92)",
     file: "src/lower/analysis/naming.rs",
-    find: "                Some((statement(item.span), named, holders))\n",
-    replace: "                Some((item.span, named, holders))\n",
+    find: "                Some((statement(item.span), named, holders, super::is_reexport(tcx, item)))\n",
+    replace: "                Some((item.span, named, holders, super::is_reexport(tcx, item)))\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "above a use"],
   },
   {
@@ -797,8 +797,35 @@ export const mutations: Mutation[] = [
     breaks:
       "a `use` of a module of bindings, `use art::transform;`, places no import, so ART's `art/core/transform` goes after every `use`'s (rd611, ADR 1063, amended)",
     file: "src/lower/analysis/naming.rs",
-    find: "            DefKind::Mod if !id.is_local() => bindings_in(tcx, id).into_iter().any(own),\n",
-    replace: "            DefKind::Mod if false => bindings_in(tcx, id).into_iter().any(own),\n",
+    find: "            DefKind::Mod if !id.is_local() => items_in(tcx, id).into_iter().any(own),\n",
+    replace: "            DefKind::Mod if false => items_in(tcx, id).into_iter().any(own),\n",
     tests: ["test/cargo-link.test.ts", "-t", "namespace or of a module"],
+  },
+  {
+    name: "imports-library-module-use-unplaced",
+    breaks:
+      "a `use` of a library's module, `use dep::action;`, places no import of its own functions, so `import * as Action` goes after every re-export (rd620)",
+    file: "src/lower/analysis/naming.rs",
+    find: "            Res::Def(_, item) if tcx.opt_parent(item) == Some(module) => Some(item),\n",
+    replace: "            Res::Def(_, item) if tcx.opt_parent(item) == Some(module) && is_binding(tcx, item) => Some(item),\n",
+    tests: ["test/declarations-libraries.test.ts", "-t", "is its re-export"],
+  },
+  {
+    name: "pub-use-import-preferred",
+    breaks:
+      "an import is where a `pub use` of its module is, before the module's own `use` of it, `import { area as _areaDEV }` at `pub use shapes::area;` (rd620)",
+    file: "src/lower/analysis/naming.rs",
+    find: "        first(false).or_else(|| first(true))\n",
+    replace: "        first(true).or_else(|| first(false))\n",
+    tests: ["test/modules.test.ts", "-t", "re-exported as written"],
+  },
+  {
+    name: "pub-use-import-unplaced",
+    breaks:
+      "an import only a `pub use` names, `pub use shapes::area;` for the module's own `map(area)`, is after every placed one, after its re-export (rd620)",
+    file: "src/lower/analysis/naming.rs",
+    find: "        first(false).or_else(|| first(true))\n",
+    replace: "        first(false)\n",
+    tests: ["test/docs.test.ts"],
   },
 ];

@@ -296,6 +296,7 @@ pub(super) fn assembled(mut found: Vec<Named>, sources: &super::sources::Capture
                         from,
                         named: vec![named],
                         span,
+                        at: span,
                     },
                 ));
             }
@@ -319,6 +320,7 @@ pub(super) fn assembled(mut found: Vec<Named>, sources: &super::sources::Capture
             {
                 last.named.extend(reexport.named);
                 last.span.hi = reexport.span.hi;
+                last.at.hi = reexport.span.hi;
             }
             _ => merged.push(reexport),
         }
@@ -650,6 +652,43 @@ pub(super) fn forwarded_from(
         _ => {
             let (from, export) = foreign.import_key(target, module)?;
             Some((js::ImportFrom::Specifier(from), export))
+        }
+    }
+}
+
+/// Where each of `reexports`, `module`'s, is among its imports, as JS
+/// loads them, where the source first names what it's from, as an import
+/// is (ADR 1063, amended, rd620): a `pub use`'s where it's written; one a
+/// function makes, a namespace's forwarding method's `export { createPortal
+/// } from`, or a forwarder's (rd575), at the `use` of its module or of
+/// what's in it, the reconciler's `use crate::react_portal;`, where one is
+/// before it; `written`, a source span's place in the module's JS.
+pub(super) fn place(
+    tcx: TyCtxt<'_>,
+    reexports: &mut [Reexport],
+    uses: &super::analysis::UsesWritten,
+    (fns, foreign, paths): (
+        &HashMap<DefId, FnInfo>,
+        &super::library::Foreign<'_, '_>,
+        &HashMap<LocalModId, Vec<String>>,
+    ),
+    written: &dyn Fn(Option<rustc_span::Span>) -> js::Span,
+) {
+    let statements: Vec<js::Span> = uses.statements().map(|at| written(Some(at))).collect();
+    for reexport in reexports {
+        let span = reexport.span;
+        if span.is_none() || statements.iter().any(|at| at.lo < span.hi && span.lo < at.hi) {
+            continue;
+        }
+        let named = match &reexport.from {
+            js::ImportFrom::Module(path) => (paths.iter())
+                .find(|(_, of)| *of == path)
+                .and_then(|(&target, _)| uses.module_at(tcx, fns, target)),
+            js::ImportFrom::Specifier(from) => uses.package_at(tcx, foreign, from),
+        };
+        let named = written(named);
+        if !named.is_none() && named.lo < reexport.at.lo {
+            reexport.at = named;
         }
     }
 }

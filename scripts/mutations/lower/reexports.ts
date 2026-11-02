@@ -312,4 +312,22 @@ export const mutations: Mutation[] = [
     replace: ".is_some_and(|between| only_attributes(between, false))",
     tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
   },
+  {
+    name: "forwarded-reexport-at-its-function",
+    breaks:
+      "a namespace's forwarding method's re-export is where the method is, after every import, not at its module's `use crate::portal;` (rd620)",
+    file: "src/lower/reexports.rs",
+    find: "        if !named.is_none() && named.lo < reexport.at.lo {\n",
+    replace: "        if false {\n",
+    tests: ["test/cargo-link.test.ts", "-t", "forwarding method's re-export"],
+  },
+  {
+    name: "written-reexport-moved",
+    breaks:
+      "a `pub use` is placed at an earlier `pub use` of its module, `export { half }` before `export { cache }` where it's written after (rd620)",
+    file: "src/lower/reexports.rs",
+    find: "        if span.is_none() || statements.iter().any(|at| at.lo < span.hi && span.lo < at.hi) {\n",
+    replace: "        if span.is_none() {\n",
+    tests: ["test/modules.test.ts", "-t", "re-exported as written"],
+  },
 ];

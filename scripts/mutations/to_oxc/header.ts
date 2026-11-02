@@ -83,4 +83,28 @@ export const mutations: Mutation[] = [
     replace: "    let written = |span: js::Span| (!span.is_none(), span.lo);\n",
     tests: ["test/modules.test.ts", "-t", "imports are where their bindings are declared"],
   },
+  {
+    name: "reexport-lines-unprinted",
+    breaks: "a module's `pub use` writes no `export { .. } from`, and what imports it finds nothing",
+    file: "src/to_oxc/header.rs",
+    find: "        named.push((relative, &reexport.from, line, reexport.at, reexport.span));\n",
+    replace: "        let _ = (relative, line);\n",
+    tests: ["test/modules.test.ts", "-t", "re-exported from it"],
+  },
+  {
+    name: "reexport-ordered-by-its-span",
+    breaks: "a re-export is placed where it's written, a namespace's forwarding method's after every import, not at its module's `use` (rd620)",
+    file: "src/to_oxc/header.rs",
+    find: "        named.push((relative, &reexport.from, line, reexport.at, reexport.span));\n",
+    replace: "        named.push((relative, &reexport.from, line, reexport.span, reexport.span));\n",
+    tests: ["test/cargo-link.test.ts", "-t", "forwarding method's re-export"],
+  },
+  {
+    name: "namespace-reexport-as-a-name",
+    breaks: "a `pub use` of a module's namespace is `export { * as ns } from`, which isn't JS, not `export * as ns from` (ADR 0240, amended)",
+    file: "src/to_oxc/header.rs",
+    find: "            [(namespace, alias)] if namespace == \"*\" => format!(\"* as {alias}\"),\n",
+    replace: "            [(namespace, alias)] if namespace == \"\" => format!(\"* as {alias}\"),\n",
+    tests: ["test/modules.test.ts", "-t", "re-exported as written"],
+  },
 ];

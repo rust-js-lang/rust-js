@@ -139,7 +139,6 @@ pub fn area(radius: f64) -> f64 {
 ```js
 // src/lib.js
 import { area } from "./shapes.js";
-
 export { area } from "./shapes.js";
 
 export function totalArea(radii) {

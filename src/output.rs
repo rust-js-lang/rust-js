@@ -112,6 +112,7 @@ impl OutputPlan {
                     named: reexport.named.clone(),
                     from: from_here(&reexport.from),
                     span: reexport.span,
+                    at: reexport.at,
                 })
                 .collect::<Vec<_>>();
             let packages = module

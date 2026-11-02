@@ -8,12 +8,11 @@
 //   geometry/area.rs  ──► geometry/area.js
 //   mod util { .. }   ──► util.js   (inline modules get a file too)
 
+/** Reaches two levels down, where both `util` modules are used. */
+export { mixed, shadowed } from "./geometry/area.js";
 import * as Area from "./geometry/area.js";
 import * as Stats from "./stats.js";
 import * as Util from "./util.js";
-
-/** Reaches two levels down, where both `util` modules are used. */
-export { mixed, shadowed } from "./geometry/area.js";
 
 /** Calls into two other files. */
 export function summary(a, b) {

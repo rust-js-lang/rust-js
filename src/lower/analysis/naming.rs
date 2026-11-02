@@ -514,13 +514,16 @@ pub(in crate::lower) fn renamed_in(tcx: TyCtxt<'_>, module: LocalModId) -> HashM
     renamed
 }
 
-/// Each `use` of a module that isn't a re-export, where it's written, and
-/// what it names, in each namespace, and each module it names a binding
-/// through that holds it (rd609): which import a `use` makes, which its
-/// comments are before (rd92), the first of those naming what it imports.
+/// Each `use` of a module, where it's written, and what it names, in each
+/// namespace, and each module it names a binding through that holds it
+/// (rd609): which import a `use` makes, which its comments are before
+/// (rd92), the first of those naming what it imports; and each `pub use`,
+/// which makes one where no other `use` does, `pub use shapes::area;`'s
+/// for the module's own code too (rd620).
 pub(in crate::lower) struct UsesWritten {
     module: LocalModId,
-    uses: Vec<(rustc_span::Span, Vec<DefId>, Vec<bindings::Holder>)>,
+    /// Each, and whether it's a `pub use`, a re-export.
+    uses: Vec<(rustc_span::Span, Vec<DefId>, Vec<bindings::Holder>, bool)>,
     /// Each binding the module declares itself, a function or a static of
     /// its own or of an `extern` block, where it's written.
     declared: Vec<(rustc_span::Span, DefId)>,
@@ -545,14 +548,11 @@ impl UsesWritten {
         let statement = |span: rustc_span::Span| {
             (lists.iter().filter(|list| list.contains(span))).fold(span, |outer, &list| outer.to(list))
         };
-        let mut uses: Vec<(rustc_span::Span, Vec<DefId>, Vec<bindings::Holder>)> = (items())
+        let mut uses: Vec<(rustc_span::Span, Vec<DefId>, Vec<bindings::Holder>, bool)> = (items())
             .filter_map(|item| {
                 let ItemKind::Use(path, UseKind::Single(_)) = item.kind else {
                     return None;
                 };
-                if super::is_reexport(tcx, item) {
-                    return None;
-                }
                 // A binding named through a module that holds it is that
                 // module's import, not its own JS module's.
                 let (mut named, mut holders) = (Vec::new(), Vec::new());
@@ -563,7 +563,7 @@ impl UsesWritten {
                         None => named.push(id),
                     }
                 }
-                Some((statement(item.span), named, holders))
+                Some((statement(item.span), named, holders, super::is_reexport(tcx, item)))
             })
             .collect();
         uses.sort_by_key(|(span, ..)| span.lo());
@@ -578,15 +578,26 @@ impl UsesWritten {
     }
 
     /// The first naming what `makes` says is of the import, or a binding
-    /// through a module `holds` says it is.
+    /// through a module `holds` says it is; a `pub use` where no other
+    /// `use` does (rd620).
     fn first(
         &self,
         makes: impl Fn(DefId) -> bool,
         holds: impl Fn(&bindings::Holder) -> bool,
     ) -> Option<rustc_span::Span> {
-        (self.uses.iter())
-            .find(|(_, named, holders)| named.iter().any(|&id| makes(id)) || holders.iter().any(&holds))
-            .map(|&(span, ..)| span)
+        let first = |reexport: bool| {
+            (self.uses.iter())
+                .filter(|use_| use_.3 == reexport)
+                .find(|(_, named, holders, _)| named.iter().any(|&id| makes(id)) || holders.iter().any(&holds))
+                .map(|&(span, ..)| span)
+        };
+        first(false).or_else(|| first(true))
+    }
+
+    /// Where each `use` and `pub use` statement is: a re-export written
+    /// where it is is at one, not one a function makes (rd620).
+    pub(in crate::lower) fn statements(&self) -> impl Iterator<Item = rustc_span::Span> + '_ {
+        self.uses.iter().map(|&(statement, ..)| statement)
     }
 
     /// The `use` of the import from the JS file `from`: of a library's item
@@ -626,7 +637,8 @@ impl UsesWritten {
     /// library's item a consumer imports from it (ADR 0100), or a binding's.
     /// Of a library's namespace, ADR 1037's unit struct, its methods',
     /// `use ..::ReactFiberReconciler;`'s; of another crate's module, each
-    /// binding's in it, `use art::transform;`'s (rd611, ADR 1063, amended).
+    /// item's in it, a binding's, `use art::transform;`'s (rd611, ADR 1063,
+    /// amended), or a library's function's, `use dep::action;`'s (rd620).
     fn imports_from(
         &self,
         tcx: TyCtxt<'_>,
@@ -647,7 +659,7 @@ impl UsesWritten {
             DefKind::Struct if !id.is_local() && crate::lower::classes::is_namespace(tcx, id) => {
                 (tcx.inherent_impls(id).iter()).any(|&imp| tcx.associated_item_def_ids(imp).iter().any(|&m| own(m)))
             }
-            DefKind::Mod if !id.is_local() => bindings_in(tcx, id).into_iter().any(own),
+            DefKind::Mod if !id.is_local() => items_in(tcx, id).into_iter().any(own),
             _ => own(id),
         }
     }
@@ -1129,16 +1141,14 @@ fn given_by_its_block(tcx: TyCtxt<'_>, def_id: LocalDefId) -> bool {
         if path.res == Res::Def(DefKind::Fn, def_id.to_def_id()))
 }
 
-/// The bindings another crate's module `module` declares: what a `use` of
-/// it imports from their JS modules (rd611).
-fn bindings_in(tcx: TyCtxt<'_>, module: DefId) -> Vec<DefId> {
+/// The items another crate's module `module` declares, not those it
+/// re-exports: what a `use` of it imports from their JS modules, its
+/// bindings' (rd611), and its functions' of a library rust-js compiled
+/// (rd620).
+fn items_in(tcx: TyCtxt<'_>, module: DefId) -> Vec<DefId> {
     (tcx.module_children(module).iter())
         .filter_map(|child| match child.res {
-            Res::Def(DefKind::Fn | DefKind::Static { .. }, binding)
-                if tcx.opt_parent(binding) == Some(module) && is_binding(tcx, binding) =>
-            {
-                Some(binding)
-            }
+            Res::Def(_, item) if tcx.opt_parent(item) == Some(module) => Some(item),
             _ => None,
         })
         .collect()

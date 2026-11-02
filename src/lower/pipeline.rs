@@ -1263,6 +1263,8 @@ pub fn lower_crate<'tcx>(
                 types_only: false,
                 reexports_alone: module == CRATE_MOD_ID && super::reexports::reexports_alone(tcx, module),
             };
+            // Each re-export among the imports (rd620).
+            super::reexports::place(tcx, &mut lowered.reexports, &uses, (&fns, &foreign, &paths), &written);
             // A class's prototype its load replaces, set right after its
             // constructor (#448, ADR 0761 amended).
             let owner_of = |constructor| fns[&constructor].owner.clone();

@@ -366,8 +366,9 @@ pub fn generic<M: ?Sized>(body: u32, manifest: &M) -> u32 {
   const app = readFileSync(join(dir, "app", "lib.js"), "utf8");
   // A run of them, from one module, one statement; a library's forwarder
   // from its own file, which re-exports it.
+  // The library's module's import where its `use` is, first.
+  expect(app).toContain('import * as Action from "../dep/action.js";\nexport { decode as decodeAction');
   expect(app).toContain(`export { decode as decodeAction, decode as decodeFormState, ping } from "../dep/action.js";
-
 export { decode as serverDecode } from "../dep/server.js";
 `);
   for (const kept of ["swapped(a, b)", "wraps(x)", "logs(n)", "holds(guard)", "holdsPlain(n)", "nested(x)", "counted(first)", "shows(n)", "bumped(point)", "discards(n)", "generic(body, manifest)"]) {

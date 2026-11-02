@@ -997,7 +997,7 @@ test("a module's default of another module's function is re-exported", async () 
   writeFileSync(join(dir, "only.rs"), "js::export_default!(super::page::page);\n");
   writeFileSync(join(dir, "page.rs"), "pub fn page() -> u32 {\n    1\n}\n\npub fn props() -> u32 {\n    2\n}\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  expect(readFileSync(join(dir, "index.js"), "utf8")).toContain('export { props } from "./page.js";\n\nexport { page as default } from "./page.js";');
+  expect(readFileSync(join(dir, "index.js"), "utf8")).toContain('export { props } from "./page.js";\nexport { page as default } from "./page.js";');
   expect(readFileSync(join(dir, "only.js"), "utf8")).toContain('export { page as default } from "./page.js";');
   const index = await import(join(dir, "index.js"));
   expect([index.default(), index.props()]).toEqual([1, 2]);
@@ -1305,7 +1305,8 @@ pub fn area(circle: &Circle) -> f64 {
   writeFileSync(join(dir, "index.rs"), "pub use crate::runtime as rt;\n");
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('import { area as _areaDEV } from "./shapes.js";\n');
+  // Its import where its own `use` is, after the `pub use`s before it.
+  expect(js).toContain('export * as math from "./math.js";\nimport { area as _areaDEV } from "./shapes.js";\n');
   expect(js).toContain(`export { area } from "./shapes.js";
 // A class, by its constructor.
 export { Circle } from "./shapes.js";

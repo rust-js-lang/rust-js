@@ -55,13 +55,13 @@ use oxc_ast::ast::{
     Argument, ArrayExpressionElement, ArrowFunctionBody, AssignmentTarget, AssignmentTargetMaybeDefault,
     BindingIdentifier, BindingPattern, BindingProperty, BindingRestElement, BlockStatement, CallExpression,
     CatchClause, CatchParameter, ChainElement, ComputedMemberExpression, Declaration, Directive, ExportFromDeclaration,
-    ExportSpecifier, Expression, ForStatementInit, ForStatementLeft, FormalParameter, FormalParameterKind,
-    FormalParameterRest, FormalParameters, FunctionBody, FunctionType, IdentifierName, ImportDeclaration,
-    ImportOrExportKind, JSXAttributeItem, JSXAttributeName, JSXAttributeValue, JSXChild, JSXClosingElement,
-    JSXClosingFragment, JSXElementName, JSXExpression, JSXIdentifier, JSXMemberExpressionObject, JSXOpeningElement,
-    JSXOpeningFragment, LabelIdentifier, ModuleExportName, ObjectExpression, ObjectPropertyKind, Program, PropertyKey,
-    PropertyKind, SimpleAssignmentTarget, Statement, StaticMemberExpression, StringLiteral, SwitchCase,
-    TemplateElement, TemplateElementValue, TemplateLiteral, VariableDeclarationKind, VariableDeclarator,
+    Expression, ForStatementInit, ForStatementLeft, FormalParameter, FormalParameterKind, FormalParameterRest,
+    FormalParameters, FunctionBody, FunctionType, IdentifierName, ImportDeclaration, JSXAttributeItem,
+    JSXAttributeName, JSXAttributeValue, JSXChild, JSXClosingElement, JSXClosingFragment, JSXElementName,
+    JSXExpression, JSXIdentifier, JSXMemberExpressionObject, JSXOpeningElement, JSXOpeningFragment, LabelIdentifier,
+    ObjectExpression, ObjectPropertyKind, Program, PropertyKey, PropertyKind, SimpleAssignmentTarget, Statement,
+    StaticMemberExpression, StringLiteral, SwitchCase, TemplateElement, TemplateElementValue, TemplateLiteral,
+    VariableDeclarationKind, VariableDeclarator,
 };
 use oxc_ast::builder::AstBuilder;
 use oxc_ast_visit::Visit;
@@ -115,7 +115,6 @@ pub fn emit(
         arms,
         tops,
         closing,
-        reexport_starts,
         imports,
         own_places,
     } = comments_of(module, sources);
@@ -135,10 +134,6 @@ pub fn emit(
     let b = &cx.b;
 
     let mut body = ArenaVec::new_in(b);
-    // What it re-exports, its `pub use`s, first, after what it imports, each
-    // where it's written, its comments before it (ADR 0240, amended).
-    let reexports = module.reexports.iter().zip(&reexport_starts);
-    body.extend(reexports.map(|(reexport, &start)| cx.reexport(reexport, start)));
     let mut items = module.items.as_slice();
     while let [item, rest @ ..] = items {
         match item {
@@ -440,11 +435,9 @@ struct Commented {
     tops: std::collections::HashMap<u32, u32>,
     /// Each object literal's `}` and the comments before it (`closing::end_of`).
     closing: closing::Closing,
-    /// Where each re-export is printed, before every other node and comment
-    /// of the module, its own comments there.
-    reexport_starts: Vec<u32>,
-    /// The comments before each import's `use`, by where it's written: in
-    /// the header, above its line (rd92).
+    /// The comments before each import's `use`, and each re-export's `pub
+    /// use`, by where it's written: in the header, above its line (rd92,
+    /// rd620).
     imports: std::collections::HashMap<u32, Vec<String>>,
     /// Each statement, by its span, that starts where one it's in starts and
     /// has comments inside it of its own, before nothing printed of it,
@@ -502,10 +495,11 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
     starts.extend(parts.keys().copied());
     starts.extend(case_starts.iter().copied());
     starts.extend(pattern_starts);
-    // Each import's `use`, which the comments before it are above the
-    // import of, in the header (rd92).
+    // Each import's `use`, and each re-export's, which the comments before
+    // it are above the line of, in the header (rd92, rd620).
     let import_starts: std::collections::HashSet<u32> = (module.imports.iter().map(|i| i.span))
         .chain(module.packages.iter().map(|p| p.span))
+        .chain(module.reexports.iter().map(|r| r.span))
         .filter(|span| !span.is_none())
         .map(|span| span.lo)
         .collect();
@@ -997,10 +991,24 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             // amended), whose blank line before is what's after it's.
             own.retain(|c| c.written);
             // An import's, in the header, above its line.
+            // A re-export's doc comment, a run of `///` lines, its JSDoc, as an
+            // item's is (`jsdoc`).
             if import_starts.contains(&at) {
-                let texts = own
-                    .iter()
-                    .map(|c| crate::comments::in_js(&sources.text[c.lo as usize..c.hi as usize]));
+                let written = |c: &crate::program::Comment| &sources.text[c.lo as usize..c.hi as usize];
+                let mut texts = Vec::new();
+                let mut i = 0;
+                while i < own.len() {
+                    let (run, lines) = doc_lines(&own[i..], &sources.text);
+                    if run > 0
+                        && let Some(jsdoc) = crate::comments::jsdoc(&lines)
+                    {
+                        texts.push(jsdoc);
+                        i += run;
+                        continue;
+                    }
+                    texts.push(crate::comments::in_js(written(&own[i])));
+                    i += 1;
+                }
                 imports.entry(at).or_default().extend(texts);
                 continue;
             }
@@ -1082,15 +1090,9 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                 {
                     pieces.push(blank(&text));
                 }
-                let is_doc_line =
-                    |c: &crate::program::Comment| c.doc && sources.text[c.lo as usize..].starts_with("///");
-                let run = own[i..].iter().take_while(|c| is_doc_line(c)).count();
-                let lines: Vec<&str> = (own[i..i + run].iter())
-                    .map(|c| &sources.text[c.lo as usize..c.hi as usize])
-                    .collect();
                 // A doc comment's lines, before one item: one JSDoc of them,
                 // or each as written where JS can't hold one (`jsdoc`).
-                let mut lines: Vec<&str> = lines.iter().map(|l| l.trim_start_matches("///")).collect();
+                let (run, mut lines) = doc_lines(&own[i..], &sources.text);
                 if noinline && run > 0 && i + run == own.len() {
                     lines.push(NOINLINE);
                     said = true;
@@ -1225,28 +1227,6 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         made.set_followed_by_newline(true);
         found.push(made);
     }
-    // Each re-export, printed first (ADR 0240), at a place of its own before
-    // every other's, its comments with it: at its own, where it's written,
-    // the comments oxc keeps of a block of only comments before it, which
-    // it prints before the first node past them, would print above it.
-    let mut free = (0..).filter(|at| !spans.iter().any(|&(lo, _)| lo == *at) && !starts.contains(at));
-    let reexport_starts: Vec<u32> = (module.reexports.iter())
-        .map(|reexport| match reexport.span.is_none() {
-            true => reexport.span.lo,
-            false => free.next().expect("a free place"),
-        })
-        .collect();
-    for (reexport, &key) in module.reexports.iter().zip(&reexport_starts) {
-        if reexport.span.is_none() {
-            continue;
-        }
-        for made in found.iter_mut().filter(|c| c.attached_to == reexport.span.lo) {
-            made.attached_to = key;
-        }
-        if let Some(top) = tops.remove(&reexport.span.lo) {
-            tops.insert(key, top);
-        }
-    }
     Commented {
         text,
         comments: found,
@@ -1254,10 +1234,21 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         arms: arm_comments,
         tops,
         closing,
-        reexport_starts,
         imports,
         own_places,
     }
+}
+
+/// The run of `///` doc comment lines `own` starts with, and each one's text
+/// past its `///`: what's one JSDoc before an item, or a re-export (`jsdoc`).
+fn doc_lines<'s>(own: &[crate::program::Comment], text: &'s str) -> (usize, Vec<&'s str>) {
+    let run = (own.iter())
+        .take_while(|c| c.doc && text[c.lo as usize..].starts_with("///"))
+        .count();
+    let lines = (own[..run].iter())
+        .map(|c| text[c.lo as usize..c.hi as usize].trim_start_matches("///"))
+        .collect();
+    (run, lines)
 }
 
 /// Where a comment of `own_places`' `i`th statement is kept until that

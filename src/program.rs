@@ -107,6 +107,11 @@ pub struct Reexport {
     pub named: Vec<(String, String)>,
     /// The `pub use` it's of, which its comments are before.
     pub span: js::Span,
+    /// Where it's among the module's imports, as JS loads them (ADR 1063,
+    /// amended, rd620): its `pub use`, or a `use` before it that names
+    /// what it's from, a namespace's forwarding methods' `use
+    /// crate::react_portal;`.
+    pub at: js::Span,
 }
 
 pub struct LoweredImport {

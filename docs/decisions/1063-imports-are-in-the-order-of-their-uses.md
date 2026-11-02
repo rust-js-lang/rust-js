@@ -184,3 +184,19 @@ a module of bindings places its import", both before what sorts first;
 mutations `imports-namespace-use-unplaced` and
 `imports-module-use-unplaced`.
 
+## Amendment: re-exports are among the imports, where the source names them (rd620)
+
+React's reconciler port writes `use crate::react_portal;` where upstream writes `export {createPortal} from './ReactPortal';`, before `import {registerDefaultIndicator} from './ReactFiberAsyncAction';`. Its namespace's forwarding method makes the `export { createPortal } from "./ReactPortal.js"` (rd292b). The same holds for ReactTestSelectors, ReactFiberHooks and ReactFiberErrorLogger. But every `export {..} from` printed after every import: the printer put re-exports first in the module's code, below the header that holds the imports (ADR 0240). JS loads a module's imports and re-exports in the order they're written, so that order was a printer's accident, not the program's.
+
+**A re-export is printed among the imports, at the first place the source names what it's from** (`program::Reexport::at`), as an import is:
+
+- a `pub use` at itself;
+- any re-export at an earlier `use` that names its module or an item in it (`UsesWritten::module_at`), or the package it's from (`package_at`). That covers a namespace's forwarding methods (rd292b) and a function that only forwards (rd575, ADR 1064), whose own spans are in the module's code;
+- a `pub use` counts as a `use` of what it names for the module's own code too, `pub use shapes::area;`, so that import is placed at it, before its re-export;
+- a `use` of a library's module, `use dep::action;`, places the import of that module's own functions, as a binding module's did (rd611): `items_in`, which was `bindings_in`.
+
+Each is one line in the header block, `export { a, b as c } from "x";` or `export * as ns from "x";`, with no blank line between, as upstream writes them. Its comments are above it, and a doc comment is a JSDoc, as an item's is. An import and a re-export placed at one `use` print the import first. One the source names neither way is after every placed one, as before (ADR 1063).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, as the imports' order is. What a module's load reads may depend on which module loads first, and the source now says it.
+
+Held by `test/namespaces.test.ts`, `test/declarations-libraries.test.ts`, `test/modules.test.ts`, `test/cargo-link.test.ts`'s "a namespace's forwarding method's re-export is where its module's use is" (`use crate::portal;` before `use crate::aaa::a;`: the export prints first), the guide's modules.md and building.md, and snapshot `modules`. Mutations in `to_oxc/header.ts`, `lower/pipeline.ts` and `lower/analysis/naming.ts`.

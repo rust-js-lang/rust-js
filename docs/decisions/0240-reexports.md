@@ -4,6 +4,9 @@ Status: Accepted; amended by [0874](0874-a-modules-pub-uses-are-re-exported-as-w
 (every `pub use` of what has JS, in the order written, a run of one
 module's one statement, or refused; a JS module's namespace too).
 Amended: a re-export printed first takes no comment of a block before it.
+Amended by [1063](1063-imports-are-in-the-order-of-their-uses.md) (rd620):
+re-exports are printed among the imports, where the source names them,
+no longer first in the module's code.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
