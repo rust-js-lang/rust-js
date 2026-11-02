@@ -4,7 +4,8 @@ Status: Accepted. Extends [0275](0275-nullable-writes-null.md) and
 [0772](0772-a-nullable-cell-field-writes-null.md), whose nullable field's
 `None` was `null` where its struct is made too. Amended: given another
 optional field's value, it's that value as it is, below; a cell field's
-`get()` too.
+`get()` too; a nullable field each constructor sets first is present
+(rd628).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: an absent key,
 `undefined` and `null` are each `None` to the program, which reads any of
@@ -330,3 +331,50 @@ of the dictionaries a function only takes too, `RequestInit`'s `body`,
 `MouseEventInit`'s `relatedTarget`: the user's decision ([ADR
 0275](0275-nullable-writes-null.md), amended), so a program can give the
 `null` each takes, `Some(None)`.
+
+## Amendment (2026-11-02): a nullable field each constructor sets first is present (rd628)
+
+React's Flight client makes its response with a constructor the port
+writes, `Class::of(function::with_this(..))`, which sets each field as it
+begins, `this._moduleLoading = moduleLoading ?? null;`. A nullable field
+that isn't optional is `null` for `None` where a literal makes its struct
+(ADR 0772), so its plain read is `null` or a value; but a `Cell` field of
+a struct JS makes may be absent, as a constructor needn't set it, so its
+`get()` was given a nullable parameter `?? null`,
+`prepareDestinationForModule(response._moduleLoading ?? null, ..)`, where
+upstream gives it as it is, and its `.d.ts` said `_moduleLoading?:
+unknown | null | undefined`.
+
+**A nullable field that each constructor of its struct the crate writes
+sets first is present, `T | null`** (`classes::set_where_constructed`,
+in `classes/constructors.rs`, which decides what a class's constructor
+gives): set by a cell's `set` among the constructor's leading statements,
+after `let this: &S = unsafe { js::cast(this) };`, before any statement
+gives `this`, as it is or cast, to anything, a call's argument or what a
+closure captures, returns, or reads the field. Nothing else can see the
+instance before then, so no read finds it absent. Its `get()` is `null` or
+a value (`Given::Nulled`), given on as it is, to a nullable parameter,
+`prepareDestinationForModule(response._moduleLoading, ..)`, and to another
+nullable cell, `twice.both = response.moduleLoading`; its `.d.ts` says
+`_moduleLoading: unknown | null`, which JS that makes one is held to. A
+field set later, in an `if`, by only one of two constructors, or never,
+and an optional one, absent until set by this decision, stay as they
+were. A value a cell's handle held is written with that MIR says is `null`
+or a value as it is, a getter's read among them, where `defined()` kept
+a getter's read as it was (`std_types/cell.rs`). A library's such field
+read in a consumer crate is given `?? null` still: the fact is the
+crate's own.
+
+Case ([ADR 0262](0262-when-rust-and-js-disagree.md)): none. Every read
+sees what Rust's `Cell` holds, `null` for `None`; only the `?? null` and
+the `?` that never applied go.
+
+Held by `test/js-constructors.test.ts`'s "a nullable field each
+constructor sets first is present, given on as it is", run; mutations
+`set-first-of-one-constructor`, `set-first-past-this-given`,
+`set-first-past-cast-given`, `set-first-past-return`,
+`set-first-captures-unread`, `set-first-read-before`, `set-first-optional`
+(`classes/constructors.ts`), `constructed-get-coalesced`
+(`mir/structure.ts`), `constructed-get-unknown` (`mir/rvalues.ts`),
+`constructed-declared-optional` (`declarations.ts`) and
+`nulled-cell-write-of-a-getter-coalesced` (`std_types/cell.ts`).

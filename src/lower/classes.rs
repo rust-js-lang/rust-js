@@ -22,7 +22,7 @@ mod prototypes;
 mod states;
 mod subclasses;
 use constructors::gives_instance;
-pub(crate) use constructors::refuse_counted_instances;
+pub(crate) use constructors::{refuse_counted_instances, set_where_constructed};
 pub(in crate::lower) use defaults::{prototype_defaults, take_default};
 pub(crate) use namespaces::{names_namespace, taken_apart, unread_namespaces};
 pub(crate) use prototypes::{PrototypeSet, set_alone, set_prototypes, with_prototype_members};

@@ -1102,6 +1102,14 @@ export function ratio(a, b) {
   through a `let r = &context.renderer;` or a helper given `&Cell` too: a
   handle on it stores `value ?? null`
   ([ADR 0791](../../decisions/0791-a-cells-storage-says-what-it-stores.md)).
+  A nullable cell field that each of the crate's constructors of its
+  struct, `Class::of(function::with_this(..))`, sets among its first
+  statements, before it gives `this` or reads the field, is present:
+  its `.d.ts` says `_moduleLoading: unknown | null`, and its `get()` is
+  given on as it is, `prepareDestinationForModule(response._moduleLoading,
+  ..)`; one set later, in an `if`, or by only some of them, may be
+  absent, and is given `?? null`
+  ([ADR 0810](../../decisions/0810-an-optional-nullable-field-is-absent-until-set.md), amended).
   What's never `undefined` is stored as it is, an object made there or a
   `Some`'s value, `context.Consumer = { $$typeof: REACT_CONSUMER_TYPE,
   _context: context }`, and a `map`'s `None` is `null` where it's made,

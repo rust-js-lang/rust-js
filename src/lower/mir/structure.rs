@@ -727,7 +727,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             Value::Expr(e) => Value::Expr(crate::lower::calls::given_by(self.tcx, func_ty, e)),
                             value => value,
                         };
-                        let value = self.nullable_written(state, *destination, value, false, span)?;
+                        // A nullable field its struct's constructors each set
+                        // first, `null` or a value already (rd628).
+                        let nulled = self.gets_constructed(state, (func, &args[..]));
+                        let value = self.nullable_written(state, *destination, value, nulled, span)?;
                         self.mir_store(state, *destination, value, span, &mut called)?;
                         // Each box given, copied back once the call returns.
                         if !state.copy_backs.is_empty() {

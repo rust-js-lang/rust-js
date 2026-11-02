@@ -297,8 +297,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Some(..)` set through a variable holding a nullable field's handle is `?? null` where tidy writes the field, `context.Consumer = consumerOf(context) ?? null`",
     file: "src/lower/std_types/cell.rs",
-    find: "            _ if given_nulled && !matches!(value.kind, js::ExprKind::Undefined) => value.defined(),\n",
-    replace: "",
+    find: "            _ if given_nulled && !matches!(value.kind, js::ExprKind::Undefined) => Expr {\n",
+    replace: "            _ if false => Expr {\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
@@ -827,5 +827,13 @@ export const mutations: Mutation[] = [
     find: "            && matches!(\n                known,\n                Std::CellReplace\n",
     replace: "            && false\n            && matches!(\n                known,\n                Std::CellReplace\n",
     tests: ["test/classes-flattened-state.test.ts", "-t", "refused"],
+  },
+  {
+    name: "nulled-cell-write-of-a-getter-coalesced",
+    breaks: "a JS-made struct's field read MIR says is `null` or a value, given a nullable cell through its handle held, is written `?? null` (rd628)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                facts: value.facts.with(js::Known::Defined),\n                ..value\n            },\n",
+    replace: "                ..value.defined()\n            },\n",
+    tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
   },
 ];

@@ -561,4 +561,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^owner_handle.rs$"],
   },
+  {
+    name: "constructed-get-coalesced",
+    breaks: "a nullable field each constructor of its struct sets first, read for a nullable parameter, is given `?? null`: `prepare(response.moduleLoading ?? null)` (rd628)",
+    file: "src/lower/mir/structure.rs",
+    find: "                        let nulled = self.gets_constructed(state, (func, &args[..]));\n",
+    replace: "                        let nulled = false;\n",
+    tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
+  },
 ];

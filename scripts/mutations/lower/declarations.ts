@@ -354,8 +354,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `#[rust_js::nullable]` field is declared `?: T`, so a TypeScript caller's `{ label: null }`, which rust-js reads as `None`, doesn't typecheck",
     file: "src/lower/declarations.rs",
-    find: '                        true => (true, json!({ "kind": "union", "types": [inner, keyword("null")] })),\n',
-    replace: "                        true => (true, inner),\n",
+    find: '                        true => (!present, json!({ "kind": "union", "types": [inner, keyword("null")] })),\n',
+    replace: "                        true => (!present, inner),\n",
     tests: ["test/declarations.test.ts", "-t", "null for an Option"],
   },
   {
@@ -1086,5 +1086,13 @@ export const mutations: Mutation[] = [
     find: "        DefKind::TyAlias => declares_written_alias(tcx, did),",
     replace: "        DefKind::TyAlias => false,",
     tests: ["test/declarations-libraries.test.ts", "-t", "declared as written"],
+  },
+  {
+    name: "constructed-declared-optional",
+    breaks: "a nullable field each constructor of its struct sets first is declared optional, `moduleLoading?: unknown | null | undefined`, though it's present (rd628)",
+    file: "src/lower/declarations.rs",
+    find: "                        true => (!present, json!({ \"kind\": \"union\", \"types\": [inner, keyword(\"null\")] })),\n",
+    replace: "                        true => (!present || true, json!({ \"kind\": \"union\", \"types\": [inner, keyword(\"null\")] })),\n",
+    tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
   },
 ];

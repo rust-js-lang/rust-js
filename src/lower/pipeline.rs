@@ -434,6 +434,8 @@ pub fn lower_crate<'tcx>(
         )
         .collect();
     let struct_literals = super::aggregates::struct_literals(tcx);
+    // The nullable fields each constructor of their struct sets first (rd628).
+    let constructed = super::classes::set_where_constructed(tcx, &named_anywhere);
     let flattened_states = super::bindings::flattened_states(tcx);
     let crate_facts = CrateFacts {
         flattened_states: &flattened_states,
@@ -490,6 +492,7 @@ pub fn lower_crate<'tcx>(
         forwarded: &forwarded,
         local_consts: &local_consts,
         struct_literals: &struct_literals,
+        constructed: &constructed,
         loads_in_cycles: Default::default(),
         nulled_params: &nulled_params,
     };
@@ -1363,7 +1366,7 @@ pub fn lower_crate<'tcx>(
                 &paths,
                 (&declared_reexports, &forwarded),
                 &aliased_items,
-                (ref_cells, &counted, &null_fields),
+                (ref_cells, &counted, &null_fields, &constructed),
                 (&fns, module_held, &module_variables),
             );
             // A `Drop` impl's `drop` of this module no other module calls,

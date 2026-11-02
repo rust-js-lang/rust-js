@@ -825,9 +825,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an optional nullable cell field's `get()` given another is `?? null`, `d._debugThenableState ?? null` (ADR 0810, amended)",
     file: "src/lower/mir/rvalues.rs",
-    find: "            && self.recognition().classify(def_id, generic_args) == Some(crate::lower::Std::CellGet)\n",
-    replace:
-      "            && self.recognition().classify(def_id, generic_args) == Some(crate::lower::Std::CellGet) && false\n",
+    find: "                true => Given::Optional,\n                false if self.krate.constructed.contains(&field.did) => Given::Nulled,\n",
+    replace: "                true => Given::Unknown,\n                false if self.krate.constructed.contains(&field.did) => Given::Nulled,\n",
     tests: [
       "test/lowering-optional-fields.test.ts",
       "-t",
@@ -960,5 +959,13 @@ export const mutations: Mutation[] = [
       "-t",
       "each field is its own symbol's"
     ]
+  },
+  {
+    name: "constructed-get-unknown",
+    breaks: "a nullable field each constructor of its struct sets first, read for another nullable cell, is given `?? null`: `twice.both = response.moduleLoading ?? null` (rd628)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                false if self.krate.constructed.contains(&field.did) => Given::Nulled,\n",
+    replace: "",
+    tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
   },
 ];

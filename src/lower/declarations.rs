@@ -53,9 +53,10 @@ pub(super) fn module<'tcx>(
     files: &HashMap<LocalModId, Vec<String>>,
     (reexports, forwarded): (&[Reexport], &HashMap<DefId, DefId>),
     aliases: &[(DefId, (String, String))],
-    (ref_cells, counted, null_fields): (
+    (ref_cells, counted, null_fields, constructed): (
         &super::drops::RefCells<'tcx>,
         &super::analysis::Counted<'tcx>,
+        &HashSet<DefId>,
         &HashSet<DefId>,
     ),
     (fns, held, variables): (
@@ -74,6 +75,7 @@ pub(super) fn module<'tcx>(
         ref_cells,
         counted,
         null_fields,
+        constructed,
         imports: BTreeSet::new(),
         library_imports: BTreeSet::new(),
         module_imports: BTreeSet::new(),
@@ -367,6 +369,9 @@ struct Declarations<'a, 'tcx> {
     counted: &'a super::analysis::Counted<'tcx>,
     /// The fields a `js::null()` is written to, `| null` (ADR 0935, amended).
     null_fields: &'a HashSet<DefId>,
+    /// The nullable fields each constructor of their struct sets first,
+    /// present, `T | null` (`classes::set_where_constructed`, rd628).
+    constructed: &'a HashSet<DefId>,
     /// The crate's modules that have a file, by their path: those whose
     /// types another's declarations import (ADR 0210).
     files: &'a HashMap<LocalModId, Vec<String>>,
@@ -735,8 +740,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     let inner = self.as_written(written.and_then(|w| self.written_option(w)), |out| out.ts(inner));
                     // Nullable, or a plain one a `js::null()` is written
                     // to, which may hold `null` (ADR 0935, amended).
+                    // One its struct's constructors each set first is present
+                    // (rd628).
+                    let present = self.constructed.contains(&field.did);
                     match is_nullable(self.tcx, field) || nested || self.null_fields.contains(&field.did) {
-                        true => (true, json!({ "kind": "union", "types": [inner, keyword("null")] })),
+                        true => (!present, json!({ "kind": "union", "types": [inner, keyword("null")] })),
                         false => (true, inner),
                     }
                 }

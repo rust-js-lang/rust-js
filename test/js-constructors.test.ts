@@ -15,13 +15,22 @@ beforeAll(buildReact, 600_000);
 
 const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
 
-/** `source` compiled, its JS, and the module it is, loaded. */
-async function compiled(name: string, source: string): Promise<{ js: string; lib: any }> {
+/** `source` compiled, with `--declarations`, beside the JS modules `files` its bindings import: its JS, its `.d.ts`, and the module it is, loaded. */
+async function compiled(
+  name: string,
+  source: string,
+  files: Record<string, string> = {},
+): Promise<{ js: string; dts: string; lib: any }> {
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), source);
-  const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs], root, 600_000);
+  for (const [file, text] of Object.entries(files)) writeFileSync(join(dir, file), text);
+  const built = runSync([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs], root, 600_000);
   expect(built.code, built.stderr).toBe(0);
-  return { js: readFileSync(join(dir, "lib.js"), "utf8"), lib: await import(join(dir, "lib.js")) };
+  return {
+    js: readFileSync(join(dir, "lib.js"), "utf8"),
+    dts: readFileSync(join(dir, "lib.d.ts"), "utf8"),
+    lib: await import(join(dir, "lib.js")),
+  };
 }
 
 /** What rust-js says of `source`, which it refuses. */
@@ -437,6 +446,249 @@ thread_local! {
   expect([event.target, event.other]).toEqual([null, null]);
   const named = new lib.syntheticEvent("div");
   expect([named.target, named.other]).toEqual(["div", "div"]);
+});
+
+// rd628: a nullable cell field each constructor of its struct sets first,
+// before anything is given its `this` or reads the field, is present, `T |
+// null`: React's Flight client's `prepareDestinationForModule(
+// response._moduleLoading, ..)` reads it as it is, where it was `?? null`.
+// One read before it's set, set in an `if`, after its `this` is given, cast
+// or not, or after a `return`, only by one of two constructors, or never,
+// may be absent, so it's still `?? null`.
+test("a nullable field each constructor sets first is present, given on as it is", async () => {
+  const { js, dts, lib } = await compiled(
+    "constructor-set-first",
+    `use std::cell::Cell;
+
+use js::{Class, Unknown, function};
+
+pub struct Response {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub module_loading: Cell<Option<&'static Unknown>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub nonce: Cell<Option<&'static Unknown>>,
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub task: Cell<Option<&'static Unknown>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub copy: Cell<Option<&'static Unknown>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub read_first: Cell<Option<&'static Unknown>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub in_if: Cell<Option<&'static Unknown>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub after_given: Cell<Option<&'static Unknown>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub never: Cell<Option<&'static Unknown>>,
+}
+
+unsafe impl js::Defined for Response {}
+
+pub struct Twice {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub both: Cell<Option<&'static Unknown>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub one: Cell<Option<&'static Unknown>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub late: Cell<Option<&'static Unknown>>,
+}
+
+unsafe impl js::Defined for Twice {}
+
+pub struct Early {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub value: Cell<Option<&'static Unknown>>,
+}
+
+unsafe impl js::Defined for Early {}
+
+pub struct Held {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub held: Cell<Option<&'static Unknown>>,
+}
+
+unsafe impl js::Defined for Held {}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./config.js#prepare", rust_js::nullable(module_loading))]
+fn prepare(module_loading: Option<&'static Unknown>) -> &'static Unknown {
+    let _ = module_loading;
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./config.js#register")]
+fn register(response: &'static Response) {
+    let _ = response;
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./config.js#keep")]
+fn keep(value: Option<&'static Unknown>) {
+    let _ = value;
+    unreachable!()
+}
+
+type Made = fn(Option<&'static Unknown>, bool) -> Response;
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::name = "Response")]
+    pub static RESPONSE: &'static Class<Made> = Class::of(function::with_this(
+        |this, (module_loading, dev): (Option<&'static Unknown>, bool)| {
+            // Safety: \`new\` gives its constructor the object it makes.
+            let response: &'static Response = unsafe { js::cast(this) };
+            let chunks = js::unknown("chunks");
+            response.module_loading.set(module_loading);
+            response.nonce.set(Some(chunks));
+            response.task.set(None);
+            response.copy.set(response.read_first.get());
+            response.read_first.set(module_loading);
+            if dev {
+                response.in_if.set(module_loading);
+            }
+            register(response);
+            response.after_given.set(module_loading);
+            response
+        },
+    ));
+    #[cfg_attr(rust_js, rust_js::name = "Twice")]
+    pub static TWICE: &'static Class<fn(Option<&'static Unknown>) -> Twice> = Class::of(function::with_this(
+        |this, (value,): (Option<&'static Unknown>,)| {
+            // Safety: \`new\` gives its constructor the object it makes.
+            let twice: &'static Twice = unsafe { js::cast(this) };
+            twice.both.set(value);
+            twice.one.set(value);
+            keep(this);
+            twice.late.set(value);
+            twice
+        },
+    ));
+    #[cfg_attr(rust_js, rust_js::name = "Once")]
+    pub static ONCE: &'static Class<fn(Option<&'static Unknown>) -> Twice> = Class::of(function::with_this(
+        |this, (value,): (Option<&'static Unknown>,)| {
+            // Safety: \`new\` gives its constructor the object it makes.
+            let twice: &'static Twice = unsafe { js::cast(this) };
+            twice.both.set(value);
+            twice.late.set(value);
+            twice
+        },
+    ));
+    #[cfg_attr(rust_js, rust_js::name = "Early")]
+    pub static EARLY: &'static Class<fn(Option<&'static Early>) -> Early> = Class::of(function::with_this(
+        |this, (other,): (Option<&'static Early>,)| {
+            // Safety: \`new\` gives its constructor the object it makes.
+            let early: &'static Early = unsafe { js::cast(this) };
+            if let Some(other) = other {
+                return other;
+            }
+            early.value.set(None);
+            early
+        },
+    ));
+    #[cfg_attr(rust_js, rust_js::name = "Held")]
+    pub static HELD: &'static Class<fn(bool) -> Held> = Class::of(function::with_this(|this, (now,): (bool,)| {
+        // Safety: \`new\` gives its constructor the object it makes.
+        let held: &'static Held = unsafe { js::cast(this) };
+        let given = move || keep(this);
+        held.held.set(None);
+        if now {
+            given();
+        }
+        held
+    }));
+}
+
+pub fn task(response: &Response) -> &'static Unknown {
+    prepare(response.task.get())
+}
+
+pub fn held(held: &Held) -> &'static Unknown {
+    prepare(held.held.get())
+}
+
+pub fn copy_present(response: &Response, twice: &Twice) {
+    twice.both.set(response.module_loading.get());
+}
+
+pub fn copy_absent(response: &Response, twice: &Twice) {
+    twice.both.set(response.read_first.get());
+}
+
+pub fn module_loading(response: &Response) -> &'static Unknown {
+    prepare(response.module_loading.get())
+}
+
+pub fn nonce(response: &Response) -> &'static Unknown {
+    prepare(response.nonce.get())
+}
+
+pub fn copy(response: &Response) -> &'static Unknown {
+    prepare(response.copy.get())
+}
+
+pub fn read_first(response: &Response) -> &'static Unknown {
+    prepare(response.read_first.get())
+}
+
+pub fn in_if(response: &Response) -> &'static Unknown {
+    prepare(response.in_if.get())
+}
+
+pub fn after_given(response: &Response) -> &'static Unknown {
+    prepare(response.after_given.get())
+}
+
+pub fn never(response: &Response) -> &'static Unknown {
+    prepare(response.never.get())
+}
+
+pub fn both(twice: &Twice) -> &'static Unknown {
+    prepare(twice.both.get())
+}
+
+pub fn one(twice: &Twice) -> &'static Unknown {
+    prepare(twice.one.get())
+}
+
+pub fn late(twice: &Twice) -> &'static Unknown {
+    prepare(twice.late.get())
+}
+
+pub fn value(early: &Early) -> &'static Unknown {
+    prepare(early.value.get())
+}
+`,
+    {
+      "config.js":
+        "export const prepare = (m) => (m === null ? 'null' : m === undefined ? 'undefined' : m);\n" +
+        "export const register = () => {};\n" +
+        "export const keep = () => {};\n",
+    },
+  );
+  for (const read of ["response.moduleLoading", "response.nonce", "response.copy", "twice.both"]) {
+    expect(js).toContain(`  return prepare(${read});\n`);
+  }
+  for (const read of ["task", "readFirst", "inIf", "afterGiven", "never"]) {
+    expect(js).toContain(`  return prepare(response.${read} ?? null);\n`);
+  }
+  // Another nullable cell is given it as it is.
+  expect(js).toContain("  twice.both = response.moduleLoading;\n");
+  expect(js).toContain("  twice.both = response.readFirst ?? null;\n");
+  for (const read of ["twice.one", "twice.late", "early.value", "held.held"]) {
+    expect(js).toContain(`  return prepare(${read} ?? null);\n`);
+  }
+  // Rust gives each `None` as `null`, absent or not.
+  const response = new lib.Response(undefined, false);
+  const reads = [lib.moduleLoading, lib.copy, lib.readFirst, lib.inIf, lib.afterGiven, lib.never];
+  expect(reads.map((f) => f(response))).toEqual(Array(6).fill("null"));
+  expect(lib.nonce(response)).toBe("chunks");
+  const once = new lib.Once(undefined);
+  expect([lib.both(once), lib.one(once), lib.late(once)]).toEqual(["null", "null", "null"]);
+  expect(lib.value(new lib.Early({}))).toBe("null");
+  // Its `.d.ts` says so: present, `T | null`.
+  for (const field of ["moduleLoading", "nonce", "copy", "both"]) {
+    expect(dts).toContain(`  ${field}: unknown | null;\n`);
+  }
+  for (const field of ["task", "readFirst", "inIf", "afterGiven", "never", "one", "late", "value", "held"]) {
+    expect(dts).toContain(`  ${field}?: unknown | null | undefined;\n`);
+  }
 });
 
 // What a closure's `#[rust_js::nullable(..)]` names is a binding of its own

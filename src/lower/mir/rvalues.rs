@@ -1191,6 +1191,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.stored_from(state, operand).0
     }
 
+    /// The field a call of `func` with `args` reads whole, a `Cell` field's
+    /// `get()`, `return_fiber.debug_task.get()`, of the field the `get`
+    /// is lent (`borrowed`).
+    pub(super) fn cell_field_got(
+        &self,
+        state: &State<'_, 'tcx>,
+        (func, args): (&Operand<'tcx>, &[rustc_span::Spanned<Operand<'tcx>>]),
+    ) -> Option<&'tcx ty::FieldDef> {
+        let (def_id, generic_args) = fn_def(func.ty(state.body, self.tcx))?;
+        if self.recognition().classify(def_id, generic_args) != Some(crate::lower::Std::CellGet) {
+            return None;
+        }
+        let [arg] = args else { return None };
+        self.place_field(state, self.borrowed(state, &arg.node)?)
+    }
+
+    /// Whether a call of `func` with `args` reads a nullable field each
+    /// constructor of its struct sets first, `null` or a value from where
+    /// it's made on (`classes::set_where_constructed`, rd628):
+    /// `response._moduleLoading` given on as it is.
+    pub(super) fn gets_constructed(
+        &self,
+        state: &State<'_, 'tcx>,
+        call: (&Operand<'tcx>, &[rustc_span::Spanned<Operand<'tcx>>]),
+    ) -> bool {
+        (self.cell_field_got(state, call)).is_some_and(|field| self.krate.constructed.contains(&field.did))
+    }
+
     /// Of what `stored_given` says is `null` or a value, the function's own
     /// nullable parameter it's that parameter given on, by index: `null` or
     /// a value only where that one is, each call of the function giving it
@@ -1312,15 +1340,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A `Cell` field's `get()`, `return_fiber.debug_task.get()`: what the
         // field holds, as a read of a plain one (ADR 0810, amended).
+        // One each constructor of its struct sets first is `null` or a value,
+        // present from where it's made on (rd628).
         if let Some((func, args)) = call
-            && let Some((def_id, generic_args)) = fn_def(func.ty(state.body, self.tcx))
-            && self.recognition().classify(def_id, generic_args) == Some(crate::lower::Std::CellGet)
-            && let [arg] = &args[..]
-            && let Some(borrowed) = self.borrowed(state, &arg.node)
-            && let Some(field) = self.place_field(state, borrowed)
+            && let Some(field) = self.cell_field_got(state, (func, &args[..]))
         {
             let given = match bindings::is_optional(self.tcx, field) {
                 true => Given::Optional,
+                false if self.krate.constructed.contains(&field.did) => Given::Nulled,
                 false => Given::Unknown,
             };
             return (given, None);

@@ -116,7 +116,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             js::ExprKind::Handle(_, storage) => storage.written(value, given_nulled),
             // A nullable thread-local's, its `None` `null` (ADR 0586, amended).
             _ if null_for_none => js::Storage::NullForNone.written(value, given_nulled),
-            _ if given_nulled && !matches!(value.kind, js::ExprKind::Undefined) => value.defined(),
+            // A JS-made struct's field read among them, a getter's that may
+            // be `undefined` elsewhere, MIR says it isn't here (rd628).
+            _ if given_nulled && !matches!(value.kind, js::ExprKind::Undefined) => Expr {
+                facts: value.facts.with(js::Known::Defined),
+                ..value
+            },
             _ => value,
         };
         Ok(Some(match known {
