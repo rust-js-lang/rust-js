@@ -273,4 +273,52 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^untagged_null_option_held.rs$"],
   },
+  {
+    name: "held-capture-unseen",
+    breaks:
+      "a closure's capture of a nested field is read as ADR 0051's box in its body, `stringify($someValue(captured))` of a `$some` made where it's captured, where the field is read as it's held, `stringify(entry.value)` (rd631)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "        let captured = self.tcx.closure_captures(local).get(capture.as_usize())?;\n",
+    replace: "        let captured = self.tcx.closure_captures(local).get(capture.as_usize()).filter(|_| false)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_field_captured.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "held-capture-given-boxed",
+    breaks:
+      "a closure's capture of a nested field its maker reads as the box is given it boxed, which its body reads as it's held: `once`'s `Some(None)` name is `$some(null)`, shown `[object Object]` (rd631)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "                let boxed = self.value_expr(value, Span::default())?;\n                Ok(Value::Expr(self.held_of_boxed(boxed, out)))\n",
+    replace: "                Ok(value)\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_field_captured.rs$"],
+  },
+  {
+    name: "held-capture-by-value-unseen",
+    breaks:
+      "a closure's capture of a nested field it took by value is read as the box in its body, which its maker gives held: `rewritten`'s `Some(None)` is read `None` (rd631)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "            Some(false) => read.is_empty(),\n",
+    replace: "            Some(false) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_field_captured.rs$"],
+  },
+  {
+    name: "held-capture-mention-refused",
+    breaks:
+      "a borrow of a nested field a closure captures is boxed where it's made, and held again for the closure, `entry.value === undefined ? undefined : $someValue(..) ?? null`, where it's the field (rd631)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "                                && (if by_ref {\n                                    field_refs.contains(&from)\n",
+    replace: "                                && (if by_ref {\n                                    false\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_field_captured.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "held-capture-borrow-spilled",
+    breaks:
+      "a borrow of a nested field a closure captures is copied to a `const captured = entry.value;` where it's made, where the closure reads the field (rd631)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "                        Value::Expr(place) if by_ref && place.reads_same() => Value::Place(place),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_field_captured.rs$"],
+    snapshots: true,
+  },
 ];

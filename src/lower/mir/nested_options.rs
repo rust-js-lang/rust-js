@@ -14,6 +14,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Some(None)` `null` (`bindings::holds_nested`, #470, the user's
     /// decision).
     pub(super) fn nested_field(&self, body: &mir::Body<'tcx>, place: mir::PlaceRef<'tcx>) -> bool {
+        if self.held_capture_read(body, place) {
+            return true;
+        }
         let Some((base, PlaceElem::Field(field, _))) = place.last_projection() else {
             return false;
         };
@@ -22,6 +25,88 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 bindings::holds_nested(self.tcx, &adt.non_enum_variant().fields[field])
             }
             _ => false,
+        }
+    }
+
+    /// Whether capture `capture` of the closure `closure` is a nested
+    /// field, `entry.value` of `|| f(entry.value.flatten())`, which its
+    /// maker gives held as its payload, as the field holds it (rd631): of
+    /// one it borrows, `Some(true)`, what its reference refers to; of one
+    /// it took by value, `Some(false)`, the capture itself.
+    pub(super) fn held_capture(&self, closure: DefId, capture: FieldIdx) -> Option<bool> {
+        let local = closure.as_local()?;
+        if !matches!(self.tcx.type_of(closure).skip_binder().kind(), ty::Closure(..)) {
+            return None;
+        }
+        let captured = self.tcx.closure_captures(local).get(capture.as_usize())?;
+        let place = &captured.place;
+        let last = place.projections.len().checked_sub(1)?;
+        let rustc_middle::hir::place::ProjectionKind::Field(field, _) = place.projections[last].kind else {
+            return None;
+        };
+        let ty::Adt(adt, _) = place.ty_before_projection(last).kind() else {
+            return None;
+        };
+        if !adt.is_struct() || !bindings::holds_nested(self.tcx, &adt.non_enum_variant().fields[field]) {
+            return None;
+        }
+        match captured.info.capture_kind {
+            ty::UpvarCapture::ByRef(ty::BorrowKind::Immutable) => Some(true),
+            ty::UpvarCapture::ByValue => Some(false),
+            _ => None,
+        }
+    }
+
+    /// What the closure `closure` is given of its captures, `values` of
+    /// `operands`: each its body reads held as its payload (`held_capture`)
+    /// as one holding it so holds it, and of one that doesn't, the box's
+    /// held (`held_of_boxed`) (rd631).
+    pub(super) fn held_captures(
+        &mut self,
+        state: &State<'_, 'tcx>,
+        closure: DefId,
+        operands: &[&Operand<'tcx>],
+        values: Vec<Value<'tcx>>,
+        out: &mut Vec<Stmt>,
+    ) -> R<Vec<Value<'tcx>>> {
+        (values.into_iter().enumerate())
+            .map(|(i, value)| {
+                let Some(by_ref) = self.held_capture(closure, FieldIdx::from_usize(i)) else {
+                    return Ok(value);
+                };
+                // A local that holds it so; a field read whole is read as
+                // the box (`mir_operand`), held again below.
+                let local = operands.get(i).and_then(|operand| operand.place()?.as_local());
+                if local.is_some_and(|local| self.held_nested(state, Place::from(local), 0)) {
+                    // A borrow of the field: the field, read where it's
+                    // used, as a shared reference's place is.
+                    return Ok(match value {
+                        Value::Expr(place) if by_ref && place.reads_same() => Value::Place(place),
+                        value => value,
+                    });
+                }
+                let boxed = self.value_expr(value, Span::default())?;
+                Ok(Value::Expr(self.held_of_boxed(boxed, out)))
+            })
+            .collect()
+    }
+
+    /// Whether `place`, in a closure's body, reads a capture its maker
+    /// gives held as its payload (`held_capture`): one it took by value,
+    /// or what one it borrows refers to, through the environment a `Fn` or
+    /// `FnMut` is given by reference or a `FnOnce` by value.
+    fn held_capture_read(&self, body: &mir::Body<'tcx>, place: mir::PlaceRef<'tcx>) -> bool {
+        if place.local != Local::from_u32(1) {
+            return false;
+        }
+        let rest = (place.projection.strip_prefix(&[PlaceElem::Deref][..])).unwrap_or(place.projection);
+        let [PlaceElem::Field(capture, _), ref read @ ..] = *rest else {
+            return false;
+        };
+        match self.held_capture(body.source.def_id(), capture) {
+            Some(true) => read == [PlaceElem::Deref],
+            Some(false) => read.is_empty(),
+            None => false,
         }
     }
 
@@ -327,6 +412,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             && nested.contains(&from) =>
                     {
                         allowed.insert((at, from));
+                    }
+                    // A closure's capture of a nested field, a borrow of it
+                    // or its copy, which its body reads held so
+                    // (`held_capture`, rd631).
+                    Rvalue::Aggregate(kind, operands) if let AggregateKind::Closure(closure, _) = **kind => {
+                        for (capture, operand) in operands.iter_enumerated() {
+                            if let Some(from) = operand.place().and_then(|place| place.as_local())
+                                && let Some(by_ref) = self.held_capture(closure, capture)
+                                && (if by_ref {
+                                    field_refs.contains(&from)
+                                } else {
+                                    nested.contains(&from)
+                                })
+                            {
+                                allowed.insert((at, from));
+                            }
+                        }
                     }
                     Rvalue::Aggregate(kind, operands)
                         if let AggregateKind::Adt(did, _, _, _, None) = **kind

@@ -903,6 +903,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // pointer is its own (ADR 0959).
             AggregateKind::Closure(def_id, args) => {
                 let ty = ty::Ty::new_closure(self.tcx, *def_id, args);
+                let values = self.held_captures(state, *def_id, &operands, values, out)?;
                 let arrow = self.mir_closure(state, ty, values, span, out)?;
                 let taker = crate::lower::passed_on::Taker::Closure;
                 let made = (!self.counted_closure(span))

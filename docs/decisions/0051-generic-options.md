@@ -517,3 +517,40 @@ an Option is what JS holds" (webapi's `ReadableStreamReadResult` of `{}`,
 `nested-flatten-unread` (`lower/mir/dispatch.ts`), and
 `nested-payload-unchecked` and `nested-nullable-outer-null`
 (`lower/bindings/nullable.ts`).
+
+## Amendment (2026-11-02): a closure's capture of a nullable `Option<Option<T>>` field is held too (rd631)
+
+Readability, P3. A closure that read such a field, React's Flight reply
+client's `catch_unwind(AssertUnwindSafe(|| reply.stringify(entry.value.flatten())))`,
+captured `entry.value` as ADR 0051's box and read it so: `const option =
+entry.value; const captured = option === undefined ? undefined :
+$some(option); .. stringify($someValue(captured))`, where upstream writes
+`JSON.stringify(entry.value, ..)`. The capture is now held as the field
+holds it, and the closure's body reads it so, as a field: a borrow of the
+field is the field, read where it's used, `stringify(entry.value)`; one
+taken by value, a `move` closure's, is its copy, `let captured =
+entry.value;`, which the closure reads and sets as it's held.
+
+- **One question, one owner.** `nested_options.rs::held_capture` says
+  which captures are: a closure's (not a coroutine's) capture whose place
+  ends in a nested field (`bindings::holds_nested`), borrowed shared or
+  taken by value, of rustc's `closure_captures`. The closure's body asks
+  it where it reads its environment (`nested_field`), its maker where it
+  makes the closure (`mir_nested`, `held_captures`).
+- **The maker always gives it held.** Where what it captures is held, a
+  borrow made once and read only so, it's given as it is; where its maker
+  read it as the box, a field read whole or a borrow given to code that
+  boxes too, it's held again (`held_of_boxed`), so the closure's reads are
+  right whichever its maker made.
+- Not yet: a capture of a local that holds one, `let value = entry.value;
+  move || value.flatten()`, stays the box, as a local captured is
+  (`mir_nested`'s "captured").
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none: the same values
+are read, as the field holds them.
+
+Held by corpus `nested_option_field_captured` (borrowed and moved, by
+`Fn`, `FnMut` and `FnOnce`, under `catch_unwind`, read whole, flattened,
+matched, shown, given to a generic function and set again, and of a
+maker that boxes it, against native Rust); mutations `held-capture-*` in
+`lower/mir/nested_options.ts`.

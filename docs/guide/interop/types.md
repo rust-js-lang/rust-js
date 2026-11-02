@@ -1220,7 +1220,9 @@ export function prepare(moduleLoading) {
   null`, `if let
   Some(Some(v))` `entry.value != null`, and `flatten()` the read itself,
   its `None` `null` as a nullable field's is; a copy, a parameter's
-  pattern's too, holds it so. Given whole to code that boxes, `{:?}` or a
+  pattern's too, and a closure's capture of it hold it so, `||
+  f(entry.value.flatten())` `() => f(entry.value)`. Given whole to code
+  that boxes, `{:?}` or a
   generic function, it's ADR 0051's box there, and what's given it of
   one, `x === undefined ? undefined : $someValue(x) ?? null`. Its `.d.ts`
   is `sdpMid?: string | null | undefined`. `T` is never what may look like `None`, a
