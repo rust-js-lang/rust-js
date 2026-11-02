@@ -24,7 +24,11 @@ the `catch` of a `let Err(x)` of a closure that never returns holds what
 follows that reads `x`, or what that declares. Amended below: an `Ok`
 arm that tests what it holds is in the `try`, and a binding's setter is a
 write that may throw; and the `try`'s value is named by the pattern that
-binds all of it.
+binds all of it. Amended by
+[0776](0776-get-has-set-take-any-value.md) (#462): what's tried of a
+closure of one `return v;` is the closure called, which tidy's applied
+arrows make `v` with the closure's place, and a `v` nothing reads that
+may throw, a JS operator's of any value, stays.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N where a panic is
 caught, as Rust catches it: the same closure runs once, the same drops

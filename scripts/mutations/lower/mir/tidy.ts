@@ -430,4 +430,12 @@ export const mutations: Mutation[] = [
       "last if is at its end",
     ],
   },
+  {
+    name: "negations-evaluation-lost",
+    breaks: "a unary remade, `+m` of `js::to_number(m)`, forgets that JS may throw of it, so unread it goes and `catch_unwind` of it is never `Err` (#462)",
+    file: "src/lower/mir/tidy.rs",
+    find: "        let facts = made.facts.and(e.facts.of_statement()).and(e.facts.of_evaluation());\n",
+    replace: "        let facts = made.facts.and(e.facts.of_statement());\n",
+    tests: ["test/lowering-unwind-arms.test.ts", "-t", "a caught value nothing reads that may throw"],
+  },
 ];

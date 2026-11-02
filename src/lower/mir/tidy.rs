@@ -300,8 +300,9 @@ fn negations(e: &mut Expr) {
     if let ExprKind::Unary(op, arg) = &e.kind {
         let made = Expr::unary(*op, (**arg).clone());
         // What an `if`'s test says of the `if`, its written `else`, kept:
-        // not of the expression, which `made` is again.
-        let facts = made.facts.and(e.facts.of_statement());
+        // not of the expression, which `made` is again; but what its
+        // evaluation may do, `+m`'s of any value (#462).
+        let facts = made.facts.and(e.facts.of_statement()).and(e.facts.of_evaluation());
         *e = Expr {
             span: e.span,
             facts,

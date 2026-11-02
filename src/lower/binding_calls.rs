@@ -247,7 +247,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::helper("$dictGet"), vec![this, args.remove(0)])
             }
             (JsForm::GetIndex, Some(this)) if args.len() == 1 => keyed(this, args.remove(0)).answered_by_a_getter(),
-            (JsForm::In, Some(this)) if args.len() == 1 => Expr::bin(Op::In, args.remove(0), this),
+            // JS's operators of any value: `in` throws of what's no object,
+            // `undefined` too, and a proxy's trap may answer it; `instanceof`
+            // throws of what's no function and may run its
+            // `Symbol.hasInstance`; `==` may run an object's `valueOf`. Each
+            // may do anything, so it's never a value nothing reads that can
+            // go, as a getter's read (`Known::Getter`, #462).
+            (JsForm::In, Some(this)) if args.len() == 1 => {
+                Expr::bin(Op::In, args.remove(0), this).answered_by_a_getter()
+            }
             (JsForm::Truthy, Some(this)) if args.is_empty() => {
                 Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, this))
             }
@@ -265,12 +273,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::bin(Op::Or, this, other)
             }
             (JsForm::StrictEquals, Some(this)) if args.len() == 1 => Expr::bin(Op::Eq, this, args.remove(0)),
-            (JsForm::LooseEquals, Some(this)) if args.len() == 1 => Expr::bin(Op::LooseEq, this, args.remove(0)),
-            (JsForm::InstanceOfGiven, Some(this)) if args.len() == 1 => Expr::bin(Op::InstanceOf, this, args.remove(0)),
+            (JsForm::LooseEquals, Some(this)) if args.len() == 1 => {
+                Expr::bin(Op::LooseEq, this, args.remove(0)).answered_by_a_getter()
+            }
+            (JsForm::InstanceOfGiven, Some(this)) if args.len() == 1 => {
+                Expr::bin(Op::InstanceOf, this, args.remove(0)).answered_by_a_getter()
+            }
             (JsForm::TypeOf, Some(this)) if args.is_empty() => Expr::unary(UnaryOp::Typeof, this),
-            (JsForm::Text, Some(this)) if args.is_empty() => Expr::bin(Op::Add, Expr::str(""), this),
-            (JsForm::Number, Some(this)) if args.is_empty() => Expr::unary(UnaryOp::Plus, this),
-            (JsForm::Subtract, Some(this)) if args.len() == 1 => Expr::bin(Op::Sub, this, args.remove(0)),
+            (JsForm::Text, Some(this)) if args.is_empty() => {
+                self.js_conversion(def_id, generic_args, Expr::bin(Op::Add, Expr::str(""), this))
+            }
+            (JsForm::Number, Some(this)) if args.is_empty() => {
+                self.js_conversion(def_id, generic_args, Expr::unary(UnaryOp::Plus, this))
+            }
+            (JsForm::Subtract, Some(this)) if args.len() == 1 => {
+                self.js_conversion(def_id, generic_args, Expr::bin(Op::Sub, this, args.remove(0)))
+            }
             (JsForm::SetIndex, Some(this)) if args.len() == 2 => {
                 let (key, value) = (args.remove(0), args.remove(0));
                 out.push(StmtKind::Assign(keyed(this, key), value).at(self.js_span(span)));
@@ -418,6 +436,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let output = output.peel_refs();
         matches!(output.kind(), ty::Adt(class, _) if super::recognition::is_js_class(self.tcx, class.did()))
             && !super::recognition::is_untyped_class(self.tcx, output)
+    }
+
+    /// `converted`, a JS conversion of binding `def_id`'s, `"" + value`,
+    /// `+value` or `value - n`: of a value of any shape, whose type the js
+    /// crate makes a `Result`, it may throw, of a symbol or a `BigInt`, and
+    /// may run an object's `valueOf`, so it does something, as a getter's
+    /// read may (`Known::Getter`, #462); of text, nothing.
+    fn js_conversion(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>, converted: Expr) -> Expr {
+        let output = self
+            .tcx
+            .fn_sig(def_id)
+            .instantiate(self.tcx, generic_args)
+            .skip_binder()
+            .output();
+        let output = (self.tcx)
+            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(output))
+            .unwrap_or(output);
+        match self.recognition().is_result(output) {
+            true => converted.answered_by_a_getter(),
+            false => converted,
+        }
     }
 
     /// Does binding `def_id`, of `generic_args`, give an `Option` of a

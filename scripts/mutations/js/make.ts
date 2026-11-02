@@ -301,13 +301,13 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-unwinds.test.ts", "-t", "resume_unwind throws what unwound"],
   },
   {
-    name: "caught-arrow-called",
-    breaks: "`catch_unwind(|| work(n))`'s `try` calls the closure, `const v = (() => work(n))();`, where it's its body",
+    name: "negated-loose-evaluation-lost",
+    breaks:
+      "`!js::loose_equals(m, 1.0)`'s `m != 1` forgets that `==` of any value may run a `valueOf`, and nothing reading it, it goes, so a throw of it is never caught (#462)",
     file: "src/js/make.rs",
-    find: "                ] => value.clone(),\n                _ => Expr::call(f.clone(), Vec::new()),\n",
-    replace: "                ] => Expr::call(f.clone(), Vec::new()),\n                _ => Expr::call(f.clone(), Vec::new()),\n",
-    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_nested_ok.rs$"],
-    snapshots: true,
+    find: "                facts: arg.facts.of_presence().and(arg.facts.of_evaluation()),\n",
+    replace: "                facts: arg.facts.of_presence(),\n",
+    tests: ["test/lowering-unwind-arms.test.ts", "-t", "a caught value nothing reads that may throw"],
   },
   {
     name: "none-test-unfolded",

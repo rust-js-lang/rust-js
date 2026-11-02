@@ -919,3 +919,141 @@ console.log(log.join(", "));
 exception 1, exception 3, root 3, exception 8, root 8, root 8, exception 5, root 5, exception 5, note 4, exception 1, note 1, exception 3, root 3, exception 5, exception 8, root 8
 `);
 });
+
+// #462: `catch_unwind(|| js::has(m, "default")).is_err()` asks whether
+// `"default" in m` throws, as JS's `in` of `undefined`, `null` or a string
+// does; the value nothing reads is still evaluated, an expression
+// statement in the `try`, so `caught(undefined)` is `true` as Rust's is,
+// where applied arrows' value nothing read went, `try { return false; }`.
+// So for each JS operator of any value, which may throw or run a
+// `valueOf`: `==`, its negation `!=`, `instanceof` and `+`; for a getter's
+// read, a call, and an unread `let` of `in` outside any `try`, which
+// prepare's unread `const`s kept no more; not `+s` of text, which can't
+// throw. Run in Node.
+test("a caught value nothing reads that may throw is still evaluated", () => {
+  const { js, dir } = compiled(
+    "unwind-unread-throws",
+    `use js::Unknown;
+use std::panic::catch_unwind;
+
+#[cfg_attr(rust_js, rust_js::link_name = "./host.js#work")]
+fn work(_n: u32) -> u32 {
+    unreachable!()
+}
+
+pub fn caught(m: Option<&'static Unknown>) -> bool {
+    catch_unwind(|| js::has(m, "default")).is_err()
+}
+
+pub fn read(m: Option<&'static Unknown>) -> bool {
+    catch_unwind(|| js::get(m, "value")).is_err()
+}
+
+pub fn called(n: u32) -> bool {
+    catch_unwind(|| work(n)).is_err()
+}
+
+pub fn fine(m: Option<&'static Unknown>) -> bool {
+    catch_unwind(|| js::has(m, "default")).is_ok()
+}
+
+pub fn loose(m: Option<&'static Unknown>) -> bool {
+    catch_unwind(|| js::loose_equals(m, 1.0)).is_err()
+}
+
+pub fn unequal(m: Option<&'static Unknown>) -> bool {
+    catch_unwind(|| !js::loose_equals(m, 1.0)).is_err()
+}
+
+pub fn instance(m: Option<&'static Unknown>, c: Option<&'static Unknown>) -> bool {
+    catch_unwind(|| js::instance_of(m, c)).is_err()
+}
+
+pub fn number(m: &'static Unknown) -> bool {
+    catch_unwind(|| js::to_number(m).unwrap()).is_err()
+}
+
+pub fn unread(m: Option<&'static Unknown>) -> u32 {
+    let _present = js::has(m, "default");
+    1
+}
+
+pub fn of_text(s: &str) -> u32 {
+    let _n = js::to_number(s);
+    1
+}
+`,
+  );
+  writeFileSync(
+    join(dir, "host.js"),
+    `export function work(n) { if (n > 2) throw new Error("big " + n); return n; }
+`,
+  );
+  expect(js).toContain('export function caught(m) {\n  try {\n    "default" in m;\n    return false;\n  } catch {\n');
+  expect(js).toContain("export function loose(m) {\n  try {\n    m == 1;\n    return false;\n");
+  expect(js).toContain("export function unequal(m) {\n  try {\n    m != 1;\n    return false;\n");
+  expect(js).toContain("export function instance(m, c) {\n  try {\n    m instanceof c;\n    return false;\n");
+  expect(js).toContain("export function number(m) {\n  try {\n    +m;\n    return false;\n");
+  expect(js).toContain('export function unread(m) {\n  const _present = "default" in m;\n  return 1;\n}');
+  // `+s` of text throws nothing and runs nothing: unread, it's no statement.
+  expect(js).toContain("export function ofText(s) {\n  return 1;\n}");
+  writeFileSync(
+    join(dir, "main.mjs"),
+    `import * as lib from "./lib.js";
+const getter = { get value() { throw new Error("getter"); } };
+console.log(JSON.stringify([lib.caught(undefined), lib.caught(null), lib.caught("text"), lib.caught({}), lib.caught({ default: 1 })]));
+console.log(JSON.stringify([lib.read(undefined), lib.read(null), lib.read(getter), lib.read({ value: 1 })]));
+console.log(JSON.stringify([lib.called(1), lib.called(3)]));
+console.log(JSON.stringify([lib.fine(undefined), lib.fine({})]));
+const valued = { valueOf() { throw new Error("valueOf"); } };
+console.log(JSON.stringify([lib.loose(valued), lib.loose(1), lib.unequal(valued), lib.unequal(1), lib.instance({}, 1), lib.instance({}, Object), lib.number(Symbol()), lib.number(2n), lib.number("2")]));
+const thrown = (f) => { try { return f(); } catch (e) { return e.constructor.name; } };
+console.log(JSON.stringify([thrown(() => lib.unread(undefined)), thrown(() => lib.unread({}))]));
+`,
+  );
+  const out = runSync([node!, join(dir, "main.mjs")], dir, 60_000);
+  expect(out.stderr).toBe("");
+  expect(out.stdout).toBe(`[true,true,true,false,false]
+[true,true,true,false]
+[false,true]
+[false,true]
+[true,false,true,false,true,false,true,true,false]
+["TypeError",1]
+`);
+});
+
+// `catch_unwind(|| inner(n))`'s `try` is the closure called, which tidy's
+// applied arrows make its body: its `return inner(n);` maps to the
+// closure's `inner(n)`, where the program wrote the call, not to the `Ok`
+// arm's line, as it did where the closure's body was taken out of it
+// without its place (ADR 0660).
+test("a try's call of a closure of one value maps to the closure's body", async () => {
+  const { js, dir } = compiled(
+    "unwind-call-mapped",
+    `use std::panic::{catch_unwind, resume_unwind};
+
+fn inner(n: u32) -> u32 {
+    if n > 2 {
+        panic!("big {n}");
+    }
+    n + 1
+}
+
+pub fn again(n: u32) -> u32 {
+    match catch_unwind(|| inner(n)) {
+        Ok(v) => v,
+        Err(payload) => resume_unwind(payload),
+    }
+}
+`,
+  );
+  const { decodeMappings } = await import("./sourcemap");
+  const lines = js.split("\n");
+  const at = lines.findIndex((line) => line.includes("return inner(n);"));
+  expect(at).toBeGreaterThan(0);
+  const map = JSON.parse(readFileSync(join(dir, "lib.js.map"), "utf8"));
+  const column = lines[at].indexOf("return");
+  const mapped = decodeMappings(map.mappings).filter((s) => s.jsLine === at && s.jsCol <= column).at(-1);
+  // Line 11, 1-based, of `match catch_unwind(|| inner(n)) {`, at `inner(n)`.
+  expect(mapped && [mapped.srcLine + 1, mapped.srcCol]).toEqual([11, 26]);
+});

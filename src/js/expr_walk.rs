@@ -434,6 +434,11 @@ impl Expr {
     /// call, and no property, which something done meanwhile could change
     /// through a `&mut`. Elements, conditions and literals of variables.
     pub fn reads_only_vars(&self) -> bool {
+        // What JS may answer, `key in value` a proxy's trap, which may do
+        // anything (`Known::Getter`, #462).
+        if self.facts.has(Known::Getter) {
+            return false;
+        }
         let props = |props: &[Prop]| {
             props.iter().all(|p| match p {
                 Prop::Field(_, value)

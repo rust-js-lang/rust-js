@@ -243,4 +243,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "field read of what JS made"],
   },
+  {
+    name: "reads-only-vars-of-js-operators",
+    breaks:
+      "`\"default\" in m`, which JS may answer, reads only variables, so prepare drops an unread `const _present = \"default\" in m;` and `unread(undefined)` throws nothing where Rust panics (#462, P0)",
+    file: "src/js/expr_walk.rs",
+    find: "        // What JS may answer, `key in value` a proxy's trap, which may do\n        // anything (`Known::Getter`, #462).\n        if self.facts.has(Known::Getter) {\n            return false;\n        }\n",
+    replace: "",
+    tests: ["test/lowering-unwind-arms.test.ts", "-t", "a caught value nothing reads that may throw"],
+  },
 ];

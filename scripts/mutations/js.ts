@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "        none == Facts::of(Known::NoneNull) || none == Facts::of(Known::NoneUndefined)\n",
     tests: ["test/webapi-bindings.test.ts", "-t", "equal only to itself"],
   },
+  {
+    name: "evaluation-facts-forgotten",
+    breaks: "an operator of any value made again, `+m` or `m != 1` of `!(m == 1)`, forgets that JS may throw of it, so unread it goes (#462)",
+    file: "src/js.rs",
+    find: "        Facts(self.0 & Facts::of(Known::Getter).0)\n",
+    replace: "        Facts::NONE\n",
+    tests: ["test/lowering-unwind-arms.test.ts", "-t", "a caught value nothing reads that may throw"],
+  },
 ];

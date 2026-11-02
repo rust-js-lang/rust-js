@@ -697,6 +697,14 @@ impl Facts {
         none == other.of_presence() && (none == Facts::of(Known::NoneNull) || none == Facts::of(Known::NoneUndefined))
     }
 
+    /// What evaluating it may do that its kind doesn't say, a getter's or
+    /// a JS operator's of any value (`Known::Getter`), which the same
+    /// evaluation made again keeps: `a != b` of `!(a == b)`, `+m` of `+m`
+    /// (#462).
+    pub fn of_evaluation(self) -> Facts {
+        Facts(self.0 & Facts::of(Known::Getter).0)
+    }
+
     /// What a test says of its `if`, not of its value: a written `else`
     /// (`Known::Else`) and a guard (`Known::Guard`), which a test made again
     /// of the same truth keeps, `flags & 4` of `(flags & 4) !== 0`.
@@ -717,6 +725,10 @@ pub enum Known {
     /// `js::get`'s, or of the method a binding calls on a JS value,
     /// `obj.send` of `obj.send(a)`: a getter may answer it, which may do
     /// anything, and may give another value read again (ADRs 0672, 0750).
+    /// So is a binding's JS operator of any value, `key in value`, `value
+    /// instanceof f`, `a == b`, or a conversion that may throw, `+value`:
+    /// JS may throw of it, or run a trap or a `valueOf`, never a value
+    /// nothing reads that can go (#462).
     Getter,
     /// A binding's write of a property, `set x` or `set X.y`, the target
     /// of its assignment: a setter may answer it, which may do anything,
