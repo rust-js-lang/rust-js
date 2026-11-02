@@ -183,6 +183,9 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
     if whole || rebound || reads != fields_read + aliases || declared != holders.len() {
         return;
     }
+    // A copy of a field the program names as the field, read before
+    // anything can set it again: the field, so its variable keeps its name.
+    js::each_block_mut(out, &mut |list| copies_read_through(list, &held));
     // Each field's variable, named apart from every name the body has.
     let mut taken = HashSet::new();
     js::names_in(out, &mut taken);
@@ -274,4 +277,164 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
             }
         }
     });
+}
+
+/// Of `list`, a copy of a field of the scope's value, `held` its holders,
+/// the program's of the field's name: `const at = reply.at;`, an `if let
+/// Some(at) = self.at.get()`'s, or `const at = e; reply.at = at;`, a
+/// `let at = e; self.at.set(Some(at));`'s, each read of `at` the field's,
+/// `reply.at = e;`, where every read is before anything that may set the
+/// field again, a call of one of the scope's functions, or a getter's:
+/// `copied_until_effects`. So its variable, named after the field, isn't
+/// named apart from the copy, `at$1`, as upstream's processReply's
+/// `replyLifetimeController = new AbortController();` (ADR 1043, amended).
+fn copies_read_through(list: &mut Vec<Stmt>, held: &dyn Fn(&Expr) -> bool) {
+    let mut i = 0;
+    while i < list.len() {
+        let next = list.get(i + 1).map(|s| &s.kind);
+        let found = match (&list[i].kind, next) {
+            (StmtKind::Const(a, e), _) if matches!(&e.kind, js::ExprKind::Member(of, key) if held(of) && key == a) => {
+                Some((a.clone(), e.clone(), None))
+            }
+            (StmtKind::Const(a, e), Some(StmtKind::Assign(target, value)))
+                if matches!(&target.kind, js::ExprKind::Member(of, key) if held(of) && key == a)
+                    && matches!(&value.kind, js::ExprKind::Var(v) if v == a) =>
+            {
+                Some((a.clone(), target.clone(), Some(e.clone())))
+            }
+            _ => None,
+        };
+        let Some((name, field, made)) = found else {
+            i += 1;
+            continue;
+        };
+        let rest = i + 1 + usize::from(made.is_some());
+        let mut declared = false;
+        js::each_declared(&list[rest..], &mut |n| declared |= n == name);
+        if declared || !copied_until_effects(&list[rest..], &name) {
+            i += 1;
+            continue;
+        }
+        js::each_expr_mut(&mut list[rest..], &mut |e| {
+            if matches!(&e.kind, js::ExprKind::Var(v) if *v == name) {
+                *e = Expr {
+                    span: e.span,
+                    ..field.clone()
+                };
+            }
+        });
+        let span = list[i].span;
+        match made {
+            None => {
+                list.remove(i);
+            }
+            Some(made) => {
+                list.splice(i..i + 2, [StmtKind::Assign(field, made).at(span)]);
+                i += 1;
+            }
+        }
+    }
+}
+
+/// Whether each read of `name` in `stmts`, as JS runs them, is before
+/// anything that may run other code: a call that may have effects, a
+/// getter's read, a write but a variable's; none in a closure, which runs
+/// later, nor in a statement whose order isn't followed here.
+fn copied_until_effects(stmts: &[Stmt], name: &str) -> bool {
+    let mut order = Order {
+        name,
+        seen: 0,
+        stopped: false,
+    };
+    order.stmts(stmts);
+    order.seen == js::mentions_in(stmts, name)
+}
+
+/// `copied_until_effects`' walk: the reads of `name` seen, until what may
+/// run other code stops it.
+struct Order<'n> {
+    name: &'n str,
+    seen: usize,
+    stopped: bool,
+}
+
+impl Order<'_> {
+    fn stmts(&mut self, stmts: &[Stmt]) {
+        for stmt in stmts {
+            if self.stopped {
+                return;
+            }
+            match &stmt.kind {
+                StmtKind::Expr(e) | StmtKind::Return(Some(e)) | StmtKind::Const(_, e) | StmtKind::Let(_, Some(e)) => {
+                    self.expr(e)
+                }
+                // Each branch from its test, a path of its own: what's after
+                // is after what either does.
+                StmtKind::If(test, then, els) => {
+                    self.expr(test);
+                    let (seen, stopped) = (self.seen, self.stopped);
+                    self.stmts(then);
+                    let then = (self.seen - seen, self.stopped);
+                    (self.seen, self.stopped) = (seen, stopped);
+                    self.stmts(els.as_deref().unwrap_or_default());
+                    self.seen += then.0;
+                    self.stopped |= then.1;
+                }
+                StmtKind::Assign(target, value) if matches!(target.kind, js::ExprKind::Var(_)) => {
+                    self.expr(value);
+                    self.stopped |= target.mentions_var(self.name);
+                }
+                StmtKind::Let(_, None) | StmtKind::Return(None) | StmtKind::Comments => {}
+                StmtKind::Function(_) if js::mentions_in(std::slice::from_ref(stmt), self.name) == 0 => {}
+                _ => self.stopped = true,
+            }
+        }
+    }
+
+    fn expr(&mut self, e: &Expr) {
+        if self.stopped {
+            return;
+        }
+        match &e.kind {
+            js::ExprKind::Var(v) => self.seen += usize::from(v == self.name),
+            js::ExprKind::Member(of, _) | js::ExprKind::OptionalMember(of, _) => {
+                self.expr(of);
+                self.stopped |= e.facts.has(js::Known::Getter);
+            }
+            js::ExprKind::Call(callee, args) => {
+                self.expr(callee);
+                args.iter().for_each(|arg| self.expr(arg));
+                self.stopped |= e.has_effects();
+            }
+            js::ExprKind::Template(_, items, _) | js::ExprKind::Array(items) => items.iter().for_each(|i| self.expr(i)),
+            // An object's fields, in order, `{ signal: controller.signal }`.
+            js::ExprKind::Object(props, ..)
+                if props
+                    .iter()
+                    .all(|p| matches!(p, js::Prop::Field(..) | js::Prop::Spread(_))) =>
+            {
+                for prop in props {
+                    if let js::Prop::Field(_, value) | js::Prop::Spread(value) = prop {
+                        self.expr(value);
+                    }
+                }
+            }
+            js::ExprKind::Binary(_, a, b) => {
+                self.expr(a);
+                self.expr(b);
+            }
+            js::ExprKind::Cond(a, b, c) => {
+                self.expr(a);
+                self.expr(b);
+                self.expr(c);
+            }
+            js::ExprKind::Unary(op, a) => {
+                self.expr(a);
+                self.stopped |= op.writes();
+            }
+            // Anything else, of an order not followed here: stopped where it
+            // reads `name` or may do anything, a closure made reads nothing.
+            _ => self.stopped |= e.mentions_var(self.name) || e.has_effects(),
+        }
+    }
 }

@@ -85,4 +85,74 @@ export const mutations: Mutation[] = [
     replace: "            let _ = &names;",
     tests: scopes,
   },
+  {
+    name: "scope-copies-kept",
+    breaks:
+      "a copy of a scope's field the program names as the field is kept, `const controller = controller$1;`, its variable named apart, where upstream's processReply reads `replyLifetimeController` (ADR 1043, amended)",
+    file: "src/lower/mir/scopes.rs",
+    find: "    js::each_block_mut(out, &mut |list| copies_read_through(list, &held));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^scope_field_copies.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "scope-copies-past-calls",
+    breaks:
+      "a copy of a scope's field read after a call that sets the field again, `bump(); log.push(`was ${at}`)`, is read through the field, `99` where Rust's copy was `5` (ADR 1043, amended)",
+    file: "src/lower/mir/scopes.rs",
+    find: "                self.stopped |= e.has_effects();\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^scope_field_copies.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "scope-copies-past-writes",
+    breaks:
+      "a copy of a scope's field read after a statement whose order isn't followed, a write of the field, is read through it (ADR 1043, amended)",
+    file: "src/lower/mir/scopes.rs",
+    find: "                _ => self.stopped = true,\n",
+    replace: "                _ => {}\n",
+    tests: ["test/corpus.test.ts", "-t", "^scope_field_copies.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "scope-copies-set-unfolded",
+    breaks:
+      "a field set to a copy the program names as it, `const controller = base * 3; controller$1 = controller;`, is kept apart, where upstream's is `replyLifetimeController = new AbortController();` (ADR 1043, amended)",
+    file: "src/lower/mir/scopes.rs",
+    find: "                Some((a.clone(), target.clone(), Some(e.clone())))\n",
+    replace: "                None\n",
+    tests: ["test/corpus.test.ts", "-t", "^scope_field_copies.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "scope-copies-branches-in-turn",
+    breaks:
+      "an `if`'s branches are walked one after the other, its `else` after what its `then` does, so `if (controller != null) { controller.abort(..) }`'s copy is kept (ADR 1043, amended)",
+    file: "src/lower/mir/scopes.rs",
+    find: "                    (self.seen, self.stopped) = (seen, stopped);\n",
+    replace: "                    self.stopped = stopped;\n",
+    tests: ["test/corpus.test.ts", "-t", "^scope_field_copies.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "scope-copies-after-branch-effects",
+    breaks:
+      "what's after an `if` whose branch calls what sets the field, `if (again) { bump(); } log.push(`maybe ${at}`)`, is taken for before it, `99` where Rust's copy was `5` (ADR 1043, amended)",
+    file: "src/lower/mir/scopes.rs",
+    find: "                    self.stopped |= then.1;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^scope_field_copies.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "scope-copies-objects-unordered",
+    breaks:
+      "an object's fields aren't read in order, so `listen({ signal: controller + 1 })` keeps the copy, where upstream's `{signal: replyLifetimeController.signal}` reads the variable (ADR 1043, amended)",
+    file: "src/lower/mir/scopes.rs",
+    find: "                    .all(|p| matches!(p, js::Prop::Field(..) | js::Prop::Spread(_))) =>\n",
+    replace: "                    .all(|_| false) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^scope_field_copies.rs$"],
+    snapshots: true,
+  },
 ];

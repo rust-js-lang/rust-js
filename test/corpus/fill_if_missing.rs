@@ -16,10 +16,10 @@ fn info_of(cache: &mut HashMap<String, Info>, id: &str, made: &mut u32) -> Info 
         Some(info) => info,
         None => {
             *made += 1;
-        let info = Info {
-            name: format!("chunk {id}"),
-            size: id.len() as u32,
-        };
+            let info = Info {
+                name: format!("chunk {id}"),
+                size: id.len() as u32,
+            };
             cache.insert(id.to_string(), info.clone());
             info
         }
@@ -92,6 +92,11 @@ fn main() {
     println!("{} {}", size_of(&sizes, "a"), size_of(&sizes, "bcd"));
     println!("{} {}", named_of(&cache, "a"), named_of(&cache, "zz"));
     let slots = [Some(4), None];
-    println!("{} {} {}", dropped_of(&slots, 0), dropped_of(&slots, 1), dropped_of(&slots, 5));
+    println!(
+        "{} {} {}",
+        dropped_of(&slots, 0),
+        dropped_of(&slots, 1),
+        dropped_of(&slots, 5)
+    );
     println!("{} {}", guarded_of(&cache, "a"), guarded_of(&cache, "ccc"));
 }

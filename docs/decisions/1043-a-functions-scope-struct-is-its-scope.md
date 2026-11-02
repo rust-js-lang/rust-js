@@ -268,3 +268,45 @@ dictionary, and a `pub` one whose crate's call of an `Option` calls a copy
 that boxes; and `test/cross-crate-items.test.ts`'s "a consumer's own of a
 library's generic function with a scope struct has its methods". The
 mutation `scope-of-a-generic-function-refused` puts the condition back.
+
+## Amendment: a copy of a field named as the field (run 40)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no difference: each
+read gives the value the copy held.
+
+React's Flight reply client writes `let reply_lifetime_controller =
+webapi::abort_controller::new();
+self.reply_lifetime_controller.set(Some(reply_lifetime_controller));`, then
+reads the local, and `if let Some(reply_lifetime_controller) =
+self.reply_lifetime_controller.get()`: each a copy of the field the
+program names as the field. Its variable was named apart from the copies,
+`replyLifetimeController$1`, with `const replyLifetimeController =
+replyLifetimeController$1;` and `replyLifetimeController$1 =
+replyLifetimeController;`, where upstream's processReply has one variable,
+`replyLifetimeController = new AbortController();`.
+
+**A copy of a field named as the field is the field** (`scopes.rs`'
+`copies_read_through`, where `scope_fields` makes its variables): `const
+at = reply.at;`, and `const at = e; reply.at = at;` folded to `reply.at =
+e;`, each read of `at` the field's, where every read of it is before
+anything that may set the field again, as JS runs them
+(`copied_until_effects`): a call that may have effects, which may be one
+of the scope's functions, a getter's read, a write but a variable's.
+Calls' arguments, an object's fields, a template's parts and operators'
+operands are followed in order; an `if`'s branches each from its test,
+what's after it after either. Anything else, a loop, a closure that reads
+the copy, stops it, so the copy stays. The scope's other functions write
+the field only when called, and a binding's JS only when it calls back,
+which is a call. A copy named otherwise keeps its name, the program's.
+
+The other way, naming the field's variable apart only from the names of
+the functions that read it, would leave the copies, `const
+replyLifetimeController = replyLifetimeController;` can't be written; and
+copy propagation of any local into an outer variable would erase names
+the program wrote.
+
+Held by the corpus's `scope_field_copies` against native Rust: copies read
+before a call, in a call's object argument, in an `if`'s branch, and kept
+past a call that sets the field, a write of it, and an `if` whose branch
+calls; mutations `scope-copies-*` in `scripts/mutations/lower/mir/scopes.ts`.
+

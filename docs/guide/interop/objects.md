@@ -170,6 +170,12 @@ export function processReply(depth) {
   function's outermost block, itself or in an `Rc::new`; and it's given to
   no call but its methods', nor given back. Any other struct's methods are
   its type's object, as above.
+- **A copy of a field named as the field is the field's variable**: `let
+  controller = new(); self.controller.set(Some(controller));` is
+  `controller = new AbortController();`, and `if let Some(controller) =
+  self.controller.get()` reads `controller`, where each read of the copy
+  is before anything that may set the field again, a call or a getter;
+  past one, the copy stays, `const controller = controller$1;`.
 - **Its function may be generic**, taking its callbacks as `impl Fn`, as
   processReply's `resolve` and `reject`: the struct and its methods are of
   no type parameter, so each of the function's lowerings declares them.
