@@ -756,6 +756,13 @@ pub(crate) enum HandleStep {
     RcNew,
     /// `RefCell::new`.
     CellNew,
+    /// `Cell::new`, `Cell::get` and `Cell::set`, of a value cell
+    /// (`self_handles/owners.rs`'s, ADR 0317, amended).
+    ValueCellNew,
+    ValueCellGet,
+    ValueCellSet,
+    /// An `Rc`'s `Default::default`.
+    RcDefault,
     /// `OnceCell::new` or `OnceLock::new`.
     OnceNew,
     /// A `OnceCell`'s or a `OnceLock`'s `get`.
@@ -818,6 +825,14 @@ pub(crate) fn handle_step<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericA
     if is_rc_new(tcx, id) {
         return Some(HandleStep::RcNew);
     }
+    if tcx
+        .trait_of_assoc(id)
+        .is_some_and(|t| tcx.is_diagnostic_item(sym::Default, t))
+    {
+        return self_ty()
+            .and_then(|ty| rc_pointee(tcx, ty))
+            .map(|_| HandleStep::RcDefault);
+    }
     match once_method(tcx, id) {
         Some(OnceOp::New) => return Some(HandleStep::OnceNew),
         Some(OnceOp::Set) => return Some(HandleStep::OnceSet),
@@ -837,6 +852,13 @@ pub(crate) fn handle_step<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericA
                 "new" => HandleStep::CellNew,
                 "borrow" => HandleStep::Borrow,
                 _ => HandleStep::BorrowMut,
+            })
+        }
+        "new" | "get" | "set" if adt_of(Some(owner)).is_some_and(|adt| is_std_def(tcx, adt, StdItem::Cell)) => {
+            Some(match name.as_str() {
+                "new" => HandleStep::ValueCellNew,
+                "get" => HandleStep::ValueCellGet,
+                _ => HandleStep::ValueCellSet,
             })
         }
         "as_ref" | "and_then" | "unwrap" | "unwrap_or" | "unwrap_or_else" | "unwrap_or_default" | "expect"

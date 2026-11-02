@@ -189,6 +189,55 @@ One of any other value, a `Vec`'s, is consumed by its first handler, as
 Rust's: two would each be given the one array
 ([ADR 0782](../../decisions/0782-a-promises-executor-borrows-and-then-takes-two-handlers.md)).
 
+Callbacks an executor makes that need the promise it makes, as React's
+Flight client's `then` writes on its wrapper promise, read it through a
+cell set right after `js::promise::new` returns. Where the executor only
+moves each into a variable of its maker's, never calling it nor giving it
+to a call, none can run before the cell is set: the cell is the promise's
+`const`, which they close over, as upstream's do. One the executor calls,
+or gives to a call, reads the cell, as written
+([ADR 0317, amended](../../decisions/0317-once-cells.md#amendment-callbacks-made-in-an-executor-read-its-calls-value-rd621)).
+
+```rust
+use std::cell::Cell;
+use std::rc::Rc;
+
+use js::{Promise, promise};
+
+pub fn tagged(tag: &'static str) -> Promise<u32> {
+    let mut resolve: Option<Rc<dyn Fn(u32)>> = None;
+    let wrapper: Rc<Cell<Option<Promise<u32>>>> = Rc::default();
+    let tagged: Promise<u32> = promise::new(|res, _| {
+        let wrapper = Rc::clone(&wrapper);
+        resolve = Some(Rc::new(move |value| {
+            js::set(wrapper.get().unwrap(), "tag", tag);
+            res(value);
+        }));
+    });
+    wrapper.set(Some(tagged));
+    if let Some(resolve) = resolve {
+        resolve(1);
+    }
+    tagged
+}
+```
+
+```js
+export function tagged(tag) {
+  let resolve;
+  const tagged = new Promise((res) => {
+    resolve = (value) => {
+      tagged.tag = tag;
+      res(value);
+    };
+  });
+  if (resolve != null) {
+    resolve(1);
+  }
+  return tagged;
+}
+```
+
 ## Fetch
 
 `window.fetch` is webapi's. A network error rejects, so settle it:

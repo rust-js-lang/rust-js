@@ -247,6 +247,12 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
         blocks.get(&block).map(|&local| (local, name))
     }
 
+    /// The variable this body's closures' handle names, its owner's, that
+    /// a value cell's readers it makes read (`self_handles/value_cells.rs`).
+    pub(super) fn owner_name(&self) -> Option<&Expr> {
+        self.own.as_ref().map(|(_, name)| name)
+    }
+
     /// Of a block whose call makes an owner handle's cell, the local whose
     /// `let` it is.
     pub(super) fn declares(&self, block: BasicBlock) -> Option<Local> {

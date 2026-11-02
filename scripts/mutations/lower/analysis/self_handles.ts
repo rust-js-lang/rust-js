@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure that borrows its cell mutably while it upgrades it is taken for one that names itself, so its `borrow` no longer panics, already mutably borrowed, as Rust's does",
     file: "src/lower/analysis/self_handles.rs",
-    find: "                (HandleStep::RcDeref | HandleStep::Borrow | HandleStep::GuardDeref | HandleStep::AsRef, [_])\n                    if !once =>\n",
-    replace: "                (_, [_]) if !once && step != HandleStep::Unwrap =>\n",
+    find: "                (HandleStep::RcDeref | HandleStep::Borrow | HandleStep::GuardDeref | HandleStep::AsRef, [_])\n                    if chain == Chain::Own =>\n",
+    replace: "                (_, [_]) if chain == Chain::Own && step != HandleStep::Unwrap =>\n",
     tests: corpus("self_handle_reads_mutably"),
   },
   {
@@ -78,8 +78,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure of an owner handle isn't told which capture is its cell, nor the variable that is, so its read of the request is undeclared",
     file: "src/lower/analysis/self_handles.rs",
-    find: "                let &(_, capture) = o.closures.iter().find(|&&(c, _)| c == closure)?;\n",
-    replace: "                let &(_, capture) = o.closures.iter().find(|&&(c, _)| c == closure && false)?;\n",
+    find: "                let &(_, _, capture) = o.closures.iter().find(|&&(by, c, _)| by == body && c == closure)?;\n",
+    replace: "                let &(_, _, capture) = o.closures.iter().find(|&&(by, c, _)| by == body && c == closure && false)?;\n",
     tests: corpus("owner_handle"),
   },
   {

@@ -128,12 +128,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // ADR 0843, amended); or on what owns it, its owner's `let` (ADR
         // 0317, amended).
         let mut captured = captured;
+        // A value cell's reader, made in the closure its maker gives the
+        // value's variable to, reads that (`self_handles/value_cells.rs`).
         let own = match self.krate.self_handles.made_of(state.body.source.def_id(), def_id) {
             Some((capture, handle)) => {
                 if let Some(cell) = captured.get_mut(capture) {
                     *cell = Value::Expr(Expr::undefined());
                 }
-                Some(Expr::var(&state.locals.names[handle]))
+                Some(match handle {
+                    Some(handle) => Expr::var(&state.locals.names[handle]),
+                    None => (state.facts.owner_name().cloned())
+                        .ok_or_else(|| self.unsupported(span, "a value cell's reader its maker names nothing to"))?,
+                })
             }
             None => None,
         };

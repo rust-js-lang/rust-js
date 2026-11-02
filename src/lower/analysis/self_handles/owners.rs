@@ -44,18 +44,22 @@ pub(crate) struct OwnerHandle<'tcx> {
     /// The maker's local of the `Rc` the call returns: the variable the
     /// cell is.
     pub(super) handle: Local,
-    /// The block whose call makes the cell: where its `let` is.
-    pub(super) declared: BasicBlock,
-    /// Each closure, and which of its captures is the cell's clone.
-    pub(super) closures: Vec<(DefId, usize)>,
-    /// What the `Rc` points at, the `Weak`'s: the cell is the variable only
-    /// where nothing counts it.
+    /// The block whose call makes the cell: where its `let` is; none of a
+    /// value cell, whose call's value is its `const` (`value_made`).
+    pub(super) declared: Option<BasicBlock>,
+    /// Each closure, the body that makes it, the maker's or the closure's
+    /// it's given to (`value_made`), and which of its captures is the
+    /// cell's clone, or that closure's borrow of the cell.
+    pub(super) closures: Vec<(DefId, DefId, usize)>,
+    /// What the `Rc` points at, the `Weak`'s, or the cell of a value cell:
+    /// the cell is the variable only where nothing counts it.
     pub(super) pointee: Ty<'tcx>,
     /// What the maker writes of the cell: nothing, at each.
     pub(super) made: HashSet<Location>,
     /// Of each closure, what it writes of reading the cell, nothing at
-    /// each, and each block whose `and_then` gives the variable, to the
-    /// local it gives it to.
+    /// each, and each block whose `and_then`, or a value cell's `unwrap`,
+    /// gives the variable, to the local it gives it to; of the closure a
+    /// value cell's readers are made in, its clones of the cell, and none.
     pub(super) read: HashMap<DefId, (HashSet<Location>, HashMap<BasicBlock, Local>)>,
     /// Where each `Weak::upgrade` of the reads is written, by its closure,
     /// which asks no count.
@@ -305,17 +309,17 @@ pub(super) fn owner_made<'tcx>(
     let mut read = HashMap::new();
     let mut upgrades = Vec::new();
     for &(closure, index, _) in &closures {
-        let (at, own, spans) = super::read(tcx, of.get(&closure)?, (index, true))?;
+        let (at, own, spans) = super::read(tcx, of.get(&closure)?, (index, Chain::Owner))?;
         upgrades.extend(spans.into_iter().map(|span| (closure, span)));
         read.insert(closure, (at, own));
     }
     Some(OwnerHandle {
         maker,
         handle,
-        declared,
+        declared: Some(declared),
         closures: closures
             .into_iter()
-            .map(|(closure, index, _)| (closure, index))
+            .map(|(closure, index, _)| (maker, closure, index))
             .collect(),
         pointee,
         made,
@@ -336,7 +340,7 @@ pub(super) fn once_weak<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx
 
 /// The call at `at`, a block's terminator, of any function: it, its
 /// arguments and its destination, a local whole.
-fn any_call_at<'a, 'tcx>(
+pub(super) fn any_call_at<'a, 'tcx>(
     tcx: TyCtxt<'tcx>,
     body: &'a mir::Body<'tcx>,
     at: Location,
@@ -360,7 +364,7 @@ fn any_call_at<'a, 'tcx>(
 }
 
 /// Whether `to` is reached from `from`'s successors, by what doesn't unwind.
-fn reaches(body: &mir::Body<'_>, from: BasicBlock, to: BasicBlock) -> bool {
+pub(super) fn reaches(body: &mir::Body<'_>, from: BasicBlock, to: BasicBlock) -> bool {
     let mut seen = HashSet::new();
     let mut todo: Vec<BasicBlock> = body.basic_blocks[from].terminator().successors().collect();
     while let Some(block) = todo.pop() {

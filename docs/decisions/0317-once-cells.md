@@ -64,6 +64,7 @@ setting it must check it's unset.**
 - [0847](0847-a-oncecell-field-is-absent-until-set.md): A `OnceCell` in a field is the property, absent until it's set
 - [Below](#amendment-callbacks-handle-on-what-owns-them-is-its-let): Callbacks' handle on what owns them is its `let`
 - [Below](#amendment-a-callback-a-public-field-holds-isnt-the-returns-alone-rd553): A callback a public field holds isn't the return's alone (rd553)
+- [Below](#amendment-callbacks-made-in-an-executor-read-its-calls-value-rd621): Callbacks made in an executor read its call's value (rd621)
 
 ## Amendment: callbacks' handle on what owns them is its `let`
 
@@ -362,3 +363,70 @@ entries reads. With that, react-server's contract says
   `handed-fn-dyn-still-drops`, `library-fn-dyns-always-drop`,
   `library-fn-dyns-never-drop` and `owner-handle-not-owned`, rewritten
   for the new code.
+
+## Amendment: callbacks made in an executor read its call's value (rd621)
+
+### Context
+
+React's Flight client's DEV `then` wraps a chunk in a native promise whose
+`resolve` and `reject` callbacks, made in its executor, write
+`_debugInfo` on that promise, `wrapperPromise._debugInfo = ..`. The port
+holds the promise in a cell, `Rc<Cell<Option<Promise<..>>>>`, set right
+after `js::promise::new` returns, which the callbacks read,
+`wrapper.get().unwrap()`. The cell was a `let` assigned after the call,
+read by `$unwrap(wrapper)`, where upstream closes over the `const`.
+
+### Decision
+
+A value cell is the variable of the value it's set to, and each read of
+it, `cell.get().unwrap()`, is that variable, where (`self_handles/
+value_cells.rs`):
+
+1. it's an `Rc<Cell<Option<T>>>` of a `T` nothing changes in place, a
+   shared reference or a JS object's `Copy` handle, a `Promise`, made by
+   `Rc::default()` or `Rc::new(Cell::new(None))`, lent to one closure, the
+   executor, which the call is given;
+2. it's set once, `cell.set(Some(value))` of the call's value, a variable
+   never changed after, next after the call, never reached again;
+3. each reader is a closure the executor makes of a clone of it, moved,
+   in an `Rc` or a `Some`, into a place a `&mut` of its maker's local
+   lends, that capture only stored into, its old value dropped: the
+   executor neither calls a reader nor gives it to a call, and the maker
+   reads those locals only after the set;
+4. each reader reads it only by `get().unwrap()`, whose value is never
+   lent mutably, nor tested.
+
+The cell's making, borrow, clones, setting and drops are no JS, and each
+read the variable; `const wrapperPromise = new Promise((res, rej) => {
+resolve = (value) => { wrapperPromise._debugInfo = ..; res(value); };
+.. })`. Otherwise the cell is a cell, as written.
+
+### Why
+
+ADR 0262's first case, no difference: no reader can run before the set
+(3, 2), so each read gives the value the variable holds, and neither
+Rust's panic of a read before it nor JS's of a `const` not yet made is
+reached. The executor may call what it's given, `res`, at once: it's no
+reader. A `&mut` the maker was given, rather than its own local, is
+refused: its caller could call a reader once the call has panicked, before
+any set, where Rust panics and the variable would throw another error.
+
+### What holds it
+
+- `test/corpus/value_cell_set_after_its_call.rs`, against native Rust:
+  two readers through a tuple of clones, an executor that calls what it's
+  given, and the value's only read after the set, given back.
+- `test/corpus/value_cell_read_in_its_executor.rs`, each a cell, as
+  written, its `unwrap` panicking as Rust's: a reader the executor calls,
+  one it gives to a call that calls it, one stored through its maker's
+  caller's `&mut`, called once the call panicked, one the maker calls
+  before the set, a `Copy` struct a reader changes its copy of, and a
+  variable changed after the set.
+- `test/js-builtins.test.ts`, "callbacks made in a promise's executor read
+  the promise's const": Flight's shape, run, `_debugInfo` set, of a
+  promise the executor settles at once too.
+- Mutations `value-cell-called-in-executor`, `value-cell-given-on`,
+  `value-cell-callers-place`, `value-cell-read-before-set`,
+  `value-cell-changed-in-place` and `value-cell-variable-changed`
+  (`self_handles/value_cells.rs`).
+
