@@ -3,7 +3,8 @@
 Status: Accepted. Extends [0024](0024-web-crate.md). Extended by
 [0891](0891-a-windows-constructor-is-the-windows.md): each constructor
 a window's global scope has is a `Window` method too. Amended (rd560):
-an iterable's `for_each` takes an `impl FnMut`, which may borrow.
+an iterable's `for_each` takes an `impl FnMut`, which may borrow; and
+(rd574) what it gives that callback is JS's, `'static`, which it may keep.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -257,3 +258,57 @@ body.forEach((value, key) => {
 Held by `test/webapi-objects.test.ts`'s "an iterable's forEach takes a
 callback that may write a local", run in Node and Bun, of `FormData`,
 `Headers` and `URLSearchParams`, and `test/web_forms.rs`'s `iterables`.
+
+
+## Amendment: what `forEach` gives its callback is JS's, which it may keep (rd574)
+
+The amendment above typed each `for_each`'s callback of what a function
+takes, lent for the call: `FormData`'s `impl FnMut(FormDataEntryValue<'_>,
+&str, &FormData)`. A callback couldn't keep a value it was given, where
+`get` gives the same value `'static`, `Option<FormDataEntryValue<'static>>`,
+and `entries()` `(String, FormDataEntryValue<'static>)`. React's Flight
+createBackingFormData keeps each entry, files too, as upstream writes it,
+`formData.forEach(appendBackingEntry.bind(null, backingStore))`; its port
+iterated `formData.entries()` instead, so a `null` given for the form
+threw V8's TypeError naming `entries`, not `forEach`.
+
+**What `forEach` gives its callback is JS's, typed as a function gives
+it, of `'static` borrows**: a JS string is immutable and lives as long as
+JS holds it, as an object does, so the callback may keep each. It's the
+generator's one rule of a value JS gives a callback, `jsGives`, which a
+promised callback's arguments already followed (ADR 1021's `&'static`
+event), and the js crate's `Map::for_each` gives its key so (ADR 0875):
+
+```rust
+pub fn kept(body: &FormData) -> Vec<(&'static str, FormDataEntryValue<'static>)> {
+    let mut entries = Vec::new();
+    body.for_each(|value, key, _| entries.push((key, value)));
+    entries
+}
+```
+```js
+export function kept(body) {
+  const entries = [];
+  body.forEach((value, key) => {
+    entries.push([key, value]);
+  });
+  return entries;
+}
+```
+
+- Every generated `for_each`, 22 of them, of an iterable, a maplike or a
+  setlike: `&str` is `&'static str`, `&T` `&'static T`, a union
+  `FormDataEntryValue<'static>`, `CSSUnparsedSegment<'static>` and
+  `BufferSource<'static>`, the collection `&'static FormData`. A `NodeList<T>`'s
+  methods are of a `T: 'static`, each a class of the crate.
+- A closure that writes its parameters' types, `|value: &str, key: &str,
+  _: &Headers|`, is one of any lifetime, so of `'static` ones too: it
+  compiles as it did, and the JS is the same.
+- What JS calls an observer's or a timer's `Box<dyn FnMut(..)>` with is
+  still typed lent, as a function takes it: rd574 is `forEach`'s.
+- Case ([0262](0262-when-rust-and-js-disagree.md)): none: JS gives the
+  same values, and Rust may hold them as long as JS keeps them.
+
+Held by `test/webapi-objects.test.ts`'s "an iterable's forEach gives
+values a callback may keep", of a `FormData`'s text and `File`, a
+`Headers`' value and itself, and a `NodeList`'s nodes.

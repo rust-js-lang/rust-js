@@ -496,6 +496,56 @@ console.log(found, [...copy.keys()].join(), lib.headerNames(new Headers({ b: "1"
   expect(run([node ?? "node", "--input-type=module", "--eval", program]).trim()).toBe("$ACTION_ID_x a a,b 5");
 });
 
+// rd574: what `forEach` gives its callback is JS's, as `get` gives it, so
+// the callback may keep it: a `FormData`'s values, `File`s too, and keys,
+// a `NodeList`'s nodes and the collection itself. React's Flight
+// createBackingFormData keeps each entry, `formData.forEach(..)`.
+test("an iterable's forEach gives values a callback may keep", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-for-each-kept");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{FormData, FormDataEntryValue, Headers, NodeList};
+
+pub fn kept(body: &FormData) -> Vec<(&'static str, FormDataEntryValue<'static>)> {
+    let mut entries = Vec::new();
+    body.for_each(|value, key, _| entries.push((key, value)));
+    entries
+}
+
+pub fn last_header(headers: &Headers) -> Option<(&'static str, &'static Headers)> {
+    let mut last = None;
+    headers.for_each(|value, _, all| last = Some((value, all)));
+    last
+}
+
+pub fn nodes(list: &NodeList) -> Vec<&'static webapi::Node> {
+    let mut nodes = Vec::new();
+    list.for_each(|node, _, _| nodes.push(node));
+    nodes
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("body.forEach((value, key) => {");
+  expect(js).toContain("entries.push([key, value]);");
+  const lib = await import(join(dir, "lib.js"));
+  const body = new FormData();
+  const file = new File(["x"], "x.txt");
+  body.append("a", "1");
+  body.append("f", file);
+  const entries = lib.kept(body);
+  expect(entries.map(([key]: [string]) => key)).toEqual(["a", "f"]);
+  expect(entries[0][1]).toBe("1");
+  expect(entries[1][1]).toBeInstanceOf(File);
+  expect(entries[1][1].name).toBe("x.txt");
+  const headers = new Headers({ a: "1", b: "2" });
+  const [value, all] = lib.lastHeader(headers);
+  expect(value).toBe("2");
+  expect(all).toBe(headers);
+  expect(lib.lastHeader(new Headers())).toBeUndefined();
+  const list = { forEach: (f: (n: unknown, i: number, l: unknown) => void) => ["x", "y"].forEach((n, i) => f(n, i, list)) };
+  expect(lib.nodes(list)).toEqual(["x", "y"]);
+});
+
 // rd506's audit: of an untagged enum of one class and kinds JS tells by
 // their value, a form entry's `File | string`, the class is what's left,
 // each other tested, `typeof entry === "string"`, so no `instanceof File`

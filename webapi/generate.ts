@@ -1378,11 +1378,17 @@ function promisedCallback(callback: Def): string | { skip: string } {
   return known.lent ? `&dyn Into${name}` : `Box<dyn Into${name}>`;
 }
 
-/** The bound of a function `Into<name>` takes: its arguments, `'static`
- * borrows, as a handler's event is (ADR 1021), and any result `R`. */
+/** A value JS gives a callback, a parameter's type: JS's, which the
+ * callback may keep, of `'static` borrows, as a handler's event is (ADR
+ * 1021) and as a function's result is, `&'static str`, `&'static Node`,
+ * `FormDataEntryValue<'static>` (ADR 0281, amended, rd574). */
+const jsGives = (type: string): string => type.replace(/&(?!')/g, "&'static ").replace(/<'_>/g, "<'static>");
+
+/** The bound of a function `Into<name>` takes: its arguments, `jsGives`',
+ * and any result `R`. */
 function promisedBound(name: string): string {
   const { args, lent, once } = promised.get(name)!;
-  const each = args.map((a) => a.replace(/&(?!')/g, "&'static ").replace(/<'_>/g, "<'static>"));
+  const each = args.map(jsGives);
   return `${lent ? "Fn" : once ? "FnOnce" : "FnMut"}(${each.join(", ")}) -> R${lent ? " + Copy" : ""} + 'static`;
 }
 
@@ -1705,6 +1711,9 @@ function functionsOf(declared: Interface): Fn[] {
     // `(value, key, map)`, an `impl FnMut` JS runs before `forEach` returns
     // and keeps nothing of, so it may borrow what's around it, as a
     // `js::Map`'s and a `js::Set`'s `for_each` may (ADR 0281, amended);
+    // each of what it's given JS's, which the callback may keep, `jsGives`'
+    // `'static` borrows, as `get` gives them (rd574): a `FormData`'s
+    // `FormDataEntryValue<'static>`, `&'static str` keys;
     // and a map's or a set's own methods; and its
     // `keys`, `values` and `entries`, JS iterators, each a
     // `Box<dyn Iterator>`, which rust-js steps, adapts and loops over as
@@ -1727,7 +1736,7 @@ function functionsOf(declared: Interface): Fn[] {
       const doc = (name: string) => [`[MDN](${mdn(i.name, name)})`];
       const add = (name: string, jsName: string, params: string[], result: string) =>
         fns.push({ name, jsName, params: [...self, ...params], result, doc: doc(jsName.replace(/^get /, "")) });
-      add("for_each", "forEach", [`callback: impl FnMut(${v}, ${k}, ${own})`], "()");
+      add("for_each", "forEach", [`callback: impl FnMut(${[v, k, own].map(jsGives).join(", ")})`], "()");
       const keyResult = m.type === "setlike" ? result : key ? rustType(key, "result") : "f64";
       if (typeof keyResult === "string") {
         const iterator = (item: string) => `Box<dyn Iterator<Item = ${item}>>`;
@@ -2302,7 +2311,7 @@ function module(name: string, all: Fn[], typed: string[] = [], constants: string
  * `Element`s, else `Node`s; and its own members give and take a `T`. */
 function listing(i: Interface, f: Fn): Fn {
   if (i.name === "NodeList") {
-    const of = (t: string) => t.replace(/&('static )?Node\b/g, "&$1T").replace(/&NodeList\b/g, "&NodeList<T>");
+    const of = (t: string) => t.replace(/&('static )?Node\b/g, "&$1T").replace(/&('static )?NodeList\b/g, "&$1NodeList<T>");
     const moduleFn = !f.params[0]?.startsWith("this:");
     return { ...f, params: f.params.map(of), result: of(f.result), ...(moduleFn ? { typeParams: ["T"] } : {}) };
   }
@@ -2411,7 +2420,9 @@ for (const name of INTERFACES) {
   }
   if (methods.length > 0 || TYPED[name]) {
     line();
-    line(listOf ? `impl<T> ${type}<T> {` : `impl ${type} {`);
+    // A list's items are JS's, which a `forEach` callback may keep,
+    // `&'static T` (rd574): each a class of the crate, `'static`.
+    line(listOf ? `impl<T: 'static> ${type}<T> {` : `impl ${type} {`);
     for (const f of methods.map((f) => listing(i, f))) {
       line(generic({ ...f, params: ["&self", ...f.params.slice(1)] }));
       line();

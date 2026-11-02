@@ -5009,7 +5009,7 @@ impl DOMTokenList {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMTokenList/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn for_each(&self, callback: impl FnMut(&str, f64, &DOMTokenList)) {
+    pub fn for_each(&self, callback: impl FnMut(&'static str, f64, &'static DOMTokenList)) {
         unreachable!()
     }
 
@@ -5068,7 +5068,7 @@ pub mod node_list {
     }
 }
 
-impl<T> NodeList<T> {
+impl<T: 'static> NodeList<T> {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeList/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
     #[cfg_attr(rust_js, rust_js::nullable)]
@@ -5086,7 +5086,7 @@ impl<T> NodeList<T> {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeList/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn for_each(&self, callback: impl FnMut(&T, f64, &NodeList<T>)) {
+    pub fn for_each(&self, callback: impl FnMut(&'static T, f64, &'static NodeList<T>)) {
         unreachable!()
     }
 
@@ -27513,7 +27513,7 @@ impl Headers {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn for_each(&self, callback: impl FnMut(&str, &str, &Headers)) {
+    pub fn for_each(&self, callback: impl FnMut(&'static str, &'static str, &'static Headers)) {
         unreachable!()
     }
 
@@ -27963,7 +27963,7 @@ impl FormData {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn for_each(&self, callback: impl FnMut(FormDataEntryValue<'_>, &str, &FormData)) {
+    pub fn for_each(&self, callback: impl FnMut(FormDataEntryValue<'static>, &'static str, &'static FormData)) {
         unreachable!()
     }
 
@@ -37985,7 +37985,7 @@ impl AudioParamMap {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioParamMap/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn for_each(&self, callback: impl FnMut(&AudioParam, &str, &AudioParamMap)) {
+    pub fn for_each(&self, callback: impl FnMut(&'static AudioParam, &'static str, &'static AudioParamMap)) {
         unreachable!()
     }
 
@@ -40616,7 +40616,7 @@ impl CSSNumericArray {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSNumericArray/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn for_each(&self, callback: impl FnMut(&CSSNumericValue, f64, &CSSNumericArray)) {
+    pub fn for_each(&self, callback: impl FnMut(&'static CSSNumericValue, f64, &'static CSSNumericArray)) {
         unreachable!()
     }
 
@@ -42538,7 +42538,7 @@ impl CSSTransformValue {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTransformValue/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn for_each(&self, callback: impl FnMut(&CSSTransformComponent, f64, &CSSTransformValue)) {
+    pub fn for_each(&self, callback: impl FnMut(&'static CSSTransformComponent, f64, &'static CSSTransformValue)) {
         unreachable!()
     }
 
@@ -42810,7 +42810,7 @@ impl CSSUnparsedValue {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSUnparsedValue/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn for_each(&self, callback: impl FnMut(CSSUnparsedSegment<'_>, f64, &CSSUnparsedValue)) {
+    pub fn for_each(&self, callback: impl FnMut(CSSUnparsedSegment<'static>, f64, &'static CSSUnparsedValue)) {
         unreachable!()
     }
 
@@ -44868,7 +44868,7 @@ impl CustomStateSet {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomStateSet/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn for_each(&self, callback: impl FnMut(&str, &str, &CustomStateSet)) {
+    pub fn for_each(&self, callback: impl FnMut(&'static str, &'static str, &'static CustomStateSet)) {
         unreachable!()
     }
 
@@ -47939,7 +47939,7 @@ impl EventCounts {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EventCounts/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn for_each(&self, callback: impl FnMut(f64, &str, &EventCounts)) {
+    pub fn for_each(&self, callback: impl FnMut(f64, &'static str, &'static EventCounts)) {
         unreachable!()
     }
 
@@ -49006,7 +49006,7 @@ impl FontFaceSet {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn for_each(&self, callback: impl FnMut(&FontFace, &FontFace, &FontFaceSet)) {
+    pub fn for_each(&self, callback: impl FnMut(&'static FontFace, &'static FontFace, &'static FontFaceSet)) {
         unreachable!()
     }
 
@@ -50907,7 +50907,7 @@ impl GPUSupportedFeatures {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUSupportedFeatures/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn for_each(&self, callback: impl FnMut(&str, &str, &GPUSupportedFeatures)) {
+    pub fn for_each(&self, callback: impl FnMut(&'static str, &'static str, &'static GPUSupportedFeatures)) {
         unreachable!()
     }
 
@@ -53056,7 +53056,7 @@ impl Highlight {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Highlight/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn for_each(&self, callback: impl FnMut(&AbstractRange, &AbstractRange, &Highlight)) {
+    pub fn for_each(&self, callback: impl FnMut(&'static AbstractRange, &'static AbstractRange, &'static Highlight)) {
         unreachable!()
     }
 
@@ -53155,7 +53155,7 @@ impl HighlightRegistry {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HighlightRegistry/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn for_each(&self, callback: impl FnMut(&Highlight, &str, &HighlightRegistry)) {
+    pub fn for_each(&self, callback: impl FnMut(&'static Highlight, &'static str, &'static HighlightRegistry)) {
         unreachable!()
     }
 
@@ -55117,7 +55117,7 @@ impl MIDIInputMap {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIInputMap/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn for_each(&self, callback: impl FnMut(&MIDIInput, &str, &MIDIInputMap)) {
+    pub fn for_each(&self, callback: impl FnMut(&'static MIDIInput, &'static str, &'static MIDIInputMap)) {
         unreachable!()
     }
 
@@ -55269,7 +55269,7 @@ impl MIDIOutputMap {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIOutputMap/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn for_each(&self, callback: impl FnMut(&MIDIOutput, &str, &MIDIOutputMap)) {
+    pub fn for_each(&self, callback: impl FnMut(&'static MIDIOutput, &'static str, &'static MIDIOutputMap)) {
         unreachable!()
     }
 
@@ -57534,7 +57534,7 @@ impl MediaKeyStatusMap {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeyStatusMap/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn for_each(&self, callback: impl FnMut(&str, BufferSource<'_>, &MediaKeyStatusMap)) {
+    pub fn for_each(&self, callback: impl FnMut(&'static str, BufferSource<'static>, &'static MediaKeyStatusMap)) {
         unreachable!()
     }
 
@@ -65619,7 +65619,7 @@ impl RTCStatsReport {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCStatsReport/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn for_each(&self, callback: impl FnMut(&dyn core::any::Any, &str, &RTCStatsReport)) {
+    pub fn for_each(&self, callback: impl FnMut(&'static dyn core::any::Any, &'static str, &'static RTCStatsReport)) {
         unreachable!()
     }
 
@@ -70626,7 +70626,7 @@ impl StylePropertyMapReadOnly {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMapReadOnly/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn for_each(&self, callback: impl FnMut(&[&CSSStyleValue], &str, &StylePropertyMapReadOnly)) {
+    pub fn for_each(&self, callback: impl FnMut(&'static [&'static CSSStyleValue], &'static str, &'static StylePropertyMapReadOnly)) {
         unreachable!()
     }
 
@@ -72119,7 +72119,7 @@ impl URLSearchParams {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn for_each(&self, callback: impl FnMut(&str, &str, &URLSearchParams)) {
+    pub fn for_each(&self, callback: impl FnMut(&'static str, &'static str, &'static URLSearchParams)) {
         unreachable!()
     }
 
@@ -73129,7 +73129,7 @@ impl ViewTransitionTypeSet {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ViewTransitionTypeSet/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn for_each(&self, callback: impl FnMut(&str, &str, &ViewTransitionTypeSet)) {
+    pub fn for_each(&self, callback: impl FnMut(&'static str, &'static str, &'static ViewTransitionTypeSet)) {
         unreachable!()
     }
 
@@ -73326,7 +73326,7 @@ impl WGSLLanguageFeatures {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WGSLLanguageFeatures/forEach)
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
-    pub fn for_each(&self, callback: impl FnMut(&str, &str, &WGSLLanguageFeatures)) {
+    pub fn for_each(&self, callback: impl FnMut(&'static str, &'static str, &'static WGSLLanguageFeatures)) {
         unreachable!()
     }
 
