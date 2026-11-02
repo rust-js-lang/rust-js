@@ -1372,7 +1372,7 @@ mod tests {
             value,
             export: false,
             mutable: false,
-            fields: Vec::new(),
+            fields: Default::default(),
             span: Span::NONE,
         })];
         let mut lists = 0;
