@@ -1,7 +1,8 @@
 # 0304. `js::import!` of an item loads its module when it's asked for
 
 Status: Accepted. Amends [0028](0028-js-module-imports.md), which left
-dynamic `import()` for later.
+dynamic `import()` for later. Amended (2026-11-02): a specifier known as
+the program runs is `js::import_specifier(specifier)` (rd607).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -51,3 +52,31 @@ const module = await import("./root.js");
 - **It's the JavaScript a person writes**: react.dev's `await import(..)`.
 - **It's the same program**: what's imported is loaded where it's asked
   for, before what's given it runs.
+
+## Amendment: a specifier known as the program runs (rd607)
+
+React's Flight client for ESM, and for an unbundled Node server, loads the
+module a server named: `import(metadata.specifier)`, of a string it was
+sent. `js::import!` and `js::import_module!` take an item the crate knows,
+whose module's path rust-js writes; none took a string.
+
+**`js::import_specifier(specifier: &str) -> Promise<&'static Unknown>` is
+`import(specifier)`**, JS's own, a promise of the module's namespace, any
+value, as TypeScript's `import()` of a string is `Promise<any>`; rejected
+where the module can't be loaded, as JS's is.
+
+- **A function, not an arm of `js::import!`**: the macro's string arm is a
+  static import for what a module does, `js::import!("./App.css")`, and
+  its path arm names an item; a variable's name is a path, so an
+  expression arm would read `js::import!(specifier)` as an item. Each form
+  says what it's given: an item, a module by its item, a specifier.
+- **No wrapper**: the call is `import(x)` itself, so a bundler sees the
+  dynamic import it leaves for the host, as upstream's
+  `// $FlowFixMe[unsupported-syntax]` one is.
+- Case N ([0262](0262-when-rust-and-js-disagree.md)): JS's own `import()`.
+
+Held by `test/js-functions.test.ts` ("a module is imported by a
+specifier known as the program runs"): `return import(specifier);` and
+`await import(base + file)`, run, a module's export read and a missing
+one rejected. A binding's signature has no mutation: the test doesn't
+compile without it.

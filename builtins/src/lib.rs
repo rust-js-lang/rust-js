@@ -110,6 +110,18 @@ pub fn import_module_of<T>(item: T) -> Promise<Module<T>> {
     unreachable!()
 }
 
+/// The module `specifier` names, loaded when it's asked for, of a
+/// specifier known as the program runs, a URL a server sent:
+/// [`import(specifier)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/import),
+/// a promise of its namespace, any value, as TypeScript's `Promise<any>`;
+/// rejected where it can't be loaded. Of an item the crate knows,
+/// [`import!`] and [`import_module!`], which a bundler splits by (ADR 0304,
+/// amended).
+#[cfg_attr(rust_js, rust_js::link_name = "import")]
+pub fn import_specifier(specifier: &str) -> Promise<&'static Unknown> {
+    unreachable!()
+}
+
 /// A JS module, loaded, whose default export is a `T`: what
 /// [`import_module!`] gives.
 pub struct Module<T>(PhantomData<JsObject>, PhantomData<T>);

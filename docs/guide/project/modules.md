@@ -683,6 +683,11 @@ export async function longLines(text) {
 `js::import_module!(root::Root)` is the module's namespace, `import("./root.js")`,
 whose default export is `Root`, as React's `lazy` takes it.
 
+`js::import_specifier(specifier)` is `import(specifier)`, of a specifier
+known only as the program runs, a URL a server sent: a promise of the
+module's namespace, any value. A bundler leaves it for the host to load
+([ADR 0304, amended](../../decisions/0304-dynamic-import.md)).
+
 ## Run code when the module loads
 
 `js::on_load!` is what the module runs when it's loaded: its body becomes

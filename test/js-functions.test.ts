@@ -891,3 +891,29 @@ pub fn named(f: &dyn Fn(&str) -> u32) -> Option<&'static Unknown> {
   expect([lib.written(() => 1, "$h5"), lib.written("text", "$6")]).toEqual(["$h5", undefined]);
   expect(lib.named(function measure(text: string) { return text.length; })).toBe("measure");
 });
+
+// rd607: `import(specifier)` of a specifier known as the program runs, a
+// URL a server sent, as React's Flight client for ESM loads a module:
+// `js::import_specifier(specifier)`, JS's own `import()`, which a bundler
+// leaves for the host, a promise of the module's namespace.
+test("a module is imported by a specifier known as the program runs", async () => {
+  const { js, lib } = await compiled("import-specifier", `use js::{Promise, Unknown};
+
+pub fn load(specifier: &str) -> Promise<&'static Unknown> {
+    js::import_specifier(specifier)
+}
+
+pub async fn named(base: &str, file: &str) -> Option<&'static Unknown> {
+    let module = js::import_specifier(&format!("{base}{file}")).await;
+    js::get(module, "name")
+}
+`);
+  expect(js).toContain("export function load(specifier) {\n  return import(specifier);\n}");
+  expect(js).toContain("  const module = await import(base + file);\n  return module.name;");
+  const dir = fixture("import-specifier-module");
+  writeFileSync(join(dir, "named.js"), 'export const name = "loaded";\n');
+  const base = `file://${dir}/`;
+  expect(await lib.named(base, "named.js")).toBe("loaded");
+  expect((await lib.load(`${base}named.js`)).name).toBe("loaded");
+  await expect(lib.load(`${base}missing.js`)).rejects.toThrow();
+});
