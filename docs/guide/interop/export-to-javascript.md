@@ -910,6 +910,70 @@ export declare class FiberNode {
 export function createFiber(tag: number, dev: boolean): FiberNode;
 ```
 
+- **A constructor may give its instance shared, `Rc<Self>`**, as React's
+  Flight server's `RequestInstance` hands `this` to the task it makes:
+  the `Rc::new(Request { .. })` it makes is `this`, and `Request::new(..)`
+  is `new RequestInstance(..)`, the `Rc` its callers hold. An `Rc` the
+  crate counts, whose counts it reads or whose last owner runs a
+  destructor, is `{ value, strong, weak }`, which `new` can't give: refused,
+  saying to give `Self`
+  ([ADR 0761](../../decisions/0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md),
+  amended, rd554):
+
+```rust
+use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Task {
+    pub request: Rc<Request>,
+}
+
+#[cfg_attr(rust_js, rust_js::class, rust_js::name = "RequestInstance")]
+pub struct Request {
+    pub pinged_tasks: RefCell<Vec<Rc<Task>>>,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Request {
+    fn new(
+        tasks: u32, // DEV-only
+    ) -> Rc<Self> {
+        let request = Rc::new(Request {
+            pinged_tasks: RefCell::new(vec![]),
+        });
+        for _ in 0..tasks {
+            let task = Rc::new(Task {
+                request: Rc::clone(&request),
+            });
+            request.pinged_tasks.borrow_mut().push(task);
+        }
+        request
+    }
+}
+
+pub fn create_request(tasks: u32) -> Rc<Request> {
+    Request::new(tasks)
+}
+```
+
+```js
+function RequestInstance(
+  tasks, // DEV-only
+) {
+  this.pingedTasks = [];
+  for (let i = 0; i < tasks; i++) {
+    const task = {
+      request: this,
+    };
+    this.pingedTasks.push(task);
+  }
+}
+
+export function createRequest(tasks) {
+  return new RequestInstance(tasks);
+}
+```
+
 - **The struct's `#[rust_js::name]` names the class**, `FiberNode` of
   React's `Fiber`, as a binding's class is named, in its JS and its
   declaration. The class is where its impl is, its constructor function

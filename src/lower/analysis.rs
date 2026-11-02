@@ -978,7 +978,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             told = false;
         }
     }
-    if !told {
+    // And a class's constructor that gives an `Rc` of it counted (rd554).
+    if !told || !super::classes::refuse_counted_instances(tcx, |pointee| counted.counts(tcx, pointee)) {
         return None;
     }
     // A handle on itself is no JS where nothing counts its `Rc`.

@@ -81,12 +81,15 @@ pub(super) fn opened_on(text: &str, (line_start, at): (usize, usize)) -> Option<
 }
 
 /// Where each function's parameter starts, by where it ends: a line
-/// comment after it on its line is after it (ADR 0708, amended).
+/// comment after it on its line is after it (ADR 0708, amended). A type's
+/// methods' too, a class's constructor function's, `function
+/// RequestInstance(.., keepDebugAlive, // DEV-only` (rd554).
 pub(super) fn param_starts(module: &crate::js::Module) -> HashMap<u32, u32> {
     (module.items.iter())
-        .filter_map(|item| match item {
-            crate::js::Item::Function(f) => Some(f),
-            _ => None,
+        .flat_map(|item| match item {
+            crate::js::Item::Function(f) => std::slice::from_ref(f),
+            crate::js::Item::Namespace(namespace) => &namespace.methods[..],
+            crate::js::Item::Const(_) | crate::js::Item::Statements(_) => &[],
         })
         .flat_map(|f| f.param_spans.iter().filter(|s| !s.is_none()).map(|s| (s.hi, s.lo)))
         .collect()

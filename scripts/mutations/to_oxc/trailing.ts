@@ -11,6 +11,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments-ends.test.ts"],
   },
   {
+    name: "param-trailing-comment-of-a-method-after-the-line",
+    breaks: "a line comment after a class's constructor's last parameter on its line, React's Flight server's `keepDebugAlive, // DEV-only`, is the body's first line, as a type's methods' parameters were none a comment is after (rd554)",
+    file: "src/to_oxc/trailing.rs",
+    find: "            crate::js::Item::Namespace(namespace) => &namespace.methods[..],\n",
+    replace: "            crate::js::Item::Namespace(_) => &[],\n",
+    tests: ["test/classes.test.ts", "-t", "a class's constructor that gives an Rc of it makes this"],
+  },
+  {
     name: "trailing-comment-dropped",
     breaks: "a comment after code on its line, `let n = 1; // why`, is lost",
     file: "src/to_oxc/trailing.rs",

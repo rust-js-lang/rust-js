@@ -15,11 +15,14 @@ use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Symbol;
 use rustc_span::def_id::DefId;
 
+mod constructors;
 mod defaults;
 mod namespaces;
 mod prototypes;
 mod states;
 mod subclasses;
+use constructors::gives_instance;
+pub(crate) use constructors::refuse_counted_instances;
 pub(in crate::lower) use defaults::{prototype_defaults, take_default};
 pub(crate) use namespaces::{names_namespace, taken_apart, unread_namespaces};
 pub(crate) use prototypes::{PrototypeSet, set_alone, set_prototypes, with_prototype_members};
@@ -708,8 +711,11 @@ pub(super) fn reject_misuse<'tcx>(
                                 .skip_normalization()
                                 .skip_binder();
                             let own = tcx.type_of(id).instantiate_identity().skip_normalization();
-                            if sig.output() != own {
-                                refuse(item_span, "constructor, `fn new(..) -> Self`, gives `Self`");
+                            if !gives_instance(tcx, sig.output(), own) {
+                                refuse(
+                                    item_span,
+                                    "constructor, `fn new(..) -> Self`, gives `Self` or an `Rc` of it",
+                                );
                             }
                             // `super(props)`: what its superclass is
                             // constructed with, its own parameter (rd331).

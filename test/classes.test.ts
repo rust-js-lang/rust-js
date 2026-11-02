@@ -305,6 +305,9 @@ test("what a class is refused says what to write", () => {
     // the error writes; and a crate's is held untyped.
     ["class-unclassed", `${head}${marked}${made}}\npub fn f() -> &'static js::Class {\n    js::class::<C>()\n}\n`, "`impl js::Classed for C { type Constructor = js::AnyConstructor; }`"],
     ["class-typed", `${head}${marked}${made}}\nimpl js::Classed for C {\n    type Constructor = fn() -> C;\n}\npub fn f() -> &'static js::Class<fn() -> C> {\n    js::class::<C>()\n}\n`, "its class is held untyped, `type Constructor = js::AnyConstructor;`"],
+    // A constructor gives its instance, or an `Rc` of it (rd554), not a
+    // `Box` of it, which is no `new`'s.
+    ["class-boxed", `${head}${marked}    pub fn new() -> Box<Self> {\n        Box::new(C { n: 0 })\n    }\n}\n`, "constructor, `fn new(..) -> Self`, gives `Self` or an `Rc` of it"],
     ["class-instance-set-again", `${head}${marked}    pub fn new(fresh: bool) -> Self {\n        let mut c = C { n: 0 };\n        if fresh {\n            c = C { n: 1 };\n        }\n        c\n    }\n}\n`, "a constructor whose instance is set again, not changed in place"],
   ];
   for (const [name, rust, message] of cases) {
@@ -756,6 +759,149 @@ export function FiberNode(tag, dev) {
   profile(false);
   const plain = createFiber(5, false);
   expect(["actualDuration" in plain, "_debugOwner" in plain, Object.isExtensible(plain)]).toEqual([false, false, true]);
+});
+
+// React's Flight server makes its request with `new RequestInstance(..)`,
+// whose constructor hands `this` to its root task, which keeps it:
+// `createTask(this, ..)`. A Rust engineer's constructor gives the `Rc` it
+// shares, `fn new(..) -> Rc<Self>`; an `Rc` the crate counts nothing of is
+// the value it points at, so the constructor's `Rc::new(Request { .. })`
+// is `this`, each read of it `this`, and `Request::new(..)` is `new
+// RequestInstance(..)` (rd554, ADR 0761 amended).
+test("a class's constructor that gives an Rc of it makes this, which it hands on", async () => {
+  const { js, ts, dir } = compiled("class-constructor-rc", `use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+pub struct Task {
+    pub request: Rc<Request>,
+    pub id: u32,
+}
+
+#[cfg_attr(rust_js, rust_js::class, rust_js::name = "RequestInstance")]
+pub struct Request {
+    pub kind: u8,
+    pub next_id: Cell<u32>,
+    pub pinged_tasks: RefCell<Vec<Rc<Task>>>,
+}
+
+unsafe impl js::Defined for Request {}
+
+fn create_task(request: &Rc<Request>) -> Rc<Task> {
+    let id = request.next_id.get();
+    request.next_id.set(id + 1);
+    Rc::new(Task {
+        request: Rc::clone(request),
+        id,
+    })
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Request {
+    fn new(
+        kind: u8,
+        tasks: u32, // the tasks it starts with
+    ) -> Rc<Self> {
+        let request = Rc::new(Request {
+            kind,
+            next_id: Cell::new(0),
+            pinged_tasks: RefCell::new(vec![]),
+        });
+        if kind == 0 {
+            return request;
+        }
+        for _ in 0..tasks {
+            let task = create_task(&request);
+            request.pinged_tasks.borrow_mut().push(task);
+        }
+        request
+    }
+
+    pub fn pinged(&self) -> u32 {
+        self.pinged_tasks.borrow().len() as u32
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Hints {
+    pub count: Cell<u32>,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Hints {
+    pub fn new() -> Rc<Self> {
+        Rc::new(Hints { count: Cell::new(0) })
+    }
+}
+
+pub fn create_request(kind: u8, tasks: u32) -> Rc<Request> {
+    // The request starts its tasks.
+    Request::new(kind, tasks)
+}
+
+pub fn held_by_its_tasks(request: &Rc<Request>) -> bool {
+    (request.pinged_tasks.borrow().iter()).all(|task| std::ptr::eq(&*task.request, &**request))
+}
+
+pub fn hinted() -> u32 {
+    let hints = Hints::new();
+    hints.count.set(hints.count.get() + 2);
+    hints.count.get()
+}
+`);
+  expect(js).toContain(`function RequestInstance(
+  kind,
+  tasks, // the tasks it starts with
+) {
+  this.kind = kind;
+  this.nextId = 0;
+  this.pingedTasks = [];
+  if (kind === 0) {
+    return;
+  }
+`);
+  expect(js).toContain("const task = createTask(this);\n");
+  expect(js).toContain("this.pingedTasks.push(task);\n");
+  expect(js).toContain("  // The request starts its tasks.\n  return new RequestInstance(kind, tasks);\n");
+  expect(js).toContain("export function Hints() {\n  this.count = 0;\n}\n");
+  expect(js).toContain("const hints = new Hints();\n");
+  expect(ts).toContain("export function createRequest(kind: number, tasks: number): RequestInstance;\n");
+  const { createRequest, heldByItsTasks, hinted, Hints } = await import(join(dir, "lib.js"));
+  const request = createRequest(1, 3);
+  expect([request.pinged(), request.nextId, heldByItsTasks(request), request.pingedTasks.map((task: { id: number }) => task.id)])
+    .toEqual([3, 3, true, [0, 1, 2]]);
+  expect(request.pingedTasks[0].request).toBe(request);
+  expect(request.constructor.name).toBe("RequestInstance");
+  expect(createRequest(0, 3).pinged()).toBe(0);
+  expect(hinted()).toBe(2);
+  expect(new Hints()).toBeInstanceOf(Hints);
+});
+
+// An `Rc` the crate counts, whose counts it reads, is `{ value, strong,
+// weak }`, which `new` can't give: its constructor is refused (rd554).
+test("a class's constructor that gives an Rc of it the crate counts is refused", () => {
+  const stderr = refused("class-constructor-rc-counted", `use std::cell::Cell;
+use std::rc::Rc;
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Counter {
+    pub count: Cell<u32>,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Counter {
+    pub fn new() -> Rc<Self> {
+        Rc::new(Counter { count: Cell::new(0) })
+    }
+}
+
+pub fn owners() -> usize {
+    let counter = Counter::new();
+    let again = Rc::clone(&counter);
+    Rc::strong_count(&again)
+}
+`);
+  expect(stderr).toContain("a `#[rust_js::class]` constructor that gives `std::rc::Rc<Counter>` gives the instance `new` makes, an `Rc` the crate counts nothing of; this crate counts it");
+  expect(stderr).toContain("give `Self`, `fn new(..) -> Self`, and `Rc::new(..)` it where it's made (rd554, ADR 0761)");
 });
 
 // A class whose `==` is its address's and whose `Hash` is too, React's

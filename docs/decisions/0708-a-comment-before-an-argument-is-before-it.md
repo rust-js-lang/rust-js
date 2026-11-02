@@ -4,7 +4,7 @@ Status: Accepted. Extends [0444](0444-a-comment-is-where-its-code-is.md)
 and [0658](0658-a-comment-before-a-branchs-value-is-before-it-in-the-conditional.md),
 whose starts a comment is before were a statement's and a conditional's
 branch's. Amended below: a `const` argument is placed where it's written;
-and a field's value of an `if` or a method call is its field's; an array's item is a start too.
+and a field's value of an `if` or a method call is its field's; an array's item is a start too; a type's method's parameter, a class's constructor's too, is a parameter a comment is after (rd554).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: comments, which
 nothing runs.
@@ -404,3 +404,31 @@ an expression's nested arrays and tuples, a comment before the first item
 or the next, printed the same JS with it. The rule is removed with its
 mutation: each arm at a start is the last met (`arm_starts`), and
 `check:fast --all` printed the same corpus, snapshots, guide and ports.
+
+## Amendment: a type's method's parameter, a class's constructor's too (rd554)
+
+React's Flight server's constructor function ends its parameters
+`keepDebugAlive, // DEV-only`. Its port's `fn new(.., keep_debug_alive:
+bool, // DEV-only) -> Rc<Self>`, a class's constructor (ADR 0761), had
+the comment as its body's first line: where each parameter starts was
+read of the module's functions alone, not of a type's methods, which a
+class's constructor and methods are. And a plain type's method, its
+object's property, `moved(info, by)`, mapped its parameters to no Rust,
+so the comment after one was lost. **A type's methods' parameters are
+each function's**: where they start is read of a namespace's methods too
+(`trailing::param_starts`), and an object's method's are placed where
+they're written (`params_at`), so either comment is after its parameter:
+
+```js
+function RequestInstance(
+  ..
+  keepDebugAlive, // DEV-only
+) {
+```
+
+Case N: comments, which nothing runs. Held by `test/classes.test.ts`'s "a
+class's constructor that gives an Rc of it makes this", the corpus's
+`class_constructor_rc` and `test/lowering-comments-ends.test.ts`'s
+`moved`; mutations `param-trailing-comment-of-a-method-after-the-line`
+(`to_oxc/trailing.ts`) and `object-method-params-unplaced`
+(`to_oxc/statements.ts`).

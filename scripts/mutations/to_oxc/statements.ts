@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "object-method-params-unplaced",
+    breaks: "a line comment after a type's method's parameter, `by: f64, // DEV-only` of its object's `moved(info, by)`, is lost: its parameters map to no Rust, so nothing is after them (rd554)",
+    file: "src/to_oxc/statements.rs",
+    find: "                    let params = self.params_at(FormalParameterKind::FormalParameter, &f.params, &f.param_spans);\n                    let body = self.function_body(&f.body);\n                    let value = Expression::new_function_expression(",
+    replace: "                    let params = self.params(FormalParameterKind::FormalParameter, &f.params);\n                    let body = self.function_body(&f.body);\n                    let value = Expression::new_function_expression(",
+    tests: ["test/lowering-comments-ends.test.ts", "-t", "a comment after a parameter"],
+  },
+  {
     name: "class-method-on-the-constructor",
     breaks: "a class's method is written `Component.setState = function ..`, the constructor's, so an instance's `this.setState` is `undefined` (ADR 0761)",
     file: "src/to_oxc/statements.rs",

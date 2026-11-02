@@ -53,6 +53,15 @@ pub fn made(name: &'static str) -> Info {
         start: 0.0,
     }
 }
+
+impl Info {
+    pub fn moved(
+        &self,
+        by: f64, // DEV-only
+    ) -> f64 {
+        self.start + by
+    }
+}
 `);
   expect(js).toContain(`export function track(
   name,
@@ -68,6 +77,12 @@ pub fn made(name: &'static str) -> Info {
   name, // The name.
   start,
 ) {`);
+  // A type's method's, its object's property's, as a class's constructor
+  // function's is (rd554).
+  expect(js).toContain(`  moved(
+    info,
+    by, // DEV-only
+  ) {`);
   // One before a field is before it, as before (ADR 0708).
   expect(js).toContain("  return {\n    name,\n    // Not yet started.\n    start: 0,\n  };\n");
   expect(lib.track("a" as never, 2 as never)).toEqual({ name: "a", start: 2 });

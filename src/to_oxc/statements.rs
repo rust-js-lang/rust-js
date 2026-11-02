@@ -328,7 +328,7 @@ impl<'a> Cx<'a> {
         let methods = {
             ArenaVec::from_iter_in(
                 constants.chain(n.methods.iter().map(|f| {
-                    let params = self.params(FormalParameterKind::FormalParameter, &f.params);
+                    let params = self.params_at(FormalParameterKind::FormalParameter, &f.params, &f.param_spans);
                     let body = self.function_body(&f.body);
                     let value = Expression::new_function_expression(
                         span(f.span),

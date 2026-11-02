@@ -1,6 +1,6 @@
 # 0761. A `#[rust_js::class]` is a constructor function and its prototype
 
-Status: Accepted, by the user's decision of 2026-10-24; amended (rd325): a private class is its module's own; amended (#448): a prototype of methods isn't replaced at load; amended (#448, the user's decision of 2026-11-01): a load's prototype set right after its constructor; amended (2026-11-01, the user's decision): a class whose `new` isn't `pub` is its type alone; amended by [1049](1049-js-class-is-typed-by-classed.md) (the user's decision of 2026-11-01): a class `js::class` names is `js::Classed`, one line of the program's, and may implement a trait of types alone. Extends
+Status: Accepted, by the user's decision of 2026-10-24; amended (rd325): a private class is its module's own; amended (rd554): a constructor may give an `Rc` of its instance; amended (#448): a prototype of methods isn't replaced at load; amended (#448, the user's decision of 2026-11-01): a load's prototype set right after its constructor; amended (2026-11-01, the user's decision): a class whose `new` isn't `pub` is its type alone; amended by [1049](1049-js-class-is-typed-by-classed.md) (the user's decision of 2026-11-01): a class `js::class` names is `js::Classed`, one line of the program's, and may implement a trait of types alone. Extends
 [0047](0047-methods.md), whose object of functions stays every other
 struct's impl. Amended: its struct's comments, its `///` doc, are its
 constructor function's (below). Amended (2026-10-26, the user's
@@ -136,7 +136,8 @@ Each a compile error that says what to write (`classes::reject_misuse`):
 
 - a tuple or unit struct: a class's fields are `this`'s, named;
 - a type or const parameter: one prototype is every value's;
-- a class of no `fn new(..) -> Self`, or one that gives other than `Self`;
+- a class of no `fn new(..) -> Self`, or one that gives other than `Self`
+  or, since rd554 (below), an `Rc` of it;
 - the attribute on the struct or its impl alone;
 - a struct literal of it outside its `new`: a plain object, no instance;
 - a trait impl of it with items, a `derive(Clone)` or a `Drop` among
@@ -612,3 +613,77 @@ mutations `class-prototype-replaced-allowed`,
 `class-prototype-set-past-a-later-load`, `class-prototype-set-left-in-place`,
 `class-prototype-set-beside-others` (`classes/prototypes.rs`),
 `class-prototype-set-dropped` (`to_oxc/statements.rs`).
+
+## Amendment: a constructor that gives an `Rc` of its instance (rd554)
+
+React's Fizz and Flight servers make their request with `new
+RequestInstance(..)`, a constructor function, so every request shares one
+hidden class, and Flight's hands `this` to its root task, which keeps it:
+
+```js
+function RequestInstance(type, model, .., keepDebugAlive) {
+  ..
+  this.type = type;
+  this.status = OPENING;
+  ..
+  const rootTask = createTask(this, model, ..);
+  pingedTasks.push(rootTask);
+}
+```
+
+Its port's `fn request_instance(..) -> Rc<Request>` printed an object
+literal (gap rd494). Every caller holds the request as an `Rc`, which a
+task keeps, so the Rust a Rust engineer writes of it is a constructor that
+gives the `Rc`, `fn new(..) -> Rc<Self>`, and that was refused: "gives
+`Self`".
+
+**A class's constructor gives `Self`, or an `Rc` or an `Arc` of it**
+(`classes/constructors.rs`'s `gives_instance`). An `Rc` the crate counts
+nothing of is the value it points at (ADRs 0023, 0844), so the `Rc::new(
+Request { .. })` the constructor makes, in a variable it returns or
+returned itself, is `this`, as a struct literal is: each read of it is
+`this`, `createTask(this, ..)`, and `Request::new(..)` is `new
+RequestInstance(..)`, the `Rc` its callers hold:
+
+```rust
+#[cfg_attr(rust_js, rust_js::class, rust_js::name = "RequestInstance")]
+pub struct Request { .. }
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Request {
+    fn new(r#type: i32, model: .., keep_debug_alive: bool) -> Rc<Self> {
+        ..
+        let request = Rc::new(Request { r#type, status: Cell::new(OPENING), .. });
+        ..
+        let root_task = create_task(&request, model, ..);
+        request.pinged_tasks.borrow_mut().push(root_task);
+        request
+    }
+}
+```
+
+**One the crate counts is refused** (`refuse_counted_instances`, asked
+where the crate's counted `Rc`s are known): it's `{ value, strong, weak }`,
+which `new` can't give, and its keys set on `this` would be a wrong
+instance. The refusal says to give `Self` and `Rc::new(..)` it where it's
+made. A `Box` of it, or any other value, is refused as before.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
+difference: an uncounted `Rc` and the value it points at are one JS
+object, which `new` makes; a counted one, whose difference would be
+observed, a compile error.
+
+Alternatives: `fn new(..) -> Self` with each caller's `Rc::new(
+Request::new(..))`, which can't hand the `Rc` to the root task the
+constructor makes, so Flight's constructor's second half would move to
+its callers, the Rust bent to fit; a constructor's own attribute naming
+the `Rc`, a second way to say what its return type says.
+
+Held by `test/classes.test.ts`'s "a class's constructor that gives an Rc
+of it makes this, which it hands on" (run in Node: `instanceof`, a task's
+`request` is the instance, an early `return;`), "a class's constructor
+that gives an Rc of it the crate counts is refused" and "what a class is
+refused"'s `class-boxed`; the corpus's `class_constructor_rc`, against
+native Rust; mutations `class-constructor-of-an-rc-refused`,
+`class-constructor-of-any-pointer-allowed` and
+`class-constructor-of-a-counted-rc-allowed` (`classes/constructors.ts`).
