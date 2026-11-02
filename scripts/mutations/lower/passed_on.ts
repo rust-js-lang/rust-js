@@ -547,4 +547,58 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/arguments.test.ts"],
   },
+  {
+    name: "forwarder-never",
+    breaks:
+      "a function that only passes its parameters on to a function at one instantiation stays a function, `function decodeAction(body, m) { return decodeAction$1(body, m); }`, not that function re-exported (rd575)",
+    file: "src/lower/passed_on.rs",
+    find: "    let (target, args) = super::body_queries::forwards_to(thir, 0)?;\n",
+    replace: "    let (target, args) = super::body_queries::forwards_to(thir, 0).filter(|_| false)?;\n",
+    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
+  },
+  {
+    name: "forwarder-other-signature",
+    breaks:
+      "a function that gives nothing, `fn discards(n: u32) { kept(n); }`, is the function it calls, which gives a value, re-exported (rd575)",
+    file: "src/lower/passed_on.rs",
+    find: "    (mine.inputs_and_output == theirs.inputs_and_output).then_some((target, args))\n",
+    replace: "    Some((target, args))\n",
+    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
+  },
+  {
+    name: "forwarder-generic",
+    breaks:
+      "a generic function that passes its parameters on is the function it calls, re-exported, declared of what that's given, not of its own type parameters (rd575)",
+    file: "src/lower/passed_on.rs",
+    find: "    if tcx.def_kind(function) != DefKind::Fn || generic {\n",
+    replace: "    if tcx.def_kind(function) != DefKind::Fn {\n",
+    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
+  },
+  {
+    name: "forwarder-of-its-own-module",
+    breaks:
+      "a function that calls its own module's function with its parameters is re-exported from its own module (rd575)",
+    file: "src/lower/passed_on.rs",
+    find: "        || (target.is_local() && module(target) == module(function))\n",
+    replace: "",
+    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
+  },
+  {
+    name: "forwarded-call-commented",
+    breaks:
+      "a function that only passes its parameters on, with a comment in its body, is re-exported, its comment left where no statement is (rd575)",
+    file: "src/lower/passed_on.rs",
+    find: "    let commented = written.is_none_or(|text| text.contains(\"//\") || text.contains(\"/*\"));\n",
+    replace: "    let commented = written.is_none();\n",
+    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
+  },
+  {
+    name: "forwarded-call-out-of-line",
+    breaks:
+      "a function kept out of line, `#[inline(never)]`, is re-exported, losing its `@noinline` (rd575, ADR 0649)",
+    file: "src/lower/passed_on.rs",
+    find: "    if !function.export || function.noinline || commented {\n",
+    replace: "    if !function.export || commented {\n",
+    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
+  },
 ];

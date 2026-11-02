@@ -105,7 +105,12 @@ react.dev's TopNav passes the same closure instead.
   `unstable_flushSync: flushSyncFromReconciler` (the user's decision,
   2026-11-01, ADR 1037, amended), only there: a dictionary's or a class's
   method reads its `this`. A closure written in place for removal
-  is refused, as it removes nothing (ADR 1021, amended).
+  is refused, as it removes nothing (ADR 1021, amended). And a function
+  that only passes its parameters on to a function at one instantiation
+  is that function, re-exported by its name (the user's decision,
+  2026-11-02, rd575, ADR 1064): a JS caller sees the function itself,
+  `===` it, its `name` and `length` the function's. Listed in the
+  guide's differences (`semantics.md`, 45).
 - **A `RegExp`'s `test` and `replace` take text, as TypeScript types
   them**, the second case's, which the user decided (2026-10-28, gap rd33):
   React's warnValidStyle tests `badStyleValueWithSemicolonPattern.test(value)`

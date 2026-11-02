@@ -180,7 +180,7 @@ mod format;
 use format::shout as loud;
 
 pub fn welcome(name: &str) -> String {
-    loud(name)
+    loud(&format!("welcome, {name}"))
 }
 ```
 
@@ -196,7 +196,7 @@ pub fn shout(text: &str) -> String {
 import { shout as loud } from "./format.js";
 
 export function welcome(name) {
-  return loud(name);
+  return loud(`welcome, ${name}`);
 }
 ```
 

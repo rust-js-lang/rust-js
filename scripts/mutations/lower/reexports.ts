@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
     breaks:
       "two `pub use`s of one module with a comment between are one statement, the comment lost (ADR 0240, amended)",
     file: "src/lower/reexports.rs",
-    find: "                    .is_some_and(only_attributes) =>\n",
+    find: "                    .is_some_and(|between| only_attributes(between, false)) =>\n",
     replace: "                    .is_some() =>\n",
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],
   },
@@ -131,7 +131,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a run of `pub use`s of one module is a statement each, `export { helper } from` and `export { other as renamed } from` (ADR 0240, amended)",
     file: "src/lower/reexports.rs",
-    find: "                    .is_some_and(only_attributes) =>\n",
+    find: "                    .is_some_and(|between| only_attributes(between, false)) =>\n",
     replace: "                    .is_some_and(|_| false) =>\n",
     tests: ["test/modules.test.ts", "-t", "re-exported from it"],
   },
@@ -302,5 +302,14 @@ export const mutations: Mutation[] = [
     find: "    Some((through, super::bindings::use_name(tcx, used, (name, item), own)))\n",
     replace: "    Some((through, own()))\n",
     tests: ["test/reexports-through.test.ts"],
+  },
+  {
+    name: "forwarded-functions-each-a-statement",
+    breaks:
+      "adjacent functions re-exported from one module are a statement each, `export { decode as decodeAction } from ..; export { decode as decodeFormState } from ..;` (rd575)",
+    file: "src/lower/reexports.rs",
+    find: ".is_some_and(|between| only_attributes(between, true))",
+    replace: ".is_some_and(|between| only_attributes(between, false))",
+    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
   },
 ];

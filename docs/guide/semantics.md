@@ -1218,4 +1218,10 @@ React and JSX are [their own pages](README.md#react).
     back at once and borrows that cell mutably sees the difference: it
     passes, where Rust panics `already borrowed` (ADR 0863, amended, the
     user's decision, 2026-11-02, rd427).
+45. A function that only passes its parameters on to a function at one
+    instantiation is that function, re-exported, `export { decode as
+    decodeAction } from ..`: calling it does the same; only its identity,
+    the function's, `===` it, and its `name` and `length`, the
+    function's, tell them apart (ADR 0262, the user's decision,
+    2026-11-02, rd575; [ADR 1064](../decisions/1064-a-function-that-only-passes-its-parameters-on-is-its-re-export.md)).
 

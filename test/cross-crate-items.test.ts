@@ -303,7 +303,7 @@ test("a library's item its module exports by another name is imported by that", 
 }
 
 pub fn local() -> f64 {
-    scheduler::get_current_time()
+    scheduler::get_current_time() * 2.0
 }
 `, `pub fn called() -> f64 {
     dep::scheduler::get_current_time() + dep::scheduler::unstable_now() + dep::scheduler::MAX
@@ -313,7 +313,7 @@ pub fn local() -> f64 {
   expect(scheduler).toContain("\nconst LIMIT = 100;\n\nfunction getCurrentTime() {\n  return 6;\n}\n\nexport { getCurrentTime as unstable_now, LIMIT as MAX };\n");
   // Called through its module, by what it exports it as there (ADR 1018).
   expect(dep).toContain('import * as Scheduler from "./scheduler.js";\n');
-  expect(dep).toContain("  return Scheduler.unstable_now();\n");
+  expect(dep).toContain("  return Scheduler.unstable_now() * 2;\n");
   const manifest = JSON.parse(readFileSync(join(dir, "dep", "lib.manifest.json"), "utf8")).library;
   const aliased = manifest.items.filter((item: any) => item.exported_as).map((item: any) => [item.export, item.exported_as]);
   expect(aliased.sort()).toEqual([["LIMIT", "MAX"], ["getCurrentTime", "unstable_now"]]);
@@ -1026,7 +1026,9 @@ pub fn pushed(x: &[Vec<u32>], y: &[Vec<u32>]) -> usize {
     x[0].len()
 }
 `);
-  expect(app).toContain('import * as Dep from "../dep/lib.js";\n');
+  // The function that only passes its parameters on to it, it, re-exported
+  // (ADR 1064).
+  expect(app).toContain('export { truncated as log } from "../dep/lib.js";\n');
   expect(app).not.toContain("function truncated");
   expect(app).toContain("function joined");
   const lib = await import(join(dir, "app", "lib.js"));

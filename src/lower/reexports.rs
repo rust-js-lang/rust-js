@@ -15,8 +15,14 @@ use rustc_span::Symbol;
 use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalModId};
 use std::collections::HashMap;
 
-/// What `module` re-exports, each `pub use` statement's `export { .. } from`
-/// in the order they're written, by where it's from (ADR 0240, amended):
+/// One name a module re-exports, where it's written: the statement, which
+/// its names of one module share; where it's from; and `(export, alias)`,
+/// what that exports it as and the name it's re-exported by.
+pub(super) type Named = (rustc_span::Span, js::ImportFrom, (String, String));
+
+/// What `module` re-exports, each name of each `pub use` statement's
+/// `export { .. } from`, which `assembled` orders, by where it's from (ADR
+/// 0240, amended):
 /// another of the crate's modules, by its path, the one the `use`'s path
 /// names, through which it may be a re-export itself; a JS module a
 /// binding names, or a library's file, by its specifier. Each `(export,
@@ -35,11 +41,10 @@ pub(super) fn reexports(
     ),
     paths: &HashMap<LocalModId, Vec<String>>,
     (default_from, held): (Option<(DefId, rustc_span::Span)>, &[super::bindings::HeldBinding]),
-    sources: &super::sources::CapturedSources,
-) -> Vec<Reexport> {
+) -> Vec<Named> {
     // Each name, where it's written: the statement, its `use` item's span,
     // which each of a tree's leaves shares; and where it's from.
-    let mut found: Vec<(rustc_span::Span, js::ImportFrom, (String, String))> = Vec::new();
+    let mut found: Vec<Named> = Vec::new();
     let refuse = |span, what: &str, why: &str| {
         super::refusal::refuse(tcx, span, super::refusal::Refused::Because(what, why));
     };
@@ -262,6 +267,14 @@ pub(super) fn reexports(
         }
     }
     forwarded_methods(tcx, module, (fns, forwarded), paths, &mut found);
+    found
+}
+
+/// The `export { .. } from`s of what a module re-exports, `found`
+/// (`reexports`, `forwarded_functions`): in the order they're written, a
+/// statement's names from one module one statement, in their order, and a
+/// run of them from one module, nothing but attributes between, one too.
+pub(super) fn assembled(mut found: Vec<Named>, sources: &super::sources::CapturedSources) -> Vec<Reexport> {
     // In the order they're written; a statement's names from one module
     // one `export { .. } from` of it, in their order.
     found.sort_by_key(|(at, ..)| at.lo());
@@ -302,7 +315,7 @@ pub(super) fn reexports(
                         .output
                         .text
                         .get(last.span.hi as usize..reexport.span.lo as usize))
-                    .is_some_and(only_attributes) =>
+                    .is_some_and(|between| only_attributes(between, false)) =>
             {
                 last.named.extend(reexport.named);
                 last.span.hi = reexport.span.hi;
@@ -314,8 +327,9 @@ pub(super) fn reexports(
 }
 
 /// Whether `between`, the text between two items, is only whitespace and
-/// attributes, `#[cfg_attr(..)]`, with no comment or blank line.
-fn only_attributes(between: &str) -> bool {
+/// attributes, `#[cfg_attr(..)]`, with no comment, and no blank line but
+/// where `blank_lines`.
+fn only_attributes(between: &str, blank_lines: bool) -> bool {
     let mut rest = between;
     let mut blank = false;
     loop {
@@ -323,7 +337,7 @@ fn only_attributes(between: &str) -> bool {
         let space = &rest[..rest.len() - trimmed.len()];
         blank |= space.matches('\n').count() > 1;
         if trimmed.is_empty() {
-            return !blank;
+            return blank_lines || !blank;
         }
         let Some(attribute) = trimmed.strip_prefix("#[") else {
             return false;
@@ -354,7 +368,7 @@ fn globbed(
     (module, glob, statement): (LocalModId, DefId, rustc_span::Span),
     (fns, foreign): (&HashMap<DefId, FnInfo>, &super::library::Foreign<'_, '_>),
     paths: &HashMap<LocalModId, Vec<String>>,
-    found: &mut Vec<(rustc_span::Span, js::ImportFrom, (String, String))>,
+    found: &mut Vec<Named>,
 ) {
     use rustc_middle::metadata::Reexport as Via;
     let refuse = |what: String, why: &str| {
@@ -524,7 +538,7 @@ fn forwarded_methods(
     module: LocalModId,
     (fns, forwarded): (&HashMap<DefId, FnInfo>, &HashMap<DefId, DefId>),
     paths: &HashMap<LocalModId, Vec<String>>,
-    found: &mut Vec<(rustc_span::Span, js::ImportFrom, (String, String))>,
+    found: &mut Vec<Named>,
 ) {
     let mut imps: Vec<DefId> = (forwarded.keys())
         .filter(|method| fns.get(method).is_some_and(|info| info.module == module))
@@ -561,6 +575,81 @@ fn forwarded_methods(
                     (export, mine.exported().to_string()),
                 ));
             }
+        }
+    }
+}
+
+/// Of `module`'s functions, `forwarders`, each that's the function it
+/// passes its parameters on to at one instantiation, and that function
+/// (rd575, ADR 1064): that function by the forwarder's name, `export {
+/// decodeAction } from "react-server/src/ReactFlightActionServer"`, `export
+/// { decode as decodeReply }` by another, the crate's from its module, a
+/// library's from its file, as a `pub use` of it is (ADR 0874). A run of
+/// them from one module, nothing but whitespace and attributes between,
+/// one statement, as a namespace's forwarded methods are (rd292b).
+pub(super) fn forwarded_functions(
+    tcx: TyCtxt<'_>,
+    module: LocalModId,
+    forwarders: &HashMap<DefId, DefId>,
+    (fns, foreign): (&HashMap<DefId, FnInfo>, &super::library::Foreign<'_, '_>),
+    paths: &HashMap<LocalModId, Vec<String>>,
+    sources: &super::sources::CapturedSources,
+) -> Vec<Named> {
+    // Each, in the order written, where it's from and what it's exported as.
+    let mut each: Vec<(rustc_span::Span, js::ImportFrom, (String, String))> = Vec::new();
+    for id in tcx.hir_module_free_items(module) {
+        let function = id.owner_id.to_def_id();
+        let (Some(&target), Some(mine)) = (forwarders.get(&function), fns.get(&function)) else {
+            continue;
+        };
+        let Some((from, export)) = forwarded_from(tcx, module, target, (fns, foreign), paths) else {
+            continue;
+        };
+        let span = tcx.hir_span_with_body(tcx.local_def_id_to_hir_id(id.owner_id.def_id));
+        each.push((span, from, (export, mine.exported().to_string())));
+    }
+    // Each run's statement, its first's to its last's.
+    let text = &sources.output.text;
+    let mut found: Vec<Named> = Vec::new();
+    let mut run_start = 0;
+    for at in 0..each.len() {
+        let next = each.get(at + 1);
+        let joined = next.is_some_and(|(next, from, _)| {
+            let (this, next) = (sources.span(each[at].0), sources.span(*next));
+            *from == each[at].1
+                && (text.get(this.hi as usize..next.lo as usize)).is_some_and(|between| only_attributes(between, true))
+        });
+        if joined {
+            continue;
+        }
+        let statement = each[run_start].0.to(each[at].0);
+        for (_, from, named) in &each[run_start..=at] {
+            found.push((statement, from.clone(), named.clone()));
+        }
+        run_start = at + 1;
+    }
+    found
+}
+
+/// Where `module` re-exports `target`, a forwarder's function, from, and
+/// what that exports it as (`forwarded_functions`): the crate's from its
+/// module, a library's from its file; `None` where it's neither.
+pub(super) fn forwarded_from(
+    tcx: TyCtxt<'_>,
+    module: LocalModId,
+    target: DefId,
+    (fns, foreign): (&HashMap<DefId, FnInfo>, &super::library::Foreign<'_, '_>),
+    paths: &HashMap<LocalModId, Vec<String>>,
+) -> Option<(js::ImportFrom, String)> {
+    match fns.get(&target) {
+        Some(theirs) if target.is_local() => {
+            let from = paths.get(&theirs.module)?;
+            let export = super::default_exports::exported_as(tcx, target, theirs.exported());
+            Some((js::ImportFrom::Module(from.clone()), export))
+        }
+        _ => {
+            let (from, export) = foreign.import_key(target, module)?;
+            Some((js::ImportFrom::Specifier(from), export))
         }
     }
 }

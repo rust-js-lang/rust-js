@@ -1668,6 +1668,52 @@ from the module that defines it. A class's is its constructor's, and a
 module's its namespace, `export * as ns from`
 ([ADR 0874](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md)).
 
+A function that only passes its parameters on, each as it is, in order,
+to a function at one instantiation is that function, re-exported by its
+own name, and declared at that instantiation, as React's server entries
+re-export `decodeAction` at their bundler's manifest
+([ADR 1064](../../decisions/1064-a-function-that-only-passes-its-parameters-on-is-its-re-export.md)):
+
+```rust
+pub mod action {
+    pub fn decode<M: ?Sized>(body: &str, _manifest: &M) -> usize {
+        body.len()
+    }
+}
+
+pub struct ServerManifest {
+    pub id: u32,
+}
+
+pub fn decode_action(body: &str, server_manifest: &ServerManifest) -> usize {
+    action::decode::<ServerManifest>(body, server_manifest)
+}
+```
+
+```js
+// src/lib.js
+export { decode as decodeAction } from "./action.js";
+```
+
+```ts
+export interface ServerManifest {
+    id: number;
+}
+
+export function decodeAction(body: string, serverManifest: ServerManifest): number;
+```
+
+- **Its callee is a plain function**, the crate's other module's or a
+  library's, not a method, a closure or a binding, and its parameters'
+  and result's types are the callee's at what it gives it.
+- **Its JS is the call alone**, of the function's own JS, which takes
+  no more than it's given. One whose call needs JS of its own, a box, a
+  dictionary or a drop, a `Some(..)` of what it's given, another
+  statement, or a comment, stays a function; so does one its own module
+  calls, its default, a generic one, and one kept out of line.
+- **A JS caller gets the function itself**, `===` it, its `name` and
+  `length` the function's ([semantics](../semantics.md), 45).
+
 ## The default export
 
 `js::export_default!` names the function that is the module's default

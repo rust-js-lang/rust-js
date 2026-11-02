@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "every re-export rustc lists, a type's too, which has no JS, is an import in the load-order graph, as fdec315a7 had it, so a `pub` thread-local made of the re-exporting module's function is refused as in an import cycle (rd116)",
     file: "src/lower/pipeline.rs",
-    find: "        .flat_map(|(&module, (_, reexports))| reexports.iter().map(move |r| (module, r.from.clone())))\n",
+    find: "        .flat_map(|(&module, (_, reexports))| reexports.iter().map(move |(_, from, _)| (module, from.clone())))\n",
     replace:
       "        .flat_map(|(&module, _)| (tcx.module_children_local(module.to_local_def_id()).iter()).filter(|c| !c.reexport_chain.is_empty()).filter_map(|c| c.res.opt_def_id()?.as_local()).filter_map(|id| Some((module, js::ImportFrom::Module(paths.get(&tcx.parent_module_from_def_id(id))?.clone())))).collect::<Vec<_>>())\n",
     tests: ["test/corpus.test.ts", "-t", "^type_reexport_in_no_load_cycle.rs$"],
@@ -70,19 +70,6 @@ export const mutations: Mutation[] = [
     find: "                super::recognition::StdItem::Mutex,\n                super::recognition::StdItem::RwLock,\n                super::recognition::StdItem::Atomic,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^static_locks.rs$"],
-  },
-  {
-    name: "unread-library-item-imported",
-    breaks:
-      "a module imports a library's item it doesn't read, a numbered enum's variant whose test an exhaustive `match` needn't write, `import { Pending, Resolved, Uninitialized }`",
-    file: "src/lower/pipeline.rs",
-    find: "                (package.named).retain(|(export, local)| read.contains(local) || analyzed(&package.from, export));\n",
-    replace: "",
-    tests: [
-      "test/cross-crate-items.test.ts",
-      "-t",
-      "a library's repr enum's variant is imported by its name",
-    ],
   },
   {
     name: "numbered-variant-const-undeclared",
@@ -247,15 +234,6 @@ export const mutations: Mutation[] = [
     replace:
       "                .filter(|&id| export_library && super::library::reachable(tcx, id)),\n",
     tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
-  },
-  {
-    name: "js-import-unread",
-    breaks: '`js::import!("./app.css");` imports nothing',
-    file: "src/lower/pipeline.rs",
-    find: '            for attr in super::bindings::marks(tcx, module, "import") {\n',
-    replace:
-      '            for attr in super::bindings::marks(tcx, module, "none") {\n',
-    tests: ["test/modules.test.ts", "-t", "js::import"],
   },
   {
     name: "initializer-reads-statics",
@@ -846,5 +824,4 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "scope_struct"],
   },
-
 ];

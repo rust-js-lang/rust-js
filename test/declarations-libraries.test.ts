@@ -200,3 +200,203 @@ encodeReply(Symbol());
   expect(errors).toHaveLength(1);
   expect(errors[0]).toContain("caller.ts(4,");
 });
+
+// React's server entries: upstream's ReactFlightDOMServerNode re-exports
+// ReactFlightActionServer's `decodeAction`, generic over the bundler's
+// manifest, whose port takes webpack's. A function that only passes its
+// parameters on, in order, each as it is, to a plain function at one
+// instantiation is that function, re-exported by its own name, `export {
+// decode as decodeAction }`, and declared at that instantiation, `manifest:
+// ServerManifest`, not `M` (rd575, ADR 1064). One that does anything more,
+// or whose call is JS of its own, stays a function.
+test("a function that only passes its parameters on to one instantiation is its re-export", async () => {
+  const dir = fixture("declarations-forwarders");
+  compiled(dir, {
+    "dep.rs": "pub mod action;\npub mod server;\n",
+    "action.rs": `pub fn decode<M: ?Sized>(body: u32, _manifest: &M) -> u32 {
+    body + 1
+}
+
+pub fn pair(a: u32, b: u32) -> u32 {
+    a * 10 + b
+}
+
+pub fn maybe(x: Option<u32>) -> bool {
+    x.is_some()
+}
+
+pub fn ping(n: u32) {
+    println!("ping {n}");
+}
+
+pub fn hold<T>(value: T) -> u32 {
+    drop(value);
+    1
+}
+
+pub fn shown<T: std::fmt::Display>(value: T) -> String {
+    format!("<{value}>")
+}
+
+pub fn bump<T>(value: &mut T) -> &mut T {
+    value
+}
+
+pub fn kept(n: u32) -> u32 {
+    n
+}
+
+pub fn some<T: Copy>(x: Option<T>) -> bool {
+    x.is_some()
+}
+
+pub fn hold_plain<T>(value: T) -> u32 {
+    drop(value);
+    1
+}
+
+pub struct Noisy;
+
+impl Drop for Noisy {
+    fn drop(&mut self) {
+        println!("noisy");
+    }
+}
+
+pub fn holds_noisy() -> u32 {
+    hold_plain(Noisy)
+}
+
+pub fn given(_first: Option<&js::Unknown>) -> Option<&'static js::Unknown> {
+    js::get(js::arguments(), "length")
+}
+`,
+    "server.rs": `pub struct Manifest {
+    pub id: u32,
+}
+
+/// Decodes with the server's manifest.
+pub fn decode(body: u32, manifest: &Manifest) -> u32 {
+    crate::action::decode::<Manifest>(body, manifest)
+}
+`,
+  }, `use dep::action;
+
+pub struct ServerManifest {
+    pub id: u32,
+}
+
+pub struct Guard(pub u32);
+
+impl Drop for Guard {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+    }
+}
+
+pub struct Point {
+    pub x: u32,
+}
+
+pub fn decode_action(body: u32, server_manifest: &ServerManifest) -> u32 {
+    action::decode::<ServerManifest>(body, server_manifest)
+}
+
+pub fn decode_form_state(body: u32, server_manifest: &ServerManifest) -> u32 {
+    action::decode(body, server_manifest)
+}
+
+pub fn ping(n: u32) {
+    action::ping(n)
+}
+
+pub fn server_decode(body: u32, manifest: &dep::server::Manifest) -> u32 {
+    dep::server::decode(body, manifest)
+}
+
+pub fn swapped(a: u32, b: u32) -> u32 {
+    action::pair(b, a)
+}
+
+pub fn wraps(x: u32) -> bool {
+    action::maybe(Some(x))
+}
+
+pub fn logs(n: u32) -> u32 {
+    println!("logs");
+    action::kept(n)
+}
+
+pub fn holds(guard: Guard) -> u32 {
+    action::hold(guard)
+}
+
+pub fn holds_plain(n: u32) -> u32 {
+    action::hold_plain(n)
+}
+
+pub fn nested(x: Option<Option<u32>>) -> bool {
+    action::some(x)
+}
+
+pub fn counted(first: Option<&js::Unknown>) -> Option<&'static js::Unknown> {
+    action::given(first)
+}
+
+pub fn shows(n: u32) -> String {
+    action::shown(n)
+}
+
+pub fn bumped(point: &mut Point) -> &mut Point {
+    action::bump(point)
+}
+
+pub fn discards(n: u32) {
+    action::kept(n);
+}
+
+pub fn generic<M: ?Sized>(body: u32, manifest: &M) -> u32 {
+    action::decode(body, manifest)
+}
+`);
+  const server = readFileSync(join(dir, "dep", "server.js"), "utf8");
+  expect(server).toContain('/** Decodes with the server\'s manifest. */\nexport { decode } from "./action.js";\n');
+  expect(server).not.toContain("function");
+  expect(readFileSync(join(dir, "dep", "server.d.ts"), "utf8")).toContain("export function decode(body: number, manifest: Manifest): number;");
+  const app = readFileSync(join(dir, "app", "lib.js"), "utf8");
+  // A run of them, from one module, one statement; a library's forwarder
+  // from its own file, which re-exports it.
+  expect(app).toContain(`export { decode as decodeAction, decode as decodeFormState, ping } from "../dep/action.js";
+
+export { decode as serverDecode } from "../dep/server.js";
+`);
+  for (const kept of ["swapped(a, b)", "wraps(x)", "logs(n)", "holds(guard)", "holdsPlain(n)", "nested(x)", "counted(first)", "shows(n)", "bumped(point)", "discards(n)", "generic(body, manifest)"]) {
+    expect(app).toContain(`export function ${kept} {`);
+  }
+  expect(app).not.toMatch(/function (decodeAction|decodeFormState|ping|serverDecode)\b/);
+  // What only a re-exported function read isn't imported.
+  expect(app).not.toContain("import * as Server");
+  const declarations = readFileSync(join(dir, "app", "lib.d.ts"), "utf8");
+  expect(declarations).toContain("export function decodeAction(body: number, serverManifest: ServerManifest): number;");
+  expect(declarations).toContain("export function ping(n: number): void;");
+  expect(declarations).toContain('import type { Manifest } from "../dep/server.js";\n');
+  expect(declarations).toContain("export function serverDecode(body: number, manifest: Manifest): number;");
+  expect(declarations).not.toContain("export {");
+  writeFileSync(join(dir, "caller.ts"), `import { decodeAction, serverDecode } from "./app/lib.js";
+
+decodeAction(1, { id: 2 });
+serverDecode(1, { id: 2 });
+decodeAction(1, "manifest");
+`);
+  const errors = typeChecked(dir, "caller.ts");
+  expect(errors).toHaveLength(1);
+  expect(errors[0]).toContain("caller.ts(5,");
+  const module = await import(join(dir, "app", "lib.js"));
+  const action = await import(join(dir, "dep", "action.js"));
+  expect([module.decodeAction(1, { id: 2 }), module.decodeFormState(2, { id: 2 }), module.serverDecode(5, { id: 1 })]).toEqual([2, 3, 6]);
+  expect([module.decodeAction, module.decodeFormState, module.serverDecode]).toEqual([action.decode, action.decode, action.decode]);
+  expect(module.ping).toBe(action.ping);
+  expect([module.swapped(1, 2), module.wraps(3), module.holds({ 0: 4 }), module.shows(5), module.generic(6, {})]).toEqual([21, true, 1, "<5>", 7]);
+  // What a JS caller gives past their parameters, none of theirs.
+  expect([module.holdsPlain(4, 5), module.counted(), module.nested({ value: undefined })]).toEqual([1, 1, true]);
+});

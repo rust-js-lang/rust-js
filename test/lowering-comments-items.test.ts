@@ -283,7 +283,7 @@ pub mod lanes {
 }
 
 pub fn named() -> u32 {
-    lane()
+    lane() + 1
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
@@ -296,7 +296,7 @@ import { lane } from "./lanes.js";
   const lanes = readFileSync(join(dir, "lanes.js"), "utf8");
   expect(lanes).toContain("/* The lanes. */\n\nexport function lane() {");
   expect(lanes).not.toContain("/*!");
-  expect((await import(join(dir, "lib.js"))).named()).toBe(1);
+  expect((await import(join(dir, "lib.js"))).named()).toBe(2);
 });
 
 // React's EventRegistry.registerDirectEvent: a blank line, then

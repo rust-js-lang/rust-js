@@ -1,8 +1,10 @@
 //! Orchestrate analyzed crate facts, function emission, reachability and symbolic module assembly.
 
 mod copies;
+mod forwarders;
 mod holes;
 mod load_cycles;
+mod packages;
 mod reached;
 
 use self::holes::{Holes, fill_hole, fill_holes};
@@ -352,6 +354,18 @@ pub fn lower_crate<'tcx>(
     let reads_arguments = super::analysis::arguments::reads_arguments(tcx, &with_closures);
     let nulled_params = NulledParams::scan(tcx, &with_closures, &|id| foreign.has_nulled_params(id));
     let forwarded = reached::forwarded(tcx, &bodies, (given, &js_given), &caller_locations, &foreign);
+    // A function that only passes its parameters on to a function at one
+    // instantiation, which its module re-exports where its JS is that call
+    // alone (rd575, ADR 1064).
+    let named_anywhere: Vec<&Body<'tcx>> = with_closures.iter().copied().chain(initializers).collect();
+    let facts = (&drop_params, &reads_arguments.functions);
+    let forwarders = forwarders::found(
+        tcx,
+        (&bodies, &named_anywhere),
+        (&foreign, &trait_impls),
+        &js_given,
+        facts,
+    );
     // A trait impl's dictionary (ADR 0049) has no body of its own, so its
     // function context gets an empty one; a copied default brings its own.
     let no_body = rustc_middle::thir::Thir::new(rustc_middle::thir::BodyTy::Const(tcx.types.unit));
@@ -381,12 +395,15 @@ pub fn lower_crate<'tcx>(
             let default = super::default_exports::module_default(tcx, module, &fns, module_held);
             let from = (default.from, module_held);
             let made = (&fns, &foreign, &forwarded);
-            let reexports = super::reexports::reexports(tcx, module, made, &paths, from, &sources);
+            let reexports = super::reexports::reexports(tcx, module, made, &paths, from);
             (module, (default, reexports))
         })
         .collect();
+    // And what each function that may be a re-export is of (rd575).
+    let forwarded_from = forwarders::reexported_from(tcx, &modules, &forwarders, (&fns, &foreign, &paths), &sources);
     let reexports_from: Vec<load_cycles::ReexportFrom> = (reexported.iter())
-        .flat_map(|(&module, (_, reexports))| reexports.iter().map(move |r| (module, r.from.clone())))
+        .flat_map(|(&module, (_, reexports))| reexports.iter().map(move |(_, from, _)| (module, from.clone())))
+        .chain(forwarded_from)
         .collect();
     // A `Vec`'s capacity is kept where the crate or a library it uses asks
     // it, as what it gives that library may be asked (ADR 0419).
@@ -1075,53 +1092,18 @@ pub fn lower_crate<'tcx>(
             // Where each import's `use` is, which its comments are before.
             let uses = super::analysis::UsesWritten::of(tcx, module, &foreign, &held);
             let written = |at: Option<rustc_span::Span>| at.map_or(js::Span::NONE, |at| sources.span(at));
-            // One `import` per JS module, of what this file uses from it.
-            let mut packages: BTreeMap<&str, js::Package> = BTreeMap::new();
-            for export in imported
-                .iter()
-                .filter(|(export, users)| {
-                    users.contains(&module) || pass.package_uses.contains(&(module, (*export).clone()))
-                })
-                .map(|(export, _)| export)
-            {
-                let (from, name) = export;
-                let package = packages.entry(from).or_insert_with(|| js::Package {
-                    from: from.clone(),
-                    default: None,
-                    named: Vec::new(),
-                    namespace: None,
-                    span: written(uses.package_at(tcx, &foreign, from)),
-                    named_at: written(uses.package_named_at(tcx, &foreign, from)),
-                });
-                let local = import_names[&module][export].clone();
-                match name.as_str() {
-                    "default" => package.default = Some(local),
-                    "*" => package.namespace = Some(local),
-                    _ => package.named.push((name.clone(), local)),
-                }
-            }
-            let mut packages: Vec<js::Package> = packages.into_values().collect();
-            // `js::import!("./App.css");`: `import "./App.css";`, for what a
-            // module does when loaded, as a bundler's CSS does (ADR 0110).
-            let mut loaded = HashSet::new();
-            for attr in super::bindings::marks(tcx, module, "import") {
-                let Some(from) = attr.value_str().map(|s| s.to_string()) else {
-                    tcx.dcx()
-                        .span_err(attr.span(), "rust-js: write it `js::import!(\"./file.css\");`");
-                    continue;
-                };
-                loaded.insert(from.clone());
-                if !packages.iter().any(|p| p.from == from) {
-                    packages.push(js::Package {
-                        from,
-                        default: None,
-                        named: Vec::new(),
-                        namespace: None,
-                        span: js::Span::NONE,
-                        named_at: js::Span::NONE,
-                    });
-                }
-            }
+            // One `import` per JS module, of what this file uses from it, and
+            // of what it imports for what that does when loaded (ADR 0110).
+            let used = |export: &Export| pass.package_uses.contains(&(module, export.clone()));
+            let (packages, loaded) = packages::of_module(
+                tcx,
+                module,
+                &imported,
+                &used,
+                &import_names[&module],
+                (&uses, &foreign),
+                &written,
+            );
             // `js::directive!("use client");` and `js::export_default!(page);`,
             // what a Next.js route's module has (ADR 0192).
             let mut directives = Vec::new();
@@ -1165,6 +1147,24 @@ pub fn lower_crate<'tcx>(
                 reexports,
             ) = reexported.remove(&module).expect("each module's re-exports");
             let aliased_items = super::default_exports::aliases(tcx, module, &fns);
+            // Each of its functions that only passes its parameters on to a
+            // function at one instantiation, whose JS is that call alone:
+            // that function, re-exported by its name, no function of its
+            // own, its declaration its own still; what only it read not
+            // imported (rd575, ADR 1064).
+            let forwarders::InPlace {
+                reexports,
+                declared: declared_reexports,
+                reads: forwarded_reads,
+            } = forwarders::reexported(
+                tcx,
+                (module, pass.functions.entry(module).or_default()),
+                &forwarders,
+                (&fns, &foreign, &paths),
+                default_export,
+                &aliased_items,
+                (reexports, &sources),
+            );
             // A binding it holds, its `const` of what the binding reads (ADRs
             // 0622, 0633); not one it re-exports from another that holds it.
             let names = import_names.get(&module);
@@ -1355,7 +1355,7 @@ pub fn lower_crate<'tcx>(
                 module,
                 (default_export, default_declared),
                 &paths,
-                (&lowered.reexports, &forwarded),
+                (&declared_reexports, &forwarded),
                 &aliased_items,
                 (ref_cells, &counted, &null_fields),
                 (&fns, module_held, &module_variables),
@@ -1376,28 +1376,9 @@ pub fn lower_crate<'tcx>(
                 .collect();
             super::drops::inlined_drops(&mut lowered.items, &drops);
             super::std_types::map::discarded_calls(&mut lowered.items);
-            // A library's item its lowering asked for, where tidy took out
-            // what read it, a test of a numbered enum's variant an exhaustive
-            // `match` needn't write (ADR 0722): not imported, as the linker
-            // imports none of the crate's modules' the module doesn't read.
-            let mut read = HashSet::new();
-            for item in &lowered.items {
-                item.visit_vars(&mut |name| {
-                    read.insert(name.to_string());
-                });
-            }
-            let analyzed = |from: &str, export: &str| {
-                (imported.get(&(from.to_string(), export.to_string()))).is_some_and(|users| users.contains(&module))
-            };
-            lowered.packages.retain_mut(|package| {
-                let named = package.named.len();
-                (package.named).retain(|(export, local)| read.contains(local) || analyzed(&package.from, export));
-                named == package.named.len()
-                    || !package.named.is_empty()
-                    || package.default.is_some()
-                    || package.namespace.is_some()
-                    || loaded.contains(&package.from)
-            });
+            // Not what nothing reads (ADR 0722), nor what only a function
+            // re-exported in its place read (rd575).
+            packages::unread(&mut lowered, (&imported, module), &loaded, &forwarded_reads);
             let mut imports: Vec<_> = targets.remove(&module).unwrap_or_default().into_iter().collect();
             // By what each imports, `import { MAX as LIMIT, unstable_now as getCurrentTime }`.
             imports.sort_by(|(a, an, ae, _), (b, bn, be, _)| (&paths[a], ae, an).cmp(&(&paths[b], be, bn)));

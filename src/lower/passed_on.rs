@@ -296,6 +296,64 @@ pub(in crate::lower) fn forwarded_function<'tcx>(
     (mine.inputs().get(1..) == Some(theirs.inputs())).then_some((target, args))
 }
 
+/// Of `function`, a free function of the crate's of no type or const
+/// parameters, whose body is `thir`: the plain function, of another of
+/// the crate's modules or a library's, that it only passes its parameters
+/// on to, in order, each as it is, at one instantiation, giving back what
+/// that gives: `react_flight_action_server::decode_action::<ServerManifest>
+/// (body, server_manifest)` (rd575, ADR 1064). Its parameters' types and
+/// its result's are that instantiation's, so no conversion is the call's
+/// to make; not a method, a closure, a constructor or a binding. It's a
+/// re-export of that function where its JS is that call alone, of the
+/// function's own JS, which takes no more (`pipeline::forwarders::found`,
+/// `forwarded_call`).
+pub(in crate::lower) fn forwarder<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    function: DefId,
+    thir: &rustc_middle::thir::Thir<'tcx>,
+) -> Option<(DefId, ty::GenericArgsRef<'tcx>)> {
+    let generic = (tcx.generics_of(function).own_params.iter())
+        .any(|param| !matches!(param.kind, ty::GenericParamDefKind::Lifetime));
+    if tcx.def_kind(function) != DefKind::Fn || generic {
+        return None;
+    }
+    let (target, args) = super::body_queries::forwards_to(thir, 0)?;
+    let module = |id: DefId| id.as_local().map(|local| tcx.parent_module_from_def_id(local));
+    if tcx.def_kind(target) != DefKind::Fn
+        || super::bindings::is_binding(tcx, target)
+        || (target.is_local() && module(target) == module(function))
+    {
+        return None;
+    }
+    // Its parameters and result, the function's at what it's given.
+    let erased =
+        |sig: ty::PolyFnSig<'tcx>| tcx.erase_and_anonymize_regions(tcx.instantiate_bound_regions_with_erased(sig));
+    let mine = erased(tcx.fn_sig(function).instantiate_identity().skip_normalization());
+    let theirs = erased(tcx.fn_sig(target).instantiate(tcx, args).skip_normalization());
+    (mine.inputs_and_output == theirs.inputs_and_output).then_some((target, args))
+}
+
+/// What `function`, the JS of a `forwarder`, calls, where it's that call
+/// alone, given its parameters, in order, and nothing more, of a function
+/// it names: `decodeAction$1` of `function decodeAction(body,
+/// serverManifest) { return decodeAction$1(body, serverManifest); }`, and
+/// of what gives nothing, `statement`, `ping(n);` too. Any conversion its
+/// call needs, a box, a dictionary, a `Some`'s or a result's, is JS of its
+/// own, and it stays a function; so does one its `written` Rust has a
+/// comment in, which a re-export has no place for, one kept out of line
+/// (ADR 0649), and one its module doesn't export (rd575, ADR 1064).
+pub(in crate::lower) fn forwarded_call<'f>(
+    function: &'f js::Function,
+    statement: bool,
+    written: Option<&str>,
+) -> Option<&'f Expr> {
+    let commented = written.is_none_or(|text| text.contains("//") || text.contains("/*"));
+    if !function.export || function.noinline || commented {
+        return None;
+    }
+    js::passes_on(&function.params, &function.body, statement).filter(|callee| callee.is_named())
+}
+
 /// In `body`, `const onSuccess = handleNavigateComplete;` of a closure
 /// that's the function of the program's it calls where it's made, one that
 /// ignores what it's given (`Forwarding`'s `ignores`):
