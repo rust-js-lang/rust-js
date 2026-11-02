@@ -202,6 +202,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
     }
 
+    /// Whether `value` is a field, of a field or more, of a variable of
+    /// plain Rust data (`plain_value`), `p.title`, `options.debugChannel
+    /// .writable`: what reads the same each time, as nothing changes the
+    /// variable or what's in it (rd614).
+    pub(super) fn plain_field(&self, value: &Expr) -> bool {
+        match &value.kind {
+            js::ExprKind::Member(object, _) => match &object.kind {
+                js::ExprKind::Var(name) => self.plain_value(name),
+                _ => self.plain_field(object),
+            },
+            _ => false,
+        }
+    }
+
     /// Whether `value` reads only variables that never change, so it's the
     /// same read before or after anything else: a `useState` value, a
     /// parameter, and elements of them.

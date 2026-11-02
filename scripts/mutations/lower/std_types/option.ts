@@ -130,9 +130,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`p.title.map(|t| ..)` reads `p.title` into a `const t` first, where a field of a plain value is read as it is",
     file: "src/lower/std_types/option.rs",
-    find: "                            js::ExprKind::Member(object, _) if matches!(&object.kind, js::ExprKind::Var(name) if self.plain_value(name)) => {",
-    replace:
-      "                            js::ExprKind::Member(object, _) if false && matches!(&object.kind, js::ExprKind::Var(name) if self.plain_value(name)) => {",
+    find: "                            _ if self.plain_field(&option) => option,\n",
+    replace: "",
     tests: [
       "test/jsx-evaluation-order.test.ts",
       "-t",

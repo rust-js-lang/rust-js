@@ -63,3 +63,23 @@ props.title`, leaves them in place, as reads in either order are alike.
 - **It's the JS a person writes**, and it's exact: a `const` is the same
   value later, so the order of reads is kept. A JSX test of `IconCanary`'s
   shape renders it, and finds no `const x$1 = x;`.
+
+## Amendment: a field of a field is read as it is too (rd614, 2026-11-02)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, a read of what
+nothing changes is the same value wherever it's read.
+
+React Flight's browser client's createResponseFromOptions gives its
+`DebugChannel` `callback: debug_channel.writable.map(..)`, of a binding a
+let-chain made of `options.debug_channel`. The JS read it
+`options.debugChannel.writable`, a field of a field, which `map`, reading
+its option twice, put in a `const option` first: a statement where
+upstream writes one conditional, `const debugChannel = __DEV__ && options
+&& options.debugChannel !== undefined ? {..} : undefined`, which the `if`
+that gives a value then couldn't be. **A field of a field, or deeper, of a
+variable of plain Rust data is read as it is** (`plain_field`, which
+`Option::map` asks), as a field of one was: nothing can change the
+variable or what's in it.
+
+Held by the corpus case `map_of_a_field_of_a_field`, run against native
+Rust, and the mutation `plain-field-of-a-field-unread` (`jsx.ts`).

@@ -3074,7 +3074,11 @@ export function isAdult(p) {
 }
 ```
 
-- `unwrap_or` is `??`. `map` changes the value if there is one. `?` after
+- `unwrap_or` is `??`. `map` changes the value if there is one; it reads
+  the option twice, so a field of plain Rust data, or a field of one,
+  `options.debugChannel.writable`, is read where it is, and anything else
+  is a `const` first
+  ([ADR 0194](../../decisions/0194-jsx-attributes-read-once.md), amended). `?` after
   an `Option` returns `None` from the function early, as `?.` stops a
   chain. What it tries is read once, as Rust reads it: a property, a
   `const` first, by its `let`'s name, `const parent = fiber.parent; if

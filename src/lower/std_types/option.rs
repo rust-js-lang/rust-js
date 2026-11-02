@@ -260,12 +260,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             return Ok(Some(chain));
                         }
                         // Read twice: a variable, or a field of a plain Rust value,
-                        // `p.title`, as it is; a getter's, in a `const` first.
+                        // `p.title`, `options.debugChannel.writable` (rd614), as
+                        // it is; a getter's, in a `const` first.
                         let option = match &option.kind {
                             js::ExprKind::Var(_) => option,
-                            js::ExprKind::Member(object, _) if matches!(&object.kind, js::ExprKind::Var(name) if self.plain_value(name)) => {
-                                option
-                            }
+                            _ if self.plain_field(&option) => option,
                             _ => self.spill(&base, option, out),
                         };
                         let present = Expr::presence(option.clone(), true);

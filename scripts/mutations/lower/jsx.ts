@@ -503,4 +503,14 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-arrows.test.ts"],
   },
+  {
+    name: "plain-field-of-a-field-unread",
+    breaks:
+      "`debug_channel.writable.map(callback_of)`, `options.debugChannel.writable`, a field of a field of plain Rust data, goes in a `const option` first, and the `if` that gives the value is no conditional, as upstream's createResponseFromOptions writes it (rd614)",
+    file: "src/lower/jsx.rs",
+    find: "                _ => self.plain_field(object),\n",
+    replace: "                _ => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_of_a_field_of_a_field.rs$"],
+    snapshots: true,
+  },
 ];
