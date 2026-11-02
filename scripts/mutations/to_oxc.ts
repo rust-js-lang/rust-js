@@ -295,7 +295,7 @@ export const mutations: Mutation[] = [
     name: "statement-comment-in-its-arguments",
     breaks: "a comment before a statement whose JS starts at its call's argument, `// A character split ..` above `io::stdout().write_all(&[0xC3])`, is put inside `$printBytes(` before `[195]`",
     file: "src/to_oxc.rs",
-    find: "                        parts.get(&at).is_some_and(|&(whole, _)| whole > c.lo)\n",
+    find: "                        parts.get(&at).is_some_and(|&(whole, _)| whole > c.lo && whole != at)\n",
     replace: "                        false\n",
     tests: ["test/lowering-comments.test.ts", "-t", "ReactFiberLane's comments in an else"],
   },
@@ -539,7 +539,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "                    starts.entry(s.lo).or_insert((e.span.lo, field));\n",
     replace: "                    starts.insert(s.lo, (e.span.lo, field));\n",
-    tests: ["test/lowering-comment-fields.test.ts", "-t", "a comment before a field of an if's value"],
+    tests: ["test/lowering-comment-fields.test.ts", "-t", "a blank line before a method call's field"],
   },
   {
     name: "default-arm-comment-before-switch",
@@ -656,15 +656,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "arrow-value-taken-by-a-part",
-    breaks: "a comment a closure's lone tail starts with, `|name| { // c\n name.len() > 3 }`, is taken for one before the call its value starts with, and put before the statement the arrow is in (rd296)",
-    file: "src/to_oxc.rs",
-    find: "                            && !arms.get(&at).is_some_and(|arm| arm.operator == \"=>\")\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^object_field_comments.rs$"],
-    snapshots: true,
-  },
-  {
     name: "safety-blank-lost",
     breaks: "the blank line above a `// SAFETY:` comment the JS leaves out is lost, what was after it right below the code before (ADR 0444, amended)",
     file: "src/to_oxc.rs",
@@ -748,5 +739,14 @@ export const mutations: Mutation[] = [
     find: "                true => inner.push((c, (lo, hi))),\n",
     replace: "                true => attached.push((c, lo)),\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "Ok arm is above its value"],
+  },
+  {
+    name: "part-at-its-whole-start-skipped",
+    breaks: "a comment above a branch's value, a call starting where its constant argument does, `$f64ToInt(SPECIFIC, ..)`, is skipped past as the argument's and lost (rd617)",
+    file: "src/to_oxc.rs",
+    find: "                        parts.get(&at).is_some_and(|&(whole, _)| whole > c.lo && whole != at)\n",
+    replace: "                        parts.get(&at).is_some_and(|&(whole, _)| whole > c.lo)\n",
+    tests: ["test/corpus.test.ts", "-t", "^conditional_branch_comments.rs$"],
+    snapshots: true,
   },
 ];

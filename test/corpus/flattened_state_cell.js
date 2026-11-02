@@ -61,13 +61,13 @@ function read(chunk) {
   if (chunk.status === "pending") {
     return `pending ${chunk.value == null ? "None" : `Some([${chunk.value.join(", ")}])`} ${chunk.reason == null ? "None" : `Some([${chunk.reason.join(", ")}])`}`;
   }
-  if (chunk.status !== "fulfilled") {
-    if (chunk.status === "rejected") {
-      return `rejected ${chunk.reason}`;
-    }
-    return "halted";
+  if (chunk.status === "fulfilled") {
+    return `fulfilled ${chunk.value} ${chunk.reason == null ? "None" : `Some(${$debugStr(chunk.reason)})`}`;
   }
-  return `fulfilled ${chunk.value} ${chunk.reason == null ? "None" : `Some(${$debugStr(chunk.reason)})`}`;
+  if (chunk.status === "rejected") {
+    return `rejected ${chunk.reason}`;
+  }
+  return "halted";
 }
 
 function made(state) {

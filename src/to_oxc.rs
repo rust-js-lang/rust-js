@@ -801,11 +801,12 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     && (
                         // Not a part of what starts after it, a call the
                         // comment is before, not inside: `// c\n f(x);`'s is
-                        // the statement's; but an arrow's value that starts
-                        // there, `|t| { // c\n t.len() > 3 }`'s, is the
-                        // arrow's (rd296).
-                        parts.get(&at).is_some_and(|&(whole, _)| whole > c.lo)
-                            && !arms.get(&at).is_some_and(|arm| arm.operator == "=>")
+                        // the statement's; but one that starts where its
+                        // call does is what the comment is before, an
+                        // arrow's value, `|t| { // c\n t.len() > 3 }`'s
+                        // (rd296), a branch's, `? // c\n $f64ToInt(SPECIFIC,
+                        // ..)` (rd617).
+                        parts.get(&at).is_some_and(|&(whole, _)| whole > c.lo && whole != at)
                         // A binary's right operand's only where only its
                         // operator is between, as rustfmt writes it first,
                         // `// c\n + &(x)`: not a match arm's, `None => given`

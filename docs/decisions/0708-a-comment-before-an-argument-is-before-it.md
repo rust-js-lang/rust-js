@@ -371,3 +371,20 @@ argument, is gone: a tuple's or an array's array is placed where its
 statement is, so a comment above it is before it, and every constant the
 program wrote, none a macro's, is placed where it's written
 ([0444](0444-a-comment-is-where-its-code-is.md), amended the same day).
+
+## Amendment: a part that starts where its call does is what a comment is before (2026-11-02, rd617)
+
+A comment is skipped past a call's argument whose call starts after the
+comment, `// c\n f(x);`, as it's before the call, not inside it. An
+argument that starts where its call does, `$f64ToInt(SPECIFIC, ..)` of
+`SPECIFIC as u32`, or a receiver, `t.len()`, is the call's start too: the
+comment is before what starts there, a conditional's branch, `? // c\n
+$f64ToInt(..)`, or an arrow's value, `|t| { // c\n t.len() > 3 }`. That
+covers the arrow's value, which had an exception of its own (rd296): it's
+removed, with its mutation `arrow-value-taken-by-a-part`, which the rule
+made survive. `inner-part-start-kept`'s test is "a comment after a blank
+line before a method call's field keeps the line" in
+`lowering-comment-fields.test.ts`, where the field's part, the outer, keeps
+the blank line Prettier keeps between properties. The case is in
+[ADR 0969](0969-a-variables-value-of-a-chain-of-arms-is-the-chain.md)'s
+amendment of the same date.

@@ -407,3 +407,39 @@ one nested conditional", the guide's `jsxDev`/`checkTag`; mutations
 `initialized-chain-private-none-kept` and `initialized-chain-end-unvalued`
 (`prepare/initializers.ts`), which replace `valued-guard-unexported` and
 `initialized-chain-none-arm-folded`.
+
+## Amendment: each arm's value is set where it's written (2026-11-02, rd617)
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): a comment's place.
+
+React DOM's compareDocumentPositionForEmptyFragment writes `} else if
+other_node_is_first_or_last_child_disconnected { // otherNode has been
+portaled into another container\n
+node::DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC as u32 }`, and the comment
+was lost, in both forms the value takes:
+
+- **Of a chain, `else if`.** `chained_arms` made each arm's assignment
+  where the chain is, the folded conditional's place, so no statement
+  started below the comment, and nothing said where it went. **Each arm's
+  value is set where it's written**, as MIR set it, where every arm has a
+  place and they're in the chain's order: `} else if (disconnected) { //
+  otherNode ..\n result = $f64ToInt(..); }`, as upstream writes it. A
+  chain whose arms a std call made, `main.then_some(root_file)`, its
+  `undefined` placed at the call, before `root_file`, keeps each where the
+  chain is, so it isn't turned by where each is placed, `else if (!main)`.
+  A `match` whose returns MIR gives one by one, `flattened_state_cell`'s
+  `read`, is now in the order it's written, `fulfilled` before `rejected`.
+- **Of a conditional, `? :`.** Since ADR 0444's amendment of this date
+  (e4e258aa0) a constant is placed where it's written, so `$f64ToInt(SPECIFIC,
+  0, 4294967295)` starts where its argument does, and the comment before
+  the branch was taken for one before the whole call, outside it, skipped
+  as the argument's, and lost. **A call's argument that starts where the
+  call does is no part the comment is outside of** (`to_oxc.rs`, [ADR
+  0708](0708-a-comment-before-an-argument-is-before-it.md), amended), so
+  it's the branch's again, `? // otherNode ..\n $f64ToInt(..)`, as on
+  5c63e9442.
+
+Held by the corpus's `conditional_branch_comments`, both forms, run, and
+the mutations `chain-arm-at-the-chain`, `chain-arms-placed-where-some-are`
+(`lower/mir/tidy/value_chains.ts`) and `part-at-its-whole-start-skipped`
+(`to_oxc.ts`).

@@ -1108,7 +1108,9 @@ let`'s binding, `const s = ..; if (s != null)`, the rest is a chain of its
 own, read so; a conditional you wrote in an `if`'s `then` stays there,
 `snapshot > 0 ? (more ? "fonts" : ..) : "images"`, its test as written,
 and an `if` you wrote as a statement, of a `let` declared before it,
-stays that `if`
+stays that `if`; a comment above an arm's value is above it, in its
+branch, `} else if (disconnected) { // ..\n result = ..; }`, or before
+the branch of a conditional, `? // ..\n value`
 ([ADR 0969](../../decisions/0969-a-variables-value-of-a-chain-of-arms-is-the-chain.md), amended):
 
 ```rust

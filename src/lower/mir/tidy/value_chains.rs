@@ -23,13 +23,31 @@ pub(super) fn written_as_statement(test: &Expr, span: js::Span, program: &crate:
 /// in it, `wasHydrated ? a : b`; `None` of what's no conditional. Its arms
 /// are in the order the program wrote them already (`written_order`).
 pub(super) fn chained_arms(x: &str, value: &Expr, at: js::Span) -> Option<Vec<Stmt>> {
+    // Each arm's value set where it's written, as MIR set it, which a
+    // comment above the arm is above (rd617), where the arms are written
+    // in the chain's order, `else if c { // ..\n v } else { w }`; else each
+    // where the chain is, so none is put before another by where it's
+    // placed, `main.then_some(root_file)`'s `undefined`, placed at the call.
+    let mut arms = Vec::new();
+    value_arms(value, &mut arms);
+    let spans: Vec<js::Span> = arms.iter().map(|(_, value)| value.span).collect();
+    let written = spans.iter().all(|s| !s.is_none()) && spans.windows(2).all(|pair| pair[0].hi <= pair[1].lo);
+    arms_of(x, value, at, written)
+}
+
+/// `chained_arms`' chain of `value`, each arm's value set where it's
+/// written, where `written`, else at `at`.
+fn arms_of(x: &str, value: &Expr, at: js::Span, written: bool) -> Option<Vec<Stmt>> {
     let ExprKind::Cond(t, q, r) = &value.kind else {
         return None;
     };
     let (t, q, r) = (&**t, &**q, &**r);
     let arm_value = |e: &Expr| small(e) || matches!(&e.kind, ExprKind::Cond(_, a, b) if small(a) && small(b));
-    let arm = |value: &Expr| vec![StmtKind::Assign(Expr::var(x), value.clone()).at(at)];
-    let rest = match chained_arms(x, r, at) {
+    let arm = |value: &Expr| {
+        let place = if written { value.span } else { at };
+        vec![StmtKind::Assign(Expr::var(x), value.clone()).at(place)]
+    };
+    let rest = match arms_of(x, r, at, written) {
         Some(rest) => rest,
         None if arm_value(r) => arm(r),
         None => return None,

@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a value's chain of four arms has only its next arm its own, the rest a conditional, `else if (b) { x = q; } else { x = c ? r : s; }`",
     file: "src/lower/mir/tidy/value_chains.rs",
-    find: "    let rest = match chained_arms(x, r, at) {\n",
+    find: "    let rest = match arms_of(x, r, at, written) {\n",
     replace: "    let rest = match None::<Vec<Stmt>> {\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "four arms"],
   },
@@ -97,5 +97,22 @@ export const mutations: Mutation[] = [
     replace:
       "    if link(tested[0].0) && (true || !bound) || !tested[1..].iter().all(|(s, ..)| link(s)) {\n",
     tests: ["test/lowering-returned-chains.test.ts", "-t", "else if let"],
+  },
+  {
+    name: "chain-arm-at-the-chain",
+    breaks: "an `else if` arm's value is set where the chain is, not where it's written, so the comment above it, `// otherNode has been portaled ..`, is lost (rd617)",
+    file: "src/lower/mir/tidy/value_chains.rs",
+    find: "        let place = if written { value.span } else { at };\n",
+    replace: "        let place = at;\n",
+    tests: ["test/corpus.test.ts", "-t", "^conditional_branch_comments.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "chain-arms-placed-where-some-are",
+    breaks: "a chain whose arms are placed only where some are written, `main.then_some(root_file)`'s `undefined` not, is turned by where each is placed, `else if (!main) { runnable = undefined; } else { .. }`",
+    file: "src/lower/mir/tidy/value_chains.rs",
+    find: "    let written = spans.iter().all(|s| !s.is_none()) && spans.windows(2).all(|pair| pair[0].hi <= pair[1].lo);\n",
+    replace: "    let written = spans.iter().all(|s| !s.is_none());\n",
+    tests: ["test/snapshots.test.ts", "-t", "playground"],
   },
 ];

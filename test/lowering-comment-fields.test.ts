@@ -350,3 +350,28 @@ pub async fn load(names: Vec<String>) -> Loaded {
     count: 3,
   });
 });
+
+// A field whose value is a method call, `parent: x.unwrap()`, starts where
+// the call's receiver does, a part of its own: of two parts at one start
+// the outer's, the field's, so the blank line above its comment is kept,
+// as the struct literal has it, Prettier's between properties (ADR 0708,
+// amended).
+test("a comment after a blank line before a method call's field keeps the line", async () => {
+  const { js, lib } = await compiled("commented-call-field-apart", `pub struct Pooled {
+    pub pool: u32,
+    pub parent: String,
+}
+
+pub fn made(x: Option<String>, n: u32) -> Pooled {
+    Pooled {
+        pool: n + 1,
+
+        // The parent, a refresh's.
+        parent: x.unwrap(),
+    }
+}
+`);
+  expect(js).toContain("    pool: (n + 1) >>> 0,\n\n    // The parent, a refresh's.\n    parent: $unwrap(x),\n");
+  const made = lib.made as (x: string, n: number) => unknown;
+  expect(made("p", 1)).toEqual({ pool: 2, parent: "p" });
+});
