@@ -1,0 +1,6 @@
+# The commit of rust-js-lang/react-in-rust that rust-js's port checks build
+# (scripts/react-in-rust.ts): the nightly's `port` compiles its crates and
+# compares their JS with what it committed, and each push that changes the
+# bindings `cargo check`s it (react-in-rust.yml). A change to its JS that's
+# intended is accepted by moving this to the port's commit that has it.
+6d2ddf7f0a1d389febb6bd588c10c6e3d8623e20

@@ -83,6 +83,9 @@ branch's one running, and no branch's run touches another's.
 | Each corpus case after each of tidy's stages, `test/tidy-stages.test.ts` | its six cases, in `check:fast` when tidy changes | | its six cases in the suite; every case, on 6 machines |
 | Release qualification | | | yes |
 | react.dev port: its JS against what it committed, `bun run port measure`; its build's 823 pages, `bun run port compare` | yes: the port is private | | |
+| React's port, react-in-rust at `ports/react-in-rust.pin`: `cargo check` of it, `bun scripts/react-in-rust.ts check` | when a change touches a binding | **React port** workflow, of a push that changes `builtins/`, `webapi/`, `node/` or `react/` | |
+| React's port compiled again, its JS against what the pin committed, `bun scripts/react-in-rust.ts regen` | when a change would move React's JS | | yes (`port`) |
+| The crates of crates.io's corpus against `docs/crate-corpus.md`, `bun scripts/crate-corpus.ts --check [name ..]` | when a change touches what a crate uses | | yes (`crates`) |
 | How the generated JS reads, `test/readability.test.ts` against `docs/readability.txt` (ADR 0565) | with `bun run bless` | in the suite | in the suite |
 
 Every local run has a timeout that fits it, about twice its usual time
@@ -479,6 +482,28 @@ group of its own, so it neither cancels nor waits for a push's check.
 `bun run ci:status` shows its latest run first; GitHub mails a failure to
 whoever last changed the schedule. Of a public repository, its machines
 cost nothing. Started by hand too: `gh workflow run nightly.yml`.
+
+It casts the crates' and the port's nets too (ADR 1067): `crates`,
+`bun scripts/crate-corpus.ts --check`, which fails where a crate does worse
+than its row in `docs/crate-corpus.md`, one marked with an open issue,
+`runs (refused: #467)`, holding while it does just that; and `port`,
+react-in-rust at `ports/react-in-rust.pin`, each crate compiled to JS again
+and compared with what that commit committed, its summary listing each
+file that differs and its first lines, the whole diff a `react-in-rust-diff`
+artifact. An intended change to React's JS is accepted by moving the pin to
+the port's commit that regenerated it. A red night of `main` opens an
+issue, `Nightly red: <date>`, or comments on that day's (`issue` job), so
+the issue watch gives it an owner.
+
+### `react-in-rust.yml`, the React port, of a push that changes a binding
+
+`bun scripts/react-in-rust.ts check`: react-in-rust at its pin, `cargo
+check`ed natively against the pushed binding crates, `builtins/`,
+`webapi/`, `node/` and `react/`, the `paths` its `on.push` names, so a
+compiler push doesn't start it. No compiler is built. A binding's change
+that breaks the port's Rust is red at its push, not at the porter's next
+regeneration; it's fixed in the binding, or the port follows and the pin
+moves. Started by hand too: `gh workflow run react-in-rust.yml`.
 
 ### Kept as they are
 

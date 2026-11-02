@@ -87,6 +87,11 @@ export const jobs: Record<string, Part[]> = {
       timeout: 5 * minutes,
     },
   ],
+  // The crates from crates.io, each no worse than docs/crate-corpus.md
+  // says (#467, #468).
+  crates: [{ id: "crates", cmd: ["bun", "scripts/crate-corpus.ts", "--check"], env: compiler, after: ["build"], cores: 4, timeout: 60 * minutes }],
+  // React's port at its pin, its JS compiled again against what it committed.
+  port: [{ id: "port", cmd: ["bun", "scripts/react-in-rust.ts", "regen"], env: compiler, after: ["build"], cores: 4, timeout: 40 * minutes }],
   examples: [{ id: "examples", cmd: ["bun", "run", "--cwd", "examples/vite-react", "build"], after: ["build"], cores: 2, timeout: 10 * minutes }],
   // The browser's compiler, of rustc's front end at the toolchain's commit,
   // as check.yml's `wasm` job fetches it, and its parity with the native.

@@ -7,6 +7,9 @@
 // and didn't parse.
 //
 //   bun scripts/crate-corpus.ts [name ...]     the corpus, or the crates named
+//   bun scripts/crate-corpus.ts --check [name ...]
+//                                              and fail where one does worse
+//                                              than docs/crate-corpus.md says
 //
 // Writes `target/crate-corpus.json` and prints a line per crate: its own
 // verdict, then each crate of its graph rust-js refused, and why, then
@@ -48,7 +51,8 @@ const corpus: Crate[] = [
 const root = resolve(import.meta.dir, "..");
 const compiler = resolve(process.env.RUST_JS_COMPILER ?? join(root, "target/debug/rust-js"));
 const toolchain = "1.99.0";
-const wanted = process.argv.slice(2);
+const check = process.argv.includes("--check");
+const wanted = process.argv.slice(2).filter((arg) => arg !== "--check");
 const chosen = wanted.length ? corpus.filter((c) => wanted.includes(c.name)) : corpus;
 
 type Refusal = { crate: string; error: string };
@@ -160,3 +164,36 @@ for (const crate of chosen) {
 }
 
 writeFileSync(join(root, "target/crate-corpus.json"), JSON.stringify(results, null, 2));
+
+// `--check`, the nightly's: what docs/crate-corpus.md records of each crate
+// is the bar, a crate doing worse failing the run, as chrono and
+// rust_decimal went from runs to refused unseen (#467, #468). Its table's
+// first cell names the crate, its second the verdict: `runs`, or `runs
+// (refused: #467)` where an open issue says it does worse now, which holds
+// while it does just that, and fails once it does better, so the mark goes
+// with the issue. Each crate measured has its row.
+if (check) {
+  type Verdict = "runs" | "compiles" | "refused" | "blocked";
+  const rank: Record<Verdict, number> = { runs: 3, compiles: 2, refused: 1, blocked: 1 };
+  const recorded = new Map<string, { bar: Verdict; open?: { now: Verdict; issue: string } }>();
+  for (const line of readFileSync(join(root, "docs/crate-corpus.md"), "utf8").split("\n")) {
+    const cells = line.split("|").map((cell) => cell.trim());
+    const said = cells[2]?.match(/^(runs|compiles|refused|blocked)(?: \((runs|compiles|refused|blocked): (#\d+)\))?$/);
+    if (cells.length > 3 && said) {
+      const [, bar, now, issue] = said as [string, Verdict, Verdict | undefined, string | undefined];
+      recorded.set(cells[1].split(" ")[0], { bar, open: now && issue ? { now, issue } : undefined });
+    }
+  }
+  const verdict = (r: Result): Verdict => (r.own === "compiles" && r.runs === "same" ? "runs" : r.own);
+  const failed: string[] = [];
+  for (const r of results) {
+    const row = recorded.get(r.name);
+    const got = verdict(r);
+    if (!row) failed.push(`${r.name}: ${got}, and docs/crate-corpus.md has no row of it`);
+    else if (row.open && got === row.open.now) console.log(`${r.name}: ${got}, as ${row.open.issue} says, where it ${row.bar}`);
+    else if (row.open && rank[got] > rank[row.open.now]) failed.push(`${r.name}: ${got}, better than ${row.open.issue} says: write \`${got}\` in its row`);
+    else if (rank[got] < rank[row.open?.now ?? row.bar]) failed.push(`${r.name}: ${got}, where docs/crate-corpus.md says ${row.open?.now ?? row.bar}`);
+  }
+  for (const line of failed) console.error(line);
+  if (failed.length) process.exit(1);
+}

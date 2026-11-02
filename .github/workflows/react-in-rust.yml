@@ -1,0 +1,53 @@
+name: React port
+
+# React's port, rust-js-lang/react-in-rust, at the commit
+# `ports/react-in-rust.pin` names, `cargo check`ed against the bindings of
+# a push to `main` that changes them: a binding's Rust API the port calls,
+# changed, breaks its build here, not at its porter's next regeneration
+# (rd540, rd617, rd623). Of no other push: the compiler's changes reach the
+# port's JS, which the nightly's `port` job compiles and compares. Its Rust
+# is checked natively, as rustc checks a binding crate's signatures, so no
+# compiler is built: about two minutes.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'builtins/**'
+      - 'webapi/**'
+      - 'node/**'
+      - 'react/**'
+      - 'ports/react-in-rust.pin'
+      - 'scripts/react-in-rust.ts'
+      - '.github/workflows/react-in-rust.yml'
+      - '!**/*.md'
+      - '!**/coverage.txt'
+      - '!**/node_modules/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: react-in-rust-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: cargo check of react-in-rust
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      # The pinned Rust alone, with rust-js's target: no rustc-dev, as no
+      # compiler is built.
+      - run: rustup toolchain install "$(bun scripts/toolchain.ts channel)" --profile minimal --target wasm32-unknown-unknown
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: react-in-rust-${{ runner.os }}-${{ hashFiles('ports/react-in-rust.pin') }}
+      - run: bun scripts/react-in-rust.ts check

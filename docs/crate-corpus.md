@@ -13,18 +13,24 @@ the JS's beside native Rust's: **runs** where they're the same. A derive's
 code is the probe's: strum's and thiserror's compiled before what they write
 in a crate that uses them did (ADR 0186).
 
+Each night, `bun scripts/crate-corpus.ts --check` measures every crate
+again and fails where one does worse than its row's verdict, the bar.
+A verdict of `runs (refused: #467)` is a crate an open issue says does worse
+now: it holds while the crate does just that, and fails once it does better,
+when the fix writes the verdict again.
+
 Measured 2026-10-19, after ADR 0462, Rust 1.99.0, each crate at the
 newest release its requirement allows.
 
 | Crate | Verdict | First refusals in its graph |
 |---|---|---|
 | strum 0.27 (`derive`) | runs | |
-| either 1.15 | runs | measured 2026-10-21, after ADR 0554 |
-| itertools 0.14 | compiles | measured 2026-10-22, after ADR 0552's amendment: its probe is refused at `collect_vec()` of a `chunk_by` group's `copied()`, a `Group` whose `Drop` the library's `collect_vec` takes none of |
+| either 1.15 | runs (compiles: #475) | measured 2026-10-21, after ADR 0554; on 2026-11-02, at 1.19.0, its probe is refused: an iterator's own `rfold` given a dictionary |
+| itertools 0.14 | compiles (refused: #473) | on 2026-11-02 refused: a module's `use` of `None` as `ProductEnded` beside its import by its name; measured 2026-10-22, after ADR 0552's amendment: its probe is refused at `collect_vec()` of a `chunk_by` group's `copied()`, a `Group` whose `Drop` the library's `collect_vec` takes none of |
 | indexmap 2.11 | runs | a `Map`, rustc builds it (ADR 0424) |
 | bitflags 2.9 | runs | |
-| smallvec 1.15 | runs | |
-| arrayvec 0.7 | runs | |
+| smallvec 1.15 | runs (compiles: #476) | on 2026-11-02, at 1.16.4, its probe is refused: `size_of` of a type parameter |
+| arrayvec 0.7 | runs | measured 2026-11-02, after #468's fix |
 | hashbrown 0.17 | runs | its maps std's, rustc builds it (ADR 0423) |
 | thiserror 2.0 | runs | |
 | anyhow 1.0 | refused | a `&mut ErrorImpl` in a generic function's parameters; its pointer casts (ADR 0562), `Arguments::as_str` (ADR 0034), `Backtrace` (ADR 0568) and `Display::fmt` on a held `Formatter` (ADR 0461) compile |
@@ -34,10 +40,10 @@ newest release its requirement allows.
 | url 2.5 | blocked | yoke: raw pointers to erase lifetimes; 15 of its 16 crates compile |
 | regex 1.11 | blocked | aho-corasick: memchr's `memmem::Finder`, which ADR 0529 doesn't ship; its unaligned reads compile (ADR 0562); regex-syntax compiles (ADR 0556) |
 | rust_decimal 1.38 | runs | measured 2026-11-02, after ADR 0176's and 0914's amendments (#468): arrayvec's `ArrayVecImpl` impl it compiles has its `CAPACITY = CAP`, and its `a * b` is called through `decimalMul` |
-| chrono 0.4 (`alloc`) | runs | measured 2026-10-21 |
+| chrono 0.4 (`alloc`) | runs (refused: #467) | measured 2026-10-21; refused since 8635ec3e2 (2026-11-02, at 0.4.45): past `PartialOrd::ge` (2809a376c), an impl's dictionary made where `date` loads, in an import cycle with `time_delta` (ADR 0592) |
 | time 0.3 (`alloc`) | blocked | powerfmt: a `Formatter` of its own; its `MaybeUninit` buffer's pointers compile (ADR 0562); deranged compiles (ADR 0165) |
 | heck 0.5 | runs | a callable that writes is a writer (ADR 0460) |
-| base64 0.22 | runs | an `io::Error` a value, its writer's errors thrown (ADR 0462) |
+| base64 0.22 | runs (compiles: #474) | on 2026-11-02 its probe is refused: "this constant, from its MIR"; an `io::Error` a value, its writer's errors thrown (ADR 0462) |
 | hex 0.4 | runs | measured 2026-10-21 |
 | num-traits 0.2 | compiles | a float's `log`, `sin_cos`, `rem_euclid` and the like (ADR 0064) |
 
