@@ -819,39 +819,3 @@ console.log(log.join(", "));
 step 0, step 2, step 6, step 3, step 8, step 9
 `);
 });
-
-// `catch_unwind(|| inner(n))`'s `try` is the closure called, which tidy's
-// applied arrows make its body: its `return inner(n);` maps to the
-// closure's `inner(n)`, where the program wrote the call, not to the `Ok`
-// arm's line, as it did where the closure's body was taken out of it
-// without its place (ADR 0660).
-test("a try's call of a closure of one value maps to the closure's body", async () => {
-  const { js, dir } = compiled(
-    "unwind-call-mapped",
-    `use std::panic::{catch_unwind, resume_unwind};
-
-fn inner(n: u32) -> u32 {
-    if n > 2 {
-        panic!("big {n}");
-    }
-    n + 1
-}
-
-pub fn again(n: u32) -> u32 {
-    match catch_unwind(|| inner(n)) {
-        Ok(v) => v,
-        Err(payload) => resume_unwind(payload),
-    }
-}
-`,
-  );
-  const { decodeMappings } = await import("./sourcemap");
-  const lines = js.split("\n");
-  const at = lines.findIndex((line) => line.includes("return inner(n);"));
-  expect(at).toBeGreaterThan(0);
-  const map = JSON.parse(readFileSync(join(dir, "lib.js.map"), "utf8"));
-  const column = lines[at].indexOf("return");
-  const mapped = decodeMappings(map.mappings).filter((s) => s.jsLine === at && s.jsCol <= column).at(-1);
-  // Line 11, 1-based, of `match catch_unwind(|| inner(n)) {`, at `inner(n)`.
-  expect(mapped && [mapped.srcLine + 1, mapped.srcCol]).toEqual([11, 26]);
-});

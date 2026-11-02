@@ -411,9 +411,8 @@ impl Expr {
 
     /// What a `try` of this `Result` holds, and whether its `catch` is given
     /// what was thrown as it is, `$try(() => call)`'s (ADR 0637), or what
-    /// unwound, `$unwound(e)`, `$catchUnwind(f)`'s, of `f()`, the closure
-    /// called, whose body tidy's applied arrows make it, `() => g(x)`'s
-    /// `g(x)`, mapped where the closure says it (ADR 0660).
+    /// unwound, `$unwound(e)`, `$catchUnwind(f)`'s, of `f()`: an arrow's
+    /// body, `() => g(x)`'s `g(x)` (ADR 0660).
     pub fn caught(&self) -> Option<(Expr, Caught)> {
         if let Some(call) = self.tried_call() {
             return Some((call.clone(), Caught::Thrown));
@@ -429,7 +428,19 @@ impl Expr {
         if f.may_throw() {
             return None;
         }
-        Some((Expr::call(f.clone(), Vec::new()), Caught::Unwound))
+        let run = match &f.kind {
+            ExprKind::Arrow(params, body) if params.is_empty() => match body.as_slice() {
+                [
+                    Stmt {
+                        kind: StmtKind::Return(Some(value)),
+                        ..
+                    },
+                ] => value.clone(),
+                _ => Expr::call(f.clone(), Vec::new()),
+            },
+            _ => Expr::call(f.clone(), Vec::new()),
+        };
+        Some((run, Caught::Unwound))
     }
 
     /// What a throwing JS call's `Result` is of, where nothing catches its
