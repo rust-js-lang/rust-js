@@ -126,9 +126,13 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: rustup show
       - uses: ./.github/actions/build-rust-js
+      # One crate of a graph at a time: rust-js on regex's graph reaches
+      # 6.3 GB in one process, and four at once took the runner's 16 GB, its
+      # runner shut down (nightly 41417626908). The corpus is ~100 s.
       - name: Compile and run each crate's probe
         env:
           RUST_JS_COMPILER: target/release/rust-js
+          CARGO_BUILD_JOBS: '1'
         run: bun scripts/crate-corpus.ts --check
 
   # React's port (scripts/react-in-rust.ts): react-in-rust at the commit
