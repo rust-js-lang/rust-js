@@ -2,7 +2,8 @@
 // them: `js::keys_in` of what may be `null` or `undefined` (ADR 0719,
 // amended), JS's loose equality, `js::loose_equals` (ADR 1012), and its
 // global `eval`, `js::eval` (ADR 1033, amended), and a `bigint` of any size
-// `classify` tells (ADR 1057). Each
+// `classify` tells (ADR 1057), and a type a program vouches extends
+// another, `js::upcast` (ADR 1065). Each
 // test is a program of its own, compiled and run in Node, as no native
 // Rust has these values.
 
@@ -500,4 +501,63 @@ test("an untagged enum's variant as a function makes its payload", async () => {
   expect(built.code, built.stderr).toBe(0);
   const untagged = await import(join(dir, "untagged.js"));
   expect(untagged.numbers([1, 2])).toEqual([1, 2]);
+});
+
+// rd622 (ADR 1065, the user's decision): a JS type a program vouches
+// extends another, `unsafe impl<T> js::Extends<Thenable> for
+// js::Promise<T> {}`, is upcast safely, `js::upcast(promise)`, its JS the
+// value itself: React's Flight bundlers instrument `Promise.all(..)` as a
+// `Thenable`, its `status` set where it settles, as the promise does.
+test("a promise a program vouches is a thenable is upcast as it is", async () => {
+  const { js, lib } = await compiled("upcast-thenable", `use js::{JsObject, Promise, Unknown};
+use std::marker::PhantomData;
+
+pub struct Thenable(PhantomData<JsObject>);
+
+impl Thenable {
+    #[cfg_attr(rust_js, rust_js::link_name = "then")]
+    pub fn then(
+        &self,
+        on_fulfill: impl FnOnce(Option<&'static Unknown>) + 'static,
+        on_reject: impl FnOnce(Option<&'static Unknown>) + 'static,
+    ) {
+        let _ = (on_fulfill, on_reject);
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "set status")]
+    pub fn set_status(&self, status: &str) {
+        let _ = status;
+        unreachable!()
+    }
+}
+
+// SAFETY: a promise is a thenable, its \`then\` a promise's.
+unsafe impl<T> js::Extends<Thenable> for Promise<T> {}
+
+pub fn instrumented(promises: Vec<Promise<u32>>) -> &'static Thenable {
+    let thenable: &'static Thenable = js::upcast(js::promise::all(promises));
+    thenable.then(
+        move |_| thenable.set_status("fulfilled"),
+        move |_| thenable.set_status("rejected"),
+    );
+    thenable
+}
+
+pub fn same(promise: &'static Promise<u32>) -> &'static Thenable {
+    js::upcast(promise)
+}
+`);
+  expect(js).toContain("const thenable = Promise.all(promises);");
+  expect(js).toContain("export function same(promise) {\n  return promise;\n}");
+  const settled = lib.instrumented([Promise.resolve(1), Promise.resolve(2)]);
+  expect(await settled).toEqual([1, 2]);
+  await Promise.resolve();
+  expect(settled.status).toBe("fulfilled");
+  const failing = lib.instrumented([Promise.reject(new Error("no"))]);
+  await failing.catch(() => {});
+  await Promise.resolve();
+  expect(failing.status).toBe("rejected");
+  const p = Promise.resolve(3);
+  expect(lib.same(p)).toBe(p);
 });

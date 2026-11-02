@@ -1289,6 +1289,68 @@ unsafe impl StructuredClone for Saved {}
 `StructuredClone` by an `unsafe impl` that vouches each field is: a closure
 or a DOM node isn't.
 
+A JS type whose every value is also one of another, as a promise is a
+thenable, says so once, `unsafe impl<T> js::Extends<Thenable> for
+js::Promise<T> {}`, in the crate that has either type: then
+`js::upcast(value)` is the value as the other, checked by rustc, its JS
+the value itself, where each use would cast it, `unsafe { js::cast(..)
+}`. Unsafe to implement, as the `impl` vouches what JS has of each value
+(rd622, [ADR 1065](../../decisions/1065-a-js-type-a-program-vouches-extends-another-is-upcast-safely.md),
+the user's decision):
+
+```rust
+use js::{JsObject, Promise, Unknown};
+use std::marker::PhantomData;
+
+/// React's thenable, which it instruments as it settles.
+pub struct Thenable(PhantomData<JsObject>);
+
+impl Thenable {
+    #[cfg_attr(rust_js, rust_js::link_name = "then")]
+    pub fn then(
+        &self,
+        on_fulfill: impl FnOnce(Option<&'static Unknown>) + 'static,
+        on_reject: impl FnOnce(Option<&'static Unknown>) + 'static,
+    ) {
+        let _ = (on_fulfill, on_reject);
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "set status")]
+    pub fn set_status(&self, status: &str) {
+        let _ = status;
+        unreachable!()
+    }
+}
+
+// SAFETY: a promise is a thenable, its `then` a promise's.
+unsafe impl<T> js::Extends<Thenable> for Promise<T> {}
+
+pub fn preload(promises: Vec<Promise<u32>>) -> &'static Thenable {
+    let thenable: &'static Thenable = js::upcast(js::promise::all(promises));
+    thenable.then(
+        move |_| thenable.set_status("fulfilled"),
+        move |_| thenable.set_status("rejected"),
+    );
+    thenable
+}
+```
+
+```js
+export function preload(promises) {
+  const thenable = Promise.all(promises);
+  thenable.then(
+    () => {
+      thenable.status = "fulfilled";
+    },
+    () => {
+      thenable.status = "rejected";
+    },
+  );
+  return thenable;
+}
+```
+
 ## Bind a component
 
 A React component of an npm package is a binding of its props, as a

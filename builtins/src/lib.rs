@@ -1581,6 +1581,26 @@ arities! { rest }
 /// one a clone copies as it is.
 pub unsafe trait Defined {}
 
+/// A JS type each of whose values is also a `U` in JS, as a promise is a
+/// thenable: unsafe to implement, as its `impl` vouches what JS has of each
+/// value, `unsafe impl<T> js::Extends<Thenable> for js::Promise<T> {}`, in
+/// the crate that has either type. [`upcast`] reads one as the other.
+pub unsafe trait Extends<U: ?Sized> {}
+
+// A reference to one is one too, `js::upcast(&promise)`.
+unsafe impl<U: ?Sized, T: Extends<U> + ?Sized> Extends<U> for &T {}
+
+/// `value` as the `U` its type vouches each of its values is ([`Extends`]):
+/// the value itself, `let thenable: &'static Thenable =
+/// js::upcast(js::promise::all(promises));` is `const thenable =
+/// Promise.all(promises);`. A JS object lives as long as JS holds it, so
+/// it's `'static`, as what a binding gives is.
+#[cfg_attr(rust_js, rust_js::link_name = "this")]
+pub fn upcast<U: ?Sized, T: Extends<U>>(this: T) -> &'static U {
+    let _ = this;
+    unreachable!()
+}
+
 /// Numbers, strings and the js crate's own: each copied, and never nullish.
 macro_rules! cloned {
     ($($t:ty),* $(,)?) => {
