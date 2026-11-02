@@ -173,18 +173,18 @@ pub fn lent(chunk: &ReactPromise) -> &RefCell<ChunkState> {
 `,
     ),
   ).toContain("a flattened state lent, or borrowed where another borrow of it may be");
-  expect(
-    refused(
-      "flattened-state-held",
-      `${state}
+  // rd432: it points at the borrow, not the field's declaration.
+  const held = `${state}
 pub fn held(chunk: &ReactPromise, f: &dyn Fn()) -> bool {
     let state = chunk.state.borrow();
     f();
     matches!(*state, ChunkState::Pending { .. })
 }
-`,
-    ),
-  ).toContain("a flattened state lent, or borrowed where another borrow of it may be");
+`;
+  const heldRefusal = refused("flattened-state-held", held);
+  expect(heldRefusal).toContain("a flattened state lent, or borrowed where another borrow of it may be");
+  const borrowLine = held.split("\n").findIndex((line) => line.includes("let state = chunk.state.borrow();")) + 1;
+  expect(heldRefusal).toContain(`lib.rs:${borrowLine}:17`);
   // rd482: what runs while it's held borrows a cell its flow says may be
   // it, the same chunk's, as Rust's `borrow_mut` would panic of.
   expect(

@@ -293,8 +293,8 @@ export const mutations: Mutation[] = [
     breaks:
       "no struct's `RefCell` field is one no borrow of which can meet another, each borrow of a fiber's `return` counted on `$fieldCell(fiber, \"return\", true)`",
     file: "src/lower/drops/ref_cells.rs",
-    find: "                        found.quiet_fields.insert(field.did);\n",
-    replace: "                        let _ = field;\n",
+    find: "                        None => _ = found.quiet_fields.insert(field.did),\n",
+    replace: "                        None => {}\n",
     tests: [
       "test/lowering-field-cells.test.ts",
       "-t",

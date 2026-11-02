@@ -1,7 +1,8 @@
 # 1044. A flattened state is its class's own keys
 
 Status: Accepted (the user's decisions, rd380, 2026-11-01). Amended
-(rd533): a let chain's borrow of it is its object too. Extends
+(rd533): a let chain's borrow of it is its object too. Amended (rd432):
+its refusal points at the borrow. Extends
 [0204](0204-flattened-props.md), whose flattened field was a struct of
 named fields or a JS object, to a `RefCell` of a discriminated union
 ([0284](0284-discriminated-unions.md)), and
@@ -172,3 +173,23 @@ if (deferred != null && cyclicChunk.status === "blocked") {
 
 Held by the corpus's `flattened_state_cell`'s `requeue`, against native
 Rust; mutation `declared-handles-kept` (`tidy/stages.ts`).
+
+## Amended (rd432): its refusal points at the borrow
+
+"A flattened state lent, or borrowed where another borrow of it may be"
+pointed at the field's declaration, which every such refusal in the
+crate shares, so a port couldn't tell which borrow it meant. **It points
+at the first place the field is lent, bound or moved, or borrowed where
+another borrow may meet it** (`RefCells::loud_at`, what made the field
+loud), the declaration only where no such place is known. Nothing it
+compiles changes.
+
+A named borrow, `let state = &mut *chunk.state.borrow_mut();`, is still
+refused where the `let`'s guard is counted: its `&mut` is the chunk, and a
+whole write through it, `*state = Blocked { .. }`, would be `$assign`'s,
+which deletes the chunk's other keys; it needs a write of the state's
+keys first.
+
+Held by `test/classes-flattened-state.test.ts`'s "a flattened state given
+or taken whole, lent or held is refused", the held borrow's line; mutation
+`flattened-state-refused-at-its-field` (`representation.ts`).

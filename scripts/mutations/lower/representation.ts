@@ -877,6 +877,14 @@ export const mutations: Mutation[] = [
     tests: ["test/classes-flattened-state.test.ts", "-t", "refused"],
   },
   {
+    name: "flattened-state-refused-at-its-field",
+    breaks: "a flattened state held where another borrow may meet it is refused at the field's declaration, not at the borrow (rd432)",
+    file: "src/lower/representation.rs",
+    find: "                                self.loud_at(field.did).unwrap_or_else(|| self.tcx.def_span(field.did)),\n",
+    replace: "                                self.tcx.def_span(field.did),\n",
+    tests: ["test/classes-flattened-state.test.ts", "-t", "refused"],
+  },
+  {
     name: "flattened-state-no-handle",
     breaks: "a flattened state's cell is its parent alone, as a flattened struct is, so its borrows are boxes of the parent (rd380)",
     file: "src/lower/representation.rs",

@@ -582,7 +582,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         {
                             super::refusal::refuse(
                                 self.tcx,
-                                self.tcx.def_span(field.did),
+                                self.loud_at(field.did).unwrap_or_else(|| self.tcx.def_span(field.did)),
                                 super::refusal::Refused::Feature(
                                     "a flattened state lent, or borrowed where another borrow of it may be: it's its object's own keys, which count no borrows; borrow it for a moment, `match &*chunk.state.borrow() { .. }`",
                                 ),

@@ -21,6 +21,10 @@ pub(in crate::lower) struct RefCells<'tcx> {
     /// or moved, and whose every borrow is held only where nothing that may
     /// borrow it runs: none of its borrows can meet another.
     quiet_fields: HashSet<DefId>,
+    /// Of each other of those fields, where it's first lent, bound or moved,
+    /// or borrowed where another borrow of it may be: what a refusal of it
+    /// points at (rd432).
+    loud_at: HashMap<DefId, rustc_span::Span>,
     /// Each a library's contract says is quiet, by its key, and the
     /// library that says so (ADR 0906).
     library_quiet: HashMap<String, String>,
@@ -90,6 +94,13 @@ impl<'tcx> RefCells<'tcx> {
             Some(_) => self.quiet_fields.contains(&field),
             None => (self.library_quiet).contains_key(&crate::lower::library::item_key(tcx, field)),
         }
+    }
+
+    /// Where `field`, a crate's struct's `RefCell` field that isn't quiet
+    /// (`quiet_field`), is first lent, bound or moved, or borrowed where
+    /// another borrow of it may be.
+    pub(in crate::lower) fn loud_at(&self, field: DefId) -> Option<rustc_span::Span> {
+        self.loud_at.get(&field).copied()
     }
 
     /// The library, if any, whose facts' `kind` names a type `ty` may be
@@ -347,6 +358,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (ADR 0863, amended).
     pub(in crate::lower) fn quiet_field(&self, field: DefId) -> bool {
         self.ref_cells().quiet_field(self.tcx, field)
+    }
+
+    /// Where a struct's `RefCell` field that isn't quiet is first lent, or
+    /// borrowed where another borrow of it may be (`RefCells::loud_at`).
+    pub(in crate::lower) fn loud_at(&self, field: DefId) -> Option<rustc_span::Span> {
+        self.ref_cells().loud_at(field)
     }
 
     /// Whether the borrow of a `RefCell` of type `ty` that `body`'s call of
@@ -665,12 +682,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if matches!(tcx.def_kind(id), DefKind::Struct) {
                 for field in tcx.adt_def(id).all_fields() {
                     let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
-                    if self.is_std_type(ty, StdItem::RefCell)
-                        && struct_field(tcx, field.did)
-                        && !lent.contains_key(&field.did)
-                        && !counted_fields.contains_key(&field.did)
-                    {
-                        found.quiet_fields.insert(field.did);
+                    if !self.is_std_type(ty, StdItem::RefCell) || !struct_field(tcx, field.did) {
+                        continue;
+                    }
+                    match lent.get(&field.did).or(counted_fields.get(&field.did)) {
+                        Some(&span) => _ = found.loud_at.insert(field.did, span),
+                        None => _ = found.quiet_fields.insert(field.did),
                     }
                 }
             }
