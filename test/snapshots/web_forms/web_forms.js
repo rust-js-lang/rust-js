@@ -121,20 +121,19 @@ export function styled(el) {
 
 /**
  * What an iterable, a maplike or a setlike declares: `forEach` of each
- * item, and a map's `get`, `has` and `size`.
+ * item, a closure JS runs before it returns, which may write a local, and
+ * a map's `get`, `has` and `size`.
  */
 export function iterables(nodes, headers, ranges) {
-  const count = 0;
-  let count$1 = count;
+  let count = 0;
   nodes.forEach((node, i, list) => {
-    count$1 = (count$1 + 1) | 0;
+    count = (count + 1) >>> 0;
   });
-  const seen = 0;
-  let seen$1 = seen;
+  let seen = 0;
   headers.forEach((value, name, _headers) => {
-    seen$1 = (seen$1 + 1) >>> 0;
+    seen = (seen + 1) >>> 0;
   });
-  return [seen, headers.get("a"), ranges.has("x"), ranges.size];
+  return [count, seen, headers.get("a"), ranges.has("x"), ranges.size];
 }
 
 /**

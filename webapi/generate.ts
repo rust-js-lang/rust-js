@@ -1669,7 +1669,10 @@ function functionsOf(declared: Interface): Fn[] {
     }
     // An iterable, a maplike or a setlike: `forEach` of each item, given
     // what JS gives it, an array's `(value, index, list)` or a map's
-    // `(value, key, map)`, and a map's or a set's own methods; and its
+    // `(value, key, map)`, an `impl FnMut` JS runs before `forEach` returns
+    // and keeps nothing of, so it may borrow what's around it, as a
+    // `js::Map`'s and a `js::Set`'s `for_each` may (ADR 0281, amended);
+    // and a map's or a set's own methods; and its
     // `keys`, `values` and `entries`, JS iterators, each a
     // `Box<dyn Iterator>`, which rust-js steps, adapts and loops over as
     // the JS iterator it is (ADR 0140).
@@ -1691,7 +1694,7 @@ function functionsOf(declared: Interface): Fn[] {
       const doc = (name: string) => [`[MDN](${mdn(i.name, name)})`];
       const add = (name: string, jsName: string, params: string[], result: string) =>
         fns.push({ name, jsName, params: [...self, ...params], result, doc: doc(jsName.replace(/^get /, "")) });
-      add("for_each", "forEach", [`callback: Box<dyn FnMut(${v}, ${k}, ${own})>`], "()");
+      add("for_each", "forEach", [`callback: impl FnMut(${v}, ${k}, ${own})`], "()");
       const keyResult = m.type === "setlike" ? result : key ? rustType(key, "result") : "f64";
       if (typeof keyResult === "string") {
         const iterator = (item: string) => `Box<dyn Iterator<Item = ${item}>>`;

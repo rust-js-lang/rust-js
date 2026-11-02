@@ -8,6 +8,9 @@ Amended by [0282](0282-event-listener-methods.md): event listener methods
 take closures directly; other WebIDL callbacks retain their existing forms.
 Amended by [0869](0869-a-web-callback-called-once-is-fn-once.md): a callback
 the API calls once is a `Box<dyn FnOnce(..)>`.
+Amended by [0281](0281-webapi-covers-typescripts-dom.md) (rd560): one JS
+runs only before the call returns, an iterable's `forEach`'s, is an
+`impl FnMut(..)`, which may borrow.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

@@ -1052,6 +1052,13 @@ export async function open(other) {
   `request_animation_frame` take, so it may move out what it holds. JS
   calls it with its parameters ([ADR 0260](../../decisions/0260-webapi-callbacks.md),
   [ADR 0869](../../decisions/0869-a-web-callback-called-once-is-fn-once.md)).
+  One JS runs only before the call returns and keeps nothing of, an
+  iterable's, a maplike's or a setlike's `forEach`'s, is an `impl
+  FnMut(..)`, as a `js::Map`'s and a `js::Set`'s `for_each` take, so it
+  may borrow and write what's around it: `body.for_each(|_, key, _| found =
+  Some(key.to_string()))` of a `FormData` is `body.forEach((_, key) => {
+  found = key; })`
+  ([ADR 0281](../../decisions/0281-webapi-covers-typescripts-dom.md), amended).
   JS keeps it, and has no drop: a closure boxed as it's given to a
   binding, `on_change(editor, Box::new(move || ..))`, drops nothing of
   what it holds after, and carries no drop. One Rust still holds drops as

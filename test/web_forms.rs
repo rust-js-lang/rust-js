@@ -106,17 +106,18 @@ pub fn styled(el: &webapi::HTMLElement) -> String {
 }
 
 /// What an iterable, a maplike or a setlike declares: `forEach` of each
-/// item, and a map's `get`, `has` and `size`.
-pub fn iterables(nodes: &webapi::NodeList, headers: &webapi::Headers, ranges: &webapi::HighlightRegistry) -> (u32, Option<String>, bool, f64) {
+/// item, a closure JS runs before it returns, which may write a local, and
+/// a map's `get`, `has` and `size`.
+pub fn iterables(nodes: &webapi::NodeList, headers: &webapi::Headers, ranges: &webapi::HighlightRegistry) -> (u32, u32, Option<String>, bool, f64) {
     let mut count = 0;
-    nodes.for_each(Box::new(move |_node: &webapi::Node, _i: f64, _list: &webapi::NodeList| {
+    nodes.for_each(|_node: &webapi::Node, _i: f64, _list: &webapi::NodeList| {
         count += 1;
-    }));
+    });
     let mut seen = 0;
-    headers.for_each(Box::new(move |_value: &str, _name: &str, _headers: &webapi::Headers| {
+    headers.for_each(|_value: &str, _name: &str, _headers: &webapi::Headers| {
         seen += 1;
-    }));
-    (seen, headers.get("a"), ranges.has("x"), ranges.size())
+    });
+    (count, seen, headers.get("a"), ranges.has("x"), ranges.size())
 }
 
 /// What an iterable gives, `keys()`, `values()` and `entries()`: JS

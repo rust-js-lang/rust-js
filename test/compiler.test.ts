@@ -952,7 +952,7 @@ test("the webapi crate's bindings become plain JS", async () => {
   expect(js).toContain("return new WebSocket(url);");
   expect(js).toContain('const style = el.style;\n  style.backgroundColor = "red";\n  return style.webkitLineClamp;');
   expect(js).toContain("nodes.forEach((node, i, list) => {");
-  expect(js).toContain('return [seen, headers.get("a"), ranges.has("x"), ranges.size];');
+  expect(js).toContain('return [count, seen, headers.get("a"), ranges.has("x"), ranges.size];');
   // An iterable's iterators are JS's, as they are: no array first.
   expect(js).toContain("for (const [name, value] of headers.entries()) {");
   expect(js).toContain("const long = list\n    .values()\n    .filter((token) => $byteLen(token) > 3)\n    .reduce((n) => n + 1, 0);");

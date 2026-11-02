@@ -2,7 +2,8 @@
 
 Status: Accepted. Extends [0024](0024-web-crate.md). Extended by
 [0891](0891-a-windows-constructor-is-the-windows.md): each constructor
-a window's global scope has is a `Window` method too.
+a window's global scope has is a `Window` method too. Amended (rd560):
+an iterable's `for_each` takes an `impl FnMut`, which may borrow.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -210,3 +211,49 @@ And `CSS`'s namespace is webapi's `css` module, `webapi::css::escape(name)`,
 left out where TypeScript's DOM doesn't say, as an interface's are; its
 MDN pages are the Web API's.
 
+
+## Amendment: an iterable's `forEach` takes a callback that may borrow (rd560)
+
+An iterable's, a maplike's and a setlike's `for_each` took a
+`Box<dyn FnMut(..)>`, ADR 0260's form of a callback JS may keep, so
+`'static`: its closure couldn't borrow or write a local. JS keeps nothing
+of a `forEach` callback; it runs it before `forEach` returns. React's
+ReactFlightActionServer writes `body.forEach((value, key) => { ..
+actionKey = key .. })`, and its port had to loop `for (key, value) in
+form_data::iter(body)` instead, `for (const [key, value] of body)`.
+
+**Each generated `for_each` takes an `impl FnMut(..)`**, the form the js
+crate's `Map::for_each` and `Set::for_each` take for the same reason (ADR
+0875, amended), one way for "a callback called only during the call":
+
+```rust
+let mut found = None;
+body.for_each(|value, key, _| {
+    if !key.starts_with("$ACTION_") {
+        form_data.append(key, value);
+    } else {
+        found = Some(key.to_string());
+    }
+});
+```
+```js
+let found;
+body.forEach((value, key) => {
+  if (!key.startsWith("$ACTION_")) {
+    formData.append(key, value);
+  } else {
+    found = key;
+  }
+});
+```
+
+- A `Box::new(..)` caller writes the closure alone; the JS is the same
+  arrow, written inline. A callback JS keeps, an observer's or a
+  timer's, is a `Box` as ADR 0260 decided.
+- Case ([0262](0262-when-rust-and-js-disagree.md)): none: JS calls the
+  function as it did, and Rust's borrow ends as `forEach` returns, when JS
+  is done with it.
+
+Held by `test/webapi-objects.test.ts`'s "an iterable's forEach takes a
+callback that may write a local", run in Node and Bun, of `FormData`,
+`Headers` and `URLSearchParams`, and `test/web_forms.rs`'s `iterables`.

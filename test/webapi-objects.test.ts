@@ -5,6 +5,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { node } from "./programs";
 import { buildReact, compiler, fixture, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
@@ -385,9 +386,9 @@ test("a form's append takes text or a Blob, an entry as it is", async () => {
 
 pub fn copied(value: &FormData, prefix: String) -> &'static FormData {
     let data = form_data::new(None, None);
-    value.for_each(Box::new(move |original_value, original_key, _| {
+    value.for_each(|original_value, original_key, _| {
         data.append(&(prefix.clone() + original_key), original_value);
-    }));
+    });
     data
 }
 
@@ -423,6 +424,76 @@ pub fn parts(blob: &Blob, stream_prefix: String, part_json: String) -> &'static 
   expect([...parts.keys()]).toEqual(["S1", "S1", "text", "blob", "named"]);
   expect(parts.getAll("S1")).toEqual(["{}", "{}"]);
   expect([parts.get("text") instanceof Blob, (parts.get("blob") as File).name, (parts.get("named") as File).name]).toEqual([true, "b.txt", "a.txt"]);
+});
+
+// rd560: JS runs an iterable's `forEach` callback before `forEach` returns
+// and keeps nothing of it, so webapi's `for_each` takes an `impl FnMut`, as
+// `js::Map`'s and `js::Set`'s do, which may borrow and write a local, as
+// React's ReactFlightActionServer writes `body.forEach((value, key) => {
+// .. actionKey = key .. })`, where a `Box<dyn FnMut>`, `'static`, made the
+// port loop `for (key, value) of body`.
+test("an iterable's forEach takes a callback that may write a local", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-for-each-borrows");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{FormData, Headers, URLSearchParams, form_data};
+
+pub fn action_key(body: &FormData) -> (Option<String>, &'static FormData) {
+    let form_data = form_data::new(None, None);
+    let mut found = None;
+    body.for_each(|value, key, _| {
+        if !key.starts_with("$ACTION_") {
+            form_data.append(key, value);
+        } else {
+            found = Some(key.to_string());
+        }
+    });
+    (found, form_data)
+}
+
+pub fn header_names(headers: &Headers) -> Vec<String> {
+    let mut names = Vec::new();
+    headers.for_each(|_, name, _| names.push(name.to_string()));
+    names
+}
+
+pub fn total(params: &URLSearchParams) -> usize {
+    let mut length = 0;
+    params.for_each(|value, _, _| {
+        length += value.len();
+    });
+    length
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`  body.forEach((value, key) => {
+    if (!key.startsWith("$ACTION_")) {
+      formData.append(key, value);
+    } else {
+      found = key;
+    }
+  });`);
+  expect(js).toContain("headers.forEach((_, name) => {");
+  expect(js).toContain("params.forEach((value) => {");
+  const lib = await import(join(dir, "lib.js"));
+  const body = new FormData();
+  body.append("a", "1");
+  body.append("$ACTION_ID_x", "");
+  body.append("f", new File(["x"], "x.txt"));
+  const [found, copy] = lib.actionKey(body);
+  expect(found).toBe("$ACTION_ID_x");
+  expect([...copy.keys()]).toEqual(["a", "f"]);
+  expect(lib.actionKey(new FormData())[0]).toBeUndefined();
+  expect(lib.headerNames(new Headers({ b: "1", a: "2" }))).toEqual(["a", "b"]);
+  expect(lib.total(new URLSearchParams("a=12&b=345"))).toBe(5);
+  // As Node runs it, its own `FormData`, `Headers` and `URLSearchParams`.
+  const program = `const lib = await import(${JSON.stringify(join(dir, "lib.js"))});
+const body = new FormData();
+body.append("a", "1");
+body.append("$ACTION_ID_x", "");
+const [found, copy] = lib.actionKey(body);
+console.log(found, [...copy.keys()].join(), lib.headerNames(new Headers({ b: "1", a: "2" })).join(), lib.total(new URLSearchParams("a=12&b=345")));`;
+  expect(run([node ?? "node", "--input-type=module", "--eval", program]).trim()).toBe("$ACTION_ID_x a a,b 5");
 });
 
 // rd506's audit: of an untagged enum of one class and kinds JS tells by
