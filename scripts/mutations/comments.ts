@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "        run_end = (out_of_js && written.starts_with(\"//\")).then_some(hi);\n",
     tests: ["test/lowering-comments-left-out.test.ts", "-t", "a SAFETY comment is left out"],
   },
+  {
+    name: "doc-lines-apart",
+    breaks: "each line of a `///` doc comment is a JSDoc of its own",
+    file: "src/comments.rs",
+    find: "        .take_while(|c| c.doc && text[c.lo as usize..].starts_with(\"///\"))\n        .count();\n",
+    replace: "        .take_while(|c| c.doc && text[c.lo as usize..].starts_with(\"///\"))\n        .count()\n        .min(1);\n",
+    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
+  },
 ];

@@ -107,4 +107,28 @@ export const mutations: Mutation[] = [
     replace: "            [(namespace, alias)] if namespace == \"\" => format!(\"* as {alias}\"),\n",
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],
   },
+  {
+    name: "header-doc-as-written",
+    breaks: "a re-export's doc comment is printed as Rust wrote it, `/// Decodes ..`, not its JSDoc (rd620)",
+    file: "src/to_oxc/header.rs",
+    find: "        if run > 0\n            && let Some(jsdoc) = crate::comments::jsdoc(&lines)\n",
+    replace: "        if false\n            && let Some(jsdoc) = crate::comments::jsdoc(&lines)\n",
+    tests: ["test/declarations-libraries.test.ts", "-t", "is its re-export"],
+  },
+  {
+    name: "header-comment-blank-dropped",
+    breaks: "a module's `//!` doc above its first `use` or re-export loses the blank line after it (m6-wife's P3)",
+    file: "src/to_oxc/header.rs",
+    find: "        texts.push(String::new());\n",
+    replace: "",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "re-exports alone keeps its inner doc"],
+  },
+  {
+    name: "header-comment-blank-of-anything",
+    breaks: "a comment above a `use` that makes no import, moved to the next import, takes a blank line from what's between, `// A type's ..` (m6-wife's P3)",
+    file: "src/to_oxc/header.rs",
+    find: "        && between.trim().is_empty()\n",
+    replace: "",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "above a use is above the import"],
+  },
 ];

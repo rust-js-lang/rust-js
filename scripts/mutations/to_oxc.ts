@@ -91,14 +91,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
   },
   {
-    name: "doc-lines-apart",
-    breaks: "each line of a `///` doc comment is a JSDoc of its own",
-    file: "src/to_oxc.rs",
-    find: "        .take_while(|c| c.doc && text[c.lo as usize..].starts_with(\"///\"))\n        .count();\n",
-    replace: "        .take_while(|c| c.doc && text[c.lo as usize..].starts_with(\"///\"))\n        .count()\n        .min(1);\n",
-    tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
-  },
-  {
     name: "trailing-comment-leading",
     breaks: "a comment after code on its line is also written before the next statement",
     file: "src/to_oxc.rs",
@@ -550,14 +542,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments-items.test.ts", "-t", "re-export printed first"],
   },
   {
-    name: "header-doc-as-written",
-    breaks: "a re-export's doc comment is printed as Rust wrote it, `/// Decodes ..`, not its JSDoc (rd620)",
-    file: "src/to_oxc.rs",
-    find: "                    if run > 0\n                        && let Some(jsdoc) = crate::comments::jsdoc(&lines)\n",
-    replace: "                    if false\n                        && let Some(jsdoc) = crate::comments::jsdoc(&lines)\n",
-    tests: ["test/declarations-libraries.test.ts", "-t", "is its re-export"],
-  },
-  {
     name: "doc-of-no-js-kept",
     breaks: "a doc comment of a `pub type`, which has no JS, is a stray `/** .. */` before the next item",
     file: "src/to_oxc.rs",
@@ -577,8 +561,8 @@ export const mutations: Mutation[] = [
     name: "use-comment-dropped",
     breaks: "a comment above a `use` that makes an import is lost, ReactDOMInput's TODO above its ReactCurrentFiber import (rd92)",
     file: "src/to_oxc.rs",
-    find: "                imports.entry(at).or_default().extend(texts);\n",
-    replace: "                imports.entry(at).or_default().extend(texts.into_iter().take(0));\n",
+    find: "                    .extend(header::above(&own, at, &sources.text));\n",
+    replace: "                    .extend(header::above(&own, at, &sources.text).into_iter().take(0));\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "above a use"],
   },
   {

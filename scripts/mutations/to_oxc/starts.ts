@@ -19,14 +19,6 @@ export const mutations: Mutation[] = [
     tests: ["test/emission.test.ts", "-t", "inline\\(never\\)"],
   },
   {
-    name: "reexport-comments-unplaced",
-    breaks: "a `pub use`'s comments, `// Concurrent Mode`, are lost, as its re-export is no statement they're before (ADR 0240, amended)",
-    file: "src/to_oxc/starts.rs",
-    find: "    for reexport in &module.reexports {\n        if !reexport.span.is_none() {\n",
-    replace: "    for reexport in module.reexports.iter().take(0) {\n        if !reexport.span.is_none() {\n",
-    tests: ["test/modules.test.ts", "-t", "re-exported as written"],
-  },
-  {
     name: "arrow-value-a-statement-too",
     breaks: "an arrow of a value's comment is its statement's too, before the arrow, and the value's",
     file: "src/to_oxc/starts.rs",

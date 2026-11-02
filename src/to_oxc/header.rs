@@ -129,3 +129,34 @@ pub(super) fn header(module: &Module, comments: &std::collections::HashMap<u32, 
     }
     code
 }
+
+/// The comments `own`, before an import's `use` or a re-export's at `at`,
+/// as the header prints them above its line (rd92, rd620): a run of `///`
+/// lines one JSDoc, as an item's is (`jsdoc`), each other as JS writes it;
+/// and a blank line after them where the Rust has one between them and
+/// what they're above, a module's `//!` doc above its first `use`.
+pub(super) fn above(own: &[crate::program::Comment], at: u32, text: &str) -> Vec<String> {
+    let written = |c: &crate::program::Comment| &text[c.lo as usize..c.hi as usize];
+    let mut texts = Vec::new();
+    let mut i = 0;
+    while i < own.len() {
+        let (run, lines) = crate::comments::doc_lines(&own[i..], text);
+        if run > 0
+            && let Some(jsdoc) = crate::comments::jsdoc(&lines)
+        {
+            texts.push(jsdoc);
+            i += run;
+            continue;
+        }
+        texts.push(crate::comments::in_js(written(&own[i])));
+        i += 1;
+    }
+    if let Some(last) = own.last()
+        && let between = &text[last.hi as usize..at as usize]
+        && between.trim().is_empty()
+        && between.matches('\n').count() > 1
+    {
+        texts.push(String::new());
+    }
+    texts
+}

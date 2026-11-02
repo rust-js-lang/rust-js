@@ -1008,25 +1008,12 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             // amended), whose blank line before is what's after it's.
             own.retain(|c| c.written);
             // An import's, in the header, above its line.
-            // A re-export's doc comment, a run of `///` lines, its JSDoc, as an
-            // item's is (`jsdoc`).
+            // An import's, or a re-export's, in the header (`header::above`).
             if import_starts.contains(&at) {
-                let written = |c: &crate::program::Comment| &sources.text[c.lo as usize..c.hi as usize];
-                let mut texts = Vec::new();
-                let mut i = 0;
-                while i < own.len() {
-                    let (run, lines) = doc_lines(&own[i..], &sources.text);
-                    if run > 0
-                        && let Some(jsdoc) = crate::comments::jsdoc(&lines)
-                    {
-                        texts.push(jsdoc);
-                        i += run;
-                        continue;
-                    }
-                    texts.push(crate::comments::in_js(written(&own[i])));
-                    i += 1;
-                }
-                imports.entry(at).or_default().extend(texts);
+                imports
+                    .entry(at)
+                    .or_default()
+                    .extend(header::above(&own, at, &sources.text));
                 continue;
             }
             // Where its Rust starts, what a blank line is before: an `if`'s
@@ -1109,7 +1096,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                 }
                 // A doc comment's lines, before one item: one JSDoc of them,
                 // or each as written where JS can't hold one (`jsdoc`).
-                let (run, mut lines) = doc_lines(&own[i..], &sources.text);
+                let (run, mut lines) = crate::comments::doc_lines(&own[i..], &sources.text);
                 if noinline && run > 0 && i + run == own.len() {
                     lines.push(NOINLINE);
                     said = true;
@@ -1255,18 +1242,6 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         imports,
         own_places,
     }
-}
-
-/// The run of `///` doc comment lines `own` starts with, and each one's text
-/// past its `///`: what's one JSDoc before an item, or a re-export (`jsdoc`).
-fn doc_lines<'s>(own: &[crate::program::Comment], text: &'s str) -> (usize, Vec<&'s str>) {
-    let run = (own.iter())
-        .take_while(|c| c.doc && text[c.lo as usize..].starts_with("///"))
-        .count();
-    let lines = (own[..run].iter())
-        .map(|c| text[c.lo as usize..c.hi as usize].trim_start_matches("///"))
-        .collect();
-    (run, lines)
 }
 
 /// Where a comment of `own_places`' `i`th statement is kept until that

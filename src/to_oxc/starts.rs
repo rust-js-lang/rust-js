@@ -133,12 +133,6 @@ pub(super) fn statement_spans(module: &Module) -> (Vec<(u32, u32)>, std::collect
         }
     }
     let mut starts: Found = (Vec::new(), Default::default());
-    // A `pub use`'s re-export, which its comments are before.
-    for reexport in &module.reexports {
-        if !reexport.span.is_none() {
-            starts.0.push((reexport.span.lo, reexport.span.hi));
-        }
-    }
     let function = |f: &js::Function, starts: &mut Found| {
         if !f.span.is_none() {
             starts.0.push((f.span.lo, f.span.hi));

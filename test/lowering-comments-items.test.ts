@@ -112,6 +112,25 @@ pub use crate::priorities::IDLE_PRIORITY as UNSTABLE_IDLE_PRIORITY;
   expect([lib.UNSTABLE_IDLE_PRIORITY, (lib.afterContinuation as () => boolean)()]).toEqual([5, false]);
 });
 
+// m6-wife's P3: a module made only of re-exports, a package's entry, keeps
+// its inner doc, `//!`, above them, and the blank line after it, as the
+// file it ports has its header comment (rd620's header holds them).
+test("a module of re-exports alone keeps its inner doc and the blank line after it", async () => {
+  const { js, lib } = await compiled("reexports-alone-doc", `//! The client's entry.
+//! It re-exports what its module makes.
+
+pub use crate::shapes::area;
+
+mod shapes {
+    pub fn area(r: f64) -> f64 {
+        r * r
+    }
+}
+`);
+  expect(js).toContain('// The client\'s entry.\n// It re-exports what its module makes.\n\nexport { area } from "./shapes.js";\n');
+  expect((lib.area as (r: number) => number)(3)).toBe(9);
+});
+
 // React's ReactInternalTypes and ReactFiberHooks document their types,
 // `/// What useMemo calls for its value.\npub type MemoCreate = ..;`: a
 // doc comment is its item's, which has no JS, so it was a stray `/** .. */`
@@ -266,7 +285,8 @@ import * as Flags from "./common/flags.js";
 // ..`, above their `use`s: a plain comment above the imports (ADR 0444's
 // rule 3), but JS has no doc comment of what it's in, so it's JS's plain
 // one, `// Where the app is: ..`, and a `/*! .. */` a `/* .. */`, above
-// the imports or, with none, the code.
+// the imports or, with none, the code, a blank line after it where the
+// Rust has one.
 test("a module's inner doc comment is a plain JS comment", async () => {
   const dir = fixture("inner-doc-above-imports");
   writeFileSync(join(dir, "lib.rs"), `//! Where the app is: its URL's hash,
@@ -290,6 +310,7 @@ pub fn named() -> u32 {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain(`// Where the app is: its URL's hash,
 // followed as it changes.
+
 import { lane } from "./lanes.js";
 `);
   expect(js).not.toContain("//!");
