@@ -1,10 +1,11 @@
 //! One contact, loaded by its id, or why it can't be.
 
-use crate::api::{self, Failure};
 use js::spawn;
 use models::Contact;
 use react::{JSX, jsx, use_effect, use_state};
 use webapi::abort_controller;
+
+use crate::api::{self, Failure};
 
 #[derive(Clone)]
 enum Loaded {

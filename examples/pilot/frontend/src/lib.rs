@@ -9,12 +9,13 @@ mod list;
 mod route;
 mod sonner;
 
+use react::{JSX, jsx};
+use sonner::Toaster;
+
 use detail::ContactPage;
 use form::NewContactForm;
 use list::ContactList;
-use react::{JSX, jsx};
 use route::{Route, use_route};
-use sonner::Toaster;
 
 pub fn App() -> JSX::Element {
     let page = match use_route() {

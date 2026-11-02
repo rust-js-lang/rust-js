@@ -1,12 +1,13 @@
 //! The contacts, searched as you type. Each search replaces the last: the
 //! one before is aborted, so an answer that comes late never shows.
 
-use crate::api::{self, Failure};
 use js::spawn;
 use models::Contact;
 use react::event::ChangeEvent;
 use react::{JSX, jsx, use_effect, use_state};
 use webapi::abort_controller;
+
+use crate::api::{self, Failure};
 
 #[derive(Clone)]
 enum Loaded {

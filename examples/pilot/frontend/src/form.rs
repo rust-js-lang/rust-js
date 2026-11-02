@@ -1,13 +1,15 @@
 //! A new contact: checked as the server will check it (`models::validate`)
 //! before it's sent, then the server's answer, its errors by field.
 
-use crate::api::{self, Failure};
-use crate::route::go;
-use crate::sonner::toast;
 use js::spawn;
-use models::{FieldError, NewContact, validate};
 use react::event::{ChangeEvent, SubmitEvent};
 use react::{JSX, jsx, use_state};
+
+use crate::sonner::toast;
+use models::{FieldError, NewContact, validate};
+
+use crate::api::{self, Failure};
+use crate::route::go;
 
 /// The message for `field`, if one of `errors` is about it.
 fn message(errors: &[FieldError], field: &str) -> Option<String> {
