@@ -4,7 +4,10 @@
 //! functions whose result is one, and each field of its structs each write
 //! of which is one. React's Flight reply client counts its parts' ids in a
 //! `next_part_id: Cell<f64>` made `1.0` and set one more each time, so its
-//! `prefix + &id.to_string()` is upstream's `prefix + id` (rd537).
+//! `prefix + &id.to_string()` is upstream's `prefix + id` (rd537). And
+//! each `f64` or `Cell<f64>` a closure takes by value, react-markup's `let
+//! stash_error_idx = Cell::new(1.0)` its `move |error| ..` counts in, a
+//! field of the closure's own (rd653).
 //!
 //! A whole number here is one at most 2^53 from zero and never `-0`: a
 //! constant such, a `#[rust_js::whole]` binding's, or such a number and
@@ -12,6 +15,7 @@
 
 use std::collections::{HashMap, HashSet};
 
+use rustc_abi::FieldIdx;
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor};
 use rustc_middle::mir::{self, AggregateKind, BinOp, BorrowKind, Local, Operand, PlaceElem, Rvalue, StatementKind};
@@ -24,11 +28,20 @@ use crate::lower::bindings;
 use crate::lower::recognition::{CellMethod, cell_own_method};
 
 /// The crate's functions whose result is always whole, and the fields of
-/// its structs each write of which is (`of_crate`).
+/// its structs and closures each write of which is (`of_crate`).
 #[derive(Default)]
 pub(in crate::lower) struct Wholes {
     returns: HashSet<DefId>,
-    fields: HashSet<DefId>,
+    fields: HashSet<Field>,
+}
+
+/// A field a number is kept in: a struct's, or what a closure takes by
+/// value, of the closure and its place among its captures, which only its
+/// own body reads and writes.
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+enum Field {
+    Struct(DefId),
+    Capture(DefId, FieldIdx),
 }
 
 impl Wholes {
@@ -39,9 +52,11 @@ impl Wholes {
     /// whose value rustc evaluates, each write of which,
     /// in a literal, an assignment or a `Cell`'s `set` or `replace`, is
     /// whole, and which is lent only to a `Cell`'s `get`, `set` and
-    /// `replace`, or as a shared reference to a number. Each taken whole
-    /// at first, and one each body finds isn't put out, until none is: a
-    /// counter's writes are of itself.
+    /// `replace`, or as a shared reference to a number. And each `f64` or
+    /// `Cell<f64>` a closure takes by value, a field of its own, which only
+    /// its body reads, made by its literal where the closure is, which a
+    /// body has. Each taken whole at first, and one each body finds isn't
+    /// put out, until none is: a counter's writes are of itself.
     pub(in crate::lower) fn of_crate<'tcx>(
         tcx: TyCtxt<'tcx>,
         bodies: &[&Body<'tcx>],
@@ -57,7 +72,25 @@ impl Wholes {
                 let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
                 let outside = tcx.visibility(id).is_public() && tcx.visibility(field.did).is_public();
                 if !outside && (ty == tcx.types.f64 || cell_of_f64(tcx, ty)) {
-                    wholes.fields.insert(field.did);
+                    wholes.fields.insert(Field::Struct(field.did));
+                }
+            }
+        }
+        // A closure's, of each made in a body of the crate's: what it takes
+        // by value, not a reference to the maker's.
+        for mir in bodies.iter().filter_map(|body| body.mir.as_ref()) {
+            for statement in mir.body.basic_blocks.iter().flat_map(|data| &data.statements) {
+                if let StatementKind::Assign(assign) = &statement.kind
+                    && let Rvalue::Aggregate(kind, _) = &assign.1
+                    && let AggregateKind::Closure(closure, args) = **kind
+                {
+                    for (index, ty) in args.as_closure().upvar_tys().iter().enumerate() {
+                        if ty == tcx.types.f64 || cell_of_f64(tcx, ty) {
+                            wholes
+                                .fields
+                                .insert(Field::Capture(closure, FieldIdx::from_usize(index)));
+                        }
+                    }
                 }
             }
         }
@@ -82,7 +115,12 @@ impl Wholes {
                 constant.visit_body(body);
             }
         }
-        (wholes.fields).retain(|&field| !constant.structs.contains(&tcx.parent(field)));
+        // A closure's capture is one of a literal seen, a constant's
+        // `const { .. }` too, whose body is lowered as any other's.
+        (wholes.fields).retain(|&field| match field {
+            Field::Struct(field) => !constant.structs.contains(&tcx.parent(field)),
+            Field::Capture(..) => true,
+        });
         for body in bodies {
             if matches!(tcx.def_kind(body.def_id), DefKind::Fn | DefKind::AssocFn)
                 && body.mir.is_some()
@@ -154,25 +192,24 @@ impl<'tcx> Visitor<'tcx> for Constants<'tcx> {
     }
 }
 
-/// How many times a body uses each of its field `borrows`, but in its one
-/// write, a statement's mention or its storage's: read, moved, borrowed
-/// again or projected, wherever, a repeat's or an `asm!`'s too, and the
-/// result's, returned, lent to the caller.
-struct Uses<'b> {
-    borrows: &'b HashMap<Local, DefId>,
-    uses: HashMap<Local, usize>,
+/// How many times a body uses each of its locals, but in a write of it, a
+/// statement's or a call's, a statement's mention or its storage's: read,
+/// moved, borrowed or projected, wherever, a repeat's or an `asm!`'s too,
+/// and the result's, returned, lent to the caller.
+struct Uses {
+    uses: Vec<usize>,
 }
 
-impl<'tcx> Visitor<'tcx> for Uses<'_> {
+impl<'tcx> Visitor<'tcx> for Uses {
     fn visit_local(&mut self, local: Local, context: PlaceContext, _: mir::Location) {
         let used = !matches!(
             context,
             PlaceContext::NonUse(_)
-                | PlaceContext::MutatingUse(MutatingUseContext::Store)
+                | PlaceContext::MutatingUse(MutatingUseContext::Store | MutatingUseContext::Call)
                 | PlaceContext::NonMutatingUse(NonMutatingUseContext::Inspect | NonMutatingUseContext::PlaceMention)
         );
-        if used && self.borrows.contains_key(&local) {
-            *self.uses.entry(local).or_default() += 1;
+        if used {
+            self.uses[local.as_usize()] += 1;
         }
     }
 }
@@ -201,14 +238,16 @@ fn write_counts(body: &mir::Body<'_>) -> Vec<usize> {
     counts
 }
 
-/// The field `place` is of a struct, where its last step is one.
-fn field_of<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, place: mir::Place<'tcx>) -> Option<DefId> {
+/// The field `place` is of a struct or a closure, where its last step is
+/// one: a closure's own body's `(*_1).0`.
+fn field_of<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, place: mir::Place<'tcx>) -> Option<Field> {
     let (&PlaceElem::Field(index, _), base) = place.projection.split_last()? else {
         return None;
     };
     let base = mir::Place::ty_from(place.local, base, body, tcx);
-    match base.ty.kind() {
-        ty::Adt(adt, _) if adt.is_struct() => Some(adt.non_enum_variant().fields[index].did),
+    match *base.ty.kind() {
+        ty::Adt(adt, _) if adt.is_struct() => Some(Field::Struct(adt.non_enum_variant().fields[index].did)),
+        ty::Closure(closure, _) => Some(Field::Capture(closure, index)),
         _ => None,
     }
 }
@@ -216,7 +255,7 @@ fn field_of<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, place: mir::Place<'
 /// Each local of `body` written once, by a borrow of a struct's field,
 /// and the field: a mutable one, which no field a write makes whole has,
 /// too (`unwhole_writes`).
-fn field_borrows<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>) -> HashMap<Local, DefId> {
+fn field_borrows<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>) -> HashMap<Local, Field> {
     let counts = write_counts(body);
     let mut found = HashMap::new();
     for statement in body.basic_blocks.iter().flat_map(|data| &data.statements) {
@@ -233,7 +272,7 @@ fn field_borrows<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>) -> HashMap<Loc
 }
 
 /// The field whose `Cell` a call's receiver, `operand`, borrows.
-fn receiver_field(operand: &Operand<'_>, borrows: &HashMap<Local, DefId>) -> Option<DefId> {
+fn receiver_field(operand: &Operand<'_>, borrows: &HashMap<Local, Field>) -> Option<Field> {
     let place = operand.place()?;
     place.projection.is_empty().then_some(())?;
     borrows.get(&place.local).copied()
@@ -384,10 +423,17 @@ fn unwhole_writes<'tcx>(
     wholes: &Wholes,
     locals: &HashSet<Local>,
     counts: &[usize],
-) -> Vec<DefId> {
+) -> Vec<Field> {
     let mut gone = Vec::new();
     let borrows = field_borrows(tcx, body);
-    // Each local a `Cell::new` of a whole number makes, written once.
+    let mut uses = Uses {
+        uses: vec![0; body.local_decls.len()],
+    };
+    uses.visit_body(body);
+    let uses = uses.uses;
+    // Each local a `Cell::new` of a whole number makes, written once and
+    // used once, moved where it's kept: never lent, to be set before then,
+    // `let idx = Cell::new(1.0); idx.set(-0.0); move || ..` (rd653).
     let mut cells: HashSet<Local> = HashSet::new();
     // How many times each borrow of a field is a `Cell` method's receiver.
     let mut received: HashMap<Local, usize> = HashMap::new();
@@ -408,6 +454,7 @@ fn unwhole_writes<'tcx>(
         if method == Some(CellMethod::New)
             && destination.projection.is_empty()
             && counts[destination.local.as_usize()] == 1
+            && uses[destination.local.as_usize()] == 1
             && args
                 .first()
                 .is_some_and(|value| whole_operand(tcx, &value.node, locals))
@@ -434,18 +481,12 @@ fn unwhole_writes<'tcx>(
     // Each use of a borrow of a field, any but its write: a `Cell`'s, only
     // as a method's receiver; a number's anywhere, shared, as a mutable
     // borrow of one is put out below.
-    let mut uses = Uses {
-        borrows: &borrows,
-        uses: HashMap::new(),
-    };
-    uses.visit_body(body);
-    let uses = uses.uses;
     for (local, &field) in &borrows {
         if !wholes.fields.contains(&field) {
             continue;
         }
-        let cell = cell_of_f64(tcx, tcx.type_of(field).instantiate_identity().skip_normalization());
-        let lent = uses.get(local).copied().unwrap_or(0) > received.get(local).copied().unwrap_or(0);
+        let cell = cell_of_f64(tcx, body.local_decls[*local].ty.peel_refs());
+        let lent = uses[local.as_usize()] > received.get(local).copied().unwrap_or(0);
         if cell && lent {
             gone.push(field);
         }
@@ -455,17 +496,18 @@ fn unwhole_writes<'tcx>(
             continue;
         };
         match &assign.1 {
-            // A literal's field, of a whole number, or a `Cell` made of one.
+            // A literal's field, of a whole number, or a `Cell` made of one;
+            // a closure's capture, where the closure's made, too.
             Rvalue::Aggregate(kind, operands) => {
-                let AggregateKind::Adt(adt, variant, ..) = **kind else {
-                    continue;
+                let field = |index: FieldIdx| match **kind {
+                    AggregateKind::Adt(adt, variant, ..) if tcx.def_kind(adt) == DefKind::Struct => {
+                        Some(Field::Struct(tcx.adt_def(adt).variant(variant).fields[index].did))
+                    }
+                    AggregateKind::Closure(closure, _) => Some(Field::Capture(closure, index)),
+                    _ => None,
                 };
-                if tcx.def_kind(adt) != DefKind::Struct {
-                    continue;
-                }
-                let fields = &tcx.adt_def(adt).variant(variant).fields;
                 for (index, operand) in operands.iter_enumerated() {
-                    let field = fields[index].did;
+                    let Some(field) = field(index) else { continue };
                     if !wholes.fields.contains(&field) {
                         continue;
                     }

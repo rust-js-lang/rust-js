@@ -1,7 +1,7 @@
 # 0994. A number a binding takes is TypeScript's `number`, an `f64`
 
 Status: Accepted; amended (below; the last: a nullable one's `Some`, and
-a variable given one; a counter, rd266; and a field or a function a counter's number is in, rd537). Amends [0024](0024-web-crate.md), whose WebIDL integer
+a variable given one; a counter, rd266; a field or a function a counter's number is in, rd537; and a number a closure takes by value, rd653). Amends [0024](0024-web-crate.md), whose WebIDL integer
 parameters were Rust integers, an `unsigned long` a `u32`; and
 [0283](0283-js-crate-covers-typescripts-es-library.md), whose typed
 arrays took their element's type and `u32`/`i32` lengths, indices and
@@ -391,3 +391,48 @@ What a function gives and takes stays an `f64`, as above:
 one or the other, `position as u32 & node::DOCUMENT_POSITION_CONTAINED_BY
 as u32`, `node::DOCUMENT_POSITION_DISCONNECTED as f64`, each of a
 constant the constant itself.
+
+## Amended (2026-11-02, rd653): a number a closure takes by value
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no difference: the
+text is Rust's for every value each can hold.
+
+react-markup counts the errors it stashes, `let stashErrorIdx = 1; ..
+const id = '' + stashErrorIdx++;`, in its promise's executor. Its port's
+`let stash_error_idx = Cell::new(1.0)`, which `move |error| { let id =
+stash_error_idx.get().to_string(); stash_error_idx.set(stash_error_idx.get()
++ 1.0); .. }` takes, was `$displayF64(stashErrorIdx)`: rd537's fields were
+a struct's, and a closure's capture is a field of the closure's own.
+
+- **A `Cell<f64>` or an `f64` a closure takes by value is a field**, of
+  the closure and its place among its captures (`wholes.rs`'s
+  `Field::Capture`), found in the closure's literal, `{closure} { idx: move
+  _1 }`, which a body has, an inline `const { .. }`'s too, and read and
+  written only by the closure's own body, `(*_1).0`. Its writes, the
+  literal's and the body's, and its lending are rd537's, by the same
+  rule; a closure no literal seen makes isn't one. One the closure borrows,
+  `&Cell<f64>`, is the maker's local, which this rule doesn't take, and
+  keeps `$displayF64`.
+- **A `Cell::new` a literal is given is whole only where it's used once**,
+  moved there: `let idx = Cell::new(1.0); idx.set(-0.0); move || ..` lends
+  it to `set` before the closure takes it, and keeps `$displayF64`. A
+  struct's literal is asked the same.
+- **A whole local's temporary, taken where it's used, is known whole as
+  its variable is** (`LocalFacts::value`): `idx.get().to_string()` is
+  `String(idx)`, as `let id = idx.get(); id.to_string()` was, and so is
+  rd537's `reply.pending.get().to_string()`, now `String(reply.pending)`,
+  and the corpus's `untagged_told_by_members`' second `parent_of(..)`. A
+  temporary read another way, that case's first `parent_of(..)`, isn't
+  asked yet and keeps `$displayF64`, as before.
+
+The text is `String(idx)`, not upstream's `'' + idx`: rd537 decided that
+`"" + n` reads worse.
+
+Held by `test/corpus/whole_captures.rs`, against native Rust, whose kept
+cases are a `Cell` set `-0.0` before a closure takes it, lent to a
+function, to `get_mut` or to a closure inside, past 2^53, stepped by a
+half, an `f64` written by `-=`, and one borrowed; mutations
+`whole-capture-unfound`, `whole-capture-literal-unchecked`,
+`whole-cell-set-before-kept` and `whole-capture-lent-unseen`
+(`lower/analysis/wholes.ts`) and `whole-temporary-unmarked`
+(`lower/mir/temporaries.ts`).

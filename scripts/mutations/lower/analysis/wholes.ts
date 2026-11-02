@@ -117,8 +117,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a struct a constant holds, `static SIGNED: Fixed = Fixed { n: -0.0 }`, whose value rustc evaluates where no write is seen, is taken for whole, its `-0` shown `0` (rd537)",
     file: "src/lower/analysis/wholes.rs",
-    find: "        (wholes.fields).retain(|&field| !constant.structs.contains(&tcx.parent(field)));\n",
-    replace: "",
+    find: "            Field::Struct(field) => !constant.structs.contains(&tcx.parent(field)),\n",
+    replace: "            Field::Struct(_) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^whole_counters.rs$"],
     snapshots: true,
   },
@@ -140,6 +140,46 @@ export const mutations: Mutation[] = [
     find: "    uses.visit_body(body);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^whole_counters.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "whole-capture-unfound",
+    breaks:
+      "a `Cell<f64>` a closure takes by value and counts in, react-markup's `stash_error_idx`, isn't known whole, `$displayF64(stashErrorIdx)` where upstream writes `'' + stashErrorIdx++` (rd653)",
+    file: "src/lower/analysis/wholes.rs",
+    find: "        ty::Closure(closure, _) => Some(Field::Capture(closure, index)),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^whole_captures.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "whole-capture-literal-unchecked",
+    breaks:
+      "a closure's literal isn't checked, so a `Cell` it takes made of `-0.0`, or set before, is taken for whole and `0` is shown where Rust shows `-0` (rd653)",
+    file: "src/lower/analysis/wholes.rs",
+    find: "                    AggregateKind::Closure(closure, _) => Some(Field::Capture(closure, index)),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^whole_captures.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "whole-cell-set-before-kept",
+    breaks:
+      "a `Cell::new(1.0)` set `-0.0` before a closure takes it, `idx.set(-0.0); move || ..`, is taken for whole and `0` is shown where Rust shows `-0` (rd653)",
+    file: "src/lower/analysis/wholes.rs",
+    find: "            && uses[destination.local.as_usize()] == 1\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^whole_captures.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "whole-capture-lent-unseen",
+    breaks:
+      "a closure's `Cell` lent to a function, `set_negative_zero(&lent)`, is taken for unlent, as only a reference's type was asked whether it's a `Cell` (rd653)",
+    file: "src/lower/analysis/wholes.rs",
+    find: "body.local_decls[*local].ty.peel_refs()",
+    replace: "body.local_decls[*local].ty",
+    tests: ["test/corpus.test.ts", "-t", "^whole_(captures|counters).rs$"],
     snapshots: true,
   },
 ];

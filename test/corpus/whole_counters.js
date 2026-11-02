@@ -72,10 +72,10 @@ function names(prefix, count) {
     const streamId = nextOf(reply);
     out.push(reply.prefix + "S" + streamId);
     reply.rows++;
-    out.push(`${$displayF64(reply.rows)}:${$displayF64(Reply.settle(reply))}`);
+    out.push(`${$displayF64(reply.rows)}:${Reply.settle(reply)}`);
   }
   reply.pending++;
-  out.push($displayF64(reply.pending));
+  out.push(String(reply.pending));
   return out;
 }
 

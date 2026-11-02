@@ -520,4 +520,13 @@ export const mutations: Mutation[] = [
     replace: "        self.settle(state, &[block], None, out);\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "returns_joined_past_blocks"],
   },
+  {
+    name: "whole-temporary-unmarked",
+    breaks: "a whole local's temporary, taken where it's used, isn't known whole, `$displayF64(idx)` of `idx.get().to_string()` (rd653)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "                Value::Expr(e) => Value::Expr(state.facts.value(local, e)),\n",
+    replace: "                Value::Expr(e) => Value::Expr(e),\n",
+    tests: ["test/corpus.test.ts", "-t", "^whole_captures.rs$"],
+    snapshots: true,
+  },
 ];

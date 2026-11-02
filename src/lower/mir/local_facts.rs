@@ -288,7 +288,13 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
     /// `#[rust_js::whole]` binding gave (`mir_wholes`), known whole, its
     /// `{}` JS's text of it (ADR 0994, amended).
     pub(super) fn variable(&self, local: Local, name: &str) -> Expr {
-        let mut read = Expr::var(name);
+        self.value(local, Expr::var(name))
+    }
+
+    /// `local`'s value, `read`, its variable's or its temporary's taken
+    /// where it's used, `idx` of `idx.get().to_string()`: known whole where
+    /// the local is (rd653).
+    pub(super) fn value(&self, local: Local, mut read: Expr) -> Expr {
         if self.wholes.contains(&local) {
             read.facts = read.facts.with(js::Known::Whole);
         }

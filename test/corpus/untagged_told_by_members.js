@@ -45,7 +45,7 @@ function main() {
   };
   append(div, text);
   append(root, div);
-  console.log(`${$displayF64(parentOf(div))} ${$displayF64(parentOf(text))}`);
+  console.log(`${$displayF64(parentOf(div))} ${parentOf(text)}`);
   for (const child of root.children) {
     console.log(`${describe(child)} ${!Array.isArray(child.children)}`);
   }

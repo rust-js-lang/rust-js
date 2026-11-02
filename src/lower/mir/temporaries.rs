@@ -378,7 +378,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Value<'tcx>> {
         if state.pending.iter().any(|(l, _)| *l == local) && self.admit(state, &[local], true, out)? {
             let at = state.pending.iter().position(|(l, _)| *l == local).expect("admitted");
-            return Ok(state.pending.remove(at).1);
+            return Ok(match state.pending.remove(at).1 {
+                Value::Expr(e) => Value::Expr(state.facts.value(local, e)),
+                value => value,
+            });
         }
         if let Some(value) = state.in_place.get(&local) {
             return Ok(Value::Expr(value.clone()));

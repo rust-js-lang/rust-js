@@ -3368,7 +3368,12 @@ written a whole number from -2^53 to 2^53, not `-0`, and one more or
 less each time, `index += 1.0`, is whole and never past 2^53, where
 JS's text is Rust's: `` `id-${index}` ``. So is a field only so written,
 a `Cell<f64>` id counter's no constant holds, and a function that gives
-one; and text joined to a number is `prefix + id`.
+one; so is a `Cell<f64>` or an `f64` a closure takes by value, `let idx =
+Cell::new(1.0); move || { let id = idx.get().to_string(); idx.set(idx.get()
++ 1.0); id }`'s `String(idx)`, where nothing sets it before the closure
+takes it or lends it after; one a closure borrows keeps `$displayF64`
+([ADR 0994](../../decisions/0994-a-number-a-binding-takes-is-typescripts-number.md#amended-2026-11-02-rd653-a-number-a-closure-takes-by-value));
+and text joined to a number is `prefix + id`.
 
 A value from JavaScript whose type you don't know, what an `any` API
 returns, is a `js::Unknown`, or `None` where it's `undefined` or `null`,
