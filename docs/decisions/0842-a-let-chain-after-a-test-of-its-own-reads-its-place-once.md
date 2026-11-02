@@ -164,3 +164,49 @@ became a `let` read again, which runs the same.
 
 Held by the corpus case `let_chain_settled_and` against native Rust, and
 the mutation `and-tests-settled-skipped` (`lower/mir/tidy/stages.ts`).
+
+## Amendment: a chain with an `else` reads its binding in its body (2026-11-02)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The tests run in the
+order written, each short-circuiting, and the binding, a path of
+properties read through `?.`, which calls nothing, is read once each
+test before it holds, as Rust's is; its second read, in the body, gives
+what the test read, as nothing runs between.
+
+React Flight's createFromReadableStream is `if __DEV__ && let
+Some(readable) = options.and_then(|o| o.debug_channel.as_ref()).and_then(|c|
+c.readable) { .. } else { .. } get_root(&response)`. Upstream writes `if
+(__DEV__ && options && options.debugChannel &&
+options.debugChannel.readable) { .. } else { .. } return
+getRoot(response);`. It printed the nested `if`s this ADR keeps for a
+chain of no `else`, `if (DEV) { const readable =
+options?.debugChannel?.readable; if (readable != null) { ..; return
+getRoot(response); } } ..; return getRoot(response);`: nested `if`s have
+no one place for the `else`, so `jumps past blocks` copied what follows
+the chain into an early `return`. **A let chain with an `else`, its
+binding between its tests, is one `if` of its tests and its `else`, the
+binding read in the body** (`logicals/chains.rs`'s `chains_in_blocks`, as
+ADR 0946's chain inside an `if` is): `if (DEV &&
+options?.debugChannel?.readable != null) { const readable =
+options.debugChannel.readable; .. } else { .. } return getRoot(response);`.
+A path read through `?.` is a path of properties, as `a.b` is
+(`read_of_a_path`). And past a part of the test that holds a path read
+through `?.` set, `options?.debugChannel?.readable != null`, each object
+of the path is a `.`'s, in the parts of the test after it and in the
+reads of a path the body starts with, before anything runs: where
+`options?.debugChannel?.readable` isn't `null` or `undefined`, neither is
+`options` nor `options.debugChannel`, and `options.debugChannel.readable`
+reads the same. One function answers it, `logicals::unchained_past`, which
+this fold and `and tests`' join both ask, so a chain of two bindings,
+`(Some(x), Some(y)) = (a.., b..)`, reads `b?.debugChannel?.readable` with
+its `?.` until its own test holds, `b` being `undefined` where `a` isn't.
+A chain of no `else` keeps the nested form above; a block's chain of no
+binding between its tests is `branch_values`', or a flag's.
+
+Rejected: the nested `if`s with the `else` written twice, or a label,
+which no Rust wrote; and the binding read into a `const` before the
+chain, which reads it where `__DEV__` is false (Alternatives above).
+
+Held by the corpus case `let_chain_else_of_an_optional_read` against
+native Rust, and the mutations of `tidy/logicals/chains.ts` and
+`optional-path-not-a-read` (`tidy/logicals.ts`).

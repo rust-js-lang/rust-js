@@ -3117,6 +3117,15 @@ export function isAdult(p) {
   once, as a person writes it: `if (debug) { const value = info.value; if
   (value != null) { .. } }`
   ([ADR 0842](../../decisions/0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)).
+  One with an `else` is one `if` of its tests and its `else`, the binding
+  read in the body, a `?.` past the test that it's set a `.`: `if dev &&
+  let Some(readable) = options.and_then(|o| o.channel.as_ref()).and_then(|c|
+  c.readable) { .. } else { .. }` is `if (dev &&
+  options?.channel?.readable != null) { const readable =
+  options.channel.readable; .. } else { .. }`, not the code after it
+  copied into an early `return`
+  ([ADR 0842](../../decisions/0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md),
+  amended).
 - A `let` the program wrote stays as it wrote it, one an `if let` then
   takes apart too, `let types = prev.types.borrow().clone(); if dev &&
   let Some(types) = types && ..`: `const types = prev.types; if (dev &&

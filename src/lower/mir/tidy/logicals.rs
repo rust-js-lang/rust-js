@@ -5,6 +5,9 @@
 
 use super::*;
 
+mod chains;
+pub(super) use chains::chains_in_blocks;
+
 /// `if (t) { return a; } return b;`, MIR's of a value the program wrote
 /// with `&&` or `||` where `t` is tested: one value returned, `t ? a : b`,
 /// as the program wrote it, each test before it folded in, `s !== "en" &&
@@ -483,6 +486,7 @@ pub(super) fn and_tests(stmts: &mut Vec<Stmt>, conditions: &[(js::Span, js::Span
                 read_again(then, at);
             }
         }
+        unchained_past(test, then);
     }
     // Its name is its own in the function, as each MIR local's is, so in
     // this list too (`contracts::DECLARED_ONCE`).
@@ -889,11 +893,70 @@ fn skipped(body: &[Stmt], label: &str, within: &dyn Fn(js::Span) -> bool) -> Opt
     Some((Expr::bin(Op::And, first.clone(), rest), then, *span))
 }
 
-/// Whether `e` reads a variable, or a path of properties from one, `a.b`.
+/// Past a part of `test`'s `&&` that holds a path read through `?.` set,
+/// `options?.channel?.readable != null`, each object of the path is set
+/// too: read with a `.` in the parts after it, `options.channel.readable >
+/// 2`, and in the reads of a path `body` starts with, before anything
+/// runs, `const readable = options.channel.readable;`, which read the same
+/// there: the one answer to where a let chain's `?.` is a `.` (rd614 b,
+/// ADR 0842, amended).
+pub(super) fn unchained_past(test: &mut Expr, body: &mut [Stmt]) {
+    fn parts(test: &mut Expr, set: &mut Vec<Expr>) {
+        if let ExprKind::Binary(Op::And, a, b) = &mut test.kind {
+            parts(a, set);
+            return parts(b, set);
+        }
+        unchain(test, set);
+        let Some(mut path) = js::null_test(test, true).map(unchained) else {
+            return;
+        };
+        loop {
+            set.push(path.clone());
+            match path.kind {
+                ExprKind::Member(object, _) => path = *object,
+                _ => break,
+            }
+        }
+    }
+    let mut set = Vec::new();
+    parts(test, &mut set);
+    for stmt in body {
+        match &mut stmt.kind {
+            StmtKind::Const(_, value) if read_of_a_path(value) => unchain(value, &set),
+            _ => break,
+        }
+    }
+}
+
+/// `e` with each `?.` of an object `set` holds, `unchained_past`'s, a `.`.
+fn unchain(e: &mut Expr, set: &[Expr]) {
+    e.each_mut(&mut |e| {
+        if let ExprKind::OptionalMember(object, field) = &e.kind
+            && set.iter().any(|s| js::same_path(s, &unchained(object)))
+        {
+            e.kind = ExprKind::Member(object.clone(), field.clone());
+        }
+    });
+}
+
+/// A path of properties, `read_of_a_path`'s, of `.`s alone: `y.v.w` of
+/// `y?.v?.w`, `same_path` of what it reads where each object is set.
+fn unchained(path: &Expr) -> Expr {
+    let kind = match &path.kind {
+        ExprKind::Member(object, field) | ExprKind::OptionalMember(object, field) => {
+            ExprKind::Member(Box::new(unchained(object)), field.clone())
+        }
+        kind => kind.clone(),
+    };
+    Expr { kind, ..path.clone() }
+}
+
+/// Whether `e` reads a variable, or a path of properties from one, `a.b`,
+/// `a?.b` too.
 fn read_of_a_path(e: &Expr) -> bool {
     match &e.kind {
         ExprKind::Var(_) | ExprKind::Symbol(_) => true,
-        ExprKind::Member(object, _) => read_of_a_path(object),
+        ExprKind::Member(object, _) | ExprKind::OptionalMember(object, _) => read_of_a_path(object),
         _ => false,
     }
 }
@@ -1260,145 +1323,6 @@ fn bits(e: &Expr) -> bool {
         ExprKind::Unary(UnaryOp::BitNot, _) => true,
         _ => false,
     }
-}
-
-/// `l: { if (c) { if (a) { if (b) { s; break l; } } t } }`, `branch_values`'
-/// `&&` chain (`or_chain`) in `if`s the block is all of, where the block goes
-/// on after them: `if (c) { if (a && b) { s } else { t } }`, a let chain's
-/// with an `else` inside an `if` (ADR 0946, amended). After the passes that
-/// name its temporaries and join its `if`s, which the chain's tests then are.
-pub(super) fn chains_in_blocks(stmts: &mut [Stmt]) {
-    for stmt in stmts {
-        let StmtKind::Labeled(label, body) = &mut stmt.kind else {
-            continue;
-        };
-        if !crate::lower::mir::is_block_label(label) || !chain_within(body, label) {
-            continue;
-        }
-        let (label, mut body) = (label.clone(), std::mem::take(body));
-        fold_within(&mut body, &label);
-        *stmt = body.pop().expect("chain_within's `if`");
-    }
-}
-
-/// `chains_in_blocks`' fold of `list`, `chain_within` it: the chain where
-/// it is, in the innermost `if`, after the bindings before it.
-fn fold_within(list: &mut [Stmt], label: &str) {
-    let [
-        Stmt {
-            kind: StmtKind::If(_, inner, None),
-            ..
-        },
-    ] = list
-    else {
-        unreachable!("chain_within")
-    };
-    let Some((k, chain)) = chained(inner, label) else {
-        return fold_within(inner, label);
-    };
-    let Some((tests, otherwise, then)) = or_chain(&chain, label) else {
-        unreachable!("chained")
-    };
-    let test = (tests.into_iter())
-        .rev()
-        .reduce(|b, a| Expr::bin(Op::And, a, b))
-        .expect("one");
-    let span = made_where(js::Span::NONE, &chain);
-    inner.truncate(k);
-    inner.push(
-        match then.is_empty() {
-            true => StmtKind::If(test, otherwise, None),
-            false => StmtKind::If(test.negated_test(), then, Some(otherwise)),
-        }
-        .at(span),
-    );
-}
-
-/// Of `list`, a block's: how many bindings its chain follows, and the
-/// chain, `or_chain`'s, of a let chain's bindings between its tests, each
-/// `const x = y;` of a variable, out of it (`hoisted`), where the tests call
-/// nothing, so the variable reads the same before them.
-fn chained(list: &[Stmt], label: &str) -> Option<(usize, Vec<Stmt>)> {
-    let k = (list.iter())
-        .take_while(|s| matches!(&s.kind, StmtKind::Const(_, value) if read_of_a_path(value)))
-        .count();
-    let mut chain = list[k..].to_vec();
-    // Whether the chain's tests, or the bindings between them, call
-    // anything: not what its body does once they've held.
-    fn calls(stmt: &Stmt) -> bool {
-        let StmtKind::If(test, then, None) = &stmt.kind else {
-            return false;
-        };
-        let mut found = false;
-        let mut called = |e: &Expr| {
-            found |= matches!(
-                e.kind,
-                ExprKind::Call(..) | ExprKind::New(..) | ExprKind::Assigned(..) | ExprKind::Await(_)
-            )
-        };
-        test.each(&mut called);
-        let k = (then.iter())
-            .take_while(|s| matches!(&s.kind, StmtKind::Const(_, value) if read_of_a_path(value)))
-            .count();
-        then[..k].iter().for_each(|s| {
-            if let StmtKind::Const(_, value) = &s.kind {
-                value.each(&mut called);
-            }
-        });
-        found || matches!(&then[k..], [next] if calls(next))
-    }
-    if let Some(first) = chain.first_mut()
-        && !calls(first)
-    {
-        sunk(first, Vec::new());
-    }
-    or_chain(&chain, label).map(|_| (k, chain))
-}
-
-/// A let chain's bindings at the start of each `then` of `if (a) { const
-/// x = y.v; if (x != null) { s } }`, `carried` those above: in its last
-/// `then`, each test of one a test of what it reads, `if (a) { if (y.v !=
-/// null) { const x = y.v; s } }`, read only where each test before it
-/// held, as it was, and the same, as the tests call nothing (ADR 0946,
-/// amended).
-fn sunk(stmt: &mut Stmt, mut carried: Vec<Stmt>) {
-    let StmtKind::If(_, then, None) = &mut stmt.kind else {
-        return;
-    };
-    let k = (then.iter())
-        .take_while(|s| matches!(&s.kind, StmtKind::Const(_, value) if read_of_a_path(value)))
-        .count();
-    if !matches!(
-        &then[k..],
-        [Stmt {
-            kind: StmtKind::If(..),
-            ..
-        }]
-    ) {
-        then.splice(0..0, carried);
-        return;
-    }
-    carried.extend(then.drain(..k));
-    if let StmtKind::If(test, ..) = &mut then[0].kind {
-        let read = |n: &str| {
-            (carried.iter()).rev().find_map(|c| match &c.kind {
-                StmtKind::Const(name, value) if name == n => Some(value.clone()),
-                _ => None,
-            })
-        };
-        if let Some(tested) = test.substitute(&read) {
-            *test = tested;
-        }
-    }
-    sunk(&mut then[0], carried);
-}
-
-/// Whether `body`, a block `label`'s, is an `if` of no `else` alone, of
-/// such an `if` or of `or_chain`'s `&&` chain (`chained`), to the block's
-/// end: the chain each `if` is all of the block within (`chains_in_blocks`).
-fn chain_within(body: &[Stmt], label: &str) -> bool {
-    matches!(body, [Stmt { kind: StmtKind::If(_, inner, None), .. }]
-        if chained(inner, label).is_some() || chain_within(inner, label))
 }
 
 /// Whether `yes` and `no` are the same value, read the same either way:
