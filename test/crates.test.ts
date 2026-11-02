@@ -142,8 +142,10 @@ const triples = join(root, "test", "crates", "triples");
  * the native program does; where each crate's JS is. A crate's file names
  * it, `dep.rs` the crate `dep`, but where its first line says otherwise,
  * `//@ crate-name: core`; one named `std` is given to a `#![no_std]` crate
- * alone, as another's `std` is std's (ADR 1054). */
-function chain(cases: string, name: string, files: string[]): string {
+ * alone, as another's `std` is std's (ADR 1054). Where `refused` is given,
+ * the app's compile is refused instead, saying each of them: what the
+ * native program prints. */
+function chain(cases: string, name: string, files: string[], refused?: string[]): string {
   const dir = fixture(`${files.length === 2 ? "pair" : "triple"}-${name}`);
   const native = join(dir, "native"), out = join(dir, "js");
   mkdirSync(native, { recursive: true });
@@ -159,7 +161,7 @@ function chain(cases: string, name: string, files: string[]): string {
   const app = crates[crates.length - 1];
   writeFileSync(join(native, "main.rs"), `fn main() {\n    ${app}::main();\n}\n`);
   run([...rustc, join(native, "main.rs"), "-o", join(native, "program"), "--extern", `${app}=${join(native, `lib${app}.rlib`)}`, "-L", `dependency=${native}`]);
-  crates.forEach((crate, i) => {
+  const compile = (crate: string, i: number) => {
     const used = crates.slice(0, i);
     const library = i < crates.length - 1
       ? ["--library", "--manifest", join(out, crate, "lib.manifest.json")]
@@ -170,7 +172,19 @@ function chain(cases: string, name: string, files: string[]): string {
       "--", "--crate-name", crate, ...metadata,
       ...given(i).flatMap((u) => ["--extern", `${u}=${join(out, u, `lib${u}.rmeta`)}`]),
       ...used.flatMap((u) => ["-L", `dependency=${join(out, u)}`])]);
-  });
+  };
+  if (refused) {
+    crates.slice(0, -1).forEach(compile);
+    let said = "";
+    try {
+      compile(app, crates.length - 1);
+    } catch (error) {
+      said = String(error);
+    }
+    for (const words of refused) expect(said).toContain(words);
+    return run([join(native, "program")]);
+  }
+  crates.forEach(compile);
   expect(printed(join(out, app, "lib.js"))).toBe(run([join(native, "program")]));
   return out;
 }
@@ -269,6 +283,23 @@ test("a library's request that owns its callbacks alone is its consumer's callba
   expect(app).toContain("  request = createRequest(name, onAllReady, onShellReady);\n  return request;\n");
   expect(app).not.toContain("strong");
   expect(readFileSync(join(out, "dep", "lib.js"), "utf8")).not.toContain("strong");
+}, 300_000);
+
+// rd553: React's Flight server's request kept its prerender's `onAllReady`
+// in a public field, which another crate may clone out and call after the
+// request is gone, when the cell's `Weak` gives `None`, as this app does:
+// the library's return doesn't alone own it, so its consumer's cell is
+// counted, its `dyn Fn`s drop, and the library, whose `dyn Fn`s drop
+// nothing, refuses it, naming the closure, what it holds and the call
+// whose return doesn't own it (ADRs 0317, 0626, amended).
+test("a library's request whose callback is a public field refuses its consumer's owner handle, saying why", () => {
+  const native = chain(join(root, "test", "crates", "refused"), "owner_handle_public_field", ["dep", "app"], [
+    "this crate's `dyn Fn`s may hold a value with a destructor, which their drop runs, but `dep`, a rust-js library whose `dyn Fn`s drop nothing, holds one of them",
+    "app.rs:22:",
+    "this `dyn Fn` holds a `std::rc::Rc<std::cell::OnceCell<std::rc::Weak<dep::Request>>>`, whose drop runs code",
+    "and `dep::create_prerender_request`'s doesn't own `on_all_ready`: the field it's moved to must be private to its crate",
+  ]);
+  expect(native).toBe("a is ready\nno request\n");
 }, 300_000);
 
 // #374, ADR 0960: a library checks its hooks' `RefCell<Vec<Rc<dyn Fn()>>>`,

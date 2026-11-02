@@ -466,8 +466,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `dyn Fn` a library hands the crate drops though no library makes one of what drops, so the crate's own `Rc<dyn Fn()>` listeners are `{ value, strong, weak }` (ADR 0626, amended)",
     file: "src/lower/analysis.rs",
-    find: "    let drops = (reached.fn_dyns_of.iter()).any(|name| foreign.drops_fn_dyns(name))\n",
-    replace: "    let drops = !reached.fn_dyns_of.is_empty()\n",
+    find: "    let library_drops = (reached.fn_dyns_of.iter()).any(|name| foreign.drops_fn_dyns(name));\n",
+    replace: "    let library_drops = !reached.fn_dyns_of.is_empty();\n",
     tests: [
       "test/cross-crate-dyn-fns.test.ts",
       "-t",
@@ -479,9 +479,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `dyn Fn` a library makes of a closure holding a value with a destructor, handed to the crate, is dropped as nothing (ADR 0626, amended)",
     file: "src/lower/analysis.rs",
-    find: "    let drops = (reached.fn_dyns_of.iter()).any(|name| foreign.drops_fn_dyns(name))\n",
+    find: "    let library_drops = (reached.fn_dyns_of.iter()).any(|name| foreign.drops_fn_dyns(name));\n",
     replace:
-      "    let drops = false && (reached.fn_dyns_of.iter()).any(|name| foreign.drops_fn_dyns(name))\n",
+      "    let library_drops = false && (reached.fn_dyns_of.iter()).any(|name| foreign.drops_fn_dyns(name));\n",
     tests: [
       "test/cross-crate-dyn-fns.test.ts",
       "-t",
@@ -501,6 +501,15 @@ export const mutations: Mutation[] = [
       "-t",
       "and refuses one it would drop nothing of",
     ],
+  },
+  {
+    name: "dropping-dyn-fn-unnamed",
+    breaks:
+      "a crate refused for a `dyn Fn` it makes that holds what drops isn't told which, nor what it holds (rd553, ADR 0626, amended)",
+    file: "src/lower/analysis.rs",
+    find: "        let Some(made) = made.filter(|_| !library_drops) else {\n",
+    replace: "        let Some(made) = made.filter(|_| false) else {\n",
+    tests: ["test/crates.test.ts", "-t", "callback is a public field"],
   },
   {
     name: "dropping-dyn-fn-library-refused",

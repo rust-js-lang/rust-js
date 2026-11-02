@@ -62,14 +62,28 @@ pub(crate) struct OwnerHandle<'tcx> {
     pub(super) upgrades: Vec<(DefId, Span)>,
 }
 
+/// A cell made as an owner handle's is, but given, in a closure's `Rc`, to
+/// a call whose return doesn't alone own it, so it's counted, as written:
+/// what a refusal of what that counts names (ADR 0317, amended).
+pub(crate) struct Unowned<'tcx> {
+    /// The closure, and the cell's clone's type, which it holds.
+    pub(crate) closure: DefId,
+    pub(crate) cell: Ty<'tcx>,
+    /// The function it's given to, and which of its parameters it is.
+    pub(crate) callee: DefId,
+    pub(crate) given: u32,
+}
+
 /// The owner handle `cell`, of `body`, makes, where it's one, each of its
 /// closures read of `of`; `owned` says whether what a function returns
-/// alone owns its parameter.
+/// alone owns its parameter. A cell given to a call whose return doesn't
+/// own its closures is `unowned`'s.
 pub(super) fn owner_made<'tcx>(
     tcx: TyCtxt<'tcx>,
     (maker, body, uses): (DefId, &mir::Body<'tcx>, &Uses),
     cell: Local,
     (of, owned): (&HashMap<DefId, &mir::Body<'tcx>>, &dyn Fn(DefId, u32) -> bool),
+    unowned: &mut Vec<Unowned<'tcx>>,
 ) -> Option<OwnerHandle<'tcx>> {
     // An `Rc<OnceCell<Weak<D>>>`.
     let pointee = once_weak(tcx, body.local_decls[cell].ty)?;
@@ -255,7 +269,17 @@ pub(super) fn owner_made<'tcx>(
         return None;
     }
     let (callee, _, _) = any_call_at(tcx, body, call)?;
-    if !closures.iter().all(|&(_, _, given)| owned(callee, given)) {
+    let not_owned: Vec<Unowned<'tcx>> = (closures.iter())
+        .filter(|&&(_, _, given)| !owned(callee, given))
+        .map(|&(closure, _, given)| Unowned {
+            closure,
+            cell: body.local_decls[cell].ty,
+            callee,
+            given,
+        })
+        .collect();
+    if !not_owned.is_empty() {
+        unowned.extend(not_owned);
         return None;
     }
     // Nothing runs between the call and the cell's setting but its steps,

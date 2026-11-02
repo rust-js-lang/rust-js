@@ -11,6 +11,7 @@ use rustc_hir::def_id::DefId;
 use rustc_middle::thir::{AdtExprBase, ExprId, ExprKind, Thir};
 use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
+use rustc_span::Span;
 use std::collections::HashSet;
 
 /// What the crate does with its closures.
@@ -60,13 +61,13 @@ impl ClosureFacts {
         };
         let (handed, made): (Vec<_>, Vec<_>) = (all_bodies.iter())
             .flat_map(|body| fn_dyn_sources(tcx, &body.thir))
-            .partition(|&(_, handed)| handed);
-        let made_fn_dyns: HashSet<DefId> = made.into_iter().filter_map(|(ty, _)| closure_of(ty)).collect();
+            .partition(|&(_, _, handed)| handed);
+        let made_fn_dyns: HashSet<DefId> = made.into_iter().filter_map(|(_, ty, _)| closure_of(ty)).collect();
         let called_once = (all_bodies.iter())
             .flat_map(|body| called_once_by_js(tcx, &body.thir))
             .collect();
         let handed_fn_dyns = (handed.into_iter())
-            .filter_map(|(ty, _)| closure_of(ty))
+            .filter_map(|(_, ty, _)| closure_of(ty))
             .filter(|id| !made_fn_dyns.contains(id))
             .collect();
         let cloned = (cloned.iter())
@@ -194,16 +195,28 @@ pub(in crate::lower) fn borrowed_fixed_bindings(tcx: TyCtxt<'_>, closure: DefId)
     tcx.closure_captures(local).iter().map(fixed).collect()
 }
 
-/// Whether any of `all_bodies` makes a function a `dyn Fn` that `drops`
-/// says has something to drop, or one of a type parameter's, given a
-/// closure: where a closure the crate makes has, or, where
+/// A `dyn Fn` the crate makes that drops what it holds: where it's made,
+/// and what it holds that drops, which a refusal names (ADR 0626, amended).
+pub(super) struct DroppingFnDyn<'tcx> {
+    /// The coercion to the `dyn Fn`.
+    pub(super) span: Span,
+    /// The function made one, a closure, a `fn` or a type parameter's.
+    pub(super) function: Ty<'tcx>,
+    /// What it holds that drops: a closure's capture, or the function
+    /// itself, a type parameter's whose drop only its callers know.
+    pub(super) held: Ty<'tcx>,
+}
+
+/// The first of `all_bodies`' coercions of a function to a `dyn Fn` that
+/// `drops` says has something to drop, or of one of a type parameter's,
+/// given a closure: where a closure the crate makes has, or, where
 /// `foreign_drops`, one a library makes may.
-pub(super) fn fn_dyns_drop<'tcx>(
+pub(super) fn dropping_fn_dyn<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
     (params_may_drop, foreign_drops): (bool, bool),
     drops: impl Fn(Ty<'tcx>) -> bool,
-) -> bool {
+) -> Option<DroppingFnDyn<'tcx>> {
     // A type parameter's: in Rust a function is a closure, a `fn` or a
     // `dyn Fn`, whose own coercion answers for it.
     let closure_drops = || {
@@ -218,7 +231,28 @@ pub(super) fn fn_dyns_drop<'tcx>(
     };
     (all_bodies.iter())
         .flat_map(|body| fn_dyn_sources(tcx, &body.thir))
-        .any(|(from, handed)| !handed && (drops(from) || holds_a_param(from) && closure_drops()))
+        .find_map(|(span, function, handed)| {
+            if handed {
+                return None;
+            }
+            if drops(function) {
+                // The capture that drops, of a closure.
+                let held = match function.kind() {
+                    ty::Closure(_, args) => args.as_closure().upvar_tys().iter().find(|&t| drops(t)),
+                    _ => None,
+                };
+                return Some(DroppingFnDyn {
+                    span,
+                    function,
+                    held: held.unwrap_or(function),
+                });
+            }
+            (holds_a_param(function) && closure_drops()).then_some(DroppingFnDyn {
+                span,
+                function,
+                held: function,
+            })
+        })
 }
 
 /// Whether a function of type `ty` may be one of a type parameter's,
@@ -260,11 +294,17 @@ pub(super) fn any_dyns_drop<'tcx>(
 }
 
 /// The functions `thir` makes `dyn Fn`s of, `Box<F>` to `Box<dyn Fn()>`'s
-/// `F`, each with whether it's a closure made one only to hand it to JS.
-fn fn_dyn_sources<'a, 'tcx>(tcx: TyCtxt<'tcx>, thir: &'a Thir<'tcx>) -> impl Iterator<Item = (Ty<'tcx>, bool)> + 'a {
+/// `F`, each with where it's made one and whether it's a closure made one
+/// only to hand it to JS.
+fn fn_dyn_sources<'a, 'tcx>(
+    tcx: TyCtxt<'tcx>,
+    thir: &'a Thir<'tcx>,
+) -> impl Iterator<Item = (Span, Ty<'tcx>, bool)> + 'a {
     let handed = handed_to_js(tcx, thir);
-    dyn_sources(tcx, thir, move |predicates| is_fn_dyn(tcx, predicates))
-        .map(move |(at, from)| (from, matches!(from.kind(), ty::Closure(..)) && handed.contains(&at)))
+    dyn_sources(tcx, thir, move |predicates| is_fn_dyn(tcx, predicates)).map(move |(at, from)| {
+        let handed = matches!(from.kind(), ty::Closure(..)) && handed.contains(&at);
+        (thir[at].span, from, handed)
+    })
 }
 
 /// The coercions to a `dyn Fn` in `thir` handed straight to JS (ADR 0873):

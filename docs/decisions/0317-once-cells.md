@@ -7,7 +7,8 @@ Status: Accepted. Extends [0025](0025-vec-loops-refcell-mut.md) and
 property, absent until it's set; a `set` is an assignment where the cell
 is known empty, else a test, and `$onceSet` is gone. Amended below
 (rd573): callbacks' handle on what owns them, an `Rc<OnceCell<Weak<T>>>`
-set once after the call they're given to, is that `Rc`'s `let`.
+set once after the call they're given to, is that `Rc`'s `let`; and
+(rd553) one kept in a public field stays counted, its refusal naming why.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)), but for `wait()`
 and a `OnceLock`'s reentrant init, D: refused.
@@ -62,6 +63,7 @@ setting it must check it's unset.**
 
 - [0847](0847-a-oncecell-field-is-absent-until-set.md): A `OnceCell` in a field is the property, absent until it's set
 - [Below](#amendment-callbacks-handle-on-what-owns-them-is-its-let): Callbacks' handle on what owns them is its `let`
+- [Below](#amendment-a-callback-a-public-field-holds-isnt-the-returns-alone-rd553): A callback a public field holds isn't the return's alone (rd553)
 
 ## Amendment: callbacks' handle on what owns them is its `let`
 
@@ -242,3 +244,121 @@ variable holds.
   `lower/library.ts` (`owned-by-return-of-a-library-unread`,
   `owned-by-return-unexported`) and `lower/recognition/wrappers.ts`
   (`unwrap-or-else-unrecognized`, `once-get-unrecognized`).
+
+## Amendment: a callback a public field holds isn't the return's alone (rd553)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change,
+for the shape this keeps counted; none for the rest: the refusal's words
+only.
+
+### Context
+
+React's Flight server's prerender entries, ported as Fizz's are, make
+`onAllReady` before the request it flows, of the cell above:
+
+```rust
+let request_cell: Rc<OnceCell<Weak<Request>>> = Rc::new(OnceCell::new());
+let on_all_ready = {
+    let cell = Rc::clone(&request_cell);
+    move || {
+        let request = cell.get().and_then(Weak::upgrade).unwrap();
+        // .. a stream that flows it
+    }
+};
+let request = create_prerender_request(model, .., Rc::new(on_all_ready), ..);
+let _ = request_cell.set(Rc::downgrade(&request));
+```
+
+react-dom builds of Fizz's; each of the five react-server-dom-* packages
+was refused, "this crate's `dyn Fn`s may hold a value with a destructor,
+.. but `react_server`, a rust-js library whose `dyn Fn`s drop nothing,
+holds one of them" (ADR 0626). The two are one shape but for one word:
+Flight's `Request` kept `pub on_all_ready: Rc<OnAllReady>`, Fizz's a
+private `on_all_ready`. A public field, any crate may read and clone,
+so `react_server`'s contract says its `create_prerender_request`'s return
+doesn't alone own `on_all_ready` (`kept_field`, as the decision above has
+it). The cell was counted, the closure holding it dropped what it held,
+and `react_server`, whose `dyn Fn`s drop nothing, would drop nothing of
+it: refused, rightly, but with no word of which `dyn Fn`, what it held,
+or why that was counted.
+
+### Decision
+
+**The proof is unchanged: a callback kept in a public field isn't what
+the call's return alone owns.** Another crate, any of the program's, may
+clone it out of the request, `Rc::clone(&request.on_all_ready)`, keep it
+past the request and call it, when Rust's upgrade gives `None` and the
+request's `let` would still hold it. A library can't see the crates that
+will use it, so its contract can't say none does. The crate is refused,
+as before.
+
+**The refusal names the `dyn Fn` the crate makes that drops, what it
+holds that does, and, where that is a cell made as an owner handle's is,
+the call whose return doesn't own the closure, and what the field must
+be:**
+
+```
+error: rust-js: this crate's `dyn Fn`s may hold a value with a destructor, which their drop runs, but `dep`, a rust-js library whose `dyn Fn`s drop nothing, holds one of them, and would drop nothing of it (ADR 0626)
+  --> app.rs:22:50
+   |
+22 |     let request = create_prerender_request(name, Rc::new(on_all_ready));
+   |                                                  ^^^^^^^^^^^^^^^^^^^^^ this `dyn Fn` holds a `std::rc::Rc<std::cell::OnceCell<std::rc::Weak<dep::Request>>>`, whose drop runs code
+   |
+   = note: its cell is the `let` of the `Rc` the call it's given to returns only where that return alone owns the closure (ADR 0317, amended), and `dep::create_prerender_request`'s doesn't own `on_all_ready`: the field it's moved to must be private to its crate, of a struct that isn't `Clone`, and read only to call through it; a library's contract says so of its function (`owned_by_return`)
+```
+
+- `closures::dropping_fn_dyn`, which `fn_dyns_drop` was, gives the first
+  coercion of a function that drops to a `dyn Fn` (its span), and what
+  it holds that drops (a closure's capture, or the function itself if
+  it's a type parameter's), not only whether there is one.
+- `owners::owner_made` records each cell made as an owner handle's is
+  but given to a call whose return doesn't own its closure
+  (`SelfHandles::unowned`): the closure, the cell's type, the call and
+  which parameter.
+- Where the crate's `dyn Fn`s drop because a library's own may, nothing
+  the crate made is to blame, and the refusal is as before.
+
+The port's form is Fizz's: the request keeps its callbacks in fields
+private to its crate, `on_all_ready: Rc<OnAllReady>`, which none of the
+entries reads. With that, react-server's contract says
+`create_prerender_request`'s return owns it, and each entry's cell is
+`let request; .. request = createPrerenderRequest(..)`.
+
+### Why
+
+- **Correctness first**: a public field's callback can outlive its
+  request in Rust, as the pair below runs, so the `let` would change the
+  result.
+- **Refuse clearly**: the refusal named neither the closure nor the
+  cause, a public field in another crate. Now it names the line, the
+  cell and the call, and says what the field must be.
+
+### Alternatives
+
+- **A public field's callback owned, a consumer that clones it refused**:
+  the library's contract would bind every crate that reads the field, and
+  refuse valid Rust, a clone of a public `Rc`, in crates that make no
+  cell. Rejected: a private field is the Rust the proof needs, and the
+  Rust Fizz's port already has.
+- **The refusal unchanged**: it named nothing that led a port to the
+  word `pub`.
+
+### What holds it
+
+- `test/crates.test.ts`, "a library's request whose callback is a public
+  field refuses its consumer's owner handle, saying why", of
+  `test/crates/refused/owner_handle_public_field` (`refused/` holds pairs
+  whose app is refused): the app clones the callback out of the request,
+  drops the request and calls it. Natively it prints `no request`, its
+  upgrade `None`, where the `let` would give the request. It's refused,
+  naming the line, the cell's type and `dep::create_prerender_request`'s
+  `on_all_ready`, and `dep`'s contract has no `owned_by_return`. The
+  private field's pair, `owner_handle`, still compiles and runs as native
+  Rust does.
+- Mutations `dropping-dyn-fn-unnamed` (`analysis.rs`),
+  `dropping-fn-dyn-holds-itself` (`analysis/closures.rs`) and
+  `owner-handle-unowned-unrecorded` (`self_handles/owners.rs`), and
+  `fn-dyn-drops-unseen`, `fn-dyn-generic-unseen`,
+  `handed-fn-dyn-still-drops`, `library-fn-dyns-always-drop`,
+  `library-fn-dyns-never-drop` and `owner-handle-not-owned`, rewritten
+  for the new code.

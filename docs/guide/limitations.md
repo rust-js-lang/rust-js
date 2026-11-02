@@ -223,6 +223,9 @@ and collecting into one; `Map::clear` and `map::Entry::or_insert`;
   ([ADR 0852](../decisions/0852-each-types-rcs-are-counted-apart.md)), or
   making a `dyn Fn` that may hold a value with a destructor where the
   library holds a `dyn Fn` whose drop nothing
-  ([ADR 0626](../decisions/0626-what-a-library-hands-a-crate.md)).
+  ([ADR 0626](../decisions/0626-what-a-library-hands-a-crate.md)); the
+  refusal names the `dyn Fn` and what it holds, and of callbacks' cell,
+  the call whose return doesn't own them
+  ([ADR 0317, amended](../decisions/0317-once-cells.md#amendment-a-callback-a-public-field-holds-isnt-the-returns-alone-rd553)).
 - What else isn't built yet is in [the architecture's "Not yet"](../architecture.md#not-yet)
   and [the roadmap](../../ROADMAP.md).

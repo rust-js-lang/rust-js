@@ -40,6 +40,7 @@ use std::collections::{HashMap, HashSet};
 
 mod owners;
 use super::owned_by_return::OwnedByReturn;
+pub(crate) use owners::Unowned;
 use owners::{OwnerHandle, once_weak, owner_made};
 
 /// A closure's handle on itself, of its maker and of the closure.
@@ -76,6 +77,9 @@ pub(crate) struct SelfHandles<'tcx> {
     handles: Vec<SelfHandle<'tcx>>,
     owners: Vec<OwnerHandle<'tcx>>,
     owned: OwnedByReturn,
+    /// The cells made as owner handles are, given to a call whose return
+    /// doesn't alone own their closures: counted, as written.
+    unowned: Vec<Unowned<'tcx>>,
 }
 
 impl<'tcx> SelfHandles<'tcx> {
@@ -95,6 +99,7 @@ impl<'tcx> SelfHandles<'tcx> {
             .collect();
         let mut handles: Vec<SelfHandle<'tcx>> = Vec::new();
         let mut owners: Vec<OwnerHandle<'tcx>> = Vec::new();
+        let mut unowned: Vec<Unowned<'tcx>> = Vec::new();
         for (&maker, &body) in &of {
             let cells: Vec<Local> = (body.local_decls.iter_enumerated())
                 .filter(|(_, decl)| {
@@ -116,7 +121,7 @@ impl<'tcx> SelfHandles<'tcx> {
                     handle.upgrades = upgrades;
                     handles.push(handle);
                 }
-                if let Some(owner) = owner_made(tcx, (maker, body, &uses), cell, (&of, owned)) {
+                if let Some(owner) = owner_made(tcx, (maker, body, &uses), cell, (&of, owned), &mut unowned) {
                     owners.push(owner);
                 }
             }
@@ -132,7 +137,15 @@ impl<'tcx> SelfHandles<'tcx> {
             handles,
             owners,
             owned: owned_by_return,
+            unowned,
         }
+    }
+
+    /// Where `closure` holds `held`, a cell made as an owner handle's is,
+    /// given to a call whose return doesn't alone own it: the call, and
+    /// which of its parameters the closure is.
+    pub(crate) fn unowned(&self, closure: DefId, held: Ty<'tcx>) -> Option<&Unowned<'tcx>> {
+        self.unowned.iter().find(|u| u.closure == closure && u.cell == held)
     }
 
     /// What the crate's functions' returns alone own, which its contract

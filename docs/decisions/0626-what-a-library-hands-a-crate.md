@@ -7,7 +7,9 @@ crate's a library's function is given hands nothing, below; and a
 library's `dyn Fn` drops where a library makes one of what drops, below;
 and a library's own `dyn Fn`s drop as a program's do, a consumer that would
 hand it one that drops refused, below; and an `Rc` of a closure owns what
-the closure captures, below.
+the closure captures, below; and that refusal names the `dyn Fn` the crate
+makes and what it holds that drops (rd553,
+[0317, amended](0317-once-cells.md#amendment-a-callback-a-public-field-holds-isnt-the-returns-alone-rd553)).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): R where it was wrong,
 a library's `dyn Fn` dropped as nothing; else none: a refusal lifted.

@@ -221,6 +221,11 @@ reads `None`, and its `unwrap` panics as Rust's does
 ([ADR 0317](../../decisions/0317-once-cells.md#amendment-callbacks-handle-on-what-owns-them-is-its-let)).
 One kept apart from the value, by a clone, a list or a field read but to
 call it, or a cell set again or read otherwise, is counted, as written.
+So is one kept in a public field, which any crate may clone out: keep a
+library's callbacks in private fields, as above. Where a library whose
+`dyn Fn`s drop nothing holds it, the crate is refused, and the refusal
+names the callback, the cell and the call whose return doesn't own it
+([ADR 0317, amended](../../decisions/0317-once-cells.md#amendment-a-callback-a-public-field-holds-isnt-the-returns-alone-rd553)).
 
 ```rust
 use std::cell::OnceCell;

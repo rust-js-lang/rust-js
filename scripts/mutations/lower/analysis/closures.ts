@@ -7,9 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a function holding a value with a destructor made a `dyn Fn` leaves the `dyn Fn` dropping nothing",
     file: "src/lower/analysis/closures.rs",
-    find: "        .any(|(from, handed)| !handed && (drops(from) || holds_a_param(from) && closure_drops()))\n",
-    replace:
-      "        .any(|(from, handed)| !handed && (holds_a_param(from) && closure_drops()))\n",
+    find: "            if drops(function) {\n",
+    replace: "            if false && drops(function) {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_drops.rs$"],
   },
   {
@@ -17,9 +16,18 @@ export const mutations: Mutation[] = [
     breaks:
       "a type parameter made a `dyn Fn`, given a closure holding a value with a destructor, leaves the `dyn Fn` dropping nothing",
     file: "src/lower/analysis/closures.rs",
-    find: "        .any(|(from, handed)| !handed && (drops(from) || holds_a_param(from) && closure_drops()))\n",
-    replace: "        .any(|(from, handed)| !handed && drops(from))\n",
+    find: "            (holds_a_param(function) && closure_drops()).then_some(DroppingFnDyn {\n",
+    replace: "            (false && holds_a_param(function) && closure_drops()).then_some(DroppingFnDyn {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_generic_drops.rs$"],
+  },
+  {
+    name: "dropping-fn-dyn-holds-itself",
+    breaks:
+      "a refused `dyn Fn` of a closure names the closure's type as what it holds, not the capture that drops, and so not the owner handle's cell whose call's return doesn't own it (rd553, ADR 0626, amended)",
+    file: "src/lower/analysis/closures.rs",
+    find: "                    held: held.unwrap_or(function),\n",
+    replace: "                    held: function,\n",
+    tests: ["test/crates.test.ts", "-t", "callback is a public field"],
   },
   {
     name: "any-dyn-drops-unseen",
@@ -121,9 +129,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure handed to JS still counts as a `dyn Fn` that drops, so a crate whose only such closures JS keeps disposes every `dyn Fn` it drops (ADR 0873)",
     file: "src/lower/analysis/closures.rs",
-    find: "        .any(|(from, handed)| !handed && (drops(from) || holds_a_param(from) && closure_drops()))\n",
-    replace:
-      "        .any(|(from, _)| drops(from) || holds_a_param(from) && closure_drops())\n",
+    find: "            if handed {\n                return None;\n            }\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_only.rs$"],
     snapshots: true,
   },
