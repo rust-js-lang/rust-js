@@ -27,8 +27,11 @@ function main() {
   v.push(undefined);
   v.splice(1, 0, undefined);
   v.push(2, undefined);
-  $extend(v, [undefined, undefined]);
-  $extend(v, [3, undefined]);
+  const value = [undefined, undefined];
+  for (let i = 0; i < value.length; i++) {
+    v.push(value[i]);
+  }
+  v.push(3, undefined);
   $splice(v, 1, 2, [4, undefined]);
   $resize(v, 12);
   $append(v, [5, undefined]);

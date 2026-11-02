@@ -24,7 +24,7 @@ import {
   PreopenDirectory,
   WASI,
 } from "@bjorn3/browser_wasi_shim";
-import { $extend, $rsplitOnce, $stripPrefix, $try, $unwrap } from "@rust-js/runtime";
+import { $rsplitOnce, $stripPrefix, $try, $unwrap } from "@rust-js/runtime";
 
 export function ms(t) {
   return `${t.toFixed(0)} ms`;
@@ -115,7 +115,10 @@ async function loadPackages(start, stat) {
   let packages = (await window.fetch("./packages.json")).json();
   const modules = [["@rust-js/runtime", await runtime]];
   packages = await packages;
-  $extend(modules, Object.entries(packages.modules));
+  const items = Object.entries(packages.modules);
+  for (let i = 0; i < items.length; i++) {
+    modules.push(items[i]);
+  }
   stat("download runtime and packages", ms(performance.now() - start));
   return [modules, Object.entries(packages.styles)];
 }

@@ -2,7 +2,6 @@
 
 import {
   $cmp,
-  $extend,
   $heapAppend,
   $heapFrom,
   $lazyRange,
@@ -21,7 +20,10 @@ function main() {
   const text = "ab".repeat(600000);
   const bytes = [];
   $writeText(bytes, text);
-  $extend(bytes, Array.from(new TextEncoder().encode(text)));
+  const items = Array.from(new TextEncoder().encode(text));
+  for (let i = 0; i < items.length; i++) {
+    bytes.push(items[i]);
+  }
   const writer = { value: bytes, impl: $vecWriter };
   writer.impl.writeAll(writer, Array.from(new TextEncoder().encode(text)));
   const value = bytes.at(-1);

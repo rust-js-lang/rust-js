@@ -5,7 +5,6 @@ import {
   $cmp,
   $copyFromSlice,
   $debugStr,
-  $extend,
   $index,
   $partition,
   $repeatItems,
@@ -46,10 +45,9 @@ function main() {
   console.log(`[${points.map((item) => pointDebug_fmt(item)).join(", ")}]`);
 
   const extended = [];
-  $extend(
-    extended,
-    points.map((item) => ({ ...item })),
-  );
+  for (let i = 0; i < points.length; i++) {
+    extended.push({ ...points[i] });
+  }
   $index(extended, 0).x = 8;
   const overwritten = [{ x: 9 }, { x: 9 }];
   $copyFromSlice(overwritten, points, (item) => ({ ...item }));

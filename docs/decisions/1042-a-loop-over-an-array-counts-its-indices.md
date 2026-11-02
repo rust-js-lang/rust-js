@@ -110,7 +110,7 @@ Closure's ES5 build polyfilled `Iterator.from` and its iteration, about
   given any iterable after (`test/corpus/generic_extend.rs`, whose range
   an index loop of its first array's type read as `length` 0). The type
   where `extend` is called can't say it's an array there; a fact where the
-  array is made would.
+  array is made would. (Done since, below.)
 - **Not `push.apply(v, list)` or `v.push(...list)`**, which upstream writes
   in places: they pass each item as an argument, and throw a `RangeError`
   past the engine's limit of a call's arguments, where Rust's `extend`
@@ -187,3 +187,29 @@ bounds counts its indices"), run against native Rust's `235 0 5 0 31` and
 its panic, and the mutations `indexed-range-unsliced`,
 `indexed-range-end-changed` and `indexed-range-siblings-apart`
 (`tidy/loops.ts`).
+
+## Amendment: a slice, an array or a `Vec` given whole (2026-11-02)
+
+**A `Vec`'s `extend` of a slice, an array or a `Vec` given whole,
+`v.extend(&xs)`, `v.extend(xs)` of a `Vec` it takes, and its
+`extend_from_slice(xs)`, are the same index loop**, `for (let i = 0; i <
+xs.length; i++) { v.push(xs[i]); }`, each `&T` of a `Copy` struct
+copied, `{ ...xs[i] }`, and each `T` of `extend_from_slice` cloned, as
+before. The fact is the call's own: `Extend::extend::<I>`'s `I`, of its
+generic arguments, a slice, an array or a `Vec`, or a shared reference
+to one (`combinators.rs`'s `extends_by_an_array`). A trait's dictionary,
+`Vec<T>: Extend<A>`'s `extend`, has no `I`, as it's lowered once of
+whatever it's given, so it keeps `$extend`: the type it states for what
+it's given, the collection's, says nothing of it, and trusting it read
+`fill`'s range as an array (the mutation `extend-whole-of-the-type-given`
+puts that wrong answer back, and `generic_extend.rs` catches it). A
+type parameter's `I`, `fn add<I: IntoIterator>(v, xs: I)`, is any
+iterable, and keeps it too. An array written in place stays `v.push(a,
+b)`, of `extend_from_slice(&[3, 4])` too, `v.push(3, 4)`, each copied
+where it needs one: one rule, the loop's (`pushed_each`), where `extend`
+had its own. Case N of ADR 0262, as above. Held by
+`test/corpus/vec_extend_indexed.rs`, run against native Rust,
+`test/lowering-index-loops.test.ts`, and the mutations
+`extend-whole-array-unseen`, `extend-whole-of-the-type-given` and
+`extend-from-slice-unlooped` (`lower/combinators.ts`); `extend-written-helper`,
+`extend-written-of-any` and `pushed-none-left-out` retargeted.

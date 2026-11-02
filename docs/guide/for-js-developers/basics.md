@@ -1270,7 +1270,7 @@ constants that's a `switch` is a `switch` first; to have no `else`,
 write `let … else` or an `if let` without one. An arm that's only a way
 out, `None => break`, or only a panic, `Child::Text(_) => panic!(..)`, is
 a guard, the rest after it: `if (child.TAG === "Text") { throw new
-Error(..); } $extend(parent, child._0);`. A function's last `match`
+Error(..); } for (..) { parent.push(child._0[i]); }`. A function's last `match`
 or `if` of arms that give `()` is its arms, `if (current == null) { ..
 } else { .. }`, with no `return;` at their ends
 ([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md), amended).
@@ -2590,10 +2590,13 @@ export function pairs(v) {
   own iterator steps the array the same way, so nothing changes, and an
   ES5 build needs no iterator polyfill for it. A map's items and a string's
   `chars()` stay `for…of` ([ADR 1042](../../decisions/1042-a-loop-over-an-array-counts-its-indices.md)).
-  A `Vec`'s `extend` of a `NodeList`'s items or of `xs.iter()` pushes
-  each the same way, `for (let i = 0; i < xs.length; i++) {
-  out.push(xs[i]); }`: never `out.push(...xs)`, which throws past the
-  engine's limit of a call's arguments, where Rust's `extend` never fails.
+  A `Vec`'s `extend` of a `NodeList`'s items, of `xs.iter()`, or of a
+  slice, an array or a `Vec` given whole, `out.extend(&xs)`, and its
+  `extend_from_slice(&xs)`, push each the same way, `for (let i = 0; i <
+  xs.length; i++) { out.push(xs[i]); }`: never `out.push(...xs)`, which
+  throws past the engine's limit of a call's arguments, where Rust's
+  `extend` never fails. Generic code's `c.extend(items)` of a `C:
+  Extend<A>`, given any iterable, keeps `$extend(c, items)`.
 - A loop of an array's first items, `for x in xs.iter().take(LIMIT)`, is
   of that part of it, `for (const x of xs.slice(0, LIMIT))`, and of those
   past some, `xs.iter().skip(1)`, `xs.slice(1)`; with their indices,

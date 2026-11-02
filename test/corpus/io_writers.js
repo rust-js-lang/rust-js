@@ -4,7 +4,6 @@ import {
   $assign,
   $debugUtf8Error,
   $dynWriter,
-  $extend,
   $fromUtf8,
   $print,
   $printBytes,
@@ -41,7 +40,7 @@ function main() {
   $assign(buf, out.value);
   shout({ value: buf, impl: $vecWriter }, "héllo");
   $writeText(buf, "7");
-  $extend(buf, [10]);
+  buf.push(10);
   $print($unwrapOk($fromUtf8(buf.slice(), true), undefined, (e) => $debugUtf8Error(e, true)));
   console.log(`${buf.length}`);
 

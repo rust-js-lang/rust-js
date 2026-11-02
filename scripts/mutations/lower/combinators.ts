@@ -3,6 +3,36 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "extend-whole-array-unseen",
+    breaks:
+      "a `Vec`'s `extend` of a slice, an array or a `Vec` given whole, `v.extend(&xs)`, is `$extend(v, xs)`, not the index loop that pushes each (ADR 1042, amended)",
+    file: "src/lower/combinators.rs",
+    find: "        let whole = self.extends_by_an_array(generic_args);\n",
+    replace: "        let whole = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_extend_indexed.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "extend-whole-of-the-type-given",
+    breaks:
+      "a `Vec`'s `extend` is an index loop of what's given where the type it's given with says an array, which a trait's dictionary says of whatever it's given, so `fill`'s range is read as an array of no `length` (generic_extend.rs, a wrong answer)",
+    file: "src/lower/combinators.rs",
+    find: "        let whole = self.extends_by_an_array(generic_args);\n",
+    replace:
+      "        let whole = self.extends_by_an_array(generic_args)\n            || self.is_std_type(iterable.peel_refs(), crate::lower::recognition::StdItem::Vec);\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
+  },
+  {
+    name: "extend-from-slice-unlooped",
+    breaks:
+      "a `Vec`'s `extend_from_slice(xs)` is `$extend(v, xs)`, not the index loop its `extend(xs)` is (ADR 1042, amended)",
+    file: "src/lower/combinators.rs",
+    find: "        if self.is_std_type(into, crate::lower::recognition::StdItem::Vec) {\n            return self.pushed_each(collection, items, cloned, span, out);\n",
+    replace: "        if false {\n            return self.pushed_each(collection, items, cloned, span, out);\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_extend_indexed.rs$"],
+    snapshots: true,
+  },
+  {
     name: "or-option-kept",
     breaks:
       "`a.filter(..).or(b)` keeps the filter's `Option` in a `const option` before its `??`, where `??` reads it once: not `a || b`",
@@ -131,8 +161,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`extend_from_slice` of structs shares each with the slice it's from",
     file: "src/lower/combinators.rs",
-    find: "                let items = if self.needs_clone(item) {",
-    replace: "                let items = if false && self.needs_clone(item) {",
+    find: "        let cloned = self.needs_clone(item).then_some(item);",
+    replace: "        let cloned = (false && self.needs_clone(item)).then_some(item);",
     tests: ["test/corpus.test.ts", "-t", "collection_methods"],
   },
   {
@@ -537,9 +567,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`extend` copies every item into an array before it pushes any, `Array.from(items)`, where it pushes each as it's stepped",
     file: "src/lower/combinators.rs",
-    find: '        Ok(Expr::call_helper("$extend", vec![collection, items]))\n',
+    find: '            return self.pushed_each(collection, list, copied, span, out);\n        }\n        Ok(Expr::call_helper("$extend", vec![collection, items]))\n',
     replace:
-      '        Ok(Expr::call_helper("$extend", vec![collection, Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items])]))\n',
+      '            return self.pushed_each(collection, list, copied, span, out);\n        }\n        Ok(Expr::call_helper("$extend", vec![collection, Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items])]))\n',
     tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
     snapshots: true,
   },
@@ -660,9 +690,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Vec`'s `extend` of an array written in place is the runtime's `$extend(v, [a, b])`, not `v.push(a, b)`",
     file: "src/lower/combinators.rs",
-    find: "            && matches!(items.kind, js::ExprKind::Array(_))\n",
-    replace:
-      "            && matches!(items.kind, js::ExprKind::Array(_)) && false\n",
+    find: "        if let js::ExprKind::Array(written) = &list.kind\n",
+    replace: "        if false\n            && let js::ExprKind::Array(written) = &list.kind\n",
     tests: [
       "test/lowering-collections.test.ts",
       "-t",
@@ -674,8 +703,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `extend` of an array written in place onto a deque is `queue.push(1, 2)`, not its own `$extend`",
     file: "src/lower/combinators.rs",
-    find: "        if self.is_std_type(into.peel_refs(), crate::lower::recognition::StdItem::Vec)\n            && matches!",
-    replace: "        if true\n            && matches!",
+    find: "        if self.is_std_type(into.peel_refs(), crate::lower::recognition::StdItem::Vec)\n            && let Some(list) = list\n",
+    replace: "        if true\n            && let Some(list) = list\n",
     tests: [
       "test/lowering-collections.test.ts",
       "-t",
@@ -741,8 +770,8 @@ export const mutations: Mutation[] = [
     name: "pushed-none-left-out",
     breaks: "`v.extend([Some(2), None])` is `v.push(2)`, its last item left out, a wrong answer (ADR 0330, amended)",
     file: "src/lower/combinators.rs",
-    find: ".map(Expr::given_item)",
-    replace: ".map(|item| item)",
+    find: "                pushed.push(item.given_item());\n",
+    replace: "                pushed.push(item);\n",
     tests: ["test/corpus.test.ts", "-t", "^trailing_none_items.rs$"],
   },
   {
@@ -766,24 +795,24 @@ export const mutations: Mutation[] = [
     name: "extend-loop-items-uncopied",
     breaks: "a `Vec`'s `extend` of `&Point`s, `Copy` structs, pushes each array's object itself, which a change to one then changes in both (ADR 1042)",
     file: "src/lower/combinators.rs",
-    find: "                Some(ty) => self.clone_value(item, ty, span, &mut body)?,\n",
-    replace: "                Some(_) => item,\n",
+    find: "            Some(ty) => self.clone_value(item, ty, span, &mut body)?,\n",
+    replace: "            Some(_) => item,\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_extend_indexed.rs$"],
   },
   {
     name: "extend-loop-list-unheld",
     breaks: "a `Vec`'s `extend` of a list a call makes, `v.extend(made(2))`, calls it at each step of the index loop (ADR 1042)",
     file: "src/lower/combinators.rs",
-    find: '                false => self.spill("items", list, out),\n',
-    replace: "                false => list,\n",
+    find: '            false => self.spill("items", list, out),\n',
+    replace: "            false => list,\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_extend_indexed.rs$"],
   },
   {
     name: "extend-loop-unplaced",
     breaks: "the index loop of a `Vec`'s `extend` has no place, and the comments above the call, Fizz's `// TODO: Consider marking ..`, are lost (ADR 1042)",
     file: "src/lower/combinators.rs",
-    find: "                .at(self.js_span(span)),\n            );\n            return Ok(Expr::undefined());\n",
-    replace: "                .at(js::Span::NONE),\n            );\n            return Ok(Expr::undefined());\n",
+    find: "            .at(self.js_span(span)),\n        );\n        Ok(Expr::undefined())\n",
+    replace: "            .at(js::Span::NONE),\n        );\n        Ok(Expr::undefined())\n",
     tests: ["test/lowering-index-loops.test.ts", "-t", "extend of an indexed list"],
   },
 ];

@@ -205,7 +205,7 @@ pub fn kept(v: &[u32], out: &mut Vec<u32>) {
 `,
   );
   expect(js).toContain(
-    '  if (child.TAG === "Text") {\n    // Noop for string children of Text\n    throw new Error("Text children should already be flattened.");\n  }\n  $extend(parent, child._0);\n}\n',
+    '  if (child.TAG === "Text") {\n    // Noop for string children of Text\n    throw new Error("Text children should already be flattened.");\n  }\n  for (let i = 0; i < child._0.length; i++) {\n    parent.push(child._0[i]);\n  }\n}\n',
   );
   expect(js).toContain('  if (x == null) {\n    throw new Error("empty");\n  }\n  return (x + 1) >>> 0;\n');
   expect(js).toContain("  if (x == null) {\n    out.push(0);\n  } else {\n    out.push(x);\n  }\n");

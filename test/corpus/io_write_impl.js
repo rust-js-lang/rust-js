@@ -3,7 +3,6 @@
 import {
   $assign,
   $debugUtf8Error,
-  $extend,
   $fromUtf8,
   $ioWriteAll,
   $ioWriteFmt,
@@ -35,7 +34,10 @@ export function bufWrite(CAP) {
 }
 function bufWrite_write(buf, data, CAP) {
   const len = Math.min((CAP - buf.bytes.length) >>> 0, data.length);
-  $extend(buf.bytes, data.slice(0, len));
+  const items = data.slice(0, len);
+  for (let i = 0; i < items.length; i++) {
+    buf.bytes.push(items[i]);
+  }
   return { TAG: "Ok", _0: len };
 }
 

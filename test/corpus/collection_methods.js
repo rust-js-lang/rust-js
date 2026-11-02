@@ -8,7 +8,6 @@ import {
   $borrow,
   $cmp,
   $debugStr,
-  $extend,
   $index,
   $replaceWith,
   $rotateLeft,
@@ -31,12 +30,17 @@ function pointDebug_fmt(point) {
 function main() {
   // A `Vec` extended from a slice, a copy of each item.
   const v = [1, 2];
-  $extend(v, [3, 4]);
+  v.push(3, 4);
   const tail = [5, 6];
-  $extend(v, tail.slice(1));
+  const items = tail.slice(1);
+  for (let i = 0; i < items.length; i++) {
+    v.push(items[i]);
+  }
   const words = ["a"];
   const more = ["b", "c"];
-  $extend(words, more);
+  for (let i = 0; i < more.length; i++) {
+    words.push(more[i]);
+  }
   words[$at(words, 1)] += "!";
   console.log(
     `[${v.join(", ")}] [${words.map((item) => $debugStr(item)).join(", ")}] [${more.map((item) => $debugStr(item)).join(", ")}]`,
@@ -45,10 +49,9 @@ function main() {
   // `to_vec()` does too.
   const origin = [{ x: 1 }];
   const grown = [{ x: 0 }];
-  $extend(
-    grown,
-    origin.map((item) => ({ ...item })),
-  );
+  for (let i = 0; i < origin.length; i++) {
+    grown.push({ ...origin[i] });
+  }
   $index(grown, 1).x = 7;
   const copied = origin.map((item) => ({ ...item }));
   $index(copied, 0).x = 9;

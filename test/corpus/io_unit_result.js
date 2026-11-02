@@ -3,7 +3,6 @@
 import {
   $IoError,
   $debugStr,
-  $extend,
   $ioErrorDisplay,
   $ioResultDebug,
   $ioThrow,
@@ -91,7 +90,10 @@ function limitedWrite_write(limited, bytes) {
     return { TAG: "Err", _0: new $IoError("WriteZero", { value: "full", impl: $stringError() }) };
   }
   const n = Math.min(bytes.length, limited.room);
-  $extend(limited.out, bytes.slice(0, n));
+  const items = bytes.slice(0, n);
+  for (let i = 0; i < items.length; i++) {
+    limited.out.push(items[i]);
+  }
   limited.room = (limited.room - n) >>> 0;
   return { TAG: "Ok", _0: n };
 }

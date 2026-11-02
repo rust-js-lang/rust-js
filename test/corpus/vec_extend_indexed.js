@@ -18,12 +18,17 @@ function made(n) {
 function main() {
   const xs = [1, 2, 3];
   const out = [0];
-  $extend(out, xs);
+  for (let i = 0; i < xs.length; i++) {
+    out.push(xs[i]);
+  }
   $extend(out, xs.toReversed().toReversed());
   for (let i = 0; i < xs.length; i++) {
     out.push(xs[i]);
   }
-  $extend(out, [7, 8]);
+  const value = [7, 8];
+  for (let i = 0; i < value.length; i++) {
+    out.push(value[i]);
+  }
   const items = made(2);
   for (let i = 0; i < items.length; i++) {
     out.push(items[i]);
@@ -43,6 +48,27 @@ function main() {
   $index(copied, 0).x = 9;
   console.log(
     `[${points.map((item) => pointDebug_fmt(item)).join(", ")}] [${copied.map((item) => pointDebug_fmt(item)).join(", ")}]`,
+  );
+
+  const more = [4, 5];
+  for (let i = 0; i < more.length; i++) {
+    out.push(more[i]);
+  }
+  const items$2 = xs.slice(0, 2);
+  for (let i = 0; i < items$2.length; i++) {
+    out.push(items$2[i]);
+  }
+  const copiedWhole = [];
+  for (let i = 0; i < points.length; i++) {
+    copiedWhole.push({ ...points[i] });
+  }
+  const items$3 = points.slice(1);
+  for (let i = 0; i < items$3.length; i++) {
+    copiedWhole.push({ ...items$3[i] });
+  }
+  $index(copiedWhole, 0).x = 7;
+  console.log(
+    `[${out.join(", ")}] [${points.map((item) => pointDebug_fmt(item)).join(", ")}] [${copiedWhole.map((item) => pointDebug_fmt(item)).join(", ")}]`,
   );
 
   const empty = [];

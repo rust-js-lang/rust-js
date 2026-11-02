@@ -173,9 +173,11 @@ pub fn huge(n: usize) -> usize {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  // Each image, in order.\n  for (let i = 0; i < list.length; i++) {\n    images.push(list[i]);\n  }\n");
   // Of a slice's iterator made here, the slice's; of a slice or a `Vec`
-  // given whole, which a trait's dictionary may be given of any type, its
-  // own iteration still.
-  expect(js).toContain("  $extend(out, xs);\n  for (let i = 0; i < xs.length; i++) {\n    out.push(xs[i]);\n  }\n  $extend(out, more);\n");
+  // given whole, as the call's own type for what it's given says, the
+  // same (a trait's dictionary, given any type, keeps `$extend`).
+  expect(js).toContain(
+    "  for (let i = 0; i < xs.length; i++) {\n    out.push(xs[i]);\n  }\n  for (let i = 0; i < xs.length; i++) {\n    out.push(xs[i]);\n  }\n  for (let i = 0; i < more.length; i++) {\n    out.push(more[i]);\n  }\n",
+  );
   expect(js).toContain("  for (let i = 0; i < items.length; i++) {\n    out.push(items[i]);\n  }\n");
   writeFileSync(join(dir, "driver.test.js"), `import { expect, test } from "bun:test";
 import { appended, gathered, huge } from "./lib.js";

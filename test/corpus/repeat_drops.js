@@ -164,8 +164,11 @@ function main() {
       }
       throw error;
     }
+    const value = [["g"]];
     try {
-      $extend(v, [["g"]]);
+      for (let i = 0; i < value.length; i++) {
+        v.push(value[i]);
+      }
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);
@@ -198,10 +201,10 @@ function main() {
       }
       throw error;
     }
-    const value = [["j"]];
+    const value$1 = [["j"]];
     let tmp$3;
     try {
-      tmp$3 = $iter(value);
+      tmp$3 = $iter(value$1);
     } catch (error) {
       if (first != null) {
         loudDrop_drop(first);

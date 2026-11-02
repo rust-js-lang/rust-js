@@ -770,20 +770,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .ok_or_else(|| self.unsupported(span, "`contains` of this"))?;
                 self.contained(subject, x, item, span, out)?
             }
-            Comb::Extend => self.extended(subject, next(), (tys[1], subject_ty), span, out)?,
+            Comb::Extend => self.extended(subject, next(), (tys[1], subject_ty), generic_args, span, out)?,
             // Each item a clone, as `to_vec()` makes them.
-            Comb::ExtendFromSlice => {
-                let items = next();
-                let item = self
-                    .slice_item(subject_ty)
-                    .ok_or_else(|| self.unsupported(span, "`extend_from_slice` of this"))?;
-                let items = if self.needs_clone(item) {
-                    self.clone_items(items, item, span)?
-                } else {
-                    items
-                };
-                helper("$extend", vec![subject, items])
-            }
+            Comb::ExtendFromSlice => self.extended_from_slice(subject, next(), subject_ty, span, out)?,
             Comb::BinarySearchBy => helper("$binarySearchBy", vec![subject, next()]),
             // `f(item)` compared with `b`, by its type's `Ord`.
             Comb::BinarySearchByKey => {
@@ -1042,9 +1031,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         collection: Expr,
         items: Expr,
         (iterable, into): (Ty<'tcx>, Ty<'tcx>),
+        generic_args: ty::GenericArgsRef<'tcx>,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
+        let whole = self.extends_by_an_array(generic_args);
         // Std's struct given whole, `repeat(x).take(n)` held: dropped once
         // it's stepped, as `extend` drops what it's given, which its end
         // doesn't, as the recognizers' `take` does (ADR 0913).
@@ -1056,23 +1047,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 true => items,
                 false => self.spill("items", items, out),
             };
-            let extended = self.extended_whole(collection, held.clone(), (iterable, into), span, out)?;
+            let extended = self.extended_whole(collection, held.clone(), (iterable, into), whole, span, out)?;
             out.push(StmtKind::Expr(extended).at(js::Span::NONE));
             return Ok(Expr::call(drop, vec![held]));
         }
-        self.extended_whole(collection, items, (iterable, into), span, out)
+        self.extended_whole(collection, items, (iterable, into), whole, span, out)
     }
 
-    /// `extended`'s, of what's dropped after.
+    /// `extended`'s, of what's dropped after; `whole`, where the call's own
+    /// type for what it's given says it's an array given whole
+    /// (`extends_by_an_array`).
     fn extended_whole(
         &mut self,
         collection: Expr,
         items: Expr,
         (iterable, into): (Ty<'tcx>, Ty<'tcx>),
+        whole: bool,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let (source, list) = self.extended_items(items, (iterable, into), span, out)?;
+        // Of a slice, an array or a `Vec` given whole, `v.extend(&xs)`, the
+        // array itself.
+        let list = list.or_else(|| whole.then(|| source.clone()));
         // Each `&T` pushed onto a collection of `T`s, its copy (`copied_into`).
         let copied = match *self.iterable_item(iterable).kind() {
             ty::Ref(_, item, _) if self.slice_item(into) == Some(item) && self.needs_clone(item) => Some(item),
@@ -1091,20 +1088,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let cmp = self.cmp_fn(item, false, span)?;
             return Ok(Expr::call_helper("$heapExtend", vec![collection, items, cmp]));
         }
-        // An array written in place, onto a `Vec`, `v.extend([a, b])`: JS's
-        // own `v.push(a, b)`, which pushes each in order, made first, as the
-        // array's are (ADR 0734).
-        if self.is_std_type(into.peel_refs(), crate::lower::recognition::StdItem::Vec)
-            && matches!(items.kind, js::ExprKind::Array(_))
-        {
-            let js::ExprKind::Array(written) = items.kind else {
-                unreachable!("matched")
-            };
-            return Ok(Expr::call(
-                Expr::member(collection, "push"),
-                written.into_iter().map(Expr::given_item).collect(),
-            ));
-        }
         // Onto a `Vec`, an indexed list's items, a `NodeList`'s, an array's
         // or a slice's, `v.extend(&xs)`: an index loop that pushes each, `for
         // (let i = 0; i < xs.length; i++) { v.push(xs[i]); }`, reading the
@@ -1114,38 +1097,112 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_std_type(into.peel_refs(), crate::lower::recognition::StdItem::Vec)
             && let Some(list) = list
         {
-            let collection = match collection.reads_same() {
-                true => collection,
-                false => self.spill("collection", collection, out),
-            };
-            let list = match list.reads_same() {
-                true => list,
-                false => self.spill("items", list, out),
-            };
-            let i = self.fresh("i");
-            let mut body = Vec::new();
-            let item = Expr::index(list.clone(), Expr::var(&i));
-            let item = match copied {
-                Some(ty) => self.clone_value(item, ty, span, &mut body)?,
-                None => item,
-            };
-            body.push(StmtKind::Expr(Expr::call(Expr::member(collection, "push"), vec![item])).at(js::Span::NONE));
-            out.push(
-                StmtKind::For {
-                    label: None,
-                    name: i.clone(),
-                    start: Expr::int(0),
-                    test: Expr::bin(Op::Lt, Expr::var(&i), Expr::member(list, "length")),
-                    step: js::Step::Up,
-                    body,
-                }
-                // Where the call is written, which the comments above it
-                // are before.
-                .at(self.js_span(span)),
-            );
-            return Ok(Expr::undefined());
+            return self.pushed_each(collection, list, copied, span, out);
         }
         Ok(Expr::call_helper("$extend", vec![collection, items]))
+    }
+
+    /// `extend_from_slice(items)` onto `collection`, of type `into`: each
+    /// item cloned where it needs one; onto a `Vec`, an index loop that
+    /// pushes each, as its `extend` of a slice is (ADR 1042, amended).
+    fn extended_from_slice(
+        &mut self,
+        collection: Expr,
+        items: Expr,
+        into: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let item = (self.slice_item(into)).ok_or_else(|| self.unsupported(span, "`extend_from_slice` of this"))?;
+        let cloned = self.needs_clone(item).then_some(item);
+        if self.is_std_type(into, crate::lower::recognition::StdItem::Vec) {
+            return self.pushed_each(collection, items, cloned, span, out);
+        }
+        let items = match cloned {
+            Some(item) => self.clone_items(items, item, span)?,
+            None => items,
+        };
+        Ok(Expr::call_helper("$extend", vec![collection, items]))
+    }
+
+    /// Each item of `list`, an array or an indexed list, pushed onto
+    /// `collection`, a `Vec`, in an index loop, `for (let i = 0; i <
+    /// list.length; i++) { v.push(list[i]); }`, a copy of each where
+    /// `cloned` says its type (ADR 1042, amended): what a `Vec`'s `extend`
+    /// and `extend_from_slice` of one is.
+    fn pushed_each(
+        &mut self,
+        collection: Expr,
+        list: Expr,
+        cloned: Option<Ty<'tcx>>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        // An array written in place, `v.extend([a, b])` or
+        // `extend_from_slice(&[3, 4])`: JS's own `v.push(a, b)`, which pushes
+        // each in order, made first, as the array's are, each copied where
+        // it needs one (ADR 0734).
+        if let js::ExprKind::Array(written) = &list.kind
+            && !written.iter().any(|item| matches!(item.kind, js::ExprKind::Spread(_)))
+        {
+            let mut pushed = Vec::new();
+            for item in written.clone() {
+                let item = match cloned {
+                    Some(ty) => self.clone_value(item, ty, span, out)?,
+                    None => item,
+                };
+                pushed.push(item.given_item());
+            }
+            return Ok(Expr::call(Expr::member(collection, "push"), pushed));
+        }
+        let collection = match collection.reads_same() {
+            true => collection,
+            false => self.spill("collection", collection, out),
+        };
+        let list = match list.reads_same() {
+            true => list,
+            false => self.spill("items", list, out),
+        };
+        let i = self.fresh("i");
+        let mut body = Vec::new();
+        let item = Expr::index(list.clone(), Expr::var(&i));
+        let item = match cloned {
+            Some(ty) => self.clone_value(item, ty, span, &mut body)?,
+            None => item,
+        };
+        body.push(StmtKind::Expr(Expr::call(Expr::member(collection, "push"), vec![item])).at(js::Span::NONE));
+        out.push(
+            StmtKind::For {
+                label: None,
+                name: i.clone(),
+                start: Expr::int(0),
+                test: Expr::bin(Op::Lt, Expr::var(&i), Expr::member(list, "length")),
+                step: js::Step::Up,
+                body,
+            }
+            // Where the call is written, which the comments above it are
+            // before.
+            .at(self.js_span(span)),
+        );
+        Ok(Expr::undefined())
+    }
+
+    /// Whether `Extend::extend::<I>`, of its generic arguments, the trait's
+    /// `Self` and `A`, then `I`, is given an array whole: a slice, an array
+    /// or a `Vec`, or a shared reference to one, `v.extend(&xs)`, whose JS
+    /// is the array itself. As the call's own `I` says: a trait's
+    /// dictionary, `Vec<T>: Extend<A>`'s `extend`, has none, lowered once of
+    /// whatever it's given (`test/corpus/generic_extend.rs`), nor a
+    /// type parameter's `I`, which any iterable may be (ADR 1042, amended).
+    fn extends_by_an_array(&self, generic_args: ty::GenericArgsRef<'tcx>) -> bool {
+        let Some(mut given) = generic_args.types().nth(2) else {
+            return false;
+        };
+        while let ty::Ref(_, inner, ty::Mutability::Not) = given.kind() {
+            given = *inner;
+        }
+        matches!(given.kind(), ty::Slice(_) | ty::Array(..))
+            || self.is_std_type(given, crate::lower::recognition::StdItem::Vec)
     }
 
     /// What `extend` of `items`, of type `iterable`, pushes onto a

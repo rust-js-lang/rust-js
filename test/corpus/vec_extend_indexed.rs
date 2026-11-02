@@ -1,9 +1,10 @@
 // A `Vec`'s `extend` of an iterator over an array's items, an index loop
 // that pushes each (ADR 1042, the user's decision): of a slice's, a
 // `Vec`'s, a list a call makes, read once, onto a field, and of `Copy`
-// structs, each copied, as Rust copies them. A slice or a `Vec` given
-// whole is stepped by its own iteration, and a heap's `extend` of a
-// slice's iterator is of the slice.
+// structs, each copied, as Rust copies them. So is one of a slice, an
+// array or a `Vec` given whole, and `extend_from_slice`, as the call's own
+// type for what it's given says, and a heap's `extend` of a slice's
+// iterator is of the slice.
 use std::collections::BinaryHeap;
 
 #[derive(Clone, Copy, Debug)]
@@ -37,6 +38,15 @@ fn main() {
     copied.extend(points.iter());
     copied[0].x = 9;
     println!("{:?} {:?}", points, copied);
+
+    let more = vec![4u32, 5];
+    out.extend(more);
+    out.extend_from_slice(&xs[..2]);
+    let mut copied_whole: Vec<Point> = Vec::new();
+    copied_whole.extend(&points);
+    copied_whole.extend_from_slice(&points[1..]);
+    copied_whole[0].x = 7;
+    println!("{:?} {:?} {:?}", out, points, copied_whole);
 
     let empty: &[u32] = &[];
     out.extend(empty.iter());

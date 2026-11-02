@@ -4,7 +4,6 @@ import {
   $assign,
   $debugStr,
   $displayF64,
-  $extend,
   $given,
   $iter,
   $next,
@@ -119,7 +118,9 @@ function bagDebug_fmt(bag) {
 
 export const bagAdd = { add: bagAdd_add };
 function bagAdd_add(bag, other) {
-  $extend(bag[0], other[0]);
+  for (let i = 0; i < other[0].length; i++) {
+    bag[0].push(other[0][i]);
+  }
   return bag;
 }
 
