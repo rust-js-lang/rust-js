@@ -567,4 +567,22 @@ export const mutations: Mutation[] = [
     replace: "            let arm: Option<js::Span> = None;\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "Ok arm is above its value"],
   },
+  {
+    name: "flagged-try-catch-uncommented",
+    breaks:
+      "a comment right above the `if let Ok(true) = r` a flag's `try` folds is above the `try`, not in its `catch`, upstream's `} catch (x) { // Fall through to reveal. }` (rd634)",
+    file: "src/prepare/catches.rs",
+    find: "    let caught = vec![StmtKind::Comments.at(tested.span)];\n",
+    replace: "    let caught = Vec::new();\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "flagged catch_unwind"],
+  },
+  {
+    name: "flagged-try-at-its-test",
+    breaks:
+      "a flag's `try` is placed where the `if` it folds is, after its body, so a comment in the closure before its `false` is above the `try`, not at its end (rd634)",
+    file: "src/prepare/catches.rs",
+    find: "    Some(StmtKind::TryCatch(tried, None, caught).at(made.span))\n",
+    replace: "    Some(StmtKind::TryCatch(tried, None, caught).at(tested.span))\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "flagged catch_unwind"],
+  },
 ];

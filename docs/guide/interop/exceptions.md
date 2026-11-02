@@ -839,7 +839,10 @@ export function described(value) {
   comes out, `if let Ok(true) = r { return false; }`; that's `try { ..;
   return false; } catch {}`, where the `if`'s `return` can't throw and
   nothing after reads the `Result`, as React's dispatchSetStateInternal
-  writes it ([ADR 0660](../../decisions/0660-catch-unwind-catches-what-js-throws.md), amended):
+  writes it. A comment before the closure's `false` is at the `try`'s
+  end, and one right above the `if let Ok(true)` is in the `catch`, the
+  way the closure threw
+  ([ADR 0660](../../decisions/0660-catch-unwind-catches-what-js-throws.md), amended):
 
 ```rust
 use std::panic::{AssertUnwindSafe, catch_unwind};

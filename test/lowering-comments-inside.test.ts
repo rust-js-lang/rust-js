@@ -79,6 +79,48 @@ pub fn is_text_href(frame: Option<&'static Unknown>) -> bool {
   expect([lib.isTextHref({ location: { href: "a" } } as never), lib.isTextHref(undefined as never)]).toEqual([true, false]);
 });
 
+// React DOM's FizzInstructionSetShared revealCompletedBoundariesWithViewTransitions:
+// `try { if (..) { ..; return; } // Fall through to reveal. } catch (x) { //
+// Fall through to reveal. }`, a flag out of `catch_unwind` returned from the
+// function. Its port's comment before the closure's `false`, which makes no
+// JS, is at the `try`'s end, and the one above the folded `if let Ok(true)`
+// in the `catch`, that test's other way, where the closure threw; both were
+// above the `try`, which was placed at that `if` (rd634).
+test("a comment before a flagged catch_unwind's false is at its try's end, one above its test in the catch", async () => {
+  const { js, lib } = await compiled("comments-of-a-flagged-try", `use std::panic::{AssertUnwindSafe, catch_unwind};
+
+pub fn reveal(on: bool, log: &mut Vec<u32>) {
+    let started = catch_unwind(AssertUnwindSafe(|| {
+        if on {
+            log.push(1);
+            return true;
+        }
+        // Fall through to reveal.
+        false
+    }));
+    // Fall through, as it threw.
+    if let Ok(true) = started {
+        return;
+    }
+    log.push(2);
+}
+`);
+  expect(js).toContain(`  try {
+    if (on) {
+      log.push(1);
+      return;
+    }
+    // Fall through to reveal.
+  } catch {
+    // Fall through, as it threw.
+  }
+  log.push(2);`);
+  const log: number[] = [];
+  lib.reveal(true as never, log as never);
+  lib.reveal(false as never, log as never);
+  expect(log).toEqual([1, 2]);
+});
+
 // React's beginWork: `oldProps !== newProps || hasLegacyContextChanged() ||
 // // Force a re-render if the implementation changed due to hot reload:
 // (__DEV__ ? workInProgress.type !== current.type : false)`. Its port's

@@ -453,3 +453,33 @@ that leaves (ADR 0753), is the `catch`'s: `} catch { // If .. }`. Case
 `test/lowering-unwind-arms.test.ts`' "comments around a match of
 catch_unwind are where they're written", run in JS, and the mutations
 `unwind-try-at-ok-arm` and `unwind-comment-only-err-after`.
+
+## Amendment: a flag's `try` keeps its comments where they're written (rd634, 2026-11-02)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments only.
+React DOM's FizzInstructionSetShared writes `try { if (..) { ..; return;
+} // Fall through to reveal. } catch (x) { // Fall through to reveal. }`.
+Its port, `let started = catch_unwind(|| { if .. { ..; return true; } //
+Fall through to reveal.\n false }); // Fall through to reveal.\n if let
+Ok(true) = started { return; }`, printed both comments above the `try`:
+the flag's `try` was placed where the `if` it folds is, after its body,
+so each comment before that `if` was before the `try` as printed, the
+one before the closure's `false` too, though the `return` it was, gone,
+left where its comments end at the body's end (`arms_where_returned`).
+
+**The flag's `try` is where the closure is made** (`flagged_try`, the
+`let` of `catch_unwind`'s), so what its body holds is inside it, the
+`false`'s comment at its end; and **a comment right above the folded
+`if let Ok(true)` is the `catch`'s**: that `if`'s only arm is the flag's
+`return`, so what it says is of the other way, the `Ok(false)` that
+falls out of the `try` and the `Err` the `catch` is, upstream's place
+for it. Only there: a comment above an `if let Ok(..)` whose arm does
+something of its own is about that arm as much, and stays where it is
+(`try_catch`'s forms are as before). The `catch` is a block of only that
+comment, empty without one (ADR 0753); a flag's `catch` has no
+statements, as its `Err` does nothing.
+
+Held by `test/lowering-comments-inside.test.ts`'s "a comment before a
+flagged catch_unwind's false is at its try's end, one above its test in
+the catch", run, and the mutations `flagged-try-catch-uncommented` and
+`flagged-try-at-its-test` (`prepare/catches.ts`).

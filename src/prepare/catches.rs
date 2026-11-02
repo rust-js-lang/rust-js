@@ -150,7 +150,13 @@ fn flagged_try(made: &Stmt, tested: &Stmt) -> Option<Stmt> {
     };
     let ok = [StmtKind::If(flag, then.clone(), None).at(tested.span)];
     let (tried, _) = arms_where_returned(body, result, &ok)?;
-    Some(StmtKind::TryCatch(tried, None, Vec::new()).at(tested.span))
+    // Where the closure is made, which its body, the `try`'s, is after, so
+    // a comment in it is in the `try` (rd634); and a comment right above
+    // the `if` it folds, `// Fall through ..\n if let Ok(true) = r`, whose
+    // only arm returns, is the `catch`'s, that test's other way, where the
+    // closure threw: `} catch { // Fall through .. }`.
+    let caught = vec![StmtKind::Comments.at(tested.span)];
+    Some(StmtKind::TryCatch(tried, None, caught).at(made.span))
 }
 
 /// `body`, a `catch_unwind` closure's, each `return v;` of a literal what
