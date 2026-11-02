@@ -803,6 +803,7 @@ export function common(a, b) {
 | `m.size` | `m.len()` |
 | `m.set(k, (m.get(k) ?? 0) + 1)` | `*m.entry(k).or_insert(0) += 1` |
 | `if (!m.has(k)) { m.set(k, []); } m.get(k).push(v)` | `m.entry(k).or_default().push(v)` ([ADR 0059](../../decisions/0059-hashmap.md), amended) |
+| `let v = m.get(k); if (v == null) { ..; v = made; m.set(k, v); }` | `let v = match m.get(&k).cloned() { Some(v) => v, None => { ..; m.insert(k, made.clone()); made } };` |
 | `s.add(x)` | `s.insert(x)`, `true` if it was new |
 
 - A `HashMap` iterates in insertion order, as a JS `Map` does. Native
