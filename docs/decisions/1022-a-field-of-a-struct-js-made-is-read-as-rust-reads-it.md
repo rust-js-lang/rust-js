@@ -1,6 +1,6 @@
 # 1022. A field of a struct JS made is read as often as Rust reads it
 
-Status: Accepted (the user's decision, rd204); amended below, the user's decision: a binding that gives back what the program gave it, `#[rust_js::gives_back]`, gives the program's own object; and amended again, rd221: a struct the program builds is its own data, whatever JS gives of its type; and amended, #411, the user's decision: a binding that gives fresh plain data, `#[rust_js::gives_plain_data]`, gives no getter's object; and amended, #430: a pattern's subject is read once where it's tested. Amends
+Status: Accepted (the user's decision, rd204); amended below, the user's decision: a binding that gives back what the program gave it, `#[rust_js::gives_back]`, gives the program's own object; and amended again, rd221: a struct the program builds is its own data, whatever JS gives of its type; and amended, #411, the user's decision: a binding that gives fresh plain data, `#[rust_js::gives_plain_data]`, gives no getter's object; and amended, #430: a pattern's subject is read once where it's tested; and amended, rd631, the user's decision: a closure's shared borrow of such a field is read where the closure derefs it. Amends
 [0194](0194-jsx-attributes-read-once.md),
 [0672](0672-a-property-a-test-reads-is-read-once.md) and
 [0866](0866-a-let-only-its-if-let-reads-is-read-there.md): a field of a
@@ -324,3 +324,39 @@ native Rust); mutations `getter-subject-not-held`,
 `getter-subject-fake-borrow-read`, `getter-subject-within-another-match`,
 `getter-subject-other-match-region` (`lower/mir/patterns.ts`) and
 `binding-body-builds` (`lower/analysis/fn_pointers.ts`).
+
+## Amendment (2026-11-02): a closure's deref is Rust's read (rd631, the user's decision)
+
+React's Flight reply client reads a stream part in a `catch_unwind`
+closure, `reply.stringify(entry.value.flatten())`, where `entry` is the
+`ReadableStreamReadResult` a reader's promise gave, a struct JS made. The
+closure borrows `entry.value`, and Rust reads the field where the closure
+derefs that borrow. But the field read is a getter's here, `Known::Getter`,
+so `&entry.value` was a value, not a place, and the closure's maker read
+it first: `const captured = entry.value; $catchUnwind(() => {
+stringify(captured) .. })`. Upstream writes `JSON.stringify(entry.value,
+resolveToJSON)` in its `try`.
+
+**A closure's shared borrow of a field a getter may answer is read where
+the closure derefs it**, as Rust reads it there: `$catchUnwind(() =>
+stringify(entry.value))`, and a closure that derefs it twice reads it
+twice, `run(() => describe(entry.value) + describe(entry.value))`. This
+holds only where the field's object reads the same, a variable Rust's
+borrow keeps as it is, and where the closure only derefs the borrow
+(`queries::derefs_capture_only`). A closure that keeps the reference or
+gives it on, `described(&entry.value)`, has it read where it's made, as
+before: the callee's own read could come later than where JS reads it.
+The user chose this over reading it first only for a closure called once
+at once (B) and over leaving it (C).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change. A
+getter runs where Rust reads the field, each deref.
+
+Held by `test/corpus/field_of_a_struct_js_made_captured.rs`, against
+native Rust (a closure that derefs the capture twice, one in a
+`catch_unwind`, and one that gives the reference on), and by
+`test/lowering-moves.test.ts`'s "a closure's borrow of a getter's field
+is read where it's derefed", whose getter's reads are counted. Mutations
+`getter-capture-read-first` and `getter-capture-given-on-read-late`
+(`lower/mir/closures.ts`) and `derefs-capture-whole-unseen`
+(`lower/mir/queries.ts`).

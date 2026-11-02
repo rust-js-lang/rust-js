@@ -72,6 +72,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ))
     }
 
+    /// The JS name of the variable a closure `def_id`'s capture `i` takes
+    /// whole, `originalMethod` of a `move` closure's `original_method`;
+    /// none of a part of one, `entry.value` (rd656).
+    fn whole_capture_name(&self, def_id: rustc_span::def_id::DefId, i: usize) -> Option<String> {
+        let captured = self.tcx.closure_captures(def_id.as_local()?).get(i)?;
+        let name = captured.var_ident.name;
+        (captured.place.projections.is_empty() && !name.as_str().is_empty())
+            .then(|| crate::lower::camel_case(name.as_str()))
+    }
+
     /// `mir_closure`'s function, of what it took.
     fn mir_closure_fn(
         &mut self,
@@ -148,6 +158,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     (e, true)
                 }
+                // A shared borrow of a field a getter may answer, of a struct
+                // JS made (ADR 1022): read where the closure derefs it, as
+                // Rust reads it there, `stringify(entry.value)` (rd631, the
+                // user's decision). Not where it keeps or gives the
+                // reference, nor of an object read apart.
+                Value::Expr(e)
+                    if matches!(
+                        upvars.get(i).map(|t| t.kind()),
+                        Some(ty::Ref(_, _, ty::Mutability::Not))
+                    ) && e.facts.has(js::Known::Getter)
+                        && matches!(&e.kind, js::ExprKind::Member(object, _) if object.reads_same())
+                        && super::queries::derefs_capture_only(&mir.body, i) =>
+                {
+                    (e, true)
+                }
                 // One it took and changes is its own: a `let` of it, made here.
                 value if writes_capture(&mir.body, i) => {
                     let e = self.value_expr(value, span)?;
@@ -170,7 +195,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         e
                     } else {
                         self.flush(state, out)?;
-                        self.spill("captured", e, out)
+                        // Named for the variable it takes whole, `const id =
+                        // action._0;`; `captured` of a part of one, and of a
+                        // copy of the variable as it is now, `const captured
+                        // = factor;`, which its name would only name apart
+                        // (rd656).
+                        let base = (self.whole_capture_name(def_id, i))
+                            .filter(|name| !matches!(&e.kind, js::ExprKind::Var(v) if v == name));
+                        self.spill(base.as_deref().unwrap_or("captured"), e, out)
                     };
                     if let js::ExprKind::Var(name) = &e.kind {
                         moved.push(name.clone());

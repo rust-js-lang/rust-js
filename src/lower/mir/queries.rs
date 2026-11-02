@@ -1313,6 +1313,45 @@ pub(super) fn writes_capture(body: &mir::Body<'_>, i: usize) -> bool {
     })
 }
 
+/// Whether a closure's `body` reads its capture `i`, a reference, only
+/// where it derefs it, `*capture`: never the reference itself, kept or
+/// given on (rd631).
+pub(super) fn derefs_capture_only(body: &mir::Body<'_>, i: usize) -> bool {
+    use rustc_middle::mir::visit::{PlaceContext, Visitor};
+    struct Uses {
+        i: usize,
+        whole: bool,
+    }
+    impl<'tcx> Visitor<'tcx> for Uses {
+        fn visit_place(&mut self, place: &Place<'tcx>, context: PlaceContext, _: mir::Location) {
+            if place.local != Local::from_usize(1) || matches!(context, PlaceContext::NonUse(_)) {
+                return;
+            }
+            let mut elems = place
+                .projection
+                .iter()
+                .skip_while(|elem| matches!(elem, PlaceElem::Deref));
+            // The reference itself, or a borrow through it, `&*capture`, which
+            // gives it on.
+            let lent = matches!(
+                context,
+                PlaceContext::NonMutatingUse(
+                    mir::visit::NonMutatingUseContext::SharedBorrow | mir::visit::NonMutatingUseContext::RawBorrow
+                )
+            );
+            if let Some(PlaceElem::Field(field, _)) = elems.next()
+                && field.as_usize() == self.i
+                && (!matches!(elems.next(), Some(PlaceElem::Deref)) || lent)
+            {
+                self.whole = true;
+            }
+        }
+    }
+    let mut uses = Uses { i, whole: false };
+    uses.visit_body(body);
+    !uses.whole
+}
+
 /// The locals a terminator reads, as its operands.
 pub(super) fn terminator_reads(terminator: &mir::Terminator<'_>) -> Vec<Local> {
     let operand = |o: &Operand<'_>| o.place().map(|p| p.local);

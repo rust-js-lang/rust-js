@@ -1094,6 +1094,11 @@ export function twoLoggers() {
   `chunk.info` in its callback, is `this.info`
   ([ADR 0846](../../decisions/0846-a-parameters-clone-is-read-by-its-name.md),
   [0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md)).
+  What a closure takes by value that its maker reads first, a variable
+  whose JS is a read of something else, is named for the variable, `const
+  n = parse._0;` of `Ok(n) => move |x| x + n`; a part of a variable, and
+  a copy of one the maker changes after, are `const captured = ..`
+  ([ADR 0879](../../decisions/0879-an-if-and-a-closures-captures-read-as-written.md), amended).
 - **A `RefCell` of an array, a `Map`, a `Set` or an object is that
   object**, `lines` above; of anything else, a number or an `Option`, it's
   `{ value }`. It counts its borrows where one may meet another, as std's

@@ -733,7 +733,12 @@ a struct JS gives an exported function, or a closure or `fn` pointer it
 calls, and one a generic `js::cast::<T>` gives: each relies on JS giving
 an object of plain data, no getters, as React's props and state are
 ([ADR 1022](../../decisions/1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md),
-amended). A read of such a field can't panic in Rust, so a guard's scope
+amended). A closure's shared borrow of a field of a struct JS made is read
+where the closure derefs it, as Rust reads it there, `run(() =>
+describe(entry.value) + describe(entry.value))`, each a getter's read;
+one the closure keeps or gives on as a reference, `described(&entry.value)`,
+is read once where the closure is made, `const captured = entry.value;`
+(ADR 1022, amended, the user's decision). A read of such a field can't panic in Rust, so a guard's scope
 holds it in its one `try { .. } finally { .. }`, as it holds what makes
 values ([ADR 0693](../../decisions/0693-a-guards-scope-is-one-finally-its-returns-in-it.md),
 amended).

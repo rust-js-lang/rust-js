@@ -836,3 +836,121 @@ pub fn differs(attr: &dyn Fn(&str) -> Option<String>, props: &Props) -> bool {
   expect(lib.differs(attr as never, props as never)).toBe(false);
   expect(log).toEqual(["attr rel", "rel", "attr href", "href", "href", "href", "attr title"]);
 });
+
+// rd631 (ADR 1022, amended, the user's decision): a closure's shared
+// borrow of a field of a struct JS made is read where the closure derefs
+// it, each deref a getter's read, as Rust reads the field there; one it
+// gives on as a reference is read once where the closure's made.
+test("a closure's borrow of a getter's field is read where it's derefed", async () => {
+  const { js, lib } = await compiled(
+    "getter-field-captured",
+    `use js::Unknown;
+
+pub struct Entry {
+    pub value: Option<&'static Unknown>,
+}
+
+unsafe impl js::Defined for Entry {}
+
+#[cfg_attr(rust_js, rust_js::link_name = "String")]
+fn shown(value: Option<&'static Unknown>) -> String {
+    let _ = value;
+    unreachable!()
+}
+
+fn run<R>(f: impl FnOnce() -> R) -> R {
+    f()
+}
+
+fn kept(value: &Option<&'static Unknown>) -> String {
+    shown(*value)
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "entryOfTest")]
+fn entry_of() -> Entry {
+    unreachable!()
+}
+
+pub fn part() -> String {
+    let entry = entry_of();
+    let twice = run(|| shown(entry.value) + &shown(entry.value));
+    let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| shown(entry.value)));
+    let given = run(|| kept(&entry.value));
+    twice + " " + &caught.unwrap_or_default() + " " + &given
+}
+`,
+  );
+  expect(js).toContain("  const twice = run(() => String(entry.value) + String(entry.value));\n");
+  expect(js).toContain("$catchUnwind(() => String(entry.value))");
+  expect(js).toContain("  const captured = entry.value;\n  const given = run(() => kept(captured));\n");
+  let reads = 0;
+  const entry = {
+    get value() {
+      reads += 1;
+      return reads;
+    },
+  };
+  (globalThis as Record<string, unknown>).entryOfTest = () => entry;
+  expect(lib.part()).toBe("12 3 4");
+  expect(reads).toBe(4);
+});
+
+// rd656: a closure's capture its maker reads first, a variable whose JS is
+// a read of something else, is named for the variable, as React's
+// patchConsole's `const originalMethod = descriptor.value;`, apart from
+// another of its name; one of a part of a variable, `entry.value`, is
+// `captured`, as no variable is its name.
+test("a closure's capture read first is named for its variable", async () => {
+  const { js, lib } = await compiled(
+    "capture-named-for-its-variable",
+    `use js::Unknown;
+
+pub struct Descriptor {
+    pub value: Option<&'static Unknown>,
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "String")]
+fn shown(value: Option<&'static Unknown>) -> String {
+    let _ = value;
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "descriptorOfTest")]
+fn descriptor_of() -> Descriptor {
+    unreachable!()
+}
+
+pub enum Action {
+    Toggle(u32),
+    Clear,
+}
+
+type Matcher = Box<dyn Fn(u32) -> bool>;
+
+pub fn matchers(action: &Action) -> Option<(Matcher, Matcher)> {
+    match *action {
+        Action::Toggle(id) => Some((Box::new(move |x| x == id), Box::new(move |x| x != id))),
+        Action::Clear => None,
+    }
+}
+
+pub fn part() -> Box<dyn Fn() -> String> {
+    let entry = descriptor_of();
+    Box::new(move || shown(entry.value))
+}
+`,
+  );
+  expect(js).toContain("  const captured = entry.value;\n");
+  expect(js).toContain("    const id = action._0;\n    const id$1 = action._0;\n    return [(x) => x === id, (x) => x !== id$1];\n");
+  const [is, isnt] = lib.matchers({ TAG: "Toggle", _0: 2 } as never) as unknown as [(x: number) => boolean, (x: number) => boolean];
+  expect([is(2), is(3), isnt(2), isnt(3)]).toEqual([true, false, false, true]);
+  let reads = 0;
+  (globalThis as Record<string, unknown>).descriptorOfTest = () => ({
+    get value() {
+      reads += 1;
+      return reads;
+    },
+  });
+  const part = lib.part() as unknown as () => string;
+  expect([part(), part(), reads]).toEqual(["1", "1", 1]);
+});

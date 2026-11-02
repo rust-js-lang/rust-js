@@ -317,14 +317,14 @@ function reduce(todos, action) {
     });
     next.nextId = (next.nextId + 1) >>> 0;
   } else if (action.TAG === "Toggle") {
-    const captured = action._0;
-    const todo = next.items.find((todo) => todo.id === captured);
+    const id = action._0;
+    const todo = next.items.find((todo) => todo.id === id);
     if (todo != null) {
       todo.done = !todo.done;
     }
   } else {
-    const captured = action._0;
-    $retain(next.items, (todo) => todo.id !== captured);
+    const id = action._0;
+    $retain(next.items, (todo) => todo.id !== id);
   }
   return next;
 }

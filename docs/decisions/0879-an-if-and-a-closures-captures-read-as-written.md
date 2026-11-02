@@ -6,7 +6,7 @@ Status: Accepted. Amends [0237](0237-no-else-after-leaving.md)'s scope (an
 is a conditional), [0607](0607-a-field-is-given-a-call-in-place.md) (a
 variable a closure captured is given a call's value in place) and extends
 [0846](0846-a-parameters-clone-is-read-by-its-name.md) (a clone of what a
-`move` closure captured is read by its name). Amended: a guard's arms in the order written, and a float's constant pattern tested value first; and an `if` that ends a guard's function keeps the `return` written between its branches (below).
+`move` closure captured is read by its name). Amended: a guard's arms in the order written, and a float's constant pattern tested value first; and an `if` that ends a guard's function keeps the `return` written between its branches (below); and a capture its maker reads first is named for its variable (rd656, below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N for each, which runs
 the same; each is a form the program wrote, which MIR's structure lost.
@@ -1052,3 +1052,31 @@ guarded arm's test holds no arm that takes its constant, so the check is
 gone, with no mutation to hold an answer nothing reaches; the rule's
 comment says why. `accumulate_again` stays, the arm of the same constant
 as rustc writes it.
+
+## Amendment (2026-11-03): a capture its maker reads first is named for its variable (rd656)
+
+What a closure takes by value and its maker reads first, where the
+closure is made, was always `const captured = ..`. That happens to a
+variable whose JS is a read of something else, a pattern's binding read
+in place: React's `Toggle(id) => .. .find(|todo| todo.id == id)` printed
+`const captured = action._0; .. todo.id === captured`, and corpus
+`let_chain_values`'s `Ok(n) => move |x| x + n` printed `const captured =
+parse._0;`. The program named that value.
+
+**It's named for the variable it takes whole**, its JS name, apart from
+the names its function has: `const id = action._0;`, `const n =
+parse._0;`; a second closure's of the same variable `id$1`
+(`closures::whole_capture_name`, of rustc's `closure_captures`). Two kinds
+keep `captured`. A part of a variable, `entry.value`, which no variable
+names. And a copy of a variable as it is now, which the maker changes
+after, `const captured = factor;`: named for itself it could only be named
+apart, `factor$1`, which reads worse (readability's renamed share grew
+612 to 612.4 in 10,000 lines with it).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, a name.
+
+Held by `test/lowering-moves.test.ts`'s "a closure's capture read first is
+named for its variable" and corpus `let_chain_values` (blessed: `const n
+= parse._0;`), and the guide's tutorial (`const id = action._0;`);
+mutations `capture-named-captured`, `capture-copy-named-apart` and
+`capture-part-named-for-its-variable` (`lower/mir/closures.ts`).

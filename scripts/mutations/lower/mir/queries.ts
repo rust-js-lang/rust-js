@@ -467,4 +467,12 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^references_read_before_their_field_is_written.rs$"],
   },
+  {
+    name: "derefs-capture-whole-unseen",
+    breaks: "a closure's borrow it gives on, `kept(&entry.value)`, counts as a deref, so a getter's field is read where the closure calls, not where it's made (rd631)",
+    file: "src/lower/mir/queries.rs",
+    find: "                && (!matches!(elems.next(), Some(PlaceElem::Deref)) || lent)\n",
+    replace: "                && !matches!(elems.next(), Some(PlaceElem::Deref))\n",
+    tests: ["test/lowering-moves.test.ts", "-t", "a closure's borrow of a getter's field"],
+  },
 ];

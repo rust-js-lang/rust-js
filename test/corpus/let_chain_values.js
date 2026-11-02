@@ -36,8 +36,8 @@ const base = (() => {
   if (DEBUG) {
     const parse = $parseInt("40", 0, 4294967295);
     if (parse.TAG === "Ok") {
-      const captured = parse._0;
-      tmp = (x) => (x + captured) >>> 0;
+      const n = parse._0;
+      tmp = (x) => (x + n) >>> 0;
       return tmp;
     }
   }
