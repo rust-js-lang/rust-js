@@ -295,8 +295,11 @@ test("a library counts each type's Rcs apart, and its consumer as it does", () =
   expect(dep).toContain("export function useContext(context) {\n  const consumer = context.consumer;\n");
   expect(dep).toContain("  const slot = { value: { value }, strong: 1, weak: 0 };\n");
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
-  expect(app).toContain("  const context = Dep.createContext(1);\n  console.log(`${Dep.useContext(context)} ${Dep.useContext(context)}`);\n  const again = context;\n");
-  expect(app).toContain("  again.value = 2;\n");
+  // The uncounted `Rc`'s clone is the context itself, read by its name
+  // (rd616 A, ADR 0846 amended): `Rc::ptr_eq` of the two is `true`, as
+  // `chain` checks against the native run's `2 true`.
+  expect(app).toContain("  const context = Dep.createContext(1);\n  console.log(`${Dep.useContext(context)} ${Dep.useContext(context)}`);\n  context.value = 2;\n  console.log(`${context.value} ${context === context}`);\n");
+  expect(app).not.toContain("again");
   expect(app).toContain("console.log(`${a.value.value[0]} ${a.strong}`);");
   expect(contract(out).counted_rcs).toEqual([{ of: expect.any(String), args: [{}] }]);
   expect(() => counting(out, "pub fn main() {\n    let context = dep::create_context(1);\n    println!(\"{}\", std::rc::Rc::strong_count(&context));\n}\n"))
