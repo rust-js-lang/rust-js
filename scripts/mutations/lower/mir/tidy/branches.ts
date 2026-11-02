@@ -218,7 +218,7 @@ export const mutations: Mutation[] = [
     find: "        StmtKind::If(test, then, Some(otherwise)) if then.last().is_some_and(ends) => {\n",
     replace:
       "        StmtKind::If(test, then, Some(otherwise)) if false && then.last().is_some_and(ends) => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^range_bounds_generic.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^match_index.rs$"],
     snapshots: true,
   },
   {
@@ -302,11 +302,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/branches.rs",
     find: "        (None, false, true) => false,\n",
     replace: "        (None, false, true) => true,\n",
-    tests: [
-      "test/lowering-matches.test.ts",
-      "-t",
-      "arms as values chain in written order",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^match_call_once.rs$"],
+    snapshots: true,
   },
   {
     name: "mir-tidy-or-pattern-blocks",

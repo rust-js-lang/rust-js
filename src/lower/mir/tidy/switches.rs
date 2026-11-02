@@ -111,11 +111,12 @@ fn walk(
                 labels.push(readable.clone());
                 walk(body, program, labels, Some(&mut inner), true);
                 labels.pop();
-                // A case's `continue` of the loop whose turn the `switch`
-                // ends, which it goes on to anyway; and one MIR made, past
-                // what an arm does, that ends an `if` in it, the `switch`'s
-                // `break`, which goes there too, `if (on(name)) { break; }`
-                // of a guarded arm that does nothing (rd136).
+                // A `continue` MIR made, past what an arm does, that ends
+                // an `if` in a case of the `switch` that ends the loop's
+                // turn: the `switch`'s `break`, which goes there too, `if
+                // (on(name)) { break; }` of a guarded arm that does nothing
+                // (rd136). A case's own last `continue` is gone already,
+                // `tail continues`' before the `switch` is made (#480).
                 if let Some(Stmt {
                     kind: StmtKind::Switch { cases, default, .. },
                     ..
@@ -123,9 +124,6 @@ fn walk(
                 {
                     let of_it = |l: &Option<String>| l.is_none() || l.as_deref() == label.as_deref();
                     for case in js::case_lists_mut(cases, default) {
-                        if matches!(case.last().map(|s| &s.kind), Some(StmtKind::Continue(l)) if of_it(l)) {
-                            case.pop();
-                        }
                         made_continues_broken(case, &of_it, program);
                     }
                 }

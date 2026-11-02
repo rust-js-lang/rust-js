@@ -126,3 +126,14 @@ throws: the way out goes after the loop, `while (childFiber != null &&
 idx < node.children.length) { .. }`, then the `try`, as written. Held by
 the corpus case `while_before_borrowed_tail`, against native Rust, and
 the mutation `exit-after-try-not-leaving` (`tidy/jumps/labels.ts`).
+
+## Note: the tuple's parts no longer place it (#480, 2026-11-02)
+
+Since e4e258aa0 every array and tuple MIR makes carries where it's
+written (`Value::List(items, span)`), so the `return` of `(i, n)` is
+placed by its own span, as any value's is; the search of its parts for
+one, the #389c amendment's, found nothing in any corpus case, snapshot,
+guide example or port (`check:fast --all` with a probe at it), and its
+mutation `exits-after-tuple-unplaced` survived. The search and that
+mutation are gone; `exits-after-return-unplaced`, of the `return`'s own
+place, is held by `loop_exit_tuple` too.

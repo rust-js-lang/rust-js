@@ -163,16 +163,6 @@ export const mutations: Mutation[] = [
     tests: switches,
   },
   {
-    name: "switch-tail-continue-kept",
-    breaks:
-      "a case's `continue` where the `switch` ends the loop's turn stays, `case 0: continue;`, not `case 0: break;`",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "                            case.pop();\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^switch_tail_continues.rs$"],
-    snapshots: true,
-  },
-  {
     name: "switch-value-temporary-kept",
     breaks:
       "a temporary each case gives is copied after, `let tmp; switch .. const slice = tmp;`",
@@ -661,7 +651,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/switches.rs",
     find: "            *own = Some(otherwise.clone());\n",
     replace: "            let _ = (own, otherwise);\n",
-    tests: ORS,
+    tests: ["test/corpus.test.ts", "-t", "^guarded_match_ends_function.rs$"],
     snapshots: true,
   },
   {

@@ -972,7 +972,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/corpus.test.ts",
       "-t",
-      "^(rev_loops|mut_ref_loop|inclusive_range_loops).rs$",
+      "^(match_breaks_its_loop|continue_outer_past_block).rs$",
     ],
     snapshots: true,
   },

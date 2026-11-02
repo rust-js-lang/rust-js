@@ -167,17 +167,9 @@ pub(super) fn exit_after(
         }
         // Of what the program wrote after the loop, MIR's own beside it: a
         // `return` MIR made where its value is written, a tuple's, `(i,
-        // n)`, which MIR made of its parts, where they are.
+        // n)`, made where it's written (`Value::List`'s place).
         let at = |s: &Stmt| match &s.kind {
-            StmtKind::Return(Some(value)) if s.span.is_none() => {
-                let mut at = value.span;
-                value.each(&mut |e: &Expr| {
-                    if at.is_none() {
-                        at = e.span;
-                    }
-                });
-                at
-            }
+            StmtKind::Return(Some(value)) if s.span.is_none() => value.span,
             _ => s.span,
         };
         let written =

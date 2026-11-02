@@ -60,11 +60,26 @@ fn skipped_after(keys: &[i32], seen: bool, last: i32) -> Vec<i32> {
     out
 }
 
+/// The same of text, `!key.is_empty()`, around a loop of its chars: MIR's
+/// block of the condition ends the body, its `if` the one written.
+fn of_text(keys: &[&str], seen: bool, last: &str) -> Vec<u32> {
+    let mut out = Vec::new();
+    for key in keys {
+        if !key.is_empty() && (!seen || last != *key) {
+            for part in key.chars() {
+                out.push(part as u32);
+            }
+        }
+    }
+    out
+}
+
 fn main() {
     for (seen, last) in [(false, 2), (true, 2), (true, 5)] {
         println!("{:?}", changed(&[1, 2, -3, 5], seen, last));
         println!("{:?}", written(&[1, 2, -3, 5], seen, last));
         println!("{:?}", negated(&[1, 2, -3, 5], seen, last));
         println!("{:?}", skipped_after(&[1, 2, -3, 5], seen, last));
+        println!("{:?}", of_text(&["ab", "", "c"], seen, if last == 2 { "ab" } else { "c" }));
     }
 }

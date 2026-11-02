@@ -63,6 +63,23 @@ function skippedAfter(keys, seen, last) {
   return out;
 }
 
+/**
+ * The same of text, `!key.is_empty()`, around a loop of its chars: MIR's
+ * block of the condition ends the body, its `if` the one written.
+ */
+function ofText(keys, seen, last) {
+  const out = [];
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    if (key && (!seen || last !== key)) {
+      for (const part of key) {
+        out.push(part.codePointAt(0));
+      }
+    }
+  }
+  return out;
+}
+
 function main() {
   for (const [seen, last] of [
     [false, 2],
@@ -73,6 +90,7 @@ function main() {
     console.log(`[${written([1, 2, -3, 5], seen, last).join(", ")}]`);
     console.log(`[${negated([1, 2, -3, 5], seen, last).join(", ")}]`);
     console.log(`[${skippedAfter([1, 2, -3, 5], seen, last).join(", ")}]`);
+    console.log(`[${ofText(["ab", "", "c"], seen, last === 2 ? "ab" : "c").join(", ")}]`);
   }
 }
 //# sourceMappingURL=case.js.map

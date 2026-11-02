@@ -429,3 +429,16 @@ follows it but the function's end. Held by the corpus case
 `written_jumps_kept` (`unhide`, `arm_ends`) and the mutations
 `mir-match-arm-jumps-unknown`, `mir-match-arm-jump-of-blocks-end-unknown`
 and `kept-breaks-written-return-broken`.
+
+## Note: a case's last `continue` is `tail continues`' (#480, 2026-11-02)
+
+`switches`' walk took a case's last `continue` off where the `switch`
+ends the loop's turn, `case 0: continue;` to `case 0: break;`. Since the
+`written` stage's `tail continues` runs before the `switch` is made, the
+`if` chain the `switch` is made of has no such `continue` left: a probe
+at the removal reached it in no corpus case, snapshot, guide example or
+port (`check:fast --all`), nor in ten shapes tried for it (`0 =>
+continue` first, middle and last, `'outer` loops, `while let`, arms of
+drops), and its mutation `switch-tail-continue-kept` survived. The
+removal and the mutation are gone; `switch_tail_continues.rs` prints
+`case 0: break;` as before, of `tail continues`.
