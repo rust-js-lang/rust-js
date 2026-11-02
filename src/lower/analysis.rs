@@ -1173,7 +1173,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         &named_expressions,
         instances,
     );
-    let failed = failed | refuse_two_names(tcx, &modules);
+    let failed = failed | refuse_two_names(tcx, &modules, &foreign);
     let import_names = name_imports(tcx, &uses, &taken, &foreign);
     for (module, names) in taken.iter_mut() {
         names.extend(import_names[module].values().cloned());

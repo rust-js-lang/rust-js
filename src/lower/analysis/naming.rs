@@ -724,8 +724,14 @@ fn use_renames(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<(DefId, String, rustc
 /// A module whose `use`s give one item two names, `use dep::helper as
 /// assist;` and `use dep::helper as aid;`: refused, as its file imports it
 /// once, by one name, and either would leave the other unsaid (ADR 0202,
-/// amended). Not its own item, which its file declares and imports not.
-pub(super) fn refuse_two_names(tcx: TyCtxt<'_>, modules: &[LocalModId]) -> bool {
+/// amended). Not its own item, which its file declares and imports not;
+/// nor std's that `@rust-js/std` doesn't compile, `use Option::{None as
+/// ProductEnded}` of itertools', which its JS writes in place (#473).
+pub(super) fn refuse_two_names(
+    tcx: TyCtxt<'_>,
+    modules: &[LocalModId],
+    foreign: &crate::lower::library::Foreign<'_, '_>,
+) -> bool {
     let mut failed = false;
     for &module in modules {
         // A `#[rust_js::name]` names the import of a `use` of one name; of
@@ -743,15 +749,17 @@ pub(super) fn refuse_two_names(tcx: TyCtxt<'_>, modules: &[LocalModId]) -> bool 
             }
         }
         let mut first: HashMap<DefId, String> = HashMap::new();
-        // Of its own item, its file declares it, and imports nothing.
-        let own = |def_id: DefId| {
+        // Of its own item, its file declares it, and imports nothing; of
+        // std's, only what `@rust-js/std` compiled, as its manifest says.
+        let unimported = |def_id: DefId| {
             def_id
                 .as_local()
                 .is_some_and(|id| tcx.parent_module_from_def_id(id) == module)
+                || (crate::lower::recognition::is_std_crate(tcx, def_id) && foreign.item(def_id).is_none())
         };
         for (def_id, alias, span) in use_renames(tcx, module)
             .into_iter()
-            .filter(|&(def_id, ..)| !own(def_id))
+            .filter(|&(def_id, ..)| !unimported(def_id))
         {
             match first.get(&def_id) {
                 Some(named) if *named != alias => {

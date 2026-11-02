@@ -1,6 +1,6 @@
 # 0202. An import is named in each file that imports it
 
-Status: Accepted. Amends [0028](0028-js-module-imports.md). Amended: a module's own item renamed twice imports nothing (below).
+Status: Accepted. Amends [0028](0028-js-module-imports.md). Amended: a module's own item renamed twice imports nothing, nor std's that no file imports (below).
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -163,3 +163,21 @@ namespace import, `use ..::ReactFiberConfigNoop as DefaultConfig` `import
 [ADR 1037](1037-a-module-namespace-is-a-unit-struct-of-its-functions.md),
 amended).
 
+
+## Amendment (2026-11-02): std's item that no file imports (#473)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; itertools 0.14 was
+refused, `use Option::{self as State, None as ProductEnded, Some as
+ProductInProgress};` beside `use Option::{self as CurrentItems, None as
+NotYetPopulated, Some as Populated};` in its `multi_product.rs`, "imports
+`None` once, by one name, and another `use` names it `ProductEnded`".
+
+Std's `None` is no import: its JS writes it in place, `undefined`, whatever
+a `use` names it. Of std, a file imports only what `@rust-js/std` compiled,
+which its manifest lists, by the name a `use` gives it.
+
+**The refusal is of a `use` of an item the file imports: another module's
+of the crate, a library's, a binding's, or std's that `@rust-js/std`
+compiled** (`refuse_two_names`, given the crate's libraries). Held by
+corpus `std_variants_renamed_twice`, against native Rust, and the mutation
+`two-names-of-std-refused` (`lower/analysis/naming.ts`).

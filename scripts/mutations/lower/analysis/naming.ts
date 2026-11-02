@@ -629,8 +629,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a module's `use`s that give its own item two names, `pub(super) use self::Foo as Bar;`, are refused as two names of one import, which its file has none of (ADR 0202, amended; rustc's privacy/pub-restricted-path-usage-55376.rs)",
     file: "src/lower/analysis/naming.rs",
-    find: ".filter(|&(def_id, ..)| !own(def_id))",
-    replace: ".filter(|&(def_id, ..)| !own(def_id) || true)",
+    find: ".filter(|&(def_id, ..)| !unimported(def_id))",
+    replace: ".filter(|&(def_id, ..)| !unimported(def_id) || true)",
     tests: ["test/corpus.test.ts", "-t", "^use_renames_own_item.rs$"],
   },
   {
@@ -827,5 +827,14 @@ export const mutations: Mutation[] = [
     find: "        first(false).or_else(|| first(true))\n",
     replace: "        first(false)\n",
     tests: ["test/docs.test.ts"],
+  },
+  {
+    name: "two-names-of-std-refused",
+    breaks:
+      "two `use`s renaming std's `Option::None` apart, which no file imports, are refused as two names of one import, itertools' `ProductEnded` and `NotYetPopulated` (#473)",
+    file: "src/lower/analysis/naming.rs",
+    find: "                || (crate::lower::recognition::is_std_crate(tcx, def_id) && foreign.item(def_id).is_none())\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^std_variants_renamed_twice.rs$"],
   },
 ];
