@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "kept-of-an-impl-unseen",
+    breaks:
+      "a closure `Rc::new` or `Box::new` is given, of a function that gives back `Rc<impl Fn>`, is dropped as the call returns as well as by the `Rc`'s last clone (#464)",
+    file: "src/lower/combinators/callbacks.rs",
+    find: "        let output = self.reveal(output);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^rc_of_impl_fn_returned.rs$"],
+  },
+  {
     name: "unrun-function-undropped",
     breaks:
       "a function an `Option`'s or a `Result`'s method leaves unrun, `map`'s of a `None`, holds what it's never dropped",

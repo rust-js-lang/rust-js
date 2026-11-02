@@ -14,6 +14,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (tys, output): (&[Ty<'tcx>], Ty<'tcx>),
         span: Span,
     ) -> R<Vec<(usize, Option<Unused>)>> {
+        // What it gives as the type it stands for, as each argument's is:
+        // `Rc::new(f)`'s `Rc<impl Fn>` of a function that gives it back is
+        // the `Rc` of `f`'s closure, which keeps it (#464).
+        let output = self.reveal(output);
         let mut given = Vec::new();
         for (at, &ty) in tys.iter().enumerate() {
             // What an `impl FnMut` a function gives is, its closure, which

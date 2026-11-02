@@ -54,3 +54,37 @@ const value = smallest([5, 2, 9], cmp, { clone: (value) => value }, $dispose);
 
 - **What compiles grows**: a closure holding a value with a destructor
   given back by its maker, as itertools' `key_to_cmp` is.
+
+## Amended (#464): kept by an `Rc` or a `Box` given back as `impl Fn`
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, what's dropped, and
+when, as std's.
+
+A closure that carries its drop, given to `Rc::new` or `Box::new` by a
+function that gives the result back as `Rc<impl Fn>` or `Box<impl Fn>`,
+was dropped twice: once as the call returned, `$dispose(f)` after
+`{ value: f, strong: 1, weak: 0 }`, and again by the `Rc`'s last clone.
+Whether a std call keeps what it's given compared the argument's type, the
+closure the `impl Fn` stands for, with the call's output as the body's MIR
+writes it, still the `impl Fn`: the closure was nowhere in it, so it was
+taken as dropped as the call returns. A generic `fn hold<T: 'static>(value:
+T) -> Rc<impl Fn(u32) -> u32>` was the same; an `Rc<dyn Fn>`'s, and a
+local `Rc`'s, whose types name the closure, were right.
+
+**The output is the type it stands for, as each argument is**
+(`given_unused`, `combinators/callbacks.rs`): the `Rc` of the closure,
+which keeps it, so `Rc::new` drops none of it, and the last clone's drop
+drops what it took, once:
+
+```js
+function plain(value) {
+  const make = (value) => $dropping($cloning(..., () => make(value)), () => {
+    manifestDrop_drop(value);
+  });
+  return { value: make(value), strong: 1, weak: 0 };
+}
+```
+
+`rc_of_impl_fn_returned` holds it with native Rust: an `Rc<impl Fn>`, a
+generic one, a `Box<impl Fn>`, and the `Rc<dyn Fn>` and local `Rc` that
+were right. The guide shows no returned closure's drop, so no page changes.
