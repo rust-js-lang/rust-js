@@ -706,4 +706,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^or_pattern_one_place.rs$"],
     snapshots: true,
   },
+  {
+    name: "temporary-named-positional",
+    breaks:
+      "a temporary that reads a positional field is named after it, `const _0 = result._0;`, a temporary's name, where its type's, `tok`, says what it holds (run 40)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                            if !is_temporary(field) =>\n",
+    replace: "                            if true =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_clone_nested_results.rs$"],
+    snapshots: true,
+  },
 ];

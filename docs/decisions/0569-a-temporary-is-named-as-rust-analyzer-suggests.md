@@ -165,3 +165,21 @@ $borrow($fieldCell(handler, "chunk", true)); if (chunk == null) ..`. Case
 `const chunk = handler.chunk;` is the borrow helpers' to give (rd428).
 Held by the corpus's `counted_guard_value_named`, against native Rust, and
 the mutation `destructured-temporary-unnamed` (`tidy/bindings.rs`).
+
+## Amendment: not after a positional field (run 40)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, a name.
+
+A temporary is named after the field it reads, `routes` of
+`tree.routes`; of a positional field, a tuple variant's, that's `_0`:
+`match bump(&mut i)?.clone() { .. }`'s subject was `const _0 =
+result._0;`, read as `_0.TAG` and `_0._0`, a name that is itself MIR's
+form of a temporary's (`is_temporary`), which says nothing of what it
+holds. **A positional field names no temporary**: the next name is
+taken, what rust-analyzer suggests of its type, `const tok = result._0;`,
+else `value`. A field the program names keeps naming it.
+
+Held by the corpus's `match_clone_nested_results` (`tok`) and
+`option_combinator_drops` (`value`), against native Rust, and the mutation
+`temporary-named-positional` (`tidy/bindings.rs`).
+

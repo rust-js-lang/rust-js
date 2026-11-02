@@ -991,7 +991,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0566 `Fuse` is std's; a specialization is picked by its caller's fact](0566-fuse-is-stds.md)
 - [0567 A corpus case's runs are kept by what they ran](0567-a-corpus-cases-runs-are-kept-by-what-they-ran.md)
 - [0568 A backtrace is disabled unless forced](0568-a-backtrace-is-disabled-unless-forced.md)
-- [0569 A temporary is named as rust-analyzer suggests](0569-a-temporary-is-named-as-rust-analyzer-suggests.md) *(amended: a temporary a drop guard's `try` sets; amended: one a `const` takes apart, rd439)*
+- [0569 A temporary is named as rust-analyzer suggests](0569-a-temporary-is-named-as-rust-analyzer-suggests.md) *(amended: a temporary a drop guard's `try` sets; amended: one a `const` takes apart, rd439; amended: not after a positional field)*
 - [0570 A closing source is dropped when it's done](0570-a-closing-source-is-dropped-when-done.md)
 - [0571 `pin!` and a ready future](0571-pin-macro-and-a-ready-future.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](0050-snapshots.md)

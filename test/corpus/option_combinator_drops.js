@@ -105,28 +105,28 @@ function parsePair(a, b, both, BNamed, dropB) {
       result = result$1;
       return result;
     }
-    const _0 = result$1._0;
+    const value = result$1._0;
     let tmp;
     let tmp$1;
     try {
       tmp = BNamed.fromName(b);
       tmp$1 = () => `unknown ${b}`;
     } catch (error) {
-      dropB?.(_0);
+      dropB?.(value);
       throw error;
     }
     let okOrElse;
     try {
       okOrElse = tmp != null ? { TAG: "Ok", _0: tmp } : { TAG: "Err", _0: tmp$1() };
     } catch (error) {
-      dropB?.(_0);
+      dropB?.(value);
       throw error;
     }
     if (okOrElse.TAG !== "Err") {
-      pair = [_0, okOrElse._0];
+      pair = [value, okOrElse._0];
     } else {
       result = okOrElse;
-      dropB?.(_0);
+      dropB?.(value);
       return result;
     }
   } else {

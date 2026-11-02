@@ -199,9 +199,9 @@ export const FlattenCompat = {
           throw error;
         }
         if (tmp$1.TAG === "Continue") {
-          const _0 = tmp$1._0;
+          const value = tmp$1._0;
           tmp = true;
-          acc = _0;
+          acc = value;
         } else {
           try {
             result = RTry.FromResidual().fromResidual(tmp$1._0);
@@ -282,9 +282,9 @@ export const FlattenCompat = {
         throw error;
       }
       if (tmp$1.TAG === "Continue") {
-        const value = tmp$1._0;
+        const value$1 = tmp$1._0;
         tmp = true;
-        acc = value;
+        acc = value$1;
         try {
           if (flattenCompat.frontiter != null) {
             dropU?.($someValue(flattenCompat.frontiter));
@@ -307,9 +307,9 @@ export const FlattenCompat = {
             throw error;
           }
           if (tmp$1.TAG === "Continue") {
-            const value$1 = tmp$1._0;
+            const value = tmp$1._0;
             tmp = true;
-            acc = value$1;
+            acc = value;
           } else {
             try {
               result = RTry.FromResidual().fromResidual(tmp$1._0);
@@ -480,9 +480,9 @@ export const FlattenCompat = {
           throw error;
         }
         if (tmp$1.TAG === "Continue") {
-          const _0 = tmp$1._0;
+          const value = tmp$1._0;
           tmp = true;
-          acc = _0;
+          acc = value;
         } else {
           try {
             result = RTry.FromResidual().fromResidual(tmp$1._0);
@@ -565,9 +565,9 @@ export const FlattenCompat = {
         throw error;
       }
       if (tmp$1.TAG === "Continue") {
-        const value = tmp$1._0;
+        const value$1 = tmp$1._0;
         tmp = true;
-        acc = value;
+        acc = value$1;
         try {
           if (flattenCompat.backiter != null) {
             dropU?.($someValue(flattenCompat.backiter));
@@ -590,9 +590,9 @@ export const FlattenCompat = {
             throw error;
           }
           if (tmp$1.TAG === "Continue") {
-            const value$1 = tmp$1._0;
+            const value = tmp$1._0;
             tmp = true;
-            acc = value$1;
+            acc = value;
           } else {
             try {
               result = RTry.FromResidual().fromResidual(tmp$1._0);
@@ -1490,9 +1490,9 @@ export function fuseFuseImplI_tryFold(
     dropFold?.(fold);
     const value$1 = RTry.branch(value);
     if (value$1.TAG === "Continue") {
-      const _0 = value$1._0;
+      const value = value$1._0;
       tmp = true;
-      acc = _0;
+      acc = value;
       try {
         if (fuse.iter != null) {
           dropI?.($someValue(fuse.iter));
@@ -5397,9 +5397,9 @@ export function skipIterator_last(skip, IIterator = { next: $next }, dropI, drop
       skip.return();
       return result;
     }
-    const _0 = { TAG: "Continue", _0: $someValue(nth) }._0;
+    const value = { TAG: "Continue", _0: $someValue(nth) }._0;
     try {
-      dropIItem?.(_0);
+      dropIItem?.(value);
     } catch (error) {
       dropI?.(skip.iter);
       throw error;
@@ -8851,9 +8851,9 @@ export function fuseFuseImplI_tryRfold(
     dropFold?.(fold);
     const value$1 = RTry.branch(value);
     if (value$1.TAG === "Continue") {
-      const _0 = value$1._0;
+      const value = value$1._0;
       tmp = true;
-      acc = _0;
+      acc = value;
       try {
         if (fuse.iter != null) {
           dropI?.($someValue(fuse.iter));
@@ -9099,11 +9099,11 @@ export function flattenCompatIUIterator_sizeHint(
   }
   lower = Math.min(tmp + lo, 4294967295);
   if (fhi != null) {
-    const _0 = { TAG: "Continue", _0: fhi }._0;
+    const value = { TAG: "Continue", _0: fhi }._0;
     if (bhi != null) {
-      const value = { TAG: "Continue", _0: bhi }._0;
-      if (!$overflowing((_0 + value) >>> 0, _0 + value, 0, 4294967295)[1]) {
-        const value$1 = { TAG: "Continue", _0: (_0 + value) >>> 0 }._0;
+      const value$1 = { TAG: "Continue", _0: bhi }._0;
+      if (!$overflowing((value + value$1) >>> 0, value + value$1, 0, 4294967295)[1]) {
+        const value$2 = { TAG: "Continue", _0: (value + value$1) >>> 0 }._0;
         if (upper != null) {
           const b = { TAG: "Continue", _0: upper }._0;
           const [_78, _79] = $overflowing(
@@ -9114,8 +9114,8 @@ export function flattenCompatIUIterator_sizeHint(
           );
           if (!_79) {
             const value = { TAG: "Continue", _0: _78 }._0;
-            upper = !$overflowing((value$1 + value) >>> 0, value$1 + value, 0, 4294967295)[1]
-              ? { TAG: "Continue", _0: (value$1 + value) >>> 0 }._0
+            upper = !$overflowing((value$2 + value) >>> 0, value$2 + value, 0, 4294967295)[1]
+              ? { TAG: "Continue", _0: (value$2 + value) >>> 0 }._0
               : undefined;
           } else {
             upper = undefined;
@@ -10337,7 +10337,7 @@ export function stepByStepByBackImplI_specTryRfold(
     throw error;
   }
   if (tmp.TAG === "Continue") {
-    const _0 = tmp._0;
+    const value$2 = tmp._0;
     const captured = stepBy.iter;
     const captured$1 = stepBy.stepMinusOne;
     const value$1 = $fromFn(
@@ -10351,7 +10351,7 @@ export function stepByStepByBackImplI_specTryRfold(
       true,
     );
     tmp$1 = false;
-    const value = $tryFoldInto(value$1, _0, (a, b) => f(a, b), RTry, dropAcc);
+    const value = $tryFoldInto(value$1, value$2, (a, b) => f(a, b), RTry, dropAcc);
     dropF?.(f);
     return value;
   }
@@ -10402,19 +10402,19 @@ export function zipZipImplAB_next(
 ) {
   const value = AIterator.next(zip.a);
   if (value != null) {
-    const _0 = { TAG: "Continue", _0: $someValue(value) }._0;
+    const value$1 = { TAG: "Continue", _0: $someValue(value) }._0;
     let tmp;
     try {
       tmp = BIterator.next(zip.b);
     } catch (error) {
-      dropAItem?.(_0);
+      dropAItem?.(value$1);
       throw error;
     }
     if (tmp != null) {
-      return [_0, { TAG: "Continue", _0: $someValue(tmp) }._0];
+      return [value$1, { TAG: "Continue", _0: $someValue(tmp) }._0];
     }
     const result = undefined;
-    dropAItem?.(_0);
+    dropAItem?.(value$1);
     return result;
   }
 }
@@ -10454,19 +10454,19 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
 ) {
   const value = AIterator.next(zip.a);
   if (value != null) {
-    const _0 = { TAG: "Continue", _0: $someValue(value) }._0;
+    const value$1 = { TAG: "Continue", _0: $someValue(value) }._0;
     let tmp;
     try {
       tmp = BIterator.next(zip.b);
     } catch (error) {
-      dropAItem?.(_0);
+      dropAItem?.(value$1);
       throw error;
     }
     if (tmp != null) {
-      return [_0, { TAG: "Continue", _0: $someValue(tmp) }._0];
+      return [value$1, { TAG: "Continue", _0: $someValue(tmp) }._0];
     }
     const result = undefined;
-    dropAItem?.(_0);
+    dropAItem?.(value$1);
     return result;
   }
 }

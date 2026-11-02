@@ -595,7 +595,8 @@ pub(super) fn in_closure(stmts: &[Stmt], name: &str) -> bool {
 
 /// `_4`, a temporary MIR holds still, read more than once: named after
 /// what it holds, the field it reads, `routes` of `tree.routes` or
-/// `length` of `slice?.length`, else what rust-analyzer suggests of it,
+/// `length` of `slice?.length`, not a positional one, `_0`, which is a
+/// temporary's name, else what rust-analyzer suggests of it,
 /// `trailingZeros` or `point` (`suggested`, ADR 0569); a trait object's
 /// whose method is called, `receiver`; else `value`, an argument held
 /// `arg`, or `tmp` of a `let` its branches set. The first of those names no
@@ -661,7 +662,12 @@ pub(super) fn readable_temporaries(
                     let names = match (given.get(name), &value.kind) {
                         (Some(prop), _) => vec![prop.clone()],
                         (None, _) if is_held_arg(name) => Vec::new(),
-                        (None, ExprKind::Member(_, field) | ExprKind::OptionalMember(_, field)) => vec![field.clone()],
+                        // Not a positional field's, `_0`, a temporary's name.
+                        (None, ExprKind::Member(_, field) | ExprKind::OptionalMember(_, field))
+                            if !is_temporary(field) =>
+                        {
+                            vec![field.clone()]
+                        }
                         (None, _) => suggested.get(name).cloned().unwrap_or_default(),
                     };
                     renames.push((name.clone(), names, any));

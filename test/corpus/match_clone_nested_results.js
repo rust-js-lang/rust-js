@@ -45,8 +45,8 @@ function parsePrimary(toks) {
   if (result.TAG === "Err") {
     return result;
   }
-  const _0 = result._0;
-  if (_0.TAG === "Ident") {
+  const tok = result._0;
+  if (tok.TAG === "Ident") {
     const result = bump({
       get value() {
         return i;
@@ -58,9 +58,9 @@ function parsePrimary(toks) {
     if (result.TAG === "Err") {
       return result;
     }
-    return result._0 === "RParen" ? { TAG: "Ok", _0: { TAG: "Var", _0: _0._0 } } : { TAG: "Err" };
+    return result._0 === "RParen" ? { TAG: "Ok", _0: { TAG: "Var", _0: tok._0 } } : { TAG: "Err" };
   }
-  if (_0 === "LParen") {
+  if (tok === "LParen") {
     const result = bump({
       get value() {
         return i;

@@ -126,12 +126,12 @@ export function sum(a, b) {
   if (result.TAG === "Err") {
     return result;
   }
-  const _0 = result._0;
+  const value = result._0;
   const result$1 = parse(b);
   if (result$1.TAG === "Err") {
     return result$1;
   }
-  return { TAG: "Ok", _0: (_0 + result$1._0) >>> 0 };
+  return { TAG: "Ok", _0: (value + result$1._0) >>> 0 };
 }
 
 export function must(text) {
