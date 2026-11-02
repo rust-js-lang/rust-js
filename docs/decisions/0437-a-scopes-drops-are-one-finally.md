@@ -195,3 +195,47 @@ Case "Results change": each value is dropped once, when Rust drops it.
 Held by `drop_assigned_after_a_loop.rs` against native Rust (a `Noisy` and
 an `Rc<RefCell<_>>`, with a panic unwound through the loop) and the
 mutation `looped-drop-past-its-write` (`mir/tidy/unwinds.ts`).
+
+**Amended (#465, P0).** What may come between the drop and its way out
+was what can't throw. That isn't what a drop can't see: `console.log(..)`
+can't throw, and runs the program's code. Since the early "drop scopes"
+stage read loops `loops` makes a `for` of (ab2aa4746, #442), an inner
+`for` over a `Vec`'s `into_iter()` in an outer loop, left by `break`, was
+MIR's `$dropItems(iter); console.log(..); continue bb4;` at each of its
+ways out. The pass took it as the loop's drop before a way out and made
+`try { while (..) { .. break; } console.log(..); } finally { /* drop the
+rest */ }`, which printed before it dropped the `for`'s rest. Native Rust
+drops it first: `drop 17, true`, where it was `true, drop 17` (the
+Nightly's seed 12455721, run 41383999976). **What follows the drop is
+what a drop can't see run before it** (`unseen_by_drops`): a `let` or a
+`const`, or a write of a variable, each of a value of no effects, and
+nothing the drop names (above). A field's write (a `Cell`'s `set` of a
+field that's its property, `seen.n = ..`) runs the drop's code no more
+than a call does, but a drop may read it. Else the loop keeps its scope's
+`finally` around the `for` alone, and the statement after it runs after:
+
+```js
+const iter = $iter(tmp$5);
+try {
+  while (true) {
+    ..
+    if (d[0] === 16) {
+      console.log(`drop ${d[0]}`);
+      break;
+    }
+    ..
+  }
+} finally {
+  for (const item of iter) {
+    console.log(`drop ${item[0]}`);
+  }
+}
+console.log(`${[].length === 0} after round ${round}`);
+```
+
+Case "Results change": each value is dropped where Rust drops it, before
+what follows. Held by `for_left_drops_its_rest_where_it_ends.rs` against
+native Rust (a `for` left by `break` and one that runs out, in another
+loop, a plain write after one, and a field a drop reads, set after one),
+and the mutations `looped-drop-past-what-runs-code` and
+`looped-drop-past-a-field-write` (`mir/tidy/unwinds.ts`).

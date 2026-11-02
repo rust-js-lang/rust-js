@@ -389,8 +389,26 @@ export const mutations: Mutation[] = [
     breaks:
       "an assignment's drop of the old value in a loop, `dDrop(held); held = noisy; continue;`, is a `finally` around the assignment, which drops the new value and never the old (#463)",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "        if dropped && (!stmt.cannot_throw() || names_dropped(&stmt, drop)) {\n",
-    replace: "        if dropped && !stmt.cannot_throw() {\n",
+    find: "        if dropped && (!unseen_by_drops(&stmt) || names_dropped(&stmt, drop)) {\n",
+    replace: "        if dropped && !unseen_by_drops(&stmt) {\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_assigned_after_a_loop.rs$"],
+  },
+  {
+    name: "looped-drop-past-what-runs-code",
+    breaks:
+      "a statement after an inner `for` that runs the program's code, `console.log(..)`, is in the `finally`'s `try`, so it runs before what the `for` left is dropped (#465)",
+    file: "src/lower/mir/tidy/unwinds.rs",
+    find: "        StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) => !value.has_effects(),\n        StmtKind::Assign(target, value) => matches!(target.kind, ExprKind::Var(_)) && !value.has_effects(),\n        _ => false,\n",
+    replace: "        _ => stmt.cannot_throw(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^for_left_drops_its_rest_where_it_ends.rs$"],
+  },
+  {
+    name: "looped-drop-past-a-field-write",
+    breaks:
+      "a write of a field after an inner `for`, which a drop may read, runs before the drop, in the `finally`'s `try` (#465)",
+    file: "src/lower/mir/tidy/unwinds.rs",
+    find: "        StmtKind::Assign(target, value) => matches!(target.kind, ExprKind::Var(_)) && !value.has_effects(),\n",
+    replace: "        StmtKind::Assign(_, value) => !value.has_effects(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^for_left_drops_its_rest_where_it_ends.rs$"],
   },
 ];
