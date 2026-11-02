@@ -690,6 +690,15 @@ pub fn reads_this(stmts: &[Stmt]) -> bool {
     read
 }
 
+/// The variables a statement declares where it is: `const x`, `let [a, b]`.
+pub fn declared_here(statement: &Stmt) -> Vec<String> {
+    match &statement.kind {
+        StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.clone()],
+        StmtKind::Destructure { pattern, .. } => pattern.names().into_iter().map(str::to_owned).collect(),
+        _ => Vec::new(),
+    }
+}
+
 /// Each name `stmts` declare, however deep: a statement's, an arrow's
 /// parameters and statements, a function's too.
 pub fn declared_names(stmts: &[Stmt]) -> Vec<String> {

@@ -432,3 +432,158 @@ pub fn held(holder: &Holder, roots: &[Rc<Root>], tag: u32) {
   lib.held(holder, roots, 3);
   expect([lib.found(roots, 2, seen), lib.found(roots, 5, seen), holder.root]).toEqual([roots[1], null, null]);
 });
+
+// rd613 (ADR 0861, amended, the user's decision): a function's own
+// `#[rust_js::nullable(..)]` parameter each of the crate's calls gives
+// `null` or a value is tested `!== null`, React's webpack server config's
+// `if (moduleLoading !== null)`; JS's calls keep its declared `T | null`.
+// One a call gives what may be `undefined`, one used as a value, and one
+// not marked are tested `!= null`, as JS may give them either.
+test("a function's own nullable parameter each call gives null or a value is tested against null alone", async () => {
+  const dir = fixture("nullable-param-tested");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `pub struct ModuleLoading {
+    pub prefix: String,
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(module_loading))]
+pub fn prepare(module_loading: Option<&ModuleLoading>, chunk: &str) -> String {
+    if let Some(module_loading) = module_loading {
+        return module_loading.prefix.clone() + chunk;
+    }
+    String::new()
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(module_loading))]
+pub fn forward(module_loading: Option<&ModuleLoading>) -> String {
+    prepare(module_loading, "a.js") + &prepare(None, "b.js")
+}
+
+pub fn prefixed(prefix: &str) -> String {
+    let loading = ModuleLoading { prefix: prefix.to_string() };
+    prepare(Some(&loading), "c.js")
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(module_loading))]
+pub fn cleared(mut module_loading: Option<&ModuleLoading>, clear: bool) -> bool {
+    if clear {
+        module_loading = None;
+    }
+    module_loading.is_none()
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(module_loading))]
+pub fn given_on(module_loading: Option<&ModuleLoading>) -> bool {
+    module_loading.is_some()
+}
+
+pub fn given(module_loading: Option<&ModuleLoading>) -> bool {
+    given_on(module_loading)
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(module_loading))]
+pub fn mapped(module_loading: Option<&ModuleLoading>) -> bool {
+    module_loading.is_some()
+}
+
+pub fn each(loadings: &[Option<&ModuleLoading>]) -> usize {
+    loadings.iter().copied().map(mapped).filter(|&set| set).count()
+}
+
+pub trait Loads {
+    fn loads(&self, module_loading: Option<&ModuleLoading>) -> bool;
+}
+
+pub struct Loader;
+
+impl Loads for Loader {
+    #[cfg_attr(rust_js, rust_js::nullable(module_loading))]
+    fn loads(&self, module_loading: Option<&ModuleLoading>) -> bool {
+        module_loading.is_some()
+    }
+}
+
+pub fn through(loader: &dyn Loads, module_loading: Option<&ModuleLoading>) -> bool {
+    loader.loads(module_loading)
+}
+
+pub fn loose(module_loading: Option<&ModuleLoading>) -> bool {
+    module_loading.is_some()
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  if (moduleLoading !== null) {\n");
+  expect(js).toContain("  return moduleLoading === null;\n");
+  expect(js).toContain('  return prepare(moduleLoading, "a.js") + prepare(null, "b.js");\n');
+  // `given` gives what JS gave it, which may be `undefined`, as it is.
+  expect(js).toContain("export function givenOn(moduleLoading) {\n  return moduleLoading != null;\n}");
+  expect(js).toContain("  return givenOn(moduleLoading);\n");
+  expect(js).toContain("export function mapped(moduleLoading) {\n  return moduleLoading != null;\n}");
+  expect(js).toContain("export function loose(moduleLoading) {\n  return moduleLoading != null;\n}");
+  // A trait's method, which its dictionary calls with what it's given.
+  expect(js).toContain("function loaderLoads_loads(loader, moduleLoading) {\n  return moduleLoading != null;\n}");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.prepare(null, "x"), lib.prepare({ prefix: "p/" }, "x")]).toEqual(["", "p/x"]);
+  expect([lib.forward(null), lib.forward({ prefix: "p/" })]).toEqual(["", "p/a.js"]);
+  expect(lib.prefixed("q/")).toBe("q/c.js");
+  expect([lib.cleared(null, false), lib.cleared({ prefix: "" }, false), lib.cleared({ prefix: "" }, true)]).toEqual([
+    true,
+    false,
+    true,
+  ]);
+  expect([lib.given(undefined), lib.given(null), lib.given({ prefix: "" })]).toEqual([false, false, true]);
+  expect(lib.each([undefined, null, { prefix: "" }])).toBe(1);
+  expect([lib.loose(undefined), lib.loose(null), lib.loose({ prefix: "" })]).toEqual([false, false, true]);
+});
+
+// rd613: a call lowering never sees, a namespace's method that only passes
+// its parameter on, which is the function it forwards to (rd292b), leaves
+// that function's nullable parameter `!= null`: its callers give it what
+// they're given, `checked()` of `checked(None)`, `undefined`.
+test("a nullable parameter a forwarding namespace method gives on is tested against undefined too", async () => {
+  const dir = fixture("nullable-param-forwarded");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `pub struct ModuleLoading {
+    pub prefix: String,
+}
+
+pub mod work_loop {
+    use super::ModuleLoading;
+
+    #[cfg_attr(rust_js, rust_js::nullable(module_loading))]
+    pub fn checked(module_loading: Option<&ModuleLoading>) -> bool {
+        module_loading.is_some()
+    }
+}
+
+pub mod forwarding {
+    use super::ModuleLoading;
+    use crate::work_loop;
+
+    #[cfg_attr(rust_js, rust_js::namespace)]
+    pub struct Reconciler;
+
+    unsafe impl js::Defined for Reconciler {}
+
+    #[cfg_attr(rust_js, rust_js::namespace)]
+    impl Reconciler {
+        pub fn checked(&self, module_loading: Option<&ModuleLoading>) -> bool {
+            work_loop::checked(module_loading)
+        }
+    }
+}
+
+pub fn uses() -> bool {
+    forwarding::Reconciler.checked(None)
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  expect(readFileSync(join(dir, "work_loop.js"), "utf8")).toContain("  return moduleLoading != null;\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.uses()).toBe(false);
+});

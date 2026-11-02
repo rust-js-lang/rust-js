@@ -5,11 +5,10 @@ mod back_stepped;
 mod callers_decide;
 mod cell_borrows;
 mod cell_flow;
-pub(super) use cell_flow::CellClass;
-
 pub(super) use cell_borrows::{
     Borrow, Cell, CellBorrows, binding_call_runs_nothing, binding_runs_nothing, borrowed, may_be_cell, unsized_in_place,
 };
+pub(super) use cell_flow::CellClass;
 mod clones;
 mod closures;
 mod debug;
@@ -26,6 +25,7 @@ mod mutation;
 mod namespaces;
 pub(super) use namespaces::{Through, module_paths, namespace_in, namespace_of};
 mod naming;
+pub(super) mod nulled_params;
 mod only_called;
 pub(super) mod owned_by_return;
 mod plain_locals;

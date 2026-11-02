@@ -48,7 +48,7 @@ export function parseManifest(text) {
   if (result.library !== undefined) {
     const library = result.library;
     // ADR 0100: each item another crate can reach, by rustc's key for it.
-    if (!object(library) || library.version !== 11 || typeof library.name !== "string" || !library.name
+    if (!object(library) || library.version !== 12 || typeof library.name !== "string" || !library.name
         || typeof library.crate_hash !== "string" || !library.crate_hash
         || !Array.isArray(library.inputs) || !library.inputs.every(fingerprint)
         || !strings(library.impls) || !strings(library.libraries)
@@ -67,14 +67,18 @@ export function parseManifest(text) {
           // steps it by, each by its key (ADR 0548).
           && (item.params === undefined || Array.isArray(item.params) && item.params.every(typeParam))
           // What else its calls give it or read of it (ADR 0906).
-          && facts(item.facts, ["fails", "takes_location", "rest", "lazy", "variable"]))
+          && facts(item.facts, ["fails", "takes_location", "rest", "lazy", "variable"])
+          // Its own nullable parameters each of its crate's calls gives
+          // `null` or a value, by index (ADR 0861, amended).
+          && (item.nulled_params === undefined || Array.isArray(item.nulled_params)
+            && item.nulled_params.every(index => Number.isInteger(index) && index >= 0)))
         // What it says of each of its structs' fields, by key (ADRs 0863,
         // amended, 0906).
         || !(library.fields === undefined || Array.isArray(library.fields) && library.fields.every(field => object(field)
           && typeof field.key === "string" && facts(field.facts, ["quiet", "rust_functions"])))
         // The structs its code makes values of, by key (ADR 1022, amended).
         || !(library.built === undefined || strings(library.built))) {
-      throw new Error("Invalid rust-js library contract; expected library ABI 11");
+      throw new Error("Invalid rust-js library contract; expected library ABI 12");
     }
   }
   if (!path(result.input) || !path(result.output) || !paths(result.sources)

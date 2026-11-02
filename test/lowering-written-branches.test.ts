@@ -778,7 +778,7 @@ pub fn probed(fiber: Option<&Fiber>, callback: impl Fn(u32) -> u32) -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  if (fiber != null && fiber._debugTask != null) {\n    return fiber._debugTask.run(() => callback(arg0));\n  }\n");
+  expect(js).toContain("  if (fiber !== null && fiber._debugTask != null) {\n    return fiber._debugTask.run(() => callback(arg0));\n  }\n");
   expect(js.match(/const task = fiber\._debugTask;/g)).toHaveLength(4);
   expect(js).not.toContain("const debugTask");
   const lib = await import(join(dir, "lib.js"));

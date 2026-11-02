@@ -988,4 +988,31 @@ export const mutations: Mutation[] = [
     replace: "            _ if false => crate::lower::calls::given_to_js(&mut exprs),\n",
     tests: ["test/arguments.test.ts"],
   },
+  {
+    name: "nulled-param-calls-unrecorded",
+    breaks:
+      "no call of a function with an own nullable parameter is seen, so none is found given `null` or a value at each, `!= null` still (rd613)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            self.krate.nulled_params.record(caller, callee.0, &nulled);\n",
+    replace: "",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "each call gives null or a value"],
+  },
+  {
+    name: "nulled-param-foreign-uncoalesced",
+    breaks:
+      "a consumer's call of a library's function whose nullable parameter its body tests `!== null` gives it what may be `undefined` as it is (rd613)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "                if self.krate.foreign.nulled_param(callee.0, i) && nulled.get(i) != Some(&true) {\n",
+    replace: "                if false {\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "nullable parameter its calls give null"],
+  },
+  {
+    name: "nulled-param-foreign-nulled-coalesced",
+    breaks:
+      "a consumer's call of a library's function whose nullable parameter is `null` at each call gives what's `null` or a value already `?? null` too (rd613)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "                if self.krate.foreign.nulled_param(callee.0, i) && nulled.get(i) != Some(&true) {\n",
+    replace: "                if self.krate.foreign.nulled_param(callee.0, i) {\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "nullable parameter its calls give null"],
+  },
 ];

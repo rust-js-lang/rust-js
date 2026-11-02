@@ -8,7 +8,7 @@ mod reached;
 use self::holes::{Holes, fill_hole, fill_holes};
 use self::load_cycles::{ModuleJs, module_imports};
 use self::reached::written_where_reached;
-use super::analysis::{AnalyzedCrate, analyze_crate, is_thread_local, renamed_in};
+use super::analysis::{AnalyzedCrate, analyze_crate, is_thread_local, nulled_params::NulledParams, renamed_in};
 use super::bindings::Export;
 use super::{Body, CrateFacts, FnCx, Locals, const_js, located, module_file, module_symbol, static_value};
 use crate::js::{self, Expr, Prop, StmtKind};
@@ -350,6 +350,7 @@ pub fn lower_crate<'tcx>(
     // What reads `js::arguments()`, each call of which gives every argument (rd332).
     let with_closures: Vec<&Body<'tcx>> = bodies.iter().copied().chain(closures.values().copied()).collect();
     let reads_arguments = super::analysis::arguments::reads_arguments(tcx, &with_closures);
+    let nulled_params = NulledParams::scan(tcx, &with_closures, &|id| foreign.has_nulled_params(id));
     let forwarded = reached::forwarded(tcx, &bodies, (given, &js_given), &caller_locations, &foreign);
     // A trait impl's dictionary (ADR 0049) has no body of its own, so its
     // function context gets an empty one; a copied default brings its own.
@@ -469,6 +470,7 @@ pub fn lower_crate<'tcx>(
         local_consts: &local_consts,
         struct_literals: &struct_literals,
         loads_in_cycles: Default::default(),
+        nulled_params: &nulled_params,
     };
     // What a library's manifest says of its writers (ADR 0137).
     let writers_take_options = crate_facts.writers_take_options();
@@ -517,6 +519,9 @@ pub fn lower_crate<'tcx>(
                 .collect();
             if !round.is_empty() {
                 work.extend(round);
+            } else if nulled_params.again(&mut work, |&(at, _, _)| at) {
+                // Each with an own nullable parameter each call gives `null`
+                // or a value, lowered again with its copies (ADR 0861, amended).
             } else {
                 // Each body run where its module loads that read another
                 // module's `const` by its name, where that module may load
@@ -561,7 +566,7 @@ pub fn lower_crate<'tcx>(
             let earlier = lowered_items
                 .iter()
                 .filter(|(id, _)| super::bindings::is_on_load(tcx, *id) && fns[id].module == module);
-            names.extend(earlier.flat_map(|(_, item)| item.function.body.iter().flat_map(declared)));
+            names.extend(earlier.flat_map(|(_, item)| item.function.body.iter().flat_map(js::declared_here)));
         }
         // A function's scope struct's methods, functions declared in it, by
         // names none of its variables hide (ADR 1043).
@@ -627,6 +632,7 @@ pub fn lower_crate<'tcx>(
                 used.extend(lowered.dependencies.uses.iter().map(|&(_, to)| to));
                 // A copy its callers need, beside it (ADR 0051, amended).
                 if let Some(copy) = copy {
+                    lowered_copies.retain(|(at, _)| *at != (def_id, copy));
                     lowered_copies.push(((def_id, copy), lowered));
                     continue;
                 }
@@ -1478,6 +1484,7 @@ pub fn lower_crate<'tcx>(
                         gives_argument: &gives_argument,
                         built: cell_borrows.pointers().built().collect(),
                         owned_by_return: self_handles.owned_by_return(),
+                        nulled_params: &nulled_params.found(),
                     },
                     (&trait_impls, &held.modules),
                     dependencies,
@@ -1488,13 +1495,4 @@ pub fn lower_crate<'tcx>(
             tests,
         })
     }))
-}
-
-/// The variables a statement declares where it is: `const x`, `let [a, b]`.
-fn declared(statement: &js::Stmt) -> Vec<String> {
-    match &statement.kind {
-        StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.clone()],
-        StmtKind::Destructure { pattern, .. } => pattern.names().into_iter().map(str::to_owned).collect(),
-        _ => Vec::new(),
-    }
 }

@@ -474,6 +474,9 @@ struct CrateFacts<'a, 'tcx> {
     /// (`FnCx::reads_by_name`, `pipeline::load_cycles`, ADR 0031, amended).
     /// Lowered again once it's known.
     loads_in_cycles: std::cell::RefCell<HashSet<DefId>>,
+    /// The own nullable parameters each call gives `null` or a value, as
+    /// lowering sees their calls (ADR 0861, amended, rd613).
+    nulled_params: &'a analysis::nulled_params::NulledParams,
 }
 
 impl CrateFacts<'_, '_> {

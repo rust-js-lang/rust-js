@@ -1217,3 +1217,69 @@ pub fn keyed(given: &Unknown) -> bool {
   reparent(fiber, fiber);
   expect([fiber.parent === fiber, keyed({ key: 0 })]).toEqual([true, false]);
 });
+
+// rd613 (ADR 0861, amended): a library's function whose own nullable
+// parameter each of its crate's calls gives `null` or a value tests it
+// `!== null`, as its contract says (`nulled_params`); a consumer's call
+// gives what may be `undefined` `?? null`, and what's `null` or a value
+// already as it is. Its use as a value is refused.
+test("a library's nullable parameter its calls give null is given null by its consumer", async () => {
+  const dir = fixture("cross-crate-nulled-params");
+  const { dep, app } = compiled(dir, `pub struct ModuleLoading {
+    pub prefix: String,
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(module_loading))]
+pub fn prepare(module_loading: Option<&ModuleLoading>, chunk: &str) -> String {
+    if let Some(module_loading) = module_loading {
+        return module_loading.prefix.clone() + chunk;
+    }
+    String::new()
+}
+`, `use dep::ModuleLoading;
+
+pub fn given(module_loading: Option<&ModuleLoading>) -> String {
+    dep::prepare(module_loading, "a.js")
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(module_loading))]
+pub fn passed_on(module_loading: Option<&ModuleLoading>) -> String {
+    dep::prepare(module_loading, "b.js") + &dep::prepare(None, "c.js")
+}
+
+pub struct Holder<'a> {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub loading: Option<&'a ModuleLoading>,
+}
+
+pub fn held(holder: &Holder) -> String {
+    dep::prepare(holder.loading, "e.js")
+}
+`);
+  expect(JSON.parse(readFileSync(join(dir, "dep", "lib.manifest.json"), "utf8")).library.items[0].nulled_params).toEqual([0]);
+  expect(dep).toContain("  if (moduleLoading !== null) {\n");
+  expect(app).toContain('  return Dep.prepare(moduleLoading ?? null, "a.js");\n');
+  expect(app).toContain('  return Dep.prepare(moduleLoading, "b.js") + Dep.prepare(null, "c.js");\n');
+  // A nullable field's, `null` or a value already, as it is.
+  expect(app).toContain('  return Dep.prepare(holder.loading, "e.js");\n');
+  const { given, passedOn } = await import(join(dir, "app", "lib.js"));
+  expect([given(undefined), given(null), given({ prefix: "p/" })]).toEqual(["", "", "p/a.js"]);
+  expect([passedOn(null), passedOn({ prefix: "p/" })]).toEqual(["", "p/b.js"]);
+  writeFileSync(join(dir, "valued.rs"), `use dep::ModuleLoading;
+
+pub fn each(loadings: &[Option<&ModuleLoading>]) -> Vec<String> {
+    loadings.iter().copied().map(|loading| (loading, "d.js")).map(|(l, c)| dep::prepare(l, c)).collect()
+}
+
+pub fn as_value() -> fn(Option<&ModuleLoading>, &str) -> String {
+    dep::prepare
+}
+`);
+  const p = Bun.spawnSync([compiler, join(dir, "valued.rs"), "-o", join(dir, "valued", "lib.js"), "--dependency",
+    join(dir, "dep", "lib.manifest.json"), "--", "--crate-name", "valued", "--extern", `dep=${join(dir, "libdep.rmeta")}`,
+    "-L", dir, ...js], { stderr: "pipe" });
+  const stderr = p.stderr.toString();
+  expect(p.exitCode).not.toBe(0);
+  expect(stderr).toContain("whose nullable parameter is `null` at each of its calls, given as a value");
+  expect(stderr.match(/given as a value/g)).toHaveLength(1);
+});

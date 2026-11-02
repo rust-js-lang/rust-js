@@ -569,4 +569,22 @@ export const mutations: Mutation[] = [
     replace: "                owned_by_return: Vec::new(),\n",
     tests: ["test/crates.test.ts", "-t", "owns its callbacks alone"],
   },
+  {
+    name: "nulled-params-unwritten",
+    breaks:
+      "a library's contract says none of its functions' own nullable parameters is `null` at each call, where its body tests one `!== null`, so a consumer gives it `undefined` (rd613)",
+    file: "src/lower/library.rs",
+    find: "                        .filter(|&&(of, _)| of == id)\n",
+    replace: "                        .filter(|_| false)\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "nullable parameter its calls give null"],
+  },
+  {
+    name: "nulled-params-unread",
+    breaks:
+      "a consumer reads no library function's own nullable parameter as `null` at each call, so it gives it what may be `undefined` (rd613)",
+    file: "src/lower/library.rs",
+    find: "            .is_some_and(|item| item.calling.nulled_params.contains(&(index as u32)))\n",
+    replace: "            .is_some_and(|_| false)\n",
+    tests: ["test/cross-crate-items.test.ts", "-t", "nullable parameter its calls give null"],
+  },
 ];

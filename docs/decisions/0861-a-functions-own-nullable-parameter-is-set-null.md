@@ -1,6 +1,6 @@
 # 0861. A function's own nullable parameter is `null` where it's given or set `None`
 
-Status: Accepted. Amended (2026-10-29): its map by what's its argument in JS is stored as given. Extends [0275](0275-nullable-writes-null.md)'s
+Status: Accepted. Amended (2026-10-29): its map by what's its argument in JS is stored as given. Amended (2026-11-02): a parameter each call gives `null` or a value is tested `!== null` (rd613). Extends [0275](0275-nullable-writes-null.md)'s
 `#[rust_js::nullable(name)]`, a binding's parameter, to a function of the
 crate's own, and [0772](0772-a-nullable-cell-field-writes-null.md) and
 [0841](0841-a-nullable-place-stores-what-is-never-undefined-as-it-is.md)'s
@@ -270,3 +270,74 @@ null`. Case A: the same value, `null` or the object.
   parameter is stored as it's given", run; mutations
   `identity-map-stored-unknown` (`lower/mir/rvalues.ts`) and
   `this-binding-map-not-itself` (`lower/std_types/option.ts`).
+
+## Amendment: a parameter each call gives `null` or a value is tested `!== null` (2026-11-02, rd613)
+
+The user's decision (2026-11-02, option A), Case A
+([0262](0262-when-rust-and-js-disagree.md)): the same answers, of the
+values its declaration and its crate's calls give.
+
+React's Flight targets test their own nullable parameter `!== null`:
+
+```js
+export function prepareDestinationWithChunks(moduleLoading, chunks, nonce) {
+  if (moduleLoading !== null) {
+```
+
+The port's `#[rust_js::nullable(module_loading)]` printed `moduleLoading
+!= null`. `!== null` alone would be wrong where a call of the crate's
+gives `undefined`: what a call gives is as it is (above), so
+`given(module_loading)`, of a parameter JS gave `undefined`, gives it
+`undefined`, which `!== null` takes for a value, `undefined.prefix`,
+where Rust's `None` returns `""`.
+
+**A function's own nullable parameter is tested `!== null` and `===
+null` where each of the crate's calls of it gives it `null` or a value,
+and nothing uses the function but to call it** (`analysis/nulled_params.rs`,
+`NulledParams`, the owner): each call's argument as `stored_given` says
+(`Nulled`: `None`, `Some(..)`, a nullable parameter or field passed on, a
+nullable function's result), each call seen as lowering takes it
+(`NulledCalls::record`, by the function calling and its block, so a call
+lowered another way leaves it `!= null`), and the function never given or
+kept as a value, nor a trait's method or a binding. JS's calls keep the
+declared `T | null`, as above. The body's own writes are `null` for `None`
+already, and one written through a borrow, or by a call's result in place,
+leaves it `!= null` (`mir_nones`'s `fixed`). What isn't each call's stays
+as it was: React's `mapIntoArray(child, ..)`, given what JS gave, keeps
+`!= null`, with no `?? null` added, as the alternative "coalesce what each
+call gives" (above) would.
+
+The calls are known once every body is lowered, so each function with
+such a parameter is lowered again, with its copies, its tests strict
+(`pipeline.rs`). What each call gives doesn't change with it: a function's
+own nullable parameter passed on is `Nulled` either way.
+
+**Another crate's calls**: the library's contract says which parameters
+(`Calling::nulled_params`, library ABI 12). A consumer's call gives what
+may be `undefined` there `?? null`, and what's `null` or a value already
+as it is:
+
+```js
+export function given(moduleLoading) {
+  return Dep.prepare(moduleLoading ?? null, "a.js");
+}
+```
+
+A consumer's use of it as a value, `let f: fn(..) -> _ = dep::prepare;`,
+is an error, as a call through the value could give `undefined`: "a
+function of another crate's whose nullable parameter is `null` at each of
+its calls, given as a value", which says to call it in a closure.
+
+- Held by `test/lowering-nullable-reads.test.ts`'s "a function's own
+  nullable parameter each call gives null or a value is tested against
+  null alone" (one called with `None`, `Some` and a nullable parameter,
+  one set `None` in its body, one called with what JS gave, one mapped as
+  a value, one not marked, run in JS) and `test/cross-crate-items.test.ts`'s
+  "a library's nullable parameter its calls give null is given null by
+  its consumer" (its contract, a consumer's `?? null` and as it is, run,
+  and the refusal); mutations in `lower/analysis/nulled_params.ts`,
+  `lower/mir/patterns.ts`, `lower/mir/dispatch.ts`, `lower/library.ts`
+  and `lower/pipeline.ts`.
+- The port marks the callers too: BundlerWebpack's
+  `prepare_destination_for_module` takes `#[rust_js::nullable(module_loading)]`,
+  so its call of the target's gives it on as it is.

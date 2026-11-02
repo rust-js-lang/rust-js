@@ -106,6 +106,9 @@ pub(super) struct Contracts<'a, 'tcx> {
     /// What each function's return alone owns of what it's given (ADR
     /// 0317, amended).
     pub(super) owned_by_return: &'a super::analysis::owned_by_return::OwnedByReturn,
+    /// The own nullable parameters each call gives `null` or a value
+    /// (`analysis/nulled_params.rs`, ADR 0861, amended).
+    pub(super) nulled_params: &'a HashSet<(DefId, usize)>,
 }
 
 /// What `id` asks of each of its type parameters that it asks anything of,
@@ -256,6 +259,7 @@ pub(super) fn exports<'tcx>(
         gives_argument,
         built,
         owned_by_return,
+        nulled_params,
     } = contracts;
     let crate_name = tcx.crate_name(LOCAL_CRATE);
     let mut items: Vec<_> = functions
@@ -299,6 +303,14 @@ pub(super) fn exports<'tcx>(
                 .filter_map(|(fact, holds)| holds.then_some(fact))
                 .collect(),
                 owned_by_return: owned_by_return.of(id),
+                nulled_params: {
+                    let mut nulled: Vec<u32> = (nulled_params.iter())
+                        .filter(|&&(of, _)| of == id)
+                        .map(|&(_, i)| i as u32)
+                        .collect();
+                    nulled.sort();
+                    nulled
+                },
             },
         })
         .collect();
@@ -785,6 +797,19 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     pub(super) fn owned_by_return(&self, id: DefId, index: u32) -> bool {
         self.item(id)
             .is_some_and(|item| item.calling.owned_by_return.contains(&index))
+    }
+
+    /// Does a library's `id` take its parameter `index` as `null` or a
+    /// value only, as its contract says (ADR 0861, amended)?
+    pub(super) fn nulled_param(&self, id: DefId, index: usize) -> bool {
+        self.item(id)
+            .is_some_and(|item| item.calling.nulled_params.contains(&(index as u32)))
+    }
+
+    /// Does a library's `id` take any parameter as `null` or a value only
+    /// (ADR 0861, amended)?
+    pub(super) fn has_nulled_params(&self, id: DefId) -> bool {
+        self.item(id).is_some_and(|item| !item.calling.nulled_params.is_empty())
     }
 
     /// Does `id`, a library's function, read `js::arguments()`, as its

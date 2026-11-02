@@ -504,7 +504,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             self.flush(state, out)?;
         }
-        let values = self.take_operands(state, operands, out)?;
+        // A call of the crate's function with an own nullable parameter:
+        // what it gives each, which says whether every call gives it `null`
+        // or a value (`analysis/nulled_params.rs`, ADR 0861, amended).
+        if self.krate.nulled_params.may_have(callee.0) {
+            let caller = (state.body.source.def_id(), state.at);
+            self.krate.nulled_params.record(caller, callee.0, &nulled);
+        }
+        let mut values = self.take_operands(state, operands, out)?;
+        // Of another crate's, one its crate's calls each give `null` or a
+        // value, which its body tests `!== null`: what may be `undefined`
+        // given it `?? null`, as its contract says.
+        if !callee.0.is_local() && self.krate.foreign.has_nulled_params(callee.0) {
+            for (i, value) in values.iter_mut().enumerate() {
+                if self.krate.foreign.nulled_param(callee.0, i) && nulled.get(i) != Some(&true) {
+                    let given = self.value_expr(std::mem::replace(value, Value::Expr(Expr::undefined())), span)?;
+                    *value = Value::Expr(js::Storage::NullForNone.written(given, false));
+                }
+            }
+        }
         match self.mir_call_values(state, callee, (values, arg_tys, &nulled), output, span, out)? {
             Value::Expr(e) if strict => Ok(Value::Expr(js::strict_equality(e))),
             value => Ok(value),

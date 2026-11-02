@@ -1,0 +1,61 @@
+// Mutations of src/lower/analysis/nulled_params.rs (ADR 0861, amended, rd613).
+import type { Mutation } from "../../../mutations";
+
+const tested = ["test/lowering-nullable-reads.test.ts", "-t", "each call gives null or a value"];
+
+export const mutations: Mutation[] = [
+  {
+    name: "nulled-param-of-a-value-use",
+    breaks:
+      "a function with an own nullable parameter that's mapped as a value, `.map(mapped)`, is taken as given `null` or a value at each call, so its body tests `!== null` of what `map` gives it, `undefined` too (rd613)",
+    file: "src/lower/analysis/nulled_params.rs",
+    find: "            self.as_values.insert(id);\n",
+    replace: "",
+    tests: tested,
+  },
+  {
+    name: "nulled-param-of-an-unnulled-call",
+    breaks:
+      "a call that gives an own nullable parameter what JS gave, which may be `undefined`, is taken as giving `null` or a value, `givenOn`'s `!== null` (rd613)",
+    file: "src/lower/analysis/nulled_params.rs",
+    find: "            .filter(|key| !calls.unnulled.contains(key))\n",
+    replace: "",
+    tests: tested,
+  },
+  {
+    name: "nulled-param-of-an-unseen-call",
+    breaks:
+      "a call lowering never sees, a forwarding namespace method's, which callers give `undefined`, `checked()`, is taken as giving `null` or a value (rd613)",
+    file: "src/lower/analysis/nulled_params.rs",
+    find: "                .all(|(site, _)| calls.seen.contains(site))\n",
+    replace: "                .all(|_| true)\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "forwarding namespace method"],
+  },
+  {
+    name: "nulled-param-of-a-trait-impl",
+    breaks:
+      "a trait impl's method with an own nullable parameter, which its dictionary calls with what it's given, is taken as given `null` or a value (rd613)",
+    file: "src/lower/analysis/nulled_params.rs",
+    find: "        DefKind::AssocFn if tcx.trait_of_assoc(id).is_none() && tcx.trait_impl_of_assoc(id).is_none() => {}\n",
+    replace: "        DefKind::AssocFn => {}\n",
+    tests: tested,
+  },
+  {
+    name: "nulled-param-foreign-value-allowed",
+    breaks:
+      "another crate's function whose nullable parameter is `null` at each call, given as a value, compiles, so a call through it may give `undefined` (rd613)",
+    file: "src/lower/analysis/nulled_params.rs",
+    find: "            self.refused.push(constant.span);\n",
+    replace: "",
+    tests: ["test/cross-crate-items.test.ts", "-t", "nullable parameter its calls give null"],
+  },
+  {
+    name: "nulled-params-never-again",
+    breaks:
+      "a function found to have an own nullable parameter each call gives `null` or a value isn't lowered again, so it's tested `!= null` still (rd613)",
+    file: "src/lower/analysis/nulled_params.rs",
+    find: "        work.extend(queued);\n",
+    replace: "",
+    tests: tested,
+  },
+];

@@ -505,7 +505,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/assign.rs": ["binding_var", "body", "branches", "builders", "copy_backs", "cuts", "in_place", "locals", "maps", "named", "parts", "pending", "places", "refs", "writer"],
   "src/lower/mir/calls.rs": ["at", "body", "flattened"],
   "src/lower/mir/closures.rs": ["at", "body", "locals"],
-  "src/lower/mir/dispatch.rs": ["body", "defaults", "flattened", "locals", "maps"],
+  "src/lower/mir/dispatch.rs": ["at", "body", "defaults", "flattened", "locals", "maps"],
   "src/lower/mir/drops.rs": ["body", "branches", "locals", "pending"],
   "src/lower/mir/entries.rs": ["body", "locals", "thrown_writes"],
   "src/lower/mir/hints.rs": ["locals"],

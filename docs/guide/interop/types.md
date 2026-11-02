@@ -1051,6 +1051,14 @@ export function ratio(a, b) {
   it is, `captureCommitPhaseError(current, nearestMountedAncestor)`,
   `searchTarget = target`
   ([ADR 0861](../../decisions/0861-a-functions-own-nullable-parameter-is-set-null.md), amended).
+  Where each of the crate's calls gives it `null` or a value (`None`,
+  `Some(..)`, a nullable parameter or field passed on) and nothing uses the
+  function but to call it, its body tests it `!== null`, `if
+  (moduleLoading !== null)`; one call that gives what may be `undefined`,
+  or a use of the function as a value, and it's `!= null`. Another crate's
+  call of such a function gives `?? null` where what it gives may be
+  `undefined`, and another crate's use of it as a value is an error (ADR
+  0861, amended).
   A closure's, `function::with_this`'s tuple, says so on the parameter,
   naming its bindings, `#[cfg_attr(rust_js, rust_js::nullable(react_name,
   target_inst))] (react_name, react_event_type, target_inst): (..)`, each

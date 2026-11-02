@@ -216,19 +216,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "on-load-destructured-names-unreserved",
-    breaks:
-      "a name an earlier `on_load!` body destructures is declared again by a later one",
-    file: "src/lower/pipeline.rs",
-    find: "        StmtKind::Destructure { pattern, .. } => pattern.names().into_iter().map(str::to_owned).collect(),\n",
-    replace: "",
-    tests: [
-      "test/lowering-bindings.test.ts",
-      "-t",
-      "on_load bodies that bind one name",
-    ],
-  },
-  {
     name: "library-codec-unused",
     breaks:
       "a library lowers only the codecs it uses itself, so its consumers can't read its types",

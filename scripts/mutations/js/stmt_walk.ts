@@ -356,4 +356,17 @@ export const mutations: Mutation[] = [
     replace: "        found |= own;\n",
     tests: ["test/js-object.test.ts", "-t", "beside a closure's own of its name"],
   },
+  {
+    name: "on-load-destructured-names-unreserved",
+    breaks:
+      "a name an earlier `on_load!` body destructures is declared again by a later one",
+    file: "src/js/stmt_walk.rs",
+    find: "        StmtKind::Destructure { pattern, .. } => pattern.names().into_iter().map(str::to_owned).collect(),\n",
+    replace: "",
+    tests: [
+      "test/lowering-bindings.test.ts",
+      "-t",
+      "on_load bodies that bind one name",
+    ],
+  },
 ];

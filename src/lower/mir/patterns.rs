@@ -296,9 +296,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `None` alone, the same: the crate's `None`, `undefined`; a call that
     /// gives one (`calls::none_given_by`), `window.event`'s `undefined` or
     /// a `#[rust_js::nullable]` function's `null`; a copy of another such,
-    /// or a borrow of one. Never a parameter, which JS may give either, nor
-    /// one written any other way, a field's read, a cast's, a `take()`'s,
-    /// through a `&mut` or a pointer, or in part (ADR 0298, amended).
+    /// or a borrow of one. Never a parameter, which JS may give either, but
+    /// a function's own nullable one each of whose calls gives it `null` or
+    /// a value, which the body sets `null` for `None` (ADR 0861, amended,
+    /// `analysis/nulled_params.rs`); nor one written any other way, a
+    /// field's read, a cast's, a `take()`'s, through a `&mut` or a pointer,
+    /// or in part (ADR 0298, amended).
     fn mir_nones(&self, body: &mir::Body<'tcx>, locals: &Locals) -> HashMap<Local, js::Known> {
         // What a write gives: a `None` of one kind, a `Some` (`None` here),
         // or what another local holds.
@@ -310,7 +313,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let option = |ty: Ty<'tcx>| matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option));
         let mut writes: HashMap<Local, Vec<Write>> = HashMap::new();
         let mut unknown: std::collections::HashSet<Local> = Default::default();
+        // Each local's whole writes by a statement, which a nullable
+        // parameter's store `null` for `None` (`Storage::NullForNone`).
+        let mut assigned: HashMap<Local, usize> = HashMap::new();
         for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
+            if let mir::StatementKind::Assign(assign) = &statement.kind
+                && assign.0.projection.is_empty()
+            {
+                *assigned.entry(assign.0.local).or_default() += 1;
+            }
             let assign = match &statement.kind {
                 mir::StatementKind::Assign(assign) => assign,
                 mir::StatementKind::SetDiscriminant { place, .. } => {
@@ -396,9 +407,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // either, `Ok(None)` of one only ever `Some`.
         let mut held: HashMap<Local, Result<Option<js::Known>, ()>> =
             (writes.keys()).filter(|&&l| known(l)).map(|&l| (l, Ok(None))).collect();
+        // A function's own nullable parameter each call gives `null` or a
+        // value, written only whole by statements, each `null` for `None`,
+        // and never borrowed: its `None` is `null`, whatever it's set to.
+        let def_id = body.source.def_id();
+        let fixed: Vec<Local> = (1..=body.arg_count)
+            .map(Local::from_usize)
+            .filter(|&param| {
+                self.krate.nulled_params.is_nulled(def_id, param.as_usize() - 1)
+                    && !locals.borrowed[param]
+                    && option(body.local_decls[param].ty)
+                    && assigned.get(&param).copied().unwrap_or(0) == locals.writes[param]
+            })
+            .collect();
+        for &param in &fixed {
+            held.insert(param, Ok(Some(js::Known::NoneNull)));
+        }
         loop {
             let mut changed = false;
             for (&local, each) in &writes {
+                if fixed.contains(&local) {
+                    continue;
+                }
                 let Some(&now) = held.get(&local) else { continue };
                 let mut next = now;
                 for write in each {

@@ -25,8 +25,11 @@ use std::path::Path;
 /// type parameter's `Some` is the value where its crate's calls give it
 /// nothing that may look like `None`, a fact of it, `unboxed` (ADR 0051,
 /// amended). 11: the structs its code makes values of, `built`, which a
-/// consumer takes as the program's own data (ADR 1022, amended).
-pub const VERSION: u32 = 11;
+/// consumer takes as the program's own data (ADR 1022, amended). 12: a
+/// function's own nullable parameters its crate's calls each give `null` or
+/// a value, `nulled_params`, which a consumer's call gives `?? null` where
+/// it may give `undefined` (ADR 0861, amended).
+pub const VERSION: u32 = 12;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -74,6 +77,13 @@ pub struct Calling {
     /// given one runs only while that `Rc` is alive.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub owned_by_return: Vec<u32>,
+    /// Its own `#[rust_js::nullable(..)]` parameters, by index, its `self`
+    /// first, that each of its crate's calls gives `null` or a value, which
+    /// its body tests `!== null` (ADR 0861, amended): a consumer's call
+    /// gives `?? null` of what may be `undefined` there, and a consumer's
+    /// use of it as a value is refused.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub nulled_params: Vec<u32>,
 }
 
 /// A fact of a library's function its consumers' calls read (ADR 0906):
