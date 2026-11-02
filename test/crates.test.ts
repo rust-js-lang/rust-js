@@ -364,6 +364,22 @@ test("a library's From impl nothing of its own calls is a consumer's to compile"
   expect(app).not.toContain("_from");
 }, 300_000);
 
+// ADR 0914, amended (#483): what a consumer compiles of a library is written
+// where its code reaches it. A call of a trait's generic default, asked of
+// the library, is made through the dictionary the library exports of its
+// own impl, `dogShout.shout(..)`: the default and the private function it
+// calls, compiled here, are reached by nothing, and written nowhere. One the
+// consumer's own impl's dictionary calls is written, and runs as natively.
+test("a library's function a consumer compiles is written where the consumer's code reaches it", () => {
+  const through = readFileSync(join(chain(pairs, "instance_through_dictionary", ["dep", "app"]), "app", "lib.js"), "utf8");
+  expect(through).toContain("dogShout.shout(undefined, \"!\", asRef)");
+  expect(through).not.toContain("function shout_shout");
+  expect(through).not.toContain("function loud");
+  const reached = readFileSync(join(chain(pairs, "unit_struct_of_instance", ["dep", "app"]), "app", "lib.js"), "utf8");
+  expect(reached).toContain("lettersEngine.encode(letters, [120, 121, 122], asRef)");
+  for (const name of ["engine_encode", "inner", "fill", "markerDebug_fmt"]) expect(reached).toContain(`\nfunction ${name}(`);
+}, 300_000);
+
 // ADR 0852, amended (rd57): a library generic over another library's type,
 // React's reconciler reading `react`'s context of any `T: Clone`, counts its
 // `Rc`s as that library does, none, though its own consumers are unseen: a

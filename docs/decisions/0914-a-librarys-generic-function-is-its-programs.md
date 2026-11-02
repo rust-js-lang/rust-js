@@ -858,3 +858,42 @@ the crate's own is: it reads nothing of the library's JS.
   Rust: a consumer compiling a library function whose private struct's
   `new` gives `.map(Self)`, and its own `.map(dep::Wrap)`. Mutation
   `library-constructor-value-unlisted` (`lower.ts`).
+
+## Amendment: what a consumer compiles of a library is written where its code reaches it (#483)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; what's written
+and never called changes no result. A consumer's call of a library trait's
+generic default of the library's own impl, base64's `Engine::encode` of
+its `GeneralPurpose`, asked for the default where the call was first
+lowered (`fn_ref`, `Foreign::compiles`); lowered again with it, the call
+was made through the dictionary the library exports, the pair
+`unit_struct_of_instance`'s `lettersEngine.encode(..)`, as this ADR's first
+amendment has it. The default it had compiled was still written, and what
+it calls: base64's probe held `engine_encode`, `engine_decode` and
+`engine_encodeString`, their `inner`s and `encodeWithPadding`, and the
+pair `engine_encode`, `inner`, `fill` and a `Debug` impl's `fmt`, which
+nothing called. Only the impls compiled here were written where reached.
+
+**What a consumer compiles of a library, an impl, its methods or a
+function, is written where the consumer's own code reaches it**
+(`pipeline/reached.rs`'s `written_where_reached`, of `Foreign::is_instance`):
+what's reached through each item's uses from what the crate writes of its
+own, as an impl compiled here was. One the crate's call reaches, by its
+name or through a dictionary of the crate's own impl, is written as
+before. The rule for impls is that rule now, not one of its own.
+
+- Asking less instead, each call lowered as it will be in the round with
+  its instances, would need lowering to know which of its forms it takes
+  before the instances it may call exist: the form is chosen once they do.
+  What's never reached is the one answer, whatever asked for it.
+- `test/crates.test.ts`'s "a library's function a consumer compiles is
+  written where the consumer's code reaches it": the pair
+  `instance_through_dictionary`, a library's `Dog`'s generic default
+  `shout` called through `dogShout.shout(..)`, neither it nor its private
+  `loud` written; and `unit_struct_of_instance`, whose consumer's own impl
+  `Upper` calls the default it compiles, `engine_encode`, `inner`, `fill`
+  and `markerDebug_fmt` written and run against native Rust. The crate
+  corpus's base64 probe runs the same as native, with none of the
+  `Engine` defaults it called through the library.
+- The mutation `instance-impl-kept-unused` (`lower/pipeline/reached.ts`)
+  takes the rule away of impls and functions alike.

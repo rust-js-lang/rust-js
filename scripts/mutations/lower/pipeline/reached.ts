@@ -68,20 +68,20 @@ export const mutations: Mutation[] = [
   {
     name: "instance-impl-kept-unused",
     breaks:
-      "an impl a consumer compiles writes its dictionary though only its method is called, `labelDebug` (ADR 0914, amended)",
+      "what a consumer compiles of a library is written though nothing of the consumer's reaches it: an impl's dictionary though only its method is called, `labelDebug` (ADR 0914, amended), and a trait's generic default the call makes through the library's dictionary, `dogShout.shout(..)`, with the private `loud` it calls (#483)",
     file: "src/lower/pipeline/reached.rs",
-    find: "                || foreign.is_instance(id)\n        })\n",
-    replace: "        })\n",
-    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency"],
+    find: "            foreign.is_instance(id)\n                || id.is_local()\n",
+    replace: "            id.is_local()\n",
+    tests: ["test/crates.test.ts", "-t", "program's, alone or a dependency|a consumer compiles is written where"],
   },
   {
     name: "own-name-fn-written",
     breaks:
       "a fieldless enum's `pub(crate) fn name(self)`, each call of which is the value itself, is still written, `export const HookType = { name(hookType) { return hookType; } }`, which nothing reads (ADR 0264, amended)",
     file: "src/lower/pipeline/reached.rs",
-    find: "                && super::super::patterns::gives_its_argument(tcx, function_bodies, id)\n",
+    find: "                    && super::super::patterns::gives_its_argument(tcx, function_bodies, id)\n",
     replace:
-      "                && super::super::patterns::gives_its_argument(tcx, function_bodies, id)\n                && false\n",
+      "                    && super::super::patterns::gives_its_argument(tcx, function_bodies, id)\n                    && false\n",
     tests: [
       "test/lowering-structs-enums.test.ts",
       "-t",
@@ -93,8 +93,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's `pub fn as_str(self)` giving each variant its own name, which another crate's JS calls, is written nowhere (ADR 0264, amended)",
     file: "src/lower/pipeline/reached.rs",
-    find: "                && !super::super::library::reachable(tcx, id)\n                && super::super::patterns::gives_its_argument",
-    replace: "                && super::super::patterns::gives_its_argument",
+    find: "                    && !super::super::library::reachable(tcx, id)\n                    && super::super::patterns::gives_its_argument",
+    replace: "                    && super::super::patterns::gives_its_argument",
     tests: [
       "test/lowering-structs-enums.test.ts",
       "-t",

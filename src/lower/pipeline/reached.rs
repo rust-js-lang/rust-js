@@ -21,7 +21,9 @@ use std::collections::{HashMap, HashSet};
 /// call of which is what it's given, a fieldless enum's `name(self)`
 /// matching each variant to its name, which no other crate reaches,
 /// written where something reads it as a value, as its calls don't (ADR
-/// 0264, amended).
+/// 0264, amended); and each of a library's the crate compiles itself, its
+/// impls and its functions, written where the crate's code reaches it
+/// (ADR 0914, amended, #483).
 pub(super) fn written_where_reached<'tcx>(
     tcx: TyCtxt<'tcx>,
     (trait_impls, foreign): (&[DefId], &Foreign<'_, 'tcx>),
@@ -65,9 +67,6 @@ pub(super) fn written_where_reached<'tcx>(
             super::super::recognition::known_derive(tcx, id)
                 || super::super::traits::is_marker(tcx, foreign, trait_id)
                 || identity_eq(id, trait_id, false)
-                // A library's the crate compiles itself, only what it uses
-                // of it (ADR 0914, amended).
-                || foreign.is_instance(id)
         })
         .flat_map(|&id| std::iter::once(id).chain(tcx.associated_item_def_ids(id).iter().copied()))
         // And their methods, each called as it is, by its name, where
@@ -78,10 +77,15 @@ pub(super) fn written_where_reached<'tcx>(
                 .filter(|&id| super::super::traits::read_only_generically(tcx, trait_of(id)))
                 .flat_map(|id| std::iter::once(id).chain(tcx.associated_item_def_ids(id).iter().copied())),
         )
+        // And what the crate compiles itself of a library, an impl, its
+        // methods or a function, only what its code reaches (ADR 0914,
+        // amended): a default asked for that a call then made through its
+        // library's dictionary isn't (#483).
         .chain(lowered.filter(|&id| {
-            id.is_local()
-                && !super::super::library::reachable(tcx, id)
-                && super::super::patterns::gives_its_argument(tcx, function_bodies, id)
+            foreign.is_instance(id)
+                || id.is_local()
+                    && !super::super::library::reachable(tcx, id)
+                    && super::super::patterns::gives_its_argument(tcx, function_bodies, id)
         }))
         .collect();
     (identities, derived)
