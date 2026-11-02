@@ -41,3 +41,38 @@ an expression is where ADR 0630 put it.
 ## Consequences
 
 - The port's two `// ellipsis` are each after its `"…"`, as upstream's.
+
+## Amendment: a comment after an argument's closing brackets alone (2026-11-02)
+
+React Flight's browser client gives createResponse an `if` as an
+argument, as rustfmt writes it:
+
+```rust
+createResponse(
+    ..,
+    if __DEV__ {
+        options.is_none_or(|o| o.replay_console_logs != Some(false))
+    } else {
+        false
+    }, // defaults to true
+    ..,
+)
+```
+
+The comment's line is the `else` block's `}` and the argument's `,`
+alone, which no JS maps to, so it was nobody's and was lost (rd615).
+**A line comment after only an argument's closing brackets and its `,`
+is placed by the argument's lines, from the one its last bracket opened
+on, past an `else`'s `} else {` to its `if`** (`trailing::opened_on`,
+told by `to_oxc`'s comments): after the argument's last JS, the rest of
+the JS line on the next, as above, `__DEV__ && (..), // defaults to true`,
+upstream's; a last argument's, a field's value's and an array item's
+too. A bracket inside a string or a comment between is read as code, so
+the comment is placed by another line or lost, as before.
+
+Held by lowering-comments-ends' "a comment after an argument's closing
+brackets is after its JS", and the mutations `opened-on-unread`
+(`to_oxc.ts`), `argument-lines-unread`, `argument-end-unseen` and
+`opened-on-an-else` (`to_oxc/trailing.ts`); that one after code isn't
+told an argument's lines, by `trailing.rs`'s unit test
+`opened_on_is_of_closing_brackets_alone`.

@@ -1085,6 +1085,12 @@ export function area(width, height) {
 }
 ```
 
+One after an argument written across lines, on the line of its closing
+brackets alone, `if dev { .. } else { false }, // defaults to true`, is
+after the argument's JS, `dev && (..), // defaults to true`, as one after
+an argument on one line is
+([ADR 0733](../../decisions/0733-a-line-comment-ends-the-line-of-its-code.md), amended).
+
 And one between an array's items, a `vec!`'s or a `HashMap::from`'s
 pairs, before the item after it
 ([ADR 0708](../../decisions/0708-a-comment-before-an-argument-is-before-it.md), amended):

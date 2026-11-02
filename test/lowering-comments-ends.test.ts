@@ -475,3 +475,66 @@ impl Drop for Restore {
   expect(lib.quiet(3 as never)).toBe(3);
   expect(out).toEqual([5, 2]);
 });
+
+// React Flight's browser client gives createResponse an `if` as an
+// argument, `if __DEV__ { .. } else { false }, // defaults to true`: the
+// comment is on a line of the argument's closing brackets alone, which
+// no JS maps to, and was lost. It's after the argument's JS, before the
+// next argument's, as upstream writes `__DEV__ && .., // defaults to
+// true`; and after a last argument, a field's value and an array's item
+// too (rd615).
+test("a comment after an argument's closing brackets is after its JS", async () => {
+  const { js, lib } = await compiled("comment-after-an-argument-closing", `pub struct Options {
+    pub replay: Option<bool>,
+}
+
+fn create(name: &str, replay: bool, find: bool) -> usize {
+    name.len() + usize::from(replay) + usize::from(find)
+}
+
+pub fn made(options: Option<&Options>, dev: bool) -> usize {
+    create(
+        "root",
+        if dev {
+            options.is_none_or(|o| o.replay != Some(false))
+        } else {
+            false
+        }, // defaults to true
+        false, // find source maps
+    )
+}
+
+pub fn last(options: Option<&Options>, dev: bool) -> usize {
+    create(
+        "root",
+        false, // find source maps
+        if dev {
+            options.is_none_or(|o| o.replay != Some(false))
+        } else {
+            false
+        }, // defaults to true
+    )
+}
+
+pub fn listed(dev: bool) -> Vec<usize> {
+    vec![
+        if dev {
+            create("a", true, false)
+        } else {
+            0
+        }, // the first
+        2,
+    ]
+}
+`);
+  expect(js).toContain(
+    '    "root",\n    dev && (options == null || options.replay !== false), // defaults to true\n    false, // find source maps\n  );',
+  );
+  expect(js).toContain(
+    '    false, // find source maps\n    dev && (options == null || options.replay !== false), // defaults to true\n  );',
+  );
+  expect(js).toContain('    dev ? create("a", true, false) : 0, // the first\n    2,\n');
+  const made = lib.made as (options: { replay?: boolean } | undefined, dev: boolean) => number;
+  const listed = lib.listed as (dev: boolean) => number[];
+  expect([made(undefined, true), made({ replay: false }, true), listed(true)]).toEqual([5, 4, [2, 2]]);
+});

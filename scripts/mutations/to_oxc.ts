@@ -740,4 +740,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^conditional_branch_comments.rs$"],
     snapshots: true,
   },
+  {
+    name: "opened-on-unread",
+    breaks: "a line comment after an argument's closing brackets alone, `}, // defaults to true`, isn't told where its argument opened, and is lost (rd615)",
+    file: "src/to_oxc.rs",
+    find: "                    .then(|| trailing::opened_on(&sources.text, (line_start, c.lo as usize)))\n",
+    replace: "                    .then(|| None::<u32>)\n",
+    tests: ["test/lowering-comments-ends.test.ts", "-t", "a comment after an argument.s closing brackets"],
+  },
 ];

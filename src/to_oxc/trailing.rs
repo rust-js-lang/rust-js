@@ -40,6 +40,44 @@ pub(super) struct Trailing {
     /// are its line's too, so it's after the statement, not its last item
     /// (rd605).
     pub(super) closes: u32,
+    /// Of a line comment after only an argument's closing brackets and its
+    /// `,`, `}, // defaults to true` of an `if` given as one, which no JS
+    /// of its line maps to: the line its last bracket opened on, whose
+    /// lines' JS, the argument's, it's after (rd615).
+    pub(super) opened_on: Option<u32>,
+}
+
+/// Of a comment at `at` in `text` after only closing brackets and a `,` on
+/// its line, from `line_start`: the line its last bracket, the argument's,
+/// was opened on, counting back past the brackets between.
+/// Strings and comments are read as code: a bracket in one makes another
+/// line, or none, its JS's, and the comment is placed by it or lost, as
+/// before (rd615).
+pub(super) fn opened_on(text: &str, (line_start, at): (usize, usize)) -> Option<u32> {
+    let code = text[line_start..at].trim();
+    let closers = code.strip_suffix(',')?;
+    if closers.is_empty() || !closers.chars().all(|c| ")]}".contains(c)) {
+        return None;
+    }
+    // From the last, the argument's own, `)` of `}),`.
+    let comma = line_start + text[line_start..at].rfind(',')?;
+    let mut depth = 0usize;
+    for (i, c) in text[..comma].char_indices().rev() {
+        match c {
+            ')' | ']' | '}' => depth += 1,
+            '(' | '[' | '{' => {
+                depth = depth.checked_sub(1)?;
+                // An `else`'s block, `} else {`, is of the `if` before it,
+                // whose block's `}` is next.
+                let line = text[..i].rfind('\n').map_or(0, |at| at + 1);
+                if depth == 0 && !text[line..i].trim_start().starts_with('}') {
+                    return Some(text[..i].matches('\n').count() as u32);
+                }
+            }
+            _ => {}
+        }
+    }
+    None
 }
 
 /// Where each function's parameter starts, by where it ends: a line
@@ -255,10 +293,23 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
                         .is_some_and(|rest| rest.starts_with([']', ')', '}']))
             })
         };
+        // After an argument's brackets alone, `}, // defaults to true`, of
+        // a line no JS may map to: the argument's lines, from where its
+        // bracket opened, whose JS it's after (rd615); a bracket's JS of
+        // its own line is the nearest before it, first.
+        let argument = (comment.opened_on).map(|open| open..comment.line + 1);
+        let lines = argument.clone().unwrap_or(comment.line..comment.line + 1);
+        let of_lines = || (map.get_tokens()).filter(|t| lines.contains(&t.get_src_line()));
+        // Its last JS, where the argument's ends.
+        let argument = || {
+            argument
+                .as_ref()
+                .and(of_lines().map(|t| (t.get_dst_line(), t.get_dst_col())).max())
+        };
         // Where its JS ends, of a line comment, when a later line's JS
         // follows it on its line: before that, and the `(`, `?`, `:` or
         // `,` it's after.
-        let end = (before.or_else(closed))
+        let end = (before.or_else(closed).or_else(argument))
             .filter(|_| !comment.inside)
             .and_then(|(line, column)| {
                 let text = generated_lines.get(line as usize)?;
@@ -301,9 +352,8 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
             }
             (_, Some((line, end))) => ends.entry(line).or_default().push((end, &comment.text)),
             _ => {
-                let of_line = || (map.get_tokens()).filter(|t| t.get_src_line() == comment.line);
-                let first = of_line().map(|t| (t.get_dst_line(), t.get_dst_col())).min();
-                let last = (of_line().map(|t| t.get_dst_line()).max())
+                let first = of_lines().map(|t| (t.get_dst_line(), t.get_dst_col())).min();
+                let last = (of_lines().map(|t| t.get_dst_line()).max())
                     .zip(first)
                     .map(|(last, first)| closed_after(first, last, comment.closes, generated_lines));
                 if let Some(last) = last {
@@ -596,4 +646,23 @@ pub(super) fn own_line_after_value(
     let value_line_start = text[..end].rfind('\n').map_or(0, |i| i + 1);
     let line = text[..end].matches('\n').count() as u32;
     Some((line, (end - value_line_start) as u32))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::opened_on;
+
+    // A comment after an argument's closing brackets alone is told the
+    // line its `if` opened on, past its `else`; one after code isn't
+    // (rd615).
+    #[test]
+    fn opened_on_is_of_closing_brackets_alone() {
+        let text = "create(\n    if dev {\n        a\n    } else {\n        b\n    }, // defaults to true\n    false, // find\n)\n";
+        let at = |comment: &str| {
+            let at = text.find(comment).expect("written");
+            (text[..at].rfind('\n').map_or(0, |i| i + 1), at)
+        };
+        assert_eq!(opened_on(text, at("// defaults")), Some(1));
+        assert_eq!(opened_on(text, at("// find")), None);
+    }
 }

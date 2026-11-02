@@ -600,6 +600,11 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     .take_while(|c| c.is_whitespace() || ")]};,".contains(*c))
                     .filter(|c| ")]}".contains(*c))
                     .count() as u32;
+                // One after an argument's closing brackets alone, `}, //
+                // defaults to true`, is the argument's (rd615).
+                let opened_on = (!block)
+                    .then(|| trailing::opened_on(&sources.text, (line_start, c.lo as usize)))
+                    .flatten();
                 trailing.push(Trailing {
                     line,
                     column: (c.lo as usize - line_start) as u32,
@@ -610,6 +615,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     before_link,
                     of_default,
                     closes,
+                    opened_on,
                 });
             }
         }
@@ -638,6 +644,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     before_link: None,
                     of_default: false,
                     closes: 0,
+                    opened_on: None,
                 });
             }
         }
@@ -656,6 +663,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     before_link: None,
                     of_default: false,
                     closes: 0,
+                    opened_on: None,
                 });
             }
         }
@@ -676,6 +684,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     before_link: None,
                     of_default: false,
                     closes: 0,
+                    opened_on: None,
                 });
             }
         }
