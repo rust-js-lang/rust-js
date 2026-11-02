@@ -335,6 +335,10 @@ pub struct Package {
     pub namespace: Option<String>,
     /// The `use` that makes it, as `Import::span` is.
     pub span: Span,
+    /// Where the source first names it, which orders it among the imports
+    /// (ADR 1063, amended): its `use`, or a binding of its module's own
+    /// declared of it, whichever is first; `Span::NONE` of neither.
+    pub named_at: Span,
 }
 
 #[derive(Clone, PartialEq)]

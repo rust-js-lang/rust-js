@@ -22,13 +22,14 @@ pub(super) fn header(module: &Module, comments: &std::collections::HashMap<u32, 
     let packages = &module.packages;
     // Sorted already, and each once, as the artifact planner chose them.
     let helpers = &module.helpers;
-    // One block, in the order the module's `use`s are written (ADR 1063):
-    // each import where the first `use` that makes it is, as JS loads its
-    // modules in its imports' order; one no `use` makes after, packages
-    // then relative ones, each by its specifier; then what it imports for
-    // its effect, as written, its CSS after what it styles; then the
-    // runtime's helpers.
-    let mut named: Vec<(bool, &str, String, js::Span)> = Vec::new();
+    // One block, in the order the module's source names them (ADR 1063):
+    // each import where the first `use` that makes it is, or a binding the
+    // module declares of it, as JS loads its modules in its imports' order;
+    // one the source names neither way after, packages then relative ones,
+    // each by its specifier; then what it imports for its effect, as
+    // written, its CSS after what it styles; then the runtime's helpers.
+    // Each with where it's named and the `use` its comments are before.
+    let mut named: Vec<(bool, &str, String, js::Span, js::Span)> = Vec::new();
 
     let mut effects = Vec::new();
     let clause_of = |pairs: &mut dyn Iterator<Item = &(String, String)>| -> Vec<String> {
@@ -49,11 +50,11 @@ pub(super) fn header(module: &Module, comments: &std::collections::HashMap<u32, 
         let relative = crate::program::is_relative_specifier(&package.from);
         if !clause.is_empty() {
             let line = import_line(&clause.join(", "), &package.from);
-            named.push((relative, &package.from, line, package.span));
+            named.push((relative, &package.from, line, package.named_at, package.span));
         }
         if let Some(namespace) = &package.namespace {
             let line = import_line(&format!("* as {namespace}"), &package.from);
-            named.push((relative, &package.from, line, package.span));
+            named.push((relative, &package.from, line, package.named_at, package.span));
         }
         if clause.is_empty() && package.namespace.is_none() {
             effects.push(format!("import {:?};\n", package.from));
@@ -68,6 +69,7 @@ pub(super) fn header(module: &Module, comments: &std::collections::HashMap<u32, 
                 relative,
                 import.from.as_str(),
                 import_line(&format!("* as {namespace}"), &import.from),
+                import.span,
                 import.span,
             )
         });
@@ -85,7 +87,7 @@ pub(super) fn header(module: &Module, comments: &std::collections::HashMap<u32, 
             (None, _) => format!("{{ {} }}", names.join(", ")),
         };
         let line = import_line(&clause, &import.from);
-        named.push((relative, &import.from, line, import.span));
+        named.push((relative, &import.from, line, import.span, import.span));
         named.extend(namespace);
     }
     // Of two one `use` makes, `use crate::{a::x, b::y};`, by specifier.
@@ -94,7 +96,7 @@ pub(super) fn header(module: &Module, comments: &std::collections::HashMap<u32, 
     // Each after the comments of its `use`, on lines of their own, once: of
     // two imports one `use` makes, above the first printed.
     let mut said: std::collections::HashSet<u32> = std::collections::HashSet::new();
-    let named = named.into_iter().map(|(_, _, line, span)| {
+    let named = named.into_iter().map(|(_, _, line, _, span)| {
         let texts = (comments.get(&span.lo))
             .filter(|_| !span.is_none() && said.insert(span.lo))
             .into_iter()

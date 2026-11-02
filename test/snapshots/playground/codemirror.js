@@ -4,11 +4,11 @@
 // the `Editor` component does to its view. Both editors follow the system's
 // light or dark setting.
 
-import { javascript } from "@codemirror/lang-javascript";
-import { rust } from "@codemirror/lang-rust";
-import { Compartment, EditorState } from "@codemirror/state";
-import { oneDark } from "@codemirror/theme-one-dark";
 import { EditorView, basicSetup } from "codemirror";
+import { oneDark } from "@codemirror/theme-one-dark";
+import { rust } from "@codemirror/lang-rust";
+import { javascript } from "@codemirror/lang-javascript";
+import { Compartment, EditorState } from "@codemirror/state";
 
 // Made once: as the module loads, or what runs the crate's code where it's
 // first used (ADR 0037, amended). One theme compartment serves

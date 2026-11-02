@@ -15,6 +15,7 @@
 // Each compile gets a fresh instance of the (compiled once) module: rustc
 // keeps global state, and a failed compile ends in a trap.
 
+import { reactLibs } from "../../../tooling/crates.js";
 import {
   ConsoleStdout,
   Directory,
@@ -23,7 +24,6 @@ import {
   PreopenDirectory,
   WASI,
 } from "@bjorn3/browser_wasi_shim";
-import { reactLibs } from "../../../tooling/crates.js";
 import { $extend, $rsplitOnce, $stripPrefix, $try, $unwrap } from "@rust-js/runtime";
 
 export function ms(t) {

@@ -1191,7 +1191,7 @@ pub fn values(x: u32) -> [u32; 3] {
 // packages, then its own relative modules, bindings and the crate's alike,
 // each by path; then what it imports for its effect, as written, as
 // react.dev's _app has its CSS after; then rust-js's runtime.
-test("imports are packages, then relative modules, then effects, then the runtime", () => {
+test("imports are where their bindings are declared, then by path, then effects, then the runtime", () => {
   const dir = fixture("import-order");
   writeFileSync(join(dir, "lib.rs"), `js::import!("./app.css");
 
@@ -1211,23 +1211,25 @@ fn local() -> u32 {
     unreachable!()
 }
 
-#[cfg_attr(rust_js, rust_js::link_name = "@scope/alpha#alpha")]
-fn alpha() -> u32 {
-    unreachable!()
+mod ext {
+    #[cfg_attr(rust_js, rust_js::link_name = "@scope/alpha#alpha")]
+    pub fn alpha() -> u32 {
+        unreachable!()
+    }
 }
 
 pub fn all(items: &[u32], i: usize) -> u32 {
-    zeta() + local() + alpha() + helper::h(items, i) + items[i]
+    zeta() + local() + ext::alpha() + helper::h(items, i) + items[i]
 }
 `);
   buildReact();
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const top = readFileSync(join(dir, "lib.js"), "utf8");
   const imports = top.split("\n").filter((line) => line.startsWith("import") || line === "").slice(1, 8).join("\n");
-  expect(imports).toBe(`import { alpha } from "@scope/alpha";
-import { zeta } from "zeta";
-import * as Helper from "./helper.js";
+  expect(imports).toBe(`import { zeta } from "zeta";
 import { local } from "./local";
+import { alpha } from "@scope/alpha";
+import * as Helper from "./helper.js";
 import "./app.css";
 import { $index } from "@rust-js/runtime";
 `);

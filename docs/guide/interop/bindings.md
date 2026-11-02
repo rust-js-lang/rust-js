@@ -315,8 +315,8 @@ pub fn flushed() -> f64 {
 ```
 
 ```js
-import * as ReactDOM from "react-dom";
 import * as Scheduler from "scheduler";
+import * as ReactDOM from "react-dom";
 
 export function flushed() {
   ReactDOM.flushSync(() => {});

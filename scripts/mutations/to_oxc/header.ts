@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/header.rs",
     find: "    named.sort_by(|a, b| (written(a.3), a.0, a.1).cmp(&(written(b.3), b.0, b.1)));\n",
     replace: "",
-    tests: ["test/modules.test.ts", "-t", "imports are packages"],
+    tests: ["test/modules.test.ts", "-t", "imports are where their bindings are declared"],
   },
   {
     name: "imports-relative-mixed",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/header.rs",
     find: "    named.sort_by(|a, b| (written(a.3), a.0, a.1).cmp(&(written(b.3), b.0, b.1)));",
     replace: "    named.sort_by(|a, b| (written(a.3), a.1).cmp(&(written(b.3), b.1)));",
-    tests: ["test/modules.test.ts", "-t", "imports are packages"],
+    tests: ["test/modules.test.ts", "-t", "imports are where their bindings are declared"],
   },
   {
     name: "imports-effects-first",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/header.rs",
     find: "    let lines: Vec<String> = named.chain(effects).chain(runtime).collect();\n",
     replace: "    let lines: Vec<String> = named.chain(runtime).chain(effects).collect();\n",
-    tests: ["test/modules.test.ts", "-t", "imports are packages"],
+    tests: ["test/modules.test.ts", "-t", "imports are where their bindings are declared"],
   },
   {
     name: "default-import-braced",
@@ -81,6 +81,6 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/header.rs",
     find: "    let written = |span: js::Span| (span.is_none(), span.lo);\n",
     replace: "    let written = |span: js::Span| (!span.is_none(), span.lo);\n",
-    tests: ["test/libraries.test.ts", "-t", "another package"],
+    tests: ["test/modules.test.ts", "-t", "imports are where their bindings are declared"],
   },
 ];

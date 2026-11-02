@@ -520,6 +520,9 @@ pub(in crate::lower) fn renamed_in(tcx: TyCtxt<'_>, module: LocalModId) -> HashM
 pub(in crate::lower) struct UsesWritten {
     module: LocalModId,
     uses: Vec<(rustc_span::Span, Vec<DefId>)>,
+    /// Each binding the module declares itself, a function or a static of
+    /// its own or of an `extern` block, where it's written.
+    declared: Vec<(rustc_span::Span, DefId)>,
 }
 
 impl UsesWritten {
@@ -554,7 +557,14 @@ impl UsesWritten {
             })
             .collect();
         uses.sort_by_key(|(span, _)| span.lo());
-        UsesWritten { module, uses }
+        let items = tcx.hir_module_items(module);
+        let mut declared: Vec<(rustc_span::Span, DefId)> = (items.free_items().map(|id| id.owner_id.to_def_id()))
+            .chain(items.foreign_items().map(|id| id.owner_id.to_def_id()))
+            .filter(|&id| is_binding(tcx, id))
+            .map(|id| (tcx.def_span(id), id))
+            .collect();
+        declared.sort_by_key(|(span, _)| span.lo());
+        UsesWritten { module, uses, declared }
     }
 
     /// The first naming what `makes` says is of the import.
@@ -570,15 +580,44 @@ impl UsesWritten {
         foreign: &crate::lower::library::Foreign<'_, '_>,
         from: &str,
     ) -> Option<rustc_span::Span> {
-        self.first(|id| {
-            let export = foreign.import_key(id, self.module).or_else(|| {
-                (is_binding(tcx, id))
-                    .then(|| js_path(tcx, id))
-                    .flatten()
-                    .and_then(|path| js_import(&path).map(|(export, _)| export))
-            });
-            export.is_some_and(|(of, _)| of == from)
-        })
+        self.first(|id| self.imports_from(tcx, foreign, id, from))
+    }
+
+    /// Where the source first names the import from the JS file `from`,
+    /// which orders it (ADR 1063, amended): its `use` (`package_at`), or a
+    /// binding of the module's own declared of it, the reconciler's
+    /// `#[link_name = "./ReactFiberConfig.js#.."] fn ..`, whichever is
+    /// written first.
+    pub(in crate::lower) fn package_named_at(
+        &self,
+        tcx: TyCtxt<'_>,
+        foreign: &crate::lower::library::Foreign<'_, '_>,
+        from: &str,
+    ) -> Option<rustc_span::Span> {
+        let declared = (self.declared.iter())
+            .find(|&&(_, id)| self.imports_from(tcx, foreign, id, from))
+            .map(|&(span, _)| span);
+        (self.package_at(tcx, foreign, from).into_iter())
+            .chain(declared)
+            .min_by_key(|span| span.lo())
+    }
+
+    /// Whether what `id` names is imported from the JS file `from`: a
+    /// library's item a consumer imports from it (ADR 0100), or a binding's.
+    fn imports_from(
+        &self,
+        tcx: TyCtxt<'_>,
+        foreign: &crate::lower::library::Foreign<'_, '_>,
+        id: DefId,
+        from: &str,
+    ) -> bool {
+        let export = foreign.import_key(id, self.module).or_else(|| {
+            (is_binding(tcx, id))
+                .then(|| js_path(tcx, id))
+                .flatten()
+                .and_then(|path| js_import(&path).map(|(export, _)| export))
+        });
+        export.is_some_and(|(of, _)| of == from)
     }
 
     /// The `use` of the import from the crate's module `target`: of its

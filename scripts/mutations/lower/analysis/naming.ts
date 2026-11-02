@@ -647,8 +647,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a comment above the `use` of a binding is lost, not above its JS file's import (rd92)",
     file: "src/lower/analysis/naming.rs",
-    find: "            export.is_some_and(|(of, _)| of == from)\n",
-    replace: "            export.is_some_and(|(of, _)| of == from && false)\n",
+    find: "        export.is_some_and(|(of, _)| of == from)\n",
+    replace: "        export.is_some_and(|(of, _)| of == from && false)\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "above a use"],
   },
   {
@@ -746,5 +746,14 @@ export const mutations: Mutation[] = [
     find: "                    bindings::given_name(tcx, **only).unwrap_or_else(|| camel_case(tcx.item_name(**only).as_str())),\n",
     replace: "                    camel_case(tcx.item_name(**only).as_str()),\n",
     tests: ["test/lowering-binding-paths.test.ts", "-t", "default import is named"],
+  },
+  {
+    name: "imports-declared-unordered",
+    breaks:
+      "a binding the module declares itself is imported after every `use`'s, where it's declared before one, so JS loads the reconciler's ReactFiberConfig after what upstream imports it before (rd608, ADR 1063, amended)",
+    file: "src/lower/analysis/naming.rs",
+    find: "            .chain(declared)\n",
+    replace: "",
+    tests: ["test/libraries.test.ts", "-t", "uses that make them"],
   },
 ];

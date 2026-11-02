@@ -1,6 +1,7 @@
 # 1063. Imports are in the order of their `use`s
 
-Status: Accepted (the user's decision, rd570). Replaces
+Status: Accepted (the user's decision, rd570). Amended (rd608): a binding
+the module declares itself is named where it's declared. Replaces
 [0295](0295-import-order.md)'s order and
 [0770](0770-a-librarys-const-is-imported-by-its-name.md)'s ordering of a
 subpath by its file.
@@ -96,3 +97,37 @@ Held by `test/libraries.test.ts`'s "imports are in the order of the uses
 that make them", whose JS modules note their loads, a binding's and a
 library module's from two groups either way round, and by the mutations
 `imports-by-path-not-use` and `imports-unused-first`.
+
+## Amendment: a binding the module declares is named where it's declared (rd608)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, as above.
+
+The reconciler reaches its host config through bindings each module
+declares itself, `#[cfg_attr(rust_js, rust_js::link_name =
+"./src/ReactFiberConfig.js#setCurrentUpdatePriority")] fn ..`, as
+react-client does its `./ReactFlightClientConfig.js` and shared its
+ReactSharedInternals. No `use` makes their imports, so the fallback put
+them after every `use`'s, where upstream's ReactFiberHooks imports
+`./ReactFiberConfig` first: no source could say its order.
+
+**An import is where the source first names it**: the first `use` that
+makes it, or the first binding the module declares of it, a function or
+a static of its own or of an `extern` block, whichever is written first
+(`UsesWritten::package_named_at`, carried as `js::Package::named_at`). The
+module writes the declaration where the import goes, among its `use`s.
+Only an import the source names neither way, a module read through its
+path's namespace, is the fallback's. Comments stay with the `use` the
+import is of (rd92), not a declaration's.
+
+The other way, a `use`-able module of the bindings, `use
+crate::react_fiber_config::{..};` of a module declaring them once, was not
+taken here: a module of bindings alone writes no JS of its own to import
+from, and each binding's relative specifier is its declaring file's,
+which another module's import would have to rebase. The declaration's place
+is the key a `use`'s is, so the rule stays one.
+
+Held by `test/libraries.test.ts`'s "imports are in the order of the uses
+that make them", a binding declared between two `use` groups loading
+between them, and `test/modules.test.ts`'s bindings declared in their
+order; mutation `imports-declared-unordered`.
+

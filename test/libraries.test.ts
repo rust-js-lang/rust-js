@@ -544,7 +544,10 @@ fn a() -> u32 {
 // DOM's ReactDOMFizzServerNode imports ReactFizzServer, a binding's JS
 // module, before ReactFizzConfigDOM, a library's module by its package's
 // subpath, whose load sets what the other's reads in jest's cycle (rd570).
-// Whichever `use` group comes first, its module loads first.
+// Whichever `use` group comes first, its module loads first; and a binding
+// the module declares itself is imported where it's declared among them, as
+// the reconciler's `#[link_name = "./ReactFiberConfig.js#.."]`s are its
+// first import (rd608, ADR 1063, amended).
 test("imports are in the order of the uses that make them, a binding's and a library module's alike", () => {
   const dir = fixture("use-ordered-imports");
   writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["server", "config", "dom"]\nresolver = "3"\n');
@@ -573,8 +576,12 @@ test("imports are in the order of the uses that make them, a binding's and a lib
   const imported = () => [...readFileSync(lib, "utf8").matchAll(/^import .* from "(.*)";$/gm)].map((line) => line[1]);
   const loaded = () =>
     run([node ?? "node", "--input-type=module", "--eval", `const dom = await import(${JSON.stringify(lib)}); console.log(dom.run(), globalThis.loaded.join());`]).trim();
-  const written = (first: string, second: string) => {
-    writeFileSync(join(dir, "dom", "src", "lib.rs"), `${first}\n\n${second}\n\npub fn run() -> u32 {\n    start() + make()\n}\n`);
+  writeFileSync(join(dir, "own.js"), noted("own", 3));
+  const own = '#[cfg_attr(rust_js, rust_js::link_name = "../../own.js#own")]\nfn own() -> u32 {\n    unreachable!()\n}';
+  const written = (first: string, second: string, between = "") => {
+    const declared = between ? `${between}\n\n` : "";
+    const ran = between ? "start() + make() + own()" : "start() + make()";
+    writeFileSync(join(dir, "dom", "src", "lib.rs"), `${first}\n\n${declared}${second}\n\npub fn run() -> u32 {\n    ${ran}\n}\n`);
     expect(build(join(dir, "dom")).stderr).toBe("");
   };
   // ReactDOMFizzServerNode's order: the binding's, then the library's.
@@ -586,4 +593,8 @@ test("imports are in the order of the uses that make them, a binding's and a lib
   written("use config::setup::make;", "use server::task::start;");
   expect(imported()).toEqual(["config/src/setup", "server/src/Fizz"]);
   expect(loaded()).toBe("5 mark,start");
+  // A binding of its own declared between the two, loaded between them.
+  written("use config::setup::make;", "use server::task::start;", own);
+  expect(imported()).toEqual(["config/src/setup", "../../own.js", "server/src/Fizz"]);
+  expect(loaded()).toBe("8 mark,own,start");
 }, 600_000);

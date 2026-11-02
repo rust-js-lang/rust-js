@@ -138,9 +138,12 @@ lines between blank ones, and keeps the groups as written, so a module
 whose imports must load in an order writes them in groups, as React DOM's
 ReactDOMFizzServerNode writes `use react_server::..;`, a blank line, then
 `use react_dom_bindings::..;`, for upstream's ReactFizzServer before
-ReactFizzConfigDOM. An import no `use` makes, of what's named by its
-path, comes after, packages then relative modules, each by its
-specifier; then imports for their effect, as written; then
+ReactFizzConfigDOM. A binding the module declares itself, a
+`#[rust_js::link_name = "./config.js#name"]` function, is named where
+it's declared, so its import goes there among the `use`s'. An import the
+source names neither way, of what's read by its path, comes after,
+packages then relative modules, each by its specifier; then imports for
+their effect, as written; then
 `@rust-js/runtime`
 ([ADR 1063](../../decisions/1063-imports-are-in-the-order-of-their-uses.md),
 which replaces [ADR 0295](../../decisions/0295-import-order.md)'s order).
