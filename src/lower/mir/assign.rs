@@ -993,6 +993,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let mut exprs: Vec<Expr> = Vec::new();
         for (i, value) in values.into_iter().enumerate() {
+            // A box this function was given, its `&mut` given on as it is,
+            // `items(copy _1)` of a library's MIR, optimized, where the MIR
+            // built of the crate's own reborrows it, `&mut *self`: a `&mut` to
+            // its place, the box's `value`, as the reborrow is (#472).
+            let value = match value {
+                Value::Expr(boxed) if matches!(&boxed.kind, js::ExprKind::Var(name) if state.naming.boxes().contains(name)) => {
+                    Value::Ref(Expr::held(boxed))
+                }
+                value => value,
+            };
             let object = !matches!(value, Value::Ref(_));
             let place = match value {
                 // A shared reference to what generic code has in a box, an

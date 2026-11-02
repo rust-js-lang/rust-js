@@ -1,6 +1,6 @@
 # 0099. A `&mut` held in a variable names its place; one kept elsewhere is a handle
 
-Status: Accepted in part (amended 2026-11-02: a `&mut` read from where one's kept is the object's, not its slot, #466): a `&mut` in a variable, the index loop, a
+Status: Accepted in part (amended 2026-11-02: a `&mut` read from where one's kept is the object's, not its slot, #466; and a box a function was given is given on as it is, reborrowed or not, #472): a `&mut` in a variable, the index loop, a
 generic `&mut T`, a `&mut` to a closure, a `&mut dyn Trait` of the
 crate's, and handles of a `&mut` to a value JS can't change in place, and
 to a temporary. A generic `&mut T` to
@@ -542,3 +542,29 @@ which is the same answer.
   `moved-reference-a-place`, `index-mut-not-a-place` and
   `deref-mut-not-a-place` (`mir/local_facts.rs`), beside
   `place-ref-written-in-place`.
+
+## Amendment: a box a function was given is given on as it is, reborrowed or not (#472)
+
+A function given a box for a `&mut` to what JS can't change in place, a
+generic `&mut Self` or a `&mut u32` (ADR 0074), gives it on as it is where
+what it calls takes one: MIR built of the crate's own reborrows it,
+`items(move _3)` of `_3 = &mut (*_1)`, whose place is the box's `value`,
+and `boxed_args` gives the box itself. A library's optimized MIR, the one
+a consumer compiles its code from (ADR 0914), has no reborrow:
+`items(copy _1)`, the `&mut` itself, which `boxed_args` took for an object
+to box, and boxed again, `SelfBounded.items({ get value() { return self; }
+.. })`. So a consumer's instance of a library trait's `&mut self` default,
+arrayvec's `try_push` as rust_decimal or a program compiles it, read
+`items` of that box's box: `undefined.length` threw where native Rust runs.
+A wrong answer, ADR 0262's "results change" case: Rust's behavior is kept.
+
+**A copy or move of a box the function was given is a `&mut` to its place,
+the box's `value`, as its reborrow is:** given where a box goes, the box,
+`SelfBounded.items(self)`, `addOne(n)`; where an object goes, its
+`value`.
+
+- `test/crates/pairs/library_default_mut_self_instance`, against native
+  Rust: a library trait's `try_push(&mut self, ..)` calling `self.items()`,
+  and a `&mut u32` given on to a private function, each compiled by a
+  consumer that gives a value with a destructor.
+- Mutation `given-box-boxed-again` (`mir/assign.rs`).

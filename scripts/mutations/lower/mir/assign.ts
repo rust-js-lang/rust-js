@@ -1049,4 +1049,13 @@ export const mutations: Mutation[] = [
     replace: "            let param = self.tcx.fn_sig(def_id).instantiate(self.tcx, generic_args).skip_binder().inputs()[i];\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_reference_changed_through_mut\\.rs$"],
   },
+  {
+    name: "given-box-boxed-again",
+    breaks:
+      "a box a function was given, its `&mut` given on as it is in a library's optimized MIR, `items(copy _1)`, is boxed again, `SelfBounded.items({ get value() { return self; } })`, so a consumer's instance of a trait default taking `&mut self` throws where native runs (#472, P0)",
+    file: "src/lower/mir/assign.rs",
+    find: "                Value::Expr(boxed) if matches!(&boxed.kind, js::ExprKind::Var(name) if state.naming.boxes().contains(name)) => {\n",
+    replace: "                Value::Expr(boxed) if false && matches!(&boxed.kind, js::ExprKind::Var(name) if state.naming.boxes().contains(name)) => {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_default_mut_self_instance"],
+  },
 ];
