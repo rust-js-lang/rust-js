@@ -238,6 +238,23 @@ react.dev's TopNav passes the same closure instead.
   the guard. Held by `test/lowering-cell-borrows.test.ts`'s "a guard
   that's only a call's receiver is held while the call runs, not its
   arguments". Listed in the guide's differences (`semantics.md`, 39).
+- **A guard read only for a binding's argument is held while it's read,
+  not while the binding runs**, the second case's, which the user decided
+  (2026-11-02, rd427, ADR 0863, amended): `prepare(loading,
+  response.nonce.borrow().as_deref());` is `prepare(loading,
+  response.nonce)`, as React's Flight client's
+  `prepareDestinationForModule(response._moduleLoading, response._nonce,
+  ..)`, and `js::set(target, "_debugInfo", chunk.debug_info.borrow()
+  .clone())` its DEV `then`'s `wrapperPromise._debugInfo =
+  this._debugInfo`. Rust holds the guard until the statement ends. Only
+  a binding that calls back at once and borrows that cell mutably tells
+  them apart: Rust panics `already borrowed`, and the JS passes. What it guards lent, `as_deref()`'s, or a
+  copy or clone of it, given straight to the binding; anything else, and
+  a later argument's code, is asked as before. Held by
+  `test/lowering-cell-borrows.test.ts`'s "a guard read only for a
+  binding's argument is held while it's read, not while the binding
+  runs" and the corpus's `argument_guard_reentered`, against native Rust.
+  Listed in the guide's differences (`semantics.md`, 44).
 - **A global `static` tested again inside the `if` that tested it is
   decided there**, the first case's, which the user accepted (2026-10-28,
   gap pt6): React's `if (__DEV__) { .. if (__DEV__ && debugTask) { .. } }`

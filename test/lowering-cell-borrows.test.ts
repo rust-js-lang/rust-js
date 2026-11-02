@@ -1065,6 +1065,104 @@ pub fn mark(marks: &Marks) {
   expect(() => lib.mark(lib.marks())).toThrow("RefCell already mutably borrowed");
 });
 
+// rd427, rd383 (ADR 0863, amended, the user's decision, 2026-11-02): a guard
+// read only for a binding's argument, what it guards lent, `as_deref()`'s,
+// or a copy or clone of it, is held while that's read, not while the
+// binding runs, as JS's `prepare(response.nonce)` reads it first: React's
+// Flight client's `prepareDestinationForModule(response._moduleLoading,
+// response._nonce, metadata)` and its DEV `then`'s `wrapperPromise._debugInfo
+// = this._debugInfo`. So a binding that calls back and writes the cell meets
+// no borrow, where Rust's would panic. A later argument's call of the
+// crate's that writes it runs while it's held, and is still counted, and
+// panics as Rust's does (`argument_guard_reentered`, against native Rust).
+test("a guard read only for a binding's argument is held while it's read, not while the binding runs", async () => {
+  const dir = fixture("argument-guard");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+use js::Unknown;
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.prepare")]
+fn prepare(loading: Option<&'static Unknown>, nonce: Option<&str>) {
+    let _ = (loading, nonce);
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.logTime")]
+fn log_time(time: f64, nonce: String) {
+    let _ = (time, nonce);
+    unreachable!()
+}
+
+pub struct Response {
+    pub nonce: RefCell<Option<String>>,
+    pub time: RefCell<f64>,
+}
+
+pub fn response(nonce: Option<String>) -> Response {
+    Response {
+        nonce: RefCell::new(nonce),
+        time: RefCell::new(1.5),
+    }
+}
+
+pub fn set_nonce(response: &Response, nonce: Option<String>) {
+    *response.nonce.borrow_mut() = nonce;
+    *response.time.borrow_mut() += 1.0;
+}
+
+pub fn resolve(response: &Response, loading: Option<&'static Unknown>) {
+    prepare(loading, response.nonce.borrow().as_deref());
+}
+
+pub fn stamp(response: &Response, target: &Unknown) {
+    js::set(target, "nonce", response.nonce.borrow().clone());
+}
+
+pub fn log(response: &Response) {
+    log_time(*response.time.borrow(), String::from("now"));
+}
+
+fn renamed(response: &Response) -> String {
+    set_nonce(response, Some(String::from("later")));
+    String::from("renamed")
+}
+
+pub fn log_renamed(response: &Response) {
+    log_time(*response.time.borrow(), renamed(response));
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  globalThis.prepare(loading, response.nonce);\n");
+  expect(js).toContain("  target.nonce = response.nonce;\n");
+  expect(js).not.toContain('$fieldCell(response, "nonce")');
+  expect(js).toContain('  globalThis.logTime($borrow($fieldCell(response, "time")).value, "now");\n');
+  expect(js).toContain('$borrow($fieldCell(response, "time"), true)');
+  const lib = await import(join(dir, "lib.js"));
+  const globals = globalThis as any;
+  const response = lib.response("first");
+  const given: unknown[] = [];
+  // The accepted difference: a binding that calls back and writes the cell
+  // it was given a value of, which Rust's borrow would meet with a panic.
+  globals.prepare = (_loading: unknown, nonce: string) => {
+    given.push(nonce);
+    lib.setNonce(response, "second");
+  };
+  globals.logTime = (time: number, nonce: string) => given.push([time, nonce]);
+  try {
+    lib.resolve(response, undefined);
+    const target: any = {};
+    lib.stamp(response, target);
+    lib.log(response);
+    expect(given).toEqual(["first", [2.5, "now"]]);
+    expect(target.nonce).toBe("second");
+    expect(() => lib.logRenamed(response)).toThrow("RefCell already borrowed");
+  } finally {
+    delete globals.prepare;
+    delete globals.logTime;
+  }
+});
+
 // rd442: a webapi operation that runs no code but its own, \`FormData\`'s
 // \`append\`, holds no counted borrow while it runs, React's Fizz
 // \`formData.append('$ACTION_KEY', nextPostbackStateKey)\` of a key a cell

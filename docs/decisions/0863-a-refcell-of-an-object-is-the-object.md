@@ -1,6 +1,6 @@
 # 0863. A `RefCell` of an object is the object, and one no borrow of which can meet another is never checked
 
-Status: Accepted; amended below (`as_deref` of an `Option` of a guard, a guard that's only a call's receiver, a held borrow counts the cells that can be its own (#445), and a library's cell only its own code and constants reach is its flow's (#456)). Amends [0328](0328-refcell-borrow-counts.md) (what a
+Status: Accepted; amended below (`as_deref` of an `Option` of a guard, a guard that's only a call's receiver, a guard read only for a binding's argument (rd427), a held borrow counts the cells that can be its own (#445), and a library's cell only its own code and constants reach is its flow's (#456)). Amends [0328](0328-refcell-borrow-counts.md) (what a
 `RefCell` is, and which of its borrows are counted),
 [0362](0362-refcell-fields-never-counted.md) (a field's plain cell, a
 library's too), [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md)
@@ -1101,3 +1101,50 @@ Built as a library, `untagged_ref_cells` is now its program's JS.
   `flow-shared-unread` (`analysis/cell_flow.rs`);
   `class-unshared-by-type-in-a-library` and `library-borrowed-unshared`
   (`drops/ref_cells.rs`).
+
+## Amendment: a guard read only for a binding's argument (rd427)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): B, the user's decision
+(2026-11-02). React's Flight client gives a module's loader the
+response's nonce, and its DEV `then` stamps the promise it makes with the
+chunk's debug info:
+
+```js
+prepareDestinationForModule(response._moduleLoading, response._nonce, metadata);
+wrapperPromise._debugInfo = this._debugInfo;
+```
+
+A port writes `prepare_destination_for_module(response._module_loading
+.get(), response._nonce.borrow().as_deref(), metadata)` and
+`js::set(promise, "_debugInfo", chunk._debug_info.borrow().clone())`.
+Rust holds each guard until its statement ends, while the binding runs,
+which may call back: so the first was refused where `shared`, a library,
+borrows a cell of its type unchecked, and the second counted, `$borrow`
+and `$unborrow` around the write; the port bound a `let` first, `const
+nonce = response._nonce;`.
+
+**A guard read only for a binding's argument, what it guards lent
+(`&*guard`), a copy of it (`*guard`), or a clone or an `Option`'s
+`as_deref()` of it lent, given straight to a binding's call, `js::set`
+too, is held while that argument and those after it run, not while the
+binding does** (`drops/facts.rs`'s `given_of_guard`): its borrow is
+momentary, so neither counted nor refused, and the JS is upstream's. A
+later argument's code, which runs while it's held, is asked as before:
+`log_time(*t.borrow(), renamed(r))`, where `renamed` writes `t`, still
+counts it and panics as Rust's does. A guard given to the crate's own
+function, a library's, a `dyn`'s or a closure's is held through the call,
+as before.
+
+Only a binding that calls back at once and borrows that cell mutably
+tells them apart: Rust panics `already borrowed`, and the JS passes.
+Listed in ADR 0262's Consequences and the guide's differences
+(`semantics.md`, 44).
+
+Held by `test/lowering-cell-borrows.test.ts`'s "a guard read only for a
+binding's argument is held while it's read, not while the binding runs",
+and the corpus's `argument_guard_reentered`, against native Rust; mutations
+`argument-guard-held-through-binding`, `argument-guard-of-any-call`,
+`argument-guard-of-a-clone-only` and `argument-guard-later-arguments-unasked`
+(`drops/facts.ts`), and `as-deref-unrecognized` (`recognition/wrappers.ts`,
+whose `is_as_deref` says which call is an `as_deref`).
+

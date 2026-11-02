@@ -440,6 +440,17 @@ pub(crate) fn rc_made_of<'tcx>(tcx: TyCtxt<'tcx>, from: Ty<'tcx>, to: Ty<'tcx>) 
     made.then_some(pointee)
 }
 
+/// Whether `id` is an `Option`'s or a `Result`'s `as_deref`, which lends
+/// what it holds through that's `Deref` (rd427).
+pub(crate) fn is_as_deref(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.item_name(id).as_str() == "as_deref"
+        && tcx.inherent_impl_of_assoc(id).is_some_and(|imp| {
+            matches!(tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
+                ty::Adt(adt, _) if tcx.is_diagnostic_item(sym::Option, adt.did())
+                    || tcx.is_diagnostic_item(sym::Result, adt.did()))
+        })
+}
+
 pub(crate) fn rc_pointee<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     match ty.kind() {
         ty::Adt(adt, args)

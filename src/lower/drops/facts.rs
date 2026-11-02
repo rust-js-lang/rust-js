@@ -18,7 +18,7 @@ use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
-use super::super::recognition::{Std, StdItem};
+use super::super::recognition::{HandleStep, Std, StdItem, handle_step, is_as_deref};
 use super::super::{fn_def, strip};
 use rustc_middle::middle::region;
 
@@ -522,11 +522,69 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                 self.facts.momentary.insert(fun);
                 return;
             }
+            // A guard read only for a binding's argument, what it guards
+            // lent, `as_deref()`'s, or a copy or clone of it, `prepare(
+            // response.nonce.borrow().as_deref())`, is held while that's read
+            // and the arguments after it run, not while the binding does,
+            // as JS's `prepare(response.nonce)` reads it first (ADR 0863,
+            // amended, the user's decision, rd427): a binding that calls
+            // back and writes the cell meets no borrow, where Rust's would.
+            (None, Some(extent))
+                if let ExprKind::Call {
+                    fun: binding, ref args, ..
+                } = self.thir[strip(self.thir, extent)].kind
+                    && fn_def(self.thir[binding].ty)
+                        .is_some_and(|(id, _)| crate::lower::bindings::is_binding(recognition.tcx, id))
+                    && let Some(at) = args.iter().position(|&arg| arg == e || self.stack.contains(&arg))
+                    && self.given_of_guard(args[at], e) =>
+            {
+                args[at..].to_vec()
+            }
             (None, Some(extent)) => vec![extent],
             (None, None) => return,
         };
         if self.held_quietly((fun, cell), &[], &extents) {
             self.facts.momentary.insert(fun);
+        }
+    }
+
+    /// Whether `arg`, a call's argument, is only what `guard` guards, read
+    /// through it: lent, `&*guard`, a copy, `*guard`, or a clone or an
+    /// `Option`'s `as_deref()` of it lent (rd427).
+    fn given_of_guard(&self, arg: ExprId, guard: ExprId) -> bool {
+        let thir = self.thir;
+        let tcx = self.cx.recognition.tcx;
+        let guard = strip(thir, guard);
+        // `*guard`, through its `Deref`.
+        let read = |e: ExprId| {
+            let ExprKind::Deref { arg } = thir[strip(thir, e)].kind else {
+                return false;
+            };
+            let ExprKind::Call { fun, ref args, .. } = thir[strip(thir, arg)].kind else {
+                return false;
+            };
+            fn_def(thir[fun].ty).is_some_and(|(id, generic_args)| {
+                matches!(
+                    handle_step(tcx, id, generic_args),
+                    Some(HandleStep::GuardDeref | HandleStep::GuardDerefMut)
+                )
+            }) && matches!(args[..], [lent] if matches!(thir[strip(thir, lent)].kind,
+                ExprKind::Borrow { arg, .. } if strip(thir, arg) == guard))
+        };
+        let lent = |e: ExprId| match thir[strip(thir, e)].kind {
+            ExprKind::Borrow { arg, .. } => read(arg),
+            _ => read(e),
+        };
+        match thir[strip(thir, arg)].kind {
+            ExprKind::Call { fun, ref args, .. }
+                if let [of] = args[..]
+                    && fn_def(thir[fun].ty).is_some_and(|(id, _)| {
+                        tcx.is_lang_item(id, rustc_hir::attrs::lang_items::LangItem::CloneFn) || is_as_deref(tcx, id)
+                    }) =>
+            {
+                lent(of)
+            }
+            _ => lent(arg),
         }
     }
 

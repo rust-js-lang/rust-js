@@ -329,7 +329,11 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   and one that's only a call's receiver, `c.borrow_mut().push(f(v));`,
   once the call's other arguments have, as JS evaluates them, where only
   code rust-js sees in them asks of it (0863, amended, the user's
-  decision, rd360).
+  decision, rd360); and one read only for a binding's argument,
+  `prepare(c.borrow().as_deref())`, what it guards lent, `as_deref()`'s,
+  or a copy or clone of it, only while that and the arguments after it
+  are read, not while the binding runs (0863, amended, the user's
+  decision, rd427).
   A call of a fn pointer runs what the crate made one of that type of,
   `Math.clz32` or a fallback, unless a value of its type may come from
   JS or a library, an exported function's parameter say, which may be
@@ -1201,4 +1205,12 @@ React and JSX are [their own pages](README.md#react).
     `name`, `''` for `'handleEvent'`, tells them apart, in a stack trace
     or DevTools' listener list (ADR 0262, the user's decision, 2026-11-02,
     rd335).
+44. A guard read only for a binding's argument, `prepare(response.nonce
+    .borrow().as_deref())` or `js::set(target, "nonce", response.nonce
+    .borrow().clone())`, is held while what it guards is read, as JS's
+    `prepare(response.nonce)` reads it, where Rust holds it until the
+    statement ends, while the binding runs. Only a binding that calls
+    back at once and borrows that cell mutably sees the difference: it
+    passes, where Rust panics `already borrowed` (ADR 0863, amended, the
+    user's decision, 2026-11-02, rd427).
 

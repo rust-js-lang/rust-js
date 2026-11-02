@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "as-deref-unrecognized",
+    breaks:
+      "an `Option`'s `as_deref()` of a guard given to a binding isn't its read, so `prepare(response.nonce.borrow().as_deref())` counts the cell (rd427)",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "    tcx.item_name(id).as_str() == \"as_deref\"\n",
+    replace: "    tcx.item_name(id).as_str() == \"as_deref!\"\n",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "read only for a binding"],
+  },
+  {
     name: "ptr-eq-of-library-struct-counts",
     breaks:
       "`Rc::ptr_eq` of a library's struct counts it, so a crate an uncounting library hands it is refused (ADR 0844)",

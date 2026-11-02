@@ -339,6 +339,41 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-cell-borrows.test.ts", "-t", "only a call's receiver"],
   },
   {
+    name: "argument-guard-held-through-binding",
+    breaks:
+      "a guard read only for a binding's argument is held while the binding runs, so `prepare(response.nonce.borrow().as_deref())` counts the cell, `$borrow` and a `try`/`finally` (rd427)",
+    file: "src/lower/drops/facts.rs",
+    find: "                    && self.given_of_guard(args[at], e) =>\n",
+    replace: "                    && self.given_of_guard(args[at], e) && false =>\n",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "read only for a binding"],
+  },
+  {
+    name: "argument-guard-of-any-call",
+    breaks:
+      "a guard read only for an argument of the crate's own function, which writes the cell, is taken as held only while it's read, so Rust's `already borrowed` never comes (rd427)",
+    file: "src/lower/drops/facts.rs",
+    find: "                        .is_some_and(|(id, _)| crate::lower::bindings::is_binding(recognition.tcx, id))\n",
+    replace: "                        .is_some()\n",
+    tests: ["test/corpus.test.ts", "-t", "^argument_guard_reentered.rs$"],
+  },
+  {
+    name: "argument-guard-of-a-clone-only",
+    breaks: "a guard's `as_deref()` or copy given to a binding is held while the binding runs, and counted (rd427)",
+    file: "src/lower/drops/facts.rs",
+    find: "            _ => lent(arg),\n",
+    replace: "            _ => false,\n",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "read only for a binding"],
+  },
+  {
+    name: "argument-guard-later-arguments-unasked",
+    breaks:
+      "an argument after a guard's read, `log_time(*t.borrow(), renamed(r))`, whose call writes the cell, is taken as running after the guard's given back, so Rust's `already borrowed` never comes (rd427)",
+    file: "src/lower/drops/facts.rs",
+    find: "                args[at..].to_vec()\n",
+    replace: "                args[at..=at].to_vec()\n",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "read only for a binding"],
+  },
+  {
     name: "receiver-guard-ignores-call",
     breaks:
       "the call whose receiver holds a guard, `add(&mut m.borrow_mut(), m)` of an `add` that borrows `m`, is taken as asking nothing",
