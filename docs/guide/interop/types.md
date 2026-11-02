@@ -1255,7 +1255,9 @@ export function changes(listeners) {
   read whole too. A std map's `get` of one, and its `cloned()` or
   `copied()` where the clone is the value, are JS's `map.get(key)`, as
   React's Flight client reads its chunk cache, a `Map<string, null |
-  Promise<any>>`; given on or compared, it's `$someGet`'s box
+  Promise<any>>`, and so is a thread-local's `with_borrow` of a closure
+  that gives one back, `CACHE.with_borrow(|cache| cache.get(id).cloned())`;
+  given on or compared, it's `$someGet`'s box
   ([ADR 1017](../../decisions/1017-an-option-of-an-option-held-where-its-made-is-its-payload.md), amended):
 
 ```rust

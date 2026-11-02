@@ -254,4 +254,13 @@ export const mutations: Mutation[] = [
       "a function written in a body is declared in it",
     ],
   },
+  {
+    name: "closure-result-held-untold",
+    breaks:
+      "a closure whose maker holds its result as the value isn't told so, and is refused, its body boxing it (rd547, ADR 1017 amended)",
+    file: "src/lower/mir/closures.rs",
+    find: "        let result_held = state.facts.options().held_results.contains(&def_id);\n",
+    replace: "        let result_held = false;\n",
+    tests: ["test/lowering-nested-options.test.ts", "-t", "with_borrow gives back"],
+  },
 ];

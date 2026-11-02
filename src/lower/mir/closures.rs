@@ -192,7 +192,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let outer_owner = std::mem::replace(&mut self.frame.owner, def_id);
         // Given a place found, what it's told of it (ADR 0642).
         let seed = state.facts.offsets().seed(def_id).cloned();
-        let lowered = self.lowered_from_mir(mir, Some(captures), (seed, own));
+        // Whether what it gives back is held as its payload where it's
+        // given back, a thread-local's `with_borrow`'s (ADR 1017, amended).
+        let result_held = state.facts.options().held_results.contains(&def_id);
+        let lowered = self.lowered_from_mir(mir, Some(captures), (seed, own, result_held));
         self.frame.thir = outer;
         self.frame.facts = outer_facts;
         self.frame.owner = outer_owner;

@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Option` of an `Option` whose inner `Option` is only tested, `inner.is_some()`, keeps its box, `$some(value)`, not `last != null` (ADR 1017 amended)",
     file: "src/lower/mir/nested_options.rs",
-    find: "        locals.writes[held] == 1\n            && (mentions.iter())\n",
+    find: "        writes[held] == 1\n            && (mentions.iter())\n",
     replace: "        false\n            && (mentions.iter())\n",
     tests: ["test/lowering-nested-options.test.ts", "-t", "gives on is undefined"],
   },
@@ -150,6 +150,51 @@ export const mutations: Mutation[] = [
       "an `==` of two `Option`s of a value `null` but never `undefined` is read as an `Option` of an `Option`'s, which it isn't: a panic (rd547, ADR 1017 amended)",
     file: "src/lower/mir/nested_options.rs",
     find: "                && self.nested_payload(decls[x].ty).is_some()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_null_option_held.rs$"],
+  },
+  {
+    name: "with-borrow-result-unseen",
+    breaks:
+      "a thread-local's `with_borrow(|cache| cache.get(id).cloned())` writes its local boxed, `$someValue(entry)`, where its closure's result is held as the value (rd547, ADR 1017 amended)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "                && self.result_held(closure)\n",
+    replace: "                && false\n",
+    tests: ["test/lowering-nested-options.test.ts", "-t", "with_borrow gives back"],
+  },
+  {
+    name: "with-borrow-result-of-any-closure",
+    breaks:
+      "a thread-local's `with_borrow` of a closure whose body boxes its result, a call's, writes a local held as the value, which that closure can't give: refused (rd547, ADR 1017 amended)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "                && self.result_held(closure)\n",
+    replace: "                && true\n",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_null_option_held.rs$"],
+  },
+  {
+    name: "held-result-not-given-back",
+    breaks:
+      "a closure's result held as its payload isn't given back where it returns, so it's boxed, and so is the local its `with_borrow` writes (rd547, ADR 1017 amended)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "            if result && matches!(data.terminator().kind, mir::TerminatorKind::Return) {\n",
+    replace: "            if false && matches!(data.terminator().kind, mir::TerminatorKind::Return) {\n",
+    tests: ["test/lowering-nested-options.test.ts", "-t", "with_borrow gives back"],
+  },
+  {
+    name: "held-result-not-a-candidate",
+    breaks:
+      "a closure's result isn't among the locals held as their payload, so it's boxed, and so is the local its `with_borrow` writes (rd547, ADR 1017 amended)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "            .filter(|&local| local.as_usize() > body.arg_count || (result && local == mir::RETURN_PLACE))\n",
+    replace: "            .filter(|&local| local.as_usize() > body.arg_count)\n",
+    tests: ["test/lowering-nested-options.test.ts", "-t", "with_borrow gives back"],
+  },
+  {
+    name: "held-results-of-any-local",
+    breaks:
+      "a closure whose result its maker gives on, boxed, gives it back held as the value: `owned` reads the `null` of `Loaded` as `None` (rd547, ADR 1017 amended)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "            .filter(|(to, _)| nested.contains(to))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^untagged_null_option_held.rs$"],
   },

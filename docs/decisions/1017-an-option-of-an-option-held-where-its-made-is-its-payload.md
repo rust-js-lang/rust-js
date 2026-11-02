@@ -368,17 +368,41 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): none. `undefined`, `null`
 and the other variants' values are each their own JS value, so each test
 is Rust's answer.
 
-Not yet: the port's form reads the map in a thread-local's
-`with_borrow(|cache| cache.get(id).cloned())`, whose closure's result is
-its own body's, given back through `with_borrow` to the caller's local:
-which form it's in is a fact of two bodies, the closure's writes and the
-caller's reads (below, if landed).
+**A thread-local's `with`, `with_borrow` or `with_borrow_mut` of a
+closure whose own body holds its result so writes one as it gives it
+back**, the port's form, `CHUNK_CACHE.with_borrow(|chunk_cache|
+chunk_cache.get(chunk_id).cloned())`: `chunkCache.get(chunkId)`, the
+closure applied where its cell is quiet, or `$withBorrow(chunkCache,
+(chunkCache) => chunkCache.get(chunkId), true)`. Which form the closure's
+result is in is a fact of two bodies, so each says its half once, both
+read of MIR before either is written:
+
+- **The closure's**: `mir_nested` of its own body, its result a local
+  like the others, given back where it returns (`result_held`). Its maker
+  asks it where it's given, a call's closure type naming it.
+- **The maker's**: whether the local the call writes stays held, as any
+  local's (`mir_nested`), each closure it's so of `OptionWrites::
+  held_results`, which its lowering tells the closure's
+  (`lowered_from_mir`'s), as an offset's seed is told (ADR 0642).
+
+The closure's own lowering holds its result so only where its maker said:
+one given on, `owned(CACHE.with_borrow(|cache| cache.get(id).cloned()))`,
+is boxed in both. A closure its maker says holds its result whose own
+lowered body boxes it is refused, the two never read one value in two
+forms; its maker read the same MIR, so no program meets it, and it has no
+mutation.
 
 Held by corpus `untagged_null_option_held` (a map's `get` and its
-`cloned()` and `copied()` read by `match`, `is_none()` and whole; one
-given to a function, compared, of an enum whose clone copies, one that's
-`undefined` too, one that's neither, and a map of `Option`s, against
-native Rust), and the mutations `held-whole-payload-only-tested`,
+`cloned()` and `copied()` read by `match`, `is_none()` and whole, in a
+thread-local's `with_borrow` too; one given to a function, compared, of
+an enum whose clone copies, one that's `undefined` too, one that's
+neither, a map of `Option`s, and a closure whose result is a call's or is
+given on, against native Rust), `test/lowering-nested-options.test.ts`'s
+"a thread-local's with_borrow gives back a map's value held as it is"
+(React's chunk cache, in Node), and the mutations `with-borrow-result-unseen`,
+`with-borrow-result-of-any-closure`, `held-result-not-given-back`,
+`held-result-not-a-candidate`, `held-results-of-any-local`,
+`closure-result-held-untold` (`lower/mir/closures.ts`), `held-whole-payload-only-tested`,
 `held-cloned-unseen`, `held-cloned-unlinked`, `held-cloned-copies`,
 `held-map-get-any-value`, `held-eq-of-any` (`lower/mir/nested_options.ts`),
 `never-undefined-of-undefined` (`lower/untagged.ts`),

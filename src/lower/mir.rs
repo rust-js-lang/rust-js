@@ -651,6 +651,10 @@ struct OptionWrites {
     /// its arm of `match js::classify(value)` is reached
     /// (`body_queries::held_guards`): its test of `value` a `Some`'s.
     held: std::collections::HashSet<Span>,
+    /// The closures given to a thread-local's `with`, `with_borrow` or
+    /// `with_borrow_mut` whose result a local of `nested` holds: each
+    /// gives back its result held so (`mir_nested`, ADR 1017, amended).
+    held_results: std::collections::HashSet<rustc_span::def_id::DefId>,
 }
 
 /// What `.flatten()` reads as it is, the JS read itself.
@@ -887,7 +891,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Its drop functions, each declared once at its top, as a nested
         // body's are (ADR 0098, amended, #306).
         let enclosing = self.begin_hoisting();
-        let lowered = self.lowered_from_mir(mir, None, (None, None));
+        let lowered = self.lowered_from_mir(mir, None, (None, None, false));
         let hoisted = self.end_hoisting(enclosing);
         let (mut params, mut out) = lowered?;
         out.splice(0..0, drops_read(hoisted, &out));
@@ -1046,7 +1050,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         mir: &Mir<'tcx>,
         captures: Option<Vec<(Expr, bool)>>,
-        seed: (Option<offsets::Seed>, Option<Expr>),
+        seed: local_facts::Seeds,
     ) -> R<(Vec<js::Pattern>, Vec<Stmt>)> {
         // Its dictionaries of types known whole, each written twice
         // declared once at its top (ADR 0979); the enclosing body's back
@@ -1090,12 +1094,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// `lowered_from_mir`'s, in the body it starts.
+    /// `lowered_from_mir`'s, in the body it starts: of a closure, what's
+    /// told it, `local_facts`' seeds, whether its maker holds its result as
+    /// its payload among them (`OptionWrites::held_results`, ADR 1017,
+    /// amended).
     fn mir_function(
         &mut self,
         mir: &Mir<'tcx>,
         captures: Option<Vec<(Expr, bool)>>,
-        (seed, own): (Option<offsets::Seed>, Option<Expr>),
+        seeds: local_facts::Seeds,
     ) -> R<(Vec<js::Pattern>, Vec<Stmt>)> {
         let mir_body = &mir.body;
         // What THIR's drop facts refuse of its closures holding what has a
@@ -1118,8 +1125,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             locals.reads[local] += 2;
         }
         let given = captures.clone().unwrap_or_default();
-        let (facts, held_bindings) =
-            self.local_facts(mir, (&locals, drops, given), (seed.as_ref(), own, alternatives.held_as));
+        let (facts, held_bindings) = self.local_facts(mir, (&locals, drops, given), (seeds, alternatives.held_as))?;
         let mut state = State {
             body: mir_body,
             facts,

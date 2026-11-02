@@ -61,6 +61,46 @@ function preload(cache, id, pending) {
   return true;
 }
 
+// React's form: the thread-local's cache read in its `with_borrow`, whose
+// closure gives back what it holds.
+function borrowed(id, pending) {
+  const entry = cache.get(id);
+  if (entry === undefined) {
+    cache.set(id, "new.js");
+    return "none";
+  }
+  if (typeof entry === "string") {
+    pending.push(entry);
+    return "pending";
+  }
+  if (typeof entry === "number") {
+    return "count";
+  }
+  return "loaded";
+}
+
+// One whose closure's result its body boxes, a call's: boxed where it's
+// given back too; and the function it calls, lowered after a closure whose
+// result is held, its own result boxed.
+function cachedSome(id) {
+  const entry = cache.get(id);
+  return entry !== undefined;
+}
+
+function lookup(cache, id) {
+  return $someGet(cache, id);
+}
+
+function picked(id) {
+  const entry = lookup(cache, id);
+  return entry != null && $someValue(entry) === null;
+}
+
+// A closure whose result is given on, boxed.
+function cachedShown(id) {
+  return owned($someGet(cache, id));
+}
+
 function shown(cache, id) {
   const entry = cache.get(id);
   if (entry === undefined) {
@@ -197,7 +237,12 @@ function main() {
   console.log(`[${pending.map((item) => $debugStr(item)).join(", ")}]`);
   cache.set("x", null);
   const cached = preload(cache, "x", pending);
-  console.log(`${cached}`);
+  const value = borrowed("y", pending);
+  const arg = borrowed("y", pending);
+  console.log(`${cached} ${value} ${arg} [${pending.map((item) => $debugStr(item)).join(", ")}]`);
+  console.log(`${borrowed("x", pending)}`);
+  console.log(`${cachedShown("x")} ${cachedShown("z")}`);
+  console.log(`${cachedSome("x")} ${cachedSome("z")} ${picked("x")} ${picked("y")}`);
   const slots = new Map();
   slots.set(1, [1, 2]);
   slots.set(2, null);

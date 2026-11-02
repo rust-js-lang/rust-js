@@ -476,7 +476,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Option<&Option<Rc<Fiber>>>` made and compared where it's held is boxed, `previousInstance = $some(instance)`, where upstream's is `previousInstance = instance` (ADR 1017)",
     file: "src/lower/mir/patterns.rs",
-    find: "            nested: self.mir_nested(body, locals),\n",
+    find: "            nested,\n",
     replace: "            nested: Default::default(),\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
     snapshots: true,

@@ -11,6 +11,12 @@ use super::*;
 /// A body's facts, made by `FnCx::local_facts` and read through `State`'s
 /// `facts`: each field private here, so what lowers a statement can read
 /// it, never change it. Its drops and a closure's captures too.
+/// What a body's maker tells its facts, of a closure: what an offset found
+/// says of a place (ADR 0642), its handle on itself (ADR 0843), and whether
+/// its maker holds its result as its payload (`OptionWrites::held_results`,
+/// ADR 1017, amended).
+pub(super) type Seeds = (Option<offsets::Seed>, Option<Expr>, bool);
+
 pub(super) struct LocalFacts<'m, 'tcx> {
     /// The blocks whose call is an `.await` (`awaits.rs`).
     awaits: &'m HashSet<BasicBlock>,
@@ -321,13 +327,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         mir: &'m Mir<'tcx>,
         (locals, drops, captures): (&Locals, Option<drops::Elaboration<'tcx>>, Vec<(Expr, bool)>),
-        (seed, own, alternatives): (Option<&offsets::Seed>, Option<Expr>, HashMap<BasicBlock, BasicBlock>),
-    ) -> (LocalFacts<'m, 'tcx>, Vec<(Local, Local)>) {
+        ((seed, own, result_held), alternatives): (Seeds, HashMap<BasicBlock, BasicBlock>),
+    ) -> R<(LocalFacts<'m, 'tcx>, Vec<(Local, Local)>)> {
         let body = &mir.body;
         let def_id = body.source.def_id();
         let handles = self.krate.self_handles;
         let own = own.and_then(|name| Some((handles.read_by(def_id)?.own.clone(), name)));
-        let options = self.mir_option_writes(body, &mir.promoted, locals);
+        let options = self.mir_option_writes(body, &mir.promoted, locals, result_held);
+        // Of a closure whose maker reads what it gives back as its payload,
+        // its own writes of it make it so, as its maker read of its MIR.
+        if result_held && !options.nested.contains(&mir::RETURN_PLACE) {
+            return Err(self.unsupported(
+                body.span,
+                "a closure whose result its maker holds as its value, which its own body boxes",
+            ));
+        }
         let bindings = self.mir_held_bindings(body, &options.held);
         let bound: HashSet<Local> = bindings.iter().map(|&(bound, _)| bound).collect();
         let mut held_arms = self.mir_held_arms(body, &options.held, &bound);
@@ -352,7 +366,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             payloads: self.mir_payloads(body),
             patterned: self.mir_patterned(body),
             jsx_props: self.mir_jsx_props(body),
-            offsets: self.mir_offsets(body, seed),
+            offsets: self.mir_offsets(body, seed.as_ref()),
             let_spans: self.mir_let_spans(body),
             options,
             held_arms,
@@ -375,7 +389,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .flatten()
                 .collect(),
         };
-        (facts, bindings)
+        Ok((facts, bindings))
     }
 
     /// The locals `LocalFacts::lasting` says: each `&T` parameter MIR

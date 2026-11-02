@@ -5,6 +5,7 @@
 //! `Some(v)` `v` (ADR 1017, amended).
 
 use super::*;
+use rustc_span::def_id::DefId;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The locals `OptionWrites::nested` says (ADR 1017): each an `Option`
@@ -18,11 +19,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `(x as Some).0`, or, through a reference, by an `==` of two such: so
     /// each read knows what its writes made. One read any other way, given
     /// to a function, returned, captured or borrowed `&mut`, isn't, nor
-    /// what it's copied to or from, or compared with.
-    pub(super) fn mir_nested(&self, body: &mir::Body<'tcx>, locals: &Locals) -> std::collections::HashSet<Local> {
+    /// what it's copied to or from, or compared with. And a thread-local's
+    /// `with_borrow` of a closure whose own body holds its result so
+    /// (`result_held`) writes one as it gives it back, each such closure
+    /// the second set; of a closure whose maker holds its result so,
+    /// `result`, its result is one too, given back where it returns.
+    pub(super) fn mir_nested(
+        &self,
+        body: &mir::Body<'tcx>,
+        writes: &IndexVec<Local, usize>,
+        result: bool,
+    ) -> (std::collections::HashSet<Local>, std::collections::HashSet<DefId>) {
         let decls = &body.local_decls;
         let mut nested: std::collections::HashSet<Local> = (decls.indices())
-            .filter(|&local| local.as_usize() > body.arg_count)
+            .filter(|&local| local.as_usize() > body.arg_count || (result && local == mir::RETURN_PLACE))
             .filter(|&local| {
                 let ty = decls[local].ty;
                 (self.nested_payload(ty).is_some() || self.defined_payload(ty).is_some())
@@ -30,7 +40,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .collect();
         if nested.is_empty() {
-            return nested;
+            return (nested, Default::default());
         }
         // Each shared reference to one, made once.
         let mut refs: HashMap<Local, Local> = HashMap::new();
@@ -40,7 +50,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && let Rvalue::Ref(_, BorrowKind::Shared, of) = &assign.1
                 && let Some(of) = of.as_local()
                 && nested.contains(&of)
-                && locals.writes[reference] == 1
+                && writes[reference] == 1
             {
                 refs.insert(reference, of);
             }
@@ -78,6 +88,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Where each is mentioned as it may be, and which must agree.
         let mut allowed: std::collections::HashSet<(mir::Location, Local)> = Default::default();
         let mut links: Vec<(Local, Local)> = Vec::new();
+        let mut given_back: Vec<(Local, DefId)> = Vec::new();
         for (block, data) in body.basic_blocks.iter_enumerated() {
             for (statement_index, statement) in data.statements.iter().enumerate() {
                 let at = mir::Location { block, statement_index };
@@ -132,7 +143,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 || self.defined_payload(decls[of.local].ty).is_some()
                                 || to
                                     .as_local()
-                                    .is_some_and(|held| self.only_tested(body, held, locals, &mentions))) =>
+                                    .is_some_and(|held| self.only_tested(body, held, writes, &mentions))) =>
                     {
                         allowed.insert((at, of.local));
                     }
@@ -187,6 +198,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && self.reads_held(def_id, args, decls[to].ty)
             {
                 allowed.insert((body.terminator_loc(block), to));
+            }
+            // What a thread-local's `with`, `with_borrow` or
+            // `with_borrow_mut` gives back of a closure whose body holds its
+            // result so (`result_held`): that, as it is (rd547).
+            if let mir::TerminatorKind::Call {
+                func,
+                args,
+                destination,
+                ..
+            } = &data.terminator().kind
+                && let Some(to) = destination.as_local()
+                && nested.contains(&to)
+                && let Some((def_id, generic_args)) = func.const_fn_def()
+                && matches!(
+                    self.recognition().classify(def_id, generic_args),
+                    Some(Std::LocalWith | Std::LocalBorrow { .. })
+                )
+                && let [_, f] = &args[..]
+                && let ty::Closure(closure, _) = *f.node.ty(body, self.tcx).kind()
+                && self.result_held(closure)
+            {
+                allowed.insert((body.terminator_loc(block), to));
+                given_back.push((to, closure));
+            }
+            // Its result, given back where it returns.
+            if result && matches!(data.terminator().kind, mir::TerminatorKind::Return) {
+                allowed.insert((body.terminator_loc(block), mir::RETURN_PLACE));
             }
             // `cloned()` or `copied()` of one, to another, whose clone is the
             // value itself (`clone_value`'s): the value, as it's held.
@@ -251,7 +289,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         nested.extend(refs.keys());
         nested.retain(|local| !out.contains(local));
-        nested
+        let held_results = (given_back.into_iter())
+            .filter(|(to, _)| nested.contains(to))
+            .map(|(_, closure)| closure)
+            .collect();
+        (nested, held_results)
+    }
+
+    /// Whether the closure `def_id`'s own body holds what it gives back as
+    /// its payload (`mir_nested` of it, its result one), each of its writes
+    /// one, `|cache| cache.get(id).cloned()`: a thread-local's `with_borrow`
+    /// gives it back as it is, React's Flight client's chunk cache's read
+    /// (rd547, ADR 1017 amended).
+    fn result_held(&self, def_id: DefId) -> bool {
+        let Some(mir) = (self.krate.closures.get(&def_id)).and_then(|closure| closure.mir.as_ref()) else {
+            return false;
+        };
+        let body = &mir.body;
+        let mut writes: IndexVec<Local, usize> = IndexVec::from_elem_n(0, body.local_decls.len());
+        for data in body.basic_blocks.iter() {
+            for statement in &data.statements {
+                if let mir::StatementKind::Assign(assign) = &statement.kind {
+                    writes[assign.0.local] += 1;
+                }
+            }
+            if let mir::TerminatorKind::Call { destination, .. } = &data.terminator().kind {
+                writes[destination.local] += 1;
+            }
+        }
+        self.mir_nested(body, &writes, true).0.contains(&mir::RETURN_PLACE)
     }
 
     /// Whether a call of `def_id` reads a keyed collection's value as JS's
@@ -262,12 +328,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// never `undefined`, `null` one of them (`defined_payload`), as a JS
     /// `Map` holds its values as they are, `chunkCache.get(chunkId)`, its
     /// box `$someGet`'s elsewhere (ADR 1017, amended).
-    pub(super) fn reads_held(
-        &self,
-        def_id: rustc_span::def_id::DefId,
-        args: ty::GenericArgsRef<'tcx>,
-        ty: Ty<'tcx>,
-    ) -> bool {
+    pub(super) fn reads_held(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, ty: Ty<'tcx>) -> bool {
         bindings::reads_a_nullable_value(self.tcx, def_id, args)
             || (self.defined_payload(ty).is_some()
                 && self.recognition().classify(def_id, args) == Some(Std::Map(MapOp::Get)))
@@ -283,7 +344,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         body: &mir::Body<'tcx>,
         held: Local,
-        locals: &Locals,
+        writes: &IndexVec<Local, usize>,
         mentions: &[(mir::Location, Local)],
     ) -> bool {
         let derefs = |place: &Place<'tcx>| place.projection.iter().all(|elem| elem == PlaceElem::Deref);
@@ -310,12 +371,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && let Rvalue::Ref(_, BorrowKind::Shared, of) = &assign.1
                 && of.local == held
                 && derefs(of)
-                && locals.writes[reference] == 1
+                && writes[reference] == 1
             {
                 tested.insert(reference);
             }
         }
-        locals.writes[held] == 1
+        writes[held] == 1
             && (mentions.iter())
                 .filter(|(_, local)| tested.contains(local))
                 .all(|&(at, local)| match body.stmt_at(at).left() {

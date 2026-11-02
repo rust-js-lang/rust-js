@@ -316,7 +316,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A constant rustc can't say as a value, its MIR lowered as code: what
     /// it returns, or a function of it, called.
     fn const_as_code(&mut self, mir: Mir<'tcx>) -> R<Expr> {
-        let (_, stmts) = self.lowered_from_mir(&mir, Some(Vec::new()), (None, None))?;
+        let (_, stmts) = self.lowered_from_mir(&mir, Some(Vec::new()), (None, None, false))?;
         Ok(match stmts.as_slice() {
             [
                 Stmt {

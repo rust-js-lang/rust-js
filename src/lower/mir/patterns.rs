@@ -433,16 +433,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         body: &mir::Body<'tcx>,
         promoted: &IndexVec<Promoted, mir::Body<'tcx>>,
         locals: &Locals,
+        result_held: bool,
     ) -> OptionWrites {
+        let (nested, held_results) = self.mir_nested(body, &locals.writes, result_held);
         OptionWrites {
             null_nones: self.mir_null_nones(body, locals),
             nones: self.mir_nones(body, locals),
             made_some: self.mir_made_some(body, promoted, locals),
-            nested: self.mir_nested(body, locals),
+            nested,
             registered: self.mir_registered(body),
             thrown: self.mir_thrown(body, locals),
             present: self.mir_present(body),
             held: self.frame.facts.held_guards.clone(),
+            held_results,
         }
     }
 

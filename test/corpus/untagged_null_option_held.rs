@@ -91,6 +91,46 @@ fn preload(cache: &HashMap<String, Entry>, id: &str, pending: &mut Vec<&'static 
     }
 }
 
+// React's form: the thread-local's cache read in its `with_borrow`, whose
+// closure gives back what it holds.
+fn borrowed(id: &str, pending: &mut Vec<&'static str>) -> &'static str {
+    let entry = CACHE.with_borrow(|cache| cache.get(id).cloned());
+    match entry {
+        None => {
+            CACHE.with_borrow_mut(|cache| cache.insert(id.to_string(), Entry::Pending("new.js")));
+            "none"
+        }
+        Some(Entry::Pending(name)) => {
+            pending.push(name);
+            "pending"
+        }
+        Some(Entry::Count(_)) => "count",
+        Some(Entry::Loaded) => "loaded",
+    }
+}
+
+// One whose closure's result its body boxes, a call's: boxed where it's
+// given back too; and the function it calls, lowered after a closure whose
+// result is held, its own result boxed.
+fn cached_some(id: &str) -> bool {
+    let entry = CACHE.with_borrow(|cache| cache.get(id).cloned());
+    entry.is_some()
+}
+
+fn lookup(cache: &HashMap<String, Entry>, id: &str) -> Option<Entry> {
+    cache.get(id).copied()
+}
+
+fn picked(id: &str) -> bool {
+    let entry = CACHE.with_borrow(|cache| lookup(cache, id));
+    matches!(entry, Some(Entry::Loaded))
+}
+
+// A closure whose result is given on, boxed.
+fn cached_shown(id: &str) -> String {
+    owned(CACHE.with_borrow(|cache| cache.get(id).cloned()))
+}
+
 fn shown(cache: &HashMap<String, Entry>, id: &str) -> String {
     match cache.get(id) {
         None => "missing".to_string(),
@@ -198,7 +238,10 @@ fn main() {
     println!("{pending:?}");
     CACHE.with_borrow_mut(|cache| cache.insert("x".to_string(), Entry::Loaded));
     let cached = CACHE.with_borrow(|cache| preload(cache, "x", &mut pending));
-    println!("{cached}");
+    println!("{cached} {} {} {pending:?}", borrowed("y", &mut pending), borrowed("y", &mut pending));
+    println!("{}", borrowed("x", &mut pending));
+    println!("{} {}", cached_shown("x"), cached_shown("z"));
+    println!("{} {} {} {}", cached_some("x"), cached_some("z"), picked("x"), picked("y"));
     let mut slots = HashMap::new();
     slots.insert(1, Slot::Items(vec![1, 2]));
     slots.insert(2, Slot::Cleared);

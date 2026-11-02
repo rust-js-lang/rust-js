@@ -2,10 +2,12 @@
 // as its payload (ADR 1017): its `None` `undefined`, its `Some(None)`
 // `null`. Each test is a program of its own, compiled.
 
-import { expect, test } from "bun:test";
+import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { compiler, fixture, run } from "./support";
+import { buildReact, compiler, fixture, run, target } from "./support";
+
+beforeAll(buildReact, 600_000);
 
 // `matches!(last, Some(None))` is `last === null`, its two tests one where
 // they're of one place; a test of `undefined` beside another place's of
@@ -125,4 +127,70 @@ pub fn tested(values: &[Option<u32>]) -> bool {
   expect([[1, undefined], [undefined, 2], []].map((v) => given((f) => lib.derefs(v, f)))).toStrictEqual([[undefined], [2], []]);
   expect([undefined, 0, 3].map(lib.returned)).toStrictEqual([undefined, 0, 3]);
   expect([[], [1, undefined], [undefined, 1]].map(lib.tested)).toStrictEqual([false, false, true]);
+});
+
+// rd547: React's Flight client's chunk cache, a `Map<string, null |
+// Promise<any>>`, read in its thread-local's `with_borrow`, whose closure's
+// result its own body holds as the value, `null` once loaded, and gives back
+// to the local that holds it so: `chunkCache.get(chunkId)`, tested `===
+// undefined` and `!== null`, as upstream's (ADR 1017, amended).
+test("a thread-local's with_borrow gives back a map's value held as it is", async () => {
+  const dir = fixture("held-with-borrow");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::RefCell;
+use std::collections::HashMap;
+
+use js::{Promise, Unknown};
+
+#[derive(Clone)]
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum ChunkEntry {
+    Pending(Promise<Option<&'static Unknown>>),
+    #[cfg_attr(rust_js, rust_js::null)]
+    Loaded,
+}
+
+thread_local! {
+    static CHUNK_CACHE: RefCell<HashMap<String, ChunkEntry>> = RefCell::new(HashMap::new());
+}
+
+pub fn preload(
+    chunk_id: &str,
+    promises: &mut Vec<Promise<Option<&'static Unknown>>>,
+    make: &dyn Fn() -> Promise<Option<&'static Unknown>>,
+) {
+    let entry = CHUNK_CACHE.with_borrow(|chunk_cache| chunk_cache.get(chunk_id).cloned());
+    match entry {
+        None => {
+            let thenable = make();
+            CHUNK_CACHE.with_borrow_mut(|chunk_cache| {
+                chunk_cache.insert(chunk_id.to_string(), ChunkEntry::Pending(thenable.clone()))
+            });
+            promises.push(thenable);
+        }
+        Some(ChunkEntry::Pending(entry)) => promises.push(entry),
+        Some(ChunkEntry::Loaded) => {}
+    }
+}
+
+pub fn loaded(chunk_id: &str) {
+    CHUNK_CACHE.with_borrow_mut(|chunk_cache| chunk_cache.insert(chunk_id.to_string(), ChunkEntry::Loaded));
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("(chunkCache) => chunkCache.get(chunkId)");
+  expect(js).toContain("if (entry === undefined) {");
+  expect(js).toContain("promises.push(entry);");
+  expect(js).not.toContain("$someValue");
+  const lib = await import(join(dir, "lib.js"));
+  const made = Promise.resolve(1);
+  const promises: unknown[] = [];
+  lib.preload("a", promises, () => made);
+  lib.preload("a", promises, () => Promise.resolve(2));
+  lib.loaded("b");
+  lib.preload("b", promises, () => Promise.resolve(3));
+  expect(promises).toStrictEqual([made, made]);
 });
