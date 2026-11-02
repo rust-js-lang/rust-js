@@ -484,7 +484,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
     let case_starts = cases::case_starts(module, &sources.text);
     // And each value of a case of more than one, which a comment between
     // an arm's patterns is before (rd139), or above the arm (rd143).
-    let pattern_starts = cases::pattern_starts(module);
+    let pattern_starts = cases::pattern_starts(module, &sources.text);
     // And a call's argument, and an object literal's field, whose comments
     // oxc writes before it, on lines of their own (ADR 0708).
     let parts = part_starts(module);

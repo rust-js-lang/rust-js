@@ -93,18 +93,25 @@ fn let_start(before: &str) -> Option<usize> {
 /// pattern, `67 /* "C" */ => {`, as if it weren't there (rd525).
 pub(super) fn opens_default(between: &str) -> bool {
     // Past a block comment on its pattern, `_ /* "{" "[" */ => {` (rd525).
-    let mut code = between.to_string();
-    while let Some(open) = code.find("/*")
-        && let Some(close) = code[open..].find("*/")
-    {
-        code.replace_range(open..open + close + 2, " ");
-    }
+    let code = uncommented(between);
     let head = code.trim();
     let head = head.strip_suffix("if").map_or(head, str::trim_end);
     head.strip_suffix('{')
         .map(str::trim_end)
         .and_then(|head| head.strip_suffix("=>"))
         .is_some_and(|pattern| !pattern.trim().is_empty() && !pattern.contains(['\n', ';', '{', '}', '|']))
+}
+
+/// `text` with each block comment in it a space, so a pattern's, `125 /*
+/// "}" */ =>`, reads as if it weren't there (rd525).
+fn uncommented(text: &str) -> String {
+    let mut code = text.to_string();
+    while let Some(open) = code.find("/*")
+        && let Some(close) = code[open..].find("*/")
+    {
+        code.replace_range(open..open + close + 2, " ");
+    }
+    code
 }
 
 /// Whether a comment the program wrote says a case falls through, as
@@ -118,33 +125,79 @@ pub(super) fn says_fallthrough(comment: &str) -> bool {
         .any(|said| text.contains(said))
 }
 
-/// Where each value of a case of more than one starts, of `module`'s
-/// `switch`es: a start a comment between a `match` arm's patterns is
-/// before, `"mouseup" // TODO: .. | "mouseout"`'s, as React writes it
-/// between its `case`s (rd139); and one above the arm, before its first,
-/// `// Unlike commitLayoutEffectsOnFiber ..` above `case HostSingleton:`,
-/// and a blank line there (rd143), where its first is printed
-/// (`Cx::stmt`'s `switch`). Not of a case of one, whose comment above its
-/// arm is its body's (ADR 0590), printed at no start of its own; but of
-/// one whose arm does nothing, `"value" => {}`, a body of nothing written
-/// (`at_its_value`), whose comment above it is the case's (rd136).
-pub(super) fn pattern_starts(module: &Module) -> Vec<u32> {
+/// Where each value of a case printed where it's written starts
+/// (`at_its_value`), of `module`'s `switch`es, `source` the program: a
+/// start a comment between a `match` arm's patterns is before, `"mouseup"
+/// // TODO: .. | "mouseout"`'s, as React writes it between its `case`s
+/// (rd139); and one above the arm, before its first, `// Unlike
+/// commitLayoutEffectsOnFiber ..` above `case HostSingleton:`, and a blank
+/// line there (rd143), where its first is printed (`Cx::stmt`'s
+/// `switch`). Not of a case of one value whose arm is a value, `IMMEDIATE
+/// => -1.0`, whose comment above it is its body's (ADR 0590), printed at
+/// no start of its own.
+pub(super) fn pattern_starts(module: &Module, source: &str) -> Vec<u32> {
     let mut starts = Vec::new();
     each_switch(module, &mut |cases, _| {
-        let stacked = cases.iter().filter(|case| at_its_value(case));
+        let stacked = cases.iter().filter(|case| at_its_value(case, source));
         let values = stacked.flat_map(|case| case.values.iter());
         starts.extend(values.filter(|v| !v.span.is_none()).map(|v| v.span.lo));
     });
     starts
 }
 
-/// Whether `case` is printed where its first value is written: one of more
-/// than one value (rd139, rd143), or of one whose arm does nothing, its
-/// body nothing the program wrote, `case "value": break;` of `"value" =>
-/// {}`, a comment above which is before it, not above the loop's first
-/// statement (rd136).
-pub(crate) fn at_its_value(case: &js::Case) -> bool {
-    case.values.len() > 1 || (!case.values.is_empty() && case.body.iter().all(|s| s.span.is_none()))
+/// Whether `case` is printed where its first value is written, in
+/// `source`, so a comment above its arm is above its `case`, as upstream
+/// writes one (rd619, the user's decision): one of more than one value
+/// (rd139, rd143); and of one whose arm opens a block, `"mousedown" => {`,
+/// `"value" => {}`'s that does nothing too, `case "value": break;`
+/// (rd136), or is guarded and does nothing, `"selectionchange" if skip =>
+/// {}` (`opens_or_guards`).
+/// Not of one whose arm is a value, `IMMEDIATE => -1.0`, whose comment
+/// above it is its body's, there being no other place to write it (ADR
+/// 0590).
+pub(crate) fn at_its_value(case: &js::Case, source: &str) -> bool {
+    if case.values.is_empty() {
+        return false;
+    }
+    case.values.len() > 1 || written_apart(case, source)
+}
+
+/// Whether `case`'s arm, in `source`, where its first value is, opens a
+/// block or is guarded and does nothing (`opens_or_guards`): what a
+/// comment above it is above, not its body, as upstream writes one
+/// (rd619).
+fn written_apart(case: &js::Case, source: &str) -> bool {
+    // Not of an arm of only comments, `3 => { // .. }`, which are its
+    // clause's own where it ends (`commented_clause`).
+    let commented = matches!(case.body.first().map(|s| &s.kind), Some(StmtKind::Comments));
+    !commented
+        && (case.values.first()).is_some_and(|first| !first.span.is_none() && opens_or_guards(source, first.span.hi))
+}
+
+/// Whether the arm whose pattern ends at `hi` in `source` opens a block,
+/// `"mousedown" => {`, or is guarded and does nothing, `"selectionchange"
+/// if skip => {}`, its case's body only its guard's `if`: what's between
+/// the pattern and its `=>`, past the value's own `)` of `Some("a")`, and
+/// after it. Not a guarded arm that does something, `"keypress" if
+/// char_code(event) == 0 => return None`, whose comment above it is its
+/// body's, before the guard's `if`, as upstream writes React DOM's
+/// SimpleEventPlugin's and completeWork's.
+fn opens_or_guards(source: &str, hi: u32) -> bool {
+    let Some(rest) = source.get(hi as usize..) else {
+        return false;
+    };
+    let Some(arrow) = rest.find("=>") else {
+        return false;
+    };
+    // Past a block comment on its pattern, `125 /* "}" */ => {` (rd525).
+    let (head, body) = (uncommented(&rest[..arrow]), rest[arrow + 2..].trim_start());
+    let pattern = head.split(['{', '}', ';']).next().unwrap_or_default();
+    match pattern.split_whitespace().any(|word| word == "if") {
+        true => body
+            .strip_prefix('{')
+            .is_some_and(|inside| inside.trim_start().starts_with('}')),
+        false => !head.contains(['{', '}', ';']) && body.starts_with('{'),
+    }
 }
 
 /// Where each case a case falls through to starts, of `module`'s
@@ -187,12 +240,14 @@ pub(super) fn case_starts(module: &Module, source: &str) -> Vec<u32> {
     // is now forwards.` above `case 'forwards': default:` (rd214).
     // Where its arm opens a block, just past its `{`: what's in the block is
     // its body's.
+    // And each case's whose arm opens a block, `"mousedown" => {`, or is
+    // guarded, `"selectionchange" if skip => {}`, where its first value is,
+    // a comment above which is before its `case`, not its body's first
+    // statement on the guard's line (rd166, rd619).
     each_switch(module, &mut |cases, default| {
         starts.extend(default.and_then(|default| clause_start(source, default)));
-        // And each case's of one value whose arm opens a block, `"meta" =>
-        // {`, a comment above which is before its `case` too (rd166).
-        let single = cases.iter().filter(|case| case.values.len() == 1);
-        starts.extend(single.filter_map(|case| clause_start(source, &case.body)));
+        let apart = cases.iter().filter(|case| written_apart(case, source));
+        starts.extend(apart.map(|case| case.values[0].span.lo));
     });
     starts.sort_unstable();
     starts.dedup();

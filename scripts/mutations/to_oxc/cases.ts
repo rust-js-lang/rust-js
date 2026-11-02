@@ -45,19 +45,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "stacked-case-starts-of-one-pattern",
-    breaks: "a comment before an arm of one pattern, which ADR 0590 puts in its body, is before a start no clause is printed at, and lost, `// Track the input node that has focus.` (rd143)",
+    breaks: "a case of more than one value is printed where none is written, so a comment or a blank line above its arm, `\"rp\" | \"rt\" => ..`, is in its body, not above its first `case` (rd143)",
     file: "src/to_oxc/cases.rs",
-    find: "    case.values.len() > 1 || (!case.values.is_empty() && case.body.iter().all(|s| s.span.is_none()))\n",
-    replace: "    !case.values.is_empty()\n",
-    tests: ["test/corpus.test.ts", "-t", "^switch_guard_skips_its_case.rs$"],
-    snapshots: true,
+    find: "    case.values.len() > 1 || written_apart(case, source)\n",
+    replace: "    written_apart(case, source)\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "above an arm of patterns is above its first case"],
   },
   {
     name: "block-case-start-unlisted",
     breaks:
-      "a case of one pattern whose arm opens a block isn't a start a comment above its arm is before, and the comment stays in its body (rd166)",
+      "a case whose arm opens a block, or is guarded and does nothing, isn't a start a comment above its arm is before, and the comment is its body's first statement's, `if (skip)`'s on the guard's line (rd166, rd619)",
     file: "src/to_oxc/cases.rs",
-    find: "        starts.extend(single.filter_map(|case| clause_start(source, &case.body)));\n",
+    find: "        starts.extend(apart.map(|case| case.values[0].span.lo));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^switch_guard_skips_its_case.rs$"],
     snapshots: true,
@@ -99,13 +98,42 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "opens with a `let`"],
   },
   {
-    name: "empty-arm-case-at-no-value",
+    name: "block-case-comment-in-body",
     breaks:
-      "a comment above an arm that does nothing, `// Controlled attributes are not validated.` above `\"value\" => {}`, is above the loop's `const name = names[i];`, not its `case \"value\":` (rd136)",
+      "a comment above an arm of one pattern that opens a block, `// Don't fire the event ..` above `\"mousedown\" => {`, is in its case's body, not before its `case` (rd166, rd619)",
     file: "src/to_oxc/cases.rs",
-    find: "    case.values.len() > 1 || (!case.values.is_empty() && case.body.iter().all(|s| s.span.is_none()))\n",
-    replace: "    case.values.len() > 1\n",
-    tests: ["test/corpus.test.ts", "-t", "^switch_guarded_or_pattern\\.rs$"],
+    find: "        false => !head.contains(['{', '}', ';']) && body.starts_with('{'),\n",
+    replace: "        false => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^(switch_guard_skips_its_case|switch_guarded_or_pattern).rs$"],
     snapshots: true,
+  },
+  {
+    name: "guarded-nothing-case-comment-in-body",
+    breaks:
+      "a comment above a guarded arm that does nothing, `// Chrome and IE fire ..` above `\"selectionchange\" if skip => {}`, is in its case, before the guard's `if`, not above `case \"selectionchange\":` as upstream writes it (rd619)",
+    file: "src/to_oxc/cases.rs",
+    find: "        true => body\n",
+    replace: "        true => false && body\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_guard_skips_its_case.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "guarded-doing-case-comment-above",
+    breaks:
+      "a comment above a guarded arm that does something, `// Remove unwanted keypresses.` above `\"keypress\" if char_code(..) == 0 => return None`, is above its `case`, not before the guard's `if` in it, as upstream's SimpleEventPlugin writes it (rd619)",
+    file: "src/to_oxc/cases.rs",
+    find: "        true => body\n",
+    replace: "        true => true || body\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_text_guard_falls.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "commented-arm-written-apart",
+    breaks:
+      "a case whose arm is only comments, `3 => { // The last case .. }`, is printed where its value is, and its comments, the clause's own, are lost (rd619)",
+    file: "src/to_oxc/cases.rs",
+    find: "    !commented\n",
+    replace: "    (commented || !commented)\n",
+    tests: ["test/lowering-comments-ends.test.ts", "-t", "a last arm of only comments keeps them in its clause"],
   },
 ];

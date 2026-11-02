@@ -165,6 +165,24 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt], told: 
         calls: &mut calls,
     };
     tree_walk.walk(vec![tree], Vec::new())?;
+    // A tree whose tests are a guard of a `match` that's a `switch`: the
+    // `switch`'s, its guarded case falling through to the next (ADR 0905),
+    // each arm's `if` its case's, not a chain of `name === "focusin" &&
+    // (..)` and `(name === "selectionchange" && !skip) || ..`, of a tree a
+    // drop MIR decides at the block's end makes (rd619).
+    let switched_guard = tested.iter().any(|(_, test)| {
+        let mut parts = Vec::new();
+        leaf_tests(test, js::Span::NONE, &mut parts);
+        parts.iter().any(|(_, at)| {
+            !at.is_none()
+                && (told.switches.iter())
+                    .flat_map(|s| &s.arms)
+                    .any(|arm| arm.guard.is_some_and(|g| within(*at, g)))
+        })
+    });
+    if switched_guard {
+        return None;
+    }
     // A path no value takes, `c < "0" && c >= "A"`, goes.
     let valued = |e: &Expr| valued(e, told.switches);
     // Only of a tree no `switch` takes, a `break` of the loop around it in
@@ -264,10 +282,10 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt], told: 
     // The `else`: an arm that does nothing, or the one whose test is longest;
     // and that one where the others' tests, with the arm that does nothing's
     // the `else`, are longer than the tree's, of an arm that does nothing
-    // going on to what follows the block, `"C" => {}` between guarded arms
-    // (not one a turn of a loop ends, which a `switch` of `continue`s may
-    // be, ADR 0636): that arm's test negated, what follows it in the chain
-    // inside, `if (name !== "C") { if (name === "D" && keep) { .. } else {
+    // going on, `"C" => {}` between guarded arms, of a `match` no `switch`
+    // takes (a `switch`'s guard's tree is never chained, `switched_guard`,
+    // so a turn of a loop it ends is the `switch` of `continue`s, ADR
+    // 0636): that arm's test negated, what follows it in the chain inside, `if (name !== "C") { if (name === "D" && keep) { .. } else {
     // .. } }`.
     let empty: Vec<usize> = (0..arms.len()).filter(|&i| bodies[i].is_empty()).collect();
     let longest = (0..arms.len()).max_by_key(|&i| arms[i].tests.iter().flatten().map(atoms).sum::<usize>())?;
@@ -388,10 +406,8 @@ fn chain((label, block): (&str, js::Span), body: &[Stmt], after: &[Stmt], told: 
         Some(chain.unwrap_or_default())
     };
     let chain = match empty.as_slice() {
-        [only] => arranged(*only, arms.clone(), bodies.clone()).or_else(|| {
-            let goes_on = *only != longest && !after.is_empty();
-            goes_on.then(|| arranged(longest, arms, bodies)).flatten()
-        }),
+        [only] => arranged(*only, arms.clone(), bodies.clone())
+            .or_else(|| (*only != longest).then(|| arranged(longest, arms, bodies)).flatten()),
         _ => arranged(longest, arms, bodies),
     }?;
     let mut stmts: Vec<Stmt> = decls.to_vec();
@@ -635,14 +651,10 @@ impl<'s> Walk<'s, '_> {
         let guard = |test: &Expr| {
             let mut parts = Vec::new();
             leaf_tests(test, js::Span::NONE, &mut parts);
-            let switched = |g: &Guard| {
-                (self.told.switches.iter())
-                    .flat_map(|s| &s.arms)
-                    .any(|arm| arm.guard == Some(g.span))
-            };
+            // A `switch`'s guard is a test too, of a tree `chain` leaves to
+            // the `switch` (`switched_guard`).
             (parts.iter()).all(|(part, span)| {
-                pure(part)
-                    || !span.is_none() && (self.told.guards.iter()).any(|g| within(*span, g.span) && !switched(g))
+                pure(part) || !span.is_none() && (self.told.guards.iter()).any(|g| within(*span, g.span))
             })
         };
         if let StmtKind::If(test, then, otherwise) = &stmt.kind {

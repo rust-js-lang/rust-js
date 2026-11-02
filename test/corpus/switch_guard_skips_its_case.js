@@ -22,9 +22,9 @@ function extract(name, n, log) {
     case "focusout":
       construct(log, 2);
       break;
+    // Don't fire the event while the user is dragging. This matches the
+    // semantics of the native select event.
     case "mousedown":
-      // Don't fire the event while the user is dragging. This matches the
-      // semantics of the native select event.
       down = true;
       break;
     case "contextmenu":
@@ -33,10 +33,10 @@ function extract(name, n, log) {
       down = false;
       construct(log, n);
       break;
+    // Chrome and IE fire non-standard event when selection is changed (and
+    // sometimes when it hasn't). IE's event fires out of order with respect
+    // to key and input events on deletion, so we discard it.
     case "selectionchange":
-      // Chrome and IE fire non-standard event when selection is changed (and
-      // sometimes when it hasn't). IE's event fires out of order with respect
-      // to key and input events on deletion, so we discard it.
       if (skip) {
         break;
       }

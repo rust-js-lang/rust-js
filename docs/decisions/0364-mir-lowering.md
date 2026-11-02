@@ -15,7 +15,8 @@ nothing of never unwinds, so the cleanup it would unwind to drops nothing.
 Amended: a value a block gives last is given first only where nothing can
 tell (issue #219, below); an `|` of two values' tests is a chain of its
 arms; no arm holds a copy of what follows the `match` (kj-switch); a
-chain's arm needs no more than that the arms before it failed (#221). Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): the value of an `if` the program wrote with a branch of `false` or `true` is a conditional, `c ? x : false`, not `c && x`; its branches are in the order written.
+chain's arm needs no more than that the arms before it failed (#221); a
+tree of a `switch`'s guard is the `switch`'s (rd619). Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): the value of an `if` the program wrote with a branch of `false` or `true` is a conditional, `c ? x : false`, not `c && x`; its branches are in the order written.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -599,3 +600,42 @@ alike are one call of the model**, which refuses only a path that makes
 two, `(1, _) | (_, 1) if odd(a + b)` of `(1, 1)`, which Rust calls twice.
 `Some(1) | None if odd(3)` is `(a == null || a === 1) && odd(3)`, where it
 was MIR's labeled block. See ADR 0905's amendment of the same day.
+
+## Amendment: a tree of a `switch`'s guard is the `switch`'s (rd619, 2026-11-02)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, which statements are
+made, not what they do.
+
+React DOM's SelectEventPlugin moves `target_inst` in one arm, `"focusin"
+=> { if .. { ACTIVE_ELEMENT_INST.set(target_inst); } }`, and has a guarded
+arm that falls to the next, `"selectionchange" if skip => {}`. MIR decides
+the drop through a block every arm breaks out of, and `decisions` read
+that tree: the arm's own `if` as one of its tests, `name === "focusin" &&
+(..)`, and the guarded arm with the next, `(name === "selectionchange" &&
+!skip) || name === "keydown"`. Neither is a `switch`'s, and upstream's
+`switch (domEventName)` was an `if` chain, the comment above the guarded
+arm on its test's operand. Where the arms return, no block is made and
+the `switch` takes the arms as written.
+
+**A tree whose tests include a guard of a `match` that's a `switch`
+(`Written::switches`) isn't made a chain** (`chain`'s `switched_guard`):
+the `switch` takes it, its guarded case falling through to the next (ADR
+0905), and each arm's `if` its case's. This replaces the rule that a
+`switch`'s guard that calls is no test of the tree (#221), which left its
+`if` to an arm's statements: one rule, as a guard of either kind is now
+one the tree never chains. An `if` the program wrote in an arm's body was
+considered for a rule of its own, that it's the arm's and no test, but no
+tree reaches `decisions` with one where the `switch` has no guard: MIR
+makes no block of it. And bb39's exception, that an arm doing nothing
+where a loop's turn ends isn't the chain's negated test, as a `switch` of
+`continue`s may be (rd184), was of a guarded `switch`'s tree, which never
+gets there now: it's gone, and its mutation, which the corpus and the
+lowering's tests all passed with, with it; `switch_turn_end_unguarded`
+holds the `switch` of such arms with no guard.
+
+Held by the corpus cases `switch_arm_tests_its_own` (the port's shape, its
+moved `Rc`, and one with no guard), `switch_turn_end_unguarded`,
+`guarded_arm_falls_to_tail`, `default_value_exits`,
+`guards_that_call` and `guarded_arm_chains`, run against native Rust, and
+the mutation `switched-guard-decided` (`mir/tidy/decisions.ts`), which
+takes `decisions-switch-guard-chained`'s place.

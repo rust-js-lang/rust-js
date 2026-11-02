@@ -1,7 +1,9 @@
 # 0590. A `match` of constants tests each by its name, its comments in its arms
 
 Status: Accepted. Extends [0014](0014-match-lowering.md)'s `if` chains and
-[0444](0444-a-comment-is-where-its-code-is.md)'s comments.
+[0444](0444-a-comment-is-where-its-code-is.md)'s comments. Amended: a
+comment above an arm of a block, or a guarded arm that does nothing, is
+above its `case` (rd619, the user's decision).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A. A name and its value
 test the same.
@@ -223,3 +225,59 @@ another module's constant, imported) and `presence_said_by_chain` (`value
 `text-named-past-its-patterns` (`body_queries/constants.ts`),
 `named-text-left-its-literal`, `named-text-before-tidy` and
 `named-text-of-a-written-eq` (`named_constants.ts`).
+
+## Amendment: a comment above an arm of a block, or a guarded arm that does nothing, is above its `case` (rd619, 2026-11-02, the user's decision)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments.
+
+rd166 put a comment above an arm of one pattern that opens a block before
+its `case`, by where the arm's first statement is: just past its `{`
+(`cases::clause_start`). A first statement whose span starts after code on
+its line, `DOWN.set(true)`'s at `set`, had no such place, and React DOM's
+SelectEventPlugin printed `case "mousedown": // Don't fire ..`; a comment
+above a guarded arm that does nothing, `"selectionchange" if skip => {}`,
+went to the guard's `if (skip)` in the case. Upstream writes both above
+the `case`. The user decided: **a comment above an arm prints above its
+`case` label, as upstream writes it**. A case is printed where its first
+value is written (`cases::at_its_value`, as rd143's case of more than one
+value and rd136's of an arm that does nothing were) where its arm opens a
+block or is guarded and does nothing (`cases::opens_or_guards`, of the
+source between the pattern and its `=>` and after), and that start is a
+case's (`cases::case_starts`), so the comment is before the `case`, not
+the first statement on the guard's line. A comment inside the block,
+before its first statement, stays the body's.
+
+Two arms keep their comments in their cases, as upstream does: an arm
+that's a value, `IMMEDIATE => -1.0`, the scheduler's (`case
+ImmediatePriority: // Times out immediately`), where the arm has no other
+place for its body's comment; and a guarded arm that does something,
+SimpleEventPlugin's `"keypress" if char_code(..) == 0 => return None`
+(`case 'keypress': // Firefox creates .. if (getEventCharCode(..) === 0)`)
+and completeWork's `THROW if !DISABLE_LEGACY_MODE => return None`, whose
+comment is before the guard's `if`. An arm of only comments, `3 => { //
+.. }`, keeps them in its clause, where it ends (`commented_clause`).
+
+The `if` chain the port printed instead, `name === // Chrome and IE ..
+"selectionchange" && !skip || ..`, its comment on the test's operand, was
+the `decisions` pass's chain of the `match`, whose guarded arm and a
+drop MIR decides at the block's end, of a value one arm moves, made a tree
+of it: see ADR 0364's amendment of the same day. The `switch` is made again, and its comments
+are its cases'.
+
+Held by the corpus cases `switch_guard_skips_its_case` (above `case
+"mousedown":` and `case "selectionchange":`), `switch_arm_tests_its_own`
+and `switch_text_guard_falls` (the guarded `return`'s comment in its
+case), run against native Rust; `lowering-comments-ends`' "a last arm of
+only comments keeps them in its clause"; the guide's basics.md; and the
+mutations `block-case-start-unlisted` and `stacked-case-starts-of-one-pattern`
+(retargeted), `block-case-comment-in-body` (moved from
+`to_oxc/statements.ts`; it holds rd136's `"value" => {}` too, an arm of a
+block, so `empty-arm-case-at-no-value` and the rule of a body of nothing
+written it held are gone), `guarded-nothing-case-comment-in-body`,
+`guarded-doing-case-comment-above` and `commented-arm-written-apart`
+(`to_oxc/cases.ts`). What the case's start being its value's left to
+other tests: `lowering-comments-inside`'s "a comment above an arm of a
+block of an if chain is before its first statement" holds
+`arm-opening-not-an-opening`, and `lowering-comments-jumps`' "a comment
+above a _ arm whose pattern's comment has brackets is before its default"
+holds `comment-between-read-apart` (`to_oxc.ts`).

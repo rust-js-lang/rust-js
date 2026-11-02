@@ -245,6 +245,8 @@ test("a comment or a blank line above an arm of patterns is above its first case
 const B: u8 = 1;
 const C: u8 = 2;
 const D: u8 = 3;
+const E: u8 = 4;
+const F: u8 = 5;
 
 pub fn effects(tag: u8, log: &mut Vec<u8>) {
     match tag {
@@ -256,6 +258,9 @@ pub fn effects(tag: u8, log: &mut Vec<u8>) {
         C | D => {
             log.push(2);
         }
+        // Above an arm of a value.
+        E // Between its patterns.
+        | F => log.push(3),
         _ => {}
     }
 }
@@ -273,10 +278,13 @@ pub fn valid(tag: &str, parent: Option<&str>) -> bool {
 }
 `);
   expect(js).toContain("      break;\n    // Above the arm.\n    // A second line.\n    case C:\n    case D:\n");
+  // Of an arm of a value whose patterns have a comment between them, each
+  // case where its value is (rd139).
+  expect(js).toContain("      break;\n    // Above an arm of a value.\n    case E: // Between its patterns.\n    case F:\n      log.push(3);\n");
   expect(js).toContain('      return true;\n\n    case "rp":\n    case "rt":\n');
   const log: number[] = [];
-  for (const tag of [0, 3, 7]) lib.effects(tag as never, log as never);
-  expect([log, lib.valid("rt" as never, undefined as never), lib.valid("y" as never, undefined as never)]).toEqual([[1, 2], true, false]);
+  for (const tag of [0, 3, 5, 7]) lib.effects(tag as never, log as never);
+  expect([log, lib.valid("rt" as never, undefined as never), lib.valid("y" as never, undefined as never)]).toEqual([[1, 2, 3], true, false]);
 });
 
 // React's Flight client's processFullStringRow: an arm whose pattern has a
@@ -585,4 +593,34 @@ pub fn kept_else(n: Option<u32>, given: Option<u32>) -> Option<u32> {
   expect(js).toContain("  // Else the one given.\n  let current = n ?? given;\n");
   const kept = lib.keptElse as (n?: number, given?: number) => unknown;
   expect([kept(1, 2), kept(undefined, 2)]).toEqual([1, 2]);
+});
+
+// A comment above a `_` arm whose pattern's comment holds brackets, `_ /*
+// "{" "}" */ => {`: the code between it and the `default`'s start is read
+// as if that comment weren't there, so it's before the `default`, not lost
+// or above the `switch` (rd525).
+test("a comment above a _ arm whose pattern's comment has brackets is before its default", async () => {
+  const { js, lib } = await compiled("comment-above-bracketed-default", `pub fn process(tag: u8, row: &str) -> Vec<String> {
+    let mut log = Vec::new();
+    match tag {
+        82 /* "R" */ => {
+            log.push("r".to_string());
+        }
+        67 /* "C" */ => {
+            log.push("stop".to_string());
+        }
+        125 /* "}" */ => {
+            log.push("close".to_string());
+        }
+        // We assume anything else is JSON.
+        _ /* "{" "}" */ => {
+            log.push(row.to_string());
+        }
+    }
+    log
+}
+`);
+  expect(js).toContain("      break;\n    // We assume anything else is JSON.\n    default:\n");
+  const process = lib.process as (tag: number, row: string) => string[];
+  expect([process(125, "x"), process(1, "{}")]).toEqual([["close"], ["{}"]]);
 });

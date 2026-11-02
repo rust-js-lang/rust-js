@@ -382,3 +382,37 @@ pub fn style() -> String {
     "padding: 0 2px;margin: 0",
   ]);
 });
+
+// A comment above an arm of a block that's no `switch`'s case, `// Nothing
+// is released.` above `None => { DOWN.set(false); }`, whose first
+// statement's span starts at `set`, past `DOWN.`: read past the arm's
+// opening, before that statement, its `else`'s first (ADR 0905, amended,
+// rd119).
+test("a comment above an arm of a block of an if chain is before its first statement", async () => {
+  const { js, lib } = await compiled("comment-above-a-chain-arm", `use std::cell::Cell;
+
+thread_local! {
+    static DOWN: Cell<bool> = const { Cell::new(false) };
+}
+
+pub fn pick(v: Option<u32>, out: &mut Vec<u32>) -> bool {
+    match v {
+        // A number is pressed.
+        Some(n) => {
+            DOWN.set(true);
+            out.push(n);
+        }
+        // Nothing is released.
+        None => {
+            DOWN.set(false);
+        }
+    }
+    DOWN.get()
+}
+`);
+  expect(js).toContain("  // A number is pressed.\n  if (v != null) {\n");
+  expect(js).toContain("  } else {\n    // Nothing is released.\n    down = false;\n");
+  const out: number[] = [];
+  const pick = lib.pick as (v: number | undefined, out: number[]) => boolean;
+  expect([pick(4, out), pick(undefined, out), out]).toEqual([true, false, [4]]);
+});

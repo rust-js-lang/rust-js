@@ -348,16 +348,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments-inside.test.ts", "-t", "_ arm that opens a block"],
   },
   {
-    name: "block-case-comment-in-body",
-    breaks:
-      "a comment above an arm of one pattern that opens a block, `// Track the input node that has focus.` above `\"focusin\" => {`, is in its case's body, not before its `case` (rd166)",
-    file: "src/to_oxc/statements.rs",
-    find: "                        .or(opened)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^switch_guard_skips_its_case.rs$"],
-    snapshots: true,
-  },
-  {
     name: "subclass-a-constructor-function",
     breaks: "a class that extends one is a constructor function, `function Label(props) { super(props); .. }`, which can't extend",
     file: "src/to_oxc/statements.rs",

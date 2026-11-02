@@ -2,9 +2,10 @@
 // next, which names its string and more: React DOM's SelectEventPlugin,
 // `"selectionchange" if SKIP.with(|skip| *skip) => {}`, upstream's `case
 // 'selectionchange': if (skipSelectionChangeEvent) { break; } // falls
-// through`, its arms' comments before their bodies, `case 'mousedown': //
-// Don't fire ..`, and no `default:` of the last `_ => {}` (rd119, ADR 0905
-// amended).
+// through`, the comment above each arm of a block, or guarded and doing
+// nothing, above its `case`, `// Don't fire .. case 'mousedown':` (rd619,
+// the user's decision), and no `default:` of the last `_ => {}` (rd119,
+// ADR 0905 amended).
 use std::cell::{Cell, RefCell};
 
 thread_local! {

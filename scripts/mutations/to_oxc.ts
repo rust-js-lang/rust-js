@@ -615,12 +615,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "arm-opening-not-an-opening",
-    breaks: "a comment before an arm whose body is a block, `// Track the input node that has focus.` before `\"focusin\" => {`, moves above the `switch`, not into its case before its first statement, React DOM's SelectEventPlugin (rd119, ADR 0905 amended)",
+    breaks: "a comment before an arm whose body is a block, `// Nothing is released.` before `None => { DOWN.set(false); }`, moves above the chain, not into its `else` before its first statement, React DOM's SelectEventPlugin (rd119, ADR 0905 amended)",
     file: "src/to_oxc.rs",
     find: "                        || arm_opening(head) && receiver_only(&rest[i + 1..])\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^switch_guard_skips_its_case.rs$"],
-    snapshots: true,
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "an arm of a block of an if chain"],
   },
   {
     name: "stacked-case-blank-line-between",
@@ -704,7 +703,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "                    between.replace_range(lo..hi, &\" \".repeat(hi - lo));\n",
     replace: "                    let _ = (lo, hi);\n",
-    tests: ["test/lowering-comments-jumps.test.ts", "-t", "whose pattern has a comment"],
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "whose pattern has a comment|pattern's comment has brackets"],
   },
   {
     name: "default-pattern-comment-unmarked",

@@ -1699,7 +1699,8 @@ export function settled(status) {
 }
 ```
 
-A comment before an arm is before its body:
+A comment before an arm that's a value is before its body, as there's
+nowhere else in the arm to write it:
 
 ```rust
 pub const IMMEDIATE: u8 = 1;
@@ -1768,6 +1769,57 @@ export function unchecked(names) {
     }
   }
   return found;
+}
+```
+
+So is one before an arm that opens a block, and one before a guarded arm
+that does nothing, as React writes them above their `case`s; a comment
+inside the block is its body's. Before a guarded arm that does something,
+`"keypress" if code == 0 => return None`, it's the case's, before the
+guard's `if` ([ADR 0590](../../decisions/0590-a-match-of-constants-names-them.md),
+amended):
+
+```rust
+pub fn extract(name: &str, skip: bool, log: &mut Vec<u32>) {
+    match name {
+        // Track the input node that has focus.
+        "focusin" => {
+            log.push(1);
+        }
+        "focusout" => {
+            // Forget it.
+            log.clear();
+        }
+        // Chrome fires it when the selection hasn't changed.
+        "selectionchange" if skip => {}
+        "selectionchange" | "keydown" => {
+            log.push(2);
+        }
+        _ => {}
+    }
+}
+```
+
+```js
+export function extract(name, skip, log) {
+  switch (name) {
+    // Track the input node that has focus.
+    case "focusin":
+      log.push(1);
+      break;
+    case "focusout":
+      // Forget it.
+      log.length = 0;
+      break;
+    // Chrome fires it when the selection hasn't changed.
+    case "selectionchange":
+      if (skip) {
+        break;
+      }
+    // Fallthrough
+    case "keydown":
+      log.push(2);
+  }
 }
 ```
 

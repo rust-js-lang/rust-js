@@ -662,25 +662,16 @@ impl<'a> Cx<'a> {
                         continue;
                     };
                     // Where a case falls through to it, where its comment
-                    // says so is (ADR 0905); else, of more than one value,
-                    // where its first is written, which a comment above
-                    // the arm is before (rd143, `cases::pattern_starts`), and
-                    // of one whose arm does nothing (rd136); one before an
-                    // arm of one value is its body's (ADR 0590).
-                    let first = (super::cases::at_its_value(case) && !case.values[0].span.is_none())
+                    // says so is (ADR 0905); else where its first value is
+                    // written, which a comment above the arm is before, as
+                    // upstream writes one above its `case` (rd619,
+                    // `cases::at_its_value`); one before an arm of one value
+                    // that's a value is its body's (ADR 0590).
+                    let first = (super::cases::at_its_value(case, self.source) && !case.values[0].span.is_none())
                         .then(|| Span::new(case.values[0].span.lo, case.values[0].span.lo));
-                    // Of one value whose arm opens a block, `"meta" => {`,
-                    // where its first statement is, so a comment above the
-                    // arm is before its `case`, as a `_`'s is before its
-                    // `default` (rd166, rd214).
-                    let opened = (stacked.is_empty())
-                        .then(|| super::cases::clause_start(self.source, &case.body))
-                        .flatten()
-                        .map(|lo| Span::new(lo, lo));
                     let mut at = super::fallen_to(cases, k)
                         .map(|lo| Span::new(lo, lo))
                         .or(first)
-                        .or(opened)
                         .unwrap_or(SPAN);
                     // Each value after the first where it's written, which a
                     // comment between an arm's patterns is before, `"mouseup"

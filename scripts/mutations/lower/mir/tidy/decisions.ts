@@ -19,23 +19,13 @@ export const mutations: Mutation[] = [
     breaks:
       "a match's arm that does nothing between guarded arms, `\"C\" => {}`, is the chain's `else` or none, so `kinds` keeps MIR's `bb39:` block (bb39)",
     file: "src/lower/mir/tidy/decisions.rs",
-    find: "            let goes_on = *only != longest && !after.is_empty();\n",
-    replace: "            let goes_on = false;\n",
+    find: "            .or_else(|| (*only != longest).then(|| arranged(longest, arms, bodies)).flatten()),\n",
+    replace: "            .or_else(|| None),\n",
     tests: [
       "test/lowering-labels.test.ts",
       "-t",
       "an arm that does nothing between",
     ],
-  },
-  {
-    name: "empty-arm-of-a-turn-negated",
-    breaks:
-      "an arm that does nothing at a loop turn's end is a negated test, `else if (name !== \"SCRIPT\" && ..)`, not upstream's `switch` of `continue`s (rd184)",
-    file: "src/lower/mir/tidy/decisions.rs",
-    find: "            let goes_on = *only != longest && !after.is_empty();\n",
-    replace: "            let goes_on = *only != longest;\n",
-    tests: ["test/corpus.test.ts", "-t", "^guarded_arm_falls_to_tail.rs$"],
-    snapshots: true,
   },
   {
     name: "present-said-past-the-block-unseen",
@@ -91,7 +81,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard that calls, `[n, ..] if below(*n)`, is no test of the tree, so `guarded_rows` keeps MIR's `bb25:` block each arm breaks out of (#221)",
     file: "src/lower/mir/tidy/decisions.rs",
-    find: "                pure(part)\n                    || !span.is_none() && (self.told.guards.iter()).any(|g| within(*span, g.span) && !switched(g))\n",
+    find: "                pure(part) || !span.is_none() && (self.told.guards.iter()).any(|g| within(*span, g.span))\n",
     replace: "                pure(part)\n",
     tests: CALLS,
     snapshots: true,
@@ -104,16 +94,6 @@ export const mutations: Mutation[] = [
     find: "            StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => (name, value, true),\n",
     replace:
       "            StmtKind::Const(..) | StmtKind::Let(..) => return None,\n",
-    tests: CALLS,
-    snapshots: true,
-  },
-  {
-    name: "decisions-switch-guard-chained",
-    breaks:
-      "a `match` of constants whose guard calls, React's finishConcurrentRender's `case 4: if (!onlyTransitions(lanes) && ..) { break; }`, is an `if` chain, not its `switch` (#221, ADR 0629)",
-    file: "src/lower/mir/tidy/decisions.rs",
-    find: " && !switched(g))\n",
-    replace: ")\n",
     tests: CALLS,
     snapshots: true,
   },
@@ -329,6 +309,16 @@ export const mutations: Mutation[] = [
     find: "        Some((first, others)) if !others.is_empty() => (1..first.len())\n",
     replace: "        Some((first, others)) if !others.is_empty() => (1..1)\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_(guarded_or_pattern|of_empty_first_arms_in_an_if).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "switched-guard-decided",
+    breaks:
+      "a `switch`'s guarded arm that falls to the next, `\"selectionchange\" if skip => {}`, has its tree made a chain, `(name === \"selectionchange\" && !skip) || name === \"keydown\"`, and the `match` is no `switch`, its comment on the test's operand (rd619); of a guard that calls, React's finishConcurrentRender's `case 4: if (!onlyTransitions(lanes) && ..) { break; }`, an `if` chain (#221, ADR 0629)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "    if switched_guard {\n",
+    replace: "    if false && switched_guard {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(switch_arm_tests_its_own|default_value_exits|guards_that_call|guarded_arm_chains).rs$"],
     snapshots: true,
   },
 ];
