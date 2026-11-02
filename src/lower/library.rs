@@ -82,6 +82,8 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) makes_dropping_fn_dyns: bool,
     /// What the `Rc`s it counts point at (ADR 0852).
     pub(super) counted: &'a super::analysis::Counted<'tcx>,
+    /// What it changes in place, which its JS copies (ADR 0914, amended).
+    pub(super) changed: super::copies::Changed<'a, 'tcx>,
     /// What it does with its `RefCell`s (ADR 0863).
     pub(super) ref_cells: crate::library::RefCellFacts,
     /// What it says of its structs' fields (ADRs 0863, amended, 0906).
@@ -241,6 +243,7 @@ pub(super) fn exports<'tcx>(
         makes_dropping_anys,
         makes_dropping_fn_dyns,
         counted,
+        changed,
         ref_cells: _,
         fields: _,
         lazy_locals: _,
@@ -349,6 +352,7 @@ pub(super) fn exports<'tcx>(
             shapes.dedup();
             shapes
         },
+        changed: shapes(tcx, changed.mutated.iter().chain(changed.vecs).copied()),
         ref_cells: contracts.ref_cells.clone(),
         fields: contracts.fields.clone(),
         identities: {
@@ -588,6 +592,14 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// (`library_name`).
     fn library(&self, krate: rustc_span::def_id::CrateNum) -> Option<&'a crate::library::Exports> {
         self.dependencies.libraries.get(library_name(self.tcx, krate).as_str())
+    }
+
+    /// Does the library `krate` change a value of `ty` in place, so that
+    /// its JS copies one where Rust does (ADR 0914, amended)? Not one whose
+    /// contract says none, or of a compiler that wrote no such fact.
+    pub(super) fn changes(&self, krate: rustc_span::def_id::CrateNum, ty: rustc_middle::ty::Ty<'tcx>) -> bool {
+        (self.library(krate))
+            .is_some_and(|library| (library.changed.iter()).any(|shape| may_be_shape(self.tcx, shape, ty)))
     }
 
     /// The crate's type context, which its queries are asked in.

@@ -214,3 +214,18 @@ impl First for Spots {
 pub fn first_of(spots: &Spots) -> Spot {
     spots.first()
 }
+
+/// A `Copy` struct the library changes in place itself, so its JS copies
+/// one where Rust does: its consumer, which changes one too, imports what
+/// copies one (rd606).
+#[derive(Clone, Copy, Debug)]
+pub struct Notch {
+    pub x: i32,
+}
+
+/// The first of `notches`, a copy of it, moved along by one.
+pub fn first_notch(notches: &[Notch]) -> Notch {
+    let mut notch = notches[0];
+    notch.x += 1;
+    notch
+}

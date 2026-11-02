@@ -3,6 +3,19 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "library-changed-unshared",
+    breaks:
+      "a library's exported function that copies what its consumer changes in place, which the library changes too, so its JS copies it, is compiled by the consumer, where it is imported, `Dep.firstNotch(notches)`; React's Flight client's `close`, refused as it reads its library's private state (rd606)",
+    file: "src/lower/instances.rs",
+    find: "                .filter(|&&ty| !self.recognition.foreign.changes(library, ty))\n",
+    replace: "                .filter(|_| true)\n",
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "a library's generic function is its program's",
+    ],
+  },
+  {
     name: "instance-drop-ignored",
     breaks:
       "a consumer's call that gives a library's generic function a value with a destructor its JS takes no drop for calls the library's, so a panic in it drops nothing, where Rust drops `Loud(2)` (ADR 0914)",

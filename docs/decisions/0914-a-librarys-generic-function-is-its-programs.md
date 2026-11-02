@@ -753,3 +753,37 @@ MIR's cleanup tested a flag of each argument, a `()`'s drop of nothing
 joining both ways of each test, which each `catch` nested 2^k ways,
 about 450 lines; none is tested now. Held by the `generic_flags_given`
 pair against native Rust.
+
+## Amendment: a copy of what the library changes too is its library's (rd606)
+
+React's Flight client entries call react-client's exports, `close(response)`,
+`getRoot(response)`, `processStringChunk(..)`, each a plain `pub fn` its
+JS exports. react-server-dom-webpack compiled each itself and was refused,
+as `close` reads react-client's private `DEBUG_CHANNEL_REGISTRY`: the
+consumer changes a `Vec<Option<&Unknown>>` in place, a debug info list it
+pushes to, and `close` reaches `ReactPromise::new` and `create_element`,
+which clone one, so `instances::Copying` said `close` "copies what this
+crate changes in place". But react-client changes those lists in place
+too, so its JS copies each clone, as Rust does: nothing its JS shares
+could be what the consumer then changes.
+
+**A library function copies what its consumer changes, and so is the
+consumer's, only of what the library doesn't change itself**: a library's
+contract says what its code changes in place, `changed`, the shapes of
+its `mutated` types and changed `Vec`s (`copies::Changed`), as it says what
+its `Rc`s count (ADR 0852); `Copying` asks, of each body, what the crate
+changes that the body's library doesn't (`Foreign::changes`). A contract
+of a compiler that wrote no such fact says none, so its consumer compiles
+its own as before.
+
+- Case N ([0262](0262-when-rust-and-js-disagree.md)): the library's JS
+  copies each value of a type it changes where Rust does, so importing it
+  gives the consumer what its own copy would.
+- Held by the `program_form` pair (`test/crates.test.ts`): `firstNotch`,
+  which copies a `Notch` its library changes in place too, is imported,
+  `Dep.firstNotch(notches)`, and the consumer's change of the copy is its
+  own, against native Rust; `firstSpot`, of a `Spot` the library never
+  changes, is still the consumer's; and by the `tree` pair, whose `Tree`
+  the library changes too, and whose `potSize` reads a `Pot` it never
+  changes through a `Box`, both imported. Mutations `library-changed-unshared`
+  (`lower/instances.ts`) and `library-changed-unwritten` (`lower/library.ts`).

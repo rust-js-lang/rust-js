@@ -218,7 +218,10 @@ test("a crate of no JS named test or std is neither libtest nor std", () => {
 // consumer changes, and isn't compiled again.
 test("a consumer that grows a library's boxed tree calls the library's method", () => {
   const out = chain(pairs, "tree", ["dep", "app"]);
-  expect(readFileSync(join(out, "app", "lib.js"), "utf8")).toContain('import { Tree } from "../dep/lib.js";\nimport * as Dep from "../dep/lib.js";\n');
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toContain('import { Tree } from "../dep/lib.js";\nimport * as Dep from "../dep/lib.js";\n');
+  // A read through a `Box` of what the library never changes copies none.
+  expect(app).toContain("Dep.potSize(planter)");
 }, 300_000);
 
 // ADR 0693, amended: a library's function, which nothing assigns, returned
@@ -414,6 +417,11 @@ test("a library's generic function is its program's, alone or a dependency, and 
   // library exports, or by a library function that calls it.
   expect(app).toContain("\nfunction spotsFirst_first(spots) {\n  return { ...$index(spots[0], 0) };\n}");
   expect(app).toContain("\nfunction firstOf(spots) {\n  return spotsFirst_first(spots);\n}");
+  // One that copies what the library changes in place too, whose JS copies
+  // it as Rust does, is imported (rd606).
+  expect(dep).toContain("export function firstNotch(notches) {\n  const notch = { ...$index(notches, 0) };\n");
+  expect(app).toContain("Dep.firstNotch(notches)");
+  expect(app).not.toContain("\nfunction firstNotch(");
   // And two that call each other, above one that copies.
   expect(app).toContain("\nfunction inner(spots, n) {\n  return outer(spots, n);\n}");
   const lib = JSON.stringify(join(out, "dep", "lib.js"));

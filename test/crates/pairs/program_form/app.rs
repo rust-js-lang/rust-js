@@ -81,4 +81,9 @@ pub fn main() {
     let mut again = dep::first_of(&held);
     again.x += 2;
     println!("{first:?} {again:?} {:?}", held.0[0]);
+    // One the library changes in place too, whose JS copies it: imported.
+    let notches = [dep::Notch { x: 1 }];
+    let mut notch = dep::first_notch(&notches);
+    notch.x += 10;
+    println!("{notch:?} {:?}", notches[0]);
 }

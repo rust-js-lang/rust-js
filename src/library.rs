@@ -245,6 +245,13 @@ pub struct Library {
     /// does. None where it counts none.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub counted_rcs: Vec<RcShape>,
+    /// What its code changes in place (ADR 0052), its mutated types and
+    /// changed `Vec`s, which its JS copies where Rust copies one: a
+    /// consumer compiles its own of a function of its only where it may
+    /// copy what the consumer changes and it doesn't (ADR 0914, amended).
+    /// None where it changes none.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub changed: Vec<RcShape>,
     /// What it does with its `RefCell`s, which its consumers agree with
     /// (ADR 0863). None where it has none.
     #[serde(default, skip_serializing_if = "RefCellFacts::is_empty")]
@@ -418,6 +425,8 @@ pub struct Exports {
     pub makes_dropping_fn_dyns: bool,
     /// What the `Rc`s it counts point at (ADR 0852).
     pub counted_rcs: Vec<RcShape>,
+    /// What it changes in place, which its JS copies (ADR 0914, amended).
+    pub changed: Vec<RcShape>,
     /// What it does with its `RefCell`s (ADR 0863).
     pub ref_cells: RefCellFacts,
     /// Its types equal only to themselves, by their keys (ADR 0864).
@@ -506,6 +515,7 @@ impl Dependencies {
                     .into_iter()
                     .map(|field| (field.key, field.facts))
                     .collect(),
+                changed: library.changed,
                 counted_rcs: library.counted_rcs,
                 ref_cells: library.ref_cells,
                 impls: library.impls.into_iter().collect(),
@@ -651,6 +661,7 @@ impl Dependencies {
                 .into_iter()
                 .map(|field| (field.key, field.facts))
                 .collect(),
+            changed: library.changed,
             counted_rcs: library.counted_rcs,
             ref_cells: library.ref_cells,
             impls: library.impls.into_iter().collect(),

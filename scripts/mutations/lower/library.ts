@@ -3,6 +3,19 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "library-changed-unwritten",
+    breaks:
+      "a library's contract says it changes nothing in place, so a consumer that changes what it does compiles its own of each exported function that copies one, `firstNotch` (rd606)",
+    file: "src/lower/library.rs",
+    find: "        changed: shapes(tcx, changed.mutated.iter().chain(changed.vecs).copied()),\n",
+    replace: "        changed: shapes(tcx, changed.vecs.iter().copied().filter(|_| false)),\n",
+    tests: [
+      "test/crates.test.ts",
+      "-t",
+      "a library's generic function is its program's",
+    ],
+  },
+  {
     name: "library-default-type-imported-by-name",
     breaks:
       "a consumer's declarations import a library's default class by its name, `import type { Complex }`, which its module doesn't export (ADR 0210, amended)",

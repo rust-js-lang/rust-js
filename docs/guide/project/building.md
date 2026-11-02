@@ -283,8 +283,9 @@ it gives generic code, a derived `Debug` it prints, a destructor, compiles
 its own of what it uses of it; one whose dictionary the library exports,
 it calls through that, `strToKebabCase.toKebabCase(title)`. A library
 copies what its own crate changes in place; a crate that changes a value
-a library's function copies compiles its own of that function, which
-copies it
+a library's function copies, of a type the library never changes itself,
+compiles its own of that function, which copies it. One of a type the
+library changes too, whose JS copies it already, is imported
 ([ADR 0914, amended](../../decisions/0914-a-librarys-generic-function-is-its-programs.md)):
 
 ```

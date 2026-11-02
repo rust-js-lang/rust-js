@@ -165,9 +165,23 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
             typing_env: ty::TypingEnv::post_analysis(tcx, body.source.def_id()),
             ..self.recognition
         };
+        // What the crate changes that the body's library doesn't: what the
+        // library changes too, its JS copies as Rust does (rd606).
+        let library = body.source.def_id().krate;
+        let unshared = |changed: &HashSet<Ty<'tcx>>| -> HashSet<Ty<'tcx>> {
+            (changed.iter())
+                .filter(|&&ty| !self.recognition.foreign.changes(library, ty))
+                .copied()
+                .collect()
+        };
+        let (mutated, vecs) = (unshared(self.changed.mutated), unshared(self.changed.vecs));
+        let changed = super::copies::Changed {
+            mutated: &mutated,
+            vecs: &vecs,
+        };
         let holds = |ty: Ty<'tcx>| {
             let ty = tcx.erase_and_anonymize_regions(ty);
-            super::copies::may_hold_changed(&recognition, self.changed, ty)
+            super::copies::may_hold_changed(&recognition, changed, ty)
         };
         struct Found<'b, 'a, 'tcx> {
             copying: &'b Copying<'a, 'tcx>,

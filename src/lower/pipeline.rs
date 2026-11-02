@@ -1462,6 +1462,7 @@ pub fn lower_crate<'tcx>(
                         makes_dropping_anys: closure_facts.any_dyns_drop,
                         makes_dropping_fn_dyns: closure_facts.fn_dyns_drop,
                         counted: &counted,
+                        changed,
                         ref_cells: ref_cell_facts(),
                         fields: super::library::fields(tcx, ref_cells.get(), cell_borrows.pointers()),
                         lazy_locals: &lazy_locals,
