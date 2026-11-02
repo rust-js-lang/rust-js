@@ -494,6 +494,84 @@ pub(super) fn written_before_read(body: &mir::Body<'_>, at: mir::Location, root:
     })
 }
 
+/// Whether a path from `at`, where `local` is assigned, writes `root`, or
+/// what it points at, before it reads `local`: along each path until
+/// `local` is assigned again, a loop's next turn, after which a read is of
+/// another value.
+pub(super) fn written_before_its_read(body: &mir::Body<'_>, at: mir::Location, root: Local, local: Local) -> bool {
+    use mir::visit::{PlaceContext, Visitor};
+    /// Of one statement or terminator: whether it reads `local`, and
+    /// whether it writes `root`.
+    struct Uses {
+        root: Local,
+        local: Local,
+        reads: bool,
+        writes: bool,
+    }
+    impl<'tcx> Visitor<'tcx> for Uses {
+        fn visit_place(&mut self, place: &mir::Place<'tcx>, context: PlaceContext, at: mir::Location) {
+            if place.local == self.root && matches!(context, PlaceContext::MutatingUse(_)) {
+                self.writes = true;
+            }
+            self.super_place(place, context, at);
+        }
+        fn visit_local(&mut self, local: Local, context: PlaceContext, _: mir::Location) {
+            if local == self.local && matches!(context, PlaceContext::NonMutatingUse(_)) {
+                self.reads = true;
+            }
+        }
+    }
+    let uses = |location: mir::Location| {
+        let mut uses = Uses {
+            root,
+            local,
+            reads: false,
+            writes: false,
+        };
+        match body.stmt_at(location) {
+            rustc_data_structures::either::Either::Left(statement) => uses.visit_statement(statement, location),
+            rustc_data_structures::either::Either::Right(terminator) => uses.visit_terminator(terminator, location),
+        }
+        (uses.reads, uses.writes)
+    };
+    let mut seen = std::collections::HashSet::new();
+    let mut next = vec![(at.block, at.statement_index + 1, false)];
+    while let Some((block, from, mut written)) = next.pop() {
+        let data = &body.basic_blocks[block];
+        for statement_index in from..=data.statements.len() {
+            let location = mir::Location { block, statement_index };
+            if location == at {
+                break;
+            }
+            let (reads, writes) = uses(location);
+            if reads && written {
+                return true;
+            }
+            written |= writes;
+            if statement_index == data.statements.len() {
+                for successor in data.terminator().successors() {
+                    if seen.insert((successor, written)) {
+                        next.push((successor, 0, written));
+                    }
+                }
+            }
+        }
+    }
+    false
+}
+
+/// Whether `place` is read through a shared reference a part of a value
+/// holds, `*((*inner).s)` of a `&str` field: what it refers to borrowck
+/// keeps the same, not the part that holds it, which may be written while
+/// the reference is held.
+pub(super) fn through_held_reference<'tcx>(body: &mir::Body<'tcx>, tcx: ty::TyCtxt<'tcx>, place: Place<'tcx>) -> bool {
+    (place.iter_projections()).any(|(base, elem)| {
+        elem == PlaceElem::Deref
+            && !base.projection.is_empty()
+            && matches!(base.ty(body, tcx).ty.kind(), ty::Ref(_, _, ty::Mutability::Not))
+    })
+}
+
 /// Whether `local` is assigned in `from`, or a block it goes on to.
 pub(super) fn written_from(body: &mir::Body<'_>, from: BasicBlock, local: Local) -> bool {
     let mut seen = std::collections::HashSet::new();

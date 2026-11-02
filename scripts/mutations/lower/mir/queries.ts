@@ -449,4 +449,22 @@ export const mutations: Mutation[] = [
     replace: "            constant.const_.try_to_scalar_int()?;\n",
     tests: ["test/lowering-dictionaries.test.ts", "-t", "a dictionary that takes nothing is its module's const"],
   },
+  {
+    name: "write-through-reference-unseen",
+    breaks:
+      "a write through a `&mut`, `(*inner).s = ..`, isn't a write of `inner`, so a reference read of its field before it is read after it",
+    file: "src/lower/mir/queries.rs",
+    find: "                self.writes = true;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^references_read_before_their_field_is_written.rs$"],
+  },
+  {
+    name: "held-reference-of-field-unseen",
+    breaks:
+      "a reference read through one a field holds, `&*inner.s`, is taken for one of a place borrowck keeps the same, so it's read after the field's written",
+    file: "src/lower/mir/queries.rs",
+    find: "            && !base.projection.is_empty()\n            && matches!(base.ty(body, tcx).ty.kind(), ty::Ref(_, _, ty::Mutability::Not))\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^references_read_before_their_field_is_written.rs$"],
+  },
 ];

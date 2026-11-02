@@ -683,6 +683,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             state.refs.insert(local, target.clone());
             return Ok(());
         }
+        // A reference read through one a place holds, `_2 = &(*(*inner).s)`
+        // of a `&str` field: borrowck keeps what it refers to the same, not
+        // the place that held it, which a write before its read changes,
+        // `inner.s = "new"`, where the JS of the place, `inner.s`, would read
+        // the new one.
+        let rewritten = match state.body.stmt_at(state.location()) {
+            rustc_data_structures::either::Either::Left(mir::Statement {
+                kind: StatementKind::Assign(assign),
+                ..
+            }) => match &assign.1 {
+                Rvalue::Ref(_, _, from) | Rvalue::CopyForDeref(from) => {
+                    through_held_reference(state.body, self.tcx, *from)
+                        && written_before_its_read(state.body, state.location(), from.local, local)
+                }
+                _ => false,
+            },
+            _ => false,
+        };
         // A shared reference a temporary or a variant's binding holds, made
         // once, to a place of a variable nothing changes, `&route.title`: the
         // place, read where it's used (ADR 0023);
@@ -692,7 +710,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // place, which nothing else changes while it's borrowed.
         let held = |value: &Value<'tcx>, ty: Ty<'tcx>| match value {
             Value::Place(target)
-                if same_place(state, target)
+                if !rewritten
+                    && same_place(state, target)
                     && root_var(target).is_some_and(|root| self.locals.mir.alike.contains(root)) =>
             {
                 Some(target.clone())

@@ -1058,4 +1058,13 @@ export const mutations: Mutation[] = [
     replace: "                Value::Expr(boxed) if false && matches!(&boxed.kind, js::ExprKind::Var(name) if state.naming.boxes().contains(name)) => {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_default_mut_self_instance"],
   },
+  {
+    name: "held-reference-place-rewritten",
+    breaks:
+      "a reference read out of a field, `inner.s` of a `&str`, is read where it's used, after the field's written, `inner.s = \"new\"; both(inner.s, 1)`, where Rust gives the old one",
+    file: "src/lower/mir/assign.rs",
+    find: "                if !rewritten\n",
+    replace: "                if true\n",
+    tests: ["test/corpus.test.ts", "-t", "^references_read_before_their_field_is_written.rs$"],
+  },
 ];

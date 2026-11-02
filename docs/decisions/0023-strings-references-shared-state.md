@@ -1,7 +1,8 @@
 # 0023. Strings, references and shared state
 
 Status: Accepted. Extended by [0034](0034-strings-and-chars.md): more string
-methods, `char`, and `format!`.
+methods, `char`, and `format!`. Amended (2026-11-02): a reference read
+through one a field holds is read where Rust reads it, below.
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -77,3 +78,29 @@ supported, with its path.
 ## Amended by
 
 - [0288](0288-cell-fields.md): A `Cell` in a field is the property it holds
+
+## Amendment (2026-11-02): a reference read through one a field holds is read where Rust reads it
+
+A wrong answer, found working on React's Flight server (rd579). A shared
+reference a temporary holds is read where it's used, as borrowck keeps
+its place the same while it's borrowed. Not a reference read through
+one a field holds, `_2 = &(*(*inner).s)` of a `&str` field, or a
+`&dyn Fn` one is called through: borrowck keeps what it refers to the
+same, not the field, which the program may write before the reference
+is read. `both(inner.s, { inner.s = "new"; 1 })` printed `inner.s =
+"new"; return both(inner.s, 1);`, `new1` where Rust prints `old1`, and
+`(inner.f)({ inner.f = other; n })` called `other`.
+
+**Such a reference is held in a `const` where a path from it to its read
+writes the place it was read through, `const s = inner.s; inner.s =
+"new"; return both(s, 1);`** (`mir/assign.rs`, asking
+`queries::through_held_reference` and `written_before_its_read`, which
+follows each path until the temporary is assigned again, a loop's next
+turn). Case: results changed (0262's third): Rust's.
+
+Held by the corpus's `references_read_before_their_field_is_written`,
+against native Rust: a `&str` field, a `&dyn Fn` and a fn pointer, each
+written while what their call is given is made. Mutations
+`held-reference-place-rewritten` (`mir/assign.ts`),
+`write-through-reference-unseen` and `held-reference-of-field-unseen`
+(`mir/queries.ts`).
