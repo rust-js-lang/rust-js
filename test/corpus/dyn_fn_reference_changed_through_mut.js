@@ -15,8 +15,12 @@ function kept(g) {
 export function call(f) {
   let g = f;
   const g$1 = { value: g };
-  const before = kept(g$1);
-  g = g$1.value;
+  let before;
+  try {
+    before = kept(g$1);
+  } finally {
+    g = g$1.value;
+  }
   const g$2 = { value: g };
   other(g$2);
   g = g$2.value;

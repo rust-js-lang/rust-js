@@ -140,13 +140,16 @@ function concat(
       (a, b) => {
         const self = { value: a };
         try {
-          IItemExtendIItemItem.extend(
-            self,
-            $given(IItemIntoIterator.intoIter(b), IItemIntoIterator.IntoIterIterator(), true),
-            dropIItem,
-            dropIItemIntoIter,
-          );
-          $assign(a, self.value);
+          try {
+            IItemExtendIItemItem.extend(
+              self,
+              $given(IItemIntoIterator.intoIter(b), IItemIntoIterator.IntoIterIterator(), true),
+              dropIItem,
+              dropIItemIntoIter,
+            );
+          } finally {
+            $assign(a, self.value);
+          }
         } catch (error) {
           dropIItem?.(a);
           throw error;

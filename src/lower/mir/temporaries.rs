@@ -129,7 +129,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             made.push(StmtKind::Const(name, expr).at(js::Span::NONE));
         }
         state.pending = kept;
-        self.unwinding_to(state, unwind, made, out)
+        self.unwinding_to(state, unwind, made, out, Vec::new())
     }
 
     /// Each value kept to be read in place that reads through a shared
@@ -246,14 +246,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         unwind: Option<BasicBlock>,
         made: Vec<Stmt>,
         out: &mut Vec<Stmt>,
+        copied_back: Vec<(Stmt, bool)>,
     ) -> R<()> {
-        match unwind {
-            Some(cleanup) if !made.is_empty() => {
-                let cleanup = self.mir_unwind(state, mir::UnwindAction::Cleanup(cleanup))?;
-                self.unwinding(made, cleanup, js::Span::NONE, out);
+        let cleanup = match unwind {
+            Some(cleanup) if !made.is_empty() => self.mir_unwind(state, mir::UnwindAction::Cleanup(cleanup))?,
+            _ => Vec::new(),
+        };
+        // A box `made` gives a call is copied back as it unwinds too, where
+        // the cleanup may read it, or its place outlives the body: the call
+        // in a `try` whose `finally` copies it back (#487).
+        let made = match !cleanup.is_empty() || copied_back.iter().any(|&(_, outlives)| outlives) {
+            true if !copied_back.is_empty() => {
+                let backs: Vec<Stmt> = copied_back.into_iter().map(|(back, _)| back).collect();
+                let call: Vec<Stmt> = made.into_iter().take_while(|s| !backs.contains(s)).collect();
+                let mut finally = Vec::new();
+                self.unwinding_finally(call, backs, &mut finally);
+                finally
             }
-            _ => out.extend(made),
-        }
+            _ => made,
+        };
+        self.unwinding(made, cleanup, js::Span::NONE, out);
         Ok(())
     }
 

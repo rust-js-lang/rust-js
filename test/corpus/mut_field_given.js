@@ -42,8 +42,11 @@ function main() {
   c = b.value;
   const item$3 = $index(es, 0);
   const s = { value: item$3.tag };
-  pushTag(s);
-  item$3.tag = s.value;
+  try {
+    pushTag(s);
+  } finally {
+    item$3.tag = s.value;
+  }
   const item$4 = new Array(3).fill(0);
   const grid = Array.from({ length: 2 }, () => item$4.slice());
   const x$2 = { value: grid[1][2] };

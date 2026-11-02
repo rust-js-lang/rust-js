@@ -56,11 +56,15 @@ function main() {
   const b = { bytes: [] };
   const out = { value: b };
   try {
-    const value = render(out, 7, bufWrite(16));
-    $assign(b, out.value);
+    let tmp;
+    try {
+      tmp = render(out, 7, bufWrite(16));
+    } finally {
+      $assign(b, out.value);
+    }
     const write = bufWrite_write(b, [33, 33], 16);
     const n = write.TAG === "Ok" ? write._0 : undefined;
-    const value$1 = bufWrite(16).writeFmt({ value: b }, "1");
+    const value = bufWrite(16).writeFmt({ value: b }, "1");
     const writeAll = bufWrite(16).writeAll({ value: b }, [63]);
     console.log(
       `${$unwrapOk($fromUtf8(b.bytes.slice(), true), undefined, (e) => $debugUtf8Error(e, true))} ${n == null ? "None" : `Some(${n})`}`,

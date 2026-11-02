@@ -35,8 +35,12 @@ function main() {
   const stack = { items: [1] };
   const value = [2];
   const slot$1 = { value: $apart(stack) };
-  const old = put(slot$1, { items: value });
-  $assign(stack, slot$1.value);
+  let old;
+  try {
+    old = put(slot$1, { items: value });
+  } finally {
+    $assign(stack, slot$1.value);
+  }
   stack.items.push(3);
   console.log(`${stackDebug_fmt(stack)} ${stackDebug_fmt(old)}`);
 
@@ -55,9 +59,13 @@ function main() {
   for (let n = 1; n < 4; n++) {
     const value = [n];
     const slot$1 = { value: $apart(slot) };
-    const value$1 = put(slot$1, [n, value]);
-    $assign(slot, slot$1.value);
-    log.push(value$1);
+    let tmp;
+    try {
+      tmp = put(slot$1, [n, value]);
+    } finally {
+      $assign(slot, slot$1.value);
+    }
+    log.push(tmp);
   }
   console.log(
     `[${log.map((item) => `(${item[0]}, [${item[1].join(", ")}])`).join(", ")}] (${slot[0]}, [${slot[1].join(", ")}])`,

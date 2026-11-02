@@ -93,3 +93,46 @@ array, `Map`, `Set` or object of the same items, an instance's prototype
 kept, which what's moved out is. Other boxes are as they were. Held by
 `test/corpus/generic_mut_moved_out.rs` and the mutations
 `moved-out-of-box-unseen` and `apart-shares`.
+
+## Amendment: a box is copied back as its call unwinds too (#487)
+
+A box was copied back only once its call returned. A callee that wrote
+through it and then panicked left the place as it was: a variable a
+closure given to `catch_unwind` borrows, `slot`, held `None` once the
+panic was caught, where Rust's held what was written, `Some(1)`; and a
+variable whose drop the unwinding runs dropped its old value, not the one
+written (P0, ADR 0262's "results change": Rust's behavior is kept).
+
+Each box is copied back as its call unwinds too, where that can be seen:
+
+- **Where the call's unwinding runs a cleanup**, a drop, the copy back is
+  first in the `catch` the cleanup is already in, `catch (error) { slot =
+  slot$1.value; .. throw error; }`: the cleanup may drop what was written.
+- **Where it runs none, but the place outlives the body**, anything but a
+  variable of the body's own, a captured one's or what a reference
+  reaches, the call is in a `try` whose `finally` copies it back, the box
+  made before it:
+
+  ```js
+  const slot$1 = { value: slot };
+  try {
+    return setThenPanic(slot$1);
+  } finally {
+    slot = slot$1.value;
+  }
+  ```
+
+- **Otherwise** it's as it was: a call that can't throw (`cannot_throw`),
+  or a variable of the body's own nothing reads as it unwinds, which is
+  gone once it has, copied back after the call alone.
+
+The React port has no `&mut` box in its JS, so none of its output changes.
+
+### What holds it
+
+- `test/corpus/written_through_before_a_panic.rs`, against native Rust: a
+  captured variable, one a `&mut` parameter given on reaches, a variable
+  whose drop the unwinding runs, and the body's own variable, copied back
+  after its call alone, panicking or not.
+- Mutations `box-unwind-uncopied` and `box-unwind-cleanup-uncopied`
+  (`mir/temporaries.rs`) and `box-outlives-own-variable` (`mir/structure.rs`).

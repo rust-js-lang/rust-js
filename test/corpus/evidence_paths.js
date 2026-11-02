@@ -142,10 +142,14 @@ function main() {
   $assign(p, self.value);
   console.log(`${before} ${pointPositionedS_x(p, clone)}`);
   const bag = { x: [[1]] };
+  const value$1 = [2, 3];
   const self$1 = { value: bag };
-  before = pointMovableS(bagClone, bagAdd).translate(self$1, [[2, 3]]);
-  $assign(bag, self$1.value);
-  const value$1 = pointPositionedS_x(bag, bagClone);
-  console.log(`${bagDebug_fmt(before)} ${bagDebug_fmt(value$1)}`);
+  try {
+    before = pointMovableS(bagClone, bagAdd).translate(self$1, [value$1]);
+  } finally {
+    $assign(bag, self$1.value);
+  }
+  const value$2 = pointPositionedS_x(bag, bagClone);
+  console.log(`${bagDebug_fmt(before)} ${bagDebug_fmt(value$2)}`);
 }
 //# sourceMappingURL=case.js.map

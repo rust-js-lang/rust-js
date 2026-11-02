@@ -74,8 +74,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a call written where it's used, which may panic as something's there to drop, isn't in a `try`",
     file: "src/lower/mir/structure.rs",
-    find: "            self.unwinding_to(state, unwind.filter(|_| ran), made, &mut out)?;\n",
-    replace: "            self.unwinding_to(state, None, made, &mut out)?;\n",
+    find: "            self.unwinding_to(state, unwind.filter(|_| ran), made, &mut out, Vec::new())?;\n",
+    replace: "            self.unwinding_to(state, None, made, &mut out, Vec::new())?;\n",
     tests: ["test/corpus.test.ts", "-t", "drop|refcell_"],
   },
   {
@@ -568,5 +568,25 @@ export const mutations: Mutation[] = [
     find: "                        let nulled = self.gets_constructed(state, (func, &args[..]));\n",
     replace: "                        let nulled = false;\n",
     tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
+  },
+  {
+    name: "box-outlives-own-variable",
+    breaks:
+      "a box of a variable of the body's own, gone once it unwinds, is copied back in a `finally` all the same, a `try` the JS needn't have (#487)",
+    file: "src/lower/mir/structure.rs",
+    find: "    !matches!(&root.kind, js::ExprKind::Var(name)\n",
+    replace: "    true || !matches!(&root.kind, js::ExprKind::Var(name)\n",
+    tests: ["test/corpus.test.ts", "-t", "^written_through_before_a_panic.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "box-unthrowing-wrapped",
+    breaks:
+      "a box given to a call that can't throw, of a variable a closure borrows, is copied back in a `finally` all the same, a `try` the JS needn't have (#487)",
+    file: "src/lower/mir/structure.rs",
+    find: "                            let throws = called.last().is_some_and(|s| !s.cannot_throw());\n",
+    replace: "                            let throws = true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^written_through_before_a_panic.rs$"],
+    snapshots: true,
   },
 ];

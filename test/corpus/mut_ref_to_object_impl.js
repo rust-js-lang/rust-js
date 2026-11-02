@@ -33,11 +33,18 @@ function main() {
   const five = { cents: 5n, note: [0, 0] };
   let r = m;
   const self = { value: r };
-  refMutMoneyAddAssignMoney_addAssign(self, { ...five });
-  r = self.value;
+  try {
+    refMutMoneyAddAssignMoney_addAssign(self, { ...five });
+  } finally {
+    r = self.value;
+  }
   const total = { value: r };
-  let r$1 = bump(total, { ...five }, refMutMoneyAddAssignMoney).value;
-  $assign(r, total.value);
+  let r$1;
+  try {
+    r$1 = bump(total, { ...five }, refMutMoneyAddAssignMoney).value;
+  } finally {
+    $assign(r, total.value);
+  }
   r$1.cents = BigInt.asIntN(64, r$1.cents + 1n);
   const other = {
     cents: 100n,

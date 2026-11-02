@@ -18,12 +18,18 @@ export function entry() {
 function eitherExtendA_extend(either, iter, LExtendA, RExtendA) {
   if (either.TAG === "Left") {
     const self = { value: either._0 };
-    LExtendA.extend(self, iter);
-    either._0 = self.value;
+    try {
+      LExtendA.extend(self, iter);
+    } finally {
+      either._0 = self.value;
+    }
   } else {
     const self = { value: either._0 };
-    RExtendA.extend(self, iter);
-    either._0 = self.value;
+    try {
+      RExtendA.extend(self, iter);
+    } finally {
+      either._0 = self.value;
+    }
   }
 }
 

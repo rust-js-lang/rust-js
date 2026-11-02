@@ -47,8 +47,12 @@ function enumeratedPull(PPull) {
 }
 function enumeratedPull_pull(enumerated, PPull) {
   const self = { value: enumerated.inner };
-  const pull = PPull.pull(self);
-  enumerated.inner = self.value;
+  let pull;
+  try {
+    pull = PPull.pull(self);
+  } finally {
+    enumerated.inner = self.value;
+  }
   if (pull == null) {
     return;
   }

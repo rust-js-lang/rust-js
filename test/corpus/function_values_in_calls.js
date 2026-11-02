@@ -103,8 +103,11 @@ function main() {
   try {
     const collect = value$3.map(show);
     const total$1 = { value: total };
-    tally(total$1, collect);
-    total = total$1.value;
+    try {
+      tally(total$1, collect);
+    } finally {
+      total = total$1.value;
+    }
   } finally {
     for (const item of value$3) {
       console.log(`drop ${item[0]}`);
@@ -125,14 +128,18 @@ function main() {
     console.log(`[${lens.join(", ")}]`);
     let m = 1;
     const n = { value: m };
-    const value = twice(n, bump);
-    m = n.value;
-    const value$1 = [["e"]];
+    let tmp;
+    try {
+      tmp = twice(n, bump);
+    } finally {
+      m = n.value;
+    }
+    const value = [["e"]];
     let got;
     try {
-      got = (value + value$1.map(show).reduce((a, b) => (a + b) >>> 0, 0)) >>> 0;
+      got = (tmp + value.map(show).reduce((a, b) => (a + b) >>> 0, 0)) >>> 0;
     } finally {
-      for (const item of value$1) {
+      for (const item of value) {
         console.log(`drop ${item[0]}`);
       }
     }

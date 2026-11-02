@@ -38,8 +38,11 @@ function main() {
   const copy = { ...value };
   const item = $index(links, 0);
   const slot = { value: item.to };
-  point(slot, root);
-  item.to = slot.value;
+  try {
+    point(slot, root);
+  } finally {
+    item.to = slot.value;
+  }
   console.log(`${$index(links, 0).to === kid.parent} ${copy.to === kid.parent}`);
   console.log(`${copy.to === null} ${copy.tag}`);
   let w = kid;

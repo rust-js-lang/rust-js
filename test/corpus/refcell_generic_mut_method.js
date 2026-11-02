@@ -20,8 +20,11 @@ function pay(c, AAccount) {
   const borrowMut = $borrowMut(c, true);
   const self = { value: borrowMut.value };
   try {
-    AAccount.deposit(self, 5);
-    borrowMut.value = self.value;
+    try {
+      AAccount.deposit(self, 5);
+    } finally {
+      borrowMut.value = self.value;
+    }
   } finally {
     $unborrow(borrowMut);
   }
@@ -31,8 +34,11 @@ function payThrough(c, AAccount) {
   const guard = $borrowMut(c, true);
   const self = { value: guard.value };
   try {
-    AAccount.deposit(self, 7);
-    guard.value = self.value;
+    try {
+      AAccount.deposit(self, 7);
+    } finally {
+      guard.value = self.value;
+    }
   } finally {
     $unborrow(guard);
   }
@@ -46,8 +52,11 @@ function payGiven(c, AAccount) {
   const borrowMut = $borrowMut(c, true);
   const a = { value: borrowMut.value };
   try {
-    give(a, AAccount);
-    borrowMut.value = a.value;
+    try {
+      give(a, AAccount);
+    } finally {
+      borrowMut.value = a.value;
+    }
   } finally {
     $unborrow(borrowMut);
   }

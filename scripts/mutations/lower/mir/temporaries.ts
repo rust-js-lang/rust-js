@@ -529,4 +529,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^whole_captures.rs$"],
     snapshots: true,
   },
+  {
+    name: "box-unwind-uncopied",
+    breaks:
+      "a box whose call panics after writing it, of a variable a closure given to `catch_unwind` borrows, isn't copied back as it unwinds, so the variable holds `None` once the panic is caught, where Rust's holds `Some(1)` (#487)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "        let made = match !cleanup.is_empty() || copied_back.iter().any(|&(_, outlives)| outlives) {\n",
+    replace: "        let made = match !cleanup.is_empty() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^written_through_before_a_panic.rs$"],
+  },
+  {
+    name: "box-unwind-cleanup-uncopied",
+    breaks:
+      "a box whose call panics after writing it, of a variable the unwinding drops, isn't copied back before that drop, which drops the old value, `dropped first`, where Rust's drops what was written (#487)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "        let made = match !cleanup.is_empty() || copied_back.iter().any(|&(_, outlives)| outlives) {\n",
+    replace: "        let made = match copied_back.iter().any(|&(_, outlives)| outlives) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^written_through_before_a_panic.rs$"],
+  },
 ];

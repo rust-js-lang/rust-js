@@ -37,13 +37,16 @@ function main() {
     const again = [[undefined, undefined]];
     const e = { value: again };
     try {
-      emptied(
-        e,
-        wrapEmpty((loud) => {
-          console.log("dropped");
-        }),
-      );
-      $assign(again, e.value);
+      try {
+        emptied(
+          e,
+          wrapEmpty((loud) => {
+            console.log("dropped");
+          }),
+        );
+      } finally {
+        $assign(again, e.value);
+      }
       console.log("end");
     } finally {
       for (const item of again[0]) {

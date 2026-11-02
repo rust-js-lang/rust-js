@@ -309,7 +309,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // read one item of, `format_args!`'s `_arg` (`take_field`).
             let ran =
                 acting.iter().any(|l| !state.pending.iter().any(|(p, _)| p == l)) || self.acting_parts(state) < parts;
-            self.unwinding_to(state, unwind.filter(|_| ran), made, &mut out)?;
+            self.unwinding_to(state, unwind.filter(|_| ran), made, &mut out, Vec::new())?;
             state.unwind = unwind.filter(|_| !self.acting(state).is_empty());
         }
         Ok(out)
@@ -732,15 +732,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let nulled = self.gets_constructed(state, (func, &args[..]));
                         let value = self.nullable_written(state, *destination, value, nulled, span)?;
                         self.mir_store(state, *destination, value, span, &mut called)?;
-                        // Each box given, copied back once the call returns.
+                        // Each box given, copied back once the call returns;
+                        // and as it unwinds, where it may (#487): what it was
+                        // written before the call panicked is the place's,
+                        // which its cleanup, or what catches the panic, if
+                        // the place outlives this body, reads.
+                        let mut on_unwind = Vec::new();
                         if !state.copy_backs.is_empty() {
                             self.flush(state, &mut called)?;
+                            // The call's own statement, last: what's made before
+                            // it writes nothing to the box.
+                            let throws = called.last().is_some_and(|s| !s.cannot_throw());
                             for (place, boxed, object) in std::mem::take(&mut state.copy_backs) {
                                 let js_span = self.js_span(span);
-                                called.push(self.copied_back(place, &boxed, object, js_span));
+                                let back = self.copied_back(place.clone(), &boxed, object, js_span);
+                                if throws {
+                                    on_unwind.push((back.clone(), outlives(state, &place)));
+                                }
+                                called.push(back);
                             }
                         }
-                        self.unwinding_to(state, unwind, called, &mut out)?;
+                        self.unwinding_to(state, unwind, called, &mut out, on_unwind)?;
                         state.unwind = unwind.filter(|_| !self.acting(state).is_empty());
                         out.extend(self.mir_branch(state, block, *target)?);
                     }
@@ -755,7 +767,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             };
                             called.push(StmtKind::Expr(value).at(self.js_span(span)));
                         }
-                        self.unwinding_to(state, unwind, called, &mut out)?;
+                        self.unwinding_to(state, unwind, called, &mut out, Vec::new())?;
                     }
                 }
             }
@@ -958,4 +970,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     // ── Calls ───────────────────────────────────────────────────────────
+}
+
+/// Whether what's at `place`, a box's, may be read once this body has
+/// unwound: anything but a variable of its own, or what one holds, `v[0]`;
+/// a captured one's, or what a reference reaches, may (#487).
+fn outlives(state: &State<'_, '_>, place: &Expr) -> bool {
+    let mut root = place;
+    while let js::ExprKind::Member(object, _) | js::ExprKind::Index(object, _) = &root.kind {
+        root = object;
+    }
+    !matches!(&root.kind, js::ExprKind::Var(name)
+        if state.locals.names.iter_enumerated().any(|(local, n)| n == name
+            && local != mir::RETURN_PLACE
+            && !state.body.local_decls[local].ty.is_ref()
+            && !state.body.local_decls[local].ty.is_raw_ptr()))
 }

@@ -70,9 +70,13 @@ function main() {
   ).value.push(2);
   console.log(`[${h[0].join(", ")}]`);
   const kept = $ptr(h, 0);
+  const value = [7, 8];
   const g$1 = { value: h };
-  reset(g$1, [7, 8], holderGet);
-  $assign(h, g$1.value);
+  try {
+    reset(g$1, value, holderGet);
+  } finally {
+    $assign(h, g$1.value);
+  }
   $assign(
     first(
       {
@@ -93,7 +97,7 @@ function main() {
   const g$2 = { value: n };
   bump(g$2, numGet);
   $assign(n, g$2.value);
-  const value = first(
+  const value$1 = first(
     {
       get value() {
         return n;
@@ -104,7 +108,7 @@ function main() {
     },
     numGet,
   );
-  value.value = (value.value + 5) >>> 0;
+  value$1.value = (value$1.value + 5) >>> 0;
   const g$3 = { value: n };
   reset(g$3, 40, numGet);
   $assign(n, g$3.value);
@@ -128,9 +132,13 @@ function main() {
     },
     slotGet,
   ).value.push(2);
+  const value$2 = [3, 4];
   const g$6 = { value: slot };
-  reset(g$6, [3, 4], slotGet);
-  $assign(slot, g$6.value);
+  try {
+    reset(g$6, value$2, slotGet);
+  } finally {
+    $assign(slot, g$6.value);
+  }
   first(
     {
       get value() {

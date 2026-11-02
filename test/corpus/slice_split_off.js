@@ -67,8 +67,12 @@ function main() {
   let text = [116, 111, 32, 98, 101, 32, 111, 114];
   while (true) {
     const input = { value: text };
-    const word = takeWord(input);
-    text = input.value;
+    let word;
+    try {
+      word = takeWord(input);
+    } finally {
+      text = input.value;
+    }
     if (word == null) {
       break;
     }

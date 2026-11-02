@@ -77,8 +77,11 @@ function main() {
   item$4.value += "c";
   const item$5 = first(v);
   const r = { value: item$5.value };
-  bump(r, five());
-  item$5.value = r.value;
+  try {
+    bump(r, five());
+  } finally {
+    item$5.value = r.value;
+  }
   shout(name(c));
   console.log(`[${v.join(", ")}] ${c.hits} ${c.name}`);
 }

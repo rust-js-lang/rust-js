@@ -19,18 +19,27 @@ function pick(slot, other) {
 function main() {
   let s = "hello";
   const s$1 = { value: s };
-  shorten(s$1);
-  s = s$1.value;
+  try {
+    shorten(s$1);
+  } finally {
+    s = s$1.value;
+  }
   const s$2 = { value: s };
-  shorten(s$2);
-  s = s$2.value;
+  try {
+    shorten(s$2);
+  } finally {
+    s = s$2.value;
+  }
   console.log(`${s}`);
   const a = [1, 2];
   const b = [3, 4, 5];
   let longest = a;
   const slot = { value: longest };
-  pick(slot, b);
-  longest = slot.value;
+  try {
+    pick(slot, b);
+  } finally {
+    longest = slot.value;
+  }
   console.log(`[${longest.join(", ")}]`);
   const words = ["a", "bb", "c"];
   for (let i = 0; i < words.length; i++) {

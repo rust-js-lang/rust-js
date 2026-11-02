@@ -454,9 +454,11 @@ function main() {
   let calls = 0;
   const made = [12, 4, 3, 0, 8].map((n) => {
     const calls$1 = { value: calls };
-    const result = chained(n, calls$1);
-    calls = calls$1.value;
-    return result;
+    try {
+      return chained(n, calls$1);
+    } finally {
+      calls = calls$1.value;
+    }
   });
   console.log(`[${made.join(", ")}] ${calls}`);
 }

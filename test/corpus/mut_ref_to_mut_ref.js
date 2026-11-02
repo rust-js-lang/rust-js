@@ -139,8 +139,11 @@ function main() {
     },
   };
   const text = { value: tmp };
-  shout(text);
-  tmp = text.value;
+  try {
+    shout(text);
+  } finally {
+    tmp = text.value;
+  }
   console.log(`${word}`);
 }
 //# sourceMappingURL=case.js.map

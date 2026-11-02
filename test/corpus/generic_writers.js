@@ -29,8 +29,12 @@ export const timeDisplay = { fmt: timeDisplay_fmt };
 function timeDisplay_fmt(time) {
   let f = "at ";
   const w = { value: f };
-  writeTime(w, time.hours, time.minutes, "", $stringWriter);
-  f = w.value;
+  let tmp;
+  try {
+    tmp = writeTime(w, time.hours, time.minutes, "", $stringWriter);
+  } finally {
+    f = w.value;
+  }
   f += ".";
   return f;
 }
@@ -68,8 +72,11 @@ export const flagsDisplay = { fmt: flagsDisplay_fmt };
 function flagsDisplay_fmt(flags) {
   let f = "";
   const writer = { value: f };
-  toWriter(flags[0], writer, $mutWriter($stringWriter));
-  f = writer.value;
+  try {
+    toWriter(flags[0], writer, $mutWriter($stringWriter));
+  } finally {
+    f = writer.value;
+  }
   return f;
 }
 

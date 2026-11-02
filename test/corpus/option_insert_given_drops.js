@@ -49,43 +49,76 @@ function main() {
   let d = [1];
   const slot$2 = { value: d };
   try {
-    put(slot$2, [2], dDrop_drop);
-    d = slot$2.value;
+    try {
+      put(slot$2, [2], dDrop_drop);
+    } finally {
+      d = slot$2.value;
+    }
     const slot = { value: d };
-    kept(slot, [3], dDrop_drop);
-    d = slot.value;
+    try {
+      kept(slot, [3], dDrop_drop);
+    } finally {
+      d = slot.value;
+    }
     console.log(`${n == null ? "None" : `Some(${n})`} ${d?.[0] ?? 0}`);
 
     let owned;
     const value = [[10], [11]];
     const slot$1 = { value: owned };
     try {
-      const value$1 = putIter(slot$1, value, dDrop_drop, $dropEach(dDrop_drop));
-      owned = slot$1.value;
-      console.log(`${value$1}`);
+      let tmp;
+      try {
+        tmp = putIter(slot$1, value, dDrop_drop, $dropEach(dDrop_drop));
+      } finally {
+        owned = slot$1.value;
+      }
+      console.log(`${tmp}`);
+      const value$1 = [[12]];
       const slot = { value: owned };
-      const value$2 = putIter(slot, [[12]], dDrop_drop, $dropEach(dDrop_drop));
-      owned = slot.value;
-      console.log(`${value$2}`);
+      let tmp$1;
+      try {
+        tmp$1 = putIter(slot, value$1, dDrop_drop, $dropEach(dDrop_drop));
+      } finally {
+        owned = slot.value;
+      }
+      console.log(`${tmp$1}`);
       const v = [1, 2, 3];
       let lent;
       const slot$2 = { value: lent };
-      const value$3 = putIter(slot$2, v);
-      lent = slot$2.value;
-      console.log(`${value$3}`);
+      let tmp$2;
+      try {
+        tmp$2 = putIter(slot$2, v);
+      } finally {
+        lent = slot$2.value;
+      }
+      console.log(`${tmp$2}`);
       const slot$3 = { value: lent };
-      const value$4 = putIter(slot$3, $slice(v, 1));
-      lent = slot$3.value;
-      console.log(`${value$4}`);
+      let tmp$3;
+      try {
+        tmp$3 = putIter(slot$3, $slice(v, 1));
+      } finally {
+        lent = slot$3.value;
+      }
+      console.log(`${tmp$3}`);
       let numbers;
+      const value$2 = [4, 5];
       const slot$4 = { value: numbers };
-      const value$5 = putIter(slot$4, [4, 5]);
-      numbers = slot$4.value;
-      console.log(`${value$5}`);
+      let tmp$4;
+      try {
+        tmp$4 = putIter(slot$4, value$2);
+      } finally {
+        numbers = slot$4.value;
+      }
+      console.log(`${tmp$4}`);
+      const value$3 = [6];
       const slot$5 = { value: numbers };
-      const value$6 = putIter(slot$5, [6]);
-      numbers = slot$5.value;
-      console.log(`${value$6}`);
+      let tmp$5;
+      try {
+        tmp$5 = putIter(slot$5, value$3);
+      } finally {
+        numbers = slot$5.value;
+      }
+      console.log(`${tmp$5}`);
     } finally {
       if (owned != null) {
         for (const item of owned) {

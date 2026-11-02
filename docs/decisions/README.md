@@ -62,7 +62,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0069 Preserve effects before simplifying; lower once and link afterwards](0069-lowering-effects-and-linking.md)
 - [0070 A std function taken as a value is an arrow](0070-function-values.md)
 - [0071 An iterator stepped through is a `$iter`, which knows where it is](0071-stepping-iterators.md)
-- [0074 A `&mut` to a string or a number is a box the caller copies back](0074-mut-boxes.md)
+- [0074 A `&mut` to a string or a number is a box the caller copies back](0074-mut-boxes.md) *(amended: a box of what may be moved out holds a copy; amended (#487): a box is copied back as its call unwinds too, where that can be seen)*
 - [0076 A struct's `..base` after its fields, and std's own steps for a few more methods](0076-std-odds.md)
 - [0068 `VecDeque` and `BinaryHeap` are arrays; a heap moves its items as Rust's does](0068-queues.md) *(amended: a heap's `pop()` of what could look like `None`)*
 - [0015 Loops: put `while` back, label only when needed](0015-loops.md)

@@ -57,8 +57,11 @@ function grow(stack, items, TSize) {
 
 function fill(stack, item, TSize) {
   const into = { value: stack };
-  twice(into, item, stackPushT(TSize));
-  $assign(stack, into.value);
+  try {
+    twice(into, item, stackPushT(TSize));
+  } finally {
+    $assign(stack, into.value);
+  }
 }
 
 function stackFromTSlice_from(items, TClone, TSize) {

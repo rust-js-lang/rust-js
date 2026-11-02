@@ -807,6 +807,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `try` whose `catch` drops it and throws the panic on. What `body`
     /// declares, it assigns, declared before. A cleanup that runs nothing,
     /// of what's all moved, an `FnOnce`'s own self given away, needs none.
+    /// `body` in a `try` whose `finally` is `finally`, each `const` it
+    /// makes a `let` before, read after it (#487); what's made before its
+    /// last statement that may throw, the call, before it.
+    pub(super) fn unwinding_finally(&mut self, body: Vec<Stmt>, finally: Vec<Stmt>, out: &mut Vec<Stmt>) {
+        // What's made before the call, the box, before it: a throw of it
+        // has written nothing to copy back.
+        let first = body.iter().rposition(|s| !s.cannot_throw()).unwrap_or(0);
+        let mut body = body.into_iter();
+        out.extend(body.by_ref().take(first));
+        let mut inner = Vec::new();
+        for stmt in body {
+            match stmt.kind {
+                StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => {
+                    out.push(StmtKind::Let(name.clone(), None).at(stmt.span));
+                    inner.push(StmtKind::Assign(Expr::var(&name), value).at(stmt.span));
+                }
+                StmtKind::Let(name, None) => out.push(StmtKind::Let(name, None).at(stmt.span)),
+                kind => inner.push(Stmt { kind, span: stmt.span }),
+            }
+        }
+        out.push(StmtKind::Try(inner, finally).at(js::Span::NONE));
+    }
+
     pub(super) fn unwinding(&mut self, body: Vec<Stmt>, cleanup: Vec<Stmt>, span: js::Span, out: &mut Vec<Stmt>) {
         if cleanup.is_empty() {
             out.extend(body);

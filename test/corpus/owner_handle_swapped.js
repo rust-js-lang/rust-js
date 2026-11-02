@@ -127,8 +127,12 @@ function main() {
   });
   const other$1 = { value: other };
   try {
-    const request = render("a", other$1);
-    other = other$1.value;
+    let request;
+    try {
+      request = render("a", other$1);
+    } finally {
+      other = other$1.value;
+    }
     console.log(`${request.value.name} ${other.value.name}`);
     try {
       complete(request.value);
