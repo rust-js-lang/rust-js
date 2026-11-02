@@ -28,12 +28,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "receiver-not-only",
-    breaks: "a comment before an arm whose first statement is a method call, `DOWN.set(true)`, whose span starts at `set`, moves above the `switch` (rd119, ADR 0905 amended)",
+    breaks: "a comment before an if chain's arm whose first statement is a method call, `None => { DOWN.set(false); }`, whose span starts at `set`, is lost, not before `down = false` in the `else` (rd119, ADR 0905 amended)",
     file: "src/to_oxc/openings.rs",
     find: "        || (code.strip_suffix('.')).is_some_and(|path| {\n",
     replace: "        || (code.strip_suffix('.')).filter(|_| false).is_some_and(|path| {\n",
-    tests: ["test/corpus.test.ts", "-t", "^switch_guard_skips_its_case.rs$"],
-    snapshots: true,
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "an arm of a block of an if chain"],
   },
   {
     name: "let-value-of-any-start",
