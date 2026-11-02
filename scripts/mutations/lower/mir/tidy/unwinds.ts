@@ -281,11 +281,12 @@ export const mutations: Mutation[] = [
   {
     name: "looped-drop-inner-loop-labels-unseen",
     breaks:
-      "the labels of the loops inside a loop that drops a value aren't its own, so an inner loop's `continue bb10` leaves it, and a value given again there is dropped once, at the outer loop's end (generated program 12454574)",
+      "the labels of the loops inside a loop that drops a value aren't its own, so an inner loop's `continue bb10` leaves it: a value given again there was dropped once, at the outer loop's end (generated program 12454574), which `names_dropped` now refuses too (#463), and a loop over a borrow with an inner loop's `continue` is a `catch` of the drop around each step, not one `try`",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "            StmtKind::While { label, .. }\n            | StmtKind::DoWhile { label, .. }\n            | StmtKind::For { label, .. }\n            | StmtKind::ForOf { label, .. } => label.clone(),\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^drop_reassigned_in_inner_loop.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(drop_reassigned_in_inner_loop|looped_drops_jumps)\\.rs$"],
+    snapshots: true,
   },
   {
     name: "looped-drops-own-continue-leaves",
@@ -382,5 +383,14 @@ export const mutations: Mutation[] = [
       "        StmtKind::If(_, then, Some(otherwise)) if false => {\n            let ended",
     tests: ["test/corpus.test.ts", "-t", "^guard_value_of_branches.rs$"],
     snapshots: true,
+  },
+  {
+    name: "looped-drop-past-its-write",
+    breaks:
+      "an assignment's drop of the old value in a loop, `dDrop(held); held = noisy; continue;`, is a `finally` around the assignment, which drops the new value and never the old (#463)",
+    file: "src/lower/mir/tidy/unwinds.rs",
+    find: "        if dropped && (!stmt.cannot_throw() || names_dropped(&stmt, drop)) {\n",
+    replace: "        if dropped && !stmt.cannot_throw() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_assigned_after_a_loop.rs$"],
   },
 ];

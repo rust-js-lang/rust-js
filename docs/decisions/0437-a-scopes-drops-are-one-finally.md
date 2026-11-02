@@ -173,3 +173,25 @@ native Rust (one loop, `while`s, early `break`s, an inner `continue`,
 `continue 'outer`, and a borrow's loop with one), and the mutation
 `looped-drops-own-continue-leaves` (`mir/tidy/unwinds.ts`);
 `looped-drops-own-label-unread` went with the rewrite it held.
+
+**Amended (#463, P0).** Once a loop's labeled `continue` was a way out of
+it (3ae96fc0c, rd200, above), `looped_drops` took an assignment's drop of
+the old value for the loop's drop before a way out. The shape is
+`dDrop(held); held = noisy; continue bb4;`, from `let mut held = Noisy(10);
+for round in .. { for step in 0..steps(round) { .. } held =
+Noisy(label(round)); }`. Only what can't throw may come between a drop and
+its way out, and the assignment can't throw. So the pass made it `try {
+..; held = [label(round)]; } finally { dDrop(held); }`. That `finally` drops
+the new value after the write: the old one is never dropped, and the new
+one is dropped twice, or with an `Rc` it's read once dropped and throws a
+`TypeError`. Found by the Nightly's generated programs (run 41375580164,
+seeds 12455460, 12455721 and 12455879). **What follows the drop names
+nothing the drop reads** (`names_dropped`). The only statement that could
+name it is one that writes it again, which is the assignment, and an
+assignment's drop isn't the loop's. The loop then keeps MIR's shape:
+`let noisy; try { noisy = [label(round)]; } finally { dDrop(held); }
+held = noisy;`, which drops the old value whether or not `label` panics.
+Case "Results change": each value is dropped once, when Rust drops it.
+Held by `drop_assigned_after_a_loop.rs` against native Rust (a `Noisy` and
+an `Rc<RefCell<_>>`, with a panic unwound through the loop) and the
+mutation `looped-drop-past-its-write` (`mir/tidy/unwinds.ts`).

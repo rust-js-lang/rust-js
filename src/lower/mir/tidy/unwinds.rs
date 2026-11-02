@@ -860,6 +860,16 @@ fn dropping_catch<'s>(stmt: &'s Stmt, drop: &Stmt) -> Option<&'s Vec<Stmt>> {
     }
 }
 
+/// Whether `stmt` names a variable `drop` reads, `d9` of `dDrop(d9)`: after
+/// the drop, only a write gives it a value again.
+fn names_dropped(stmt: &Stmt, drop: &Stmt) -> bool {
+    let mut named = false;
+    js::visit_stmts(std::slice::from_ref(drop), &mut |var| {
+        named |= js::mentions_in(std::slice::from_ref(stmt), var) > 0;
+    });
+    named
+}
+
 /// What a loop's jumps go on in: the blocks and loops it labels, whose
 /// `break`s and `continue`s go on in it, and its own label, `own`, MIR's
 /// `bb5: while (true)`, whose `continue bb5` is a turn, in a loop in it
@@ -923,8 +933,11 @@ fn dropped_at_each_exit(stmts: &mut Vec<Stmt>, drop: &Stmt, (depth, caught, insi
             out.push(stmt);
             continue;
         }
-        // A drop, then what isn't a way out: not this shape.
-        if dropped && !stmt.cannot_throw() {
+        // A drop, then what isn't a way out: not this shape. Nor one that
+        // names what it dropped, `dDrop(d9); d9 = _28; continue bb4;`, an
+        // assignment's drop of the old value: a `finally` would drop the
+        // new one after it (#463).
+        if dropped && (!stmt.cannot_throw() || names_dropped(&stmt, drop)) {
             return false;
         }
         let ok = match &mut stmt.kind {
