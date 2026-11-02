@@ -561,6 +561,7 @@ pub fn same(promise: &'static Promise<u32>) -> &'static Thenable {
   expect(failing.status).toBe("rejected");
   const p = Promise.resolve(3);
   expect(lib.same(p)).toBe(p);
+});
 
 // React's Flight server's `patchConsole` (rd576, rd577): a descriptor JS
 // gives is read as TypeScript's `PropertyDescriptor`, its `value` any value,
