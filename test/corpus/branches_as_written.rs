@@ -4,7 +4,7 @@
 // `if c { x } else { false }` of `bool`s, the `c && x` it means (the
 // user's decision, ADR 0879, amended); a call's value
 // given to a variable a closure captured, `result = callback();`, with no
-// temporary, where a place JS reaches first, `a[at.get()]`, which the
+// temporary, in `catch_unwind`'s closure or one called again, where a place JS reaches first, `a[at.get()]`, which the
 // call may change, keeps it; and a clone of what a `move` closure captured, read by
 // its name, but not of what one only borrowed, given another value after.
 
@@ -76,6 +76,17 @@ fn act(callback: &dyn Fn() -> Option<u32>) -> Option<u32> {
     result
 }
 
+fn repeat(callback: &dyn Fn() -> Option<u32>, times: u32) -> Option<u32> {
+    let mut result = None;
+    let mut set = || {
+        result = callback();
+    };
+    for _ in 0..times {
+        set();
+    }
+    result
+}
+
 fn bump(at: &Cell<usize>) -> u32 {
     at.set(at.get() + 1);
     7
@@ -135,6 +146,7 @@ fn main() {
     println!("{} {}", either(true, &|| false), either(false, &|| true));
     println!("{:?}", act(&|| Some(3)));
     println!("{:?}", act(&|| panic!("thrown")));
+    println!("{:?} {:?}", repeat(&|| Some(4), 2), repeat(&|| Some(5), 0));
     println!("{:?}", placed());
 
     let make = thenable(Some(Rc::new(vec![1, 2])));

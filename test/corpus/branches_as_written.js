@@ -70,6 +70,17 @@ function act(callback) {
   return result;
 }
 
+function repeat(callback, times) {
+  let result;
+  function set() {
+    result = callback();
+  }
+  for (let i = 0; i < times; i++) {
+    set();
+  }
+  return result;
+}
+
 function bump(at) {
   at.value = (at.value + 1) >>> 0;
   return 7;
@@ -130,6 +141,11 @@ function main() {
     throw new Error("thrown");
   });
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  const value$2 = repeat(() => 4, 2);
+  const value$3 = repeat(() => 5, 0);
+  console.log(
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
+  );
   console.log(`[${placed().join(", ")}]`);
 
   const make = thenable([1, 2]);
