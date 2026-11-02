@@ -1,6 +1,6 @@
 # 0841. A nullable place stores what's never `undefined` as it is
 
-Status: Accepted. Amended: a nullable function's result, kept in a
+Status: Accepted. Amended (rd523): a guard's field of a nullable thread-local. Amended: a nullable function's result, kept in a
 variable or a `Drop` guard's field, is stored as it is, and a trait's
 method's isn't taken as one; stored again where it's read in place; an
 `and_then` of one is `null` for `None` wherever it's kept; a `Cell` made
@@ -331,3 +331,28 @@ Held by `test/lowering-nullable-reads.test.ts`, "a Some made into a
 nullable field's Cell, and a nullable thread-local's lent value, are
 stored as they are", run; mutations `cell-new-of-some-unknown`
 (`mir/rvalues.ts`) and `applied-stored-again-skipped` (`std_types/cell.ts`).
+
+## Amendment (2026-11-02): a guard's field of a nullable thread-local, taken where it's dropped (rd523)
+
+React's Flight client's initializeModelChunk keeps its nullable
+thread-locals' values in a guard, `let prev_handler = INITIALIZING_HANDLER
+.take(); let prev_chunk = INITIALIZING_CHUNK.with_borrow(Clone::clone);`,
+and its `Drop` restores each, `INITIALIZING_CHUNK.set(self.prev_chunk
+.take())`. Each restore was `initializingChunk = prevChunk ?? null`, where
+upstream's `finally` is `initializingChunk = prevChunk;`.
+
+**What a `#[rust_js::nullable]` thread-local gives, read whole,
+`KEY.with_borrow(Clone::clone)`, or taken, `KEY.take()`, is `null` or a
+value (ADR 0949), so a guard's field made of it is never `undefined`
+(`stored_given`, of the call `quiet_cells().nullable` marks); and a copy of
+a guard's field its `Drop` takes, `const old = _restore.prevChunk;`, read
+as the variable the field was made of, is never `undefined` where the field
+wasn't (`drops/inlined.rs`'s `copies_read_as`)**, as the field's own read
+is. So each is stored as it is: `initializingHandler = prevHandler;`.
+
+- Case N ([0262](0262-when-rust-and-js-disagree.md)): `prevChunk` is the
+  thread-local's own value, `null` or a chunk.
+- Held by corpus `drop_guard_restores_nullable_fields` against native
+  Rust, restored after a return and a panic, and the mutations
+  `nullable-local-read-unnulled` (`lower/mir/rvalues.ts`) and
+  `guard-copy-defined-lost` (`lower/drops/inlined.ts`).

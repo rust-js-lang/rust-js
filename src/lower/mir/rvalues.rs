@@ -1214,6 +1214,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } if *destination == place.local.into() => Some((func, args)),
             _ => None,
         });
+        // What a `#[rust_js::nullable]` thread-local gives, read whole,
+        // `KEY.with_borrow(Clone::clone)`, or taken, `KEY.take()`: what it
+        // holds, `null` or a value (ADR 0949), a guard's field made of it
+        // restored as it is (rd523).
+        if let Some(block) = (state.body.basic_blocks.iter_enumerated()).find_map(|(block, b)| {
+            matches!(&b.terminator().kind, mir::TerminatorKind::Call { destination, .. } if *destination == place.local.into())
+                .then_some(block)
+        }) && state.facts.quiet_cells().nullable.contains(&block)
+        {
+            return Given::Nulled;
+        }
         // What a `#[rust_js::nullable]` function gives, a binding's too, its
         // `None` `null` (ADRs 0578, 0638): `ReactSharedInternals.T` kept in
         // `prevTransition` (ADR 0841, amended).

@@ -316,8 +316,11 @@ fn unread_writes(stmts: &mut Vec<Stmt>, guard: &str, mut read_after: GuardReads)
 /// made of or a `const` of its own, `const old = _restore[0];` of a
 /// `Drop`'s `self.0.take()`: `n` read as `v`, where each of `body`'s
 /// declarations of `n` is such a copy, as nothing sets either once it's
-/// made (ADR 0705, amended).
-fn copies_read_as(body: &mut Vec<Stmt>, field: &dyn Fn(&Expr) -> bool, v: &str) {
+/// made (ADR 0705, amended); never `undefined` where `defined` says the
+/// field was made of what isn't, as the field's own read is (ADR 0841,
+/// amended): `initializingChunk = prevChunk` of the drop's `old ?? null`
+/// (rd523).
+fn copies_read_as(body: &mut Vec<Stmt>, field: &dyn Fn(&Expr) -> bool, v: &str, defined: bool) {
     let mut copies = Vec::new();
     js::each_block_mut(body, &mut |stmts| {
         for s in stmts.iter() {
@@ -348,10 +351,12 @@ fn copies_read_as(body: &mut Vec<Stmt>, field: &dyn Fn(&Expr) -> bool, v: &str) 
             stmts.retain(|s| !matches!(&s.kind, StmtKind::Const(name, value) if *name == n && field(value)));
         });
         js::each_expr_mut(body, &mut |e| {
-            if let ExprKind::Var(name) = &mut e.kind
-                && *name == n
-            {
-                *name = v.to_string();
+            if matches!(&e.kind, ExprKind::Var(name) if *name == n) {
+                let read = Expr::var(v).or_at(e.span);
+                *e = match defined {
+                    true => read.defined(),
+                    false => read,
+                };
             }
         });
     }
@@ -517,7 +522,7 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
             matches!(&e.kind, ExprKind::Member(of, k)
                 if k == key && matches!(&of.kind, ExprKind::Var(g) if g == guard))
         };
-        copies_read_as(body, &read, &v);
+        copies_read_as(body, &read, &v, field.1.facts.has(js::Known::Defined));
     }
     // Each read of a field the value it was made of, never `undefined`
     // where that's what was known of it and nothing sets it again: what a
@@ -671,7 +676,7 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) {
         _ => guard.to_string(),
     };
     // A copy of it, `const old = _restore[0];`, is what it reads as too.
-    copies_read_as(body, &field, &read);
+    copies_read_as(body, &field, &read, known.has(js::Known::Defined));
     // Never `undefined` where that's what was known of it (ADR 0841,
     // amended), as `fields_of` reads one.
     js::each_expr_mut(body, &mut |e| {

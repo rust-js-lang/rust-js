@@ -3,6 +3,16 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "nullable-local-read-unnulled",
+    breaks:
+      "a nullable thread-local read whole or taken, `KEY.with_borrow(Clone::clone)`, `KEY.take()`, kept in a guard's field is restored `?? null`, as if it may be `undefined` (rd523)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "        }) && state.facts.quiet_cells().nullable.contains(&block)\n",
+    replace: "        }) && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_guard_restores_nullable_fields.rs$"],
+    snapshots: true,
+  },
+  {
     name: "nullable-result-not-nulled",
     breaks:
       "a nullable getter's result kept in a `let`, `prevTransition`, is written to a nullable setter `?? null`, as if it may be `undefined` (ADR 0841, amended)",
