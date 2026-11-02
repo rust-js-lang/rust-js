@@ -3,6 +3,39 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "tested-some-copy-unseen",
+    breaks:
+      "a `let` of `js::null()` set to a place just tested `is_some()` may be `undefined`, so the nullable parameter it's given is tested `!= null` (rd623)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                made.entry(assign.0.local).or_default().0 += 1;\n            }\n            if let Rvalue::Use",
+    replace: "            }\n            if let Rvalue::Use",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a let of null set only to a place tested is_some"],
+  },
+  {
+    name: "tested-some-of-any-test",
+    breaks: "a place tested `is_none()`, or another place tested, is taken for a `Some` where it's read: `undefined` given as `null` (rd623)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                self.recognition().classify(def_id, generic_args) == Some(Std::IsSome)\n            })\n            && reference.is_some_and(",
+    replace: "                matches!(self.recognition().classify(def_id, generic_args), Some(Std::IsSome | Std::IsNone))\n            })\n            && reference.is_some_and(",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a let of null set only to a place tested is_some"],
+  },
+  {
+    name: "tested-some-of-another-place",
+    breaks: "a copy of one place where another was tested `is_some()` is taken for a `Some`: `undefined` given as `null` (rd623)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                            && matches!(&assign.1, Rvalue::Ref(_, BorrowKind::Shared, of) if *of == place))",
+    replace: "                            && matches!(&assign.1, Rvalue::Ref(_, BorrowKind::Shared, _)))",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a let of null set only to a place tested is_some"],
+  },
+  {
+    name: "null-call-called",
+    breaks: "`js::null()`'s `None`, which is `null`, is taken for a call's that may be `undefined` (rd623)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                if !null {\n                    called.insert(destination.local);\n                }\n",
+    replace: "                let _ = null;\n                called.insert(destination.local);\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a let of null set only to a place tested is_some"],
+  },
+  {
     name: "null-none-copy-ungiven",
     breaks:
       "`let owner = None;` given to a nullable field is `undefined` where it's made, and `owner ?? null` where it's given (ADR 0781)",

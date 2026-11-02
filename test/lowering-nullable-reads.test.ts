@@ -587,3 +587,77 @@ pub fn uses() -> bool {
   const lib = await import(join(dir, "lib.js"));
   expect(lib.uses()).toBe(false);
 });
+
+// rd623: a `let` that starts `js::null()` and is set only to a place just
+// tested `is_some()` is `null` or a value, so the nullable parameter it's
+// given is tested `!== null` and another crate's call gives it as it is,
+// React DOM's createRoot's `transitionCallbacks`. Set to a place tested
+// `is_none()`, or to one another place's test guards, it may be what JS
+// gave, `undefined`.
+test("a let of null set only to a place tested is_some is null or a value", async () => {
+  const dir = fixture("nullable-param-tested-some");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use js::Unknown;
+
+pub struct Options {
+    pub callbacks: Option<&'static Unknown>,
+    pub other: Option<&'static Unknown>,
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(callbacks))]
+fn create(callbacks: Option<&'static Unknown>) -> bool {
+    callbacks.is_some()
+}
+
+pub fn root(options: Option<&Options>) -> bool {
+    let mut callbacks = js::null();
+    if let Some(options) = options {
+        if options.callbacks.is_some() {
+            callbacks = options.callbacks;
+        }
+    }
+    create(callbacks)
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(callbacks))]
+fn untested(callbacks: Option<&'static Unknown>) -> bool {
+    callbacks.is_some()
+}
+
+pub fn other(options: &Options) -> bool {
+    let mut callbacks = js::null();
+    if options.other.is_some() {
+        callbacks = options.callbacks;
+    }
+    untested(callbacks)
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(callbacks))]
+fn negated(callbacks: Option<&'static Unknown>) -> bool {
+    callbacks.is_some()
+}
+
+pub fn none(options: &Options) -> bool {
+    let mut callbacks = js::null();
+    if options.callbacks.is_none() {
+        callbacks = options.callbacks;
+    }
+    negated(callbacks)
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("function create(callbacks) {\n  return callbacks !== null;\n}");
+  expect(js).toContain("function untested(callbacks) {\n  return callbacks != null;\n}");
+  expect(js).toContain("function negated(callbacks) {\n  return callbacks != null;\n}");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.root(undefined), lib.root({}), lib.root({ callbacks: 1 })]).toEqual([false, false, true]);
+  expect([lib.other({ other: 1 }), lib.other({ other: 1, callbacks: 1 }), lib.other({ callbacks: 1 })]).toEqual([
+    false,
+    true,
+    false,
+  ]);
+  expect([lib.none({}), lib.none({ callbacks: 1 })]).toEqual([false, false]);
+});

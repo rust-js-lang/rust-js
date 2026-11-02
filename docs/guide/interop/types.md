@@ -1052,7 +1052,9 @@ export function ratio(a, b) {
   `searchTarget = target`
   ([ADR 0861](../../decisions/0861-a-functions-own-nullable-parameter-is-set-null.md), amended).
   Where each of the crate's calls gives it `null` or a value (`None`,
-  `Some(..)`, a nullable parameter or field passed on) and nothing uses the
+  `Some(..)`, a nullable parameter or field passed on, or a `let` of
+  `js::null()` set only to a place just tested `is_some()`, as React DOM's
+  createRoot's `transitionCallbacks` is) and nothing uses the
   function but to call it, its body tests it `!== null`, `if
   (moduleLoading !== null)`; one call that gives what may be `undefined`,
   or a use of the function as a value, and it's `!= null`. Another crate's

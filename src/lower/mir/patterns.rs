@@ -79,10 +79,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // and the variable returned as it is (ADR 0957, amended, the user's
         // decision, 2026-10-27).
         let returns_nullable = bindings::nullable_result(self.tcx, body.source.def_id());
-        for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
+        let statements = (body.basic_blocks.iter_enumerated())
+            .flat_map(|(block, data)| data.statements.iter().enumerate().map(move |(i, s)| (block, i, s)));
+        for (block, statement_index, statement) in statements {
             let mir::StatementKind::Assign(assign) = &statement.kind else {
                 continue;
             };
+            // A copy of a place just tested `is_some()`, `if
+            // options.callbacks.is_some() { callbacks = options.callbacks;
+            // }`: a write of a `Some` (rd623).
+            if let Rvalue::Use(mir::Operand::Copy(read) | mir::Operand::Move(read), _) = &assign.1
+                && !read.projection.is_empty()
+                && assign.0.projection.is_empty()
+                && self.option_of(assign.0.ty(body, self.tcx).ty).is_some()
+                && self.tested_some(body, mir::Location { block, statement_index }, *read)
+            {
+                made.entry(assign.0.local).or_default().0 += 1;
+            }
             if let Rvalue::Use(mir::Operand::Copy(read) | mir::Operand::Move(read), _) = &assign.1
                 && read.projection.is_empty()
                 && assign.0.projection.is_empty()
@@ -140,7 +153,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (writes, none) = made.entry(destination.local).or_default();
                 *writes += 1;
                 *none = true;
-                called.insert(destination.local);
+                // But one whose `None` is `null`, `js::null()`'s (rd623).
+                let null = (func.const_fn_def())
+                    .and_then(|(def_id, _)| crate::lower::calls::none_given_by(self.tcx, def_id))
+                    == Some(js::Known::NoneNull);
+                if !null {
+                    called.insert(destination.local);
+                }
             }
             let Some((def_id, _)) = func.const_fn_def() else {
                 continue;
@@ -269,6 +288,78 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .map(|(local, _)| local)
             .collect()
+    }
+
+    /// Whether `place`, an `Option` read at `at`, is a `Some` there: read
+    /// first where `place.is_some()` is true, its block the test's alone
+    /// goes on to, and `place` a field, or a field's, of what a shared
+    /// reference refers to, which nothing writes between (rd623).
+    fn tested_some(&self, body: &mir::Body<'tcx>, at: mir::Location, place: Place<'tcx>) -> bool {
+        let shared = matches!(
+            body.local_decls[place.local].ty.kind(),
+            ty::Ref(_, _, ty::Mutability::Not)
+        );
+        let fields = (place.projection.iter().skip(1)).all(|elem| matches!(elem, mir::ProjectionElem::Field(..)));
+        if !shared || place.projection.first() != Some(&mir::ProjectionElem::Deref) || !fields {
+            return false;
+        }
+        let written = |statement: &mir::Statement<'tcx>| matches!(&statement.kind, StatementKind::Assign(assign) if assign.0.local == place.local);
+        if body.basic_blocks[at.block].statements[..at.statement_index]
+            .iter()
+            .any(written)
+        {
+            return false;
+        }
+        let predecessors = body.basic_blocks.predecessors();
+        let [switch] = predecessors[at.block][..] else {
+            return false;
+        };
+        let data = &body.basic_blocks[switch];
+        let TerminatorKind::SwitchInt {
+            discr: Operand::Copy(test) | Operand::Move(test),
+            targets,
+        } = &data.terminator().kind
+        else {
+            return false;
+        };
+        if targets.target_for_value(0) == at.block || !test.projection.is_empty() || data.statements.iter().any(written)
+        {
+            return false;
+        }
+        // The test: `is_some()` of a shared reference made once to `place`,
+        // whose call goes on to the switch.
+        let [call] = predecessors[switch][..] else {
+            return false;
+        };
+        let TerminatorKind::Call {
+            func,
+            args,
+            destination,
+            target: Some(next),
+            ..
+        } = &body.basic_blocks[call].terminator().kind
+        else {
+            return false;
+        };
+        let reference = match &args[..] {
+            [arg] => arg.node.place().and_then(|p| p.as_local()),
+            _ => None,
+        };
+        *next == switch
+            && destination.as_local() == Some(test.local)
+            && func.const_fn_def().is_some_and(|(def_id, generic_args)| {
+                self.recognition().classify(def_id, generic_args) == Some(Std::IsSome)
+            })
+            && reference.is_some_and(|reference| {
+                (body.basic_blocks.iter().flat_map(|b| &b.statements)).any(|s| {
+                    matches!(&s.kind, StatementKind::Assign(assign)
+                        if assign.0.as_local() == Some(reference)
+                            && matches!(&assign.1, Rvalue::Ref(_, BorrowKind::Shared, of) if *of == place))
+                }) && (body.basic_blocks.iter().flat_map(|b| &b.statements))
+                    .filter(|s| matches!(&s.kind, StatementKind::Assign(assign) if assign.0.local == reference))
+                    .count()
+                    == 1
+            })
     }
 
     /// Each variable a `let` binds: where the `let` is written, which its

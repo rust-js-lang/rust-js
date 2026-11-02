@@ -341,3 +341,46 @@ its calls, given as a value", which says to call it in a closure.
 - The port marks the callers too: BundlerWebpack's
   `prepare_destination_for_module` takes `#[rust_js::nullable(module_loading)]`,
   so its call of the target's gives it on as it is.
+
+## Amendment: a `let` of `null` set only to a tested `Some` is `null` or a value (2026-11-02, rd623)
+
+React DOM's createRoot keeps its options' callbacks in a `let` that
+starts `js::null()` and is set only under that field's own test:
+
+```rust
+let mut transition_callbacks = js::null();
+if let Some(options) = options {
+    if options.unstable_transition_callbacks.is_some() {
+        transition_callbacks = options.unstable_transition_callbacks;
+    }
+}
+ReactFiberReconciler.create_container(.., transition_callbacks)
+```
+
+The amendment above made the reconciler's call give it
+`transitionCallbacks ?? null`, where upstream, and the port before it,
+gives `transitionCallbacks`: what the `let` holds was "what may be
+`undefined`", as a field's read is, and `js::null()`'s `None` a call's,
+which may be `undefined` too.
+
+**What a `let` holds follows its writes and their tests** (`mir/patterns.rs`'s
+`mir_null_nones`): a call that gives `null` for `None`, `js::null()`'s
+(`calls::none_given_by`), is a `None` that's `null`, and a copy of a
+place read first where `place.is_some()` was just true, the block its
+test alone goes on to, the place a field of what a shared reference
+refers to, nothing writing between (`tested_some`), is a `Some`. So the
+`let` is `null` or a value: the reconciler's call gives it as it is, and
+a crate's own function given it tests it `!== null`. A copy where
+another place was tested, or where it was tested `is_none()`, is what JS
+gave, as before.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none: `?? null` of what's
+never `undefined` is that value, and `!== null` of what's `null` or a
+value is `!= null`.
+
+- Held by `test/lowering-nullable-reads.test.ts`'s "a let of null set
+  only to a place tested is_some is null or a value" (tested `is_some()`,
+  `is_none()` and another place's test, run in JS), and the mutations
+  `tested-some-copy-unseen`, `tested-some-of-any-test`,
+  `tested-some-of-another-place` and `null-call-called`
+  (`lower/mir/patterns.ts`).
