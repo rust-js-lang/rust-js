@@ -299,3 +299,32 @@ program's JS by the time the nightly ran its mutation,
 make the same `else` first, and `else_break_ends_loop.rs`'s snapshot, with
 the whole corpus's and the lowering, snapshot, JSX, port, compiler and
 tidy-stage suites, was unchanged without it. It goes with its mutation.
+
+## Amendment: a late `let` read after the `if` stays before it (2026-11-02, rd578)
+
+Case: a wrong answer (P1 in the port, as it threw), fixed: the JS must
+do what the Rust does ([0262](0262-when-rust-and-js-disagree.md)'s
+"results change").
+
+`let x; if c { return 0; } else if let Some(p) = o { x = p + 1; } else {
+x = 7; } x * 2` printed `if (c) { return 0; } else { let x; if (o !=
+null) { x = .. } else { x = 7; } } return x * 2;`, and the read after the
+`if` threw `x is not defined`: React's Flight server's
+renderFunctionComponent, `debugInfo is not defined`, 210 of the port's
+tests. MIR makes a guard of the `if`, `if (c) { return 0; }`, and the
+declaration `let x;` was sunk after it, before its first write; turning
+the guard back into the `else` it was written as (`written_elses`) made
+every statement up to the last the `else` wrote its own, the `let` too,
+in a block the read after it can't see. **What's made a branch declares
+nothing what follows it reads** (`written_elses` asks `tidy/bindings.rs`'s `kept_declarations`): a
+late `let x;` among those statements is declared before the `if`, where
+the program wrote it, `let x; if (c) { return 0; } else if (o != null) {
+.. }`; any other declaration read after keeps the guard as MIR made it.
+The same holds where an `if` MIR left with both branches has statements
+written after it moved out of its `else`: a late `let` they read goes
+before the `if`.
+
+Held by the corpus's `late_let_before_written_else`, run against native
+Rust, m6-wife's repro and the port's shape (a call between the `let` and
+the `if`, each arm's value a call's), and the mutation
+`late-let-made-the-branchs` (`lower/mir/tidy/jumps/tails.ts`).

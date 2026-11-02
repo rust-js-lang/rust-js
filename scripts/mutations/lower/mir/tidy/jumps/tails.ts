@@ -49,7 +49,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "                    if otherwise.lo >= then.hi\n",
     replace: "                    if true\n",
-    tests: ["test/corpus.test.ts", "-t", "^else_break_ends_loop.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(else_break_ends_loop|loop_over_a_thread_local).rs$"],
+    snapshots: true,
   },
   {
     name: "written-else-jump-span-kept",
@@ -304,8 +305,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`} else if (tags.length === 0) { return 7; } return 9;` is `} else { if (..) { return 7; } return 9; }`, what the program wrote after the `if` in its `else`",
     file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "                let after = otherwise.split_off(k);\n                stmts.splice(at + 1..at + 1, after);\n",
-    replace: "",
+    find: "                stmts.splice(at + 1..at + 1, after);\n                let declared = bindings::declared_before(stmts, at, &mut kept_in, &kept);\n",
+    replace: "                kept_in.extend(after);\n                let declared = bindings::declared_before(stmts, at, &mut kept_in, &kept);\n",
     tests: ["test/corpus.test.ts", "-t", "^returns_in_held_branches.rs$"],
     snapshots: true,
   },
@@ -911,6 +912,15 @@ export const mutations: Mutation[] = [
     find: "    tried.push(StmtKind::Return(None).at(js::Span::NONE));\n    returns_past_blocks(tried, written, returns, starts);\n",
     replace: "    let _ = (written, returns, starts);\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_guard_early_returns\\.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "late-let-made-the-branchs",
+    breaks: "a late `let x;` before a written `if c { return 0; } else if let .. { x = .. } else { x = .. }` is made the `else`'s, out of the scope of `x * 2` after it, which throws `x is not defined` (rd578)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "                bindings::kept_declarations(moved, after).map(|kept| (turned, k, kept))\n",
+    replace: "                Some((turned, k, Vec::<String>::new()))\n",
+    tests: ["test/corpus.test.ts", "-t", "^late_let_before_written_else.rs$"],
     snapshots: true,
   },
 ];

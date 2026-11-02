@@ -1415,3 +1415,35 @@ fn gives_read(branch: &[Stmt], var: &str, read: &str) -> bool {
     matches!(branch, [s] if matches!(&s.kind, StmtKind::Assign(t, v)
         if matches!(&t.kind, ExprKind::Var(n) if n == var) && matches!(&v.kind, ExprKind::Var(n) if n == read)))
 }
+
+/// Of `moved`, statements made a branch of an `if` that `after` follows:
+/// the names of each late `let x;` among them that `after` reads, to be
+/// declared before the `if` instead, as the program wrote them, in its
+/// scope; `None` where another declaration `after` reads would be made the
+/// branch's, `const v = ..`, which can't be (rd578, ADR 0237, amended).
+pub(super) fn kept_declarations(moved: &[Stmt], after: &[Stmt]) -> Option<Vec<String>> {
+    let mut kept = Vec::new();
+    for stmt in moved {
+        for name in js::declared_here(stmt) {
+            if js::mentions_in(after, &name) == 0 {
+                continue;
+            }
+            match &stmt.kind {
+                StmtKind::Let(_, None) => kept.push(name),
+                _ => return None,
+            }
+        }
+    }
+    Some(kept)
+}
+
+/// `kept`'s late `let`s, `kept_declarations`', taken out of `moved` and
+/// declared in `stmts` before its `at`th: how many.
+pub(super) fn declared_before(stmts: &mut Vec<Stmt>, at: usize, moved: &mut Vec<Stmt>, kept: &[String]) -> usize {
+    moved.retain(|s| !matches!(&s.kind, StmtKind::Let(name, None) if kept.contains(name)));
+    let declared = kept
+        .iter()
+        .map(|name| StmtKind::Let(name.clone(), None).at(js::Span::NONE));
+    stmts.splice(at..at, declared);
+    kept.len()
+}

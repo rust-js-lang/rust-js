@@ -1106,10 +1106,19 @@ fn linked_elses(
                 }
                 _ => None,
             };
-            if let Some((turned, k)) = turned {
+            // What's made the branch declares nothing what's after it reads,
+            // which a block would put out of its scope: a late `let x;` of
+            // `let x; if c { return; } else if let Some(p) = o { x = p; }
+            // else { x = 7; } f(x)` stays before the `if` (rd578).
+            let turned = turned.and_then(|(turned, k)| {
+                let (moved, after) = stmts[at + 1..].split_at(k);
+                bindings::kept_declarations(moved, after).map(|kept| (turned, k, kept))
+            });
+            if let Some((turned, k, kept)) = turned {
                 let after = stmts.split_off(at + 1 + k);
                 let mut rest = stmts.split_off(at + 1);
                 stmts.extend(after);
+                at += bindings::declared_before(stmts, at, &mut rest, &kept);
                 let StmtKind::If(test, mut exit, None) =
                     std::mem::replace(&mut stmts[at].kind, StmtKind::Expr(Expr::undefined()))
                 else {
@@ -1164,9 +1173,17 @@ fn linked_elses(
                 && then.last().is_some_and(ends)
                 && otherwise[k..].iter().any(|s| !place(s).is_none())
                 && otherwise[k..].iter().all(|s| place(s).is_none() || place(s).lo >= end)
+                && let Some(kept) = bindings::kept_declarations(&otherwise[..k], &otherwise[k..])
             {
                 let after = otherwise.split_off(k);
+                let mut kept_in = std::mem::take(otherwise);
                 stmts.splice(at + 1..at + 1, after);
+                let declared = bindings::declared_before(stmts, at, &mut kept_in, &kept);
+                let StmtKind::If(_, _, Some(otherwise)) = &mut stmts[at + declared].kind else {
+                    unreachable!("matched")
+                };
+                *otherwise = kept_in;
+                at += declared;
             }
         }
         at += 1;
