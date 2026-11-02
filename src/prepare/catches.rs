@@ -102,7 +102,8 @@ fn ignored_tries(body: &mut [Stmt]) {
 /// can't: the `try` its body is, each `return` of the flag the `if`'s
 /// `return v;`, its last, of the other, gone, `try { ..; if (c) { ..; return
 /// v; } } catch {}`, as JS returns from inside a `try`, React's
-/// dispatchSetStateInternal (ADR 0660, amended). Only where the `if`'s
+/// dispatchSetStateInternal (ADR 0660, amended): the `if`'s arm where the
+/// closure returns its value (`arms_where_returned`), so only where its
 /// `return` can't throw, which the `catch` would catch; where each other
 /// `return` of the body gives the flag; and of `!r._0`, the other way.
 fn flagged_try(made: &Stmt, tested: &Stmt) -> Option<Stmt> {
@@ -132,51 +133,157 @@ fn flagged_try(made: &Stmt, tested: &Stmt) -> Option<Stmt> {
         ExprKind::Unary(js::UnaryOp::Not, read) => (&**read, false),
         _ => (&flag, true),
     };
-    if !js::result::reads_held(read, result) {
+    if !js::result::reads_held(read, result)
+        || !matches!(
+            then.as_slice(),
+            [Stmt {
+                kind: StmtKind::Return(_),
+                ..
+            }]
+        )
+    {
         return None;
     }
-    let [
-        Stmt {
-            kind: StmtKind::Return(returned),
-            ..
-        },
-    ] = then.as_slice()
-    else {
-        return None;
+    let flag = match when {
+        true => Expr::var(result),
+        false => Expr::unary(js::UnaryOp::Not, Expr::var(result)),
     };
-    if returned.as_ref().is_some_and(Expr::may_throw) {
-        return None;
-    }
-    let (last, before) = body.split_last()?;
-    if !matches!(&last.kind, StmtKind::Return(Some(Expr { kind: ExprKind::Bool(b), .. })) if *b != when) {
-        return None;
-    }
-    let tried = flag_returns(before, when, then)?;
+    let ok = [StmtKind::If(flag, then.clone(), None).at(tested.span)];
+    let (tried, _) = arms_where_returned(body, result, &ok)?;
     Some(StmtKind::TryCatch(tried, None, Vec::new()).at(tested.span))
 }
 
-/// `stmts`, each `return` of the flag, `when`, `then`; `None` where another
-/// `return` is in them, or one in what isn't an `if`.
-fn flag_returns(stmts: &[Stmt], when: bool, then: &[Stmt]) -> Option<Vec<Stmt>> {
-    let mut out = Vec::with_capacity(stmts.len());
-    for stmt in stmts {
-        match &stmt.kind {
-            StmtKind::Return(Some(Expr {
-                kind: ExprKind::Bool(b),
+/// `body`, a `catch_unwind` closure's, each `return v;` of a literal what
+/// `ok`, its `Ok` arms, do where its value, `value`, is `v`, as a person
+/// writes what the closure gives out to do there (ADR 0706, amended,
+/// rd60): `if (didFatal) { panicOnRootError(..); return true; } return
+/// false;` and `if (value) { return 0; }` are `if (didFatal) {
+/// panicOnRootError(..); return 0; }`, and the `false`, which does
+/// nothing, what falls out of the `try`; and what's after, the rest of
+/// `ok`, which never reads the value. Only where each `if` of `ok` that
+/// reads the value tests it against a literal; what each `return` is made
+/// can't throw, which the `try`'s `catch` would catch, where the `Ok` arm's
+/// throw is the function's; and of a value returned in more places than
+/// one, is one jump, `return 0;`, not statements written twice.
+fn arms_where_returned<'o>(body: &[Stmt], value: &str, ok: &'o [Stmt]) -> Option<(Vec<Stmt>, &'o [Stmt])> {
+    let reads = ok
+        .iter()
+        .rposition(|s| js::mentions_in(std::slice::from_ref(s), value) > 0)?;
+    let (tested, after) = ok.split_at(reads + 1);
+    let mut returned = Vec::new();
+    returned_values(body, &mut returned);
+    // Where the body's last statement is written.
+    let mut last = 0;
+    js::each_list(body, &mut |list| {
+        last = (list.iter().filter(|s| !s.span.is_none())).fold(last, |last, s| last.max(s.span.lo));
+    });
+    let arm = |v: &Expr, at: js::Span| {
+        let mut arm = arm_of(tested, value, v)?;
+        let places = returned.iter().filter(|r| same_literal(r, v) == Some(true)).count();
+        let one_jump = matches!(
+            arm.as_slice(),
+            [Stmt {
+                kind: StmtKind::Return(_) | StmtKind::Break(_) | StmtKind::Continue(_),
                 ..
-            })) if *b == when => out.extend(then.iter().cloned()),
-            StmtKind::If(test, yes, no) => {
-                let no = match no {
-                    Some(no) => Some(flag_returns(no, when, then)?),
-                    None => None,
-                };
-                out.push(StmtKind::If(test.clone(), flag_returns(yes, when, then)?, no).at(stmt.span));
+            }]
+        );
+        if !arm.iter().all(cannot_throw) || (places > 1 && !arm.is_empty() && !one_jump) {
+            return None;
+        }
+        // What's said before the `return` is where it was, before what the
+        // arm does there; and what's said in the arm, after the closure, is
+        // where it's placed only at the body's last statement, as a comment
+        // of the closure's written after this `return` is before what
+        // follows it, not in an arm placed before that.
+        if at.is_none() || at.lo < last {
+            js::statement_lists(&mut arm, &mut |list| {
+                list.iter_mut().for_each(|s| s.span = js::Span::NONE)
+            });
+            js::each_expr_mut(&mut arm, &mut |e| e.span = js::Span::NONE);
+        }
+        let said = (!at.is_none()).then(|| StmtKind::Comments.at(at));
+        Some(said.into_iter().chain(arm).collect())
+    };
+    Some((js::returns_replaced(body, &arm)?, after))
+}
+
+/// Each value `stmts` return, but in a closure of their own.
+fn returned_values(stmts: &[Stmt], out: &mut Vec<Expr>) {
+    js::each_list(stmts, &mut |list| {
+        out.extend(list.iter().filter_map(|s| match &s.kind {
+            StmtKind::Return(Some(v)) => Some(v.clone()),
+            _ => None,
+        }));
+    });
+}
+
+/// What `ok`, statements that test `value`, do where it's `v`, a literal:
+/// each `if` of it its branch that runs, up to what ends; `None` where
+/// `ok` reads `value` otherwise.
+fn arm_of(ok: &[Stmt], value: &str, v: &Expr) -> Option<Vec<Stmt>> {
+    let mut out = Vec::new();
+    for stmt in ok {
+        if js::mentions_in(std::slice::from_ref(stmt), value) == 0 {
+            out.push(stmt.clone());
+        } else {
+            let StmtKind::If(test, then, otherwise) = &stmt.kind else {
+                return None;
+            };
+            let branch = match holds(test, value, v)? {
+                true => then.as_slice(),
+                false => otherwise.as_deref().unwrap_or_default(),
+            };
+            let mut arm = arm_of(branch, value, v)?;
+            // What's said before the arm, `// When it's true.` above
+            // `Ok(true) =>`, is before what it does.
+            if let Some(first) = arm.first_mut()
+                && !stmt.span.is_none()
+                && !first.span.is_none()
+                && stmt.span.lo < first.span.lo
+            {
+                first.span.lo = stmt.span.lo;
             }
-            _ if js::returns(std::slice::from_ref(stmt)).0 => return None,
-            _ => out.push(stmt.clone()),
+            out.extend(arm);
+        }
+        if out.last().is_some_and(js::ends) {
+            break;
         }
     }
     Some(out)
+}
+
+/// Whether `test` holds where `value` is `v`, a literal: of `value`, `!`
+/// of it, and `===` or `!==` of it and a literal; `None` otherwise.
+fn holds(test: &Expr, value: &str, v: &Expr) -> Option<bool> {
+    let is_value = |e: &Expr| matches!(&e.kind, ExprKind::Var(name) if name == value);
+    match &test.kind {
+        _ if is_value(test) => match v.kind {
+            ExprKind::Bool(b) => Some(b),
+            _ => None,
+        },
+        ExprKind::Unary(js::UnaryOp::Not, inner) => holds(inner, value, v).map(|h| !h),
+        ExprKind::Binary(op @ (js::Op::Eq | js::Op::Ne), a, b) => {
+            let other = match (is_value(a), is_value(b)) {
+                (true, false) => b,
+                (false, true) => a,
+                _ => return None,
+            };
+            Some(same_literal(other, v)? == (*op == js::Op::Eq))
+        }
+        _ => None,
+    }
+}
+
+/// Whether `a` and `b` are the same, where each is a literal of one kind,
+/// as `===` says; `None` otherwise.
+fn same_literal(a: &Expr, b: &Expr) -> Option<bool> {
+    match (&a.kind, &b.kind) {
+        (ExprKind::Num(x), ExprKind::Num(y)) => Some(x == y),
+        (ExprKind::BigInt(x), ExprKind::BigInt(y)) => Some(x == y),
+        (ExprKind::Bool(x), ExprKind::Bool(y)) => Some(x == y),
+        (ExprKind::Str(x), ExprKind::Str(y)) => Some(x == y),
+        _ => None,
+    }
 }
 
 /// The name a `Result` tested where it's made is given,
@@ -574,6 +681,24 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     // The `Ok`'s value kept is the call's too, `return f(x)`.
     if let Some((held, written)) = held {
         return Some((vec![caught(vec![held.at(written.unwrap_or(of_call))])], taken));
+    }
+    // A value the program never named, a literal the closure returns that
+    // the `Ok` arms test, `Ok(true) => return 0`: each arm where the closure
+    // returns its value, the rest of the arm after the `try` where the
+    // `catch` leaves, else in it where it can't throw (ADR 0706, amended).
+    if value_name.as_deref() == Some(result.as_str())
+        && let Some(body) = js::called_body(&call)
+        && let Some((mut tried, rest)) = arms_where_returned(body, result, ok)
+        && (leaves(err) || rest.iter().all(cannot_throw))
+    {
+        let after = match leaves(err) {
+            true => rest.to_vec(),
+            false => {
+                tried.extend(rest.iter().cloned());
+                Vec::new()
+            }
+        };
+        return Some((std::iter::once(caught(tried)).chain(after).collect(), taken));
     }
     // What the `Ok` arm does can't throw: in the `try`.
     if ok.iter().all(cannot_throw) {

@@ -690,7 +690,16 @@ export function text(value) {
   a closure called. A value you never named, tested by the arms, `Ok(true)
   => {} Ok(false) => return false`, is the call where the `try` reads it
   first, `if (!objectIs(getSnapshot(), renderedValue))`; one you name keeps
-  its name ([ADR 0706](../../decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md), amended).
+  its name. A closure that returns literals, `return true;` after
+  `panic_on_root_error(..)`, with `Ok` arms of those literals, `Ok(true)
+  => return 0, Ok(false) => {}`, is each arm where the closure returns its
+  value, `if (didFatal) { panicOnRootError(..); return 0; }`, and what
+  does nothing falls out of the `try`, as React's throwAndUnwindWorkLoop
+  writes it. Only an arm that can't throw moves into the `try`, so what an
+  arm throws is never the `catch`'s; one returned in more places than one
+  moves only where it's a jump, `return 0;`; and into the closure's loop
+  only where it returns from the function, as the closure's `return` did
+  ([ADR 0706](../../decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md), amended).
 - **`panic!` is the one way to throw a new `Error`**, `panic!("")` a `new
   Error()`: a JS value isn't `Send`, so rustc refuses `resume_unwind`
   and `panic_any` of a `&JsError`; a value JS already has is thrown by

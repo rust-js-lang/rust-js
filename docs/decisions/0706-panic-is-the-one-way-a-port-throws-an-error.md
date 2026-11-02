@@ -21,7 +21,8 @@ below (rd534): a closure's value a `try` keeps in a variable declared
 just before it sets the variable where the value is made, where nothing
 could see it set early; and below (rd60): a closure that returns early
 sets its value in each branch, and a value never named is the call where
-it's read first.
+it's read first; and below (rd60): an `Ok` arm of a literal the closure
+returns is where the closure returns it.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A where what's read is
 the same value, `$unwinding($unwound(e))` being `e`; for `new Error()`,
@@ -580,3 +581,99 @@ if` chain with a panic, and a `return` in a loop. Mutations
 `value-in-place-never`, `value-in-place-of-named`
 (`prepare/catches.rs`), `value-in-place-comment-moved`,
 `returns-set-never` and `returns-set-rest-dropped` (`js/applied.rs`).
+
+## Amendment (2026-11-02): an `Ok` arm of a literal the closure returns is where it returns it (rd60)
+
+React's throwAndUnwindWorkLoop returns from its function where the
+closure finds the error fatal, which a closure can't do itself, so its
+port gives out a flag and the arms act on it:
+
+```rust
+match catch_unwind(AssertUnwindSafe(|| {
+    let did_fatal = throw_exception(x);
+    if did_fatal {
+        panic_on_root_error(x);
+        return true;
+    }
+    false
+})) {
+    Ok(true) => return 0,
+    Ok(false) => {}
+    Err(error) => { .. }
+}
+x + 1
+```
+
+It printed `let catchUnwind; const didFatal = throwException(x); if
+(didFatal) { panicOnRootError(x); catchUnwind = true; } else {
+catchUnwind = false; } if (catchUnwind) { return 0; }`, a flag named
+after the `Result`, where upstream writes `try { const didFatal =
+throwException(x); if (didFatal) { panicOnRootError(x); return; } }
+catch (error) { .. }`.
+
+**Each `return v;` of a literal is what the `Ok` arms do where the value
+is `v`** (`catches::arms_where_returned`): `return 0;` where the closure
+returns `true`, and nothing where it returns `false`, which falls out of
+the `try` to what follows it; the rest of the arm, which never reads the
+value, `return x + 1;`, after the `try` where the `catch` leaves, else in
+it where it can't throw. The arms are taken by their tests, each `if` of
+the value, `!` of it or `===` and `!==` of it and a literal, a number, a
+string, a char's or a `bool`, the branch that runs. Each `return` is
+replaced where it is (`js::returns_replaced`, what `returns_set` was,
+the one walk of a closure's `return`s that both use): an arm that ends,
+`return 0;`, where the `return` was, what follows its `if` after it;
+one that goes on only where the `return` ends what runs of the body,
+what follows its `if` the other branch's, `if (x !== 0) { .. }` of a
+guard's `return false;` that does nothing. In a loop or a `switch` of
+the closure's, an arm is placed only where it returns from the function,
+as the closure's `return` did, ending with no `break` or
+`continue` in it, which would be of the closure's loop: the Flight
+client's fulfillReference returns from inside its loops, `Ok(false) =>
+return`, as upstream's `try` does. A `return` in a `try` of the closure's
+keeps the flag, as its `finally` would run after the arm, not before.
+React's dispatchSetStateInternal, `if let Ok(true) = r { return v; }`
+(`flagged_try`), is the same rule, its `if` the arm, where `flag_returns`
+was a walk of its own.
+
+Moving an arm into the `try` changes what its `catch` catches, so only
+what can't throw moves: **an arm that may throw, `Ok(true) => { fatal(x);
+return 2; }` or `Ok(true) => panic!(..)`, keeps the flag**, the arm after
+the `try`, where what it throws goes on past the `catch`, as Rust's goes
+on past the `catch_unwind`. An arm placed where the closure returns its
+value in more places than one is one jump, `return 0;` or `break;`, never
+statements written twice; else the flag stays. A value the program names,
+`Ok(found) => ..`, keeps its name; a closure that returns what isn't a
+literal keeps the flag.
+What's said before a `return` the arm replaces is before what the arm
+does there. What's said in an arm, and before it, `// Where it's thrown.`
+above `Ok(true) =>`, is before its statements where it's placed at the
+closure's last statement; placed before more of the closure, an arm's
+statements are of no place in the source, as a comment the closure
+writes after that `return`, `// TODO: Mark downstreams as halted too.`
+of the Flight client's next branch, is before what follows it, not
+taken into the arm.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The same program:
+where the closure returned `v`, the arm of `v` ran next, nothing between,
+and it runs there now; it throws nothing the `catch` could catch, and
+what does nothing goes on past the `try`, as past the `match`.
+
+Held by `test/lowering-unwind-arms.test.ts`, "an Ok arm of a literal the
+closure returns is where it's returned", run in Node:
+throwAndUnwindWorkLoop's shape, its `catch` resuming or returning, and an
+arm that throws, which its `catch` never catches. Corpus case
+`catch_unwind_arms_where_returned` against native Rust: that shape, an
+arm that panics and one that calls what panics, numbers whose `catch`
+goes on, chars, a guard's `return` of what does nothing with comments, a
+value returned twice whose arm is more than a jump, a loop's `break`
+beside a name the closure declares that its arm reads of its own, and
+`return`s in the closure's loop whose arm returns, may `break`, or does
+nothing; `catch_unwind_flag_return` holds `flagged_try`'s. Mutations
+`arms-returned-never`, `arms-returned-throwing`,
+`arms-returned-rest-in-try`, `arms-returned-negation-unseen`,
+`arms-returned-ne-as-eq`, `arms-returned-written-twice`,
+`arms-returned-comment-lost`, `arms-returned-spans-kept` (`prepare/catches.rs`),
+`returns-replaced-goes-on-anywhere`, `returns-replaced-nothing-unnegated`,
+`returned-in-loop-jumps` and `returned-in-loop-goes-on`
+(`js/applied.rs`); `returns-set-never`
+and `returns-set-rest-dropped` find the walk where it is now.

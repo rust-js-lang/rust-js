@@ -483,13 +483,7 @@ fn sets(stmts: &[Stmt], name: &str) -> bool {
 /// whose value it's given to nothing: `return step(n);` is `step(n);`
 /// (ADR 0706, amended). Not of an async closure, whose value is a promise.
 pub fn applied_tried(mut tried: Vec<Stmt>) -> Vec<Stmt> {
-    let body_of = |value: &Expr| match &value.kind {
-        ExprKind::Call(callee, args) if args.is_empty() => match &callee.kind {
-            ExprKind::Arrow(params, body) if params.is_empty() => Some(body.clone()),
-            _ => None,
-        },
-        _ => None,
-    };
+    let body_of = |value: &Expr| called_body(value).map(<[Stmt]>::to_vec);
     match tried.first().map(|s| &s.kind) {
         Some(StmtKind::Return(Some(value))) if tried.len() == 1 => {
             match body_of(value).filter(|body| body.last().is_some_and(ends)) {
@@ -568,7 +562,8 @@ pub fn applied_tried(mut tried: Vec<Stmt>) -> Vec<Stmt> {
                 // Not where the body declares the variable's name, which
                 // its blocks would set in its place.
                 let shadowed = matches!(&to.kind, ExprKind::Var(name) if declares(&body, name));
-                let Some(set) = returns_set(&body, &to).filter(|_| !shadowed) else {
+                let set = |value: &Expr, at: Span| Some(vec![StmtKind::Assign(to.clone(), value.clone()).at(at)]);
+                let Some(set) = returns_replaced(&body, &set).filter(|_| !shadowed) else {
                     return tried;
                 };
                 let span = tried[0].span;
@@ -582,35 +577,148 @@ pub fn applied_tried(mut tried: Vec<Stmt>) -> Vec<Stmt> {
     }
 }
 
-/// `body`, a closure's whose value is set to `to`, each `return v;` of it
-/// `to = v;`, where each ends what runs of it: last, or last of an `if`'s
-/// branch, what follows that `if` its `else`. `None` where one is in a
-/// loop, a `switch` or a `try`, or a way through it ends with no value.
-fn returns_set(body: &[Stmt], to: &Expr) -> Option<Vec<Stmt>> {
-    let Some(at) = body.iter().position(|s| returns(std::slice::from_ref(s)).0) else {
-        // Of no `return`, it ends otherwise, a `throw`.
-        return body.last().is_some_and(ends).then(|| body.to_vec());
-    };
-    let (stmt, rest) = (&body[at], &body[at + 1..]);
-    let set = match &stmt.kind {
-        StmtKind::Return(Some(value)) if rest.is_empty() => StmtKind::Assign(to.clone(), value.clone()),
-        // Each branch, the one that goes on with what follows the `if`, of
-        // one at most, so nothing's written twice.
-        StmtKind::If(test, then, otherwise) => {
-            let otherwise = otherwise.as_deref().unwrap_or_default();
-            let goes_on = |branch: &[Stmt]| !branch.last().is_some_and(ends);
-            if !rest.is_empty() && goes_on(then) && goes_on(otherwise) {
-                return None;
+/// The body of `e`, where it's a closure of nothing called where it's
+/// made, `(() => { .. })()`.
+pub fn called_body(e: &Expr) -> Option<&[Stmt]> {
+    match &e.kind {
+        ExprKind::Call(callee, args) if args.is_empty() => match &callee.kind {
+            ExprKind::Arrow(params, body) if params.is_empty() => Some(body),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
+/// `body`, a closure's in a block of its own, each `return v;` of it what
+/// `replace` makes of `v`, and of where the `return` is: the value set,
+/// `to = v;` (rd60), or what a `try`'s `Ok` arm does of it, `return 0;`
+/// (ADR 0706, amended). What it makes that goes on is where the `return`
+/// ends what runs of the body: last, or last of an `if`'s branch, what
+/// follows that `if` its `else`, of one branch at most, so nothing's
+/// written twice; what ends, `return 0;`, is where the `return` is, what
+/// follows the `if` after it; in a loop or a `switch`, only what returns
+/// from the function, `return;`, as the `return` did the closure
+/// (`returned_in`). `None` where a `return` is in a `try`, or in a loop or
+/// a `switch` where what it's made doesn't return, `replace` makes nothing
+/// of one, or a way through the body ends with no value.
+pub fn returns_replaced(body: &[Stmt], replace: &dyn Fn(&Expr, Span) -> Option<Vec<Stmt>>) -> Option<Vec<Stmt>> {
+    // Of no `return`, it ends otherwise, a `throw`.
+    if !body.last().is_some_and(ends) {
+        return None;
+    }
+    replaced(body, true, replace)
+}
+
+/// `stmts`, each `return v;` in them `replace`'s, where they're `last` of
+/// the body, so what goes on after them is what follows the body, or they
+/// go on to what follows them in it (`returns_replaced`).
+fn replaced(stmts: &[Stmt], last: bool, replace: &dyn Fn(&Expr, Span) -> Option<Vec<Stmt>>) -> Option<Vec<Stmt>> {
+    let mut out = Vec::with_capacity(stmts.len());
+    for (at, stmt) in stmts.iter().enumerate() {
+        let rest = &stmts[at + 1..];
+        if !returns(std::slice::from_ref(stmt)).0 {
+            out.push(stmt.clone());
+            continue;
+        }
+        match &stmt.kind {
+            StmtKind::Return(Some(value)) if rest.is_empty() => {
+                let made = replace(value, stmt.span)?;
+                if !last && !made.last().is_some_and(ends) {
+                    return None;
+                }
+                out.extend(made);
+                return Some(out);
             }
-            let branch = |branch: &[Stmt]| match goes_on(branch) {
-                true => returns_set(&[branch, rest].concat(), to),
-                false => returns_set(branch, to),
-            };
-            StmtKind::If(test.clone(), branch(then)?, Some(branch(otherwise)?))
+            StmtKind::If(test, then, otherwise) => {
+                // Each branch in place, where what goes on of it goes on
+                // to what follows the `if` as it did.
+                let in_place = |branch: &[Stmt]| replaced(branch, last && rest.is_empty(), replace);
+                if let Some(yes) = in_place(then)
+                    && let Some(no) = otherwise.as_deref().map(in_place).unwrap_or(Some(Vec::new()))
+                {
+                    let no = otherwise.is_some().then_some(no);
+                    out.push(StmtKind::If(test.clone(), yes, no).at(stmt.span));
+                    continue;
+                }
+                // Else what follows is the `else` of the branch that goes
+                // on, where they're last.
+                let otherwise = otherwise.as_deref().unwrap_or_default();
+                let goes_on = |branch: &[Stmt]| !branch.last().is_some_and(ends);
+                if !last || (!rest.is_empty() && goes_on(then) && goes_on(otherwise)) {
+                    return None;
+                }
+                let branch = |branch: &[Stmt]| match goes_on(branch) {
+                    true => replaced(&[branch, rest].concat(), true, replace),
+                    false => replaced(branch, true, replace),
+                };
+                let (yes, no) = (branch(then)?, branch(otherwise)?);
+                let nothing = |stmts: &[Stmt]| stmts.iter().all(|s| matches!(s.kind, StmtKind::Comments));
+                let made = match (nothing(&yes), nothing(&no)) {
+                    (true, false) => StmtKind::If(test.clone().negated_test(), no, None),
+                    (_, true) => StmtKind::If(test.clone(), yes, None),
+                    (false, false) => StmtKind::If(test.clone(), yes, Some(no)),
+                };
+                out.push(made.at(stmt.span));
+                return Some(out);
+            }
+            // In a loop or a `switch`, where what each `return` is made
+            // returns from the function, as the closure's `return` did.
+            _ => out.push(returned_in(stmt, replace)?),
+        }
+    }
+    Some(out)
+}
+
+/// `stmt`, a loop or a `switch`, or what's in one, each `return v;` in it
+/// what `replace` makes of `v`, where that returns from the function as
+/// the `return` did the closure: it ends, and nothing it makes is a
+/// `break` or a `continue`, which would be of the loop. `None` of a `try`,
+/// whose `finally` would run after the arm, not before it.
+fn returned_in(stmt: &Stmt, replace: &dyn Fn(&Expr, Span) -> Option<Vec<Stmt>>) -> Option<Stmt> {
+    let list = |stmts: &[Stmt]| -> Option<Vec<Stmt>> {
+        let mut out = Vec::with_capacity(stmts.len());
+        for s in stmts {
+            match &s.kind {
+                StmtKind::Return(Some(value)) => {
+                    let made = replace(value, s.span)?;
+                    let mut jumps = false;
+                    let jump = |s: &Stmt| matches!(s.kind, StmtKind::Break(_) | StmtKind::Continue(_));
+                    each_list(&made, &mut |l| jumps |= l.iter().any(jump));
+                    if jumps || !made.last().is_some_and(ends) {
+                        return None;
+                    }
+                    out.extend(made);
+                }
+                _ if returns(std::slice::from_ref(s)).0 => out.push(returned_in(s, replace)?),
+                _ => out.push(s.clone()),
+            }
+        }
+        Some(out)
+    };
+    let mut out = stmt.clone();
+    match &mut out.kind {
+        StmtKind::If(_, then, otherwise) => {
+            *then = list(then)?;
+            if let Some(otherwise) = otherwise {
+                *otherwise = list(otherwise)?;
+            }
+        }
+        StmtKind::While { body, .. }
+        | StmtKind::DoWhile { body, .. }
+        | StmtKind::ForOf { body, .. }
+        | StmtKind::For { body, .. }
+        | StmtKind::Labeled(_, body) => *body = list(body)?,
+        StmtKind::Switch { cases, default, .. } => {
+            for case in cases {
+                case.body = list(&case.body)?;
+            }
+            if let Some(default) = default {
+                *default = list(default)?;
+            }
         }
         _ => return None,
-    };
-    Some(body[..at].iter().cloned().chain([set.at(stmt.span)]).collect())
+    }
+    Some(out)
 }
 
 /// Of `body`, each `try` whose closure's value `applied_tried` gave a

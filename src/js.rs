@@ -20,7 +20,8 @@ mod writes;
 
 pub use self::{
     applied::{
-        applied_blocks, applied_call, applied_closures, applied_tried, read_where_made, returns, tried_set_where_made,
+        applied_blocks, applied_call, applied_closures, applied_tried, called_body, read_where_made, returns,
+        returns_replaced, tried_set_where_made,
     },
     expr_walk::*,
     stmt_walk::*,

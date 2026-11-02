@@ -819,3 +819,103 @@ console.log(log.join(", "));
 step 0, step 2, step 6, step 3, step 8, step 9
 `);
 });
+
+// React's throwAndUnwindWorkLoop, `try { const didFatal = throwException(..);
+// if (didFatal) { panicOnRootError(..); return; } } catch (error) { .. }`:
+// a closure that returns a literal, `return true;` after
+// `panic_on_root_error(..)`, and `Ok` arms that test it, `Ok(true) =>
+// return 0, Ok(false) => {}`, is each arm where the closure returns its
+// value, `return 0;` there, and `false` what falls out of the `try`, with
+// no `catchUnwind` it set (rd60, ADR 0706 amended). An arm that may throw
+// stays after the `try`, so what it throws isn't the `catch`'s. Run in Node.
+test("an Ok arm of a literal the closure returns is where it's returned", () => {
+  const { js, dir } = compiled(
+    "unwind-arms-where-returned",
+    `use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
+
+#[cfg_attr(rust_js, rust_js::link_name = "./host.js#throwException")]
+fn throw_exception(_x: u32) -> bool {
+    unreachable!()
+}
+#[cfg_attr(rust_js, rust_js::link_name = "./host.js#panicOnRootError")]
+fn panic_on_root_error(_x: u32) {
+    unreachable!()
+}
+#[cfg_attr(rust_js, rust_js::link_name = "./host.js#note")]
+fn note(_x: u32) {
+    unreachable!()
+}
+
+pub fn unwind(x: u32, ret: Option<u32>) -> u32 {
+    match catch_unwind(AssertUnwindSafe(|| {
+        let did_fatal = throw_exception(x);
+        if did_fatal {
+            panic_on_root_error(x);
+            return true;
+        }
+        false
+    })) {
+        Ok(true) => return 0,
+        Ok(false) => {}
+        Err(error) => {
+            if let Some(r) = ret {
+                note(r);
+                resume_unwind(error);
+            } else {
+                panic_on_root_error(x);
+                return 1;
+            }
+        }
+    }
+    x + 1
+}
+
+pub fn arm_throws(x: u32) -> u32 {
+    match catch_unwind(AssertUnwindSafe(|| {
+        if throw_exception(x) {
+            return true;
+        }
+        note(x);
+        false
+    })) {
+        Ok(true) => {
+            panic_on_root_error(x);
+            return 2;
+        }
+        Ok(false) => {}
+        Err(_) => return 9,
+    }
+    x
+}
+`,
+  );
+  writeFileSync(
+    join(dir, "host.js"),
+    `export const log = [];
+export function throwException(x) { log.push("exception " + x); if (x === 5) throw new Error("exception " + x); return x > 2; }
+export function panicOnRootError(x) { log.push("root " + x); if (x >= 7) throw new Error("root " + x); }
+export function note(x) { log.push("note " + x); }
+`,
+  );
+  expect(js).toContain(
+    "  try {\n    const didFatal = throwException(x);\n    if (didFatal) {\n      panicOnRootError(x);\n      return 0;\n    }\n  } catch (error) {\n",
+  );
+  expect(js).toContain("      return 1;\n    }\n  }\n  return (x + 1) >>> 0;\n}\n");
+  expect(js).not.toContain("catchUnwind = true");
+  writeFileSync(
+    join(dir, "main.mjs"),
+    `import * as lib from "./lib.js";
+import { log } from "./host.js";
+const attempt = (f) => { try { return f(); } catch (e) { return "threw " + e.message; } };
+console.log(JSON.stringify([1, 3, 8, 5].map((x) => attempt(() => lib.unwind(x))).concat([attempt(() => lib.unwind(5, 4))])));
+console.log(JSON.stringify([1, 3, 5, 8].map((x) => attempt(() => lib.armThrows(x)))));
+console.log(log.join(", "));
+`,
+  );
+  const out = runSync([node!, join(dir, "main.mjs")], dir, 60_000);
+  expect(out.stderr).toBe("");
+  expect(out.stdout).toBe(`[2,0,"threw root 8",1,"threw exception 5"]
+[1,2,9,"threw root 8"]
+exception 1, exception 3, root 3, exception 8, root 8, root 8, exception 5, root 5, exception 5, note 4, exception 1, note 1, exception 3, root 3, exception 5, exception 8, root 8
+`);
+});
