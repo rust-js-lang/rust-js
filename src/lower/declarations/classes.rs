@@ -2,11 +2,11 @@
 //! .. }`, its constructor, fields, prototype and statics; or, of a class
 //! whose constructor function its module doesn't export, its type alone.
 
-use rustc_middle::ty::TyCtxt;
+use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
 use serde_json::{Value, json};
 
-use super::{Declarations, documented, keyword, type_name};
+use super::{Declarations, documented, keyword, type_name, union};
 
 /// A `pub` class's declaration, exported as its JS exports it: a class
 /// whose constructor function isn't, as its `new` isn't `pub`, declared
@@ -50,6 +50,7 @@ impl Declarations<'_, '_> {
                 members.push(property);
             }
         }
+        members.splice(0..0, self.state_keys(def_id));
         for &imp in self.tcx.inherent_impls(def_id) {
             for &item in self.tcx.associated_item_def_ids(imp) {
                 if !self.tcx.visibility(item).is_public() {
@@ -112,5 +113,64 @@ impl Declarations<'_, '_> {
             }
         }
         class
+    }
+
+    /// A flattened state's keys, each the class's own property (rd380, ADR
+    /// 1044): its tag, any variant's, and each other key what any variant
+    /// holds there, `undefined` of one that holds nothing there, as its
+    /// object has it: `status: "pending" | "fulfilled"; reason: string |
+    /// undefined;`, `unknown` where one may be any value.
+    fn state_keys(&mut self, def_id: DefId) -> Vec<Value> {
+        let tcx = self.tcx;
+        let args = ty::GenericArgs::identity_for_item(tcx, def_id);
+        let mut members = Vec::new();
+        for field in tcx.adt_def(def_id).non_enum_variant().fields.iter() {
+            let cell = field.ty(tcx, args).skip_normalization();
+            let Some((state, keys)) = crate::lower::bindings::flattened_state(tcx, cell) else {
+                continue;
+            };
+            let ty::Adt(_, cell_args) = cell.kind() else { continue };
+            let ty::Adt(_, state_args) = cell_args.type_at(0).kind() else {
+                continue;
+            };
+            for (k, key) in keys.iter().enumerate() {
+                let mut types: Vec<Value> = Vec::new();
+                for variant in state.variants() {
+                    let held = match k {
+                        0 => self.variant_literal(variant),
+                        _ => match (0..variant.fields.len())
+                            .find(|&i| crate::lower::representation::variant_field(tcx, variant, i) == *key)
+                        {
+                            Some(i) => {
+                                let field = &variant.fields[rustc_abi::FieldIdx::from_usize(i)];
+                                self.field_ts(field.ty(tcx, state_args).skip_normalization(), None)
+                            }
+                            None => keyword("undefined"),
+                        },
+                    };
+                    let parts = match held["kind"].as_str() {
+                        Some("union") => held["types"].as_array().cloned().unwrap_or_default(),
+                        _ => vec![held],
+                    };
+                    for part in parts {
+                        if !types.contains(&part) {
+                            types.push(part);
+                        }
+                    }
+                }
+                // What holds any value is the union, `unknown` or `any`.
+                let top = ["any", "unknown"]
+                    .into_iter()
+                    .find(|&top| types.contains(&keyword(top)));
+                let ty = match (top, types.len()) {
+                    (Some(top), _) => keyword(top),
+                    (None, 1) => types.remove(0),
+                    (None, _) => union(types),
+                };
+                members
+                    .push(json!({ "kind": "property", "name": key, "static": false, "optional": false, "type": ty }));
+            }
+        }
+        members
     }
 }

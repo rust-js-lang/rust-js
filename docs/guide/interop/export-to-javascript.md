@@ -1157,7 +1157,11 @@ stays, as upstream's do; Rust reads it only through its variant. Its
 `replace`, `take`, `swap` and `get_mut` are refused, and so is the cell
 lent, `&chunk.state`, or borrowed where another borrow of it may be, as
 its object counts no borrows
-([ADR 1044](../../decisions/1044-a-flattened-state-is-its-classs-own-keys.md)):
+([ADR 1044](../../decisions/1044-a-flattened-state-is-its-classs-own-keys.md)).
+Its declaration, `--declarations`', has each key as the class's
+property: the tag any variant's, and each other key what any variant
+holds there, or `undefined` where one holds nothing, `status: "pending"
+| "fulfilled"; value: number[] | null | undefined | string;`:
 
 ```rust
 use std::cell::RefCell;

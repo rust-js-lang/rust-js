@@ -3,6 +3,30 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "state-keys-undeclared",
+    breaks: "a class's flattened state's keys, `status`, `value` and `reason`, are left out of its declaration (rd380)",
+    file: "src/lower/declarations/classes.rs",
+    find: "        members.splice(0..0, self.state_keys(def_id));\n",
+    replace: "",
+    tests: ["test/declarations-flatten.test.ts", "-t", "flattened state declares its keys"],
+  },
+  {
+    name: "state-key-of-a-variant-without-it-never",
+    breaks: "a flattened state's key a variant has no field at is declared as only what the others hold, though its object may have none there (rd380)",
+    file: "src/lower/declarations/classes.rs",
+    find: "                            None => keyword(\"undefined\"),\n",
+    replace: "                            None => keyword(\"never\"),\n",
+    tests: ["test/declarations-flatten.test.ts", "-t", "flattened state declares its keys"],
+  },
+  {
+    name: "state-key-of-any-value-a-union",
+    breaks: "a flattened state's key one variant holds any value at is declared as a union with `unknown` in it, which says no more than `unknown` (rd380)",
+    file: "src/lower/declarations/classes.rs",
+    find: "                    (Some(top), _) => keyword(top),\n",
+    replace: "                    (Some(_), _) => union(types),\n",
+    tests: ["test/declarations-flatten.test.ts", "-t", "flattened state declares its keys"],
+  },
+  {
     name: "class-to-string-undeclared",
     breaks: "a class's `toString` is left out of its declaration (#358)",
     file: "src/lower/declarations/classes.rs",

@@ -2,7 +2,7 @@
 
 Status: Accepted (the user's decisions, rd380, 2026-11-01). Amended
 (rd533): a let chain's borrow of it is its object too. Amended (rd432):
-its refusal points at the borrow. Extends
+its refusal points at the borrow. Amended: its declaration has its keys. Extends
 [0204](0204-flattened-props.md), whose flattened field was a struct of
 named fields or a JS object, to a `RefCell` of a discriminated union
 ([0284](0284-discriminated-unions.md)), and
@@ -193,3 +193,37 @@ keys first.
 Held by `test/classes-flattened-state.test.ts`'s "a flattened state given
 or taken whole, lent or held is refused", the held borrow's line; mutation
 `flattened-state-refused-at-its-field` (`representation.ts`).
+
+## Amended: its declaration has its keys
+
+A class's `.d.ts` (`--declarations`, ADR 0761) declared its fields and
+methods but not a flattened state's keys, which are its own: React's
+Flight client's `declare class ReactPromise` had `_debugInfo` and `then`,
+no `status`, `value` or `reason`. **Each key is a property of the class's
+declaration**: the tag, any variant's literal, `status: "pending" |
+"fulfilled" | "rejected"`; each other key what any variant holds there,
+`undefined` of one that holds nothing there (its key is `undefined`, or
+what an earlier variant left), each type once, and `unknown` or `any`
+alone where one is it:
+
+```ts
+declare class Stepper {
+    kind: "counted" | "named";
+    n: number;
+    name: undefined | string;
+    label: string;
+}
+```
+
+A class can't be a union, so a key's type isn't narrowed by the tag, as
+the state's own type, `ChunkState`, still is. The alternative, `type
+ReactPromise = ReactPromiseFields & ChunkState`, narrows, but isn't a
+class, so a class whose constructor is exported would be declared two
+ways; one form for every class, a property each key, was chosen
+(reversible; a decision of the Flight-gaps run, logged).
+
+Held by `test/declarations-flatten.test.ts`'s "a class's flattened state
+declares its keys"; mutations `state-keys-undeclared`,
+`state-key-of-a-variant-without-it-never` and
+`state-key-of-any-value-a-union` (`declarations/classes.ts`).
+
