@@ -1030,3 +1030,25 @@ compiler panic on valid Rust. **Where `a` leaves already, nothing is
 added**: `if (c) { ..; return v; } b` runs as the `if … else` did. Held
 by the corpus's `match_clone_nested_results`, run against native Rust,
 and the mutation `returned-apart-after-a-return` (`jumps.ts`).
+
+## Amendment: no check of the guarded arm's constant in the chain after it (2026-11-02)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N; the same JS.
+
+rd600's `guards_before_others` checked that no test after the guarded arm
+compares with that arm's own constant, which, it said, never has the
+shape. Probed (a panic where the check was reached), it never was: by
+`1 if n > 0 => a, 1 => b`, `1 if g => a, 2 => b, 1 => c`, of integers,
+strings, `char`s, `i64`s, `f64`s, or-patterns `2 | 1`, `3 | 1`, guards
+after it, `_ if x == 5`, `y if y == 5`, tuples, loops, the corpus, the
+suites `check:fast --all` runs, and React's crates built. rustc tests a
+later arm of the same constant in that constant's branch, which the
+guard's failure goes to, `if (g) { a } else { c }`, not an `if` of the
+guard alone; and an arm after one that tests something else, `_ if x ==
+5`, in a block of the candidates left, which the guard's failure goes to
+too, so `if (n === 1 && n > 0) { a } else if (x === 5) { b } else if (x
+=== 1) { c }` is already one test before this pass. The `else` of the
+guarded arm's test holds no arm that takes its constant, so the check is
+gone, with no mutation to hold an answer nothing reaches; the rule's
+comment says why. `accumulate_again` stays, the arm of the same constant
+as rustc writes it.
