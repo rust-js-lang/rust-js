@@ -278,9 +278,25 @@ pub struct Const {
     /// Of a namespace thread-local's, its value's fields, each one of its
     /// module's exports, which it declares: `export const { render, act } =
     /// createReactNoop(..);`, its own `name` no JS's (ADR 1037, amended).
-    pub fields: Vec<String>,
+    pub fields: Fields,
     /// The whole `const` item.
     pub span: Span,
+}
+
+/// A namespace thread-local's exports, `Const::fields`: each its value's
+/// field's name, and where its struct declares it, which the map gives
+/// each name in the list; and where that struct is, the list's (rd610,
+/// ADR 1037, amended).
+#[derive(Clone, Default)]
+pub struct Fields {
+    pub names: Vec<(String, Span)>,
+    pub declared: Span,
+}
+
+impl Fields {
+    pub fn is_empty(&self) -> bool {
+        self.names.is_empty()
+    }
 }
 
 pub struct Import {

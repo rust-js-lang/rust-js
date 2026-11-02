@@ -155,3 +155,44 @@ pub(crate) fn unread_namespaces<'tcx>(
         }
     }
 }
+
+/// The value a namespace thread-local's initializer, `body`, takes apart
+/// into `fields`, its module's exports (rd610, the user's decision, ADR
+/// 1037, amended): `{ const renderer = create(3); return { render:
+/// renderer.render, .. }; }` is `create(3)`, `export const { render, .. } =
+/// create(3);`, where its literal takes each field, once, in the exports'
+/// order, from the same-named field of the one value it makes and reads
+/// nowhere else: JS's destructuring reads the same properties of the same
+/// value in the same order, once each, a getter's too. A value with fields
+/// left to drop, whose drops are statements, isn't one.
+pub(crate) fn taken_apart(fields: &[String], body: &[crate::js::Stmt]) -> Option<crate::js::Expr> {
+    use crate::js::{ExprKind, Prop, Stmt, StmtKind};
+    let [
+        Stmt {
+            kind: StmtKind::Const(made, value),
+            ..
+        },
+        Stmt {
+            kind: StmtKind::Return(Some(literal)),
+            ..
+        },
+    ] = body
+    else {
+        return None;
+    };
+    let ExprKind::Object(props, _) = &literal.kind else {
+        return None;
+    };
+    let mut keys = Vec::new();
+    for prop in props {
+        let Prop::Field(key, read) = prop else { return None };
+        let ExprKind::Member(of, field) = &read.kind else {
+            return None;
+        };
+        if field != key || !matches!(&of.kind, ExprKind::Var(v) if v == made) {
+            return None;
+        }
+        keys.push(key.as_str());
+    }
+    (keys.iter().copied().eq(fields.iter().map(String::as_str))).then(|| value.clone())
+}

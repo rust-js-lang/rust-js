@@ -1520,6 +1520,60 @@ export const { render, act } = create(3);
 - **JS reads it, Rust doesn't**: a Rust read, `NOOP.with(..)`, is
   refused; so is one of no struct of named fields, or not `pub`.
 
+An entry that exports its own list of what a function makes, in its own
+order, as each of React's noop entries lists its names, is a struct of its
+own, and a literal of it that takes each field, in that order, from the
+same-named field of the one value its initializer makes: that value taken
+apart, each export the value's field (rd610, the user's decision):
+
+```rust
+pub mod noop {
+    pub struct Renderer {
+        pub render: Box<dyn Fn(u32) -> u32>,
+        pub act: Option<fn()>,
+        pub size: u32,
+    }
+
+    pub fn create(scale: u32) -> Renderer {
+        Renderer {
+            render: Box::new(move |n| n * scale),
+            act: None,
+            size: scale,
+        }
+    }
+}
+
+/// What this entry exports of the renderer.
+pub struct Exports {
+    pub size: u32,
+    pub render: Box<dyn Fn(u32) -> u32>,
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::namespace)]
+    pub static NOOP: Exports = {
+        let renderer = noop::create(3);
+        Exports {
+            size: renderer.size,
+            render: renderer.render,
+        }
+    };
+}
+```
+
+```js
+// src/lib.js
+import * as Noop from "./noop.js";
+
+export const { size, render } = Noop.create(3);
+```
+
+- **Only what it lists is exported**: `act` isn't one of this module's,
+  `"act" in entry` is `false`.
+- **Each field is taken whole, once, in its struct's order**, of the same
+  JS name; any other literal, `size: renderer.size + 1`, or another order,
+  is made as written, `export const { .. } = (() => { .. })()`.
+
 ## Constants, statics and thread-locals
 
 ```rust

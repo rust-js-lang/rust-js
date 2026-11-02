@@ -828,7 +828,9 @@ fn exports(module: &program::LoweredModule) -> Vec<String> {
     });
     // A namespace's value's fields (ADR 1037, amended).
     let fields = module.items.iter().flat_map(|item| match item {
-        js::Item::Const(constant) if constant.export => constant.fields.clone(),
+        js::Item::Const(constant) if constant.export => {
+            (constant.fields.names.iter()).map(|(name, _)| name.clone()).collect()
+        }
         _ => Vec::new(),
     });
     let reexported =

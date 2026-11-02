@@ -335,7 +335,7 @@ pub fn lower_crate<'tcx>(
             name: info.name.clone(),
             value,
             mutable: false,
-            fields: Vec::new(),
+            fields: js::Fields::default(),
             export: tcx.visibility(named).is_public() || called_from_elsewhere.contains(&named.to_def_id()),
             span: sources.item_span(tcx, named),
         };
@@ -741,7 +741,7 @@ pub fn lower_crate<'tcx>(
                 name,
                 value,
                 mutable: false,
-                fields: Vec::new(),
+                fields: js::Fields::default(),
                 export,
                 span,
             };
@@ -789,6 +789,7 @@ pub fn lower_crate<'tcx>(
                 // where it's first used, as Rust makes it, and read by calling
                 // it, `const START = $local(() => ..)` (ADR 0037, amended).
                 let function = lowered.function;
+                let fields = super::classes::namespace_fields(tcx, key.to_def_id());
                 let value = match (lazy_locals.contains(&key), function.body.as_slice()) {
                     (true, _) => Expr::call_helper("$local", vec![Expr::arrow(Vec::new(), function.body)]),
                     (
@@ -800,7 +801,8 @@ pub fn lower_crate<'tcx>(
                             },
                         ],
                     ) => value.clone(),
-                    (false, _) => Expr::call(Expr::arrow(Vec::new(), function.body), Vec::new()),
+                    (false, body) => super::classes::taken_apart(&fields, body)
+                        .unwrap_or_else(|| Expr::call(Expr::arrow(Vec::new(), function.body), Vec::new())),
                 };
                 // A nullable thread-local's `None` `null` (ADR 0586, amended).
                 let value = match super::bindings::nullable_local(tcx, key.to_def_id()) {
@@ -818,7 +820,7 @@ pub fn lower_crate<'tcx>(
                     value,
                     mutable: false,
                     // A namespace's, its module's exports (ADR 1037, amended).
-                    fields: super::classes::namespace_fields(tcx, key.to_def_id()),
+                    fields: super::classes::exported_fields(tcx, key.to_def_id(), fields, |at| sources.span(at)),
                     // A `const { .. }` block has no visibility: it's its function's alone.
                     export: (tcx.def_kind(key) != DefKind::AnonConst && tcx.visibility(key).is_public())
                         || called_from_elsewhere.contains(&key.to_def_id()),
@@ -937,7 +939,7 @@ pub fn lower_crate<'tcx>(
             name: info.name.clone(),
             value: super::bindings::variant_tag(tcx, adt.variant_with_id(id)),
             mutable: false,
-            fields: Vec::new(),
+            fields: js::Fields::default(),
             export,
             span: sources.item_span(tcx, variant),
         });
@@ -1170,7 +1172,7 @@ pub fn lower_crate<'tcx>(
                         }),
                         export: held.exported_by_name(),
                         mutable: false,
-                        fields: Vec::new(),
+                        fields: js::Fields::default(),
                         span: held.span.map_or(js::Span::NONE, |span| sources.span(span)),
                     }),
             );

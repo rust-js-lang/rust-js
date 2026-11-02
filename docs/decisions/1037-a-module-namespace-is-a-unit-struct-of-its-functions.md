@@ -428,3 +428,57 @@ read refused, and one of no struct refused. Mutations
 (`to_oxc/statements.rs`), `namespace-value-read-allowed`
 (`analysis/validation.rs`), `namespace-value-of-anything` (`classes.rs`)
 and `namespace-value-undeclared` (`declarations.rs`).
+
+## Amendment: an entry's own list of one value's fields (rd610, the user's decision)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C before, a module's
+keys changed; N now, the same exports as upstream's.
+
+React's noop renderer has two entries, each `export const { .. } =
+createReactNoop(..)` of a list of its own: ReactNoop's hasn't
+`flushDiscreteUpdates`, Persistent's has it between `idleUpdates` and
+`flushSync`. A namespace thread-local exports its struct's fields in its
+order, so both entries of `ReactNoop`'s struct exported one list, with
+`flushDiscreteUpdates` in ReactNoop too, where `Object.keys` and `in` see
+it: a result changed.
+
+**The user's decision: each entry is a struct of its own**, of the names
+it exports, in its order, and its initializer a literal of it that takes
+each field from the same-named field of the one value it makes:
+
+    pub static REACT_NOOP: ReactNoopExports = {
+        let noop = create_react_noop(&react_fiber_reconciler, true);
+        ReactNoopExports { get_children: noop.get_children, .. }
+    };
+
+**Such a literal is that value taken apart** (`classes::taken_apart`):
+`export const { getChildren, .. } = createReactNoop(ReactFiberReconciler,
+true);`, where the initializer is a `const` of the value and a literal
+each of whose fields is the field of the same JS name of that `const`, in
+the exports' order, the value read nowhere else. JS's destructuring reads
+the same properties of the same value, once each, in the same order, so a
+getter's too; a field left to drop is a statement, which no such
+initializer has. Any other, a field computed, of another name or another
+order, is made as written, an arrow's, as before. No attribute is added:
+a struct says what's exported, as it did.
+
+The other ways: a list on the attribute, `#[rust_js::namespace(a, b)]`,
+would be a second way to say what's exported and holds no comments; an
+`impl From` is the same literal behind a call; a destructuring `let` has
+no module-level form in Rust. Each entry writes its names twice, in its
+struct and its literal, which rustc checks against what it takes them of.
+
+**Its comments**: the user asked that the struct's field comments go in
+the export list too. They're in the entry's `.d.ts`, its struct's
+interface; the JS list has none yet: oxc's printer writes no comment
+before a destructuring's property, where it does before an object
+literal's, so they need a placement of their own, left open. Each name
+of the list maps to its field.
+
+Held by `test/namespace-values.test.ts` in Node, as the exports are JS's
+alone, which no Rust can read (a read is refused): an entry's list taken
+apart, its keys, values and the value made once; one computed, one renamed
+and one reordered made as written; mutations `namespace-literal-made`,
+`namespace-literal-renamed-taken-apart` and `namespace-literal-any-order`
+(`classes/namespaces.rs`).
+

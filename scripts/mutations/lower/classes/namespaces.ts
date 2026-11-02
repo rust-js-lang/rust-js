@@ -58,4 +58,31 @@ export const mutations: Mutation[] = [
     replace: "            (reads.1.get(local).into_iter().flatten()).all(|at| named_at.contains(at))\n",
     tests: ["test/namespaces.test.ts", "-t", "called by name or through the value a binding gives"],
   },
+  {
+    name: "namespace-literal-made",
+    breaks:
+      "a namespace thread-local of one value's fields is made in an arrow, `(() => { const renderer = create(3); return {..}; })()`, where upstream's ReactNoop takes `createReactNoop(..)` apart (rd610, ADR 1037, amended)",
+    file: "src/lower/classes/namespaces.rs",
+    find: "    (keys.iter().copied().eq(fields.iter().map(String::as_str))).then(|| value.clone())\n",
+    replace: "    (keys.iter().copied().eq(fields.iter().map(String::as_str))).then(|| value.clone()).filter(|_| false)\n",
+    tests: ["test/namespace-values.test.ts", "-t", "taken apart"],
+  },
+  {
+    name: "namespace-literal-renamed-taken-apart",
+    breaks:
+      "a field taken from one of another JS name, `scheduler: renderer._Scheduler`, is taken apart by its own, `scheduler`, which the value hasn't (rd610, ADR 1037, amended)",
+    file: "src/lower/classes/namespaces.rs",
+    find: "        if field != key || !matches!(&of.kind, ExprKind::Var(v) if v == made) {\n",
+    replace: "        if !matches!(&of.kind, ExprKind::Var(v) if v == made) {\n",
+    tests: ["test/namespace-values.test.ts", "-t", "other names"],
+  },
+  {
+    name: "namespace-literal-any-order",
+    breaks:
+      "a literal of another order than its exports' is taken apart, reading what a getter answers in the exports' order (rd610, ADR 1037, amended)",
+    file: "src/lower/classes/namespaces.rs",
+    find: "    (keys.iter().copied().eq(fields.iter().map(String::as_str))).then(|| value.clone())\n",
+    replace: "    (keys.len() == fields.len()).then(|| value.clone())\n",
+    tests: ["test/namespace-values.test.ts", "-t", "other names"],
+  },
 ];

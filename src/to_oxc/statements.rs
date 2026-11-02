@@ -415,9 +415,14 @@ impl<'a> Cx<'a> {
         let sp = span(c.span);
         let id = match c.fields.is_empty() {
             true => BindingPattern::new_binding_identifier(SPAN, self.name(&c.name), b),
+            // Each at its field's declaration, as the map places it (rd610).
             false => {
-                let named = |field: &String| (field.clone(), js::Pattern::Name(field.clone()), None);
-                self.pattern(&js::Pattern::Object(c.fields.iter().map(named).collect(), None))
+                let fields = (c.fields.names.iter()).map(|(field, at)| {
+                    let key = PropertyKey::new_static_identifier(span(*at), self.name(field), b);
+                    let value = BindingPattern::new_binding_identifier(span(*at), self.name(field), b);
+                    BindingProperty::new(span(*at), key, value, true, false, b)
+                });
+                BindingPattern::new_object_pattern(span(c.fields.declared), ArenaVec::from_iter_in(fields, b), None, b)
             }
         };
         // `let cached;`: a variable set later starts `undefined` by itself.

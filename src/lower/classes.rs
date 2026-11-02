@@ -21,7 +21,7 @@ mod prototypes;
 mod states;
 mod subclasses;
 pub(in crate::lower) use defaults::{prototype_defaults, take_default};
-pub(crate) use namespaces::{names_namespace, unread_namespaces};
+pub(crate) use namespaces::{names_namespace, taken_apart, unread_namespaces};
 pub(crate) use prototypes::{PrototypeSet, set_alone, set_prototypes, with_prototype_members};
 use states::spread_state;
 pub(crate) use states::{flattened_parameter, new_of_state};
@@ -137,6 +137,34 @@ pub(crate) fn value_namespace_exports(tcx: TyCtxt<'_>, key: DefId) -> Option<Vec
     (variant.fields.iter())
         .map(|field| Some(crate::lower::bindings::field_key(tcx, field).name()?.to_string()))
         .collect()
+}
+
+/// A namespace thread-local's exports, `names`, each where its struct
+/// declares it, and where the struct is: where the map places each in the
+/// export list, `span` each's in the JS (rd610, ADR 1037, amended).
+pub(crate) fn exported_fields(
+    tcx: TyCtxt<'_>,
+    key: DefId,
+    names: Vec<String>,
+    span: impl Fn(rustc_span::Span) -> crate::js::Span,
+) -> crate::js::Fields {
+    let ty = tcx.type_of(key).instantiate_identity().skip_normalization();
+    let struct_of = match ty.kind() {
+        ty::Adt(_, args) if !names.is_empty() => match args.type_at(0).kind() {
+            ty::Adt(adt, _) => Some(*adt),
+            _ => None,
+        },
+        _ => None,
+    };
+    let Some(adt) = struct_of else {
+        return crate::js::Fields::default();
+    };
+    let at = (adt.non_enum_variant().fields.iter()).map(|field| span(tcx.def_span(field.did)));
+    let declared = (adt.did().as_local()).map_or(crate::js::Span::NONE, |local| span(tcx.source_span(local)));
+    crate::js::Fields {
+        names: names.into_iter().zip(at).collect(),
+        declared,
+    }
 }
 
 /// A namespace thread-local's exports, `value_namespace_exports`'s, or
