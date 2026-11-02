@@ -388,8 +388,11 @@ test("the crate corpus is its table's rows, each at an exact release", () => {
   const chrono = rows.find((c) => c.name === "chrono")!;
   expect(dependency(chrono)).toMatch(/^chrono = \{ version = "=\d+\.\d+\.\d+", default-features = false, features = \["alloc"\] \}$/);
   expect(dependency(rows.find((c) => c.name === "either")!)).toMatch(/^either = \{ version = "=\d+\.\d+\.\d+" \}$/);
-  expect(rows.find((c) => c.name === "itertools")!.open).toEqual({ now: "refused", issue: "#473" });
-  const table = (crate: string) => `| Crate | Verdict | Refusals |\n|---|---|---|\n| ${crate} | runs | |\n`;
+  const table = (crate: string, verdict = "runs") => `| Crate | Verdict | Refusals |\n|---|---|---|\n| ${crate} | ${verdict} | |\n`;
+  // A row an open issue marks, its bar and what the crate does now.
+  expect(corpusRows(table("itertools 0.14.0", "compiles (refused: #473)"))).toEqual([
+    { name: "itertools", version: "0.14.0", bar: "compiles", open: { now: "refused", issue: "#473" } },
+  ]);
   expect(corpusRows(table("either 1.15"))).toEqual({
     problem:
       "docs/crate-corpus.md's row `either 1.15` names no exact release: write the crate's name and version, `either 1.19.0`, and its features after them, `chrono 0.4.45 (`alloc`)`",
