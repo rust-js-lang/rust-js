@@ -941,34 +941,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     }
     // A library whose `dyn Fn`s drop nothing that holds one the crate's
     // may be: it would drop nothing of one it's given (ADR 0626, amended).
-    // Named where the crate makes one: what it holds that drops, and of a
-    // closure's handle on what owns it, the call whose return doesn't own
-    // the closure, which counts it (ADR 0317, amended).
     if drops && let Some(name) = (reached.fn_dyns_of.iter()).find(|name| !foreign.drops_fn_dyns(name)) {
-        let message = format!(
-            "rust-js: this crate's `dyn Fn`s may hold a value with a destructor, which their drop runs, but `{name}`, a rust-js library whose `dyn Fn`s drop nothing, holds one of them, and would drop nothing of it (ADR 0626)"
-        );
-        let Some(made) = made.filter(|_| !library_drops) else {
-            tcx.dcx().err(message);
-            return None;
-        };
-        let mut error = (tcx.dcx().struct_span_err(made.span, message)).with_span_label(
-            made.span,
-            format!("this `dyn Fn` holds a `{}`, whose drop runs code", made.held),
-        );
-        if let ty::Closure(closure, _) = *made.function.kind()
-            && let Some(unowned) = self_handles.unowned(closure, made.held)
-        {
-            let parameter = match tcx.fn_arg_idents(unowned.callee).get(unowned.given as usize) {
-                Some(Some(ident)) => format!("`{ident}`"),
-                _ => format!("its parameter {}", unowned.given),
-            };
-            error = error.with_note(format!(
-                "its cell is the `let` of the `Rc` the call it's given to returns only where that return alone owns the closure (ADR 0317, amended), and `{}`'s doesn't own {parameter}: the field it's moved to must be private to its crate, of a struct that isn't `Clone`, and read only to call through it; a library's contract says so of its function (`owned_by_return`)",
-                tcx.def_path_str(unowned.callee)
-            ));
-        }
-        error.emit();
+        closures::refuse_dropping_fn_dyn(tcx, name, made.filter(|_| !library_drops), &self_handles);
         return None;
     }
     // Whether a value with a destructor is made a `dyn Any`, which then

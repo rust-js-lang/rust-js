@@ -507,8 +507,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a crate refused for a `dyn Fn` it makes that holds what drops isn't told which, nor what it holds (rd553, ADR 0626, amended)",
     file: "src/lower/analysis.rs",
-    find: "        let Some(made) = made.filter(|_| !library_drops) else {\n",
-    replace: "        let Some(made) = made.filter(|_| false) else {\n",
+    find: "        closures::refuse_dropping_fn_dyn(tcx, name, made.filter(|_| !library_drops), &self_handles);\n",
+    replace: "        closures::refuse_dropping_fn_dyn(tcx, name, made.filter(|_| false), &self_handles);\n",
     tests: ["test/crates.test.ts", "-t", "callback is a public field"],
   },
   {

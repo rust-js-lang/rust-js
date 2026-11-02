@@ -255,6 +255,43 @@ pub(super) fn dropping_fn_dyn<'tcx>(
         })
 }
 
+/// Refuses the crate, whose `dyn Fn`s drop, for `library`, whose drop
+/// nothing (ADR 0626, amended): naming, where the crate makes one, `made`,
+/// what it holds that drops, and of a closure's handle on what owns it, a
+/// cell counted as the call it's given to doesn't own the closure, that
+/// call (ADR 0317, amended).
+pub(super) fn refuse_dropping_fn_dyn<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    library: &str,
+    made: Option<DroppingFnDyn<'tcx>>,
+    self_handles: &super::SelfHandles<'tcx>,
+) {
+    let message = format!(
+        "rust-js: this crate's `dyn Fn`s may hold a value with a destructor, which their drop runs, but `{library}`, a rust-js library whose `dyn Fn`s drop nothing, holds one of them, and would drop nothing of it (ADR 0626)"
+    );
+    let Some(made) = made else {
+        tcx.dcx().err(message);
+        return;
+    };
+    let mut error = (tcx.dcx().struct_span_err(made.span, message)).with_span_label(
+        made.span,
+        format!("this `dyn Fn` holds a `{}`, whose drop runs code", made.held),
+    );
+    if let ty::Closure(closure, _) = *made.function.kind()
+        && let Some(unowned) = self_handles.unowned(closure, made.held)
+    {
+        let parameter = match tcx.fn_arg_idents(unowned.callee).get(unowned.given as usize) {
+            Some(Some(ident)) => format!("`{ident}`"),
+            _ => format!("its parameter {}", unowned.given),
+        };
+        error = error.with_note(format!(
+            "its cell is the `let` of the `Rc` the call it's given to returns only where that return alone owns the closure (ADR 0317, amended), and `{}`'s doesn't own {parameter}: the field it's moved to must be private to its crate, of a struct that isn't `Clone`, and read only to call through it; a library's contract says so of its function (`owned_by_return`)",
+            tcx.def_path_str(unowned.callee)
+        ));
+    }
+    error.emit();
+}
+
 /// Whether a function of type `ty` may be one of a type parameter's,
 /// whose drop only its callers know: a type parameter's own, `F`, or a
 /// closure that captures one. Not a closure of a generic function's that
