@@ -78,7 +78,7 @@ pub fn kinds(
     let names = el.get_attribute_names();
     let languages = webapi::navigator.languages();
     let into = text_encoder::new().encode_into("hi", bytes);
-    (names, languages.len(), blob.size(), param.value(), node::ELEMENT_NODE, into.written)
+    (names, languages.len(), blob.size(), param.value(), f64::from(node::ELEMENT_NODE), into.written)
 }
 
 /// An event handler property, `onclick`: a function given the event its name
@@ -223,7 +223,7 @@ pub fn defined(registry: &webapi::CustomElementRegistry) -> bool {
 /// read of either as JS reads it, and each one as it is (rd193).
 pub fn hoisted(root: &webapi::DocumentOrShadowRoot) -> (f64, bool) {
     let links = root.query_selector_all("link").length();
-    (links, root.node_type() == node::DOCUMENT_NODE)
+    (links, root.node_type() == f64::from(node::DOCUMENT_NODE))
 }
 
 pub fn hoisted_of_document() -> (f64, bool) {

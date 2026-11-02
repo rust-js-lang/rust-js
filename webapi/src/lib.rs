@@ -113,16 +113,20 @@ pub mod event {
     use super::*;
 
     /// `Event.NONE`
-    pub const NONE: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Event.NONE")]
+    pub const NONE: u16 = 0;
 
     /// `Event.CAPTURING_PHASE`
-    pub const CAPTURING_PHASE: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Event.CAPTURING_PHASE")]
+    pub const CAPTURING_PHASE: u16 = 1;
 
     /// `Event.AT_TARGET`
-    pub const AT_TARGET: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Event.AT_TARGET")]
+    pub const AT_TARGET: u16 = 2;
 
     /// `Event.BUBBLING_PHASE`
-    pub const BUBBLING_PHASE: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Event.BUBBLING_PHASE")]
+    pub const BUBBLING_PHASE: u16 = 3;
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/Event)
     #[cfg_attr(rust_js, rust_js::link_name = "new Event")]
@@ -289,58 +293,76 @@ pub mod node {
     use super::*;
 
     /// `Node.ELEMENT_NODE`
-    pub const ELEMENT_NODE: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Node.ELEMENT_NODE")]
+    pub const ELEMENT_NODE: u16 = 1;
 
     /// `Node.ATTRIBUTE_NODE`
-    pub const ATTRIBUTE_NODE: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Node.ATTRIBUTE_NODE")]
+    pub const ATTRIBUTE_NODE: u16 = 2;
 
     /// `Node.TEXT_NODE`
-    pub const TEXT_NODE: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Node.TEXT_NODE")]
+    pub const TEXT_NODE: u16 = 3;
 
     /// `Node.CDATA_SECTION_NODE`
-    pub const CDATA_SECTION_NODE: f64 = 4.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Node.CDATA_SECTION_NODE")]
+    pub const CDATA_SECTION_NODE: u16 = 4;
 
     /// `Node.ENTITY_REFERENCE_NODE`
-    pub const ENTITY_REFERENCE_NODE: f64 = 5.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Node.ENTITY_REFERENCE_NODE")]
+    pub const ENTITY_REFERENCE_NODE: u16 = 5;
 
     /// `Node.ENTITY_NODE`
-    pub const ENTITY_NODE: f64 = 6.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Node.ENTITY_NODE")]
+    pub const ENTITY_NODE: u16 = 6;
 
     /// `Node.PROCESSING_INSTRUCTION_NODE`
-    pub const PROCESSING_INSTRUCTION_NODE: f64 = 7.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Node.PROCESSING_INSTRUCTION_NODE")]
+    pub const PROCESSING_INSTRUCTION_NODE: u16 = 7;
 
     /// `Node.COMMENT_NODE`
-    pub const COMMENT_NODE: f64 = 8.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Node.COMMENT_NODE")]
+    pub const COMMENT_NODE: u16 = 8;
 
     /// `Node.DOCUMENT_NODE`
-    pub const DOCUMENT_NODE: f64 = 9.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Node.DOCUMENT_NODE")]
+    pub const DOCUMENT_NODE: u16 = 9;
 
     /// `Node.DOCUMENT_TYPE_NODE`
-    pub const DOCUMENT_TYPE_NODE: f64 = 10.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Node.DOCUMENT_TYPE_NODE")]
+    pub const DOCUMENT_TYPE_NODE: u16 = 10;
 
     /// `Node.DOCUMENT_FRAGMENT_NODE`
-    pub const DOCUMENT_FRAGMENT_NODE: f64 = 11.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Node.DOCUMENT_FRAGMENT_NODE")]
+    pub const DOCUMENT_FRAGMENT_NODE: u16 = 11;
 
     /// `Node.NOTATION_NODE`
-    pub const NOTATION_NODE: f64 = 12.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Node.NOTATION_NODE")]
+    pub const NOTATION_NODE: u16 = 12;
 
     /// `Node.DOCUMENT_POSITION_DISCONNECTED`
-    pub const DOCUMENT_POSITION_DISCONNECTED: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Node.DOCUMENT_POSITION_DISCONNECTED")]
+    pub const DOCUMENT_POSITION_DISCONNECTED: u16 = 0x01;
 
     /// `Node.DOCUMENT_POSITION_PRECEDING`
-    pub const DOCUMENT_POSITION_PRECEDING: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Node.DOCUMENT_POSITION_PRECEDING")]
+    pub const DOCUMENT_POSITION_PRECEDING: u16 = 0x02;
 
     /// `Node.DOCUMENT_POSITION_FOLLOWING`
-    pub const DOCUMENT_POSITION_FOLLOWING: f64 = 4.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Node.DOCUMENT_POSITION_FOLLOWING")]
+    pub const DOCUMENT_POSITION_FOLLOWING: u16 = 0x04;
 
     /// `Node.DOCUMENT_POSITION_CONTAINS`
-    pub const DOCUMENT_POSITION_CONTAINS: f64 = 8.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Node.DOCUMENT_POSITION_CONTAINS")]
+    pub const DOCUMENT_POSITION_CONTAINS: u16 = 0x08;
 
     /// `Node.DOCUMENT_POSITION_CONTAINED_BY`
-    pub const DOCUMENT_POSITION_CONTAINED_BY: f64 = 16.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Node.DOCUMENT_POSITION_CONTAINED_BY")]
+    pub const DOCUMENT_POSITION_CONTAINED_BY: u16 = 0x10;
 
     /// `Node.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC`
-    pub const DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC: f64 = 32.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Node.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC")]
+    pub const DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC: u16 = 0x20;
 
     /// Treats `this` as `Node` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -13954,16 +13976,20 @@ pub mod html_track_element {
     use super::*;
 
     /// `HTMLTrackElement.NONE`
-    pub const NONE: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "HTMLTrackElement.NONE")]
+    pub const NONE: u16 = 0;
 
     /// `HTMLTrackElement.LOADING`
-    pub const LOADING: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "HTMLTrackElement.LOADING")]
+    pub const LOADING: u16 = 1;
 
     /// `HTMLTrackElement.LOADED`
-    pub const LOADED: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "HTMLTrackElement.LOADED")]
+    pub const LOADED: u16 = 2;
 
     /// `HTMLTrackElement.ERROR`
-    pub const ERROR: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "HTMLTrackElement.ERROR")]
+    pub const ERROR: u16 = 3;
 
     /// Treats `this` as `HTMLTrackElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -14075,31 +14101,40 @@ pub mod html_media_element {
     use super::*;
 
     /// `HTMLMediaElement.NETWORK_EMPTY`
-    pub const NETWORK_EMPTY: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "HTMLMediaElement.NETWORK_EMPTY")]
+    pub const NETWORK_EMPTY: u16 = 0;
 
     /// `HTMLMediaElement.NETWORK_IDLE`
-    pub const NETWORK_IDLE: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "HTMLMediaElement.NETWORK_IDLE")]
+    pub const NETWORK_IDLE: u16 = 1;
 
     /// `HTMLMediaElement.NETWORK_LOADING`
-    pub const NETWORK_LOADING: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "HTMLMediaElement.NETWORK_LOADING")]
+    pub const NETWORK_LOADING: u16 = 2;
 
     /// `HTMLMediaElement.NETWORK_NO_SOURCE`
-    pub const NETWORK_NO_SOURCE: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "HTMLMediaElement.NETWORK_NO_SOURCE")]
+    pub const NETWORK_NO_SOURCE: u16 = 3;
 
     /// `HTMLMediaElement.HAVE_NOTHING`
-    pub const HAVE_NOTHING: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "HTMLMediaElement.HAVE_NOTHING")]
+    pub const HAVE_NOTHING: u16 = 0;
 
     /// `HTMLMediaElement.HAVE_METADATA`
-    pub const HAVE_METADATA: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "HTMLMediaElement.HAVE_METADATA")]
+    pub const HAVE_METADATA: u16 = 1;
 
     /// `HTMLMediaElement.HAVE_CURRENT_DATA`
-    pub const HAVE_CURRENT_DATA: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "HTMLMediaElement.HAVE_CURRENT_DATA")]
+    pub const HAVE_CURRENT_DATA: u16 = 2;
 
     /// `HTMLMediaElement.HAVE_FUTURE_DATA`
-    pub const HAVE_FUTURE_DATA: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "HTMLMediaElement.HAVE_FUTURE_DATA")]
+    pub const HAVE_FUTURE_DATA: u16 = 3;
 
     /// `HTMLMediaElement.HAVE_ENOUGH_DATA`
-    pub const HAVE_ENOUGH_DATA: f64 = 4.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "HTMLMediaElement.HAVE_ENOUGH_DATA")]
+    pub const HAVE_ENOUGH_DATA: u16 = 4;
 
     /// Treats `this` as `HTMLMediaElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -19681,16 +19716,20 @@ pub mod keyboard_event {
     use super::*;
 
     /// `KeyboardEvent.DOM_KEY_LOCATION_STANDARD`
-    pub const DOM_KEY_LOCATION_STANDARD: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "KeyboardEvent.DOM_KEY_LOCATION_STANDARD")]
+    pub const DOM_KEY_LOCATION_STANDARD: u32 = 0x00;
 
     /// `KeyboardEvent.DOM_KEY_LOCATION_LEFT`
-    pub const DOM_KEY_LOCATION_LEFT: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "KeyboardEvent.DOM_KEY_LOCATION_LEFT")]
+    pub const DOM_KEY_LOCATION_LEFT: u32 = 0x01;
 
     /// `KeyboardEvent.DOM_KEY_LOCATION_RIGHT`
-    pub const DOM_KEY_LOCATION_RIGHT: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "KeyboardEvent.DOM_KEY_LOCATION_RIGHT")]
+    pub const DOM_KEY_LOCATION_RIGHT: u32 = 0x02;
 
     /// `KeyboardEvent.DOM_KEY_LOCATION_NUMPAD`
-    pub const DOM_KEY_LOCATION_NUMPAD: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "KeyboardEvent.DOM_KEY_LOCATION_NUMPAD")]
+    pub const DOM_KEY_LOCATION_NUMPAD: u32 = 0x03;
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/KeyboardEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new KeyboardEvent")]
@@ -19891,13 +19930,16 @@ pub mod wheel_event {
     use super::*;
 
     /// `WheelEvent.DOM_DELTA_PIXEL`
-    pub const DOM_DELTA_PIXEL: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WheelEvent.DOM_DELTA_PIXEL")]
+    pub const DOM_DELTA_PIXEL: u32 = 0x00;
 
     /// `WheelEvent.DOM_DELTA_LINE`
-    pub const DOM_DELTA_LINE: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WheelEvent.DOM_DELTA_LINE")]
+    pub const DOM_DELTA_LINE: u32 = 0x01;
 
     /// `WheelEvent.DOM_DELTA_PAGE`
-    pub const DOM_DELTA_PAGE: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WheelEvent.DOM_DELTA_PAGE")]
+    pub const DOM_DELTA_PAGE: u32 = 0x02;
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WheelEvent/WheelEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new WheelEvent")]
@@ -32380,13 +32422,16 @@ pub mod svg_text_content_element {
     use super::*;
 
     /// `SVGTextContentElement.LENGTHADJUST_UNKNOWN`
-    pub const LENGTHADJUST_UNKNOWN: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGTextContentElement.LENGTHADJUST_UNKNOWN")]
+    pub const LENGTHADJUST_UNKNOWN: u16 = 0;
 
     /// `SVGTextContentElement.LENGTHADJUST_SPACING`
-    pub const LENGTHADJUST_SPACING: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGTextContentElement.LENGTHADJUST_SPACING")]
+    pub const LENGTHADJUST_SPACING: u16 = 1;
 
     /// `SVGTextContentElement.LENGTHADJUST_SPACINGANDGLYPHS`
-    pub const LENGTHADJUST_SPACINGANDGLYPHS: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGTextContentElement.LENGTHADJUST_SPACINGANDGLYPHS")]
+    pub const LENGTHADJUST_SPACINGANDGLYPHS: u16 = 2;
 
     /// Treats `this` as `SVGTextContentElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -32626,22 +32671,28 @@ pub mod svg_text_path_element {
     use super::*;
 
     /// `SVGTextPathElement.TEXTPATH_METHODTYPE_UNKNOWN`
-    pub const TEXTPATH_METHODTYPE_UNKNOWN: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGTextPathElement.TEXTPATH_METHODTYPE_UNKNOWN")]
+    pub const TEXTPATH_METHODTYPE_UNKNOWN: u16 = 0;
 
     /// `SVGTextPathElement.TEXTPATH_METHODTYPE_ALIGN`
-    pub const TEXTPATH_METHODTYPE_ALIGN: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGTextPathElement.TEXTPATH_METHODTYPE_ALIGN")]
+    pub const TEXTPATH_METHODTYPE_ALIGN: u16 = 1;
 
     /// `SVGTextPathElement.TEXTPATH_METHODTYPE_STRETCH`
-    pub const TEXTPATH_METHODTYPE_STRETCH: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGTextPathElement.TEXTPATH_METHODTYPE_STRETCH")]
+    pub const TEXTPATH_METHODTYPE_STRETCH: u16 = 2;
 
     /// `SVGTextPathElement.TEXTPATH_SPACINGTYPE_UNKNOWN`
-    pub const TEXTPATH_SPACINGTYPE_UNKNOWN: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGTextPathElement.TEXTPATH_SPACINGTYPE_UNKNOWN")]
+    pub const TEXTPATH_SPACINGTYPE_UNKNOWN: u16 = 0;
 
     /// `SVGTextPathElement.TEXTPATH_SPACINGTYPE_AUTO`
-    pub const TEXTPATH_SPACINGTYPE_AUTO: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGTextPathElement.TEXTPATH_SPACINGTYPE_AUTO")]
+    pub const TEXTPATH_SPACINGTYPE_AUTO: u16 = 1;
 
     /// `SVGTextPathElement.TEXTPATH_SPACINGTYPE_EXACT`
-    pub const TEXTPATH_SPACINGTYPE_EXACT: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGTextPathElement.TEXTPATH_SPACINGTYPE_EXACT")]
+    pub const TEXTPATH_SPACINGTYPE_EXACT: u16 = 2;
 
     /// Treats `this` as `SVGTextPathElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -32850,25 +32901,32 @@ pub mod svg_marker_element {
     use super::*;
 
     /// `SVGMarkerElement.SVG_MARKERUNITS_UNKNOWN`
-    pub const SVG_MARKERUNITS_UNKNOWN: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGMarkerElement.SVG_MARKERUNITS_UNKNOWN")]
+    pub const SVG_MARKERUNITS_UNKNOWN: u16 = 0;
 
     /// `SVGMarkerElement.SVG_MARKERUNITS_USERSPACEONUSE`
-    pub const SVG_MARKERUNITS_USERSPACEONUSE: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGMarkerElement.SVG_MARKERUNITS_USERSPACEONUSE")]
+    pub const SVG_MARKERUNITS_USERSPACEONUSE: u16 = 1;
 
     /// `SVGMarkerElement.SVG_MARKERUNITS_STROKEWIDTH`
-    pub const SVG_MARKERUNITS_STROKEWIDTH: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGMarkerElement.SVG_MARKERUNITS_STROKEWIDTH")]
+    pub const SVG_MARKERUNITS_STROKEWIDTH: u16 = 2;
 
     /// `SVGMarkerElement.SVG_MARKER_ORIENT_UNKNOWN`
-    pub const SVG_MARKER_ORIENT_UNKNOWN: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGMarkerElement.SVG_MARKER_ORIENT_UNKNOWN")]
+    pub const SVG_MARKER_ORIENT_UNKNOWN: u16 = 0;
 
     /// `SVGMarkerElement.SVG_MARKER_ORIENT_AUTO`
-    pub const SVG_MARKER_ORIENT_AUTO: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGMarkerElement.SVG_MARKER_ORIENT_AUTO")]
+    pub const SVG_MARKER_ORIENT_AUTO: u16 = 1;
 
     /// `SVGMarkerElement.SVG_MARKER_ORIENT_ANGLE`
-    pub const SVG_MARKER_ORIENT_ANGLE: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGMarkerElement.SVG_MARKER_ORIENT_ANGLE")]
+    pub const SVG_MARKER_ORIENT_ANGLE: u16 = 2;
 
     /// `SVGMarkerElement.SVG_MARKER_ORIENT_AUTO_START_REVERSE`
-    pub const SVG_MARKER_ORIENT_AUTO_START_REVERSE: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGMarkerElement.SVG_MARKER_ORIENT_AUTO_START_REVERSE")]
+    pub const SVG_MARKER_ORIENT_AUTO_START_REVERSE: u16 = 3;
 
     /// Treats `this` as `SVGMarkerElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -32987,16 +33045,20 @@ pub mod svg_gradient_element {
     use super::*;
 
     /// `SVGGradientElement.SVG_SPREADMETHOD_UNKNOWN`
-    pub const SVG_SPREADMETHOD_UNKNOWN: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGGradientElement.SVG_SPREADMETHOD_UNKNOWN")]
+    pub const SVG_SPREADMETHOD_UNKNOWN: u16 = 0;
 
     /// `SVGGradientElement.SVG_SPREADMETHOD_PAD`
-    pub const SVG_SPREADMETHOD_PAD: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGGradientElement.SVG_SPREADMETHOD_PAD")]
+    pub const SVG_SPREADMETHOD_PAD: u16 = 1;
 
     /// `SVGGradientElement.SVG_SPREADMETHOD_REFLECT`
-    pub const SVG_SPREADMETHOD_REFLECT: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGGradientElement.SVG_SPREADMETHOD_REFLECT")]
+    pub const SVG_SPREADMETHOD_REFLECT: u16 = 2;
 
     /// `SVGGradientElement.SVG_SPREADMETHOD_REPEAT`
-    pub const SVG_SPREADMETHOD_REPEAT: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGGradientElement.SVG_SPREADMETHOD_REPEAT")]
+    pub const SVG_SPREADMETHOD_REPEAT: u16 = 3;
 
     /// Treats `this` as `SVGGradientElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -34009,55 +34071,72 @@ pub mod svgfe_blend_element {
     use super::*;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_UNKNOWN`
-    pub const SVG_FEBLEND_MODE_UNKNOWN: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEBlendElement.SVG_FEBLEND_MODE_UNKNOWN")]
+    pub const SVG_FEBLEND_MODE_UNKNOWN: u16 = 0;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_NORMAL`
-    pub const SVG_FEBLEND_MODE_NORMAL: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEBlendElement.SVG_FEBLEND_MODE_NORMAL")]
+    pub const SVG_FEBLEND_MODE_NORMAL: u16 = 1;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_MULTIPLY`
-    pub const SVG_FEBLEND_MODE_MULTIPLY: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEBlendElement.SVG_FEBLEND_MODE_MULTIPLY")]
+    pub const SVG_FEBLEND_MODE_MULTIPLY: u16 = 2;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_SCREEN`
-    pub const SVG_FEBLEND_MODE_SCREEN: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEBlendElement.SVG_FEBLEND_MODE_SCREEN")]
+    pub const SVG_FEBLEND_MODE_SCREEN: u16 = 3;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_DARKEN`
-    pub const SVG_FEBLEND_MODE_DARKEN: f64 = 4.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEBlendElement.SVG_FEBLEND_MODE_DARKEN")]
+    pub const SVG_FEBLEND_MODE_DARKEN: u16 = 4;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_LIGHTEN`
-    pub const SVG_FEBLEND_MODE_LIGHTEN: f64 = 5.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEBlendElement.SVG_FEBLEND_MODE_LIGHTEN")]
+    pub const SVG_FEBLEND_MODE_LIGHTEN: u16 = 5;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_OVERLAY`
-    pub const SVG_FEBLEND_MODE_OVERLAY: f64 = 6.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEBlendElement.SVG_FEBLEND_MODE_OVERLAY")]
+    pub const SVG_FEBLEND_MODE_OVERLAY: u16 = 6;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_COLOR_DODGE`
-    pub const SVG_FEBLEND_MODE_COLOR_DODGE: f64 = 7.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEBlendElement.SVG_FEBLEND_MODE_COLOR_DODGE")]
+    pub const SVG_FEBLEND_MODE_COLOR_DODGE: u16 = 7;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_COLOR_BURN`
-    pub const SVG_FEBLEND_MODE_COLOR_BURN: f64 = 8.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEBlendElement.SVG_FEBLEND_MODE_COLOR_BURN")]
+    pub const SVG_FEBLEND_MODE_COLOR_BURN: u16 = 8;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_HARD_LIGHT`
-    pub const SVG_FEBLEND_MODE_HARD_LIGHT: f64 = 9.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEBlendElement.SVG_FEBLEND_MODE_HARD_LIGHT")]
+    pub const SVG_FEBLEND_MODE_HARD_LIGHT: u16 = 9;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_SOFT_LIGHT`
-    pub const SVG_FEBLEND_MODE_SOFT_LIGHT: f64 = 10.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEBlendElement.SVG_FEBLEND_MODE_SOFT_LIGHT")]
+    pub const SVG_FEBLEND_MODE_SOFT_LIGHT: u16 = 10;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_DIFFERENCE`
-    pub const SVG_FEBLEND_MODE_DIFFERENCE: f64 = 11.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEBlendElement.SVG_FEBLEND_MODE_DIFFERENCE")]
+    pub const SVG_FEBLEND_MODE_DIFFERENCE: u16 = 11;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_EXCLUSION`
-    pub const SVG_FEBLEND_MODE_EXCLUSION: f64 = 12.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEBlendElement.SVG_FEBLEND_MODE_EXCLUSION")]
+    pub const SVG_FEBLEND_MODE_EXCLUSION: u16 = 12;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_HUE`
-    pub const SVG_FEBLEND_MODE_HUE: f64 = 13.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEBlendElement.SVG_FEBLEND_MODE_HUE")]
+    pub const SVG_FEBLEND_MODE_HUE: u16 = 13;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_SATURATION`
-    pub const SVG_FEBLEND_MODE_SATURATION: f64 = 14.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEBlendElement.SVG_FEBLEND_MODE_SATURATION")]
+    pub const SVG_FEBLEND_MODE_SATURATION: u16 = 14;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_COLOR`
-    pub const SVG_FEBLEND_MODE_COLOR: f64 = 15.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEBlendElement.SVG_FEBLEND_MODE_COLOR")]
+    pub const SVG_FEBLEND_MODE_COLOR: u16 = 15;
 
     /// `SVGFEBlendElement.SVG_FEBLEND_MODE_LUMINOSITY`
-    pub const SVG_FEBLEND_MODE_LUMINOSITY: f64 = 16.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEBlendElement.SVG_FEBLEND_MODE_LUMINOSITY")]
+    pub const SVG_FEBLEND_MODE_LUMINOSITY: u16 = 16;
 
     /// Treats `this` as `SVGFEBlendElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -34144,19 +34223,24 @@ pub mod svgfe_color_matrix_element {
     use super::*;
 
     /// `SVGFEColorMatrixElement.SVG_FECOLORMATRIX_TYPE_UNKNOWN`
-    pub const SVG_FECOLORMATRIX_TYPE_UNKNOWN: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEColorMatrixElement.SVG_FECOLORMATRIX_TYPE_UNKNOWN")]
+    pub const SVG_FECOLORMATRIX_TYPE_UNKNOWN: u16 = 0;
 
     /// `SVGFEColorMatrixElement.SVG_FECOLORMATRIX_TYPE_MATRIX`
-    pub const SVG_FECOLORMATRIX_TYPE_MATRIX: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEColorMatrixElement.SVG_FECOLORMATRIX_TYPE_MATRIX")]
+    pub const SVG_FECOLORMATRIX_TYPE_MATRIX: u16 = 1;
 
     /// `SVGFEColorMatrixElement.SVG_FECOLORMATRIX_TYPE_SATURATE`
-    pub const SVG_FECOLORMATRIX_TYPE_SATURATE: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEColorMatrixElement.SVG_FECOLORMATRIX_TYPE_SATURATE")]
+    pub const SVG_FECOLORMATRIX_TYPE_SATURATE: u16 = 2;
 
     /// `SVGFEColorMatrixElement.SVG_FECOLORMATRIX_TYPE_HUEROTATE`
-    pub const SVG_FECOLORMATRIX_TYPE_HUEROTATE: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEColorMatrixElement.SVG_FECOLORMATRIX_TYPE_HUEROTATE")]
+    pub const SVG_FECOLORMATRIX_TYPE_HUEROTATE: u16 = 3;
 
     /// `SVGFEColorMatrixElement.SVG_FECOLORMATRIX_TYPE_LUMINANCETOALPHA`
-    pub const SVG_FECOLORMATRIX_TYPE_LUMINANCETOALPHA: f64 = 4.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEColorMatrixElement.SVG_FECOLORMATRIX_TYPE_LUMINANCETOALPHA")]
+    pub const SVG_FECOLORMATRIX_TYPE_LUMINANCETOALPHA: u16 = 4;
 
     /// Treats `this` as `SVGFEColorMatrixElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -34315,22 +34399,28 @@ pub mod svg_component_transfer_function_element {
     use super::*;
 
     /// `SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_UNKNOWN`
-    pub const SVG_FECOMPONENTTRANSFER_TYPE_UNKNOWN: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_UNKNOWN")]
+    pub const SVG_FECOMPONENTTRANSFER_TYPE_UNKNOWN: u16 = 0;
 
     /// `SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_IDENTITY`
-    pub const SVG_FECOMPONENTTRANSFER_TYPE_IDENTITY: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_IDENTITY")]
+    pub const SVG_FECOMPONENTTRANSFER_TYPE_IDENTITY: u16 = 1;
 
     /// `SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_TABLE`
-    pub const SVG_FECOMPONENTTRANSFER_TYPE_TABLE: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_TABLE")]
+    pub const SVG_FECOMPONENTTRANSFER_TYPE_TABLE: u16 = 2;
 
     /// `SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_DISCRETE`
-    pub const SVG_FECOMPONENTTRANSFER_TYPE_DISCRETE: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_DISCRETE")]
+    pub const SVG_FECOMPONENTTRANSFER_TYPE_DISCRETE: u16 = 3;
 
     /// `SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_LINEAR`
-    pub const SVG_FECOMPONENTTRANSFER_TYPE_LINEAR: f64 = 4.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_LINEAR")]
+    pub const SVG_FECOMPONENTTRANSFER_TYPE_LINEAR: u16 = 4;
 
     /// `SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_GAMMA`
-    pub const SVG_FECOMPONENTTRANSFER_TYPE_GAMMA: f64 = 5.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGComponentTransferFunctionElement.SVG_FECOMPONENTTRANSFER_TYPE_GAMMA")]
+    pub const SVG_FECOMPONENTTRANSFER_TYPE_GAMMA: u16 = 5;
 
     /// Treats `this` as `SVGComponentTransferFunctionElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -34543,25 +34633,32 @@ pub mod svgfe_composite_element {
     use super::*;
 
     /// `SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_UNKNOWN`
-    pub const SVG_FECOMPOSITE_OPERATOR_UNKNOWN: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_UNKNOWN")]
+    pub const SVG_FECOMPOSITE_OPERATOR_UNKNOWN: u16 = 0;
 
     /// `SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_OVER`
-    pub const SVG_FECOMPOSITE_OPERATOR_OVER: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_OVER")]
+    pub const SVG_FECOMPOSITE_OPERATOR_OVER: u16 = 1;
 
     /// `SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_IN`
-    pub const SVG_FECOMPOSITE_OPERATOR_IN: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_IN")]
+    pub const SVG_FECOMPOSITE_OPERATOR_IN: u16 = 2;
 
     /// `SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_OUT`
-    pub const SVG_FECOMPOSITE_OPERATOR_OUT: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_OUT")]
+    pub const SVG_FECOMPOSITE_OPERATOR_OUT: u16 = 3;
 
     /// `SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_ATOP`
-    pub const SVG_FECOMPOSITE_OPERATOR_ATOP: f64 = 4.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_ATOP")]
+    pub const SVG_FECOMPOSITE_OPERATOR_ATOP: u16 = 4;
 
     /// `SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_XOR`
-    pub const SVG_FECOMPOSITE_OPERATOR_XOR: f64 = 5.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_XOR")]
+    pub const SVG_FECOMPOSITE_OPERATOR_XOR: u16 = 5;
 
     /// `SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_ARITHMETIC`
-    pub const SVG_FECOMPOSITE_OPERATOR_ARITHMETIC: f64 = 6.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFECompositeElement.SVG_FECOMPOSITE_OPERATOR_ARITHMETIC")]
+    pub const SVG_FECOMPOSITE_OPERATOR_ARITHMETIC: u16 = 6;
 
     /// Treats `this` as `SVGFECompositeElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -34672,16 +34769,20 @@ pub mod svgfe_convolve_matrix_element {
     use super::*;
 
     /// `SVGFEConvolveMatrixElement.SVG_EDGEMODE_UNKNOWN`
-    pub const SVG_EDGEMODE_UNKNOWN: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEConvolveMatrixElement.SVG_EDGEMODE_UNKNOWN")]
+    pub const SVG_EDGEMODE_UNKNOWN: u16 = 0;
 
     /// `SVGFEConvolveMatrixElement.SVG_EDGEMODE_DUPLICATE`
-    pub const SVG_EDGEMODE_DUPLICATE: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEConvolveMatrixElement.SVG_EDGEMODE_DUPLICATE")]
+    pub const SVG_EDGEMODE_DUPLICATE: u16 = 1;
 
     /// `SVGFEConvolveMatrixElement.SVG_EDGEMODE_WRAP`
-    pub const SVG_EDGEMODE_WRAP: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEConvolveMatrixElement.SVG_EDGEMODE_WRAP")]
+    pub const SVG_EDGEMODE_WRAP: u16 = 2;
 
     /// `SVGFEConvolveMatrixElement.SVG_EDGEMODE_NONE`
-    pub const SVG_EDGEMODE_NONE: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEConvolveMatrixElement.SVG_EDGEMODE_NONE")]
+    pub const SVG_EDGEMODE_NONE: u16 = 3;
 
     /// Treats `this` as `SVGFEConvolveMatrixElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -34918,19 +35019,24 @@ pub mod svgfe_displacement_map_element {
     use super::*;
 
     /// `SVGFEDisplacementMapElement.SVG_CHANNEL_UNKNOWN`
-    pub const SVG_CHANNEL_UNKNOWN: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEDisplacementMapElement.SVG_CHANNEL_UNKNOWN")]
+    pub const SVG_CHANNEL_UNKNOWN: u16 = 0;
 
     /// `SVGFEDisplacementMapElement.SVG_CHANNEL_R`
-    pub const SVG_CHANNEL_R: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEDisplacementMapElement.SVG_CHANNEL_R")]
+    pub const SVG_CHANNEL_R: u16 = 1;
 
     /// `SVGFEDisplacementMapElement.SVG_CHANNEL_G`
-    pub const SVG_CHANNEL_G: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEDisplacementMapElement.SVG_CHANNEL_G")]
+    pub const SVG_CHANNEL_G: u16 = 2;
 
     /// `SVGFEDisplacementMapElement.SVG_CHANNEL_B`
-    pub const SVG_CHANNEL_B: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEDisplacementMapElement.SVG_CHANNEL_B")]
+    pub const SVG_CHANNEL_B: u16 = 3;
 
     /// `SVGFEDisplacementMapElement.SVG_CHANNEL_A`
-    pub const SVG_CHANNEL_A: f64 = 4.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEDisplacementMapElement.SVG_CHANNEL_A")]
+    pub const SVG_CHANNEL_A: u16 = 4;
 
     /// Treats `this` as `SVGFEDisplacementMapElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -35198,16 +35304,20 @@ pub mod svgfe_gaussian_blur_element {
     use super::*;
 
     /// `SVGFEGaussianBlurElement.SVG_EDGEMODE_UNKNOWN`
-    pub const SVG_EDGEMODE_UNKNOWN: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEGaussianBlurElement.SVG_EDGEMODE_UNKNOWN")]
+    pub const SVG_EDGEMODE_UNKNOWN: u16 = 0;
 
     /// `SVGFEGaussianBlurElement.SVG_EDGEMODE_DUPLICATE`
-    pub const SVG_EDGEMODE_DUPLICATE: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEGaussianBlurElement.SVG_EDGEMODE_DUPLICATE")]
+    pub const SVG_EDGEMODE_DUPLICATE: u16 = 1;
 
     /// `SVGFEGaussianBlurElement.SVG_EDGEMODE_WRAP`
-    pub const SVG_EDGEMODE_WRAP: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEGaussianBlurElement.SVG_EDGEMODE_WRAP")]
+    pub const SVG_EDGEMODE_WRAP: u16 = 2;
 
     /// `SVGFEGaussianBlurElement.SVG_EDGEMODE_NONE`
-    pub const SVG_EDGEMODE_NONE: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEGaussianBlurElement.SVG_EDGEMODE_NONE")]
+    pub const SVG_EDGEMODE_NONE: u16 = 3;
 
     /// Treats `this` as `SVGFEGaussianBlurElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -35499,13 +35609,16 @@ pub mod svgfe_morphology_element {
     use super::*;
 
     /// `SVGFEMorphologyElement.SVG_MORPHOLOGY_OPERATOR_UNKNOWN`
-    pub const SVG_MORPHOLOGY_OPERATOR_UNKNOWN: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEMorphologyElement.SVG_MORPHOLOGY_OPERATOR_UNKNOWN")]
+    pub const SVG_MORPHOLOGY_OPERATOR_UNKNOWN: u16 = 0;
 
     /// `SVGFEMorphologyElement.SVG_MORPHOLOGY_OPERATOR_ERODE`
-    pub const SVG_MORPHOLOGY_OPERATOR_ERODE: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEMorphologyElement.SVG_MORPHOLOGY_OPERATOR_ERODE")]
+    pub const SVG_MORPHOLOGY_OPERATOR_ERODE: u16 = 1;
 
     /// `SVGFEMorphologyElement.SVG_MORPHOLOGY_OPERATOR_DILATE`
-    pub const SVG_MORPHOLOGY_OPERATOR_DILATE: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFEMorphologyElement.SVG_MORPHOLOGY_OPERATOR_DILATE")]
+    pub const SVG_MORPHOLOGY_OPERATOR_DILATE: u16 = 2;
 
     /// Treats `this` as `SVGFEMorphologyElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -35856,22 +35969,28 @@ pub mod svgfe_turbulence_element {
     use super::*;
 
     /// `SVGFETurbulenceElement.SVG_TURBULENCE_TYPE_UNKNOWN`
-    pub const SVG_TURBULENCE_TYPE_UNKNOWN: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFETurbulenceElement.SVG_TURBULENCE_TYPE_UNKNOWN")]
+    pub const SVG_TURBULENCE_TYPE_UNKNOWN: u16 = 0;
 
     /// `SVGFETurbulenceElement.SVG_TURBULENCE_TYPE_FRACTALNOISE`
-    pub const SVG_TURBULENCE_TYPE_FRACTALNOISE: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFETurbulenceElement.SVG_TURBULENCE_TYPE_FRACTALNOISE")]
+    pub const SVG_TURBULENCE_TYPE_FRACTALNOISE: u16 = 1;
 
     /// `SVGFETurbulenceElement.SVG_TURBULENCE_TYPE_TURBULENCE`
-    pub const SVG_TURBULENCE_TYPE_TURBULENCE: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFETurbulenceElement.SVG_TURBULENCE_TYPE_TURBULENCE")]
+    pub const SVG_TURBULENCE_TYPE_TURBULENCE: u16 = 2;
 
     /// `SVGFETurbulenceElement.SVG_STITCHTYPE_UNKNOWN`
-    pub const SVG_STITCHTYPE_UNKNOWN: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFETurbulenceElement.SVG_STITCHTYPE_UNKNOWN")]
+    pub const SVG_STITCHTYPE_UNKNOWN: u16 = 0;
 
     /// `SVGFETurbulenceElement.SVG_STITCHTYPE_STITCH`
-    pub const SVG_STITCHTYPE_STITCH: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFETurbulenceElement.SVG_STITCHTYPE_STITCH")]
+    pub const SVG_STITCHTYPE_STITCH: u16 = 1;
 
     /// `SVGFETurbulenceElement.SVG_STITCHTYPE_NOSTITCH`
-    pub const SVG_STITCHTYPE_NOSTITCH: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGFETurbulenceElement.SVG_STITCHTYPE_NOSTITCH")]
+    pub const SVG_STITCHTYPE_NOSTITCH: u16 = 2;
 
     /// Treats `this` as `SVGFETurbulenceElement` without checking that it is one.
     #[cfg_attr(rust_js, rust_js::link_name = "this")]
@@ -41606,43 +41725,56 @@ impl Eq for CSSRule {}
 pub mod css_rule {
 
     /// `CSSRule.KEYFRAMES_RULE`
-    pub const KEYFRAMES_RULE: f64 = 7.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "CSSRule.KEYFRAMES_RULE")]
+    pub const KEYFRAMES_RULE: u16 = 7;
 
     /// `CSSRule.KEYFRAME_RULE`
-    pub const KEYFRAME_RULE: f64 = 8.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "CSSRule.KEYFRAME_RULE")]
+    pub const KEYFRAME_RULE: u16 = 8;
 
     /// `CSSRule.SUPPORTS_RULE`
-    pub const SUPPORTS_RULE: f64 = 12.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "CSSRule.SUPPORTS_RULE")]
+    pub const SUPPORTS_RULE: u16 = 12;
 
     /// `CSSRule.COUNTER_STYLE_RULE`
-    pub const COUNTER_STYLE_RULE: f64 = 11.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "CSSRule.COUNTER_STYLE_RULE")]
+    pub const COUNTER_STYLE_RULE: u16 = 11;
 
     /// `CSSRule.FONT_FEATURE_VALUES_RULE`
-    pub const FONT_FEATURE_VALUES_RULE: f64 = 14.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "CSSRule.FONT_FEATURE_VALUES_RULE")]
+    pub const FONT_FEATURE_VALUES_RULE: u16 = 14;
 
     /// `CSSRule.STYLE_RULE`
-    pub const STYLE_RULE: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "CSSRule.STYLE_RULE")]
+    pub const STYLE_RULE: u16 = 1;
 
     /// `CSSRule.CHARSET_RULE`
-    pub const CHARSET_RULE: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "CSSRule.CHARSET_RULE")]
+    pub const CHARSET_RULE: u16 = 2;
 
     /// `CSSRule.IMPORT_RULE`
-    pub const IMPORT_RULE: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "CSSRule.IMPORT_RULE")]
+    pub const IMPORT_RULE: u16 = 3;
 
     /// `CSSRule.MEDIA_RULE`
-    pub const MEDIA_RULE: f64 = 4.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "CSSRule.MEDIA_RULE")]
+    pub const MEDIA_RULE: u16 = 4;
 
     /// `CSSRule.FONT_FACE_RULE`
-    pub const FONT_FACE_RULE: f64 = 5.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "CSSRule.FONT_FACE_RULE")]
+    pub const FONT_FACE_RULE: u16 = 5;
 
     /// `CSSRule.PAGE_RULE`
-    pub const PAGE_RULE: f64 = 6.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "CSSRule.PAGE_RULE")]
+    pub const PAGE_RULE: u16 = 6;
 
     /// `CSSRule.MARGIN_RULE`
-    pub const MARGIN_RULE: f64 = 9.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "CSSRule.MARGIN_RULE")]
+    pub const MARGIN_RULE: u16 = 9;
 
     /// `CSSRule.NAMESPACE_RULE`
-    pub const NAMESPACE_RULE: f64 = 10.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "CSSRule.NAMESPACE_RULE")]
+    pub const NAMESPACE_RULE: u16 = 10;
 }
 
 impl CSSRule {
@@ -44810,79 +44942,104 @@ pub mod dom_exception {
     use super::*;
 
     /// `DOMException.INDEX_SIZE_ERR`
-    pub const INDEX_SIZE_ERR: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.INDEX_SIZE_ERR")]
+    pub const INDEX_SIZE_ERR: u16 = 1;
 
     /// `DOMException.DOMSTRING_SIZE_ERR`
-    pub const DOMSTRING_SIZE_ERR: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.DOMSTRING_SIZE_ERR")]
+    pub const DOMSTRING_SIZE_ERR: u16 = 2;
 
     /// `DOMException.HIERARCHY_REQUEST_ERR`
-    pub const HIERARCHY_REQUEST_ERR: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.HIERARCHY_REQUEST_ERR")]
+    pub const HIERARCHY_REQUEST_ERR: u16 = 3;
 
     /// `DOMException.WRONG_DOCUMENT_ERR`
-    pub const WRONG_DOCUMENT_ERR: f64 = 4.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.WRONG_DOCUMENT_ERR")]
+    pub const WRONG_DOCUMENT_ERR: u16 = 4;
 
     /// `DOMException.INVALID_CHARACTER_ERR`
-    pub const INVALID_CHARACTER_ERR: f64 = 5.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.INVALID_CHARACTER_ERR")]
+    pub const INVALID_CHARACTER_ERR: u16 = 5;
 
     /// `DOMException.NO_DATA_ALLOWED_ERR`
-    pub const NO_DATA_ALLOWED_ERR: f64 = 6.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.NO_DATA_ALLOWED_ERR")]
+    pub const NO_DATA_ALLOWED_ERR: u16 = 6;
 
     /// `DOMException.NO_MODIFICATION_ALLOWED_ERR`
-    pub const NO_MODIFICATION_ALLOWED_ERR: f64 = 7.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.NO_MODIFICATION_ALLOWED_ERR")]
+    pub const NO_MODIFICATION_ALLOWED_ERR: u16 = 7;
 
     /// `DOMException.NOT_FOUND_ERR`
-    pub const NOT_FOUND_ERR: f64 = 8.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.NOT_FOUND_ERR")]
+    pub const NOT_FOUND_ERR: u16 = 8;
 
     /// `DOMException.NOT_SUPPORTED_ERR`
-    pub const NOT_SUPPORTED_ERR: f64 = 9.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.NOT_SUPPORTED_ERR")]
+    pub const NOT_SUPPORTED_ERR: u16 = 9;
 
     /// `DOMException.INUSE_ATTRIBUTE_ERR`
-    pub const INUSE_ATTRIBUTE_ERR: f64 = 10.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.INUSE_ATTRIBUTE_ERR")]
+    pub const INUSE_ATTRIBUTE_ERR: u16 = 10;
 
     /// `DOMException.INVALID_STATE_ERR`
-    pub const INVALID_STATE_ERR: f64 = 11.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.INVALID_STATE_ERR")]
+    pub const INVALID_STATE_ERR: u16 = 11;
 
     /// `DOMException.SYNTAX_ERR`
-    pub const SYNTAX_ERR: f64 = 12.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.SYNTAX_ERR")]
+    pub const SYNTAX_ERR: u16 = 12;
 
     /// `DOMException.INVALID_MODIFICATION_ERR`
-    pub const INVALID_MODIFICATION_ERR: f64 = 13.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.INVALID_MODIFICATION_ERR")]
+    pub const INVALID_MODIFICATION_ERR: u16 = 13;
 
     /// `DOMException.NAMESPACE_ERR`
-    pub const NAMESPACE_ERR: f64 = 14.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.NAMESPACE_ERR")]
+    pub const NAMESPACE_ERR: u16 = 14;
 
     /// `DOMException.INVALID_ACCESS_ERR`
-    pub const INVALID_ACCESS_ERR: f64 = 15.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.INVALID_ACCESS_ERR")]
+    pub const INVALID_ACCESS_ERR: u16 = 15;
 
     /// `DOMException.VALIDATION_ERR`
-    pub const VALIDATION_ERR: f64 = 16.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.VALIDATION_ERR")]
+    pub const VALIDATION_ERR: u16 = 16;
 
     /// `DOMException.TYPE_MISMATCH_ERR`
-    pub const TYPE_MISMATCH_ERR: f64 = 17.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.TYPE_MISMATCH_ERR")]
+    pub const TYPE_MISMATCH_ERR: u16 = 17;
 
     /// `DOMException.SECURITY_ERR`
-    pub const SECURITY_ERR: f64 = 18.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.SECURITY_ERR")]
+    pub const SECURITY_ERR: u16 = 18;
 
     /// `DOMException.NETWORK_ERR`
-    pub const NETWORK_ERR: f64 = 19.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.NETWORK_ERR")]
+    pub const NETWORK_ERR: u16 = 19;
 
     /// `DOMException.ABORT_ERR`
-    pub const ABORT_ERR: f64 = 20.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.ABORT_ERR")]
+    pub const ABORT_ERR: u16 = 20;
 
     /// `DOMException.URL_MISMATCH_ERR`
-    pub const URL_MISMATCH_ERR: f64 = 21.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.URL_MISMATCH_ERR")]
+    pub const URL_MISMATCH_ERR: u16 = 21;
 
     /// `DOMException.QUOTA_EXCEEDED_ERR`
-    pub const QUOTA_EXCEEDED_ERR: f64 = 22.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.QUOTA_EXCEEDED_ERR")]
+    pub const QUOTA_EXCEEDED_ERR: u16 = 22;
 
     /// `DOMException.TIMEOUT_ERR`
-    pub const TIMEOUT_ERR: f64 = 23.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.TIMEOUT_ERR")]
+    pub const TIMEOUT_ERR: u16 = 23;
 
     /// `DOMException.INVALID_NODE_TYPE_ERR`
-    pub const INVALID_NODE_TYPE_ERR: f64 = 24.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.INVALID_NODE_TYPE_ERR")]
+    pub const INVALID_NODE_TYPE_ERR: u16 = 24;
 
     /// `DOMException.DATA_CLONE_ERR`
-    pub const DATA_CLONE_ERR: f64 = 25.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "DOMException.DATA_CLONE_ERR")]
+    pub const DATA_CLONE_ERR: u16 = 25;
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMException/DOMException)
     #[cfg_attr(rust_js, rust_js::link_name = "new DOMException")]
@@ -47851,13 +48008,16 @@ pub mod event_source {
     use super::*;
 
     /// `EventSource.CONNECTING`
-    pub const CONNECTING: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "EventSource.CONNECTING")]
+    pub const CONNECTING: u16 = 0;
 
     /// `EventSource.OPEN`
-    pub const OPEN: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "EventSource.OPEN")]
+    pub const OPEN: u16 = 1;
 
     /// `EventSource.CLOSED`
-    pub const CLOSED: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "EventSource.CLOSED")]
+    pub const CLOSED: u16 = 2;
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EventSource/EventSource)
     #[cfg_attr(rust_js, rust_js::link_name = "new EventSource")]
@@ -48056,13 +48216,16 @@ pub mod file_reader {
     use super::*;
 
     /// `FileReader.EMPTY`
-    pub const EMPTY: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "FileReader.EMPTY")]
+    pub const EMPTY: u16 = 0;
 
     /// `FileReader.LOADING`
-    pub const LOADING: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "FileReader.LOADING")]
+    pub const LOADING: u16 = 1;
 
     /// `FileReader.DONE`
-    pub const DONE: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "FileReader.DONE")]
+    pub const DONE: u16 = 2;
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/FileReader)
     #[cfg_attr(rust_js, rust_js::link_name = "new FileReader")]
@@ -51640,13 +51803,16 @@ impl Eq for GeolocationPositionError {}
 pub mod geolocation_position_error {
 
     /// `GeolocationPositionError.PERMISSION_DENIED`
-    pub const PERMISSION_DENIED: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "GeolocationPositionError.PERMISSION_DENIED")]
+    pub const PERMISSION_DENIED: u16 = 1;
 
     /// `GeolocationPositionError.POSITION_UNAVAILABLE`
-    pub const POSITION_UNAVAILABLE: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "GeolocationPositionError.POSITION_UNAVAILABLE")]
+    pub const POSITION_UNAVAILABLE: u16 = 2;
 
     /// `GeolocationPositionError.TIMEOUT`
-    pub const TIMEOUT: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "GeolocationPositionError.TIMEOUT")]
+    pub const TIMEOUT: u16 = 3;
 }
 
 impl GeolocationPositionError {
@@ -57144,16 +57310,20 @@ impl Eq for MediaError {}
 pub mod media_error {
 
     /// `MediaError.MEDIA_ERR_ABORTED`
-    pub const MEDIA_ERR_ABORTED: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "MediaError.MEDIA_ERR_ABORTED")]
+    pub const MEDIA_ERR_ABORTED: u16 = 1;
 
     /// `MediaError.MEDIA_ERR_NETWORK`
-    pub const MEDIA_ERR_NETWORK: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "MediaError.MEDIA_ERR_NETWORK")]
+    pub const MEDIA_ERR_NETWORK: u16 = 2;
 
     /// `MediaError.MEDIA_ERR_DECODE`
-    pub const MEDIA_ERR_DECODE: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "MediaError.MEDIA_ERR_DECODE")]
+    pub const MEDIA_ERR_DECODE: u16 = 3;
 
     /// `MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED`
-    pub const MEDIA_ERR_SRC_NOT_SUPPORTED: f64 = 4.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED")]
+    pub const MEDIA_ERR_SRC_NOT_SUPPORTED: u16 = 4;
 }
 
 impl MediaError {
@@ -62010,16 +62180,20 @@ impl Eq for PerformanceNavigation {}
 pub mod performance_navigation {
 
     /// `PerformanceNavigation.TYPE_NAVIGATE`
-    pub const TYPE_NAVIGATE: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "PerformanceNavigation.TYPE_NAVIGATE")]
+    pub const TYPE_NAVIGATE: u16 = 0;
 
     /// `PerformanceNavigation.TYPE_RELOAD`
-    pub const TYPE_RELOAD: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "PerformanceNavigation.TYPE_RELOAD")]
+    pub const TYPE_RELOAD: u16 = 1;
 
     /// `PerformanceNavigation.TYPE_BACK_FORWARD`
-    pub const TYPE_BACK_FORWARD: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "PerformanceNavigation.TYPE_BACK_FORWARD")]
+    pub const TYPE_BACK_FORWARD: u16 = 2;
 
     /// `PerformanceNavigation.TYPE_RESERVED`
-    pub const TYPE_RESERVED: f64 = 255.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "PerformanceNavigation.TYPE_RESERVED")]
+    pub const TYPE_RESERVED: u16 = 255;
 }
 
 impl PerformanceNavigation {
@@ -65645,16 +65819,20 @@ pub mod range {
     use super::*;
 
     /// `Range.START_TO_START`
-    pub const START_TO_START: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Range.START_TO_START")]
+    pub const START_TO_START: u16 = 0;
 
     /// `Range.START_TO_END`
-    pub const START_TO_END: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Range.START_TO_END")]
+    pub const START_TO_END: u16 = 1;
 
     /// `Range.END_TO_END`
-    pub const END_TO_END: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Range.END_TO_END")]
+    pub const END_TO_END: u16 = 2;
 
     /// `Range.END_TO_START`
-    pub const END_TO_START: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "Range.END_TO_START")]
+    pub const END_TO_START: u16 = 3;
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/Range)
     #[cfg_attr(rust_js, rust_js::link_name = "new Range")]
@@ -66369,19 +66547,24 @@ impl Eq for SVGAngle {}
 pub mod svg_angle {
 
     /// `SVGAngle.SVG_ANGLETYPE_UNKNOWN`
-    pub const SVG_ANGLETYPE_UNKNOWN: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGAngle.SVG_ANGLETYPE_UNKNOWN")]
+    pub const SVG_ANGLETYPE_UNKNOWN: u16 = 0;
 
     /// `SVGAngle.SVG_ANGLETYPE_UNSPECIFIED`
-    pub const SVG_ANGLETYPE_UNSPECIFIED: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGAngle.SVG_ANGLETYPE_UNSPECIFIED")]
+    pub const SVG_ANGLETYPE_UNSPECIFIED: u16 = 1;
 
     /// `SVGAngle.SVG_ANGLETYPE_DEG`
-    pub const SVG_ANGLETYPE_DEG: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGAngle.SVG_ANGLETYPE_DEG")]
+    pub const SVG_ANGLETYPE_DEG: u16 = 2;
 
     /// `SVGAngle.SVG_ANGLETYPE_RAD`
-    pub const SVG_ANGLETYPE_RAD: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGAngle.SVG_ANGLETYPE_RAD")]
+    pub const SVG_ANGLETYPE_RAD: u16 = 3;
 
     /// `SVGAngle.SVG_ANGLETYPE_GRAD`
-    pub const SVG_ANGLETYPE_GRAD: f64 = 4.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGAngle.SVG_ANGLETYPE_GRAD")]
+    pub const SVG_ANGLETYPE_GRAD: u16 = 4;
 }
 
 impl SVGAngle {
@@ -66843,37 +67026,48 @@ impl Eq for SVGLength {}
 pub mod svg_length {
 
     /// `SVGLength.SVG_LENGTHTYPE_UNKNOWN`
-    pub const SVG_LENGTHTYPE_UNKNOWN: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGLength.SVG_LENGTHTYPE_UNKNOWN")]
+    pub const SVG_LENGTHTYPE_UNKNOWN: u16 = 0;
 
     /// `SVGLength.SVG_LENGTHTYPE_NUMBER`
-    pub const SVG_LENGTHTYPE_NUMBER: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGLength.SVG_LENGTHTYPE_NUMBER")]
+    pub const SVG_LENGTHTYPE_NUMBER: u16 = 1;
 
     /// `SVGLength.SVG_LENGTHTYPE_PERCENTAGE`
-    pub const SVG_LENGTHTYPE_PERCENTAGE: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGLength.SVG_LENGTHTYPE_PERCENTAGE")]
+    pub const SVG_LENGTHTYPE_PERCENTAGE: u16 = 2;
 
     /// `SVGLength.SVG_LENGTHTYPE_EMS`
-    pub const SVG_LENGTHTYPE_EMS: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGLength.SVG_LENGTHTYPE_EMS")]
+    pub const SVG_LENGTHTYPE_EMS: u16 = 3;
 
     /// `SVGLength.SVG_LENGTHTYPE_EXS`
-    pub const SVG_LENGTHTYPE_EXS: f64 = 4.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGLength.SVG_LENGTHTYPE_EXS")]
+    pub const SVG_LENGTHTYPE_EXS: u16 = 4;
 
     /// `SVGLength.SVG_LENGTHTYPE_PX`
-    pub const SVG_LENGTHTYPE_PX: f64 = 5.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGLength.SVG_LENGTHTYPE_PX")]
+    pub const SVG_LENGTHTYPE_PX: u16 = 5;
 
     /// `SVGLength.SVG_LENGTHTYPE_CM`
-    pub const SVG_LENGTHTYPE_CM: f64 = 6.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGLength.SVG_LENGTHTYPE_CM")]
+    pub const SVG_LENGTHTYPE_CM: u16 = 6;
 
     /// `SVGLength.SVG_LENGTHTYPE_MM`
-    pub const SVG_LENGTHTYPE_MM: f64 = 7.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGLength.SVG_LENGTHTYPE_MM")]
+    pub const SVG_LENGTHTYPE_MM: u16 = 7;
 
     /// `SVGLength.SVG_LENGTHTYPE_IN`
-    pub const SVG_LENGTHTYPE_IN: f64 = 8.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGLength.SVG_LENGTHTYPE_IN")]
+    pub const SVG_LENGTHTYPE_IN: u16 = 8;
 
     /// `SVGLength.SVG_LENGTHTYPE_PT`
-    pub const SVG_LENGTHTYPE_PT: f64 = 9.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGLength.SVG_LENGTHTYPE_PT")]
+    pub const SVG_LENGTHTYPE_PT: u16 = 9;
 
     /// `SVGLength.SVG_LENGTHTYPE_PC`
-    pub const SVG_LENGTHTYPE_PC: f64 = 10.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGLength.SVG_LENGTHTYPE_PC")]
+    pub const SVG_LENGTHTYPE_PC: u16 = 10;
 }
 
 impl SVGLength {
@@ -67257,46 +67451,60 @@ impl Eq for SVGPreserveAspectRatio {}
 pub mod svg_preserve_aspect_ratio {
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_UNKNOWN`
-    pub const SVG_PRESERVEASPECTRATIO_UNKNOWN: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_UNKNOWN")]
+    pub const SVG_PRESERVEASPECTRATIO_UNKNOWN: u16 = 0;
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_NONE`
-    pub const SVG_PRESERVEASPECTRATIO_NONE: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_NONE")]
+    pub const SVG_PRESERVEASPECTRATIO_NONE: u16 = 1;
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMINYMIN`
-    pub const SVG_PRESERVEASPECTRATIO_XMINYMIN: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMINYMIN")]
+    pub const SVG_PRESERVEASPECTRATIO_XMINYMIN: u16 = 2;
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMIDYMIN`
-    pub const SVG_PRESERVEASPECTRATIO_XMIDYMIN: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMIDYMIN")]
+    pub const SVG_PRESERVEASPECTRATIO_XMIDYMIN: u16 = 3;
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMAXYMIN`
-    pub const SVG_PRESERVEASPECTRATIO_XMAXYMIN: f64 = 4.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMAXYMIN")]
+    pub const SVG_PRESERVEASPECTRATIO_XMAXYMIN: u16 = 4;
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMINYMID`
-    pub const SVG_PRESERVEASPECTRATIO_XMINYMID: f64 = 5.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMINYMID")]
+    pub const SVG_PRESERVEASPECTRATIO_XMINYMID: u16 = 5;
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMIDYMID`
-    pub const SVG_PRESERVEASPECTRATIO_XMIDYMID: f64 = 6.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMIDYMID")]
+    pub const SVG_PRESERVEASPECTRATIO_XMIDYMID: u16 = 6;
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMAXYMID`
-    pub const SVG_PRESERVEASPECTRATIO_XMAXYMID: f64 = 7.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMAXYMID")]
+    pub const SVG_PRESERVEASPECTRATIO_XMAXYMID: u16 = 7;
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMINYMAX`
-    pub const SVG_PRESERVEASPECTRATIO_XMINYMAX: f64 = 8.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMINYMAX")]
+    pub const SVG_PRESERVEASPECTRATIO_XMINYMAX: u16 = 8;
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMIDYMAX`
-    pub const SVG_PRESERVEASPECTRATIO_XMIDYMAX: f64 = 9.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMIDYMAX")]
+    pub const SVG_PRESERVEASPECTRATIO_XMIDYMAX: u16 = 9;
 
     /// `SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMAXYMAX`
-    pub const SVG_PRESERVEASPECTRATIO_XMAXYMAX: f64 = 10.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGPreserveAspectRatio.SVG_PRESERVEASPECTRATIO_XMAXYMAX")]
+    pub const SVG_PRESERVEASPECTRATIO_XMAXYMAX: u16 = 10;
 
     /// `SVGPreserveAspectRatio.SVG_MEETORSLICE_UNKNOWN`
-    pub const SVG_MEETORSLICE_UNKNOWN: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGPreserveAspectRatio.SVG_MEETORSLICE_UNKNOWN")]
+    pub const SVG_MEETORSLICE_UNKNOWN: u16 = 0;
 
     /// `SVGPreserveAspectRatio.SVG_MEETORSLICE_MEET`
-    pub const SVG_MEETORSLICE_MEET: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGPreserveAspectRatio.SVG_MEETORSLICE_MEET")]
+    pub const SVG_MEETORSLICE_MEET: u16 = 1;
 
     /// `SVGPreserveAspectRatio.SVG_MEETORSLICE_SLICE`
-    pub const SVG_MEETORSLICE_SLICE: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGPreserveAspectRatio.SVG_MEETORSLICE_SLICE")]
+    pub const SVG_MEETORSLICE_SLICE: u16 = 2;
 }
 
 impl SVGPreserveAspectRatio {
@@ -67430,25 +67638,32 @@ impl Eq for SVGTransform {}
 pub mod svg_transform {
 
     /// `SVGTransform.SVG_TRANSFORM_UNKNOWN`
-    pub const SVG_TRANSFORM_UNKNOWN: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGTransform.SVG_TRANSFORM_UNKNOWN")]
+    pub const SVG_TRANSFORM_UNKNOWN: u16 = 0;
 
     /// `SVGTransform.SVG_TRANSFORM_MATRIX`
-    pub const SVG_TRANSFORM_MATRIX: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGTransform.SVG_TRANSFORM_MATRIX")]
+    pub const SVG_TRANSFORM_MATRIX: u16 = 1;
 
     /// `SVGTransform.SVG_TRANSFORM_TRANSLATE`
-    pub const SVG_TRANSFORM_TRANSLATE: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGTransform.SVG_TRANSFORM_TRANSLATE")]
+    pub const SVG_TRANSFORM_TRANSLATE: u16 = 2;
 
     /// `SVGTransform.SVG_TRANSFORM_SCALE`
-    pub const SVG_TRANSFORM_SCALE: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGTransform.SVG_TRANSFORM_SCALE")]
+    pub const SVG_TRANSFORM_SCALE: u16 = 3;
 
     /// `SVGTransform.SVG_TRANSFORM_ROTATE`
-    pub const SVG_TRANSFORM_ROTATE: f64 = 4.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGTransform.SVG_TRANSFORM_ROTATE")]
+    pub const SVG_TRANSFORM_ROTATE: u16 = 4;
 
     /// `SVGTransform.SVG_TRANSFORM_SKEWX`
-    pub const SVG_TRANSFORM_SKEWX: f64 = 5.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGTransform.SVG_TRANSFORM_SKEWX")]
+    pub const SVG_TRANSFORM_SKEWX: u16 = 5;
 
     /// `SVGTransform.SVG_TRANSFORM_SKEWY`
-    pub const SVG_TRANSFORM_SKEWY: f64 = 6.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGTransform.SVG_TRANSFORM_SKEWY")]
+    pub const SVG_TRANSFORM_SKEWY: u16 = 6;
 }
 
 impl SVGTransform {
@@ -67640,13 +67855,16 @@ impl Eq for SVGUnitTypes {}
 pub mod svg_unit_types {
 
     /// `SVGUnitTypes.SVG_UNIT_TYPE_UNKNOWN`
-    pub const SVG_UNIT_TYPE_UNKNOWN: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGUnitTypes.SVG_UNIT_TYPE_UNKNOWN")]
+    pub const SVG_UNIT_TYPE_UNKNOWN: u16 = 0;
 
     /// `SVGUnitTypes.SVG_UNIT_TYPE_USERSPACEONUSE`
-    pub const SVG_UNIT_TYPE_USERSPACEONUSE: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGUnitTypes.SVG_UNIT_TYPE_USERSPACEONUSE")]
+    pub const SVG_UNIT_TYPE_USERSPACEONUSE: u16 = 1;
 
     /// `SVGUnitTypes.SVG_UNIT_TYPE_OBJECTBOUNDINGBOX`
-    pub const SVG_UNIT_TYPE_OBJECTBOUNDINGBOX: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "SVGUnitTypes.SVG_UNIT_TYPE_OBJECTBOUNDINGBOX")]
+    pub const SVG_UNIT_TYPE_OBJECTBOUNDINGBOX: u16 = 2;
 }
 
 /// [`Sanitizer`](https://developer.mozilla.org/docs/Web/API/Sanitizer)
@@ -73321,1687 +73539,2246 @@ impl Eq for WebGL2RenderingContext {}
 pub mod web_gl_2_rendering_context {
 
     /// `WebGL2RenderingContext.DEPTH_BUFFER_BIT`
-    pub const DEPTH_BUFFER_BIT: f64 = 256.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DEPTH_BUFFER_BIT")]
+    pub const DEPTH_BUFFER_BIT: u32 = 0x00000100;
 
     /// `WebGL2RenderingContext.STENCIL_BUFFER_BIT`
-    pub const STENCIL_BUFFER_BIT: f64 = 1024.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STENCIL_BUFFER_BIT")]
+    pub const STENCIL_BUFFER_BIT: u32 = 0x00000400;
 
     /// `WebGL2RenderingContext.COLOR_BUFFER_BIT`
-    pub const COLOR_BUFFER_BIT: f64 = 16384.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COLOR_BUFFER_BIT")]
+    pub const COLOR_BUFFER_BIT: u32 = 0x00004000;
 
     /// `WebGL2RenderingContext.POINTS`
-    pub const POINTS: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.POINTS")]
+    pub const POINTS: u32 = 0x0000;
 
     /// `WebGL2RenderingContext.LINES`
-    pub const LINES: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.LINES")]
+    pub const LINES: u32 = 0x0001;
 
     /// `WebGL2RenderingContext.LINE_LOOP`
-    pub const LINE_LOOP: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.LINE_LOOP")]
+    pub const LINE_LOOP: u32 = 0x0002;
 
     /// `WebGL2RenderingContext.LINE_STRIP`
-    pub const LINE_STRIP: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.LINE_STRIP")]
+    pub const LINE_STRIP: u32 = 0x0003;
 
     /// `WebGL2RenderingContext.TRIANGLES`
-    pub const TRIANGLES: f64 = 4.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TRIANGLES")]
+    pub const TRIANGLES: u32 = 0x0004;
 
     /// `WebGL2RenderingContext.TRIANGLE_STRIP`
-    pub const TRIANGLE_STRIP: f64 = 5.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TRIANGLE_STRIP")]
+    pub const TRIANGLE_STRIP: u32 = 0x0005;
 
     /// `WebGL2RenderingContext.TRIANGLE_FAN`
-    pub const TRIANGLE_FAN: f64 = 6.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TRIANGLE_FAN")]
+    pub const TRIANGLE_FAN: u32 = 0x0006;
 
     /// `WebGL2RenderingContext.ZERO`
-    pub const ZERO: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ZERO")]
+    pub const ZERO: u32 = 0;
 
     /// `WebGL2RenderingContext.ONE`
-    pub const ONE: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ONE")]
+    pub const ONE: u32 = 1;
 
     /// `WebGL2RenderingContext.SRC_COLOR`
-    pub const SRC_COLOR: f64 = 768.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SRC_COLOR")]
+    pub const SRC_COLOR: u32 = 0x0300;
 
     /// `WebGL2RenderingContext.ONE_MINUS_SRC_COLOR`
-    pub const ONE_MINUS_SRC_COLOR: f64 = 769.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ONE_MINUS_SRC_COLOR")]
+    pub const ONE_MINUS_SRC_COLOR: u32 = 0x0301;
 
     /// `WebGL2RenderingContext.SRC_ALPHA`
-    pub const SRC_ALPHA: f64 = 770.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SRC_ALPHA")]
+    pub const SRC_ALPHA: u32 = 0x0302;
 
     /// `WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA`
-    pub const ONE_MINUS_SRC_ALPHA: f64 = 771.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA")]
+    pub const ONE_MINUS_SRC_ALPHA: u32 = 0x0303;
 
     /// `WebGL2RenderingContext.DST_ALPHA`
-    pub const DST_ALPHA: f64 = 772.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DST_ALPHA")]
+    pub const DST_ALPHA: u32 = 0x0304;
 
     /// `WebGL2RenderingContext.ONE_MINUS_DST_ALPHA`
-    pub const ONE_MINUS_DST_ALPHA: f64 = 773.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ONE_MINUS_DST_ALPHA")]
+    pub const ONE_MINUS_DST_ALPHA: u32 = 0x0305;
 
     /// `WebGL2RenderingContext.DST_COLOR`
-    pub const DST_COLOR: f64 = 774.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DST_COLOR")]
+    pub const DST_COLOR: u32 = 0x0306;
 
     /// `WebGL2RenderingContext.ONE_MINUS_DST_COLOR`
-    pub const ONE_MINUS_DST_COLOR: f64 = 775.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ONE_MINUS_DST_COLOR")]
+    pub const ONE_MINUS_DST_COLOR: u32 = 0x0307;
 
     /// `WebGL2RenderingContext.SRC_ALPHA_SATURATE`
-    pub const SRC_ALPHA_SATURATE: f64 = 776.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SRC_ALPHA_SATURATE")]
+    pub const SRC_ALPHA_SATURATE: u32 = 0x0308;
 
     /// `WebGL2RenderingContext.FUNC_ADD`
-    pub const FUNC_ADD: f64 = 32774.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FUNC_ADD")]
+    pub const FUNC_ADD: u32 = 0x8006;
 
     /// `WebGL2RenderingContext.BLEND_EQUATION`
-    pub const BLEND_EQUATION: f64 = 32777.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.BLEND_EQUATION")]
+    pub const BLEND_EQUATION: u32 = 0x8009;
 
     /// `WebGL2RenderingContext.BLEND_EQUATION_RGB`
-    pub const BLEND_EQUATION_RGB: f64 = 32777.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.BLEND_EQUATION_RGB")]
+    pub const BLEND_EQUATION_RGB: u32 = 0x8009;
 
     /// `WebGL2RenderingContext.BLEND_EQUATION_ALPHA`
-    pub const BLEND_EQUATION_ALPHA: f64 = 34877.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.BLEND_EQUATION_ALPHA")]
+    pub const BLEND_EQUATION_ALPHA: u32 = 0x883D;
 
     /// `WebGL2RenderingContext.FUNC_SUBTRACT`
-    pub const FUNC_SUBTRACT: f64 = 32778.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FUNC_SUBTRACT")]
+    pub const FUNC_SUBTRACT: u32 = 0x800A;
 
     /// `WebGL2RenderingContext.FUNC_REVERSE_SUBTRACT`
-    pub const FUNC_REVERSE_SUBTRACT: f64 = 32779.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FUNC_REVERSE_SUBTRACT")]
+    pub const FUNC_REVERSE_SUBTRACT: u32 = 0x800B;
 
     /// `WebGL2RenderingContext.BLEND_DST_RGB`
-    pub const BLEND_DST_RGB: f64 = 32968.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.BLEND_DST_RGB")]
+    pub const BLEND_DST_RGB: u32 = 0x80C8;
 
     /// `WebGL2RenderingContext.BLEND_SRC_RGB`
-    pub const BLEND_SRC_RGB: f64 = 32969.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.BLEND_SRC_RGB")]
+    pub const BLEND_SRC_RGB: u32 = 0x80C9;
 
     /// `WebGL2RenderingContext.BLEND_DST_ALPHA`
-    pub const BLEND_DST_ALPHA: f64 = 32970.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.BLEND_DST_ALPHA")]
+    pub const BLEND_DST_ALPHA: u32 = 0x80CA;
 
     /// `WebGL2RenderingContext.BLEND_SRC_ALPHA`
-    pub const BLEND_SRC_ALPHA: f64 = 32971.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.BLEND_SRC_ALPHA")]
+    pub const BLEND_SRC_ALPHA: u32 = 0x80CB;
 
     /// `WebGL2RenderingContext.CONSTANT_COLOR`
-    pub const CONSTANT_COLOR: f64 = 32769.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.CONSTANT_COLOR")]
+    pub const CONSTANT_COLOR: u32 = 0x8001;
 
     /// `WebGL2RenderingContext.ONE_MINUS_CONSTANT_COLOR`
-    pub const ONE_MINUS_CONSTANT_COLOR: f64 = 32770.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ONE_MINUS_CONSTANT_COLOR")]
+    pub const ONE_MINUS_CONSTANT_COLOR: u32 = 0x8002;
 
     /// `WebGL2RenderingContext.CONSTANT_ALPHA`
-    pub const CONSTANT_ALPHA: f64 = 32771.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.CONSTANT_ALPHA")]
+    pub const CONSTANT_ALPHA: u32 = 0x8003;
 
     /// `WebGL2RenderingContext.ONE_MINUS_CONSTANT_ALPHA`
-    pub const ONE_MINUS_CONSTANT_ALPHA: f64 = 32772.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ONE_MINUS_CONSTANT_ALPHA")]
+    pub const ONE_MINUS_CONSTANT_ALPHA: u32 = 0x8004;
 
     /// `WebGL2RenderingContext.BLEND_COLOR`
-    pub const BLEND_COLOR: f64 = 32773.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.BLEND_COLOR")]
+    pub const BLEND_COLOR: u32 = 0x8005;
 
     /// `WebGL2RenderingContext.ARRAY_BUFFER`
-    pub const ARRAY_BUFFER: f64 = 34962.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ARRAY_BUFFER")]
+    pub const ARRAY_BUFFER: u32 = 0x8892;
 
     /// `WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER`
-    pub const ELEMENT_ARRAY_BUFFER: f64 = 34963.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER")]
+    pub const ELEMENT_ARRAY_BUFFER: u32 = 0x8893;
 
     /// `WebGL2RenderingContext.ARRAY_BUFFER_BINDING`
-    pub const ARRAY_BUFFER_BINDING: f64 = 34964.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ARRAY_BUFFER_BINDING")]
+    pub const ARRAY_BUFFER_BINDING: u32 = 0x8894;
 
     /// `WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER_BINDING`
-    pub const ELEMENT_ARRAY_BUFFER_BINDING: f64 = 34965.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ELEMENT_ARRAY_BUFFER_BINDING")]
+    pub const ELEMENT_ARRAY_BUFFER_BINDING: u32 = 0x8895;
 
     /// `WebGL2RenderingContext.STREAM_DRAW`
-    pub const STREAM_DRAW: f64 = 35040.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STREAM_DRAW")]
+    pub const STREAM_DRAW: u32 = 0x88E0;
 
     /// `WebGL2RenderingContext.STATIC_DRAW`
-    pub const STATIC_DRAW: f64 = 35044.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STATIC_DRAW")]
+    pub const STATIC_DRAW: u32 = 0x88E4;
 
     /// `WebGL2RenderingContext.DYNAMIC_DRAW`
-    pub const DYNAMIC_DRAW: f64 = 35048.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DYNAMIC_DRAW")]
+    pub const DYNAMIC_DRAW: u32 = 0x88E8;
 
     /// `WebGL2RenderingContext.BUFFER_SIZE`
-    pub const BUFFER_SIZE: f64 = 34660.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.BUFFER_SIZE")]
+    pub const BUFFER_SIZE: u32 = 0x8764;
 
     /// `WebGL2RenderingContext.BUFFER_USAGE`
-    pub const BUFFER_USAGE: f64 = 34661.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.BUFFER_USAGE")]
+    pub const BUFFER_USAGE: u32 = 0x8765;
 
     /// `WebGL2RenderingContext.CURRENT_VERTEX_ATTRIB`
-    pub const CURRENT_VERTEX_ATTRIB: f64 = 34342.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.CURRENT_VERTEX_ATTRIB")]
+    pub const CURRENT_VERTEX_ATTRIB: u32 = 0x8626;
 
     /// `WebGL2RenderingContext.FRONT`
-    pub const FRONT: f64 = 1028.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRONT")]
+    pub const FRONT: u32 = 0x0404;
 
     /// `WebGL2RenderingContext.BACK`
-    pub const BACK: f64 = 1029.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.BACK")]
+    pub const BACK: u32 = 0x0405;
 
     /// `WebGL2RenderingContext.FRONT_AND_BACK`
-    pub const FRONT_AND_BACK: f64 = 1032.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRONT_AND_BACK")]
+    pub const FRONT_AND_BACK: u32 = 0x0408;
 
     /// `WebGL2RenderingContext.CULL_FACE`
-    pub const CULL_FACE: f64 = 2884.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.CULL_FACE")]
+    pub const CULL_FACE: u32 = 0x0B44;
 
     /// `WebGL2RenderingContext.BLEND`
-    pub const BLEND: f64 = 3042.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.BLEND")]
+    pub const BLEND: u32 = 0x0BE2;
 
     /// `WebGL2RenderingContext.DITHER`
-    pub const DITHER: f64 = 3024.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DITHER")]
+    pub const DITHER: u32 = 0x0BD0;
 
     /// `WebGL2RenderingContext.STENCIL_TEST`
-    pub const STENCIL_TEST: f64 = 2960.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STENCIL_TEST")]
+    pub const STENCIL_TEST: u32 = 0x0B90;
 
     /// `WebGL2RenderingContext.DEPTH_TEST`
-    pub const DEPTH_TEST: f64 = 2929.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DEPTH_TEST")]
+    pub const DEPTH_TEST: u32 = 0x0B71;
 
     /// `WebGL2RenderingContext.SCISSOR_TEST`
-    pub const SCISSOR_TEST: f64 = 3089.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SCISSOR_TEST")]
+    pub const SCISSOR_TEST: u32 = 0x0C11;
 
     /// `WebGL2RenderingContext.POLYGON_OFFSET_FILL`
-    pub const POLYGON_OFFSET_FILL: f64 = 32823.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.POLYGON_OFFSET_FILL")]
+    pub const POLYGON_OFFSET_FILL: u32 = 0x8037;
 
     /// `WebGL2RenderingContext.SAMPLE_ALPHA_TO_COVERAGE`
-    pub const SAMPLE_ALPHA_TO_COVERAGE: f64 = 32926.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SAMPLE_ALPHA_TO_COVERAGE")]
+    pub const SAMPLE_ALPHA_TO_COVERAGE: u32 = 0x809E;
 
     /// `WebGL2RenderingContext.SAMPLE_COVERAGE`
-    pub const SAMPLE_COVERAGE: f64 = 32928.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SAMPLE_COVERAGE")]
+    pub const SAMPLE_COVERAGE: u32 = 0x80A0;
 
     /// `WebGL2RenderingContext.NO_ERROR`
-    pub const NO_ERROR: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.NO_ERROR")]
+    pub const NO_ERROR: u32 = 0;
 
     /// `WebGL2RenderingContext.INVALID_ENUM`
-    pub const INVALID_ENUM: f64 = 1280.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.INVALID_ENUM")]
+    pub const INVALID_ENUM: u32 = 0x0500;
 
     /// `WebGL2RenderingContext.INVALID_VALUE`
-    pub const INVALID_VALUE: f64 = 1281.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.INVALID_VALUE")]
+    pub const INVALID_VALUE: u32 = 0x0501;
 
     /// `WebGL2RenderingContext.INVALID_OPERATION`
-    pub const INVALID_OPERATION: f64 = 1282.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.INVALID_OPERATION")]
+    pub const INVALID_OPERATION: u32 = 0x0502;
 
     /// `WebGL2RenderingContext.OUT_OF_MEMORY`
-    pub const OUT_OF_MEMORY: f64 = 1285.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.OUT_OF_MEMORY")]
+    pub const OUT_OF_MEMORY: u32 = 0x0505;
 
     /// `WebGL2RenderingContext.CW`
-    pub const CW: f64 = 2304.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.CW")]
+    pub const CW: u32 = 0x0900;
 
     /// `WebGL2RenderingContext.CCW`
-    pub const CCW: f64 = 2305.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.CCW")]
+    pub const CCW: u32 = 0x0901;
 
     /// `WebGL2RenderingContext.LINE_WIDTH`
-    pub const LINE_WIDTH: f64 = 2849.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.LINE_WIDTH")]
+    pub const LINE_WIDTH: u32 = 0x0B21;
 
     /// `WebGL2RenderingContext.ALIASED_POINT_SIZE_RANGE`
-    pub const ALIASED_POINT_SIZE_RANGE: f64 = 33901.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ALIASED_POINT_SIZE_RANGE")]
+    pub const ALIASED_POINT_SIZE_RANGE: u32 = 0x846D;
 
     /// `WebGL2RenderingContext.ALIASED_LINE_WIDTH_RANGE`
-    pub const ALIASED_LINE_WIDTH_RANGE: f64 = 33902.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ALIASED_LINE_WIDTH_RANGE")]
+    pub const ALIASED_LINE_WIDTH_RANGE: u32 = 0x846E;
 
     /// `WebGL2RenderingContext.CULL_FACE_MODE`
-    pub const CULL_FACE_MODE: f64 = 2885.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.CULL_FACE_MODE")]
+    pub const CULL_FACE_MODE: u32 = 0x0B45;
 
     /// `WebGL2RenderingContext.FRONT_FACE`
-    pub const FRONT_FACE: f64 = 2886.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRONT_FACE")]
+    pub const FRONT_FACE: u32 = 0x0B46;
 
     /// `WebGL2RenderingContext.DEPTH_RANGE`
-    pub const DEPTH_RANGE: f64 = 2928.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DEPTH_RANGE")]
+    pub const DEPTH_RANGE: u32 = 0x0B70;
 
     /// `WebGL2RenderingContext.DEPTH_WRITEMASK`
-    pub const DEPTH_WRITEMASK: f64 = 2930.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DEPTH_WRITEMASK")]
+    pub const DEPTH_WRITEMASK: u32 = 0x0B72;
 
     /// `WebGL2RenderingContext.DEPTH_CLEAR_VALUE`
-    pub const DEPTH_CLEAR_VALUE: f64 = 2931.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DEPTH_CLEAR_VALUE")]
+    pub const DEPTH_CLEAR_VALUE: u32 = 0x0B73;
 
     /// `WebGL2RenderingContext.DEPTH_FUNC`
-    pub const DEPTH_FUNC: f64 = 2932.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DEPTH_FUNC")]
+    pub const DEPTH_FUNC: u32 = 0x0B74;
 
     /// `WebGL2RenderingContext.STENCIL_CLEAR_VALUE`
-    pub const STENCIL_CLEAR_VALUE: f64 = 2961.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STENCIL_CLEAR_VALUE")]
+    pub const STENCIL_CLEAR_VALUE: u32 = 0x0B91;
 
     /// `WebGL2RenderingContext.STENCIL_FUNC`
-    pub const STENCIL_FUNC: f64 = 2962.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STENCIL_FUNC")]
+    pub const STENCIL_FUNC: u32 = 0x0B92;
 
     /// `WebGL2RenderingContext.STENCIL_FAIL`
-    pub const STENCIL_FAIL: f64 = 2964.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STENCIL_FAIL")]
+    pub const STENCIL_FAIL: u32 = 0x0B94;
 
     /// `WebGL2RenderingContext.STENCIL_PASS_DEPTH_FAIL`
-    pub const STENCIL_PASS_DEPTH_FAIL: f64 = 2965.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STENCIL_PASS_DEPTH_FAIL")]
+    pub const STENCIL_PASS_DEPTH_FAIL: u32 = 0x0B95;
 
     /// `WebGL2RenderingContext.STENCIL_PASS_DEPTH_PASS`
-    pub const STENCIL_PASS_DEPTH_PASS: f64 = 2966.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STENCIL_PASS_DEPTH_PASS")]
+    pub const STENCIL_PASS_DEPTH_PASS: u32 = 0x0B96;
 
     /// `WebGL2RenderingContext.STENCIL_REF`
-    pub const STENCIL_REF: f64 = 2967.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STENCIL_REF")]
+    pub const STENCIL_REF: u32 = 0x0B97;
 
     /// `WebGL2RenderingContext.STENCIL_VALUE_MASK`
-    pub const STENCIL_VALUE_MASK: f64 = 2963.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STENCIL_VALUE_MASK")]
+    pub const STENCIL_VALUE_MASK: u32 = 0x0B93;
 
     /// `WebGL2RenderingContext.STENCIL_WRITEMASK`
-    pub const STENCIL_WRITEMASK: f64 = 2968.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STENCIL_WRITEMASK")]
+    pub const STENCIL_WRITEMASK: u32 = 0x0B98;
 
     /// `WebGL2RenderingContext.STENCIL_BACK_FUNC`
-    pub const STENCIL_BACK_FUNC: f64 = 34816.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STENCIL_BACK_FUNC")]
+    pub const STENCIL_BACK_FUNC: u32 = 0x8800;
 
     /// `WebGL2RenderingContext.STENCIL_BACK_FAIL`
-    pub const STENCIL_BACK_FAIL: f64 = 34817.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STENCIL_BACK_FAIL")]
+    pub const STENCIL_BACK_FAIL: u32 = 0x8801;
 
     /// `WebGL2RenderingContext.STENCIL_BACK_PASS_DEPTH_FAIL`
-    pub const STENCIL_BACK_PASS_DEPTH_FAIL: f64 = 34818.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STENCIL_BACK_PASS_DEPTH_FAIL")]
+    pub const STENCIL_BACK_PASS_DEPTH_FAIL: u32 = 0x8802;
 
     /// `WebGL2RenderingContext.STENCIL_BACK_PASS_DEPTH_PASS`
-    pub const STENCIL_BACK_PASS_DEPTH_PASS: f64 = 34819.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STENCIL_BACK_PASS_DEPTH_PASS")]
+    pub const STENCIL_BACK_PASS_DEPTH_PASS: u32 = 0x8803;
 
     /// `WebGL2RenderingContext.STENCIL_BACK_REF`
-    pub const STENCIL_BACK_REF: f64 = 36003.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STENCIL_BACK_REF")]
+    pub const STENCIL_BACK_REF: u32 = 0x8CA3;
 
     /// `WebGL2RenderingContext.STENCIL_BACK_VALUE_MASK`
-    pub const STENCIL_BACK_VALUE_MASK: f64 = 36004.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STENCIL_BACK_VALUE_MASK")]
+    pub const STENCIL_BACK_VALUE_MASK: u32 = 0x8CA4;
 
     /// `WebGL2RenderingContext.STENCIL_BACK_WRITEMASK`
-    pub const STENCIL_BACK_WRITEMASK: f64 = 36005.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STENCIL_BACK_WRITEMASK")]
+    pub const STENCIL_BACK_WRITEMASK: u32 = 0x8CA5;
 
     /// `WebGL2RenderingContext.VIEWPORT`
-    pub const VIEWPORT: f64 = 2978.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.VIEWPORT")]
+    pub const VIEWPORT: u32 = 0x0BA2;
 
     /// `WebGL2RenderingContext.SCISSOR_BOX`
-    pub const SCISSOR_BOX: f64 = 3088.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SCISSOR_BOX")]
+    pub const SCISSOR_BOX: u32 = 0x0C10;
 
     /// `WebGL2RenderingContext.COLOR_CLEAR_VALUE`
-    pub const COLOR_CLEAR_VALUE: f64 = 3106.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COLOR_CLEAR_VALUE")]
+    pub const COLOR_CLEAR_VALUE: u32 = 0x0C22;
 
     /// `WebGL2RenderingContext.COLOR_WRITEMASK`
-    pub const COLOR_WRITEMASK: f64 = 3107.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COLOR_WRITEMASK")]
+    pub const COLOR_WRITEMASK: u32 = 0x0C23;
 
     /// `WebGL2RenderingContext.UNPACK_ALIGNMENT`
-    pub const UNPACK_ALIGNMENT: f64 = 3317.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNPACK_ALIGNMENT")]
+    pub const UNPACK_ALIGNMENT: u32 = 0x0CF5;
 
     /// `WebGL2RenderingContext.PACK_ALIGNMENT`
-    pub const PACK_ALIGNMENT: f64 = 3333.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.PACK_ALIGNMENT")]
+    pub const PACK_ALIGNMENT: u32 = 0x0D05;
 
     /// `WebGL2RenderingContext.MAX_TEXTURE_SIZE`
-    pub const MAX_TEXTURE_SIZE: f64 = 3379.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_TEXTURE_SIZE")]
+    pub const MAX_TEXTURE_SIZE: u32 = 0x0D33;
 
     /// `WebGL2RenderingContext.MAX_VIEWPORT_DIMS`
-    pub const MAX_VIEWPORT_DIMS: f64 = 3386.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_VIEWPORT_DIMS")]
+    pub const MAX_VIEWPORT_DIMS: u32 = 0x0D3A;
 
     /// `WebGL2RenderingContext.SUBPIXEL_BITS`
-    pub const SUBPIXEL_BITS: f64 = 3408.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SUBPIXEL_BITS")]
+    pub const SUBPIXEL_BITS: u32 = 0x0D50;
 
     /// `WebGL2RenderingContext.RED_BITS`
-    pub const RED_BITS: f64 = 3410.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RED_BITS")]
+    pub const RED_BITS: u32 = 0x0D52;
 
     /// `WebGL2RenderingContext.GREEN_BITS`
-    pub const GREEN_BITS: f64 = 3411.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.GREEN_BITS")]
+    pub const GREEN_BITS: u32 = 0x0D53;
 
     /// `WebGL2RenderingContext.BLUE_BITS`
-    pub const BLUE_BITS: f64 = 3412.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.BLUE_BITS")]
+    pub const BLUE_BITS: u32 = 0x0D54;
 
     /// `WebGL2RenderingContext.ALPHA_BITS`
-    pub const ALPHA_BITS: f64 = 3413.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ALPHA_BITS")]
+    pub const ALPHA_BITS: u32 = 0x0D55;
 
     /// `WebGL2RenderingContext.DEPTH_BITS`
-    pub const DEPTH_BITS: f64 = 3414.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DEPTH_BITS")]
+    pub const DEPTH_BITS: u32 = 0x0D56;
 
     /// `WebGL2RenderingContext.STENCIL_BITS`
-    pub const STENCIL_BITS: f64 = 3415.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STENCIL_BITS")]
+    pub const STENCIL_BITS: u32 = 0x0D57;
 
     /// `WebGL2RenderingContext.POLYGON_OFFSET_UNITS`
-    pub const POLYGON_OFFSET_UNITS: f64 = 10752.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.POLYGON_OFFSET_UNITS")]
+    pub const POLYGON_OFFSET_UNITS: u32 = 0x2A00;
 
     /// `WebGL2RenderingContext.POLYGON_OFFSET_FACTOR`
-    pub const POLYGON_OFFSET_FACTOR: f64 = 32824.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.POLYGON_OFFSET_FACTOR")]
+    pub const POLYGON_OFFSET_FACTOR: u32 = 0x8038;
 
     /// `WebGL2RenderingContext.TEXTURE_BINDING_2D`
-    pub const TEXTURE_BINDING_2D: f64 = 32873.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_BINDING_2D")]
+    pub const TEXTURE_BINDING_2D: u32 = 0x8069;
 
     /// `WebGL2RenderingContext.SAMPLE_BUFFERS`
-    pub const SAMPLE_BUFFERS: f64 = 32936.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SAMPLE_BUFFERS")]
+    pub const SAMPLE_BUFFERS: u32 = 0x80A8;
 
     /// `WebGL2RenderingContext.SAMPLES`
-    pub const SAMPLES: f64 = 32937.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SAMPLES")]
+    pub const SAMPLES: u32 = 0x80A9;
 
     /// `WebGL2RenderingContext.SAMPLE_COVERAGE_VALUE`
-    pub const SAMPLE_COVERAGE_VALUE: f64 = 32938.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SAMPLE_COVERAGE_VALUE")]
+    pub const SAMPLE_COVERAGE_VALUE: u32 = 0x80AA;
 
     /// `WebGL2RenderingContext.SAMPLE_COVERAGE_INVERT`
-    pub const SAMPLE_COVERAGE_INVERT: f64 = 32939.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SAMPLE_COVERAGE_INVERT")]
+    pub const SAMPLE_COVERAGE_INVERT: u32 = 0x80AB;
 
     /// `WebGL2RenderingContext.COMPRESSED_TEXTURE_FORMATS`
-    pub const COMPRESSED_TEXTURE_FORMATS: f64 = 34467.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COMPRESSED_TEXTURE_FORMATS")]
+    pub const COMPRESSED_TEXTURE_FORMATS: u32 = 0x86A3;
 
     /// `WebGL2RenderingContext.DONT_CARE`
-    pub const DONT_CARE: f64 = 4352.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DONT_CARE")]
+    pub const DONT_CARE: u32 = 0x1100;
 
     /// `WebGL2RenderingContext.FASTEST`
-    pub const FASTEST: f64 = 4353.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FASTEST")]
+    pub const FASTEST: u32 = 0x1101;
 
     /// `WebGL2RenderingContext.NICEST`
-    pub const NICEST: f64 = 4354.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.NICEST")]
+    pub const NICEST: u32 = 0x1102;
 
     /// `WebGL2RenderingContext.GENERATE_MIPMAP_HINT`
-    pub const GENERATE_MIPMAP_HINT: f64 = 33170.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.GENERATE_MIPMAP_HINT")]
+    pub const GENERATE_MIPMAP_HINT: u32 = 0x8192;
 
     /// `WebGL2RenderingContext.BYTE`
-    pub const BYTE: f64 = 5120.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.BYTE")]
+    pub const BYTE: u32 = 0x1400;
 
     /// `WebGL2RenderingContext.UNSIGNED_BYTE`
-    pub const UNSIGNED_BYTE: f64 = 5121.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNSIGNED_BYTE")]
+    pub const UNSIGNED_BYTE: u32 = 0x1401;
 
     /// `WebGL2RenderingContext.SHORT`
-    pub const SHORT: f64 = 5122.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SHORT")]
+    pub const SHORT: u32 = 0x1402;
 
     /// `WebGL2RenderingContext.UNSIGNED_SHORT`
-    pub const UNSIGNED_SHORT: f64 = 5123.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNSIGNED_SHORT")]
+    pub const UNSIGNED_SHORT: u32 = 0x1403;
 
     /// `WebGL2RenderingContext.INT`
-    pub const INT: f64 = 5124.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.INT")]
+    pub const INT: u32 = 0x1404;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT`
-    pub const UNSIGNED_INT: f64 = 5125.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNSIGNED_INT")]
+    pub const UNSIGNED_INT: u32 = 0x1405;
 
     /// `WebGL2RenderingContext.FLOAT`
-    pub const FLOAT: f64 = 5126.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FLOAT")]
+    pub const FLOAT: u32 = 0x1406;
 
     /// `WebGL2RenderingContext.DEPTH_COMPONENT`
-    pub const DEPTH_COMPONENT: f64 = 6402.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DEPTH_COMPONENT")]
+    pub const DEPTH_COMPONENT: u32 = 0x1902;
 
     /// `WebGL2RenderingContext.ALPHA`
-    pub const ALPHA: f64 = 6406.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ALPHA")]
+    pub const ALPHA: u32 = 0x1906;
 
     /// `WebGL2RenderingContext.RGB`
-    pub const RGB: f64 = 6407.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGB")]
+    pub const RGB: u32 = 0x1907;
 
     /// `WebGL2RenderingContext.RGBA`
-    pub const RGBA: f64 = 6408.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGBA")]
+    pub const RGBA: u32 = 0x1908;
 
     /// `WebGL2RenderingContext.LUMINANCE`
-    pub const LUMINANCE: f64 = 6409.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.LUMINANCE")]
+    pub const LUMINANCE: u32 = 0x1909;
 
     /// `WebGL2RenderingContext.LUMINANCE_ALPHA`
-    pub const LUMINANCE_ALPHA: f64 = 6410.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.LUMINANCE_ALPHA")]
+    pub const LUMINANCE_ALPHA: u32 = 0x190A;
 
     /// `WebGL2RenderingContext.UNSIGNED_SHORT_4_4_4_4`
-    pub const UNSIGNED_SHORT_4_4_4_4: f64 = 32819.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNSIGNED_SHORT_4_4_4_4")]
+    pub const UNSIGNED_SHORT_4_4_4_4: u32 = 0x8033;
 
     /// `WebGL2RenderingContext.UNSIGNED_SHORT_5_5_5_1`
-    pub const UNSIGNED_SHORT_5_5_5_1: f64 = 32820.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNSIGNED_SHORT_5_5_5_1")]
+    pub const UNSIGNED_SHORT_5_5_5_1: u32 = 0x8034;
 
     /// `WebGL2RenderingContext.UNSIGNED_SHORT_5_6_5`
-    pub const UNSIGNED_SHORT_5_6_5: f64 = 33635.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNSIGNED_SHORT_5_6_5")]
+    pub const UNSIGNED_SHORT_5_6_5: u32 = 0x8363;
 
     /// `WebGL2RenderingContext.FRAGMENT_SHADER`
-    pub const FRAGMENT_SHADER: f64 = 35632.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAGMENT_SHADER")]
+    pub const FRAGMENT_SHADER: u32 = 0x8B30;
 
     /// `WebGL2RenderingContext.VERTEX_SHADER`
-    pub const VERTEX_SHADER: f64 = 35633.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.VERTEX_SHADER")]
+    pub const VERTEX_SHADER: u32 = 0x8B31;
 
     /// `WebGL2RenderingContext.MAX_VERTEX_ATTRIBS`
-    pub const MAX_VERTEX_ATTRIBS: f64 = 34921.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_VERTEX_ATTRIBS")]
+    pub const MAX_VERTEX_ATTRIBS: u32 = 0x8869;
 
     /// `WebGL2RenderingContext.MAX_VERTEX_UNIFORM_VECTORS`
-    pub const MAX_VERTEX_UNIFORM_VECTORS: f64 = 36347.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_VERTEX_UNIFORM_VECTORS")]
+    pub const MAX_VERTEX_UNIFORM_VECTORS: u32 = 0x8DFB;
 
     /// `WebGL2RenderingContext.MAX_VARYING_VECTORS`
-    pub const MAX_VARYING_VECTORS: f64 = 36348.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_VARYING_VECTORS")]
+    pub const MAX_VARYING_VECTORS: u32 = 0x8DFC;
 
     /// `WebGL2RenderingContext.MAX_COMBINED_TEXTURE_IMAGE_UNITS`
-    pub const MAX_COMBINED_TEXTURE_IMAGE_UNITS: f64 = 35661.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_COMBINED_TEXTURE_IMAGE_UNITS")]
+    pub const MAX_COMBINED_TEXTURE_IMAGE_UNITS: u32 = 0x8B4D;
 
     /// `WebGL2RenderingContext.MAX_VERTEX_TEXTURE_IMAGE_UNITS`
-    pub const MAX_VERTEX_TEXTURE_IMAGE_UNITS: f64 = 35660.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_VERTEX_TEXTURE_IMAGE_UNITS")]
+    pub const MAX_VERTEX_TEXTURE_IMAGE_UNITS: u32 = 0x8B4C;
 
     /// `WebGL2RenderingContext.MAX_TEXTURE_IMAGE_UNITS`
-    pub const MAX_TEXTURE_IMAGE_UNITS: f64 = 34930.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_TEXTURE_IMAGE_UNITS")]
+    pub const MAX_TEXTURE_IMAGE_UNITS: u32 = 0x8872;
 
     /// `WebGL2RenderingContext.MAX_FRAGMENT_UNIFORM_VECTORS`
-    pub const MAX_FRAGMENT_UNIFORM_VECTORS: f64 = 36349.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_FRAGMENT_UNIFORM_VECTORS")]
+    pub const MAX_FRAGMENT_UNIFORM_VECTORS: u32 = 0x8DFD;
 
     /// `WebGL2RenderingContext.SHADER_TYPE`
-    pub const SHADER_TYPE: f64 = 35663.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SHADER_TYPE")]
+    pub const SHADER_TYPE: u32 = 0x8B4F;
 
     /// `WebGL2RenderingContext.DELETE_STATUS`
-    pub const DELETE_STATUS: f64 = 35712.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DELETE_STATUS")]
+    pub const DELETE_STATUS: u32 = 0x8B80;
 
     /// `WebGL2RenderingContext.LINK_STATUS`
-    pub const LINK_STATUS: f64 = 35714.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.LINK_STATUS")]
+    pub const LINK_STATUS: u32 = 0x8B82;
 
     /// `WebGL2RenderingContext.VALIDATE_STATUS`
-    pub const VALIDATE_STATUS: f64 = 35715.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.VALIDATE_STATUS")]
+    pub const VALIDATE_STATUS: u32 = 0x8B83;
 
     /// `WebGL2RenderingContext.ATTACHED_SHADERS`
-    pub const ATTACHED_SHADERS: f64 = 35717.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ATTACHED_SHADERS")]
+    pub const ATTACHED_SHADERS: u32 = 0x8B85;
 
     /// `WebGL2RenderingContext.ACTIVE_UNIFORMS`
-    pub const ACTIVE_UNIFORMS: f64 = 35718.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ACTIVE_UNIFORMS")]
+    pub const ACTIVE_UNIFORMS: u32 = 0x8B86;
 
     /// `WebGL2RenderingContext.ACTIVE_ATTRIBUTES`
-    pub const ACTIVE_ATTRIBUTES: f64 = 35721.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ACTIVE_ATTRIBUTES")]
+    pub const ACTIVE_ATTRIBUTES: u32 = 0x8B89;
 
     /// `WebGL2RenderingContext.SHADING_LANGUAGE_VERSION`
-    pub const SHADING_LANGUAGE_VERSION: f64 = 35724.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SHADING_LANGUAGE_VERSION")]
+    pub const SHADING_LANGUAGE_VERSION: u32 = 0x8B8C;
 
     /// `WebGL2RenderingContext.CURRENT_PROGRAM`
-    pub const CURRENT_PROGRAM: f64 = 35725.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.CURRENT_PROGRAM")]
+    pub const CURRENT_PROGRAM: u32 = 0x8B8D;
 
     /// `WebGL2RenderingContext.NEVER`
-    pub const NEVER: f64 = 512.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.NEVER")]
+    pub const NEVER: u32 = 0x0200;
 
     /// `WebGL2RenderingContext.LESS`
-    pub const LESS: f64 = 513.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.LESS")]
+    pub const LESS: u32 = 0x0201;
 
     /// `WebGL2RenderingContext.EQUAL`
-    pub const EQUAL: f64 = 514.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.EQUAL")]
+    pub const EQUAL: u32 = 0x0202;
 
     /// `WebGL2RenderingContext.LEQUAL`
-    pub const LEQUAL: f64 = 515.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.LEQUAL")]
+    pub const LEQUAL: u32 = 0x0203;
 
     /// `WebGL2RenderingContext.GREATER`
-    pub const GREATER: f64 = 516.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.GREATER")]
+    pub const GREATER: u32 = 0x0204;
 
     /// `WebGL2RenderingContext.NOTEQUAL`
-    pub const NOTEQUAL: f64 = 517.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.NOTEQUAL")]
+    pub const NOTEQUAL: u32 = 0x0205;
 
     /// `WebGL2RenderingContext.GEQUAL`
-    pub const GEQUAL: f64 = 518.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.GEQUAL")]
+    pub const GEQUAL: u32 = 0x0206;
 
     /// `WebGL2RenderingContext.ALWAYS`
-    pub const ALWAYS: f64 = 519.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ALWAYS")]
+    pub const ALWAYS: u32 = 0x0207;
 
     /// `WebGL2RenderingContext.KEEP`
-    pub const KEEP: f64 = 7680.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.KEEP")]
+    pub const KEEP: u32 = 0x1E00;
 
     /// `WebGL2RenderingContext.REPLACE`
-    pub const REPLACE: f64 = 7681.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.REPLACE")]
+    pub const REPLACE: u32 = 0x1E01;
 
     /// `WebGL2RenderingContext.INCR`
-    pub const INCR: f64 = 7682.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.INCR")]
+    pub const INCR: u32 = 0x1E02;
 
     /// `WebGL2RenderingContext.DECR`
-    pub const DECR: f64 = 7683.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DECR")]
+    pub const DECR: u32 = 0x1E03;
 
     /// `WebGL2RenderingContext.INVERT`
-    pub const INVERT: f64 = 5386.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.INVERT")]
+    pub const INVERT: u32 = 0x150A;
 
     /// `WebGL2RenderingContext.INCR_WRAP`
-    pub const INCR_WRAP: f64 = 34055.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.INCR_WRAP")]
+    pub const INCR_WRAP: u32 = 0x8507;
 
     /// `WebGL2RenderingContext.DECR_WRAP`
-    pub const DECR_WRAP: f64 = 34056.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DECR_WRAP")]
+    pub const DECR_WRAP: u32 = 0x8508;
 
     /// `WebGL2RenderingContext.VENDOR`
-    pub const VENDOR: f64 = 7936.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.VENDOR")]
+    pub const VENDOR: u32 = 0x1F00;
 
     /// `WebGL2RenderingContext.RENDERER`
-    pub const RENDERER: f64 = 7937.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RENDERER")]
+    pub const RENDERER: u32 = 0x1F01;
 
     /// `WebGL2RenderingContext.VERSION`
-    pub const VERSION: f64 = 7938.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.VERSION")]
+    pub const VERSION: u32 = 0x1F02;
 
     /// `WebGL2RenderingContext.NEAREST`
-    pub const NEAREST: f64 = 9728.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.NEAREST")]
+    pub const NEAREST: u32 = 0x2600;
 
     /// `WebGL2RenderingContext.LINEAR`
-    pub const LINEAR: f64 = 9729.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.LINEAR")]
+    pub const LINEAR: u32 = 0x2601;
 
     /// `WebGL2RenderingContext.NEAREST_MIPMAP_NEAREST`
-    pub const NEAREST_MIPMAP_NEAREST: f64 = 9984.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.NEAREST_MIPMAP_NEAREST")]
+    pub const NEAREST_MIPMAP_NEAREST: u32 = 0x2700;
 
     /// `WebGL2RenderingContext.LINEAR_MIPMAP_NEAREST`
-    pub const LINEAR_MIPMAP_NEAREST: f64 = 9985.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.LINEAR_MIPMAP_NEAREST")]
+    pub const LINEAR_MIPMAP_NEAREST: u32 = 0x2701;
 
     /// `WebGL2RenderingContext.NEAREST_MIPMAP_LINEAR`
-    pub const NEAREST_MIPMAP_LINEAR: f64 = 9986.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.NEAREST_MIPMAP_LINEAR")]
+    pub const NEAREST_MIPMAP_LINEAR: u32 = 0x2702;
 
     /// `WebGL2RenderingContext.LINEAR_MIPMAP_LINEAR`
-    pub const LINEAR_MIPMAP_LINEAR: f64 = 9987.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.LINEAR_MIPMAP_LINEAR")]
+    pub const LINEAR_MIPMAP_LINEAR: u32 = 0x2703;
 
     /// `WebGL2RenderingContext.TEXTURE_MAG_FILTER`
-    pub const TEXTURE_MAG_FILTER: f64 = 10240.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_MAG_FILTER")]
+    pub const TEXTURE_MAG_FILTER: u32 = 0x2800;
 
     /// `WebGL2RenderingContext.TEXTURE_MIN_FILTER`
-    pub const TEXTURE_MIN_FILTER: f64 = 10241.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_MIN_FILTER")]
+    pub const TEXTURE_MIN_FILTER: u32 = 0x2801;
 
     /// `WebGL2RenderingContext.TEXTURE_WRAP_S`
-    pub const TEXTURE_WRAP_S: f64 = 10242.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_WRAP_S")]
+    pub const TEXTURE_WRAP_S: u32 = 0x2802;
 
     /// `WebGL2RenderingContext.TEXTURE_WRAP_T`
-    pub const TEXTURE_WRAP_T: f64 = 10243.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_WRAP_T")]
+    pub const TEXTURE_WRAP_T: u32 = 0x2803;
 
     /// `WebGL2RenderingContext.TEXTURE_2D`
-    pub const TEXTURE_2D: f64 = 3553.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_2D")]
+    pub const TEXTURE_2D: u32 = 0x0DE1;
 
     /// `WebGL2RenderingContext.TEXTURE`
-    pub const TEXTURE: f64 = 5890.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE")]
+    pub const TEXTURE: u32 = 0x1702;
 
     /// `WebGL2RenderingContext.TEXTURE_CUBE_MAP`
-    pub const TEXTURE_CUBE_MAP: f64 = 34067.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_CUBE_MAP")]
+    pub const TEXTURE_CUBE_MAP: u32 = 0x8513;
 
     /// `WebGL2RenderingContext.TEXTURE_BINDING_CUBE_MAP`
-    pub const TEXTURE_BINDING_CUBE_MAP: f64 = 34068.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_BINDING_CUBE_MAP")]
+    pub const TEXTURE_BINDING_CUBE_MAP: u32 = 0x8514;
 
     /// `WebGL2RenderingContext.TEXTURE_CUBE_MAP_POSITIVE_X`
-    pub const TEXTURE_CUBE_MAP_POSITIVE_X: f64 = 34069.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_CUBE_MAP_POSITIVE_X")]
+    pub const TEXTURE_CUBE_MAP_POSITIVE_X: u32 = 0x8515;
 
     /// `WebGL2RenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_X`
-    pub const TEXTURE_CUBE_MAP_NEGATIVE_X: f64 = 34070.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_X")]
+    pub const TEXTURE_CUBE_MAP_NEGATIVE_X: u32 = 0x8516;
 
     /// `WebGL2RenderingContext.TEXTURE_CUBE_MAP_POSITIVE_Y`
-    pub const TEXTURE_CUBE_MAP_POSITIVE_Y: f64 = 34071.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_CUBE_MAP_POSITIVE_Y")]
+    pub const TEXTURE_CUBE_MAP_POSITIVE_Y: u32 = 0x8517;
 
     /// `WebGL2RenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_Y`
-    pub const TEXTURE_CUBE_MAP_NEGATIVE_Y: f64 = 34072.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_Y")]
+    pub const TEXTURE_CUBE_MAP_NEGATIVE_Y: u32 = 0x8518;
 
     /// `WebGL2RenderingContext.TEXTURE_CUBE_MAP_POSITIVE_Z`
-    pub const TEXTURE_CUBE_MAP_POSITIVE_Z: f64 = 34073.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_CUBE_MAP_POSITIVE_Z")]
+    pub const TEXTURE_CUBE_MAP_POSITIVE_Z: u32 = 0x8519;
 
     /// `WebGL2RenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_Z`
-    pub const TEXTURE_CUBE_MAP_NEGATIVE_Z: f64 = 34074.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_Z")]
+    pub const TEXTURE_CUBE_MAP_NEGATIVE_Z: u32 = 0x851A;
 
     /// `WebGL2RenderingContext.MAX_CUBE_MAP_TEXTURE_SIZE`
-    pub const MAX_CUBE_MAP_TEXTURE_SIZE: f64 = 34076.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_CUBE_MAP_TEXTURE_SIZE")]
+    pub const MAX_CUBE_MAP_TEXTURE_SIZE: u32 = 0x851C;
 
     /// `WebGL2RenderingContext.TEXTURE0`
-    pub const TEXTURE0: f64 = 33984.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE0")]
+    pub const TEXTURE0: u32 = 0x84C0;
 
     /// `WebGL2RenderingContext.TEXTURE1`
-    pub const TEXTURE1: f64 = 33985.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE1")]
+    pub const TEXTURE1: u32 = 0x84C1;
 
     /// `WebGL2RenderingContext.TEXTURE2`
-    pub const TEXTURE2: f64 = 33986.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE2")]
+    pub const TEXTURE2: u32 = 0x84C2;
 
     /// `WebGL2RenderingContext.TEXTURE3`
-    pub const TEXTURE3: f64 = 33987.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE3")]
+    pub const TEXTURE3: u32 = 0x84C3;
 
     /// `WebGL2RenderingContext.TEXTURE4`
-    pub const TEXTURE4: f64 = 33988.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE4")]
+    pub const TEXTURE4: u32 = 0x84C4;
 
     /// `WebGL2RenderingContext.TEXTURE5`
-    pub const TEXTURE5: f64 = 33989.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE5")]
+    pub const TEXTURE5: u32 = 0x84C5;
 
     /// `WebGL2RenderingContext.TEXTURE6`
-    pub const TEXTURE6: f64 = 33990.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE6")]
+    pub const TEXTURE6: u32 = 0x84C6;
 
     /// `WebGL2RenderingContext.TEXTURE7`
-    pub const TEXTURE7: f64 = 33991.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE7")]
+    pub const TEXTURE7: u32 = 0x84C7;
 
     /// `WebGL2RenderingContext.TEXTURE8`
-    pub const TEXTURE8: f64 = 33992.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE8")]
+    pub const TEXTURE8: u32 = 0x84C8;
 
     /// `WebGL2RenderingContext.TEXTURE9`
-    pub const TEXTURE9: f64 = 33993.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE9")]
+    pub const TEXTURE9: u32 = 0x84C9;
 
     /// `WebGL2RenderingContext.TEXTURE10`
-    pub const TEXTURE10: f64 = 33994.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE10")]
+    pub const TEXTURE10: u32 = 0x84CA;
 
     /// `WebGL2RenderingContext.TEXTURE11`
-    pub const TEXTURE11: f64 = 33995.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE11")]
+    pub const TEXTURE11: u32 = 0x84CB;
 
     /// `WebGL2RenderingContext.TEXTURE12`
-    pub const TEXTURE12: f64 = 33996.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE12")]
+    pub const TEXTURE12: u32 = 0x84CC;
 
     /// `WebGL2RenderingContext.TEXTURE13`
-    pub const TEXTURE13: f64 = 33997.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE13")]
+    pub const TEXTURE13: u32 = 0x84CD;
 
     /// `WebGL2RenderingContext.TEXTURE14`
-    pub const TEXTURE14: f64 = 33998.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE14")]
+    pub const TEXTURE14: u32 = 0x84CE;
 
     /// `WebGL2RenderingContext.TEXTURE15`
-    pub const TEXTURE15: f64 = 33999.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE15")]
+    pub const TEXTURE15: u32 = 0x84CF;
 
     /// `WebGL2RenderingContext.TEXTURE16`
-    pub const TEXTURE16: f64 = 34000.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE16")]
+    pub const TEXTURE16: u32 = 0x84D0;
 
     /// `WebGL2RenderingContext.TEXTURE17`
-    pub const TEXTURE17: f64 = 34001.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE17")]
+    pub const TEXTURE17: u32 = 0x84D1;
 
     /// `WebGL2RenderingContext.TEXTURE18`
-    pub const TEXTURE18: f64 = 34002.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE18")]
+    pub const TEXTURE18: u32 = 0x84D2;
 
     /// `WebGL2RenderingContext.TEXTURE19`
-    pub const TEXTURE19: f64 = 34003.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE19")]
+    pub const TEXTURE19: u32 = 0x84D3;
 
     /// `WebGL2RenderingContext.TEXTURE20`
-    pub const TEXTURE20: f64 = 34004.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE20")]
+    pub const TEXTURE20: u32 = 0x84D4;
 
     /// `WebGL2RenderingContext.TEXTURE21`
-    pub const TEXTURE21: f64 = 34005.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE21")]
+    pub const TEXTURE21: u32 = 0x84D5;
 
     /// `WebGL2RenderingContext.TEXTURE22`
-    pub const TEXTURE22: f64 = 34006.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE22")]
+    pub const TEXTURE22: u32 = 0x84D6;
 
     /// `WebGL2RenderingContext.TEXTURE23`
-    pub const TEXTURE23: f64 = 34007.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE23")]
+    pub const TEXTURE23: u32 = 0x84D7;
 
     /// `WebGL2RenderingContext.TEXTURE24`
-    pub const TEXTURE24: f64 = 34008.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE24")]
+    pub const TEXTURE24: u32 = 0x84D8;
 
     /// `WebGL2RenderingContext.TEXTURE25`
-    pub const TEXTURE25: f64 = 34009.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE25")]
+    pub const TEXTURE25: u32 = 0x84D9;
 
     /// `WebGL2RenderingContext.TEXTURE26`
-    pub const TEXTURE26: f64 = 34010.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE26")]
+    pub const TEXTURE26: u32 = 0x84DA;
 
     /// `WebGL2RenderingContext.TEXTURE27`
-    pub const TEXTURE27: f64 = 34011.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE27")]
+    pub const TEXTURE27: u32 = 0x84DB;
 
     /// `WebGL2RenderingContext.TEXTURE28`
-    pub const TEXTURE28: f64 = 34012.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE28")]
+    pub const TEXTURE28: u32 = 0x84DC;
 
     /// `WebGL2RenderingContext.TEXTURE29`
-    pub const TEXTURE29: f64 = 34013.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE29")]
+    pub const TEXTURE29: u32 = 0x84DD;
 
     /// `WebGL2RenderingContext.TEXTURE30`
-    pub const TEXTURE30: f64 = 34014.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE30")]
+    pub const TEXTURE30: u32 = 0x84DE;
 
     /// `WebGL2RenderingContext.TEXTURE31`
-    pub const TEXTURE31: f64 = 34015.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE31")]
+    pub const TEXTURE31: u32 = 0x84DF;
 
     /// `WebGL2RenderingContext.ACTIVE_TEXTURE`
-    pub const ACTIVE_TEXTURE: f64 = 34016.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ACTIVE_TEXTURE")]
+    pub const ACTIVE_TEXTURE: u32 = 0x84E0;
 
     /// `WebGL2RenderingContext.REPEAT`
-    pub const REPEAT: f64 = 10497.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.REPEAT")]
+    pub const REPEAT: u32 = 0x2901;
 
     /// `WebGL2RenderingContext.CLAMP_TO_EDGE`
-    pub const CLAMP_TO_EDGE: f64 = 33071.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.CLAMP_TO_EDGE")]
+    pub const CLAMP_TO_EDGE: u32 = 0x812F;
 
     /// `WebGL2RenderingContext.MIRRORED_REPEAT`
-    pub const MIRRORED_REPEAT: f64 = 33648.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MIRRORED_REPEAT")]
+    pub const MIRRORED_REPEAT: u32 = 0x8370;
 
     /// `WebGL2RenderingContext.FLOAT_VEC2`
-    pub const FLOAT_VEC2: f64 = 35664.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FLOAT_VEC2")]
+    pub const FLOAT_VEC2: u32 = 0x8B50;
 
     /// `WebGL2RenderingContext.FLOAT_VEC3`
-    pub const FLOAT_VEC3: f64 = 35665.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FLOAT_VEC3")]
+    pub const FLOAT_VEC3: u32 = 0x8B51;
 
     /// `WebGL2RenderingContext.FLOAT_VEC4`
-    pub const FLOAT_VEC4: f64 = 35666.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FLOAT_VEC4")]
+    pub const FLOAT_VEC4: u32 = 0x8B52;
 
     /// `WebGL2RenderingContext.INT_VEC2`
-    pub const INT_VEC2: f64 = 35667.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.INT_VEC2")]
+    pub const INT_VEC2: u32 = 0x8B53;
 
     /// `WebGL2RenderingContext.INT_VEC3`
-    pub const INT_VEC3: f64 = 35668.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.INT_VEC3")]
+    pub const INT_VEC3: u32 = 0x8B54;
 
     /// `WebGL2RenderingContext.INT_VEC4`
-    pub const INT_VEC4: f64 = 35669.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.INT_VEC4")]
+    pub const INT_VEC4: u32 = 0x8B55;
 
     /// `WebGL2RenderingContext.BOOL`
-    pub const BOOL: f64 = 35670.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.BOOL")]
+    pub const BOOL: u32 = 0x8B56;
 
     /// `WebGL2RenderingContext.BOOL_VEC2`
-    pub const BOOL_VEC2: f64 = 35671.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.BOOL_VEC2")]
+    pub const BOOL_VEC2: u32 = 0x8B57;
 
     /// `WebGL2RenderingContext.BOOL_VEC3`
-    pub const BOOL_VEC3: f64 = 35672.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.BOOL_VEC3")]
+    pub const BOOL_VEC3: u32 = 0x8B58;
 
     /// `WebGL2RenderingContext.BOOL_VEC4`
-    pub const BOOL_VEC4: f64 = 35673.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.BOOL_VEC4")]
+    pub const BOOL_VEC4: u32 = 0x8B59;
 
     /// `WebGL2RenderingContext.FLOAT_MAT2`
-    pub const FLOAT_MAT2: f64 = 35674.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FLOAT_MAT2")]
+    pub const FLOAT_MAT2: u32 = 0x8B5A;
 
     /// `WebGL2RenderingContext.FLOAT_MAT3`
-    pub const FLOAT_MAT3: f64 = 35675.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FLOAT_MAT3")]
+    pub const FLOAT_MAT3: u32 = 0x8B5B;
 
     /// `WebGL2RenderingContext.FLOAT_MAT4`
-    pub const FLOAT_MAT4: f64 = 35676.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FLOAT_MAT4")]
+    pub const FLOAT_MAT4: u32 = 0x8B5C;
 
     /// `WebGL2RenderingContext.SAMPLER_2D`
-    pub const SAMPLER_2D: f64 = 35678.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SAMPLER_2D")]
+    pub const SAMPLER_2D: u32 = 0x8B5E;
 
     /// `WebGL2RenderingContext.SAMPLER_CUBE`
-    pub const SAMPLER_CUBE: f64 = 35680.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SAMPLER_CUBE")]
+    pub const SAMPLER_CUBE: u32 = 0x8B60;
 
     /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_ENABLED`
-    pub const VERTEX_ATTRIB_ARRAY_ENABLED: f64 = 34338.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_ENABLED")]
+    pub const VERTEX_ATTRIB_ARRAY_ENABLED: u32 = 0x8622;
 
     /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_SIZE`
-    pub const VERTEX_ATTRIB_ARRAY_SIZE: f64 = 34339.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_SIZE")]
+    pub const VERTEX_ATTRIB_ARRAY_SIZE: u32 = 0x8623;
 
     /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_STRIDE`
-    pub const VERTEX_ATTRIB_ARRAY_STRIDE: f64 = 34340.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_STRIDE")]
+    pub const VERTEX_ATTRIB_ARRAY_STRIDE: u32 = 0x8624;
 
     /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_TYPE`
-    pub const VERTEX_ATTRIB_ARRAY_TYPE: f64 = 34341.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_TYPE")]
+    pub const VERTEX_ATTRIB_ARRAY_TYPE: u32 = 0x8625;
 
     /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_NORMALIZED`
-    pub const VERTEX_ATTRIB_ARRAY_NORMALIZED: f64 = 34922.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_NORMALIZED")]
+    pub const VERTEX_ATTRIB_ARRAY_NORMALIZED: u32 = 0x886A;
 
     /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_POINTER`
-    pub const VERTEX_ATTRIB_ARRAY_POINTER: f64 = 34373.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_POINTER")]
+    pub const VERTEX_ATTRIB_ARRAY_POINTER: u32 = 0x8645;
 
     /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_BUFFER_BINDING`
-    pub const VERTEX_ATTRIB_ARRAY_BUFFER_BINDING: f64 = 34975.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_BUFFER_BINDING")]
+    pub const VERTEX_ATTRIB_ARRAY_BUFFER_BINDING: u32 = 0x889F;
 
     /// `WebGL2RenderingContext.IMPLEMENTATION_COLOR_READ_TYPE`
-    pub const IMPLEMENTATION_COLOR_READ_TYPE: f64 = 35738.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.IMPLEMENTATION_COLOR_READ_TYPE")]
+    pub const IMPLEMENTATION_COLOR_READ_TYPE: u32 = 0x8B9A;
 
     /// `WebGL2RenderingContext.IMPLEMENTATION_COLOR_READ_FORMAT`
-    pub const IMPLEMENTATION_COLOR_READ_FORMAT: f64 = 35739.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.IMPLEMENTATION_COLOR_READ_FORMAT")]
+    pub const IMPLEMENTATION_COLOR_READ_FORMAT: u32 = 0x8B9B;
 
     /// `WebGL2RenderingContext.COMPILE_STATUS`
-    pub const COMPILE_STATUS: f64 = 35713.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COMPILE_STATUS")]
+    pub const COMPILE_STATUS: u32 = 0x8B81;
 
     /// `WebGL2RenderingContext.LOW_FLOAT`
-    pub const LOW_FLOAT: f64 = 36336.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.LOW_FLOAT")]
+    pub const LOW_FLOAT: u32 = 0x8DF0;
 
     /// `WebGL2RenderingContext.MEDIUM_FLOAT`
-    pub const MEDIUM_FLOAT: f64 = 36337.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MEDIUM_FLOAT")]
+    pub const MEDIUM_FLOAT: u32 = 0x8DF1;
 
     /// `WebGL2RenderingContext.HIGH_FLOAT`
-    pub const HIGH_FLOAT: f64 = 36338.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.HIGH_FLOAT")]
+    pub const HIGH_FLOAT: u32 = 0x8DF2;
 
     /// `WebGL2RenderingContext.LOW_INT`
-    pub const LOW_INT: f64 = 36339.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.LOW_INT")]
+    pub const LOW_INT: u32 = 0x8DF3;
 
     /// `WebGL2RenderingContext.MEDIUM_INT`
-    pub const MEDIUM_INT: f64 = 36340.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MEDIUM_INT")]
+    pub const MEDIUM_INT: u32 = 0x8DF4;
 
     /// `WebGL2RenderingContext.HIGH_INT`
-    pub const HIGH_INT: f64 = 36341.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.HIGH_INT")]
+    pub const HIGH_INT: u32 = 0x8DF5;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER`
-    pub const FRAMEBUFFER: f64 = 36160.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAMEBUFFER")]
+    pub const FRAMEBUFFER: u32 = 0x8D40;
 
     /// `WebGL2RenderingContext.RENDERBUFFER`
-    pub const RENDERBUFFER: f64 = 36161.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RENDERBUFFER")]
+    pub const RENDERBUFFER: u32 = 0x8D41;
 
     /// `WebGL2RenderingContext.RGBA4`
-    pub const RGBA4: f64 = 32854.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGBA4")]
+    pub const RGBA4: u32 = 0x8056;
 
     /// `WebGL2RenderingContext.RGB5_A1`
-    pub const RGB5_A1: f64 = 32855.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGB5_A1")]
+    pub const RGB5_A1: u32 = 0x8057;
 
     /// `WebGL2RenderingContext.RGBA8`
-    pub const RGBA8: f64 = 32856.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGBA8")]
+    pub const RGBA8: u32 = 0x8058;
 
     /// `WebGL2RenderingContext.RGB565`
-    pub const RGB565: f64 = 36194.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGB565")]
+    pub const RGB565: u32 = 0x8D62;
 
     /// `WebGL2RenderingContext.DEPTH_COMPONENT16`
-    pub const DEPTH_COMPONENT16: f64 = 33189.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DEPTH_COMPONENT16")]
+    pub const DEPTH_COMPONENT16: u32 = 0x81A5;
 
     /// `WebGL2RenderingContext.STENCIL_INDEX8`
-    pub const STENCIL_INDEX8: f64 = 36168.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STENCIL_INDEX8")]
+    pub const STENCIL_INDEX8: u32 = 0x8D48;
 
     /// `WebGL2RenderingContext.DEPTH_STENCIL`
-    pub const DEPTH_STENCIL: f64 = 34041.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DEPTH_STENCIL")]
+    pub const DEPTH_STENCIL: u32 = 0x84F9;
 
     /// `WebGL2RenderingContext.RENDERBUFFER_WIDTH`
-    pub const RENDERBUFFER_WIDTH: f64 = 36162.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RENDERBUFFER_WIDTH")]
+    pub const RENDERBUFFER_WIDTH: u32 = 0x8D42;
 
     /// `WebGL2RenderingContext.RENDERBUFFER_HEIGHT`
-    pub const RENDERBUFFER_HEIGHT: f64 = 36163.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RENDERBUFFER_HEIGHT")]
+    pub const RENDERBUFFER_HEIGHT: u32 = 0x8D43;
 
     /// `WebGL2RenderingContext.RENDERBUFFER_INTERNAL_FORMAT`
-    pub const RENDERBUFFER_INTERNAL_FORMAT: f64 = 36164.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RENDERBUFFER_INTERNAL_FORMAT")]
+    pub const RENDERBUFFER_INTERNAL_FORMAT: u32 = 0x8D44;
 
     /// `WebGL2RenderingContext.RENDERBUFFER_RED_SIZE`
-    pub const RENDERBUFFER_RED_SIZE: f64 = 36176.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RENDERBUFFER_RED_SIZE")]
+    pub const RENDERBUFFER_RED_SIZE: u32 = 0x8D50;
 
     /// `WebGL2RenderingContext.RENDERBUFFER_GREEN_SIZE`
-    pub const RENDERBUFFER_GREEN_SIZE: f64 = 36177.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RENDERBUFFER_GREEN_SIZE")]
+    pub const RENDERBUFFER_GREEN_SIZE: u32 = 0x8D51;
 
     /// `WebGL2RenderingContext.RENDERBUFFER_BLUE_SIZE`
-    pub const RENDERBUFFER_BLUE_SIZE: f64 = 36178.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RENDERBUFFER_BLUE_SIZE")]
+    pub const RENDERBUFFER_BLUE_SIZE: u32 = 0x8D52;
 
     /// `WebGL2RenderingContext.RENDERBUFFER_ALPHA_SIZE`
-    pub const RENDERBUFFER_ALPHA_SIZE: f64 = 36179.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RENDERBUFFER_ALPHA_SIZE")]
+    pub const RENDERBUFFER_ALPHA_SIZE: u32 = 0x8D53;
 
     /// `WebGL2RenderingContext.RENDERBUFFER_DEPTH_SIZE`
-    pub const RENDERBUFFER_DEPTH_SIZE: f64 = 36180.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RENDERBUFFER_DEPTH_SIZE")]
+    pub const RENDERBUFFER_DEPTH_SIZE: u32 = 0x8D54;
 
     /// `WebGL2RenderingContext.RENDERBUFFER_STENCIL_SIZE`
-    pub const RENDERBUFFER_STENCIL_SIZE: f64 = 36181.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RENDERBUFFER_STENCIL_SIZE")]
+    pub const RENDERBUFFER_STENCIL_SIZE: u32 = 0x8D55;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE`
-    pub const FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE: f64 = 36048.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE")]
+    pub const FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE: u32 = 0x8CD0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME`
-    pub const FRAMEBUFFER_ATTACHMENT_OBJECT_NAME: f64 = 36049.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME")]
+    pub const FRAMEBUFFER_ATTACHMENT_OBJECT_NAME: u32 = 0x8CD1;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL`
-    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL: f64 = 36050.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL")]
+    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL: u32 = 0x8CD2;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE`
-    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE: f64 = 36051.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE")]
+    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE: u32 = 0x8CD3;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT0`
-    pub const COLOR_ATTACHMENT0: f64 = 36064.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COLOR_ATTACHMENT0")]
+    pub const COLOR_ATTACHMENT0: u32 = 0x8CE0;
 
     /// `WebGL2RenderingContext.DEPTH_ATTACHMENT`
-    pub const DEPTH_ATTACHMENT: f64 = 36096.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DEPTH_ATTACHMENT")]
+    pub const DEPTH_ATTACHMENT: u32 = 0x8D00;
 
     /// `WebGL2RenderingContext.STENCIL_ATTACHMENT`
-    pub const STENCIL_ATTACHMENT: f64 = 36128.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STENCIL_ATTACHMENT")]
+    pub const STENCIL_ATTACHMENT: u32 = 0x8D20;
 
     /// `WebGL2RenderingContext.DEPTH_STENCIL_ATTACHMENT`
-    pub const DEPTH_STENCIL_ATTACHMENT: f64 = 33306.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DEPTH_STENCIL_ATTACHMENT")]
+    pub const DEPTH_STENCIL_ATTACHMENT: u32 = 0x821A;
 
     /// `WebGL2RenderingContext.NONE`
-    pub const NONE: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.NONE")]
+    pub const NONE: u32 = 0;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_COMPLETE`
-    pub const FRAMEBUFFER_COMPLETE: f64 = 36053.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAMEBUFFER_COMPLETE")]
+    pub const FRAMEBUFFER_COMPLETE: u32 = 0x8CD5;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_INCOMPLETE_ATTACHMENT`
-    pub const FRAMEBUFFER_INCOMPLETE_ATTACHMENT: f64 = 36054.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAMEBUFFER_INCOMPLETE_ATTACHMENT")]
+    pub const FRAMEBUFFER_INCOMPLETE_ATTACHMENT: u32 = 0x8CD6;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT`
-    pub const FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: f64 = 36055.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT")]
+    pub const FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: u32 = 0x8CD7;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_INCOMPLETE_DIMENSIONS`
-    pub const FRAMEBUFFER_INCOMPLETE_DIMENSIONS: f64 = 36057.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAMEBUFFER_INCOMPLETE_DIMENSIONS")]
+    pub const FRAMEBUFFER_INCOMPLETE_DIMENSIONS: u32 = 0x8CD9;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_UNSUPPORTED`
-    pub const FRAMEBUFFER_UNSUPPORTED: f64 = 36061.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAMEBUFFER_UNSUPPORTED")]
+    pub const FRAMEBUFFER_UNSUPPORTED: u32 = 0x8CDD;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_BINDING`
-    pub const FRAMEBUFFER_BINDING: f64 = 36006.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAMEBUFFER_BINDING")]
+    pub const FRAMEBUFFER_BINDING: u32 = 0x8CA6;
 
     /// `WebGL2RenderingContext.RENDERBUFFER_BINDING`
-    pub const RENDERBUFFER_BINDING: f64 = 36007.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RENDERBUFFER_BINDING")]
+    pub const RENDERBUFFER_BINDING: u32 = 0x8CA7;
 
     /// `WebGL2RenderingContext.MAX_RENDERBUFFER_SIZE`
-    pub const MAX_RENDERBUFFER_SIZE: f64 = 34024.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_RENDERBUFFER_SIZE")]
+    pub const MAX_RENDERBUFFER_SIZE: u32 = 0x84E8;
 
     /// `WebGL2RenderingContext.INVALID_FRAMEBUFFER_OPERATION`
-    pub const INVALID_FRAMEBUFFER_OPERATION: f64 = 1286.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.INVALID_FRAMEBUFFER_OPERATION")]
+    pub const INVALID_FRAMEBUFFER_OPERATION: u32 = 0x0506;
 
     /// `WebGL2RenderingContext.UNPACK_FLIP_Y_WEBGL`
-    pub const UNPACK_FLIP_Y_WEBGL: f64 = 37440.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNPACK_FLIP_Y_WEBGL")]
+    pub const UNPACK_FLIP_Y_WEBGL: u32 = 0x9240;
 
     /// `WebGL2RenderingContext.UNPACK_PREMULTIPLY_ALPHA_WEBGL`
-    pub const UNPACK_PREMULTIPLY_ALPHA_WEBGL: f64 = 37441.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNPACK_PREMULTIPLY_ALPHA_WEBGL")]
+    pub const UNPACK_PREMULTIPLY_ALPHA_WEBGL: u32 = 0x9241;
 
     /// `WebGL2RenderingContext.CONTEXT_LOST_WEBGL`
-    pub const CONTEXT_LOST_WEBGL: f64 = 37442.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.CONTEXT_LOST_WEBGL")]
+    pub const CONTEXT_LOST_WEBGL: u32 = 0x9242;
 
     /// `WebGL2RenderingContext.UNPACK_COLORSPACE_CONVERSION_WEBGL`
-    pub const UNPACK_COLORSPACE_CONVERSION_WEBGL: f64 = 37443.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNPACK_COLORSPACE_CONVERSION_WEBGL")]
+    pub const UNPACK_COLORSPACE_CONVERSION_WEBGL: u32 = 0x9243;
 
     /// `WebGL2RenderingContext.BROWSER_DEFAULT_WEBGL`
-    pub const BROWSER_DEFAULT_WEBGL: f64 = 37444.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.BROWSER_DEFAULT_WEBGL")]
+    pub const BROWSER_DEFAULT_WEBGL: u32 = 0x9244;
 
     /// `WebGL2RenderingContext.READ_BUFFER`
-    pub const READ_BUFFER: f64 = 3074.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.READ_BUFFER")]
+    pub const READ_BUFFER: u32 = 0x0C02;
 
     /// `WebGL2RenderingContext.UNPACK_ROW_LENGTH`
-    pub const UNPACK_ROW_LENGTH: f64 = 3314.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNPACK_ROW_LENGTH")]
+    pub const UNPACK_ROW_LENGTH: u32 = 0x0CF2;
 
     /// `WebGL2RenderingContext.UNPACK_SKIP_ROWS`
-    pub const UNPACK_SKIP_ROWS: f64 = 3315.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNPACK_SKIP_ROWS")]
+    pub const UNPACK_SKIP_ROWS: u32 = 0x0CF3;
 
     /// `WebGL2RenderingContext.UNPACK_SKIP_PIXELS`
-    pub const UNPACK_SKIP_PIXELS: f64 = 3316.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNPACK_SKIP_PIXELS")]
+    pub const UNPACK_SKIP_PIXELS: u32 = 0x0CF4;
 
     /// `WebGL2RenderingContext.PACK_ROW_LENGTH`
-    pub const PACK_ROW_LENGTH: f64 = 3330.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.PACK_ROW_LENGTH")]
+    pub const PACK_ROW_LENGTH: u32 = 0x0D02;
 
     /// `WebGL2RenderingContext.PACK_SKIP_ROWS`
-    pub const PACK_SKIP_ROWS: f64 = 3331.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.PACK_SKIP_ROWS")]
+    pub const PACK_SKIP_ROWS: u32 = 0x0D03;
 
     /// `WebGL2RenderingContext.PACK_SKIP_PIXELS`
-    pub const PACK_SKIP_PIXELS: f64 = 3332.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.PACK_SKIP_PIXELS")]
+    pub const PACK_SKIP_PIXELS: u32 = 0x0D04;
 
     /// `WebGL2RenderingContext.COLOR`
-    pub const COLOR: f64 = 6144.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COLOR")]
+    pub const COLOR: u32 = 0x1800;
 
     /// `WebGL2RenderingContext.DEPTH`
-    pub const DEPTH: f64 = 6145.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DEPTH")]
+    pub const DEPTH: u32 = 0x1801;
 
     /// `WebGL2RenderingContext.STENCIL`
-    pub const STENCIL: f64 = 6146.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STENCIL")]
+    pub const STENCIL: u32 = 0x1802;
 
     /// `WebGL2RenderingContext.RED`
-    pub const RED: f64 = 6403.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RED")]
+    pub const RED: u32 = 0x1903;
 
     /// `WebGL2RenderingContext.RGB8`
-    pub const RGB8: f64 = 32849.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGB8")]
+    pub const RGB8: u32 = 0x8051;
 
     /// `WebGL2RenderingContext.RGB10_A2`
-    pub const RGB10_A2: f64 = 32857.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGB10_A2")]
+    pub const RGB10_A2: u32 = 0x8059;
 
     /// `WebGL2RenderingContext.TEXTURE_BINDING_3D`
-    pub const TEXTURE_BINDING_3D: f64 = 32874.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_BINDING_3D")]
+    pub const TEXTURE_BINDING_3D: u32 = 0x806A;
 
     /// `WebGL2RenderingContext.UNPACK_SKIP_IMAGES`
-    pub const UNPACK_SKIP_IMAGES: f64 = 32877.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNPACK_SKIP_IMAGES")]
+    pub const UNPACK_SKIP_IMAGES: u32 = 0x806D;
 
     /// `WebGL2RenderingContext.UNPACK_IMAGE_HEIGHT`
-    pub const UNPACK_IMAGE_HEIGHT: f64 = 32878.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNPACK_IMAGE_HEIGHT")]
+    pub const UNPACK_IMAGE_HEIGHT: u32 = 0x806E;
 
     /// `WebGL2RenderingContext.TEXTURE_3D`
-    pub const TEXTURE_3D: f64 = 32879.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_3D")]
+    pub const TEXTURE_3D: u32 = 0x806F;
 
     /// `WebGL2RenderingContext.TEXTURE_WRAP_R`
-    pub const TEXTURE_WRAP_R: f64 = 32882.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_WRAP_R")]
+    pub const TEXTURE_WRAP_R: u32 = 0x8072;
 
     /// `WebGL2RenderingContext.MAX_3D_TEXTURE_SIZE`
-    pub const MAX_3D_TEXTURE_SIZE: f64 = 32883.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_3D_TEXTURE_SIZE")]
+    pub const MAX_3D_TEXTURE_SIZE: u32 = 0x8073;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT_2_10_10_10_REV`
-    pub const UNSIGNED_INT_2_10_10_10_REV: f64 = 33640.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNSIGNED_INT_2_10_10_10_REV")]
+    pub const UNSIGNED_INT_2_10_10_10_REV: u32 = 0x8368;
 
     /// `WebGL2RenderingContext.MAX_ELEMENTS_VERTICES`
-    pub const MAX_ELEMENTS_VERTICES: f64 = 33000.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_ELEMENTS_VERTICES")]
+    pub const MAX_ELEMENTS_VERTICES: u32 = 0x80E8;
 
     /// `WebGL2RenderingContext.MAX_ELEMENTS_INDICES`
-    pub const MAX_ELEMENTS_INDICES: f64 = 33001.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_ELEMENTS_INDICES")]
+    pub const MAX_ELEMENTS_INDICES: u32 = 0x80E9;
 
     /// `WebGL2RenderingContext.TEXTURE_MIN_LOD`
-    pub const TEXTURE_MIN_LOD: f64 = 33082.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_MIN_LOD")]
+    pub const TEXTURE_MIN_LOD: u32 = 0x813A;
 
     /// `WebGL2RenderingContext.TEXTURE_MAX_LOD`
-    pub const TEXTURE_MAX_LOD: f64 = 33083.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_MAX_LOD")]
+    pub const TEXTURE_MAX_LOD: u32 = 0x813B;
 
     /// `WebGL2RenderingContext.TEXTURE_BASE_LEVEL`
-    pub const TEXTURE_BASE_LEVEL: f64 = 33084.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_BASE_LEVEL")]
+    pub const TEXTURE_BASE_LEVEL: u32 = 0x813C;
 
     /// `WebGL2RenderingContext.TEXTURE_MAX_LEVEL`
-    pub const TEXTURE_MAX_LEVEL: f64 = 33085.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_MAX_LEVEL")]
+    pub const TEXTURE_MAX_LEVEL: u32 = 0x813D;
 
     /// `WebGL2RenderingContext.MIN`
-    pub const MIN: f64 = 32775.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MIN")]
+    pub const MIN: u32 = 0x8007;
 
     /// `WebGL2RenderingContext.MAX`
-    pub const MAX: f64 = 32776.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX")]
+    pub const MAX: u32 = 0x8008;
 
     /// `WebGL2RenderingContext.DEPTH_COMPONENT24`
-    pub const DEPTH_COMPONENT24: f64 = 33190.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DEPTH_COMPONENT24")]
+    pub const DEPTH_COMPONENT24: u32 = 0x81A6;
 
     /// `WebGL2RenderingContext.MAX_TEXTURE_LOD_BIAS`
-    pub const MAX_TEXTURE_LOD_BIAS: f64 = 34045.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_TEXTURE_LOD_BIAS")]
+    pub const MAX_TEXTURE_LOD_BIAS: u32 = 0x84FD;
 
     /// `WebGL2RenderingContext.TEXTURE_COMPARE_MODE`
-    pub const TEXTURE_COMPARE_MODE: f64 = 34892.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_COMPARE_MODE")]
+    pub const TEXTURE_COMPARE_MODE: u32 = 0x884C;
 
     /// `WebGL2RenderingContext.TEXTURE_COMPARE_FUNC`
-    pub const TEXTURE_COMPARE_FUNC: f64 = 34893.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_COMPARE_FUNC")]
+    pub const TEXTURE_COMPARE_FUNC: u32 = 0x884D;
 
     /// `WebGL2RenderingContext.CURRENT_QUERY`
-    pub const CURRENT_QUERY: f64 = 34917.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.CURRENT_QUERY")]
+    pub const CURRENT_QUERY: u32 = 0x8865;
 
     /// `WebGL2RenderingContext.QUERY_RESULT`
-    pub const QUERY_RESULT: f64 = 34918.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.QUERY_RESULT")]
+    pub const QUERY_RESULT: u32 = 0x8866;
 
     /// `WebGL2RenderingContext.QUERY_RESULT_AVAILABLE`
-    pub const QUERY_RESULT_AVAILABLE: f64 = 34919.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.QUERY_RESULT_AVAILABLE")]
+    pub const QUERY_RESULT_AVAILABLE: u32 = 0x8867;
 
     /// `WebGL2RenderingContext.STREAM_READ`
-    pub const STREAM_READ: f64 = 35041.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STREAM_READ")]
+    pub const STREAM_READ: u32 = 0x88E1;
 
     /// `WebGL2RenderingContext.STREAM_COPY`
-    pub const STREAM_COPY: f64 = 35042.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STREAM_COPY")]
+    pub const STREAM_COPY: u32 = 0x88E2;
 
     /// `WebGL2RenderingContext.STATIC_READ`
-    pub const STATIC_READ: f64 = 35045.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STATIC_READ")]
+    pub const STATIC_READ: u32 = 0x88E5;
 
     /// `WebGL2RenderingContext.STATIC_COPY`
-    pub const STATIC_COPY: f64 = 35046.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.STATIC_COPY")]
+    pub const STATIC_COPY: u32 = 0x88E6;
 
     /// `WebGL2RenderingContext.DYNAMIC_READ`
-    pub const DYNAMIC_READ: f64 = 35049.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DYNAMIC_READ")]
+    pub const DYNAMIC_READ: u32 = 0x88E9;
 
     /// `WebGL2RenderingContext.DYNAMIC_COPY`
-    pub const DYNAMIC_COPY: f64 = 35050.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DYNAMIC_COPY")]
+    pub const DYNAMIC_COPY: u32 = 0x88EA;
 
     /// `WebGL2RenderingContext.MAX_DRAW_BUFFERS`
-    pub const MAX_DRAW_BUFFERS: f64 = 34852.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_DRAW_BUFFERS")]
+    pub const MAX_DRAW_BUFFERS: u32 = 0x8824;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER0`
-    pub const DRAW_BUFFER0: f64 = 34853.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DRAW_BUFFER0")]
+    pub const DRAW_BUFFER0: u32 = 0x8825;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER1`
-    pub const DRAW_BUFFER1: f64 = 34854.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DRAW_BUFFER1")]
+    pub const DRAW_BUFFER1: u32 = 0x8826;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER2`
-    pub const DRAW_BUFFER2: f64 = 34855.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DRAW_BUFFER2")]
+    pub const DRAW_BUFFER2: u32 = 0x8827;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER3`
-    pub const DRAW_BUFFER3: f64 = 34856.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DRAW_BUFFER3")]
+    pub const DRAW_BUFFER3: u32 = 0x8828;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER4`
-    pub const DRAW_BUFFER4: f64 = 34857.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DRAW_BUFFER4")]
+    pub const DRAW_BUFFER4: u32 = 0x8829;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER5`
-    pub const DRAW_BUFFER5: f64 = 34858.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DRAW_BUFFER5")]
+    pub const DRAW_BUFFER5: u32 = 0x882A;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER6`
-    pub const DRAW_BUFFER6: f64 = 34859.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DRAW_BUFFER6")]
+    pub const DRAW_BUFFER6: u32 = 0x882B;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER7`
-    pub const DRAW_BUFFER7: f64 = 34860.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DRAW_BUFFER7")]
+    pub const DRAW_BUFFER7: u32 = 0x882C;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER8`
-    pub const DRAW_BUFFER8: f64 = 34861.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DRAW_BUFFER8")]
+    pub const DRAW_BUFFER8: u32 = 0x882D;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER9`
-    pub const DRAW_BUFFER9: f64 = 34862.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DRAW_BUFFER9")]
+    pub const DRAW_BUFFER9: u32 = 0x882E;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER10`
-    pub const DRAW_BUFFER10: f64 = 34863.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DRAW_BUFFER10")]
+    pub const DRAW_BUFFER10: u32 = 0x882F;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER11`
-    pub const DRAW_BUFFER11: f64 = 34864.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DRAW_BUFFER11")]
+    pub const DRAW_BUFFER11: u32 = 0x8830;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER12`
-    pub const DRAW_BUFFER12: f64 = 34865.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DRAW_BUFFER12")]
+    pub const DRAW_BUFFER12: u32 = 0x8831;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER13`
-    pub const DRAW_BUFFER13: f64 = 34866.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DRAW_BUFFER13")]
+    pub const DRAW_BUFFER13: u32 = 0x8832;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER14`
-    pub const DRAW_BUFFER14: f64 = 34867.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DRAW_BUFFER14")]
+    pub const DRAW_BUFFER14: u32 = 0x8833;
 
     /// `WebGL2RenderingContext.DRAW_BUFFER15`
-    pub const DRAW_BUFFER15: f64 = 34868.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DRAW_BUFFER15")]
+    pub const DRAW_BUFFER15: u32 = 0x8834;
 
     /// `WebGL2RenderingContext.MAX_FRAGMENT_UNIFORM_COMPONENTS`
-    pub const MAX_FRAGMENT_UNIFORM_COMPONENTS: f64 = 35657.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_FRAGMENT_UNIFORM_COMPONENTS")]
+    pub const MAX_FRAGMENT_UNIFORM_COMPONENTS: u32 = 0x8B49;
 
     /// `WebGL2RenderingContext.MAX_VERTEX_UNIFORM_COMPONENTS`
-    pub const MAX_VERTEX_UNIFORM_COMPONENTS: f64 = 35658.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_VERTEX_UNIFORM_COMPONENTS")]
+    pub const MAX_VERTEX_UNIFORM_COMPONENTS: u32 = 0x8B4A;
 
     /// `WebGL2RenderingContext.SAMPLER_3D`
-    pub const SAMPLER_3D: f64 = 35679.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SAMPLER_3D")]
+    pub const SAMPLER_3D: u32 = 0x8B5F;
 
     /// `WebGL2RenderingContext.SAMPLER_2D_SHADOW`
-    pub const SAMPLER_2D_SHADOW: f64 = 35682.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SAMPLER_2D_SHADOW")]
+    pub const SAMPLER_2D_SHADOW: u32 = 0x8B62;
 
     /// `WebGL2RenderingContext.FRAGMENT_SHADER_DERIVATIVE_HINT`
-    pub const FRAGMENT_SHADER_DERIVATIVE_HINT: f64 = 35723.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAGMENT_SHADER_DERIVATIVE_HINT")]
+    pub const FRAGMENT_SHADER_DERIVATIVE_HINT: u32 = 0x8B8B;
 
     /// `WebGL2RenderingContext.PIXEL_PACK_BUFFER`
-    pub const PIXEL_PACK_BUFFER: f64 = 35051.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.PIXEL_PACK_BUFFER")]
+    pub const PIXEL_PACK_BUFFER: u32 = 0x88EB;
 
     /// `WebGL2RenderingContext.PIXEL_UNPACK_BUFFER`
-    pub const PIXEL_UNPACK_BUFFER: f64 = 35052.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.PIXEL_UNPACK_BUFFER")]
+    pub const PIXEL_UNPACK_BUFFER: u32 = 0x88EC;
 
     /// `WebGL2RenderingContext.PIXEL_PACK_BUFFER_BINDING`
-    pub const PIXEL_PACK_BUFFER_BINDING: f64 = 35053.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.PIXEL_PACK_BUFFER_BINDING")]
+    pub const PIXEL_PACK_BUFFER_BINDING: u32 = 0x88ED;
 
     /// `WebGL2RenderingContext.PIXEL_UNPACK_BUFFER_BINDING`
-    pub const PIXEL_UNPACK_BUFFER_BINDING: f64 = 35055.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.PIXEL_UNPACK_BUFFER_BINDING")]
+    pub const PIXEL_UNPACK_BUFFER_BINDING: u32 = 0x88EF;
 
     /// `WebGL2RenderingContext.FLOAT_MAT2x3`
     #[allow(non_upper_case_globals)]
-    pub const FLOAT_MAT2x3: f64 = 35685.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FLOAT_MAT2x3")]
+    pub const FLOAT_MAT2x3: u32 = 0x8B65;
 
     /// `WebGL2RenderingContext.FLOAT_MAT2x4`
     #[allow(non_upper_case_globals)]
-    pub const FLOAT_MAT2x4: f64 = 35686.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FLOAT_MAT2x4")]
+    pub const FLOAT_MAT2x4: u32 = 0x8B66;
 
     /// `WebGL2RenderingContext.FLOAT_MAT3x2`
     #[allow(non_upper_case_globals)]
-    pub const FLOAT_MAT3x2: f64 = 35687.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FLOAT_MAT3x2")]
+    pub const FLOAT_MAT3x2: u32 = 0x8B67;
 
     /// `WebGL2RenderingContext.FLOAT_MAT3x4`
     #[allow(non_upper_case_globals)]
-    pub const FLOAT_MAT3x4: f64 = 35688.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FLOAT_MAT3x4")]
+    pub const FLOAT_MAT3x4: u32 = 0x8B68;
 
     /// `WebGL2RenderingContext.FLOAT_MAT4x2`
     #[allow(non_upper_case_globals)]
-    pub const FLOAT_MAT4x2: f64 = 35689.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FLOAT_MAT4x2")]
+    pub const FLOAT_MAT4x2: u32 = 0x8B69;
 
     /// `WebGL2RenderingContext.FLOAT_MAT4x3`
     #[allow(non_upper_case_globals)]
-    pub const FLOAT_MAT4x3: f64 = 35690.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FLOAT_MAT4x3")]
+    pub const FLOAT_MAT4x3: u32 = 0x8B6A;
 
     /// `WebGL2RenderingContext.SRGB`
-    pub const SRGB: f64 = 35904.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SRGB")]
+    pub const SRGB: u32 = 0x8C40;
 
     /// `WebGL2RenderingContext.SRGB8`
-    pub const SRGB8: f64 = 35905.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SRGB8")]
+    pub const SRGB8: u32 = 0x8C41;
 
     /// `WebGL2RenderingContext.SRGB8_ALPHA8`
-    pub const SRGB8_ALPHA8: f64 = 35907.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SRGB8_ALPHA8")]
+    pub const SRGB8_ALPHA8: u32 = 0x8C43;
 
     /// `WebGL2RenderingContext.COMPARE_REF_TO_TEXTURE`
-    pub const COMPARE_REF_TO_TEXTURE: f64 = 34894.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COMPARE_REF_TO_TEXTURE")]
+    pub const COMPARE_REF_TO_TEXTURE: u32 = 0x884E;
 
     /// `WebGL2RenderingContext.RGBA32F`
-    pub const RGBA32F: f64 = 34836.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGBA32F")]
+    pub const RGBA32F: u32 = 0x8814;
 
     /// `WebGL2RenderingContext.RGB32F`
-    pub const RGB32F: f64 = 34837.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGB32F")]
+    pub const RGB32F: u32 = 0x8815;
 
     /// `WebGL2RenderingContext.RGBA16F`
-    pub const RGBA16F: f64 = 34842.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGBA16F")]
+    pub const RGBA16F: u32 = 0x881A;
 
     /// `WebGL2RenderingContext.RGB16F`
-    pub const RGB16F: f64 = 34843.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGB16F")]
+    pub const RGB16F: u32 = 0x881B;
 
     /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_INTEGER`
-    pub const VERTEX_ATTRIB_ARRAY_INTEGER: f64 = 35069.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_INTEGER")]
+    pub const VERTEX_ATTRIB_ARRAY_INTEGER: u32 = 0x88FD;
 
     /// `WebGL2RenderingContext.MAX_ARRAY_TEXTURE_LAYERS`
-    pub const MAX_ARRAY_TEXTURE_LAYERS: f64 = 35071.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_ARRAY_TEXTURE_LAYERS")]
+    pub const MAX_ARRAY_TEXTURE_LAYERS: u32 = 0x88FF;
 
     /// `WebGL2RenderingContext.MIN_PROGRAM_TEXEL_OFFSET`
-    pub const MIN_PROGRAM_TEXEL_OFFSET: f64 = 35076.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MIN_PROGRAM_TEXEL_OFFSET")]
+    pub const MIN_PROGRAM_TEXEL_OFFSET: u32 = 0x8904;
 
     /// `WebGL2RenderingContext.MAX_PROGRAM_TEXEL_OFFSET`
-    pub const MAX_PROGRAM_TEXEL_OFFSET: f64 = 35077.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_PROGRAM_TEXEL_OFFSET")]
+    pub const MAX_PROGRAM_TEXEL_OFFSET: u32 = 0x8905;
 
     /// `WebGL2RenderingContext.MAX_VARYING_COMPONENTS`
-    pub const MAX_VARYING_COMPONENTS: f64 = 35659.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_VARYING_COMPONENTS")]
+    pub const MAX_VARYING_COMPONENTS: u32 = 0x8B4B;
 
     /// `WebGL2RenderingContext.TEXTURE_2D_ARRAY`
-    pub const TEXTURE_2D_ARRAY: f64 = 35866.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_2D_ARRAY")]
+    pub const TEXTURE_2D_ARRAY: u32 = 0x8C1A;
 
     /// `WebGL2RenderingContext.TEXTURE_BINDING_2D_ARRAY`
-    pub const TEXTURE_BINDING_2D_ARRAY: f64 = 35869.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_BINDING_2D_ARRAY")]
+    pub const TEXTURE_BINDING_2D_ARRAY: u32 = 0x8C1D;
 
     /// `WebGL2RenderingContext.R11F_G11F_B10F`
-    pub const R11F_G11F_B10F: f64 = 35898.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.R11F_G11F_B10F")]
+    pub const R11F_G11F_B10F: u32 = 0x8C3A;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT_10F_11F_11F_REV`
-    pub const UNSIGNED_INT_10F_11F_11F_REV: f64 = 35899.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNSIGNED_INT_10F_11F_11F_REV")]
+    pub const UNSIGNED_INT_10F_11F_11F_REV: u32 = 0x8C3B;
 
     /// `WebGL2RenderingContext.RGB9_E5`
-    pub const RGB9_E5: f64 = 35901.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGB9_E5")]
+    pub const RGB9_E5: u32 = 0x8C3D;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT_5_9_9_9_REV`
-    pub const UNSIGNED_INT_5_9_9_9_REV: f64 = 35902.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNSIGNED_INT_5_9_9_9_REV")]
+    pub const UNSIGNED_INT_5_9_9_9_REV: u32 = 0x8C3E;
 
     /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_BUFFER_MODE`
-    pub const TRANSFORM_FEEDBACK_BUFFER_MODE: f64 = 35967.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TRANSFORM_FEEDBACK_BUFFER_MODE")]
+    pub const TRANSFORM_FEEDBACK_BUFFER_MODE: u32 = 0x8C7F;
 
     /// `WebGL2RenderingContext.MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS`
-    pub const MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS: f64 = 35968.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS")]
+    pub const MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS: u32 = 0x8C80;
 
     /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_VARYINGS`
-    pub const TRANSFORM_FEEDBACK_VARYINGS: f64 = 35971.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TRANSFORM_FEEDBACK_VARYINGS")]
+    pub const TRANSFORM_FEEDBACK_VARYINGS: u32 = 0x8C83;
 
     /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_BUFFER_START`
-    pub const TRANSFORM_FEEDBACK_BUFFER_START: f64 = 35972.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TRANSFORM_FEEDBACK_BUFFER_START")]
+    pub const TRANSFORM_FEEDBACK_BUFFER_START: u32 = 0x8C84;
 
     /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_BUFFER_SIZE`
-    pub const TRANSFORM_FEEDBACK_BUFFER_SIZE: f64 = 35973.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TRANSFORM_FEEDBACK_BUFFER_SIZE")]
+    pub const TRANSFORM_FEEDBACK_BUFFER_SIZE: u32 = 0x8C85;
 
     /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN`
-    pub const TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN: f64 = 35976.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN")]
+    pub const TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN: u32 = 0x8C88;
 
     /// `WebGL2RenderingContext.RASTERIZER_DISCARD`
-    pub const RASTERIZER_DISCARD: f64 = 35977.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RASTERIZER_DISCARD")]
+    pub const RASTERIZER_DISCARD: u32 = 0x8C89;
 
     /// `WebGL2RenderingContext.MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS`
-    pub const MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS: f64 = 35978.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS")]
+    pub const MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS: u32 = 0x8C8A;
 
     /// `WebGL2RenderingContext.MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS`
-    pub const MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS: f64 = 35979.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS")]
+    pub const MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS: u32 = 0x8C8B;
 
     /// `WebGL2RenderingContext.INTERLEAVED_ATTRIBS`
-    pub const INTERLEAVED_ATTRIBS: f64 = 35980.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.INTERLEAVED_ATTRIBS")]
+    pub const INTERLEAVED_ATTRIBS: u32 = 0x8C8C;
 
     /// `WebGL2RenderingContext.SEPARATE_ATTRIBS`
-    pub const SEPARATE_ATTRIBS: f64 = 35981.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SEPARATE_ATTRIBS")]
+    pub const SEPARATE_ATTRIBS: u32 = 0x8C8D;
 
     /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_BUFFER`
-    pub const TRANSFORM_FEEDBACK_BUFFER: f64 = 35982.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TRANSFORM_FEEDBACK_BUFFER")]
+    pub const TRANSFORM_FEEDBACK_BUFFER: u32 = 0x8C8E;
 
     /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_BUFFER_BINDING`
-    pub const TRANSFORM_FEEDBACK_BUFFER_BINDING: f64 = 35983.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TRANSFORM_FEEDBACK_BUFFER_BINDING")]
+    pub const TRANSFORM_FEEDBACK_BUFFER_BINDING: u32 = 0x8C8F;
 
     /// `WebGL2RenderingContext.RGBA32UI`
-    pub const RGBA32UI: f64 = 36208.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGBA32UI")]
+    pub const RGBA32UI: u32 = 0x8D70;
 
     /// `WebGL2RenderingContext.RGB32UI`
-    pub const RGB32UI: f64 = 36209.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGB32UI")]
+    pub const RGB32UI: u32 = 0x8D71;
 
     /// `WebGL2RenderingContext.RGBA16UI`
-    pub const RGBA16UI: f64 = 36214.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGBA16UI")]
+    pub const RGBA16UI: u32 = 0x8D76;
 
     /// `WebGL2RenderingContext.RGB16UI`
-    pub const RGB16UI: f64 = 36215.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGB16UI")]
+    pub const RGB16UI: u32 = 0x8D77;
 
     /// `WebGL2RenderingContext.RGBA8UI`
-    pub const RGBA8UI: f64 = 36220.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGBA8UI")]
+    pub const RGBA8UI: u32 = 0x8D7C;
 
     /// `WebGL2RenderingContext.RGB8UI`
-    pub const RGB8UI: f64 = 36221.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGB8UI")]
+    pub const RGB8UI: u32 = 0x8D7D;
 
     /// `WebGL2RenderingContext.RGBA32I`
-    pub const RGBA32I: f64 = 36226.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGBA32I")]
+    pub const RGBA32I: u32 = 0x8D82;
 
     /// `WebGL2RenderingContext.RGB32I`
-    pub const RGB32I: f64 = 36227.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGB32I")]
+    pub const RGB32I: u32 = 0x8D83;
 
     /// `WebGL2RenderingContext.RGBA16I`
-    pub const RGBA16I: f64 = 36232.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGBA16I")]
+    pub const RGBA16I: u32 = 0x8D88;
 
     /// `WebGL2RenderingContext.RGB16I`
-    pub const RGB16I: f64 = 36233.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGB16I")]
+    pub const RGB16I: u32 = 0x8D89;
 
     /// `WebGL2RenderingContext.RGBA8I`
-    pub const RGBA8I: f64 = 36238.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGBA8I")]
+    pub const RGBA8I: u32 = 0x8D8E;
 
     /// `WebGL2RenderingContext.RGB8I`
-    pub const RGB8I: f64 = 36239.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGB8I")]
+    pub const RGB8I: u32 = 0x8D8F;
 
     /// `WebGL2RenderingContext.RED_INTEGER`
-    pub const RED_INTEGER: f64 = 36244.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RED_INTEGER")]
+    pub const RED_INTEGER: u32 = 0x8D94;
 
     /// `WebGL2RenderingContext.RGB_INTEGER`
-    pub const RGB_INTEGER: f64 = 36248.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGB_INTEGER")]
+    pub const RGB_INTEGER: u32 = 0x8D98;
 
     /// `WebGL2RenderingContext.RGBA_INTEGER`
-    pub const RGBA_INTEGER: f64 = 36249.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGBA_INTEGER")]
+    pub const RGBA_INTEGER: u32 = 0x8D99;
 
     /// `WebGL2RenderingContext.SAMPLER_2D_ARRAY`
-    pub const SAMPLER_2D_ARRAY: f64 = 36289.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SAMPLER_2D_ARRAY")]
+    pub const SAMPLER_2D_ARRAY: u32 = 0x8DC1;
 
     /// `WebGL2RenderingContext.SAMPLER_2D_ARRAY_SHADOW`
-    pub const SAMPLER_2D_ARRAY_SHADOW: f64 = 36292.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SAMPLER_2D_ARRAY_SHADOW")]
+    pub const SAMPLER_2D_ARRAY_SHADOW: u32 = 0x8DC4;
 
     /// `WebGL2RenderingContext.SAMPLER_CUBE_SHADOW`
-    pub const SAMPLER_CUBE_SHADOW: f64 = 36293.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SAMPLER_CUBE_SHADOW")]
+    pub const SAMPLER_CUBE_SHADOW: u32 = 0x8DC5;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT_VEC2`
-    pub const UNSIGNED_INT_VEC2: f64 = 36294.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNSIGNED_INT_VEC2")]
+    pub const UNSIGNED_INT_VEC2: u32 = 0x8DC6;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT_VEC3`
-    pub const UNSIGNED_INT_VEC3: f64 = 36295.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNSIGNED_INT_VEC3")]
+    pub const UNSIGNED_INT_VEC3: u32 = 0x8DC7;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT_VEC4`
-    pub const UNSIGNED_INT_VEC4: f64 = 36296.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNSIGNED_INT_VEC4")]
+    pub const UNSIGNED_INT_VEC4: u32 = 0x8DC8;
 
     /// `WebGL2RenderingContext.INT_SAMPLER_2D`
-    pub const INT_SAMPLER_2D: f64 = 36298.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.INT_SAMPLER_2D")]
+    pub const INT_SAMPLER_2D: u32 = 0x8DCA;
 
     /// `WebGL2RenderingContext.INT_SAMPLER_3D`
-    pub const INT_SAMPLER_3D: f64 = 36299.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.INT_SAMPLER_3D")]
+    pub const INT_SAMPLER_3D: u32 = 0x8DCB;
 
     /// `WebGL2RenderingContext.INT_SAMPLER_CUBE`
-    pub const INT_SAMPLER_CUBE: f64 = 36300.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.INT_SAMPLER_CUBE")]
+    pub const INT_SAMPLER_CUBE: u32 = 0x8DCC;
 
     /// `WebGL2RenderingContext.INT_SAMPLER_2D_ARRAY`
-    pub const INT_SAMPLER_2D_ARRAY: f64 = 36303.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.INT_SAMPLER_2D_ARRAY")]
+    pub const INT_SAMPLER_2D_ARRAY: u32 = 0x8DCF;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT_SAMPLER_2D`
-    pub const UNSIGNED_INT_SAMPLER_2D: f64 = 36306.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNSIGNED_INT_SAMPLER_2D")]
+    pub const UNSIGNED_INT_SAMPLER_2D: u32 = 0x8DD2;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT_SAMPLER_3D`
-    pub const UNSIGNED_INT_SAMPLER_3D: f64 = 36307.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNSIGNED_INT_SAMPLER_3D")]
+    pub const UNSIGNED_INT_SAMPLER_3D: u32 = 0x8DD3;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT_SAMPLER_CUBE`
-    pub const UNSIGNED_INT_SAMPLER_CUBE: f64 = 36308.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNSIGNED_INT_SAMPLER_CUBE")]
+    pub const UNSIGNED_INT_SAMPLER_CUBE: u32 = 0x8DD4;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT_SAMPLER_2D_ARRAY`
-    pub const UNSIGNED_INT_SAMPLER_2D_ARRAY: f64 = 36311.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNSIGNED_INT_SAMPLER_2D_ARRAY")]
+    pub const UNSIGNED_INT_SAMPLER_2D_ARRAY: u32 = 0x8DD7;
 
     /// `WebGL2RenderingContext.DEPTH_COMPONENT32F`
-    pub const DEPTH_COMPONENT32F: f64 = 36012.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DEPTH_COMPONENT32F")]
+    pub const DEPTH_COMPONENT32F: u32 = 0x8CAC;
 
     /// `WebGL2RenderingContext.DEPTH32F_STENCIL8`
-    pub const DEPTH32F_STENCIL8: f64 = 36013.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DEPTH32F_STENCIL8")]
+    pub const DEPTH32F_STENCIL8: u32 = 0x8CAD;
 
     /// `WebGL2RenderingContext.FLOAT_32_UNSIGNED_INT_24_8_REV`
-    pub const FLOAT_32_UNSIGNED_INT_24_8_REV: f64 = 36269.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FLOAT_32_UNSIGNED_INT_24_8_REV")]
+    pub const FLOAT_32_UNSIGNED_INT_24_8_REV: u32 = 0x8DAD;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING`
-    pub const FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING: f64 = 33296.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING")]
+    pub const FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING: u32 = 0x8210;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE`
-    pub const FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE: f64 = 33297.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE")]
+    pub const FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE: u32 = 0x8211;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_RED_SIZE`
-    pub const FRAMEBUFFER_ATTACHMENT_RED_SIZE: f64 = 33298.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_RED_SIZE")]
+    pub const FRAMEBUFFER_ATTACHMENT_RED_SIZE: u32 = 0x8212;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_GREEN_SIZE`
-    pub const FRAMEBUFFER_ATTACHMENT_GREEN_SIZE: f64 = 33299.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_GREEN_SIZE")]
+    pub const FRAMEBUFFER_ATTACHMENT_GREEN_SIZE: u32 = 0x8213;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_BLUE_SIZE`
-    pub const FRAMEBUFFER_ATTACHMENT_BLUE_SIZE: f64 = 33300.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_BLUE_SIZE")]
+    pub const FRAMEBUFFER_ATTACHMENT_BLUE_SIZE: u32 = 0x8214;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE`
-    pub const FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE: f64 = 33301.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE")]
+    pub const FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE: u32 = 0x8215;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE`
-    pub const FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE: f64 = 33302.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE")]
+    pub const FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE: u32 = 0x8216;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE`
-    pub const FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE: f64 = 33303.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE")]
+    pub const FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE: u32 = 0x8217;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_DEFAULT`
-    pub const FRAMEBUFFER_DEFAULT: f64 = 33304.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAMEBUFFER_DEFAULT")]
+    pub const FRAMEBUFFER_DEFAULT: u32 = 0x8218;
 
     /// `WebGL2RenderingContext.UNSIGNED_INT_24_8`
-    pub const UNSIGNED_INT_24_8: f64 = 34042.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNSIGNED_INT_24_8")]
+    pub const UNSIGNED_INT_24_8: u32 = 0x84FA;
 
     /// `WebGL2RenderingContext.DEPTH24_STENCIL8`
-    pub const DEPTH24_STENCIL8: f64 = 35056.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DEPTH24_STENCIL8")]
+    pub const DEPTH24_STENCIL8: u32 = 0x88F0;
 
     /// `WebGL2RenderingContext.UNSIGNED_NORMALIZED`
-    pub const UNSIGNED_NORMALIZED: f64 = 35863.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNSIGNED_NORMALIZED")]
+    pub const UNSIGNED_NORMALIZED: u32 = 0x8C17;
 
     /// `WebGL2RenderingContext.DRAW_FRAMEBUFFER_BINDING`
-    pub const DRAW_FRAMEBUFFER_BINDING: f64 = 36006.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DRAW_FRAMEBUFFER_BINDING")]
+    pub const DRAW_FRAMEBUFFER_BINDING: u32 = 0x8CA6;
 
     /// `WebGL2RenderingContext.READ_FRAMEBUFFER`
-    pub const READ_FRAMEBUFFER: f64 = 36008.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.READ_FRAMEBUFFER")]
+    pub const READ_FRAMEBUFFER: u32 = 0x8CA8;
 
     /// `WebGL2RenderingContext.DRAW_FRAMEBUFFER`
-    pub const DRAW_FRAMEBUFFER: f64 = 36009.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.DRAW_FRAMEBUFFER")]
+    pub const DRAW_FRAMEBUFFER: u32 = 0x8CA9;
 
     /// `WebGL2RenderingContext.READ_FRAMEBUFFER_BINDING`
-    pub const READ_FRAMEBUFFER_BINDING: f64 = 36010.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.READ_FRAMEBUFFER_BINDING")]
+    pub const READ_FRAMEBUFFER_BINDING: u32 = 0x8CAA;
 
     /// `WebGL2RenderingContext.RENDERBUFFER_SAMPLES`
-    pub const RENDERBUFFER_SAMPLES: f64 = 36011.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RENDERBUFFER_SAMPLES")]
+    pub const RENDERBUFFER_SAMPLES: u32 = 0x8CAB;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER`
-    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER: f64 = 36052.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER")]
+    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER: u32 = 0x8CD4;
 
     /// `WebGL2RenderingContext.MAX_COLOR_ATTACHMENTS`
-    pub const MAX_COLOR_ATTACHMENTS: f64 = 36063.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_COLOR_ATTACHMENTS")]
+    pub const MAX_COLOR_ATTACHMENTS: u32 = 0x8CDF;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT1`
-    pub const COLOR_ATTACHMENT1: f64 = 36065.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COLOR_ATTACHMENT1")]
+    pub const COLOR_ATTACHMENT1: u32 = 0x8CE1;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT2`
-    pub const COLOR_ATTACHMENT2: f64 = 36066.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COLOR_ATTACHMENT2")]
+    pub const COLOR_ATTACHMENT2: u32 = 0x8CE2;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT3`
-    pub const COLOR_ATTACHMENT3: f64 = 36067.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COLOR_ATTACHMENT3")]
+    pub const COLOR_ATTACHMENT3: u32 = 0x8CE3;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT4`
-    pub const COLOR_ATTACHMENT4: f64 = 36068.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COLOR_ATTACHMENT4")]
+    pub const COLOR_ATTACHMENT4: u32 = 0x8CE4;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT5`
-    pub const COLOR_ATTACHMENT5: f64 = 36069.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COLOR_ATTACHMENT5")]
+    pub const COLOR_ATTACHMENT5: u32 = 0x8CE5;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT6`
-    pub const COLOR_ATTACHMENT6: f64 = 36070.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COLOR_ATTACHMENT6")]
+    pub const COLOR_ATTACHMENT6: u32 = 0x8CE6;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT7`
-    pub const COLOR_ATTACHMENT7: f64 = 36071.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COLOR_ATTACHMENT7")]
+    pub const COLOR_ATTACHMENT7: u32 = 0x8CE7;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT8`
-    pub const COLOR_ATTACHMENT8: f64 = 36072.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COLOR_ATTACHMENT8")]
+    pub const COLOR_ATTACHMENT8: u32 = 0x8CE8;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT9`
-    pub const COLOR_ATTACHMENT9: f64 = 36073.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COLOR_ATTACHMENT9")]
+    pub const COLOR_ATTACHMENT9: u32 = 0x8CE9;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT10`
-    pub const COLOR_ATTACHMENT10: f64 = 36074.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COLOR_ATTACHMENT10")]
+    pub const COLOR_ATTACHMENT10: u32 = 0x8CEA;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT11`
-    pub const COLOR_ATTACHMENT11: f64 = 36075.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COLOR_ATTACHMENT11")]
+    pub const COLOR_ATTACHMENT11: u32 = 0x8CEB;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT12`
-    pub const COLOR_ATTACHMENT12: f64 = 36076.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COLOR_ATTACHMENT12")]
+    pub const COLOR_ATTACHMENT12: u32 = 0x8CEC;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT13`
-    pub const COLOR_ATTACHMENT13: f64 = 36077.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COLOR_ATTACHMENT13")]
+    pub const COLOR_ATTACHMENT13: u32 = 0x8CED;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT14`
-    pub const COLOR_ATTACHMENT14: f64 = 36078.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COLOR_ATTACHMENT14")]
+    pub const COLOR_ATTACHMENT14: u32 = 0x8CEE;
 
     /// `WebGL2RenderingContext.COLOR_ATTACHMENT15`
-    pub const COLOR_ATTACHMENT15: f64 = 36079.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COLOR_ATTACHMENT15")]
+    pub const COLOR_ATTACHMENT15: u32 = 0x8CEF;
 
     /// `WebGL2RenderingContext.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE`
-    pub const FRAMEBUFFER_INCOMPLETE_MULTISAMPLE: f64 = 36182.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE")]
+    pub const FRAMEBUFFER_INCOMPLETE_MULTISAMPLE: u32 = 0x8D56;
 
     /// `WebGL2RenderingContext.MAX_SAMPLES`
-    pub const MAX_SAMPLES: f64 = 36183.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_SAMPLES")]
+    pub const MAX_SAMPLES: u32 = 0x8D57;
 
     /// `WebGL2RenderingContext.HALF_FLOAT`
-    pub const HALF_FLOAT: f64 = 5131.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.HALF_FLOAT")]
+    pub const HALF_FLOAT: u32 = 0x140B;
 
     /// `WebGL2RenderingContext.RG`
-    pub const RG: f64 = 33319.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RG")]
+    pub const RG: u32 = 0x8227;
 
     /// `WebGL2RenderingContext.RG_INTEGER`
-    pub const RG_INTEGER: f64 = 33320.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RG_INTEGER")]
+    pub const RG_INTEGER: u32 = 0x8228;
 
     /// `WebGL2RenderingContext.R8`
-    pub const R8: f64 = 33321.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.R8")]
+    pub const R8: u32 = 0x8229;
 
     /// `WebGL2RenderingContext.RG8`
-    pub const RG8: f64 = 33323.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RG8")]
+    pub const RG8: u32 = 0x822B;
 
     /// `WebGL2RenderingContext.R16F`
-    pub const R16F: f64 = 33325.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.R16F")]
+    pub const R16F: u32 = 0x822D;
 
     /// `WebGL2RenderingContext.R32F`
-    pub const R32F: f64 = 33326.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.R32F")]
+    pub const R32F: u32 = 0x822E;
 
     /// `WebGL2RenderingContext.RG16F`
-    pub const RG16F: f64 = 33327.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RG16F")]
+    pub const RG16F: u32 = 0x822F;
 
     /// `WebGL2RenderingContext.RG32F`
-    pub const RG32F: f64 = 33328.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RG32F")]
+    pub const RG32F: u32 = 0x8230;
 
     /// `WebGL2RenderingContext.R8I`
-    pub const R8I: f64 = 33329.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.R8I")]
+    pub const R8I: u32 = 0x8231;
 
     /// `WebGL2RenderingContext.R8UI`
-    pub const R8UI: f64 = 33330.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.R8UI")]
+    pub const R8UI: u32 = 0x8232;
 
     /// `WebGL2RenderingContext.R16I`
-    pub const R16I: f64 = 33331.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.R16I")]
+    pub const R16I: u32 = 0x8233;
 
     /// `WebGL2RenderingContext.R16UI`
-    pub const R16UI: f64 = 33332.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.R16UI")]
+    pub const R16UI: u32 = 0x8234;
 
     /// `WebGL2RenderingContext.R32I`
-    pub const R32I: f64 = 33333.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.R32I")]
+    pub const R32I: u32 = 0x8235;
 
     /// `WebGL2RenderingContext.R32UI`
-    pub const R32UI: f64 = 33334.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.R32UI")]
+    pub const R32UI: u32 = 0x8236;
 
     /// `WebGL2RenderingContext.RG8I`
-    pub const RG8I: f64 = 33335.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RG8I")]
+    pub const RG8I: u32 = 0x8237;
 
     /// `WebGL2RenderingContext.RG8UI`
-    pub const RG8UI: f64 = 33336.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RG8UI")]
+    pub const RG8UI: u32 = 0x8238;
 
     /// `WebGL2RenderingContext.RG16I`
-    pub const RG16I: f64 = 33337.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RG16I")]
+    pub const RG16I: u32 = 0x8239;
 
     /// `WebGL2RenderingContext.RG16UI`
-    pub const RG16UI: f64 = 33338.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RG16UI")]
+    pub const RG16UI: u32 = 0x823A;
 
     /// `WebGL2RenderingContext.RG32I`
-    pub const RG32I: f64 = 33339.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RG32I")]
+    pub const RG32I: u32 = 0x823B;
 
     /// `WebGL2RenderingContext.RG32UI`
-    pub const RG32UI: f64 = 33340.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RG32UI")]
+    pub const RG32UI: u32 = 0x823C;
 
     /// `WebGL2RenderingContext.VERTEX_ARRAY_BINDING`
-    pub const VERTEX_ARRAY_BINDING: f64 = 34229.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.VERTEX_ARRAY_BINDING")]
+    pub const VERTEX_ARRAY_BINDING: u32 = 0x85B5;
 
     /// `WebGL2RenderingContext.R8_SNORM`
-    pub const R8_SNORM: f64 = 36756.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.R8_SNORM")]
+    pub const R8_SNORM: u32 = 0x8F94;
 
     /// `WebGL2RenderingContext.RG8_SNORM`
-    pub const RG8_SNORM: f64 = 36757.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RG8_SNORM")]
+    pub const RG8_SNORM: u32 = 0x8F95;
 
     /// `WebGL2RenderingContext.RGB8_SNORM`
-    pub const RGB8_SNORM: f64 = 36758.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGB8_SNORM")]
+    pub const RGB8_SNORM: u32 = 0x8F96;
 
     /// `WebGL2RenderingContext.RGBA8_SNORM`
-    pub const RGBA8_SNORM: f64 = 36759.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGBA8_SNORM")]
+    pub const RGBA8_SNORM: u32 = 0x8F97;
 
     /// `WebGL2RenderingContext.SIGNED_NORMALIZED`
-    pub const SIGNED_NORMALIZED: f64 = 36764.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SIGNED_NORMALIZED")]
+    pub const SIGNED_NORMALIZED: u32 = 0x8F9C;
 
     /// `WebGL2RenderingContext.COPY_READ_BUFFER`
-    pub const COPY_READ_BUFFER: f64 = 36662.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COPY_READ_BUFFER")]
+    pub const COPY_READ_BUFFER: u32 = 0x8F36;
 
     /// `WebGL2RenderingContext.COPY_WRITE_BUFFER`
-    pub const COPY_WRITE_BUFFER: f64 = 36663.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COPY_WRITE_BUFFER")]
+    pub const COPY_WRITE_BUFFER: u32 = 0x8F37;
 
     /// `WebGL2RenderingContext.COPY_READ_BUFFER_BINDING`
-    pub const COPY_READ_BUFFER_BINDING: f64 = 36662.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COPY_READ_BUFFER_BINDING")]
+    pub const COPY_READ_BUFFER_BINDING: u32 = 0x8F36;
 
     /// `WebGL2RenderingContext.COPY_WRITE_BUFFER_BINDING`
-    pub const COPY_WRITE_BUFFER_BINDING: f64 = 36663.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.COPY_WRITE_BUFFER_BINDING")]
+    pub const COPY_WRITE_BUFFER_BINDING: u32 = 0x8F37;
 
     /// `WebGL2RenderingContext.UNIFORM_BUFFER`
-    pub const UNIFORM_BUFFER: f64 = 35345.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNIFORM_BUFFER")]
+    pub const UNIFORM_BUFFER: u32 = 0x8A11;
 
     /// `WebGL2RenderingContext.UNIFORM_BUFFER_BINDING`
-    pub const UNIFORM_BUFFER_BINDING: f64 = 35368.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNIFORM_BUFFER_BINDING")]
+    pub const UNIFORM_BUFFER_BINDING: u32 = 0x8A28;
 
     /// `WebGL2RenderingContext.UNIFORM_BUFFER_START`
-    pub const UNIFORM_BUFFER_START: f64 = 35369.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNIFORM_BUFFER_START")]
+    pub const UNIFORM_BUFFER_START: u32 = 0x8A29;
 
     /// `WebGL2RenderingContext.UNIFORM_BUFFER_SIZE`
-    pub const UNIFORM_BUFFER_SIZE: f64 = 35370.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNIFORM_BUFFER_SIZE")]
+    pub const UNIFORM_BUFFER_SIZE: u32 = 0x8A2A;
 
     /// `WebGL2RenderingContext.MAX_VERTEX_UNIFORM_BLOCKS`
-    pub const MAX_VERTEX_UNIFORM_BLOCKS: f64 = 35371.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_VERTEX_UNIFORM_BLOCKS")]
+    pub const MAX_VERTEX_UNIFORM_BLOCKS: u32 = 0x8A2B;
 
     /// `WebGL2RenderingContext.MAX_FRAGMENT_UNIFORM_BLOCKS`
-    pub const MAX_FRAGMENT_UNIFORM_BLOCKS: f64 = 35373.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_FRAGMENT_UNIFORM_BLOCKS")]
+    pub const MAX_FRAGMENT_UNIFORM_BLOCKS: u32 = 0x8A2D;
 
     /// `WebGL2RenderingContext.MAX_COMBINED_UNIFORM_BLOCKS`
-    pub const MAX_COMBINED_UNIFORM_BLOCKS: f64 = 35374.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_COMBINED_UNIFORM_BLOCKS")]
+    pub const MAX_COMBINED_UNIFORM_BLOCKS: u32 = 0x8A2E;
 
     /// `WebGL2RenderingContext.MAX_UNIFORM_BUFFER_BINDINGS`
-    pub const MAX_UNIFORM_BUFFER_BINDINGS: f64 = 35375.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_UNIFORM_BUFFER_BINDINGS")]
+    pub const MAX_UNIFORM_BUFFER_BINDINGS: u32 = 0x8A2F;
 
     /// `WebGL2RenderingContext.MAX_UNIFORM_BLOCK_SIZE`
-    pub const MAX_UNIFORM_BLOCK_SIZE: f64 = 35376.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_UNIFORM_BLOCK_SIZE")]
+    pub const MAX_UNIFORM_BLOCK_SIZE: u32 = 0x8A30;
 
     /// `WebGL2RenderingContext.MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS`
-    pub const MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS: f64 = 35377.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS")]
+    pub const MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS: u32 = 0x8A31;
 
     /// `WebGL2RenderingContext.MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS`
-    pub const MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS: f64 = 35379.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS")]
+    pub const MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS: u32 = 0x8A33;
 
     /// `WebGL2RenderingContext.UNIFORM_BUFFER_OFFSET_ALIGNMENT`
-    pub const UNIFORM_BUFFER_OFFSET_ALIGNMENT: f64 = 35380.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNIFORM_BUFFER_OFFSET_ALIGNMENT")]
+    pub const UNIFORM_BUFFER_OFFSET_ALIGNMENT: u32 = 0x8A34;
 
     /// `WebGL2RenderingContext.ACTIVE_UNIFORM_BLOCKS`
-    pub const ACTIVE_UNIFORM_BLOCKS: f64 = 35382.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ACTIVE_UNIFORM_BLOCKS")]
+    pub const ACTIVE_UNIFORM_BLOCKS: u32 = 0x8A36;
 
     /// `WebGL2RenderingContext.UNIFORM_TYPE`
-    pub const UNIFORM_TYPE: f64 = 35383.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNIFORM_TYPE")]
+    pub const UNIFORM_TYPE: u32 = 0x8A37;
 
     /// `WebGL2RenderingContext.UNIFORM_SIZE`
-    pub const UNIFORM_SIZE: f64 = 35384.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNIFORM_SIZE")]
+    pub const UNIFORM_SIZE: u32 = 0x8A38;
 
     /// `WebGL2RenderingContext.UNIFORM_BLOCK_INDEX`
-    pub const UNIFORM_BLOCK_INDEX: f64 = 35386.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNIFORM_BLOCK_INDEX")]
+    pub const UNIFORM_BLOCK_INDEX: u32 = 0x8A3A;
 
     /// `WebGL2RenderingContext.UNIFORM_OFFSET`
-    pub const UNIFORM_OFFSET: f64 = 35387.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNIFORM_OFFSET")]
+    pub const UNIFORM_OFFSET: u32 = 0x8A3B;
 
     /// `WebGL2RenderingContext.UNIFORM_ARRAY_STRIDE`
-    pub const UNIFORM_ARRAY_STRIDE: f64 = 35388.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNIFORM_ARRAY_STRIDE")]
+    pub const UNIFORM_ARRAY_STRIDE: u32 = 0x8A3C;
 
     /// `WebGL2RenderingContext.UNIFORM_MATRIX_STRIDE`
-    pub const UNIFORM_MATRIX_STRIDE: f64 = 35389.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNIFORM_MATRIX_STRIDE")]
+    pub const UNIFORM_MATRIX_STRIDE: u32 = 0x8A3D;
 
     /// `WebGL2RenderingContext.UNIFORM_IS_ROW_MAJOR`
-    pub const UNIFORM_IS_ROW_MAJOR: f64 = 35390.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNIFORM_IS_ROW_MAJOR")]
+    pub const UNIFORM_IS_ROW_MAJOR: u32 = 0x8A3E;
 
     /// `WebGL2RenderingContext.UNIFORM_BLOCK_BINDING`
-    pub const UNIFORM_BLOCK_BINDING: f64 = 35391.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNIFORM_BLOCK_BINDING")]
+    pub const UNIFORM_BLOCK_BINDING: u32 = 0x8A3F;
 
     /// `WebGL2RenderingContext.UNIFORM_BLOCK_DATA_SIZE`
-    pub const UNIFORM_BLOCK_DATA_SIZE: f64 = 35392.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNIFORM_BLOCK_DATA_SIZE")]
+    pub const UNIFORM_BLOCK_DATA_SIZE: u32 = 0x8A40;
 
     /// `WebGL2RenderingContext.UNIFORM_BLOCK_ACTIVE_UNIFORMS`
-    pub const UNIFORM_BLOCK_ACTIVE_UNIFORMS: f64 = 35394.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNIFORM_BLOCK_ACTIVE_UNIFORMS")]
+    pub const UNIFORM_BLOCK_ACTIVE_UNIFORMS: u32 = 0x8A42;
 
     /// `WebGL2RenderingContext.UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES`
-    pub const UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES: f64 = 35395.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES")]
+    pub const UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES: u32 = 0x8A43;
 
     /// `WebGL2RenderingContext.UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER`
-    pub const UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER: f64 = 35396.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER")]
+    pub const UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER: u32 = 0x8A44;
 
     /// `WebGL2RenderingContext.UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER`
-    pub const UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER: f64 = 35398.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER")]
+    pub const UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER: u32 = 0x8A46;
 
     /// `WebGL2RenderingContext.INVALID_INDEX`
-    pub const INVALID_INDEX: f64 = 4294967295.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.INVALID_INDEX")]
+    pub const INVALID_INDEX: u32 = 0xFFFFFFFF;
 
     /// `WebGL2RenderingContext.MAX_VERTEX_OUTPUT_COMPONENTS`
-    pub const MAX_VERTEX_OUTPUT_COMPONENTS: f64 = 37154.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_VERTEX_OUTPUT_COMPONENTS")]
+    pub const MAX_VERTEX_OUTPUT_COMPONENTS: u32 = 0x9122;
 
     /// `WebGL2RenderingContext.MAX_FRAGMENT_INPUT_COMPONENTS`
-    pub const MAX_FRAGMENT_INPUT_COMPONENTS: f64 = 37157.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_FRAGMENT_INPUT_COMPONENTS")]
+    pub const MAX_FRAGMENT_INPUT_COMPONENTS: u32 = 0x9125;
 
     /// `WebGL2RenderingContext.MAX_SERVER_WAIT_TIMEOUT`
-    pub const MAX_SERVER_WAIT_TIMEOUT: f64 = 37137.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_SERVER_WAIT_TIMEOUT")]
+    pub const MAX_SERVER_WAIT_TIMEOUT: u32 = 0x9111;
 
     /// `WebGL2RenderingContext.OBJECT_TYPE`
-    pub const OBJECT_TYPE: f64 = 37138.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.OBJECT_TYPE")]
+    pub const OBJECT_TYPE: u32 = 0x9112;
 
     /// `WebGL2RenderingContext.SYNC_CONDITION`
-    pub const SYNC_CONDITION: f64 = 37139.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SYNC_CONDITION")]
+    pub const SYNC_CONDITION: u32 = 0x9113;
 
     /// `WebGL2RenderingContext.SYNC_STATUS`
-    pub const SYNC_STATUS: f64 = 37140.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SYNC_STATUS")]
+    pub const SYNC_STATUS: u32 = 0x9114;
 
     /// `WebGL2RenderingContext.SYNC_FLAGS`
-    pub const SYNC_FLAGS: f64 = 37141.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SYNC_FLAGS")]
+    pub const SYNC_FLAGS: u32 = 0x9115;
 
     /// `WebGL2RenderingContext.SYNC_FENCE`
-    pub const SYNC_FENCE: f64 = 37142.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SYNC_FENCE")]
+    pub const SYNC_FENCE: u32 = 0x9116;
 
     /// `WebGL2RenderingContext.SYNC_GPU_COMMANDS_COMPLETE`
-    pub const SYNC_GPU_COMMANDS_COMPLETE: f64 = 37143.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SYNC_GPU_COMMANDS_COMPLETE")]
+    pub const SYNC_GPU_COMMANDS_COMPLETE: u32 = 0x9117;
 
     /// `WebGL2RenderingContext.UNSIGNALED`
-    pub const UNSIGNALED: f64 = 37144.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.UNSIGNALED")]
+    pub const UNSIGNALED: u32 = 0x9118;
 
     /// `WebGL2RenderingContext.SIGNALED`
-    pub const SIGNALED: f64 = 37145.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SIGNALED")]
+    pub const SIGNALED: u32 = 0x9119;
 
     /// `WebGL2RenderingContext.ALREADY_SIGNALED`
-    pub const ALREADY_SIGNALED: f64 = 37146.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ALREADY_SIGNALED")]
+    pub const ALREADY_SIGNALED: u32 = 0x911A;
 
     /// `WebGL2RenderingContext.TIMEOUT_EXPIRED`
-    pub const TIMEOUT_EXPIRED: f64 = 37147.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TIMEOUT_EXPIRED")]
+    pub const TIMEOUT_EXPIRED: u32 = 0x911B;
 
     /// `WebGL2RenderingContext.CONDITION_SATISFIED`
-    pub const CONDITION_SATISFIED: f64 = 37148.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.CONDITION_SATISFIED")]
+    pub const CONDITION_SATISFIED: u32 = 0x911C;
 
     /// `WebGL2RenderingContext.WAIT_FAILED`
-    pub const WAIT_FAILED: f64 = 37149.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.WAIT_FAILED")]
+    pub const WAIT_FAILED: u32 = 0x911D;
 
     /// `WebGL2RenderingContext.SYNC_FLUSH_COMMANDS_BIT`
-    pub const SYNC_FLUSH_COMMANDS_BIT: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SYNC_FLUSH_COMMANDS_BIT")]
+    pub const SYNC_FLUSH_COMMANDS_BIT: u32 = 0x00000001;
 
     /// `WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_DIVISOR`
-    pub const VERTEX_ATTRIB_ARRAY_DIVISOR: f64 = 35070.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.VERTEX_ATTRIB_ARRAY_DIVISOR")]
+    pub const VERTEX_ATTRIB_ARRAY_DIVISOR: u32 = 0x88FE;
 
     /// `WebGL2RenderingContext.ANY_SAMPLES_PASSED`
-    pub const ANY_SAMPLES_PASSED: f64 = 35887.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ANY_SAMPLES_PASSED")]
+    pub const ANY_SAMPLES_PASSED: u32 = 0x8C2F;
 
     /// `WebGL2RenderingContext.ANY_SAMPLES_PASSED_CONSERVATIVE`
-    pub const ANY_SAMPLES_PASSED_CONSERVATIVE: f64 = 36202.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.ANY_SAMPLES_PASSED_CONSERVATIVE")]
+    pub const ANY_SAMPLES_PASSED_CONSERVATIVE: u32 = 0x8D6A;
 
     /// `WebGL2RenderingContext.SAMPLER_BINDING`
-    pub const SAMPLER_BINDING: f64 = 35097.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.SAMPLER_BINDING")]
+    pub const SAMPLER_BINDING: u32 = 0x8919;
 
     /// `WebGL2RenderingContext.RGB10_A2UI`
-    pub const RGB10_A2UI: f64 = 36975.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.RGB10_A2UI")]
+    pub const RGB10_A2UI: u32 = 0x906F;
 
     /// `WebGL2RenderingContext.INT_2_10_10_10_REV`
-    pub const INT_2_10_10_10_REV: f64 = 36255.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.INT_2_10_10_10_REV")]
+    pub const INT_2_10_10_10_REV: u32 = 0x8D9F;
 
     /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK`
-    pub const TRANSFORM_FEEDBACK: f64 = 36386.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TRANSFORM_FEEDBACK")]
+    pub const TRANSFORM_FEEDBACK: u32 = 0x8E22;
 
     /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_PAUSED`
-    pub const TRANSFORM_FEEDBACK_PAUSED: f64 = 36387.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TRANSFORM_FEEDBACK_PAUSED")]
+    pub const TRANSFORM_FEEDBACK_PAUSED: u32 = 0x8E23;
 
     /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_ACTIVE`
-    pub const TRANSFORM_FEEDBACK_ACTIVE: f64 = 36388.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TRANSFORM_FEEDBACK_ACTIVE")]
+    pub const TRANSFORM_FEEDBACK_ACTIVE: u32 = 0x8E24;
 
     /// `WebGL2RenderingContext.TRANSFORM_FEEDBACK_BINDING`
-    pub const TRANSFORM_FEEDBACK_BINDING: f64 = 36389.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TRANSFORM_FEEDBACK_BINDING")]
+    pub const TRANSFORM_FEEDBACK_BINDING: u32 = 0x8E25;
 
     /// `WebGL2RenderingContext.TEXTURE_IMMUTABLE_FORMAT`
-    pub const TEXTURE_IMMUTABLE_FORMAT: f64 = 37167.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_IMMUTABLE_FORMAT")]
+    pub const TEXTURE_IMMUTABLE_FORMAT: u32 = 0x912F;
 
     /// `WebGL2RenderingContext.MAX_ELEMENT_INDEX`
-    pub const MAX_ELEMENT_INDEX: f64 = 36203.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_ELEMENT_INDEX")]
+    pub const MAX_ELEMENT_INDEX: u32 = 0x8D6B;
 
     /// `WebGL2RenderingContext.TEXTURE_IMMUTABLE_LEVELS`
-    pub const TEXTURE_IMMUTABLE_LEVELS: f64 = 33503.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TEXTURE_IMMUTABLE_LEVELS")]
+    pub const TEXTURE_IMMUTABLE_LEVELS: u32 = 0x82DF;
 
     /// `WebGL2RenderingContext.TIMEOUT_IGNORED`
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.TIMEOUT_IGNORED")]
     pub const TIMEOUT_IGNORED: f64 = -1.0;
 
     /// `WebGL2RenderingContext.MAX_CLIENT_WAIT_TIMEOUT_WEBGL`
-    pub const MAX_CLIENT_WAIT_TIMEOUT_WEBGL: f64 = 37447.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGL2RenderingContext.MAX_CLIENT_WAIT_TIMEOUT_WEBGL")]
+    pub const MAX_CLIENT_WAIT_TIMEOUT_WEBGL: u32 = 0x9247;
 }
 
 impl WebGL2RenderingContext {
@@ -76961,895 +77738,1192 @@ impl Eq for WebGLRenderingContext {}
 pub mod web_gl_rendering_context {
 
     /// `WebGLRenderingContext.DEPTH_BUFFER_BIT`
-    pub const DEPTH_BUFFER_BIT: f64 = 256.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.DEPTH_BUFFER_BIT")]
+    pub const DEPTH_BUFFER_BIT: u32 = 0x00000100;
 
     /// `WebGLRenderingContext.STENCIL_BUFFER_BIT`
-    pub const STENCIL_BUFFER_BIT: f64 = 1024.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.STENCIL_BUFFER_BIT")]
+    pub const STENCIL_BUFFER_BIT: u32 = 0x00000400;
 
     /// `WebGLRenderingContext.COLOR_BUFFER_BIT`
-    pub const COLOR_BUFFER_BIT: f64 = 16384.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.COLOR_BUFFER_BIT")]
+    pub const COLOR_BUFFER_BIT: u32 = 0x00004000;
 
     /// `WebGLRenderingContext.POINTS`
-    pub const POINTS: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.POINTS")]
+    pub const POINTS: u32 = 0x0000;
 
     /// `WebGLRenderingContext.LINES`
-    pub const LINES: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.LINES")]
+    pub const LINES: u32 = 0x0001;
 
     /// `WebGLRenderingContext.LINE_LOOP`
-    pub const LINE_LOOP: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.LINE_LOOP")]
+    pub const LINE_LOOP: u32 = 0x0002;
 
     /// `WebGLRenderingContext.LINE_STRIP`
-    pub const LINE_STRIP: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.LINE_STRIP")]
+    pub const LINE_STRIP: u32 = 0x0003;
 
     /// `WebGLRenderingContext.TRIANGLES`
-    pub const TRIANGLES: f64 = 4.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TRIANGLES")]
+    pub const TRIANGLES: u32 = 0x0004;
 
     /// `WebGLRenderingContext.TRIANGLE_STRIP`
-    pub const TRIANGLE_STRIP: f64 = 5.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TRIANGLE_STRIP")]
+    pub const TRIANGLE_STRIP: u32 = 0x0005;
 
     /// `WebGLRenderingContext.TRIANGLE_FAN`
-    pub const TRIANGLE_FAN: f64 = 6.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TRIANGLE_FAN")]
+    pub const TRIANGLE_FAN: u32 = 0x0006;
 
     /// `WebGLRenderingContext.ZERO`
-    pub const ZERO: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.ZERO")]
+    pub const ZERO: u32 = 0;
 
     /// `WebGLRenderingContext.ONE`
-    pub const ONE: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.ONE")]
+    pub const ONE: u32 = 1;
 
     /// `WebGLRenderingContext.SRC_COLOR`
-    pub const SRC_COLOR: f64 = 768.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.SRC_COLOR")]
+    pub const SRC_COLOR: u32 = 0x0300;
 
     /// `WebGLRenderingContext.ONE_MINUS_SRC_COLOR`
-    pub const ONE_MINUS_SRC_COLOR: f64 = 769.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.ONE_MINUS_SRC_COLOR")]
+    pub const ONE_MINUS_SRC_COLOR: u32 = 0x0301;
 
     /// `WebGLRenderingContext.SRC_ALPHA`
-    pub const SRC_ALPHA: f64 = 770.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.SRC_ALPHA")]
+    pub const SRC_ALPHA: u32 = 0x0302;
 
     /// `WebGLRenderingContext.ONE_MINUS_SRC_ALPHA`
-    pub const ONE_MINUS_SRC_ALPHA: f64 = 771.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.ONE_MINUS_SRC_ALPHA")]
+    pub const ONE_MINUS_SRC_ALPHA: u32 = 0x0303;
 
     /// `WebGLRenderingContext.DST_ALPHA`
-    pub const DST_ALPHA: f64 = 772.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.DST_ALPHA")]
+    pub const DST_ALPHA: u32 = 0x0304;
 
     /// `WebGLRenderingContext.ONE_MINUS_DST_ALPHA`
-    pub const ONE_MINUS_DST_ALPHA: f64 = 773.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.ONE_MINUS_DST_ALPHA")]
+    pub const ONE_MINUS_DST_ALPHA: u32 = 0x0305;
 
     /// `WebGLRenderingContext.DST_COLOR`
-    pub const DST_COLOR: f64 = 774.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.DST_COLOR")]
+    pub const DST_COLOR: u32 = 0x0306;
 
     /// `WebGLRenderingContext.ONE_MINUS_DST_COLOR`
-    pub const ONE_MINUS_DST_COLOR: f64 = 775.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.ONE_MINUS_DST_COLOR")]
+    pub const ONE_MINUS_DST_COLOR: u32 = 0x0307;
 
     /// `WebGLRenderingContext.SRC_ALPHA_SATURATE`
-    pub const SRC_ALPHA_SATURATE: f64 = 776.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.SRC_ALPHA_SATURATE")]
+    pub const SRC_ALPHA_SATURATE: u32 = 0x0308;
 
     /// `WebGLRenderingContext.FUNC_ADD`
-    pub const FUNC_ADD: f64 = 32774.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FUNC_ADD")]
+    pub const FUNC_ADD: u32 = 0x8006;
 
     /// `WebGLRenderingContext.BLEND_EQUATION`
-    pub const BLEND_EQUATION: f64 = 32777.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.BLEND_EQUATION")]
+    pub const BLEND_EQUATION: u32 = 0x8009;
 
     /// `WebGLRenderingContext.BLEND_EQUATION_RGB`
-    pub const BLEND_EQUATION_RGB: f64 = 32777.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.BLEND_EQUATION_RGB")]
+    pub const BLEND_EQUATION_RGB: u32 = 0x8009;
 
     /// `WebGLRenderingContext.BLEND_EQUATION_ALPHA`
-    pub const BLEND_EQUATION_ALPHA: f64 = 34877.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.BLEND_EQUATION_ALPHA")]
+    pub const BLEND_EQUATION_ALPHA: u32 = 0x883D;
 
     /// `WebGLRenderingContext.FUNC_SUBTRACT`
-    pub const FUNC_SUBTRACT: f64 = 32778.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FUNC_SUBTRACT")]
+    pub const FUNC_SUBTRACT: u32 = 0x800A;
 
     /// `WebGLRenderingContext.FUNC_REVERSE_SUBTRACT`
-    pub const FUNC_REVERSE_SUBTRACT: f64 = 32779.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FUNC_REVERSE_SUBTRACT")]
+    pub const FUNC_REVERSE_SUBTRACT: u32 = 0x800B;
 
     /// `WebGLRenderingContext.BLEND_DST_RGB`
-    pub const BLEND_DST_RGB: f64 = 32968.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.BLEND_DST_RGB")]
+    pub const BLEND_DST_RGB: u32 = 0x80C8;
 
     /// `WebGLRenderingContext.BLEND_SRC_RGB`
-    pub const BLEND_SRC_RGB: f64 = 32969.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.BLEND_SRC_RGB")]
+    pub const BLEND_SRC_RGB: u32 = 0x80C9;
 
     /// `WebGLRenderingContext.BLEND_DST_ALPHA`
-    pub const BLEND_DST_ALPHA: f64 = 32970.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.BLEND_DST_ALPHA")]
+    pub const BLEND_DST_ALPHA: u32 = 0x80CA;
 
     /// `WebGLRenderingContext.BLEND_SRC_ALPHA`
-    pub const BLEND_SRC_ALPHA: f64 = 32971.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.BLEND_SRC_ALPHA")]
+    pub const BLEND_SRC_ALPHA: u32 = 0x80CB;
 
     /// `WebGLRenderingContext.CONSTANT_COLOR`
-    pub const CONSTANT_COLOR: f64 = 32769.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.CONSTANT_COLOR")]
+    pub const CONSTANT_COLOR: u32 = 0x8001;
 
     /// `WebGLRenderingContext.ONE_MINUS_CONSTANT_COLOR`
-    pub const ONE_MINUS_CONSTANT_COLOR: f64 = 32770.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.ONE_MINUS_CONSTANT_COLOR")]
+    pub const ONE_MINUS_CONSTANT_COLOR: u32 = 0x8002;
 
     /// `WebGLRenderingContext.CONSTANT_ALPHA`
-    pub const CONSTANT_ALPHA: f64 = 32771.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.CONSTANT_ALPHA")]
+    pub const CONSTANT_ALPHA: u32 = 0x8003;
 
     /// `WebGLRenderingContext.ONE_MINUS_CONSTANT_ALPHA`
-    pub const ONE_MINUS_CONSTANT_ALPHA: f64 = 32772.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.ONE_MINUS_CONSTANT_ALPHA")]
+    pub const ONE_MINUS_CONSTANT_ALPHA: u32 = 0x8004;
 
     /// `WebGLRenderingContext.BLEND_COLOR`
-    pub const BLEND_COLOR: f64 = 32773.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.BLEND_COLOR")]
+    pub const BLEND_COLOR: u32 = 0x8005;
 
     /// `WebGLRenderingContext.ARRAY_BUFFER`
-    pub const ARRAY_BUFFER: f64 = 34962.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.ARRAY_BUFFER")]
+    pub const ARRAY_BUFFER: u32 = 0x8892;
 
     /// `WebGLRenderingContext.ELEMENT_ARRAY_BUFFER`
-    pub const ELEMENT_ARRAY_BUFFER: f64 = 34963.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.ELEMENT_ARRAY_BUFFER")]
+    pub const ELEMENT_ARRAY_BUFFER: u32 = 0x8893;
 
     /// `WebGLRenderingContext.ARRAY_BUFFER_BINDING`
-    pub const ARRAY_BUFFER_BINDING: f64 = 34964.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.ARRAY_BUFFER_BINDING")]
+    pub const ARRAY_BUFFER_BINDING: u32 = 0x8894;
 
     /// `WebGLRenderingContext.ELEMENT_ARRAY_BUFFER_BINDING`
-    pub const ELEMENT_ARRAY_BUFFER_BINDING: f64 = 34965.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.ELEMENT_ARRAY_BUFFER_BINDING")]
+    pub const ELEMENT_ARRAY_BUFFER_BINDING: u32 = 0x8895;
 
     /// `WebGLRenderingContext.STREAM_DRAW`
-    pub const STREAM_DRAW: f64 = 35040.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.STREAM_DRAW")]
+    pub const STREAM_DRAW: u32 = 0x88E0;
 
     /// `WebGLRenderingContext.STATIC_DRAW`
-    pub const STATIC_DRAW: f64 = 35044.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.STATIC_DRAW")]
+    pub const STATIC_DRAW: u32 = 0x88E4;
 
     /// `WebGLRenderingContext.DYNAMIC_DRAW`
-    pub const DYNAMIC_DRAW: f64 = 35048.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.DYNAMIC_DRAW")]
+    pub const DYNAMIC_DRAW: u32 = 0x88E8;
 
     /// `WebGLRenderingContext.BUFFER_SIZE`
-    pub const BUFFER_SIZE: f64 = 34660.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.BUFFER_SIZE")]
+    pub const BUFFER_SIZE: u32 = 0x8764;
 
     /// `WebGLRenderingContext.BUFFER_USAGE`
-    pub const BUFFER_USAGE: f64 = 34661.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.BUFFER_USAGE")]
+    pub const BUFFER_USAGE: u32 = 0x8765;
 
     /// `WebGLRenderingContext.CURRENT_VERTEX_ATTRIB`
-    pub const CURRENT_VERTEX_ATTRIB: f64 = 34342.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.CURRENT_VERTEX_ATTRIB")]
+    pub const CURRENT_VERTEX_ATTRIB: u32 = 0x8626;
 
     /// `WebGLRenderingContext.FRONT`
-    pub const FRONT: f64 = 1028.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FRONT")]
+    pub const FRONT: u32 = 0x0404;
 
     /// `WebGLRenderingContext.BACK`
-    pub const BACK: f64 = 1029.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.BACK")]
+    pub const BACK: u32 = 0x0405;
 
     /// `WebGLRenderingContext.FRONT_AND_BACK`
-    pub const FRONT_AND_BACK: f64 = 1032.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FRONT_AND_BACK")]
+    pub const FRONT_AND_BACK: u32 = 0x0408;
 
     /// `WebGLRenderingContext.CULL_FACE`
-    pub const CULL_FACE: f64 = 2884.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.CULL_FACE")]
+    pub const CULL_FACE: u32 = 0x0B44;
 
     /// `WebGLRenderingContext.BLEND`
-    pub const BLEND: f64 = 3042.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.BLEND")]
+    pub const BLEND: u32 = 0x0BE2;
 
     /// `WebGLRenderingContext.DITHER`
-    pub const DITHER: f64 = 3024.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.DITHER")]
+    pub const DITHER: u32 = 0x0BD0;
 
     /// `WebGLRenderingContext.STENCIL_TEST`
-    pub const STENCIL_TEST: f64 = 2960.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.STENCIL_TEST")]
+    pub const STENCIL_TEST: u32 = 0x0B90;
 
     /// `WebGLRenderingContext.DEPTH_TEST`
-    pub const DEPTH_TEST: f64 = 2929.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.DEPTH_TEST")]
+    pub const DEPTH_TEST: u32 = 0x0B71;
 
     /// `WebGLRenderingContext.SCISSOR_TEST`
-    pub const SCISSOR_TEST: f64 = 3089.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.SCISSOR_TEST")]
+    pub const SCISSOR_TEST: u32 = 0x0C11;
 
     /// `WebGLRenderingContext.POLYGON_OFFSET_FILL`
-    pub const POLYGON_OFFSET_FILL: f64 = 32823.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.POLYGON_OFFSET_FILL")]
+    pub const POLYGON_OFFSET_FILL: u32 = 0x8037;
 
     /// `WebGLRenderingContext.SAMPLE_ALPHA_TO_COVERAGE`
-    pub const SAMPLE_ALPHA_TO_COVERAGE: f64 = 32926.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.SAMPLE_ALPHA_TO_COVERAGE")]
+    pub const SAMPLE_ALPHA_TO_COVERAGE: u32 = 0x809E;
 
     /// `WebGLRenderingContext.SAMPLE_COVERAGE`
-    pub const SAMPLE_COVERAGE: f64 = 32928.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.SAMPLE_COVERAGE")]
+    pub const SAMPLE_COVERAGE: u32 = 0x80A0;
 
     /// `WebGLRenderingContext.NO_ERROR`
-    pub const NO_ERROR: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.NO_ERROR")]
+    pub const NO_ERROR: u32 = 0;
 
     /// `WebGLRenderingContext.INVALID_ENUM`
-    pub const INVALID_ENUM: f64 = 1280.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.INVALID_ENUM")]
+    pub const INVALID_ENUM: u32 = 0x0500;
 
     /// `WebGLRenderingContext.INVALID_VALUE`
-    pub const INVALID_VALUE: f64 = 1281.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.INVALID_VALUE")]
+    pub const INVALID_VALUE: u32 = 0x0501;
 
     /// `WebGLRenderingContext.INVALID_OPERATION`
-    pub const INVALID_OPERATION: f64 = 1282.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.INVALID_OPERATION")]
+    pub const INVALID_OPERATION: u32 = 0x0502;
 
     /// `WebGLRenderingContext.OUT_OF_MEMORY`
-    pub const OUT_OF_MEMORY: f64 = 1285.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.OUT_OF_MEMORY")]
+    pub const OUT_OF_MEMORY: u32 = 0x0505;
 
     /// `WebGLRenderingContext.CW`
-    pub const CW: f64 = 2304.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.CW")]
+    pub const CW: u32 = 0x0900;
 
     /// `WebGLRenderingContext.CCW`
-    pub const CCW: f64 = 2305.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.CCW")]
+    pub const CCW: u32 = 0x0901;
 
     /// `WebGLRenderingContext.LINE_WIDTH`
-    pub const LINE_WIDTH: f64 = 2849.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.LINE_WIDTH")]
+    pub const LINE_WIDTH: u32 = 0x0B21;
 
     /// `WebGLRenderingContext.ALIASED_POINT_SIZE_RANGE`
-    pub const ALIASED_POINT_SIZE_RANGE: f64 = 33901.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.ALIASED_POINT_SIZE_RANGE")]
+    pub const ALIASED_POINT_SIZE_RANGE: u32 = 0x846D;
 
     /// `WebGLRenderingContext.ALIASED_LINE_WIDTH_RANGE`
-    pub const ALIASED_LINE_WIDTH_RANGE: f64 = 33902.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.ALIASED_LINE_WIDTH_RANGE")]
+    pub const ALIASED_LINE_WIDTH_RANGE: u32 = 0x846E;
 
     /// `WebGLRenderingContext.CULL_FACE_MODE`
-    pub const CULL_FACE_MODE: f64 = 2885.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.CULL_FACE_MODE")]
+    pub const CULL_FACE_MODE: u32 = 0x0B45;
 
     /// `WebGLRenderingContext.FRONT_FACE`
-    pub const FRONT_FACE: f64 = 2886.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FRONT_FACE")]
+    pub const FRONT_FACE: u32 = 0x0B46;
 
     /// `WebGLRenderingContext.DEPTH_RANGE`
-    pub const DEPTH_RANGE: f64 = 2928.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.DEPTH_RANGE")]
+    pub const DEPTH_RANGE: u32 = 0x0B70;
 
     /// `WebGLRenderingContext.DEPTH_WRITEMASK`
-    pub const DEPTH_WRITEMASK: f64 = 2930.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.DEPTH_WRITEMASK")]
+    pub const DEPTH_WRITEMASK: u32 = 0x0B72;
 
     /// `WebGLRenderingContext.DEPTH_CLEAR_VALUE`
-    pub const DEPTH_CLEAR_VALUE: f64 = 2931.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.DEPTH_CLEAR_VALUE")]
+    pub const DEPTH_CLEAR_VALUE: u32 = 0x0B73;
 
     /// `WebGLRenderingContext.DEPTH_FUNC`
-    pub const DEPTH_FUNC: f64 = 2932.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.DEPTH_FUNC")]
+    pub const DEPTH_FUNC: u32 = 0x0B74;
 
     /// `WebGLRenderingContext.STENCIL_CLEAR_VALUE`
-    pub const STENCIL_CLEAR_VALUE: f64 = 2961.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.STENCIL_CLEAR_VALUE")]
+    pub const STENCIL_CLEAR_VALUE: u32 = 0x0B91;
 
     /// `WebGLRenderingContext.STENCIL_FUNC`
-    pub const STENCIL_FUNC: f64 = 2962.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.STENCIL_FUNC")]
+    pub const STENCIL_FUNC: u32 = 0x0B92;
 
     /// `WebGLRenderingContext.STENCIL_FAIL`
-    pub const STENCIL_FAIL: f64 = 2964.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.STENCIL_FAIL")]
+    pub const STENCIL_FAIL: u32 = 0x0B94;
 
     /// `WebGLRenderingContext.STENCIL_PASS_DEPTH_FAIL`
-    pub const STENCIL_PASS_DEPTH_FAIL: f64 = 2965.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.STENCIL_PASS_DEPTH_FAIL")]
+    pub const STENCIL_PASS_DEPTH_FAIL: u32 = 0x0B95;
 
     /// `WebGLRenderingContext.STENCIL_PASS_DEPTH_PASS`
-    pub const STENCIL_PASS_DEPTH_PASS: f64 = 2966.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.STENCIL_PASS_DEPTH_PASS")]
+    pub const STENCIL_PASS_DEPTH_PASS: u32 = 0x0B96;
 
     /// `WebGLRenderingContext.STENCIL_REF`
-    pub const STENCIL_REF: f64 = 2967.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.STENCIL_REF")]
+    pub const STENCIL_REF: u32 = 0x0B97;
 
     /// `WebGLRenderingContext.STENCIL_VALUE_MASK`
-    pub const STENCIL_VALUE_MASK: f64 = 2963.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.STENCIL_VALUE_MASK")]
+    pub const STENCIL_VALUE_MASK: u32 = 0x0B93;
 
     /// `WebGLRenderingContext.STENCIL_WRITEMASK`
-    pub const STENCIL_WRITEMASK: f64 = 2968.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.STENCIL_WRITEMASK")]
+    pub const STENCIL_WRITEMASK: u32 = 0x0B98;
 
     /// `WebGLRenderingContext.STENCIL_BACK_FUNC`
-    pub const STENCIL_BACK_FUNC: f64 = 34816.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.STENCIL_BACK_FUNC")]
+    pub const STENCIL_BACK_FUNC: u32 = 0x8800;
 
     /// `WebGLRenderingContext.STENCIL_BACK_FAIL`
-    pub const STENCIL_BACK_FAIL: f64 = 34817.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.STENCIL_BACK_FAIL")]
+    pub const STENCIL_BACK_FAIL: u32 = 0x8801;
 
     /// `WebGLRenderingContext.STENCIL_BACK_PASS_DEPTH_FAIL`
-    pub const STENCIL_BACK_PASS_DEPTH_FAIL: f64 = 34818.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.STENCIL_BACK_PASS_DEPTH_FAIL")]
+    pub const STENCIL_BACK_PASS_DEPTH_FAIL: u32 = 0x8802;
 
     /// `WebGLRenderingContext.STENCIL_BACK_PASS_DEPTH_PASS`
-    pub const STENCIL_BACK_PASS_DEPTH_PASS: f64 = 34819.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.STENCIL_BACK_PASS_DEPTH_PASS")]
+    pub const STENCIL_BACK_PASS_DEPTH_PASS: u32 = 0x8803;
 
     /// `WebGLRenderingContext.STENCIL_BACK_REF`
-    pub const STENCIL_BACK_REF: f64 = 36003.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.STENCIL_BACK_REF")]
+    pub const STENCIL_BACK_REF: u32 = 0x8CA3;
 
     /// `WebGLRenderingContext.STENCIL_BACK_VALUE_MASK`
-    pub const STENCIL_BACK_VALUE_MASK: f64 = 36004.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.STENCIL_BACK_VALUE_MASK")]
+    pub const STENCIL_BACK_VALUE_MASK: u32 = 0x8CA4;
 
     /// `WebGLRenderingContext.STENCIL_BACK_WRITEMASK`
-    pub const STENCIL_BACK_WRITEMASK: f64 = 36005.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.STENCIL_BACK_WRITEMASK")]
+    pub const STENCIL_BACK_WRITEMASK: u32 = 0x8CA5;
 
     /// `WebGLRenderingContext.VIEWPORT`
-    pub const VIEWPORT: f64 = 2978.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.VIEWPORT")]
+    pub const VIEWPORT: u32 = 0x0BA2;
 
     /// `WebGLRenderingContext.SCISSOR_BOX`
-    pub const SCISSOR_BOX: f64 = 3088.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.SCISSOR_BOX")]
+    pub const SCISSOR_BOX: u32 = 0x0C10;
 
     /// `WebGLRenderingContext.COLOR_CLEAR_VALUE`
-    pub const COLOR_CLEAR_VALUE: f64 = 3106.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.COLOR_CLEAR_VALUE")]
+    pub const COLOR_CLEAR_VALUE: u32 = 0x0C22;
 
     /// `WebGLRenderingContext.COLOR_WRITEMASK`
-    pub const COLOR_WRITEMASK: f64 = 3107.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.COLOR_WRITEMASK")]
+    pub const COLOR_WRITEMASK: u32 = 0x0C23;
 
     /// `WebGLRenderingContext.UNPACK_ALIGNMENT`
-    pub const UNPACK_ALIGNMENT: f64 = 3317.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.UNPACK_ALIGNMENT")]
+    pub const UNPACK_ALIGNMENT: u32 = 0x0CF5;
 
     /// `WebGLRenderingContext.PACK_ALIGNMENT`
-    pub const PACK_ALIGNMENT: f64 = 3333.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.PACK_ALIGNMENT")]
+    pub const PACK_ALIGNMENT: u32 = 0x0D05;
 
     /// `WebGLRenderingContext.MAX_TEXTURE_SIZE`
-    pub const MAX_TEXTURE_SIZE: f64 = 3379.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.MAX_TEXTURE_SIZE")]
+    pub const MAX_TEXTURE_SIZE: u32 = 0x0D33;
 
     /// `WebGLRenderingContext.MAX_VIEWPORT_DIMS`
-    pub const MAX_VIEWPORT_DIMS: f64 = 3386.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.MAX_VIEWPORT_DIMS")]
+    pub const MAX_VIEWPORT_DIMS: u32 = 0x0D3A;
 
     /// `WebGLRenderingContext.SUBPIXEL_BITS`
-    pub const SUBPIXEL_BITS: f64 = 3408.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.SUBPIXEL_BITS")]
+    pub const SUBPIXEL_BITS: u32 = 0x0D50;
 
     /// `WebGLRenderingContext.RED_BITS`
-    pub const RED_BITS: f64 = 3410.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.RED_BITS")]
+    pub const RED_BITS: u32 = 0x0D52;
 
     /// `WebGLRenderingContext.GREEN_BITS`
-    pub const GREEN_BITS: f64 = 3411.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.GREEN_BITS")]
+    pub const GREEN_BITS: u32 = 0x0D53;
 
     /// `WebGLRenderingContext.BLUE_BITS`
-    pub const BLUE_BITS: f64 = 3412.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.BLUE_BITS")]
+    pub const BLUE_BITS: u32 = 0x0D54;
 
     /// `WebGLRenderingContext.ALPHA_BITS`
-    pub const ALPHA_BITS: f64 = 3413.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.ALPHA_BITS")]
+    pub const ALPHA_BITS: u32 = 0x0D55;
 
     /// `WebGLRenderingContext.DEPTH_BITS`
-    pub const DEPTH_BITS: f64 = 3414.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.DEPTH_BITS")]
+    pub const DEPTH_BITS: u32 = 0x0D56;
 
     /// `WebGLRenderingContext.STENCIL_BITS`
-    pub const STENCIL_BITS: f64 = 3415.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.STENCIL_BITS")]
+    pub const STENCIL_BITS: u32 = 0x0D57;
 
     /// `WebGLRenderingContext.POLYGON_OFFSET_UNITS`
-    pub const POLYGON_OFFSET_UNITS: f64 = 10752.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.POLYGON_OFFSET_UNITS")]
+    pub const POLYGON_OFFSET_UNITS: u32 = 0x2A00;
 
     /// `WebGLRenderingContext.POLYGON_OFFSET_FACTOR`
-    pub const POLYGON_OFFSET_FACTOR: f64 = 32824.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.POLYGON_OFFSET_FACTOR")]
+    pub const POLYGON_OFFSET_FACTOR: u32 = 0x8038;
 
     /// `WebGLRenderingContext.TEXTURE_BINDING_2D`
-    pub const TEXTURE_BINDING_2D: f64 = 32873.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE_BINDING_2D")]
+    pub const TEXTURE_BINDING_2D: u32 = 0x8069;
 
     /// `WebGLRenderingContext.SAMPLE_BUFFERS`
-    pub const SAMPLE_BUFFERS: f64 = 32936.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.SAMPLE_BUFFERS")]
+    pub const SAMPLE_BUFFERS: u32 = 0x80A8;
 
     /// `WebGLRenderingContext.SAMPLES`
-    pub const SAMPLES: f64 = 32937.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.SAMPLES")]
+    pub const SAMPLES: u32 = 0x80A9;
 
     /// `WebGLRenderingContext.SAMPLE_COVERAGE_VALUE`
-    pub const SAMPLE_COVERAGE_VALUE: f64 = 32938.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.SAMPLE_COVERAGE_VALUE")]
+    pub const SAMPLE_COVERAGE_VALUE: u32 = 0x80AA;
 
     /// `WebGLRenderingContext.SAMPLE_COVERAGE_INVERT`
-    pub const SAMPLE_COVERAGE_INVERT: f64 = 32939.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.SAMPLE_COVERAGE_INVERT")]
+    pub const SAMPLE_COVERAGE_INVERT: u32 = 0x80AB;
 
     /// `WebGLRenderingContext.COMPRESSED_TEXTURE_FORMATS`
-    pub const COMPRESSED_TEXTURE_FORMATS: f64 = 34467.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.COMPRESSED_TEXTURE_FORMATS")]
+    pub const COMPRESSED_TEXTURE_FORMATS: u32 = 0x86A3;
 
     /// `WebGLRenderingContext.DONT_CARE`
-    pub const DONT_CARE: f64 = 4352.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.DONT_CARE")]
+    pub const DONT_CARE: u32 = 0x1100;
 
     /// `WebGLRenderingContext.FASTEST`
-    pub const FASTEST: f64 = 4353.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FASTEST")]
+    pub const FASTEST: u32 = 0x1101;
 
     /// `WebGLRenderingContext.NICEST`
-    pub const NICEST: f64 = 4354.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.NICEST")]
+    pub const NICEST: u32 = 0x1102;
 
     /// `WebGLRenderingContext.GENERATE_MIPMAP_HINT`
-    pub const GENERATE_MIPMAP_HINT: f64 = 33170.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.GENERATE_MIPMAP_HINT")]
+    pub const GENERATE_MIPMAP_HINT: u32 = 0x8192;
 
     /// `WebGLRenderingContext.BYTE`
-    pub const BYTE: f64 = 5120.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.BYTE")]
+    pub const BYTE: u32 = 0x1400;
 
     /// `WebGLRenderingContext.UNSIGNED_BYTE`
-    pub const UNSIGNED_BYTE: f64 = 5121.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.UNSIGNED_BYTE")]
+    pub const UNSIGNED_BYTE: u32 = 0x1401;
 
     /// `WebGLRenderingContext.SHORT`
-    pub const SHORT: f64 = 5122.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.SHORT")]
+    pub const SHORT: u32 = 0x1402;
 
     /// `WebGLRenderingContext.UNSIGNED_SHORT`
-    pub const UNSIGNED_SHORT: f64 = 5123.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.UNSIGNED_SHORT")]
+    pub const UNSIGNED_SHORT: u32 = 0x1403;
 
     /// `WebGLRenderingContext.INT`
-    pub const INT: f64 = 5124.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.INT")]
+    pub const INT: u32 = 0x1404;
 
     /// `WebGLRenderingContext.UNSIGNED_INT`
-    pub const UNSIGNED_INT: f64 = 5125.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.UNSIGNED_INT")]
+    pub const UNSIGNED_INT: u32 = 0x1405;
 
     /// `WebGLRenderingContext.FLOAT`
-    pub const FLOAT: f64 = 5126.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FLOAT")]
+    pub const FLOAT: u32 = 0x1406;
 
     /// `WebGLRenderingContext.DEPTH_COMPONENT`
-    pub const DEPTH_COMPONENT: f64 = 6402.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.DEPTH_COMPONENT")]
+    pub const DEPTH_COMPONENT: u32 = 0x1902;
 
     /// `WebGLRenderingContext.ALPHA`
-    pub const ALPHA: f64 = 6406.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.ALPHA")]
+    pub const ALPHA: u32 = 0x1906;
 
     /// `WebGLRenderingContext.RGB`
-    pub const RGB: f64 = 6407.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.RGB")]
+    pub const RGB: u32 = 0x1907;
 
     /// `WebGLRenderingContext.RGBA`
-    pub const RGBA: f64 = 6408.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.RGBA")]
+    pub const RGBA: u32 = 0x1908;
 
     /// `WebGLRenderingContext.LUMINANCE`
-    pub const LUMINANCE: f64 = 6409.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.LUMINANCE")]
+    pub const LUMINANCE: u32 = 0x1909;
 
     /// `WebGLRenderingContext.LUMINANCE_ALPHA`
-    pub const LUMINANCE_ALPHA: f64 = 6410.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.LUMINANCE_ALPHA")]
+    pub const LUMINANCE_ALPHA: u32 = 0x190A;
 
     /// `WebGLRenderingContext.UNSIGNED_SHORT_4_4_4_4`
-    pub const UNSIGNED_SHORT_4_4_4_4: f64 = 32819.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.UNSIGNED_SHORT_4_4_4_4")]
+    pub const UNSIGNED_SHORT_4_4_4_4: u32 = 0x8033;
 
     /// `WebGLRenderingContext.UNSIGNED_SHORT_5_5_5_1`
-    pub const UNSIGNED_SHORT_5_5_5_1: f64 = 32820.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.UNSIGNED_SHORT_5_5_5_1")]
+    pub const UNSIGNED_SHORT_5_5_5_1: u32 = 0x8034;
 
     /// `WebGLRenderingContext.UNSIGNED_SHORT_5_6_5`
-    pub const UNSIGNED_SHORT_5_6_5: f64 = 33635.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.UNSIGNED_SHORT_5_6_5")]
+    pub const UNSIGNED_SHORT_5_6_5: u32 = 0x8363;
 
     /// `WebGLRenderingContext.FRAGMENT_SHADER`
-    pub const FRAGMENT_SHADER: f64 = 35632.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FRAGMENT_SHADER")]
+    pub const FRAGMENT_SHADER: u32 = 0x8B30;
 
     /// `WebGLRenderingContext.VERTEX_SHADER`
-    pub const VERTEX_SHADER: f64 = 35633.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.VERTEX_SHADER")]
+    pub const VERTEX_SHADER: u32 = 0x8B31;
 
     /// `WebGLRenderingContext.MAX_VERTEX_ATTRIBS`
-    pub const MAX_VERTEX_ATTRIBS: f64 = 34921.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.MAX_VERTEX_ATTRIBS")]
+    pub const MAX_VERTEX_ATTRIBS: u32 = 0x8869;
 
     /// `WebGLRenderingContext.MAX_VERTEX_UNIFORM_VECTORS`
-    pub const MAX_VERTEX_UNIFORM_VECTORS: f64 = 36347.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.MAX_VERTEX_UNIFORM_VECTORS")]
+    pub const MAX_VERTEX_UNIFORM_VECTORS: u32 = 0x8DFB;
 
     /// `WebGLRenderingContext.MAX_VARYING_VECTORS`
-    pub const MAX_VARYING_VECTORS: f64 = 36348.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.MAX_VARYING_VECTORS")]
+    pub const MAX_VARYING_VECTORS: u32 = 0x8DFC;
 
     /// `WebGLRenderingContext.MAX_COMBINED_TEXTURE_IMAGE_UNITS`
-    pub const MAX_COMBINED_TEXTURE_IMAGE_UNITS: f64 = 35661.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.MAX_COMBINED_TEXTURE_IMAGE_UNITS")]
+    pub const MAX_COMBINED_TEXTURE_IMAGE_UNITS: u32 = 0x8B4D;
 
     /// `WebGLRenderingContext.MAX_VERTEX_TEXTURE_IMAGE_UNITS`
-    pub const MAX_VERTEX_TEXTURE_IMAGE_UNITS: f64 = 35660.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.MAX_VERTEX_TEXTURE_IMAGE_UNITS")]
+    pub const MAX_VERTEX_TEXTURE_IMAGE_UNITS: u32 = 0x8B4C;
 
     /// `WebGLRenderingContext.MAX_TEXTURE_IMAGE_UNITS`
-    pub const MAX_TEXTURE_IMAGE_UNITS: f64 = 34930.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.MAX_TEXTURE_IMAGE_UNITS")]
+    pub const MAX_TEXTURE_IMAGE_UNITS: u32 = 0x8872;
 
     /// `WebGLRenderingContext.MAX_FRAGMENT_UNIFORM_VECTORS`
-    pub const MAX_FRAGMENT_UNIFORM_VECTORS: f64 = 36349.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.MAX_FRAGMENT_UNIFORM_VECTORS")]
+    pub const MAX_FRAGMENT_UNIFORM_VECTORS: u32 = 0x8DFD;
 
     /// `WebGLRenderingContext.SHADER_TYPE`
-    pub const SHADER_TYPE: f64 = 35663.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.SHADER_TYPE")]
+    pub const SHADER_TYPE: u32 = 0x8B4F;
 
     /// `WebGLRenderingContext.DELETE_STATUS`
-    pub const DELETE_STATUS: f64 = 35712.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.DELETE_STATUS")]
+    pub const DELETE_STATUS: u32 = 0x8B80;
 
     /// `WebGLRenderingContext.LINK_STATUS`
-    pub const LINK_STATUS: f64 = 35714.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.LINK_STATUS")]
+    pub const LINK_STATUS: u32 = 0x8B82;
 
     /// `WebGLRenderingContext.VALIDATE_STATUS`
-    pub const VALIDATE_STATUS: f64 = 35715.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.VALIDATE_STATUS")]
+    pub const VALIDATE_STATUS: u32 = 0x8B83;
 
     /// `WebGLRenderingContext.ATTACHED_SHADERS`
-    pub const ATTACHED_SHADERS: f64 = 35717.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.ATTACHED_SHADERS")]
+    pub const ATTACHED_SHADERS: u32 = 0x8B85;
 
     /// `WebGLRenderingContext.ACTIVE_UNIFORMS`
-    pub const ACTIVE_UNIFORMS: f64 = 35718.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.ACTIVE_UNIFORMS")]
+    pub const ACTIVE_UNIFORMS: u32 = 0x8B86;
 
     /// `WebGLRenderingContext.ACTIVE_ATTRIBUTES`
-    pub const ACTIVE_ATTRIBUTES: f64 = 35721.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.ACTIVE_ATTRIBUTES")]
+    pub const ACTIVE_ATTRIBUTES: u32 = 0x8B89;
 
     /// `WebGLRenderingContext.SHADING_LANGUAGE_VERSION`
-    pub const SHADING_LANGUAGE_VERSION: f64 = 35724.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.SHADING_LANGUAGE_VERSION")]
+    pub const SHADING_LANGUAGE_VERSION: u32 = 0x8B8C;
 
     /// `WebGLRenderingContext.CURRENT_PROGRAM`
-    pub const CURRENT_PROGRAM: f64 = 35725.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.CURRENT_PROGRAM")]
+    pub const CURRENT_PROGRAM: u32 = 0x8B8D;
 
     /// `WebGLRenderingContext.NEVER`
-    pub const NEVER: f64 = 512.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.NEVER")]
+    pub const NEVER: u32 = 0x0200;
 
     /// `WebGLRenderingContext.LESS`
-    pub const LESS: f64 = 513.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.LESS")]
+    pub const LESS: u32 = 0x0201;
 
     /// `WebGLRenderingContext.EQUAL`
-    pub const EQUAL: f64 = 514.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.EQUAL")]
+    pub const EQUAL: u32 = 0x0202;
 
     /// `WebGLRenderingContext.LEQUAL`
-    pub const LEQUAL: f64 = 515.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.LEQUAL")]
+    pub const LEQUAL: u32 = 0x0203;
 
     /// `WebGLRenderingContext.GREATER`
-    pub const GREATER: f64 = 516.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.GREATER")]
+    pub const GREATER: u32 = 0x0204;
 
     /// `WebGLRenderingContext.NOTEQUAL`
-    pub const NOTEQUAL: f64 = 517.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.NOTEQUAL")]
+    pub const NOTEQUAL: u32 = 0x0205;
 
     /// `WebGLRenderingContext.GEQUAL`
-    pub const GEQUAL: f64 = 518.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.GEQUAL")]
+    pub const GEQUAL: u32 = 0x0206;
 
     /// `WebGLRenderingContext.ALWAYS`
-    pub const ALWAYS: f64 = 519.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.ALWAYS")]
+    pub const ALWAYS: u32 = 0x0207;
 
     /// `WebGLRenderingContext.KEEP`
-    pub const KEEP: f64 = 7680.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.KEEP")]
+    pub const KEEP: u32 = 0x1E00;
 
     /// `WebGLRenderingContext.REPLACE`
-    pub const REPLACE: f64 = 7681.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.REPLACE")]
+    pub const REPLACE: u32 = 0x1E01;
 
     /// `WebGLRenderingContext.INCR`
-    pub const INCR: f64 = 7682.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.INCR")]
+    pub const INCR: u32 = 0x1E02;
 
     /// `WebGLRenderingContext.DECR`
-    pub const DECR: f64 = 7683.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.DECR")]
+    pub const DECR: u32 = 0x1E03;
 
     /// `WebGLRenderingContext.INVERT`
-    pub const INVERT: f64 = 5386.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.INVERT")]
+    pub const INVERT: u32 = 0x150A;
 
     /// `WebGLRenderingContext.INCR_WRAP`
-    pub const INCR_WRAP: f64 = 34055.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.INCR_WRAP")]
+    pub const INCR_WRAP: u32 = 0x8507;
 
     /// `WebGLRenderingContext.DECR_WRAP`
-    pub const DECR_WRAP: f64 = 34056.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.DECR_WRAP")]
+    pub const DECR_WRAP: u32 = 0x8508;
 
     /// `WebGLRenderingContext.VENDOR`
-    pub const VENDOR: f64 = 7936.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.VENDOR")]
+    pub const VENDOR: u32 = 0x1F00;
 
     /// `WebGLRenderingContext.RENDERER`
-    pub const RENDERER: f64 = 7937.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.RENDERER")]
+    pub const RENDERER: u32 = 0x1F01;
 
     /// `WebGLRenderingContext.VERSION`
-    pub const VERSION: f64 = 7938.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.VERSION")]
+    pub const VERSION: u32 = 0x1F02;
 
     /// `WebGLRenderingContext.NEAREST`
-    pub const NEAREST: f64 = 9728.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.NEAREST")]
+    pub const NEAREST: u32 = 0x2600;
 
     /// `WebGLRenderingContext.LINEAR`
-    pub const LINEAR: f64 = 9729.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.LINEAR")]
+    pub const LINEAR: u32 = 0x2601;
 
     /// `WebGLRenderingContext.NEAREST_MIPMAP_NEAREST`
-    pub const NEAREST_MIPMAP_NEAREST: f64 = 9984.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.NEAREST_MIPMAP_NEAREST")]
+    pub const NEAREST_MIPMAP_NEAREST: u32 = 0x2700;
 
     /// `WebGLRenderingContext.LINEAR_MIPMAP_NEAREST`
-    pub const LINEAR_MIPMAP_NEAREST: f64 = 9985.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.LINEAR_MIPMAP_NEAREST")]
+    pub const LINEAR_MIPMAP_NEAREST: u32 = 0x2701;
 
     /// `WebGLRenderingContext.NEAREST_MIPMAP_LINEAR`
-    pub const NEAREST_MIPMAP_LINEAR: f64 = 9986.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.NEAREST_MIPMAP_LINEAR")]
+    pub const NEAREST_MIPMAP_LINEAR: u32 = 0x2702;
 
     /// `WebGLRenderingContext.LINEAR_MIPMAP_LINEAR`
-    pub const LINEAR_MIPMAP_LINEAR: f64 = 9987.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.LINEAR_MIPMAP_LINEAR")]
+    pub const LINEAR_MIPMAP_LINEAR: u32 = 0x2703;
 
     /// `WebGLRenderingContext.TEXTURE_MAG_FILTER`
-    pub const TEXTURE_MAG_FILTER: f64 = 10240.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE_MAG_FILTER")]
+    pub const TEXTURE_MAG_FILTER: u32 = 0x2800;
 
     /// `WebGLRenderingContext.TEXTURE_MIN_FILTER`
-    pub const TEXTURE_MIN_FILTER: f64 = 10241.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE_MIN_FILTER")]
+    pub const TEXTURE_MIN_FILTER: u32 = 0x2801;
 
     /// `WebGLRenderingContext.TEXTURE_WRAP_S`
-    pub const TEXTURE_WRAP_S: f64 = 10242.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE_WRAP_S")]
+    pub const TEXTURE_WRAP_S: u32 = 0x2802;
 
     /// `WebGLRenderingContext.TEXTURE_WRAP_T`
-    pub const TEXTURE_WRAP_T: f64 = 10243.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE_WRAP_T")]
+    pub const TEXTURE_WRAP_T: u32 = 0x2803;
 
     /// `WebGLRenderingContext.TEXTURE_2D`
-    pub const TEXTURE_2D: f64 = 3553.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE_2D")]
+    pub const TEXTURE_2D: u32 = 0x0DE1;
 
     /// `WebGLRenderingContext.TEXTURE`
-    pub const TEXTURE: f64 = 5890.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE")]
+    pub const TEXTURE: u32 = 0x1702;
 
     /// `WebGLRenderingContext.TEXTURE_CUBE_MAP`
-    pub const TEXTURE_CUBE_MAP: f64 = 34067.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE_CUBE_MAP")]
+    pub const TEXTURE_CUBE_MAP: u32 = 0x8513;
 
     /// `WebGLRenderingContext.TEXTURE_BINDING_CUBE_MAP`
-    pub const TEXTURE_BINDING_CUBE_MAP: f64 = 34068.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE_BINDING_CUBE_MAP")]
+    pub const TEXTURE_BINDING_CUBE_MAP: u32 = 0x8514;
 
     /// `WebGLRenderingContext.TEXTURE_CUBE_MAP_POSITIVE_X`
-    pub const TEXTURE_CUBE_MAP_POSITIVE_X: f64 = 34069.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE_CUBE_MAP_POSITIVE_X")]
+    pub const TEXTURE_CUBE_MAP_POSITIVE_X: u32 = 0x8515;
 
     /// `WebGLRenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_X`
-    pub const TEXTURE_CUBE_MAP_NEGATIVE_X: f64 = 34070.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_X")]
+    pub const TEXTURE_CUBE_MAP_NEGATIVE_X: u32 = 0x8516;
 
     /// `WebGLRenderingContext.TEXTURE_CUBE_MAP_POSITIVE_Y`
-    pub const TEXTURE_CUBE_MAP_POSITIVE_Y: f64 = 34071.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE_CUBE_MAP_POSITIVE_Y")]
+    pub const TEXTURE_CUBE_MAP_POSITIVE_Y: u32 = 0x8517;
 
     /// `WebGLRenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_Y`
-    pub const TEXTURE_CUBE_MAP_NEGATIVE_Y: f64 = 34072.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_Y")]
+    pub const TEXTURE_CUBE_MAP_NEGATIVE_Y: u32 = 0x8518;
 
     /// `WebGLRenderingContext.TEXTURE_CUBE_MAP_POSITIVE_Z`
-    pub const TEXTURE_CUBE_MAP_POSITIVE_Z: f64 = 34073.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE_CUBE_MAP_POSITIVE_Z")]
+    pub const TEXTURE_CUBE_MAP_POSITIVE_Z: u32 = 0x8519;
 
     /// `WebGLRenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_Z`
-    pub const TEXTURE_CUBE_MAP_NEGATIVE_Z: f64 = 34074.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE_CUBE_MAP_NEGATIVE_Z")]
+    pub const TEXTURE_CUBE_MAP_NEGATIVE_Z: u32 = 0x851A;
 
     /// `WebGLRenderingContext.MAX_CUBE_MAP_TEXTURE_SIZE`
-    pub const MAX_CUBE_MAP_TEXTURE_SIZE: f64 = 34076.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.MAX_CUBE_MAP_TEXTURE_SIZE")]
+    pub const MAX_CUBE_MAP_TEXTURE_SIZE: u32 = 0x851C;
 
     /// `WebGLRenderingContext.TEXTURE0`
-    pub const TEXTURE0: f64 = 33984.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE0")]
+    pub const TEXTURE0: u32 = 0x84C0;
 
     /// `WebGLRenderingContext.TEXTURE1`
-    pub const TEXTURE1: f64 = 33985.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE1")]
+    pub const TEXTURE1: u32 = 0x84C1;
 
     /// `WebGLRenderingContext.TEXTURE2`
-    pub const TEXTURE2: f64 = 33986.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE2")]
+    pub const TEXTURE2: u32 = 0x84C2;
 
     /// `WebGLRenderingContext.TEXTURE3`
-    pub const TEXTURE3: f64 = 33987.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE3")]
+    pub const TEXTURE3: u32 = 0x84C3;
 
     /// `WebGLRenderingContext.TEXTURE4`
-    pub const TEXTURE4: f64 = 33988.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE4")]
+    pub const TEXTURE4: u32 = 0x84C4;
 
     /// `WebGLRenderingContext.TEXTURE5`
-    pub const TEXTURE5: f64 = 33989.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE5")]
+    pub const TEXTURE5: u32 = 0x84C5;
 
     /// `WebGLRenderingContext.TEXTURE6`
-    pub const TEXTURE6: f64 = 33990.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE6")]
+    pub const TEXTURE6: u32 = 0x84C6;
 
     /// `WebGLRenderingContext.TEXTURE7`
-    pub const TEXTURE7: f64 = 33991.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE7")]
+    pub const TEXTURE7: u32 = 0x84C7;
 
     /// `WebGLRenderingContext.TEXTURE8`
-    pub const TEXTURE8: f64 = 33992.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE8")]
+    pub const TEXTURE8: u32 = 0x84C8;
 
     /// `WebGLRenderingContext.TEXTURE9`
-    pub const TEXTURE9: f64 = 33993.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE9")]
+    pub const TEXTURE9: u32 = 0x84C9;
 
     /// `WebGLRenderingContext.TEXTURE10`
-    pub const TEXTURE10: f64 = 33994.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE10")]
+    pub const TEXTURE10: u32 = 0x84CA;
 
     /// `WebGLRenderingContext.TEXTURE11`
-    pub const TEXTURE11: f64 = 33995.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE11")]
+    pub const TEXTURE11: u32 = 0x84CB;
 
     /// `WebGLRenderingContext.TEXTURE12`
-    pub const TEXTURE12: f64 = 33996.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE12")]
+    pub const TEXTURE12: u32 = 0x84CC;
 
     /// `WebGLRenderingContext.TEXTURE13`
-    pub const TEXTURE13: f64 = 33997.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE13")]
+    pub const TEXTURE13: u32 = 0x84CD;
 
     /// `WebGLRenderingContext.TEXTURE14`
-    pub const TEXTURE14: f64 = 33998.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE14")]
+    pub const TEXTURE14: u32 = 0x84CE;
 
     /// `WebGLRenderingContext.TEXTURE15`
-    pub const TEXTURE15: f64 = 33999.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE15")]
+    pub const TEXTURE15: u32 = 0x84CF;
 
     /// `WebGLRenderingContext.TEXTURE16`
-    pub const TEXTURE16: f64 = 34000.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE16")]
+    pub const TEXTURE16: u32 = 0x84D0;
 
     /// `WebGLRenderingContext.TEXTURE17`
-    pub const TEXTURE17: f64 = 34001.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE17")]
+    pub const TEXTURE17: u32 = 0x84D1;
 
     /// `WebGLRenderingContext.TEXTURE18`
-    pub const TEXTURE18: f64 = 34002.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE18")]
+    pub const TEXTURE18: u32 = 0x84D2;
 
     /// `WebGLRenderingContext.TEXTURE19`
-    pub const TEXTURE19: f64 = 34003.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE19")]
+    pub const TEXTURE19: u32 = 0x84D3;
 
     /// `WebGLRenderingContext.TEXTURE20`
-    pub const TEXTURE20: f64 = 34004.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE20")]
+    pub const TEXTURE20: u32 = 0x84D4;
 
     /// `WebGLRenderingContext.TEXTURE21`
-    pub const TEXTURE21: f64 = 34005.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE21")]
+    pub const TEXTURE21: u32 = 0x84D5;
 
     /// `WebGLRenderingContext.TEXTURE22`
-    pub const TEXTURE22: f64 = 34006.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE22")]
+    pub const TEXTURE22: u32 = 0x84D6;
 
     /// `WebGLRenderingContext.TEXTURE23`
-    pub const TEXTURE23: f64 = 34007.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE23")]
+    pub const TEXTURE23: u32 = 0x84D7;
 
     /// `WebGLRenderingContext.TEXTURE24`
-    pub const TEXTURE24: f64 = 34008.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE24")]
+    pub const TEXTURE24: u32 = 0x84D8;
 
     /// `WebGLRenderingContext.TEXTURE25`
-    pub const TEXTURE25: f64 = 34009.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE25")]
+    pub const TEXTURE25: u32 = 0x84D9;
 
     /// `WebGLRenderingContext.TEXTURE26`
-    pub const TEXTURE26: f64 = 34010.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE26")]
+    pub const TEXTURE26: u32 = 0x84DA;
 
     /// `WebGLRenderingContext.TEXTURE27`
-    pub const TEXTURE27: f64 = 34011.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE27")]
+    pub const TEXTURE27: u32 = 0x84DB;
 
     /// `WebGLRenderingContext.TEXTURE28`
-    pub const TEXTURE28: f64 = 34012.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE28")]
+    pub const TEXTURE28: u32 = 0x84DC;
 
     /// `WebGLRenderingContext.TEXTURE29`
-    pub const TEXTURE29: f64 = 34013.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE29")]
+    pub const TEXTURE29: u32 = 0x84DD;
 
     /// `WebGLRenderingContext.TEXTURE30`
-    pub const TEXTURE30: f64 = 34014.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE30")]
+    pub const TEXTURE30: u32 = 0x84DE;
 
     /// `WebGLRenderingContext.TEXTURE31`
-    pub const TEXTURE31: f64 = 34015.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.TEXTURE31")]
+    pub const TEXTURE31: u32 = 0x84DF;
 
     /// `WebGLRenderingContext.ACTIVE_TEXTURE`
-    pub const ACTIVE_TEXTURE: f64 = 34016.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.ACTIVE_TEXTURE")]
+    pub const ACTIVE_TEXTURE: u32 = 0x84E0;
 
     /// `WebGLRenderingContext.REPEAT`
-    pub const REPEAT: f64 = 10497.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.REPEAT")]
+    pub const REPEAT: u32 = 0x2901;
 
     /// `WebGLRenderingContext.CLAMP_TO_EDGE`
-    pub const CLAMP_TO_EDGE: f64 = 33071.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.CLAMP_TO_EDGE")]
+    pub const CLAMP_TO_EDGE: u32 = 0x812F;
 
     /// `WebGLRenderingContext.MIRRORED_REPEAT`
-    pub const MIRRORED_REPEAT: f64 = 33648.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.MIRRORED_REPEAT")]
+    pub const MIRRORED_REPEAT: u32 = 0x8370;
 
     /// `WebGLRenderingContext.FLOAT_VEC2`
-    pub const FLOAT_VEC2: f64 = 35664.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FLOAT_VEC2")]
+    pub const FLOAT_VEC2: u32 = 0x8B50;
 
     /// `WebGLRenderingContext.FLOAT_VEC3`
-    pub const FLOAT_VEC3: f64 = 35665.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FLOAT_VEC3")]
+    pub const FLOAT_VEC3: u32 = 0x8B51;
 
     /// `WebGLRenderingContext.FLOAT_VEC4`
-    pub const FLOAT_VEC4: f64 = 35666.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FLOAT_VEC4")]
+    pub const FLOAT_VEC4: u32 = 0x8B52;
 
     /// `WebGLRenderingContext.INT_VEC2`
-    pub const INT_VEC2: f64 = 35667.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.INT_VEC2")]
+    pub const INT_VEC2: u32 = 0x8B53;
 
     /// `WebGLRenderingContext.INT_VEC3`
-    pub const INT_VEC3: f64 = 35668.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.INT_VEC3")]
+    pub const INT_VEC3: u32 = 0x8B54;
 
     /// `WebGLRenderingContext.INT_VEC4`
-    pub const INT_VEC4: f64 = 35669.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.INT_VEC4")]
+    pub const INT_VEC4: u32 = 0x8B55;
 
     /// `WebGLRenderingContext.BOOL`
-    pub const BOOL: f64 = 35670.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.BOOL")]
+    pub const BOOL: u32 = 0x8B56;
 
     /// `WebGLRenderingContext.BOOL_VEC2`
-    pub const BOOL_VEC2: f64 = 35671.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.BOOL_VEC2")]
+    pub const BOOL_VEC2: u32 = 0x8B57;
 
     /// `WebGLRenderingContext.BOOL_VEC3`
-    pub const BOOL_VEC3: f64 = 35672.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.BOOL_VEC3")]
+    pub const BOOL_VEC3: u32 = 0x8B58;
 
     /// `WebGLRenderingContext.BOOL_VEC4`
-    pub const BOOL_VEC4: f64 = 35673.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.BOOL_VEC4")]
+    pub const BOOL_VEC4: u32 = 0x8B59;
 
     /// `WebGLRenderingContext.FLOAT_MAT2`
-    pub const FLOAT_MAT2: f64 = 35674.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FLOAT_MAT2")]
+    pub const FLOAT_MAT2: u32 = 0x8B5A;
 
     /// `WebGLRenderingContext.FLOAT_MAT3`
-    pub const FLOAT_MAT3: f64 = 35675.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FLOAT_MAT3")]
+    pub const FLOAT_MAT3: u32 = 0x8B5B;
 
     /// `WebGLRenderingContext.FLOAT_MAT4`
-    pub const FLOAT_MAT4: f64 = 35676.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FLOAT_MAT4")]
+    pub const FLOAT_MAT4: u32 = 0x8B5C;
 
     /// `WebGLRenderingContext.SAMPLER_2D`
-    pub const SAMPLER_2D: f64 = 35678.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.SAMPLER_2D")]
+    pub const SAMPLER_2D: u32 = 0x8B5E;
 
     /// `WebGLRenderingContext.SAMPLER_CUBE`
-    pub const SAMPLER_CUBE: f64 = 35680.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.SAMPLER_CUBE")]
+    pub const SAMPLER_CUBE: u32 = 0x8B60;
 
     /// `WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_ENABLED`
-    pub const VERTEX_ATTRIB_ARRAY_ENABLED: f64 = 34338.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_ENABLED")]
+    pub const VERTEX_ATTRIB_ARRAY_ENABLED: u32 = 0x8622;
 
     /// `WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_SIZE`
-    pub const VERTEX_ATTRIB_ARRAY_SIZE: f64 = 34339.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_SIZE")]
+    pub const VERTEX_ATTRIB_ARRAY_SIZE: u32 = 0x8623;
 
     /// `WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_STRIDE`
-    pub const VERTEX_ATTRIB_ARRAY_STRIDE: f64 = 34340.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_STRIDE")]
+    pub const VERTEX_ATTRIB_ARRAY_STRIDE: u32 = 0x8624;
 
     /// `WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_TYPE`
-    pub const VERTEX_ATTRIB_ARRAY_TYPE: f64 = 34341.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_TYPE")]
+    pub const VERTEX_ATTRIB_ARRAY_TYPE: u32 = 0x8625;
 
     /// `WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_NORMALIZED`
-    pub const VERTEX_ATTRIB_ARRAY_NORMALIZED: f64 = 34922.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_NORMALIZED")]
+    pub const VERTEX_ATTRIB_ARRAY_NORMALIZED: u32 = 0x886A;
 
     /// `WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_POINTER`
-    pub const VERTEX_ATTRIB_ARRAY_POINTER: f64 = 34373.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_POINTER")]
+    pub const VERTEX_ATTRIB_ARRAY_POINTER: u32 = 0x8645;
 
     /// `WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_BUFFER_BINDING`
-    pub const VERTEX_ATTRIB_ARRAY_BUFFER_BINDING: f64 = 34975.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.VERTEX_ATTRIB_ARRAY_BUFFER_BINDING")]
+    pub const VERTEX_ATTRIB_ARRAY_BUFFER_BINDING: u32 = 0x889F;
 
     /// `WebGLRenderingContext.IMPLEMENTATION_COLOR_READ_TYPE`
-    pub const IMPLEMENTATION_COLOR_READ_TYPE: f64 = 35738.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.IMPLEMENTATION_COLOR_READ_TYPE")]
+    pub const IMPLEMENTATION_COLOR_READ_TYPE: u32 = 0x8B9A;
 
     /// `WebGLRenderingContext.IMPLEMENTATION_COLOR_READ_FORMAT`
-    pub const IMPLEMENTATION_COLOR_READ_FORMAT: f64 = 35739.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.IMPLEMENTATION_COLOR_READ_FORMAT")]
+    pub const IMPLEMENTATION_COLOR_READ_FORMAT: u32 = 0x8B9B;
 
     /// `WebGLRenderingContext.COMPILE_STATUS`
-    pub const COMPILE_STATUS: f64 = 35713.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.COMPILE_STATUS")]
+    pub const COMPILE_STATUS: u32 = 0x8B81;
 
     /// `WebGLRenderingContext.LOW_FLOAT`
-    pub const LOW_FLOAT: f64 = 36336.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.LOW_FLOAT")]
+    pub const LOW_FLOAT: u32 = 0x8DF0;
 
     /// `WebGLRenderingContext.MEDIUM_FLOAT`
-    pub const MEDIUM_FLOAT: f64 = 36337.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.MEDIUM_FLOAT")]
+    pub const MEDIUM_FLOAT: u32 = 0x8DF1;
 
     /// `WebGLRenderingContext.HIGH_FLOAT`
-    pub const HIGH_FLOAT: f64 = 36338.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.HIGH_FLOAT")]
+    pub const HIGH_FLOAT: u32 = 0x8DF2;
 
     /// `WebGLRenderingContext.LOW_INT`
-    pub const LOW_INT: f64 = 36339.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.LOW_INT")]
+    pub const LOW_INT: u32 = 0x8DF3;
 
     /// `WebGLRenderingContext.MEDIUM_INT`
-    pub const MEDIUM_INT: f64 = 36340.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.MEDIUM_INT")]
+    pub const MEDIUM_INT: u32 = 0x8DF4;
 
     /// `WebGLRenderingContext.HIGH_INT`
-    pub const HIGH_INT: f64 = 36341.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.HIGH_INT")]
+    pub const HIGH_INT: u32 = 0x8DF5;
 
     /// `WebGLRenderingContext.FRAMEBUFFER`
-    pub const FRAMEBUFFER: f64 = 36160.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FRAMEBUFFER")]
+    pub const FRAMEBUFFER: u32 = 0x8D40;
 
     /// `WebGLRenderingContext.RENDERBUFFER`
-    pub const RENDERBUFFER: f64 = 36161.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.RENDERBUFFER")]
+    pub const RENDERBUFFER: u32 = 0x8D41;
 
     /// `WebGLRenderingContext.RGBA4`
-    pub const RGBA4: f64 = 32854.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.RGBA4")]
+    pub const RGBA4: u32 = 0x8056;
 
     /// `WebGLRenderingContext.RGB5_A1`
-    pub const RGB5_A1: f64 = 32855.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.RGB5_A1")]
+    pub const RGB5_A1: u32 = 0x8057;
 
     /// `WebGLRenderingContext.RGBA8`
-    pub const RGBA8: f64 = 32856.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.RGBA8")]
+    pub const RGBA8: u32 = 0x8058;
 
     /// `WebGLRenderingContext.RGB565`
-    pub const RGB565: f64 = 36194.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.RGB565")]
+    pub const RGB565: u32 = 0x8D62;
 
     /// `WebGLRenderingContext.DEPTH_COMPONENT16`
-    pub const DEPTH_COMPONENT16: f64 = 33189.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.DEPTH_COMPONENT16")]
+    pub const DEPTH_COMPONENT16: u32 = 0x81A5;
 
     /// `WebGLRenderingContext.STENCIL_INDEX8`
-    pub const STENCIL_INDEX8: f64 = 36168.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.STENCIL_INDEX8")]
+    pub const STENCIL_INDEX8: u32 = 0x8D48;
 
     /// `WebGLRenderingContext.DEPTH_STENCIL`
-    pub const DEPTH_STENCIL: f64 = 34041.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.DEPTH_STENCIL")]
+    pub const DEPTH_STENCIL: u32 = 0x84F9;
 
     /// `WebGLRenderingContext.RENDERBUFFER_WIDTH`
-    pub const RENDERBUFFER_WIDTH: f64 = 36162.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.RENDERBUFFER_WIDTH")]
+    pub const RENDERBUFFER_WIDTH: u32 = 0x8D42;
 
     /// `WebGLRenderingContext.RENDERBUFFER_HEIGHT`
-    pub const RENDERBUFFER_HEIGHT: f64 = 36163.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.RENDERBUFFER_HEIGHT")]
+    pub const RENDERBUFFER_HEIGHT: u32 = 0x8D43;
 
     /// `WebGLRenderingContext.RENDERBUFFER_INTERNAL_FORMAT`
-    pub const RENDERBUFFER_INTERNAL_FORMAT: f64 = 36164.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.RENDERBUFFER_INTERNAL_FORMAT")]
+    pub const RENDERBUFFER_INTERNAL_FORMAT: u32 = 0x8D44;
 
     /// `WebGLRenderingContext.RENDERBUFFER_RED_SIZE`
-    pub const RENDERBUFFER_RED_SIZE: f64 = 36176.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.RENDERBUFFER_RED_SIZE")]
+    pub const RENDERBUFFER_RED_SIZE: u32 = 0x8D50;
 
     /// `WebGLRenderingContext.RENDERBUFFER_GREEN_SIZE`
-    pub const RENDERBUFFER_GREEN_SIZE: f64 = 36177.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.RENDERBUFFER_GREEN_SIZE")]
+    pub const RENDERBUFFER_GREEN_SIZE: u32 = 0x8D51;
 
     /// `WebGLRenderingContext.RENDERBUFFER_BLUE_SIZE`
-    pub const RENDERBUFFER_BLUE_SIZE: f64 = 36178.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.RENDERBUFFER_BLUE_SIZE")]
+    pub const RENDERBUFFER_BLUE_SIZE: u32 = 0x8D52;
 
     /// `WebGLRenderingContext.RENDERBUFFER_ALPHA_SIZE`
-    pub const RENDERBUFFER_ALPHA_SIZE: f64 = 36179.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.RENDERBUFFER_ALPHA_SIZE")]
+    pub const RENDERBUFFER_ALPHA_SIZE: u32 = 0x8D53;
 
     /// `WebGLRenderingContext.RENDERBUFFER_DEPTH_SIZE`
-    pub const RENDERBUFFER_DEPTH_SIZE: f64 = 36180.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.RENDERBUFFER_DEPTH_SIZE")]
+    pub const RENDERBUFFER_DEPTH_SIZE: u32 = 0x8D54;
 
     /// `WebGLRenderingContext.RENDERBUFFER_STENCIL_SIZE`
-    pub const RENDERBUFFER_STENCIL_SIZE: f64 = 36181.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.RENDERBUFFER_STENCIL_SIZE")]
+    pub const RENDERBUFFER_STENCIL_SIZE: u32 = 0x8D55;
 
     /// `WebGLRenderingContext.FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE`
-    pub const FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE: f64 = 36048.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE")]
+    pub const FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE: u32 = 0x8CD0;
 
     /// `WebGLRenderingContext.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME`
-    pub const FRAMEBUFFER_ATTACHMENT_OBJECT_NAME: f64 = 36049.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME")]
+    pub const FRAMEBUFFER_ATTACHMENT_OBJECT_NAME: u32 = 0x8CD1;
 
     /// `WebGLRenderingContext.FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL`
-    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL: f64 = 36050.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL")]
+    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL: u32 = 0x8CD2;
 
     /// `WebGLRenderingContext.FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE`
-    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE: f64 = 36051.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE")]
+    pub const FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE: u32 = 0x8CD3;
 
     /// `WebGLRenderingContext.COLOR_ATTACHMENT0`
-    pub const COLOR_ATTACHMENT0: f64 = 36064.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.COLOR_ATTACHMENT0")]
+    pub const COLOR_ATTACHMENT0: u32 = 0x8CE0;
 
     /// `WebGLRenderingContext.DEPTH_ATTACHMENT`
-    pub const DEPTH_ATTACHMENT: f64 = 36096.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.DEPTH_ATTACHMENT")]
+    pub const DEPTH_ATTACHMENT: u32 = 0x8D00;
 
     /// `WebGLRenderingContext.STENCIL_ATTACHMENT`
-    pub const STENCIL_ATTACHMENT: f64 = 36128.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.STENCIL_ATTACHMENT")]
+    pub const STENCIL_ATTACHMENT: u32 = 0x8D20;
 
     /// `WebGLRenderingContext.DEPTH_STENCIL_ATTACHMENT`
-    pub const DEPTH_STENCIL_ATTACHMENT: f64 = 33306.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.DEPTH_STENCIL_ATTACHMENT")]
+    pub const DEPTH_STENCIL_ATTACHMENT: u32 = 0x821A;
 
     /// `WebGLRenderingContext.NONE`
-    pub const NONE: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.NONE")]
+    pub const NONE: u32 = 0;
 
     /// `WebGLRenderingContext.FRAMEBUFFER_COMPLETE`
-    pub const FRAMEBUFFER_COMPLETE: f64 = 36053.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FRAMEBUFFER_COMPLETE")]
+    pub const FRAMEBUFFER_COMPLETE: u32 = 0x8CD5;
 
     /// `WebGLRenderingContext.FRAMEBUFFER_INCOMPLETE_ATTACHMENT`
-    pub const FRAMEBUFFER_INCOMPLETE_ATTACHMENT: f64 = 36054.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FRAMEBUFFER_INCOMPLETE_ATTACHMENT")]
+    pub const FRAMEBUFFER_INCOMPLETE_ATTACHMENT: u32 = 0x8CD6;
 
     /// `WebGLRenderingContext.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT`
-    pub const FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: f64 = 36055.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT")]
+    pub const FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: u32 = 0x8CD7;
 
     /// `WebGLRenderingContext.FRAMEBUFFER_INCOMPLETE_DIMENSIONS`
-    pub const FRAMEBUFFER_INCOMPLETE_DIMENSIONS: f64 = 36057.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FRAMEBUFFER_INCOMPLETE_DIMENSIONS")]
+    pub const FRAMEBUFFER_INCOMPLETE_DIMENSIONS: u32 = 0x8CD9;
 
     /// `WebGLRenderingContext.FRAMEBUFFER_UNSUPPORTED`
-    pub const FRAMEBUFFER_UNSUPPORTED: f64 = 36061.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FRAMEBUFFER_UNSUPPORTED")]
+    pub const FRAMEBUFFER_UNSUPPORTED: u32 = 0x8CDD;
 
     /// `WebGLRenderingContext.FRAMEBUFFER_BINDING`
-    pub const FRAMEBUFFER_BINDING: f64 = 36006.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.FRAMEBUFFER_BINDING")]
+    pub const FRAMEBUFFER_BINDING: u32 = 0x8CA6;
 
     /// `WebGLRenderingContext.RENDERBUFFER_BINDING`
-    pub const RENDERBUFFER_BINDING: f64 = 36007.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.RENDERBUFFER_BINDING")]
+    pub const RENDERBUFFER_BINDING: u32 = 0x8CA7;
 
     /// `WebGLRenderingContext.MAX_RENDERBUFFER_SIZE`
-    pub const MAX_RENDERBUFFER_SIZE: f64 = 34024.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.MAX_RENDERBUFFER_SIZE")]
+    pub const MAX_RENDERBUFFER_SIZE: u32 = 0x84E8;
 
     /// `WebGLRenderingContext.INVALID_FRAMEBUFFER_OPERATION`
-    pub const INVALID_FRAMEBUFFER_OPERATION: f64 = 1286.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.INVALID_FRAMEBUFFER_OPERATION")]
+    pub const INVALID_FRAMEBUFFER_OPERATION: u32 = 0x0506;
 
     /// `WebGLRenderingContext.UNPACK_FLIP_Y_WEBGL`
-    pub const UNPACK_FLIP_Y_WEBGL: f64 = 37440.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.UNPACK_FLIP_Y_WEBGL")]
+    pub const UNPACK_FLIP_Y_WEBGL: u32 = 0x9240;
 
     /// `WebGLRenderingContext.UNPACK_PREMULTIPLY_ALPHA_WEBGL`
-    pub const UNPACK_PREMULTIPLY_ALPHA_WEBGL: f64 = 37441.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.UNPACK_PREMULTIPLY_ALPHA_WEBGL")]
+    pub const UNPACK_PREMULTIPLY_ALPHA_WEBGL: u32 = 0x9241;
 
     /// `WebGLRenderingContext.CONTEXT_LOST_WEBGL`
-    pub const CONTEXT_LOST_WEBGL: f64 = 37442.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.CONTEXT_LOST_WEBGL")]
+    pub const CONTEXT_LOST_WEBGL: u32 = 0x9242;
 
     /// `WebGLRenderingContext.UNPACK_COLORSPACE_CONVERSION_WEBGL`
-    pub const UNPACK_COLORSPACE_CONVERSION_WEBGL: f64 = 37443.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.UNPACK_COLORSPACE_CONVERSION_WEBGL")]
+    pub const UNPACK_COLORSPACE_CONVERSION_WEBGL: u32 = 0x9243;
 
     /// `WebGLRenderingContext.BROWSER_DEFAULT_WEBGL`
-    pub const BROWSER_DEFAULT_WEBGL: f64 = 37444.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebGLRenderingContext.BROWSER_DEFAULT_WEBGL")]
+    pub const BROWSER_DEFAULT_WEBGL: u32 = 0x9244;
 }
 
 impl WebGLRenderingContext {
@@ -79051,16 +80125,20 @@ pub mod web_socket {
     use super::*;
 
     /// `WebSocket.CONNECTING`
-    pub const CONNECTING: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebSocket.CONNECTING")]
+    pub const CONNECTING: u16 = 0;
 
     /// `WebSocket.OPEN`
-    pub const OPEN: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebSocket.OPEN")]
+    pub const OPEN: u16 = 1;
 
     /// `WebSocket.CLOSING`
-    pub const CLOSING: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebSocket.CLOSING")]
+    pub const CLOSING: u16 = 2;
 
     /// `WebSocket.CLOSED`
-    pub const CLOSED: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "WebSocket.CLOSED")]
+    pub const CLOSED: u16 = 3;
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/WebSocket)
     #[cfg_attr(rust_js, rust_js::link_name = "new WebSocket")]
@@ -79872,19 +80950,24 @@ pub mod xml_http_request {
     use super::*;
 
     /// `XMLHttpRequest.UNSENT`
-    pub const UNSENT: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "XMLHttpRequest.UNSENT")]
+    pub const UNSENT: u16 = 0;
 
     /// `XMLHttpRequest.OPENED`
-    pub const OPENED: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "XMLHttpRequest.OPENED")]
+    pub const OPENED: u16 = 1;
 
     /// `XMLHttpRequest.HEADERS_RECEIVED`
-    pub const HEADERS_RECEIVED: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "XMLHttpRequest.HEADERS_RECEIVED")]
+    pub const HEADERS_RECEIVED: u16 = 2;
 
     /// `XMLHttpRequest.LOADING`
-    pub const LOADING: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "XMLHttpRequest.LOADING")]
+    pub const LOADING: u16 = 3;
 
     /// `XMLHttpRequest.DONE`
-    pub const DONE: f64 = 4.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "XMLHttpRequest.DONE")]
+    pub const DONE: u16 = 4;
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/XMLHttpRequest)
     #[cfg_attr(rust_js, rust_js::link_name = "new XMLHttpRequest")]
@@ -80345,34 +81428,44 @@ impl Eq for XPathResult {}
 pub mod x_path_result {
 
     /// `XPathResult.ANY_TYPE`
-    pub const ANY_TYPE: f64 = 0.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "XPathResult.ANY_TYPE")]
+    pub const ANY_TYPE: u16 = 0;
 
     /// `XPathResult.NUMBER_TYPE`
-    pub const NUMBER_TYPE: f64 = 1.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "XPathResult.NUMBER_TYPE")]
+    pub const NUMBER_TYPE: u16 = 1;
 
     /// `XPathResult.STRING_TYPE`
-    pub const STRING_TYPE: f64 = 2.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "XPathResult.STRING_TYPE")]
+    pub const STRING_TYPE: u16 = 2;
 
     /// `XPathResult.BOOLEAN_TYPE`
-    pub const BOOLEAN_TYPE: f64 = 3.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "XPathResult.BOOLEAN_TYPE")]
+    pub const BOOLEAN_TYPE: u16 = 3;
 
     /// `XPathResult.UNORDERED_NODE_ITERATOR_TYPE`
-    pub const UNORDERED_NODE_ITERATOR_TYPE: f64 = 4.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "XPathResult.UNORDERED_NODE_ITERATOR_TYPE")]
+    pub const UNORDERED_NODE_ITERATOR_TYPE: u16 = 4;
 
     /// `XPathResult.ORDERED_NODE_ITERATOR_TYPE`
-    pub const ORDERED_NODE_ITERATOR_TYPE: f64 = 5.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "XPathResult.ORDERED_NODE_ITERATOR_TYPE")]
+    pub const ORDERED_NODE_ITERATOR_TYPE: u16 = 5;
 
     /// `XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE`
-    pub const UNORDERED_NODE_SNAPSHOT_TYPE: f64 = 6.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE")]
+    pub const UNORDERED_NODE_SNAPSHOT_TYPE: u16 = 6;
 
     /// `XPathResult.ORDERED_NODE_SNAPSHOT_TYPE`
-    pub const ORDERED_NODE_SNAPSHOT_TYPE: f64 = 7.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "XPathResult.ORDERED_NODE_SNAPSHOT_TYPE")]
+    pub const ORDERED_NODE_SNAPSHOT_TYPE: u16 = 7;
 
     /// `XPathResult.ANY_UNORDERED_NODE_TYPE`
-    pub const ANY_UNORDERED_NODE_TYPE: f64 = 8.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "XPathResult.ANY_UNORDERED_NODE_TYPE")]
+    pub const ANY_UNORDERED_NODE_TYPE: u16 = 8;
 
     /// `XPathResult.FIRST_ORDERED_NODE_TYPE`
-    pub const FIRST_ORDERED_NODE_TYPE: f64 = 9.0;
+    #[cfg_attr(rust_js, rust_js::link_name = "XPathResult.FIRST_ORDERED_NODE_TYPE")]
+    pub const FIRST_ORDERED_NODE_TYPE: u16 = 9;
 }
 
 impl XPathResult {

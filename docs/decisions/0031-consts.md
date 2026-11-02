@@ -452,3 +452,43 @@ two can't disagree: only what's written is an import.
   function. It was refused on fdec315a7.
 - The mutation `type-reexport-an-import` brings back the derivation from
   rustc's children.
+
+## Amendment: a constant JS names is its JS name (2026-11-02, rd618, the user's decision)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same value: the
+binding's constant is the platform's, as WebIDL declares it, and a binding
+is trusted as declared.
+
+React DOM's compareDocumentPositionForEmptyFragment tests
+`firstResult & Node.DOCUMENT_POSITION_FOLLOWING`. webapi's constants were
+`f64`s, written in place, so the port's `first_result &
+node::DOCUMENT_POSITION_FOLLOWING as u32 != 0` printed `(firstResult &
+$f64ToInt(4, 0, 4294967295)) >>> 0 !== 0`, and `return
+node::DOCUMENT_POSITION_DISCONNECTED;` `return 1;`, the name lost at
+eleven sites.
+
+**A `const` with `#[rust_js::link_name = "Node.ELEMENT_NODE"]` is read as
+its JS name, `Node.ELEMENT_NODE`** (`bindings::const_link_name`, read by
+`named_const`), as a binding function is called by its: one attribute,
+the JS name of what it's on, now of a constant too. Its value is still
+Rust's, so a `match` of it compares that value, `case Node.ELEMENT_NODE:`
+where JS's is the same, and rustc folds what it computes of it,
+`AT_TARGET as i8 - 3`'s `-1`. webapi's generator writes it on each
+constant, the doc comment `Node.ELEMENT_NODE` documentation only, and each
+is of WebIDL's own integer type (ADR 0994, amended), so a widening `as` is
+the constant itself:
+
+```rust
+position & node::DOCUMENT_POSITION_CONTAINED_BY as u32 != 0
+```
+
+```js
+(position & Node.DOCUMENT_POSITION_CONTAINED_BY) >>> 0 !== 0
+```
+
+Held by `test/corpus/const_read_by_its_js_name.rs`, against native Rust
+(`Event`'s phases, which Node has: a `match` of them, `&`, `as u32`, `as
+f64`, `u32::from`), `test/webapi-objects.test.ts`'s "a webapi constant is
+read by its JS name, as WebIDL's integer" (run, `Node` given), and the
+mutations `const-link-name-unread` (`lower.ts`) and
+`const-link-name-refused` (`lower/bindings.ts`).

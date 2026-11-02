@@ -540,3 +540,45 @@ pub fn file_name(data: &FormData, name: &str) -> Option<String> {
     globalThis.File = File;
   }
 });
+
+// React DOM's compareDocumentPositionForEmptyFragment tests a position
+// against `Node.DOCUMENT_POSITION_CONTAINED_BY`: webapi's constants are
+// WebIDL's `const unsigned short`, `u16`, each read by its JS name, a
+// widening `as u32` the constant itself (ADRs 0031, 0994, amended, rd618).
+test("a webapi constant is read by its JS name, as WebIDL's integer", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-constants");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{Node, node};
+
+pub fn contained(position: u32) -> bool {
+    position & node::DOCUMENT_POSITION_CONTAINED_BY as u32 != 0
+}
+
+pub fn disconnected() -> f64 {
+    node::DOCUMENT_POSITION_DISCONNECTED as f64
+}
+
+pub fn kind(of: &Node) -> &'static str {
+    match of.node_type() as u16 {
+        node::ELEMENT_NODE => "element",
+        node::TEXT_NODE => "text",
+        _ => "other",
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  return (position & Node.DOCUMENT_POSITION_CONTAINED_BY) >>> 0 !== 0;\n");
+  expect(js).toContain("  return Node.DOCUMENT_POSITION_DISCONNECTED;\n");
+  expect(js).toContain("    case Node.ELEMENT_NODE:\n");
+  const Node = { DOCUMENT_POSITION_CONTAINED_BY: 16, DOCUMENT_POSITION_DISCONNECTED: 1, ELEMENT_NODE: 1, TEXT_NODE: 3 };
+  const lib = await import(join(dir, "lib.js"));
+  const saved = (globalThis as Record<string, unknown>).Node;
+  (globalThis as Record<string, unknown>).Node = Node;
+  try {
+    expect([lib.contained(20), lib.contained(4), lib.disconnected()]).toEqual([true, false, 1]);
+    expect([lib.kind({ nodeType: 1 }), lib.kind({ nodeType: 3 }), lib.kind({ nodeType: 8 })]).toEqual(["element", "text", "other"]);
+  } finally {
+    (globalThis as Record<string, unknown>).Node = saved;
+  }
+});

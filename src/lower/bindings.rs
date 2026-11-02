@@ -108,11 +108,14 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
         for attr in &attrs {
             if attrs.len() != 1
                 || attr.value_str().is_none()
-                || !matches!(tcx.def_kind(def), DefKind::Fn | DefKind::AssocFn)
+                || !matches!(
+                    tcx.def_kind(def),
+                    DefKind::Fn | DefKind::AssocFn | DefKind::Const { .. }
+                )
             {
                 tcx.dcx().span_err(
                     attr.span(),
-                    "rust-js: a binding needs one `#[rust_js::link_name = \"...\"]` on a function or method",
+                    "rust-js: a binding needs one `#[rust_js::link_name = \"...\"]` on a function, a method or a constant",
                 );
                 valid = false;
             }
@@ -364,6 +367,19 @@ pub(super) fn extern_fn_refused(tcx: TyCtxt<'_>, def_id: DefId) -> String {
 /// Its body is never compiled.
 pub(super) fn tool_link_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Symbol> {
     if !matches!(tcx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn) {
+        return None;
+    }
+    tcx.get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), sym::link_name])
+        .next()?
+        .value_str()
+}
+
+/// A constant's JS name, `#[rust_js::link_name = "Node.ELEMENT_NODE"]`, a
+/// binding crate's, webapi's of WebIDL's: what a read of it is, where its
+/// value is Rust's, which a `match` of it compares (ADR 0031, amended,
+/// rd618).
+pub(super) fn const_link_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Symbol> {
+    if !matches!(tcx.def_kind(def_id), DefKind::Const { .. }) {
         return None;
     }
     tcx.get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), sym::link_name])

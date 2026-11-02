@@ -659,4 +659,13 @@ export const mutations: Mutation[] = [
       "a field a symbol names is that symbol's key"
     ]
   },
+  {
+    name: "const-link-name-refused",
+    breaks:
+      "a `#[rust_js::link_name]` on a constant, webapi's `Node.ELEMENT_NODE`, is refused as on no function (rd618)",
+    file: "src/lower/bindings.rs",
+    find: "                    DefKind::Fn | DefKind::AssocFn | DefKind::Const { .. }\n",
+    replace: "                    DefKind::Fn | DefKind::AssocFn\n",
+    tests: ["test/corpus.test.ts", "-t", "^const_read_by_its_js_name.rs$"],
+  },
 ];

@@ -88,7 +88,7 @@ export function kinds(el, blob, param, bytes) {
   const names = el.getAttributeNames();
   const languages = navigator.languages;
   const into = new TextEncoder().encodeInto("hi", bytes);
-  return [names, languages.length, blob.size, param.value, 1, into.written];
+  return [names, languages.length, blob.size, param.value, Node.ELEMENT_NODE, into.written];
 }
 
 /**
@@ -265,7 +265,7 @@ export function defined(registry) {
  */
 export function hoisted(root) {
   const links = root.querySelectorAll("link").length;
-  return [links, root.nodeType === 9];
+  return [links, root.nodeType === Node.DOCUMENT_NODE];
 }
 
 export function hoistedOfDocument() {

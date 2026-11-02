@@ -499,4 +499,13 @@ export const mutations: Mutation[] = [
       "a field a symbol names is that symbol's key"
     ]
   },
+  {
+    name: "const-link-name-unread",
+    breaks:
+      "a constant JS names, `#[rust_js::link_name = \"Event.AT_TARGET\"]`, webapi's `node::ELEMENT_NODE`, is its value written in place, `2`, its name lost (rd618)",
+    file: "src/lower.rs",
+    find: "        if let Some(name) = bindings::const_link_name(self.tcx, def_id) {\n",
+    replace: "        if let Some(name) = None::<rustc_span::Symbol> {\n",
+    tests: ["test/webapi-objects.test.ts", "-t", "webapi constant is read by its JS name"],
+  },
 ];

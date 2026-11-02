@@ -372,3 +372,22 @@ mutably, to a function, to an array or by a result, a constant's or
 Held by `test/corpus/whole_counters.rs`, against native Rust; mutations in
 `scripts/mutations/lower/analysis/wholes.ts` and `js/make.ts`'s
 `text-joined-number-stringed`.
+
+## Amendment: a constant is WebIDL's integer (2026-11-02, rd618, the user's decision)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same value, which
+the platform defines.
+
+A WebIDL constant is a fixed whole number, `const unsigned short
+ELEMENT_NODE = 1`, not a value JS converts: **webapi's constant is of
+WebIDL's own type**, `u16` of an `unsigned short`, `u32` of an `unsigned
+long`, `i32` of a `long` (`constantType`, `webapi/generate.ts`), its
+literal as WebIDL writes it, `0x10`; a `long long`'s stays an `f64`, a
+JS number. It's read by its JS name (ADR 0031, amended). Of the 1,092
+constants, 230 are `u16` and 862 `u32`.
+
+What a function gives and takes stays an `f64`, as above:
+`compare_document_position(..)` is still `-> f64`, so a program converts
+one or the other, `position as u32 & node::DOCUMENT_POSITION_CONTAINED_BY
+as u32`, `node::DOCUMENT_POSITION_DISCONNECTED as f64`, each of a
+constant the constant itself.

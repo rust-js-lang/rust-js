@@ -946,8 +946,9 @@ test("the webapi crate's bindings become plain JS", async () => {
   expect(js).toContain('const canvas = document.createElement("canvas");\n  canvas.width = 320;\n  canvas.height = 200;\n  return [canvas.width, canvas.height];');
   // A static method is the class's: `URL.createObjectURL(blob)`.
   expect(js).toContain('const url = URL.createObjectURL(blob);\n  URL.revokeObjectURL(url);\n  return [HTMLScriptElement.supports("importmap"), url];');
-  // Each WebIDL type a function gives, as it is: a constant is its value.
-  expect(js).toContain("const names = el.getAttributeNames();\n  const languages = navigator.languages;\n  const into = new TextEncoder().encodeInto(\"hi\", bytes);\n  return [names, languages.length, blob.size, param.value, 1, into.written];");
+  // Each WebIDL type a function gives, as it is: a constant is its JS
+  // name, of WebIDL's integer type, `f64::from` of it itself (rd618).
+  expect(js).toContain("const names = el.getAttributeNames();\n  const languages = navigator.languages;\n  const into = new TextEncoder().encodeInto(\"hi\", bytes);\n  return [names, languages.length, blob.size, param.value, Node.ELEMENT_NODE, into.written];");
   // An event handler property is set to a closure, or to `null`.
   expect(js).toContain("button.onclick = (e) => {\n    e.preventDefault();\n  };\n  const set = button.onclick !== null;\n  button.onclick = null;\n  return set;");
   expect(js).toContain("return new WebSocket(url);");
@@ -976,10 +977,14 @@ test("the webapi crate's bindings become plain JS", async () => {
   // A function JS gives, an object.
   expect(js).toContain('return registry.get("x-card") !== undefined;');
   // A `Document | ShadowRoot`, what both have, and a document as one (rd193).
-  expect(js).toContain('  const links = root.querySelectorAll("link").length;\n  return [links, root.nodeType === 9];');
+  expect(js).toContain('  const links = root.querySelectorAll("link").length;\n  return [links, root.nodeType === Node.DOCUMENT_NODE];');
   expect(js).toContain("  return hoisted(document);\n");
   const { roundTrip, iterated, samples, texts, onErrors, listed, selected, widths, unionsRead, defined, hoisted } = await import(join(target, "web_forms.js"));
+  // `Node.DOCUMENT_NODE` is the browser's, which Node lacks (rd618).
+  (globalThis as any).Node = { DOCUMENT_NODE: 9 };
   expect(hoisted({ querySelectorAll: () => ({ length: 2 }), nodeType: 11 })).toEqual([2, false]);
+  expect(hoisted({ querySelectorAll: () => ({ length: 1 }), nodeType: 9 })).toEqual([1, true]);
+  delete (globalThis as any).Node;
   // A window's attribute is a global, tested where there's no window, as
   // upstream's typeof devicePixelRatio === 'number' (rd195).
   expect(js).toContain('  return typeof devicePixelRatio === "number" ? devicePixelRatio : 1;\n');

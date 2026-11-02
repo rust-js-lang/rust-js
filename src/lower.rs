@@ -769,6 +769,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(constant) = std_types::number::math::constant(self.tcx, def_id) {
             return Ok(constant);
         }
+        // One JS names, a binding crate's, `node::ELEMENT_NODE`, is its JS
+        // name, `Node.ELEMENT_NODE` (ADR 0031, amended, rd618).
+        if let Some(name) = bindings::const_link_name(self.tcx, def_id) {
+            return Ok(self.binding_ref(name.as_str(), span));
+        }
         // One holding a `Cell`, which changes through a shared reference, is
         // its value, written in place: `{ value: 5 }` each time it's used.
         // One made where another module loads, read where this one does, is

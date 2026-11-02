@@ -836,6 +836,16 @@ const RUNS_ONLY_GIVEN = new Set([
   "console.groupEnd", "console.info", "console.log", "console.warn",
 ]);
 
+/** A constant's Rust type: WebIDL's own, an integer's `u16` or `i32`, as
+ * its value is one (rd618), where every other number is an `f64`; a
+ * `long long`'s too, which JS holds as a number. */
+function constantType(t: IdlType): string | { skip: string } {
+  const name = t.idlType as string;
+  const aliased = typedefs.get(name);
+  if (aliased) return constantType(aliased);
+  return typeof name === "string" && NUMBERS[name] && name !== "boolean" ? NUMBERS[name] : rustType(t, "result");
+}
+
 /** The Rust type for a (non-union) WebIDL type, or why there isn't one. */
 function rustType(t: IdlType, at: Position): string | { skip: string } {
   if (at === "result" && isUnion(t)) return resultUnion(t);
@@ -1649,20 +1659,27 @@ function functionsOf(declared: Interface): Fn[] {
   };
 
   for (const [index, { member: m }] of i.members.entries()) {
-    // A constant is a Rust one, its value written where it's read, as a
-    // `const`'s is (ADR 0031): `node::ELEMENT_NODE`.
+    // A constant is a Rust one, of WebIDL's own type, `const unsigned
+    // short`'s `u16`, which a `match` names and `as` converts as Rust's;
+    // read, it's its JS name, `Node.ELEMENT_NODE`, its `link_name` (ADRs
+    // 0031, 0994, amended, rd618, the user's decision): `node::ELEMENT_NODE`.
     if (m.type === "const") {
-      const rust = rustType(m.idlType!, "result");
+      const rust = constantType(m.idlType!);
       const value = (m as unknown as { value?: { type: string; value: string } }).value;
       const own = constantsOf.get(i.name) ?? new Map<string, string>();
       if (typeof rust !== "string" || value?.type !== "number") skip("constant");
       else if (!own.has(m.name!)) {
-        // A number's, as an `f64` writes it: `0x02`'s `2.0`.
+        // A number's, as an `f64` writes it, `2.0`; an integer's as WebIDL
+        // does, `0x02`.
         const n = Number(value.value);
         const literal = rust.startsWith("f") ? (Number.isInteger(n) ? `${n}.0` : `${n}`) : value.value;
         // As WebIDL names it, `FLOAT_MAT2x3` too.
         const allow = /[a-z]/.test(m.name!) ? "    #[allow(non_upper_case_globals)]\n" : "";
-        own.set(m.name!, `    /// \`${jsName(i)}.${m.name}\`\n${allow}    pub const ${m.name}: ${rust} = ${literal};`);
+        const name = `${jsName(i)}.${m.name}`;
+        own.set(
+          m.name!,
+          `    /// \`${name}\`\n${allow}    #[cfg_attr(rust_js, rust_js::link_name = "${name}")]\n    pub const ${m.name}: ${rust} = ${literal};`,
+        );
       }
       constantsOf.set(i.name, own);
       continue;
