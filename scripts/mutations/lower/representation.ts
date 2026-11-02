@@ -212,6 +212,9 @@ export const mutations: Mutation[] = [
     find: "            && !self.is_callable(ty)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "closure_mut_ref"],
+    // The box is a cell of the function, `dynamic({ value() { .. } })`,
+    // which runs as the function does: only its snapshot tells them apart.
+    snapshots: true,
   },
   {
     name: "generic-mut-not-cell",
