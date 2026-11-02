@@ -34,6 +34,9 @@ pub trait Emits<E> {
 #[cfg_attr(rust_js, rust_js::types = "EventEmitter")]
 pub struct EventEmitter(PhantomData<JsObject>);
 
+// An object, never `undefined` nor `null`: a value of any shape.
+unsafe impl js::Defined for EventEmitter {}
+
 pub mod event_emitter {
     use super::{EventEmitter, EventEmitterOptions};
 

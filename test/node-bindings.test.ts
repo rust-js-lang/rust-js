@@ -1316,3 +1316,49 @@ destination.on("finish", () => console.log(JSON.stringify([createFastHash("abc")
   expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
   expect(JSON.parse(p.stdout.toString())).toEqual(["900150983cd24fb0d6963f7d28e17f72", true, ["hi", "hi"], "é!"]);
 });
+
+// rd552: each of Node's classes is an object, never `undefined` nor `null`,
+// so `js::Defined`, a value of any shape, as each of webapi's interfaces is:
+// React's Fizz server keeps its destination, a `Writable`, as `js::unknown`'s.
+test("node's classes are js::Defined, values of any shape", () => {
+  const dir = fixture("node-defined");
+  const node = buildNode();
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+use node::events::EventEmitter;
+use node::stream::{Duplex, Readable, Writable};
+
+pub fn writable(destination: &'static Writable) -> &'static Unknown {
+    js::unknown(destination)
+}
+
+pub fn readable(source: &'static Readable) -> &'static Unknown {
+    js::unknown(source)
+}
+
+pub fn duplex(both: &'static Duplex) -> &'static Unknown {
+    js::unknown(both)
+}
+
+pub fn emitter(emitter: &'static EventEmitter) -> &'static Unknown {
+    js::unknown(emitter)
+}
+
+pub fn is_writable(destination: Option<&Writable>) -> bool {
+    js::truthy(destination)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function writable(destination) {\n  return destination;\n}");
+  expect(js).toContain("export function duplex(both) {\n  return both;\n}");
+  writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
+  writeFileSync(join(dir, "run.js"), `import { Duplex, Readable, Writable } from "node:stream";
+import { EventEmitter } from "node:events";
+import { writable, readable, duplex, emitter, isWritable } from "./lib.js";
+const w = new Writable(), r = new Readable(), d = new Duplex(), e = new EventEmitter();
+console.log(JSON.stringify([writable(w) === w, readable(r) === r, duplex(d) === d, emitter(e) === e, isWritable(w), isWritable(undefined)]));
+`);
+  const p = Bun.spawnSync(["node", "run.js"], { cwd: dir, stderr: "pipe" });
+  expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
+  expect(JSON.parse(p.stdout.toString())).toEqual([true, true, true, true, true, false]);
+});

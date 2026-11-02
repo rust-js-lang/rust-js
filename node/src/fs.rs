@@ -30,6 +30,9 @@ pub fn read_file_sync(path: &str, options: BufferEncoding) -> Result<String, &'s
 #[cfg_attr(rust_js, rust_js::types = "fs#Stats")]
 pub struct Stats(core::marker::PhantomData<js::JsObject>);
 
+// An object, never `undefined` nor `null`: a value of any shape.
+unsafe impl js::Defined for Stats {}
+
 impl Stats {
     /// [`stats.isDirectory()`](https://nodejs.org/api/fs.html#statsisdirectory):
     /// whether it's a directory.

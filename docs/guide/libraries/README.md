@@ -451,7 +451,10 @@ is `new AsyncLocalStorage()`, a store of a `T` that `storage.run(store, ||
 ..)` gives the code it runs and each resource that code makes, read by
 `get_store()`, as React's servers keep the request rendering; and
 `create_hook(&HookCallbacks { init: Some(&f), ..Default::default() })` is
-`createHook({ init: f })`, `None` callbacks left out.
+`createHook({ init: f })`, `None` callbacks left out. Each of its classes,
+a `stream::Writable` say, is an object, never `undefined` nor `null`, so
+`js::Defined`, a value of any shape, as each of webapi's interfaces is:
+`js::unknown(destination)` is `destination`.
 
 ```rust
 use node::{BufferEncoding, fs, process};

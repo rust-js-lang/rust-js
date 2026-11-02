@@ -24,6 +24,9 @@ use crate::events::{Emits, EventEmitterExt};
 #[cfg_attr(rust_js, rust_js::types = "stream#Writable")]
 pub struct Writable(PhantomData<JsObject>);
 
+// An object, never `undefined` nor `null`: a value of any shape.
+unsafe impl js::Defined for Writable {}
+
 impl Writable {
     /// [`writable.write(chunk)`](https://nodejs.org/api/stream.html#writablewritechunk-encoding-callback):
     /// `chunk` written, text as UTF-8; whether the stream would take more
@@ -55,6 +58,9 @@ impl Writable {
 /// prerender.
 #[cfg_attr(rust_js, rust_js::types = "stream#Readable")]
 pub struct Readable(PhantomData<JsObject>);
+
+// An object, never `undefined` nor `null`: a value of any shape.
+unsafe impl js::Defined for Readable {}
 
 impl Readable {
     /// [`readable.push(chunk)`](https://nodejs.org/api/stream.html#readablepushchunk-encoding):
@@ -186,6 +192,9 @@ impl Emits<event::Unpipe> for Writable {
 /// object itself. Its events are both's.
 #[cfg_attr(rust_js, rust_js::types = "stream#Duplex")]
 pub struct Duplex(PhantomData<JsObject>);
+
+// An object, never `undefined` nor `null`: a value of any shape.
+unsafe impl js::Defined for Duplex {}
 
 impl Deref for Duplex {
     type Target = Readable;

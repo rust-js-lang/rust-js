@@ -17,6 +17,9 @@ pub use webapi::{Blob, File};
 #[cfg_attr(rust_js, rust_js::types = "Buffer")]
 pub struct Buffer(PhantomData<JsObject>);
 
+// An object, never `undefined` nor `null`: a value of any shape.
+unsafe impl js::Defined for Buffer {}
+
 // A global class, `js::class::<Buffer>()`'s, held (ADR 1049).
 impl js::Classed for Buffer {
     type Constructor = js::AnyConstructor;
@@ -641,6 +644,9 @@ pub fn resolve_object_url(id: &str) -> Option<&'static Blob> {
 
 /// [`buffer.constants`](constants).
 pub struct BufferConstants(PhantomData<JsObject>);
+
+// An object, never `undefined` nor `null`: a value of any shape.
+unsafe impl js::Defined for BufferConstants {}
 
 impl BufferConstants {
     #[cfg_attr(rust_js, rust_js::link_name = "get MAX_LENGTH")]

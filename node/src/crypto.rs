@@ -19,6 +19,9 @@ use crate::buffer::IntoStrOrBufferSource;
 #[cfg_attr(rust_js, rust_js::types = "crypto#Hash")]
 pub struct Hash(PhantomData<JsObject>);
 
+// An object, never `undefined` nor `null`: a value of any shape.
+unsafe impl js::Defined for Hash {}
+
 /// [`crypto.createHash(algorithm)`](https://nodejs.org/api/crypto.html#cryptocreatehashalgorithm-options):
 /// a [`Hash`] of `algorithm`, `"md5"` or `"sha256"`, an OpenSSL digest's
 /// name; of one OpenSSL lacks, JS's `Error`, a panic.

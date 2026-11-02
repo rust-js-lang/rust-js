@@ -70,6 +70,9 @@ pub struct HookCallbacks {
 #[cfg_attr(rust_js, rust_js::types = "async_hooks#AsyncHook")]
 pub struct AsyncHook(PhantomData<JsObject>);
 
+// An object, never `undefined` nor `null`: a value of any shape.
+unsafe impl js::Defined for AsyncHook {}
+
 impl AsyncHook {
     /// [`hook.enable()`](https://nodejs.org/api/async_hooks.html#asynchookenable):
     /// its callbacks called from now on.
@@ -119,6 +122,9 @@ pub struct AsyncResourceOptions {
 /// a resource of a program's own, which hooks see as Node's.
 #[cfg_attr(rust_js, rust_js::types = "async_hooks#AsyncResource")]
 pub struct AsyncResource(PhantomData<JsObject>);
+
+// An object, never `undefined` nor `null`: a value of any shape.
+unsafe impl js::Defined for AsyncResource {}
 
 pub mod async_resource {
     use super::{AsyncResource, IntoAsyncResourceTrigger, JsError};

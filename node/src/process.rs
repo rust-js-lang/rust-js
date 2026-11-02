@@ -669,6 +669,9 @@ pub struct EmitWarningOptions<'a> {
 /// [`finalization`]'s: callbacks run as the process ends.
 pub struct ProcessFinalization(PhantomData<JsObject>);
 
+// An object, never `undefined` nor `null`: a value of any shape.
+unsafe impl js::Defined for ProcessFinalization {}
+
 impl ProcessFinalization {
     /// Call `callback` with `r#ref` as the process exits, if `r#ref` lives.
     #[cfg_attr(rust_js, rust_js::link_name = "register")]
@@ -692,6 +695,9 @@ impl ProcessFinalization {
 /// [`permission`]'s: what the permission model lets the process do.
 pub struct ProcessPermission(PhantomData<JsObject>);
 
+// An object, never `undefined` nor `null`: a value of any shape.
+unsafe impl js::Defined for ProcessPermission {}
+
 impl ProcessPermission {
     /// Whether it may use `scope`, `"fs.read"`, of `reference`, a path say,
     /// where it's given.
@@ -703,6 +709,9 @@ impl ProcessPermission {
 
 /// [`report`]'s: diagnostic reports, and when they're written.
 pub struct ProcessReport(PhantomData<JsObject>);
+
+// An object, never `undefined` nor `null`: a value of any shape.
+unsafe impl js::Defined for ProcessReport {}
 
 impl ProcessReport {
     #[cfg_attr(rust_js, rust_js::link_name = "get compact")]
@@ -969,6 +978,9 @@ mod sealed {
 /// The `process` global's type, of its events (ADR 0361): `process::on`'s.
 #[cfg_attr(rust_js, rust_js::types = "NodeJS.Process")]
 pub struct Process(PhantomData<JsObject>);
+
+// An object, never `undefined` nor `null`: a value of any shape.
+unsafe impl js::Defined for Process {}
 
 /// Where an uncaught exception came from: a throw, or a rejected promise.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

@@ -65,6 +65,9 @@ unsafe extern "Rust" {
 /// given, one for each call the error was made in (ADR 0648).
 pub struct CallSite(PhantomData<JsObject>);
 
+// An object, never `undefined` nor `null`: a value of any shape.
+unsafe impl js::Defined for CallSite {}
+
 impl CallSite {
     /// `callSite.getColumnNumber()`: its column, from 1, `None`, `null`, where it has none.
     #[cfg_attr(rust_js, rust_js::link_name = "getColumnNumber")]

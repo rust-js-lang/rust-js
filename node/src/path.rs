@@ -147,6 +147,9 @@ pub struct FormatInputPathObject<'a> {
 /// its separator.
 pub struct PlatformPath(PhantomData<JsObject>);
 
+// An object, never `undefined` nor `null`: a value of any shape.
+unsafe impl js::Defined for PlatformPath {}
+
 impl PlatformPath {
     #[cfg_attr(rust_js, rust_js::link_name = "normalize")]
     pub fn normalize(&self, path: &str) -> String {

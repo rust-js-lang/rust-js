@@ -18,6 +18,9 @@ pub fn create_server(request_listener: impl Fn(&IncomingMessage, &ServerResponse
 /// server of [`create_server`]'s, to listen on a port.
 pub struct Server(PhantomData<JsObject>);
 
+// An object, never `undefined` nor `null`: a value of any shape.
+unsafe impl js::Defined for Server {}
+
 impl Server {
     /// [`server.listen(port, listeningListener)`](https://nodejs.org/api/net.html#serverlistenport-host-backlog-callback):
     /// listen on `port`, or one the OS picks, `listening_listener` called
@@ -43,6 +46,9 @@ impl Server {
 /// [`http.IncomingMessage`](https://nodejs.org/api/http.html#class-httpincomingmessage):
 /// a request a server is given.
 pub struct IncomingMessage(PhantomData<JsObject>);
+
+// An object, never `undefined` nor `null`: a value of any shape.
+unsafe impl js::Defined for IncomingMessage {}
 
 impl IncomingMessage {
     /// Its method, `"GET"`.
@@ -125,6 +131,9 @@ pub enum IncomingHttpHeader {
 /// [`http.ServerResponse`](https://nodejs.org/api/http.html#class-httpserverresponse):
 /// the response a server writes.
 pub struct ServerResponse(PhantomData<JsObject>);
+
+// An object, never `undefined` nor `null`: a value of any shape.
+unsafe impl js::Defined for ServerResponse {}
 
 impl ServerResponse {
     /// Its status, `200` unless it's set.
