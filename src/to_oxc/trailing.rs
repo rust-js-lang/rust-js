@@ -34,6 +34,12 @@ pub(super) struct Trailing {
     /// after its `default:`, which no code of its line maps to, before the
     /// clause's `{` (rd525), `default: /* .. */ {`, as upstream writes it.
     pub(super) of_default: bool,
+    /// How many brackets the code before it on its line ends closing, `]`
+    /// of `[9.0, 13.0, 27.0, 32.0]; // Tab, ..`: the JS's lines of only
+    /// those after its last JS, of an array the JS writes an item a line,
+    /// are its line's too, so it's after the statement, not its last item
+    /// (rd605).
+    pub(super) closes: u32,
 }
 
 /// Where each function's parameter starts, by where it ends: a line
@@ -283,10 +289,11 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
             }
             (_, Some((line, end))) => ends.entry(line).or_default().push((end, &comment.text)),
             _ => {
-                let last = (map.get_tokens())
-                    .filter(|t| t.get_src_line() == comment.line)
-                    .map(|t| t.get_dst_line())
-                    .max();
+                let of_line = || (map.get_tokens()).filter(|t| t.get_src_line() == comment.line);
+                let first = of_line().map(|t| (t.get_dst_line(), t.get_dst_col())).min();
+                let last = (of_line().map(|t| t.get_dst_line()).max())
+                    .zip(first)
+                    .map(|(last, first)| closed_after(first, last, comment.closes, generated_lines));
                 if let Some(last) = last {
                     after.entry(last).or_default().push(&comment.text);
                 }
@@ -294,6 +301,66 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
         }
     }
     Placed { after, inside, ends }
+}
+
+/// Of `last`, the last line of the JS of a comment's line, from `first`,
+/// its first JS's line and column, whose code ends closing `closes`
+/// brackets: the last of the lines after it that hold only brackets the
+/// JS of the line opened and left open, `];` of an array the JS writes an
+/// item a line (rd605). Not one of what's around it, the `};` of an object
+/// after `o: Cell::new(None), // object cache`, whose `)` no JS has.
+fn closed_after(first: (u32, u32), last: u32, closes: u32, generated_lines: &[&str]) -> u32 {
+    let (lines, column) = (generated_lines.get(first.0 as usize..=last as usize), first.1);
+    let Some(lines) = lines.filter(|_| closes > 0) else {
+        return last;
+    };
+    let text = (lines.iter().enumerate())
+        .map(|(k, line)| if k == 0 { &line[in_bytes(line, column)..] } else { line })
+        .collect::<Vec<_>>()
+        .join("\n");
+    let mut open = opened(&text).min(closes);
+    let mut at = last;
+    while open > 0
+        && let Some(next) = generated_lines.get(at as usize + 1)
+        && let text = next.trim()
+        && !text.is_empty()
+        && text.chars().all(|c| ")]};,".contains(c))
+    {
+        let closing = text.chars().filter(|c| ")]}".contains(*c)).count() as u32;
+        if closing > open {
+            break;
+        }
+        open -= closing;
+        at += 1;
+    }
+    at
+}
+
+/// How many brackets `code` opens and leaves open, past its strings.
+fn opened(code: &str) -> u32 {
+    let mut depth: Vec<char> = Vec::new();
+    let mut chars = code.chars();
+    while let Some(c) = chars.next() {
+        match c {
+            '"' | '\'' | '`' => {
+                while let Some(d) = chars.next() {
+                    match d {
+                        '\\' => {
+                            chars.next();
+                        }
+                        d if d == c => break,
+                        _ => {}
+                    }
+                }
+            }
+            '(' | '[' | '{' => depth.push(c),
+            ')' | ']' | '}' => {
+                depth.pop();
+            }
+            _ => {}
+        }
+    }
+    depth.len() as u32
 }
 
 /// Whether a line of the JS is a comment or a `default:`, what's between a

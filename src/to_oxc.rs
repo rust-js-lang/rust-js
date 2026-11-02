@@ -586,6 +586,12 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                 // its `default:`'s, which no code of the line maps to (rd525).
                 let of_default = sources.text[line_start..c.lo as usize].trim() == "_"
                     && sources.text[c.hi as usize..line_end].trim_start().starts_with("=>");
+                // The brackets its line's code ends closing, `]` of `[9.0, ..,
+                // 32.0];`, which a line of the JS may hold alone (rd605).
+                let closes = (sources.text[line_start..c.lo as usize].chars().rev())
+                    .take_while(|c| c.is_whitespace() || ")]};,".contains(*c))
+                    .filter(|c| ")]}".contains(*c))
+                    .count() as u32;
                 trailing.push(Trailing {
                     line,
                     column: (c.lo as usize - line_start) as u32,
@@ -595,6 +601,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     after_param,
                     before_link,
                     of_default,
+                    closes,
                 });
             }
         }
@@ -622,6 +629,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     after_param: None,
                     before_link: None,
                     of_default: false,
+                    closes: 0,
                 });
             }
         }
@@ -639,6 +647,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     after_param: None,
                     before_link: None,
                     of_default: false,
+                    closes: 0,
                 });
             }
         }
@@ -658,6 +667,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
                     after_param: None,
                     before_link: None,
                     of_default: false,
+                    closes: 0,
                 });
             }
         }

@@ -717,3 +717,31 @@ static's array is after that item", run, and the mutation
 
 An array a function's body borrows, `f(1, &[""], // path`, rustc's
 promoted constant, still prints the comment after the call's `)`.
+
+## Amendment: a comment after an array's statement is after the statement (rd605, 2026-11-02)
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): comments.
+
+React DOM's BeforeInputEventPlugin writes `const END_KEYCODES = [9, 13,
+27, 32]; // Tab, Return, Esc, Space`. Once rd344a placed each item where
+it's written, the port's `const END_KEYCODES: [f64; 4] = [9.0, 13.0,
+27.0, 32.0]; // ..` printed `32, // Tab, ..` inside the array, laid out an
+item a line: the JS before it's laid out writes an array of more than two
+items an item a line, and the last JS of the comment's line is the last
+item's line, before the `];` no code of the line maps to. **The JS's
+lines after it that hold only brackets the JS of the comment's line
+opened and left open are its line's too**, as many as the Rust's line
+ends closing (`trailing::closed_after`, by `Trailing::closes`, the `]` of
+`32.0];`), so the comment is after the statement, `[9, 13, 27, 32]; //
+Tab, ..`, as upstream, and after a block's last array, `return [9, 9,
+9]; // ..`, not after its `}`. A bracket the Rust closes that the JS has
+none of, `o: Cell::new(None), // object cache`'s `)`, is no reason to go
+past the object's `};`: the JS of that line, `o: null,`, opens nothing. A
+comment after an item, `"Parallel", // ..` before a line of the array's
+rest, closes nothing and stays after it. An array that rustfmt wouldn't
+write, its last item and `];` on a line after its first, `1, 2,` then
+`3]; // ..`, keeps the comment after that item: the JS of that line
+opened nothing. Held by the corpus's `array_trailing_comments`, run
+against native Rust, `lowering-comment-fields.test.ts`, and the
+mutations `statement-comment-on-last-item` and
+`closed-lines-past-their-brackets` (`to_oxc/trailing.ts`).

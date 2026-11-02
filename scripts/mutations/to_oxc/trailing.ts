@@ -129,4 +129,24 @@ export const mutations: Mutation[] = [
     replace: "                match false {\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "opens with a `let`"],
   },
+  {
+    name: "statement-comment-on-last-item",
+    breaks:
+      "a line comment after an array's statement on its line, `[9.0, 13.0, 27.0, 32.0]; // Tab, ..`, is after the array's last item, the JS's line of it, `32, // Tab, ..` inside the array an item a line, not after the statement as upstream's (rd605)",
+    file: "src/to_oxc/trailing.rs",
+    find: "                    .map(|(last, first)| closed_after(first, last, comment.closes, generated_lines));\n",
+    replace: "                    .map(|(last, _)| last);\n",
+    tests: ["test/corpus.test.ts", "-t", "^array_trailing_comments\\.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "closed-lines-past-their-brackets",
+    breaks:
+      "a statement comment goes past the lines of brackets the JS of its line didn't open, `o: null, // object cache` after the object's `};`, where `Cell::new(None)`'s `)` closed nothing JS has (rd605)",
+    file: "src/to_oxc/trailing.rs",
+    find: "    let mut open = opened(&text).min(closes);\n",
+    replace: "    let mut open = closes;\n",
+    tests: ["test/corpus.test.ts", "-t", "^array_trailing_comments\\.rs$"],
+    snapshots: true,
+  },
 ];

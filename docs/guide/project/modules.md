@@ -1106,6 +1106,18 @@ export const TRACKS = [
 ];
 ```
 
+One after the array's statement, on its line, is after the statement,
+however the JS lays out the array before it's formatted
+([ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md), amended):
+
+```rust
+pub const END_KEYCODES: [f64; 4] = [9.0, 13.0, 27.0, 32.0]; // Tab, Return, Esc, Space
+```
+
+```js
+export const END_KEYCODES = [9, 13, 27, 32]; // Tab, Return, Esc, Space
+```
+
 One after a call's last argument is there too, before its `)`
 ([ADR 0708](../../decisions/0708-a-comment-before-an-argument-is-before-it.md), amended):
 
