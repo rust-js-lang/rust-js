@@ -417,7 +417,7 @@ program's that JS never made an object of methods of.
 is called with no `this` where what holds it is the program's own data:
 a field the program writes, a literal's or an assignment's, of what may
 be a JS function, `Request { environment_name, .. }`, or an item of a
-tuple, an array or a `Vec`** (`FnPointers::may_read_this`, of
+tuple, an array or a slice, as its MIR's place says (`calls::called_holder`)** (`FnPointers::may_read_this`, of
 `own_fields`, which records each write of a field of a function). Case:
 results changed (0262's third): Rust's, which gives none. What's left as
 it was:
@@ -431,8 +431,9 @@ it was:
   too, but the consumer's call doesn't know it: it's called through its
   object, as before, the library's contract saying no more (a limit, the
   crates test's `hooks.onEach(1)`). So is a member of what the call's MIR doesn't show,
-  `(PREVIOUS.with(|p| p.d))(href)`'s `previousDispatcher.D(href)`, or an
-  `Rc`'s own box, as before (`Holder::Unknown`).
+  `(PREVIOUS.with(|p| p.d))(href)`'s `previousDispatcher.D(href)`, an
+  item a call reads, a `Vec`'s or a JS object's by its key, or an `Rc`'s
+  own box, as before (`Holder::Unknown`).
 - **What may only be Rust's is called as it is**, `c.step(1)`: a field
   the crate fills with its own closures alone (#405), or with what the
   field held, React DOM's dispatcher's `r: previous.r`, which writes it
@@ -475,12 +476,10 @@ Mutations `js-object-holder-unbound`, `own-data-holder-bound`,
 `unbound-variable-sequenced` and `unbound-eval-direct`
 (`js/make.ts`); #402's and #427's moved to the new code.
 
-react-in-rust's JS, every package built before and after: ART's two
-`(0, instance._subscriptions[type])()`, art's unsubscribe functions, an
-item of the program's own object, called with no `this` as Rust calls
-them; and three calls with none already, of a with_this function's
+react-in-rust's JS, every package built before and after: three calls
+with none already, of a with_this function's
 signature, React DOM's legacy `destination.destroy(error)` and Flight's
 reply `controller.error(error)`, in the one form, `(0, destination.destroy)(error)`
 where they were `const destroy = destination.destroy; destroy(error);`.
-React DOM's dispatchers, `previousDispatcher.r(form)` and the rest, read as
-before.
+React DOM's dispatchers, `previousDispatcher.r(form)` and the rest, and
+ART's `instance._subscriptions[type]()`, read as before.

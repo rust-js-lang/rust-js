@@ -978,13 +978,19 @@ impl Expr {
         Expr::new(ExprKind::Unbound(Box::new(f)))
     }
 
-    /// A variable read unbound, `(0, f)` of a field's function MIR held, as
-    /// the variable, `f`, whose call gives no `this` in a module; but
-    /// `eval`'s, an indirect eval, which `eval(..)` isn't (ADR 0972,
-    /// amended, rd579). What preparation does of each expression.
+    /// What's read unbound that JS gives no `this` of, `(0, f)` of a
+    /// variable, a field's function MIR held, or of a call's value: itself,
+    /// `f`, whose call gives none in a module; but `eval`'s, an indirect
+    /// eval, which `eval(..)` isn't (ADR 0972, amended, rd579). A member's
+    /// or an item's read stays unbound, `(0, s.f)`. What preparation does
+    /// of each expression.
     pub fn unbound_variable_read(e: &mut Expr) {
         if let ExprKind::Unbound(f) = &e.kind
-            && matches!(&f.kind, ExprKind::Var(name) if name != "eval")
+            && !matches!(
+                &f.kind,
+                ExprKind::Member(..) | ExprKind::OptionalMember(..) | ExprKind::Index(..)
+            )
+            && !matches!(&f.kind, ExprKind::Var(name) if name == "eval")
         {
             *e = (**f).clone();
         }

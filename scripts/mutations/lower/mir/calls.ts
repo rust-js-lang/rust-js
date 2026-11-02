@@ -823,12 +823,12 @@ export const mutations: Mutation[] = [
     breaks:
       "`(s.f)()` of a `dyn Fn` is `s.f()`, which gives a with_this function `s` as its `this`, where Rust gives it `None` (#402)",
     file: "src/lower/mir/calls.rs",
-    find: "            (js::ExprKind::Member(..) | js::ExprKind::OptionalMember(..) | js::ExprKind::Index(..), Some(field)) => {\n",
-    replace: "            (js::ExprKind::Index(..), Some(field)) => {\n",
+    find: "            (PlaceElem::Field(index, _), ty::Adt(adt, _)) if adt.is_struct() => {\n",
+    replace: "            (PlaceElem::Field(index, _), ty::Adt(adt, _)) if adt.is_struct() && false => {\n",
     tests: [
       "test/js-functions.test.ts",
       "-t",
-      "a dyn Fn a field or an item holds is called with no this",
+      "a JS function the program's own data holds is called with no this",
     ],
   },
   {
@@ -836,12 +836,12 @@ export const mutations: Mutation[] = [
     breaks:
       "`fs[0]()` of a `dyn Fn` an array holds gives it the array as its `this` (#402)",
     file: "src/lower/mir/calls.rs",
-    find: "            (js::ExprKind::Index(..), None) => Holder::Item,\n",
-    replace: "",
+    find: "            | (PlaceElem::Index(_) | PlaceElem::ConstantIndex { .. } | PlaceElem::Subslice { .. }, _) => Holder::Item,\n",
+    replace: "            | (PlaceElem::Index(_) | PlaceElem::ConstantIndex { .. } | PlaceElem::Subslice { .. }, _) => Holder::Unknown,\n",
     tests: [
       "test/js-functions.test.ts",
       "-t",
-      "a dyn Fn a field or an item holds is called with no this",
+      "a JS function the program's own data holds is called with no this",
     ],
   },
   {
@@ -917,8 +917,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a host function's field read MIR holds in a temporary, `_3 = CONFIG.schedule`, is read in place by tidy, `CONFIG.schedule(..)`, its `this` the config (#427)",
     file: "src/lower/mir/calls.rs",
-    find: "            (js::ExprKind::Var(name), Some(field)) if super::tidy::is_temporary(name) => Holder::Field(field),\n",
-    replace: "",
+    find: "        Ok(Value::Expr(Expr::call(Expr::unbound(*callee), args)))\n    }\n",
+    replace: "        if let js::ExprKind::Var(_) = callee.kind {\n            return Ok(Value::Expr(Expr::call(*callee, args)));\n        }\n        Ok(Value::Expr(Expr::call(Expr::unbound(*callee), args)))\n    }\n",
     tests: [
       "test/lowering-passed-on.test.ts",
       "-t",
@@ -1133,5 +1133,14 @@ export const mutations: Mutation[] = [
       "-t",
       "a JS function the program's own data holds is called with no this",
     ],
+  },
+  {
+    name: "variable-called-unbound",
+    breaks:
+      "a variable of the program's a call through a field gives no `this` is called `(0, ping)()`, so a closure that only calls it, `|_| ping()`, is no longer the function it calls, `addEventListener(\"load\", ping)` (rd579)",
+    file: "src/lower/mir/calls.rs",
+    find: "            && !super::tidy::is_temporary(name)\n        {\n            return Ok(Value::Expr(Expr::call(*callee, args)));\n",
+    replace: "            && false\n        {\n            return Ok(Value::Expr(Expr::call(*callee, args)));\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "a closure that ignores what it's given is the function it calls"],
   },
 ];

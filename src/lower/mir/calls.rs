@@ -27,30 +27,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         else {
             return Ok(call);
         };
-        let (pointers, field) = (self.krate.cell_borrows.pointers(), self.called_field(state, called));
-        // What holds it: a field, `s.f`, one a symbol names too,
-        // `iterable[Symbol.asyncIterator]`, or a temporary of one; an item,
-        // `fs[i]`; or a member of what isn't seen, a thread-local's `with`'s.
-        let holder = match (&callee.kind, field) {
-            (js::ExprKind::Member(..) | js::ExprKind::OptionalMember(..) | js::ExprKind::Index(..), Some(field)) => {
-                Holder::Field(field)
-            }
-            (js::ExprKind::Index(..), None) => Holder::Item,
-            (js::ExprKind::Member(..) | js::ExprKind::OptionalMember(..), None) => Holder::Unknown,
-            (js::ExprKind::Var(name), Some(field)) if super::tidy::is_temporary(name) => Holder::Field(field),
-            _ => return Ok(Value::Expr(Expr::call(*callee, args))),
-        };
+        let (pointers, holder) = (self.krate.cell_borrows.pointers(), self.called_holder(state, called));
         if !pointers.may_read_this(self.tcx, called, holder) {
+            return Ok(Value::Expr(Expr::call(*callee, args)));
+        }
+        // A variable of the program's is called with none as it is, as a
+        // closure that only calls it is that function (`passed_on`); MIR's
+        // temporary, which tidy may read in place, and the rest are read
+        // unbound, and of what JS gives no `this` of, a call's value,
+        // preparation leaves it as it is.
+        if let js::ExprKind::Var(name) = &callee.kind
+            && !super::tidy::is_temporary(name)
+        {
             return Ok(Value::Expr(Expr::call(*callee, args)));
         }
         Ok(Value::Expr(Expr::call(Expr::unbound(*callee), args)))
     }
 
-    /// The field of the crate's struct the call that ends `state.at` calls,
-    /// `(s.f)()`'s `f`: of the place of what it calls, a function's its
-    /// first argument, a fn pointer's itself, or the place a temporary of
-    /// it borrows or copies, `_3 = &(*((*_1).0))`.
-    fn called_field(&self, state: &State<'_, 'tcx>, called: Called<'tcx>) -> Option<rustc_span::def_id::DefId> {
+    /// What holds what the call that ends `state.at` calls (rd579), of the
+    /// place of what it calls, a function's its first argument, a fn
+    /// pointer's itself, or the place a temporary of it borrows or copies,
+    /// `_3 = &(*((*_1).0))`: a field of the crate's struct, `(s.f)()`'s `f`,
+    /// one a symbol names too; an item of a tuple or an array, `(p.0)()`,
+    /// `fs[i]()`; or what the MIR doesn't show, a thread-local's `with`'s.
+    fn called_holder(&self, state: &State<'_, 'tcx>, called: Called<'tcx>) -> Holder {
+        self.called_place_holder(state, called).unwrap_or(Holder::Unknown)
+    }
+
+    fn called_place_holder(&self, state: &State<'_, 'tcx>, called: Called<'tcx>) -> Option<Holder> {
         let mir::TerminatorKind::Call { func, args, .. } = &state.body[state.at].terminator().kind else {
             return None;
         };
@@ -108,12 +112,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             place = assigned(place.local).or_else(|| given_of(place.local))?;
         }
-        let (base, elem) = (place.iter_projections()).rfind(|(_, elem)| matches!(elem, PlaceElem::Field(..)))?;
-        let PlaceElem::Field(index, _) = elem else { return None };
-        match base.ty(state.body, self.tcx).ty.kind() {
-            ty::Adt(adt, _) if adt.is_struct() => Some(adt.non_enum_variant().fields[index].did),
-            _ => None,
-        }
+        let (base, elem) = (place.iter_projections()).rfind(|(_, elem)| {
+            matches!(
+                elem,
+                PlaceElem::Field(..)
+                    | PlaceElem::Index(_)
+                    | PlaceElem::ConstantIndex { .. }
+                    | PlaceElem::Subslice { .. }
+            )
+        })?;
+        Some(match (elem, base.ty(state.body, self.tcx).ty.kind()) {
+            (PlaceElem::Field(index, _), ty::Adt(adt, _)) if adt.is_struct() => {
+                Holder::Field(adt.non_enum_variant().fields[index].did)
+            }
+            // A tuple's, an array's or a slice's.
+            (PlaceElem::Field(..), ty::Tuple(_))
+            | (PlaceElem::Index(_) | PlaceElem::ConstantIndex { .. } | PlaceElem::Subslice { .. }, _) => Holder::Item,
+            _ => Holder::Unknown,
+        })
     }
 
     /// A closure called, `Fn::call(&f, (a, b))`: in JS, `f(a, b)`, and an
