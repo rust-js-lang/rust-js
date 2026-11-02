@@ -1638,7 +1638,9 @@ patterns above its first `case`, and a last `_` of only
 comments keeps them in its `default`
 ([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md), amended);
 or where it's a last `_` that does something, a case that falls through
-to the `default`
+to the `default`, the program's own comment above the `_` kept above
+`default:`, `_ => {` too, and no `// falls through` beside it where it
+says so, `// Fallthrough`
 ([ADR 0636](../../decisions/0636-a-guarded-arm-is-a-case.md), amended), of
 a guarded `|`, `"vt-name" | "vt-update" if on(name)`, its stacked
 `case`s and the guard's `if` once, `if (on(name)) { break; }`, as

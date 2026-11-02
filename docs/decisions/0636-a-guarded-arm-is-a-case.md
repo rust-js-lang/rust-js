@@ -263,3 +263,27 @@ codes, a function's, and two whose `_` does something); and mutations
 (`mir/tidy/switches.ts`). No mutation of the refusal outside a loop's turn
 end, where a case would need a `continue`: no chain MIR makes reaches it
 today.
+
+## Amendment: a fallen-to `_` that opens a block keeps the comment above it (rd638, 2026-11-02)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments only.
+A `default` the last case falls through to was printed where its first
+statement starts (`default_fallen_to`), `// falls through` before it;
+one none falls to, of a `_ => {` arm, just past its `{`
+(`clause_start`), where a comment above the arm is before it. So where
+both held, a guarded arm falling to `_ => { .. }` with the program's
+own `// Fallthrough` above the `_`, that comment was attached past the
+`{`, where no clause was printed, and lost, and rust-js's `// falls
+through` written in its place: React's ReactFiberCommitWork, four
+sites, `// Fallthrough` and `// Intentional fallthrough to next branch`.
+Since rd635 made the two texts differ it showed. **A fallen-to
+`default` whose `_` arm opens a block is printed past its `{`, as one
+none falls to**: the program's comment above it is above `default:`,
+and, saying it falls through (`says_fallthrough`), no `// falls
+through` of rust-js's beside it, as before any `case`. One that's a
+value, `_ => 0`, is where its value is, as before.
+
+Held by `test/lowering-comments-jumps.test.ts`'s "a program's
+fall-through comment above a block's `_` is kept, none of rust-js's
+beside it", run, and the mutation `default-fallen-to-past-its-open`
+(`to_oxc/cases.ts`).

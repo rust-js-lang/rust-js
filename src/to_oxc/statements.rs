@@ -670,7 +670,7 @@ impl<'a> Cx<'a> {
                     // `case 'forwards': default:` (rd214); not of one that's
                     // a value, `_ => String::new()`, whose comment above it
                     // is its body's, there being no other (ADR 0590).
-                    let at = (super::default_fallen_to(cases, Some(default)))
+                    let at = (super::default_fallen_to(self.source, cases, Some(default)))
                         .or_else(|| super::cases::clause_start(self.source, default))
                         .map_or(SPAN, |lo| Span::new(lo, lo));
                     let at = commented_clause(at, default);

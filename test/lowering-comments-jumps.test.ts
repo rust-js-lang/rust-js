@@ -624,3 +624,61 @@ test("a comment above a _ arm whose pattern's comment has brackets is before its
   const process = lib.process as (tag: number, row: string) => string[];
   expect([process(125, "x"), process(1, "{}")]).toEqual([["close"], ["{}"]]);
 });
+
+// React's ReactFiberCommitWork: a guarded arm that falls to a last `_`
+// that opens a block, `_ => {`, the program's own comment above it,
+// `// Fallthrough`, `// Intentional fallthrough to next branch`: that
+// comment above `default:`, and no `// falls through` of rust-js's, where
+// the arm ends in the case's `break` and where it returns (rd638).
+test("a program's fall-through comment above a block's `_` is kept, none of rust-js's beside it", async () => {
+  const { js, lib } = await compiled("fallthrough-to-a-block-default", `const VIEW: u32 = 30;
+const HOST: u32 = 5;
+
+pub fn commit(tag: u32, enabled: bool, log: &mut Vec<u32>) {
+    match tag {
+        HOST => log.push(5),
+        VIEW if enabled => {
+            if log.is_empty() {
+                log.push(30);
+            }
+        }
+        // Intentional fallthrough to next branch
+        _ => {
+            log.push(0);
+        }
+    }
+}
+
+pub fn returned(tag: u32, enabled: bool, log: &mut Vec<u32>) {
+    match tag {
+        HOST => log.push(5),
+        VIEW if enabled => {
+            log.push(30);
+            return;
+        }
+        // Fallthrough
+        _ => {
+            log.push(0);
+        }
+    }
+}
+`);
+  expect(js).toContain(`        break;
+      }
+    // Intentional fallthrough to next branch
+    default:
+      log.push(0);`);
+  expect(js).toContain(`        return;
+      }
+    // Fallthrough
+    default:
+      log.push(0);`);
+  expect(js).not.toContain("// falls through");
+  const log: number[] = [];
+  const run = lib as unknown as Record<string, (tag: number, enabled: boolean, log: number[]) => void>;
+  run.commit(30, true, log);
+  run.commit(30, false, log);
+  run.returned(30, false, log);
+  run.returned(5, true, log);
+  expect(log).toEqual([30, 0, 0, 5]);
+});

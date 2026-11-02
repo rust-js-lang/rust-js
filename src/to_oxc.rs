@@ -1204,7 +1204,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             }
         }
     }
-    cases::fallthroughs(module, &said_fallen, &mut text, &mut found);
+    cases::fallthroughs((module, &sources.text), &said_fallen, &mut text, &mut found);
     // Each comment of a statement's place of its own, keyed by which of
     // `own_places` it's of until the statement's place is given (`owned`).
     let mut own_places: Vec<(u32, u32)> = Vec::new();

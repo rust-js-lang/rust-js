@@ -9,15 +9,18 @@ use super::*;
 pub(super) const FALLTHROUGH: &str = "// falls through";
 
 /// Before each case a case falls through to, `// falls through` (ADR 0905),
-/// in `text`, each one of `found`: but where the program's comment says it
-/// already, `said`'s.
+/// in `text`, each one of `found`, `source` the program: but where the
+/// program's comment says it already, `said`'s.
 pub(super) fn fallthroughs(
-    module: &Module,
+    (module, source): (&Module, &str),
     said: &std::collections::HashSet<u32>,
     text: &mut String,
     found: &mut Vec<oxc_ast::Comment>,
 ) {
-    for at in fallthrough_starts(module).into_iter().filter(|at| !said.contains(at)) {
+    for at in fallthrough_starts(module, source)
+        .into_iter()
+        .filter(|at| !said.contains(at))
+    {
         let lo = text.len() as u32;
         text.push_str(FALLTHROUGH);
         let mut made = oxc_ast::Comment::new(lo, text.len() as u32, oxc_ast::CommentKind::Line);
@@ -203,11 +206,11 @@ fn opens_or_guards(source: &str, hi: u32) -> bool {
 /// Where each case a case falls through to starts, of `module`'s
 /// `switch`es: its first value's, which the case is printed at
 /// (`fallen_to`), its comment `FALLTHROUGH` before it.
-pub(super) fn fallthrough_starts(module: &Module) -> Vec<u32> {
+pub(super) fn fallthrough_starts(module: &Module, source: &str) -> Vec<u32> {
     let mut starts = Vec::new();
     each_switch(module, &mut |cases, default| {
         starts.extend((0..cases.len()).filter_map(|k| fallen_to(cases, k)));
-        starts.extend(default_fallen_to(cases, default));
+        starts.extend(default_fallen_to(source, cases, default));
     });
     starts
 }
@@ -221,11 +224,16 @@ pub(crate) fn fallen_to(cases: &[js::Case], k: usize) -> Option<u32> {
 }
 
 /// Where the `default` is printed, `default`, where the last case falls
-/// through to it (ADR 0636, amended): its first statement's start,
-/// `FALLTHROUGH` before it.
-pub(crate) fn default_fallen_to(cases: &[js::Case], default: Option<&[js::Stmt]>) -> Option<u32> {
-    let first = default?.first()?;
-    (cases.last()?.falls && !first.span.is_none()).then_some(first.span.lo)
+/// through to it (ADR 0636, amended), `source` the program: of a `_` arm
+/// that opens a block, `_ => {`, just past its `{` (`clause_start`), as
+/// where none falls to it, so a comment the program wrote above the arm is
+/// before it, its `// Fallthrough` said there (rd638); else its first
+/// statement's start. `FALLTHROUGH` before it where none is.
+pub(crate) fn default_fallen_to(source: &str, cases: &[js::Case], default: Option<&[js::Stmt]>) -> Option<u32> {
+    let default = default?;
+    let first = default.first()?;
+    let fallen = cases.last()?.falls && !first.span.is_none();
+    fallen.then(|| clause_start(source, default).unwrap_or(first.span.lo))
 }
 
 /// Where each case the one before falls through to starts, in order: a
@@ -234,7 +242,7 @@ pub(crate) fn default_fallen_to(cases: &[js::Case], default: Option<&[js::Stmt]>
 /// writes one (ADR 0905, amended). Another case's is its body's, as the
 /// scheduler's are (ADR 0590).
 pub(super) fn case_starts(module: &Module, source: &str) -> Vec<u32> {
-    let mut starts = fallthrough_starts(module);
+    let mut starts = fallthrough_starts(module, source);
     // And each `default`'s, a comment above whose `_` arm is before it, as
     // above a case of the labels a `_` stands for, React's `// The default
     // is now forwards.` above `case 'forwards': default:` (rd214).
