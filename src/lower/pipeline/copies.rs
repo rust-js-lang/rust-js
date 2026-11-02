@@ -91,6 +91,7 @@ pub(super) fn settle(
     let lowered = (items.iter_mut()).chain(made.iter_mut()).map(|(id, item)| (*id, item));
     for (id, item) in lowered {
         if !renamed.is_empty() {
+            keep_apart(&mut item.function, fns[&id].module, &renamed);
             rename(&mut item.function, fns[&id].module, &renamed);
         }
         // A call of one made alike another, a call of that one, imported by
@@ -135,6 +136,42 @@ fn alike(function: &js::Function, module: LocalModId, renamed: &HashMap<Named, S
     function.name = String::new();
     function.export = false;
     function
+}
+
+/// Each local of `function`, of a module's `module`, of the name a copy it
+/// calls is `renamed` to, named apart, so the call reads the function it's
+/// alike, not the local: chrono's `parse` named its result for its call of
+/// `parseInternalUnboxed` (ADR 0569) before that became `parseInternal`,
+/// `const parseInternal = parseInternal(..)`, which threw where it's made
+/// (#467). One named apart is `parseInternal$1`, as tidy names one.
+fn keep_apart(function: &mut js::Function, module: LocalModId, renamed: &HashMap<Named, String>) {
+    let mut called = HashSet::new();
+    js::function_exprs_mut(function, &mut |e| {
+        if let ExprKind::Var(name) = &e.kind
+            && let Some(to) = renamed.get(&(module, None, name.clone()))
+        {
+            called.insert(to.clone());
+        }
+    });
+    let mut declared = HashSet::new();
+    (function.params.iter()).for_each(|p| declared.extend(p.names().into_iter().map(str::to_string)));
+    js::each_declared(&function.body, &mut |name| _ = declared.insert(name.to_string()));
+    let mut taken: HashSet<String> = declared.clone();
+    js::names_in(&function.body, &mut taken);
+    taken.extend(renamed.values().cloned());
+    let mut called: Vec<String> = called.into_iter().filter(|to| declared.contains(to)).collect();
+    called.sort();
+    for to in called {
+        let apart = crate::names::fresh_in(&mut taken, &to);
+        for param in &mut function.params {
+            param.each_name_mut(&mut |name| {
+                if *name == to {
+                    *name = apart.clone();
+                }
+            });
+        }
+        js::renamed(&mut function.body, &to, &apart);
+    }
 }
 
 /// Each call of a copy in `function`, of a module's `module`, named as the

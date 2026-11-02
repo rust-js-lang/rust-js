@@ -554,3 +554,22 @@ Held by corpus `nested_option_field_captured` (borrowed and moved, by
 matched, shown, given to a generic function and set again, and of a
 maker that boxes it, against native Rust); mutations `held-capture-*` in
 `lower/mir/nested_options.ts`.
+
+## Amendment (2026-11-02): a local isn't named as a copy's function (#467)
+
+A copy alike its function, or an earlier copy, is that one: each call of
+it is renamed once every body is tidied (`pipeline/copies.rs`). A body's
+temporary named for its call (ADR 0569) took the copy's name's function's
+name, free while the call was of the copy: chrono's `format::parse::parse`
+was `const parseInternal = parseInternalUnboxed(..)`, then, the copy alike
+`parseInternal`, `const parseInternal = parseInternal(..)`, which threw
+"Cannot access 'parseInternal' before initialization". A wrong answer,
+ADR 0262's "results change" case.
+
+**Where a call of a copy is renamed to the one it's alike, a local of that
+name in its function is named apart first**, as tidy names one apart:
+`const parseInternal$1 = parseInternal(s, items, BBorrowU8);`.
+
+- Held by corpus `copy_call_named_for_its_function`, against native Rust,
+  and the crate corpus's chrono probe. Mutation `copy-target-shadowed`
+  (`lower/pipeline/copies.ts`).

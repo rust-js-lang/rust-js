@@ -169,11 +169,22 @@ pub(super) fn refuse_dictionaries_in_load_cycles(
     (modules, imports): (&[LocalModId], &crate::lower::load_order::ModuleImports),
 ) {
     // A dictionary, its cache and what its entries share run nothing of the
-    // program's where they're made: not code a cycle's load runs.
+    // program's where they're made: not code a cycle's load runs. Nor does
+    // a constant JS's own operators and globals make, `Number(BigInt.asIntN(
+    // 32, ..))` of chrono's `TimeDelta::MAX` (#467): what may reach the
+    // dictionary is the program's code (`runs_program_code`), or a getter's
+    // read, which may do anything.
+    let runs = |value: &js::Expr| {
+        let mut getter = false;
+        value
+            .clone()
+            .each_mut(&mut |part| getter |= part.facts.has(js::Known::Getter));
+        value.has_effects() && (value.runs_program_code() || getter)
+    };
     let runs_code = |module: &LocalModId| {
         pass.statements.get(module).is_some_and(|stmts| !stmts.is_empty())
             || const_items.get(module).is_some_and(|consts| {
-                (consts.iter()).any(|c| !pass.dictionary_names.contains(&c.name) && c.value.has_effects())
+                (consts.iter()).any(|c| !pass.dictionary_names.contains(&c.name) && runs(&c.value))
             })
     };
     let reaches = |from, to| imports.reaches(from, to);

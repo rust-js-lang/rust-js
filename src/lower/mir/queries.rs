@@ -714,8 +714,13 @@ pub(super) enum Check {
 /// a comparison of two numbers, as an array's constant index below its
 /// constant length, `2 < 3`, or a constant divisor against 0, `2 == 0`, of
 /// a local assigned it once; `!` of one; or `&` of two, as a signed
-/// division's overflow, `2 == -1 & n == MIN`, is false of one.
-pub(super) fn constant_truth<'tcx>(body: &mir::Body<'tcx>, operand: &Operand<'tcx>) -> Option<bool> {
+/// division's overflow, `2 == -1 & n == MIN`, is false of one. A named
+/// constant is its value, as rustc evaluates it in `typing_env`.
+pub(super) fn constant_truth<'tcx>(
+    (tcx, typing_env): (ty::TyCtxt<'tcx>, ty::TypingEnv<'tcx>),
+    body: &mir::Body<'tcx>,
+    operand: &Operand<'tcx>,
+) -> Option<bool> {
     let assigned = |operand: &Operand<'tcx>| -> Option<&Rvalue<'tcx>> {
         let local = operand.place()?.as_local()?;
         let mut assigned = (body.basic_blocks.iter())
@@ -738,7 +743,10 @@ pub(super) fn constant_truth<'tcx>(body: &mir::Body<'tcx>, operand: &Operand<'tc
                 _ => return None,
             },
         };
-        let scalar = constant.const_.try_to_scalar_int()?;
+        // A named one too, std's `i64::MAX` of `-i64::MAX`'s overflow
+        // check, which rustc evaluates (#467).
+        let scalar =
+            (constant.const_.try_to_scalar_int()).or_else(|| constant.const_.try_eval_scalar_int(tcx, typing_env))?;
         match constant.ty().is_signed() {
             true => Some(scalar.to_int(scalar.size())),
             false => i128::try_from(scalar.to_uint(scalar.size())).ok(),
@@ -748,10 +756,13 @@ pub(super) fn constant_truth<'tcx>(body: &mir::Body<'tcx>, operand: &Operand<'tc
         return constant.const_.try_to_bool();
     }
     match assigned(operand)? {
-        Rvalue::Use(operand, _) => constant_truth(body, operand),
-        Rvalue::UnaryOp(mir::UnOp::Not, operand) => constant_truth(body, operand).map(|t| !t),
+        Rvalue::Use(operand, _) => constant_truth((tcx, typing_env), body, operand),
+        Rvalue::UnaryOp(mir::UnOp::Not, operand) => constant_truth((tcx, typing_env), body, operand).map(|t| !t),
         Rvalue::BinaryOp(BinOp::BitAnd, operands) => {
-            match (constant_truth(body, &operands.0), constant_truth(body, &operands.1)) {
+            match (
+                constant_truth((tcx, typing_env), body, &operands.0),
+                constant_truth((tcx, typing_env), body, &operands.1),
+            ) {
                 (Some(false), _) | (_, Some(false)) => Some(false),
                 (Some(true), Some(true)) => Some(true),
                 _ => None,

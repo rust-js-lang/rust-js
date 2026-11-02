@@ -4,7 +4,7 @@ Status: Accepted. Amends [0049](0049-traits-and-generics.md), whose
 dictionary was a function caching it in a `var`, and
 [0019](0019-one-js-file-per-module.md)'s "cycles are fine". Decided with
 the user. (Amended: a cycle refuses only a dictionary the crate's own
-code reaches.)
+code reaches; and a load runs code where it may run the program's, #467.)
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A where it compiles: a
 dictionary made where its module loads is the one every use reads. Where
@@ -115,3 +115,49 @@ read it before it's made.
 Held by `test/lowering-dictionaries.test.ts`, "an identity PartialEq is
 ===, and its dictionary no load cycle reaches", built as a library, and
 the mutation `consumers-dictionary-refused-in-cycle`.
+
+## Amendment: a load runs code where it may run the program's (#467)
+
+chrono stopped at its `date` module's dictionaries, `impl<Tz: TimeZone>
+Datelike for Date<Tz>` and five others, "in an import cycle with
+`time_delta`, which runs code where it loads". What `time_delta`'s load
+ran was its constants, `TimeDelta::MIN` and `MAX`, of `-i64::MAX`
+milliseconds:
+
+```js
+export const MAX = {
+  secs: 9223372036854775807n / MILLIS_PER_SEC,
+  nanos: (Number(BigInt.asIntN(32, 9223372036854775807n % MILLIS_PER_SEC)) * NANOS_PER_MILLI) | 0,
+};
+```
+
+Since ADR 0031's amendment (2dbb712e2), a constant written of other
+constants is its initializer, lowered as code, and this check asked
+`has_effects` of it, which any call has, `Number(..)`'s too: chrono, which
+ran on 2026-10-21, was refused.
+
+**A module's load runs code where it may run the program's: a call of the
+crate's, a binding's or a dictionary's (`Expr::runs_program_code`, the one
+answer, as a call's order asks it), or a read a getter may answer, which
+may run anything.** JS's own operators, globals and the runtime's pure
+helpers run nothing that could reach the dictionary. A constant written of
+others calls none of the crate's functions (ADR 0031, amended), so none is
+code a cycle's load runs; a thread-local made of a binding's call or a
+global's read still is.
+
+`MIN`, `-i64::MAX / MILLIS_PER_SEC - 1`, was an IIFE that threw "attempt to
+negate with overflow" where `i64::MAX` was `i64::MIN`: MIR checks the
+negation of a named constant, which `constant_truth` didn't evaluate. A
+check of named constants is of their values, as rustc evaluates them, so
+it's none where they say it passes: `MIN` is its object.
+
+- Case N ([0262](0262-when-rust-and-js-disagree.md)): no load of the
+  crate's can reach the dictionary before it's made.
+- Held by `test/lowering-dictionaries.test.ts`, "a dictionary that takes
+  nothing is its module's const": a dictionary in a cycle with a module of
+  chrono's constants compiles and runs, with no check of `-i64::MAX`; one
+  with a thread-local of a global's getter read is refused. And
+  `bun scripts/crate-corpus.ts chrono`: runs, the same as native.
+- Mutations `load-of-numbers-runs-code`, `load-of-a-getter-runs-nothing`
+  (`lower/pipeline/load_cycles.ts`) and `named-constant-truth-unknown`
+  (`lower/mir/queries.ts`).

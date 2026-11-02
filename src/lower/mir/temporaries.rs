@@ -574,7 +574,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         else {
             return None;
         };
-        if self.known_in_bounds(msg, terminator.source_info.span) || constant_truth(body, cond) == Some(*expected) {
+        if self.known_in_bounds(msg, terminator.source_info.span)
+            || constant_truth((self.tcx, self.typing_env), body, cond) == Some(*expected)
+        {
             return Some(Check::Unchecked);
         }
         if drops::cleans_up(body, drops, *unwind).is_some() {

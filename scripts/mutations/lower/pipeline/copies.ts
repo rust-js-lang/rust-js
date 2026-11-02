@@ -51,4 +51,13 @@ export const mutations: Mutation[] = [
     replace: "        if true {\n",
     tests: ["test/namespaces.test.ts", "-t", "unlike its own JS"],
   },
+  {
+    name: "copy-target-shadowed",
+    breaks:
+      "a local named for its call of a copy (ADR 0569), `parseInternal` of `parseInternalUnboxed(..)`, keeps its name once the call is of the function the copy is alike, `const parseInternal = parseInternal(..)`, which throws where it's made, chrono's `parse` (#467)",
+    file: "src/lower/pipeline/copies.rs",
+    find: "            keep_apart(&mut item.function, fns[&id].module, &renamed);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^copy_call_named_for_its_function\\.rs$"],
+  },
 ];

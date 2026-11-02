@@ -222,6 +222,14 @@ pub mod counts {
   const refused = Bun.spawnSync([compiler, join(loaded, "lib.rs"), "-o", join(loaded, "lib.js")]);
   expect(refused.exitCode).not.toBe(0);
   expect(refused.stderr.toString()).toContain("this impl's dictionary, made where `shapes` loads, in an import cycle with `counts`, which runs code where it loads");
+  // And one made of a global's read, which its getter may answer, which
+  // may run anything (#467).
+  const read = fixture("dictionary-in-a-load-cycle-of-a-getter");
+  writeFileSync(join(read, "lib.rs"), readFileSync(join(loaded, "lib.rs"), "utf8")
+    .replace("rust_js::link_name = \"tick\"", "rust_js::link_name = \"get globalThis.ticks\""));
+  const got = Bun.spawnSync([compiler, join(read, "lib.rs"), "-o", join(read, "lib.js")]);
+  expect(got.exitCode).not.toBe(0);
+  expect(got.stderr.toString()).toContain("this impl's dictionary, made where `shapes` loads, in an import cycle with `counts`, which runs code where it loads");
 
   // So is one whose cycle is through a JS file of the program's own that
   // `shapes` binds, which imports `counts` (ADR 0031, amended).
@@ -270,6 +278,54 @@ pub mod counts {
   const cyclic = Bun.spawnSync([compiler, join(through, "lib.rs"), "-o", join(through, "lib.js")]);
   expect(cyclic.exitCode).not.toBe(0);
   expect(cyclic.stderr.toString()).toContain("this impl's dictionary, made where `shapes` loads, in an import cycle with `counts`, which runs code where it loads");
+
+  // A constant JS's own operators and globals make where its module loads,
+  // chrono's `TimeDelta::MIN` of `-i64::MAX` milliseconds, runs nothing of
+  // the program's: the cycle compiles (#467), and `-i64::MAX`'s check of
+  // overflow, which rustc's constants say passes, is none.
+  const numbers = fixture("dictionary-in-a-load-cycle-of-numbers");
+  writeFileSync(join(numbers, "lib.rs"), `pub trait Shape {
+    fn area(&self) -> i64;
+}
+
+pub mod shapes {
+    pub struct Square(pub i64);
+
+    impl super::Shape for Square {
+        fn area(&self) -> i64 {
+            self.0 * self.0 + super::delta::MIN.secs
+        }
+    }
+
+    pub fn total<S: super::Shape>(shapes: &[S]) -> i64 {
+        shapes.iter().map(|s| s.area()).sum()
+    }
+}
+
+pub mod delta {
+    const MILLIS_PER_SEC: i64 = 1000;
+    const NANOS_PER_MILLI: i32 = 1_000_000;
+
+    pub struct Delta {
+        pub secs: i64,
+        pub nanos: i32,
+    }
+
+    pub(crate) const MIN: Delta = Delta {
+        secs: -i64::MAX / MILLIS_PER_SEC - 1,
+        nanos: 1_000_000_000 + (-i64::MAX % MILLIS_PER_SEC) as i32 * NANOS_PER_MILLI,
+    };
+
+    pub fn first() -> String {
+        format!("{} {}", MIN.nanos, super::shapes::total(&[super::shapes::Square(2)]))
+    }
+}
+`);
+  run([compiler, join(numbers, "lib.rs"), "-o", join(numbers, "lib.js")]);
+  const delta = readFileSync(join(numbers, "delta.js"), "utf8");
+  expect(delta).toContain("const MIN = {\n  secs: BigInt.asIntN(64, -9223372036854775807n / MILLIS_PER_SEC - 1n),\n");
+  expect(delta).not.toContain("attempt to negate with overflow");
+  expect((await import(join(numbers, "delta.js"))).first()).toBe("193000000 -9223372036854772");
 });
 
 // ADR 0864, amended: a `PartialEq` whose `eq` is `ptr::eq(self, other)`

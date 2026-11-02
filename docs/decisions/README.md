@@ -39,7 +39,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0047 Methods are an object of functions named after their type](0047-methods.md) *(extended by 1043: a function's scope struct's are functions declared in it; extended by 0761: a `#[rust_js::class]`'s are its prototype's; extended by 0943: a `#[rust_js::object]`'s its literal's own; amended: a `self` a pointer holds is named after its type)*
 - [0014 `match` becomes an `if`/`else if` chain](0014-match-lowering.md) *(amended by 0629: a `match` of constants is a `switch`)*
 - [0048 Let chains: each part runs only once the ones before it held](0048-let-chains.md)
-- [0051 `Option<T>` in generic code: boxed only when it looks like `None`](0051-generic-options.md) *(amended: a type parameter bound by a function trait is a function; amended: a type parameter no call gives what may look like `None` is never boxed; amended: a function JS calls takes what JS gives as it gives it; by 1017: a local `Option` of an `Option` held where it's made is its payload; amended: a thread-local's closure's `Option`, as it gives it)*
+- [0051 `Option<T>` in generic code: boxed only when it looks like `None`](0051-generic-options.md) *(amended: a type parameter bound by a function trait is a function; amended: a type parameter no call gives what may look like `None` is never boxed; amended: a function JS calls takes what JS gives as it gives it; by 1017: a local `Option` of an `Option` held where it's made is its payload; amended: a thread-local's closure's `Option`, as it gives it; amended: a local isn't named as a copy's function, #467)*
 - [0052 The crate's own `Default`, `From` and `Clone`, and the trait ABI kept](0052-std-trait-impls.md) *(amended: `into()` of a type parameter's target is its bound's `from`; amended: an impl and a function of one name are named apart, #453)*
 - [0053 `==`: JS's `===` or `$eq`, until a hand-written `eq` is in it](0053-partial-eq.md) *(amended: an item-by-item `==`'s arrow names are fresh; by 1015: an object `===` compares is a custom part)*
 - [0054 `Display`: a `fmt` returns the string it writes](0054-display.md)
@@ -496,7 +496,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0589 A `Drop` dropped in one place is its body there](0589-a-drop-dropped-once-is-its-body-there.md) *(amended by 0705: a guard's field of a variable is that variable)*
 - [0590 A `match` of constants tests each by its name, its comments in its arms](0590-a-match-of-constants-names-them.md) *(amended: a transparent struct's constant is named too; amended: each `match` names its own constants)*
 - [0591 `is_some_and` of an equality with its `Some` is the equality](0591-is-some-and-of-an-equality-is-the-equality.md)
-- [0592 An impl's dictionary is its module's `const`](0592-a-dictionary-is-its-modules-const.md) *(amended: a cycle refuses only a dictionary the crate's own code reaches)*
+- [0592 An impl's dictionary is its module's `const`](0592-a-dictionary-is-its-modules-const.md) *(amended: a cycle refuses only a dictionary the crate's own code reaches; amended: a load runs code where it may run the program's, #467)*
 - [0593 `use_state` takes what makes its first state; a lazy argument that does nothing is its value](0593-a-lazy-argument-is-its-value.md)
 - [0594 An overload whose arguments an options dictionary holds is that one](0594-an-overload-an-options-dictionary-holds-is-it.md)
 - [0595 A thread-local `Cell`'s `take` and `replace` are its cell's](0595-a-thread-local-cells-take-is-its-cells.md) *(amended: a `RefCell` key's too)*

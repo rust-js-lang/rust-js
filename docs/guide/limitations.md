@@ -111,9 +111,10 @@ depends on what the program does:
 - Two exports of one module with one JS name, of which an importer reads one by that name: give one another with `#[rust_js::name]` ([ADR 0922](../decisions/0922-an-export-is-named-first.md)): `mod order { pub fn sort_index() -> u32 { 1 } #[rust_js::name = "sortIndex"] pub fn index_for_sorting() -> u32 { 2 } } println!("{}", order::sort_index() + order::index_for_sorting());`
 - An impl's dictionary made where its module loads, which the crate's
   own code reads, in an import cycle with a module that runs code where it
-  loads, a `thread_local!` made by a binding's call, or `js::on_load!`,
-  that may reach the dictionary before it's made. Move the impl or that
-  code out of the cycle
+  loads, a `thread_local!` made by a binding's call or a global's read, or
+  `js::on_load!`, that may reach the dictionary before it's made; a
+  constant there, made of numbers, runs none. Move the impl or that code
+  out of the cycle
   ([ADR 0592](../decisions/0592-a-dictionary-is-its-modules-const.md), amended).
 
 ## Iterators and collections

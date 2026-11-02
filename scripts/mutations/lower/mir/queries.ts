@@ -440,4 +440,13 @@ export const mutations: Mutation[] = [
     ],
     snapshots: true,
   },
+  {
+    name: "named-constant-truth-unknown",
+    breaks:
+      "a check of a named constant, `-i64::MAX`'s of overflow, which rustc's value says passes, is written, an IIFE that throws `attempt to negate with overflow` where chrono's `TimeDelta::MIN` loads (#467)",
+    file: "src/lower/mir/queries.rs",
+    find: "            (constant.const_.try_to_scalar_int()).or_else(|| constant.const_.try_eval_scalar_int(tcx, typing_env))?;\n",
+    replace: "            constant.const_.try_to_scalar_int()?;\n",
+    tests: ["test/lowering-dictionaries.test.ts", "-t", "a dictionary that takes nothing is its module's const"],
+  },
 ];

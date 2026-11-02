@@ -44,9 +44,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a module whose load calls a function isn't one that runs code, so a dictionary it may reach through a cycle compiles",
     file: "src/lower/pipeline/load_cycles.rs",
-    find: "!pass.dictionary_names.contains(&c.name) && c.value.has_effects())",
+    find: "!pass.dictionary_names.contains(&c.name) && runs(&c.value))",
     replace:
-      "!pass.dictionary_names.contains(&c.name) && c.value.has_effects() && false)",
+      "!pass.dictionary_names.contains(&c.name) && runs(&c.value) && false)",
     tests: [
       "test/lowering-dictionaries.test.ts",
       "-t",
@@ -58,8 +58,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic dictionary's cache, `new WeakMap()`, is code its module's load runs, so a cycle of dictionaries alone, either's, is refused",
     file: "src/lower/pipeline/load_cycles.rs",
-    find: "(consts.iter()).any(|c| !pass.dictionary_names.contains(&c.name) && c.value.has_effects())",
-    replace: "(consts.iter()).any(|c| c.value.has_effects())",
+    find: "(consts.iter()).any(|c| !pass.dictionary_names.contains(&c.name) && runs(&c.value))",
+    replace: "(consts.iter()).any(|c| runs(&c.value))",
     tests: [
       "test/lowering-dictionaries.test.ts",
       "-t",
@@ -162,5 +162,23 @@ export const mutations: Mutation[] = [
       "-t",
       "a function read through a module that re-exports it imports that module",
     ],
+  },
+  {
+    name: "load-of-numbers-runs-code",
+    breaks:
+      "a constant JS's own operators and globals make where its module loads, chrono's `TimeDelta::MIN` of `Number(BigInt.asIntN(..))`, counts as code that may reach a dictionary in an import cycle with it, so chrono is refused (#467)",
+    file: "src/lower/pipeline/load_cycles.rs",
+    find: "        value.has_effects() && (value.runs_program_code() || getter)\n",
+    replace: "        value.has_effects() || getter\n",
+    tests: ["test/lowering-dictionaries.test.ts", "-t", "a dictionary that takes nothing is its module's const"],
+  },
+  {
+    name: "load-of-a-getter-runs-nothing",
+    breaks:
+      "a thread-local made where its module loads of a global's read, which its getter may answer, which may run anything, counts as no code a dictionary in an import cycle with it could be reached by (#467)",
+    file: "src/lower/pipeline/load_cycles.rs",
+    find: "        value.has_effects() && (value.runs_program_code() || getter)\n",
+    replace: "        value.has_effects() && (value.runs_program_code() || (getter && false))\n",
+    tests: ["test/lowering-dictionaries.test.ts", "-t", "a dictionary that takes nothing is its module's const"],
   },
 ];
