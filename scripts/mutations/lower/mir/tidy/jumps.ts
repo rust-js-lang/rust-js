@@ -418,4 +418,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^guarded_match_ends_function.rs$"],
     snapshots: true,
   },
+  {
+    name: "returned-apart-after-a-return",
+    breaks:
+      "an arm split off by the `?`'s `return` written between, `if (c) { ..; return v; } rest`, gets a `return;` after its `return v;`, which tidy's contract \"nothing after a jump\" refuses with a panic (#461)",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "    if !first.last().is_some_and(ends) {\n        first.push(StmtKind::Return(None).at(place));\n",
+    replace: "    {\n        first.push(StmtKind::Return(None).at(place));\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_clone_nested_results\\.rs$"],
+  },
 ];

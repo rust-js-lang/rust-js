@@ -1013,3 +1013,20 @@ visit(4); } else { visit(..); }`, as written. Held by the corpus's
 `accumulate_again`, of an arm after it of the same constant), run against
 native Rust, and the mutations `returning-chain-unclosed` (`jumps.ts`) and
 `guard-before-others-unjoined` (`logicals.ts`).
+
+## Amendment: no `return;` after a branch that returns (#461, 2026-11-02)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N.
+
+`returned_apart` (rd502) splits `if (c) { a } else { b }` that ends a
+function into `if (c) { a; return; } b` by a `return` the program wrote
+between `a` and `b`. Of a function of a value, a `?` is such a `return`:
+`match bump(&mut i)?.clone() { Tok::LParen => match bump(&mut i)? { .. },
+Tok::Ident(name) => match bump(&mut i)? { .. }, _ => Err(()) }`, whose
+second arm's `?` lies between the first arm's branch and the rest, and
+whose `a` ends in its own `return v;` already. The `return;` it added
+after that was a jump after a jump, which tidy's contract refuses, a
+compiler panic on valid Rust. **Where `a` leaves already, nothing is
+added**: `if (c) { ..; return v; } b` runs as the `if … else` did. Held
+by the corpus's `match_clone_nested_results`, run against native Rust,
+and the mutation `returned-apart-after-a-return` (`jumps.ts`).

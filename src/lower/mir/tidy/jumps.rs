@@ -728,7 +728,11 @@ fn returned_apart(stmt: Stmt, returns: &[js::Span]) -> Vec<Stmt> {
         (None, Some(place)) => (test.negated_test(), otherwise, then, place),
         (None, None) => return vec![StmtKind::If(test, then, Some(otherwise)).at(span)],
     };
-    first.push(StmtKind::Return(None).at(place));
+    // Not after what leaves already, a `return v;` of a `match`'s arm whose
+    // `?` is the `return` between (#461): the rest follows it either way.
+    if !first.last().is_some_and(ends) {
+        first.push(StmtKind::Return(None).at(place));
+    }
     let mut stmts = vec![StmtKind::If(test, first, None).at(span)];
     stmts.extend(after);
     stmts
