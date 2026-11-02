@@ -603,6 +603,10 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
   expect(app).toContain('import * as Dep from "../dep/lib.js";\n');
   expect(app).toContain('  Dep.addType(outer, "a");\n');
   expect(app).not.toContain("function addType(");
+  // A `Vec` it changes that the library never does, read by one through
+  // std's `Iter`, a type of a lifetime, which borrows it and holds none.
+  expect(app).toContain("Dep.longest(rows)");
+  expect(app).not.toContain("function longest(");
   expect(app).toContain("  const queue = [\"q\"];\n");
   expect(app).toContain("  queue.push(\"s\");\n");
   expect(app).toContain("  const replaced = inner.types;\n  inner.types = undefined;\n");

@@ -1,6 +1,8 @@
 //! A crate given a library's `RefCell`s, which it represents and borrows as
 //! the library does (ADR 0863): a plain field's read and replaced in place,
 //! and the `Rc`'s array and the `Set` borrowed for a moment, unchecked.
+use std::collections::HashMap;
+
 pub fn main() {
     let outer = dep::start(None);
     dep::add_type(&outer, "a");
@@ -37,4 +39,9 @@ pub fn main() {
     let length = dep::enqueue(&queue, "r");
     queue.values.borrow_mut().push("s".to_string());
     println!("{length} {:?}", queue.values.borrow());
+    let mut rows = HashMap::from([(1, vec![1]), (2, vec![2, 3])]);
+    if let Some(row) = rows.get_mut(&1) {
+        row.extend([4, 5]);
+    }
+    println!("{}", dep::longest(&rows));
 }

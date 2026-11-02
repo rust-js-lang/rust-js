@@ -300,7 +300,7 @@ export const mutations: Mutation[] = [
   {
     name: "borrowing-std-type-holds",
     breaks:
-      "a std type of a lifetime, a `Ref` of a `Vec` the consumer changes, is taken to hold one by value, and a consumer compiles the library's `add_type`, which it needn't (ADR 0914, amended)",
+      "a std type of a lifetime, the `Values` of a map of `Vec`s only the consumer changes, is taken to hold one by value, and a consumer compiles the library's `longest`, which it needn't (ADR 0914, amended)",
     file: "src/lower/copies.rs",
     find: "                        && (args.regions().next().is_some()\n",
     replace: "                        && (false\n",

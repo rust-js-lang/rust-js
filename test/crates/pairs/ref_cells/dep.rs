@@ -4,7 +4,7 @@
 //! `RefCell<HashSet<u32>>` the `Set`, none of whose borrows is checked, as
 //! none can meet another.
 use std::cell::RefCell;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 pub struct Transition {
@@ -79,4 +79,12 @@ pub struct Queue {
 pub fn enqueue(queue: &Queue, value: &str) -> usize {
     queue.values.borrow_mut().push(value.to_string());
     queue.values.borrow().len()
+}
+
+/// Reads what only its consumer changes in place, a `Vec` of numbers,
+/// through std's `Values`, a type of a lifetime, which borrows what it reads
+/// and holds none: its consumer imports it, and compiles no copy of its own
+/// (ADR 0914, amended).
+pub fn longest(rows: &HashMap<u32, Vec<u32>>) -> usize {
+    rows.values().map(Vec::len).max().unwrap_or(0)
 }
