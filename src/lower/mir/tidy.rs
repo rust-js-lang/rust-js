@@ -879,6 +879,7 @@ mod tests {
                 "written jumps",
                 "written ors",
                 "commented jumps",
+                "named texts",
                 "stepped slices"
             ]
         );
