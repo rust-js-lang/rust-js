@@ -38,7 +38,7 @@ const pending = {
 function eachPending(f) {
   const borrow = $borrow(pending.items, true);
   try {
-    return borrow.map((item) => f(item));
+    return borrow.map(f);
   } finally {
     $unborrow(borrow);
   }
@@ -49,7 +49,7 @@ function eachPending(f) {
 function each(watched, f) {
   const borrow = $borrow(watched.items, true);
   try {
-    return borrow.map((item) => f(item));
+    return borrow.map(f);
   } finally {
     $unborrow(borrow);
   }

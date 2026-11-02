@@ -768,3 +768,138 @@ pub fn kept(target: &EventTarget) {
   target.dispatchEvent(new Event("load"));
   expect(state.count).toBe(1);
 });
+
+// rd616: a `dyn Fn` parameter of a function only the crate's calls reach,
+// which each call fills with a function that reads no `this` and nothing
+// it's given more, is one, so a closure that ignores what it's given and
+// calls it is that parameter, a listener's too: React Flight's Node
+// client's `stream.on('end', onEnd)`. Not one a call fills with a
+// `with_this` function unbound, which reads the `this` a listener is
+// called with.
+test("a dyn Fn parameter each call fills with the crate's function is that function", async () => {
+  const dir = fixture("own-callback-params");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::Cell;
+use std::rc::Rc;
+
+use js::function;
+use webapi::{EventTarget, EventTargetExt};
+
+pub struct State {
+    pub ended: Cell<f64>,
+}
+
+unsafe impl js::Defined for State {}
+
+thread_local! {
+    static ON_END: &'static dyn Fn() = function::with_this(|this, ()| {
+        // Safety: it's a state's listener.
+        let state: &State = unsafe { js::cast(this) };
+        state.ended.set(state.ended.get() + 1.0);
+    });
+}
+
+fn close(state: &State) {
+    state.ended.set(state.ended.get() + 10.0);
+}
+
+fn start_reading(target: &EventTarget, on_end: Rc<dyn Fn()>) {
+    target.add_event_listener_named("end", move |_| on_end(), None);
+}
+
+fn listen_unbound(target: &EventTarget, on_end: &'static dyn Fn()) {
+    target.add_event_listener_named("end", move |_| on_end(), None);
+}
+
+pub fn read(a: &EventTarget, b: &EventTarget, state: &'static State) {
+    let handle_end: Rc<dyn Fn()> = {
+        let ended = Rc::new(Cell::new(0));
+        Rc::new(move || {
+            ended.set(ended.get() + 1);
+            if ended.get() == 2 {
+                close(state);
+            }
+        })
+    };
+    start_reading(a, Rc::clone(&handle_end));
+    start_reading(b, handle_end);
+}
+
+pub fn unbound(target: &EventTarget) {
+    listen_unbound(target, ON_END.with(|f| *f));
+}
+
+fn listen_made(target: &EventTarget, on_end: &'static dyn Fn()) {
+    target.add_event_listener_named("end", move |_| on_end(), None);
+}
+
+thread_local! {
+    static GIVEN: Cell<Option<&'static js::Unknown>> = const { Cell::new(None) };
+}
+
+/// How many the last count was given.
+pub fn given() -> Option<&'static js::Unknown> {
+    GIVEN.get()
+}
+
+fn count_given() {
+    GIVEN.set(js::get(js::arguments(), "length"));
+}
+
+fn listen_counting(target: &EventTarget, on_end: &'static dyn Fn()) {
+    target.add_event_listener_named("end", move |_| on_end(), None);
+}
+
+fn listen_counting_with_this(target: &EventTarget, on_end: &'static dyn Fn()) {
+    target.add_event_listener_named("end", move |_| on_end(), None);
+}
+
+pub fn counting(target: &EventTarget, made: &EventTarget) {
+    listen_counting(target, &count_given);
+    listen_counting_with_this(
+        made,
+        function::with_this(|_, ()| GIVEN.set(js::get(js::arguments(), "length"))),
+    );
+}
+
+pub fn made(target: &EventTarget) {
+    listen_made(
+        target,
+        function::with_this(|this, ()| {
+            // Safety: it's a state's listener.
+            let state: &State = unsafe { js::cast(this) };
+            state.ended.set(state.ended.get() + 2.0);
+        }),
+    );
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(
+    'function startReading(target, onEnd) {\n  target.addEventListener("end", onEnd);\n}\n',
+  );
+  expect(js).toContain(
+    'function listenUnbound(target, onEnd) {\n  target.addEventListener("end", () => {\n    onEnd();\n  });\n}\n',
+  );
+  expect(js).toContain(
+    'function listenMade(target, onEnd) {\n  target.addEventListener("end", () => {\n    onEnd();\n  });\n}\n',
+  );
+  const lib = await import(join(dir, "lib.js"));
+  const state = { ended: 0 };
+  const [a, b] = [new EventTarget(), new EventTarget()];
+  lib.read(a, b, state);
+  a.dispatchEvent(new Event("end"));
+  expect(state.ended).toBe(0);
+  b.dispatchEvent(new Event("end"));
+  expect(state.ended).toBe(10);
+  // One that reads `js::arguments()` counts what it's given, none, where
+  // the listener would give it the event.
+  const [counted, made] = [new EventTarget(), new EventTarget()];
+  lib.counting(counted, made);
+  counted.dispatchEvent(new Event("end"));
+  expect(lib.given()).toBe(0);
+  made.dispatchEvent(new Event("end"));
+  expect(lib.given()).toBe(0);
+});

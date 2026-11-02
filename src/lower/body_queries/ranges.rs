@@ -128,7 +128,7 @@ pub(in crate::lower) type Walked<'a, 'tcx> = (DefId, &'a Thir<'tcx>, ExprId);
 pub(in crate::lower) fn ranges<'tcx>(
     tcx: TyCtxt<'tcx>,
     bodies: &[Walked<'_, 'tcx>],
-    only_called: &HashMap<DefId, usize>,
+    only_called: &HashMap<DefId, Vec<rustc_hir::HirId>>,
 ) -> Vec<Ranges> {
     // A function only calls reach, each of whose calls is in a body here.
     let mut counted: HashMap<DefId, usize> = HashMap::new();
@@ -138,7 +138,11 @@ pub(in crate::lower) fn ranges<'tcx>(
         }
     }
     let callees: HashMap<DefId, Vec<Option<Param>>> = (bodies.iter())
-        .filter(|(def_id, ..)| only_called.get(def_id).is_some_and(|n| counted.get(def_id) == Some(n)))
+        .filter(|(def_id, ..)| {
+            only_called
+                .get(def_id)
+                .is_some_and(|at| counted.get(def_id) == Some(&at.len()))
+        })
         .map(|&(def_id, thir, _)| {
             let params = (thir.params.iter())
                 .map(|param| match param.pat.as_deref()?.kind {

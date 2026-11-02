@@ -127,3 +127,12 @@ with whatever JS gives it", holds them; mutations `default-only-called`,
 whose callers don't export them, is gone: that function is exported by
 its module now, whoever calls it, so its filter changed nothing, as its
 surviving mutation `own-default-of-another-module` showed.
+
+## Amendment: each call kept, which a `dyn Fn` parameter's fact reads (rd616)
+
+`only_called` keeps each function's calls by their expressions, not by
+how many there are: the ranges compare their number with the calls THIR
+walks, as before, and `passed_on`'s `own_callbacks` reads what each call
+gives a `dyn Fn` parameter, which is one of the crate's own functions
+where each call gives one (ADR 0605, amended). One answer of which
+functions only calls reach, read by both.

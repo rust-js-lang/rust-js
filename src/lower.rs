@@ -443,6 +443,11 @@ struct CrateFacts<'a, 'tcx> {
     /// 0362), and those whose borrows are counted (ADR 0863), found once
     /// the first is asked of.
     ref_cells: &'a std::cell::OnceCell<drops::RefCells<'tcx>>,
+    /// The parameters of `dyn Fn` each of the crate's calls fills with a
+    /// function that reads no `this` and none of what it's given more,
+    /// found once the first is asked of (`passed_on`'s `own_callbacks`,
+    /// rd616).
+    own_callbacks: &'a std::cell::OnceCell<HashSet<rustc_hir::HirId>>,
     /// The thread-locals each `with_borrow` of which can't ask whether it's
     /// borrowed, their module's variables (ADRs 0270, 0580).
     quiet_locals: &'a HashSet<rustc_span::def_id::LocalDefId>,

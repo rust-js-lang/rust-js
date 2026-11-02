@@ -413,6 +413,7 @@ pub fn lower_crate<'tcx>(
     // they're lowered, lowered or not, then resolved (ADRs 0190, 0300).
     let mut drops_observed = super::drops::DropsObserved::default();
     let ref_cells = std::cell::OnceCell::new();
+    let own_callbacks = std::cell::OnceCell::new();
     // What runs where its module loads, which reads another module's
     // `const`s as their values where that module may load after its own
     // (`load_cycles`).
@@ -478,6 +479,7 @@ pub fn lower_crate<'tcx>(
         debug_hex,
         tidy_until,
         ref_cells: &ref_cells,
+        own_callbacks: &own_callbacks,
         quiet_locals: &quiet_locals,
         quiet_library_keys: &quiet_library_keys,
         lazy_locals: &lazy_locals,

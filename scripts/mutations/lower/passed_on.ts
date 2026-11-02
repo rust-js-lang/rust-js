@@ -21,6 +21,12 @@ const callback = [
   "-t",
   "only passes its arguments on",
 ];
+const ownCallbacks = ["test/corpus.test.ts", "-t", "^own_callback_params.rs$"];
+const ownListener = [
+  "test/lowering-passed-on.test.ts",
+  "-t",
+  "each call fills with the crate's function",
+];
 const restCallee = [
   "test/lowering-passed-on.test.ts",
   "-t",
@@ -137,9 +143,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Box<dyn Fn()>` prop's call isn't a Rust function's, `() => onClear()` kept",
     file: "src/lower/passed_on.rs",
-    find: "                    ty::Adt(adt, args) if adt.is_box() && matches!(args.type_at(0).kind(), ty::Dynamic(..)) => {\n",
-    replace:
-      "                    ty::Adt(adt, args) if adt.is_box() && matches!(args.type_at(0).kind(), ty::Never) => {\n",
+    find: "                    ty::Adt(adt, args) => adt.is_box() && matches!(args.type_at(0).kind(), ty::Dynamic(..)),\n",
+    replace: "                    ty::Adt(adt, args) => adt.is_box() && matches!(args.type_at(0).kind(), ty::Never),\n",
     tests: handler,
   },
   {
@@ -408,7 +413,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a bound function of the crate's is taken for a `dyn Fn` a JS function may be, `move |_| ping()` kept an arrow (rd196)",
     file: "src/lower/passed_on.rs",
-    find: "                    ty::Dynamic(..) if captured.is_some_and(|var| self.bound_own(var)) => Callee::Own,\n",
+    find: "                    _ if dyn_fn && captured.is_some_and(|var| self.bound_own(var)) => Callee::Own,\n",
     replace: "",
     tests: ["test/lowering-passed-on.test.ts", "-t", "ignores what it's given"],
   },
@@ -417,8 +422,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding's JS function bound is taken for the crate's, given to a listener that reads what it's given (rd196)",
     file: "src/lower/passed_on.rs",
-    find: "                    && !super::bindings::is_binding(tcx, f)\n                    && !self.takes_rest(f);\n",
-    replace: "                    && !self.takes_rest(f);\n",
+    find: "                    && !super::bindings::is_binding(tcx, f)\n                    && !self.takes_rest(f)\n",
+    replace: "                    && !self.takes_rest(f)\n",
     tests: ["test/lowering-passed-on.test.ts", "-t", "ignores what it's given"],
   },
   {
@@ -508,7 +513,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a listener that only calls a local function JS makes, `handleNavigateComplete`, is a function of its own, `function onSuccess() { handleNavigateComplete(); }` (rd284b)",
     file: "src/lower/passed_on.rs",
-    find: "                    fixed: matches!(ty.kind(), ty::Dynamic(..)) && callee == Callee::Own,\n",
+    find: "                    fixed: dyn_fn && callee == Callee::Own,\n",
     replace: "                    fixed: false,\n",
     tests: ["test/webapi-events.test.ts", "-t", "event methods and reusable listeners"],
   },
@@ -564,6 +569,121 @@ export const mutations: Mutation[] = [
     find: "    (mine.inputs_and_output == theirs.inputs_and_output).then_some((target, args))\n",
     replace: "    Some((target, args))\n",
     tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
+  },
+  {
+    name: "own-callback-params-none",
+    breaks:
+      "a `dyn Fn` parameter each of the crate's calls fills with its own function isn't one, `on(() => { onEnd(); })` where React Flight's Node client gives `stream.on('end', onEnd)` (rd616)",
+    file: "src/lower/passed_on.rs",
+    find: "        self.krate.own_callbacks.get_or_init(|| self.find_own_callbacks())\n",
+    replace: "        self.krate.own_callbacks.get_or_init(HashSet::new)\n",
+    tests: ownCallbacks,
+    snapshots: true,
+  },
+  {
+    name: "own-callback-param-changed",
+    breaks:
+      "a `mut` parameter, which its body may set to what a JS caller gave, is taken for what its calls give it (rd616)",
+    file: "src/lower/passed_on.rs",
+    find: "                let hir::PatKind::Binding(hir::BindingMode::NONE, var, _, None) = param.pat.kind else {\n",
+    replace: "                let hir::PatKind::Binding(_, var, _, None) = param.pat.kind else {\n",
+    tests: ownCallbacks,
+    snapshots: true,
+  },
+  {
+    name: "own-callback-unfilled-kept",
+    breaks:
+      "a parameter one call fills with another that a JS caller fills is taken for the crate's function, `relay`'s `on(onEnd)` of an exported function's callback (rd616)",
+    file: "src/lower/passed_on.rs",
+    find: "            if unfilled.is_empty() {\n",
+    replace: "            if true {\n",
+    tests: ownCallbacks,
+    snapshots: true,
+  },
+  {
+    name: "own-target-reads-arguments",
+    breaks:
+      "a function of the crate's that reads `js::arguments()` is taken for one that reads nothing it's given more, a listener's, which then counts the event (rd616)",
+    file: "src/lower/passed_on.rs",
+    find: "                    && !self.reads_arguments(f);\n",
+    replace: ";\n",
+    tests: ownListener,
+  },
+  {
+    name: "with-this-reading-arguments-own",
+    breaks:
+      "a `with_this` function that ignores its `this` but reads `js::arguments()` is taken for one that reads nothing it's given more, a listener's, which then counts the event (rd616)",
+    file: "src/lower/passed_on.rs",
+    find: "                        && !made_closure(target).is_some_and(|c| self.krate.reads_arguments.made.contains(&c))\n",
+    replace: "",
+    tests: ownListener,
+  },
+  {
+    name: "own-callback-block-unseen",
+    breaks:
+      "a function made as a block's value, `let handle_end: Rc<dyn Fn()> = { ..; Rc::new(move || ..) }`, isn't seen to be the crate's (rd616)",
+    file: "src/lower/passed_on.rs",
+    find: "            hir::ExprKind::Block(block, _) => block.expr.is_some_and(inner),\n",
+    replace: "            hir::ExprKind::Block(..) => false,\n",
+    tests: ownCallbacks,
+    snapshots: true,
+  },
+  {
+    name: "own-callback-borrow-unseen",
+    breaks:
+      "a borrowed closure, `listen_end(&|| close(..))` of a `&dyn Fn()`, isn't seen to be the crate's (rd616)",
+    file: "src/lower/passed_on.rs",
+    find: "            hir::ExprKind::AddrOf(_, _, of) => inner(of),\n",
+    replace: "            hir::ExprKind::AddrOf(..) => false,\n",
+    tests: ownCallbacks,
+    snapshots: true,
+  },
+  {
+    name: "own-callback-param-given-on-unseen",
+    breaks:
+      "a parameter given on to another, `ended_by(on_end)`, isn't seen to be what its own calls fill it with (rd616)",
+    file: "src/lower/passed_on.rs",
+    find: "                hir::def::Res::Local(var) => params.contains(&var) || self.let_value(var).is_some_and(inner),\n",
+    replace: "                hir::def::Res::Local(var) => self.let_value(var).is_some_and(inner),\n",
+    tests: ownCallbacks,
+    snapshots: true,
+  },
+  {
+    name: "own-callback-through-rc-unseen",
+    breaks:
+      "a closure that calls an `Rc<dyn Fn()>` it captured, through the `Rc`'s `Deref`, isn't seen to call that variable, `addEventListener(\"end\", () => { onEnd(); })` (rd616)",
+    file: "src/lower/passed_on.rs",
+    find: "            } if args.len() == 1 && deref(fun) => e = args[0],\n",
+    replace: "            } if false && deref(fun) => e = args[0],\n",
+    tests: ownCallbacks,
+    snapshots: true,
+  },
+  {
+    name: "own-callback-boxed-unseen",
+    breaks: "a boxed closure, `later(Box::new(|| ..))`, isn't seen to be the crate's (rd616)",
+    file: "src/lower/passed_on.rs",
+    find: "        super::recognition::is_std_def(self.tcx, f, StdItem::BoxNew)\n            ||",
+    replace: "        false\n            ||",
+    tests: ownCallbacks,
+    snapshots: true,
+  },
+  {
+    name: "own-callback-counted-unseen",
+    breaks: "a closure made an `Rc`'s, `Rc::new(|| close(..))`, isn't seen to be the crate's (rd616)",
+    file: "src/lower/passed_on.rs",
+    find: "                Some(HandleStep::RcNew | HandleStep::RcClone)\n",
+    replace: "                Some(HandleStep::RcClone)\n",
+    tests: ownCallbacks,
+    snapshots: true,
+  },
+  {
+    name: "own-callback-shared-unseen",
+    breaks: "an `Rc`'s clone, `Rc::clone(&handle_end)`, isn't seen to be what it's a clone of (rd616)",
+    file: "src/lower/passed_on.rs",
+    find: "                Some(HandleStep::RcNew | HandleStep::RcClone)\n",
+    replace: "                Some(HandleStep::RcNew)\n",
+    tests: ownCallbacks,
+    snapshots: true,
   },
   {
     name: "forwarder-generic",

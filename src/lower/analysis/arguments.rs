@@ -28,6 +28,8 @@ use std::collections::{HashMap, HashSet};
 pub(in crate::lower) struct ReadsArguments<'tcx> {
     pub functions: HashSet<DefId>,
     pub with_this: HashSet<ty::Ty<'tcx>>,
+    /// Each closure `function::with_this` makes that reads it.
+    pub made: HashSet<DefId>,
 }
 
 impl<'tcx> ReadsArguments<'tcx> {
@@ -74,6 +76,7 @@ pub(in crate::lower) fn reads_arguments<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&
         };
         if let Some(&params) = functions_made.get(&body.def_id) {
             reading.with_this.insert(params);
+            reading.made.insert(body.def_id);
             continue;
         }
         match not_its_own(tcx, body.def_id) {

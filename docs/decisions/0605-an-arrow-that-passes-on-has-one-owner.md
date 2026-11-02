@@ -541,3 +541,68 @@ or passes it all on: two names for one rule, which the mutation
 what the listener's no longer did. **A callback that isn't called once is
 a `Closure`'s**, the one taker; the mutation is gone, the rule held by the
 closure's (`ignoring-not-taken`).
+
+## Amendment: a `dyn Fn` parameter each of the crate's calls fills with its own function (rd616 B)
+
+React Flight's Node client reads a stream to its end with the function
+each caller gives it, `startReadingFromStream(response, stream, onEnd)`,
+whose `stream.on('end', onEnd)` hands the stream that function. Rust's
+`stream.on(event::End, Box::new(move || on_end()))` of an `on_end:
+Rc<dyn Fn()>` printed `stream.on('end', () => { onEnd(); })`: a `dyn Fn`
+was any JS caller's function, `Callee::Dyn`, which may read its `this`
+and what it's given. The client's callers fill it with a counter closure
+or `close` bound to the response.
+
+**A `dyn Fn` parameter is `Callee::Own` where each of the crate's calls
+fills it with a function that reads no `this` and none of what it's given
+more, and only those calls reach its function.** That's a function ADR
+0577's `only_called` keeps: not exported, not a module's default, not a
+trait's method, never named as a value. So what its calls give is all
+it's ever given. The parameter is a binding that's never set again (not
+`mut`), of a `dyn Fn` as it is, borrowed, boxed, or an `Rc`'s or an
+`Arc`'s. `own_callbacks` (`passed_on.rs`) finds them once for the crate,
+the first time one's asked, from each call `only_called` now keeps by its
+expression, not by a count. What a call gives may be another such
+parameter. All are taken to be one, and each that a call fills with
+something else is put out, with what it fills, until none is: a
+parameter's value always starts at some call that isn't a parameter's.
+What fills one is `own_callback`: what `own_target` says by its type (a
+function of the crate's, a closure, a fn pointer only those fill), or
+what `bound_value` says, a function bound or one `with_this` makes of a
+closure that ignores its `this`. Neither may read `js::arguments()`,
+which counts what a JS caller gives it more: `own_target` now asks it of
+a function (`reads_arguments`), and `bound_value` of a `with_this`
+closure (`ReadsArguments::made`), as a bound function's call of it was
+as wrong as a listener's. It sees through a block's value, a borrow, a
+`Box::new`, an `Rc::new` or an `Arc::new`, an `Rc`'s clone, and `let`s
+that never change. Not a `with_this` function that reads its `this`,
+which a listener calls with its target as `this`, nor a thread-local's
+value read as one. `bound_own` asks it of a `let`'s value too, so a
+`let` of an `Rc::new` of a closure counts, as one of `function::bind`
+did. A closure that calls a captured `Rc<dyn Fn()>` calls it through the
+`Rc`'s `Deref` (`captured`, `is_rc_deref`), and a `Box<dyn Fn()>` through
+the box's own `Fn` impl, so both are the variable the closure captured.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): the user's exception,
+as rd196's above. The closure ignores what it's given and calls a
+function that reads no `this` and nothing more, so a JS caller sees what
+the closure would give it. Only the listener's `.length` and identity
+tell them apart.
+
+Alternatives: asking it of every call where lowering sees it, as
+`NulledParams` does (ADR 0861), lowers each function again once all its
+calls are seen. Here the answer is in the HIR before anything is lowered.
+A parameter-specific attribute would be a new source form for what the
+calls already say.
+
+Held by corpus `own_callback_params` (native run; `endedBy`'s `on(onEnd)`
+of another such parameter, `later`'s boxed `on(task)`, `listenEnd`'s
+borrowed one; kept: an exported function's parameter given on (`relay`),
+a `mut` one set to it (`relayOr`), one of a function used as a value
+(`listenValued`)) and `test/lowering-passed-on.test.ts`'s "a dyn Fn
+parameter each call fills with the crate's function is that function"
+(run: a listener's `startReading`; kept: `with_this` functions that read
+their `this`, and a function and a `with_this` function that read
+`js::arguments()`, run: each counts none). Mutations `own-callback-*`,
+`own-target-reads-arguments` and `with-this-reading-arguments-own`
+(`passed_on.ts`).

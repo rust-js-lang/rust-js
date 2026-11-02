@@ -483,6 +483,56 @@ only holds its `this`, cast to what's bound, is `this` where it's read,
 `this.count--`
 ([ADR 0972](../../decisions/0972-a-function-that-reads-its-this-is-with-thiss.md), amended).
 
+So is a `dyn Fn` parameter, as it is, borrowed, boxed or an `Rc`'s, that
+each of the crate's calls fills with such a function, where only those
+calls reach its function: one that isn't exported or a trait's method,
+and that's never used as a value. What those calls give it is all it's
+ever given. A parameter given on to another counts as what its own calls
+give it. One that's `mut`, which its body may set again, doesn't count.
+React Flight's Node client hands its stream's end so:
+
+```rust
+use std::cell::Cell;
+use std::rc::Rc;
+
+use webapi::{EventTarget, EventTargetExt};
+
+fn close(ended: &Cell<f64>) {
+    ended.set(ended.get() + 1.0);
+}
+
+fn start_reading(stream: &EventTarget, on_end: Rc<dyn Fn()>) {
+    stream.add_event_listener_named("end", move |_| on_end(), None);
+}
+
+pub fn read(stream: &EventTarget, debug: &EventTarget, ended: &'static Cell<f64>) {
+    let handle_end: Rc<dyn Fn()> = Rc::new(move || close(ended));
+    start_reading(debug, Rc::clone(&handle_end));
+    start_reading(stream, handle_end);
+}
+```
+
+```js
+function close(ended) {
+  ended.value++;
+}
+
+function startReading(stream, onEnd) {
+  stream.addEventListener("end", onEnd);
+}
+
+export function read(stream, debug, ended) {
+  const handleEnd = () => close(ended);
+  startReading(debug, handleEnd);
+  startReading(stream, handleEnd);
+}
+```
+
+A parameter of an exported function, which a JS caller fills with any
+function, keeps its arrow, and so does one that some call fills with
+what a JS caller gave
+([ADR 0605](../../decisions/0605-an-arrow-that-passes-on-has-one-owner.md), amended, rd616).
+
 An array method's callback, `xs.iter().map(|x| double(x))`, is the
 function too, `xs.map(double)` ([ADR 0279](../../decisions/0279-callbacks-passed-on.md)),
 and an event's handler, `onClick={onClear}` of `move |_| on_clear()`

@@ -13,6 +13,8 @@ use rustc_span::def_id::DefId;
 
 use super::{FnCx, fn_def};
 use crate::js::{self, Expr, Stmt, StmtKind};
+use crate::lower::recognition::StdItem;
+use std::collections::{HashMap, HashSet};
 
 /// Where an arrow is given, which says whether it may be the function it
 /// passes on to, and what it must pass on to.
@@ -475,11 +477,25 @@ fn passed_to(f: &Expr, statement: bool) -> Option<(&Expr, usize)> {
 }
 
 /// The variable a closure captured that `e` reads, through its borrows
-/// and what they point to, `ping` of `(&*ping)()`; not its own parameter.
-fn captured(thir: &rustc_middle::thir::Thir<'_>, mut e: rustc_middle::thir::ExprId) -> Option<rustc_hir::HirId> {
+/// and what they point to, `ping` of `(&*ping)()`, a `Box`'s or an `Rc`'s
+/// too, `on_end` of `on_end()` of an `Rc<dyn Fn()>`; not its own parameter.
+fn captured<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    thir: &rustc_middle::thir::Thir<'tcx>,
+    mut e: rustc_middle::thir::ExprId,
+) -> Option<rustc_hir::HirId> {
+    let deref = |fun: rustc_middle::thir::ExprId| {
+        fn_def(thir[fun].ty).is_some_and(|(id, args)| super::recognition::is_rc_deref(tcx, id, args))
+    };
     loop {
         match thir[super::body_queries::strip(thir, e)].kind {
             ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => e = arg,
+            ExprKind::Call {
+                fun,
+                ref args,
+                from_hir_call: false,
+                ..
+            } if args.len() == 1 && deref(fun) => e = args[0],
             ExprKind::UpvarRef { var_hir_id, .. } => return Some(var_hir_id.0),
             _ => return None,
         }
@@ -531,7 +547,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (ADR 0959): a function of its own wherever it's made, as two such are
     /// two `Rc`s to Rust.
     pub(in crate::lower) fn counted_closure(&self, span: rustc_span::Span) -> bool {
-        use crate::lower::recognition::StdItem;
         let thir = self.frame.thir;
         thir.exprs.iter().any(|e| {
             let ExprKind::Call { fun, ref args, .. } = e.kind else {
@@ -598,7 +613,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // 0330), called with nothing: `move |_| f()`.
         if let ty::FnPtr(..) = thir[fun].ty.kind() {
             let own = self.krate.cell_borrows.pointers().rust_only(self.tcx, thir[fun].ty);
-            return (own && args.is_empty() && captured(thir, fun).is_some()).then_some(Forwarding {
+            return (own && args.is_empty() && captured(self.tcx, thir, fun).is_some()).then_some(Forwarding {
                 span,
                 callee: Callee::Own,
                 adapts: true,
@@ -623,19 +638,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(fn_trait) if self.tcx.fn_trait_kind_from_def_id(fn_trait).is_some() => {
                 // What it calls, a variable it captured, not its own
                 // parameter, `move |_| ping()`'s `ping`.
-                let captured = captured(thir, args[0]);
+                let captured = captured(self.tcx, thir, args[0]);
                 let ty = thir[args[0]].ty.peel_refs();
+                // A `dyn Fn`, as it is or boxed, `Box<dyn Fn()>`'s own `Fn`.
+                let dyn_fn = match ty.kind() {
+                    ty::Dynamic(..) => true,
+                    ty::Adt(adt, args) => adt.is_box() && matches!(args.type_at(0).kind(), ty::Dynamic(..)),
+                    _ => false,
+                };
                 let callee = match ty.kind() {
                     ty::Closure(..) => Callee::Own,
                     ty::Param(_) => Callee::Generic,
                     // One only the crate's functions fill (ADR 0330).
                     ty::FnPtr(..) if self.krate.cell_borrows.pointers().rust_only(self.tcx, ty) => Callee::Own,
-                    // A bound function of the crate's (rd196).
-                    ty::Dynamic(..) if captured.is_some_and(|var| self.bound_own(var)) => Callee::Own,
-                    ty::Dynamic(..) => Callee::Dyn,
-                    ty::Adt(adt, args) if adt.is_box() && matches!(args.type_at(0).kind(), ty::Dynamic(..)) => {
-                        Callee::Dyn
-                    }
+                    // A bound function of the crate's (rd196), or one each
+                    // of the crate's calls gives (rd616).
+                    _ if dyn_fn && captured.is_some_and(|var| self.bound_own(var)) => Callee::Own,
+                    _ if dyn_fn => Callee::Dyn,
                     _ => return None,
                 };
                 // Not one that may be a `function::with_this` function that
@@ -656,7 +675,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     binds: false,
                     ignores: callee == Callee::Own && given && captured.is_some(),
                     eta: false,
-                    fixed: matches!(ty.kind(), ty::Dynamic(..)) && callee == Callee::Own,
+                    fixed: dyn_fn && callee == Callee::Own,
                 })
             }
             // A binding's global function, JS's own, called as a function,
@@ -700,13 +719,148 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// Whether variable `var`, never changed, is a function of the crate's
-    /// bound, `let ping = function::bind(on_unsuspend, Some(state), ())`:
-    /// what reads no `this`, the one it's bound to, and none of what it's
-    /// given more, as the function it binds doesn't (`own_target`). A JS
+    /// Whether variable `var`, never changed, is a function that reads no
+    /// `this` and none of what it's given more (`own_callback`): a `let`'s
+    /// of one, `let ping = function::bind(on_unsuspend, Some(state), ())`, or
+    /// a parameter each of the crate's calls fills with one, React Flight's
+    /// Node client's `on_end: Rc<dyn Fn()>` (`own_callbacks`, rd616). A JS
     /// function bound may read what it's given more.
     fn bound_own(&self, var: rustc_hir::HirId) -> bool {
-        self.let_value(var).is_some_and(|init| self.bound_value(init, 0))
+        let own = self.own_callbacks();
+        own.contains(&var) || self.let_value(var).is_some_and(|init| self.own_callback(init, 0, own))
+    }
+
+    /// The parameters that are such a function at every call (rd616): of a
+    /// function only the crate's calls reach (`analysis::only_called`, ADR
+    /// 0577), so what each call gives it is all it's ever given, each a
+    /// `dyn Fn`, as it is or through a reference, a `Box`, an `Rc` or an
+    /// `Arc`, a binding never changed, that each call fills with what
+    /// `own_callback` says is one. Found the first time it's asked, of every
+    /// call at once: what a call gives may be another such parameter, which
+    /// is one while each of its own calls gives one, as nothing else fills
+    /// it.
+    fn own_callbacks(&self) -> &'a HashSet<rustc_hir::HirId> {
+        self.krate.own_callbacks.get_or_init(|| self.find_own_callbacks())
+    }
+
+    fn find_own_callbacks(&self) -> HashSet<rustc_hir::HirId> {
+        use rustc_hir as hir;
+        let tcx = self.tcx;
+        let callback = |ty: ty::Ty<'tcx>| {
+            let ty = ty.peel_refs();
+            let pointee = ty.boxed_ty().or_else(|| super::recognition::rc_pointee(tcx, ty));
+            matches!(pointee.unwrap_or(ty).kind(), ty::Dynamic(..))
+        };
+        let mut given: HashMap<hir::HirId, Vec<&'tcx hir::Expr<'tcx>>> = HashMap::new();
+        for (function, calls) in super::analysis::only_called::only_called(tcx) {
+            let Some(body) = function.as_local().and_then(|local| tcx.hir_maybe_body_owned_by(local)) else {
+                continue;
+            };
+            let inputs = tcx
+                .fn_sig(function)
+                .instantiate_identity()
+                .skip_normalization()
+                .skip_binder()
+                .inputs();
+            for (i, (param, &ty)) in body.params.iter().zip(inputs).enumerate() {
+                let hir::PatKind::Binding(hir::BindingMode::NONE, var, _, None) = param.pat.kind else {
+                    continue;
+                };
+                if !callback(ty) {
+                    continue;
+                }
+                // What each call gives it: a method's receiver is its first.
+                let at = |call: hir::HirId| match tcx.hir_node(call) {
+                    hir::Node::Expr(hir::Expr {
+                        kind: hir::ExprKind::Call(_, args),
+                        ..
+                    }) => args.get(i),
+                    hir::Node::Expr(hir::Expr {
+                        kind: hir::ExprKind::MethodCall(_, receiver, args, _),
+                        ..
+                    }) => match i {
+                        0 => Some(*receiver),
+                        _ => args.get(i - 1),
+                    },
+                    _ => None,
+                };
+                if let Some(values) = calls.iter().map(|&call| at(call)).collect::<Option<Vec<_>>>() {
+                    given.insert(var, values);
+                }
+            }
+        }
+        // Each, until one a call gives what's none is put out, and with it
+        // what it fills.
+        let mut own: HashSet<hir::HirId> = given.keys().copied().collect();
+        loop {
+            let unfilled: Vec<hir::HirId> = (given.iter())
+                .filter(|(var, values)| own.contains(var) && !values.iter().all(|e| self.own_callback(e, 0, &own)))
+                .map(|(&var, _)| var)
+                .collect();
+            if unfilled.is_empty() {
+                return own;
+            }
+            for var in unfilled {
+                own.remove(&var);
+            }
+        }
+    }
+
+    /// Whether `e` is a function that reads no `this` and none of what it's
+    /// given more, through what makes it, a block's value, a borrow, a
+    /// `Box`, an `Rc` or an `Arc` of it, or a clone of that `Rc`, and
+    /// variables that never change, of which `params`, the parameters
+    /// each call fills with one, at `depth`: one `own_target` says is by its
+    /// type, a function of the crate's or a closure; or what `bound_value`
+    /// says, a function bound, or one `function::with_this` makes of a
+    /// closure that ignores its `this` (rd284b). Not one that reads its
+    /// `this`, which a JS caller gives, nor its `arguments`.
+    fn own_callback(&self, e: &'tcx rustc_hir::Expr<'tcx>, depth: usize, params: &HashSet<rustc_hir::HirId>) -> bool {
+        use rustc_hir as hir;
+        if depth > 8 {
+            return false;
+        }
+        let tcx = self.tcx;
+        let results = tcx.typeck(e.hir_id.owner.def_id);
+        if matches!(
+            results.expr_ty(e).kind(),
+            ty::FnDef(..) | ty::Closure(..) | ty::FnPtr(..)
+        ) {
+            return self.own_target(e, depth);
+        }
+        let inner = |e: &'tcx hir::Expr<'tcx>| self.own_callback(e, depth + 1, params);
+        match e.peel_drop_temps().kind {
+            hir::ExprKind::Block(block, _) => block.expr.is_some_and(inner),
+            hir::ExprKind::AddrOf(_, _, of) => inner(of),
+            hir::ExprKind::Path(ref qpath) => match results.qpath_res(qpath, e.hir_id) {
+                hir::def::Res::Local(var) => params.contains(&var) || self.let_value(var).is_some_and(inner),
+                _ => false,
+            },
+            // A function bound, or one `with_this` makes that reads no
+            // `this` (`bound_value`); or what's made of one, or shared.
+            hir::ExprKind::Call(callee, args) => {
+                self.bound_value(e, depth + 1)
+                    || match (fn_def(results.expr_ty_adjusted(callee)), args) {
+                        (Some((f, generic)), [made]) => self.made_or_shared(f, generic) && inner(made),
+                        _ => false,
+                    }
+            }
+            hir::ExprKind::MethodCall(_, receiver, [], _) => (results.type_dependent_def_id(e.hir_id))
+                .is_some_and(|f| self.made_or_shared(f, results.node_args(e.hir_id)) && inner(receiver)),
+            _ => false,
+        }
+    }
+
+    /// Whether a call of `f`, of `args`, gives what it's given, or another
+    /// handle on it: `Box::new`, `Rc::new` or `Arc::new`, or an `Rc`'s or
+    /// an `Arc`'s clone.
+    fn made_or_shared(&self, f: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+        use crate::lower::recognition::{HandleStep, handle_step};
+        super::recognition::is_std_def(self.tcx, f, StdItem::BoxNew)
+            || matches!(
+                handle_step(self.tcx, f, args),
+                Some(HandleStep::RcNew | HandleStep::RcClone)
+            )
     }
 
     /// What variable `var` is, of a `let` that never changes it: its
@@ -748,10 +902,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // A function `function::with_this` makes of a closure that
                 // ignores its `this`, `move |_, ()| ..`: one that reads none
                 // (rd284b).
+                // Not one that reads `js::arguments()` (rd509).
                 ty::FnDef(f, _)
                     if matches!(super::bindings::js_form(self.tcx, f), super::bindings::JsForm::WithThis) =>
                 {
                     ignores_this(self.tcx, target)
+                        && !made_closure(target).is_some_and(|c| self.krate.reads_arguments.made.contains(&c))
                 }
                 _ => false,
             },
@@ -775,10 +931,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let results = tcx.typeck(e.hir_id.owner.def_id);
         let ty = results.expr_ty(e);
         match *ty.kind() {
+            // Not one that reads `js::arguments()`, which counts what JS
+            // gives it more (rd332).
             ty::FnDef(f, _) => {
                 return (f.is_local() || self.krate.foreign.is_library(f.krate))
                     && !super::bindings::is_binding(tcx, f)
-                    && !self.takes_rest(f);
+                    && !self.takes_rest(f)
+                    && !self.reads_arguments(f);
             }
             ty::Closure(..) => return true,
             ty::FnPtr(..) => return self.krate.cell_borrows.pointers().rust_only(tcx, ty),
@@ -872,6 +1031,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         inputs.len() != called.inputs().len()
             || (inputs.iter().zip(called.inputs())).any(|(&a, &b)| erased(a) != erased(b))
             || erased(theirs.output()) != erased(called.output())
+    }
+}
+
+/// The closure `e` makes, through the block that makes it.
+fn made_closure(e: &rustc_hir::Expr<'_>) -> Option<DefId> {
+    match e.peel_drop_temps().kind {
+        rustc_hir::ExprKind::Block(block, _) => block.expr.and_then(made_closure),
+        rustc_hir::ExprKind::Closure(closure) => Some(closure.def_id.to_def_id()),
+        _ => None,
     }
 }
 

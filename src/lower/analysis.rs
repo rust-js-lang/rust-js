@@ -26,7 +26,7 @@ mod namespaces;
 pub(super) use namespaces::{Through, module_paths, namespace_in, namespace_of};
 mod naming;
 pub(super) mod nulled_params;
-mod only_called;
+pub(super) mod only_called;
 pub(super) mod owned_by_return;
 mod plain_locals;
 mod rc_counts;

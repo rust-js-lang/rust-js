@@ -1,8 +1,9 @@
 //! The crate's functions only calls reach (ADR 0577): each one no JS
 //! caller sees, never named as a value, a trait's method or exported, by
-//! how many calls of it the crate's code makes. What each call gives it is
-//! all it's ever given, so what's known of its parameters is what's known
-//! where it's called.
+//! the calls of it the crate's code makes. What each call gives it is all
+//! it's ever given, so what's known of its parameters is what's known
+//! where it's called: their ranges (ADR 0577), and a `dyn Fn` the crate's
+//! own function fills at each (`passed_on`'s `own_callbacks`, rd616).
 
 use rustc_hir as hir;
 use rustc_hir::def::{DefKind, Res};
@@ -11,11 +12,12 @@ use rustc_middle::ty::{TyCtxt, TypeckResults};
 use rustc_span::def_id::DefId;
 use std::collections::{HashMap, HashSet};
 
-/// Each function only calls reach, by how many there are.
-pub(in crate::lower) fn only_called(tcx: TyCtxt<'_>) -> HashMap<DefId, usize> {
+/// Each function only calls reach, by its calls, each the call's
+/// expression, `f(..)` or `x.f(..)`.
+pub(in crate::lower) fn only_called(tcx: TyCtxt<'_>) -> HashMap<DefId, Vec<hir::HirId>> {
     struct Mentions<'tcx> {
         typeck: &'tcx TypeckResults<'tcx>,
-        calls: HashMap<DefId, usize>,
+        calls: HashMap<DefId, Vec<hir::HirId>>,
         values: HashSet<DefId>,
     }
     impl<'tcx> Mentions<'tcx> {
@@ -33,7 +35,7 @@ pub(in crate::lower) fn only_called(tcx: TyCtxt<'_>) -> HashMap<DefId, usize> {
                     if let hir::ExprKind::Path(ref qpath) = callee.kind
                         && let Some(def_id) = self.named(qpath, callee.hir_id) =>
                 {
-                    *self.calls.entry(def_id).or_default() += 1;
+                    self.calls.entry(def_id).or_default().push(e.hir_id);
                     for arg in args {
                         self.visit_expr(arg);
                     }
@@ -41,7 +43,7 @@ pub(in crate::lower) fn only_called(tcx: TyCtxt<'_>) -> HashMap<DefId, usize> {
                 }
                 hir::ExprKind::MethodCall(..) => {
                     if let Some(def_id) = self.typeck.type_dependent_def_id(e.hir_id) {
-                        *self.calls.entry(def_id).or_default() += 1;
+                        self.calls.entry(def_id).or_default().push(e.hir_id);
                     }
                 }
                 // Named as a value: a function pointer, a callback, what
@@ -52,7 +54,7 @@ pub(in crate::lower) fn only_called(tcx: TyCtxt<'_>) -> HashMap<DefId, usize> {
             intravisit::walk_expr(self, e);
         }
     }
-    let mut calls: HashMap<DefId, usize> = HashMap::new();
+    let mut calls: HashMap<DefId, Vec<hir::HirId>> = HashMap::new();
     let mut values: HashSet<DefId> = HashSet::new();
     // Not a constant only rustc evaluates, whose calls JS never makes.
     for owner in tcx
@@ -65,8 +67,8 @@ pub(in crate::lower) fn only_called(tcx: TyCtxt<'_>) -> HashMap<DefId, usize> {
             values: HashSet::new(),
         };
         mentions.visit_body(tcx.hir_body_owned_by(owner));
-        for (def_id, n) in mentions.calls {
-            *calls.entry(def_id).or_default() += n;
+        for (def_id, at) in mentions.calls {
+            calls.entry(def_id).or_default().extend(at);
         }
         values.extend(mentions.values);
     }
