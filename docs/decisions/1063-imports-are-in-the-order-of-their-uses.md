@@ -200,3 +200,8 @@ Each is one line in the header block, `export { a, b as c } from "x";` or `expor
 Case ([0262](0262-when-rust-and-js-disagree.md)): C, as the imports' order is. What a module's load reads may depend on which module loads first, and the source now says it.
 
 Held by `test/namespaces.test.ts`, `test/declarations-libraries.test.ts`, `test/modules.test.ts`, `test/cargo-link.test.ts`'s "a namespace's forwarding method's re-export is where its module's use is" (`use crate::portal;` before `use crate::aaa::a;`: the export prints first), the guide's modules.md and building.md, and snapshot `modules`. Mutations in `to_oxc/header.ts`, `lower/pipeline.ts` and `lower/analysis/naming.ts`.
+
+## Amendment: a binding's class a class extends is imported where its `use` is (rd629)
+
+ReactART writes `use react::{CSSProperties, Component, HostType, JSX, jsx};` first, where upstream writes `import * as React from 'react';`, but `import { Component } from "react"` printed after `./ReactARTInternals.js`. `Component` is a trait, react's class (`#[rust_js::types = "react#Component<P, S>"]`), which `impl Component<P> for Surface` makes the class's `extends` (rd331). Its import is the superclass's, which no `use` was taken to make: `imports_from` asked a trait for none. **A `use` of a binding's class (`classes::base_class`) makes the import from that class's module**, so it's placed there. Held by `test/class-components.test.ts`'s "a class's superclass is imported where its use is", mutation `superclass-use-unplaced` (`analysis/naming.ts`).
+

@@ -135,7 +135,8 @@ first `use` that makes it is, a binding's JS module, a library's module
 and the crate's own alike, a module that holds a binding the `use`
 names through it, `use shared::assign::assign;`'s `shared/assign`, a
 library's namespace, its functions' module, and a module of bindings,
-`use art::transform;`'s `art/core/transform`. rustfmt sorts the `use`s of one group, the
+`use art::transform;`'s `art/core/transform`, and a binding's class a
+class extends, `use react::Component;`'s `react`. rustfmt sorts the `use`s of one group, the
 lines between blank ones, and keeps the groups as written, so a module
 whose imports must load in an order writes them in groups, as React DOM's
 ReactDOMFizzServerNode writes `use react_server::..;`, a blank line, then

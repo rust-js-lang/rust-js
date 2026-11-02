@@ -756,3 +756,39 @@ test("its cell is set as it mounts", () => {
 `);
   expect([ran.code, ran.passed], ran.output).toEqual([0, "1"]);
 }, 60_000);
+
+
+// The import of the class a class extends is where its `use` is, as any
+// import's (ADR 1063, amended, rd629): ReactART's `use react::{..,
+// Component, ..};`, first, is upstream's first import, before its own
+// modules', not after them.
+test("a class's superclass is imported where its use is", () => {
+  const { js } = compiled(
+    "superclass-import-placed",
+    `#![allow(non_snake_case)]
+use react::{Component, JSX, jsx};
+
+use crate::labels::label;
+
+mod labels {
+    pub fn label() -> &'static str {
+        "hi"
+    }
+}
+
+pub struct CounterProps {
+    pub n: f64,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Counter {}
+
+impl Component<CounterProps> for Counter {
+    fn render(&'static self) -> JSX::Element {
+        jsx! { <p>{label()}</p> }
+    }
+}
+`,
+  );
+  expect(js).toContain('import { Component } from "react";\nimport { label } from "./labels.js";\n');
+});

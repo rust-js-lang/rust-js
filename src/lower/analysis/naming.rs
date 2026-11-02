@@ -638,7 +638,9 @@ impl UsesWritten {
     /// Of a library's namespace, ADR 1037's unit struct, its methods',
     /// `use ..::ReactFiberReconciler;`'s; of another crate's module, each
     /// item's in it, a binding's, `use art::transform;`'s (rd611, ADR 1063,
-    /// amended), or a library's function's, `use dep::action;`'s (rd620).
+    /// amended), or a library's function's, `use dep::action;`'s (rd620);
+    /// of a binding's class, its own module's, `use react::Component;`'s
+    /// (rd629).
     fn imports_from(
         &self,
         tcx: TyCtxt<'_>,
@@ -660,6 +662,10 @@ impl UsesWritten {
                 (tcx.inherent_impls(id).iter()).any(|&imp| tcx.associated_item_def_ids(imp).iter().any(|&m| own(m)))
             }
             DefKind::Mod if !id.is_local() => items_in(tcx, id).into_iter().any(own),
+            // A binding's class a class of the module's extends, `use
+            // react::Component;`'s `import { Component } from "react"`
+            // (rd629).
+            DefKind::Trait => crate::lower::classes::base_class(tcx, id).is_some_and(|(of, _)| of == from),
             _ => own(id),
         }
     }
