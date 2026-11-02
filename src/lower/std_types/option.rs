@@ -161,6 +161,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         false => value,
                     }));
                 }
+                // Of a binding getter's function or object called, or the
+                // `this` of a method, where it's unwrapped: the getter's read,
+                // whose `None` JS's call throws on, a `TypeError` (rd519, the
+                // user's decision; semantics.md).
+                if self.frame.facts.getter_unwraps.contains(&span)
+                    && list.len() == 1
+                    && !self.boxed_payload(generic_args.type_at(0))
+                {
+                    return Ok(list.into_iter().next());
+                }
                 let unwrapped = Expr::call(Expr::helper("$unwrap"), list);
                 if self.boxed_payload(generic_args.type_at(0)) {
                     self.some_value(unwrapped)

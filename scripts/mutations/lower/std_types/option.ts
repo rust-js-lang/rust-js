@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "getter-unwrap-checked",
+    breaks:
+      "a getter's function unwrapped where it's called keeps `$unwrap`, `$unwrap(console.createTask).bind(console, ..)`, where the user chose the read (rd519, ADR 1066)",
+    file: "src/lower/std_types/option.rs",
+    find: "                if self.frame.facts.getter_unwraps.contains(&span)\n",
+    replace: "                if self.frame.facts.getter_unwraps.contains(&span) && false\n",
+    tests: ["test/js-globals.test.ts", "-t", "a getter's function unwrapped where it's called"],
+  },
+  {
     name: "option-slot-iterator-a-handle",
     breaks:
       "`slot.get_or_insert_with(f).next()` of a generic iterator steps a handle, `$someMut(..)`, not the iterator: `None` where Rust gives `Some(4)`",

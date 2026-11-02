@@ -111,6 +111,14 @@ react.dev's TopNav passes the same closure instead.
   2026-11-02, rd575, ADR 1064): a JS caller sees the function itself,
   `===` it, its `name` and `length` the function's. Listed in the
   guide's differences (`semantics.md`, 45).
+- **A binding getter's function unwrapped where it's called is the read**,
+  the user's decision (2026-11-02, rd519, ADR 1066):
+  `console::create_task().unwrap()(name)` is `console.createTask(name)`
+  and `function::bind(console::create_task().unwrap(), ..)`
+  `console.createTask.bind(console, ..)`. Of a host without it, JS's call
+  throws a `TypeError` where Rust's `unwrap()` panics: a throw at the same
+  place either way, its message and type the difference. Listed in the
+  guide's differences (`semantics.md`, 46).
 - **A `RegExp`'s `test` and `replace` take text, as TypeScript types
   them**, the second case's, which the user decided (2026-10-28, gap rd33):
   React's warnValidStyle tests `badStyleValueWithSemicolonPattern.test(value)`

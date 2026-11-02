@@ -328,6 +328,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | What JS is given of a `()`: `undefined`, or a list's `[]` | `representation.rs` | `unit_given`, `UnitTo` |
 | A guard `if let Some(v) = value` that holds where its arm of `match js::classify(value)` matched | `body_queries.rs` | `held_guards` |
 | A cell's `get().unwrap()` that can't fail, the first call of the statement after its `set(Some(..))`, its value (ADR 0294, amended) | `body_queries/set_reads.rs` | `set_then_unwrapped` |
+| A binding getter's `unwrap()` read only as the callee of its call or the `this` of a binding's method, the getter's read (rd519, ADR 1066, the user's decision) | `body_queries/getter_unwraps.rs` | `getter_unwraps` |
 | Which `rev()`, `enumerate()`, `map()` or `inspect()` is stepped where it's made, the recognizers', and which is held, std's compiled struct (ADR 0871) | `body_queries.rs`; `mir/iter.rs`; `iterators.rs` | `in_place_adapters`; `compiled_struct_at`; `made_in_place` |
 | An index or a slice's range in bounds, the test a `bool` variable holds, and a `OnceCell` still empty where it's set | `body_queries/ranges.rs`; `mir/bounds.rs` | `judge_index`, `judge_range`, `held_test`, `made_empty`; `indexes_in_bounds` |
 | A slice's `position` only tested and its index taken, JS's `indexOf` or `findIndex`, and an `Option` of an index whose `None` is `-1`, a string's place's too (ADR 1040) | `mir/positions.rs`; `mir/local_facts.rs`; `mir/queries.rs` | `FoundIndexes`, `found_index`; `none_is_minus_one`; `tested_and_taken` |

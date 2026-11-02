@@ -475,6 +475,38 @@ export function renderIn(task, render) {
 }
 ```
 
+Where the program asks it's there first, as React's `supportsCreateTask`
+does, and unwraps it where it calls it, or binds it, the `unwrap()` is
+the read: `console.createTask(name)` and `console.createTask.bind(console,
+name)`, as upstream writes them. Of a host without it, the call throws a
+`TypeError` where Rust's `unwrap()` panics; one kept or given on keeps
+`$unwrap`'s check (the user's decision,
+[ADR 1066](../../decisions/1066-a-getters-function-unwrapped-where-its-called-is-the-read.md),
+and [the semantics](../semantics.md)):
+
+```rust
+use js::function;
+use webapi::{ConsoleTask, console};
+
+pub fn root_task(name: &str) -> &'static ConsoleTask {
+    console::create_task().unwrap()(name)
+}
+
+pub fn task_maker(name: &str) -> &'static dyn Fn() -> &'static ConsoleTask {
+    function::bind(console::create_task().unwrap(), Some(&console), (name.to_string(),))
+}
+```
+
+```js
+export function rootTask(name) {
+  return console.createTask(name);
+}
+
+export function taskMaker(name) {
+  return console.createTask.bind(console, name);
+}
+```
+
 A method a host extends past what WebIDL declares is the method, of every
 parameter it takes there, called as one, its presence asked as
 `setTimeout`'s is: Chrome's `console.timeStamp(label, start, end,

@@ -16,6 +16,7 @@ use rustc_span::def_id::{DefId, LocalModId};
 use std::collections::{HashMap, HashSet};
 
 mod constants;
+mod getter_unwraps;
 mod ranges;
 mod set_reads;
 mod whole_casts;
@@ -151,6 +152,10 @@ pub(super) struct BodyFacts<'tcx> {
     /// Where each `unwrap` or `expect` is of a cell's `get` read right
     /// after it's set to a `Some`, `set_then_unwrapped`'s (rd331e).
     pub(super) set_then_unwrapped: HashSet<Span>,
+    /// Where each `unwrap()` is of a binding getter's function or object
+    /// read only as the callee or the `this` of the call it's made for,
+    /// `getter_unwraps`'s (rd519).
+    pub(super) getter_unwraps: HashSet<Span>,
     /// Where each `rev()`, `enumerate()` or `map()` is whose adapter a std
     /// iterator's method steps where it's made, and where each such method
     /// is, `in_place_adapters`'s.
@@ -184,6 +189,7 @@ impl<'tcx> BodyFacts<'tcx> {
             present_calls: present_calls(tcx, thir),
             resumed_as_given: resumed_as_given(tcx, thir),
             set_then_unwrapped: set_reads::set_then_unwrapped(tcx, thir),
+            getter_unwraps: getter_unwraps::getter_unwraps(tcx, thir),
             in_place_adapters,
             in_place_adapter_steps,
             constant_patterns: constant_patterns(tcx, thir),

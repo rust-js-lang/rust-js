@@ -2,7 +2,8 @@
 // types them, never narrower: React's Flight client's `Array.prototype`,
 // `BigInt(text)`, `new Date(Date.parse(text))` and `Symbol()` (rd399);
 // its Flight server's `Promise.prototype`, `then` handlers of `void | PromiseLike<void>`,
-// an async iterator's `throw` and an async iterable (rd580, rd581, rd584, rd585).
+// an async iterator's `throw` and an async iterable (rd580, rd581, rd584, rd585);
+// and a getter's function unwrapped where it's called, `console.createTask` (rd519).
 // Each test is a program of its own, compiled, and its JS run.
 
 import { beforeAll, expect, test } from "bun:test";
@@ -15,7 +16,7 @@ import { buildReact, compiler, fixture, root, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
-const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "-L", target];
 
 /** `source` compiled, its JS, and the module it is, loaded. */
 async function compiled(name: string, source: string): Promise<{ js: string; lib: any; dir: string }> {
@@ -395,4 +396,74 @@ pub fn iterator(of: &Keyed) -> f64 {
   expect(refused.code).not.toBe(0);
   expect(refused.stderr).toContain("`[1]` isn't a binding's path: `1` isn't a JS name");
   expect(refused.stderr).toContain("`[Symbol.iterator]` isn't a binding's path: a key, `[Symbol.asyncIterator]`, is a method's, of `&self` or `this`");
+});
+
+// rd519 (ADR 1066, the user's decision): an `unwrap()` of a binding
+// getter's function read only as the callee of its call, or as the `this`
+// of a binding's method, is the getter's read, React's Flight client's
+// `console.createTask(name)` and `console.createTask.bind(console, name)`;
+// one kept keeps `$unwrap`. Of a host without it, the call throws a
+// `TypeError` where Rust's `unwrap()` panics.
+test("a getter's function unwrapped where it's called is the read", async () => {
+  const { js, lib } = await compiled(
+    "getter-unwrapped-called",
+    `use js::function;
+use webapi::{ConsoleTask, console};
+
+pub fn root_task(name: &str) -> &'static ConsoleTask {
+    console::create_task().unwrap()(name)
+}
+
+pub fn bound(name: &str) -> &'static dyn Fn() -> &'static ConsoleTask {
+    function::bind(console::create_task().unwrap(), Some(&console), (name.to_string(),))
+}
+
+pub fn kept() -> &'static dyn Fn(&str) -> &'static ConsoleTask {
+    console::create_task().unwrap()
+}
+
+fn named(f: &dyn Fn(&str) -> &'static ConsoleTask) -> &'static ConsoleTask {
+    f("given")
+}
+
+pub fn given() -> &'static ConsoleTask {
+    named(console::create_task().unwrap())
+}
+
+pub fn local(f: Option<&dyn Fn(u32) -> u32>) -> u32 {
+    f.unwrap()(1)
+}
+
+fn maker() -> Option<&'static dyn Fn(u32) -> u32> {
+    None
+}
+
+pub fn made() -> u32 {
+    maker().unwrap()(1)
+}
+`,
+  );
+  expect(js).toContain("export function rootTask(name) {\n  return console.createTask(name);\n}");
+  expect(js).toContain("export function bound(name) {\n  return console.createTask.bind(console, name);\n}");
+  expect(js).toContain("export function kept() {\n  return $unwrap(console.createTask);\n}");
+  expect(js).toContain("return named($unwrap(console.createTask));");
+  expect(js).toContain("return $unwrap(f)(1);");
+  expect(js).toContain("return $unwrap(maker())(1);");
+  const host = console as unknown as { createTask?: (name: string) => unknown };
+  const before = host.createTask;
+  try {
+    host.createTask = function (this: unknown, name: string) {
+      return { name, self: this === console };
+    };
+    expect(lib.rootTask("a")).toEqual({ name: "a", self: true });
+    expect(lib.bound("b")()).toEqual({ name: "b", self: true });
+    expect(lib.kept()("c")).toEqual({ name: "c", self: false });
+    delete host.createTask;
+    expect(() => lib.rootTask("a")).toThrow(TypeError);
+    expect(() => lib.bound("b")).toThrow(TypeError);
+    expect(() => lib.kept()).toThrow("called `Option::unwrap()` on a `None` value");
+  } finally {
+    if (before) host.createTask = before;
+    else delete host.createTask;
+  }
 });

@@ -758,6 +758,10 @@ missing key, `unreachable!`, `todo!` ([0012](../decisions/0012-panics-and-runtim
   create(this.surface);`, as nothing could take the `Some` out between; a
   call that runs first, or a statement between, keeps the check, `$unwrap`
   ([0294](../decisions/0294-unwrap-unchecked.md), amended).
+- **A getter's function unwrapped where it's called is the read:**
+  `console::create_task().unwrap()(name)` is `console.createTask(name)`,
+  and of a host without it the call's `TypeError` is what's thrown, where
+  Rust panics (46 below, [1066](../decisions/1066-a-getters-function-unwrapped-where-its-called-is-the-read.md)).
 
 Differences:
 
@@ -1231,4 +1235,12 @@ React and JSX are [their own pages](README.md#react).
     the function's, `===` it, and its `name` and `length`, the
     function's, tell them apart (ADR 0262, the user's decision,
     2026-11-02, rd575; [ADR 1064](../decisions/1064-a-function-that-only-passes-its-parameters-on-is-its-re-export.md)).
+46. An `unwrap()` of a binding getter's function, read only as the callee
+    of its call or the `this` of a binding's method, is the getter's read,
+    `console.createTask(name)` and `console.createTask.bind(console, ..)`:
+    of a host without it, JS's call throws a `TypeError`, `console.createTask
+    is not a function`, where Rust's `unwrap()` panics ``called
+    `Option::unwrap()` on a `None` value``. Both throw there; only what
+    catches it, JS or a `catch_unwind`, sees which (ADR 0262, the user's
+    decision, 2026-11-02, rd519; [ADR 1066](../decisions/1066-a-getters-function-unwrapped-where-its-called-is-the-read.md)).
 
