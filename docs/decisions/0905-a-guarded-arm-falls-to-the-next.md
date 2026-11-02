@@ -897,3 +897,19 @@ guard twice has no mutation: a chain it'd take must make the tree's calls
 in the tree's order each way (`tells`), which no chain of such a tree
 does, so what it refuses no corpus case reaches; it stays, as the one bit
 a call is read as would otherwise stand for two answers.
+
+## Amended: a written `continue` stays one (rd604)
+
+The `continue` the program writes in an `if` of an arm has no place in
+the JS either: MIR's `goto` of the loop's head is all it is, as the one
+MIR makes at the end of a guarded arm that does nothing. So
+`made_continues_broken` took React DOM's diffHydratedGenericElement's
+`case 'src':`, `if (value === '' ..) { ..; continue; }`, for MIR's and
+printed `break;`, where upstream and the Rust say `continue;` (seven of
+its cases). Which `if` the program wrote of a `continue` its THIR says,
+`Written::continues` and `else_continues`, as `jumps` reads them: a
+branch of such an `if` keeps its `continue`; only the others, MIR's, are
+the `switch`'s `break`. Case N (ADR 0262): `break` and `continue` go to
+the same place there either way; this is how it reads. Held by the
+corpus's `switch_guarded_or_pattern`'s `sources`, run against native
+Rust, and the mutation `written-continue-broken` (`switches.ts`).

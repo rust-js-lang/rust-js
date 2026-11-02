@@ -76,6 +76,32 @@ fn unguarded(names: &[&str]) -> Vec<String> {
     found
 }
 
+/// A `continue` the program wrote in an arm, which stays one, where MIR's
+/// own, at the end of a guarded arm that does nothing, is the `switch`'s
+/// `break`: React DOM's diffHydratedGenericElement's `case 'src':`, `if
+/// (value === '' ..) { ..; continue; }` (rd604).
+fn sources(names: &[&str], tag: &str) -> Vec<String> {
+    let mut found = Vec::new();
+    for &name in names {
+        match name {
+            "children" => note("children"),
+            "data" | "src" | "href" => {
+                if tag == "img" {
+                    note("img");
+                    continue;
+                }
+                if name != "href" && tag.is_empty() {
+                    note("empty");
+                    continue;
+                }
+                found.push(name.to_string());
+            }
+            _ => note("other"),
+        }
+    }
+    found
+}
+
 fn described(tag: u32, on_them: bool) -> u32 {
     match tag {
         1 => note("one"),
@@ -123,6 +149,10 @@ fn main() {
     }
     println!("flagged: {:?} {:?}", flagged(&names, true), flagged(&names, false));
     println!("unguarded: {:?}", unguarded(&names));
+    for tag in ["img", "", "a"] {
+        let found = sources(&["children", "data", "src", "href", "id"], tag);
+        println!("sources {tag:?}: {found:?} {:?}", LOG.take());
+    }
     for value in [None, Some(1), Some(2)] {
         let got = present(value);
         println!("present {value:?}: {got} {:?}", LOG.take());

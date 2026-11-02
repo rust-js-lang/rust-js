@@ -89,6 +89,40 @@ function unguarded(names) {
   return found;
 }
 
+/**
+ * A `continue` the program wrote in an arm, which stays one, where MIR's
+ * own, at the end of a guarded arm that does nothing, is the `switch`'s
+ * `break`: React DOM's diffHydratedGenericElement's `case 'src':`, `if
+ * (value === '' ..) { ..; continue; }` (rd604).
+ */
+function sources(names, tag) {
+  const found = [];
+  for (let i = 0; i < names.length; i++) {
+    const name = names[i];
+    switch (name) {
+      case "children":
+        note("children");
+        break;
+      case "data":
+      case "src":
+      case "href":
+        if (tag === "img") {
+          note("img");
+          continue;
+        }
+        if (name !== "href" && !tag) {
+          note("empty");
+          continue;
+        }
+        found.push(name);
+        break;
+      default:
+        note("other");
+    }
+  }
+  return found;
+}
+
 function described(tag, onThem) {
   switch (tag) {
     case 1:
@@ -176,6 +210,14 @@ function main() {
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
+  for (const tag of ["img", "", "a"]) {
+    const found = sources(["children", "data", "src", "href", "id"], tag);
+    const arg = log;
+    log = [];
+    console.log(
+      `sources ${$debugStr(tag)}: [${found.map((item) => $debugStr(item)).join(", ")}] [${arg.map((item) => $debugStr(item)).join(", ")}]`,
+    );
+  }
   for (const value of [undefined, 1, 2]) {
     const got = present(value);
     const arg = log;

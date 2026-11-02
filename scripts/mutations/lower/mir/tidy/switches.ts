@@ -639,7 +639,7 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's block of a guarded `|` whose guard calls, `bb10: { if (name === \"vt-name\") { if (!on(name)) { break bb10; } } .. }`, stays, a label the program never wrote, and no `switch` (rd136)",
     file: "src/lower/mir/tidy/switches.rs",
-    find: "    js::statement_lists(body, &mut |list| guards_once(list, switches));\n",
+    find: "    js::statement_lists(body, &mut |list| guards_once(list, &written.switches));\n",
     replace: "",
     tests: ORS,
     snapshots: true,
@@ -671,6 +671,16 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/switches.rs",
     find: "                last.kind = StmtKind::Break(None);\n",
     replace: "                let _ = &last;\n",
+    tests: ORS,
+    snapshots: true,
+  },
+  {
+    name: "written-continue-broken",
+    breaks:
+      "a `continue` the program wrote in an `if` of a case of a `switch` that ends a loop's turn, `if (tag === \"img\") { note(\"img\"); continue; }`, is the `switch`'s `break;`, not React DOM's `continue;` (rd604)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "                && super::jump_tested(jumps, span).is_none()\n",
+    replace: "",
     tests: ORS,
     snapshots: true,
   },

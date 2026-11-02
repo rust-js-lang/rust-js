@@ -789,9 +789,7 @@ pub(super) const STAGES: &[Stage] = &[
                 js::statement_lists(b, &mut |s| decisions::presence_said(s, &h.written.switches))
             }),
             // A `match` of constants, its chain settled: a `switch` (ADR 0629).
-            pass("switches", |b, h| {
-                switches::switches(b, &h.written.switches, &h.written.loops)
-            }),
+            pass("switches", |b, h| switches::switches(b, h.written)),
             // A function's value of a `match` of constants `switches` left
             // an `if`, two arms of an enum's four: `return t ? a : b`, as
             // `returned values` gives each other `match`'s (ADR 0237,

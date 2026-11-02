@@ -6,7 +6,7 @@
 use std::collections::HashSet;
 
 use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
-use crate::lower::mir::hints::{Constant, Switch, SwitchArm};
+use crate::lower::mir::hints::{Constant, Switch, SwitchArm, Written};
 use crate::lower::untagged::TypeofCase;
 
 use super::bindings::declared;
@@ -23,12 +23,12 @@ use nullish::{some_switch_defaults, switch_of};
 /// Each chain of `body` that tests the arms of a `match` of `switches`, in
 /// the order written, a `switch`; a `break` in it of a loop around it, of
 /// that loop's label, the program's of `loops` where it wrote one.
-pub(super) fn switches(body: &mut Vec<Stmt>, switches: &[Switch], loops: &[(js::Span, bool, Option<String>)]) {
-    if switches.is_empty() {
+pub(super) fn switches(body: &mut Vec<Stmt>, written: &Written) {
+    if written.switches.is_empty() {
         return;
     }
-    js::statement_lists(body, &mut |list| guards_once(list, switches));
-    walk(body, switches, loops, &mut Vec::new(), None, false);
+    js::statement_lists(body, &mut |list| guards_once(list, &written.switches));
+    walk(body, written, &mut Vec::new(), None, false);
 }
 
 /// The loop a `switch` is in: the label a `break` of it names, whether
@@ -44,12 +44,12 @@ struct Around<'l> {
 /// they're in.
 fn walk(
     list: &mut Vec<Stmt>,
-    switches: &[Switch],
-    loops: &[(js::Span, bool, Option<String>)],
+    program: &Written,
     labels: &mut Vec<String>,
     mut around: Option<&mut Around>,
     turn: bool,
 ) {
+    let (switches, loops) = (program.switches.as_slice(), program.loops.as_slice());
     let mut i = 0;
     while i < list.len() {
         written_after(list, i, switches);
@@ -66,19 +66,19 @@ fn walk(
         let span = stmt.span;
         match &mut stmt.kind {
             StmtKind::If(_, a, b) => {
-                walk(a, switches, loops, labels, around.as_deref_mut(), false);
+                walk(a, program, labels, around.as_deref_mut(), false);
                 if let Some(b) = b {
-                    walk(b, switches, loops, labels, around.as_deref_mut(), false);
+                    walk(b, program, labels, around.as_deref_mut(), false);
                 }
             }
-            StmtKind::Labeled(_, body) => walk(body, switches, loops, labels, around.as_deref_mut(), false),
+            StmtKind::Labeled(_, body) => walk(body, program, labels, around.as_deref_mut(), false),
             StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
-                walk(a, switches, loops, labels, around.as_deref_mut(), false);
-                walk(b, switches, loops, labels, around.as_deref_mut(), false);
+                walk(a, program, labels, around.as_deref_mut(), false);
+                walk(b, program, labels, around.as_deref_mut(), false);
             }
             StmtKind::Switch { cases, default, .. } => {
                 for body in js::case_lists_mut(cases, default) {
-                    walk(body, switches, loops, labels, around.as_deref_mut(), false);
+                    walk(body, program, labels, around.as_deref_mut(), false);
                 }
             }
             StmtKind::While { label, body, .. }
@@ -109,7 +109,7 @@ fn walk(
                     named: false,
                 };
                 labels.push(readable.clone());
-                walk(body, switches, loops, labels, Some(&mut inner), true);
+                walk(body, program, labels, Some(&mut inner), true);
                 labels.pop();
                 // A case's `continue` of the loop whose turn the `switch`
                 // ends, which it goes on to anyway; and one MIR made, past
@@ -126,7 +126,7 @@ fn walk(
                         if matches!(case.last().map(|s| &s.kind), Some(StmtKind::Continue(l)) if of_it(l)) {
                             case.pop();
                         }
-                        made_continues_broken(case, &of_it);
+                        made_continues_broken(case, &of_it, program);
                     }
                 }
                 if inner.named {
@@ -143,23 +143,30 @@ fn walk(
     }
 }
 
-/// Each `continue` MIR made, of no place written, `of_it`, the loop's
-/// whose turn a `switch` ends, that ends an `if`'s branch in the case
-/// `stmts`, however deep in `if`s: the `switch`'s `break`, which leaves to
-/// where it goes.
-fn made_continues_broken(stmts: &mut [Stmt], of_it: &dyn Fn(&Option<String>) -> bool) {
+/// Each `continue` MIR made, `of_it`, the loop's whose turn a `switch`
+/// ends, that ends an `if`'s branch in the case `stmts`, however deep in
+/// `if`s: the `switch`'s `break`, which leaves to where it goes. Not one
+/// the program wrote, of no place in the JS either, as MIR's `goto` of the
+/// loop's head has none: the branch of an `if` the program wrote of a
+/// `continue` (`Written::continues`, `else_continues`), React DOM's
+/// diffHydratedGenericElement's `if (value === '' ..) { ..; continue; }`
+/// in its `case 'src':` (rd604).
+fn made_continues_broken(stmts: &mut [Stmt], of_it: &dyn Fn(&Option<String>) -> bool, written: &Written) {
     for stmt in stmts.iter_mut() {
+        let span = stmt.span;
         let StmtKind::If(_, then, otherwise) = &mut stmt.kind else {
             continue;
         };
-        for branch in std::iter::once(then).chain(otherwise.as_mut()) {
+        let jumps = [&written.continues, &written.else_continues];
+        for (branch, jumps) in std::iter::once(then).chain(otherwise.as_mut()).zip(jumps) {
             if let Some(last) = branch.last_mut()
                 && last.span.is_none()
                 && matches!(&last.kind, StmtKind::Continue(l) if of_it(l))
+                && super::jump_tested(jumps, span).is_none()
             {
                 last.kind = StmtKind::Break(None);
             }
-            made_continues_broken(branch, of_it);
+            made_continues_broken(branch, of_it, written);
         }
     }
 }
