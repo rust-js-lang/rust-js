@@ -1596,6 +1596,13 @@ export const { size, render } = Noop.create(3);
 - **Each field is taken whole, once, in its struct's order**, of the same
   JS name; any other literal, `size: renderer.size + 1`, or another order,
   is made as written, `export const { .. } = (() => { .. })()`.
+- **Its struct's comments are its list's**: one on lines of its own above
+  a field, `// TODO: Remove this after callers migrate.`, is above that
+  export, and one after the last field before the list's `}`, as React's
+  noop entries write theirs, `// TODO: ..` above `unstable_runWithPriority,`
+  and `// $FlowFixMe[..]` last; a field's doc comment is its `.d.ts`
+  declaration's
+  ([ADR 1037](../../decisions/1037-a-module-namespace-is-a-unit-struct-of-its-functions.md), amended).
 
 ## Constants, statics and thread-locals
 

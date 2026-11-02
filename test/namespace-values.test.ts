@@ -119,6 +119,7 @@ const picked = `use crate::noop::{Renderer, create};
 
 /// What this entry exports of the renderer.
 pub struct Picked {
+    /// The scheduler's export, its declaration's doc alone.
     #[cfg_attr(rust_js, rust_js::name = "_Scheduler")]
     pub scheduler: u32,
     // TODO: Remove this after callers migrate.
@@ -138,12 +139,17 @@ thread_local! {
 }
 `;
 
+// Its struct's comments, above a field and after the last, are its export
+// list's, as React's noop entries write theirs (rd610).
+const list = (name: string) =>
+  `export const {\n  ${name},\n  // TODO: Remove this after callers migrate.\n  render,\n  // $FlowFixMe[signature-verification-failure]\n} = `;
+
 test("a namespace thread-local of an entry's own fields of one value is that value taken apart", async () => {
   const { p, dir, read } = compiled("namespace-value-picked", picked);
   expect(p.stderr).not.toContain("error");
   expect(p.code).toBe(0);
   const js = read("entry.js");
-  expect(js).toContain("export const { _Scheduler, render } = create(3);\n");
+  expect(js).toContain(`${list("_Scheduler")}create(3);\n`);
   const types = read("entry.d.ts");
   expect(types).toContain("export const _Scheduler: number;\n");
   expect(types).not.toContain("getRoot");
@@ -159,7 +165,7 @@ test("a namespace thread-local's literal of what isn't one value's same fields i
   const computed = picked.replace("scheduler: renderer.scheduler,", "scheduler: renderer.scheduler + 1,");
   const { p, dir, read } = compiled("namespace-value-computed", computed);
   expect(p.code).toBe(0);
-  expect(read("entry.js")).toContain("export const { _Scheduler, render } = (() => {\n  const renderer = create(3);\n");
+  expect(read("entry.js")).toContain(`${list("_Scheduler")}(() => {\n  const renderer = create(3);\n`);
   const ran = run(["node", "--input-type=module", "--eval", `
     const entry = await import(${JSON.stringify(join(dir, "entry.js"))});
     console.log(entry.render(2), entry._Scheduler, Object.keys(entry).join());
@@ -172,7 +178,7 @@ test("a namespace thread-local's literal of other names or another order is made
   const renamed = picked.replace('    #[cfg_attr(rust_js, rust_js::name = "_Scheduler")]\n    pub scheduler', "    pub scheduler");
   const other = compiled("namespace-value-renamed", renamed);
   expect(other.p.code).toBe(0);
-  expect(other.read("entry.js")).toContain("export const { scheduler, render } = (() => {\n");
+  expect(other.read("entry.js")).toContain(`${list("scheduler")}(() => {\n`);
   // Its literal in another order than its exports', which a getter reads in.
   const reordered = picked.replace(
     "            scheduler: renderer.scheduler,\n            render: renderer.render,\n",
@@ -180,5 +186,5 @@ test("a namespace thread-local's literal of other names or another order is made
   );
   const turned = compiled("namespace-value-reordered", reordered);
   expect(turned.p.code).toBe(0);
-  expect(turned.read("entry.js")).toContain("export const { _Scheduler, render } = (() => {\n");
+  expect(turned.read("entry.js")).toContain(`${list("_Scheduler")}(() => {\n`);
 });

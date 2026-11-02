@@ -482,3 +482,28 @@ and one reordered made as written; mutations `namespace-literal-made`,
 `namespace-literal-renamed-taken-apart` and `namespace-literal-any-order`
 (`classes/namespaces.rs`).
 
+
+## Amendment: the export list's comments are its struct's (rd610, 2026-11-02)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N; where a comment is
+changes what the JS says, not what it does.
+
+The placement left open above. **A comment on lines of its own in the
+struct of a namespace thread-local's exports, declared in the module's
+file, is in the export list: above a field, before that export; after
+the last field, before the list's `}`**, as React's noop entries write
+`// TODO: Remove this after callers migrate to alternatives.` above
+`unstable_runWithPriority,` and `// $FlowFixMe[..]` last. `to_oxc/closing.rs`'s `exported` takes them by the field
+each is above, and `split_exports` splits the printed list where the map
+places that field's export, or past the last at the list's `}`, as an
+object literal's `}` is split (ADR 0708, amended), since oxc's printer
+writes no comment before a destructuring's property; the formatter then
+writes the list a property a line. A field's doc comment stays its
+`.d.ts` declaration's alone, and a struct another file declares keeps its
+comments there.
+
+Held by `test/namespace-values.test.ts`'s lists, run in Node, and the
+mutations `export-list-comments-unread` (`to_oxc.ts`),
+`export-list-doc-listed`, `export-list-end-before-first`,
+`export-list-end-at-its-field` and `export-list-comment-of-its-own-field`
+(`to_oxc/closing.ts`).

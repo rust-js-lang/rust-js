@@ -115,6 +115,7 @@ pub fn emit(
         arms,
         tops,
         closing,
+        exports,
         imports,
         own_places,
     } = comments_of(module, sources);
@@ -264,6 +265,7 @@ pub fn emit(
         }
         // And an object's `}`, its comments before it (ADR 0708, amended).
         closing::split(&closing, map, &generated_lines, &offset, &mut splits);
+        closing::split_exports(&exports, map, &generated_lines, &offset, &mut splits);
     }
     for list in splits.values_mut() {
         list.sort_by_key(|&(column, _)| column);
@@ -435,6 +437,8 @@ struct Commented {
     tops: std::collections::HashMap<u32, u32>,
     /// Each object literal's `}` and the comments before it (`closing::end_of`).
     closing: closing::Closing,
+    /// The comments of each namespace thread-local's export list (`closing::exported`).
+    exports: closing::Exports,
     /// The comments before each import's `use`, and each re-export's `pub
     /// use`, by where it's written: in the header, above its line (rd92,
     /// rd620).
@@ -480,11 +484,12 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
     let pattern_starts = cases::pattern_starts(module, &sources.text);
     // And a call's argument, and an object literal's field, whose comments
     // oxc writes before it, on lines of their own (ADR 0708).
-    let parts = part_starts(module);
+    let parts = arguments::part_starts(module);
     let field_docs = field_docs(module);
     let argument_ends = arguments::argument_ends(module);
     let object_ends = closing::object_ends(module);
     let mut closing = Vec::new();
+    let mut exports = Vec::new();
     let param_starts = trailing::param_starts(module);
     let mut starts: Vec<u32> = spans.iter().map(|&(lo, _)| lo).chain(arms.keys().copied()).collect();
     // What's first on its line is of these alone, and a case's values,
@@ -734,6 +739,9 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         // One after an object literal's last field, before its `}` (ADR
         // 0708, amended).
         let (own_line, closed) = closing::taken(own_line, (&object_ends, &mut closing), sources, &file.comments);
+        // One in the struct of a namespace thread-local's exports, above a
+        // field or after the last, in its export list (rd610).
+        let own_line = closing::exported(own_line, (module, &mut exports), sources, (file_start, end));
         found.extend(
             (ending.iter())
                 .filter(|c| c.written)
@@ -1243,6 +1251,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
         arms: arm_comments,
         tops,
         closing,
+        exports,
         imports,
         own_places,
     }
@@ -1347,52 +1356,6 @@ fn apart(
         }
     }
     (comments, told)
-}
-
-/// Where each call's and `new`'s argument starts, and each object literal's
-/// field's value, of those that say, and where what they're parts of
-/// starts: what a comment before one in the Rust, inside what it's part
-/// of, is before in the JS, as oxc writes it (ADR 0708); and whether it's a field.
-fn part_starts(module: &Module) -> std::collections::HashMap<u32, (u32, bool)> {
-    let mut starts = std::collections::HashMap::new();
-    let mut of = |mut stmts: Vec<js::Stmt>| {
-        js::each_expr_mut(&mut stmts, &mut |e| {
-            let (spans, field): (Vec<js::Span>, bool) = match &e.kind {
-                ExprKind::Call(_, args) | ExprKind::New(_, args) => (args.iter().map(|arg| arg.span).collect(), false),
-                ExprKind::Object(props, layout) => {
-                    let values = props.iter().filter_map(|prop| match prop {
-                        // A method's too, its arrow's (ADR 0882, amended);
-                        // where its literal writes its field (rd296).
-                        js::Prop::Field(key, value) | js::Prop::Method(key, value) => {
-                            Some(layout.start(key).map_or(value.span, |at| js::Span {
-                                lo: at,
-                                hi: value.span.hi.max(at + 1),
-                            }))
-                        }
-                        _ => None,
-                    });
-                    (values.collect(), true)
-                }
-                _ => (Vec::new(), false),
-            };
-            // Of two parts at one start, the outer's, whose whole a comment before them may be inside, a
-            // struct literal's field's, `parent: x.unwrap()`, not its call's receiver's (ADR 0708, amended).
-            if !e.span.is_none() {
-                for s in spans.into_iter().filter(|s| !s.is_none()) {
-                    starts.entry(s.lo).or_insert((e.span.lo, field));
-                }
-            }
-        });
-    };
-    for item in &module.items {
-        match item {
-            js::Item::Const(c) => of(vec![StmtKind::Expr(c.value.clone()).at(js::Span::NONE)]),
-            js::Item::Statements(stmts) => of(stmts.clone()),
-            js::Item::Function(f) => of(f.body.clone()),
-            js::Item::Namespace(n) => n.methods.iter().for_each(|method| of(method.body.clone())),
-        }
-    }
-    starts
 }
 
 /// Where each object literal's field's value starts whose struct's field

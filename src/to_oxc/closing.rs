@@ -128,3 +128,88 @@ pub(super) fn lines_of(texts: &[String], code: &mut String) -> u32 {
     }
     texts.len() as u32
 }
+
+/// The comments of a namespace thread-local's export list, `export const {
+/// render, .. } = createReactNoop(..);`, each its struct's, on lines of
+/// their own (rd610): by where the field they're above starts, before its
+/// export, or of none, after the last field, by where that one starts,
+/// before the list's `}`.
+pub(super) type Exports = Vec<(u32, Vec<String>, bool)>;
+
+/// Of `own_line`, each comment inside the struct of a namespace
+/// thread-local's exports, of the file `file` spans, as the module is,
+/// `// TODO: Remove this ..` above a field, put in `exports` by the field
+/// it's above, or after the last: the rest. No statement's JS is of the
+/// struct, so nothing else places those. A doc comment is the field's
+/// own, its declaration's (`.d.ts`); one of a struct another file
+/// declares, that file's.
+pub(super) fn exported<'c>(
+    own_line: Vec<&'c crate::program::Comment>,
+    (module, exports): (&Module, &mut Exports),
+    sources: &crate::program::Sources,
+    file: (usize, usize),
+) -> Vec<&'c crate::program::Comment> {
+    let in_file = |span: js::Span| !span.is_none() && file.0 <= span.lo as usize && (span.hi as usize) <= file.1;
+    let lists: Vec<(js::Span, Vec<u32>)> = (module.items.iter())
+        .filter_map(|item| match item {
+            js::Item::Const(c) if in_file(c.fields.declared) => {
+                let fields = (c.fields.names.iter())
+                    .filter(|(_, at)| !at.is_none())
+                    .map(|(_, at)| at.lo);
+                Some((c.fields.declared, fields.collect()))
+            }
+            _ => None,
+        })
+        .collect();
+    let mut rest = Vec::new();
+    for c in own_line {
+        let list = (lists.iter()).find(|(declared, _)| declared.lo < c.lo && c.hi < declared.hi);
+        // The field it's above, or after the last.
+        let place = list
+            .filter(|_| !c.doc)
+            .and_then(|(_, fields)| match fields.iter().find(|&&lo| lo > c.hi) {
+                Some(&lo) => Some((lo, false)),
+                None => fields.last().map(|&lo| (lo, true)),
+            });
+        let Some((at, after)) = place else {
+            rest.push(c);
+            continue;
+        };
+        if !c.written {
+            continue;
+        }
+        let written = sources.text[c.lo as usize..c.hi as usize].to_string();
+        match exports.iter_mut().find(|(lo, _, last)| (*lo, *last) == (at, after)) {
+            Some((_, texts, _)) => texts.push(written),
+            None => exports.push((at, vec![written], after)),
+        }
+    }
+    rest
+}
+
+/// Each of `exports`, split in `generated_lines`: before the export its
+/// field's start is printed as, by the map, or after the last, before the
+/// list's `}` past it on its line, in `splits`.
+pub(super) fn split_exports<'c>(
+    exports: &'c Exports,
+    map: &oxc_sourcemap::SourceMap,
+    generated_lines: &[&str],
+    offset: &dyn Fn(u32, u32) -> Option<u32>,
+    splits: &mut std::collections::HashMap<u32, Vec<(u32, &'c [String])>>,
+) {
+    for (at, texts, after) in exports {
+        let found = (map.get_tokens())
+            .filter(|t| offset(t.get_src_line(), t.get_src_col()) == Some(*at))
+            .map(|t| (t.get_dst_line(), t.get_dst_col()))
+            .min();
+        let Some((line, column)) = found else { continue };
+        let column = match after {
+            false => Some(column),
+            true => (generated_lines.get(line as usize))
+                .and_then(|text| text.get(column as usize..)?.find('}').map(|i| column + i as u32)),
+        };
+        if let Some(column) = column {
+            splits.entry(line).or_default().push((column, texts.as_slice()));
+        }
+    }
+}

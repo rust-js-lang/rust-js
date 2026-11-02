@@ -27,14 +27,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments.test.ts", "-t", "what its test's take"],
   },
   {
-    name: "method-field-comment-inside",
-    breaks: "a comment before a field that's a method, ReactNoopUpdateQueue's `// Forces an update.`, is in the method's body, and the blank line before it lost",
-    file: "src/to_oxc.rs",
-    find: "                        js::Prop::Field(key, value) | js::Prop::Method(key, value) => {\n",
-    replace: "                        js::Prop::Field(key, value) => {\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "field that's a method"],
-  },
-  {
     name: "class-doc-unattached",
     breaks: "a class struct's `///` doc isn't before its constructor function, `/** Base class helpers .. */ function Component` (ADR 0761)",
     file: "src/to_oxc.rs",
@@ -526,14 +518,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments-inside.test.ts", "-t", "a block comment after an argument.s comma is after the argument"],
   },
   {
-    name: "inner-part-start-kept",
-    breaks: "a comment before a struct literal's field whose value is a method call, `parent: x.unwrap()`, is before the `return {`, as the call's receiver's part takes its start (ADR 0708, amended)",
-    file: "src/to_oxc.rs",
-    find: "                    starts.entry(s.lo).or_insert((e.span.lo, field));\n",
-    replace: "                    starts.insert(s.lo, (e.span.lo, field));\n",
-    tests: ["test/lowering-comment-fields.test.ts", "-t", "a blank line before a method call's field"],
-  },
-  {
     name: "default-arm-comment-before-switch",
     breaks: "React's `// Fall through` before getTag's `_` arm is printed before the `switch`, a synthetic `// Fallthrough` before `default:` (ADR 0905, amended)",
     file: "src/to_oxc.rs",
@@ -747,5 +731,13 @@ export const mutations: Mutation[] = [
     find: "                    .then(|| trailing::opened_on(&sources.text, (line_start, c.lo as usize)))\n",
     replace: "                    .then(|| None::<u32>)\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "a comment after an argument.s closing brackets"],
+  },
+  {
+    name: "export-list-comments-unread",
+    breaks: "the comments of a namespace thread-local's struct, `// TODO: Remove this ..` above a field, aren't in its export list, `export const { _Scheduler, render } = ..`, as React's noop entries write them (rd610)",
+    file: "src/to_oxc.rs",
+    find: "        closing::split_exports(&exports, map, &generated_lines, &offset, &mut splits);\n",
+    replace: "",
+    tests: ["test/namespace-values.test.ts", "-t", "of an entry.s own fields of one value"],
   },
 ];

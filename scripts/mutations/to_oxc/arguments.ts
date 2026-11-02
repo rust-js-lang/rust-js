@@ -28,4 +28,20 @@ export const mutations: Mutation[] = [
     replace: "        .max_by_key(|&&(lo, hi)| hi - lo)\n",
     tests,
   },
+  {
+    name: "method-field-comment-inside",
+    breaks: "a comment before a field that's a method, ReactNoopUpdateQueue's `// Forces an update.`, is in the method's body, and the blank line before it lost",
+    file: "src/to_oxc/arguments.rs",
+    find: "                        js::Prop::Field(key, value) | js::Prop::Method(key, value) => {\n",
+    replace: "                        js::Prop::Field(key, value) => {\n",
+    tests: ["test/lowering-comments.test.ts", "-t", "field that's a method"],
+  },
+  {
+    name: "inner-part-start-kept",
+    breaks: "a comment before a struct literal's field whose value is a method call, `parent: x.unwrap()`, is before the `return {`, as the call's receiver's part takes its start (ADR 0708, amended)",
+    file: "src/to_oxc/arguments.rs",
+    find: "                    starts.entry(s.lo).or_insert((e.span.lo, field));\n",
+    replace: "                    starts.insert(s.lo, (e.span.lo, field));\n",
+    tests: ["test/lowering-comment-fields.test.ts", "-t", "a blank line before a method call's field"],
+  },
 ];
