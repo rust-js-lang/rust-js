@@ -302,6 +302,17 @@ test("a library's request whose callback is a public field refuses its consumer'
   expect(native).toBe("a is ready\nno request\n");
 }, 300_000);
 
+// #476, ADR 0145, amended: a library's manifest says what its traits'
+// dictionaries carry of each associated type; a consumer's ask of what
+// they don't carry is refused, never read as `undefined` of them.
+test("a consumer's fact of a library's associated type its dictionaries don't carry is refused", () => {
+  const native = chain(join(root, "test", "crates", "refused"), "uncarried_associated_fact", ["dep", "app"], [
+    "rust-js does not support `size_of` of a type parameter yet",
+    "app.rs:8:",
+  ]);
+  expect(native).toBe("8\n");
+}, 300_000);
+
 // #374, ADR 0960: a library checks its hooks' `RefCell<Vec<Rc<dyn Fn()>>>`,
 // borrowed while they run; its consumer's `RefCell<Vec<Rc<Node>>>` isn't one
 // that may be it, a `Vec`'s `dyn` no `Node`, so its borrows aren't checked.

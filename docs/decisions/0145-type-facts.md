@@ -151,3 +151,51 @@ type naming the caller's type parameter is still resolved to its impl's:
 a std trait's that's no dictionary's, `From::from`, smallvec's
 `SmallVec::from(slice)`, reaches its impl no other way (its corpus case
 holds it).
+
+## Amendment (2026-11-02): a library's trait's associated types' facts are its manifest's (#476)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change: a
+fact read of a dictionary that doesn't carry it is `undefined`, so what
+isn't carried is refused.
+
+Since ADR 0914 (30a9fb024), a consumer that gives smallvec's `SmallVec<A>`
+an item with a destructor compiles its methods itself, from smallvec's
+MIR, `inline_capacity`'s `size_of::<A::Item>()` among them. The fact is its
+`A: Array` dictionary's, `AArray.ItemSize`, which smallvec's
+`_T__N_Array(N, TSize, dropT)` carries; but only a fact of the crate's
+own trait was a dictionary's (`carried_by`), so the consumer's was refused,
+"`size_of` of a type parameter", and smallvec's probe with it. And a
+consumer's own impl of a library's trait carried none of what the
+library's code asks of its associated types: a dictionary of it would give
+`undefined`.
+
+**A library's manifest says what each of its traits' dictionaries carry of
+each associated type, `associated`, by key, of `type_fact_params`' own
+entry of it; a consumer's dictionaries of its own impls of the trait carry
+those too, and its code reads of any dictionary of the trait what the
+manifest says, `AArray.ItemSize`.** A fact the manifest doesn't list is
+refused as before, as no dictionary of the library's carries it.
+
+```js
+// smallvec's consumer, its own `Array` for its `Pairs`, and its compiled
+// `inline_capacity`
+export const pairsArray = { size: pairsArray_size, ItemSize: 2 };
+  if (AArray.ItemSize > 0) {
+```
+
+The library contract is **library ABI 13** (`library::VERSION`): its
+manifest's shape changed, so a library compiled before must be compiled
+again, and `tooling/manifest.js` checks the new field.
+
+- Held by `test/crates/pairs/item_size_of_instance`, against native Rust:
+  a consumer giving the library's `Small<A: Array>` an item with a
+  destructor and one of no size, compiling its methods itself; by
+  `library_trait_facts_of_own_impl`, a consumer's own `Array`s, whose
+  dictionaries the library's `Default` reads; by the refused pair
+  `uncarried_associated_fact`, a consumer's `size_of` of a library's
+  associated type that its dictionaries don't carry; and by
+  `test/manifest.test.ts`'s library contract. Mutations
+  `library-associated-uncarried`, `library-trait-impls-carry-none`,
+  `uncarried-associated-read` (`lower/analysis/type_facts.ts`),
+  `associated-facts-unexported` (`lower/library.ts`) and
+  `associated-facts-unread` (`library.ts`).

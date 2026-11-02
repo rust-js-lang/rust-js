@@ -123,4 +123,12 @@ export const mutations: Mutation[] = [
     replace: '        for krate in ["core", "alloc", "std"] {\n            self.libraries.insert(krate.to_string(), exports.clone());\n        }\n',
     tests: ["test/crates.test.ts", "-t", "crate_named_core"],
   },
+  {
+    name: "associated-facts-unread",
+    breaks: "a dependency's manifest's facts of its traits' associated types are dropped as it's read, so a consumer compiling its `size_of::<A::Item>()` is refused (#476)",
+    file: "src/library.rs",
+    find: "                associated: (library.associated.into_iter())\n                    .map(|associated| (associated.key, associated.facts))\n",
+    replace: "                associated: (library.associated.into_iter())\n                    .filter(|_| false)\n                    .map(|associated| (associated.key, associated.facts))\n",
+    tests: ["test/crates.test.ts", "-t", "item_size_of_instance"],
+  },
 ];

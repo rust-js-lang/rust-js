@@ -587,4 +587,12 @@ export const mutations: Mutation[] = [
     replace: "            .is_some_and(|_| false)\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "nullable parameter its calls give null"],
   },
+  {
+    name: "associated-facts-unexported",
+    breaks: "a library's manifest says none of what its traits' dictionaries carry of their associated types, so a consumer compiling its `size_of::<A::Item>()` is refused (#476)",
+    file: "src/lower/library.rs",
+    find: "                .filter(|&(&id, _)| id.is_local() && tcx.def_kind(id) == rustc_hir::def::DefKind::AssocTy)\n",
+    replace: "                .filter(|_| false)\n",
+    tests: ["test/crates.test.ts", "-t", "item_size_of_instance"],
+  },
 ];

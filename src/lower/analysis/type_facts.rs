@@ -205,6 +205,20 @@ pub(super) fn type_fact_params<'tcx>(
         passed,
         calls,
     } = asking;
+    // Of a library's trait, only what its dictionaries carry; and each the
+    // crate's impls of one carry, as the library's code reads it of them
+    // (#476).
+    carried.retain(|&(assoc, fact)| carries(foreign, assoc, fact));
+    for &trait_id in tcx.all_local_trait_impls(()).keys() {
+        if trait_id.is_local() {
+            continue;
+        }
+        for item in tcx.associated_items(trait_id).in_definition_order() {
+            for fact in foreign.carried(item.def_id) {
+                carried.insert((item.def_id, fact));
+            }
+        }
+    }
     let mut changed = true;
     while changed {
         changed = false;
@@ -255,7 +269,7 @@ pub(super) fn type_fact_params<'tcx>(
         }
         for &(assoc, (callee, to)) in &passed_carried {
             for fact in TypeFact::ALL {
-                if asked.contains(&(callee, to, fact)) {
+                if asked.contains(&(callee, to, fact)) && carries(foreign, assoc, fact) {
                     changed |= carried.insert((assoc, fact));
                 }
             }
@@ -277,7 +291,9 @@ pub(super) fn type_fact_params<'tcx>(
             if let ty::Param(param) = ty.kind() {
                 changed |= asked.insert((imp, param.index, fact));
             }
-            if let Some(assoc) = carried_by(ty) {
+            if let Some(assoc) = carried_by(foreign, ty)
+                && carries(foreign, assoc, fact)
+            {
                 changed |= carried.insert((assoc, fact));
             }
         }
@@ -371,7 +387,7 @@ impl<'tcx> Asking<'tcx> {
                     }
                 }
             }
-            if let Some(assoc) = args.types().last().and_then(|of| carried_by(of)) {
+            if let Some(assoc) = args.types().last().and_then(|of| carried_by(foreign, of)) {
                 self.carried.insert((assoc, fact));
             }
             // A flatten's items' constant size, of `I::Item`, a std
@@ -475,16 +491,17 @@ impl<'tcx> Asking<'tcx> {
         }
         self.calls.push((caller, callee, args));
         for (index, arg) in args.iter().enumerate() {
-            if let Some(assoc) = arg.as_type().and_then(|ty| carried_by(ty)) {
+            if let Some(assoc) = arg.as_type().and_then(|ty| carried_by(foreign, ty)) {
                 self.passed_carried.push((assoc, (callee, index as u32)));
             }
         }
     }
 }
 
-/// The associated type of the crate's own trait `ty` projects, whose facts
-/// the trait's dictionaries carry: `<A as Array>::Item`.
-fn carried_by(ty: ty::Ty<'_>) -> Option<DefId> {
+/// The associated type of the crate's own trait or a library's `ty`
+/// projects, whose facts the trait's dictionaries carry: `<A as
+/// Array>::Item`. Not std's, whose facts a caller gives (ADR 0466).
+fn carried_by(foreign: &crate::lower::library::Foreign<'_, '_>, ty: ty::Ty<'_>) -> Option<DefId> {
     match ty.kind() {
         ty::Alias(
             _,
@@ -492,9 +509,18 @@ fn carried_by(ty: ty::Ty<'_>) -> Option<DefId> {
                 kind: ty::Projection { def_id },
                 ..
             },
-        ) if def_id.is_local() => Some(*def_id),
+        ) if def_id.is_local() || foreign.is_library(def_id.krate) => Some(*def_id),
         _ => None,
     }
+}
+
+/// Whether the dictionaries of `assoc`'s trait carry `fact` of it: of the
+/// crate's own trait, each its code asks; of a library's, only what its
+/// manifest says they carry, which its consumer's code may read of any of
+/// them, and the consumer's dictionaries of its own impls carry too
+/// (`Foreign::carried`, #476).
+fn carries(foreign: &crate::lower::library::Foreign<'_, '_>, assoc: DefId, fact: TypeFact) -> bool {
+    assoc.is_local() || foreign.carried(assoc).contains(&fact)
 }
 
 /// The slots of its own a caller has what its call of `callee` with `args`

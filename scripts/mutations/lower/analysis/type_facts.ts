@@ -298,4 +298,28 @@ export const mutations: Mutation[] = [
       "            if let Some(spec) = fact_specialization(tcx, typing_env, callee, args).filter(|_| false)\n                && fns.contains_key(&spec.selected.0)\n",
     tests: ["test/std-package.test.ts"],
   },
+  {
+    name: "library-associated-uncarried",
+    breaks: "a fact of a library trait's associated type, `size_of::<A::Item>()` of smallvec's code a consumer compiles, is no dictionary's, so it's refused, \"`size_of` of a type parameter\" (#476)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "        ) if def_id.is_local() || foreign.is_library(def_id.krate) => Some(*def_id),\n",
+    replace: "        ) if def_id.is_local() => Some(*def_id),\n",
+    tests: ["test/crates.test.ts", "-t", "item_size_of_instance"],
+  },
+  {
+    name: "library-trait-impls-carry-none",
+    breaks: "the crate's own impl of a library's trait carries none of what the library's code asks of its associated type, so `AArray.ItemSize` is `undefined` (#476)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "            for fact in foreign.carried(item.def_id) {\n",
+    replace: "            for fact in Vec::<TypeFact>::new() {\n",
+    tests: ["test/crates.test.ts", "-t", "library_trait_facts_of_own_impl"],
+  },
+  {
+    name: "uncarried-associated-read",
+    breaks: "a consumer's fact of a library trait's associated type that the library's dictionaries don't carry is read of them, `undefined` (#476)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "    assoc.is_local() || foreign.carried(assoc).contains(&fact)\n",
+    replace: "    assoc.is_local() || foreign.is_library(assoc.krate) || foreign.carried(assoc).contains(&fact)\n",
+    tests: ["test/crates.test.ts", "-t", "associated type its dictionaries don't carry"],
+  },
 ];

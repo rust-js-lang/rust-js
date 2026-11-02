@@ -28,8 +28,11 @@ use std::path::Path;
 /// consumer takes as the program's own data (ADR 1022, amended). 12: a
 /// function's own nullable parameters its crate's calls each give `null` or
 /// a value, `nulled_params`, which a consumer's call gives `?? null` where
-/// it may give `undefined` (ADR 0861, amended).
-pub const VERSION: u32 = 12;
+/// it may give `undefined` (ADR 0861, amended). 13: the facts its traits'
+/// dictionaries carry of each associated type, `associated`, which a
+/// consumer's dictionaries of its own impls carry too and its code reads,
+/// `AArray.ItemSize` (ADR 0145, amended).
+pub const VERSION: u32 = 13;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -296,6 +299,11 @@ pub struct Library {
     /// and its facts (ADRs 0863, amended, 0906).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub fields: Vec<Field>,
+    /// Each of its traits' associated types whose facts its dictionaries
+    /// carry, by key, `Size` of smallvec's `<A as Array>::Item`, its
+    /// `ItemSize` (ADR 0145, amended).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub associated: Vec<Associated>,
     /// Each type its modules' declarations export by name (ADR 0210,
     /// amended): a consumer's declarations import it from that module's.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -322,6 +330,15 @@ pub struct DeclaredType {
     /// which a consumer imports as it, `import type Complex from ..`.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub default: bool,
+}
+
+/// One of a library's traits' associated types, by rustc's key for it, and
+/// the facts each dictionary of the trait carries of it, by their words,
+/// as a type parameter's are (ADR 0145, amended).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Associated {
+    pub key: String,
+    pub facts: Vec<String>,
 }
 
 /// One of a library's structs' fields, by rustc's key for it, and what
@@ -458,6 +475,9 @@ pub struct Exports {
     pub built: HashSet<String>,
     /// What it says of each of its structs' fields, by key (ADR 0906).
     pub fields: HashMap<String, BTreeSet<FieldFact>>,
+    /// The facts its traits' dictionaries carry of each associated type, by
+    /// key (ADR 0145, amended).
+    pub associated: HashMap<String, Vec<String>>,
     pub items: HashMap<String, Imported>,
     pub impls: HashSet<String>,
     /// Each binding a module holds, by the module's key and the binding's
@@ -530,6 +550,9 @@ impl Dependencies {
                     .fields
                     .into_iter()
                     .map(|field| (field.key, field.facts))
+                    .collect(),
+                associated: (library.associated.into_iter())
+                    .map(|associated| (associated.key, associated.facts))
                     .collect(),
                 changed: library.changed,
                 counted_rcs: library.counted_rcs,
@@ -676,6 +699,9 @@ impl Dependencies {
                 .fields
                 .into_iter()
                 .map(|field| (field.key, field.facts))
+                .collect(),
+            associated: (library.associated.into_iter())
+                .map(|associated| (associated.key, associated.facts))
                 .collect(),
             changed: library.changed,
             counted_rcs: library.counted_rcs,

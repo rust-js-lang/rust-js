@@ -372,6 +372,19 @@ pub(super) fn exports<'tcx>(
         changed: shapes(tcx, changed.mutated.iter().chain(changed.vecs).copied()),
         ref_cells: contracts.ref_cells.clone(),
         fields: contracts.fields.clone(),
+        // What its traits' dictionaries carry of their associated types,
+        // `type_fact_params`' own entry of each (ADR 0145, amended).
+        associated: {
+            let mut associated: Vec<crate::library::Associated> = (contracts.type_facts.iter())
+                .filter(|&(&id, _)| id.is_local() && tcx.def_kind(id) == rustc_hir::def::DefKind::AssocTy)
+                .map(|(&id, facts)| crate::library::Associated {
+                    key: key(tcx, id),
+                    facts: facts.iter().map(|&(_, fact)| fact.word().to_string()).collect(),
+                })
+                .collect();
+            associated.sort_by(|a, b| a.key.cmp(&b.key));
+            associated
+        },
         identities: {
             let mut keys: Vec<String> = (identities.iter())
                 .filter(|&&id| reachable(tcx, id))
@@ -663,6 +676,19 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
                     library.items.contains_key(&key) || library.impls.contains(&key)
                 }
             })
+    }
+
+    /// What a library's trait's dictionaries carry of its associated type
+    /// `assoc`, `Size` of smallvec's `Array::Item`, as its manifest says:
+    /// what the crate's dictionaries of its own impls of the trait carry
+    /// too, and what its code may read of any (ADR 0145, amended, #476).
+    pub(super) fn carried(&self, assoc: DefId) -> Vec<super::recognition::TypeFact> {
+        (self.library(assoc.krate).filter(|library| !library.builtin))
+            .and_then(|library| library.associated.get(&key(self.tcx, assoc)))
+            .into_iter()
+            .flatten()
+            .filter_map(|word| super::recognition::TypeFact::of_word(word))
+            .collect()
     }
 
     pub(super) fn type_facts(&self, id: DefId) -> Vec<(u32, super::recognition::TypeFact)> {
