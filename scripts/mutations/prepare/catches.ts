@@ -364,14 +364,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-unwinds.test.ts", "-t", "Ok arm that sets a binding"],
   },
   {
-    name: "caught-call-at-match",
-    breaks: "what's of a `catch_unwind` closure's call, `const result = f(x)`, is where the `match` is, so a comment before the call in the closure is before the `try` (ADR 0444, amended)",
-    file: "src/prepare/catches.rs",
-    find: "        false => call.span,\n",
-    replace: "        false => span,\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "a comment in catch_unwind's closure"],
-  },
-  {
     name: "ok-binding-alias-kept",
     breaks: "`Ok(Some(f)) => return f` keeps its pattern's alias of the `try`'s value, `const value = ..; if (value) { const f = value; return f; }`",
     file: "src/prepare/catches.rs",
@@ -448,14 +440,6 @@ export const mutations: Mutation[] = [
     find: "        Some(StmtKind::If(_, then, Some(otherwise))) => {\n            for branch in [then, otherwise] {",
     replace: "        Some(StmtKind::If(_, then, Some(otherwise))) if false => {\n            for branch in [then, otherwise] {",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "an Err arm that ends the function"],
-  },
-  {
-    name: "kept-ok-at-the-match",
-    breaks: "a `catch_unwind` closure of one value, `unwrap_or(false)`'s, its comment first, has it before the `try`, isSameOriginFrame's `// Reading href can throw.` (ADR 0444, amended)",
-    file: "src/prepare/catches.rs",
-    find: "        return Some((vec![caught(vec![held.at(written.unwrap_or(of_call))])], taken));\n",
-    replace: "        return Some((vec![caught(vec![held.at(written.unwrap_or(span))])], taken));\n",
-    tests: ["test/lowering-comments-inside.test.ts", "-t", "catch_unwind closure's value"],
   },
   {
     name: "unwind-try-at-ok-arm",

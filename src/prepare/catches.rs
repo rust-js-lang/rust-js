@@ -669,18 +669,11 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
         let (binding, handler) = read_as_thrown(binding.clone(), in_catch.clone());
         StmtKind::TryCatch(tried, binding, handler).at(span)
     };
-    // What's of the call is where it is, `f(x)` of `catch_unwind(|| { ..
-    // f(x) })`, so a comment before it in the closure is before it in the
-    // `try` (ADR 0444, amended), as one before the `match` is before that.
-    let of_call = match call.span.is_none() {
-        true => span,
-        false => call.span,
-    };
-    let alone = StmtKind::Expr(call.clone()).at(of_call);
+    let alone = StmtKind::Expr(call.clone()).at(span);
     let cannot_throw = |stmt: &Stmt| cannot_throw(stmt);
     // The `Ok`'s value kept is the call's too, `return f(x)`.
     if let Some((held, written)) = held {
-        return Some((vec![caught(vec![held.at(written.unwrap_or(of_call))])], taken));
+        return Some((vec![caught(vec![held.at(written.unwrap_or(span))])], taken));
     }
     // A value the program never named, a literal the closure returns that
     // the `Ok` arms test, `Ok(true) => return 0`: each arm where the closure
@@ -703,7 +696,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     // What the `Ok` arm does can't throw: in the `try`.
     if ok.iter().all(cannot_throw) {
         let first = match &value_name {
-            Some(name) => StmtKind::Const(name.clone(), call.clone()).at(of_call),
+            Some(name) => StmtKind::Const(name.clone(), call.clone()).at(span),
             None => alone,
         };
         let tried = std::iter::once(first).chain(ok.iter().cloned()).collect();
@@ -720,7 +713,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     let tried = match &value_name {
         Some(name) => {
             out.push(StmtKind::Let(name.clone(), None).at(span));
-            StmtKind::Assign(Expr::var(name), call.clone()).at(of_call)
+            StmtKind::Assign(Expr::var(name), call.clone()).at(span)
         }
         None => alone,
     };
