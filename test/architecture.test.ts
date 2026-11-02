@@ -584,6 +584,64 @@ test("a JS form of a concept is written by the concept's owner", () => {
   expect(strays).toEqual([]);
 });
 
+// A lowering decision is made of the program's facts, MIR's or an owner's,
+// never read back from the JS made so far (AGENTS.md): whether `*r = v`
+// writes a place or replaces the object was moved from MIR's `refs` to
+// `target.kind` being a member or an index (4bfa4dea9), and a `&mut` read
+// from where one is kept, `result._0`, `holder.account`, is one too, so the
+// write replaced the slot and not the pointee (#466, P0). Each test in
+// lowering, outside tidy (whose passes rewrite JS by its shape, ADR 0659),
+// of whether a JS expression is a member or an index, its parts unread,
+// `js::ExprKind::Member(..)`, is listed by its function with what it asks:
+// a question of the JS itself (its grammar, what it evaluates, whether it
+// reads the same again), or the JS form of a place a fact has decided.
+// One marked "a fact's to ask" decides alone and is to move to a fact. A
+// new one asks the fact's owner (docs/architecture.md) instead, or says
+// here why the JS's shape is its question (ADR 1067).
+const shapeTests: Record<string, [number, string]> = {
+  "src/lower/jsx.rs jsx_values": [1, "JS's grammar: a JSX tag is a name or a member expression"],
+  "src/lower/passed_on.rs passed_on": [2, "JS's call: a member's callee is called with its object as `this`, and a namespace's member is its import's binding"],
+  "src/lower/pointers.rs read_only_pointer_to": [2, "whether the JS names a place to read again, else a cell of the value"],
+  "src/lower/pointers.rs pointer_to": [1, "a pointer to a property is its object and key, not `$ptrTo`"],
+  "src/lower/std_types/cell.rs cell_call": [2, "a fact's to ask: a quiet `RefCell`'s object replaced in a field where the cell is the field's place, which a field holding a `&RefCell` is shaped as too"],
+  "src/lower/std_types/map.rs first": [3, "JS's evaluation: what a statement evaluates first"],
+  "src/lower/mir/iter/backs.rs closed_rev": [1, "JS's evaluation: a variable's or a field's read evaluates nothing, so the receiver is read as it is"],
+  "src/lower/mir/iter/backs.rs rev_items": [1, "JS's evaluation: a variable's or a field's read evaluates nothing, so the receiver is read as it is"],
+  "src/lower/mir/iter/backs.rs reversed_inward": [1, "JS's call: a function value given as it is reads no index"],
+  "src/lower/mir/places.rs mir_place": [1, "MIR's projection and `lasting` decide; the shape is that field's read"],
+  "src/lower/mir/entries.rs read_once_tried": [3, "whether the JS reads the same again: a property's read may be a getter's"],
+  "src/lower/mir/entries.rs mir_swap_or_replace": [1, "`borrows_field` decides; the shape is the field written as a place"],
+  "src/lower/mir/calls.rs called_unbound": [1, "a name for what's called, `f` of an index"],
+  "src/lower/mir/std_calls.rs mir_text_call": [3, "JS's assignment: a formatter's text written back needs a target JS can assign"],
+  "src/lower/mir/assign.rs mir_store": [4, "`place_reference` decides `*r = v`'s place (#466); and a fact's to ask: a temporary `&mut` kept as the JS place it was read from"],
+  "src/lower/mir/assign.rs boxed_args": [2, "JS's evaluation: a property place's object named once, so the place a call writes back is fixed (ADR 0099)"],
+  "src/lower/mir/temporaries.rs flush": [2, "JS's evaluation: a property place's object named before a later argument changes it (#280)"],
+  "src/lower/mir/temporaries.rs reads_same_anywhere": [2, "whether the JS reads the same anywhere: a property's read may be a getter's"],
+};
+/** Each function's tests of a JS member's or index's shape, its parts
+ * unread: `js::ExprKind::Member(..)`, or bare `ExprKind::Index(_, _)` where
+ * the file imports `js`'s. */
+const shapeTestsOf = (text: string): Map<string, number> => {
+  const bare = /use crate::js::\{[^}]*\bExprKind\b/.test(text);
+  const counts = new Map<string, number>();
+  let fn = "";
+  for (const line of text.split("\n")) {
+    fn = line.match(/^\s*(?:pub(?:\([^)]*\))?\s+)?(?:const\s+)?(?:unsafe\s+)?fn\s+(\w+)/)?.[1] ?? fn;
+    if (/^\s*\/\//.test(line)) continue;
+    const found = [...line.matchAll(/\b(js::)?ExprKind::(?:Member|OptionalMember|Index)\((?:\.\.|_, _)\)/g)].filter((m) => m[1] || bare).length;
+    if (found) counts.set(fn, (counts.get(fn) ?? 0) + found);
+  }
+  return counts;
+};
+test("a lowering decision isn't read back from the JS's shape", () => {
+  expect([...shapeTestsOf("fn f() {\n    if matches!(t.kind, js::ExprKind::Member(..) | js::ExprKind::Index(_, _)) {}\n    // js::ExprKind::Member(..)\n    let js::ExprKind::Member(of, key) = e.kind;\n}")]).toEqual([["f", 2]]);
+  const found: Record<string, number> = {};
+  for (const file of ["src/lower.rs", ...files("src/lower")].filter((f) => f.endsWith(".rs") && !f.startsWith("src/lower/mir/tidy"))) {
+    for (const [fn, n] of shapeTestsOf(read(file))) found[`${file} ${fn}`] = n;
+  }
+  expect(found).toEqual(Object.fromEntries(Object.entries(shapeTests).map(([at, [n]]) => [at, n])));
+});
+
 // An enum's JS, `{ TAG: "Circle", _0: radius }`, is spelled by `js.rs`
 // alone, `js::TAG` and `js::positional(i)`, and a `Result`'s, `{ TAG:
 // "Ok", _0: value }`, is made, tested and read by `js::result` alone:
