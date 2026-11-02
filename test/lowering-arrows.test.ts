@@ -201,6 +201,58 @@ test("a comment in a let's function declared is where it's written", async () =>
   expect(lib.run([1, 2])).toBe(3 + 2 + 2 + 3 + 4 + 4);
 });
 
+// rd557: a function declared in a closure's body, react-markup's
+// `handleFlightError` and `handleError` in `new Promise((resolve, reject)
+// => ..)`, has its comments where they're written: not inside its first
+// statement's call, after that statement, or above the function.
+test("a comment in a closure's function declared is where it's written", async () => {
+  const dir = fixture("closure-function-comments");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::Cell;
+
+fn wrap(f: impl FnOnce(&dyn Fn(Option<String>))) {
+    f(&|id| println!("{id:?}"))
+}
+
+fn give(f: impl Fn(u32) -> Option<String>) -> Option<String> {
+    f(1)
+}
+
+pub fn run() {
+    wrap(|reject| {
+        let idx = Cell::new(1.0);
+        let stash = |n: u32| -> Option<String> {
+            // Stashed by its index.
+            let id = idx.get().to_string();
+            idx.set(idx.get() + f64::from(n));
+            Some(id)
+        };
+        let handle = |n: u32| -> Option<String> {
+            if n > 0 {
+                // Inside its if.
+                reject(stash(n));
+            }
+
+            // Any one rejects.
+            reject(None);
+            None
+        };
+        give(handle);
+    });
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(
+    "    function stash(n) {\n      // Stashed by its index.\n      const id = $displayF64(idx);\n",
+  );
+  expect(js).toContain(
+    "    function handle(n) {\n      if (n > 0) {\n        // Inside its if.\n        reject(stash(n));\n      }\n\n      // Any one rejects.\n      reject();\n",
+  );
+});
+
 // ADR 0882, amended (the user's decision, 2026-10-27): in an object that
 // has a method, each field that's an arrow is one too, of a value alone
 // as well, React's DEV dispatchers' `readContext(context) { return

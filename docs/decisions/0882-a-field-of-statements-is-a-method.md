@@ -4,7 +4,7 @@ Status: Accepted. Extends [0022](0022-closures.md)'s closures, an arrow,
 to one an object's field holds. Amended below (the user's decision,
 2026-10-26): a closure of statements a `let` binds is a function declared,
 `function deleteChild(..) { .. }`. Amended again (the user's decision,
-2026-10-27): in an object that has a method, each function field is one. Amended again (the user's rd96 decision, 2026-10-29): a function held as a value, a `let` of an `Rc` or a `Box` of a closure, is a `const` of its arrow; narrowed (the user's decision, 2026-10-29) to the program's own `Rc::new`, `Arc::new` or `Box::new`.
+2026-10-27): in an object that has a method, each function field is one. Amended again (the user's rd96 decision, 2026-10-29): a function held as a value, a `let` of an `Rc` or a `Box` of a closure, is a `const` of its arrow; narrowed (the user's decision, 2026-10-29) to the program's own `Rc::new`, `Arc::new` or `Box::new`. Amended (2026-11-02): a function declared in a closure's body has its comments where they're written.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
 difference: a method and an arrow differ in their `this` and their
@@ -229,3 +229,27 @@ handleCopy() { .. }`. React's `const commitHook = () => ..` and
 function it is", the corpus cases `dyn_fn_generic_closure_drops`,
 `rc_fn_ptr_eq` and `self_handle`, and the mutations
 `valued-of-a-bindings-box` and `made-pointer-cast-unfollowed`.
+
+## Amendment: a function declared in a closure has its comments where written
+
+React's react-markup declares `handleFlightError` and `handleError` in
+the executor of `new Promise((resolve, reject) => { .. })`. Its port, `let
+handle_error = move |error, error_info| { .. };` in `promise::new(move
+|resolve, reject| { .. })`, printed each `function`'s comments above it,
+or inside its first statement's call, `const id = $displayF64(\n// For
+Flight errors ..\nstashErrorIdx)` (rd557). What a comment is attached to
+is a start (ADR 0444, `to_oxc/starts.rs`), and a function declared in a
+function's statements had its body taken out and walked as its own; one
+declared in an arrow's body had its statements walked by none, so none of
+them was a start, and each comment went to the next start there was.
+
+**A function declared in an arrow's body is taken out and walked as one in
+a function's is** (`starts.rs`'s `take_functions`, which both ask): each
+of its statements is a start, each comment before its statement, inside
+its branch, after its blank line. Case N ([0262](0262-when-rust-and-js-disagree.md)):
+comments, which nothing runs.
+
+Held by `test/lowering-arrows.test.ts`, "a comment in a closure's function
+declared is where it's written", the corpus case
+`closure_function_comments`, run against native Rust, and the mutation
+`arrow-declared-function-unstarted`.

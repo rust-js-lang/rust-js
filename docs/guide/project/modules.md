@@ -818,8 +818,12 @@ before a struct literal's field, and a blank line, are before that field
 in its object, whatever its value is, a block, `create_instance:
 Box::new({ .. })`, too; one a closure's lone tail starts with is in its
 body, after its `=>` or a method's `{`
-([ADR 0708](../../decisions/0708-a-comment-before-an-argument-is-before-it.md), amended); and a
-comment before what the JS reads away, an arm of
+([ADR 0708](../../decisions/0708-a-comment-before-an-argument-is-before-it.md), amended); one
+in a closure's body a `let` binds inside another closure, `function
+handleError(..) { .. }` in `new Promise((resolve, reject) => ..)`, is
+where it's written in the function
+([ADR 0882](../../decisions/0882-a-field-of-statements-is-a-method.md#amendment-a-function-declared-in-a-closure-has-its-comments-where-written));
+and a comment before what the JS reads away, an arm of
 `prev?.types`, is before the statement it's in, never lost ([ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md),
 amended). A file's
 leading comments, a license's, are its JS's first
