@@ -1217,7 +1217,7 @@ pub fn shown(el: &Element, name: &str) {
         Some(&KeyframeAnimationOptions {
             duration: Some(0.0.into()),
             fill: Some("forwards"),
-            pseudo_element: Some(name),
+            pseudo_element: Some(Some(name)),
             delay: Some(10.0),
             range_start: Some("cover 0%".into()),
             ..Default::default()
@@ -1278,15 +1278,15 @@ pub fn start(document: &'static Document, transition_types: Option<Rc<RefCell<Ve
     };
     let types = transition_types.as_ref().map(|types| types.borrow());
     document.start_view_transition(Some(&StartViewTransitionOptions {
-        update: Some(&update),
-        types: types.as_ref().map(|types| types.as_slice()),
+        update: Some(Some(&update)),
+        types: Some(types.as_ref().map(|types| types.as_slice())),
     }));
 }
 
 pub fn gesture(document: &Document, transition_types: Option<&[String]>, mutation_callback: fn()) {
     document.start_view_transition(Some(&StartViewTransitionOptions {
-        update: Some(&mutation_callback),
-        types: transition_types,
+        update: Some(Some(&mutation_callback)),
+        types: Some(transition_types),
     }));
 }
 
@@ -1308,8 +1308,8 @@ pub fn locked(locks: &LockManager) -> Promise<Option<&'static Unknown>> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  function update() {\n    mutationCallback();\n    if (document.hidden) {\n      const ready = document.fonts.ready.then(() => {\n        mutationCallback();\n      });\n      return ready;\n    }\n  }\n");
-  expect(js).toContain("    document.startViewTransition({\n      update,\n      types,\n    });\n");
-  expect(js).toContain("  document.startViewTransition({\n    update: mutationCallback,\n    types: transitionTypes,\n  });\n");
+  expect(js).toContain("    document.startViewTransition({\n      update,\n      types: types ?? null,\n    });\n");
+  expect(js).toContain("  document.startViewTransition({\n    update: mutationCallback,\n    types: transitionTypes ?? null,\n  });\n");
   expect(js).toContain("  document.startViewTransition(() => {\n    mutationCallback();\n  });\n");
   expect(js).toContain("    handler: () => console.log(name),\n");
   expect(js).toContain('  return locks.request("name", (lock) => lock != null);\n');
@@ -1327,7 +1327,7 @@ pub fn locked(locks: &LockManager) -> Promise<Option<&'static Unknown>> {
   expect(given[0].types).toBe(types);
   expect(given[0].update!()).toBeUndefined();
   lib.start(document(true), undefined, () => void mutations++);
-  expect(given[1].types).toBeUndefined();
+  expect(given[1].types).toBeNull();
   const ready = given[1].update!();
   expect(ready).toBeInstanceOf(Promise);
   await ready;
@@ -1359,8 +1359,8 @@ use webapi::{Document, StartViewTransitionOptions};
 pub fn start(document: &Document, transition_types: Option<Rc<RefCell<Vec<String>>>>, mutation_callback: fn()) {
     let types = transition_types.as_ref().map(|types| types.borrow().clone());
     document.start_view_transition(Some(&StartViewTransitionOptions {
-        update: Some(&mutation_callback),
-        types: types.as_deref(),
+        update: Some(Some(&mutation_callback)),
+        types: Some(types.as_deref()),
     }));
 }
 

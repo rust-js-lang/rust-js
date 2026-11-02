@@ -324,3 +324,9 @@ nullable member, `ReadableStreamReadResult`'s `value`, the field is an
 amended, the user's decision). The two are two Rust types, each read as
 it's declared; `optional` on the second is the error it is on any field
 that isn't `nullable`'s of an `Option`.
+
+Every optional nullable member of a webapi dictionary is one now, those
+of the dictionaries a function only takes too, `RequestInit`'s `body`,
+`MouseEventInit`'s `relatedTarget`: the user's decision ([ADR
+0275](0275-nullable-writes-null.md), amended), so a program can give the
+`null` each takes, `Some(None)`.

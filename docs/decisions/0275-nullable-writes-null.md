@@ -157,14 +157,48 @@ DOMRectInit`, so a program couldn't give the `null` upstream's type
 takes. The generator writes it `#[cfg_attr(rust_js, rust_js::nullable)]
 pub root_bounds: Option<DOMRectInit>`: this decision's field, its `None`
 `null`, never left out, as JS requires the member there. It's webref's
-only one. Not yet: 92 optional nullable members of the dictionaries a
-function only takes, `RequestInit.body`, `MouseEventInit.relatedTarget`,
-are still their `T` alone, `Option<T>` left out for `None`, which can't
-say `null`; ADR 0051's amended `Option<Option<T>>` (#470) would, a change
-of each one's Rust, so it's the user's to decide.
+only one. The optional ones followed, below.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none: `null` is the
 member's `None`.
 
 Held by `test/lowering-nested-options.test.ts`'s "a dictionary's required
 nullable member's None is null" (`rootBounds: null` and a value, in Node).
+
+
+## Amendment: a dictionary's optional nullable member is one too (2026-11-02, the user's decision)
+
+A narrower type, P3. The 92 optional nullable members of the
+dictionaries a function only takes, `RequestInit`'s `BodyInit? body` and
+`AbortSignal? signal`, `MouseEventInit`'s `relatedTarget` and `view`,
+`FocusEventInit.relatedTarget`, `MessageEventInit.source`, the
+`Device*EventInit` fields, `CookieInit`'s `domain` and `expires`, were
+their `T` alone, an `Option<T>` left out for `None`, so a program
+couldn't give the `null` each takes. The user chose to widen them: the
+generator writes each as #470's field, `#[cfg_attr(rust_js,
+rust_js::nullable)] pub body: Option<Option<BodyInit<'a>>>` ([ADR
+0051](0051-generic-options.md), [ADR 0810](0810-an-optional-nullable-field-is-absent-until-set.md),
+amended): `None` left out, `Some(None)` `null`, `Some(Some(v))` the value.
+Every optional nullable member of a webapi dictionary is now one, a
+result's and a parameter's alike; one rule in `paramDictionary`, a member
+whose WebIDL type is nullable is an `Option` of its `T`, inside the
+`Option` that leaves it out where it's optional.
+
+What a program writes changes: `body: Some(Some(json.into()))`, `signal:
+Some(Some(signal))`, `update: Some(Some(&update))`; a value that's an
+`Option` already is given whole, `types: Some(transition_types)`, its
+`None` then `null` where it was left out, `types: transitionTypes ??
+null`, as upstream React's `types: transitionTypes` gives `null`.
+
+Alternatives: leave them narrower (run 12's recommendation), a source
+form unchanged but no `null` to give; a second attribute for `null` of
+a plain `Option` field, a second way to say #470's.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none: `null` is the
+member's `Some(None)`, and `None` left out as before.
+
+Held by `test/lowering-nested-options.test.ts`'s "a dictionary a function
+only takes gives its optional nullable member's null" (`body`, `signal`
+and `relatedTarget`, each of the three, in Node, and a read telling them
+apart) and `test/webapi-bindings.test.ts`'s "the webapi crate is what its
+generator writes".

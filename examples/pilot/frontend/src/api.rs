@@ -28,7 +28,7 @@ impl Failure {
 /// The server's answer's text, if it answered with a status of `ok`, or why
 /// not. A rejection, a network error or an abort, is an `Err` (`settle`).
 async fn call(url: &str, init: RequestInit<'_>, ok: u16) -> Result<String, Failure> {
-    let signal = init.signal;
+    let signal = init.signal.flatten();
     let response = match settle(window.fetch(url, Some(init))).await {
         Ok(response) => response,
         Err(_) if signal.is_some_and(AbortSignal::aborted) => return Err(Failure::Aborted),
@@ -47,7 +47,7 @@ async fn call(url: &str, init: RequestInit<'_>, ok: u16) -> Result<String, Failu
 
 fn get(signal: &AbortSignal) -> RequestInit<'_> {
     RequestInit {
-        signal: Some(signal),
+        signal: Some(Some(signal)),
         ..Default::default()
     }
 }
@@ -77,7 +77,7 @@ pub async fn create(new: &NewContact) -> Result<Contact, Failure> {
     let init = RequestInit {
         method: Some("POST"),
         headers: Some(json),
-        body: Some(body.as_str().into()),
+        body: Some(Some(body.as_str().into())),
         ..Default::default()
     };
     let text = call("/api/contacts", init, 201).await?;

@@ -85425,7 +85425,8 @@ pub struct AnimationEventInit<'a> {
     pub animation_name: Option<&'a str>,
     pub elapsed_time: Option<f64>,
     pub pseudo_element: Option<&'a str>,
-    pub animation: Option<&'a CSSAnimation>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub animation: Option<Option<&'a CSSAnimation>>,
 }
 
 unsafe impl Defined for AnimationEventInit<'_> {}
@@ -85436,8 +85437,10 @@ pub struct AnimationPlaybackEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub current_time: Option<CSSNumberish<'a>>,
-    pub timeline_time: Option<CSSNumberish<'a>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub current_time: Option<Option<CSSNumberish<'a>>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub timeline_time: Option<Option<CSSNumberish<'a>>>,
 }
 
 unsafe impl Defined for AnimationPlaybackEventInit<'_> {}
@@ -85463,7 +85466,8 @@ unsafe impl Defined for AudioBufferOptions {}
 /// The [`AudioBufferSourceOptions`](https://developer.mozilla.org/docs/Web/API/AudioBufferSourceOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Clone, Copy, Default)]
 pub struct AudioBufferSourceOptions<'a> {
-    pub buffer: Option<&'a AudioBuffer>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub buffer: Option<Option<&'a AudioBuffer>>,
     pub detune: Option<f64>,
     pub r#loop: Option<bool>,
     pub loop_end: Option<f64>,
@@ -85724,7 +85728,8 @@ pub struct ClipboardEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub clipboard_data: Option<&'a DataTransfer>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub clipboard_data: Option<Option<&'a DataTransfer>>,
 }
 
 unsafe impl Defined for ClipboardEventInit<'_> {}
@@ -85772,7 +85777,8 @@ pub struct CommandEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub source: Option<&'a Element>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub source: Option<Option<&'a Element>>,
     pub command: Option<&'a str>,
 }
 
@@ -85784,7 +85790,8 @@ pub struct CompositionEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub view: Option<&'a Window>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub view: Option<Option<&'a Window>>,
     pub detail: Option<f64>,
     pub which: Option<f64>,
     pub data: Option<&'a str>,
@@ -85826,7 +85833,8 @@ pub struct ConvolverOptions<'a> {
     pub channel_count: Option<f64>,
     pub channel_count_mode: Option<&'a str>,
     pub channel_interpretation: Option<&'a str>,
-    pub buffer: Option<&'a AudioBuffer>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub buffer: Option<Option<&'a AudioBuffer>>,
     pub disable_normalization: Option<bool>,
 }
 
@@ -85849,12 +85857,15 @@ unsafe impl Defined for CookieChangeEventInit<'_> {}
 pub struct CookieInit<'a> {
     pub name: &'a str,
     pub value: &'a str,
-    pub expires: Option<f64>,
-    pub domain: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub expires: Option<Option<f64>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub domain: Option<Option<&'a str>>,
     pub path: Option<&'a str>,
     pub same_site: Option<&'a str>,
     pub partitioned: Option<bool>,
-    pub max_age: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub max_age: Option<Option<f64>>,
 }
 
 unsafe impl Defined for CookieInit<'_> {}
@@ -85863,7 +85874,8 @@ unsafe impl Defined for CookieInit<'_> {}
 #[derive(Clone, Copy)]
 pub struct CookieStoreDeleteOptions<'a> {
     pub name: &'a str,
-    pub domain: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub domain: Option<Option<&'a str>>,
     pub path: Option<&'a str>,
     pub partitioned: Option<bool>,
 }
@@ -85903,7 +85915,8 @@ unsafe impl Defined for CSSMatrixComponentOptions {}
 #[derive(Clone, Copy, Default)]
 pub struct CSSStyleSheetInit<'a> {
     #[cfg_attr(rust_js, rust_js::name = "baseURL")]
-    pub base_url: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub base_url: Option<Option<&'a str>>,
     pub media: Option<MediaListOrStr<'a>>,
     pub disabled: Option<bool>,
 }
@@ -85947,9 +85960,12 @@ unsafe impl Defined for DelayOptions<'_> {}
 /// The [`DeviceMotionEventAccelerationInit`](https://developer.mozilla.org/docs/Web/API/DeviceMotionEventAccelerationInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Clone, Copy, Default)]
 pub struct DeviceMotionEventAccelerationInit {
-    pub x: Option<f64>,
-    pub y: Option<f64>,
-    pub z: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub x: Option<Option<f64>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub y: Option<Option<f64>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub z: Option<Option<f64>>,
 }
 
 unsafe impl Defined for DeviceMotionEventAccelerationInit {}
@@ -85971,9 +85987,12 @@ unsafe impl Defined for DeviceMotionEventInit {}
 /// The [`DeviceMotionEventRotationRateInit`](https://developer.mozilla.org/docs/Web/API/DeviceMotionEventRotationRateInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Clone, Copy, Default)]
 pub struct DeviceMotionEventRotationRateInit {
-    pub alpha: Option<f64>,
-    pub beta: Option<f64>,
-    pub gamma: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub alpha: Option<Option<f64>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub beta: Option<Option<f64>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub gamma: Option<Option<f64>>,
 }
 
 unsafe impl Defined for DeviceMotionEventRotationRateInit {}
@@ -85984,9 +86003,12 @@ pub struct DeviceOrientationEventInit {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub alpha: Option<f64>,
-    pub beta: Option<f64>,
-    pub gamma: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub alpha: Option<Option<f64>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub beta: Option<Option<f64>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub gamma: Option<Option<f64>>,
     pub absolute: Option<bool>,
 }
 
@@ -86125,7 +86147,8 @@ pub struct DragEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub view: Option<&'a Window>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub view: Option<Option<&'a Window>>,
     pub detail: Option<f64>,
     pub which: Option<f64>,
     pub ctrl_key: Option<bool>,
@@ -86148,10 +86171,12 @@ pub struct DragEventInit<'a> {
     pub client_y: Option<f64>,
     pub button: Option<f64>,
     pub buttons: Option<f64>,
-    pub related_target: Option<&'a EventTarget>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub related_target: Option<Option<&'a EventTarget>>,
     pub movement_x: Option<f64>,
     pub movement_y: Option<f64>,
-    pub data_transfer: Option<&'a DataTransfer>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub data_transfer: Option<Option<&'a DataTransfer>>,
 }
 
 unsafe impl Defined for DragEventInit<'_> {}
@@ -86174,7 +86199,8 @@ unsafe impl Defined for DynamicsCompressorOptions<'_> {}
 /// The [`ElementCreationOptions`](https://developer.mozilla.org/docs/Web/API/ElementCreationOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Clone, Copy, Default)]
 pub struct ElementCreationOptions<'a> {
-    pub custom_element_registry: Option<&'a CustomElementRegistry>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub custom_element_registry: Option<Option<&'a CustomElementRegistry>>,
     pub is: Option<&'a str>,
 }
 
@@ -86328,10 +86354,12 @@ pub struct FocusEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub view: Option<&'a Window>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub view: Option<Option<&'a Window>>,
     pub detail: Option<f64>,
     pub which: Option<f64>,
-    pub related_target: Option<&'a EventTarget>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub related_target: Option<Option<&'a EventTarget>>,
 }
 
 unsafe impl Defined for FocusEventInit<'_> {}
@@ -86424,7 +86452,8 @@ pub struct GamepadEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub gamepad: Option<&'a Gamepad>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub gamepad: Option<Option<&'a Gamepad>>,
 }
 
 unsafe impl Defined for GamepadEventInit<'_> {}
@@ -86433,7 +86462,8 @@ unsafe impl Defined for GamepadEventInit<'_> {}
 #[derive(Clone, Copy, Default)]
 pub struct GetAnimationsOptions<'a> {
     pub subtree: Option<bool>,
-    pub pseudo_element: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub pseudo_element: Option<Option<&'a str>>,
 }
 
 unsafe impl Defined for GetAnimationsOptions<'_> {}
@@ -87104,7 +87134,8 @@ unsafe impl Defined for IDBIndexParameters {}
 /// The [`IDBObjectStoreParameters`](https://developer.mozilla.org/docs/Web/API/IDBObjectStoreParameters) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Clone, Copy, Default)]
 pub struct IDBObjectStoreParameters<'a> {
-    pub key_path: Option<StrOrList<'a>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub key_path: Option<Option<StrOrList<'a>>>,
     pub auto_increment: Option<bool>,
 }
 
@@ -87125,7 +87156,8 @@ pub struct IDBVersionChangeEventInit {
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
     pub old_version: Option<f64>,
-    pub new_version: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub new_version: Option<Option<f64>>,
 }
 
 unsafe impl Defined for IDBVersionChangeEventInit {}
@@ -87219,13 +87251,16 @@ pub struct InputEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub view: Option<&'a Window>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub view: Option<Option<&'a Window>>,
     pub detail: Option<f64>,
     pub which: Option<f64>,
-    pub data: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub data: Option<Option<&'a str>>,
     pub is_composing: Option<bool>,
     pub input_type: Option<&'a str>,
-    pub data_transfer: Option<&'a DataTransfer>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub data_transfer: Option<Option<&'a DataTransfer>>,
     pub target_ranges: Option<&'a [&'a StaticRange]>,
 }
 
@@ -87250,7 +87285,8 @@ unsafe impl Defined for IntersectionObserverEntryInit<'_> {}
 /// The [`IntersectionObserverInit`](https://developer.mozilla.org/docs/Web/API/IntersectionObserverInit) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Clone, Copy, Default)]
 pub struct IntersectionObserverInit<'a> {
-    pub root: Option<ElementOrDocument<'a>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub root: Option<Option<ElementOrDocument<'a>>>,
     pub root_margin: Option<&'a str>,
     pub scroll_margin: Option<&'a str>,
     pub threshold: Option<NumberOrList<'a>>,
@@ -87266,7 +87302,8 @@ pub struct KeyboardEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub view: Option<&'a Window>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub view: Option<Option<&'a Window>>,
     pub detail: Option<f64>,
     pub which: Option<f64>,
     pub ctrl_key: Option<bool>,
@@ -87307,10 +87344,12 @@ pub struct KeyframeAnimationOptions<'a> {
     pub playback_rate: Option<f64>,
     pub duration: Option<NumberOrCSSNumericValueOrStr<'a>>,
     pub composite: Option<&'a str>,
-    pub pseudo_element: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub pseudo_element: Option<Option<&'a str>>,
     pub iteration_composite: Option<&'a str>,
     pub id: Option<&'a str>,
-    pub timeline: Option<&'a AnimationTimeline>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub timeline: Option<Option<&'a AnimationTimeline>>,
     pub range_start: Option<TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a>>,
     pub range_end: Option<TimelineRangeOffsetOrCSSNumericValueOrCSSKeywordValueOrStr<'a>>,
 }
@@ -87330,7 +87369,8 @@ pub struct KeyframeEffectOptions<'a> {
     pub playback_rate: Option<f64>,
     pub duration: Option<NumberOrCSSNumericValueOrStr<'a>>,
     pub composite: Option<&'a str>,
-    pub pseudo_element: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub pseudo_element: Option<Option<&'a str>>,
     pub iteration_composite: Option<&'a str>,
 }
 
@@ -87362,7 +87402,8 @@ pub struct MediaEncryptedEventInit<'a> {
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
     pub init_data_type: Option<&'a str>,
-    pub init_data: Option<&'a ArrayBuffer>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub init_data: Option<Option<&'a ArrayBuffer>>,
 }
 
 unsafe impl Defined for MediaEncryptedEventInit<'_> {}
@@ -87507,7 +87548,8 @@ pub struct MessageEventInit<'a> {
     pub data: Option<&'a dyn IntoUnknown>,
     pub origin: Option<&'a str>,
     pub last_event_id: Option<&'a str>,
-    pub source: Option<MessageEventSource<'a>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub source: Option<Option<MessageEventSource<'a>>>,
     pub ports: Option<&'a [&'a MessagePort]>,
 }
 
@@ -87550,7 +87592,8 @@ pub struct MouseEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub view: Option<&'a Window>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub view: Option<Option<&'a Window>>,
     pub detail: Option<f64>,
     pub which: Option<f64>,
     pub ctrl_key: Option<bool>,
@@ -87573,7 +87616,8 @@ pub struct MouseEventInit<'a> {
     pub client_y: Option<f64>,
     pub button: Option<f64>,
     pub buttons: Option<f64>,
-    pub related_target: Option<&'a EventTarget>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub related_target: Option<Option<&'a EventTarget>>,
     pub movement_x: Option<f64>,
     pub movement_y: Option<f64>,
 }
@@ -87617,12 +87661,15 @@ pub struct NavigateEventInit<'a> {
     pub user_initiated: Option<bool>,
     pub hash_change: Option<bool>,
     pub signal: &'a AbortSignal,
-    pub form_data: Option<&'a FormData>,
-    pub download_request: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub form_data: Option<Option<&'a FormData>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub download_request: Option<Option<&'a str>>,
     pub info: Option<&'a dyn IntoUnknown>,
     #[cfg_attr(rust_js, rust_js::name = "hasUAVisualTransition")]
     pub has_ua_visual_transition: Option<bool>,
-    pub source_element: Option<&'a Element>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub source_element: Option<Option<&'a Element>>,
 }
 
 unsafe impl Defined for NavigateEventInit<'_> {}
@@ -87633,7 +87680,8 @@ pub struct NavigationCurrentEntryChangeEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub navigation_type: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub navigation_type: Option<Option<&'a str>>,
     pub from: &'a NavigationHistoryEntry,
 }
 
@@ -87699,7 +87747,8 @@ pub struct NotificationOptions<'a> {
     pub vibrate: Option<VibratePattern<'a>>,
     pub timestamp: Option<f64>,
     pub renotify: Option<bool>,
-    pub silent: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub silent: Option<Option<bool>>,
     pub require_interaction: Option<bool>,
     pub data: Option<&'a dyn IntoUnknown>,
     pub actions: Option<&'a [NotificationAction]>,
@@ -87722,7 +87771,8 @@ unsafe impl Defined for OfflineAudioCompletionEventInit<'_> {}
 #[derive(Clone, Copy)]
 pub struct OfflineAudioContextOptions<'a> {
     pub number_of_channels: Option<f64>,
-    pub length: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub length: Option<Option<f64>>,
     pub sample_rate: f64,
     pub render_size_hint: Option<StrOrNumber<'a>>,
 }
@@ -87765,7 +87815,8 @@ pub struct PageRevealEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub view_transition: Option<&'a ViewTransition>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub view_transition: Option<Option<&'a ViewTransition>>,
 }
 
 unsafe impl Defined for PageRevealEventInit<'_> {}
@@ -87776,8 +87827,10 @@ pub struct PageSwapEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub activation: Option<&'a NavigationActivation>,
-    pub view_transition: Option<&'a ViewTransition>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub activation: Option<Option<&'a NavigationActivation>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub view_transition: Option<Option<&'a ViewTransition>>,
 }
 
 unsafe impl Defined for PageSwapEventInit<'_> {}
@@ -88002,7 +88055,8 @@ pub struct PointerEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub view: Option<&'a Window>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub view: Option<Option<&'a Window>>,
     pub detail: Option<f64>,
     pub which: Option<f64>,
     pub ctrl_key: Option<bool>,
@@ -88025,7 +88079,8 @@ pub struct PointerEventInit<'a> {
     pub client_y: Option<f64>,
     pub button: Option<f64>,
     pub buttons: Option<f64>,
-    pub related_target: Option<&'a EventTarget>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub related_target: Option<Option<&'a EventTarget>>,
     pub movement_x: Option<f64>,
     pub movement_y: Option<f64>,
     pub pointer_id: Option<f64>,
@@ -88158,7 +88213,8 @@ unsafe impl Defined for PublicKeyCredentialUserEntityJSON<'_> {}
 #[derive(Clone, Copy, Default)]
 pub struct PushSubscriptionOptionsInit<'a> {
     pub user_visible_only: Option<bool>,
-    pub application_server_key: Option<BufferSourceOrStr<'a>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub application_server_key: Option<Option<BufferSourceOrStr<'a>>>,
 }
 
 unsafe impl Defined for PushSubscriptionOptionsInit<'_> {}
@@ -88228,7 +88284,8 @@ unsafe impl Defined for ReportingObserverOptions<'_> {}
 pub struct RequestInit<'a> {
     pub method: Option<&'a str>,
     pub headers: Option<&'a Headers>,
-    pub body: Option<BodyInit<'a>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub body: Option<Option<BodyInit<'a>>>,
     pub referrer: Option<&'a str>,
     pub referrer_policy: Option<&'a str>,
     pub mode: Option<&'a str>,
@@ -88237,7 +88294,8 @@ pub struct RequestInit<'a> {
     pub redirect: Option<&'a str>,
     pub integrity: Option<&'a str>,
     pub keepalive: Option<bool>,
-    pub signal: Option<&'a AbortSignal>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub signal: Option<Option<&'a AbortSignal>>,
     pub duplex: Option<&'a str>,
     pub priority: Option<&'a str>,
     pub window: Option<&'a dyn IntoUnknown>,
@@ -88342,11 +88400,16 @@ unsafe impl Defined for RTCErrorInit<'_> {}
 #[derive(Clone, Copy, Default)]
 pub struct RTCLocalIceCandidateInit<'a> {
     pub candidate: Option<&'a str>,
-    pub sdp_mid: Option<&'a str>,
-    pub sdp_m_line_index: Option<f64>,
-    pub username_fragment: Option<&'a str>,
-    pub relay_protocol: Option<&'a str>,
-    pub url: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub sdp_mid: Option<Option<&'a str>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub sdp_m_line_index: Option<Option<f64>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub username_fragment: Option<Option<&'a str>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub relay_protocol: Option<Option<&'a str>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub url: Option<Option<&'a str>>,
 }
 
 unsafe impl Defined for RTCLocalIceCandidateInit<'_> {}
@@ -88376,8 +88439,10 @@ pub struct RTCPeerConnectionIceErrorEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub address: Option<&'a str>,
-    pub port: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub address: Option<Option<&'a str>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub port: Option<Option<f64>>,
     pub url: Option<&'a str>,
     pub error_code: f64,
     pub error_text: Option<&'a str>,
@@ -88391,8 +88456,10 @@ pub struct RTCPeerConnectionIceEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub candidate: Option<&'a RTCIceCandidate>,
-    pub url: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub candidate: Option<Option<&'a RTCIceCandidate>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub url: Option<Option<&'a str>>,
 }
 
 unsafe impl Defined for RTCPeerConnectionIceEventInit<'_> {}
@@ -88445,7 +88512,8 @@ unsafe impl Defined for ScrollIntoViewOptions<'_> {}
 /// The [`ScrollTimelineOptions`](https://developer.mozilla.org/docs/Web/API/ScrollTimelineOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Clone, Copy, Default)]
 pub struct ScrollTimelineOptions<'a> {
-    pub source: Option<&'a Element>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub source: Option<Option<&'a Element>>,
     pub axis: Option<&'a str>,
 }
 
@@ -88552,7 +88620,8 @@ pub struct ShadowRootInit<'a> {
     pub serializable: Option<bool>,
     pub slot_assignment: Option<&'a str>,
     pub clonable: Option<bool>,
-    pub custom_element_registry: Option<&'a CustomElementRegistry>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub custom_element_registry: Option<Option<&'a CustomElementRegistry>>,
 }
 
 unsafe impl Defined for ShadowRootInit<'_> {}
@@ -88645,8 +88714,10 @@ unsafe impl Defined for SpeechSynthesisEventInit<'_> {}
 /// The [`StartViewTransitionOptions`](https://developer.mozilla.org/docs/Web/API/StartViewTransitionOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Clone, Copy, Default)]
 pub struct StartViewTransitionOptions<'a> {
-    pub update: Option<&'a dyn IntoViewTransitionUpdateCallback>,
-    pub types: Option<&'a [String]>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub update: Option<Option<&'a dyn IntoViewTransitionUpdateCallback>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub types: Option<Option<&'a [String]>>,
 }
 
 unsafe impl Defined for StartViewTransitionOptions<'_> {}
@@ -88679,11 +88750,15 @@ pub struct StorageEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub key: Option<&'a str>,
-    pub old_value: Option<&'a str>,
-    pub new_value: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub key: Option<Option<&'a str>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub old_value: Option<Option<&'a str>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub new_value: Option<Option<&'a str>>,
     pub url: Option<&'a str>,
-    pub storage_area: Option<&'a Storage>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub storage_area: Option<Option<&'a Storage>>,
 }
 
 unsafe impl Defined for StorageEventInit<'_> {}
@@ -88713,7 +88788,8 @@ pub struct SubmitEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub submitter: Option<&'a HTMLElement>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub submitter: Option<Option<&'a HTMLElement>>,
 }
 
 unsafe impl Defined for SubmitEventInit<'_> {}
@@ -88785,7 +88861,8 @@ unsafe impl Defined for TextDecoderOptions {}
 /// The [`TimelineRangeOffset`](https://developer.mozilla.org/docs/Web/API/TimelineRangeOffset) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Clone, Copy, Default)]
 pub struct TimelineRangeOffset<'a> {
-    pub range_name: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub range_name: Option<Option<&'a str>>,
     pub offset: Option<&'a CSSNumericValue>,
 }
 
@@ -88799,7 +88876,8 @@ pub struct ToggleEventInit<'a> {
     pub composed: Option<bool>,
     pub old_state: Option<&'a str>,
     pub new_state: Option<&'a str>,
-    pub source: Option<&'a Element>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub source: Option<Option<&'a Element>>,
 }
 
 unsafe impl Defined for ToggleEventInit<'_> {}
@@ -88819,7 +88897,8 @@ pub struct TouchEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub view: Option<&'a Window>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub view: Option<Option<&'a Window>>,
     pub detail: Option<f64>,
     pub which: Option<f64>,
     pub ctrl_key: Option<bool>,
@@ -88871,7 +88950,8 @@ pub struct TrackEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub track: Option<&'a TextTrack>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub track: Option<Option<&'a TextTrack>>,
 }
 
 unsafe impl Defined for TrackEventInit<'_> {}
@@ -88885,7 +88965,8 @@ pub struct TransitionEventInit<'a> {
     pub property_name: Option<&'a str>,
     pub elapsed_time: Option<f64>,
     pub pseudo_element: Option<&'a str>,
-    pub animation: Option<&'a CSSTransition>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub animation: Option<Option<&'a CSSTransition>>,
 }
 
 unsafe impl Defined for TransitionEventInit<'_> {}
@@ -88896,7 +88977,8 @@ pub struct UIEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub view: Option<&'a Window>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub view: Option<Option<&'a Window>>,
     pub detail: Option<f64>,
     pub which: Option<f64>,
 }
@@ -88957,7 +89039,8 @@ unsafe impl Defined for VideoEncoderEncodeOptions {}
 /// The [`VideoEncoderEncodeOptionsForAvc`](https://developer.mozilla.org/docs/Web/API/VideoEncoderEncodeOptionsForAvc) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Clone, Copy, Default)]
 pub struct VideoEncoderEncodeOptionsForAvc {
-    pub quantizer: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub quantizer: Option<Option<f64>>,
 }
 
 unsafe impl Defined for VideoEncoderEncodeOptionsForAvc {}
@@ -89057,7 +89140,8 @@ unsafe impl Defined for WaveShaperOptions<'_> {}
 /// The [`WebAssemblyCompileOptions`](https://developer.mozilla.org/docs/Web/API/WebAssemblyCompileOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[derive(Clone, Copy, Default)]
 pub struct WebAssemblyCompileOptions<'a> {
-    pub imported_string_constants: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub imported_string_constants: Option<Option<&'a str>>,
     pub builtins: Option<&'a [String]>,
 }
 
@@ -89078,7 +89162,8 @@ unsafe impl Defined for WebGLContextEventInit<'_> {}
 #[derive(Clone, Copy, Default)]
 pub struct WebTransportErrorOptions<'a> {
     pub source: Option<&'a str>,
-    pub stream_error_code: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub stream_error_code: Option<Option<f64>>,
 }
 
 unsafe impl Defined for WebTransportErrorOptions<'_> {}
@@ -89100,8 +89185,10 @@ pub struct WebTransportOptions<'a> {
     pub headers: Option<HeadersInit<'a>>,
     pub server_certificate_hashes: Option<&'a [WebTransportHash<'a>]>,
     pub congestion_control: Option<&'a str>,
-    pub anticipated_concurrent_incoming_unidirectional_streams: Option<f64>,
-    pub anticipated_concurrent_incoming_bidirectional_streams: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub anticipated_concurrent_incoming_unidirectional_streams: Option<Option<f64>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub anticipated_concurrent_incoming_bidirectional_streams: Option<Option<f64>>,
     pub protocols: Option<&'a [String]>,
     pub datagrams_readable_type: Option<&'a str>,
 }
@@ -89123,7 +89210,8 @@ pub struct WheelEventInit<'a> {
     pub bubbles: Option<bool>,
     pub cancelable: Option<bool>,
     pub composed: Option<bool>,
-    pub view: Option<&'a Window>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub view: Option<Option<&'a Window>>,
     pub detail: Option<f64>,
     pub which: Option<f64>,
     pub ctrl_key: Option<bool>,
@@ -89146,7 +89234,8 @@ pub struct WheelEventInit<'a> {
     pub client_y: Option<f64>,
     pub button: Option<f64>,
     pub buttons: Option<f64>,
-    pub related_target: Option<&'a EventTarget>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub related_target: Option<Option<&'a EventTarget>>,
     pub movement_x: Option<f64>,
     pub movement_y: Option<f64>,
     pub delta_x: Option<f64>,
@@ -89198,9 +89287,12 @@ unsafe impl Defined for WorkletOptions<'_> {}
 #[derive(Clone, Copy)]
 pub struct WriteParams<'a> {
     pub r#type: &'a str,
-    pub size: Option<f64>,
-    pub position: Option<f64>,
-    pub data: Option<BufferSourceOrBlobOrStr<'a>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub size: Option<Option<f64>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub position: Option<Option<f64>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub data: Option<Option<BufferSourceOrBlobOrStr<'a>>>,
 }
 
 unsafe impl Defined for WriteParams<'_> {}

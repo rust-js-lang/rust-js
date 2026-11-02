@@ -1003,7 +1003,9 @@ export async function open(other) {
   string, a tuple an array, a struct an object.
 - **An options object is a struct of `Option` fields**, the rest
   `..Default::default()`. A `None` field is left out; an optional
-  nullable member's, an `Option<Option<T>>`, is `null` of `Some(None)`
+  nullable member's, an `Option<Option<T>>`, is `null` of `Some(None)`,
+  `RequestInit { body: Some(None), .. }`'s `body: null`, and the value of
+  `Some(Some(v))`
   ([Option and Result](types.md#option-and-result)). One of numbers,
   `bool`s and borrows is `Copy`, as a union of them is, so what a program
   kept it gives again, `add_event_listener_named(.., Some(&options))` and
@@ -1084,12 +1086,13 @@ export async function open(other) {
   `Box`, which may own what it holds; lent, a union's or a field of a
   dictionary in one, it's `Copy`, as an event handler is, so
   `start_view_transition(Some(&StartViewTransitionOptions { update:
-  Some(&update), types }))` is `startViewTransition({ update, types })`,
-  `update: Some(&mutation_callback)` of a `fn()` is `update:
+  Some(Some(&update)), types: Some(Some(&types)) }))` is
+  `startViewTransition({ update, types })`, both nullable members, `update:
+  Some(Some(&mutation_callback))` of a `fn()` is `update:
   mutationCallback`, and `start_view_transition(Some(&move || ..))` takes
   the function itself. A string in an array a binding takes is a
   `String`, as one it gives is, so a `Vec<String>` is given as it is,
-  `types: Some(&types)`, and a literal is `&["class".into()]`
+  `types: Some(Some(&types))`, and a literal is `&["class".into()]`
   ([ADR 1026](../../decisions/1026-a-callback-of-a-promise-js-resolves-gives-any-value.md)).
 - **A function JS gives is a `&'static dyn Fn` of its signature**, its
   `any` an `Option<&Unknown>`, to call, keep, or compare by

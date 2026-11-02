@@ -1026,10 +1026,13 @@ function paramDictionary(d: Def): string | { skip: string } {
       if (!chosen || object || chosen.includes(ANY)) continue;
       // A borrow in a field lives as long as the struct's: `&'a str`.
       const borrowed = chosen.replace(/&(?!')/g, "&'a ").replace(/<'_>/g, "<'a>");
-      // A required nullable member, `required DOMRectInit? rootBounds`, is an
-      // `Option` whose `None` is `null`, `#[rust_js::nullable]`, as JS
-      // requires it there (ADR 0275).
-      const nulls = m.required && m.idlType!.nullable && !borrowed.startsWith("Option<");
+      // A nullable member is an `Option` whose `None` is `null`,
+      // `#[rust_js::nullable]` (ADR 0275): a required one, `required
+      // DOMRectInit? rootBounds`, as JS requires it there; an optional one,
+      // `BodyInit? body`, inside the `Option` that leaves it out, so
+      // `Option<Option<T>>`, `Some(None)` its `null` (ADRs 0051, 0810,
+      // amended, the user's decision).
+      const nulls = m.idlType!.nullable && !borrowed.startsWith("Option<");
       const type = nulls ? `Option<${borrowed}>` : borrowed;
       fields.push({ rust: snake(m.name!), js: m.name!, type, optional: !m.required, nullable: nulls || (!m.required && type.startsWith("Option<")) });
     }

@@ -133,7 +133,7 @@ pub async fn load(url: &str) -> (f64, bool, String) {
 /// A dictionary a function takes (ADR 0102): a struct of what's given, the
 /// rest `..Default::default()`, which JS reads as not given.
 pub async fn post(url: &str, body: &str) -> String {
-    let init = RequestInit { method: Some("POST"), body: Some(body.into()), ..Default::default() };
+    let init = RequestInit { method: Some("POST"), body: Some(Some(body.into())), ..Default::default() };
     window.fetch(url, Some(init)).await.text().await
 }
 

@@ -54,7 +54,8 @@ app.append((b, "!"));                     // app.append(b, "!"), a rest paramete
   `console.log(x)`, and `console::log(())` is `console.log()`; a slice or a `Vec` of them is
   spread, `el.append(&children)` is `el.append(...children)`.
 - An options object is a struct of `Option` fields, the rest `..Default::default()`:
-  `RequestInit { method: Some("POST"), body: Some(json.into()), ..Default::default() }`.
+  `RequestInit { method: Some("POST"), body: Some(Some(json.into())), ..Default::default() }`,
+  a nullable member an `Option<Option<T>>` whose `Some(None)` is `null`.
 - A constructor is `new`, `event::new("ping", None)`, and `request::new(url, None)`. A
   window's own class is the window's method of the module's name, `window.new_event("ping", None)`,
   `new window.Event("ping")`: another window's, a frame's or jsdom's, differs from the global one

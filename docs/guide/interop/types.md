@@ -1212,8 +1212,12 @@ export function prepare(moduleLoading) {
   its `Some(Some(v))` is `v`, where it's made, set and read. webapi's
   dictionaries say it of each such member, `RTCIceCandidateInit`'s
   `sdp_mid` and `ReadableStreamReadResult`'s `value`, so a `{ value: null
-  }` JS made is `Some(None)`. `is_some()` is `entry.value !== undefined`,
-  `matches!(.., Some(None))` `entry.value === null`, `if let
+  }` JS made is `Some(None)`, and those a function only takes too,
+  `RequestInit`'s `body` and `signal`, `MouseEventInit`'s
+  `related_target`, so a program gives the `null` each takes, `body:
+  Some(None)`, and its value as `Some(Some(v))`. `is_some()` is
+  `entry.value !== undefined`, `matches!(.., Some(None))` `entry.value ===
+  null`, `if let
   Some(Some(v))` `entry.value != null`, and `flatten()` the read itself,
   its `None` `null` as a nullable field's is; a copy, a parameter's
   pattern's too, holds it so. Given whole to code that boxes, `{:?}` or a
@@ -1226,7 +1230,7 @@ export function prepare(moduleLoading) {
 
 ```rust
 use js::Unknown;
-use webapi::{RTCIceCandidateInit, ReadableStreamReadResult};
+use webapi::{BodyInit, RTCIceCandidateInit, ReadableStreamReadResult, RequestInit};
 
 pub fn chunk(ReadableStreamReadResult { done, value }: ReadableStreamReadResult) -> Option<&'static Unknown> {
     if done.unwrap_or(false) {
@@ -1243,6 +1247,14 @@ pub fn candidate() -> RTCIceCandidateInit {
     RTCIceCandidateInit {
         candidate: Some("candidate:0".to_string()),
         sdp_mid: Some(None),
+        ..Default::default()
+    }
+}
+
+pub fn post(json: Option<&str>) -> RequestInit<'_> {
+    RequestInit {
+        method: Some("POST"),
+        body: Some(json.map(BodyInit::Str)),
         ..Default::default()
     }
 }
@@ -1264,6 +1276,13 @@ export function candidate() {
   return {
     candidate: "candidate:0",
     sdpMid: null,
+  };
+}
+
+export function post(json) {
+  return {
+    method: "POST",
+    body: json ?? null,
   };
 }
 ```

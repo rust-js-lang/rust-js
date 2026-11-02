@@ -316,3 +316,58 @@ pub fn init(target: &'static Element, root: Option<f64>) -> IntersectionObserver
   expect("rootBounds" in lib.init(element, undefined)).toBe(true);
   expect(lib.init(element, 4).rootBounds).toEqual({ width: 4 });
 });
+
+// The user's decision (ADRs 0275, 0810, amended): an optional nullable
+// member of a dictionary a function only takes, `BodyInit? body` of
+// `RequestInit`, `EventTarget? relatedTarget` of `MouseEventInit`, is an
+// `Option<Option<T>>` as #470's are, so a program can give the `null` the
+// member takes: `None` leaves it out, `Some(None)` is `null`, `Some(Some(v))`
+// the value; a read of one tells the three apart.
+test("a dictionary a function only takes gives its optional nullable member's null", async () => {
+  const dir = fixture("param-dictionary-nullable-member");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use webapi::{AbortSignal, BodyInit, EventTarget, MouseEventInit, RequestInit};
+
+pub fn request<'a>(at: u32, text: &'a str, signal: &'a AbortSignal) -> RequestInit<'a> {
+    RequestInit {
+        method: Some("POST"),
+        body: match at {
+            0 => None,
+            1 => Some(None),
+            _ => Some(Some(BodyInit::Str(text))),
+        },
+        signal: if at == 1 { Some(None) } else { Some(Some(signal)) },
+        ..Default::default()
+    }
+}
+
+pub fn mouse(target: Option<&EventTarget>) -> MouseEventInit<'_> {
+    MouseEventInit {
+        related_target: Some(target),
+        client_x: Some(3.0),
+        ..Default::default()
+    }
+}
+
+pub fn body(init: &RequestInit) -> &'static str {
+    match init.body {
+        None => "missing",
+        Some(None) => "null",
+        Some(Some(_)) => "value",
+    }
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "-L", target]);
+  const lib = await import(join(dir, "lib.js"));
+  const signal = { aborted: false };
+  const made = [0, 1, 2].map((at) => lib.request(at, "t", signal));
+  // `None` is `undefined`, which WebIDL reads as left out (ADR 0810).
+  expect(made.map((init: { body?: unknown }) => init.body)).toStrictEqual([undefined, null, "t"]);
+  expect(made.map((init: { signal?: unknown }) => init.signal)).toEqual([signal, null, signal]);
+  const related = {};
+  expect(lib.mouse(undefined)).toEqual({ relatedTarget: null, clientX: 3 });
+  expect(lib.mouse(related).relatedTarget).toBe(related);
+  expect([{}, { body: null }, { body: "t" }].map(lib.body)).toEqual(["missing", "null", "value"]);
+});

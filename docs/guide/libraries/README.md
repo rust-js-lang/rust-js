@@ -376,7 +376,9 @@ How WebIDL maps to Rust, one rule for each:
   `None` is no argument: `window.fetch(url, None)` is `window.fetch(url)`
   ([ADR 0443](../../decisions/0443-a-value-a-caller-may-leave-out-is-an-option.md)).
   An options object is a struct of `Option`s, `RequestInit { method:
-  Some("POST"), ..Default::default() }`.
+  Some("POST"), ..Default::default() }`, a nullable member's an
+  `Option<Option<T>>`, `body: Some(Some(json.into()))`, whose `Some(None)`
+  is its `null`.
 - **A result that may be `null` is an `Option`;** one that may be
   `undefined` too. Of a class TypeScript says always has one, it's the
   value: `element.owner_document()` is a `&Document`, a node's an
