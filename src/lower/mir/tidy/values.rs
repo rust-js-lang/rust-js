@@ -560,7 +560,8 @@ pub(super) fn handles_in_place(body: &mut Vec<Stmt>) {
     let mut taken = std::collections::HashSet::new();
     js::names_in(body, &mut taken);
     let fresh = crate::names::fresh_in(&mut taken, "state");
-    js::statement_lists(body, &mut |stmts| {
+    // A closure's write too (#482).
+    js::each_block_mut(body, &mut |stmts| {
         let mut out = Vec::with_capacity(stmts.len());
         for stmt in std::mem::take(stmts) {
             if let StmtKind::Assign(target, value) = &stmt.kind
@@ -647,9 +648,9 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool) {
         *at_once &= !changed.contains(name);
     }
     // A flattened state's written whole through it keeps it, whose setter
-    // sets each key (ADR 1044).
+    // sets each key (ADR 1044), a closure's write too (#482).
     let mut written_whole = std::collections::HashSet::new();
-    js::each_list(body, &mut |stmts| {
+    js::each_block_mut(body, &mut |stmts| {
         for stmt in stmts.iter() {
             if let StmtKind::Assign(target, _) = &stmt.kind
                 && let ExprKind::Member(of, key) = &target.kind
@@ -660,6 +661,25 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool) {
             }
         }
     });
+    // Written whole through a handle on its `value`, `state.value = ..` of
+    // `const state = { get value() { return _5.value; } .. }`, a closure's
+    // `&mut` to a `&mut` of one: written whole too (#482).
+    loop {
+        let through: Vec<String> = (handles.iter())
+            .filter(|(name, ..)| written_whole.contains(name))
+            .filter_map(|(_, place, ..)| match &place.kind {
+                ExprKind::Member(of, key) if key == js::HELD => match &of.kind {
+                    ExprKind::Var(inner) if !written_whole.contains(inner) => Some(inner.clone()),
+                    _ => None,
+                },
+                _ => None,
+            })
+            .collect();
+        if through.is_empty() {
+            break;
+        }
+        written_whole.extend(through);
+    }
     // There, it's the handle itself where it's used, made of its place,
     // which reads the same: each whole write through it sets the object's
     // keys there (`handles_in_place`), each read is the object (#478).
@@ -672,7 +692,7 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool) {
         js::statement_lists(body, &mut |stmts| {
             stmts.retain(|stmt| !matches!(&stmt.kind, StmtKind::Const(name, _) if of(name).is_some()));
         });
-        js::each_expr_mut(body, &mut |e| {
+        let substitute = &mut |e: &mut Expr| {
             if let ExprKind::Var(v) = &e.kind
                 && let Some(handle) = of(v)
             {
@@ -681,7 +701,12 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool) {
                     ..handle.clone()
                 };
             }
-        });
+        };
+        js::each_expr_mut(body, substitute);
+        // And in the places of the handles on it, read below.
+        for (_, place, ..) in &mut handles {
+            place.each_mut(substitute);
+        }
     }
     handles
         .retain(|(name, _, _, storage)| !(matches!(storage, js::Storage::InPlace(_)) && written_whole.contains(name)));
@@ -700,7 +725,8 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool) {
         while let ExprKind::Member(of, _) = &root.kind {
             root = of;
         }
-        js::mentions_in(&rest, name) == 0 && (*at_once || matches!(root.kind, ExprKind::Var(_) | ExprKind::This))
+        js::mentions_in(&rest, name) == 0
+            && (*at_once || matches!(root.kind, ExprKind::Var(_) | ExprKind::This | ExprKind::Handle(..)))
     });
     if handles.is_empty() {
         return;

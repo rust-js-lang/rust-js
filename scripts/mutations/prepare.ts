@@ -798,11 +798,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "in-place-setter-assigns",
-    breaks: "a flattened state's handle given away sets the variable its object is, not each key (rd380)",
+    breaks:
+      "a flattened state's handle given away, a closure's `&mut` lent on, `|v| finish(state, v)`, sets the variable its object is, not each key (rd380, #482)",
     file: "src/prepare.rs",
     find: "            sets.unwrap_or_else(|| vec![StmtKind::Assign((**place).clone(), written).at(place.span)]),",
     replace: "            vec![StmtKind::Assign((**place).clone(), written).at(place.span)],",
-    tests: ["test/corpus.test.ts", "-t", "flattened_state_cell"],
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_closure_writes.rs$"],
   },
   {
     name: "this-handles-not-read-apart",

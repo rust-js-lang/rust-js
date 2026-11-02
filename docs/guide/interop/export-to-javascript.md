@@ -1155,7 +1155,8 @@ constructor takes the keys, as React's Flight client's chunk is
 `new ReactPromise("pending", null, null)`. A key an earlier variant set
 stays, as upstream's do; Rust reads it only through its variant. A
 borrow a `let` names, `let state = &mut *chunk.state.borrow_mut();`, is
-the chunk too, each whole write through it the keys; a `&mut` to the
+the chunk too, each whole write through it the keys, a closure's that
+captures it too; a `&mut` to the
 state lent to a function, `finish(&mut chunk.state.borrow_mut())`, is a
 cell of it, `{ value: chunk }`, whose value is written back key by key,
 so the class's other fields stay, whatever its variants hold (#478). Its

@@ -2,7 +2,9 @@
 
 Status: Accepted (the user's decisions, rd380, 2026-11-01). Amended
 (rd533): a let chain's borrow of it is its object too. Amended (rd432):
-its refusal points at the borrow. Amended: its declaration has its keys. Extends
+its refusal points at the borrow. Amended: its declaration has its keys.
+Amended (#482): a closure's write through a borrow it captures is the
+keys too. Extends
 [0204](0204-flattened-props.md), whose flattened field was a struct of
 named fields or a JS object, to a `RefCell` of a discriminated union
 ([0284](0284-discriminated-unions.md)), and
@@ -272,3 +274,43 @@ against native Rust, and `flattened_state_cell`; mutations
 `flattened-state-mut-the-object` (`representation.ts`),
 `let-held-through-unseen` (`drops/facts.ts`) and
 `in-place-handle-kept-whole` (`tidy/values.ts`).
+
+## Amended (2026-11-02, #482): a closure's write through a borrow it captures is the keys too
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results changed: a
+wrong answer.
+
+A borrow a `let` holds, `let state = &mut *chunk.state.borrow_mut();`,
+written whole by a closure that captures it, `let mut set = |v| *state =
+ChunkState::Initialized { .. }`, printed `chunk = { status: "fulfilled",
+value: v }`, which reassigned the variable and left the instance as it
+was; one tested and taken from, `if let Pending { value, .. } = state {
+.. *state = Blocked { .. } }`, read the instance as a cell,
+`chunk.value.status === "pending"`. Node printed `false` and `pending`
+where Rust prints `true`, `blocked` and `fulfilled b`. MIR's lowering made
+the handle on the state's keys right, `{ get value() { return chunk; },
+set value(value) { chunk.status = value.status; .. } }`; tidy's
+`read_handles` (#478) looked for a whole write through it in the body's
+own statements, not its closures', so it took the handle for one only read
+and gave its place, `chunk`, for each `value`, a write too. A closure's
+`&mut` to the `&mut` the `let` holds is a handle on the first's `value`,
+`state`, written through itself, which `read_handles` read in place
+first, leaving the state's handle read at once, `const _5 = chunk`.
+
+**A closure's whole write is one too** (`each_block_mut`, in
+`read_handles` and `handles_in_place`), and **a whole write through a
+handle on a state's handle's `value` is the state's** (`written_whole`
+followed through each handle's place, which is made of the state's
+handle then, as the body is): `chunk.status = "fulfilled"; chunk.value =
+v;` in the closure, `if (chunk.status === "pending") { .. chunk.status =
+"blocked"; chunk.value = listeners; }`. A handle given on from a closure,
+`|v| finish(state, v)`, is the handle object, whose setter sets each key,
+as before.
+
+Held by the corpus case `flattened_state_closure_writes` (each of the
+three, against native Rust), and the mutations
+`whole-writes-outside-closures`, `whole-through-a-handle-unseen`,
+`handle-places-unsubstituted` and `handle-root-kept`
+(`mir/tidy/values.ts`); `in-place-setter-assigns` (`prepare.ts`), which
+survived on `main` once #478 left no corpus case giving the handle away,
+is held by the case's lent closure again.
