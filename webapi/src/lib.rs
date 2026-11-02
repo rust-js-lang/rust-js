@@ -87235,7 +87235,8 @@ unsafe impl Defined for InputEventInit<'_> {}
 #[derive(Clone, Copy)]
 pub struct IntersectionObserverEntryInit<'a> {
     pub time: f64,
-    pub root_bounds: DOMRectInit,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub root_bounds: Option<DOMRectInit>,
     pub bounding_client_rect: DOMRectInit,
     pub intersection_rect: DOMRectInit,
     pub is_intersecting: bool,

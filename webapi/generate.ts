@@ -950,7 +950,8 @@ function rustType(t: IdlType, at: Position): string | { skip: string } {
  * A dictionary's member: `nullable` where it's optional and nullable,
  * WebIDL's `T?` or `any` a member may leave out, an `Option<Option<T>>` field whose
  * `None` isn't there and `Some(None)` is `null` (#470, ADRs 0051, 0810,
- * amended, the user's decision).
+ * amended, the user's decision); and where it's required and nullable, an
+ * `Option<T>` whose `None` is `null` (ADR 0275).
  */
 type Field = { rust: string; js: string; type: string; optional: boolean; nullable?: boolean };
 
@@ -1024,8 +1025,13 @@ function paramDictionary(d: Def): string | { skip: string } {
       const object = chosen?.includes("dyn core::any::Any") && !chosen.startsWith("&[");
       if (!chosen || object || chosen.includes(ANY)) continue;
       // A borrow in a field lives as long as the struct's: `&'a str`.
-      const type = chosen.replace(/&(?!')/g, "&'a ").replace(/<'_>/g, "<'a>");
-      fields.push({ rust: snake(m.name!), js: m.name!, type, optional: !m.required, nullable: !m.required && type.startsWith("Option<") });
+      const borrowed = chosen.replace(/&(?!')/g, "&'a ").replace(/<'_>/g, "<'a>");
+      // A required nullable member, `required DOMRectInit? rootBounds`, is an
+      // `Option` whose `None` is `null`, `#[rust_js::nullable]`, as JS
+      // requires it there (ADR 0275).
+      const nulls = m.required && m.idlType!.nullable && !borrowed.startsWith("Option<");
+      const type = nulls ? `Option<${borrowed}>` : borrowed;
+      fields.push({ rust: snake(m.name!), js: m.name!, type, optional: !m.required, nullable: nulls || (!m.required && type.startsWith("Option<")) });
     }
     if (fields.length === 0) return { skip: d.name };
     known = { fields, borrows: fields.some((f) => f.type.includes("'a")) };

@@ -284,3 +284,35 @@ pub fn mid(init: &RTCIceCandidateInit) -> String {
   ]);
   expect([{}, { sdpMid: null }, { sdpMid: "m" }].map(lib.mid)).toEqual(["None", "Some(None)", 'Some(Some("m"))']);
 });
+
+// A dictionary's required nullable member, `required DOMRectInit?
+// rootBounds`, is an `Option` whose `None` is `null`, as JS requires it
+// there, `#[rust_js::nullable]` (ADR 0275): a `None` the program gives is
+// `rootBounds: null`, never left out.
+test("a dictionary's required nullable member's None is null", async () => {
+  const dir = fixture("required-nullable-member");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use webapi::{DOMRectInit, Element, IntersectionObserverEntryInit};
+
+pub fn init(target: &'static Element, root: Option<f64>) -> IntersectionObserverEntryInit<'static> {
+    IntersectionObserverEntryInit {
+        time: 1.0,
+        root_bounds: root.map(|width| DOMRectInit { width: Some(width), ..Default::default() }),
+        bounding_client_rect: DOMRectInit::default(),
+        intersection_rect: DOMRectInit::default(),
+        is_intersecting: false,
+        is_visible: false,
+        intersection_ratio: 0.0,
+        target,
+    }
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "-L", target]);
+  const lib = await import(join(dir, "lib.js"));
+  const element = {};
+  expect(lib.init(element, undefined).rootBounds).toBe(null);
+  expect("rootBounds" in lib.init(element, undefined)).toBe(true);
+  expect(lib.init(element, 4).rootBounds).toEqual({ width: 4 });
+});

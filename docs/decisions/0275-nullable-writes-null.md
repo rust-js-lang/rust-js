@@ -147,3 +147,24 @@ or the `null` it couldn't pass.
 Held by `test/webapi-bindings.test.ts`, "a parameter that takes null is
 an Option", run; "the webapi crate is what its generator writes".
 
+
+## Amendment: a dictionary's required nullable member is one (2026-11-02)
+
+A narrower type, P3. webapi's dictionaries a function takes typed a
+required nullable member, `required DOMRectInit? rootBounds` of
+`IntersectionObserverEntryInit`, as its `T` alone, `root_bounds:
+DOMRectInit`, so a program couldn't give the `null` upstream's type
+takes. The generator writes it `#[cfg_attr(rust_js, rust_js::nullable)]
+pub root_bounds: Option<DOMRectInit>`: this decision's field, its `None`
+`null`, never left out, as JS requires the member there. It's webref's
+only one. Not yet: 92 optional nullable members of the dictionaries a
+function only takes, `RequestInit.body`, `MouseEventInit.relatedTarget`,
+are still their `T` alone, `Option<T>` left out for `None`, which can't
+say `null`; ADR 0051's amended `Option<Option<T>>` (#470) would, a change
+of each one's Rust, so it's the user's to decide.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none: `null` is the
+member's `None`.
+
+Held by `test/lowering-nested-options.test.ts`'s "a dictionary's required
+nullable member's None is null" (`rootBounds: null` and a value, in Node).
