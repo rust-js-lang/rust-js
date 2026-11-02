@@ -232,8 +232,11 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
                 .push((column, Inside::AfterEquals, &comment.text));
             continue;
         }
-        // The nearest before it whose JS is a name, a number or a string.
-        let before = {
+        // The nearest before it whose JS is a name, a number or a string;
+        // and, of a line comment's end, or a bracket that closes, an
+        // array's `]` the map places at its end, `&[""], // path`'s, an
+        // argument promoted to a constant (rd525).
+        let nearest = |of: &dyn Fn(&str, u32) -> bool| {
             let mut tokens: Vec<_> = (map.get_tokens())
                 .filter(|t| t.get_src_line() == comment.line && t.get_src_col() < comment.column)
                 .collect();
@@ -241,25 +244,34 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
             tokens
                 .into_iter()
                 .map(|t| (t.get_dst_line(), t.get_dst_col()))
-                .find(|&(line, column)| {
-                    (generated_lines.get(line as usize)).is_some_and(|text| word_end(text, column).is_some())
-                })
+                .find(|&(line, column)| (generated_lines.get(line as usize)).is_some_and(|text| of(text, column)))
+        };
+        let before = nearest(&|text, column| word_end(text, column).is_some());
+        let closed = || {
+            nearest(&|text, column| {
+                word_end(text, column).is_some()
+                    || text
+                        .get(in_bytes(text, column)..)
+                        .is_some_and(|rest| rest.starts_with([']', ')', '}']))
+            })
         };
         // Where its JS ends, of a line comment, when a later line's JS
         // follows it on its line: before that, and the `(`, `?`, `:` or
         // `,` it's after.
-        let end = before.filter(|_| !comment.inside).and_then(|(line, column)| {
-            let text = generated_lines.get(line as usize)?;
-            let later = (map.get_tokens())
-                .filter(|t| t.get_dst_line() == line && t.get_dst_col() > column && t.get_src_line() > comment.line)
-                .map(|t| t.get_dst_col())
-                .min()?;
-            let head = &text[..in_bytes(text, later)];
-            let cut = head
-                .trim_end_matches(|c: char| c.is_whitespace() || "([{?:,".contains(c))
-                .len();
-            (cut > in_bytes(text, column)).then_some((line, cut as u32))
-        });
+        let end = (before.or_else(closed))
+            .filter(|_| !comment.inside)
+            .and_then(|(line, column)| {
+                let text = generated_lines.get(line as usize)?;
+                let later = (map.get_tokens())
+                    .filter(|t| t.get_dst_line() == line && t.get_dst_col() > column && t.get_src_line() > comment.line)
+                    .map(|t| t.get_dst_col())
+                    .min()?;
+                let head = &text[..in_bytes(text, later)];
+                let cut = head
+                    .trim_end_matches(|c: char| c.is_whitespace() || "([{?:,".contains(c))
+                    .len();
+                (cut > in_bytes(text, column)).then_some((line, cut as u32))
+            });
         // Of one inside with no such code before it on its line, the code
         // nearest after it there, which it's before.
         let next = || {

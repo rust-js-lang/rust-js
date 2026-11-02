@@ -716,7 +716,7 @@ static's array is after that item", run, and the mutation
 `static-array-items-unplaced` (`literals.ts`).
 
 An array a function's body borrows, `f(1, &[""], // path`, rustc's
-promoted constant, still prints the comment after the call's `)`.
+promoted constant, printed the comment after the call's `)` (since: see the rd525 amendment below).
 
 ## Amendment: a comment after an array's statement is after the statement (rd605, 2026-11-02)
 
@@ -745,3 +745,23 @@ opened nothing. Held by the corpus's `array_trailing_comments`, run
 against native Rust, `lowering-comment-fields.test.ts`, and the
 mutations `statement-comment-on-last-item` and
 `closed-lines-past-their-brackets` (`to_oxc/trailing.ts`).
+
+## Amendment: a comment after a promoted array argument is after it (rd525, 2026-11-02)
+
+Case N ([0262](0262-when-rust-and-js-disagree.md)): comments.
+
+`visit(id, &[""], // path` printed `// path` after the call's `);`:
+rustc promotes the array of constants to one, whose JS the map places at
+its start and at its `]` only, from the argument's `&` and its `]`, and a
+line comment's place was found by the nearest JS before it on its line
+that is a name, a number or a string, none here. **Of a line comment's
+end, a closing bracket the map places counts too**, so it's after `[""]`,
+`[""], // path`, its line's rest on the next, as after `"root", // name`.
+A block comment inside an expression still goes after a name, number or
+string only. Held by `lowering-comments-items.test.ts`'s "a comment after
+a promoted array argument is after it", run, and the mutation
+`promoted-argument-comment-past-call` (`to_oxc/trailing.ts`).
+
+An array that isn't promoted, `&[key], // path`, still loses its
+comment: its JS has the span of the argument before it, `id`'s, so no JS
+of the comment's line is there to be after (to fix in its lowering).

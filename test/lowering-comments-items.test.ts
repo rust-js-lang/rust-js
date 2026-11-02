@@ -370,3 +370,25 @@ pub const SIZES: [u32; 3] = [
   expect(lib.TRACK_NAMES).toEqual(["Primary", "Parallel", "Parallel​", "Parallel​​"]);
   expect(lib.SIZES).toEqual([1, 2, 3]);
 });
+
+// React's Flight client, `fn(.., [''], // path`: a line comment after an
+// argument that's an array of constants, which rustc promotes to one, the
+// map placing it at its `]`, is after that argument, not the call's `)`
+// (rd525).
+test("a comment after a promoted array argument is after it", async () => {
+  const { js, lib } = await compiled("comment-after-a-promoted-argument", `pub fn visit(id: u32, path: &[&str], name: &str, deep: bool) -> usize {
+    id as usize + path.len() + name.len() + usize::from(deep)
+}
+
+pub fn walk(id: u32) -> usize {
+    visit(
+        id,
+        &[""], // path
+        "root", // name
+        true,
+    )
+}
+`);
+  expect(js).toContain('    id,\n    [""], // path\n    "root", // name\n    true,\n  );');
+  expect((lib.walk as (id: number) => number)(1)).toBe(7);
+});

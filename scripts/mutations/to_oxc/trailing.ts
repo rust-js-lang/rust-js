@@ -149,4 +149,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^array_trailing_comments\\.rs$"],
     snapshots: true,
   },
+  {
+    name: "promoted-argument-comment-past-call",
+    breaks:
+      "a line comment after an argument promoted to a constant, `&[\"\"], // path`, whose JS the map places only at its `]`, is after the call's `);`, not after `[\"\"],` (rd525)",
+    file: "src/to_oxc/trailing.rs",
+    find: "        let end = (before.or_else(closed))\n",
+    replace: "        let end = before.or(None::<(u32, u32)>.filter(|_| { let _ = closed; false }))\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "a comment after a promoted array argument"],
+  },
 ];
