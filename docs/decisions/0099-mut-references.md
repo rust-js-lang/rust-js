@@ -495,3 +495,26 @@ written back, each its own `const item`, so five are `item$1` to
 `item$5`, as six `*first(&mut v) += five`s already give `value` to
 `value$5`. The name is the one `fixed_place_of` gives a place's object;
 a program that does one in a scope gets `item`.
+
+## Amendment: a projected field holding `&mut` is not its pointee's place (2026-11-02)
+
+`*map.get_mut(key).ok_or_else(..)? = next` must update the map's
+object. The assignment's projected MIR base holds `&mut Account`, and
+its JS target can be `result._0`. Treating every member or index target
+as an immediate storage place wrote `result._0 = next`, replacing only
+the temporary `Result` payload. A native `42` became `0` in JS. This was
+found in a full-stack app's copy-on-write order transaction, which
+returned success without committing its orders or audit events.
+
+Whole-object assignment now distinguishes a projected reference holder
+from a local whose lowering already names a concrete place. It follows
+MIR copies and moves from fields too: `?` can move a payload's reference
+into an unprojected temporary whose JS is still `result._0`.
+A reference loaded from such a holder updates its pointee in place.
+The direct `Vec` item replacement rule remains unchanged. This is ADR
+0262's results-change case: preserve Rust's behavior.
+
+`test/lowering-result-references.test.ts` compares BTreeMap, HashMap,
+Option::as_mut, and a holder's `&mut` field with native Rust; it also
+checks a direct Vec item replacement. The mutation
+`projected-mut-reference-replaces-holder` restores the lost writes.

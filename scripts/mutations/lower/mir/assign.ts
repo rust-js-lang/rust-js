@@ -34,10 +34,18 @@ export const mutations: Mutation[] = [
     breaks:
       "`*r = p` of a `&mut` that's `v[i]`'s place is `$assign(v[i], p)`, the old object made `p`",
     file: "src/lower/mir/assign.rs",
-    find: "            && !matches!(target.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..))\n",
+    find: "            && (!matches!(target.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..))\n                || !base.projection.is_empty()\n                || reference_from_field(state.body, base.local))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_item_written_whole.rs$"],
     snapshots: true,
+  },
+  {
+    name: "projected-mut-reference-replaces-holder",
+    breaks: "writing through a Result or struct field holding &mut replaces the temporary holder instead of the map entry's object",
+    file: "src/lower/mir/assign.rs",
+    find: "                || reference_from_field(state.body, base.local))\n",
+    replace: "                || false)\n",
+    tests: ["test/lowering-result-references.test.ts"],
   },
   {
     name: "field-value-always-spilled",

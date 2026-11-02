@@ -263,6 +263,10 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   reads back; kept elsewhere, a handle with a getter and a setter
   ([0074](../decisions/0074-mut-boxes.md),
   [0099](../decisions/0099-mut-references.md)).
+  Replacing a whole object through a `&mut` stored in a `Result`, an
+  `Option` or another struct's field changes the original object too:
+  `*map.get_mut(key).ok_or_else(..)? = next` updates the map entry,
+  rather than the temporary result's payload (0099, amended).
 - **`*r = v` replaces the value whole, as Rust's does:** an object `r` is
   becomes `v` in place, `$assign(r, v)`, so every name for it sees `v`;
   `mem::replace`, `mem::swap` and `mem::take` the same. An enum with a

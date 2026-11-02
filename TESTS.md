@@ -2,6 +2,11 @@
 
 As of 2026-10-30, `main` at `120772e2`; times are CI's, check run 41022723550.
 
+Added on 2026-11-02: `test/lowering-result-references.test.ts`,
+one native/JS differential regression covering whole-object replacement
+through Result, Option and struct-held mutable references, with a direct
+Vec item control. The aggregate CI counts below are the dated baseline.
+
 | Suite | Size | What it proves | Time |
 |---|---|---|---|
 | `bun run test` | 3,725 tests in 161 files | Everything below except mutations, rustc, fuzz and the nightly's files | 11–13 min on 2 machines: each one's corpus parts, 8.5–9.6 min, then its browser files |

@@ -826,7 +826,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ty::Ref(_, _, ty::Mutability::Mut)
             )
             && self.written_in_place(place.ty(decls, self.tcx).ty)
-            && !matches!(target.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..))
+            // A projected base holds the reference, `Ok(&mut account)`
+            // or `holder.account`, not its pointee's storage place. The
+            // Member/Index target then names that reference's object;
+            // replacing the property would lose the write through it.
+            && (!matches!(target.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..))
+                || !base.projection.is_empty()
+                || reference_from_field(state.body, base.local))
         {
             let ty = place.ty(decls, self.tcx).ty;
             if let Some(writes) = self.kept_items_written(&target, &value, ty, js_span, out) {
@@ -1186,6 +1192,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Err(index) => Expr::index(object, index),
         })
     }
+}
+
+/// Whether a reference local was loaded from a field or another projected
+/// reference, through MIR's copies and moves. Its JS can still be that
+/// field, `result._0`, but the field holds a reference, not the pointee.
+fn reference_from_field(body: &mir::Body<'_>, local: Local) -> bool {
+    let mut pending = vec![local];
+    let mut seen = std::collections::HashSet::new();
+    while let Some(local) = pending.pop() {
+        if !seen.insert(local) {
+            continue;
+        }
+        for statement in body.basic_blocks.iter().flat_map(|block| &block.statements) {
+            if let StatementKind::Assign(assign) = &statement.kind
+                && assign.0.as_local() == Some(local)
+                && let Rvalue::Use(Operand::Copy(read) | Operand::Move(read), _) = &assign.1
+            {
+                if !read.projection.is_empty() {
+                    return true;
+                }
+                pending.push(read.local);
+            }
+        }
+    }
+    false
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
