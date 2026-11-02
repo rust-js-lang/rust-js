@@ -479,7 +479,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Its `<` is std's default, its impl's `partial_cmp` against 0, which
         // `None`'s `undefined` makes false; its `partial_cmp`, its impl's.
         if other {
-            let generic = matches!(ty.kind(), ty::Param(_));
+            // Of references, std's `impl PartialOrd<&B> for &A`: its
+            // referents' order, `A: PartialOrd<B>`'s, as chrono's `dt >=
+            // &DateTime::<Utc>::MIN_UTC` of a `&DateTime<Tz>` (#467).
+            let tr = match (ty.kind(), tr.args.types().nth(1).map(|rhs| *rhs.kind())) {
+                (ty::Ref(_, a, _), Some(ty::Ref(_, b, _))) => ty::TraitRef::new(self.tcx, tr.def_id, [*a, b]),
+                _ => tr,
+            };
+            let generic = matches!(tr.self_ty().kind(), ty::Param(_));
             let Some(op) = operator.filter(|_| generic || self.is_user_impl(tr)) else {
                 return Ok(None);
             };

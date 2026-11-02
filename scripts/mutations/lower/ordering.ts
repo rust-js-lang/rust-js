@@ -328,4 +328,13 @@ export const mutations: Mutation[] = [
       "a transparent struct's derived order",
     ],
   },
+  {
+    name: "ordering-other-through-refs-unpeeled",
+    breaks:
+      "`&at >= &MIN` of a `&At<Z>` and a `&At<Utc>` asks for std's `impl PartialOrd<&B> for &A`, not the crate's, and is refused, as chrono's `map_local` was (#467)",
+    file: "src/lower/ordering.rs",
+    find: "                (ty::Ref(_, a, _), Some(ty::Ref(_, b, _))) => ty::TraitRef::new(self.tcx, tr.def_id, [*a, b]),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^partial_ord_other_through_refs.rs$"],
+  },
 ];

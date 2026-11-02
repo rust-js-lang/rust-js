@@ -155,6 +155,10 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
   a.encode_utf16().cmp(b.encode_utf16()))`, they order by UTF-16 units,
   an emoji before U+E000, which is JS's `sort()`
   ([0945](../decisions/0945-utf16-order-is-js-sort.md)).
+- **A type compared with another by its own `PartialOrd<B>`,** `cm < mm`
+  and `&cm < &mm` alike, is its `partial_cmp` against 0, in generic code
+  too, `fn less<A: PartialOrd<B>, B>(a: &A, b: &B) -> bool { a < b }`
+  ([0057](../decisions/0057-ordering.md), amended).
 
 - **A type's own `FromStr` is what `parse` calls,** `s.parse::<Role>()`
   calling `impl FromStr for Role`'s `from_str`

@@ -137,3 +137,27 @@ keys' own `Ord` orders them, and `f64` values make it partial. Held by
 [ADR 0687](0687-a-consumer-steps-its-iterator-as-std-does.md): `max()`,
 `min()` and the `_by` and `_by_key` ones are given the iterator, not its
 array, and step it as std's `reduce` does, each item as it comes.
+
+## Amendment: another type's order through references (#467)
+
+chrono's `map_local`, `.filter(|dt| dt >= &DateTime::<Utc>::MIN_UTC)` of
+a `&DateTime<Tz>` in code generic over `Tz`, was refused, "calling
+`PartialOrd::ge`", so chrono compiled to its types alone and an app's
+`NaiveDate::parse_from_str` was refused with it. It compiled before
+8635ec3e2 (#106), whose branch for a type ordered by another's
+`PartialOrd<B>` asked `is_user_impl` of the trait as called, `<&At<Z> as
+PartialOrd<&At<Utc>>>`, which is std's `impl PartialOrd<&B> for &A`, not
+the crate's. A regression; ADR 0262's case: Rust's behavior is kept, and
+a refusal is lifted.
+
+Of references, that order is its referents', `A: PartialOrd<B>`'s, the
+trait taken through them before its impl is asked for, or its dictionary
+in generic code: `&at >= &MIN` is `atPartialOrdAt_partialCmp(at, MIN) >=
+0`, as before #106, and `fn less<A: PartialOrd<B>, B>(a: &A, b: &B) ->
+bool { a < b }`, which the limitations listed, compiles.
+
+- `test/corpus/partial_ord_other_through_refs.rs` checks `>=`, `<=`, `<`
+  and `>` of `&At<Z>` and `&At<Utc>` in generic code against native Rust;
+  `test/limitations.test.ts` lost its line.
+- The mutation is `ordering-other-through-refs-unpeeled`
+  (`lower/ordering.rs`).
