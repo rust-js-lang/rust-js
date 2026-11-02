@@ -269,7 +269,12 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   fieldless variant, whose `Off` is a string, is reached through its place
   instead, as a number is; so is an `Rc`, whose owners share what it
   points at: `*update.next.borrow_mut() = next` is `update.next = next`
-  ([0147](../decisions/0147-replacing-through-mut.md), amended).
+  ([0147](../decisions/0147-replacing-through-mut.md), amended). A `&mut`
+  kept in a `Result`, an `Option`, a tuple or a struct's field is the
+  object too: `*map.get_mut(k).ok_or_else(..)? = v` makes the map's entry
+  `v`, `$assign(result._0, v)`, while a `Vec`'s item written whole is its
+  place, `v[$at(v, i)] = p`
+  ([0099](../decisions/0099-mut-references.md), amended).
 - **`Rc::clone` shares the one object,** as Rust's does. Where the crate
   reads an `Rc`'s counts, `Rc::strong_count` is `rc.strong`, counted where
   it's made, cloned and dropped, and the last drop runs what it points at's

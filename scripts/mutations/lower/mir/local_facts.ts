@@ -198,4 +198,51 @@ export const mutations: Mutation[] = [
     replace: "        self.offsets.in_units(local)\n",
     tests: ["test/corpus.test.ts", "-t", "^position_index_of.rs$"],
   },
+  {
+    name: "held-reference-a-place",
+    breaks:
+      "a `&mut` moved out of a `Result`'s payload, `?` of `get_mut(k).ok_or_else(..)`, is taken as its place, and `*r = v` is `result._0 = v`, the map's entry left as it was (#466)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                        None => Made::Other,\n",
+    replace: "                        None => Made::Place,\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_held_written_whole.rs$"],
+  },
+  {
+    name: "reborrow-of-held-a-place",
+    breaks:
+      "`&mut *h.account`, a reborrow of a reference a field holds, is taken as its place, and `*r = v` is `h.account = v` (#466)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                    Some(PlaceElem::Deref) | None => Made::Other,\n",
+    replace: "                    Some(PlaceElem::Deref) | None => Made::Place,\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_held_written_whole.rs$"],
+  },
+  {
+    name: "moved-reference-a-place",
+    breaks:
+      "a move of any `&mut`, `_8 = move _7` of what `?` read from a payload, is taken as its place, and `*r = v` replaces the payload (#466)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                        Made::Of(of) => places.contains(of),\n",
+    replace: "                        Made::Of(_) => true,\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_held_written_whole.rs$"],
+  },
+  {
+    name: "index-mut-not-a-place",
+    breaks:
+      "`v[i] = p` of a `Vec` of objects is `$assign(v[i], p)`, the old object made `p`, as `index_mut`'s `&mut` isn't taken as the item's place (#349)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                        self.tcx.is_lang_item(t, LangItem::IndexMut) || self.tcx.is_lang_item(t, LangItem::DerefMut)\n",
+    replace: "                        self.tcx.is_lang_item(t, LangItem::DerefMut)\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_item_written_whole.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "deref-mut-not-a-place",
+    breaks:
+      "`*cell.borrow_mut() = v` of a `RefCell` of a `dyn` is `$assign($borrowMut(cell).value, v)`, as a guard's `deref_mut` isn't taken as its value's place",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                        self.tcx.is_lang_item(t, LangItem::IndexMut) || self.tcx.is_lang_item(t, LangItem::DerefMut)\n",
+    replace: "                        self.tcx.is_lang_item(t, LangItem::IndexMut)\n",
+    tests: ["test/corpus.test.ts", "-t", "^(dyn_ref_cells|lock_destructors).rs$"],
+    snapshots: true,
+  },
 ];

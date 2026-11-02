@@ -73,17 +73,20 @@ function main() {
   const g$1 = { value: h };
   reset(g$1, [7, 8], holderGet);
   $assign(h, g$1.value);
-  first(
-    {
-      get value() {
-        return h;
+  $assign(
+    first(
+      {
+        get value() {
+          return h;
+        },
+        set value(value) {
+          h = value;
+        },
       },
-      set value(value) {
-        h = value;
-      },
-    },
-    holderGet,
-  ).value = [9];
+      holderGet,
+    ).value,
+    [9],
+  );
   console.log(`[${h[0].join(", ")}] ${$ptrEq(kept, $ptr(h, 0), 12)}`);
 
   let n = [1];

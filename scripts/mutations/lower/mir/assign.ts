@@ -34,10 +34,28 @@ export const mutations: Mutation[] = [
     breaks:
       "`*r = p` of a `&mut` that's `v[i]`'s place is `$assign(v[i], p)`, the old object made `p`",
     file: "src/lower/mir/assign.rs",
-    find: "            && !matches!(target.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..))\n",
+    find: "            && !names_place(base)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_item_written_whole.rs$"],
     snapshots: true,
+  },
+  {
+    name: "held-reference-written-as-its-place",
+    breaks:
+      "`*map.get_mut(k).ok_or_else(..)? = v` is `result._0 = v`, the `Result`'s payload replaced and the map's entry left as it was (#466)",
+    file: "src/lower/mir/assign.rs",
+    find: "            base.projection.is_empty()\n                && state.facts.place_reference(base.local)\n",
+    replace: "            base.projection.is_empty()\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_held_written_whole.rs$"],
+  },
+  {
+    name: "place-reference-written-as-a-variable",
+    breaks:
+      "a `&mut` MIR has as a place whose JS is a variable, `if let Some(r) = slot.current`'s `r`, is written `r = v`, which writes nothing it refers to (#466)",
+    file: "src/lower/mir/assign.rs",
+    find: "                && matches!(target.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..))\n        };\n",
+    replace: "        };\n",
+    tests: ["test/corpus.test.ts", "-t", "^(mut_ref_held_written_whole|vec_item_written_whole).rs$"],
   },
   {
     name: "field-value-always-spilled",

@@ -207,6 +207,11 @@ item, `v[i + k] = p` of an index spilled first, and a guard's `value`,
 Held also by the corpus's `lock_destructors`, `dyn_ref_cells`,
 `generic_deref_mut` and `mut_assoc_through_dictionary`.
 
+Which `r` is a known place is MIR's answer, not its JS's: a member or an
+index is also the slot of a `&mut` kept in a payload or a field,
+`result._0`, whose object the write makes `v` (#466,
+[0099](0099-mut-references.md), amended).
+
 ## Amendment: a swap of two places is JS's own (#369)
 
 `std::mem::swap(&mut lower[0][r], &mut upper[r][c])` was `const t = ..; a

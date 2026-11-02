@@ -817,16 +817,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         self.flush(state, out)?;
         // `*r = v` of a `&mut` to an object: the object becomes `v`, so each
-        // name for it sees it. Not of one whose place is known, `v[i]` of a
-        // `Vec`'s `index_mut` written at once: the place is `v` (#349).
+        // name for it sees it. Not of one MIR has as its place,
+        // `place_reference`'s, `v[i]` of a `Vec`'s `index_mut` written at
+        // once, which JS reaches as that place: the place is `v` (#349). A
+        // `&mut` read from where one's kept, `result._0` of `get_mut(k)
+        // .ok_or(..)?`, `holder.account`, is the object's, and its slot
+        // isn't the object's place (#466).
         let decls = &state.body.local_decls;
+        let names_place = |base: mir::PlaceRef<'tcx>| {
+            base.projection.is_empty()
+                && state.facts.place_reference(base.local)
+                && matches!(target.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..))
+        };
         if let Some((base, PlaceElem::Deref)) = place.as_ref().last_projection()
             && matches!(
                 Place::ty_from(base.local, base.projection, decls, self.tcx).ty.kind(),
                 ty::Ref(_, _, ty::Mutability::Mut)
             )
             && self.written_in_place(place.ty(decls, self.tcx).ty)
-            && !matches!(target.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..))
+            && !names_place(base)
         {
             let ty = place.ty(decls, self.tcx).ty;
             if let Some(writes) = self.kept_items_written(&target, &value, ty, js_span, out) {

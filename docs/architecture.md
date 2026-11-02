@@ -248,6 +248,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Generic iterator evidence | `iterators.rs` | `given_as_it_is`, `iterator_dictionary`, `iterator_evidence`; which functions step one, `analysis/iterator_steps.rs` |
 | Array stepping and lent iterators | `iterators.rs` | `stepped_items`, `is_stepped_items`, `iterated`, `lent_iterator`, `unlent` |
 | Mutable-reference boxes and copy-back | `mut_refs.rs` | `boxed`, `copied_back`, `mut_borrowed`, `nested_mut_object` |
+| Which `&mut` is the place of what it refers to, a whole write through it the place's, MIR's answer, and which is read from where one's kept, the object's, `$assign` (#466, ADR 0099, amended) | `mir/local_facts.rs` | `place_reference` |
 | Formatter output and MIR writer calls | `display.rs`; `mir/writer.rs` | `formatter_answer`, `written_of`, `builder_written`, `mir_writer_call` |
 | Function and binding references | `items.rs` | `fn_ref`, `js_ref`, `resolve_instance` |
 | Bindings held by modules, a renaming private `use` of a global too (ADR 0622, amended) | `bindings/held.rs`; `items.rs` | `held`, `held_path`; `binding_ref` |

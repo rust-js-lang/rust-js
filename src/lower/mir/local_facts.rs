@@ -100,6 +100,9 @@ pub(super) struct LocalFacts<'m, 'tcx> {
     /// Each shared reference whose referent Rust can't change while the
     /// body runs (`mir_lasting`).
     lasting: HashSet<Local>,
+    /// Each `&mut` that is the place of what it refers to
+    /// (`mir_place_references`, #466).
+    place_references: HashSet<Local>,
 }
 
 /// Of a body's calls of a `RefCell`'s, those of a place no borrow of which
@@ -268,6 +271,19 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
         self.lasting.contains(&local)
     }
 
+    /// Whether `local`, a `&mut`, is the place of what it refers to, as
+    /// MIR makes it: a borrow of a field or an item, `&mut pair.a`, or
+    /// `v[i]` through `index_mut`, through MIR's moves and reborrows, each
+    /// way it's made. A whole write through it, `*r = v`, writes that
+    /// place. Not one read from where a reference is kept, a `Result`'s
+    /// payload `get_mut(k).ok_or(..)?` gives, a field, an item or a tuple
+    /// holding one: its JS is that slot, `result._0`, which holds the
+    /// object, and the write makes the object `v`, `$assign`; nor a
+    /// parameter, nor what another call gives (#466).
+    pub(super) fn place_reference(&self, local: Local) -> bool {
+        self.place_references.contains(&local)
+    }
+
     /// `local`'s variable, `name`, read: of one whose number a
     /// `#[rust_js::whole]` binding gave (`mir_wholes`), known whole, its
     /// `{}` JS's text of it (ADR 0994, amended).
@@ -386,8 +402,80 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             tried_ints: self.mir_tried_ints(body),
             found_indexes: self.mir_found_indexes(body),
             lasting: self.mir_lasting(body),
+            place_references: self.mir_place_references(body),
         };
         Ok((facts, bindings))
+    }
+
+    /// The locals `LocalFacts::place_reference` says: each `&mut` each of
+    /// whose writes is a borrow of a field or an item, `&mut (*x).f`, a
+    /// `index_mut` call's or a `deref_mut` call's, or a move or a reborrow,
+    /// `&mut *r`, of another such local. A move or a reborrow of what a
+    /// field, a payload or an item holds, `(_4 as Continue).0`, is the
+    /// reference read from where it's kept, not its place.
+    fn mir_place_references(&self, body: &mir::Body<'tcx>) -> HashSet<Local> {
+        enum Made {
+            Place,
+            Of(Local),
+            Other,
+        }
+        let reference = |local: Local| matches!(body.local_decls[local].ty.kind(), ty::Ref(_, _, ty::Mutability::Mut));
+        let mut made: HashMap<Local, Vec<Made>> = HashMap::new();
+        for statement in body.basic_blocks.iter().flat_map(|block| &block.statements) {
+            let StatementKind::Assign(assign) = &statement.kind else {
+                continue;
+            };
+            let (place, rvalue) = &**assign;
+            if !place.projection.is_empty() || !reference(place.local) {
+                continue;
+            }
+            let how = match rvalue {
+                Rvalue::Ref(_, _, of) => match of.projection.last() {
+                    Some(PlaceElem::Deref) if of.projection.len() == 1 => Made::Of(of.local),
+                    Some(PlaceElem::Deref) | None => Made::Other,
+                    Some(_) => Made::Place,
+                },
+                Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _) | Rvalue::CopyForDeref(of) => {
+                    match of.as_local() {
+                        Some(of) => Made::Of(of),
+                        None => Made::Other,
+                    }
+                }
+                _ => Made::Other,
+            };
+            made.entry(place.local).or_default().push(how);
+        }
+        for block in body.basic_blocks.iter() {
+            if let TerminatorKind::Call { func, destination, .. } = &block.terminator().kind
+                && destination.projection.is_empty()
+                && reference(destination.local)
+            {
+                let gives_place = func.const_fn_def().is_some_and(|(def_id, _)| {
+                    (self.tcx.trait_of_assoc(def_id)).is_some_and(|t| {
+                        self.tcx.is_lang_item(t, LangItem::IndexMut) || self.tcx.is_lang_item(t, LangItem::DerefMut)
+                    })
+                });
+                let how = if gives_place { Made::Place } else { Made::Other };
+                made.entry(destination.local).or_default().push(how);
+            }
+        }
+        // Each taken as a place till one of its ways isn't one.
+        let mut places: HashSet<Local> = made.keys().copied().collect();
+        loop {
+            let kept: HashSet<Local> = (places.iter().copied())
+                .filter(|local| {
+                    made[local].iter().all(|how| match how {
+                        Made::Place => true,
+                        Made::Of(of) => places.contains(of),
+                        Made::Other => false,
+                    })
+                })
+                .collect();
+            if kept.len() == places.len() {
+                return places;
+            }
+            places = kept;
+        }
     }
 
     /// The locals `LocalFacts::lasting` says: each `&T` parameter MIR

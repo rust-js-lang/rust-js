@@ -1,6 +1,6 @@
 # 0099. A `&mut` held in a variable names its place; one kept elsewhere is a handle
 
-Status: Accepted in part (amended 2026-10-29: a compound assignment through a call's `&mut` reads the call once): a `&mut` in a variable, the index loop, a
+Status: Accepted in part (amended 2026-11-02: a `&mut` read from where one's kept is the object's, not its slot, #466): a `&mut` in a variable, the index loop, a
 generic `&mut T`, a `&mut` to a closure, a `&mut dyn Trait` of the
 crate's, and handles of a `&mut` to a value JS can't change in place, and
 to a temporary. A generic `&mut T` to
@@ -495,3 +495,50 @@ written back, each its own `const item`, so five are `item$1` to
 `item$5`, as six `*first(&mut v) += five`s already give `value` to
 `value$5`. The name is the one `fixed_place_of` gives a place's object;
 a program that does one in a scope gets `item`.
+
+## Amendment: a `&mut` read from where one's kept is the object's, not its slot (#466)
+
+`*accounts.get_mut(key).ok_or_else(..)? = Account { balance: 42 }` left
+the map's entry as it was: native Rust gives `42`, the JS `0`. MIR moves
+the `&mut` out of the `Result`'s payload, `_7 = move (_4 as Continue).0`,
+and its JS is that slot, `result._0`; the write was `result._0 = { balance:
+42 }`, the payload replaced, the object it holds untouched. So for a
+`&mut` in a tuple, `*t.0`, a `Vec` of them, `*refs[0]`, a struct's field,
+`*holder.account`, a nested one, `*outer.inner.account`, an `Option`'s
+field, `if let Some(r) = slot.current`, one returned in an `Option` by a
+method, and `**slot.current.as_mut().unwrap()`: 17 forms, of objects and of
+`Copy` structs, gave the old value. A wrong answer, ADR 0262's "results
+change" case: Rust's behavior is kept.
+
+The cause was #349's change to [0147](0147-replacing-through-mut.md)
+(4bfa4dea9): whether `*r = v` writes the place, `target = v`, or makes the
+object `v`, `$assign(target, v)`, was asked of `target`'s JS, any member or
+index written as a place. Before it, MIR's answer was asked, `state.refs`;
+a member or an index is as much a slot that holds a reference as a place.
+MIR answers it again, once for each body: `LocalFacts::place_reference`
+(`mir_place_references`) says a `&mut` is the place of what it refers to
+where each way it's made is a borrow of a field or an item, `&mut (*x).f`,
+a call of `index_mut` or `deref_mut`, `v[i]`'s and a guard's `value`, or a
+move or a reborrow, `&mut *r`, of another such. One moved or reborrowed out
+of a field, a payload or an item is the reference read from where it's
+kept; a parameter's and another call's are the object alone. Only such a
+place is written as one, and only where its JS is one, a member or an
+index: of a place whose JS is a variable, `if let Some(a) = &mut o` of an
+`Option` JS holds as the object, `a = v` would write nothing it refers to.
+
+`v[i] = p` keeps its output, `names[$at(names, 0)] = first`, as do
+`lock_destructors`, `dyn_ref_cells` and `generic_deref_mut`.
+`mut_assoc_through_dictionary`'s `*first(&mut h) = vec![9]`, a generic
+function's `&mut`, is `$assign(first(..).value, [9])` again, as before
+#349: a call MIR can't say gives a place, so its object is made `[9]`,
+which is the same answer.
+
+- `test/corpus/mut_ref_held_written_whole.rs` checks the 17 forms, a
+  direct `Vec` item, an `Option`'s binding and a block's reborrow of a
+  field's `&mut`, `*{ &mut *h.account } = ..`, against native Rust.
+- The mutations are `held-reference-written-as-its-place`,
+  `place-reference-written-as-a-variable` (`mir/assign.rs`),
+  `held-reference-a-place`, `reborrow-of-held-a-place`,
+  `moved-reference-a-place`, `index-mut-not-a-place` and
+  `deref-mut-not-a-place` (`mir/local_facts.rs`), beside
+  `place-ref-written-in-place`.
