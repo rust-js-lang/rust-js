@@ -1,7 +1,7 @@
 # 0994. A number a binding takes is TypeScript's `number`, an `f64`
 
 Status: Accepted; amended (below; the last: a nullable one's `Some`, and
-a variable given one; and a counter, rd266). Amends [0024](0024-web-crate.md), whose WebIDL integer
+a variable given one; a counter, rd266; and a field or a function a counter's number is in, rd537). Amends [0024](0024-web-crate.md), whose WebIDL integer
 parameters were Rust integers, an `unsigned long` a `u32`; and
 [0283](0283-js-crate-covers-typescripts-es-library.md), whose typed
 arrays took their element's type and `u32`/`i32` lengths, indices and
@@ -289,7 +289,7 @@ the counter can hold.
 Held by `test/corpus/counter_shown_as_js_text.rs` (native comparison of
 counters up and down and of each kept case); mutations
 `counter-past-2-53`, `counter-negative-zero`, `counter-any-step` and
-`counter-of-itself-unknown` (`lower/mir/local_facts.ts`).
+`counter-of-itself-unknown` (moved to `lower/analysis/wholes.ts`, rd537).
 
 ## Amended (2026-11-01, rd343): a string's index and `lastIndexOf`'s position
 
@@ -312,3 +312,63 @@ an `f64`, and `last_index_of` no position, which the port wrote as a
 
 Held by `test/compiler.test.ts`' "the builtins crate's string functions
 are JS's string methods" (`test/builtins.rs`).
+
+## Amended (2026-11-02, rd537): a counter's field, and a function that gives its number
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no difference: the
+text is Rust's for every value each can hold.
+
+React's Flight reply client counts its parts' ids in a field, `let
+nextPartId = 1;`, `const blobId = nextPartId++;`, the port's `next_part_id:
+Cell<f64>` and `take_part_id(&self) -> f64`, and joins each to a name,
+upstream's `formFieldPrefix + blobId`. rd266's counter was a local's, so
+the port's `prefix + &blob_id.to_string()` was `prefix +
+$displayF64(blobId)` at 17 sites. **The rule is the crate's too**
+(`analysis/wholes.rs`, its one owner; `whole_locals` its one rule of a
+body, which `LocalFacts`' `mir_wholes` asks):
+
+- **A field is whole** where it's an `f64` or a `Cell<f64>` of a struct
+  only the program makes values of (ADR 1022), that no other crate writes
+  (not a `pub` field of a `pub` struct), and that no constant holds, each
+  write of which, a literal's, an assignment's, a `Cell`'s `set` or
+  `replace`, is whole; lent only as a `Cell` method's receiver, `get`,
+  `set` or `replace`, or shared, a number's. A read of it, its `get`'s and
+  `replace`'s result, is whole.
+- **A constant's value is rustc's**, which no body is seen writing: a
+  struct a `const`, a `static` or an associated `const` of the crate's
+  holds, of its type, or a constant a body reads, a promoted `&Fixed { n:
+  1e21 }` or an inline `const { .. }`, its fields, a reference's, an
+  array's and a tuple's too, has no whole field. `static SIGNED: Fixed =
+  Fixed { n: -0.0 }` keeps `$displayF64`.
+- **A borrow of a `Cell` field is lent** wherever it's used but as a
+  method's receiver: a call's argument, an array's or a closure's part, a
+  repeat's, or the function's result, returned to its caller, which may
+  `set(-0.0)`. Each use counted by rustc's MIR visitor, every place it's
+  read, not by the statements this rule knows.
+- **A function is whole** where its result, `_0` as a local, is.
+- **Each is taken whole first**, and one a body's write finds isn't put
+  out, until none is: the largest set, as rd266's locals, by the same
+  induction, a counter's writes being of itself.
+- **A number's text joined to text is the number**, `prefix + id`, not
+  `prefix + String(id)` (`Expr::number_joined`): JS's `+` makes a number
+  text as `String` does, whichever number it is, an integer's too. Done
+  in preparation, once tidy's done: tidy's `f += s; return f` is `return
+  s` of a text `s`, which `String(b)` is and `b` isn't, so `Display`'s
+  `write!(f, "{b}")` would give a `bool`. Not of `""`, whose `"" + n`
+  reads worse than `String(n)`. What `Expr::text_joined` made is known
+  text however tidy inlines its text, `reply.prefix` of a temporary.
+
+Why never `-0` nor past 2^53: a constant is whole only from -2^53 to 2^53
+and not `-0`; a whole number one more or less is whole, `-0` never, and
+past 2^53 it is the same number; any other write, a parameter's, a call's
+not known whole, a pointer's, a `&mut`'s or another crate's, puts it out.
+
+The other way, `js::number::to_string(id, None)` folded into `+`, is a JS
+API where Rust's `to_string()` already says it; it would be a second way
+to write a number's text. A field written `-0.0`, `1e21`, a half, lent
+mutably, to a function, to an array or by a result, a constant's or
+`pub`, and a function of `-0.0`, keep `$displayF64`.
+
+Held by `test/corpus/whole_counters.rs`, against native Rust; mutations in
+`scripts/mutations/lower/analysis/wholes.ts` and `js/make.ts`'s
+`text-joined-number-stringed`.

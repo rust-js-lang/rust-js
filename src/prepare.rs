@@ -3,9 +3,8 @@
 //! too, as a person writes them, and oxfmt lays them out where they are (ADR 0218). The printer
 //! only lays out the result.
 
-use std::collections::HashSet;
-
 use crate::js::{self, Expr, ExprKind, JsxTag, Op, Prop, Stmt, StmtKind, UnaryOp};
+use std::collections::HashSet;
 
 mod assigned_breaks;
 mod catches;
@@ -1189,6 +1188,7 @@ fn method(prop: &Prop, beside: bool) -> Option<Prop> {
 fn expr(e: &mut Expr) {
     // A global's `typeof` an earlier test of one `&&` says (ADR 0964).
     typeofs::implied(e);
+    e.number_joined(); // `s + String(n)` is `s + n` (rd537).
     // A `&mut`'s handle on a place (ADR 0099), and a `dyn`'s of one with its
     // dictionary, as JS writes it: `{ get value() { return n; }, set
     // value(value) { n = value; } }`, its parameter a name the place

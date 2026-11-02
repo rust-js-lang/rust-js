@@ -129,24 +129,6 @@ export const mutations: Mutation[] = [
     tests: ["test/webapi-bindings.test.ts", "-t", "WebIDL integer"],
   },
   {
-    name: "whole-some-payload-unread",
-    breaks:
-      "the `Some`'s number of a nullable WebIDL integer, `Some(start) => ..`, isn't known whole (ADR 0994, amended)",
-    file: "src/lower/mir/local_facts.rs",
-    find: "                    [PlaceElem::Downcast(_, some), PlaceElem::Field(..)] if some.as_u32() == 1 => {\n                        Some(Some(read.local))\n                    }\n",
-    replace: "",
-    tests: ["test/webapi-bindings.test.ts", "-t", "WebIDL integer"],
-  },
-  {
-    name: "whole-parameter-trusted",
-    breaks:
-      "a parameter set again to a WebIDL integer is known whole, though its caller gave `-0`, which `${n}` writes `0` (ADR 0994, amended)",
-    file: "src/lower/mir/local_facts.rs",
-    find: "            local.as_usize() > body.arg_count\n                && ",
-    replace: "            ",
-    tests: ["test/webapi-bindings.test.ts", "-t", "WebIDL integer"],
-  },
-  {
     name: "made-pointer-cast-unfollowed",
     breaks:
       "a `let f: Rc<dyn Fn()> = Rc::new(..)`, whose unsizing cast MIR makes, isn't the program's own `Rc`, so its closure is a function declared, not a `const` of its arrow (ADR 0882, amended)",
@@ -178,47 +160,6 @@ export const mutations: Mutation[] = [
     find: "                    quiet.momentary.insert(block);\n                    quiet.guards.insert(destination.local);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^refcell_vec_bounds.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "counter-past-2-53",
-    breaks:
-      "a counter that starts past 2^53, `1e21`, is taken for whole and shown as JS's text, `1e+21` where Rust shows its digits (rd266)",
-    file: "src/lower/mir/local_facts.rs",
-    find: "n.fract() == 0.0 && n.abs() <= 9007199254740992.0 && ",
-    replace: "n.fract() == 0.0 && ",
-    tests: ["test/corpus.test.ts", "-t", "^counter_shown_as_js_text.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "counter-negative-zero",
-    breaks:
-      "a counter that starts at `-0` is shown as JS's text, `0` where Rust shows `-0` (rd266)",
-    file: "src/lower/mir/local_facts.rs",
-    find: " && !(n == 0.0 && n.is_sign_negative())",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^counter_shown_as_js_text.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "counter-any-step",
-    breaks:
-      "a counter of any step, `big += 4e20`, is shown as JS's text, `1.2e+21` past 1e21 (rd266)",
-    file: "src/lower/mir/local_facts.rs",
-    find: "f64::from_bits(scalar.to_bits_unchecked() as u64) == 1.0)",
-    replace:
-      "f64::from_bits(scalar.to_bits_unchecked() as u64).fract() == 0.0)",
-    tests: ["test/corpus.test.ts", "-t", "^counter_shown_as_js_text.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "counter-of-itself-unknown",
-    breaks:
-      "a counter, written of itself, isn't known whole, `$displayF64(index)` (rd266)",
-    file: "src/lower/mir/local_facts.rs",
-    find: "                        .any(|of| of.is_some_and(|of| !wholes.contains(&of)))\n",
-    replace: "                        .any(|of| of.is_some())\n",
-    tests: ["test/corpus.test.ts", "-t", "^counter_shown_as_js_text.rs$"],
     snapshots: true,
   },
   {

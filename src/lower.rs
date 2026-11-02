@@ -350,6 +350,9 @@ struct CrateFacts<'a, 'tcx> {
     scopes: &'a analysis::Scopes,
     /// What each body may borrow, of its cells (ADR 0580).
     cell_borrows: &'a analysis::CellBorrows<'tcx>,
+    /// The functions whose result is whole, and the fields each write of
+    /// which is (rd537, ADR 0994, amended).
+    wholes: &'a analysis::Wholes,
     /// Whether a function holding a value with a destructor is made a `dyn
     /// Fn` (ADR 0521).
     closure_facts: &'a analysis::ClosureFacts,

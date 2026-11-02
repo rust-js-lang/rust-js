@@ -26,7 +26,7 @@ function lastOf(items) {
     out += "x";
   }
   if (last != null) {
-    out += String(last);
+    out += last;
   }
   return out;
 }

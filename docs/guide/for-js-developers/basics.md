@@ -3244,7 +3244,9 @@ export function describe(v) {
 `String(n)` for very large and very small numbers. A counter, an `f64`
 written a whole number from -2^53 to 2^53, not `-0`, and one more or
 less each time, `index += 1.0`, is whole and never past 2^53, where
-JS's text is Rust's: `` `id-${index}` ``.
+JS's text is Rust's: `` `id-${index}` ``. So is a field only so written,
+a `Cell<f64>` id counter's no constant holds, and a function that gives
+one; and text joined to a number is `prefix + id`.
 
 A value from JavaScript whose type you don't know, what an `any` API
 returns, is a `js::Unknown`, or `None` where it's `undefined` or `null`,

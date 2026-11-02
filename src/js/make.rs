@@ -890,7 +890,29 @@ impl Expr {
     /// text joined to `"" +` (ADR 0639, amended).
     pub fn text_joined(mut text: Expr, part: Expr) -> Expr {
         text.facts = text.facts.with(Known::Text);
-        Expr::bin(Op::Add, text, part)
+        let mut joined = Expr::bin(Op::Add, text, part);
+        joined.facts = joined.facts.with(Known::Text);
+        joined
+    }
+
+    /// Of text joined to a number's text, `s + String(n)`, the number,
+    /// which `+` makes text the same way: `prefix + id` (rd537). Prepared
+    /// once tidy's done, whose `f += s; return f` is `return s` of what's
+    /// text; not of `""`, whose `"" + n` reads worse than `String(n)`. What
+    /// `text_joined` made is text whatever its text's been inlined to.
+    pub fn number_joined(&mut self) {
+        let joined = self.facts.has(Known::Text);
+        if let ExprKind::Binary(Op::Add, text, part) = &mut self.kind
+            && (joined || is_text(text))
+            && !matches!(&text.kind, ExprKind::Str(s) if s.is_empty())
+            && let ExprKind::Stringed(number) = &mut part.kind
+        {
+            let number = std::mem::replace(&mut **number, Expr::undefined());
+            **part = Expr {
+                span: part.span,
+                ..number
+            };
+        }
     }
 
     pub fn cond(test: Expr, then: Expr, els: Expr) -> Expr {

@@ -35,21 +35,20 @@ mod self_handles;
 pub(super) use self_handles::SelfHandles;
 mod throwing;
 mod unwinding;
-
-pub(super) use throwing::call_throws;
+mod wholes;
+pub(super) use wholes::{Wholes, whole_locals};
 
 pub(super) use naming::{UsesWritten, renamed_in};
+pub(super) use throwing::call_throws;
 mod caller_locations;
 mod type_facts;
 mod validation;
 
-use super::bindings;
-use super::bindings::{Export, is_binding};
-use super::recognition::TypeFact;
+use super::bindings::{self, Export, is_binding};
 use super::traits;
 use super::{Body, FnInfo, TestFn, module_path};
 use crate::lower::recognition::{
-    Recognition, StdItem, is_js_object_deref, is_std_def, is_unlowered_impl, known_derive,
+    Recognition, StdItem, TypeFact, is_js_object_deref, is_std_def, is_unlowered_impl, known_derive,
 };
 pub(super) use closures::{ClosureFacts, borrowed_fixed_bindings, clone_shares};
 use debug::{uses_debug_hex, uses_format_options, uses_pretty_debug};
@@ -68,8 +67,7 @@ use rustc_hir::def::DefKind;
 use rustc_hir::find_attr;
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::ExprKind;
-use rustc_middle::ty;
-use rustc_middle::ty::{Ty, TyCtxt, TypeVisitableExt};
+use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::Symbol;
 use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -549,6 +547,8 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub scopes: Scopes,
     /// What each body may borrow, of its cells (ADR 0580).
     pub cell_borrows: CellBorrows<'tcx>,
+    /// Which results and fields are whole numbers (rd537, ADR 0994).
+    pub wholes: Wholes,
     /// Whether a function holding a value with a destructor is made a `dyn
     /// Fn`, which then drops it: a library's may be (ADR 0521).
     pub closure_facts: ClosureFacts,
@@ -1100,6 +1100,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         (all_bodies, &clones),
         &|ty| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty),
     );
+    let wholes = Wholes::of_crate(tcx, all_bodies, &|adt| cell_borrows.pointers().js_may_make(adt));
     // What `with_borrow` runs while its thread-local is borrowed, that can't
     // ask whether it is (ADRs 0328, 0587): borrows nothing that may be it,
     // held as it's held, a `with_borrow`'s shared, which only a mutable
@@ -1342,6 +1343,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         self_handles,
         scopes,
         cell_borrows,
+        wholes,
         closure_facts,
         cloned,
         explicit_adapters,

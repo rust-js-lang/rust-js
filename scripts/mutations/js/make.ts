@@ -593,4 +593,14 @@ export const mutations: Mutation[] = [
     replace: "            let sets = props.iter().skip(1).map(|prop| match prop {",
     tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
   },
+  {
+    name: "text-joined-number-stringed",
+    breaks:
+      "a whole number's text joined to text is `prefix + String(id)`, where upstream's is `prefix + id` (rd537)",
+    file: "src/js/make.rs",
+    find: "            && let ExprKind::Stringed(number) = &mut part.kind\n",
+    replace: "            && let ExprKind::Stringed(number) = &mut part.kind\n            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^whole_counters.rs$"],
+    snapshots: true,
+  },
 ];

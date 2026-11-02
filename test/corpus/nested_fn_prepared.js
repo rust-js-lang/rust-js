@@ -10,7 +10,7 @@ function outer(n) {
   function inner(x) {
     let s = "";
     for (let i = 0; i < x; i++) {
-      s += String(i);
+      s += i;
     }
     if ($byteLen(s) > 2) {
       return s;
@@ -22,7 +22,7 @@ function outer(n) {
   }
   let t = "";
   for (let i = 0; i < n; i++) {
-    t += String(i);
+    t += i;
   }
   return inner(n) + "|" + t;
 }
