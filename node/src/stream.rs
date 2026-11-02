@@ -1,5 +1,6 @@
 //! [`stream`](https://nodejs.org/api/stream.html): a [`Writable`], what
-//! data is written to, as React's server renderers write their chunks.
+//! data is written to, as React's server renderers write their chunks; a
+//! [`Readable`], what's read from; and a [`Duplex`], both.
 //!
 //! ```rust,ignore
 //! use node::stream::Writable;
@@ -10,6 +11,7 @@
 //! ```
 
 use core::marker::PhantomData;
+use core::ops::Deref;
 
 use js::{IntoUnknown, JsError, JsObject, Uint8Array, Unknown};
 
@@ -156,6 +158,118 @@ impl Emits<event::Readable> for Readable {
 impl Emits<event::Resume> for Readable {
     type Listener = dyn Fn();
     type Args = ();
+}
+
+/// `"finish"`: `end()` called and all it was given written.
+impl Emits<event::Finish> for Writable {
+    type Listener = dyn Fn();
+    type Args = ();
+}
+
+/// `"pipe"`: a Readable piped to it.
+impl Emits<event::Pipe> for Writable {
+    type Listener = dyn Fn(&Readable);
+    type Args = (&'static Readable,);
+}
+
+/// `"unpipe"`: a Readable unpiped from it.
+impl Emits<event::Unpipe> for Writable {
+    type Listener = dyn Fn(&Readable);
+    type Args = (&'static Readable,);
+}
+
+/// [`stream.Duplex`](https://nodejs.org/api/stream.html#class-streamduplex):
+/// both what's read from and what's written to, a socket's, as
+/// @types/node's `interface Duplex extends Readable, Writable`: a
+/// [`Readable`] by `Deref`, as Node's `Duplex` extends `Readable`, and a
+/// [`Writable`] by `AsRef`, `duplex.as_ref()`, as it's one too; each the
+/// object itself. Its events are both's.
+#[cfg_attr(rust_js, rust_js::types = "stream#Duplex")]
+pub struct Duplex(PhantomData<JsObject>);
+
+impl Deref for Duplex {
+    type Target = Readable;
+
+    fn deref(&self) -> &Readable {
+        // Never runs: rust-js compiles this `Deref` to the object itself.
+        unsafe { &*(self as *const Self as *const Readable) }
+    }
+}
+
+impl AsRef<Writable> for Duplex {
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    fn as_ref(&self) -> &Writable {
+        // Never runs: the object itself.
+        unsafe { &*(self as *const Self as *const Writable) }
+    }
+}
+
+impl EventEmitterExt for Duplex {}
+
+/// `"close"`: it and what it holds closed.
+impl Emits<event::Close> for Duplex {
+    type Listener = dyn Fn();
+    type Args = ();
+}
+
+/// `"data"`: a chunk read, any value, as a [`Readable`]'s.
+impl Emits<event::Data> for Duplex {
+    type Listener = dyn Fn(Option<&Unknown>);
+    type Args = (Option<&'static Unknown>,);
+}
+
+/// `"drain"`: it takes more, after a `write` gave `false`.
+impl Emits<event::Drain> for Duplex {
+    type Listener = dyn Fn();
+    type Args = ();
+}
+
+/// `"end"`: all of it read.
+impl Emits<event::End> for Duplex {
+    type Listener = dyn Fn();
+    type Args = ();
+}
+
+/// `"error"`: what failed, the stream destroyed of it.
+impl Emits<event::Error> for Duplex {
+    type Listener = dyn Fn(&JsError);
+    type Args = (&'static JsError,);
+}
+
+/// `"finish"`: `end()` called and all it was given written.
+impl Emits<event::Finish> for Duplex {
+    type Listener = dyn Fn();
+    type Args = ();
+}
+
+/// `"pause"`: it stopped giving its chunks.
+impl Emits<event::Pause> for Duplex {
+    type Listener = dyn Fn();
+    type Args = ();
+}
+
+/// `"pipe"`: a Readable piped to it.
+impl Emits<event::Pipe> for Duplex {
+    type Listener = dyn Fn(&Readable);
+    type Args = (&'static Readable,);
+}
+
+/// `"readable"`: a chunk to `read()`, or its end.
+impl Emits<event::Readable> for Duplex {
+    type Listener = dyn Fn();
+    type Args = ();
+}
+
+/// `"resume"`: it gives its chunks again.
+impl Emits<event::Resume> for Duplex {
+    type Listener = dyn Fn();
+    type Args = ();
+}
+
+/// `"unpipe"`: a Readable unpiped from it.
+impl Emits<event::Unpipe> for Duplex {
+    type Listener = dyn Fn(&Readable);
+    type Args = (&'static Readable,);
 }
 
 /// What a stream's chunk, `string | Uint8Array`, takes: each as it is (ADR

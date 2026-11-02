@@ -595,6 +595,13 @@ pub fn circle(radius: f64) -> &'static Circle {
 
 `circle(2.0).area()` is `new Circle(2).area()`. The `deref` body is no JS.
 
+A class that's two others, as TypeScript's `interface Duplex extends
+Readable, Writable` says, derefs to the one its prototype extends, and is
+`AsRef` of the other, its `as_ref` bound `link_name = "this"`: node's
+`stream::Duplex` derefs to `Readable`, and `duplex.as_ref()` is a
+`&Writable`, the object itself ([ADR 0272](../../decisions/0272-node.md),
+amended).
+
 ### Equal only to itself
 
 A JS object is the same object or another: its `PartialEq` is `ptr::eq`,

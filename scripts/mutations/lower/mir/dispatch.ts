@@ -3,6 +3,19 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "binding-impl-by-dictionary",
+    breaks:
+      "a std trait's method whose impl is a binding's, a `Duplex`'s `as_ref()` of its `Writable`, is called through a dictionary, which rust-js refuses, where it's the binding, the object itself (rd588)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "self.impl_binding(def_id, args).is_some()\n    }\n",
+    replace: "false\n    }\n",
+    tests: [
+      "test/node-bindings.test.ts",
+      "-t",
+      "a Duplex is read from and written to",
+    ],
+  },
+  {
     name: "pointer-binding-none-left-out",
     breaks:
       "a trailing `None` given a pointer the crate makes of a binding's function, whose parameter isn't optional, is left out, `max(1)` of `Math.max`'s, which gives `1`, not `NaN` (ADR 0330)",
@@ -249,8 +262,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding default method called through a generic from MIR is a dictionary's, `{}.rule_id(error)`, which throws",
     file: "src/lower/mir/dispatch.rs",
-    find: "            && !bindings::is_binding(tcx, def_id)\n            && let Some(trait_id) = tcx.trait_of_assoc(def_id)\n",
-    replace: "            && let Some(trait_id) = tcx.trait_of_assoc(def_id)\n",
+    find: "        bindings::is_binding(self.tcx, def_id) || self.impl_binding",
+    replace: "        self.impl_binding",
     tests: [
       "test/lowering-structs-enums.test.ts",
       "-t",

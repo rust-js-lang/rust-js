@@ -30,9 +30,18 @@ pub struct End;
 #[cfg_attr(rust_js, rust_js::name = "error")]
 pub struct Error;
 
+/// `"finish"`: a writable stream's `end()` called and all it was given
+/// written.
+#[cfg_attr(rust_js, rust_js::name = "finish")]
+pub struct Finish;
+
 /// `"exit"`: the process ends, now.
 #[cfg_attr(rust_js, rust_js::name = "exit")]
 pub struct Exit;
+
+/// `"pipe"`: a readable stream piped to a writable one, `pipe()`'s.
+#[cfg_attr(rust_js, rust_js::name = "pipe")]
+pub struct Pipe;
 
 /// `"pause"`: a readable stream stopped giving its chunks, `pause()`'s.
 #[cfg_attr(rust_js, rust_js::name = "pause")]
@@ -49,6 +58,10 @@ pub struct RejectionHandled;
 /// `"resume"`: a paused readable stream gives its chunks again.
 #[cfg_attr(rust_js, rust_js::name = "resume")]
 pub struct Resume;
+
+/// `"unpipe"`: a readable stream unpiped from a writable one.
+#[cfg_attr(rust_js, rust_js::name = "unpipe")]
+pub struct Unpipe;
 
 /// `"uncaughtException"`: nothing caught what was thrown.
 #[cfg_attr(rust_js, rust_js::name = "uncaughtException")]

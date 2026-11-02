@@ -1211,6 +1211,61 @@ stream.on("close", () => {
   expect(JSON.parse(p.stdout.toString())).toEqual(["resume", "a", "b", "end", "close", "pause", "resume", "boom", "close", "readable"]);
 });
 
+// rd588: a Duplex is a Readable, by Deref, and a Writable, by AsRef, each
+// the object itself, as @types/node's `interface Duplex extends Readable,
+// Writable`, React's Flight server's `debugChannel`; its events both's.
+test("a Duplex is read from and written to, and emits both's events", () => {
+  const dir = fixture("node-duplex");
+  const node = buildNode();
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+use node::event;
+use node::events::EventEmitterExt;
+use node::stream::{Duplex, Readable, Writable};
+
+fn send(destination: &Writable, text: &str) -> bool {
+    destination.write(text)
+}
+
+pub fn echo(duplex: &'static Duplex, log: &'static dyn Fn(&str)) {
+    duplex.on(event::Data, Box::new(move |chunk: Option<&Unknown>| log(&js::string(chunk))));
+    duplex.on(event::End, Box::new(move || log("end")));
+    duplex.on(event::Finish, Box::new(move || log("finish")));
+    duplex.on(event::Pipe, Box::new(move |_source: &Readable| log("pipe")));
+    duplex.push(Some(&"read"));
+    duplex.push(None);
+    send(duplex.as_ref(), "written");
+    duplex.as_ref().end();
+}
+
+pub fn piped(destination: &'static Writable, log: &'static dyn Fn(&str)) {
+    destination.on(event::Unpipe, Box::new(move |_source: &Readable| log("unpipe")));
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  duplex.push("read");\n  duplex.push(null);\n  send(duplex, "written");\n  duplex.end();');
+  expect(js).toContain('duplex.on("pipe", (source) => {');
+  writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
+  writeFileSync(join(dir, "run.js"), `import { Duplex, Readable } from "node:stream";
+import { echo, piped } from "./lib.js";
+const seen = [];
+const log = (said) => seen.push(said);
+const duplex = new Duplex({ read() {}, write(chunk, _, done) { log("wrote " + chunk); done(); } });
+echo(duplex, log);
+duplex.on("close", () => {
+  const source = Readable.from([]);
+  const destination = new Duplex({ read() {}, write(chunk, _, done) { done(); } });
+  piped(destination, log);
+  source.pipe(destination);
+  source.unpipe(destination);
+  console.log(JSON.stringify(seen));
+});
+`);
+  const p = Bun.spawnSync(["node", "run.js"], { cwd: dir, stderr: "pipe" });
+  expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
+  expect(JSON.parse(p.stdout.toString())).toEqual(["wrote written", "read", "finish", "end", "unpipe"]);
+});
+
 test("node's crypto hashes and a Writable is written to", () => {
   const dir = fixture("node-stream");
   const node = buildNode();

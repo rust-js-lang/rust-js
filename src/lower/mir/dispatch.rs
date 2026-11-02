@@ -1002,15 +1002,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A `&mut` to a number is boxed for the crate's own trait or impl;
         // std's, `write!` to a `String` say, takes its place below.
         let gives_ref = values.iter().any(|v| matches!(v, Value::Ref(_)));
-        // Not one that's a binding, a default method's `get ruleId` called
-        // through a generic's bound: the binding, below.
+        // Not a binding's, a default method's `get ruleId` called through a
+        // generic's bound, or a `Duplex`'s `as_ref()` (`is_binding_of`): below.
         // Nor `BinaryHeap::from(items)`, which std's own lowering heaps; nor std's that's the same JS value, a
         // `Box`'s `as_ref()` (ADR 0331); nor std's `clone_from`, `*dest = source.clone()` written in place, where
         // the crate's impl isn't known to have its own; nor a `fmt` method on a held `Formatter` (ADR 0461); nor
         // a std type's `hash`, the writes std's impl makes, whatever references optimized MIR has (ADR 0463).
         if !matches!(known, Some(Std::Any(_) | Std::Same | Std::FmtTo(_) | Std::Hash(_)))
             && (rust_impl || known != Some(Std::CloneFrom))
-            && !bindings::is_binding(tcx, def_id)
+            && !self.is_binding_of(def_id, generic_args)
             && let Some(trait_id) = tcx.trait_of_assoc(def_id)
             && (rust_impl
                 || (crate::lower::recognition::operational(tcx, self.krate.foreign, trait_id)
@@ -1412,6 +1412,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if bindings::is_binding(tcx, def_id) || crate::lower::recognition::is_symbol_for_read(tcx, def_id) {
             return Some((def_id, args));
         }
+        self.impl_binding(def_id, args)
+    }
+
+    /// Whether a call of `def_id`, given `args`, is a binding's: a binding,
+    /// a binding trait's default method, or a std trait's method whose impl
+    /// is a binding's (`impl_binding`), not a trait call through a
+    /// dictionary (rd588).
+    fn is_binding_of(&self, def_id: rustc_span::def_id::DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+        bindings::is_binding(self.tcx, def_id) || self.impl_binding(def_id, args).is_some()
+    }
+
+    /// The binding a binding's impl of a std trait declares, which a call
+    /// of the trait's method `def_id`, given `args`, is: an index
+    /// signature's `Index::index` (ADR 1011), a `Duplex`'s `as_ref()`
+    /// (rd588).
+    fn impl_binding(
+        &self,
+        def_id: rustc_span::def_id::DefId,
+        args: ty::GenericArgsRef<'tcx>,
+    ) -> Option<(rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>)> {
+        let tcx = self.tcx;
         tcx.trait_of_assoc(def_id)?;
         let instance = crate::lower::items::resolve_instance_in(tcx, self.typing_env, def_id, args).ok()??;
         match instance.def {
