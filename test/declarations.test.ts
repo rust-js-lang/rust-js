@@ -516,6 +516,8 @@ pub struct BadgeProps<'a> {
     pub title: Option<&'a str>,
     pub data: Option<&'a react::js::Unknown>,
     pub width: Option<Meters>,
+    #[rust_js::nullable]
+    pub mid: Option<Option<&'a str>>,
 }
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
@@ -523,7 +525,7 @@ pub struct BadgeProps<'a> {
   expect(declarations).toContain("export const LanguagesContext: Context<LanguageItem[] | null | undefined>;");
   // A trailing `Option` is optional, left out by a caller (ADR 0443).
   expect(declarations).toContain("export function shown(name?: string | null | undefined): string;");
-  expect(declarations).toContain("export interface BadgeProps {\n    label?: string | null | undefined;\n    title?: string | undefined;\n    data?: unknown;\n    width?: any;\n}");
+  expect(declarations).toContain("export interface BadgeProps {\n    label?: string | null | undefined;\n    title?: string | undefined;\n    data?: unknown;\n    width?: any;\n    mid?: string | null | undefined;\n}");
   writeFileSync(join(dir, "use.tsx"), `import { LanguagesContext, shown, type BadgeProps } from "./lib.jsx";
 const languages: { code: string }[] | null = null;
 export const ok = [<LanguagesContext value={languages}>{shown(null)}</LanguagesContext>, shown(undefined), shown("a"), shown()];

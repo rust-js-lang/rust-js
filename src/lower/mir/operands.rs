@@ -26,6 +26,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(span, "copying a closure that changes what it captured"));
         }
         let read = self.mir_operand_read(state, operand, out)?;
+        // A nested field read whole, held as its payload: the box code
+        // that doesn't hold it so reads, where it's read not as it's held
+        // (`assign`'s, #470).
+        if let Some(place) = operand.place()
+            && self.nested_field(state.body, place.as_ref())
+        {
+            let held = self.value_expr(read, Span::default())?;
+            return Ok(Value::Expr(self.boxed_of_held(held, out)));
+        }
         match none_read(state, operand, read) {
             Value::Expr(e) if copied => {
                 let ty = operand.ty(&state.body.local_decls, self.tcx);

@@ -5,6 +5,14 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "nested-field-declared-undefined",
+    breaks: "a nullable `Option<Option<T>>` field is declared `T | undefined`, where JS holds `null` too (#470)",
+    file: "src/lower/declarations.rs",
+    find: "                    match is_nullable(self.tcx, field) || nested || self.null_fields.contains(&field.did) {\n",
+    replace: "                    match is_nullable(self.tcx, field) || self.null_fields.contains(&field.did) {\n",
+    tests: ["test/declarations.test.ts", "-t", "declarations take JS's null"],
+  },
+  {
     name: "any-value-declared-null",
     breaks:
       "a map of any value is declared `Map<K, unknown | null>`, without the `undefined` it holds (#443)",
@@ -355,7 +363,7 @@ export const mutations: Mutation[] = [
     breaks:
       "every `Option` field is declared `?: T | null`, so a TypeScript caller reading one passes `null` where a default takes only `undefined`",
     file: "src/lower/declarations.rs",
-    find: "                    match is_nullable(self.tcx, field) || self.null_fields.contains(&field.did) {\n",
+    find: "                    match is_nullable(self.tcx, field) || nested || self.null_fields.contains(&field.did) {\n",
     replace:
       "                    match true || is_nullable(self.tcx, field) {\n",
     tests: ["test/declarations.test.ts", "-t", "null for an Option"],
@@ -950,7 +958,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a plain `Option` field a `js::null()` is written to is declared `?: T | undefined`, though it holds `null` (ADR 0935, amended)",
     file: "src/lower/declarations.rs",
-    find: "                    match is_nullable(self.tcx, field) || self.null_fields.contains(&field.did) {\n",
+    find: "                    match is_nullable(self.tcx, field) || nested || self.null_fields.contains(&field.did) {\n",
     replace: "                    match is_nullable(self.tcx, field) {\n",
     tests: ["test/lowering-nullable-constants.test.ts", "-t", "is declared"],
   },

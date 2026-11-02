@@ -9,10 +9,74 @@ use rustc_span::Symbol;
 use rustc_span::def_id::DefId;
 
 /// Whether a field of an `Option` is declared to take `null` too,
-/// `#[rust_js::nullable]` (ADR 0196).
+/// `#[rust_js::nullable]` (ADR 0196): its `None` `null`. Not one of an
+/// `Option` of an `Option`, whose `None` isn't there (`holds_nested`).
 pub(in crate::lower) fn is_nullable(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
+    said_nullable(tcx, field) && !nested_option(tcx, field)
+}
+
+/// Whether a field is a `#[rust_js::nullable]` `Option<Option<T>>`,
+/// WebIDL's optional nullable member, TypeScript's `field?: T | null`: its
+/// `None` not there, `undefined`, its `Some(None)` `null` and its
+/// `Some(Some(v))` `v`, ADR 1017's held form, wherever it's made or read
+/// (#470, ADRs 0051 and 0810, amended, the user's decision).
+pub(in crate::lower) fn holds_nested(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
+    said_nullable(tcx, field) && nested_option(tcx, field)
+}
+
+fn said_nullable(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("nullable")];
     tcx.get_attrs_by_path(field.did, &path).next().is_some()
+}
+
+/// Whether `field` is declared an `Option` of an `Option`.
+fn nested_option<'tcx>(tcx: TyCtxt<'tcx>, field: &FieldDef) -> bool {
+    let option = |ty: Ty<'tcx>| match ty.kind() {
+        ty::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Option) => Some(args.type_at(0)),
+        _ => None,
+    };
+    let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+    option(ty).and_then(option).is_some()
+}
+
+/// Of a `holds_nested` field's `T`, what may look like `None` by its type,
+/// so its `Some(Some(v))` and `Some(None)` couldn't be told apart: a type
+/// parameter or one of its types, a `()`, an `Option`, a unit struct, or
+/// an untagged enum of `undefined` or `null`, through references, `Box`
+/// and `Rc`; the error that says so.
+pub(in crate::lower) fn nested_refused(tcx: TyCtxt<'_>, field: &FieldDef) -> Option<&'static str> {
+    if !holds_nested(tcx, field) {
+        return None;
+    }
+    let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+    let ty::Adt(_, args) = ty.kind() else { return None };
+    let ty::Adt(_, args) = args.type_at(0).kind() else {
+        return None;
+    };
+    let mut payload = args.type_at(0);
+    loop {
+        payload = match payload.kind() {
+            ty::Ref(_, inner, _) => *inner,
+            ty::Adt(_, args) if payload.is_box() => args.type_at(0),
+            _ => match crate::lower::recognition::rc_pointee(tcx, payload) {
+                Some(pointee) => pointee,
+                None => break,
+            },
+        };
+    }
+    let nullish = match payload.kind() {
+        ty::Param(_) | ty::Alias(..) => true,
+        ty::Tuple(items) => items.is_empty(),
+        ty::Adt(adt, _) => {
+            tcx.is_lang_item(adt.did(), LangItem::Option)
+                || (adt.is_struct() && adt.non_enum_variant().fields.is_empty())
+                || crate::lower::untagged::holds_nullish(tcx, *adt)
+        }
+        _ => false,
+    };
+    nullish.then_some(
+        "rust-js: a `#[rust_js::nullable]` `Option<Option<T>>` field, `field?: T | null`, holds `T` itself, which can't be `undefined` or `null`: this `T` may be; hold a `T` that's never `None`-like",
+    )
 }
 
 /// Whether a nullable field is absent until set, `#[rust_js::optional]`, `field?: T | null` (ADR 0810).

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "nested-field-payload-boxed",
+    breaks: "what a nested field's `Some` holds is read through the box, `$someValue(candidate.line)` (#470)",
+    file: "src/lower/mir/places.rs",
+    find: "                && self.held_nested(state, place, at - 1)\n",
+    replace: "                && at == 1\n                && self.held_nested(state, place, at - 1)\n",
+    tests: ["test/lowering-nested-options.test.ts", "-t", "a dictionary's nullable Option of an Option"],
+  },
+  {
     name: "mir-residual-err-lost",
     breaks: "`?` of an `Err` returns nothing, not the `Err`",
     file: "src/lower/mir/places.rs",
@@ -179,7 +187,7 @@ export const mutations: Mutation[] = [
     breaks:
       "what a held `Option` of an `Option`'s `Some` holds is read through `$someValue`, a box it never is (ADR 1017)",
     file: "src/lower/mir/places.rs",
-    find: "            if at == 1\n",
+    find: "            if at >= 1\n",
     replace: "            if at == usize::MAX\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
     snapshots: true,

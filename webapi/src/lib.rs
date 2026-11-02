@@ -84289,18 +84289,21 @@ pub struct SanitizerConfig {
 /// The `SanitizerElementNamespaceWithAttributes` dictionary: a JS object with these fields, a `None` one not there.
 pub struct SanitizerElementNamespaceWithAttributes {
     pub name: String,
+    #[cfg_attr(rust_js, rust_js::nullable)]
     pub namespace: Option<Option<String>>,
 }
 
 /// The `SanitizerAttributeNamespace` dictionary: a JS object with these fields, a `None` one not there.
 pub struct SanitizerAttributeNamespace {
     pub name: String,
+    #[cfg_attr(rust_js, rust_js::nullable)]
     pub namespace: Option<Option<String>>,
 }
 
 /// The `SanitizerElementNamespace` dictionary: a JS object with these fields, a `None` one not there.
 pub struct SanitizerElementNamespace {
     pub name: String,
+    #[cfg_attr(rust_js, rust_js::nullable)]
     pub namespace: Option<Option<String>>,
 }
 
@@ -84344,6 +84347,7 @@ pub struct MediaKeySystemConfiguration {
 #[derive(Default)]
 pub struct MediaKeySystemMediaCapability {
     pub content_type: Option<String>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
     pub encryption_scheme: Option<Option<String>>,
     pub robustness: Option<String>,
 }
@@ -84374,11 +84378,14 @@ pub struct ComputedEffectTiming {
     pub end_delay: Option<f64>,
     pub playback_rate: Option<f64>,
     pub duration: Option<NumberOrCSSNumericValueOrStr<'static>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
     pub progress: Option<Option<f64>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
     pub current_iteration: Option<Option<f64>>,
     pub start_time: Option<CSSNumberish<'static>>,
     pub end_time: Option<CSSNumberish<'static>>,
     pub active_duration: Option<CSSNumberish<'static>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
     pub local_time: Option<Option<CSSNumberish<'static>>>,
 }
 
@@ -84742,6 +84749,7 @@ pub struct MediaCapabilitiesKeySystemConfiguration {
 #[derive(Default)]
 pub struct KeySystemTrackConfiguration {
     pub robustness: Option<String>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
     pub encryption_scheme: Option<Option<String>>,
 }
 
@@ -84946,6 +84954,7 @@ pub struct AuthenticationExtensionsLargeBlobOutputs {
 #[derive(Default)]
 pub struct PushSubscriptionJSON {
     pub endpoint: Option<String>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
     pub expiration_time: Option<Option<f64>>,
 }
 
@@ -84995,8 +85004,11 @@ pub struct RTCEncodedVideoFrameMetadata {
 #[derive(Default)]
 pub struct RTCIceCandidateInit {
     pub candidate: Option<String>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
     pub sdp_mid: Option<Option<String>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
     pub sdp_m_line_index: Option<Option<f64>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
     pub username_fragment: Option<Option<String>>,
 }
 
@@ -85115,6 +85127,7 @@ pub struct RTCRtpSendParameters {
 /// The `ReadableStreamReadResult` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
 pub struct ReadableStreamReadResult {
+    #[cfg_attr(rust_js, rust_js::nullable)]
     pub value: Option<Option<&'static Unknown>>,
     pub done: Option<bool>,
 }
@@ -85124,6 +85137,7 @@ pub struct ReadableStreamReadResult {
 pub struct Report {
     pub r#type: Option<String>,
     pub url: Option<String>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
     pub body: Option<Option<ReportBody>>,
 }
 
@@ -85228,9 +85242,13 @@ pub struct URLPatternComponentResult {
 /// The `VideoColorSpaceInit` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
 pub struct VideoColorSpaceInit {
+    #[cfg_attr(rust_js, rust_js::nullable)]
     pub primaries: Option<Option<String>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
     pub transfer: Option<Option<String>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
     pub matrix: Option<Option<String>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
     pub full_range: Option<Option<bool>>,
 }
 
@@ -85321,6 +85339,7 @@ pub struct WebTransportConnectionStats {
     pub rtt_variation: Option<f64>,
     pub min_rtt: Option<f64>,
     pub datagrams: WebTransportDatagramStats,
+    #[cfg_attr(rust_js, rust_js::nullable)]
     pub estimated_send_rate: Option<Option<f64>>,
     pub at_send_capacity: Option<bool>,
 }

@@ -8,6 +8,136 @@ use super::*;
 use rustc_span::def_id::DefId;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether `place` is a `#[rust_js::nullable]` field of an `Option` of
+    /// an `Option`, WebIDL's optional nullable member, whole: held as its
+    /// payload where it's made, its `None` no key, `undefined`, its
+    /// `Some(None)` `null` (`bindings::holds_nested`, #470, the user's
+    /// decision).
+    pub(super) fn nested_field(&self, body: &mir::Body<'tcx>, place: mir::PlaceRef<'tcx>) -> bool {
+        let Some((base, PlaceElem::Field(field, _))) = place.last_projection() else {
+            return false;
+        };
+        match base.ty(body, self.tcx).ty.kind() {
+            ty::Adt(adt, _) if adt.is_struct() => {
+                bindings::holds_nested(self.tcx, &adt.non_enum_variant().fields[field])
+            }
+            _ => false,
+        }
+    }
+
+    /// Whether what `place`'s first `upto` projections read is an `Option`
+    /// of an `Option` held as its payload: a local `OptionWrites::nested`
+    /// says, whole, or a nested field (`nested_field`).
+    pub(super) fn held_nested(&self, state: &State<'_, 'tcx>, place: Place<'tcx>, upto: usize) -> bool {
+        let read = mir::PlaceRef {
+            local: place.local,
+            projection: &place.projection[..upto],
+        };
+        let nested = state.facts.options().nested.contains(&place.local);
+        // Through a reference to one, which is it in JS.
+        (nested && (upto == 0 || (upto == 1 && place.projection[0] == PlaceElem::Deref)))
+            || self.nested_field(state.body, read)
+    }
+
+    /// What a `None` or a `Some(x)`, its `operands`, makes of an `Option`
+    /// of an `Option` held as its payload, a local's or a nested field's:
+    /// `undefined`, and `x` with its `None` `null`, as a nullable field's
+    /// is already, `previousInstance = instance`; of a value never
+    /// `undefined` (`defined`), `x` (ADR 1017, amended; #470).
+    pub(super) fn held_made(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        operands: &IndexVec<FieldIdx, Operand<'tcx>>,
+        defined: bool,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        Ok(match operands.iter().next() {
+            None => Expr::undefined(),
+            Some(operand) if defined => self.mir_expr(state, operand, out)?,
+            Some(operand) => {
+                let nulled = self.stored_given(state, operand) == crate::lower::aggregates::Given::Nulled;
+                let held = self.mir_expr(state, operand, out)?;
+                js::Storage::NullForNone.written(held, nulled)
+            }
+        })
+    }
+
+    /// Whether `operand` reads an `Option` of an `Option` held as its
+    /// payload whole: a local that holds it so, or a nested field.
+    pub(super) fn holds_nested_operand(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> bool {
+        operand
+            .place()
+            .is_some_and(|place| self.held_nested(state, place, place.projection.len()))
+    }
+
+    /// What a struct literal gives its `field`, `value` of `operand`: of a
+    /// nested field (`bindings::holds_nested`), held as its payload, what
+    /// one holding it so holds as it is, else the box's (#470).
+    pub(super) fn given_field(
+        &mut self,
+        state: &State<'_, 'tcx>,
+        field: &ty::FieldDef,
+        operand: &Operand<'tcx>,
+        value: Expr,
+        out: &mut Vec<Stmt>,
+    ) -> Expr {
+        let local = operand.place().filter(|place| place.projection.is_empty());
+        match bindings::holds_nested(self.tcx, field) && !local.is_some_and(|place| self.held_nested(state, place, 0)) {
+            true => self.held_of_boxed(value, out),
+            false => value,
+        }
+    }
+
+    /// An `Option` of an `Option` held as its payload, `held`, as ADR
+    /// 0051's box that code which doesn't hold it so reads: `held ===
+    /// undefined ? undefined : $some(held)`, its `Some(None)` `$some(null)`.
+    pub(super) fn boxed_of_held(&mut self, held: Expr, out: &mut Vec<Stmt>) -> Expr {
+        let held = match held.reads_same() {
+            true => held,
+            false => self.spill("option", held, out),
+        };
+        let some = self.some(held.clone());
+        Expr::cond(Expr::bin(Op::Eq, held, Expr::undefined()), Expr::undefined(), some)
+    }
+
+    /// ADR 0051's box of an `Option` of an `Option`, `boxed`, held as its
+    /// payload, as a nested field holds it (`nested_field`): `undefined`
+    /// of its `None`, and else what its `Some` holds, its `None` `null`,
+    /// `boxed === undefined ? undefined : $someValue(boxed) ?? null`. Of
+    /// what `boxed_of_held` made, what it was made of.
+    pub(super) fn held_of_boxed(&mut self, boxed: Expr, out: &mut Vec<Stmt>) -> Expr {
+        if let js::ExprKind::Cond(test, none, some) = &boxed.kind
+            && matches!(none.kind, js::ExprKind::Undefined)
+            && let js::ExprKind::Call(callee, args) = &some.kind
+            && callee.helper_name() == Some("$some")
+            && let [held] = args.as_slice()
+            && matches!(&test.kind, js::ExprKind::Binary(Op::Eq, x, u) if **x == *held && matches!(u.kind, js::ExprKind::Undefined))
+        {
+            return held.clone();
+        }
+        if matches!(boxed.kind, js::ExprKind::Undefined) {
+            return boxed;
+        }
+        // A `Some` just made, `$some(x)`, of an `Option` whose `None` is
+        // `undefined`: `x ?? null`; and a constant that's there, itself.
+        if let js::ExprKind::Call(callee, args) = &boxed.kind
+            && callee.helper_name() == Some("$some")
+            && let [inner] = args.as_slice()
+        {
+            return js::Storage::NullForNone.written(inner.clone(), false);
+        }
+        if boxed.is_constant() && !matches!(boxed.kind, js::ExprKind::Null) {
+            return boxed;
+        }
+        let boxed = match boxed.reads_same() {
+            true => boxed,
+            false => self.spill("option", boxed, out),
+        };
+        let value = self.some_value(boxed.clone());
+        let held = js::Storage::NullForNone.written(value, false);
+        Expr::cond(Expr::bin(Op::Eq, boxed, Expr::undefined()), Expr::undefined(), held)
+    }
+
     /// The locals `OptionWrites::nested` says (ADR 1017): each an `Option`
     /// of an `Option` whose payload never looks like `None`
     /// (`nested_payload`), or of a value never `undefined` that may be
@@ -39,7 +169,58 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && !ty.needs_drop(self.tcx, self.typing_env)
             })
             .collect();
-        if nested.is_empty() {
+        // Each shared reference to a nested field made once, which holds
+        // it as the field does (#470); and each local how many of whose
+        // writes are a nested field's read, all of them of one that's the
+        // field's read alone, whose `Some(None)` is its `null`.
+        let assigns = || {
+            (body.basic_blocks.iter().flat_map(|b| &b.statements)).filter_map(|statement| match &statement.kind {
+                mir::StatementKind::Assign(assign) => assign.0.as_local().map(|to| (to, &assign.1)),
+                _ => None,
+            })
+        };
+        let field_refs: std::collections::HashSet<Local> = assigns()
+            .filter(|&(to, rvalue)| {
+                matches!(rvalue, Rvalue::Ref(_, BorrowKind::Shared, of)
+                    if writes[to] == 1 && self.nested_field(body, of.as_ref()))
+            })
+            .map(|(to, _)| to)
+            .collect();
+        // A nested field read whole, or through a reference to it.
+        let field_read = |of: &Place<'tcx>| {
+            self.nested_field(body, of.as_ref())
+                || (of.projection.as_slice() == [PlaceElem::Deref] && field_refs.contains(&of.local))
+        };
+        // What each local is written: a field's read (`None`), or a copy.
+        let mut sources: HashMap<Local, Vec<Option<Local>>> = HashMap::new();
+        for (to, rvalue) in assigns() {
+            let source = match rvalue {
+                Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _) if field_read(of) => None,
+                Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _) if of.as_local().is_some() => of.as_local(),
+                _ => Some(to),
+            };
+            sources.entry(to).or_default().push(source);
+        }
+        let mut of_fields: std::collections::HashSet<Local> = (sources.iter())
+            .filter(|&(&local, each)| each.len() == writes[local] && !each.contains(&Some(local)))
+            .map(|(&local, _)| local)
+            .collect();
+        loop {
+            let before = of_fields.len();
+            let kept: Vec<Local> = (of_fields.iter().copied())
+                .filter(|local| {
+                    sources[local]
+                        .iter()
+                        .all(|s| s.is_none_or(|from| of_fields.contains(&from)))
+                })
+                .collect();
+            of_fields = kept.into_iter().collect();
+            if of_fields.len() == before {
+                break;
+            }
+        }
+        let of_field = |local: Local| of_fields.contains(&local);
+        if nested.is_empty() && field_refs.is_empty() {
             return (nested, Default::default());
         }
         // Each shared reference to one, made once.
@@ -104,6 +285,63 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     {
                         allowed.insert((at, to));
                     }
+                    // A nested field read whole by one that holds it so,
+                    // and a reference to it made once, and read through it
+                    // (#470).
+                    Rvalue::Use(Operand::Copy(from) | Operand::Move(from), _)
+                        if let Some(to) = whole
+                            && field_read(from) =>
+                    {
+                        allowed.extend([(at, to), (at, from.local)]);
+                    }
+                    Rvalue::Discriminant(of)
+                        if field_refs.contains(&of.local)
+                            && of.projection.first() == Some(&PlaceElem::Deref)
+                            && (of.projection.len() == 1
+                                || matches!(of.projection[1..], [PlaceElem::Downcast(_, some), PlaceElem::Field(field, _), ..]
+                                    if some.as_u32() == 1 && field.as_u32() == 0)) =>
+                    {
+                        allowed.insert((at, of.local));
+                    }
+                    Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _)
+                    | Rvalue::Ref(_, BorrowKind::Shared, of)
+                    | Rvalue::CopyForDeref(of)
+                        if whole.is_none()
+                            && field_refs.contains(&of.local)
+                            && matches!(of.projection[..], [PlaceElem::Deref, PlaceElem::Downcast(_, some), PlaceElem::Field(field, _), ..]
+                                if some.as_u32() == 1 && field.as_u32() == 0) =>
+                    {
+                        allowed.insert((at, of.local));
+                    }
+                    Rvalue::Ref(_, BorrowKind::Shared, of)
+                        if let Some(reference) = to.as_local()
+                            && field_refs.contains(&reference)
+                            && self.nested_field(body, of.as_ref()) =>
+                    {
+                        allowed.insert((at, reference));
+                    }
+                    // One a nested field is set to, or made of.
+                    Rvalue::Use(Operand::Copy(from) | Operand::Move(from), _)
+                        if self.nested_field(body, to.as_ref())
+                            && let Some(from) = from.as_local()
+                            && nested.contains(&from) =>
+                    {
+                        allowed.insert((at, from));
+                    }
+                    Rvalue::Aggregate(kind, operands)
+                        if let AggregateKind::Adt(did, _, _, _, None) = **kind
+                            && self.tcx.adt_def(did).is_struct() =>
+                    {
+                        let fields = &self.tcx.adt_def(did).non_enum_variant().fields;
+                        for (field, operand) in fields.iter().zip(operands.iter()) {
+                            if bindings::holds_nested(self.tcx, field)
+                                && let Some(from) = operand.place().and_then(|place| place.as_local())
+                                && nested.contains(&from)
+                            {
+                                allowed.insert((at, from));
+                            }
+                        }
+                    }
                     Rvalue::Use(Operand::Copy(from) | Operand::Move(from), _)
                         if let Some(to) = whole
                             && let Some(from) = from.as_local()
@@ -141,6 +379,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             && payload(of)
                             && (!of.projection[2..].iter().all(|elem| *elem == PlaceElem::Deref)
                                 || self.defined_payload(decls[of.local].ty).is_some()
+                                || of_field(of.local)
                                 || to
                                     .as_local()
                                     .is_some_and(|held| self.only_tested(body, held, writes, &mentions))) =>
@@ -159,7 +398,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let through = |operand: &Operand<'tcx>| {
                     (operand.place())
                         .and_then(|place| place.as_local())
-                        .filter(|local| refs.contains_key(local))
+                        .filter(|local| refs.contains_key(local) || field_refs.contains(local))
                 };
                 let tested = match &args[..] {
                     [a] if matches!(
@@ -188,6 +427,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let Some(reference) = tested {
                     allowed.insert((body.terminator_loc(block), reference));
                 }
+            }
+            // `flatten()` of one that's a nested field's read alone, which
+            // gives what it holds, its `None` `null` as the field's is
+            // (#470).
+            if let mir::TerminatorKind::Call { func, args, .. } = &data.terminator().kind
+                && let Some((def_id, generic_args)) = func.const_fn_def()
+                && self.recognition().classify(def_id, generic_args) == Some(Std::OptionFlatten)
+                && let [given] = &args[..]
+                && let Some(from) = given.node.place().and_then(|place| place.as_local())
+                && nested.contains(&from)
+                && of_field(from)
+            {
+                allowed.insert((body.terminator_loc(block), from));
             }
             // A keyed read JS's read itself gives as it's held
             // (`reads_held`), `map.get(key)`.
@@ -271,7 +523,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Every other mention.
         let mut out: std::collections::HashSet<Local> = (mentions.into_iter())
             .filter(|&(at, local)| {
-                (nested.contains(&local) || refs.contains_key(&local)) && !allowed.contains(&(at, local))
+                (nested.contains(&local) || refs.contains_key(&local) || field_refs.contains(&local))
+                    && !allowed.contains(&(at, local))
             })
             .map(|(_, local)| local)
             .collect();
@@ -288,6 +541,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         nested.extend(refs.keys());
+        nested.extend(field_refs.iter().copied());
         nested.retain(|local| !out.contains(local));
         let held_results = (given_back.into_iter())
             .filter(|(to, _)| nested.contains(to))

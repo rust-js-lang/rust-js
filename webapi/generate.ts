@@ -946,7 +946,13 @@ function rustType(t: IdlType, at: Position): string | { skip: string } {
 }
 
 /** A field of a dictionary: its Rust and JS names, and type. */
-type Field = { rust: string; js: string; type: string; optional: boolean };
+/**
+ * A dictionary's member: `nullable` where it's optional and nullable,
+ * WebIDL's `T?` or `any` a member may leave out, an `Option<Option<T>>` field whose
+ * `None` isn't there and `Some(None)` is `null` (#470, ADRs 0051, 0810,
+ * amended, the user's decision).
+ */
+type Field = { rust: string; js: string; type: string; optional: boolean; nullable?: boolean };
 
 /** The fields of each dictionary a result uses. */
 const usedDictionaries = new Map<string, Field[]>();
@@ -969,7 +975,8 @@ function dictionaryType(d: Def): string | { skip: string } {
     // `TextEncoderEncodeIntoResult`'s `read` and `written`, though WebIDL's
     // dictionary doesn't say `required`: its own isn't an `Option`.
     const required = m.required || [d.name, ...dictionaryAncestors(d.name)].some((n) => typescriptDictionaries.get(n)?.required.has(m.name!));
-    fields.push({ rust: snake(m.name!), js: m.name!, type: m.idlType!.nullable ? `Option<${rust}>` : rust, optional: !required });
+    const type = m.idlType!.nullable ? `Option<${rust}>` : rust;
+    fields.push({ rust: snake(m.name!), js: m.name!, type, optional: !required, nullable: !required && type.startsWith("Option<") });
   }
   // One of no fields Rust can take is an empty struct: the function gives it,
   // and nothing of it is read.
@@ -1018,7 +1025,7 @@ function paramDictionary(d: Def): string | { skip: string } {
       if (!chosen || object || chosen.includes(ANY)) continue;
       // A borrow in a field lives as long as the struct's: `&'a str`.
       const type = chosen.replace(/&(?!')/g, "&'a ").replace(/<'_>/g, "<'a>");
-      fields.push({ rust: snake(m.name!), js: m.name!, type, optional: !m.required });
+      fields.push({ rust: snake(m.name!), js: m.name!, type, optional: !m.required, nullable: !m.required && type.startsWith("Option<") });
     }
     if (fields.length === 0) return { skip: d.name };
     known = { fields, borrows: fields.some((f) => f.type.includes("'a")) };
@@ -2663,6 +2670,7 @@ for (const [name, fields] of usedDictionaries) {
   line(`pub struct ${typeName(name)} {`);
   for (const f of fields) {
     if (needsJsName(f.rust, f.js)) line(`    #[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(f.js)})]`);
+    if (f.nullable) line(`    #[cfg_attr(rust_js, rust_js::nullable)]`);
     line(`    pub ${f.rust}: ${f.optional ? `Option<${f.type}>` : f.type},`);
   }
   line(`}`);
@@ -2703,6 +2711,7 @@ for (const [name, { fields, borrows }] of [...paramDictionaries].sort(([a], [b])
   line(`pub struct ${typeName(name)}${borrows ? "<'a>" : ""} {`);
   for (const f of fields) {
     if (needsJsName(f.rust, f.js)) line(`    #[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(f.js)})]`);
+    if (f.nullable) line(`    #[cfg_attr(rust_js, rust_js::nullable)]`);
     line(`    pub ${f.rust}: ${f.optional ? `Option<${f.type}>` : f.type},`);
   }
   line(`}`);

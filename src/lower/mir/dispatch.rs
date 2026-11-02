@@ -585,6 +585,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .and_then(|place| place.as_local())
                 .is_some_and(|local| state.facts.options().nested.contains(&local))
         };
+        // `flatten()` of one `mir_nested` says may be, or of a nested field:
+        // what it holds, its `None` `null` as the field's is, `entry.value`
+        // (#470).
+        if let [x] = operands
+            && self.holds_nested_operand(state, x)
+            && self.recognition().classify(def_id, generic_args) == Some(Std::OptionFlatten)
+        {
+            let place = x.place().expect("a place");
+            return Ok(Some(match place.projection.is_empty() {
+                true => self.nested_operand(state, x, span, out)?,
+                false => self.mir_place(state, place, span, out)?,
+            }));
+        }
         // `is_some()` and `is_none()` of one, through a reference: a test of
         // its `None`, `last !== undefined` (ADR 1017, amended).
         if let [x] = operands

@@ -144,16 +144,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Rvalue::Aggregate(_, operands) = rvalue
         {
             let defined = self.defined_payload(state.body.local_decls[place.local].ty).is_some();
-            let made = match operands.iter().next() {
-                None => Expr::undefined(),
-                Some(operand) if defined => self.mir_expr(state, operand, out)?,
-                Some(operand) => {
-                    let nulled = matches!(
-                        self.stored_given(state, operand),
-                        crate::lower::aggregates::Given::Nulled
-                    );
-                    let held = self.mir_expr(state, operand, out)?;
-                    js::Storage::NullForNone.written(held, nulled)
+            let made = self.held_made(state, operands, defined, out)?;
+            return self.mir_store(state, *place, Value::Expr(made), span, out);
+        }
+        // Of a nested field, held as its payload (#470): read as it's held
+        // by one that holds it so, and a reference to it so too.
+        if place.projection.is_empty()
+            && state.facts.options().nested.contains(&place.local)
+            && let Rvalue::Use(Operand::Copy(from) | Operand::Move(from), _) | Rvalue::Ref(_, BorrowKind::Shared, from) =
+                rvalue
+            && self.nested_field(state.body, from.as_ref())
+            // Not a parameter's part its pattern binds, bound there already.
+            && state.parts.get(&place.local).is_none_or(|&arg| from.local != arg)
+        {
+            let held = self.mir_place(state, *from, span, out)?;
+            return self.mir_store(state, *place, Value::Expr(held), span, out);
+        }
+        // A nested field set, held as its payload (#470): `None` no key's
+        // `undefined`, a `Some` what it holds, its `None` `null`; what one
+        // holding it so holds, as it is; and the box of what doesn't.
+        if self.nested_field(state.body, place.as_ref()) {
+            let made = match rvalue {
+                Rvalue::Aggregate(kind, operands) if matches!(**kind, AggregateKind::Adt(..)) => {
+                    self.held_made(state, operands, false, out)?
+                }
+                Rvalue::Use(operand, _) if self.holds_nested_operand(state, operand) => {
+                    let place = operand.place().expect("a place");
+                    self.mir_place(state, place, span, out)?
+                }
+                _ => {
+                    let boxed = self.mir_rvalue(state, rvalue, span, out)?;
+                    let boxed = self.value_expr(boxed, span)?;
+                    self.held_of_boxed(boxed, out)
                 }
             };
             return self.mir_store(state, *place, Value::Expr(made), span, out);

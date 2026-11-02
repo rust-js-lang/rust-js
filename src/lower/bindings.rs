@@ -41,10 +41,11 @@ pub(super) use imports::{Export, file_stem, js_import, module_binding, namespace
 use indexed::indexed_refused;
 pub(in crate::lower) use indexed::is_indexed_list;
 pub(super) use nullable::{
-    holds_none_as_null, is_js_null, is_nullable, is_optional, null_result, null_where_made, nullable_bindings,
-    nullable_const_refused, nullable_init, nullable_items, nullable_local, nullable_local_option, nullable_option,
-    nullable_params, nullable_result, nullable_tuple_item, nullable_values, of_type_parameter, optional_result,
-    reads_a_nullable_value, reject_nullable_held, takes_nullable, takes_nullable_entries,
+    holds_nested, holds_none_as_null, is_js_null, is_nullable, is_optional, nested_refused, null_result,
+    null_where_made, nullable_bindings, nullable_const_refused, nullable_init, nullable_items, nullable_local,
+    nullable_local_option, nullable_option, nullable_params, nullable_result, nullable_tuple_item, nullable_values,
+    of_type_parameter, optional_result, reads_a_nullable_value, reject_nullable_held, takes_nullable,
+    takes_nullable_entries,
 };
 pub(in crate::lower) use paths::{Step, first_name, has_steps, read as read_path, steps, unbound};
 pub(super) use rest_values::{is_rest_value, reads_rest_value, rest_items};
@@ -187,6 +188,10 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
         if matches!(tcx.def_kind(def), DefKind::Struct | DefKind::Enum | DefKind::Union) {
             for field in tcx.adt_def(def).all_fields() {
                 let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+                if let Some(message) = nested_refused(tcx, field) {
+                    tcx.dcx().span_err(tcx.def_span(field.did), message);
+                    valid = false;
+                }
                 if is_nullable(tcx, field)
                     && nullable_option(tcx, ty).is_none()
                     && nullable_items(tcx, ty).is_none()

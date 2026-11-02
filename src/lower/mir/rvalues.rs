@@ -40,6 +40,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A reference is what it refers to (ADR 0023): a `&mut` to a
             // value JS can't share, a number's, needs what isn't made yet.
             Rvalue::Ref(_, kind, place) => {
+                // A nested field, held as its payload (#470): through a
+                // shared reference, the box code that doesn't hold it so
+                // reads, where `assign` hasn't read it as it's held; never
+                // through a `&mut`, which would write the box in it.
+                if self.nested_field(state.body, place.as_ref()) {
+                    if matches!(kind, BorrowKind::Mut { .. }) {
+                        return Err(self.unsupported(
+                            span,
+                            "a `&mut` to a `#[rust_js::nullable]` `Option<Option<T>>` field, which holds `null` for `Some(None)`: set the field whole, `s.field = Some(None)`",
+                        ));
+                    }
+                    let held = self.mir_place(state, *place, span, out)?;
+                    return Ok(Value::Expr(self.boxed_of_held(held, out)));
+                }
                 // A slice pattern's rest, through a `&mut`: a view of it.
                 if matches!(kind, BorrowKind::Mut { .. })
                     && place
@@ -617,9 +631,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // An `Option` of an `Option` held as its payload: a `Some` where
             // it isn't `undefined`, its `Some(None)` `null` (ADR 1017).
-            Rvalue::Discriminant(place)
-                if place.projection.is_empty() && state.facts.options().nested.contains(&place.local) =>
-            {
+            Rvalue::Discriminant(place) if self.held_nested(state, *place, place.projection.len()) => {
                 let held = self.mir_place(state, *place, span, out)?;
                 return Ok(Value::Tested(Expr::bin(Op::Ne, held, Expr::undefined())));
             }
@@ -778,6 +790,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             for (i, value) in given.into_iter().zip(values) {
                 let value = self.value_expr(value, span)?;
                 let field = &self.tcx.adt_def(did).non_enum_variant().fields[FieldIdx::from_usize(i)];
+                let value = self.given_field(state, field, &operands[FieldIdx::from_usize(i)], value, out);
                 let value = self.holding(value, Some(field), names[i].1);
                 // One a symbol names, `[SYMBOL]: ..` (ADR 1051).
                 props.push(match names[i].0.symbol_item() {
@@ -831,6 +844,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         false => self.value_expr(v, span),
                     })
                     .collect::<R<Vec<_>>>()?;
+                // A nested field's, held as its payload (#470).
+                let exprs = match self.tcx.adt_def(*did).is_struct() {
+                    true => {
+                        let fields = &self.tcx.adt_def(*did).non_enum_variant().fields;
+                        let mut given = Vec::with_capacity(exprs.len());
+                        for ((field, operand), e) in fields.iter().zip(&operands).zip(exprs) {
+                            given.push(self.given_field(state, field, operand, e, out));
+                        }
+                        given
+                    }
+                    false => exprs,
+                };
                 let given: Vec<Given> = (operands.iter())
                     .map(|o| match self.written_none(state.body, &state.locals, o) {
                         true => Given::WrittenNone,

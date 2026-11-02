@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "nested-payload-unchecked",
+    breaks: "a nullable `Option<Option<()>>` field is held as its payload, its `Some(Some(()))` `undefined`, `None` (#470)",
+    file: "src/lower/bindings/nullable.rs",
+    find: "    nullish.then_some(\n",
+    replace: "    (nullish && false).then_some(\n",
+    tests: ["test/diagnostics.test.ts", "-t", "nullable Option of an Option"],
+  },
+  {
+    name: "nested-nullable-outer-null",
+    breaks: "a nullable `Option<Option<T>>` field's `None` is `null`, as a nullable `Option`'s, and its `Some(None)` boxed (#470)",
+    file: "src/lower/bindings/nullable.rs",
+    find: "    said_nullable(tcx, field) && !nested_option(tcx, field)\n",
+    replace: "    said_nullable(tcx, field)\n",
+    tests: ["test/lowering-nested-options.test.ts", "-t", "a dictionary's nullable Option of an Option"],
+  },
+  {
     name: "any-value-none-nulled",
     breaks:
       "a map of any value, `Map<K, Option<&Unknown>>`, writes a `None` `null`, `data.set(key, value ?? null)`, so an `undefined` comes back `null` (#443)",

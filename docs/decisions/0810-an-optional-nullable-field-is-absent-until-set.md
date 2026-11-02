@@ -312,3 +312,15 @@ copied as `undefined` and given `null` to a nullable cell that isn't
 optional; mutations `optional-cell-set-coalesced`,
 `optional-cell-set-any-target` (`mir/dispatch.ts`) and
 `optional-cell-get-unknown` (`mir/rvalues.ts`).
+
+## Amendment (2026-11-02): an `Option<Option<T>>` says the three apart (#470)
+
+This decision's field, `#[rust_js::nullable] #[rust_js::optional]` on an
+`Option<T>`, reads an absent key and `null` as one `None`, as a program
+that doesn't tell them apart asks. Where it does, WebIDL's optional
+nullable member, `ReadableStreamReadResult`'s `value`, the field is an
+`Option<Option<T>>` marked `#[rust_js::nullable]` alone: absent `None`,
+`null` `Some(None)`, a value `Some(Some(v))` ([ADR 0051](0051-generic-options.md),
+amended, the user's decision). The two are two Rust types, each read as
+it's declared; `optional` on the second is the error it is on any field
+that isn't `nullable`'s of an `Option`.

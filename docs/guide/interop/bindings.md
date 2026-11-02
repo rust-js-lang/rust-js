@@ -1002,7 +1002,9 @@ export async function open(other) {
 - **Values are as [JavaScript types](types.md) has them**: a `&str` is a
   string, a tuple an array, a struct an object.
 - **An options object is a struct of `Option` fields**, the rest
-  `..Default::default()`. A `None` field is left out. One of numbers,
+  `..Default::default()`. A `None` field is left out; an optional
+  nullable member's, an `Option<Option<T>>`, is `null` of `Some(None)`
+  ([Option and Result](types.md#option-and-result)). One of numbers,
   `bool`s and borrows is `Copy`, as a union of them is, so what a program
   kept it gives again, `add_event_listener_named(.., Some(&options))` and
   `remove_event_listener_named(.., Some(&options))` of one value; and a

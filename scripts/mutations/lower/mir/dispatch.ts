@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "nested-flatten-unread",
+    breaks: "`flatten()` of a nested field is `$someValue(..)` of its box, not `entry.value` (#470)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            && self.recognition().classify(def_id, generic_args) == Some(Std::OptionFlatten)\n        {\n            let place = x.place().expect(\"a place\");\n",
+    replace: "            && self.recognition().classify(def_id, generic_args) == Some(Std::OptionFlatten)\n            && false\n        {\n            let place = x.place().expect(\"a place\");\n",
+    tests: ["test/lowering-nested-options.test.ts", "-t", "a dictionary's nullable Option of an Option"],
+  },
+  {
     name: "binding-impl-by-dictionary",
     breaks:
       "a std trait's method whose impl is a binding's, a `Duplex`'s `as_ref()` of its `Writable`, is called through a dictionary, which rust-js refuses, where it's the binding, the object itself (rd588)",

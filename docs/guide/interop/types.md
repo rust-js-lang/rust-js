@@ -32,6 +32,7 @@ from your crate and what a binding must be given.
 | `Option<T>` | the value, or `undefined` | [Option and Result](#option-and-result) |
 | `#[rust_js::nullable]` `Option<T>` | the value, or `null` | [Option and Result](#option-and-result) |
 | `#[rust_js::nullable]` `#[rust_js::optional]` field | absent until it's set, then the value or `null` | [Option and Result](#option-and-result) |
+| `#[rust_js::nullable]` `Option<Option<T>>` field | absent for `None`, `null` for `Some(None)`, else the value | [Option and Result](#option-and-result) |
 | `js::null()` | `null` where it's written, `None` to Rust | [Option and Result](#option-and-result) |
 | `Result<T, E>` | `{ TAG: "Ok", _0 }`, `{ TAG: "Err", _0 }` | [Option and Result](#option-and-result) |
 | `Box<T>`, `Rc<T>`, `Arc<T>` | the value itself | [Pointers](#box-rc-and-arc) |
@@ -1061,6 +1062,11 @@ export function ratio(a, b) {
   call of such a function gives `?? null` where what it gives may be
   `undefined`, and another crate's use of it as a value is an error (ADR
   0861, amended).
+  So `nullable(param)` is a promise JS's callers keep too: that they give
+  `null`, never leave it out. A parameter JS may leave out, TypeScript's
+  `param?: T` or Flow's `?T`, React's `updateContainer`'s `parentComponent`
+  and `callback`, is a plain `Option`, tested `!= null`, as the example
+  after this list's error shows.
   A closure's, `function::with_this`'s tuple, says so on the parameter,
   naming its bindings, `#[cfg_attr(rust_js, rust_js::nullable(react_name,
   target_inst))] (react_name, react_event_type, target_inst): (..)`, each
@@ -1133,6 +1139,43 @@ export function ratio(a, b) {
   rust-js: `#[rust_js::nullable]` is of a field that's an `Option`, or a `Vec` of them, or a `Cell` or a `RefCell` of one, or of a type parameter's value, whose `None` is `null`; this one isn't
   ```
 
+```rust
+use js::Unknown;
+
+// Upstream's `function update(element, parentComponent: ?Component, callback: ?Function)`:
+// JS renderers leave `callback` out, so it's a plain `Option`.
+pub fn update(element: &str, callback: Option<&dyn Fn(&str)>) -> bool {
+    if let Some(callback) = callback {
+        callback(element);
+        return true;
+    }
+    false
+}
+
+// Upstream's `prepare(moduleLoading: null | ModuleLoading)`, given `null` by each caller.
+#[cfg_attr(rust_js, rust_js::nullable(module_loading))]
+pub fn prepare(module_loading: Option<&Unknown>) -> bool {
+    module_loading.is_some()
+}
+```
+
+```js
+// Upstream's `function update(element, parentComponent: ?Component, callback: ?Function)`:
+// JS renderers leave `callback` out, so it's a plain `Option`.
+export function update(element, callback) {
+  if (callback != null) {
+    callback(element);
+    return true;
+  }
+  return false;
+}
+
+// Upstream's `prepare(moduleLoading: null | ModuleLoading)`, given `null` by each caller.
+export function prepare(moduleLoading) {
+  return moduleLoading !== null;
+}
+```
+
 - **`#[rust_js::optional]` on a cell field makes it absent until it's
   set**, a `OnceCell`, React's lazy payload's `_ioInfo?: ..`, made empty,
   `{ _status: -1 }`, then `payload._ioInfo = ..` where it's set; or a
@@ -1160,6 +1203,68 @@ export function ratio(a, b) {
   ```
   rust-js: `#[rust_js::optional]` is of a cell, a `Cell<Option<T>>`, a `RefCell` of one or a `OnceCell`, left out where it's made `None` or empty, or of a `#[rust_js::nullable]` field, whose `None` is then left out where its struct is made and `null` where it's set; an `Option` field's `None` is left out already
   ```
+
+- **`#[rust_js::nullable]` on an `Option<Option<T>>` field tells all
+  three apart**, WebIDL's optional nullable member, TypeScript's `sdpMid?:
+  string | null`: its `None` isn't there, its `Some(None)` is `null` and
+  its `Some(Some(v))` is `v`, where it's made, set and read. webapi's
+  dictionaries say it of each such member, `RTCIceCandidateInit`'s
+  `sdp_mid` and `ReadableStreamReadResult`'s `value`, so a `{ value: null
+  }` JS made is `Some(None)`. `is_some()` is `entry.value !== undefined`,
+  `matches!(.., Some(None))` `entry.value === null`, `if let
+  Some(Some(v))` `entry.value != null`, and `flatten()` the read itself,
+  its `None` `null` as a nullable field's is; a copy, a parameter's
+  pattern's too, holds it so. Given whole to code that boxes, `{:?}` or a
+  generic function, it's ADR 0051's box there, and what's given it of
+  one, `x === undefined ? undefined : $someValue(x) ?? null`. Its `.d.ts`
+  is `sdpMid?: string | null | undefined`. `T` is never what may look like `None`, a
+  `()` or a type parameter, and the field is set whole, never through a
+  `&mut`, each an error (#470, ADRs 0051 and 0810, amended, the user's
+  decision):
+
+```rust
+use js::Unknown;
+use webapi::{RTCIceCandidateInit, ReadableStreamReadResult};
+
+pub fn chunk(ReadableStreamReadResult { done, value }: ReadableStreamReadResult) -> Option<&'static Unknown> {
+    if done.unwrap_or(false) {
+        return None;
+    }
+    value.flatten()
+}
+
+pub fn ended(entry: &ReadableStreamReadResult) -> bool {
+    entry.value.is_none()
+}
+
+pub fn candidate() -> RTCIceCandidateInit {
+    RTCIceCandidateInit {
+        candidate: Some("candidate:0".to_string()),
+        sdp_mid: Some(None),
+        ..Default::default()
+    }
+}
+```
+
+```js
+export function chunk({ done, value }) {
+  if (done) {
+    return;
+  }
+  return value;
+}
+
+export function ended(entry) {
+  return entry.value === undefined;
+}
+
+export function candidate() {
+  return {
+    candidate: "candidate:0",
+    sdpMid: null,
+  };
+}
+```
 
 - **`js::null()` is a `None` that's `null` where it's written**, of any
   `Option`, usually inferred, as a field upstream types `T | null` or

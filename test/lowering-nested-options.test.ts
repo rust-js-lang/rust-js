@@ -194,3 +194,93 @@ pub fn loaded(chunk_id: &str) {
   lib.preload("b", promises, () => Promise.resolve(3));
   expect(promises).toStrictEqual([made, made]);
 });
+
+// #470 (P0, ADRs 0051 and 0810, amended, the user's decision): a
+// dictionary's `#[rust_js::nullable]` `Option<Option<T>>` field, WebIDL's
+// optional nullable member, is what JS holds: no key for `None`, `null` for
+// `Some(None)`, the value for `Some(Some(v))`. `reader.read()`'s `{ value:
+// null }` is `Some(None)`, `{}` is `None`, its `flatten()` the read itself,
+// a destructured copy too; and a candidate made `Some(None)` gives the
+// browser `sdpMid: null`, not a box.
+test("a dictionary's nullable Option of an Option is what JS holds", async () => {
+  const dir = fixture("nested-option-dictionary");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use js::Unknown;
+use webapi::{RTCIceCandidateInit, ReadableStreamReadResult};
+
+pub fn has_value(entry: &ReadableStreamReadResult) -> bool {
+    entry.value.is_some()
+}
+
+pub fn describe(entry: &ReadableStreamReadResult) -> &'static str {
+    match entry.value {
+        None => "missing",
+        Some(None) => "null",
+        Some(Some(_)) => "value",
+    }
+}
+
+pub fn nothing(entry: &ReadableStreamReadResult) -> bool {
+    matches!(entry.value, Some(None))
+}
+
+pub fn value_of(entry: &ReadableStreamReadResult) -> Option<&'static Unknown> {
+    entry.value.flatten()
+}
+
+pub fn present(entry: &ReadableStreamReadResult) -> Option<&'static Unknown> {
+    if let Some(Some(value)) = &entry.value {
+        return Some(*value);
+    }
+    None
+}
+
+pub fn chunk(ReadableStreamReadResult { done, value }: ReadableStreamReadResult) -> Option<&'static Unknown> {
+    if done.unwrap_or(false) {
+        return None;
+    }
+    value.flatten()
+}
+
+pub fn candidate(at: u32) -> RTCIceCandidateInit {
+    RTCIceCandidateInit {
+        candidate: Some("c".to_string()),
+        sdp_mid: if at == 0 {
+            None
+        } else if at == 1 {
+            Some(None)
+        } else {
+            Some(Some("m".to_string()))
+        },
+        ..Default::default()
+    }
+}
+
+pub fn mid(init: &RTCIceCandidateInit) -> String {
+    format!("{:?}", init.sdp_mid)
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return entry.value !== undefined;");
+  expect(js).toContain("return entry.value === null;");
+  expect(js).toContain("export function valueOf(entry) {\n  return entry.value;\n}");
+  expect(js).toContain("export function present(entry) {\n  if (entry.value != null) {\n    return entry.value;\n  }\n}");
+  expect(js).toContain("export function chunk({ done, value }) {\n  if (done) {\n    return;\n  }\n  return value;\n}");
+  const lib = await import(join(dir, "lib.js"));
+  const entries = [{ done: true }, { value: undefined, done: true }, { value: null, done: false }, { value: 0, done: false }, { value: "a", done: false }];
+  expect(entries.map(lib.hasValue)).toEqual([false, false, true, true, true]);
+  expect(entries.map(lib.describe)).toEqual(["missing", "missing", "null", "value", "value"]);
+  expect(entries.map(lib.nothing)).toEqual([false, false, true, false, false]);
+  expect(entries.map(lib.valueOf)).toEqual([undefined, undefined, null, 0, "a"]);
+  expect(entries.map(lib.present)).toEqual([undefined, undefined, undefined, 0, "a"]);
+  expect(entries.map(lib.chunk)).toEqual([undefined, undefined, null, 0, "a"]);
+  expect([0, 1, 2].map((at) => JSON.stringify(lib.candidate(at)))).toEqual([
+    '{"candidate":"c"}',
+    '{"candidate":"c","sdpMid":null}',
+    '{"candidate":"c","sdpMid":"m"}',
+  ]);
+  expect([{}, { sdpMid: null }, { sdpMid: "m" }].map(lib.mid)).toEqual(["None", "Some(None)", 'Some(Some("m"))']);
+});

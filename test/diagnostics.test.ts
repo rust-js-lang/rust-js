@@ -54,6 +54,9 @@ for (const [name, source, message, crate] of [
   ["a pub thread-local of a dyn Fn lent mutably", "thread_local! {\n    pub static N: u32 = call(&|| 3);\n}\nfn call(f: &dyn Fn() -> u32) -> u32 {\n    let mut g = f;\n    let r = &mut g;\n    *r = &|| 4;\n    g()\n}", "does not support a `pub` thread-local whose initializer may run what rust-js can't follow yet"],
   // A `Cell` or a `RefCell` of one is (ADRs 0772, 0863); of a number isn't.
   ["a nullable field that isn't an Option", "pub struct Task {\n    #[rust_js::nullable]\n    pub callback: std::cell::RefCell<u32>,\n}", "is of a field that's an `Option`"],
+  // #470: a nullable `Option<Option<T>>` field holds `T` itself, `field?: T | null`, and is set whole.
+  ["a nullable Option of an Option of what may be None", "pub struct Init {\n    #[rust_js::nullable]\n    pub mid: Option<Option<()>>,\n}", "holds `T` itself, which can't be `undefined` or `null`"],
+  ["a &mut of a nullable Option of an Option", "pub struct Init {\n    #[rust_js::nullable]\n    pub mid: Option<Option<u32>>,\n}\npub fn f(init: &mut Init) { if let Some(mid) = &mut init.mid { *mid = None; } }", "set the field whole, `s.field = Some(None)`"],
   // An `Option` field's `None` is left out where it's made already (ADR 0810).
   ["an optional field that isn't nullable", "pub struct Context {\n    #[rust_js::optional]\n    pub renderer: Option<u32>,\n}", "`#[rust_js::optional]` is of a cell, a `Cell<Option<T>>`"],
   ["a lazy parameter that isn't there", '#[rust_js::link_name = "f"]\n#[rust_js::lazy(init)]\npub fn f(initial: impl FnOnce() -> u32) {}', "`#[rust_js::lazy(init)]` names no parameter of this function"],

@@ -3,13 +3,88 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "held-some-null-for-none",
+    breaks:
+      "a `Some` of a value `null` but never `undefined`, held as its value, is written as an inner `Option`'s, `fallback ?? null` (rd547, ADR 1017 amended)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "            Some(operand) if defined => self.mir_expr(state, operand, out)?,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_null_option_held.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "nested-option-none-null",
+    breaks:
+      "a held `Option` of an `Option`'s `None` is `null`, its `Some(None)`'s, so the two are equal (ADR 1017)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "            None => Expr::undefined(),\n",
+    replace: "            None => Expr::null(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
+  },
+  {
+    name: "nested-option-some-none-undefined",
+    breaks:
+      "a held `Option` of an `Option` made of an `Option` whose `None` is `undefined` keeps it, so its `Some(None)` is its `None` (ADR 1017)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "                js::Storage::NullForNone.written(held, nulled)\n",
+    replace: "                { let _ = nulled; held }\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
+  },
+  {
+    name: "nested-field-unseen",
+    breaks: "a dictionary's nullable `Option<Option<T>>` field is read as ADR 0051's box: `{ value: null }` is `None` (#470)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "                bindings::holds_nested(self.tcx, &adt.non_enum_variant().fields[field])\n",
+    replace: "                bindings::holds_nested(self.tcx, &adt.non_enum_variant().fields[field]) && false\n",
+    tests: ["test/lowering-nested-options.test.ts", "-t", "a dictionary's nullable Option of an Option"],
+  },
+  {
+    name: "nested-field-boxed-as-held",
+    breaks: "a nested field read whole is given as it's held to code that boxes: its `Some(None)`, `null`, is shown `None` (#470)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "        let some = self.some(held.clone());\n        Expr::cond(Expr::bin(Op::Eq, held, Expr::undefined()), Expr::undefined(), some)\n",
+    replace: "        held\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_nullable_field.rs$"],
+  },
+  {
+    name: "nested-field-given-none-undefined",
+    breaks: "a boxed `Some(None)` given a nested field is `undefined`, read back as `None` (#470)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "        let value = self.some_value(boxed.clone());\n        let held = js::Storage::NullForNone.written(value, false);\n",
+    replace: "        let value = self.some_value(boxed.clone());\n        let held = value;\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_nullable_field.rs$"],
+  },
+  {
+    name: "nested-field-given-boxed",
+    breaks: "what a struct literal gives a nested field is ADR 0051's box, `{ $someNone: 0 }`, where JS reads `null` (#470)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "            true => self.held_of_boxed(value, out),\n            false => value,\n",
+    replace: "            true => value,\n            false => value,\n",
+    tests: ["test/lowering-nested-options.test.ts", "-t", "a dictionary's nullable Option of an Option"],
+  },
+  {
+    name: "nested-field-refs-unheld",
+    breaks: "`entry.value.is_some()` reads the field's box, `$some(..)`, not `entry.value !== undefined` (#470)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "                    if writes[to] == 1 && self.nested_field(body, of.as_ref()))\n",
+    replace: "                    if writes[to] == 1 && self.nested_field(body, of.as_ref()) && false)\n",
+    tests: ["test/lowering-nested-options.test.ts", "-t", "a dictionary's nullable Option of an Option"],
+  },
+  {
+    name: "nested-field-copies-boxed",
+    breaks: "a copy of a nested field, a destructured parameter's `value`, is boxed, `value.flatten()` `$someValue(value)` (#470)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "        let of_field = |local: Local| of_fields.contains(&local);\n",
+    replace: "        let of_field = |local: Local| of_fields.contains(&local) && false;\n",
+    tests: ["test/lowering-nested-options.test.ts", "-t", "a dictionary's nullable Option of an Option"],
+  },
+  {
     name: "nested-option-mentions-unchecked",
     breaks:
       "an `Option` of an `Option` given to a function is held as its payload too, so the function, which boxes, reads its `Some(None)`, `null`, as `None` (ADR 1017)",
     file: "src/lower/mir/nested_options.rs",
-    find: "                (nested.contains(&local) || refs.contains_key(&local)) && !allowed.contains(&(at, local))\n",
-    replace:
-      "                (nested.contains(&local) || refs.contains_key(&local)) && false\n",
+    find: "                    && !allowed.contains(&(at, local))\n",
+    replace: "                    && false\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
   },
   {

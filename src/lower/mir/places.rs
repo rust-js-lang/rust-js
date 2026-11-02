@@ -155,10 +155,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             // What the `Some` of an `Option` of an `Option` held as its
-            // payload holds: the payload itself, its `None` `null` (ADR 1017).
-            if at == 1
-                && matches!(place.projection[0], PlaceElem::Downcast(_, some) if some.as_u32() == 1)
-                && state.facts.options().nested.contains(&place.local)
+            // payload holds: the payload itself, its `None` `null` (ADR 1017);
+            // a nested field's too (#470).
+            if at >= 1
+                && matches!(place.projection[at - 1], PlaceElem::Downcast(_, some) if some.as_u32() == 1)
+                && self.held_nested(state, place, at - 1)
             {
                 placed = false;
                 ty = ty.projection_ty(self.tcx, elem);

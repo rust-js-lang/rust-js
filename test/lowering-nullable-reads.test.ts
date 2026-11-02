@@ -202,6 +202,15 @@ pub fn pass_on(current: &Fiber, nearest: Option<&Rc<Fiber>>) {
     capture(current, nearest);
 }
 
+#[cfg_attr(rust_js, rust_js::nullable(nearest))]
+pub fn pass_on_held(current: &Fiber, nearest: Option<&Rc<Fiber>>) {
+    capture(current, nearest);
+}
+
+pub fn held() -> fn(&Fiber, Option<&Rc<Fiber>>) {
+    pass_on_held
+}
+
 #[cfg_attr(rust_js, rust_js::nullable(target))]
 pub fn push_search_target(target: Option<Rc<Fiber>>) {
     SEARCH_TARGET.set(target);
@@ -229,6 +238,8 @@ pub fn find_strict_root(fiber: &Rc<Fiber>) -> Option<Rc<Fiber>> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function passOn(current, nearest) {\n  rustJsCapture(current, nearest);\n}");
+  // One used as a value, whose callers JS's calls may be: as declared.
+  expect(js).toContain("export function passOnHeld(current, nearest) {\n  rustJsCapture(current, nearest);\n}");
   expect(js).toContain("export function pushSearchTarget(target) {\n  searchTarget = target;\n}");
   expect(js).toContain("export function popSearchTarget() {\n  return searchTarget;\n}");
   expect(js).toContain("  let maybeStrictRoot = null;\n");

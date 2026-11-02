@@ -423,3 +423,97 @@ give the closure's own `Option`, boxed as the closure makes it**, as
 needs ADR 1017's payload representation of a map's value, which a `Map`
 holds; not yet. Held by `test/corpus/local_borrow_nested_option.rs`, with
 native Rust, and the mutation `local-borrow-nested-option-refused`.
+
+## Amendment (2026-11-02): a nullable `Option<Option<T>>` field is held as its payload (#470, the user's decision)
+
+#470, P0, a wrong answer both ways. webapi's dictionaries hold an optional
+nullable member, WebIDL's `DOMString? sdpMid` a dictionary may leave out
+or `any value`, as an `Option<Option<T>>` field, and this decision's box
+was its representation:
+
+```rust
+pub fn has_value(entry: &ReadableStreamReadResult) -> bool {
+    entry.value.is_some()
+}
+
+pub fn candidate() -> RTCIceCandidateInit {
+    RTCIceCandidateInit { candidate: Some("c".to_string()), sdp_mid: Some(None), ..Default::default() }
+}
+```
+
+```js
+export function hasValue(entry) {
+  return entry.value != null;
+}
+export function candidate() {
+  return { candidate: "c", sdpMid: $some(undefined) };
+}
+```
+
+Of `{ value: null, done: false }`, what `reader.read()` resolves a `null`
+chunk with, `hasValue` was `false` where Rust's is `true`, and the browser
+was given `sdpMid: {"$someNone":0}` where it reads `null`. JS holds the
+member's three values as three of its own: no key, `null`, the value.
+
+The user chose to say it on the field (option A of two): **a
+`#[rust_js::nullable]` field of an `Option<Option<T>>`
+(`bindings::holds_nested`) is ADR 1017's held form wherever it's made, set
+or read: its `None` not there, `undefined`, its `Some(None)` `null`, its
+`Some(Some(v))` `v`.** webapi's generator writes the attribute on each
+optional member whose type is an `Option` already, nineteen of them, and a
+binding of a library's own JS object says it the same way. `nullable` on
+an `Option<T>` field is still ADR 0275's, its `None` `null`; on an
+`Option<Option<T>>` field it was that of the outer `None`, which boxed
+`Some(None)` and was of no use, so no program changes.
+
+- **What reads it** (`mir/nested_options.rs`, the owner, and its callers):
+  its discriminant `!== undefined` (`rvalues.rs`), what its `Some` holds
+  the value itself, its `None` `null` as a nullable field's is
+  (`places.rs`), and `flatten()` the read, `entry.value` (`dispatch.rs`).
+  A shared reference made once to it, a copy of it, and a copy of a copy
+  are held so too (`mir_nested`'s `field_refs` and `of_fields`), so
+  `is_some()` is `entry.value !== undefined`, `matches!(.., Some(None))`
+  `entry.value === null`, and a parameter's pattern, Flight's
+  `ReadableStreamReadResult { done, value }`, is `({ done, value })` with
+  `value.flatten()` `value`.
+- **What sets it** (`assign.rs`, `rvalues.rs`'s struct literal): `None`
+  `undefined`, left out of a literal; `Some(x)` `x ?? null`, or `x` of what's
+  `null` or a value already; what one that holds it so holds, as it is.
+- **Where it meets the box**, given whole to code that boxes, `{:?}`, a
+  generic function, a shared reference given on, it's the box there,
+  `x === undefined ? undefined : $some(x)` (`boxed_of_held`), and a box
+  given it is `x === undefined ? undefined : $someValue(x) ?? null`
+  (`held_of_boxed`), each value read once. One representation per place:
+  the field's is always the held form, and a local holds it so only where
+  `mir_nested` says, else its box all through.
+- **Refused**: a `&mut` to it, which would be a handle that writes the box
+  in it ("set the field whole, `s.field = Some(None)`"), and a `T` that may
+  look like `None`, a `()`, an `Option`, a type parameter, a unit struct or
+  an untagged enum of `undefined` or `null`, whose `Some(Some(v))` couldn't
+  be told from `Some(None)` (`bindings::nested_refused`).
+- Its `.d.ts` is `sdpMid?: string | null | undefined`.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior: each of the three values is its own JS value, as JS
+holds them, and each read and write is Rust's.
+
+Not yet: a local of a `T` with a destructor, a `String`'s, isn't held
+(ADR 1017's rule), so `sdp_mid: if c { Some(None) } else { .. }` is boxed in
+its temporary and converted where it's given, correct but not what a
+person writes.
+
+Held by corpus `nested_option_nullable_field` (made of a constant, a
+variable, a parameter and another field, read by `match`, `matches!`,
+`is_some()`, `is_none()`, `if let`, `flatten()`, a copy taken apart, given
+whole, shown, compared and set again, against native Rust),
+`test/lowering-nested-options.test.ts`'s "a dictionary's nullable Option of
+an Option is what JS holds" (webapi's `ReadableStreamReadResult` of `{}`,
+`{ value: undefined }`, `{ value: null }` and values, destructured, and
+`RTCIceCandidateInit` made `Some(None)`, in Node),
+`test/diagnostics.test.ts`'s two refusals and `test/declarations.test.ts`'s
+"declarations take JS's null for an Option"; mutations `nested-field-*` in
+`lower/mir/nested_options.ts`, `places.ts`, `rvalues.ts`, `operands.ts`,
+`assign.ts`, `dispatch.ts` and `lower/declarations.ts`,
+`nested-flatten-unread` (`lower/mir/dispatch.ts`), and
+`nested-payload-unchecked` and `nested-nullable-outer-null`
+(`lower/bindings/nullable.ts`).

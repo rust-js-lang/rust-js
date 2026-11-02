@@ -723,8 +723,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
             });
             // A nullable `Cell`'s, the `Option` it holds, the field (ADR 0772);
             // a `OnceCell`'s, absent until it's set (ADR 0847).
+            // A nested one's, the `Option` it holds, `field?: T | null` (#470).
+            let nested = super::bindings::holds_nested(self.tcx, field);
             let option = match is_nullable(self.tcx, field) {
                 true => super::bindings::nullable_option(self.tcx, ty).and_then(|option| self.option(option)),
+                false if nested => self.option(ty).and_then(|option| self.option(option)),
                 false => self.option(ty).or_else(|| self.once_cell_item(ty)),
             };
             let (optional, ty) = match option {
@@ -732,7 +735,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     let inner = self.as_written(written.and_then(|w| self.written_option(w)), |out| out.ts(inner));
                     // Nullable, or a plain one a `js::null()` is written
                     // to, which may hold `null` (ADR 0935, amended).
-                    match is_nullable(self.tcx, field) || self.null_fields.contains(&field.did) {
+                    match is_nullable(self.tcx, field) || nested || self.null_fields.contains(&field.did) {
                         true => (true, json!({ "kind": "union", "types": [inner, keyword("null")] })),
                         false => (true, inner),
                     }

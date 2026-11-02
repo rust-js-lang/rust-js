@@ -3,6 +3,30 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "nested-field-tested-loose",
+    breaks: "a nested field's `None` is tested `== null`, so `{ value: null }` is `None` (#470)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "            Rvalue::Discriminant(place) if self.held_nested(state, *place, place.projection.len()) => {\n",
+    replace: "            Rvalue::Discriminant(place) if place.projection.is_empty() && self.held_nested(state, *place, 0) => {\n",
+    tests: ["test/lowering-nested-options.test.ts", "-t", "a dictionary's nullable Option of an Option"],
+  },
+  {
+    name: "nested-field-lent-mut",
+    breaks: "a `&mut` to a nested field is a handle that writes the box in it (#470)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                    if matches!(kind, BorrowKind::Mut { .. }) {\n                        return Err(self.unsupported(\n",
+    replace: "                    if matches!(kind, BorrowKind::Mut { .. }) && false {\n                        return Err(self.unsupported(\n",
+    tests: ["test/diagnostics.test.ts", "-t", "nullable Option of an Option"],
+  },
+  {
+    name: "nested-field-literal-boxed",
+    breaks: "a nested field a struct literal gives is ADR 0051's box (#470)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                            given.push(self.given_field(state, field, operand, e, out));\n",
+    replace: "                            given.push({ let _ = (field, operand); e });\n",
+    tests: ["test/lowering-nested-options.test.ts", "-t", "a dictionary's nullable Option of an Option"],
+  },
+  {
     name: "nullable-local-read-unnulled",
     breaks:
       "a nullable thread-local read whole or taken, `KEY.with_borrow(Clone::clone)`, `KEY.take()`, kept in a guard's field is restored `?? null`, as if it may be `undefined` (rd523)",

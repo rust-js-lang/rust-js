@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "nested-field-set-boxed",
+    breaks: "a nested field set, `changed.sdp_mid = Some(None)`, holds the box (#470)",
+    file: "src/lower/mir/assign.rs",
+    find: "                    let boxed = self.value_expr(boxed, span)?;\n                    self.held_of_boxed(boxed, out)\n",
+    replace: "                    self.value_expr(boxed, span)?\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_nullable_field.rs$"],
+  },
+  {
+    name: "nested-field-read-into-held-boxed",
+    breaks: "a local that holds a nested field's copy as it's held is given the box (#470)",
+    file: "src/lower/mir/assign.rs",
+    find: "            // Not a parameter's part its pattern binds, bound there already.\n",
+    replace: "            && false\n",
+    tests: ["test/lowering-nested-options.test.ts", "-t", "a dictionary's nullable Option of an Option"],
+  },
+  {
     name: "made-array-unplaced",
     breaks:
       "an array a statement makes is where its Rust is, `&[key], // path` of a call's arguments, whose line's JS the comment is after (ADR 0444, amended)",
@@ -949,24 +965,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "nested-option-none-null",
-    breaks:
-      "a held `Option` of an `Option`'s `None` is `null`, its `Some(None)`'s, so the two are equal (ADR 1017)",
-    file: "src/lower/mir/assign.rs",
-    find: "                None => Expr::undefined(),\n",
-    replace: "                None => Expr::null(),\n",
-    tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
-  },
-  {
-    name: "nested-option-some-none-undefined",
-    breaks:
-      "a held `Option` of an `Option` made of an `Option` whose `None` is `undefined` keeps it, so its `Some(None)` is its `None` (ADR 1017)",
-    file: "src/lower/mir/assign.rs",
-    find: "                    js::Storage::NullForNone.written(held, nulled)\n",
-    replace: "                    { let _ = nulled; held }\n",
-    tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
-  },
-  {
     name: "valued-of-a-bindings-box",
     breaks:
       "a `let` of the `Box` a binding gives, an event's `spawn`'s, is a `const` of its arrow, `const handleCopy = async () => ..`, where react.dev writes `async function handleCopy()` (ADR 0882, amended)",
@@ -1050,15 +1048,5 @@ export const mutations: Mutation[] = [
     find: "            let param = (self.tcx)\n                .instantiate_bound_regions_with_erased(\n                    self.tcx\n                        .fn_sig(def_id)\n                        .instantiate(self.tcx, generic_args)\n                        .skip_normalization(),\n                )\n                .inputs()[i];\n",
     replace: "            let param = self.tcx.fn_sig(def_id).instantiate(self.tcx, generic_args).skip_binder().inputs()[i];\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_reference_changed_through_mut\\.rs$"],
-  },
-  {
-    name: "held-some-null-for-none",
-    breaks:
-      "a `Some` of a value `null` but never `undefined`, held as its value, is written as an inner `Option`'s, `fallback ?? null` (rd547, ADR 1017 amended)",
-    file: "src/lower/mir/assign.rs",
-    find: "                Some(operand) if defined => self.mir_expr(state, operand, out)?,\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^untagged_null_option_held.rs$"],
-    snapshots: true,
   },
 ];
