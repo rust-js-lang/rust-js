@@ -579,6 +579,18 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         })
     }
 
+    /// Whether no value of the untagged enum `adt` is `undefined`: each of
+    /// its variants one JS tells by a kind, `null`'s among them, but not
+    /// `undefined`'s. An `Option` of one that holds `null` is then its value
+    /// where it's held, its `None` `undefined` (`defined_payload`, ADR 1017,
+    /// amended).
+    pub(super) fn never_undefined(&self, adt: AdtDef<'tcx>, args: GenericArgsRef<'tcx>) -> bool {
+        adt.variants().iter().all(|variant| {
+            (self.untagged_variant_kind(variant, args))
+                .is_some_and(|kind| kind.parts().iter().all(|part| *part != Kind::Undefined))
+        })
+    }
+
     /// Whether a value of a payload of type `ty` may have the member `key`:
     /// a struct that declares it, or another untagged enum's that does.
     fn has_member(&self, ty: Ty<'tcx>, key: &str, own: &Kind) -> bool {

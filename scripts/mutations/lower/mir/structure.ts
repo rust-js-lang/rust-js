@@ -543,4 +543,13 @@ export const mutations: Mutation[] = [
     replace: "                } else if false && place.projection.is_empty() && self.is_guard(state.body.local_decls[place.local].ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "guard_value_read_before_write"],
   },
+  {
+    name: "held-read-binding-only",
+    breaks:
+      "a std map's `get` writing a local held as its value is still `$someGet`'s box, which `=== undefined` and `=== null` read wrongly (rd547, ADR 1017 amended)",
+    file: "src/lower/mir/structure.rs",
+    find: "                                self.reads_held(def_id, args, destination.ty(&state.body.local_decls, self.tcx).ty)\n",
+    replace: "                                bindings::reads_a_nullable_value(self.tcx, def_id, args)\n",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_null_option_held.rs$"],
+  },
 ];

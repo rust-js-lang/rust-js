@@ -779,4 +779,13 @@ export const mutations: Mutation[] = [
     replace: "                if let Some(at) = super::recognition::transparent_field(self.tcx, *adt)\n                    && false =>\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
   },
+  {
+    name: "never-undefined-of-undefined",
+    breaks:
+      "an untagged enum one of whose variants is `undefined` is said never to be, so a map's `Some(Missing)` is `fields.get(at)`'s `undefined`, read as `None` (rd547, ADR 1017 amended)",
+    file: "src/lower/untagged.rs",
+    find: "                .is_some_and(|kind| kind.parts().iter().all(|part| *part != Kind::Undefined))\n",
+    replace: "                .is_some()\n",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_null_option_held.rs$"],
+  },
 ];

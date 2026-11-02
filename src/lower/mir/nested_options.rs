@@ -1,27 +1,32 @@
 //! The locals an `Option` of an `Option` is held in as its payload (ADR
 //! 1017): its `None` `undefined`, its `Some(None)` `null` and its
-//! `Some(Some(v))` `v`, where each of its reads knows what its writes made.
+//! `Some(Some(v))` `v`, where each of its reads knows what its writes made;
+//! and so an `Option` of a value that's `null` but never `undefined`, its
+//! `Some(v)` `v` (ADR 1017, amended).
 
 use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The locals `OptionWrites::nested` says (ADR 1017): each an `Option`
     /// of an `Option` whose payload never looks like `None`
-    /// (`nested_payload`), of no drop, neither a parameter nor the result,
-    /// and each shared reference to one an `==` is given. Each written only
-    /// `None`, `Some(..)` or another such, and read only by another such,
-    /// by its discriminant, by its `Some`'s payload, `(x as Some).0`, or,
-    /// through a reference, by an `==` of two such: so each read knows
-    /// what its writes made. One read any other way, given to a function,
-    /// returned, captured or borrowed `&mut`, isn't, nor what it's copied
-    /// to or from, or compared with.
+    /// (`nested_payload`), or of a value never `undefined` that may be
+    /// `null` (`defined_payload`), of no drop, neither a parameter nor the
+    /// result, and each shared reference to one an `==` is given. Each
+    /// written only `None`, `Some(..)`, another such, its `cloned()`, or a
+    /// keyed read JS's read gives as it's held (`reads_held`), and read
+    /// only by another such, by its discriminant, by its `Some`'s payload,
+    /// `(x as Some).0`, or, through a reference, by an `==` of two such: so
+    /// each read knows what its writes made. One read any other way, given
+    /// to a function, returned, captured or borrowed `&mut`, isn't, nor
+    /// what it's copied to or from, or compared with.
     pub(super) fn mir_nested(&self, body: &mir::Body<'tcx>, locals: &Locals) -> std::collections::HashSet<Local> {
         let decls = &body.local_decls;
         let mut nested: std::collections::HashSet<Local> = (decls.indices())
             .filter(|&local| local.as_usize() > body.arg_count)
             .filter(|&local| {
                 let ty = decls[local].ty;
-                self.nested_payload(ty).is_some() && !ty.needs_drop(self.tcx, self.typing_env)
+                (self.nested_payload(ty).is_some() || self.defined_payload(ty).is_some())
+                    && !ty.needs_drop(self.tcx, self.typing_env)
             })
             .collect();
         if nested.is_empty() {
@@ -114,7 +119,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // from the `undefined` a `None` is everywhere else
                     // (`only_tested`): a callback given it would be
                     // given `null`, and a `None` of any shape's value
-                    // would be `null`, `Kind::Null`, whichever it was.
+                    // would be `null`, `Kind::Null`, whichever it was. A
+                    // value never `undefined` is the value it is anywhere
+                    // (`defined_payload`), its `null` its own.
                     Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _)
                     | Rvalue::Ref(_, BorrowKind::Shared, of)
                     | Rvalue::CopyForDeref(of)
@@ -122,6 +129,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             && nested.contains(&of.local)
                             && payload(of)
                             && (!of.projection[2..].iter().all(|elem| *elem == PlaceElem::Deref)
+                                || self.defined_payload(decls[of.local].ty).is_some()
                                 || to
                                     .as_local()
                                     .is_some_and(|held| self.only_tested(body, held, locals, &mentions))) =>
@@ -170,18 +178,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     allowed.insert((body.terminator_loc(block), reference));
                 }
             }
-            // A keyed read of a value whose `None` its collection holds as
-            // `null`, `map.get(key)`: JS's read tells the three apart (ADR
-            // 0884, amended).
+            // A keyed read JS's read itself gives as it's held
+            // (`reads_held`), `map.get(key)`.
             if let mir::TerminatorKind::Call { func, destination, .. } = &data.terminator().kind
                 && let Some(to) = destination.as_local()
                 && nested.contains(&to)
                 && let Some((def_id, args)) = func.const_fn_def()
-                && bindings::reads_a_nullable_value(self.tcx, def_id, args)
+                && self.reads_held(def_id, args, decls[to].ty)
             {
                 allowed.insert((body.terminator_loc(block), to));
             }
-            // An `==` of two of them, each through a reference.
+            // `cloned()` or `copied()` of one, to another, whose clone is the
+            // value itself (`clone_value`'s): the value, as it's held.
+            if let mir::TerminatorKind::Call {
+                func,
+                args,
+                destination,
+                ..
+            } = &data.terminator().kind
+                && let Some(to) = destination.as_local()
+                && nested.contains(&to)
+                && let [given] = &args[..]
+                && let Some(from) = given.node.place().and_then(|place| place.as_local())
+                && nested.contains(&from)
+                && let Some((def_id, generic_args)) = func.const_fn_def()
+                && self.recognition().classify(def_id, generic_args) == Some(Std::OptionCloned)
+                && !self.needs_clone(decls[to].ty)
+            {
+                let at = body.terminator_loc(block);
+                allowed.extend([(at, to), (at, from)]);
+                links.push((to, from));
+            }
+            // An `==` of two of them, each through a reference, of an
+            // `Option` of an `Option` (`nested_equality`'s).
             if let mir::TerminatorKind::Call { func, args, .. } = &data.terminator().kind
                 && let Some((def_id, _)) = func.const_fn_def()
                 && (self.tcx.trait_of_assoc(def_id)).is_some_and(|trait_id| {
@@ -194,6 +223,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && let (Some(a), Some(b)) = (a.node.place(), b.node.place())
                 && let (Some(a), Some(b)) = (a.as_local(), b.as_local())
                 && let (Some(&x), Some(&y)) = (refs.get(&a), refs.get(&b))
+                && self.nested_payload(decls[x].ty).is_some()
             {
                 let at = body.terminator_loc(block);
                 allowed.extend([(at, a), (at, b)]);
@@ -222,6 +252,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         nested.extend(refs.keys());
         nested.retain(|local| !out.contains(local));
         nested
+    }
+
+    /// Whether a call of `def_id` reads a keyed collection's value as JS's
+    /// read itself does where what it gives, of type `ty`, is held as its
+    /// payload: `undefined` of a key it lacks, and the value of one it has,
+    /// never `undefined`. A binding's of a value whose `None` it holds as
+    /// `null` (ADR 0884, amended); and a std map's `get` of a value that's
+    /// never `undefined`, `null` one of them (`defined_payload`), as a JS
+    /// `Map` holds its values as they are, `chunkCache.get(chunkId)`, its
+    /// box `$someGet`'s elsewhere (ADR 1017, amended).
+    pub(super) fn reads_held(
+        &self,
+        def_id: rustc_span::def_id::DefId,
+        args: ty::GenericArgsRef<'tcx>,
+        ty: Ty<'tcx>,
+    ) -> bool {
+        bindings::reads_a_nullable_value(self.tcx, def_id, args)
+            || (self.defined_payload(ty).is_some()
+                && self.recognition().classify(def_id, args) == Some(Std::Map(MapOp::Get)))
     }
 
     /// Whether `held`, the inner `Option` a `Some` of one held as its

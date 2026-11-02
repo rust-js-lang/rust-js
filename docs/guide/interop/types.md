@@ -1248,6 +1248,48 @@ export function changes(listeners) {
   return count;
 }
 ```
+
+  So is a variable's `Option` of an untagged enum that may be `null`
+  but is never `undefined`, none of its variants `#[rust_js::undefined]`,
+  and of no destructor: its `None` is `undefined` and its `Some(v)` `v`,
+  read whole too. A std map's `get` of one, and its `cloned()` or
+  `copied()` where the clone is the value, are JS's `map.get(key)`, as
+  React's Flight client reads its chunk cache, a `Map<string, null |
+  Promise<any>>`; given on or compared, it's `$someGet`'s box
+  ([ADR 1017](../../decisions/1017-an-option-of-an-option-held-where-its-made-is-its-payload.md), amended):
+
+```rust
+use std::collections::HashMap;
+
+use js::Promise;
+
+#[derive(Clone)]
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum ChunkEntry {
+    Pending(Promise<u32>),
+    #[cfg_attr(rust_js, rust_js::null)]
+    Loaded,
+}
+
+pub fn preload(cache: &HashMap<String, ChunkEntry>, id: &str, promises: &mut Vec<Promise<u32>>) {
+    match cache.get(id).cloned() {
+        None => {}
+        Some(ChunkEntry::Pending(entry)) => promises.push(entry),
+        Some(ChunkEntry::Loaded) => {}
+    }
+}
+```
+
+```js
+export function preload(cache, id, promises) {
+  const entry = cache.get(id);
+  if (entry !== undefined) {
+    if (entry !== null) {
+      promises.push(entry);
+    }
+  }
+}
+```
 - **A `Result` is an object of its `TAG`**, `{ TAG: "Ok", _0: v }`, and
   `Ok(())` is `{ TAG: "Ok" }` ([ADR 0035](../../decisions/0035-results-and-throwing-js.md)).
   A binding returns one to say JS may throw: see

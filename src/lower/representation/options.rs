@@ -54,6 +54,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (!self.boxed_payload(payload)).then_some(payload)
     }
 
+    /// Of an `Option<V>`, or an `Option<&V>`, whose `Some` is boxed as a
+    /// `V` may be `null`, an untagged enum's `#[rust_js::null]` variant,
+    /// and whose `V` is never `undefined` (`untagged::never_undefined`), so
+    /// a `Some` of it is `V` itself where nothing else boxes it: its `V`. A
+    /// local MIR makes and reads only where it's held is its `V` then, its
+    /// `None` `undefined`, as upstream's `Map<string, null | Promise>`'s
+    /// read is, `chunkCache.get(chunkId) === undefined` (ADR 1017, amended).
+    pub(in crate::lower) fn defined_payload(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        let some = self.option_of(ty)?;
+        if !self.boxed_payload(some) {
+            return None;
+        }
+        let held = match some.kind() {
+            ty::Ref(_, held, ty::Mutability::Not) => *held,
+            _ => some,
+        };
+        let (adt, args) = self.untagged(held)?;
+        self.recognition().never_undefined(adt, args).then_some(held)
+    }
+
     /// Is `ty` a type parameter JS gives, of a function JS calls, or of a
     /// copy of one its values reach: any JS value, `undefined` too, whose
     /// `Some` is the value, as TypeScript's `T | undefined` says (ADR 0051,

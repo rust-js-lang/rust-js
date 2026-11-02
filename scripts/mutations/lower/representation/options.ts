@@ -100,4 +100,14 @@ export const mutations: Mutation[] = [
     replace: ")",
     tests: ["test/class-components.test.ts", "-t", "ref is its instance"],
   },
+  {
+    name: "defined-payload-unboxed-too",
+    breaks:
+      "an `Option` of an untagged enum that's never `null` either is held as its value, tested `=== undefined` where any `Option` is `!= null` (rd547, ADR 1017 amended)",
+    file: "src/lower/representation/options.rs",
+    find: "        let some = self.option_of(ty)?;\n        if !self.boxed_payload(some) {\n            return None;\n        }\n        let held = match some.kind() {\n            ty::Ref(_, held, ty::Mutability::Not) => *held,\n            _ => some,\n        };\n        let (adt, args) = self.untagged(held)?;\n",
+    replace: "        let some = self.option_of(ty)?;\n        let held = match some.kind() {\n            ty::Ref(_, held, ty::Mutability::Not) => *held,\n            _ => some,\n        };\n        let (adt, args) = self.untagged(held)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_null_option_held.rs$"],
+    snapshots: true,
+  },
 ];

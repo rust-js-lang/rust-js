@@ -293,3 +293,95 @@ for and shown, against native Rust), and the mutations
 `mir_nested`, which was `mir/patterns.rs`'s, is `mir/nested_options.rs`'s
 now, with `only_tested`, and so are its mutations above that were
 `lower/mir/patterns.ts`'s, but `nested-options-boxed`, of its call.
+
+## Amendment: an `Option` of a value that's `null` but never `undefined` (2026-11-02)
+
+rd547, P3. React's Flight client keeps its chunk cache as a `Map<string,
+null | Promise<any>>`, `null` once a chunk has loaded:
+
+```js
+const entry = chunkCache.get(chunkId);
+if (entry === undefined) {
+  ..
+} else if (entry !== null) {
+  promises.push(entry);
+}
+```
+
+Its port's value is an untagged enum whose `Loaded` is `null`,
+`#[rust_js::null]`, so a `Some` of it is boxed (ADR 0051), and the read
+was the box's:
+
+```rust
+match cache.get(chunk_id).cloned() {
+    None => { .. }
+    Some(ChunkEntry::Pending(entry)) => promises.push(entry),
+    Some(ChunkEntry::Loaded) => {}
+}
+```
+
+```js
+const entry = $someGet(chunkCache, chunkId);
+if (entry == null) {
+  ..
+} else if ($someValue(entry) !== null) {
+  const entry$1 = $someValue(entry);
+  promises.push(entry$1);
+}
+```
+
+**An `Option<V>` or `Option<&V>` local, `V` an untagged enum that may be
+`null` but never `undefined`, each of its variants of a kind JS tells and
+none `#[rust_js::undefined]` (`untagged::never_undefined`,
+`representation::defined_payload`), held under this decision's
+conditions, is its value: its `None` `undefined`, its `Some(v)` `v`, the
+`null` of `v`'s variant its own.** Its writes and reads are this
+decision's, with three more:
+
+- **What its `Some` holds, read whole**, is the value as it is everywhere,
+  so given on, kept or returned it needs no `only_tested`: the inner
+  `Option`'s `null`, which is `undefined` elsewhere, has no counterpart.
+- **A std map's `get` of such a value** writes one as JS's read itself,
+  `cache.get(id)`: a JS `Map` holds its values as they are, so a key it
+  lacks is `undefined` and one it has is its value, never `undefined`
+  (`mir/nested_options.rs`'s `reads_held`, which the call's lowering asks,
+  `binding_calls::held_read`). Not a map of `Option`s, whose `None` it holds
+  as `undefined`: that keeps `$someGet`'s box.
+- **`cloned()` or `copied()` of one, to another**, where the clone is the
+  value itself (`needs_clone`, `clone_value`'s rule), is the value: a link,
+  as a copy is, so one given on boxes both.
+
+An `==` of two of them keeps the box: `nested_equality` compares an
+`Option` of an `Option`'s payloads.
+
+```js
+const entry = cache.get(id);
+if (entry === undefined) {
+  return false;
+}
+if (typeof entry === "string") {
+  pending.push(entry);
+}
+```
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. `undefined`, `null`
+and the other variants' values are each their own JS value, so each test
+is Rust's answer.
+
+Not yet: the port's form reads the map in a thread-local's
+`with_borrow(|cache| cache.get(id).cloned())`, whose closure's result is
+its own body's, given back through `with_borrow` to the caller's local:
+which form it's in is a fact of two bodies, the closure's writes and the
+caller's reads (below, if landed).
+
+Held by corpus `untagged_null_option_held` (a map's `get` and its
+`cloned()` and `copied()` read by `match`, `is_none()` and whole; one
+given to a function, compared, of an enum whose clone copies, one that's
+`undefined` too, one that's neither, and a map of `Option`s, against
+native Rust), and the mutations `held-whole-payload-only-tested`,
+`held-cloned-unseen`, `held-cloned-unlinked`, `held-cloned-copies`,
+`held-map-get-any-value`, `held-eq-of-any` (`lower/mir/nested_options.ts`),
+`never-undefined-of-undefined` (`lower/untagged.ts`),
+`defined-payload-unboxed-too` (`lower/representation/options.ts`),
+`held-some-null-for-none` (`lower/mir/assign.ts`) and
+`held-read-binding-only` (`lower/mir/structure.ts`).

@@ -1024,4 +1024,14 @@ export const mutations: Mutation[] = [
     replace: "            let param = self.tcx.fn_sig(def_id).instantiate(self.tcx, generic_args).skip_binder().inputs()[i];\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_reference_changed_through_mut\\.rs$"],
   },
+  {
+    name: "held-some-null-for-none",
+    breaks:
+      "a `Some` of a value `null` but never `undefined`, held as its value, is written as an inner `Option`'s, `fallback ?? null` (rd547, ADR 1017 amended)",
+    file: "src/lower/mir/assign.rs",
+    find: "                Some(operand) if defined => self.mir_expr(state, operand, out)?,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_null_option_held.rs$"],
+    snapshots: true,
+  },
 ];

@@ -91,9 +91,66 @@ export const mutations: Mutation[] = [
     breaks:
       "a keyed read of a value a collection holds `None` of as `null` doesn't write a local held as its payload, so it's `$someGet`'s box, `$eq(.., { $someNone: 0 })` (ADR 0884, amended)",
     file: "src/lower/mir/nested_options.rs",
-    find: "                && bindings::reads_a_nullable_value(self.tcx, def_id, args)\n            {\n                allowed.insert((body.terminator_loc(block), to));",
+    find: "                && self.reads_held(def_id, args, decls[to].ty)\n            {\n                allowed.insert((body.terminator_loc(block), to));",
     replace:
-      "                && bindings::reads_a_nullable_value(self.tcx, def_id, args)\n                && false\n            {\n                allowed.insert((body.terminator_loc(block), to));",
+      "                && self.reads_held(def_id, args, decls[to].ty)\n                && false\n            {\n                allowed.insert((body.terminator_loc(block), to));",
     tests: ["test/js-collections.test.ts", "-t", "a Map's value is any value"],
+  },
+  {
+    name: "held-whole-payload-only-tested",
+    breaks:
+      "an `Option` of a value `null` but never `undefined` read whole, `Some(entry) => describe(entry)`, keeps its box, `$someValue(get)`, as an inner `Option`'s read whole does (rd547, ADR 1017 amended)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "                                || self.defined_payload(decls[of.local].ty).is_some()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_null_option_held.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "held-cloned-unseen",
+    breaks:
+      "`cache.get(id).cloned()` of a value `null` but never `undefined` keeps its box, `$someGet(cache, id)` (rd547, ADR 1017 amended)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "                && self.recognition().classify(def_id, generic_args) == Some(Std::OptionCloned)\n",
+    replace: "                && self.recognition().classify(def_id, generic_args) == Some(Std::OptionCloned)\n                && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_null_option_held.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "held-cloned-unlinked",
+    breaks:
+      "a `cloned()` given to a function is boxed while what it clones is held as its value, so the function reads its `Loaded`, `null`, as `None` (rd547, ADR 1017 amended)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "                links.push((to, from));\n            }\n            // An `==` of two of them",
+    replace: "            }\n            // An `==` of two of them",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_null_option_held.rs$"],
+  },
+  {
+    name: "held-cloned-copies",
+    breaks:
+      "a `cloned()` of an `Option` of a value its clone copies, a `Vec`'s, is held as its value too (rd547, ADR 1017 amended)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "                && !self.needs_clone(decls[to].ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_null_option_held.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "held-map-get-any-value",
+    breaks:
+      "a std map's `get` of an `Option`, whose `None` the map holds as `undefined`, is `values.get(at)`, its `Some(None)` read as `None` (rd547, ADR 1017 amended)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "            || (self.defined_payload(ty).is_some()\n",
+    replace: "            || (true\n",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_null_option_held.rs$"],
+  },
+  {
+    name: "held-eq-of-any",
+    breaks:
+      "an `==` of two `Option`s of a value `null` but never `undefined` is read as an `Option` of an `Option`'s, which it isn't: a panic (rd547, ADR 1017 amended)",
+    file: "src/lower/mir/nested_options.rs",
+    find: "                && self.nested_payload(decls[x].ty).is_some()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_null_option_held.rs$"],
   },
 ];

@@ -137,13 +137,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // An `Option` of an `Option` held as its payload (ADR 1017): `None`
         // `undefined`, and a `Some` what it holds, its `None` `null`, as a
-        // nullable field's is already, `previousInstance = instance`.
+        // nullable field's is already, `previousInstance = instance`; of a
+        // value never `undefined`, the value (`defined_payload`).
         if place.projection.is_empty()
             && state.facts.options().nested.contains(&place.local)
             && let Rvalue::Aggregate(_, operands) = rvalue
         {
+            let defined = self.defined_payload(state.body.local_decls[place.local].ty).is_some();
             let made = match operands.iter().next() {
                 None => Expr::undefined(),
+                Some(operand) if defined => self.mir_expr(state, operand, out)?,
                 Some(operand) => {
                     let nulled = matches!(
                         self.stored_given(state, operand),
