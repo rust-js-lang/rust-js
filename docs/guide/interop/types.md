@@ -763,7 +763,10 @@ export function size(input) {
   Its variants' fields are named; a tuple variant, or a field named as the
   tag, is an error. A variant's tag may be `true` or `false`,
   `#[rust_js::name = true]`
-  ([ADR 0284](../../decisions/0284-discriminated-unions.md)).
+  ([ADR 0284](../../decisions/0284-discriminated-unions.md)). A tag is
+  compared and written as its literal, `chunk.status === "fulfilled"`,
+  never as a constant a JS original named it by (React's `INITIALIZED`):
+  an accepted port difference, the user's decision (rd435).
 - **`#[rust_js::untagged]` makes each value its payload**, as TypeScript's
   `string | number` is. `match` tests each payload's kind, `typeof`,
   `Array.isArray` or `instanceof`, so each variant holds one value, and no

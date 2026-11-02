@@ -145,6 +145,18 @@ if (status.pending === true) { .. }   // FormStatus::Pending { data, .. }
   number would be a new rule with no API asking for it.
 - Its `{:?}` is the Rust name, as a renamed variant's is (ADR 0060).
 
+## Amendment: a tag is its literal (rd435)
+
+React's Flight client names each status by a constant, `const INITIALIZED
+= 'fulfilled';`, and compares `chunk.status === INITIALIZED`; a port's
+`#[rust_js::name = "fulfilled"]` variant prints `chunk.status ===
+"fulfilled"`. **A tag stays its literal**: no source form names a
+variant's tag by a constant, the user's decision (2026-11-02), as
+TypeScript's discriminated unions compare literals. rustc refuses a path
+as an attribute's value, `name = INITIALIZED`, and a list form,
+`name(INITIALIZED)`, would leave each constant only it uses unused to
+rustc, `dead_code` natively. Case N: the same value either way.
+
 ## Amended by
 
 - (Amended by the second architecture review: a fieldless variant of a
