@@ -1187,8 +1187,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// is (ADR 0810, amended), or what may be `undefined`. Not a
     /// `WrittenNone`, which `written_none` tells.
     pub(super) fn stored_given(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> Given {
+        self.stored_from(state, operand).0
+    }
+
+    /// Of what `stored_given` says is `null` or a value, the function's own
+    /// nullable parameter it's that parameter given on, by index: `null` or
+    /// a value only where that one is, each call of the function giving it
+    /// so (`NulledParams`, rd624).
+    pub(super) fn given_on_param(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> Option<usize> {
+        self.stored_from(state, operand).1
+    }
+
+    /// `stored_given`, and the own nullable parameter it's of, given on.
+    fn stored_from(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> (Given, Option<usize>) {
         let Some(place) = operand.place() else {
-            return Given::Unknown;
+            return (Given::Unknown, None);
         };
         // A `#[rust_js::nullable(..)]` parameter of the function's own, `T |
         // null` as declared: what each caller gives it and the body sets it
@@ -1196,32 +1209,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // (2026-10-27); a closure's binding its parameter names so too,
         // `function::with_this`'s tuple's, read where it's the tuple's item.
         if self.own_nullable_param(state, place) {
-            return Given::Nulled;
+            let param = (place.projection.is_empty() && !self.tcx.is_closure_like(state.body.source.def_id()))
+                .then(|| place.local.as_usize() - 1);
+            return (Given::Nulled, param);
         }
         if let Some((PlaceElem::Field(..), _)) = place.projection.split_last() {
-            return match self.place_field(state, place) {
+            let given = match self.place_field(state, place) {
                 Some(field) if bindings::null_where_made(self.tcx, field) => Given::Nulled,
                 Some(field) if bindings::is_optional(self.tcx, field) => Given::Optional,
                 _ => Given::Unknown,
             };
+            return (given, None);
         }
         // What a shared reference refers to, `&*instance`'s: the reference's.
         if let [PlaceElem::Deref] = place.projection.as_slice()
             && let ty::Ref(_, _, ty::Mutability::Not) = state.body.local_decls[place.local].ty.kind()
         {
-            return self.stored_given(state, &Operand::Copy(Place::from(place.local)));
+            return self.stored_from(state, &Operand::Copy(Place::from(place.local)));
         }
         if !place.projection.is_empty() {
-            return Given::Unknown;
+            return (Given::Unknown, None);
         }
         if state.facts.options().null_nones.contains(&place.local) {
-            return Given::Nulled;
+            return (Given::Nulled, None);
         }
         // Any other parameter holds what its caller gave as well as what
         // the body assigns it, and an assignment of it may read itself,
         // `x = x;`, which the search below would follow forever.
         if place.local.as_usize() <= state.body.arg_count || state.locals.writes[place.local] != 1 {
-            return Given::Unknown;
+            return (Given::Unknown, None);
         }
         // What it's assigned, once: another such, or `Some(..)`.
         let assigned = (state.body.basic_blocks.iter().flat_map(|b| &b.statements)).find_map(|s| match &s.kind {
@@ -1251,7 +1267,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .then_some(block)
         }) && state.facts.quiet_cells().nullable.contains(&block)
         {
-            return Given::Nulled;
+            return (Given::Nulled, None);
         }
         // What a `#[rust_js::nullable]` function gives, a binding's too, its
         // `None` `null` (ADRs 0578, 0638): `ReactSharedInternals.T` kept in
@@ -1260,7 +1276,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some((def_id, _)) = fn_def(func.ty(state.body, self.tcx))
             && crate::lower::calls::gives_null_for_none(self.tcx, def_id)
         {
-            return Given::Nulled;
+            return (Given::Nulled, None);
         }
         // An `Option::map` that's the option itself in JS is what it maps:
         // `native_event_target.map(js::unknown)` (the port's gap rd94).
@@ -1273,7 +1289,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (generic_args.type_at(0), generic_args.type_at(1)),
             )
         {
-            return self.stored_given(state, &option.node);
+            return self.stored_from(state, &option.node);
         }
         // A `Cell` made of such, `Cell::new(Some(reducer))`, a nullable
         // field's, is what it's made of (ADR 0841, amended).
@@ -1282,7 +1298,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.recognition().classify(def_id, generic_args) == Some(crate::lower::Std::CellNew)
             && let [arg] = &args[..]
         {
-            return self.stored_given(state, &arg.node);
+            return self.stored_from(state, &arg.node);
         }
         if itself
             && let Some((func, args)) = call
@@ -1291,7 +1307,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let [arg] = &args[..]
             && let Some(borrowed) = self.borrowed(state, &arg.node)
         {
-            return self.stored_given(state, &Operand::Copy(borrowed));
+            return self.stored_from(state, &Operand::Copy(borrowed));
         }
         // A `Cell` field's `get()`, `return_fiber.debug_task.get()`: what the
         // field holds, as a read of a plain one (ADR 0810, amended).
@@ -1302,24 +1318,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(borrowed) = self.borrowed(state, &arg.node)
             && let Some(field) = self.place_field(state, borrowed)
         {
-            return match bindings::is_optional(self.tcx, field) {
+            let given = match bindings::is_optional(self.tcx, field) {
                 true => Given::Optional,
                 false => Given::Unknown,
             };
+            return (given, None);
         }
         match assigned {
-            Some(Rvalue::Use(operand, _)) => self.stored_given(state, operand),
+            Some(Rvalue::Use(operand, _)) => self.stored_from(state, operand),
             // A shared reference, what it refers to, a nullable field's
             // `instance` a pattern binds by reference (ADR 1017).
-            Some(Rvalue::Ref(_, BorrowKind::Shared, of)) => self.stored_given(state, &Operand::Copy(*of)),
+            Some(Rvalue::Ref(_, BorrowKind::Shared, of)) => self.stored_from(state, &Operand::Copy(*of)),
             Some(Rvalue::Aggregate(kind, fields))
                 if fields.len() == 1
                     && matches!(**kind, AggregateKind::Adt(did, variant, ..)
                     if variant.as_u32() == 1 && self.tcx.is_lang_item(did, LangItem::Option)) =>
             {
-                Given::Nulled
+                (Given::Nulled, None)
             }
-            _ => Given::Unknown,
+            _ => (Given::Unknown, None),
         }
     }
 }

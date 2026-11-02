@@ -384,3 +384,54 @@ value is `!= null`.
   `tested-some-copy-unseen`, `tested-some-of-any-test`,
   `tested-some-of-another-place` and `null-call-called`
   (`lower/mir/patterns.ts`).
+
+## Amendment: a parameter given on is so only where the one it's given is (2026-11-02, rd624, #477)
+
+#477, a wrong answer the amendment above (rd613) made. A call that gives
+on the caller's own nullable parameter counted as one that gives `null`
+or a value, as that parameter is `T | null` as declared:
+
+```rust
+#[cfg_attr(rust_js, rust_js::nullable(parent_component))]
+fn get_context_for_subtree(parent_component: Option<&Component>) -> u32 {
+    let Some(parent_component) = parent_component else { return 0; };
+    parent_component.context
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(parent_component))]
+fn update_container_impl(element: u32, parent_component: Option<&Component>) -> u32 {
+    element + get_context_for_subtree(parent_component)
+}
+
+pub fn update_container(element: u32, parent_component: Option<&Component>) -> u32 {
+    update_container_impl(element, parent_component)
+}
+```
+
+`update_container_impl` was tested `!= null`, one of its calls giving what
+JS gave `update_container`, but `getContextForSubtree` `=== null`, so
+React's `updateContainer(element, container)`, its optional arguments
+left out, read `undefined._reactInternals`.
+
+**A call that gives on the caller's own nullable parameter gives `null` or
+a value only where that parameter is so itself, each of its calls giving
+it so, each passing on followed to its end** (`stored_given`'s
+`given_on_param`, the parameter a `Nulled` read is of; `NulledParams::record`
+keeps it, and `nulled`, once every call is seen, takes out each parameter
+given one that isn't so, again until none is). It's this amendment's own
+rule for the crate's calls, followed through the parameters they give on;
+no call is given `?? null`, which is a consumer's of another crate's. A
+parameter of what isn't a candidate, a closure's `function::with_this`
+binding, is as declared, as before: what calls it is JS.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior: a `None` JS leaves out is `None`.
+
+- Held by corpus `nullable_param_passed_on` (the three functions, called
+  with `None`, `Some` and a callback, and a chain each of whose calls gives
+  `null` or a value, still `=== null`, against native Rust),
+  `test/lowering-nullable-reads.test.ts`'s "a nullable parameter given on
+  what JS may leave out is tested against undefined too" (the public
+  function called from Node with its arguments left out), and the
+  mutations `given-on-taken-as-nulled` (`lower/analysis/nulled_params.ts`)
+  and `given-on-param-unsaid` (`lower/mir/rvalues.ts`).

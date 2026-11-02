@@ -1055,7 +1055,9 @@ export function ratio(a, b) {
   Where each of the crate's calls gives it `null` or a value (`None`,
   `Some(..)`, a nullable parameter or field passed on, or a `let` of
   `js::null()` set only to a place just tested `is_some()`, as React DOM's
-  createRoot's `transitionCallbacks` is) and nothing uses the
+  createRoot's `transitionCallbacks` is; a nullable parameter of the
+  caller's own given on is one only where it is so itself, each passing
+  on followed, rd624) and nothing uses the
   function but to call it, its body tests it `!== null`, `if
   (moduleLoading !== null)`; one call that gives what may be `undefined`,
   or a use of the function as a value, and it's `!= null`. Another crate's

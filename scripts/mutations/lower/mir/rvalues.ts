@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "given-on-param-unsaid",
+    breaks: "which own nullable parameter is given on isn't said, so it's `null` or a value at that call whatever its own calls give (rd624)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                .then(|| place.local.as_usize() - 1);\n",
+    replace: "                .then(|| place.local.as_usize() - 1)\n                .filter(|_| false);\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_param_passed_on.rs$"],
+  },
+  {
     name: "nested-field-tested-loose",
     breaks: "a nested field's `None` is tested `== null`, so `{ value: null }` is `None` (#470)",
     file: "src/lower/mir/rvalues.rs",
@@ -41,9 +49,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable getter's result kept in a `let`, `prevTransition`, is written to a nullable setter `?? null`, as if it may be `undefined` (ADR 0841, amended)",
     file: "src/lower/mir/rvalues.rs",
-    find: "            && crate::lower::calls::gives_null_for_none(self.tcx, def_id)\n        {\n            return Given::Nulled;\n",
+    find: "            && crate::lower::calls::gives_null_for_none(self.tcx, def_id)\n        {\n            return (Given::Nulled, None);\n",
     replace:
-      "            && false\n        {\n            return Given::Nulled;\n",
+      "            && false\n        {\n            return (Given::Nulled, None);\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
@@ -199,8 +207,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a field's value moved through a temporary, as MIR moves it, is `?? null` again",
     file: "src/lower/mir/rvalues.rs",
-    find: "            Some(Rvalue::Use(operand, _)) => self.stored_given(state, operand),\n",
-    replace: "            Some(Rvalue::Use(..)) => Given::Unknown,\n",
+    find: "            Some(Rvalue::Use(operand, _)) => self.stored_from(state, operand),\n",
+    replace: "            Some(Rvalue::Use(..)) => (Given::Unknown, None),\n",
     tests: [
       "test/lowering-options.test.ts",
       "-t",
@@ -753,7 +761,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `#[rust_js::nullable(..)]` parameter given on is `nearest ?? null`, though it's `Fiber | null` as declared (ADR 0861, amended)",
     file: "src/lower/mir/rvalues.rs",
-    find: "        if self.own_nullable_param(state, place) {\n            return Given::Nulled;\n        }\n",
+    find: "        if self.own_nullable_param(state, place) {\n            let param = (place.projection.is_empty() && !self.tcx.is_closure_like(state.body.source.def_id()))\n                .then(|| place.local.as_usize() - 1);\n            return (Given::Nulled, param);\n        }\n",
     replace: "",
     tests: [
       "test/lowering-nullable-reads.test.ts",
@@ -788,9 +796,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Cell::new(Some(reducer))` of a nullable field is taken to maybe be `undefined`, `lastRenderedReducer: reducer ?? null` (ADR 0841, amended)",
     file: "src/lower/mir/rvalues.rs",
-    find: "            return self.stored_given(state, &arg.node);\n        }\n        if itself\n",
+    find: "            return self.stored_from(state, &arg.node);\n        }\n        if itself\n",
     replace:
-      "            return Given::Unknown;\n        }\n        if itself\n",
+      "            return (Given::Unknown, None);\n        }\n        if itself\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "stored as they are"],
   },
   {
@@ -870,7 +878,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a shared reference to a nullable field is read as of what may be `undefined`, `previousInstance = instance ?? null` (ADR 1017)",
     file: "src/lower/mir/rvalues.rs",
-    find: "            Some(Rvalue::Ref(_, BorrowKind::Shared, of)) => self.stored_given(state, &Operand::Copy(*of)),\n",
+    find: "            Some(Rvalue::Ref(_, BorrowKind::Shared, of)) => self.stored_from(state, &Operand::Copy(*of)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
     snapshots: true,
@@ -880,8 +888,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a reborrow of a reference to a nullable field, `&*instance`, is read as of what may be `undefined` (ADR 1017)",
     file: "src/lower/mir/rvalues.rs",
-    find: "            return self.stored_given(state, &Operand::Copy(Place::from(place.local)));\n",
-    replace: "            return Given::Unknown;\n",
+    find: "            return self.stored_from(state, &Operand::Copy(Place::from(place.local)));\n",
+    replace: "            return (Given::Unknown, None);\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
     snapshots: true,
   },

@@ -672,3 +672,21 @@ pub fn none(options: &Options) -> bool {
   ]);
   expect([lib.none({}), lib.none({ callbacks: 1 })]).toEqual([false, false]);
 });
+
+// rd624 (P1, ADR 0861, amended): a nullable parameter given on is `null`
+// or a value only where the one it's given is, each passing on followed:
+// React's public `updateContainer(element, container)`, called from JS
+// with its optional arguments left out, reaches `getContextForSubtree`'s
+// `parentComponent` as `undefined`, which is tested `!= null`.
+test("a nullable parameter given on what JS may leave out is tested against undefined too", async () => {
+  const dir = fixture("nullable-param-given-on");
+  writeFileSync(join(dir, "lib.rs"), readFileSync(join(import.meta.dir, "corpus/nullable_param_passed_on.rs"), "utf8"));
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("function getContextForSubtree(parentComponent) {\n  if (parentComponent == null) {");
+  expect(js).toContain("function strictContext(parentComponent) {\n  if (parentComponent === null) {");
+  const lib = await import(join(dir, "lib.js"));
+  const seen: number[] = [];
+  expect([lib.updateContainer(1), lib.updateContainer(1, undefined, (n: number) => seen.push(n)), lib.updateContainer(1, { context: 10 })]).toEqual([1, 1, 11]);
+  expect(seen).toEqual([1]);
+});

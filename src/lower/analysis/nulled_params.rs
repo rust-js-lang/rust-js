@@ -42,6 +42,9 @@ pub(in crate::lower) struct NulledParams {
 pub(in crate::lower) struct NulledCalls {
     seen: HashSet<(DefId, BasicBlock)>,
     unnulled: HashSet<(DefId, usize)>,
+    /// Each parameter a call gave the caller's own nullable parameter, by
+    /// index, which is `null` or a value only where that one is (rd624).
+    given_on: HashSet<((DefId, usize), (DefId, usize))>,
 }
 
 impl NulledParams {
@@ -105,12 +108,26 @@ impl NulledParams {
     /// The call of `callee`, one that `may_have` such a parameter, in
     /// `caller`'s block `at`, giving each parameter what's `null` or a value
     /// where `nulled` says so.
-    pub(in crate::lower) fn record(&self, (caller, at): (DefId, BasicBlock), callee: DefId, nulled: &[bool]) {
+    /// A parameter given the caller's own nullable one, `given_on`'s index,
+    /// is so only where that one is, which `nulled` tells once every call
+    /// is seen (rd624); of a caller that may have none, a closure's, as
+    /// declared.
+    pub(in crate::lower) fn record(
+        &self,
+        (caller, at): (DefId, BasicBlock),
+        callee: DefId,
+        nulled: &[bool],
+        given_on: &[Option<usize>],
+    ) {
         let mut seen = self.seen.borrow_mut();
         seen.seen.insert((caller, at));
         for (i, &nulled) in nulled.iter().enumerate() {
             if !nulled {
                 seen.unnulled.insert((callee, i));
+            } else if let Some(&Some(param)) = given_on.get(i)
+                && self.candidates.contains_key(&caller)
+            {
+                seen.given_on.insert(((callee, i), (caller, param)));
             }
         }
     }
@@ -125,8 +142,8 @@ impl NulledParams {
     /// function, `id`'s, of one newly found to have such a parameter,
     /// queued again, to be lowered again, its tests of it `!== null`;
     /// whether any is, none once each is. What each call gives doesn't
-    /// change with it: a nullable parameter given on is `null` or a value
-    /// either way.
+    /// change with it: a nullable parameter given on is said of the one it's
+    /// given (`record`'s `given_on`), whichever it is.
     pub(in crate::lower) fn again<W: Clone>(&self, work: &mut Vec<W>, id: impl Fn(&W) -> DefId) -> bool {
         let found = self.nulled(&self.seen.borrow());
         let mut nulled = self.nulled.borrow_mut();
@@ -160,11 +177,26 @@ impl NulledParams {
                 .filter(|&(_, &callee)| callee == id)
                 .all(|(site, _)| calls.seen.contains(site))
         };
-        (self.candidates.iter())
+        let mut nulled: HashSet<(DefId, usize)> = (self.candidates.iter())
             .filter(|&(&id, _)| !self.as_values.contains(&id) && all_seen(id))
             .flat_map(|(&id, params)| params.iter().map(move |&i| (id, i)))
             .filter(|key| !calls.unnulled.contains(key))
-            .collect()
+            .collect();
+        // What's given another's own parameter on is so only where that one
+        // is, each passing on followed to its end: the parameters left once
+        // none given one that isn't so remains (rd624).
+        loop {
+            let loose: Vec<(DefId, usize)> = (calls.given_on.iter())
+                .filter(|(given, of)| nulled.contains(given) && !nulled.contains(of))
+                .map(|&(given, _)| given)
+                .collect();
+            if loose.is_empty() {
+                break nulled;
+            }
+            for key in loose {
+                nulled.remove(&key);
+            }
+        }
     }
 }
 

@@ -507,9 +507,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A call of the crate's function with an own nullable parameter:
         // what it gives each, which says whether every call gives it `null`
         // or a value (`analysis/nulled_params.rs`, ADR 0861, amended).
+        // A parameter of the caller's own given on is so only where that one
+        // is, each of its calls giving it so (rd624).
         if self.krate.nulled_params.may_have(callee.0) {
             let caller = (state.body.source.def_id(), state.at);
-            self.krate.nulled_params.record(caller, callee.0, &nulled);
+            let given_on: Vec<Option<usize>> = operands.iter().map(|o| self.given_on_param(state, o)).collect();
+            self.krate.nulled_params.record(caller, callee.0, &nulled, &given_on);
         }
         let mut values = self.take_operands(state, operands, out)?;
         // Of another crate's, one its crate's calls each give `null` or a

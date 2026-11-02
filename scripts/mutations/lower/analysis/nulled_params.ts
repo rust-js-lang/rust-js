@@ -5,6 +5,14 @@ const tested = ["test/lowering-nullable-reads.test.ts", "-t", "each call gives n
 
 export const mutations: Mutation[] = [
   {
+    name: "given-on-taken-as-nulled",
+    breaks: "a nullable parameter given on another's is `null` or a value whatever its own calls give, so `getContextForSubtree(undefined)` reads `undefined.context` (rd624)",
+    file: "src/lower/analysis/nulled_params.rs",
+    find: "            if loose.is_empty() {\n",
+    replace: "            if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_param_passed_on.rs$"],
+  },
+  {
     name: "nulled-param-of-a-value-use",
     breaks:
       "a function with an own nullable parameter that's mapped as a value, `.map(mapped)`, is taken as given `null` or a value at each call, so its body tests `!== null` of what `map` gives it, `undefined` too (rd613)",
