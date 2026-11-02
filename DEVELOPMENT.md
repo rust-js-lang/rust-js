@@ -489,7 +489,9 @@ cost nothing. Started by hand too: `gh workflow run nightly.yml`.
 
 It casts the crates' and the port's nets too (ADR 1067): `crates`,
 `bun scripts/crate-corpus.ts --check`, which fails where a crate does worse
-than its row in `docs/crate-corpus.md`, one marked with an open issue,
+than its row in `docs/crate-corpus.md`, the corpus's one list, each crate at
+the exact release its row names, so a new release is measured by editing
+its row, never by crates.io's publishing it; one marked with an open issue,
 `runs (refused: #467)`, holding while it does just that; and `port`,
 react-in-rust at `ports/react-in-rust.pin`, each crate compiled to JS again
 and compared with what that commit committed, its summary listing each

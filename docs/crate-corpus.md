@@ -19,33 +19,38 @@ A verdict of `runs (refused: #467)` is a crate an open issue says does worse
 now: it holds while the crate does just that, and fails once it does better,
 when the fix writes the verdict again.
 
-Measured 2026-10-19, after ADR 0462, Rust 1.99.0, each crate at the
-newest release its requirement allows.
+Measured 2026-10-19, after ADR 0462, Rust 1.99.0. This table is the
+corpus: each row's crate, at exactly the release its first cell names,
+built with the features in its parentheses alone, its default ones off,
+where it names any. Each release is the newest on 2026-11-02. A crate
+moves to a new release only by an edit of its row, measured as it's made,
+and `bun scripts/crate-corpus.ts` refuses a row of no exact release (ADR
+1067).
 
 | Crate | Verdict | First refusals in its graph |
 |---|---|---|
-| strum 0.27 (`derive`) | runs | |
-| either 1.15 | runs | measured 2026-11-02, at 1.19.0, after ADR 0687's amendment (#475): its own `rfold` and `nth_back` given its sides' dictionaries |
-| itertools 0.14 | compiles (refused: #473) | on 2026-11-02 refused: a `FilterMap` of an iterator given as it is, `FilterMapOk::rfold`'s, stepped from its back; measured 2026-10-22, after ADR 0552's amendment: its probe is refused at `collect_vec()` of a `chunk_by` group's `copied()`, a `Group` whose `Drop` the library's `collect_vec` takes none of |
-| indexmap 2.11 | runs | a `Map`, rustc builds it (ADR 0424) |
-| bitflags 2.9 | runs | |
-| smallvec 1.15 | runs (compiles: #476) | on 2026-11-02, at 1.16.4, its probe is refused: `size_of` of a type parameter |
-| arrayvec 0.7 | runs | measured 2026-11-02, after #468's fix |
-| hashbrown 0.17 | runs | its maps std's, rustc builds it (ADR 0423) |
-| thiserror 2.0 | runs | |
-| anyhow 1.0 | refused | a `&mut ErrorImpl` in a generic function's parameters; its pointer casts (ADR 0562), `Arguments::as_str` (ADR 0034), `Backtrace` (ADR 0568) and `Display::fmt` on a held `Formatter` (ADR 0461) compile |
-| once_cell 1.21 | refused | `std::thread::current` called |
-| semver 1.0 | compiles | measured 2026-10-21, after ADR 0562: its tagged pointers, inline identifiers and pointer constants compile; no probe runs it yet |
-| uuid 1.18 | runs | measured 2026-10-21, after ADR 0555 |
-| url 2.5 | blocked | yoke: raw pointers to erase lifetimes; 15 of its 16 crates compile |
-| regex 1.11 | blocked | aho-corasick: memchr's `memmem::Finder`, which ADR 0529 doesn't ship; its unaligned reads compile (ADR 0562); regex-syntax compiles (ADR 0556) |
-| rust_decimal 1.38 | runs | measured 2026-11-02, after ADR 0176's and 0914's amendments (#468): arrayvec's `ArrayVecImpl` impl it compiles has its `CAPACITY = CAP`, and its `a * b` is called through `decimalMul` |
-| chrono 0.4 (`alloc`) | runs | measured 2026-11-02, after ADR 0592's and 0051's amendments (#467): its `date` module's dictionaries, in a cycle with `time_delta`'s constants, and `format::parse`'s call of `parse_internal` |
-| time 0.3 (`alloc`) | blocked | powerfmt: a `Formatter` of its own; its `MaybeUninit` buffer's pointers compile (ADR 0562); deranged compiles (ADR 0165) |
-| heck 0.5 | runs | a callable that writes is a writer (ADR 0460) |
-| base64 0.22 | runs | measured 2026-11-02, after ADR 0914's amendment (#474); an `io::Error` a value, its writer's errors thrown (ADR 0462) |
-| hex 0.4 | runs | measured 2026-10-21 |
-| num-traits 0.2 | compiles | a float's `log`, `sin_cos`, `rem_euclid` and the like (ADR 0064) |
+| strum 0.27.2 (`std`, `derive`) | runs | |
+| either 1.19.0 | runs | measured 2026-11-02, at 1.19.0, after ADR 0687's amendment (#475): its own `rfold` and `nth_back` given its sides' dictionaries |
+| itertools 0.14.0 | compiles (refused: #473) | on 2026-11-02 refused: a `FilterMap` of an iterator given as it is, `FilterMapOk::rfold`'s, stepped from its back; measured 2026-10-22, after ADR 0552's amendment: its probe is refused at `collect_vec()` of a `chunk_by` group's `copied()`, a `Group` whose `Drop` the library's `collect_vec` takes none of |
+| indexmap 2.14.2 | runs | a `Map`, rustc builds it (ADR 0424) |
+| bitflags 2.13.2 | runs | |
+| smallvec 1.16.4 | runs (compiles: #476) | on 2026-11-02, at 1.16.4, its probe is refused: `size_of` of a type parameter |
+| arrayvec 0.7.8 | runs | measured 2026-11-02, after #468's fix |
+| hashbrown 0.17.1 | runs | its maps std's, rustc builds it (ADR 0423) |
+| thiserror 2.0.21 | runs | |
+| anyhow 1.0.104 | refused | a `&mut ErrorImpl` in a generic function's parameters; its pointer casts (ADR 0562), `Arguments::as_str` (ADR 0034), `Backtrace` (ADR 0568) and `Display::fmt` on a held `Formatter` (ADR 0461) compile |
+| once_cell 1.21.4 | refused | `std::thread::current` called |
+| semver 1.0.28 | compiles | measured 2026-10-21, after ADR 0562: its tagged pointers, inline identifiers and pointer constants compile; no probe runs it yet |
+| uuid 1.29.0 | runs | measured 2026-10-21, after ADR 0555 |
+| url 2.5.8 | blocked | yoke: raw pointers to erase lifetimes; 15 of its 16 crates compile |
+| regex 1.13.1 | blocked | aho-corasick: memchr's `memmem::Finder`, which ADR 0529 doesn't ship; its unaligned reads compile (ADR 0562); regex-syntax compiles (ADR 0556) |
+| rust_decimal 1.43.0 | runs | measured 2026-11-02, after ADR 0176's and 0914's amendments (#468): arrayvec's `ArrayVecImpl` impl it compiles has its `CAPACITY = CAP`, and its `a * b` is called through `decimalMul` |
+| chrono 0.4.45 (`alloc`) | runs | measured 2026-11-02, after ADR 0592's and 0051's amendments (#467): its `date` module's dictionaries, in a cycle with `time_delta`'s constants, and `format::parse`'s call of `parse_internal` |
+| time 0.3.55 (`alloc`) | blocked | powerfmt: a `Formatter` of its own; its `MaybeUninit` buffer's pointers compile (ADR 0562); deranged compiles (ADR 0165) |
+| heck 0.5.0 | runs | a callable that writes is a writer (ADR 0460) |
+| base64 0.22.1 | runs | measured 2026-11-02, after ADR 0914's amendment (#474); an `io::Error` a value, its writer's errors thrown (ADR 0462) |
+| hex 0.4.3 | runs | measured 2026-10-21 |
+| num-traits 0.2.19 | compiles | a float's `log`, `sin_cos`, `rem_euclid` and the like (ADR 0064) |
 
 15 of 22 compile, and each of the 15 with a probe runs as natively.
 uuid, measured 2026-10-18, after ADRs 0447 to 0450, compiles: its clock,

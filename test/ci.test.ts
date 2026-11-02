@@ -5,6 +5,7 @@ import { expect, test } from "bun:test";
 import { cpSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, timingsRun } from "../scripts/ci";
+import { corpusRows, dependency } from "../scripts/crate-corpus";
 import { batches, type Change, changedLines, changedMutations, enclosingFunction, schema, setPasses, site, type Sited, testBlocks, testResults, testSet } from "../scripts/mutations";
 import { jobs as localNightly } from "../scripts/nightly";
 import { caseParts, caseShardParts, nightly, shard } from "../scripts/shard";
@@ -375,5 +376,24 @@ test("every workflow is YAML", () => {
   for (const file of readdirSync(dir).filter((f) => f.endsWith(".yml"))) {
     expect(() => Bun.YAML.parse(readFileSync(join(dir, file), "utf8")), file).not.toThrow();
   }
+});
+
+// The nightly's crate corpus is docs/crate-corpus.md's rows, each crate at
+// the exact release its row names (ADR 1067): asked for its newest, either
+// and smallvec turned red on a release of theirs with no change here.
+test("the crate corpus is its table's rows, each at an exact release", () => {
+  const rows = corpusRows(readFileSync(join(root, "docs/crate-corpus.md"), "utf8"));
+  if (!Array.isArray(rows)) throw new Error(rows.problem);
+  expect(rows.length).toBeGreaterThan(20);
+  const chrono = rows.find((c) => c.name === "chrono")!;
+  expect(dependency(chrono)).toMatch(/^chrono = \{ version = "=\d+\.\d+\.\d+", default-features = false, features = \["alloc"\] \}$/);
+  expect(dependency(rows.find((c) => c.name === "either")!)).toMatch(/^either = \{ version = "=\d+\.\d+\.\d+" \}$/);
+  expect(rows.find((c) => c.name === "itertools")!.open).toEqual({ now: "refused", issue: "#473" });
+  const table = (crate: string) => `| Crate | Verdict | Refusals |\n|---|---|---|\n| ${crate} | runs | |\n`;
+  expect(corpusRows(table("either 1.15"))).toEqual({
+    problem:
+      "docs/crate-corpus.md's row `either 1.15` names no exact release: write the crate's name and version, `either 1.19.0`, and its features after them, `chrono 0.4.45 (`alloc`)`",
+  });
+  expect(corpusRows(table("strum 0.27.2 (`std`, `derive`)"))).toEqual([{ name: "strum", version: "0.27.2", features: ["std", "derive"], bar: "runs" }]);
 });
 

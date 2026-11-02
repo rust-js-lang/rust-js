@@ -75,11 +75,39 @@ gets only what's cheap and narrowly triggered.**
 - The port's `regen` fails whenever rust-js changes React's JS, intended
   or not, until the pin moves. Each intended change costs a pin bump, and
   the nightly is red until someone makes it.
-- The crate corpus asks for each crate's newest release its requirement
-  allows, so a new release can turn a crate red with no change here
-  (either and smallvec now resolve to 1.19.0 and 1.16.4, though both fail
-  at their recorded versions too). Its issue says which release.
+- The crate corpus asked for each crate's newest release its requirement
+  allows, so a new release could turn a crate red with no change here
+  (either and smallvec resolved to 1.19.0 and 1.16.4, though both failed
+  at their recorded versions too). Amended below: each is pinned.
 - Two of the shape tests the architecture test lists are marked "a fact's
   to ask": `cell_call`'s quiet `RefCell` in a field, and `mir_store`'s
   temporary `&mut` kept as the place it was read from. Each decides from
   the shape alone, as #466 did, and is to move to a MIR fact.
+
+## Amendment: each crate at an exact release, its row's
+
+A Cargo requirement of `1.15.0` is `^1.15.0`, so the corpus measured each
+crate's newest release, and a red night could be crates.io's doing, not
+rust-js's: either and smallvec resolved to 1.19.0 and 1.16.4 on
+2026-11-02. A night's verdict must be of this checkout alone.
+
+- **docs/crate-corpus.md's table is the corpus, its one list.** Each row
+  whose verdict cell is a verdict is a crate: its first cell its name, its
+  exact release and, in parentheses, its features, built with those alone,
+  its default ones off: `chrono 0.4.45 (`alloc`)`. The script's own list of
+  crates, which the rows had mirrored, is gone.
+- **`bun scripts/crate-corpus.ts` asks Cargo for that release exactly**,
+  `version = "=0.4.45"`, and refuses a row of no exact release, naming it,
+  before it measures anything; a crate named on its command line with no
+  row is refused too.
+- **Moving a crate to a new release is an edit of its row**, measured and
+  its verdict written as it's made. Each was pinned to its newest release
+  on 2026-11-02, what that night measured.
+- The crates a pinned crate uses still resolve to their newest compatible
+  releases: pinning them too would be a lockfile for each crate, kept up
+  by hand. A night red from one of those names it, and its release, in
+  the refusal it prints, and its issue says which.
+
+Case: none ([0262](0262-when-rust-and-js-disagree.md)); this decides what
+is measured, not what the JS does. `test/ci.test.ts`, "the crate corpus is
+its table's rows, each at an exact release", holds it.
