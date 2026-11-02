@@ -91,14 +91,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments-items.test.ts", "-t", "between an array's items"],
   },
   {
-    name: "array-item-inner-first",
-    breaks: "a comment before an array's item that's an array is written after that inner array's `[`, `[ // .. \"crossOrigin\", ..]` (ADR 0708, amended)",
-    file: "src/to_oxc/arms.rs",
-    find: "                    \"[\" | \",\" => _ = starts.entry(lo).or_insert(arm),\n",
-    replace: "",
-    tests: ["test/lowering-comments-items.test.ts", "-t", "between an array's items"],
-  },
-  {
     name: "array-items-out-of-order-arms",
     breaks: "an array rust-js made of `heap.swap(i, j)`, each item of the same `heap`, is taken for one written, and the comment before the swap goes inside `heap[index]` (ADR 0708, amended)",
     file: "src/to_oxc/arms.rs",

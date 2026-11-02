@@ -196,6 +196,27 @@ fn rebound(n: i32) -> i32 {
     }
 }
 
+// The same, made in two places: what each makes is a value of its own,
+// which the arm's variable is bound to, as the arm writes it again, not a
+// write of that variable (#479: since a00a916cd, `rebound` alone is the
+// same JS either way).
+fn rebound_made_twice(a: bool, b: bool) -> i32 {
+    let settled = if a {
+        Err(1)
+    } else if b {
+        Err(2)
+    } else {
+        Ok(3)
+    };
+    match settled {
+        Ok(v) => v,
+        Err(mut reason) => {
+            reason *= 2;
+            reason
+        }
+    }
+}
+
 struct Loud(&'static str);
 
 impl Drop for Loud {
@@ -301,6 +322,12 @@ fn main() {
     println!("{:?} {:?}", tagged_parts(&chunks, 1), tagged_parts(&[], 2));
     println!("{} {} {}", entered(true, 0), entered(true, 4), entered(false, 9));
     println!("{} {}", rebound(3), rebound(-3));
+    println!(
+        "{} {} {}",
+        rebound_made_twice(true, false),
+        rebound_made_twice(false, true),
+        rebound_made_twice(false, false)
+    );
     println!("{}", scaled(&State::Pending(vec![]), 2) + scaled(&State::Halted, 2));
     loud(0);
     loud(3);

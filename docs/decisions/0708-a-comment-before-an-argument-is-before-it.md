@@ -247,7 +247,8 @@ a comment before it, only space between, is before it on lines of its
 own, after the `[` or the `,` before it, as Prettier writes it. A tuple
 MIR made has no span of its own: its start is where its first part is,
 and of an array's first item that starts another array, the outer's item
-is the one (`arm_starts`). A split at its line's end, after the `,`, adds
+is the one (`arm_starts`; amended below: each is placed where it's made,
+and the rule is gone). A split at its line's end, after the `,`, adds
 no line of nothing (`to_oxc.rs`). `test/lowering-comments-items.test.ts`,
 "a comment between an array's items is before the next item".
 
@@ -388,3 +389,18 @@ line before a method call's field keeps the line" in
 the blank line Prettier keeps between properties. The case is in
 [ADR 0969](0969-a-variables-value-of-a-chain-of-arms-is-the-chain.md)'s
 amendment of the same date.
+
+## Amendment: an array's item is where it's made, no outer item first (2026-11-02, #479)
+
+The rule that, of an array's first item that starts another array, the
+outer's item is the one an arm starts at, was for a tuple MIR made with no
+span of its own, whose start was its first part's: the inner array's
+first item started where the outer item did. Since e4e258aa0 every array
+and tuple MIR makes is placed where its Rust is (ADR 0444, amended), so an
+inner array starts at its `[`, never at its first item, and no two arms of
+arrays start at one place. Its mutation, `array-item-inner-first`,
+survived the 2026-11-02 nightly; a static's, a `const`'s, a `vec!`'s and
+an expression's nested arrays and tuples, a comment before the first item
+or the next, printed the same JS with it. The rule is removed with its
+mutation: each arm at a start is the last met (`arm_starts`), and
+`check:fast --all` printed the same corpus, snapshots, guide and ports.

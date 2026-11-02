@@ -134,6 +134,24 @@ function rebound(n) {
   return reason;
 }
 
+// The same, made in two places: what each makes is a value of its own,
+// which the arm's variable is bound to, as the arm writes it again, not a
+// write of that variable (#479: since a00a916cd, `rebound` alone is the
+// same JS either way).
+function reboundMadeTwice(a, b) {
+  let tmp;
+  if (a) {
+    tmp = 1;
+  } else if (b) {
+    tmp = 2;
+  } else {
+    return 3;
+  }
+  let reason = tmp;
+  reason = (reason * 2) | 0;
+  return reason;
+}
+
 function loud(n) {
   const made = n === 0 ? { TAG: "Ok", _0: ["zero"] } : { TAG: "Err", _0: n };
   if (made.TAG === "Ok") {
@@ -245,6 +263,9 @@ function main() {
   console.log(`${$debugStr(taggedParts(chunks, 1))} ${$debugStr(taggedParts([], 2))}`);
   console.log(`${entered(true, 0)} ${entered(true, 4)} ${entered(false, 9)}`);
   console.log(`${rebound(3)} ${rebound(-3)}`);
+  console.log(
+    `${reboundMadeTwice(true, false)} ${reboundMadeTwice(false, true)} ${reboundMadeTwice(false, false)}`,
+  );
   console.log(`${(scaled({ TAG: "Pending", _0: [] }, 2) + scaled("Halted", 2)) | 0}`);
   loud(0);
   loud(3);

@@ -64,14 +64,7 @@ pub(super) fn arm_starts(module: &Module) -> std::collections::HashMap<u32, Arm>
                 };
                 (s.lo, arm)
             });
-            // Of an array's first item that starts another array, the outer's
-            // item, the first met.
-            for (lo, arm) in arms {
-                match arm.operator {
-                    "[" | "," => _ = starts.entry(lo).or_insert(arm),
-                    _ => _ = starts.insert(lo, arm),
-                }
-            }
+            starts.extend(arms);
         });
         // An `if`'s test, after its `if (`, which a comment between `if`
         // and its first operand is before (`opening`).
