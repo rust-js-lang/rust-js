@@ -49,15 +49,11 @@ export const flagsDisplay = { fmt: flagsDisplay_fmt };
 function flagsDisplay_fmt(flags, options) {
   let f = "";
   let first = true;
-  const iter = [
+  for (const [bit, name] of [
     [1, "A"],
     [2, "B"],
     [4, "C"],
-  ].values();
-  let value;
-  while ((value = iter.next().value) != null) {
-    const bit = value[0];
-    const name = value[1];
+  ]) {
     if (flags[0] & bit) {
       if (!first) {
         f += " | ";

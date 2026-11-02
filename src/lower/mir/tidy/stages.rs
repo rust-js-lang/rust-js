@@ -123,12 +123,7 @@ pub(super) const STAGES: &[Stage] = &[
             // The innermost first: what a loop ends with may be another,
             // recovered. An iterator a loop inside another makes, a `let`
             // assigned each time, read by nothing else.
-            pass("loops", |b, h| {
-                let mut taken = mentions(b);
-                let captured = bindings::captured(b);
-                bottom_up(b, &mut |stmts| loops(stmts, &mut taken, h.numbers, &captured));
-                loop_bound_lets(b);
-            }),
+            pass("loops", for_loops),
             // What the program wrote after a loop, MIR moved into its way out.
             // Before `decisions`, which makes a `break` of a block the loop
             // ends a `break` of the loop: an inner loop's tail that leaves
@@ -241,6 +236,10 @@ pub(super) const STAGES: &[Stage] = &[
             pass("returned in branches", |b, h| {
                 js::statement_lists(b, &mut |s| returned_in_branches(s, h.result))
             }),
+            // A loop whose way out returned only by a block's `break`, to a
+            // `return result;` past the branch it's in, `for` of what it
+            // steps now that it returns (rd603).
+            pass("returned loops", for_loops),
             // An `if` the program wrote of an exit, which MIR turned as it
             // shares the exit with what follows, as written (rd237).
             pass("turned returns", |b, h| {
@@ -1064,6 +1063,15 @@ fn branch_values_of(body: &mut Vec<Stmt>, hints: &Hints) {
     bottom_up(body, &mut |s| {
         branch_values(s, hints.returns, hints.booleans, made, hints.written)
     });
+}
+
+/// Each of `body`'s loops of an iterator's steps, a `for` of what it steps
+/// (`loops`), the innermost first.
+fn for_loops(body: &mut Vec<Stmt>, hints: &Hints) {
+    let mut taken = mentions(body);
+    let captured = bindings::captured(body);
+    bottom_up(body, &mut |stmts| loops(stmts, &mut taken, hints.numbers, &captured));
+    loop_bound_lets(body);
 }
 
 /// `looped_drops` of each of `body`'s lists, each loop's run made as MIR's

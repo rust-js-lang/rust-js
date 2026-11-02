@@ -1133,4 +1133,14 @@ export const mutations: Mutation[] = [
     replace: "                                && false)\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "dyn Fn is what its call gave it"],
   },
+  {
+    name: "returned-loops-off",
+    breaks:
+      "a `for` in an `if` whose branch returns after it, its body returning early too, stays MIR's loop, `while ((step = iter.next().value) != null)`, `$rangeNext(iter)` of a range, not upstream's `for (let i = 1; i < len; i++)` (rd602, rd603)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: "            pass(\"returned loops\", for_loops),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^for_returning_in_an_if\\.rs$"],
+    snapshots: true,
+  },
 ];

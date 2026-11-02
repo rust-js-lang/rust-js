@@ -26,12 +26,8 @@ function namedDebug_fmt(named) {
 
 function update(m, indices, value) {
   let cell = m;
-  const iter = indices.values();
-  while (true) {
-    const index = iter.next().value;
-    if (index == null) {
-      break;
-    }
+  for (let i = 0; i < indices.length; i++) {
+    const index = indices[i];
     if (!Array.isArray(cell.value)) {
       return;
     }

@@ -256,3 +256,24 @@ difference (ADR 0262, case N). Held by the corpus case
 `drop_reassigned_in_inner_loop` (`from_start`, an empty range too;
 `from_bumped`) and the mutations `held-end-of-captured-start` and
 `held-end-of-variable-start-unmade` (`mir/tidy/loops.ts`).
+
+## Amendment: a loop that returns in a branch that returns after it (rd602, rd603)
+
+`if ok { for step in path { if lazy(value) { return wait(*step); } .. }
+return value; }`, React's Flight client's getOutlinedModel walking its
+path, `for i in 1..path_len` with a `panic!` in it too, kept MIR's loop,
+`while ((step = iter.next().value) != null)` and `const iter = { start:
+1, end: pathLen }; .. $rangeNext(iter)`: when `loops` runs, each way out
+of the loop is `result = ..; break bb95;`, a block's `break` to a
+`return result;` past the `if` the loop is in, as no `return` is made
+yet of a value given in a branch; `for_of` takes a loop only where its
+end leaves, which a `break` to a block outside it doesn't show.
+**`loops` runs again right after `returned in branches`** ("returned
+loops", `stages::for_loops`), which makes those `break`s the `return`s
+they go to: then the loop's end leaves by its `return`, and it's `for
+(let i = 0; i < path.length; i++)`, `for (let i = 1; i < pathLen; i++)`,
+as upstream. Nothing else changes: the same steps, in the same order, a
+panic thrown where Rust's is, with its message, and what's held dropped
+as it was (case N, ADR 0262). Held by the corpus's
+`for_returning_in_an_if`, run against native Rust, and the mutation
+`returned-loops-off` (`mir/tidy/stages.ts`).

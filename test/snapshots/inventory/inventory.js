@@ -40,11 +40,8 @@ function storeDisplay_fmt(store) {
   let f = "";
   const items = Array.from(store.stock);
   items.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
-  const iter = items.values();
-  let value;
-  while ((value = iter.next().value) != null) {
-    const name = value[0];
-    const qty = value[1];
+  for (let i = 0; i < items.length; i++) {
+    const [name, qty] = items[i];
     f += `${name}=${qty} `;
   }
   f += `| ${$toFixed(store.revenue, 2)}`;

@@ -35,9 +35,8 @@ function flushed(n) {
 function untilSeven(queue) {
   if (queue.length !== 0) {
     try {
-      const iter = queue.values();
-      let n;
-      while ((n = iter.next().value) != null) {
+      for (let i = 0; i < queue.length; i++) {
+        const n = queue[i];
         if (n === 7) {
           return;
         }

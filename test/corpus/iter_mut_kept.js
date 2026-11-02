@@ -39,9 +39,7 @@ function main() {
   console.log(`${it.reduce((n) => n + 1, 0)}`);
   console.log(`[${v.join(", ")}]`);
 
-  const part = $iter($mutItems($view(v, 2)));
-  let x;
-  while ((x = $next(part)) != null) {
+  for (const x of $mutItems($view(v, 2))) {
     x.value = -x.value | 0;
   }
   console.log(`[${v.join(", ")}]`);
