@@ -240,7 +240,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [1060 A loop from the end down to a computed start counts down](1060-a-loop-from-the-end-of-a-computed-start-counts-down.md)
 - [1061 A stream's reader is of the mode its options say, as TypeScript's overloads type it](1061-a-streams-reader-is-of-the-mode-its-options-say.md) *(amended: a form's `append` and `set` take text or a Blob, rd505)*
 - [1062 A union's one class is what its other kinds leave](1062-a-unions-one-class-is-what-its-other-kinds-leave.md)
-- [1063 Imports are in the order of their `use`s](1063-imports-are-in-the-order-of-their-uses.md) *(amended, rd608: a binding the module declares is named where it's declared; amended, rd609: a binding named through the module that holds it is that module's import)*
+- [1063 Imports are in the order of their `use`s](1063-imports-are-in-the-order-of-their-uses.md) *(amended, rd608: a binding the module declares is named where it's declared; amended, rd609: a binding named through the module that holds it is that module's import; amended, rd611: a `use` of a library's namespace or of a module of bindings)*
 - [0205 Flattened structs chain, and the props' own name is theirs](0205-flattened-chains.md)
 - [0206 TypeScript, read and written by TypeScript's own parser and printer](0206-typescript-module.md)
 - [0207 A crate's `.d.ts` is printed by TypeScript](0207-declarations-printed-by-typescript.md)

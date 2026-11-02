@@ -287,3 +287,49 @@ pub fn merged<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
   const react = await import(join(dir, "node_modules/react/index.js"));
   expect(lib.internals()).toBe(react.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE);
 }, 120_000);
+
+// A `use` of a library's namespace, ADR 1037's unit struct, or of a module
+// of bindings places the import of what it names there too, as any `use`'s
+// (ADR 1063, amended): React DOM's `use react_reconciler::
+// react_fiber_reconciler::ReactFiberReconciler;` imports the reconciler's
+// module where upstream does, and ART's `use art::{mode, transform};` its
+// `art/modes/current` and `art/core/transform` (rd611).
+test("a use of a library's namespace or of a module of bindings places its import", () => {
+  const dir = fixture("namespace-use-library");
+  const extern = ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  mkdirSync(join(dir, "shared"), { recursive: true });
+  writeFileSync(join(dir, "shared/lib.rs"), "pub mod aaa;\npub mod recon;\npub mod tools;\n");
+  writeFileSync(join(dir, "shared/aaa.rs"), "pub fn a() -> u32 {\n    1\n}\n");
+  writeFileSync(join(dir, "shared/recon.rs"), `#[cfg_attr(rust_js, rust_js::namespace)]
+pub struct Recon;
+
+#[cfg_attr(rust_js, rust_js::namespace)]
+impl Recon {
+    pub fn go(&self) -> u32 {
+        2
+    }
+}
+`);
+  writeFileSync(join(dir, "shared/tools.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "tools-pkg#tool")]
+pub fn tool() -> u32 {
+    unreachable!()
+}
+`);
+  const libraryManifest = join(dir, "shared/manifest.json"), metadata = join(dir, "shared/libshared.rmeta");
+  run([compiler, "--declarations", join(dir, "shared/lib.rs"), "-o", join(dir, "shared/lib.js"), "--library", "--manifest", libraryManifest, "--", "--crate-name", "shared", `--emit=metadata=${metadata}`, ...extern]);
+  mkdirSync(join(dir, "app"), { recursive: true });
+  writeFileSync(join(dir, "app/lib.rs"), `use shared::recon::Recon;
+use shared::tools;
+
+use shared::aaa::a;
+
+pub fn run() -> u32 {
+    Recon.go() + tools::tool() + a()
+}
+`);
+  const output = join(dir, "app/lib.js");
+  run([compiler, join(dir, "app/lib.rs"), "-o", output, "--dependency", libraryManifest, "--", "--crate-name", "app", "--extern", `shared=${metadata}`, ...extern]);
+  const imports = [...readFileSync(output, "utf8").matchAll(/^import .* from "(.*)";$/gm)].map((line) => line[1]);
+  expect(imports).toEqual(["../shared/recon.js", "tools-pkg", "../shared/aaa.js"]);
+}, 120_000);
+

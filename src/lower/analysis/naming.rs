@@ -624,6 +624,9 @@ impl UsesWritten {
 
     /// Whether what `id` names is imported from the JS file `from`: a
     /// library's item a consumer imports from it (ADR 0100), or a binding's.
+    /// Of a library's namespace, ADR 1037's unit struct, its methods',
+    /// `use ..::ReactFiberReconciler;`'s; of another crate's module, each
+    /// binding's in it, `use art::transform;`'s (rd611, ADR 1063, amended).
     fn imports_from(
         &self,
         tcx: TyCtxt<'_>,
@@ -631,13 +634,22 @@ impl UsesWritten {
         id: DefId,
         from: &str,
     ) -> bool {
-        let export = foreign.import_key(id, self.module).or_else(|| {
-            (is_binding(tcx, id))
-                .then(|| js_path(tcx, id))
-                .flatten()
-                .and_then(|path| js_import(&path).map(|(export, _)| export))
-        });
-        export.is_some_and(|(of, _)| of == from)
+        let own = |id: DefId| {
+            let export = foreign.import_key(id, self.module).or_else(|| {
+                (is_binding(tcx, id))
+                    .then(|| js_path(tcx, id))
+                    .flatten()
+                    .and_then(|path| js_import(&path).map(|(export, _)| export))
+            });
+            export.is_some_and(|(of, _)| of == from)
+        };
+        match tcx.def_kind(id) {
+            DefKind::Struct if !id.is_local() && crate::lower::classes::is_namespace(tcx, id) => {
+                (tcx.inherent_impls(id).iter()).any(|&imp| tcx.associated_item_def_ids(imp).iter().any(|&m| own(m)))
+            }
+            DefKind::Mod if !id.is_local() => bindings_in(tcx, id).into_iter().any(own),
+            _ => own(id),
+        }
     }
 
     /// The `use` of the import from the crate's module `target`: of its
@@ -1115,4 +1127,19 @@ fn given_by_its_block(tcx: TyCtxt<'_>, def_id: LocalDefId) -> bool {
     };
     matches!(block.expr, Some(hir::Expr { kind: hir::ExprKind::Path(hir::QPath::Resolved(None, path)), .. })
         if path.res == Res::Def(DefKind::Fn, def_id.to_def_id()))
+}
+
+/// The bindings another crate's module `module` declares: what a `use` of
+/// it imports from their JS modules (rd611).
+fn bindings_in(tcx: TyCtxt<'_>, module: DefId) -> Vec<DefId> {
+    (tcx.module_children(module).iter())
+        .filter_map(|child| match child.res {
+            Res::Def(DefKind::Fn | DefKind::Static { .. }, binding)
+                if tcx.opt_parent(binding) == Some(module) && is_binding(tcx, binding) =>
+            {
+                Some(binding)
+            }
+            _ => None,
+        })
+        .collect()
 }

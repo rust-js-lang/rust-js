@@ -157,3 +157,30 @@ binding is what a consumer reads it through", a library's holder and the
 crate's own each before what sorts first, and `react`'s import where its
 binding is declared; mutations `imports-held-library-unplaced`,
 `imports-held-module-unplaced` and `imports-held-binding-own`.
+
+## Amendment: a `use` of a library's namespace, or of a module of bindings (rd611)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, as above.
+
+Two more `use`s placed no import, which fell after every `use`'s: React
+DOM's `use react_reconciler::react_fiber_reconciler::ReactFiberReconciler;`,
+the reconciler's namespace unit struct (ADR 1037), whose methods are its
+module's functions, `import {..} from
+'react-reconciler/src/ReactFiberReconciler'`; and ART's `use art::{..,
+mode, transform};`, modules of bindings, `transform::new()`'s `import
+Transform from 'art/core/transform'`. `UsesWritten` asked what the `use`
+names, a struct or a module, of the JS module it's imported from, which
+neither is.
+
+**A `use` of another crate's namespace makes its methods' import, and one
+of another crate's module its bindings'** (`UsesWritten::imports_from`,
+`bindings_in`): of the module's own bindings, a function or a static, not
+of modules inside it, which a `use` of each names. The crate's own
+namespace and modules were placed already, as the crate's modules are
+(`module_at`).
+
+Held by `test/cargo-link.test.ts`'s "a use of a library's namespace or of
+a module of bindings places its import", both before what sorts first;
+mutations `imports-namespace-use-unplaced` and
+`imports-module-use-unplaced`.
+

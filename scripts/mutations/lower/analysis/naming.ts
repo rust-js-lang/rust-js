@@ -783,4 +783,22 @@ export const mutations: Mutation[] = [
     replace: "                        Some(holder) => {\n                            holders.push(holder);\n                            named.push(id);\n                        }\n",
     tests: ["test/cargo-link.test.ts", "-t", "holds a binding"],
   },
+  {
+    name: "imports-namespace-use-unplaced",
+    breaks:
+      "a `use` of a library's namespace, `use react_reconciler::react_fiber_reconciler::ReactFiberReconciler;`, places no import, so the reconciler's goes after every `use`'s (rd611, ADR 1063, amended)",
+    file: "src/lower/analysis/naming.rs",
+    find: "            DefKind::Struct if !id.is_local() && crate::lower::classes::is_namespace(tcx, id) => {\n",
+    replace: "            DefKind::Struct if false => {\n",
+    tests: ["test/cargo-link.test.ts", "-t", "namespace or of a module"],
+  },
+  {
+    name: "imports-module-use-unplaced",
+    breaks:
+      "a `use` of a module of bindings, `use art::transform;`, places no import, so ART's `art/core/transform` goes after every `use`'s (rd611, ADR 1063, amended)",
+    file: "src/lower/analysis/naming.rs",
+    find: "            DefKind::Mod if !id.is_local() => bindings_in(tcx, id).into_iter().any(own),\n",
+    replace: "            DefKind::Mod if false => bindings_in(tcx, id).into_iter().any(own),\n",
+    tests: ["test/cargo-link.test.ts", "-t", "namespace or of a module"],
+  },
 ];
