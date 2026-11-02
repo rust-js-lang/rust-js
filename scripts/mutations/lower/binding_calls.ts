@@ -91,9 +91,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`js::instance_of(value, constructor)` is `constructor instanceof value`, which throws of a value that's no function (ADR 0878)",
     file: "src/lower/binding_calls.rs",
-    find: "            (JsForm::InstanceOfGiven, Some(this)) if args.len() == 1 => Expr::bin(Op::InstanceOf, this, args.remove(0)),\n",
-    replace:
-      "            (JsForm::InstanceOfGiven, Some(this)) if args.len() == 1 => Expr::bin(Op::InstanceOf, args.remove(0), this),\n",
+    find: "                Expr::bin(Op::InstanceOf, this, args.remove(0)).answered_by_a_getter()\n",
+    replace: "                Expr::bin(Op::InstanceOf, args.remove(0), this).answered_by_a_getter()\n",
     tests: [
       "test/js-collections.test.ts",
       "-t",
@@ -778,9 +777,8 @@ export const mutations: Mutation[] = [
     breaks:
       '`js::loose_equals(typed, value)` is `typed === value`, so ReactDOMInput\'s `"0.0"` typed where the value is `0` is clobbered (a wrong answer, ADR 1012)',
     file: "src/lower/binding_calls.rs",
-    find: "            (JsForm::LooseEquals, Some(this)) if args.len() == 1 => Expr::bin(Op::LooseEq, this, args.remove(0)),\n",
-    replace:
-      "            (JsForm::LooseEquals, Some(this)) if args.len() == 1 => Expr::bin(Op::Eq, this, args.remove(0)),\n",
+    find: "                Expr::bin(Op::LooseEq, this, args.remove(0)).answered_by_a_getter()\n",
+    replace: "                Expr::bin(Op::Eq, this, args.remove(0)).answered_by_a_getter()\n",
     tests: ["test/js-any-values.test.ts", "-t", "loose_equals"],
   },
   {
@@ -841,9 +839,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`js::to_number(width)` is `Number(width)`, which makes `1` of `1n`, where react-art's `+width` throws",
     file: "src/lower/binding_calls.rs",
-    find: "            (JsForm::Number, Some(this)) if args.is_empty() => Expr::unary(UnaryOp::Plus, this),\n",
-    replace:
-      "            (JsForm::Number, Some(this)) if args.is_empty() => Expr::call(Expr::var(\"Number\"), vec![this]),\n",
+    find: "                self.js_conversion(def_id, generic_args, Expr::unary(UnaryOp::Plus, this))\n",
+    replace: "                self.js_conversion(def_id, generic_args, Expr::call(Expr::var(\"Number\"), vec![this]))\n",
     tests: ["test/js-any-values.test.ts", "-t", "to_number is JS's unary"],
   },
   {
@@ -851,9 +848,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`js::subtract(length, 1.0)` is `+length - 1`, whose TypeError of a BigInt says it can't be made a number, where `length - 1`'s says it can't be mixed with one (rd564)",
     file: "src/lower/binding_calls.rs",
-    find: "            (JsForm::Subtract, Some(this)) if args.len() == 1 => Expr::bin(Op::Sub, this, args.remove(0)),\n",
+    find: "                self.js_conversion(def_id, generic_args, Expr::bin(Op::Sub, this, args.remove(0)))\n",
     replace:
-      "            (JsForm::Subtract, Some(this)) if args.len() == 1 => Expr::bin(Op::Sub, Expr::unary(UnaryOp::Plus, this), args.remove(0)),\n",
+      "                self.js_conversion(def_id, generic_args, Expr::bin(Op::Sub, Expr::unary(UnaryOp::Plus, this), args.remove(0)))\n",
     tests: ["test/js-any-values.test.ts", "-t", "subtract is JS's binary"],
   },
   {

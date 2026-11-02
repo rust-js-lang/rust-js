@@ -402,8 +402,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a written `else` whose test is a negation, `if (!x)`, loses its mark when `negations` makes the test again, so preparation's `unelsed` drops it (ADR 0237, amended)",
     file: "src/lower/mir/tidy.rs",
-    find: "        let facts = made.facts.and(e.facts.of_statement());\n",
-    replace: "        let facts = made.facts;\n",
+    find: "        let facts = made.facts.and(e.facts.of_statement()).and(e.facts.of_evaluation());\n",
+    replace: "        let facts = made.facts.and(e.facts.of_evaluation());\n",
     tests: ["test/corpus.test.ts", "-t", "^match_last_arm_else.rs$"],
     snapshots: true,
   },
