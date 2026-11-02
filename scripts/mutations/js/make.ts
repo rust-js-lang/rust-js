@@ -603,4 +603,26 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^whole_counters.rs$"],
     snapshots: true,
   },
+  {
+    name: "unbound-variable-sequenced",
+    breaks:
+      "a variable read unbound is printed `(0, onError)(2)`, where a variable's call gives no `this` already, `onError(2)` (rd579)",
+    file: "src/js/make.rs",
+    find: "            && matches!(&f.kind, ExprKind::Var(name) if name != \"eval\")\n",
+    replace: "            && false\n",
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a JS function the program's own data holds is called with no this",
+    ],
+  },
+  {
+    name: "unbound-eval-direct",
+    breaks:
+      "`(0, eval)(code)` is printed `eval(code)`, a direct eval, which reads the caller's variables (rd579's variable rule)",
+    file: "src/js/make.rs",
+    find: "            && matches!(&f.kind, ExprKind::Var(name) if name != \"eval\")\n",
+    replace: "            && matches!(&f.kind, ExprKind::Var(_))\n",
+    tests: ["test/js-any-values.test.ts", "-t", "eval is the global eval, called indirectly"],
+  },
 ];

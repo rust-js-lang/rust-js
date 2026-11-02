@@ -6,20 +6,19 @@ use super::*;
 use crate::lower::bindings::Asked;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// A call of what may be a with_this function, a `dyn Fn`'s or a
-    /// generic one's of its signature, or a binding's JS function a fn
-    /// pointer holds (`may_read_this`), whose callee is read as a member,
-    /// `s.f`, or an item, `fs[i]`, which JS would give it as its `this`:
-    /// its callee held first, `const f = s.f; f()`, so it's called with
-    /// none, as Rust calls it (#402, ADR 0972; #427). A temporary MIR holds
-    /// the read in, which tidy reads in place, is held as its field is
-    /// named. Not of a field the crate fills with its own closures alone
-    /// (#405).
+    /// A call of what may read the `this` JS would give it
+    /// (`may_read_this`): a JS function, a with_this function or a
+    /// binding's a fn pointer holds, whose callee is read as a member,
+    /// `s.f`, or an item, `fs[i]`, which JS would give it as its `this`.
+    /// Its callee is read unbound, `(0, s.f)()`, so it's called with none,
+    /// as Rust calls it (#402, ADR 0972; #427; rd579). A temporary MIR
+    /// holds the read in is read unbound too, `(0, f)`: `(0, s.f)` where tidy
+    /// reads it in place, else the variable alone, `f()`, which gives none.
+    /// Rust's own function, the crate's closure, is called as it is.
     pub(super) fn called_unbound(
         &mut self,
         state: &mut State<'_, 'tcx>,
         (call, called): (Value<'tcx>, Called<'tcx>),
-        out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
         let Value::Expr(Expr {
             kind: js::ExprKind::Call(callee, args),
@@ -29,23 +28,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(call);
         };
         let (pointers, field) = (self.krate.cell_borrows.pointers(), self.called_field(state, called));
-        if !pointers.may_read_this(self.tcx, called, field) {
-            return Ok(Value::Expr(Expr::call(*callee, args)));
-        }
-        let name = match &callee.kind {
-            js::ExprKind::Member(_, property) | js::ExprKind::OptionalMember(_, property) => property.clone(),
-            js::ExprKind::Index(..) => "f".to_string(),
-            js::ExprKind::Var(name)
-                if super::tidy::is_temporary(name)
-                    && let Some(field) = field =>
-            {
-                crate::lower::camel_case(self.tcx.item_name(field).as_str())
+        // What holds it: a field, `s.f`, one a symbol names too,
+        // `iterable[Symbol.asyncIterator]`, or a temporary of one; an item,
+        // `fs[i]`; or a member of what isn't seen, a thread-local's `with`'s.
+        let holder = match (&callee.kind, field) {
+            (js::ExprKind::Member(..) | js::ExprKind::OptionalMember(..) | js::ExprKind::Index(..), Some(field)) => {
+                Holder::Field(field)
             }
+            (js::ExprKind::Index(..), None) => Holder::Item,
+            (js::ExprKind::Member(..) | js::ExprKind::OptionalMember(..), None) => Holder::Unknown,
+            (js::ExprKind::Var(name), Some(field)) if super::tidy::is_temporary(name) => Holder::Field(field),
             _ => return Ok(Value::Expr(Expr::call(*callee, args))),
         };
-        self.flush(state, out)?;
-        let callee = self.spill(&name, *callee, out);
-        Ok(Value::Expr(Expr::call(callee, args)))
+        if !pointers.may_read_this(self.tcx, called, holder) {
+            return Ok(Value::Expr(Expr::call(*callee, args)));
+        }
+        Ok(Value::Expr(Expr::call(Expr::unbound(*callee), args)))
     }
 
     /// The field of the crate's struct the call that ends `state.at` calls,
@@ -73,33 +71,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
         };
-        if place.projection.is_empty() {
-            place = match assigned(place.local) {
-                Some(of) => of,
-                // A `Cell`'s value got, `(s.f.get())()`: the cell's place.
-                None => {
-                    let got = (state.body.basic_blocks.iter()).find_map(|block| match &block.terminator().kind {
-                        mir::TerminatorKind::Call {
-                            func,
-                            args,
-                            destination,
-                            ..
-                        } if destination.local == place.local
-                            && destination.projection.is_empty()
-                            && let Some((f, _)) = func.const_fn_def()
-                            && crate::lower::recognition::cell_own_method(self.tcx, f)
-                                == Some(crate::lower::recognition::CellMethod::Get) =>
-                        {
-                            args.first()?.node.place()
-                        }
-                        _ => None,
-                    })?;
-                    match got.projection.is_empty() {
-                        true => assigned(got.local)?,
-                        false => got,
-                    }
+        // What a call gives of what it's given: a `Cell`'s value got,
+        // `(s.f.get())()`, and an `Rc`'s or a `Box`'s pointee, `(s.f)()` of an
+        // `Rc<dyn Fn()>`, the place of what it's given.
+        let given_of = |local: mir::Local| {
+            (state.body.basic_blocks.iter()).find_map(|block| match &block.terminator().kind {
+                mir::TerminatorKind::Call {
+                    func,
+                    args,
+                    destination,
+                    ..
+                } if destination.local == local
+                    && destination.projection.is_empty()
+                    && let Some((f, _)) = func.const_fn_def()
+                    && (crate::lower::recognition::cell_own_method(self.tcx, f)
+                        == Some(crate::lower::recognition::CellMethod::Get)
+                        || self
+                            .tcx
+                            .trait_of_assoc(f)
+                            .is_some_and(|t| self.tcx.is_lang_item(t, LangItem::Deref))
+                            && args.first().is_some_and(|given| {
+                                let ty = given.node.ty(state.body, self.tcx).peel_refs();
+                                ty.is_box() || crate::lower::recognition::rc_pointee(self.tcx, ty).is_some()
+                            })) =>
+                {
+                    args.first()?.node.place()
                 }
-            };
+                _ => None,
+            })
+        };
+        // Through each temporary, and what it points at, `&(*_2)`, to the
+        // place a field is read of.
+        for _ in 0..4 {
+            if !place.projection.iter().all(|elem| matches!(elem, PlaceElem::Deref)) {
+                break;
+            }
+            place = assigned(place.local).or_else(|| given_of(place.local))?;
         }
         let (base, elem) = (place.iter_projections()).rfind(|(_, elem)| matches!(elem, PlaceElem::Field(..)))?;
         let PlaceElem::Field(index, _) = elem else { return None };
@@ -117,7 +124,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         arg_tys: &[Ty<'tcx>],
         writes: Option<usize>,
         span: Span,
-        unbound: Option<(&mut State<'_, 'tcx>, &mut Vec<Stmt>, Ty<'tcx>)>,
+        unbound: Option<(&mut State<'_, 'tcx>, Ty<'tcx>)>,
     ) -> R<Value<'tcx>> {
         let mut values = values.into_iter();
         let callee = match values.next().expect("the closure") {
@@ -188,8 +195,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let call = Value::Expr(Expr::call(callee, exprs));
         match unbound {
-            Some((state, out, output)) if !own => {
-                self.called_unbound(state, (call, Called::Function(arg_tys[1], output)), out)
+            Some((state, output)) if !own => {
+                self.called_unbound(state, (call, Called::Function(arg_tys[0], arg_tys[1], output)))
             }
             _ => Ok(call),
         }

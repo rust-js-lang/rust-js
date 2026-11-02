@@ -8,6 +8,8 @@ rest parameter (below); amended (#449): a place of its `this` is never read in a
 [1009](1009-a-constructor-is-held-as-a-typed-class.md): held by
 `Class::of`, its function is a constructor closed over what it captures.
 Amended: it takes as many parameters as a function, sixteen (rd400).
+Amended (rd579): a JS function the program's own data holds is called
+with no `this`, `(0, s.f)()`, the one form of a call with none (below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none for the function:
 its `this` is a parameter Rust sees, so what it reads is what JS gives it.
@@ -400,3 +402,85 @@ body, so the default reads `const this$ = this;` as well. The case is now
 one of the few cases `test/tidy-stages.test.ts` runs in the nightly's suite, and
 `this-handles-not-read-apart` names it too: without the rule, and with
 3ce9fbb21's parent, it fails after `flags/settled flags`.
+
+## Amendment (rd579): a JS function the program's own data holds is called with no `this`
+
+React's Flight server keeps the `environmentName` its caller gives in the
+request it makes and calls it unbound, `(0, request.environmentName)()`.
+Its port keeps an `Rc<dyn Fn() -> String>` in its `Request` and calls
+`(request.environment_name)()`, which printed `request.environmentName()`:
+the caller's function was given the request as its `this`, where Rust
+gives it none. A function that reads its `this` saw a struct of the
+program's that JS never made an object of methods of.
+
+**A function that may be a JS function, called through what holds it,
+is called with no `this` where what holds it is the program's own data:
+a field the program writes, a literal's or an assignment's, of what may
+be a JS function, `Request { environment_name, .. }`, or an item of a
+tuple, an array or a `Vec`** (`FnPointers::may_read_this`, of
+`own_fields`, which records each write of a field of a function). Case:
+results changed (0262's third): Rust's, which gives none. What's left as
+it was:
+
+- **A field the program never writes is a property of an object JS
+  made, its own method** (#404, the user's decision): called as JS calls
+  it, `o.g(1)`, `destination.destroy(error)`, its `this` the object. A
+  struct the program builds may be JS's too, a stream JS gives where the
+  program builds one of its own: whose struct it is says nothing of who
+  wrote the function. A field another crate writes is the program's own
+  too, but the consumer's call doesn't know it: it's called through its
+  object, as before, the library's contract saying no more (a limit, the
+  crates test's `hooks.onEach(1)`). So is a member of what the call's MIR doesn't show,
+  `(PREVIOUS.with(|p| p.d))(href)`'s `previousDispatcher.D(href)`, or an
+  `Rc`'s own box, as before (`Holder::Unknown`).
+- **What may only be Rust's is called as it is**, `c.step(1)`: a field
+  the crate fills with its own closures alone (#405), or with what the
+  field held, React DOM's dispatcher's `r: previous.r`, which writes it
+  nothing new, `previousDispatcher.r(form)` as upstream calls it; a `dyn Fn` of a
+  signature no value from outside the crate's code has, nor one the crate
+  makes of a binding's function, of a fn pointer that may be JS's, or of
+  what generic code is given where the crate may hold any JS function
+  (`js_dyns`); a fn pointer none of whose values comes from outside or is
+  a binding's (`pointer_may_be_js`); and a generic `F` where the crate
+  holds no JS function at all (`may_hold_js`). A trait's method of a type
+  no consumer can name gives JS no way in: the `dyn Fn`s and pointers of
+  its signature are the program's own.
+- **A with_this function and a binding's pointer** are called with none
+  wherever they're held, as before (#402, #427).
+
+**The one form of a call with no `this` is `(0, s.f)()`**, upstream's,
+`ExprKind::Unbound`, as `(0, eval)` is (ADR 1033): an expression, read
+where Rust reads it, before what it's given, where #402's form held the
+callee in a `const` first, `const f = s.f; f()`. A variable read unbound
+is the variable, `f()`, which gives no `this` in a module, as preparation makes it (`Expr::unbound_variable_read`);
+`eval`'s is still `(0, eval)`, an indirect eval. A field's function an
+`Rc` holds is seen as its field's through the `Rc`'s deref
+(`calls::called_field`).
+
+An array JS gives a program, `callbacks: &[fn()]`, is an item's holder too:
+`(0, callbacks[i])()`, where JS's own `callbacks[i]()` would give the
+array. No JS function a program is given expects an array as its `this`.
+
+Held by `test/js-functions.test.ts`, "a JS function the program's own
+data holds is called with no this", run in Node with JS functions that
+read their `this`: a request's `Rc<dyn Fn>` and `&dyn Fn`, a tuple's and
+a `Vec`'s item, a JS object's function called through it, the crate's
+closure and a `dyn Fn` of a signature nothing outside gives, a field
+written while its call's argument is made (the old function called), a
+JS fn pointer the program's struct holds, and a binding's function made a
+`dyn Fn`; and #402's, #405's and #427's tests, their form `(0, ..)` now.
+Mutations `js-object-holder-unbound`, `own-data-holder-bound`,
+`own-data-pointer-bound`, `js-dyns-unrecorded`, `binding-dyn-unrecorded`,
+`own-field-of-itself-any` (`analysis/fn_pointers.ts`), `rc-field-unseen` (`mir/calls.ts`),
+`unbound-variable-sequenced` and `unbound-eval-direct`
+(`js/make.ts`); #402's and #427's moved to the new code.
+
+react-in-rust's JS, every package built before and after: ART's two
+`(0, instance._subscriptions[type])()`, art's unsubscribe functions, an
+item of the program's own object, called with no `this` as Rust calls
+them; and three calls with none already, of a with_this function's
+signature, React DOM's legacy `destination.destroy(error)` and Flight's
+reply `controller.error(error)`, in the one form, `(0, destination.destroy)(error)`
+where they were `const destroy = destination.destroy; destroy(error);`.
+React DOM's dispatchers, `previousDispatcher.r(form)` and the rest, read as
+before.

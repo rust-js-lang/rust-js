@@ -471,10 +471,26 @@ pub struct Other {
 pub fn other(o: &Other) -> u32 {
     (o.g)(1)
 }
+
+// JS's object, whose field the program never writes, given a with_this
+// function the program made.
+pub struct Given {
+    pub f: &'static dyn Fn() -> bool,
+}
+
+pub fn reader() -> &'static dyn Fn() -> bool {
+    js::function::with_this(|this: Option<&'static Unknown>, ()| this.is_some())
+}
+
+pub fn given(g: &Given) -> bool {
+    (g.f)()
+}
 `);
-  expect(js).toContain("  const f = s.f;\n  return f();\n");
-  expect(js).toContain("const f = fs[0];\n");
-  expect(js).toContain("  const f = p[0];\n  return f();\n");
+  expect(js).toContain("return (0, s.f)();");
+  expect(js).toContain("return (0, g.f)();");
+  expect(lib.given({ f: lib.reader() })).toBe(false);
+  expect(js).toContain("(0, fs[0])()");
+  expect(js).toContain("return (0, p[0])();");
   expect(js).toContain("return t.g();");
   expect(js).toContain("return !!p[0]() && p[1] > 1;");
   expect(js).toContain("return o.g(1);");
@@ -514,7 +530,7 @@ pub fn rust() -> bool {
     (r.h)()
 }
 `);
-  expect(alone.js).toContain("  const f = s.f;\n  return f();\n");
+  expect(alone.js).toContain("return (0, s.f)();");
   expect(alone.js).toContain("return r.h();");
   expect([alone.lib.field(), alone.lib.rust()]).toEqual([false, true]);
   // One generic code makes, of what its callers give, may be any.
@@ -536,7 +552,159 @@ pub fn read() -> u32 {
     reader(2u8)() as u32
 }
 `);
-  expect(generic.js).toContain("  const f = s.f;\n  return f();\n");
+  expect(generic.js).toContain("return (0, s.f)();");
+});
+
+// rd579: React's Flight server keeps the `environmentName` its caller gives
+// in the request it makes, and calls it `(0, request.environmentName)()`.
+// A JS function the program's own data holds, a struct it builds or an item
+// of a tuple or a `Vec`, is called with no `this`, as Rust calls it, where
+// `request.environmentName()` would give it the request. A struct the program
+// never builds is JS's object, its function called as JS calls it,
+// `o.g(1)` (#404); one the crate fills with its own closures alone, and a
+// `dyn Fn` of a signature nothing outside the crate gives, are Rust's,
+// which read no `this`.
+test("a JS function the program's own data holds is called with no this", async () => {
+  const { js, lib } = await compiled("dyn-fn-own-data-this", `use std::rc::Rc;
+
+pub struct Request {
+    pub environment_name: Rc<dyn Fn() -> String>,
+    pub on_error: &'static dyn Fn(u32) -> u32,
+    pub pending: u32,
+}
+
+pub fn create_request(environment_name: Rc<dyn Fn() -> String>, on_error: &'static dyn Fn(u32) -> u32) -> Request {
+    Request { environment_name, on_error, pending: 0 }
+}
+
+pub fn environment(request: &Request) -> String {
+    (request.environment_name)()
+}
+
+pub fn error(request: &Request) -> u32 {
+    (request.on_error)(request.pending + 1)
+}
+
+pub fn paired(f: &'static dyn Fn(u32) -> u32) -> u32 {
+    let pair = (f, 1u32);
+    (pair.0)(pair.1)
+}
+
+pub fn listed(fs: Vec<Rc<dyn Fn() -> String>>) -> String {
+    fs[0]()
+}
+
+pub struct Theirs {
+    pub g: Rc<dyn Fn(u32) -> u32>,
+}
+
+pub fn theirs(o: &Theirs) -> u32 {
+    (o.g)(1)
+}
+
+struct Counter {
+    step: Box<dyn Fn(u8) -> u8>,
+}
+
+pub fn counted(n: u8) -> u8 {
+    let c = Counter { step: Box::new(move |k| k + n) };
+    (c.step)(1)
+}
+
+fn twice(k: u16) -> u16 {
+    k * 2
+}
+
+pub fn rust_only(n: u16) -> u16 {
+    let fs: Vec<&dyn Fn(u16) -> u16> = vec![&twice];
+    fs[0](n)
+}
+
+// Rust reads the field first: the function it held, not the one written.
+pub fn swapped(request: &mut Request, other: &'static dyn Fn(u32) -> u32) -> u32 {
+    (request.on_error)({
+        request.on_error = other;
+        2
+    })
+}
+
+pub struct Hooks {
+    pub schedule: fn(u32) -> u32,
+}
+
+pub fn hooks(schedule: fn(u32) -> u32) -> Hooks {
+    Hooks { schedule }
+}
+
+pub fn scheduled(hooks: &Hooks) -> u32 {
+    (hooks.schedule)(3)
+}
+
+// React DOM's dispatcher, what it held passed on, r: previous.r, its own
+// functions beside: called through it, as upstream calls previousDispatcher.r(form).
+pub struct Dispatcher {
+    pub r: &'static dyn Fn(u32) -> u32,
+    pub d: &'static dyn Fn(u32) -> u32,
+}
+
+fn doubled(n: u32) -> u32 {
+    n * 2
+}
+
+pub fn wrapped(previous: &'static Dispatcher) -> Dispatcher {
+    Dispatcher { r: previous.r, d: &doubled }
+}
+
+pub fn reset(dispatcher: &Dispatcher) -> u32 {
+    (dispatcher.r)(1)
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.unboundProbe")]
+fn probe() -> bool {
+    unreachable!()
+}
+
+struct Probed {
+    check: &'static dyn Fn() -> bool,
+}
+
+pub fn probed() -> bool {
+    let p = Probed { check: &probe };
+    (p.check)()
+}
+`);
+  expect(js).toContain("return (0, request.environmentName)();");
+  expect(js).toContain("return (0, request.onError)((request.pending + 1) >>> 0);");
+  expect(js).toContain("return (0, pair[0])(pair[1]);");
+  expect(js).toContain("return $index(fs, 0)();");
+  expect(js).toContain("return o.g(1);");
+  expect(js).toContain("return c.step(1);");
+  expect(js).toContain("$index(fs, 0)(n)");
+  function name(this: unknown) {
+    return this === undefined ? "Server" : "bound";
+  }
+  function onError(this: unknown, n: number) {
+    return this === undefined ? n : -1;
+  }
+  const request = lib.createRequest(name, onError);
+  expect([lib.environment(request), lib.error(request), lib.paired(onError), lib.listed([name])]).toEqual(["Server", 1, 1, "Server"]);
+  expect(lib.theirs({ k: 5, g(this: { k: number }, n: number) { return this.k + n; } })).toBe(6);
+  expect([lib.counted(2), lib.rustOnly(3)]).toEqual([3, 6]);
+  expect(js).toContain("  const onError = request.onError;\n  request.onError = other;\n  return onError(2);\n");
+  expect(lib.swapped(request, () => 100)).toBe(2);
+  expect(js).toContain("return (0, hooks.schedule)(3);");
+  expect(lib.scheduled(lib.hooks(onError))).toBe(3);
+  expect(js).toContain("return (0, p.check)();");
+  expect(js).toContain("return dispatcher.r(1);");
+  expect(lib.reset({ r(this: unknown, n: number) { return this === undefined ? n : n + 10; } })).toBe(11);
+  (globalThis as any).unboundProbe = function (this: unknown) {
+    return this === undefined;
+  };
+  try {
+    expect(lib.probed()).toBe(true);
+  } finally {
+    delete (globalThis as any).unboundProbe;
+  }
 });
 
 // What with_this makes is a `&dyn Fn`, as `Parameters` is of a tuple
@@ -596,8 +764,8 @@ pub fn lent() -> bool {
 }
 `);
   expect(js).toContain("return t.stop();");
-  expect(js).toContain("  const f$1 = h.f;\n  return f$1();\n");
-  expect(js).toContain("  const g$1 = l.g;\n  return g$1();\n");
+  expect(js).toContain("return (0, h.f)();");
+  expect(js).toContain("return (0, l.g)();");
   expect([lib.stop(lib.tracker(2)), lib.held(), lib.lent()]).toEqual([true, false, false]);
 });
 

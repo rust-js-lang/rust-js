@@ -2878,9 +2878,14 @@ export function bindToConsole(methodName, args) {
   `callback.apply(this, args)`
   ([ADR 0972](../../decisions/0972-a-function-that-reads-its-this-is-with-thiss.md),
   amended). Rust's call of one a field or an item holds, `(s.f)()`,
-  gives it none: `const f = s.f; f()`, not `s.f()`, whose `this` is `s`,
-  where a `with_this` function the crate makes, of that call's signature,
-  may be it. A JS function of another is called through its object,
+  gives it none: `(0, s.f)()`, not `s.f()`, whose `this` is `s`, where a
+  `with_this` function the crate makes, of that call's signature, may be
+  it; and where a JS function may be it, kept by the program in a field
+  it writes, or an item of a tuple or a collection, as React's Flight
+  server calls `(0, request.environmentName)()` (rd579). A closure of the
+  crate's, or a `dyn Fn` no JS function can be, is called as it is,
+  `tracker.stop()`. A JS function of a field the program never writes, an
+  object JS made's own method, is called through its object,
   `handle.play()`, which is its `this`, as JS calls it, also where its
   arguments need statements first: `const d = internals.d; ..; d.L(..)`
   ([ADR 1034](../../decisions/1034-a-fields-function-called-after-statements-keeps-its-object.md)). React's error

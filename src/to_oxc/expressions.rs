@@ -277,7 +277,8 @@ impl<'a> Cx<'a> {
             ExprKind::DropArgument(..) => unreachable!("the pipeline keeps each drop argument or leaves it out"),
             ExprKind::Await(promise) => Expression::new_await_expression(sp, self.expr(promise), b),
             // `(0, f)`: `f` read unbound, `(0, eval)`, an indirect eval
-            // (ADR 1033, amended).
+            // (ADR 1033, amended), and `(0, s.f)`, a field's function called
+            // with no `this` (ADR 0972, amended).
             ExprKind::Unbound(f) => {
                 let zero = Expression::new_numeric_literal(sp, 0.0, None, NumberBase::Decimal, b);
                 Expression::new_sequence_expression(sp, ArenaVec::from_iter_in([zero, self.expr(f)], b), b)

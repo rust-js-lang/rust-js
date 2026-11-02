@@ -144,8 +144,8 @@ pub fn swapped(n: u32) -> u32 {
 });
 
 // One a with_this function of its signature may be is called with no
-// `this`, as Rust calls it (ADR 0972, amended): its function held, `const
-// f = s.f; f(..)`, whatever its arguments need.
+// `this`, as Rust calls it (ADR 0972, amended): read unbound, `(0,
+// s.f)(..)`, whatever its arguments need.
 test("a field's function a with_this function may be is still held", async () => {
   const { js, lib } = await compiled(
     "held-receivers-with-this",
@@ -170,6 +170,6 @@ fn called(s: &S, options: &Unknown) -> bool {
 }
 `,
   );
-  expect(js).toContain("  const f = s.f;\n  return f(typeof integrity");
+  expect(js).toContain("  return (0, s.f)(typeof integrity");
   expect([(lib.field as (o: unknown) => boolean)({ integrity: "x" })]).toEqual([false]);
 });

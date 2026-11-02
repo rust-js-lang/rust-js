@@ -75,6 +75,28 @@ pub(in crate::lower) struct FnPointers<'tcx> {
     /// a closure or a function of its own, `Box::new(move || ..)`, never
     /// a with_this function's, and its place never lent mutably (#405).
     own_fields: HashMap<DefId, bool>,
+    /// The signatures, `dyn_key`'s, of each `dyn Fn` a value of which may
+    /// be a JS function (rd579): one that may come from outside the crate's
+    /// code, or one the crate makes of a binding's function or of what
+    /// generic code is given.
+    js_dyns: HashSet<(Ty<'tcx>, Ty<'tcx>)>,
+    /// Each `dyn Fn` the crate makes of a fn pointer, the pointer's type
+    /// and the `dyn`'s signatures: a JS function where the pointer may be
+    /// one, which only every body's coercions say.
+    dyns_of_pointers: Vec<(Ty<'tcx>, (Ty<'tcx>, Ty<'tcx>))>,
+    /// Each `dyn Fn` generic code makes of what it's given, `Rc::new(f)` of
+    /// an `F`: a JS function where the crate's code may hold any.
+    dyns_of_generics: Vec<(Ty<'tcx>, Ty<'tcx>)>,
+    /// Each `dyn Fn` made of another, of another signature, a supertrait's:
+    /// a JS function where the other may be one.
+    dyns_of_dyns: Vec<((Ty<'tcx>, Ty<'tcx>), (Ty<'tcx>, Ty<'tcx>))>,
+    /// The fn pointer types, `key`'s, a value of which may be a JS function
+    /// (rd579): one that may come from outside the crate's code, or one
+    /// generic code makes of a binding's function.
+    js_pointers: HashSet<Ty<'tcx>>,
+    /// Whether the crate's code gives a binding's function as a value, which
+    /// a generic `F` may be (rd579).
+    binding_values: bool,
 }
 
 impl<'tcx> FnPointers<'tcx> {
@@ -94,8 +116,16 @@ impl<'tcx> FnPointers<'tcx> {
                 let sig = tcx.instantiate_bound_regions_with_erased(
                     tcx.fn_sig(owner).instantiate_identity().skip_normalization(),
                 );
+                // A trait's method of a type no consumer can name is given the
+                // program's own values, which hold no JS function it wasn't
+                // given elsewhere (rd579); a pointer they hold may be any, as
+                // before.
+                let private = (tcx.impl_of_assoc(owner.to_def_id())).is_some_and(|of| {
+                    matches!(tcx.type_of(of).instantiate_identity().skip_normalization().kind(),
+                        ty::Adt(adt, _) if adt.did().as_local().is_some_and(|adt| !tcx.effective_visibilities(()).is_reachable(adt)))
+                });
                 for ty in sig.inputs_and_output {
-                    found.given_in(recognition, ty);
+                    found.given_from(recognition, ty, !private);
                 }
             }
             // A binding's body, and its closures', is native Rust's stand-in
@@ -107,10 +137,26 @@ impl<'tcx> FnPointers<'tcx> {
                 recognition,
                 results: tcx.typeck(owner),
                 found: &mut found,
+                callees: HashSet::new(),
             };
             made.visit_body(tcx.hir_body_owned_by(owner));
         }
         found.rust_fields = found.fields_of_rust(recognition);
+        // A `dyn Fn` made of a fn pointer that may be JS's may be too.
+        for (ptr, signature) in std::mem::take(&mut found.dyns_of_pointers) {
+            if found.pointer_may_be_js(tcx, ptr) {
+                found.js_dyns.insert(signature);
+            }
+        }
+        let generics = std::mem::take(&mut found.dyns_of_generics);
+        if found.may_hold_js(tcx) {
+            found.js_dyns.extend(generics);
+        }
+        for (of, signature) in std::mem::take(&mut found.dyns_of_dyns) {
+            if found.js_dyns.contains(&of) {
+                found.js_dyns.insert(signature);
+            }
+        }
         // A struct the program makes values of is its own data, whatever JS
         // gives of its type, and so is what it holds: not one of a binding
         // crate's, a dictionary, which only JS's objects are where a binding
@@ -171,37 +217,91 @@ impl<'tcx> FnPointers<'tcx> {
     }
 
     /// Whether a function called through what holds it, `(s.f)()`, must
-    /// be called with no `this`, `const f = s.f; f()`, which JS would give
-    /// it the holder as: a `dyn Fn` or generic one, `Called::Function` of
-    /// the tuple it's called with and what it gives, that may be one
-    /// `js::function::with_this` makes in the crate's code, of that
-    /// signature, which reads the `this` Rust gives it, `None` (#402, the
-    /// user's decision, #404); or a fn pointer, `Called::Pointer`, that may
-    /// be a binding's JS function the crate made one of, `queueMicrotask`,
-    /// which a browser refuses of another `this`, "Illegal invocation"
-    /// (#427, ADR 0602). Another, JS's own, is called through its object,
-    /// `s.f()`, as JS calls it.
-    pub(in crate::lower) fn may_read_this(
-        &self,
-        tcx: TyCtxt<'tcx>,
-        called: Called<'tcx>,
-        field: Option<DefId>,
-    ) -> bool {
+    /// be called with no `this`, `(0, s.f)()`, which JS would give it the
+    /// holder as. Rust gives none: a function that may read the `this` it's
+    /// given is called with none where the holder is the program's own
+    /// data, a field the program writes or an item of a tuple or a
+    /// collection (rd579), which JS never made an object of methods of:
+    /// a `dyn Fn` or generic one, `Called::Function` of what's called, the
+    /// tuple it's called with and what it gives, that may be a JS function
+    /// (`may_be_js`) or one `js::function::with_this` makes in the crate's
+    /// code, of that signature, which reads the `this` Rust gives it,
+    /// `None` (#402, the user's decision, #404); or a fn pointer,
+    /// `Called::Pointer`, that may be a JS function, or a binding's the
+    /// crate made one of, `queueMicrotask`, which a browser refuses of
+    /// another `this`, "Illegal invocation" (#427, ADR 0602). Another, of a
+    /// field the program never writes, an object JS made's own method, is
+    /// called through its object, `s.f()`, as JS calls it (#404), but a with_this function and a binding's pointer; and one
+    /// that may only be a Rust function, which reads no `this`, is called
+    /// as it is.
+    pub(in crate::lower) fn may_read_this(&self, tcx: TyCtxt<'tcx>, called: Called<'tcx>, holder: Holder) -> bool {
+        // A field the crate fills with its own functions alone (#405, #427).
+        if let Holder::Field(field) = holder
+            && self.own_fields.get(&field) == Some(&true)
+        {
+            return false;
+        }
+        // A field the crate never writes is a property of an object JS made,
+        // its own method, which JS calls through it.
+        // So is a member of what isn't seen, as JS calls it (#404).
+        let js_object = match holder {
+            Holder::Field(field) => !self.own_fields.contains_key(&field),
+            Holder::Item => false,
+            Holder::Unknown => true,
+        };
         match called {
-            // A field the crate fills with its own functions alone (#427).
-            Called::Pointer(_) if field.is_some_and(|field| self.own_fields.get(&field) == Some(&true)) => false,
-            Called::Pointer(ptr) => key(tcx, ptr)
-                .is_some_and(|key| (self.made.get(&key).into_iter().flatten()).any(|&(f, _)| is_binding(tcx, f))),
-            // A field the crate fills with its own closures alone (#405).
-            Called::Function(..) if field.is_some_and(|field| self.own_fields.get(&field) == Some(&true)) => false,
-            Called::Function(args, output) => {
+            Called::Pointer(ptr) => {
+                key(tcx, ptr)
+                    .is_some_and(|key| (self.made.get(&key).into_iter().flatten()).any(|&(f, _)| is_binding(tcx, f)))
+                    || !js_object && self.pointer_may_be_js(tcx, ptr)
+            }
+            Called::Function(callee, args, output) => {
                 self.with_this_generic
                     || self.with_this.contains(&(
                         tcx.erase_and_anonymize_regions(args),
                         tcx.erase_and_anonymize_regions(output),
                     ))
+                    || !js_object && self.may_be_js(tcx, callee, args, output)
             }
         }
+    }
+
+    /// Whether `callee`, a `dyn Fn`'s, a generic one's or a fn item's called
+    /// with `args` and giving `output`, may be a JS function (rd579): a
+    /// `dyn Fn` of a signature a value of which may be one; a generic one,
+    /// which its caller may give one, where the crate's code may hold any;
+    /// and a binding's function.
+    fn may_be_js(&self, tcx: TyCtxt<'tcx>, callee: Ty<'tcx>, args: Ty<'tcx>, output: Ty<'tcx>) -> bool {
+        match *callee.peel_refs().kind() {
+            ty::Dynamic(..) => self.all_open || self.js_dyns.contains(&signature(tcx, args, output)),
+            ty::FnDef(f, _) => is_binding(tcx, f),
+            ty::FnPtr(..) => self.pointer_may_be_js(tcx, callee.peel_refs()),
+            ty::Closure(..) | ty::CoroutineClosure(..) => false,
+            _ => self.may_hold_js(tcx),
+        }
+    }
+
+    /// Whether the crate's code may hold any JS function (rd579), which
+    /// what generic code is given may be: one from outside it, of a `dyn
+    /// Fn` or a fn pointer, or a binding's function it gives as a value or
+    /// makes a pointer of.
+    fn may_hold_js(&self, tcx: TyCtxt<'tcx>) -> bool {
+        self.all_open
+            || self.binding_values
+            || !self.js_dyns.is_empty()
+            || !self.js_pointers.is_empty()
+            || (self.made.values().flatten()).any(|&(f, _)| is_binding(tcx, f))
+    }
+
+    /// Whether a value of `ptr`, a fn pointer type, may be a JS function
+    /// (rd579): one from outside the crate's code, or a binding's the crate
+    /// makes one of. One generic code makes of the crate's own function is
+    /// Rust's, which only its callers say.
+    fn pointer_may_be_js(&self, tcx: TyCtxt<'tcx>, ptr: Ty<'tcx>) -> bool {
+        let Some(key) = key(tcx, ptr) else { return true };
+        self.all_open
+            || self.js_pointers.contains(&key)
+            || (self.made.get(&key).into_iter().flatten()).any(|&(f, _)| is_binding(tcx, f))
     }
 
     /// What its contract says of its structs' fields (ADR 0330, amended):
@@ -269,7 +369,12 @@ impl<'tcx> FnPointers<'tcx> {
         match key(tcx, ptr) {
             // Of generic code's arguments, which only its callers say.
             Some(key) if !args.has_param() => self.made.entry(key).or_default().push((f, args)),
-            Some(key) => _ = self.open.insert(key),
+            Some(key) => {
+                if is_binding(tcx, f) {
+                    self.js_pointers.insert(key);
+                }
+                self.open.insert(key);
+            }
             None => {}
         }
     }
@@ -277,10 +382,50 @@ impl<'tcx> FnPointers<'tcx> {
     /// A value of `ty` may come from outside the crate's code: each fn
     /// pointer type it may hold may be any function.
     fn given_in(&mut self, recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>) {
+        self.given_from(recognition, ty, true);
+    }
+
+    /// `given_in`, and of the functions a value of `ty` holds, `dyn Fn`s and
+    /// fn pointers, whether each may be a JS function, `js` (rd579).
+    fn given_from(&mut self, recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>, js: bool) {
         let held = held(recognition, ty);
         self.all_open |= held.any;
-        self.open.extend(held.keys);
+        self.open.extend(held.keys.iter().copied());
         self.library_rust.extend(held.rust);
+        if js {
+            self.js_pointers.extend(held.keys);
+            self.js_dyns.extend(held.dyns);
+        }
+    }
+
+    /// The crate coerced a value of `from` to `to`: a `dyn Fn` of a
+    /// binding's function, of what generic code is given or of a fn pointer
+    /// that may be JS's, may be a JS function (rd579).
+    fn coerced(&mut self, tcx: TyCtxt<'tcx>, from: Ty<'tcx>, to: Ty<'tcx>) {
+        let Some((source, target)) = unsized_pair(tcx, from, to) else {
+            return;
+        };
+        let Some(signature) = dyn_key(tcx, target) else { return };
+        // What calls it: a function or closure a reference or a box holds,
+        // `Rc::new(&f)`'s `f`, is the one called.
+        let mut source = source.peel_refs();
+        while source.is_box() {
+            source = source.expect_boxed_ty().peel_refs();
+        }
+        match *source.kind() {
+            ty::Closure(..) | ty::CoroutineClosure(..) => {}
+            ty::FnDef(f, _) if !is_binding(tcx, f) => {}
+            ty::FnPtr(..) => self.dyns_of_pointers.push((source, signature)),
+            ty::Param(_) | ty::Alias(..) => self.dyns_of_generics.push(signature),
+            // Another `dyn`, of what it holds: one of its signature, as it was.
+            ty::Dynamic(..) => match dyn_key(tcx, source) {
+                Some(of) if of == signature => {}
+                Some(of) => self.dyns_of_dyns.push((of, signature)),
+                None => _ = self.js_dyns.insert(signature),
+            },
+            // A binding's function.
+            _ => _ = self.js_dyns.insert(signature),
+        }
     }
 }
 
@@ -383,13 +528,70 @@ impl JsMade {
 /// `fn(&dyn for<'a> Fn(&'a u32))` and `fn(&dyn Fn(&'static u32))`, which
 /// subtyping may make one of the other. `None` of one that's not a fn
 /// pointer.
+/// What a function called through what holds it, `(s.f)()`, is held by,
+/// which `may_read_this` asks of (rd579).
+#[derive(Clone, Copy)]
+pub(in crate::lower) enum Holder {
+    /// A field of the crate's struct, `s.f`.
+    Field(DefId),
+    /// An item of a tuple, an array or a collection, `fs[i]`.
+    Item,
+    /// A member of what the call's MIR doesn't show, a thread-local's.
+    Unknown,
+}
+
 /// What a call through what holds it calls, which `may_read_this` asks
 /// of: a function of the tuple it's called with and what it gives, a `dyn
 /// Fn`'s or a generic one's, or a fn pointer of its type.
 #[derive(Clone, Copy)]
 pub(in crate::lower) enum Called<'tcx> {
-    Function(Ty<'tcx>, Ty<'tcx>),
+    /// What's called, `&dyn Fn()`, `&F`; the tuple it's called with; and
+    /// what it gives.
+    Function(Ty<'tcx>, Ty<'tcx>, Ty<'tcx>),
     Pointer(Ty<'tcx>),
+}
+
+/// What an unsizing coercion of `from` to `to` makes a `dyn` of, and that
+/// `dyn`: `C` and `dyn Fn()` of `Rc<C>` to `Rc<dyn Fn()>`, `&C` to `&dyn ..`.
+fn unsized_pair<'tcx>(tcx: TyCtxt<'tcx>, from: Ty<'tcx>, to: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
+    if let (Some((a, _)), Some((b, _))) = (
+        crate::lower::pointers::raw_pointee(tcx, from),
+        crate::lower::pointers::raw_pointee(tcx, to),
+    ) {
+        return unsized_pair(tcx, a, b);
+    }
+    match (from.kind(), to.kind()) {
+        (_, ty::Dynamic(..)) => Some((from, to)),
+        (ty::Ref(_, a, _), ty::Ref(_, b, _)) => unsized_pair(tcx, *a, *b),
+        (ty::Adt(x, a), ty::Adt(y, b)) if x == y => (a.types().zip(b.types()))
+            .find(|(a, b)| a != b)
+            .and_then(|(a, b)| unsized_pair(tcx, a, b)),
+        _ => None,
+    }
+}
+
+/// A `dyn Fn`'s signature, the tuple it's called with and what it gives,
+/// as each of its values is, whatever its lifetimes.
+fn signature<'tcx>(tcx: TyCtxt<'tcx>, args: Ty<'tcx>, output: Ty<'tcx>) -> (Ty<'tcx>, Ty<'tcx>) {
+    (
+        args.fold_with(&mut Lifetimeless(tcx)),
+        output.fold_with(&mut Lifetimeless(tcx)),
+    )
+}
+
+/// The signature of `ty`, a `dyn Fn(A) -> R`, `FnMut`'s and `FnOnce`'s too;
+/// `None` of another type.
+fn dyn_key<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
+    let ty::Dynamic(traits, ..) = ty.kind() else {
+        return None;
+    };
+    let principal = traits.principal()?;
+    tcx.fn_trait_kind_from_def_id(principal.def_id())?;
+    let args = principal.skip_binder().args.type_at(0);
+    let output = (traits.projection_bounds())
+        .find_map(|output| output.skip_binder().term.as_type())
+        .unwrap_or(tcx.types.unit);
+    Some(signature(tcx, args, output))
 }
 
 fn key<'tcx>(tcx: TyCtxt<'tcx>, ptr: Ty<'tcx>) -> Option<Ty<'tcx>> {
@@ -426,6 +628,8 @@ struct Held<'tcx> {
     /// Those held only by a library's field its contract says holds only
     /// its own Rust functions (`FieldFact::RustFunctions`).
     rust: HashSet<Ty<'tcx>>,
+    /// The signatures of the `dyn Fn`s it may hold (rd579).
+    dyns: HashSet<(Ty<'tcx>, Ty<'tcx>)>,
     any: bool,
 }
 
@@ -443,6 +647,11 @@ fn held<'tcx>(recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> Held<'tcx> {
                 ty::FnPtr(..) => {
                     if let Some(key) = key(tcx, part) {
                         held.keys.insert(key);
+                    }
+                }
+                ty::Dynamic(..) => {
+                    if let Some(signature) = dyn_key(tcx, part) {
+                        held.dyns.insert(signature);
                     }
                 }
                 ty::Alias(
@@ -473,6 +682,7 @@ fn held<'tcx>(recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> Held<'tcx> {
                             let mut theirs = Held::default();
                             walk(recognition, ty, seen, &mut theirs);
                             held.rust.extend(theirs.keys.into_iter().chain(theirs.rust));
+                            held.dyns.extend(theirs.dyns);
                             held.any |= theirs.any;
                             continue;
                         }
@@ -494,6 +704,8 @@ struct Made<'a, 'b, 'tcx> {
     recognition: &'a Recognition<'b, 'tcx>,
     results: &'tcx TypeckResults<'tcx>,
     found: &'a mut FnPointers<'tcx>,
+    /// What each call calls, a path that's no value given.
+    callees: HashSet<hir::HirId>,
 }
 
 impl<'tcx> Made<'_, '_, 'tcx> {
@@ -627,19 +839,37 @@ impl<'tcx> Made<'_, '_, 'tcx> {
         if !(declared.walk().filter_map(|part| part.as_type())).any(called) {
             return;
         }
-        let own = value.is_some_and(|value| self.own_function(value));
+        let own = value.is_some_and(|value| self.own_function(value, field));
         *self.found.own_fields.entry(field).or_insert(true) &= own;
     }
 
-    /// Whether `value` is a closure or a function of the crate's, not a
-    /// binding's, or a box, an `Rc` or a `Cell` of one, `Box::new(move ||
-    /// ..)`, `Cell::new(|| {})`: never a with_this one.
-    fn own_function(&self, value: &'tcx hir::Expr<'tcx>) -> bool {
+    /// Whether `value`, written to `field`, is a closure or a function of the
+    /// crate's, not a binding's, or a box, an `Rc` or a `Cell` of one,
+    /// `Box::new(move || ..)`, `Cell::new(|| {})`: never a with_this one. Or
+    /// what the field held, `r: previous.r`, a thread-local's too,
+    /// `PREVIOUS.with(|p| p.r)`, or one of those where a branch says, which
+    /// writes it nothing new (rd579).
+    fn own_function(&self, value: &'tcx hir::Expr<'tcx>, field: DefId) -> bool {
         let tcx = self.recognition.tcx;
         let value = match value.kind {
             hir::ExprKind::AddrOf(_, _, inner) => inner,
             _ => value,
         };
+        match value.kind {
+            hir::ExprKind::Field(..) if self.field_of(value) == Some(field) => return true,
+            hir::ExprKind::If(_, then, Some(otherwise)) => {
+                return self.own_function(then, field) && self.own_function(otherwise, field);
+            }
+            hir::ExprKind::Block(block, _) if let Some(tail) = block.expr => return self.own_function(tail, field),
+            hir::ExprKind::MethodCall(_, _, [closure], _)
+                if let hir::ExprKind::Closure(closure) = closure.kind
+                    && (self.results.type_dependent_def_id(value.hir_id))
+                        .is_some_and(|with| crate::lower::recognition::is_local_with(tcx, with)) =>
+            {
+                return self.own_function(tcx.hir_body(closure.body).value, field);
+            }
+            _ => {}
+        }
         match *self.results.expr_ty(value).kind() {
             ty::Closure(..) => return true,
             ty::FnDef(f, _) => return !is_binding(tcx, f),
@@ -652,7 +882,7 @@ impl<'tcx> Made<'_, '_, 'tcx> {
         };
         matches!(value.kind, hir::ExprKind::Call(callee, [inner])
             if matches!(*self.results.expr_ty(callee).kind(), ty::FnDef(id, _) if made(id))
-                && self.own_function(inner))
+                && self.own_function(inner, field))
     }
 }
 
@@ -675,6 +905,7 @@ impl<'tcx> Visitor<'tcx> for Made<'_, '_, 'tcx> {
                 Adjust::Pointer(PointerCoercion::UnsafeFnPointer) => {
                     self.found.given_in(self.recognition, adjustment.target)
                 }
+                Adjust::Pointer(PointerCoercion::Unsize) => self.found.coerced(tcx, from, adjustment.target),
                 // A library's `Deref`, which may give what it holds nowhere.
                 Adjust::Deref(DerefAdjustKind::Overloaded(_))
                     if let ty::Adt(adt, _) = from.peel_refs().kind()
@@ -688,8 +919,18 @@ impl<'tcx> Visitor<'tcx> for Made<'_, '_, 'tcx> {
             }
             from = adjustment.target;
         }
+        // A binding's function given as a value, not called where it's
+        // named: what a generic `F` may be (rd579).
+        if let hir::ExprKind::Path(_) = expr.kind
+            && let ty::FnDef(f, _) = *results.expr_ty(expr).kind()
+            && is_binding(tcx, f)
+            && !self.callees.contains(&expr.hir_id)
+        {
+            self.found.binding_values = true;
+        }
         match expr.kind {
             hir::ExprKind::Call(callee, args) => {
+                self.callees.insert(callee.hir_id);
                 if let ty::FnDef(f, generic_args) = *results.expr_ty_adjusted(callee).kind() {
                     // A function `with_this` makes: what it's called with
                     // and gives, `A` and `R` of `with_this::<F, A, R>`.
@@ -776,6 +1017,11 @@ impl<'tcx> Visitor<'tcx> for Made<'_, '_, 'tcx> {
             }
             hir::ExprKind::AddrOf(_, rustc_hir::Mutability::Mut, place) if let Some(def) = self.field_of(place) => {
                 self.field_written(def, None);
+            }
+            // A coercion written as a cast, `&f as &dyn Fn()`.
+            hir::ExprKind::Cast(inner, _) => {
+                self.found
+                    .coerced(tcx, results.expr_ty_adjusted(inner), results.expr_ty(expr))
             }
             // A library's static or constant.
             hir::ExprKind::Path(ref qpath) => {

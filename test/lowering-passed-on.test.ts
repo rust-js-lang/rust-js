@@ -530,8 +530,8 @@ pub fn tags(xs: Vec<u32>) -> Vec<String> {
 
 // #427: a host function held as a \`fn\` in a field, called through it, is
 // given no \`this\`, which a browser's own refuses of another, "Illegal
-// invocation": its callee held first, \`const schedule = CONFIG.schedule;
-// schedule(..)\`, as a with_this function's is (#402, \`called_unbound\`).
+// invocation": its callee read unbound, \`(0, CONFIG.schedule)(..)\`, as a
+// with_this function's is (#402, \`called_unbound\`; rd579).
 // One the crate's functions alone may be is called through its field.
 // A \`Cell<fn()>\` field the crate sets of its own functions alone is called
 // through it, as React's \`ReactStrictModeWarnings.discardPendingWarnings()\`;
@@ -587,6 +587,16 @@ pub fn run(n: u32) -> u32 {
     (CONFIG.count)(n)
 }
 
+// JS's object, whose field the program never writes, of a type the
+// program makes a host function's pointer of.
+pub struct Given {
+    pub schedule: fn(Box<dyn FnOnce()>),
+}
+
+pub fn given(g: &Given, n: u32) {
+    (g.schedule)(Box::new(move || record(n)));
+}
+
 #[cfg_attr(rust_js, rust_js::link_name = "globalThis.record")]
 fn record(n: u32) {
     unreachable!()
@@ -601,10 +611,11 @@ fn record(n: u32) {
 // whose machines have none (#427).
 test("a fn field that may hold a host function is held first, its own called through it", () => {
   const js = compileHostField();
-  expect(js).toContain("  const schedule = CONFIG.schedule;\n  schedule(() => {");
+  expect(js).toContain("  (0, CONFIG.schedule)(() => {");
   expect(js).toContain("return CONFIG.count(n);");
-  expect(js).toContain("  const schedule = hooks.schedule;\n  schedule(() => {");
-  expect(js).toContain("  hooks.flush();\n  const ended = hooks.ended;\n  ended();\n");
+  expect(js).toContain("  (0, hooks.schedule)(() => {");
+  expect(js).toContain("  hooks.flush();\n  (0, hooks.ended)();\n");
+  expect(js).toContain("  (0, g.schedule)(() => {");
 });
 
 test("a fn field that may hold a host function is called with no this, in Chromium", async () => {
@@ -629,7 +640,7 @@ test("a fn field that may hold a host function is called with no this, in Chromi
 }, 60_000);
 
 // A \`Cell<fn()>\` field any other method of may write, \`swap\`'s, is held
-// first: what it's set to isn't seen (#427).
+// first, read unbound: what it's set to isn't seen (#427).
 test("a fn field a cell's other method may write is called with no this", () => {
   const dir = fixture("fn-pointer-field-swapped");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
@@ -649,7 +660,7 @@ pub fn made() -> Hooks {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  const swapped = hooks.swapped;\n  swapped();\n");
+  expect(js).toContain("  (0, hooks.swapped)();\n");
 });
 
 // React DOM's scheduleMicrotask and localRequestAnimationFrame hold a host

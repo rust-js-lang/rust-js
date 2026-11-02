@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
     name: "mir-fn-pointer-call-refused",
     breaks: "a call through a function pointer from MIR is refused",
     file: "src/lower/mir/dispatch.rs",
-    find: "        let call = Value::Expr(Expr::call(callee, exprs));\n        self.called_unbound(state, (call, Called::Pointer(fn_ptr)), out)\n",
+    find: "        let call = Value::Expr(Expr::call(callee, exprs));\n        self.called_unbound(state, (call, Called::Pointer(fn_ptr)))\n",
     replace:
       '        let _ = (callee, exprs);\n        Err(self.unsupported(span, "a call"))\n',
     tests: ["test/corpus.test.ts", "-t", "static_fns"],

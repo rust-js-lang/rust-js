@@ -823,8 +823,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`(s.f)()` of a `dyn Fn` is `s.f()`, which gives a with_this function `s` as its `this`, where Rust gives it `None` (#402)",
     file: "src/lower/mir/calls.rs",
-    find: "            js::ExprKind::Member(_, property) | js::ExprKind::OptionalMember(_, property) => property.clone(),\n",
-    replace: "",
+    find: "            (js::ExprKind::Member(..) | js::ExprKind::OptionalMember(..) | js::ExprKind::Index(..), Some(field)) => {\n",
+    replace: "            (js::ExprKind::Index(..), Some(field)) => {\n",
     tests: [
       "test/js-functions.test.ts",
       "-t",
@@ -836,7 +836,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`fs[0]()` of a `dyn Fn` an array holds gives it the array as its `this` (#402)",
     file: "src/lower/mir/calls.rs",
-    find: '            js::ExprKind::Index(..) => "f".to_string(),\n',
+    find: "            (js::ExprKind::Index(..), None) => Holder::Item,\n",
     replace: "",
     tests: [
       "test/js-functions.test.ts",
@@ -849,7 +849,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `dyn Fn`'s or a generic `F`'s call through a field is `p[0]()`, giving it `p` as its `this` (#402)",
     file: "src/lower/mir/calls.rs",
-    find: "            Some((state, out, output)) if !own => {\n                self.called_unbound(state, (call, Called::Function(arg_tys[1], output)), out)\n            }\n",
+    find: "            Some((state, output)) if !own => {\n                self.called_unbound(state, (call, Called::Function(arg_tys[0], arg_tys[1], output)))\n            }\n",
     replace: "",
     tests: [
       "test/js-functions.test.ts",
@@ -862,8 +862,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure of the crate's a tuple holds is held first to be called, `const f = p[0]; f()`, though it never reads its `this` (#402)",
     file: "src/lower/mir/calls.rs",
-    find: "            Some((state, out, output)) if !own => {\n",
-    replace: "            Some((state, out, output)) => {\n",
+    find: "            Some((state, output)) if !own => {\n",
+    replace: "            Some((state, output)) => {\n",
     tests: [
       "test/js-functions.test.ts",
       "-t",
@@ -875,9 +875,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a program that calls no binding, gives JS no function value, holds each call through a field first, `const f = s.f; f()`, though nothing it calls reads its `this` (#402)",
     file: "src/lower/mir/calls.rs",
-    find: "        if !pointers.may_read_this(self.tcx, called, field) {\n",
-    replace:
-      "        if false && !pointers.may_read_this(self.tcx, called, field) {\n",
+    find: "        if !pointers.may_read_this(self.tcx, called, holder) {\n",
+    replace: "        if false && !pointers.may_read_this(self.tcx, called, holder) {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_listeners_momentary.rs$"],
     snapshots: true,
   },
@@ -904,9 +903,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Cell<fn()>` field's value called, `(hooks.flush.get())()`, isn't seen as its field's, so one the crate fills with its own is held first (#427)",
     file: "src/lower/mir/calls.rs",
-    find: "                                == Some(crate::lower::recognition::CellMethod::Get) =>\n",
+    find: "                        == Some(crate::lower::recognition::CellMethod::Get)\n",
     replace:
-      "                                == Some(crate::lower::recognition::CellMethod::Other) =>\n",
+      "                        == Some(crate::lower::recognition::CellMethod::Other)\n",
     tests: [
       "test/lowering-passed-on.test.ts",
       "-t",
@@ -918,8 +917,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a host function's field read MIR holds in a temporary, `_3 = CONFIG.schedule`, is read in place by tidy, `CONFIG.schedule(..)`, its `this` the config (#427)",
     file: "src/lower/mir/calls.rs",
-    find: "                if super::tidy::is_temporary(name)\n",
-    replace: "                if super::tidy::is_temporary(name) && false\n",
+    find: "            (js::ExprKind::Var(name), Some(field)) if super::tidy::is_temporary(name) => Holder::Field(field),\n",
+    replace: "",
     tests: [
       "test/lowering-passed-on.test.ts",
       "-t",
@@ -1121,5 +1120,18 @@ export const mutations: Mutation[] = [
     find: "            false if self.krate.reads_arguments.may_call(self.tcx, arg_tys[1]) => {\n",
     replace: "            false if false => {\n",
     tests: ["test/arguments.test.ts"],
+  },
+  {
+    name: "rc-field-unseen",
+    breaks:
+      "an `Rc<dyn Fn>` field's call, `(o.g)(1)`, isn't seen as its field's, through the `Rc`'s deref, so a JS object's function is called with no `this`, `(0, o.g)(1)` (rd579)",
+    file: "src/lower/mir/calls.rs",
+    find: "                                ty.is_box() || crate::lower::recognition::rc_pointee(self.tcx, ty).is_some()\n",
+    replace: "                                false\n",
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a JS function the program's own data holds is called with no this",
+    ],
   },
 ];

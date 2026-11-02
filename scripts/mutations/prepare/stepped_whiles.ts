@@ -71,4 +71,12 @@ export const mutations: Mutation[] = [
     replace: "        StmtKind::Compound(op, target, by) =>",
     tests: ["test/lowering-loops.test.ts", "-t", "a while that ends an if's branch keeps its test"],
   },
+  {
+    name: "post-step-of-any-number",
+    breaks: "`const a = x; x = a + 2;` is `const a = x++;`, a step of one (ADR 0948)",
+    file: "src/prepare/stepped_whiles.rs",
+    find: "                                && matches!(one.kind, ExprKind::Num(n) if n == 1.0) =>\n",
+    replace: "                                && matches!(one.kind, ExprKind::Num(_)) =>\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "x\\+\\+"],
+  },
 ];

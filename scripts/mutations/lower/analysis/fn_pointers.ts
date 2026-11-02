@@ -29,8 +29,8 @@ export const mutations: Mutation[] = [
     breaks:
       "no value comes from outside the crate's code, so what JS gives `apply` borrows nothing, and its borrow isn't counted",
     file: "src/lower/analysis/fn_pointers.rs",
-    find: "        let held = held(recognition, ty);\n        self.all_open |= held.any;\n        self.open.extend(held.keys);\n        self.library_rust.extend(held.rust);\n",
-    replace: "        let _ = (recognition, ty);\n",
+    find: "        let held = held(recognition, ty);\n        self.all_open |= held.any;\n        self.open.extend(held.keys.iter().copied());\n        self.library_rust.extend(held.rust);\n",
+    replace: "        let held = held(recognition, ty);\n",
     tests: [
       "test/lowering-cell-borrows.test.ts",
       "-t",
@@ -174,9 +174,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a field the crate fills with its own closures alone, `tracker.stop()`, is held first, `const stop = t.stop; stop()`, as any with_this function of its signature may be it (#405)",
     file: "src/lower/analysis/fn_pointers.rs",
-    find: "            Called::Function(..) if field.is_some_and(|field| self.own_fields.get(&field) == Some(&true)) => false,\n",
-    replace:
-      "            Called::Function(..) if false && field.is_some_and(|field| self.own_fields.get(&field) == Some(&true)) => false,\n",
+    find: "        if let Holder::Field(field) = holder\n",
+    replace: "        if let Holder::Field(field) = holder\n            && matches!(called, Called::Pointer(_))\n",
     tests: [
       "test/js-functions.test.ts",
       "-t",
@@ -188,7 +187,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a field filled with a variable that holds a with_this function is taken for one of the crate's closures alone, `h.f()`, which gives it `h` as its `this` (#405)",
     file: "src/lower/analysis/fn_pointers.rs",
-    find: "        let own = value.is_some_and(|value| self.own_function(value));\n",
+    find: "        let own = value.is_some_and(|value| self.own_function(value, field));\n",
     replace: "        let own = value.is_some();\n",
     tests: [
       "test/js-functions.test.ts",
@@ -345,9 +344,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a field's fn that may be a host function, `CONFIG.schedule`, is called through its object, which a browser's `queueMicrotask` refuses, Illegal invocation (#427)",
     file: "src/lower/analysis/fn_pointers.rs",
-    find: ".is_some_and(|key| (self.made.get(&key).into_iter().flatten()).any(|&(f, _)| is_binding(tcx, f))),\n",
+    find: ".is_some_and(|key| (self.made.get(&key).into_iter().flatten()).any(|&(f, _)| is_binding(tcx, f)))\n",
     replace:
-      ".is_some_and(|key| (self.made.get(&key).into_iter().flatten()).any(|&(f, _)| is_binding(tcx, f) && false)),\n",
+      ".is_some_and(|key| (self.made.get(&key).into_iter().flatten()).any(|&(f, _)| is_binding(tcx, f) && false))\n",
     tests: [
       "test/lowering-passed-on.test.ts",
       "-t",
@@ -359,8 +358,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Cell<fn()>` field the crate sets of its own closures alone is held first, `const flush = hooks.flush; flush();`, where React calls `ReactStrictModeWarnings.discardPendingWarnings()` (#427)",
     file: "src/lower/analysis/fn_pointers.rs",
-    find: "            Called::Pointer(_) if field.is_some_and(|field| self.own_fields.get(&field) == Some(&true)) => false,\n",
-    replace: "",
+    find: "        if let Holder::Field(field) = holder\n",
+    replace: "        if let Holder::Field(field) = holder\n            && matches!(called, Called::Function(..))\n",
     tests: [
       "test/lowering-passed-on.test.ts",
       "-t",
@@ -445,5 +444,83 @@ export const mutations: Mutation[] = [
       "^subject_of_a_struct_js_made_read_once.rs$",
     ],
     snapshots: true,
+  },
+  {
+    name: "js-object-holder-unbound",
+    breaks:
+      "a JS function of an object JS made, a field the program never writes, is called with no `this`, `(0, o.g)(1)`, where JS calls it through its object, `o.g(1)` (#404, rd579)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "            Holder::Field(field) => !self.own_fields.contains_key(&field),\n",
+    replace: "            Holder::Field(_) => false,\n",
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a JS function the program's own data holds is called with no this",
+    ],
+  },
+  {
+    name: "own-data-holder-bound",
+    breaks:
+      "a JS function the program's own struct holds, React's `request.environmentName`, is called through it, `request.environmentName()`, its `this` the request, where Rust gives none (rd579)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "                    || !js_object && self.may_be_js(tcx, callee, args, output)\n",
+    replace: "",
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a JS function the program's own data holds is called with no this",
+    ],
+  },
+  {
+    name: "own-data-pointer-bound",
+    breaks:
+      "a fn pointer JS gave, held in the program's own struct, is called through it, `hooks.schedule(3)`, its `this` the struct (rd579)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "                    || !js_object && self.pointer_may_be_js(tcx, ptr)\n",
+    replace: "",
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a JS function the program's own data holds is called with no this",
+    ],
+  },
+  {
+    name: "js-dyns-unrecorded",
+    breaks:
+      "a `dyn Fn` of a signature JS gives the program is taken for Rust's own closures alone, `request.environmentName()` (rd579)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "            self.js_dyns.extend(held.dyns);\n",
+    replace: "",
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a JS function the program's own data holds is called with no this",
+    ],
+  },
+  {
+    name: "binding-dyn-unrecorded",
+    breaks:
+      "a `dyn Fn` the crate makes of a binding's function, `&probe`, is taken for Rust's own, `p.check()`, its `this` the struct (rd579)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "            // A binding's function.\n            _ => _ = self.js_dyns.insert(signature),\n",
+    replace: "            _ => {}\n",
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a JS function the program's own data holds is called with no this",
+    ],
+  },
+  {
+    name: "own-field-of-itself-any",
+    breaks:
+      "a field written what it held, React DOM's dispatcher's `r: previous.r`, is taken for one written a JS function, so its call is `(0, dispatcher.r)(1)`, where upstream calls it through its object (rd579)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "            hir::ExprKind::Field(..) if self.field_of(value) == Some(field) => return true,\n",
+    replace: "",
+    tests: [
+      "test/js-functions.test.ts",
+      "-t",
+      "a JS function the program's own data holds is called with no this",
+    ],
   },
 ];
