@@ -3,6 +3,16 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "text-pattern-constant-unnamed",
+    breaks:
+      "a `match` of `&str` constants tests their text, `case \"fulfilled\":`, not the constant the program wrote, `case INITIALIZED:` (ADR 0590, amended)",
+    file: "src/lower/std_impls.rs",
+    find: "            if let Some(named) = self.named_text(&b, span)? {\n",
+    replace: "            if let Some(named) = None::<Expr> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^str_const_patterns.rs$"],
+    snapshots: true,
+  },
+  {
     name: "compiled-copied-cloned-as-source",
     breaks:
       "a `copied()` std compiles held, `--std-iterators`', is cloned as the crate's iterator it copies, `held.it.with(..)`: `TypeError: held.it.with is not a function` (ADR 0999)",

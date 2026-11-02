@@ -3,6 +3,16 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "text-named-past-its-patterns",
+    breaks:
+      "a `==` the program writes in an arm of a `match` of `&str` constants names its literal by the constant too, `other === INITIALIZED` of `other == \"fulfilled\"` (ADR 0590, amended)",
+    file: "src/lower/body_queries/constants.rs",
+    find: "        (self.matched.iter()).any(|(_, _, tested)| tested.iter().any(|&(.., written)| written == at))\n",
+    replace: "        (self.matched.iter()).any(|(_, _, tested)| tested.iter().any(|&(.., written)| written == at || true))\n",
+    tests: ["test/corpus.test.ts", "-t", "^str_const_patterns.rs$"],
+    snapshots: true,
+  },
+  {
     name: "transparent-constant-unnamed",
     breaks:
       "a `match` of a `#[repr(transparent)]` struct's constants tests their numbers, `eventPriority === 2`, not `DiscreteEventPriority` (ADR 0590, amended)",
@@ -20,8 +30,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `#[repr(transparent)]` struct's constant's field, its number, is a pattern written another way of its value, so the constant goes unnamed (ADR 0590, amended)",
     file: "src/lower/body_queries/constants.rs",
-    find: "        tested.push((value, path, named));\n        return;\n",
-    replace: "        tested.push((value, path, named));\n",
+    find: "        tested.push((value, path, named, pattern.span));\n        return;\n",
+    replace: "        tested.push((value, path, named, pattern.span));\n",
     tests: [
       "test/lowering-constants.test.ts",
       "-t",

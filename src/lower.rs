@@ -61,6 +61,7 @@ mod load_order;
 mod loops;
 mod mir;
 mod mut_refs;
+mod named_constants;
 mod ordering;
 mod passed_on;
 mod patterns;

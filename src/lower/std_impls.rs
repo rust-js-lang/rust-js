@@ -1039,24 +1039,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.eq_value(a, b, ty, span, out)
     }
 
-    /// The registry's symbol of `text`: the `const` the patterns tested at
-    /// `span` name it by, `REACT_MEMO_TYPE` (ADRs 0590, 0634), else
-    /// `Symbol.for(text)`.
-    fn named_symbol(&mut self, text: &Expr, span: Span) -> R<Expr> {
-        if let js::ExprKind::Str(key) = &text.kind
-            && let Some(named) = (self.frame.facts.constant_patterns).named(
-                self.tcx,
-                &super::body_queries::PatternValue::Key(key.clone()),
-                span,
-                None,
-            )
-        {
-            let ty = self.tcx.type_of(named).instantiate_identity().skip_normalization();
-            return self.named_const(named, ty::List::empty(), ty, span);
-        }
-        Ok(super::representation::symbol_for(text.clone()))
-    }
-
     /// `items.contains(&x)` of `item`s: JS's `includes` for what `===`
     /// compares (ADR 0053); `indexOf(x) >= 0` for what `===` compares but
     /// `NaN`, a float or a value of any shape, which `indexOf` never finds,
@@ -1150,6 +1132,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let named = self.named_symbol(text, span)?;
                     return Ok(Expr::bin(Op::Eq, symbol.clone(), named));
                 }
+            }
+            // A text a pattern names by a `const`, `Some(INITIALIZED) =>`:
+            // its literal, named once tidy's done (ADR 0590, amended).
+            if let Some(named) = self.named_text(&b, span)? {
+                return Ok(Expr::bin(Op::Eq, a, named));
             }
         }
         // One whose `==` is its address's, its `Hash` whatever it is: the

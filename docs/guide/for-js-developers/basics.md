@@ -1664,6 +1664,39 @@ where its `match` or `let` writes it, so two constants of one value, a
 `HOST_COMPONENT` and a `SUSPENDED_ON_DATA` of 5, each name it in their own
 `match` ([ADR 0590](../../decisions/0590-a-match-of-constants-names-them.md),
 amended); one its `match` writes another way too, a literal, is its number.
+A `&str` constant is named so too, `Some(INITIALIZED) =>`'s `case
+INITIALIZED:`, its text never `null`, as its literal's isn't, so its test
+says an `Option` is there; a `==` an arm writes keeps what it writes:
+
+```rust
+const INITIALIZED: &str = "fulfilled";
+const ERRORED: &str = "rejected";
+
+pub fn settled(status: Option<&str>) -> u32 {
+    match status {
+        Some(INITIALIZED) => 1,
+        Some(ERRORED) => 2,
+        _ => 0,
+    }
+}
+```
+
+```js
+const INITIALIZED = "fulfilled";
+const ERRORED = "rejected";
+
+export function settled(status) {
+  switch (status) {
+    case INITIALIZED:
+      return 1;
+    case ERRORED:
+      return 2;
+    default:
+      return 0;
+  }
+}
+```
+
 A comment before an arm is before its body:
 
 ```rust

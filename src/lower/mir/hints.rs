@@ -15,6 +15,9 @@ mod present_breaks;
 
 /// Where the program writes what tidy reads a body's JS by.
 pub(super) struct Written {
+    /// Each literal a pattern names by a `const`, its place, its text and
+    /// that `const` read, which tidy's last pass names (ADR 0590, amended).
+    pub named_texts: Vec<crate::lower::named_constants::NamedText>,
     /// Each `match` whose arms are each a variant of its own, with no field,
     /// guard or binding, and its variants' names (ADR 0233).
     pub tables: Vec<(js::Span, Vec<String>)>,
@@ -521,6 +524,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect();
         let present_breaks = self.present_breaks();
         Written {
+            named_texts: self.named_texts(),
             present_breaks,
             tables,
             conditions,

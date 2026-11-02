@@ -483,6 +483,10 @@ pub(super) struct Found {
     /// Of a body lowered from its MIR, the `const`s it made that tidy
     /// reads in place where it can, as its temporaries.
     pub(super) made: Made,
+    /// Of a body lowered from its MIR, each literal its patterns name by
+    /// a `const`, named once tidy's done (`FnCx::named_text`, ADR 0590,
+    /// amended).
+    pub(super) named_texts: Vec<crate::lower::named_constants::NamedText>,
     /// Of a body lowered from its MIR, each dictionary it made of a type
     /// known whole that holds a function, and the name it would have: one
     /// written twice or more is declared once at the body's top and named
@@ -539,6 +543,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `passed_on` reads (ADR 0605, amended).
     pub(super) fn forwarding(&self) -> &[crate::lower::passed_on::Forwarding] {
         &self.locals.mir.forwarding
+    }
+
+    /// A literal a pattern names by a `const`, which tidy names once it's
+    /// done (`named_constants`, ADR 0590, amended).
+    pub(in crate::lower) fn note_named_text(&mut self, named: crate::lower::named_constants::NamedText) {
+        self.locals.mir.named_texts.push(named);
+    }
+
+    /// Each literal a pattern names by a `const`, as `note_named_text` was
+    /// told, of the body and the closures it's made of so far: each of its
+    /// own place, which none of another's is.
+    pub(super) fn named_texts(&self) -> Vec<crate::lower::named_constants::NamedText> {
+        self.locals.mir.named_texts.clone()
     }
 
     /// `name`, a temporary a `test && value` given what skips what's falsy

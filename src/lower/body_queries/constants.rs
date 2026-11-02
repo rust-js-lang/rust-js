@@ -59,8 +59,9 @@ pub(in crate::lower) fn pattern_places<'tcx>(
 }
 
 /// A value a `match` or `let` tests (`ConstantPatterns`): what it is,
-/// where in what's matched, and the `const` its pattern names it by.
-type Tested<'tcx> = (PatternValue<'tcx>, Vec<PatternStep>, Option<DefId>);
+/// where in what's matched, the `const` its pattern names it by, and where
+/// that pattern is written.
+type Tested<'tcx> = (PatternValue<'tcx>, Vec<PatternStep>, Option<DefId>, Span);
 
 /// What a `match` or `let` tests (`ConstantPatterns`): where it's
 /// written, a macro's where it's called, the type of what it matches, and
@@ -108,6 +109,13 @@ impl<'tcx> ConstantPatterns<'tcx> {
         self.written(tcx, value, at, places).next().is_some()
     }
 
+    /// Whether a pattern that tests a value is written at `at`: MIR's test
+    /// of it is, where a `==` the program writes in an arm isn't, though
+    /// the `match` is around it (ADR 0590, amended).
+    pub(in crate::lower) fn pattern_at(&self, at: Span) -> bool {
+        (self.matched.iter()).any(|(_, _, tested)| tested.iter().any(|&(.., written)| written == at))
+    }
+
     /// Of each pattern of the `match` or `let` written around `at` that
     /// tests `value` at `places`, the `const` it names it by, if one.
     fn written<'s>(
@@ -127,12 +135,12 @@ impl<'tcx> ConstantPatterns<'tcx> {
         };
         (found.into_iter()).flat_map(move |(_, matched, tested)| {
             (tested.iter())
-                .filter(move |(tested, path, _)| {
+                .filter(move |(tested, path, ..)| {
                     tested == value
                         && places
                             .is_none_or(|places| places.iter().any(|(ty, steps)| alike(*ty, *matched) && steps == path))
                 })
-                .map(|&(_, _, named)| named)
+                .map(|&(_, _, named, _)| named)
         })
     }
 }
@@ -186,7 +194,7 @@ fn tested_constants<'tcx>(
             path.push(PatternStep::Field(rustc_abi::FieldIdx::from_usize(index)));
             leaf = field;
         }
-        tested.push((value, path, named));
+        tested.push((value, path, named, pattern.span));
         return;
     }
     let mut each = |step: Option<PatternStep>, pattern: &Pat<'tcx>, at: &mut Vec<PatternStep>| {

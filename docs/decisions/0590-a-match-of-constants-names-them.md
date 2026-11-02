@@ -178,3 +178,48 @@ corpus case `switch_guard_skips_its_case` (`// Track the input node ..`),
 is before its default", and the mutations `block-case-comment-in-body`
 (`to_oxc/statements.ts`) and `block-case-start-unlisted`
 (`to_oxc/cases.ts`).
+
+## Amendment: a `&str` constant is named too (2026-11-02)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, a constant and its
+text test the same: `===` of strings compares their text.
+
+React Flight's clients test a chunk's status by its port's constants,
+`match status { Some(INITIALIZED) => .., Some(ERRORED) => .. }`, of
+`const INITIALIZED: &str = "fulfilled";`; upstream's `case INITIALIZED:`
+was the port's `case "fulfilled":`. MIR tests a string pattern by a call
+of `<str as PartialEq>::eq` of its text, not a `switchInt` this ADR
+named, so nothing asked `ConstantPatterns` of it, though it recorded the
+constant.
+
+**A text a pattern names by a `const` is tested by its name**
+(`named_constants::named_text`, of `ConstantPatterns::named`'s
+`PatternValue::Text`), as a number's is: `case INITIALIZED:`. Only of the
+test MIR makes of a pattern, the call written at a pattern's span
+(`ConstantPatterns::pattern_at`): a `==` the program writes in an arm,
+`other == "fulfilled"`, is in the `match` too, and keeps its literal.
+
+**To tidy it's its literal, named once tidy's done**: the test compares
+with the literal placed at the pattern, and the body records the `const`
+read of it (`Written::named_texts`), which tidy's last pass, `named texts` (`named_constants::name_texts`),
+puts in each copy of it tidy left, a `switch`'s `case` too. Tidy's
+rewrites read a literal as a value never `null` and tell two apart by
+their text: `if (status != null) { if (status === "a") .. }` is `status
+=== "a"`, and an or-pattern's nested `!==` tests are one `||` (the
+`decisions` pass's sets of values). Named before tidy, the first attempt,
+a `&str` constant's read kept `status != null &&`, a `switch`'s `default`
+after it, and a labeled block for an or-pattern's arms
+(`presence_said_by_chain`); marking the read text and accepting it in
+each rewrite would have been one more answer beside the literal's in
+every pass that reads one. A number's constant needs none of this: MIR
+tests it by a `switchInt`, which lowering names where it makes the test.
+
+Held by the corpus case `str_const_patterns` (a plain `match`, of an
+`Option<&str>`, of `as_deref()`, `matches!`, `let … else`, a `==` in an
+arm, an or-pattern with `None`, a text written two ways in one `match`,
+another module's constant, imported) and `presence_said_by_chain` (`value
+=== A || value === B`), run against native Rust; and the mutations
+`text-pattern-constant-unnamed` (`std_impls.ts`),
+`text-named-past-its-patterns` (`body_queries/constants.ts`),
+`named-text-left-its-literal`, `named-text-before-tidy` and
+`named-text-of-a-written-eq` (`named_constants.ts`).

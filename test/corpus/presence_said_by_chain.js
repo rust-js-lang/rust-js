@@ -15,9 +15,9 @@ function levels(values) {
   for (let i = 0; i < values.length; i++) {
     const value = values[i];
     let level;
-    if (value === "a" || value === "b") {
+    if (value === A || value === B) {
       level = 1;
-    } else if (value === "c") {
+    } else if (value === C) {
       level = 2;
     } else {
       seen.push(0);
@@ -70,9 +70,9 @@ function shadowed(values) {
     const value = values[i];
     let level = seen.length;
     seen.push(level);
-    if (value === "a" || value === "b") {
+    if (value === A || value === B) {
       level = 1;
-    } else if (value === "c") {
+    } else if (value === C) {
       level = 2;
     } else {
       seen.push(0);
