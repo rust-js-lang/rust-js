@@ -552,7 +552,13 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     // the `try`, its `return`s the function's (ADR 0660); and what the
     // `catch` reads of the payload as it was thrown (ADR 0706).
     let caught = |tried: Vec<Stmt>| {
-        let tried = js::applied_tried(tried);
+        let mut tried = js::applied_tried(tried);
+        // A value the program never named, read by the `Result`'s name,
+        // `catchUnwind`, is the call where it's read first (ADR 0706,
+        // amended).
+        if let Some(name) = value_name.as_deref().filter(|name| *name == result) {
+            js::read_where_made(&mut tried, name);
+        }
         let (binding, handler) = read_as_thrown(binding.clone(), in_catch.clone());
         StmtKind::TryCatch(tried, binding, handler).at(span)
     };

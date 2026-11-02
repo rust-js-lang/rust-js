@@ -499,4 +499,21 @@ export const mutations: Mutation[] = [
     replace: "            let written = true\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment in a catch_unwind closure is above its value"],
   },
+  {
+    name: "value-in-place-never",
+    breaks: "React's isRenderConsistentWithExternalStores is `const catchUnwind = objectIs(..); if (!catchUnwind)`, the value named after the `Result`, not `if (!objectIs(..))` (ADR 0706, amended)",
+    file: "src/prepare/catches.rs",
+    find: "            js::read_where_made(&mut tried, name);\n",
+    replace: "",
+    tests: ["test/lowering-unwind-arms.test.ts", "-t", "evaluated first is the call"],
+  },
+  {
+    name: "value-in-place-of-named",
+    breaks: "a value the program names, `Ok(found) => if found { .. }`, is the call where it's read, its name lost (ADR 0706, amended)",
+    file: "src/prepare/catches.rs",
+    find: "        if let Some(name) = value_name.as_deref().filter(|name| *name == result) {\n",
+    replace: "        if let Some(name) = value_name.as_deref() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_value_in_place.rs$"],
+    snapshots: true,
+  },
 ];

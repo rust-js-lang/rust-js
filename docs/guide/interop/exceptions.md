@@ -684,7 +684,13 @@ export function text(value) {
   just before the `try`, what follows the value in the closure never
   names `result` nor reads the value in a closure, and nothing could see
   `result` set early where that throws, as the `catch` leaves, never
-  naming it, or sets it first ([ADR 0706](../../decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md), amended).
+  naming it, or sets it first. A closure that returns early, a guard's
+  `if n == 0 { return 0; }`, sets the value in each branch, `found = 0;`,
+  what follows the guard its `else`; one whose `return` is in a loop stays
+  a closure called. A value you never named, tested by the arms, `Ok(true)
+  => {} Ok(false) => return false`, is the call where the `try` reads it
+  first, `if (!objectIs(getSnapshot(), renderedValue))`; one you name keeps
+  its name ([ADR 0706](../../decisions/0706-panic-is-the-one-way-a-port-throws-an-error.md), amended).
 - **`panic!` is the one way to throw a new `Error`**, `panic!("")` a `new
   Error()`: a JS value isn't `Send`, so rustc refuses `resume_unwind`
   and `panic_any` of a `&JsError`; a value JS already has is thrown by

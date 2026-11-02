@@ -19,7 +19,9 @@ read as JS shows; and below (rd551): the `catch`'s binding is given apart
 from a `thrown` of the program's, which no longer keeps the helper; and
 below (rd534): a closure's value a `try` keeps in a variable declared
 just before it sets the variable where the value is made, where nothing
-could see it set early.
+could see it set early; and below (rd60): a closure that returns early
+sets its value in each branch, and a value never named is the call where
+it's read first.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A where what's read is
 the same value, `$unwinding($unwound(e))` being `e`; for `new Error()`,
@@ -517,3 +519,64 @@ the value. Mutations `set-where-made-read-leaving`,
 `set-where-made-closure-reads`, `set-where-made-throw-unasked`,
 `set-where-made-comment-lost` (`js/applied.rs`) and
 `set-where-made-never` (`prepare.rs`).
+
+## Amendment (2026-11-02): a closure that returns early sets its value in each branch, and a value never named is the call where it's read (rd60)
+
+Two shapes of a `try`'s value still printed what no one writes.
+
+A closure that returns early, its value a `let`'s in an outer
+`catch_unwind`'s closure, stayed a closure called, as only a body that
+returns at its end was its statements:
+
+```js
+let found;
+try {
+  found = (() => {
+    if (n === 0) {
+      return 0;
+    }
+    const a = step(n);
+    return (a * 2) >>> 0;
+  })();
+} catch {
+  return 3;
+}
+```
+
+**Each `return v;` sets the value, what follows a guard its `else`**
+(`returns_set`, of `applied_tried`'s): `if (n === 0) { found = 0; } else {
+const a = step(n); found = (a * 2) >>> 0; }`, of a `const` a `let` before
+it. Where each `return` ends what runs of the body, last, or last of an
+`if`'s branch, the other branch, or what follows the `if`, going on to
+what follows it, of one branch at most, so nothing's written twice. One in
+a loop, a `switch` or a `try`, whose `return` leaves more than its branch,
+stays a closure called, as does a body that declares the variable's name.
+
+And a value the program never named, tested by the arms, `Ok(true) =>
+{} Ok(false) => return false`, was named after the `Result` it was read
+from, a temporary MIR named after `catch_unwind`: React's
+isRenderConsistentWithExternalStores printed `const catchUnwind =
+objectIs(getSnapshot(), renderedValue); if (!catchUnwind) { .. }`, where
+upstream writes `if (!objectIs(getSnapshot(), renderedValue))`. **Read
+once, by the statement after it before anything else that statement
+evaluates, it's the call there** (`js::read_where_made`, the same
+evaluated-first rule `value_of` inlines a closure by): nothing runs
+between. A comment before the closure's value is before that statement.
+A value the program names, `Ok(found) => if found { .. }`, keeps its
+name.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The same program:
+each `return` set the value and ended the closure, as each branch sets
+it and ends; and the call runs where its value was read first, with
+nothing between.
+
+Held by `test/lowering-unwind-arms.test.ts`, "a closure that returns
+early sets the value a try keeps in each branch" and "a try's value read
+once where it's evaluated first is the call there", run in Node; corpus
+case `catch_unwind_value_in_place` against native Rust: the stores loop,
+a value tested where it's returned after a comment, values the program
+names read once and twice, a guard in an outer `catch_unwind`, an `else
+if` chain with a panic, and a `return` in a loop. Mutations
+`value-in-place-never`, `value-in-place-of-named`
+(`prepare/catches.rs`), `value-in-place-comment-moved`,
+`returns-set-never` and `returns-set-rest-dropped` (`js/applied.rs`).

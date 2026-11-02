@@ -672,3 +672,150 @@ console.log(log.join(", "));
 throw 1, note 6, throw 6, panic 6, note 5, throw 9, panic 9, note 0, throw 9, panic 9, note 4, throw 1, panic 1, throw 6, panic 6, throw 9, panic 9, note 1
 `);
 });
+
+// React's isRenderConsistentWithExternalStores, `try { if
+// (!objectIs(getSnapshot(), renderedValue)) { return false; } } catch {
+// return false; }`: a `match` of `catch_unwind` whose `Ok` arms test the
+// value, `Ok(true) => {}, Ok(false) => return false`, read once where the
+// `try` evaluates it first, is the call there, not a `const catchUnwind`
+// named after the `Result` (ADR 0706, amended). Run in Node.
+test("a try's value read once where it's evaluated first is the call there", () => {
+  const { js, dir } = compiled(
+    "unwind-value-in-place",
+    `use std::panic::{AssertUnwindSafe, catch_unwind};
+
+#[cfg_attr(rust_js, rust_js::link_name = "./host.js#same")]
+fn same(_a: u32, _b: u32) -> bool {
+    unreachable!()
+}
+#[cfg_attr(rust_js, rust_js::link_name = "./host.js#note")]
+fn note(_x: u32) {
+    unreachable!()
+}
+
+pub fn consistent(checks: &[(u32, u32)]) -> bool {
+    let mut i = 0;
+    while i < checks.len() {
+        let (a, b) = checks[i];
+        match catch_unwind(AssertUnwindSafe(|| same(a, b))) {
+            Ok(true) => {}
+            Ok(false) => {
+                // Found an inconsistent store.
+                return false;
+            }
+            Err(_) => {
+                // If it throws, return \`false\`.
+                return false;
+            }
+        }
+        i += 1;
+    }
+    true
+}
+
+pub fn picked(n: u32) -> u32 {
+    match catch_unwind(|| {
+        note(n);
+        same(n, 3)
+    }) {
+        Ok(true) => 1,
+        Ok(false) => 2,
+        Err(_) => 3,
+    }
+}
+
+pub fn twice(n: u32) -> u32 {
+    match catch_unwind(|| same(n, 3)) {
+        Ok(found) if found => 1,
+        Ok(found) => u32::from(found) + 2,
+        Err(_) => 3,
+    }
+}
+`,
+  );
+  writeFileSync(
+    join(dir, "host.js"),
+    `export const log = [];
+export function same(a, b) { log.push("same " + a); if (a > 7) throw new Error("same " + a); return a === b; }
+export function note(x) { log.push("note " + x); }
+`,
+  );
+  expect(js).toContain("    try {\n      if (!same(a, b)) {\n        // Found an inconsistent store.\n        return false;\n      }\n");
+  expect(js).toContain("    note(n);\n    return same(n, 3) ? 1 : 2;\n");
+  expect(js).not.toContain("catchUnwind");
+  writeFileSync(
+    join(dir, "main.mjs"),
+    `import * as lib from "./lib.js";
+import { log } from "./host.js";
+console.log(JSON.stringify([lib.consistent([[1, 1], [2, 2]]), lib.consistent([[1, 1], [2, 3], [4, 4]]), lib.consistent([[9, 9], [1, 1]])]));
+console.log(JSON.stringify([lib.picked(3), lib.picked(4), lib.picked(9), lib.twice(3), lib.twice(4), lib.twice(9)]));
+console.log(log.join(", "));
+`,
+  );
+  const out = runSync([node!, join(dir, "main.mjs")], dir, 60_000);
+  expect(out.stderr).toBe("");
+  expect(out.stdout).toBe(`[true,false,false]
+[1,2,3,1,2,3]
+same 1, same 2, same 1, same 2, same 9, note 3, same 3, note 4, same 4, note 9, same 9, same 3, same 4, same 9
+`);
+});
+
+// rd60: a `catch_unwind` whose closure returns early, a guard's `if n == 0
+// { return 0; }`, its value a `let`'s in an outer `catch_unwind`'s
+// closure: each `return v;` sets the `let`, `found = 0;`, what follows the
+// guard its `else`, where it was `found = (() => { .. })();`, a closure
+// called (ADR 0706, amended). Run in Node.
+test("a closure that returns early sets the value a try keeps in each branch", () => {
+  const { js, dir } = compiled(
+    "unwind-returns-set",
+    `use std::panic::catch_unwind;
+
+#[cfg_attr(rust_js, rust_js::link_name = "./host.js#step")]
+fn step(_n: u32) -> u32 {
+    unreachable!()
+}
+
+pub fn guarded(n: u32) -> u32 {
+    match catch_unwind(|| {
+        let found = match catch_unwind(|| {
+            if n == 0 {
+                return 0;
+            }
+            let a = step(n);
+            a * 2
+        }) {
+            Ok(v) => v,
+            Err(_) => return 3,
+        };
+        step(found)
+    }) {
+        Ok(v) => v,
+        Err(_) => 9,
+    }
+}
+`,
+  );
+  writeFileSync(
+    join(dir, "host.js"),
+    `export const log = [];
+export function step(n) { log.push("step " + n); if (n > 7) throw new Error("big " + n); return n + 1; }
+`,
+  );
+  expect(js).toContain(
+    "    let found;\n    try {\n      if (n === 0) {\n        found = 0;\n      } else {\n        const a = step(n);\n        found = (a * 2) >>> 0;\n      }\n    } catch {\n      return 3;\n    }\n    return step(found);\n",
+  );
+  expect(js).not.toContain("(() =>");
+  writeFileSync(
+    join(dir, "main.mjs"),
+    `import * as lib from "./lib.js";
+import { log } from "./host.js";
+console.log(JSON.stringify([lib.guarded(0), lib.guarded(2), lib.guarded(3), lib.guarded(9)]));
+console.log(log.join(", "));
+`,
+  );
+  const out = runSync([node!, join(dir, "main.mjs")], dir, 60_000);
+  expect(out.stderr).toBe("");
+  expect(out.stdout).toBe(`[1,7,9,3]
+step 0, step 2, step 6, step 3, step 8, step 9
+`);
+});

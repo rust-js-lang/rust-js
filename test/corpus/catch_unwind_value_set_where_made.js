@@ -85,6 +85,7 @@ function fallback(n) {
       throw new Error(`big ${n}`);
     }
   } catch {
+    note(7);
     value = 100;
   }
   return (value + 1) >>> 0;

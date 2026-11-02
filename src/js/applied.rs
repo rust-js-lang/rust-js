@@ -234,17 +234,22 @@ fn value_of(stmt: &Stmt, whole: &[Stmt]) -> Option<Vec<Stmt>> {
     Some(inlined)
 }
 
-/// The call of a closure made where it's called that `e` evaluates before
-/// anything else of it: itself, or what an operator, a test, or a
-/// property's read evaluates first.
-fn evaluated_first(e: &mut Expr) -> Option<&mut Expr> {
-    if matches!(&e.kind, ExprKind::Call(callee, _) if matches!(callee.kind, ExprKind::Arrow(..))) {
+/// Whether `e` is the call of a closure made where it's called.
+fn closure_called(e: &Expr) -> bool {
+    matches!(&e.kind, ExprKind::Call(callee, _) if matches!(callee.kind, ExprKind::Arrow(..)))
+}
+
+/// What `e` evaluates before anything else of it that `is` says it is:
+/// itself, or what an operator, a test, or a property's read evaluates
+/// first.
+fn evaluated_first<'e>(e: &'e mut Expr, is: &dyn Fn(&Expr) -> bool) -> Option<&'e mut Expr> {
+    if is(e) {
         return Some(e);
     }
     match &mut e.kind {
-        ExprKind::Unary(op, a) if !op.writes() => evaluated_first(a),
+        ExprKind::Unary(op, a) if !op.writes() => evaluated_first(a, is),
         ExprKind::Binary(_, a, _) | ExprKind::Cond(a, ..) | ExprKind::Member(a, _) | ExprKind::Index(a, _) => {
-            evaluated_first(a)
+            evaluated_first(a, is)
         }
         _ => None,
     }
@@ -252,6 +257,13 @@ fn evaluated_first(e: &mut Expr) -> Option<&mut Expr> {
 
 /// The call `value_of` takes of `stmt`, where it's one.
 fn first_call(stmt: &mut Stmt) -> Option<&mut Expr> {
+    first_of(stmt, &closure_called)
+}
+
+/// What `stmt` evaluates before anything else of it that `is` says it is:
+/// of a statement whose value it is, its test, a `const`'s or a variable's
+/// value, what it returns or throws, or a `switch`'s discriminant.
+fn first_of<'s>(stmt: &'s mut Stmt, is: &dyn Fn(&Expr) -> bool) -> Option<&'s mut Expr> {
     match &mut stmt.kind {
         StmtKind::Expr(e)
         | StmtKind::Const(_, e)
@@ -259,10 +271,45 @@ fn first_call(stmt: &mut Stmt) -> Option<&mut Expr> {
         | StmtKind::Return(Some(e))
         | StmtKind::Throw(e)
         | StmtKind::If(e, ..)
-        | StmtKind::Switch { discriminant: e, .. } => evaluated_first(e),
+        | StmtKind::Switch { discriminant: e, .. } => evaluated_first(e, is),
         // A variable's, which nothing's read of before its value.
-        StmtKind::Assign(target, e) if matches!(target.kind, ExprKind::Var(_)) => evaluated_first(e),
+        StmtKind::Assign(target, e) if matches!(target.kind, ExprKind::Var(_)) => evaluated_first(e, is),
         _ => None,
+    }
+}
+
+/// Of `stmts`, the `const name = v;` of a name the program never gave the
+/// value, `catchUnwind`, the `Result`'s a `try`'s value was read from, read
+/// once, by the statement after it before anything else that statement
+/// evaluates: `v` there, `if (!objectIs(getSnapshot(), renderedValue))`,
+/// as React writes it. The same program: nothing is evaluated between
+/// (ADR 0706, amended).
+pub fn read_where_made(stmts: &mut Vec<Stmt>, name: &str) {
+    let Some(at) = (stmts.iter()).position(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == name)) else {
+        return;
+    };
+    let rest = &stmts[at + 1..];
+    if rest.is_empty() || mentions_in(rest, name) != 1 || declares(rest, name) {
+        return;
+    }
+    let StmtKind::Const(_, value) = &stmts[at].kind else {
+        unreachable!("found above")
+    };
+    let value = value.clone();
+    let is_read = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if v == name);
+    let Some(read) = first_of(&mut stmts[at + 1], &is_read) else {
+        return;
+    };
+    *read = Expr {
+        span: read.span,
+        ..value
+    };
+    // What's said before the value, `// Whether it's three.`, is said
+    // before what reads it now.
+    let made = stmts.remove(at);
+    if !made.span.is_none() && (stmts[at].span.is_none() || made.span.lo < stmts[at].span.lo) {
+        stmts[at].span.lo = made.span.lo;
+        stmts[at].span.hi = stmts[at].span.hi.max(made.span.hi);
     }
 }
 
@@ -508,10 +555,62 @@ pub fn applied_tried(mut tried: Vec<Stmt>) -> Vec<Stmt> {
                 tried.splice(0..1, body);
                 tried
             }
+            // A body that returns early, a guard's `if (n === 0) { return
+            // 0; }`: each `return v;` sets the value, `found = 0;`, what
+            // follows the guard its `else`, as a person writes it, where
+            // each `return` ends what runs of it (rd60).
+            Some(body) => {
+                let (declared, to) = match &tried[0].kind {
+                    StmtKind::Const(name, _) => (Some(name.clone()), Expr::var(name)),
+                    StmtKind::Assign(to, _) => (None, to.clone()),
+                    _ => unreachable!("matched above"),
+                };
+                // Not where the body declares the variable's name, which
+                // its blocks would set in its place.
+                let shadowed = matches!(&to.kind, ExprKind::Var(name) if declares(&body, name));
+                let Some(set) = returns_set(&body, &to).filter(|_| !shadowed) else {
+                    return tried;
+                };
+                let span = tried[0].span;
+                let declared = declared.map(|name| StmtKind::Let(name, None).at(span));
+                tried.splice(0..1, declared.into_iter().chain(set));
+                tried
+            }
             _ => tried,
         },
         _ => tried,
     }
+}
+
+/// `body`, a closure's whose value is set to `to`, each `return v;` of it
+/// `to = v;`, where each ends what runs of it: last, or last of an `if`'s
+/// branch, what follows that `if` its `else`. `None` where one is in a
+/// loop, a `switch` or a `try`, or a way through it ends with no value.
+fn returns_set(body: &[Stmt], to: &Expr) -> Option<Vec<Stmt>> {
+    let Some(at) = body.iter().position(|s| returns(std::slice::from_ref(s)).0) else {
+        // Of no `return`, it ends otherwise, a `throw`.
+        return body.last().is_some_and(ends).then(|| body.to_vec());
+    };
+    let (stmt, rest) = (&body[at], &body[at + 1..]);
+    let set = match &stmt.kind {
+        StmtKind::Return(Some(value)) if rest.is_empty() => StmtKind::Assign(to.clone(), value.clone()),
+        // Each branch, the one that goes on with what follows the `if`, of
+        // one at most, so nothing's written twice.
+        StmtKind::If(test, then, otherwise) => {
+            let otherwise = otherwise.as_deref().unwrap_or_default();
+            let goes_on = |branch: &[Stmt]| !branch.last().is_some_and(ends);
+            if !rest.is_empty() && goes_on(then) && goes_on(otherwise) {
+                return None;
+            }
+            let branch = |branch: &[Stmt]| match goes_on(branch) {
+                true => returns_set(&[branch, rest].concat(), to),
+                false => returns_set(branch, to),
+            };
+            StmtKind::If(test.clone(), branch(then)?, Some(branch(otherwise)?))
+        }
+        _ => return None,
+    };
+    Some(body[..at].iter().cloned().chain([set.at(stmt.span)]).collect())
 }
 
 /// Of `body`, each `try` whose closure's value `applied_tried` gave a

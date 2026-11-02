@@ -19,7 +19,9 @@ mod walk;
 mod writes;
 
 pub use self::{
-    applied::{applied_blocks, applied_call, applied_closures, applied_tried, returns, tried_set_where_made},
+    applied::{
+        applied_blocks, applied_call, applied_closures, applied_tried, read_where_made, returns, tried_set_where_made,
+    },
     expr_walk::*,
     stmt_walk::*,
     walk::*,

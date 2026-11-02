@@ -85,7 +85,10 @@ fn fallback(n: u32) -> u32 {
         made
     }) {
         Ok(made) => made,
-        Err(_) => 100,
+        Err(_) => {
+            note(7);
+            100
+        }
     };
     value + 1
 }
