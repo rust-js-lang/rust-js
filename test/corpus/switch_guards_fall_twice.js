@@ -23,7 +23,7 @@ function ctor(name, n, log) {
       if (on(log, "code", n === 1)) {
         return -1;
       }
-    // Fallthrough
+    // falls through
     case "keydown":
     case "keyup":
       ctor = 1;
@@ -36,7 +36,7 @@ function ctor(name, n, log) {
       if (on(log, "button", n === 2)) {
         return -2;
       }
-    // Fallthrough
+    // falls through
     case "auxclick":
     case "dblclick":
       ctor = 5;

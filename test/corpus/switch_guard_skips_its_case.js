@@ -40,7 +40,7 @@ function extract(name, n, log) {
       if (skip) {
         break;
       }
-    // Fallthrough
+    // falls through
     case "keydown":
     case "keyup":
       construct(log, n);

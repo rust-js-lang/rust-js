@@ -619,7 +619,7 @@ pub enum StmtKind {
     /// stacked, and its statements, which end it as an `if`'s branch's do:
     /// the printer writes `break;` where they'd go on, and a block where
     /// they declare, and leaves out a `default` of none; but of a case
-    /// that falls through to the next, `// Fallthrough` (ADR 0905). A
+    /// that falls through to the next, `// falls through` (ADR 0905). A
     /// `break` of a loop around it names the loop.
     Switch {
         discriminant: Expr,

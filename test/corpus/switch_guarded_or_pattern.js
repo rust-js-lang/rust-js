@@ -138,7 +138,7 @@ function described(tag, onThem) {
         note("three to five");
         break;
       }
-    // Fallthrough
+    // falls through
     default:
       note("other");
   }

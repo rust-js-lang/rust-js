@@ -25,7 +25,7 @@ function guarded(level, strict) {
         level = (level + 100) >>> 0;
         break;
       }
-    // Fallthrough
+    // falls through
     case 2:
     case 3:
       break;

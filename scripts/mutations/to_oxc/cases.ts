@@ -4,7 +4,7 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "fallthrough-unsaid",
-    breaks: "a case that falls through to the next has no `// Fallthrough` before the next, which ESLint's `no-fallthrough` asks",
+    breaks: "a case that falls through to the next has no `// falls through` before the next, which ESLint's `no-fallthrough` asks",
     file: "src/to_oxc/cases.rs",
     find: "    (before.falls && !first.span.is_none()).then_some(first.span.lo)\n",
     replace: "    (false && before.falls && !first.span.is_none()).then_some(first.span.lo)\n",
@@ -12,7 +12,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "default-fallthrough-unsaid",
-    breaks: "a case that falls through to the `default` has no `// Fallthrough` before it, which ESLint's `no-fallthrough` asks",
+    breaks: "a case that falls through to the `default` has no `// falls through` before it, which ESLint's `no-fallthrough` asks",
     file: "src/to_oxc/cases.rs",
     find: "    (cases.last()?.falls && !first.span.is_none()).then_some(first.span.lo)\n",
     replace: "    (false && cases.last()?.falls && !first.span.is_none()).then_some(first.span.lo)\n",
@@ -28,7 +28,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fallthrough-said-twice",
-    breaks: "a case the program's `// falls through` is before gets `// Fallthrough` beside it too",
+    breaks: "a case the program's `// falls through` is before gets `// falls through` beside it too",
     file: "src/to_oxc/cases.rs",
     find: "        .any(|said| text.contains(said))\n",
     replace: "        .any(|said| said.is_empty() && text.contains(said))\n",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
   {
     name: "default-pattern-comment-unread",
     breaks:
-      "a `_ /* \"{\" \"[\" */ => {` arm isn't read as its `default`'s opening, so the `// Fallthrough` above it is lost from before `default:` (rd525)",
+      "a `_ /* \"{\" \"[\" */ => {` arm isn't read as its `default`'s opening, so the `// falls through` above it is lost from before `default:` (rd525)",
     file: "src/to_oxc/cases.rs",
     find: "    while let Some(open) = code.find(\"/*\")\n",
     replace: "    while false\n        && let Some(open) = code.find(\"/*\")\n",
@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
   {
     name: "arm-opening-before-its-if-unseen",
     breaks:
-      "a `_` arm whose first statement is an `if` whose span starts at its test, `if __DEV__ && row.is_empty() {`, has no clause start, so the `// Fallthrough` above it is stacked above the `switch` (rd525)",
+      "a `_` arm whose first statement is an `if` whose span starts at its test, `if __DEV__ && row.is_empty() {`, has no clause start, so the `// falls through` above it is stacked above the `switch` (rd525)",
     file: "src/to_oxc/cases.rs",
     find: "    if code[line..].trim() == \"if\"\n        && line > 0\n",
     replace: "    if false\n        && line > 0\n",

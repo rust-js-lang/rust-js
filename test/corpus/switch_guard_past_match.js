@@ -27,12 +27,12 @@ function name(tag, ty, flags, log) {
       if (on(log, "view", viewTransitions)) {
         return "ViewTransition";
       }
-    // Fallthrough
+    // falls through
     case INCOMPLETE_CLASS:
       if (on(log, "legacy", legacyOff)) {
         break;
       }
-    // Fallthrough
+    // falls through
     case CLASS:
       if (ty.startsWith("<")) {
         return ty;

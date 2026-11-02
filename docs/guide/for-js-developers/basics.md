@@ -1629,9 +1629,9 @@ VIEW_TRANSITION: case TRACING_MARKER:` too, its binding read as what the
 a guard is a case that tests it, where what Rust tries when the guard
 fails does nothing: each later arm that could match its constants is a
 `_ => {}`, as below; or where it's the next arm, which names each of its
-constants and more, a case that falls through to the next's, `// Fallthrough`,
+constants and more, a case that falls through to the next's, `// falls through`, ESLint's `no-fallthrough` marker,
 a comment written before that next arm before it and its labels, as React
-writes one, a comment on its pattern, `114 /* "r" */ => {`, too, and no `// Fallthrough` where that comment says it, `//
+writes one, a comment on its pattern, `114 /* "r" */ => {`, too, and no second `// falls through` where that comment says it, `//
 falls through`; a comment between an arm's patterns, `"mouseup" // TODO
 .. | "mouseout"`, is between their `case`s, one above an arm of
 patterns above its first `case`, and a last `_` of only
@@ -1816,7 +1816,7 @@ export function extract(name, skip, log) {
       if (skip) {
         break;
       }
-    // Fallthrough
+    // falls through
     case "keydown":
       log.push(2);
   }
@@ -1947,12 +1947,12 @@ export function name(tag, ty, viewTransitions, legacyOff) {
       if (viewTransitions) {
         return "ViewTransition";
       }
-    // Fallthrough
+    // falls through
     case INCOMPLETE_CLASS:
       if (legacyOff) {
         break;
       }
-    // Fallthrough
+    // falls through
     case CLASS:
       return ty;
   }
@@ -2011,7 +2011,7 @@ export function earlyBailout(fiber, onB, onC) {
         fiber.lanes = 2;
         break;
       }
-    // Fallthrough
+    // falls through
     case C:
       if (onC || fiber.lanes > 4) {
         return 0;
@@ -2055,7 +2055,7 @@ export function frame(tag, viewTransitions) {
       if (viewTransitions) {
         return "ViewTransition";
       }
-    // Fallthrough
+    // falls through
     default:
       return "";
   }

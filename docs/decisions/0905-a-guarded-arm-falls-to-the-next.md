@@ -927,3 +927,16 @@ is before its `case "value":` (`cases::at_its_value`, which the printer's
 `switch` and `pattern_starts` both ask). Case N (ADR 0262): comments
 only. Held by the corpus's `switch_guarded_or_pattern`, and the mutation
 `empty-arm-case-at-no-value` (`to_oxc/cases.ts`).
+
+## Amendment: the fall-through comment rust-js writes is `// falls through` (rd635, the user's decision, 2026-11-02)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N; a comment's text.
+
+The comment rust-js writes before a case the one before falls through
+to was `// Fallthrough`. React writes `// falls through`, the form
+ESLint's `no-fallthrough` documents, and SelectEventPlugin's
+extractEvents printed `// Fallthrough` where upstream has it. **It's
+`// falls through`** (`to_oxc/cases.rs`'s `FALLTHROUGH`, its one
+writer); a comment the program writes that says it (`says_fallthrough`)
+is kept as written, with none beside it. The corpus's snapshots, the
+lowering tests and the guide's examples say so.

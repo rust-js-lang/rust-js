@@ -31,13 +31,13 @@ function name(tag, ty, flags, log) {
         return "ViewTransition";
       }
     // The display name for these tags come from the user-provided type:
-    // Fallthrough
+    // falls through
     case INCOMPLETE_CLASS:
     case INCOMPLETE_FUNCTION:
       if (on(log, "legacy", legacyOff)) {
         break;
       }
-    // Fallthrough
+    // falls through
     case CLASS:
     case FUNCTION:
       if ($byteLen(ty) > 3) {

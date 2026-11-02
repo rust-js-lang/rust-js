@@ -76,7 +76,7 @@ function guarded(fiber, singletons) {
           }
           break;
         }
-      // Fallthrough
+      // falls through
       case 2:
         hostParent = (current.state + 1000) >>> 0;
         break findParent;

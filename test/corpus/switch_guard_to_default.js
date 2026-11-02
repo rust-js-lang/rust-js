@@ -34,7 +34,7 @@ function frame(tag, child, viewTransitions, log) {
       if (on(log, "frame", viewTransitions)) {
         return "ViewTransition";
       }
-    // Fallthrough
+    // falls through
     default:
       return `<${tag}>`;
   }
@@ -57,7 +57,7 @@ function counted(tags, log) {
           total = (total + 20) >>> 0;
           break;
         }
-      // Fallthrough
+      // falls through
       default:
         total = (total + ((tag * 1000) >>> 0)) >>> 0;
     }

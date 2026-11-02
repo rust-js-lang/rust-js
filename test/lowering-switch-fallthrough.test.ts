@@ -100,7 +100,7 @@ pub fn apart(n: u32, on: bool) -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   // Upstream's, but for its \`typeof type\`'s test, the comment written
-  // before the arm fallen to before its \`// Fallthrough\` (ADR 0905, amended).
+  // before the arm fallen to before its \`// falls through\` (ADR 0905, amended).
   expect(js).toContain(`  switch (tag) {
     case ACTIVITY_COMPONENT:
       return "Activity";
@@ -109,14 +109,14 @@ pub fn apart(n: u32, on: bool) -> u32 {
         return "ViewTransition";
       }
     // The display name for these tags come from the user-provided type:
-    // Fallthrough
+    // falls through
     case INCOMPLETE_CLASS_COMPONENT:
     case INCOMPLETE_FUNCTION_COMPONENT:
       if (disableLegacyMode) {
         break;
       }
     // A function's name, or the tag's.
-    // Fallthrough
+    // falls through
     case CLASS_COMPONENT:
     case FUNCTION_COMPONENT:
       if (ty.startsWith("<")) {
@@ -131,14 +131,14 @@ pub fn apart(n: u32, on: bool) -> u32 {
   return null;
 `);
   expect(js).toContain("  // Each tag's, a comment before the match, not an arm.\n  switch (tag) {\n");
-  expect(js).toContain("      }\n    // Two's, or one's off.\n    // Fallthrough\n    case 2:\n      return 20;\n");
+  expect(js).toContain("      }\n    // Two's, or one's off.\n    // falls through\n    case 2:\n      return 20;\n");
   expect(js).toContain(`    // A long log stops here.
-    // Fallthrough
+    // falls through
     case INCOMPLETE_CLASS_COMPONENT:
       if (log.length > 2) {
         break;
       }
-    // Fallthrough
+    // falls through
     case CLASS_COMPONENT:
       log.push(3);
       log.push(4);
@@ -158,13 +158,13 @@ pub fn apart(n: u32, on: bool) -> u32 {
         if (enableViewTransition) {
           return "ViewTransition";
         }
-      // Fallthrough
+      // falls through
       case 3:
       case 4:
         if (disableLegacyMode) {
           break;
         }
-      // Fallthrough
+      // falls through
       case 5:
       case 6:
         if (ty.startsWith("<")) {
@@ -269,7 +269,7 @@ pub fn owner_stack(tag: u8, owned: bool, view_transitions: bool) -> String {
         info += "ViewTransition";
         break;
       }
-    // Fallthrough
+    // falls through
     case FUNCTION_COMPONENT:
       if (!owned && !info) {
         info += "function";
@@ -296,7 +296,7 @@ pub fn owner_stack(tag: u8, owned: bool, view_transitions: bool) -> String {
           info += "ViewTransition";
           break;
         }
-      // Fallthrough
+      // falls through
       case 0:
         if (!owned && info === "") {
           info += "function";
@@ -365,7 +365,7 @@ pub fn between(tag: u8, view_transitions: bool) -> u32 {
         return "ViewTransition";
       }
     // Anything else.
-    // Fallthrough
+    // falls through
     default:
       return \`<\${tag}>\`;
   }

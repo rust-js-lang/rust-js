@@ -487,7 +487,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "arm-comment-of-an-unguarded-arm-in-its-body",
-    breaks: "a comment before an unguarded arm fallen to, `// c\\n A | B => {`, is in its body, after its `// Fallthrough` and labels",
+    breaks: "a comment before an unguarded arm fallen to, `// c\\n A | B => {`, is in its body, after its `// falls through` and labels",
     file: "src/to_oxc.rs",
     find: "                    && case_starts.binary_search(&at).is_err()\n",
     replace: "",
@@ -495,7 +495,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "arm-comment-case-no-start",
-    breaks: "a comment before an arm fallen to is in its body, after its `// Fallthrough` and labels: its case is no start (ADR 0905, amended)",
+    breaks: "a comment before an arm fallen to is in its body, after its `// falls through` and labels: its case is no start (ADR 0905, amended)",
     file: "src/to_oxc.rs",
     find: "    starts.extend(case_starts.iter().copied());\n",
     replace: "",
@@ -519,7 +519,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "default-arm-comment-before-switch",
-    breaks: "React's `// Fall through` before getTag's `_` arm is printed before the `switch`, a synthetic `// Fallthrough` before `default:` (ADR 0905, amended)",
+    breaks: "React's `// Fall through` before getTag's `_` arm is printed before the `switch`, a synthetic `// falls through` before `default:` (ADR 0905, amended)",
     file: "src/to_oxc.rs",
     find: "                }) || default;\n",
     replace: "                });\n",

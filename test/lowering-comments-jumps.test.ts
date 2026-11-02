@@ -219,7 +219,7 @@ test("a comment between an arm's patterns or in a last _ of a guarded switch is 
     log.push(format!("{name} {kind}"));
 }
 `);
-  expect(js).toContain(`    // Fallthrough
+  expect(js).toContain(`    // falls through
     case "keydown":
     // A comment between patterns.
     case "keyup":

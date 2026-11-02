@@ -19,7 +19,7 @@ function ctor(name, n, log) {
       if (on(log, "code", n === 1)) {
         return -1;
       }
-    // Fallthrough
+    // falls through
     case "keydown":
       ctor = 1;
       break;

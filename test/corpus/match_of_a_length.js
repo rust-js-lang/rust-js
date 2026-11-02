@@ -29,7 +29,7 @@ function guarded(list, skip) {
       if (skip) {
         return "skipped";
       }
-    // Fallthrough
+    // falls through
     default:
       return $index(list, 1);
   }

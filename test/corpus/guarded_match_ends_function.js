@@ -45,7 +45,7 @@ function accumulate(tag, hidden, resources, n) {
         visit(n);
         break;
       }
-    // Fallthrough
+    // falls through
     default:
       visit((n * 100) >>> 0);
   }

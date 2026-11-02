@@ -1,4 +1,4 @@
-//! What's before a `switch`'s case (ADR 0629): `// Fallthrough` where the
+//! What's before a `switch`'s case (ADR 0629): `// falls through` where the
 //! one before falls through to it (ADR 0905), and the comments written
 //! before the `match` arm it's of, before its labels (ADR 0905, amended).
 
@@ -6,9 +6,9 @@ use super::*;
 
 /// What a case that falls through to the next says, before it, as React
 /// writes it, and ESLint's `no-fallthrough` asks (ADR 0905).
-pub(super) const FALLTHROUGH: &str = "// Fallthrough";
+pub(super) const FALLTHROUGH: &str = "// falls through";
 
-/// Before each case a case falls through to, `// Fallthrough` (ADR 0905),
+/// Before each case a case falls through to, `// falls through` (ADR 0905),
 /// in `text`, each one of `found`: but where the program's comment says it
 /// already, `said`'s.
 pub(super) fn fallthroughs(

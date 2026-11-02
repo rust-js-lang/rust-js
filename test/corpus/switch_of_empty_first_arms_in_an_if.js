@@ -46,7 +46,7 @@ function extra(names, transitions) {
           // Expected from the server.
           break;
         }
-      // Fallthrough
+      // falls through
       default:
         found.push(name);
     }

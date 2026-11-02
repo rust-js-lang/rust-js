@@ -35,7 +35,7 @@ function described(tag, owned, flags, log) {
         info += "ViewTransition";
         break;
       }
-    // Fallthrough
+    // falls through
     case FUNCTION:
     case MEMO:
       if (!owned && !info) {

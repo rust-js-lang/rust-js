@@ -140,7 +140,7 @@ function finished(exitStatus, lanes, log) {
         // Commit the placeholder.
         break;
       }
-    // Fallthrough
+    // falls through
     case 6:
       // Delay indefinitely.
       log.push(1);
@@ -167,7 +167,7 @@ function compared(exitStatus, lanes, log) {
         // Commit the placeholder.
         break;
       }
-    // Fallthrough
+    // falls through
     case 5:
       log.push(1);
       return;

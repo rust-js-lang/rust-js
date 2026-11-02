@@ -834,7 +834,8 @@ pub fn create(r#type: Option<&Unknown>, mut mode: u32) -> String {
   // The program's `// Fall through` before its `_` arm is before the
   // `default` it's of, as React's is, no other said (ADR 0905, amended).
   expect(js).toContain('        }\n      // Fall through\n      default: {\n');
-  expect(js).not.toContain("// Fallthrough");
+  // Each `// falls through` the program's, three, none said again.
+  expect(js.match(/\/\/ falls through/g)?.length).toBe(3);
   const lib = await import(join(dir, "lib.js"));
   const of = (key: string) => Symbol.for(key);
   expect([
