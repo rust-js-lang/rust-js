@@ -504,11 +504,16 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
         return None;
     }
     let of_ok = ok == eq;
-    // A comment right above an `if` the program wrote of the `Err`, `// c\n
-    // if r.is_err() { .. }`, is the `catch`'s, first in it, as the arm it
-    // tests is; never one above a `match`'s arm, which MIR may test first,
-    // whose comments are that arm's (#489).
-    let said = (written && !of_ok).then(|| StmtKind::Comments.at(tested_at));
+    // A comment right above the `if` is of the arm it's above: of an `if`
+    // the program wrote, `// c\n if r.is_err() { .. }`, the arm it runs;
+    // of MIR's of a `match`, the arm its test names, the first, whose
+    // pattern it tests at, `// Fine.\n Ok(()) => {}`'s of `r.TAG !== "Ok"`
+    // (#489). The `Err`'s is the `catch`'s, first in it, as that arm is.
+    let said_of_ok = match written {
+        true => of_ok,
+        false => ok,
+    };
+    let said = (!said_of_ok).then(|| StmtKind::Comments.at(tested_at));
     // Each arm's statements, and how many of `rest` are one's: an `if`'s
     // and its `else`'s; or, after an arm that leaves, the other's, `rest`,
     // which leaves too, where it's the `Err`'s, the `catch`'s; or, after an
@@ -552,6 +557,23 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     let (error, set_again) = match error {
         Some((name, set_again)) => (Some(name), set_again),
         None => (None, false),
+    };
+    // What's said right above the `Ok`'s test, of its arm, is before what
+    // the arm does, where it's done, in the `try` or after it, `// c\n if
+    // let Ok(n) = r { f(n); }`'s before `f(n);`; of an arm of nothing, or
+    // of only what its value does, its `return n;` the closure's value's,
+    // where that is. And what's said above its binding, written before its
+    // test, a `let Ok(n) = r else`'s, is before where the `try` sets it,
+    // `// c\n n = ..;` (#489).
+    let arm_said: Vec<Stmt> = said_of_ok
+        .then(|| StmtKind::Comments.at(tested_at))
+        .into_iter()
+        .collect();
+    let value_said: Vec<Stmt> = match (value_name.is_some(), ok.first()) {
+        (true, Some(binding)) if !binding.span.is_none() && binding.span.lo < tested_at.lo => {
+            vec![StmtKind::Comments.at(binding.span)]
+        }
+        _ => Vec::new(),
     };
     let ok = &ok[usize::from(value_name.is_some())..];
     let err = &err[usize::from(error.is_some())..];
@@ -677,7 +699,12 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     // A closure's body, of `catch_unwind(|| ..)`, its value returned: in
     // the `try`, its `return`s the function's (ADR 0660); and what the
     // `catch` reads of the payload as it was thrown (ADR 0706).
-    let caught = |tried: Vec<Stmt>| {
+    // What's said of the `Ok`'s value, `value_said`, before the statement
+    // it's set by, the last its first, the call's, is made of; and of its
+    // arm, `arm_said`, before the arm's own after it.
+    let caught = |tried: Vec<Stmt>, value_said: &[Stmt], arm_said: &[Stmt]| {
+        let own = tried.len().saturating_sub(1);
+        let sets = !matches!(tried.first().map(|s| &s.kind), Some(StmtKind::Expr(_)));
         let mut tried = js::applied_tried(tried);
         // A value the program never named, read by the `Result`'s name,
         // `catchUnwind`, is the call where it's read first (ADR 0706,
@@ -685,6 +712,10 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
         if let Some(name) = value_name.as_deref().filter(|name| *name == result) {
             js::read_where_made(&mut tried, name);
         }
+        let at = tried.len().saturating_sub(own);
+        tried.splice(at..at, arm_said.iter().cloned());
+        let at = at.saturating_sub(usize::from(sets));
+        tried.splice(at..at, value_said.iter().cloned());
         let (binding, mut handler) = read_as_thrown(binding.clone(), in_catch.clone());
         handler.splice(0..0, said.clone());
         StmtKind::TryCatch(tried, binding, handler).at(span)
@@ -697,7 +728,16 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
             Some(arm) if span.lo < arm.hi => js::tried_extent(span, arm),
             _ => span,
         };
-        return Some((vec![caught(vec![held.at(written.unwrap_or(through_arm))])], taken));
+        // What's said of the arm, and of its value, before the value
+        // returned; of one set through its arm, its own place's (rd630).
+        let said = match arm {
+            Some(_) => Vec::new(),
+            None => [arm_said, value_said].concat(),
+        };
+        return Some((
+            vec![caught(vec![held.at(written.unwrap_or(through_arm))], &said, &[])],
+            taken,
+        ));
     }
     // A value the program never named, a literal the closure returns that
     // the `Ok` arms test, `Ok(true) => return 0`: each arm where the closure
@@ -715,7 +755,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
                 Vec::new()
             }
         };
-        return Some((std::iter::once(caught(tried)).chain(after).collect(), taken));
+        return Some((std::iter::once(caught(tried, &[], &[])).chain(after).collect(), taken));
     }
     // What the `Ok` arm does can't throw: in the `try`.
     if ok.iter().all(cannot_throw) {
@@ -724,7 +764,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
             None => alone,
         };
         let tried = std::iter::once(first).chain(ok.iter().cloned()).collect();
-        return Some((vec![caught(tried)], taken));
+        return Some((vec![caught(tried, &value_said, &arm_said)], taken));
     }
     // Else after it, where the `Err` arm leaves, its value set by the `try`:
     // a `let` of a name nothing else here reads or declares.
@@ -741,7 +781,8 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
         }
         None => alone,
     };
-    out.push(caught(vec![tried]));
+    out.push(caught(vec![tried], &value_said, &[]));
+    out.extend(arm_said);
     out.extend(ok.iter().cloned());
     Some((out, taken))
 }

@@ -39,4 +39,14 @@ export const mutations: Mutation[] = [
     tests: corpus("tried_loop_jumps"),
     snapshots: true,
   },
+  {
+    name: "said-blocks-loop-jump",
+    breaks:
+      "a loop's `try` whose closure's `return;`s are its `Ok` arm's jump stays a closure where a block-of-comments marker is before that jump, `(() => { .. })(); break;`, not `break outer;` (#489)",
+    file: "src/prepare/labels.rs",
+    find: "    if !said.iter().all(|s| matches!(s.kind, StmtKind::Comments)) {\n",
+    replace: "    if !said.is_empty() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^tried_loop_jumps.rs$"],
+    snapshots: true,
+  },
 ];

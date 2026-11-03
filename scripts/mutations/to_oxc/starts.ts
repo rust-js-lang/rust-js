@@ -81,4 +81,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "scope_struct_functions"],
     snapshots: true,
   },
+  {
+    name: "held-comments-by-place",
+    breaks:
+      "a block's comments before a statement are printed by where each starts, so those before a `try`'s value of an `Ok` arm, which starts in the closure, before them, print at the `try`'s end, and those after a `try` before its `catch`'s `return 0;` (#489)",
+    file: "src/to_oxc/starts.rs",
+    find: "                before.insert(s.span.lo, next.span.lo);\n",
+    replace: "                ends.insert(s.span.lo);\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "folded Ok test"],
+  },
 ];

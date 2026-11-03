@@ -590,7 +590,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a comment right above an `if r.is_err() { .. }` a `try` folds is lost, not first in its `catch` (#489)",
     file: "src/prepare/catches.rs",
-    find: "    let said = (written && !of_ok).then(|| StmtKind::Comments.at(tested_at));\n",
+    find: "    let said = (!said_of_ok).then(|| StmtKind::Comments.at(tested_at));\n",
     replace: "    let said: Option<Stmt> = None;\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "folded is_err test"],
   },
@@ -599,8 +599,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a comment above a `match`'s `Ok` arm, whose `if` MIR makes of the `Err` first, is put in the `catch`, where it isn't written of an `if` (#489)",
     file: "src/prepare/catches.rs",
-    find: "    let said = (written && !of_ok).then(|| StmtKind::Comments.at(tested_at));\n",
-    replace: "    let said = (!of_ok).then(|| StmtKind::Comments.at(tested_at));\n",
+    find: "        false => ok,\n",
+    replace: "        false => of_ok,\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "folded is_err test"],
   },
   {
@@ -608,8 +608,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a comment right above an `if let Ok(n) = r { return n; }` a `try` folds is put in its `catch`, which is the other way's (#489)",
     file: "src/prepare/catches.rs",
-    find: "    let said = (written && !of_ok).then(|| StmtKind::Comments.at(tested_at));\n",
-    replace: "    let said = written.then(|| StmtKind::Comments.at(tested_at));\n",
+    find: "        true => of_ok,\n",
+    replace: "        true => false,\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "folded is_err test"],
   },
   {
@@ -620,5 +620,58 @@ export const mutations: Mutation[] = [
     find: "            .at(said.as_ref().map_or(span, |said| said.span));\n",
     replace: "            .at(span);\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "folded is_err test"],
+  },
+  {
+    name: "ok-arm-comment-unsaid",
+    breaks:
+      "a comment right above an `if let Ok(n) = r` a `try` folds, or a `match`'s `Ok(()) => {}`, is lost, not before what the arm does (#489)",
+    file: "src/prepare/catches.rs",
+    find: "        .then(|| StmtKind::Comments.at(tested_at))\n        .into_iter()\n",
+    replace: "        .then(|| StmtKind::Comments.at(tested_at))\n        .filter(|_| false)\n        .into_iter()\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "folded Ok test"],
+  },
+  {
+    name: "ok-value-comment-unsaid",
+    breaks: "a comment right above a `let Ok(n) = r else { .. }` a `try` folds is lost, not before `n = ..;` (#489)",
+    file: "src/prepare/catches.rs",
+    find: "            vec![StmtKind::Comments.at(binding.span)]\n",
+    replace: "            Vec::new()\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "folded Ok test"],
+  },
+  {
+    name: "ok-arm-comment-first-in-try",
+    breaks:
+      "a comment right above an `if let Ok(n) = r` a `try` folds is first in the `try`, before the closure's code, not before what the arm does (#489)",
+    file: "src/prepare/catches.rs",
+    find: "        tried.splice(at..at, arm_said.iter().cloned());\n",
+    replace: "        tried.splice(0..0, arm_said.iter().cloned());\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "folded Ok test"],
+  },
+  {
+    name: "ok-arm-comment-after-value",
+    breaks:
+      "a comment right above an `if let Ok(n) = r { return n; }` a `try` folds is after its `return`, at the `try`'s end, as the arm's own statements would be (#489)",
+    file: "src/prepare/catches.rs",
+    find: "            vec![caught(vec![held.at(written.unwrap_or(through_arm))], &said, &[])],\n",
+    replace: "            vec![caught(vec![held.at(written.unwrap_or(through_arm))], &[], &said)],\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "folded Ok test"],
+  },
+  {
+    name: "ok-arm-comment-after-try-unsaid",
+    breaks:
+      "a comment right above an `if let Ok(n) = r { log.push(n); .. }` whose arm a `try` leaves after it is lost, not before `log.push(n);` (#489)",
+    file: "src/prepare/catches.rs",
+    find: "    out.extend(arm_said);\n",
+    replace: "",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "folded Ok test"],
+  },
+  {
+    name: "arm-set-comment-said-again",
+    breaks:
+      "a comment above a `match`'s `Ok` arm whose value the `try` sets, `// c\\n Ok(v) => v,`, is above the `let` before the `try`, not in it at its own place (rd630, #489)",
+    file: "src/prepare/catches.rs",
+    find: "            Some(_) => Vec::new(),\n            None => [arm_said, value_said].concat(),\n",
+    replace: "            _ => [arm_said, value_said].concat(),\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment above a match.s Ok arm is above its value in the try"],
   },
 ];

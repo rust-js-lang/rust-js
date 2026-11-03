@@ -838,6 +838,12 @@ export function described(value) {
   `if let Err(e) = r`, is first in the `catch`, before the payload's
   binding too, `catch (thrown) { // c\n const e = $unwound(thrown); .. }`
   ([ADR 0637](../../decisions/0637-a-match-of-a-throwing-call-is-try-catch.md#amendment-a-comment-above-an-if-of-the-err-is-first-in-the-catch-2026-11-03-489)).
+  One right above an `if` of the `Ok`, `// c\n if let Ok(n) = r { .. }`,
+  is before what its arm does, in the `try` or after it, `try { ..; // c\n
+  return 5; }`; one above a `let Ok(n) = r else`, before where the `try`
+  sets `n`, `// c\n n = 5;`; and one above a `match`'s `Ok(()) => {}`, at
+  the `try`'s end
+  ([ADR 0637](../../decisions/0637-a-match-of-a-throwing-call-is-try-catch.md#amendment-a-comment-above-an-ok-test-is-before-what-its-arm-does-2026-11-03-489)).
 - **A flag the closure gives to return from its function is the `try` it
   returns from**: a closure can't return from its function, so the flag
   comes out, `if let Ok(true) = r { return false; }`; that's `try { ..;

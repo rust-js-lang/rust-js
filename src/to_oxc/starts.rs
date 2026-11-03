@@ -72,6 +72,15 @@ pub(super) fn set_apart_starts(module: &Module) -> std::collections::HashSet<u32
     starts
 }
 
+/// What `statement_spans` gives: each statement's span, where the comments
+/// each block ends with are, and of those a block holds before a statement,
+/// where that one starts.
+pub(super) type Spans = (
+    Vec<(u32, u32)>,
+    std::collections::HashSet<u32>,
+    std::collections::HashMap<u32, u32>,
+);
+
 pub(super) fn bodies(module: &Module) -> Vec<Vec<js::Stmt>> {
     (module.items.iter())
         .flat_map(|item| match item {
@@ -85,16 +94,31 @@ pub(super) fn bodies(module: &Module) -> Vec<Vec<js::Stmt>> {
 
 /// The span of each statement and item of `module`, closures' and nested
 /// functions' too, each list's in the order it's printed: what a comment is
-/// attached to (ADR 0444); and where each block of only comments ends,
-/// `StmtKind::Comments`, whose comments oxc prints there (ADR 0753).
-pub(super) fn statement_spans(module: &Module) -> (Vec<(u32, u32)>, std::collections::HashSet<u32>) {
-    type Found = (Vec<(u32, u32)>, std::collections::HashSet<u32>);
-    fn list(list: &[js::Stmt], (starts, ends): &mut Found) {
+/// attached to (ADR 0444); where each block's comments are that it ends
+/// with, `StmtKind::Comments`, whose comments oxc prints there (ADR 0753);
+/// and of those it holds before a statement, where that one starts, which
+/// they're printed before: it may start before them, a `catch_unwind`
+/// closure's value of an `Ok` arm they're said above, or be printed past
+/// another that starts past them, as oxc would print them by place (#489).
+pub(super) fn statement_spans(module: &Module) -> Spans {
+    type Found = Spans;
+    fn list(list: &[js::Stmt], (starts, ends, before): &mut Found) {
         starts.extend(list_spans(list));
-        let comments = list
+        let comments = |s: &js::Stmt| matches!(s.kind, StmtKind::Comments);
+        for (i, s) in list
             .iter()
-            .filter(|s| matches!(s.kind, StmtKind::Comments) && !s.span.is_none());
-        ends.extend(comments.map(|s| s.span.lo));
+            .enumerate()
+            .filter(|(_, s)| comments(s) && !s.span.is_none())
+        {
+            if let Some(next) = list[i + 1..]
+                .iter()
+                .find(|next| !comments(next) && !next.span.is_none())
+            {
+                before.insert(s.span.lo, next.span.lo);
+            } else {
+                ends.insert(s.span.lo);
+            }
+        }
     }
     /// The body of each function `stmts` declares, taken out to be walked
     /// after them, so its closures' statements aren't before its own (ADR
@@ -141,7 +165,7 @@ pub(super) fn statement_spans(module: &Module) -> (Vec<(u32, u32)>, std::collect
             of_stmts(&body, starts);
         }
     }
-    let mut starts: Found = (Vec::new(), Default::default());
+    let mut starts: Found = (Vec::new(), Default::default(), Default::default());
     let function = |f: &js::Function, starts: &mut Found| {
         if !f.span.is_none() {
             starts.0.push((f.span.lo, f.span.hi));

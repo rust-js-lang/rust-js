@@ -88,16 +88,22 @@ fn in_loop(stmts: &mut [Stmt], label: Option<&str>) {
 /// `tried`'s body, `(() => { .. })(); jump;`, a closure of no value whose
 /// each `return;` is `jump`, where `label` says each where it must.
 fn jumped(tried: &[Stmt], label: Option<&str>) -> Option<Vec<Stmt>> {
+    // What's said above the `Ok` arm, before its jump, stays before it,
+    // at the closure's end (#489).
     let [
         Stmt {
             kind: StmtKind::Expr(call),
             ..
         },
+        said @ ..,
         jump,
     ] = tried
     else {
         return None;
     };
+    if !said.iter().all(|s| matches!(s.kind, StmtKind::Comments)) {
+        return None;
+    }
     if !matches!(jump.kind, StmtKind::Break(_) | StmtKind::Continue(_)) {
         return None;
     }
@@ -117,7 +123,9 @@ fn jumped(tried: &[Stmt], label: Option<&str>) -> Option<Vec<Stmt>> {
     }
     let mut body = body.clone();
     rejumped(&mut body, &jump.kind, label, (false, false))?;
-    if !body.last().is_some_and(js::ends) {
+    let ended = body.last().is_some_and(js::ends);
+    body.extend(said.iter().cloned());
+    if !ended {
         body.push(jump.clone());
     }
     Some(body)

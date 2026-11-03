@@ -351,3 +351,64 @@ and the mutations `err-test-comment-unsaid`, `arm-comment-caught`,
 (`prepare/catches.ts`) and `written-tests-unsaid`
 (`lower/mir/tidy/logicals.ts`). `arms-returned-comment-lost`, which a
 marker of every `Err` test made redundant, is caught again.
+
+## Amendment: a comment above an `Ok` test is before what its arm does (2026-11-03, #489)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments only.
+The last amendment left three comments lost, each above an `Ok` test the
+`try` folds: `// c\n if let Ok(n) = r { return n; } 0`, `let Ok(n) = r
+else { return 0; }`, and a `match`'s `// Fine.\n Ok(()) => {}`. **A
+comment right above an `Ok` test is before what its arm does, where that
+runs**: `try { ..; // c\n return 5; }`, the closure's value its
+`return`; `try { ..; const n = 5; // c\n const twice = ..; }`, in the
+`try`; `} catch { return 0; } // c\n log.push(n);`, after it, where the
+arm can throw. A `let Ok(n) = r else`'s, above its binding, which is
+written before its test, is before where the `try` sets it, `// c\n n =
+5;`. An arm of nothing's is at the `try`'s end, `log.push(1); // Fine.\n
+}`, where it ran.
+
+Each is a block-of-comments marker (`StmtKind::Comments`, ADR 0753) that
+`try_catch` places: one at the `if`, before the arm's own statements, or
+with none, before the statement the call's value is set by; and, of a
+binding written before its test, one at it, before that statement. The
+`Err` side is the last amendment's, first in the `catch`. Of an arm
+whose value the `try` sets through it, `// c\n Ok(v) => v,` of `let
+value = match ..`, rd630's place of its own holds its comment, so none is
+placed. A loop's `try`
+whose closure's `return;`s are its `Ok` arm's jump (wl4,
+`prepare/labels.rs`) keeps the marker before that jump.
+
+Whose arm a comment right above the `if` is, is one question for both
+sides: of an `if` the program wrote (`Known::Written`), the arm it runs;
+of MIR's of a `match`, the arm its test names, `r.TAG !== "Ok"` the
+`Ok`'s, `r.TAG === "Err"` the `Err`'s. MIR tests a `match`'s first arm
+first, at its pattern, where the comment above that arm is, and names
+that arm's variant, whichever way it tests; `js::result::tested`, the
+`Result`'s owner, reads which. So a comment above a `match`'s first arm
+of the `Err` is the `catch`'s, as one above an `if` of it is; reading
+the arm from the test's way, as the last amendment rejected, would put
+`// Fine.\n Ok(()) => {}`'s in the `catch`.
+
+The printer had to print the markers where they're placed. oxc prints a
+marker's comments, which no node starts at, by place: before the first
+statement printed that starts past them, or at their block's end. A
+closure's value starts before the comment, `5` of `|| { ..; 5 }`, and a
+`catch`'s `return 0;`, which starts past it, is printed before what
+follows the `try`. So **comments a block holds before a statement are
+that statement's**, which oxc prints them before however it starts
+(`starts::statement_spans`, the map `comments_of` attaches them by); only
+those a block ends with are printed where they are.
+
+Held by `test/lowering-comments-inside.test.ts`'s "a comment above a
+folded Ok test is before its arm", run: an `if let Ok` returned, done in
+the `try` and done after it, a `let Ok(n) = r else`, and a `match`'s
+`Ok(()) => {}`; by the corpus's `tried_loop_jumps`,
+`catch_unwind_thrown_named` and `catch_unwind_value_in_place`, unchanged;
+and the mutations `ok-arm-comment-unsaid`, `ok-value-comment-unsaid`,
+`ok-arm-comment-first-in-try`, `ok-arm-comment-after-value`,
+`ok-arm-comment-after-try-unsaid`, `arm-set-comment-said-again`
+(`prepare/catches.ts`),
+`held-comments-by-place` (`to_oxc/starts.ts`) and
+`said-blocks-loop-jump` (`prepare/labels.ts`). The last
+amendment's `arm-comment-caught` and `ok-test-comment-caught` now break
+the rule above.

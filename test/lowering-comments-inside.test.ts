@@ -243,6 +243,152 @@ pub fn ignored(on: bool, log: &mut Vec<u32>) {
   expect(ignored).toEqual([1, 2, 3, 2]);
 });
 
+// A comment above an `Ok` test a `try` folds is before what its arm does,
+// where it runs, in the `try` or after it; above a `let Ok(n) = r else`,
+// before where the `try` sets `n`; above a `match`'s `Ok` arm of nothing,
+// at the `try`'s end, where it ran. Each was lost (#489). A function's
+// comments before what's after its `try` are there, not at its end.
+test("a comment above a folded Ok test is before its arm", async () => {
+  const { js, lib } = await compiled("comment-above-an-ok-test", `use std::panic::{AssertUnwindSafe, catch_unwind};
+
+pub fn returned(on: bool) -> u32 {
+    let made = catch_unwind(AssertUnwindSafe(|| {
+        if on {
+            panic!("off");
+        }
+        5
+    }));
+    // Of the Ok arm.
+    if let Ok(n) = made {
+        return n;
+    }
+    0
+}
+
+pub fn after(on: bool, log: &mut Vec<u32>) -> u32 {
+    let made = catch_unwind(AssertUnwindSafe(|| {
+        if on {
+            panic!("off");
+        }
+        5
+    }));
+    // Logged where it is made.
+    if let Ok(n) = made {
+        log.push(n);
+        return n;
+    }
+    0
+}
+
+pub fn inside(on: bool) -> u32 {
+    let made = catch_unwind(AssertUnwindSafe(|| {
+        if on {
+            panic!("off");
+        }
+        5
+    }));
+    // Doubled where it is made.
+    if let Ok(n) = made {
+        let twice = n * 2;
+        return twice;
+    }
+    0
+}
+
+pub fn left(on: bool, log: &mut Vec<u32>) -> u32 {
+    let made = catch_unwind(AssertUnwindSafe(|| {
+        if on {
+            panic!("off");
+        }
+        5
+    }));
+    // Set where it is made.
+    let Ok(n) = made else {
+        return 0;
+    };
+    log.push(n);
+    n
+}
+
+pub fn ignored(on: bool, log: &mut Vec<u32>) {
+    let made = catch_unwind(AssertUnwindSafe(|| {
+        if on {
+            panic!("off");
+        }
+        log.push(1);
+    }));
+    match made {
+        // Fine.
+        Ok(()) => {}
+        Err(_) => log.push(3),
+    }
+    log.push(2);
+}
+
+pub fn turns(xs: &[u32], log: &mut Vec<u32>) {
+    for &x in xs {
+        match catch_unwind(AssertUnwindSafe(|| {
+            if x == 1 {
+                return;
+            }
+            log.push(x);
+        })) {
+            Ok(()) => {}
+            Err(_) => log.push(9),
+        }
+    }
+}
+`);
+  // A loop's `try` whose closure's `return;` is its next turn, the
+  // marker of its `Ok` arm of nothing at its end.
+  expect(js).toContain(`    try {
+      if (x === 1) {
+        continue;
+      }
+      log.push(x);
+    } catch {`);
+  expect(js).toContain(`    }
+    // Of the Ok arm.
+    return 5;
+  } catch {
+    return 0;
+  }`);
+  expect(js).toContain(`  } catch {
+    return 0;
+  }
+  // Logged where it is made.
+  log.push(n);
+  return n;
+}`);
+  expect(js).toContain(`    const n = 5;
+    // Doubled where it is made.
+    const twice = (n * 2) >>> 0;`);
+  expect(js).toContain(`    }
+    // Set where it is made.
+    n = 5;
+  } catch {`);
+  expect(js).toContain(`    log.push(1);
+    // Fine.
+  } catch {
+    log.push(3);
+  }`);
+  expect([lib.returned(false as never), lib.returned(true as never)]).toEqual([5, 0]);
+  const after: number[] = [];
+  expect([lib.after(false as never, after as never), lib.after(true as never, after as never)]).toEqual([5, 0]);
+  expect(after).toEqual([5]);
+  expect([lib.inside(false as never), lib.inside(true as never)]).toEqual([10, 0]);
+  const left: number[] = [];
+  expect([lib.left(false as never, left as never), lib.left(true as never, left as never)]).toEqual([5, 0]);
+  expect(left).toEqual([5]);
+  const ignored: number[] = [];
+  lib.ignored(false as never, ignored as never);
+  lib.ignored(true as never, ignored as never);
+  expect(ignored).toEqual([1, 2, 3, 2]);
+  const turns: number[] = [];
+  lib.turns([1, 2] as never, turns as never);
+  expect(turns).toEqual([2]);
+});
+
 // React's beginWork: `oldProps !== newProps || hasLegacyContextChanged() ||
 // // Force a re-render if the implementation changed due to hot reload:
 // (__DEV__ ? workInProgress.type !== current.type : false)`. Its port's

@@ -463,7 +463,7 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
     let mut trailing = Vec::new();
     let mut arm_comments = Vec::new();
     let mut inner: Vec<(crate::program::Comment, (u32, u32))> = Vec::new();
-    let (spans, comment_ends) = statement_spans(module);
+    let (spans, comment_ends, comments_before) = statement_spans(module);
     // Where each class's struct is, and its constructor function, which
     // what's before the struct is before.
     let classes: std::collections::HashMap<u32, u32> = (module.items.iter())
@@ -1180,9 +1180,13 @@ fn comments_of(module: &Module, sources: &crate::program::Sources) -> Commented 
             // An object's field's, its own: not a statement its value holds
             // on its line, `getInstanceFromNode() { throw .. }` (rd296).
             let field = (parts.get(&at)).is_some_and(|&(_, field)| field).then_some(at);
+            // Comments a block holds before a statement, that one's, which
+            // may start before them, a `catch_unwind` closure's value of an
+            // `Ok` arm they're said above (#489).
             let attached_to = (classes.get(&at).copied())
                 .or(case)
                 .or(field)
+                .or(comments_before.get(&at).copied())
                 .unwrap_or_else(|| printed_first(at));
             if let Some(first) = own.first() {
                 let top = tops.entry(attached_to).or_insert(first.lo);
