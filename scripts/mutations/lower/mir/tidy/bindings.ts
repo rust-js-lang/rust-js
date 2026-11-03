@@ -400,7 +400,7 @@ export const mutations: Mutation[] = [
     find: "                Some(StmtKind::Assign(target, _)) if target.kind == read.kind)\n",
     replace:
       "                Some(StmtKind::Assign(target, _)) if false && target.kind == read.kind)\n",
-    tests: ["test/lowering-cells.test.ts", "-t", "written by replace and take"],
+    tests: ["test/lowering-takes.test.ts", "-t", "whose old value nothing reads"],
   },
   {
     name: "sunk-let-at-shadowing-closure",
