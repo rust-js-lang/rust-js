@@ -411,4 +411,7 @@ and the mutations `ok-arm-comment-unsaid`, `ok-value-comment-unsaid`,
 `held-comments-by-place` (`to_oxc/starts.ts`) and
 `said-blocks-loop-jump` (`prepare/labels.ts`). The last
 amendment's `arm-comment-caught` and `ok-test-comment-caught` now break
-the rule above.
+the rule above. Its `written-tests-unsaid` is held by `// c\n if
+!started.is_ok() { .. }`, an `if` the program wrote of the `Err` whose
+test names the `Ok`, `started.TAG !== "Ok"`: of MIR's, that'd be the
+`Ok`'s arm.

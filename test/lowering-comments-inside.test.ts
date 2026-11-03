@@ -144,6 +144,20 @@ pub fn errored(on: bool, log: &mut Vec<u32>) {
     log.push(2);
 }
 
+pub fn not_ok(on: bool, log: &mut Vec<u32>) {
+    let started = catch_unwind(AssertUnwindSafe(|| {
+        if on {
+            panic!("off");
+        }
+        log.push(1);
+    }));
+    // What threw is noted.
+    if !started.is_ok() {
+        log.push(7);
+    }
+    log.push(2);
+}
+
 pub fn returned(on: bool) -> u32 {
     let made = catch_unwind(AssertUnwindSafe(|| {
         if on {
@@ -213,6 +227,12 @@ pub fn ignored(on: bool, log: &mut Vec<u32>) {
     log.push(10);
   }
   log.push(2);`);
+  // Of an `if` the program wrote, the arm it runs, though its test,
+  // `started.TAG !== "Ok"`, names the `Ok`.
+  expect(js).toContain(`  } catch {
+    // What threw is noted.
+    log.push(7);
+  }`);
   expect(js).toContain(`  } catch (thrown) {
     // What threw is measured.
     const e = $unwound(thrown);`);
@@ -229,6 +249,10 @@ pub fn ignored(on: bool, log: &mut Vec<u32>) {
   lib.errored(false as never, log as never);
   lib.errored(true as never, log as never);
   expect(log).toEqual([1, 2, 9, 10, 2]);
+  const noted: number[] = [];
+  lib.notOk(false as never, noted as never);
+  lib.notOk(true as never, noted as never);
+  expect(noted).toEqual([1, 2, 7, 2]);
   expect([lib.returned(false as never), lib.returned(true as never)]).toEqual([5, 0]);
   const measured: number[] = [];
   lib.measured(false as never, measured as never);
