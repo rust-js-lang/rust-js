@@ -4,7 +4,8 @@ Status: Accepted (the user's decisions, rd380, 2026-11-01). Amended
 (rd533): a let chain's borrow of it is its object too. Amended (rd432):
 its refusal points at the borrow. Amended: its declaration has its keys.
 Amended (#482): a closure's write through a borrow it captures is the
-keys too. Extends
+keys too. Extended by [1071](1071-a-flattened-enum-is-told-by-its-keys.md):
+an enum of no tag, told by its keys, its owner `bindings::flattened`. Extends
 [0204](0204-flattened-props.md), whose flattened field was a struct of
 named fields or a JS object, to a `RefCell` of a discriminated union
 ([0284](0284-discriminated-unions.md)), and

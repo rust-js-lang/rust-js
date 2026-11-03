@@ -146,7 +146,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return None;
             };
             let value = super::eval_const(self.tcx, self.typing_env, def_id, ty::List::empty(), span)
-                .and_then(|value| super::const_js(self.tcx, value));
+                .and_then(|value| super::const_js(self.tcx, &self.krate.flattened.keyed, value));
             let Some(value) = value.filter(is_literal) else {
                 self.unsupported(span, "a props field's default `const` that isn't a literal");
                 return None;

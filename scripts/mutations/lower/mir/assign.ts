@@ -1076,4 +1076,12 @@ export const mutations: Mutation[] = [
     replace: "                (state.commented.arms.iter()).find_map(|&(block, end)| (block == at && false).then_some(end))\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment above an arm that does nothing is the arm.s"],
   },
+  {
+    name: "keyed-write-unseen",
+    breaks: "a flattened keyed enum written whole assigns its parent's variable, not its keys (#504)",
+    file: "src/lower/mir/assign.rs",
+    find: "        if let Some(written) = self.keyed_write(state, place, rvalue, span, out) {\n",
+    replace: "        if let Some(written) = None::<R<()>> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_enum.rs$"],
+  },
 ];

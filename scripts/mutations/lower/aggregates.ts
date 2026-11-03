@@ -109,8 +109,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a flattened struct made in place is spread, `{ ...{ line: 1 } }`, not its fields",
     file: "src/lower/aggregates.rs",
-    find: "                    js::ExprKind::Object(inner, ..) => flat.extend(inner),\n",
-    replace: "",
+    find: "                    js::ExprKind::Object(inner, inner_layout) => {\n",
+    replace: "                    js::ExprKind::Object(inner, inner_layout) if false => {\n",
     tests: [
       "test/jsx-props.test.ts",
       "-t",
@@ -290,7 +290,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `const`'s struct literal written across lines is an object on one line, as rustc's value is, where one written in place is across lines (ADR 0835)",
     file: "src/lower/aggregates.rs",
-    find: "        *layout = literal_layout(tcx, body.value.span);\n",
+    find: "        *layout = js::ObjectLayout {\n            kept,\n            ..literal_layout(tcx, body.value.span)\n        };\n",
     replace: "",
     tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
   },
@@ -480,5 +480,37 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
     snapshots: true,
+  },
+  {
+    name: "keyed-tag-kept",
+    breaks: "a keyed enum's variant is made with a `TAG` too (#504)",
+    file: "src/lower/aggregates.rs",
+    find: "        let tag = (adt_def.is_enum() && !keyed).then(|| {\n",
+    replace: "        let tag = (adt_def.is_enum()).then(|| {\n",
+    tests: ["test/flattened-keyed.test.ts", "-t", "intersection"],
+  },
+  {
+    name: "keyed-keys-dropped",
+    breaks: "a keyed enum's variant holding `None` is made without its key, so it isn't told (#504)",
+    file: "src/lower/aggregates.rs",
+    find: "                if keyed {\n                    kept.extend(",
+    replace: "                if false {\n                    kept.extend(",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_const.rs$"],
+  },
+  {
+    name: "flattened-inner-kept-lost",
+    breaks: "a keyed enum's variant made in its parent, flattened, leaves out its `undefined` keys (#504)",
+    file: "src/lower/aggregates.rs",
+    find: "                        layout.kept.extend(inner_layout.kept);\n",
+    replace: "                        drop(inner_layout);\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_const.rs$"],
+  },
+  {
+    name: "const-object-kept-lost",
+    breaks: "a module's constant of a keyed enum's variant leaves out its `undefined` keys (#504)",
+    file: "src/lower/aggregates.rs",
+    find: "        let kept = std::mem::take(&mut layout.kept);\n",
+    replace: "        let kept = Vec::new();\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_const.rs$"],
   },
 ];

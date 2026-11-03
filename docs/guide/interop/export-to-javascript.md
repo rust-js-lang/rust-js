@@ -1314,6 +1314,106 @@ export function settle(chunk, value) {
 }
 ```
 
+### A kind flattened into its node
+
+A field `#[cfg_attr(rust_js, rust_js::flatten)]` of an enum can hold the
+enum's keys in the parent, as TypeScript's interfaces that extend one
+another are one object, `interface ComputedNode extends ReactiveNode {
+value; getter }`. That needs each variant of named fields to have a key
+no other variant has, and at most one variant without fields. The field
+can also be a type parameter that the program gives such an enum, so a
+generic graph's node holds its caller's kind
+([ADR 1071](../../decisions/1071-a-flattened-enum-is-told-by-its-keys.md)).
+
+- **Its values are its keys, with no tag:** `{ value: undefined, getter }`,
+  and `{}` for the variant without fields. Each key is present even where
+  it holds `undefined`.
+- **Each variant is tested by its own key:** `"getter" in node`. That's
+  the field marked `#[cfg_attr(rust_js, rust_js::test)]`, or else the
+  variant's first key that no other variant has. The variant without
+  fields is none of the others.
+- **A whole write deletes the other variants' keys** before it sets its
+  own, so the variant changes at runtime as Rust's does.
+
+Its declaration is the union of its variants' objects. What flattens it
+is its own members together with that union, `{ flags: number } & K`:
+
+```rust
+use std::cell::Cell;
+
+pub struct Node<K> {
+    pub flags: Cell<i32>,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub kind: K,
+}
+
+pub enum Kind {
+    Signal {
+        current: Cell<Option<f64>>,
+    },
+    Computed {
+        value: Cell<Option<f64>>,
+        #[cfg_attr(rust_js, rust_js::test)]
+        getter: fn() -> f64,
+    },
+    Scope,
+}
+
+pub fn computed(getter: fn() -> f64) -> Node<Kind> {
+    Node {
+        flags: Cell::new(0),
+        kind: Kind::Computed {
+            value: Cell::new(None),
+            getter,
+        },
+    }
+}
+
+pub fn read(node: &Node<Kind>) -> Option<f64> {
+    match &node.kind {
+        Kind::Signal { current } => current.get(),
+        Kind::Computed { value, getter } => {
+            value.set(Some(getter()));
+            value.get()
+        }
+        Kind::Scope => None,
+    }
+}
+
+pub fn into_signal(node: &mut Node<Kind>) {
+    node.kind = Kind::Signal {
+        current: Cell::new(None),
+    };
+}
+```
+
+```js
+export function computed(getter) {
+  return {
+    flags: 0,
+    value: undefined,
+    getter,
+  };
+}
+
+export function read(node) {
+  if ("current" in node) {
+    const current = node.current;
+    return current;
+  }
+  if ("getter" in node) {
+    node.value = node.getter();
+    return node.value;
+  }
+}
+
+export function intoSignal(node) {
+  delete node.value;
+  delete node.getter;
+  node.current = undefined;
+}
+```
+
 ## Objects of methods
 
 A struct and its impl marked `#[cfg_attr(rust_js, rust_js::object)]` are

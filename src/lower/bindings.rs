@@ -15,6 +15,7 @@ use std::collections::HashMap;
 mod collects;
 pub(super) use collects::reject_attributed_calls;
 mod effects;
+mod flattened;
 mod forms;
 mod given_before;
 mod given_names;
@@ -32,6 +33,7 @@ pub(super) use effects::{
     called_constructs, calls_with_resolvers, cannot_throw, gives_back, gives_plain_data, iterates_receiver,
     keeps_in_collection, reject_unkept_collections, runs_nothing, runs_only_given,
 };
+pub(super) use flattened::{Flattened, Keyed, flattened, flattened_state, keyed_test};
 pub(super) use forms::{Asked, JsForm, js_form};
 pub(super) use given_before::reject_made_in_place;
 pub(in crate::lower) use given_names::alias_cased;
@@ -898,62 +900,6 @@ pub(super) fn field_default_const(tcx: TyCtxt<'_>, field: &FieldDef) -> Option<S
         [name] => name.ident().map(|ident| ident.name),
         _ => None,
     }
-}
-
-/// Of `ty`, a flattened field's type, the state it holds where it's a
-/// `RefCell` of a discriminated union, `#[rust_js::tag = "status"]`, each
-/// variant of named fields or none (rd380, ADR 1044): its tag and each
-/// key a variant has, in the order they're first declared, the parent's
-/// own properties. `None` of any other type.
-pub(super) fn flattened_state<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(ty::AdtDef<'tcx>, Vec<String>)> {
-    let ty::Adt(cell, args) = ty.kind() else { return None };
-    if !crate::lower::recognition::is_std_def(tcx, cell.did(), crate::lower::recognition::StdItem::RefCell) {
-        return None;
-    }
-    let ty::Adt(state, _) = args.type_at(0).kind() else {
-        return None;
-    };
-    let tag = declared_tag(tcx, state.did())?;
-    if !state.is_enum()
-        || (state.variants().iter()).any(|v| v.ctor.is_some() && !v.fields.is_empty() || is_otherwise(tcx, v.def_id))
-    {
-        return None;
-    }
-    let mut keys = vec![tag];
-    for field in state.variants().iter().flat_map(|v| v.fields.iter()) {
-        let key = field_key(tcx, field).text().to_string();
-        if !keys.contains(&key) {
-            keys.push(key);
-        }
-    }
-    Some((*state, keys))
-}
-
-/// The enums the crate's classes hold as a flattened state
-/// (`flattened_state`), each its object's own keys (rd380, ADR 1044): a
-/// `&mut` to one is a handle, whose setter writes each key there, wherever
-/// it's given, never the object, which holds the class's other keys too
-/// (#478).
-pub(super) fn flattened_states(tcx: TyCtxt<'_>) -> std::collections::HashSet<DefId> {
-    let mut states = std::collections::HashSet::new();
-    for id in tcx.hir_crate_items(()).definitions() {
-        if tcx.def_kind(id) != rustc_hir::def::DefKind::Struct {
-            continue;
-        }
-        for field in tcx
-            .adt_def(id)
-            .non_enum_variant()
-            .fields
-            .iter()
-            .filter(|f| is_flatten(tcx, f))
-        {
-            let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
-            if let Some((state, _)) = flattened_state(tcx, ty) {
-                states.insert(state.did());
-            }
-        }
-    }
-    states
 }
 
 /// Whether field `i` of `ty`, a struct, is flattened (ADR 0204).

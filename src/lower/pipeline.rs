@@ -111,6 +111,7 @@ pub fn lower_crate<'tcx>(
     let sources = super::sources::CapturedSources::new(tcx);
     let AnalyzedCrate {
         bodies,
+        flattened,
         closures,
         trait_impls,
         dictionaries,
@@ -291,7 +292,7 @@ pub fn lower_crate<'tcx>(
         let (value, what) = match tcx.def_kind(def_id) {
             DefKind::Static { mutability, .. } => (
                 static_value(tcx, def_id)
-                    .and_then(|v| const_js(tcx, v))
+                    .and_then(|v| const_js(tcx, &flattened.keyed, v))
                     .map(|v| super::literals::const_string(tcx, def_id, v, &|span| sources.span(span)))
                     .map(|v| super::aggregates::const_object(tcx, def_id, v))
                     .map(|v| match mutability.is_mut() {
@@ -305,9 +306,16 @@ pub fn lower_crate<'tcx>(
                 initializer
                     .and_then(|body| super::std_types::number::math::written_constant(tcx, &body.thir, body.expr))
                     .or_else(|| {
-                        super::representation::const_value_js(tcx, typing_env, def_id.to_def_id(), args, span)
-                            .map(|v| super::literals::const_string(tcx, def_id, v, &|span| sources.span(span)))
-                            .map(|v| super::aggregates::const_object(tcx, def_id, v))
+                        super::representation::const_value_js(
+                            tcx,
+                            &flattened.keyed,
+                            typing_env,
+                            def_id.to_def_id(),
+                            args,
+                            span,
+                        )
+                        .map(|v| super::literals::const_string(tcx, def_id, v, &|span| sources.span(span)))
+                        .map(|v| super::aggregates::const_object(tcx, def_id, v))
                     }),
                 "constants",
             ),
@@ -442,9 +450,8 @@ pub fn lower_crate<'tcx>(
     let struct_literals = super::aggregates::struct_literals(tcx);
     // The nullable fields each constructor of their struct sets first (rd628).
     let constructed = super::classes::set_where_constructed(tcx, &named_anywhere);
-    let flattened_states = super::bindings::flattened_states(tcx);
     let crate_facts = CrateFacts {
-        flattened_states: &flattened_states,
+        flattened: &flattened,
         foreign: &foreign,
         library: export_library,
         compiled_once: exports_reachable,
@@ -1339,7 +1346,7 @@ pub fn lower_crate<'tcx>(
                 &paths,
                 (&declared_reexports, &forwarded),
                 &aliased_items,
-                (ref_cells, &counted, &null_fields, &constructed),
+                (ref_cells, &counted, &null_fields, &constructed, &flattened),
                 (&fns, module_held, &module_variables),
             );
             // A `Drop` impl's `drop` of this module no other module calls,
@@ -1432,6 +1439,7 @@ pub fn lower_crate<'tcx>(
                         lazy_locals: &lazy_locals,
                         variables: &variables,
                         identities: &identities,
+                        keyed: &flattened.keyed,
                         eq_by_address: &eq_by_address,
                         gives_argument: &gives_argument,
                         built: cell_borrows.pointers().built().collect(),

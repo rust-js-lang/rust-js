@@ -48,10 +48,12 @@ export function parseManifest(text) {
   if (result.library !== undefined) {
     const library = result.library;
     // ADR 0100: each item another crate can reach, by rustc's key for it.
-    if (!object(library) || library.version !== 14 || typeof library.name !== "string" || !library.name
+    if (!object(library) || library.version !== 15 || typeof library.name !== "string" || !library.name
         || typeof library.crate_hash !== "string" || !library.crate_hash
         || !Array.isArray(library.inputs) || !library.inputs.every(fingerprint)
         || !strings(library.impls) || !strings(library.libraries)
+        // ADR 1071: its enums told apart by their keys; none where it's absent.
+        || !(library.keyed === undefined || strings(library.keyed))
         // ADR 0852: what the `Rc`s it counts point at; none where it's absent.
         || !(library.counted_rcs === undefined || Array.isArray(library.counted_rcs) && library.counted_rcs.every(rcShape))
         // ADR 0863: what it does with its `RefCell`s, each a list of shapes.

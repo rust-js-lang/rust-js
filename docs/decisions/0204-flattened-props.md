@@ -2,7 +2,9 @@
 
 Status: Accepted. Extends [0195](0195-rest-props.md) and [0196](0196-typescript-declarations.md);
 extended by [1044](1044-a-flattened-state-is-its-classs-own-keys.md): a `RefCell` of a
-discriminated union is its class's own keys;
+discriminated union is its class's own keys; by
+[1071](1071-a-flattened-enum-is-told-by-its-keys.md): an enum told apart
+by its keys, or a type parameter given one;
 amended by [0205](0205-flattened-chains.md), which chains them and gives a
 name both have to the props; and by
 [0674](0674-a-struct-literals-fields-are-in-the-order-written.md): a flattened

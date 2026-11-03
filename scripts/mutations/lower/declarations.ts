@@ -250,7 +250,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a tagged enum's variant of no fields is declared its name, where JS has an object of its tag",
     file: "src/lower/declarations.rs",
-    find: "                        if v.fields.is_empty() && !tagged {",
+    find: "                        if v.fields.is_empty() && !tagged && !keyed {",
     replace: "                        if v.fields.is_empty() {",
     tests,
   },
@@ -259,9 +259,8 @@ export const mutations: Mutation[] = [
     breaks:
       "props a struct doesn't name, `...rest`, are an error to TypeScript, `aria-label` of a link",
     file: "src/lower/declarations.rs",
-    find: "            if is_rest(self.tcx, ty) || (is_flatten(self.tcx, field) && extends.is_empty()) {",
-    replace:
-      "            if false && (is_rest(self.tcx, ty) || (is_flatten(self.tcx, field) && extends.is_empty())) {",
+    find: "            if is_rest(self.tcx, ty) || (is_flatten(self.tcx, field) && extends.is_empty() && intersected.is_none()) {",
+    replace: "            if false && (is_rest(self.tcx, ty) || (is_flatten(self.tcx, field) && extends.is_empty() && intersected.is_none())) {",
     tests,
   },
   {
@@ -1112,5 +1111,21 @@ export const mutations: Mutation[] = [
     find: "                    match is_nullable(self.tcx, field) || nested || value || self.null_fields.contains(&field.did) {\n",
     replace: "                    match is_nullable(self.tcx, field) || nested || self.null_fields.contains(&field.did) {\n",
     tests: ["test/lowering-nested-options.test.ts", "-t", "what may be undefined"],
+  },
+  {
+    name: "keyed-declared-tagged",
+    breaks: "a keyed enum is declared with its `TAG`, which its objects haven't (#504)",
+    file: "src/lower/declarations.rs",
+    find: "                let keyed = self.flattened.keyed.contains(&def_id);\n",
+    replace: "                let keyed = false;\n",
+    tests: ["test/flattened-keyed.test.ts", "-t", "intersection"],
+  },
+  {
+    name: "flattened-param-extended",
+    breaks: "a struct of a flattened type parameter is declared an interface extending it, which TypeScript refuses (#504)",
+    file: "src/lower/declarations.rs",
+    find: "                ty::Param(_) => true,\n                ty::Adt(adt, _) => self.flattened.keyed.contains(&adt.did()),\n",
+    replace: "                ty::Param(_) => false,\n                ty::Adt(adt, _) => self.flattened.keyed.contains(&adt.did()),\n",
+    tests: ["test/flattened-keyed.test.ts", "-t", "intersection"],
   },
 ];

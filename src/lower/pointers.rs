@@ -799,7 +799,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn sized_at_address(&self, mut before: Vec<Expr>, size: Expr, pointee: Ty<'tcx>) -> Vec<Expr> {
         before.push(size);
         if self.has_one_value(pointee)
-            && let Some(zero) = super::representation::zero_sized_js(self.tcx, pointee)
+            && let Some(zero) = super::representation::zero_sized_js(self.tcx, &self.krate.flattened.keyed, pointee)
             && !matches!(zero.kind, js::ExprKind::Undefined)
         {
             before.push(zero);

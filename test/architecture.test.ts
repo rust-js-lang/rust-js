@@ -511,6 +511,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/hints.rs": ["locals"],
   "src/lower/mir/hints/clones.rs": ["locals"],
   "src/lower/mir/jsx_props.rs": ["body"],
+  "src/lower/mir/keyed_writes.rs": ["body"],
   "src/lower/mir/locals.rs": ["body", "locals"],
   "src/lower/mir/nested_options.rs": ["body"],
   "src/lower/mir/nulled.rs": ["at", "body", "locals", "writer"],
@@ -572,7 +573,7 @@ const idioms: [string, RegExp, string[]][] = [
   // module's `const` (ADR 0722, amended), is `FnCx::unit_variant`'s: its
   // value, `bindings::unit_variant`, asked there alone, as a body's would
   // be the number where the name is written.
-  ["a variant without fields as its value", /bindings::unit_variant\(/, ["src/lower/representation.rs"]],
+  ["a variant without fields as its value", /bindings::unit_variant\(/, ["src/lower/representation.rs", "src/lower/representation/consts.rs"]],
 ];
 test("a JS form of a concept is written by the concept's owner", () => {
   const strays: string[] = [];

@@ -16,8 +16,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a flattened field read whole as an update's base, `..props.html`, is refused, where it's the object its parent is",
     file: "src/lower/analysis/validation.rs",
-    find: "                        && !bases.contains(&e) =>",
-    replace: "                        && true =>",
+    find: "                        && !bases.contains(&e)\n",
+    replace: "                        && true\n",
     tests: [
       "test/jsx-props.test.ts",
       "-t",
@@ -353,5 +353,37 @@ export const mutations: Mutation[] = [
     find: "                && crate::lower::classes::is_value_namespace(tcx, def_id)\n",
     replace: "                && false\n",
     tests: ["test/namespace-values.test.ts", "-t", "Rust reads is refused"],
+  },
+  {
+    name: "keyed-shadow-unchecked",
+    breaks: "a keyed enum flattened into a parent with a field of one of its keys compiles, and the parent's own is overwritten (#504)",
+    file: "src/lower/analysis/validation.rs",
+    find: "        .find(|key| keyed.keys.contains(key))\n",
+    replace: "        .find(|_| false)\n",
+    tests: ["test/flattened-keyed.test.ts", "-t", "no key tells"],
+  },
+  {
+    name: "keyed-param-given-anything",
+    breaks: "a struct's flattened type parameter given a number compiles, though it has no keys (#504)",
+    file: "src/lower/analysis/validation.rs",
+    find: "                    _ => \"a flattened type parameter is given an enum each of whose variants has a field no other has, one at most none\".into(),\n",
+    replace: "                    _ => continue,\n",
+    tests: ["test/flattened-keyed.test.ts", "-t", "no key tells"],
+  },
+  {
+    name: "keyed-placed-refused",
+    breaks: "a flattened keyed enum matched where it's a place, or written whole, is refused as one read whole (#504)",
+    file: "src/lower/analysis/validation.rs",
+    find: "                        && !(keyed(expr.ty) && placed.contains(&e)) =>\n",
+    replace: "                        =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_enum.rs$"],
+  },
+  {
+    name: "keyed-placed-anything",
+    breaks: "a flattened field of any type matched or written whole compiles, a type parameter's too (#504)",
+    file: "src/lower/analysis/validation.rs",
+    find: "                        && !(keyed(expr.ty) && placed.contains(&e)) =>\n",
+    replace: "                        && !placed.contains(&e) =>\n",
+    tests: ["test/flattened-keyed.test.ts", "-t", "moved out"],
   },
 ];

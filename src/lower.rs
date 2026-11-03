@@ -342,8 +342,9 @@ struct ItemScope<'tcx> {
 struct CrateFacts<'a, 'tcx> {
     sources: &'a sources::CapturedSources,
     /// The enums its classes hold as a flattened state, a `&mut` to each a
-    /// handle (`bindings::flattened_states`, #478).
-    flattened_states: &'a HashSet<DefId>,
+    /// handle (#478), and the enums told by their keys (#504):
+    /// `bindings::flattened`.
+    flattened: &'a bindings::Flattened,
     mutated: &'a HashSet<Ty<'tcx>>,
     /// The `Rc`s counted (ADR 0320).
     counted: &'a analysis::Counted<'tcx>,
@@ -791,7 +792,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // its value, which rustc computed, where it has one (`reads_by_name`).
         let by_value = || {
             (!self.reads_by_name(def_id))
-                .then(|| representation::const_value_js(self.tcx, self.typing_env, def_id, args, span))
+                .then(|| self.const_value_of(def_id, args, span))
                 .flatten()
         };
         if let Some(value) = self.is_rust_fn(def_id).then(by_value).flatten() {
@@ -804,8 +805,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // One whose value JS holds as itself, `undefined` of one with
                 // no byte written, `MaybeUninit::uninit()`'s, which nothing
                 // changes (ADR 0332).
-                && !representation::const_value_js(self.tcx, self.typing_env, def_id, args, span)
-                    .is_some_and(|value| value.is_constant());
+                && !self.const_value_of(def_id, args, span).is_some_and(|value| value.is_constant());
             // Where it's written, wherever it's read, so a comment before it
             // is before it: an operand's, `/* */ SnapshotStatic |
             // MaySuspendCommit`, as a call's argument's (ADR 0708, amended).
@@ -820,7 +820,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => Ok(place),
             };
         }
-        if let Some(value) = representation::const_value_js(self.tcx, self.typing_env, def_id, args, span) {
+        if let Some(value) = self.const_value_of(def_id, args, span) {
             return Ok(value);
         }
         // A `TrustedRandomAccess`'s `MAY_HAVE_SIDE_EFFECT`, as rustc

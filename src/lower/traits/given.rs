@@ -275,7 +275,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .iter()
                 .find(|&&(index, _)| index == p.index)
                 .map(|(_, value)| value.clone()),
-            _ => c.try_to_value().and_then(|value| const_js(self.tcx, value)),
+            _ => c
+                .try_to_value()
+                .and_then(|value| const_js(self.tcx, &self.krate.flattened.keyed, value)),
         };
         value.ok_or_else(|| self.unsupported(span, "this const argument"))
     }

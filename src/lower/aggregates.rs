@@ -103,7 +103,12 @@ pub(super) fn const_object(tcx: ty::TyCtxt<'_>, def_id: rustc_span::def_id::Loca
         && let Some(body) = tcx.hir_maybe_body_owned_by(def_id)
         && let rustc_hir::ExprKind::Struct(..) = body.value.kind
     {
-        *layout = literal_layout(tcx, body.value.span);
+        // Its kept keys, a keyed enum's (#504), as they are.
+        let kept = std::mem::take(&mut layout.kept);
+        *layout = js::ObjectLayout {
+            kept,
+            ..literal_layout(tcx, body.value.span)
+        };
     }
     value
 }
@@ -114,7 +119,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// flattened field's own fields, of a struct made there, or its spread,
     /// `{ ...item, severity }`, where it's declared (ADR 0204).
     pub(super) fn flattened_object(&self, made: Expr, ty: Ty<'tcx>) -> Expr {
-        let js::ExprKind::Object(props, layout) = made.kind else {
+        let js::ExprKind::Object(props, mut layout) = made.kind else {
             return made;
         };
         let Shape::Object(names) = self.shape(ty) else {
@@ -129,7 +134,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for prop in props {
             match prop {
                 Prop::Field(name, value) if flattened(&name) => match value.kind {
-                    js::ExprKind::Object(inner, ..) => flat.extend(inner),
+                    // Its kept keys too, a keyed enum's each (#504).
+                    js::ExprKind::Object(inner, inner_layout) => {
+                        layout.kept.extend(inner_layout.kept);
+                        flat.extend(inner);
+                    }
                     js::ExprKind::Undefined => {}
                     _ => flat.push(Prop::Spread(value)),
                 },
@@ -418,15 +427,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => stored,
             };
         }
-        let tag = (adt_def.is_enum()).then(|| {
+        // A keyed enum's variant is its keys, no tag, each kept where it's
+        // `undefined`, which `in` tells it by (#504).
+        let keyed = adt_def.is_enum() && self.krate.flattened.keyed.contains(&adt_def.did());
+        let tag = (adt_def.is_enum() && !keyed).then(|| {
             (
                 bindings::tag_key(self.tcx, adt_def.did()),
                 bindings::variant_tag(self.tcx, variant),
             )
         });
-        let shape = match tag {
-            Some(_) => Shape::Object(Self::variant_keys(self.variant_fields(variant, args))),
-            None => self.shape(ty),
+        let shape = match adt_def.is_enum() {
+            true => Shape::Object(Self::variant_keys(self.variant_fields(variant, args))),
+            false => self.shape(ty),
         };
         // The keys whose `undefined`, a `None`'s, is kept: one a comment is
         // written on, the comment's place (ADR 0280, amended).
@@ -475,6 +487,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .filter(|(_, field)| bindings::holds_value(self.tcx, field))
                     .filter_map(|((name, _), _)| name.name().map(str::to_owned));
                 kept.extend(values);
+                if keyed {
+                    kept.extend(names.iter().filter_map(|(name, _)| name.name().map(str::to_owned)));
+                }
                 let mut items: Vec<Option<Expr>> = (names.iter().zip(&variant.fields).zip(fields))
                     .map(|((&(_, field_ty), field), value)| Some(self.holding(value, Some(field), field_ty)))
                     .collect();

@@ -414,8 +414,10 @@ fn coded_inline_consts<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> Vec<L
                 && let Some(local) = did.as_local()
                 && inline.contains(&local)
                 && !coded.contains(&local)
+                // Whether it has a value, which no enum's being keyed changes.
                 && super::representation::const_value_js(
                     tcx,
+                    &HashSet::new(),
                     ty::TypingEnv::post_analysis(tcx, body.def_id),
                     did,
                     args,
@@ -464,6 +466,9 @@ pub fn collect_initializers(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
 /// into the captured THIR; all collections are owned by this analysis result.
 pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub bodies: Vec<&'a Body<'tcx>>,
+    /// What its flattened fields hold as their parents' own keys
+    /// (`bindings::flattened`).
+    pub flattened: bindings::Flattened,
     pub closures: HashMap<DefId, &'a Body<'tcx>>,
     pub trait_impls: Vec<DefId>,
     pub dictionaries: Vec<DefId>,
@@ -626,10 +631,11 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     };
     let all_bodies: Vec<&Body<'tcx>> = all_bodies.iter().filter(|body| !is_harness(body.def_id)).collect();
 
+    let flattened = bindings::flattened(tcx, &all_bodies, &foreign);
     if !reject_unsupported(tcx, &foreign, &markers)
         || !reject_static_references(tcx, &all_bodies)
         || !reject_namespace_value_reads(tcx, &all_bodies)
-        || !reject_flatten_misuse(tcx, &all_bodies)
+        || !reject_flatten_misuse(tcx, &all_bodies, &flattened)
         || !reject_rest_misuse(tcx)
         || !reject_parameter_name_misuse(tcx)
     {
@@ -1276,6 +1282,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
 
     Some(AnalyzedCrate {
         bodies,
+        flattened,
         closures,
         trait_impls,
         dictionaries,

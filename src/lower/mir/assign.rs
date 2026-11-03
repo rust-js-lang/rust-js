@@ -215,6 +215,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if place.projection.is_empty() && state.facts.rests().contains(&place.local) {
             return self.mir_let_rest(state, place.local, rvalue, span, out);
         }
+        // A flattened keyed enum written whole, its parent's keys (#504).
+        if let Some(written) = self.keyed_write(state, place, rvalue, span, out) {
+            return written;
+        }
         state.binding_var = place.projection.is_empty() && state.locals.user[place.local];
         // A flattened struct a `match`'s pattern binds, which JS's props hold
         // flat, among their other fields.

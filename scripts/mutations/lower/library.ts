@@ -595,4 +595,12 @@ export const mutations: Mutation[] = [
     replace: "                .filter(|_| false)\n",
     tests: ["test/crates.test.ts", "-t", "item_size_of_instance"],
   },
+  {
+    name: "keyed-contract-unwritten",
+    breaks: "a library's contract lists none of its keyed enums, so its consumer tags them (ADR 1071)",
+    file: "src/lower/library.rs",
+    find: "                .filter(|&&id| id.is_local() && reachable(tcx, id))\n                .map(|&id| key(tcx, id))\n                .collect();\n            keys.sort();\n            keys\n        },\n        identities: {\n",
+    replace: "                .filter(|_| false)\n                .map(|&id| key(tcx, id))\n                .collect();\n            keys.sort();\n            keys\n        },\n        identities: {\n",
+    tests: ["test/flattened-keyed.test.ts", "-t", "contract"],
+  },
 ];

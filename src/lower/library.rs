@@ -95,6 +95,8 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) variables: &'a HashSet<DefId>,
     /// Its types equal only to themselves (ADR 0864).
     pub(super) identities: &'a [DefId],
+    /// Its enums told apart by their keys (`bindings::flattened`, ADR 1071).
+    pub(super) keyed: &'a HashSet<DefId>,
     /// Its types whose `==` is their address's, whatever their `Hash` (ADR
     /// 0864, amended).
     pub(super) eq_by_address: &'a [DefId],
@@ -255,6 +257,7 @@ pub(super) fn exports<'tcx>(
         lazy_locals: _,
         variables,
         identities,
+        keyed,
         eq_by_address,
         gives_argument,
         built,
@@ -385,6 +388,14 @@ pub(super) fn exports<'tcx>(
                 .collect();
             associated.sort_by(|a, b| a.key.cmp(&b.key));
             associated
+        },
+        keyed: {
+            let mut keys: Vec<String> = (keyed.iter())
+                .filter(|&&id| id.is_local() && reachable(tcx, id))
+                .map(|&id| key(tcx, id))
+                .collect();
+            keys.sort();
+            keys
         },
         identities: {
             let mut keys: Vec<String> = (identities.iter())
@@ -984,6 +995,15 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         }
         let library = self.library(id.krate)?;
         library.types.get(&key(self.tcx, id))
+    }
+
+    /// Is `id`, a library's enum, told apart by its keys, as its contract
+    /// says (ADR 1071)?
+    pub(super) fn keyed(&self, id: DefId) -> bool {
+        !id.is_local()
+            && self
+                .library(id.krate)
+                .is_some_and(|library| library.keyed.contains(&key(self.tcx, id)))
     }
 
     /// Is `id`, a library's type, equal only to itself, as its contract

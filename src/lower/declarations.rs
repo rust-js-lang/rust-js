@@ -53,11 +53,12 @@ pub(super) fn module<'tcx>(
     files: &HashMap<LocalModId, Vec<String>>,
     (reexports, forwarded): (&[Reexport], &HashMap<DefId, DefId>),
     aliases: &[(DefId, (String, String))],
-    (ref_cells, counted, null_fields, constructed): (
+    (ref_cells, counted, null_fields, constructed, flattened): (
         &super::drops::RefCells<'tcx>,
         &super::analysis::Counted<'tcx>,
         &HashSet<DefId>,
         &HashSet<DefId>,
+        &super::bindings::Flattened,
     ),
     (fns, held, variables): (
         &HashMap<DefId, super::FnInfo>,
@@ -76,6 +77,7 @@ pub(super) fn module<'tcx>(
         counted,
         null_fields,
         constructed,
+        flattened,
         imports: BTreeSet::new(),
         library_imports: BTreeSet::new(),
         module_imports: BTreeSet::new(),
@@ -376,6 +378,9 @@ struct Declarations<'a, 'tcx> {
     /// The nullable fields each constructor of their struct sets first,
     /// present, `T | null` (`classes::set_where_constructed`, rd628).
     constructed: &'a HashSet<DefId>,
+    /// The enums told by their keys, each variant an object of its own
+    /// keys, no tag (#504).
+    flattened: &'a super::bindings::Flattened,
     /// The crate's modules that have a file, by their path: those whose
     /// types another's declarations import (ADR 0210).
     files: &'a HashMap<LocalModId, Vec<String>>,
@@ -682,7 +687,18 @@ impl<'tcx> Declarations<'_, 'tcx> {
         // one TypeScript can't see, another module's (`any`), is what a
         // `Rest` is. A name both have is this one's, which TypeScript's
         // `Omit` says (ADR 0205).
-        let extends: Vec<Value> = match variant.fields.iter().find(|f| is_flatten(self.tcx, f)) {
+        // A keyed enum's, or a type parameter's, which an interface can't
+        // extend: what it's of besides, `{ flags: number } & K` (#504).
+        let flattened = variant.fields.iter().find(|f| is_flatten(self.tcx, f));
+        let intersected = flattened
+            .map(|field| self.tcx.type_of(field.did).instantiate_identity().skip_normalization())
+            .filter(|ty| match ty.kind() {
+                ty::Param(_) => true,
+                ty::Adt(adt, _) => self.flattened.keyed.contains(&adt.did()),
+                _ => false,
+            })
+            .map(|ty| self.ts(ty));
+        let extends: Vec<Value> = match flattened.filter(|_| intersected.is_none()) {
             Some(field) => {
                 let ty = self.tcx.type_of(field.did).instantiate_identity().skip_normalization();
                 let own: Vec<String> = (variant.fields.iter())
@@ -709,7 +725,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
         for field in &variant.fields {
             let ty = self.tcx.type_of(field.did).instantiate_identity().skip_normalization();
             // What a JS caller gives besides, `...rest` (ADR 0195).
-            if is_rest(self.tcx, ty) || (is_flatten(self.tcx, field) && extends.is_empty()) {
+            if is_rest(self.tcx, ty) || (is_flatten(self.tcx, field) && extends.is_empty() && intersected.is_none()) {
                 members.push(json!({
                     "kind": "index",
                     "parameter": "prop",
@@ -808,6 +824,16 @@ impl<'tcx> Declarations<'_, 'tcx> {
             });
             members.push(documented(declared, self.tcx, method));
         }
+        if let Some(flattened) = intersected {
+            return Some(json!({
+                "kind": "type",
+                "name": self.tcx.item_name(def_id).as_str(),
+                "exported": true,
+                "declare": false,
+                "typeParameters": self.generics(def_id),
+                "type": { "kind": "intersection", "types": [{ "kind": "object", "members": members }, flattened] },
+            }));
+        }
         Some(json!({
             "kind": "interface",
             "name": self.tcx.item_name(def_id).as_str(),
@@ -849,6 +875,9 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 let args = ty::GenericArgs::identity_for_item(self.tcx, def_id);
                 let key = tag_key(self.tcx, def_id);
                 let tagged = declared_tag(self.tcx, def_id).is_some();
+                // A keyed enum's variant is an object of its keys alone,
+                // `{}` of one without fields (#504).
+                let keyed = self.flattened.keyed.contains(&def_id);
                 let types: Vec<Value> = (adt.variants().iter())
                     .map(|v| {
                         // An `otherwise`, the object it holds (ADR 0284).
@@ -859,16 +888,16 @@ impl<'tcx> Declarations<'_, 'tcx> {
                             return self.ts(field.ty(self.tcx, args).skip_normalization());
                         }
                         let name = self.variant_literal(v);
-                        if v.fields.is_empty() && !tagged {
+                        if v.fields.is_empty() && !tagged && !keyed {
                             return name;
                         }
-                        let tag = json!({ "kind": "property", "name": key, "optional": false, "readonly": false, "type": name });
+                        let tag = (!keyed).then(|| json!({ "kind": "property", "name": key, "optional": false, "readonly": false, "type": name }));
                         let fields = v.fields.iter().enumerate().map(|(i, field)| {
                             let ty = self.field_ts(field.ty(self.tcx, args).skip_normalization(), None);
                             let name = crate::lower::representation::variant_field(self.tcx, v, i);
                             json!({ "kind": "property", "name": name, "optional": false, "readonly": false, "type": ty })
                         });
-                        json!({ "kind": "object", "members": std::iter::once(tag).chain(fields).collect::<Vec<_>>() })
+                        json!({ "kind": "object", "members": tag.into_iter().chain(fields).collect::<Vec<_>>() })
                     })
                     .collect();
                 union(types)

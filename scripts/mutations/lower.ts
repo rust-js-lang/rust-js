@@ -316,8 +316,8 @@ export const mutations: Mutation[] = [
     name: "primitive-const-use-copied",
     breaks: "a use of a named constant whose value is `undefined`, which nothing changes, is copied, a clone, refused",
     file: "src/lower.rs",
-    find: "                && !representation::const_value_js(self.tcx, self.typing_env, def_id, args, span)\n",
-    replace: "                && !representation::const_value_js(self.tcx, self.typing_env, def_id, args, span).filter(|_| false)\n",
+    find: "                && !self.const_value_of(def_id, args, span).is_some_and(",
+    replace: "                && !self.const_value_of(def_id, args, span).filter(|_| false).is_some_and(",
     tests: ["test/corpus.test.ts", "-t", "^const_block_uninit_array.rs$"],
   },
   {

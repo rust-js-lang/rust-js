@@ -232,7 +232,11 @@ pub(super) fn in_thread_local(tcx: TyCtxt<'_>, d: LocalDefId) -> Option<LocalDef
 /// through, or such a struct taken apart, whose rests JS's object mixes;
 /// and a struct with one made anywhere but as JSX's props, or a flattened
 /// field's value there, which JSX holds flat. False if there was one.
-pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> bool {
+pub(super) fn reject_flatten_misuse<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    all_bodies: &[&Body<'tcx>],
+    flattened: &bindings::Flattened,
+) -> bool {
     let mut valid = true;
     let mut refuse = |span: Span, what: String| {
         refuse(tcx, span, Refused::Feature(&what));
@@ -275,8 +279,12 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
             // tag and fields (rd380, ADR 1044); no other cell, which a
             // struct of named fields of std's is not.
             let std = |adt: ty::AdtDef<'_>| crate::lower::recognition::is_std_crate(tcx, adt.did());
+            // Or an enum told by its keys, its variants' fields the
+            // parent's (#504), or a type parameter, given one.
             let object = match ty.peel_refs().kind() {
                 _ if bindings::flattened_state(tcx, ty).is_some() => true,
+                ty::Adt(adt, _) if adt.is_enum() => flattened.keyed.contains(&adt.did()),
+                ty::Param(_) => !ty.is_ref(),
                 ty::Adt(adt, args) => {
                     adt.is_struct() && adt.non_enum_variant().ctor.is_none() && !std(*adt)
                         || marks_js_object(tcx, *adt, args)
@@ -287,8 +295,47 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
                 refuse(
                     tcx.def_span(field.did),
                     format!(
-                        "flattening `{ty}`: a flattened field is a struct of named fields, a JS object or a `RefCell` of a `#[rust_js::tag]` enum"
+                        "flattening `{ty}`: a flattened field is a struct of named fields, a JS object, a `RefCell` of a `#[rust_js::tag]` enum, or an enum each of whose variants has a field no other has, one at most none"
                     ),
+                );
+            }
+            // A keyed enum's keys are its parent's, which can't hold one
+            // of its own of the same name (#504).
+            if let ty::Adt(adt, _) = ty.kind()
+                && let Some(key) = flattened
+                    .keyed(tcx, *adt)
+                    .and_then(|keyed| shadowed_key(tcx, parent, &keyed))
+            {
+                refuse(
+                    tcx.def_span(field.did),
+                    format!("flattening `{ty}`, whose `{key}` is a key of its parent's own"),
+                );
+            }
+        }
+    }
+    // What a struct's flattened type parameter is given, each type once: a
+    // keyed enum, or another type parameter, of generic code (#504).
+    let mut given_once = HashSet::new();
+    for body in all_bodies {
+        for expr in body.thir.exprs.iter() {
+            for (parent, given) in flattened.given_params(expr.ty) {
+                if !given_once.insert((parent, given)) {
+                    continue;
+                }
+                let fields = tcx.adt_def(parent).non_enum_variant();
+                let why = match given.kind() {
+                    ty::Param(_) => continue,
+                    ty::Adt(adt, _) if flattened.keyed.contains(&adt.did()) => {
+                        match flattened.keyed(tcx, *adt).and_then(|keyed| shadowed_key(tcx, fields, &keyed)) {
+                            Some(key) => format!("its `{key}` is a key of the parent's own"),
+                            None => continue,
+                        }
+                    }
+                    _ => "a flattened type parameter is given an enum each of whose variants has a field no other has, one at most none".into(),
+                };
+                refuse(
+                    expr.span,
+                    format!("flattening `{given}` into `{}`: {why}", tcx.def_path_str(parent)),
                 );
             }
         }
@@ -357,6 +404,17 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
                 _ => None,
             })
             .collect();
+        // A keyed enum's field is its parent's keys where it's matched, a
+        // place a `match` or a `let` tests, or written whole (#504).
+        let keyed = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if flattened.keyed.contains(&adt.did()));
+        let placed: HashSet<ExprId> = (thir.exprs.iter())
+            .filter_map(|expr| match expr.kind {
+                ExprKind::Match { scrutinee: at, .. }
+                | ExprKind::Let { expr: at, .. }
+                | ExprKind::Assign { lhs: at, .. } => Some(strip(thir, at)),
+                _ => None,
+            })
+            .collect();
         for (e, expr) in thir.exprs.iter_enumerated() {
             match expr.kind {
                 ExprKind::Field { lhs, name, .. }
@@ -404,7 +462,8 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
                     if bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize())
                         && !read_through.contains(&e)
                         && !lent.contains(&e)
-                        && !bases.contains(&e) =>
+                        && !bases.contains(&e)
+                        && !(keyed(expr.ty) && placed.contains(&e)) =>
                 {
                     refuse(
                         expr.span,
@@ -416,6 +475,15 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
         }
     }
     valid
+}
+
+/// A key of `keyed`'s that `parent`, a struct, has as its own field's
+/// (#504).
+fn shadowed_key(tcx: TyCtxt<'_>, parent: &ty::VariantDef, keyed: &bindings::Keyed) -> Option<String> {
+    (parent.fields.iter())
+        .filter(|field| !bindings::is_flatten(tcx, field))
+        .filter_map(|field| bindings::field_key(tcx, field).name().map(str::to_owned))
+        .find(|key| keyed.keys.contains(key))
 }
 
 /// The names of `ty`'s fields its JS object has: a struct's own, and,

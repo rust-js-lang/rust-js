@@ -26,6 +26,7 @@ mod fields_read;
 mod hints;
 mod iter;
 mod jsx_props;
+mod keyed_writes;
 mod local_facts;
 mod locals;
 mod nested_options;

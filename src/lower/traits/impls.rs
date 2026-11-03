@@ -121,7 +121,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     (true, None) => None,
                     _ => eval_const(self.tcx, self.typing_env, item.def_id, tr.args, span),
                 };
-                let Some(value) = evaluated.and_then(|value| const_js(self.tcx, value)) else {
+                let Some(value) = evaluated.and_then(|value| const_js(self.tcx, &self.krate.flattened.keyed, value))
+                else {
                     // Of its parameters, `Wrapping(T::ZERO)`: its initializer, read
                     // each time, as a constant is, of the impl's evidence (ADR 0176);
                     // a trait's default's, of the dictionary's.

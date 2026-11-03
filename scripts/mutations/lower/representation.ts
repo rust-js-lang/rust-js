@@ -13,35 +13,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^untagged_written_through_mut.rs$"],
   },
   {
-    name: "nullable-const-field-undefined",
-    breaks:
-      "a constant's `#[rust_js::nullable]` field's `None` is left out, `{ count: 0 }`, React's `CacheContext` without its `_currentValue: null` (ADR 0586, amended)",
-    file: "src/lower/representation.rs",
-    find: "                            let nullable = bindings::null_where_made(tcx, f)\n",
-    replace:
-      "                            let nullable = false && bindings::null_where_made(tcx, f)\n",
-    tests: ["test/lowering-nullable-constants.test.ts"],
-  },
-  {
-    name: "optional-const-field-null",
-    breaks:
-      "a constant's `#[rust_js::optional]` nullable field's `None` is `null`, not left out until it's set (ADR 0810)",
-    file: "src/lower/representation.rs",
-    find: "                            let nullable = bindings::null_where_made(tcx, f)\n",
-    replace:
-      "                            let nullable = bindings::is_nullable(tcx, f)\n",
-    tests: ["test/lowering-nullable-constants.test.ts"],
-  },
-  {
-    name: "ref-cell-field-const-boxed",
-    breaks:
-      "a `const` of a struct whose `RefCell<Option<u8>>` field is the value it holds is `{ items: {} }`, the cell's box, which a read of the field takes for `Some` (ADR 0863, amended)",
-    file: "src/lower/representation.rs",
-    find: "                    .any(|f| ref_cell(f) || bindings::named_by_symbol(tcx, f.did))\n",
-    replace: "                    .any(|f| bindings::named_by_symbol(tcx, f.did))\n",
-    tests: ["test/corpus.test.ts", "-t", "^ref_cell_field_const.rs$"],
-  },
-  {
     name: "unit-given-rest-not-a-list",
     breaks:
       'a variadic binding\'s rest of none, `()`, is `undefined`, spread, `called("a", ...undefined)`, which throws, not no argument (ADR 0775)',
@@ -133,32 +104,13 @@ export const mutations: Mutation[] = [
     breaks:
       "a constant rustc made of a numbered enum's variant, `[Some(Request::Pending), None]`, is its number in a body, `[5, undefined]`, not its `const`",
     file: "src/lower/representation.rs",
-    find: "        const_js_by(self.tcx, value, &|adt, variant| self.unit_variant(adt, variant))\n",
-    replace: "        const_js(self.tcx, value)\n",
+    find: "        const_js_by(\n            self.tcx,\n            value,\n            &Units {\n                unit: &unit,\n",
+    replace: "        const_js_by(\n            self.tcx,\n            value,\n            &Units {\n                unit: &|adt, variant| bindings::unit_variant(self.tcx, adt, variant),\n",
     tests: [
       "test/lowering-structs-enums.test.ts",
       "-t",
       "a repr enum's variants are its module's consts",
     ],
-  },
-  {
-    name: "tagged-constant-tag",
-    breaks:
-      'a constant of a discriminated union\'s variant is `{ TAG: "Fulfilled", value }`, its Rust name under `TAG`',
-    file: "src/lower/representation.rs",
-    find: "                    super::bindings::tag_key(tcx, adt.did()),",
-    replace: '                    "TAG".to_string(),',
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "discriminated union"],
-  },
-  {
-    name: "named-unit-const-undefined",
-    breaks:
-      "a constant of a unit struct named `#[rust_js::name]` is `undefined`, not its string",
-    file: "src/lower/representation.rs",
-    find: "                Some(CtorKind::Const) => Some(unit_name(tcx, adt.did()).map_or_else(Expr::undefined, Expr::str)),",
-    replace:
-      "                Some(CtorKind::Const) => Some(Expr::undefined()),",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "named unit struct"],
   },
   {
     name: "i32-wrap",
@@ -249,16 +201,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "constant-some-unboxed",
-    breaks:
-      "a constant `Some(None)` that rustc computed is `undefined`, and reads as `None`",
-    file: "src/lower/representation.rs",
-    find: "                    Some(&inner) => const_js_by(tcx, inner, unit).map(super::std_types::option::some_literal),",
-    replace:
-      "                    Some(&inner) => const_js_by(tcx, inner, unit),",
-    tests: ["test/corpus.test.ts", "-t", "nested_options"],
-  },
-  {
     name: "mixed-enum-object",
     breaks:
       "an enum with a fieldless variant, the crate's or std's `Bound`, is an object for a `&mut`, so `*self = Light::Off` is refused, and `*r = Bound::Unbounded` a `TypeError`",
@@ -307,28 +249,11 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "nonzero"],
   },
   {
-    name: "non-zero-const-one-level",
-    breaks: "`NonZeroU8::MIN`, two levels of std's structs in, is an error",
-    file: "src/lower/representation.rs",
-    find: "    while let ty::ValTreeKind::Branch(items) = &**value.valtree",
-    replace: "    if let ty::ValTreeKind::Branch(items) = &**value.valtree",
-    tests: ["test/corpus.test.ts", "-t", "nonzero"],
-  },
-  {
     name: "duration-not-a-number",
     breaks: "a `Duration` is std's struct, which rust-js has no value for",
     file: "src/lower/representation.rs",
     find: "            ty::Adt(adt, _) if super::recognition::is_duration(adt.did()) => Num::U128,\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "duration"],
-  },
-  {
-    name: "duration-const-seconds",
-    breaks: "`Duration::MAX` has none of its nanoseconds",
-    file: "src/lower/representation.rs",
-    find: "        return Some(num_literal(secs * 1_000_000_000 + nanos, Num::U128));",
-    replace:
-      "        return Some(num_literal(secs * 1_000_000_000 + 0 * nanos, Num::U128));",
     tests: ["test/corpus.test.ts", "-t", "duration"],
   },
   {
@@ -339,14 +264,6 @@ export const mutations: Mutation[] = [
     find: "            (Shape::Object(fields), _) if super::bindings::is_flatten_field(self.tcx, ty, i) => {",
     replace: "            (Shape::Object(fields), _) if false && super::bindings::is_flatten_field(self.tcx, ty, i) => {",
     tests: ["test/jsx-props.test.ts", "-t", "chain of flattened"],
-  },
-  {
-    name: "untagged-const-tagged",
-    breaks: "a `const` of an untagged enum is a tagged object",
-    file: "src/lower/representation.rs",
-    find: "            if super::bindings::is_untagged(tcx, adt.did()) {\n",
-    replace: "            if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "untagged_enums"],
   },
   {
     name: "struct-variant-fields-numbered",
@@ -360,16 +277,6 @@ export const mutations: Mutation[] = [
       "-t",
       "enums with fields are tagged objects, as in ReScript",
     ],
-  },
-  {
-    name: "const-cell-field-boxed",
-    breaks:
-      "a constant's `Cell` field is `{ hits: { value: 0 } }`, so setting `COUNTER.hits` adds to an object",
-    file: "src/lower/representation.rs",
-    find: "                    ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Cell) => Expr::held(js),\n",
-    replace:
-      "                    ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Cell) => js,\n",
-    tests: ["test/corpus.test.ts", "-t", "marker_traits"],
   },
   {
     name: "guard-not-object",
@@ -386,31 +293,6 @@ export const mutations: Mutation[] = [
     find: "        !self.is_unknown(ty)\n",
     replace: "        !ty.is_ref() && !self.is_unknown(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_to_ref"],
-  },
-  {
-    name: "const-range-swapped",
-    breaks: "a constant range's start is its end",
-    file: "src/lower/representation.rs",
-    find: '                Prop::Field("start".into(), start?),\n',
-    replace: '                Prop::Field("start".into(), end.clone()?),\n',
-    tests: ["test/corpus.test.ts", "-t", "pretty_debug"],
-  },
-  {
-    name: "const-range-from-refused",
-    breaks: "a constant `(5..)` is refused, not `{ start: 5 }`",
-    file: "src/lower/representation.rs",
-    find: "        ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::RangeFrom) => {\n",
-    replace:
-      "        ty::Adt(adt, _) if false && tcx.is_lang_item(adt.did(), LangItem::RangeFrom) => {\n",
-    tests: ["test/corpus.test.ts", "-t", "range_values"],
-  },
-  {
-    name: "const-range-to-refused",
-    breaks: "a constant `(..8)` or `(..=7)` is refused, not `{ end: 8 }`",
-    file: "src/lower/representation.rs",
-    find: "            if tcx.is_lang_item(adt.did(), LangItem::RangeTo)\n                || tcx.is_lang_item(adt.did(), LangItem::RangeToInclusive) =>\n",
-    replace: "            if false =>\n",
-    tests: ["test/corpus.test.ts", "-t", "range_values"],
   },
   {
     name: "tagged-enum-a-string",
@@ -461,14 +343,6 @@ export const mutations: Mutation[] = [
     find: "            Expr::member(subject, &key)\n",
     replace: "            return Err(subject);\n",
     tests: ["test/corpus.test.ts", "-t", "^tagged_enum_values.rs$"],
-  },
-  {
-    name: "discriminant-constant-refused",
-    breaks: "a `Discriminant` constant is refused, not its number",
-    file: "src/lower/representation.rs",
-    find: "    if super::recognition::is_discriminant_type(tcx, ty) {\n",
-    replace: "    if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^enum_discriminant.rs$"],
   },
   {
     name: "discriminant-chain-last-zero",
@@ -676,16 +550,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "transparent-const-an-array",
-    breaks:
-      "a constant `#[repr(transparent)]` struct is `[field]`, `Uuid([9, 8, 7, 6])` unequal to the one made",
-    file: "src/lower/representation.rs",
-    find: "        ty::Adt(adt, _) if let Some(at) = super::recognition::transparent_field(tcx, *adt) => {\n",
-    replace:
-      "        ty::Adt(adt, _) if let Some(at) = super::recognition::transparent_field(tcx, *adt).filter(|_| false) => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^transparent_transmute.rs$"],
-  },
-  {
     name: "boxable-opaque-unrevealed",
     breaks:
       "a `&mut` of a closure returned as `impl FnMut` is a box of it, `{ value: f }`, which what's lent it calls as the function",
@@ -715,20 +579,6 @@ export const mutations: Mutation[] = [
     find: "        !self.is_cell_pointee(ty) && !self.is_guard(ty) && (",
     replace: "        !self.is_cell_pointee(ty) && (",
     tests: ["test/corpus.test.ts", "-t", "^guard_swap_refused.rs$"],
-  },
-  {
-    name: "registered-symbol-const-its-struct",
-    breaks:
-      'a `const` of the registry\'s symbol is its key\'s array, `["react.fragment"]`, not `Symbol.for("react.fragment")`',
-    file: "src/lower/representation.rs",
-    find: "        return Some(symbol_for(const_js_by(tcx, key.try_to_value()?, unit)?));\n",
-    replace:
-      "        return Some(Expr::array(vec![const_js_by(tcx, key.try_to_value()?, unit)?]));\n",
-    tests: [
-      "test/lowering-symbols.test.ts",
-      "-t",
-      "a match of the registry's symbols",
-    ],
   },
   {
     name: "registered-symbol-key-itself",
@@ -762,16 +612,6 @@ export const mutations: Mutation[] = [
       "-t",
       "through a reference and a helper",
     ],
-  },
-  {
-    name: "value-cell-const-boxed",
-    breaks:
-      "a thread-local's `const { RefCell::new(Pair { .. }) }` is `{ value: { a, b } }`, which its borrows read as the struct it isn't",
-    file: "src/lower/representation.rs",
-    find: "            if is_std_def(tcx, adt.did(), StdItem::RefCell) && super::drops::holds_itself(tcx, args.type_at(0)) =>\n",
-    replace:
-      "            if false && is_std_def(tcx, adt.did(), StdItem::RefCell) && super::drops::holds_itself(tcx, args.type_at(0)) =>\n",
-    tests: ["test/corpus.test.ts", "-t", "^refcell_const_object.rs$"],
   },
   {
     name: "variant-alternative-unplaced",
@@ -854,24 +694,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "const-of-a-js-value-its-markers",
-    breaks:
-      "a `const` of a binding's JS value, `HostType::new(\"aside\")`, is rustc's value of its markers, `[undefined, undefined]`, not its initializer's `\"aside\"` (ADR 0220, amended)",
-    file: "src/lower/representation.rs",
-    find: "        // `\"Text\"` (ADR 0220, amended).\n        ty::Adt(adt, args) if marks_js_object(tcx, *adt, args) => None,\n",
-    replace: "",
-    tests: ["test/class-components.test.ts", "-t", "a tag that's a string"],
-  },
-  {
-    name: "js-object-value-tree-said",
-    breaks:
-      "a static of react's `ElementType` is what rustc's memory says, `Icon: [undefined]`, not `Icon: IconBadge`",
-    file: "src/lower/representation.rs",
-    find: "        // `\"Text\"` (ADR 0220, amended).\n        ty::Adt(adt, args) if marks_js_object(tcx, *adt, args) => None,\n",
-    replace: "",
-    tests: ["test/jsx-types.test.ts", "-t", "ElementType, rendered as a tag"],
-  },
-  {
     name: "flattened-state-counted-allowed",
     breaks: "a flattened state lent or held where another borrow may meet it compiles, though nothing can count its borrows (rd380)",
     file: "src/lower/representation.rs",
@@ -905,18 +727,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
   },
   {
-    name: "field-symbol-constant-folded",
-    breaks: "a constant struct a symbol names a field of is folded at compile time, its key named by text, which it hasn't",
-    file: "src/lower/representation.rs",
-    find: "                    .any(|f| ref_cell(f) || bindings::named_by_symbol(tcx, f.did))",
-    replace: "                    .any(ref_cell)",
-    tests: [
-      "test/field-symbol-names.test.ts",
-      "-t",
-      "a registry's symbol names a field"
-    ]
-  },
-  {
     name: "flattened-state-mut-the-object",
     breaks:
       "a `&mut` to a class's flattened state is the class's object, so what it's lent to writing it whole `$assign`s the chunk, deleting its `name` and `reads` (#478)",
@@ -924,5 +734,21 @@ export const mutations: Mutation[] = [
     find: "|| self.counted_weak(ty).is_some() || flattened;\n",
     replace: "|| self.counted_weak(ty).is_some();\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_lent_mut.rs$"],
+  },
+  {
+    name: "keyed-otherwise-of-all",
+    breaks: "a test of a keyed enum's variants, one without fields among them, leaves out the others' keys and its own alike: `matches!(k, Effect | Scope)` holds of neither (#504)",
+    file: "src/lower/representation.rs",
+    find: "                .filter(|v| !variants.contains(v))\n",
+    replace: "                .filter(|_| true)\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_enum.rs$"],
+  },
+  {
+    name: "keyed-unit-a-name",
+    breaks: "a keyed enum's variant without fields is its name, a string, which `in` throws of (#504)",
+    file: "src/lower/representation.rs",
+    find: "        if self.krate.flattened.keyed.contains(&adt) {\n            return Expr::object(Vec::new());\n",
+    replace: "        if false {\n            return Expr::object(Vec::new());\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_enum.rs$"],
   },
 ];
