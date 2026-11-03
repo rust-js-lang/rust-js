@@ -492,8 +492,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`#[rust_js::optional]` of a field that isn't nullable, which says nothing, compiles (ADR 0810)",
     file: "src/lower/bindings.rs",
-    find: "                if is_optional(tcx, field) && !is_nullable(tcx, field) && !once && !cell_of_option {\n",
-    replace: "                if false {\n",
+    find: "                } else if is_optional(tcx, field) && !is_nullable(tcx, field) && !once && !cell_of_option {\n",
+    replace: "                } else if false {\n",
     tests: [
       "test/diagnostics.test.ts",
       "-t",
@@ -553,9 +553,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `#[rust_js::optional]` `OnceCell` field is refused, so React's lazy payload keeps `_ioInfo: undefined` (ADR 0280, amended)",
     file: "src/lower/bindings.rs",
-    find: "                if is_optional(tcx, field) && !is_nullable(tcx, field) && !once && !cell_of_option {\n",
+    find: "                } else if is_optional(tcx, field) && !is_nullable(tcx, field) && !once && !cell_of_option {\n",
     replace:
-      "                if is_optional(tcx, field) && !is_nullable(tcx, field) && (!once || true) && !cell_of_option {\n",
+      "                } else if is_optional(tcx, field) && !is_nullable(tcx, field) && (!once || true) && !cell_of_option {\n",
     tests: [
       "test/lowering-optional-fields.test.ts",
       "-t",
@@ -667,5 +667,14 @@ export const mutations: Mutation[] = [
     find: "                    DefKind::Fn | DefKind::AssocFn | DefKind::Const { .. }\n",
     replace: "                    DefKind::Fn | DefKind::AssocFn\n",
     tests: ["test/corpus.test.ts", "-t", "^const_read_by_its_js_name.rs$"],
+  },
+  {
+    name: "value-field-optional-unrefused",
+    breaks:
+      "a `#[rust_js::optional]` nullable field of what may be `undefined` gets the plain `optional` error, not its own (rd645)",
+    file: "src/lower/bindings.rs",
+    find: "                if is_optional(tcx, field) && holds_value(tcx, field) {\n",
+    replace: "                if false {\n",
+    tests: ["test/lowering-nested-options.test.ts", "-t", "refuses what would box it"],
   },
 ];

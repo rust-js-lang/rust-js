@@ -281,6 +281,17 @@ pub(super) fn holds_nullish(tcx: TyCtxt<'_>, adt: AdtDef<'_>) -> bool {
         && (adt.variants().iter()).any(|v| matches!(unit_kind(tcx, v), Some(Kind::Null | Kind::Undefined)))
 }
 
+/// Whether a value of the untagged enum `adt` may be `undefined` but is
+/// never `null`: each variant one without fields, a literal or
+/// `undefined`, one of them `undefined`, upstream's `type ServerManifest =
+/// void`. A nullable place's `Option` of one holds it as it is, its `None`
+/// `null` (rd645). Told by its variants alone, so each place answers alike.
+pub(super) fn undefined_never_null(tcx: TyCtxt<'_>, adt: AdtDef<'_>) -> bool {
+    let kinds: Option<Vec<Kind>> = (adt.variants().iter()).map(|v| unit_kind(tcx, v)).collect();
+    bindings::is_untagged(tcx, adt.did())
+        && kinds.is_some_and(|kinds| kinds.contains(&Kind::Undefined) && !kinds.contains(&Kind::Null))
+}
+
 /// Whether each value of the untagged enum `adt` is an array it holds
 /// itself, not through a reference nor an `Rc`: a tuple's, a tuple
 /// struct's, a `[T; N]`'s or a `Vec`'s, each variant's. One is then

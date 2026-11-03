@@ -12,7 +12,52 @@ use rustc_span::def_id::DefId;
 /// `#[rust_js::nullable]` (ADR 0196): its `None` `null`. Not one of an
 /// `Option` of an `Option`, whose `None` isn't there (`holds_nested`).
 pub(in crate::lower) fn is_nullable(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
-    said_nullable(tcx, field) && !nested_option(tcx, field)
+    said_nullable(tcx, field) && !nested_option(tcx, field) && !value_option(tcx, field)
+}
+
+/// Whether a field is held where it's made in a form of its own, not the
+/// box code that doesn't hold it so reads: a nested one
+/// (`holds_nested`), or one of a value never `null` that may be
+/// `undefined` (`holds_value`).
+pub(in crate::lower) fn is_held(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
+    holds_nested(tcx, field) || holds_value(tcx, field)
+}
+
+/// Whether a field is a `#[rust_js::nullable]` `Option<V>` or `Option<&V>`
+/// of a `V` never `null` that may be `undefined`, a `()` or an untagged
+/// enum of literals and `undefined`, upstream's `serverModuleMap: null |
+/// ServerManifest` of `type ServerManifest = void`: its `None` `null` and
+/// its `Some(v)` `v`, `undefined` too, wherever it's made or read (rd645,
+/// the user's (B)).
+pub(in crate::lower) fn holds_value(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
+    said_nullable(tcx, field) && value_option(tcx, field)
+}
+
+/// Whether `field` is declared an `Option` of a value never `null` that
+/// may be `undefined`, or of a shared reference to one.
+fn value_option<'tcx>(tcx: TyCtxt<'tcx>, field: &FieldDef) -> bool {
+    let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+    let ty::Adt(adt, args) = ty.kind() else { return false };
+    if !tcx.is_lang_item(adt.did(), LangItem::Option) {
+        return false;
+    }
+    let value = match args.type_at(0).kind() {
+        ty::Ref(_, value, ty::Mutability::Not) => *value,
+        _ => args.type_at(0),
+    };
+    undefined_never_null(tcx, value)
+}
+
+/// Whether a value of `ty` is never `null` but may be `undefined`: a `()`,
+/// or an untagged enum whose variants are literals and `undefined`
+/// (`untagged::undefined_never_null`). An `Option` of one held in a
+/// nullable place is the value itself, its `None` `null` (rd645).
+pub(in crate::lower) fn undefined_never_null<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    match ty.kind() {
+        ty::Tuple(items) => items.is_empty(),
+        ty::Adt(adt, _) => crate::lower::untagged::undefined_never_null(tcx, *adt),
+        _ => false,
+    }
 }
 
 /// Whether a field is a `#[rust_js::nullable]` `Option<Option<T>>`,

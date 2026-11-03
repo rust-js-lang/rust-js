@@ -131,9 +131,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`js::any_of(5u32)` compiles, a second conversion of a value that's always there beside `js::unknown_of` (ADR 0909)",
     file: "src/lower/binding_calls.rs",
-    find: "        if super::recognition::is_any_of(self.tcx, def_id) && !ty::TypeVisitableExt::has_param(&generic_args.type_at(0))\n",
-    replace:
-      "        if super::recognition::is_any_of(self.tcx, def_id) && false\n",
+    find: "            && !ty::TypeVisitableExt::has_param(&generic_args.type_at(0))\n            && !self.nullish_as_it_is(generic_args.type_at(0))\n",
+    replace: "            && false\n",
     tests: [
       "test/js-object.test.ts",
       "-t",
@@ -931,5 +930,14 @@ export const mutations: Mutation[] = [
     find: "            true => converted.answered_by_a_getter(),\n            false => converted,\n",
     replace: "            true => converted.answered_by_a_getter(),\n            false => converted.answered_by_a_getter(),\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "a caught value nothing reads that may throw"],
+  },
+  {
+    name: "any-of-of-nullish-refused",
+    breaks:
+      "`js::any_of(())` is refused, though no conversion takes a value that's `undefined` as it is (rd645)",
+    file: "src/lower/binding_calls.rs",
+    find: "            && !self.nullish_as_it_is(generic_args.type_at(0))\n",
+    replace: "",
+    tests: ["test/lowering-nested-options.test.ts", "-t", "what may be undefined"],
   },
 ];

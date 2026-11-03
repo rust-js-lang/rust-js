@@ -28,13 +28,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.tcx.dcx().span_err(span, refused));
         }
         // A type parameter's value as any value is `js::any_of`'s; of a
-        // type that's known, its own conversion's, the one way (ADR 0909).
-        if super::recognition::is_any_of(self.tcx, def_id) && !ty::TypeVisitableExt::has_param(&generic_args.type_at(0))
+        // type that's known, its own conversion's, the one way (ADR 0909);
+        // but of what may be `undefined` or `null` as it is, which no
+        // conversion takes, `any_of`'s too (rd645). An `Option` of one a
+        // nullable place holds as it is is given so (`held_any_of`).
+        if super::recognition::is_any_of(self.tcx, def_id)
+            && !ty::TypeVisitableExt::has_param(&generic_args.type_at(0))
+            && !self.nullish_as_it_is(generic_args.type_at(0))
         {
             return Err(self.tcx.dcx().span_err(
                 span,
-                "`js::any_of` is of a type parameter's value, not of a value of a type that's known: \
-                 `js::unknown_of(value)` of one that's always there, `value.map(js::unknown_of)` of an `Option`",
+                "`js::any_of` is of a type parameter's value, or of one that may be `undefined` or `null` as it is, \
+                 not of a value of a type that's known: `js::unknown_of(value)` of one that's always there, \
+                 `value.map(js::unknown_of)` of an `Option`",
             ));
         }
         self.functions_themselves(def_id, generic_args, &mut args, span)?;

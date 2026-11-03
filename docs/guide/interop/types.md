@@ -33,6 +33,7 @@ from your crate and what a binding must be given.
 | `#[rust_js::nullable]` `Option<T>` | the value, or `null` | [Option and Result](#option-and-result) |
 | `#[rust_js::nullable]` `#[rust_js::optional]` field | absent until it's set, then the value or `null` | [Option and Result](#option-and-result) |
 | `#[rust_js::nullable]` `Option<Option<T>>` field | absent for `None`, `null` for `Some(None)`, else the value | [Option and Result](#option-and-result) |
+| `#[rust_js::nullable]` field of an `Option` of what may be `undefined`, `()` or such an untagged enum | `null` for `None`, else the value, `undefined` too | [Option and Result](#option-and-result) |
 | `js::null()` | `null` where it's written, `None` to Rust | [Option and Result](#option-and-result) |
 | `Result<T, E>` | `{ TAG: "Ok", _0 }`, `{ TAG: "Err", _0 }` | [Option and Result](#option-and-result) |
 | `Box<T>`, `Rc<T>`, `Arc<T>` | the value itself | [Pointers](#box-rc-and-arc) |
@@ -1303,6 +1304,59 @@ export function post(json) {
     method: "POST",
     body: json ?? null,
   };
+}
+```
+
+- **`#[rust_js::nullable]` on a field of an `Option` of a value that's
+  never `null` but may be `undefined` holds the value itself**: a `()`,
+  or an untagged enum of literals and `undefined`, upstream's
+  `serverModuleMap: null | ServerManifest` of `type ServerManifest =
+  void`. Its `None` is `null` and its `Some` the value, `undefined` too,
+  where it's made, set and read. `is_some()` is `!== null`, so a JS-made
+  `{ serverModuleMap: undefined }` is a `Some`. A literal keeps the key,
+  `{ map: undefined }`, and a derived `Default` makes it `null`. Read into
+  a variable that's only tested, given to `js::any_of` or stored back, it
+  stays so. Given to code that takes any `Option`, it's ADR 0051's box
+  there, `x === null ? undefined : $some(x)`. `js::any_of` of it is what
+  it holds, as upstream gives it on,
+  `createResponse(options.serverConsumerManifest.serverModuleMap)`. Its
+  `.d.ts` is `serverModuleMap: ServerManifest | null`. An enum that may be
+  `null` too keeps the box. The field can't be `#[rust_js::optional]`,
+  whose absent key would be its `Some`, nor borrowed `&mut`; each is an
+  error (rd645, [ADR 1070](../../decisions/1070-a-nullable-field-of-what-may-be-undefined-holds-the-value.md),
+  the user's decision):
+
+```rust
+use js::Unknown;
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum ServerManifest {
+    #[cfg_attr(rust_js, rust_js::undefined)]
+    Undefined,
+}
+
+pub struct ServerConsumerManifest {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub server_module_map: Option<&'static ServerManifest>,
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(server_reference_config))]
+pub fn create_response(server_reference_config: Option<&'static Unknown>) -> bool {
+    server_reference_config.is_some()
+}
+
+pub fn given(manifest: &'static ServerConsumerManifest) -> bool {
+    manifest.server_module_map.is_some() && create_response(js::any_of(manifest.server_module_map))
+}
+```
+
+```js
+export function createResponse(serverReferenceConfig) {
+  return serverReferenceConfig != null;
+}
+
+export function given(manifest) {
+  return manifest.serverModuleMap !== null && createResponse(manifest.serverModuleMap);
 }
 ```
 
@@ -2634,8 +2688,12 @@ export function updateTransition(hook) {
   value itself, so a generic function is given no more than its
   arguments, as `Box<dyn Any>`'s `TypeId` would be
   ([ADR 0909](../../decisions/0909-a-type-parameters-value-is-any-value.md)).
-  Of a type that's known, it's refused: `js::unknown_of(value)` is one
-  that's always there, and `value.map(js::unknown_of)` an `Option`'s:
+  Of a value that may be `undefined` or `null` as it is, a `()` or an
+  untagged enum with such a variant, which no conversion takes, it's the
+  value too, and of an `Option` a nullable field holds as its value, what
+  the field holds (rd645, ADR 0909, amended). Of any other type that's
+  known, it's refused: `js::unknown_of(value)` is one that's always
+  there, and `value.map(js::unknown_of)` an `Option`'s:
 
 ```rust
 use std::cell::RefCell;

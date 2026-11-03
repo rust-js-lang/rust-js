@@ -734,6 +734,9 @@ impl<'tcx> Declarations<'_, 'tcx> {
             // a `OnceCell`'s, absent until it's set (ADR 0847).
             // A nested one's, the `Option` it holds, `field?: T | null` (#470).
             let nested = super::bindings::holds_nested(self.tcx, field);
+            // One of a value that may be `undefined`, which is a `Some`
+            // held as it is, is there, `T | null` (rd645).
+            let value = super::bindings::holds_value(self.tcx, field);
             let option = match is_nullable(self.tcx, field) {
                 true => super::bindings::nullable_option(self.tcx, ty).and_then(|option| self.option(option)),
                 false if nested => self.option(ty).and_then(|option| self.option(option)),
@@ -746,8 +749,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     // to, which may hold `null` (ADR 0935, amended).
                     // One its struct's constructors each set first is present
                     // (rd628).
-                    let present = self.constructed.contains(&field.did);
-                    match is_nullable(self.tcx, field) || nested || self.null_fields.contains(&field.did) {
+                    let present = self.constructed.contains(&field.did) || value;
+                    match is_nullable(self.tcx, field) || nested || value || self.null_fields.contains(&field.did) {
                         true => (!present, json!({ "kind": "union", "types": [inner, keyword("null")] })),
                         false => (true, inner),
                     }

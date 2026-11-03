@@ -40,7 +40,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A reference is what it refers to (ADR 0023): a `&mut` to a
             // value JS can't share, a number's, needs what isn't made yet.
             Rvalue::Ref(_, kind, place) => {
-                // A nested field, held as its payload (#470): through a
+                // A field held where it's made (#470, rd645): through a
                 // shared reference, the box code that doesn't hold it so
                 // reads, where `assign` hasn't read it as it's held; never
                 // through a `&mut`, which would write the box in it.
@@ -48,11 +48,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if matches!(kind, BorrowKind::Mut { .. }) {
                         return Err(self.unsupported(
                             span,
-                            "a `&mut` to a `#[rust_js::nullable]` `Option<Option<T>>` field, which holds `null` for `Some(None)`: set the field whole, `s.field = Some(None)`",
+                            "a `&mut` to a `#[rust_js::nullable]` field that holds its `Option` as it's made, `null` for `Some(None)` of an `Option<Option<T>>`, a `Some`'s `undefined` as it is: set the field whole, `s.field = Some(None)` or `s.field = None`",
                         ));
                     }
+                    let ty = place.ty(&state.body.local_decls, self.tcx).ty;
                     let held = self.mir_place(state, *place, span, out)?;
-                    return Ok(Value::Expr(self.boxed_of_held(held, out)));
+                    return Ok(Value::Expr(self.boxed_of_held(held, ty, out)));
                 }
                 // A slice pattern's rest, through a `&mut`: a view of it.
                 if matches!(kind, BorrowKind::Mut { .. })
@@ -630,10 +631,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::int(1)
             }
             // An `Option` of an `Option` held as its payload: a `Some` where
-            // it isn't `undefined`, its `Some(None)` `null` (ADR 1017).
+            // it isn't `undefined`, its `Some(None)` `null` (ADR 1017); one
+            // of a value never `null`, where it isn't `null` (rd645).
             Rvalue::Discriminant(place) if self.held_nested(state, *place, place.projection.len()) => {
+                let none = self.held_none(place.ty(decls, tcx).ty);
                 let held = self.mir_place(state, *place, span, out)?;
-                return Ok(Value::Tested(Expr::bin(Op::Ne, held, Expr::undefined())));
+                return Ok(Value::Tested(Expr::bin(Op::Ne, held, none)));
             }
             Rvalue::Discriminant(place) => {
                 let ty = place.ty(decls, tcx).ty;

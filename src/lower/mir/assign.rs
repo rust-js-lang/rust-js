@@ -138,13 +138,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // An `Option` of an `Option` held as its payload (ADR 1017): `None`
         // `undefined`, and a `Some` what it holds, its `None` `null`, as a
         // nullable field's is already, `previousInstance = instance`; of a
-        // value never `undefined`, the value (`defined_payload`).
+        // value never `undefined`, the value (`defined_payload`); of one
+        // never `null`, `null` and the value (`undefined_payload`, rd645).
         if place.projection.is_empty()
             && state.facts.options().nested.contains(&place.local)
             && let Rvalue::Aggregate(_, operands) = rvalue
         {
-            let defined = self.defined_payload(state.body.local_decls[place.local].ty).is_some();
-            let made = self.held_made(state, operands, defined, out)?;
+            let form = self.held_form(state.body.local_decls[place.local].ty);
+            let made = self.held_made(state, operands, form, out)?;
             return self.mir_store(state, *place, Value::Expr(made), span, out);
         }
         // Of a nested field, held as its payload (#470): read as it's held
@@ -160,13 +161,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let held = self.mir_place(state, *from, span, out)?;
             return self.mir_store(state, *place, Value::Expr(held), span, out);
         }
-        // A nested field set, held as its payload (#470): `None` no key's
-        // `undefined`, a `Some` what it holds, its `None` `null`; what one
-        // holding it so holds, as it is; and the box of what doesn't.
+        // A field held where it's made set (#470, rd645): a nested one's
+        // `None` no key's `undefined`, a `Some` what it holds, its `None`
+        // `null`, and one of a value never `null` its `None` `null`, a
+        // `Some` its value; what one holding it so holds, as it is; and the
+        // box of what doesn't.
         if self.nested_field(state.body, place.as_ref()) {
+            let ty = place.ty(&state.body.local_decls, self.tcx).ty;
             let made = match rvalue {
                 Rvalue::Aggregate(kind, operands) if matches!(**kind, AggregateKind::Adt(..)) => {
-                    self.held_made(state, operands, false, out)?
+                    let form = self.held_form(ty);
+                    self.held_made(state, operands, form, out)?
                 }
                 Rvalue::Use(operand, _) if self.holds_nested_operand(state, operand) => {
                     let place = operand.place().expect("a place");
@@ -175,7 +180,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => {
                     let boxed = self.mir_rvalue(state, rvalue, span, out)?;
                     let boxed = self.value_expr(boxed, span)?;
-                    self.held_of_boxed(boxed, out)
+                    self.held_of_boxed(boxed, ty, out)
                 }
             };
             return self.mir_store(state, *place, Value::Expr(made), span, out);

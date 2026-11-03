@@ -74,6 +74,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.recognition().never_undefined(adt, args).then_some(held)
     }
 
+    /// Of an `Option<V>`, or an `Option<&V>`, whose `Some` is boxed as a
+    /// `V` may be `undefined`, and whose `V` is never `null`
+    /// (`bindings::undefined_never_null`), a `()` or an untagged enum of
+    /// literals and `undefined`: its `V`. A nullable field holds one as
+    /// `V` itself, its `None` `null`, and so does a local MIR makes and
+    /// reads only where it's held (rd645, the user's (B)).
+    pub(in crate::lower) fn undefined_payload(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        let some = self.option_of(ty)?;
+        if !self.boxed_payload(some) {
+            return None;
+        }
+        let held = match some.kind() {
+            ty::Ref(_, held, ty::Mutability::Not) => *held,
+            _ => some,
+        };
+        bindings::undefined_never_null(self.tcx, held).then_some(held)
+    }
+
+    /// Whether a value of `ty` is a JS value that may be `undefined` or
+    /// `null` as it is, which no conversion to any value takes, so
+    /// `js::any_of` gives it (rd645): through shared references, a `()` or
+    /// an untagged enum with an `undefined` or `null` variant; or an
+    /// `Option` of a value never `null` that may be `undefined`
+    /// (`undefined_payload`), whose `Some` is its value where a nullable
+    /// place holds it.
+    pub(in crate::lower) fn nullish_as_it_is(&self, ty: Ty<'tcx>) -> bool {
+        if self.undefined_payload(ty).is_some() {
+            return true;
+        }
+        let mut ty = ty;
+        while let ty::Ref(_, inner, ty::Mutability::Not) = ty.kind() {
+            ty = *inner;
+        }
+        ty.is_unit() || matches!(ty.kind(), ty::Adt(adt, _) if super::super::untagged::holds_nullish(self.tcx, *adt))
+    }
+
     /// Is `ty` a type parameter JS gives, of a function JS calls, or of a
     /// copy of one its values reach: any JS value, `undefined` too, whose
     /// `Some` is the value, as TypeScript's `T | undefined` says (ADR 0051,

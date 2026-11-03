@@ -1172,7 +1172,7 @@ pub fn run() -> Vec<String> {
   // Of a value of a type that's known, what it is: its own conversion.
   for (const [name, value] of [["number", "5u32"], ["option", "Some(\"a\")"]]) {
     const said = refused(`any-of-${name}`, `pub fn any() -> Option<&'static js::Unknown> {\n    js::any_of(${value})\n}\n`);
-    expect(said).toContain("`js::any_of` is of a type parameter's value, not of a value of a type that's known: `js::unknown_of(value)` of one that's always there, `value.map(js::unknown_of)` of an `Option`");
+    expect(said).toContain("`js::any_of` is of a type parameter's value, or of one that may be `undefined` or `null` as it is, not of a value of a type that's known: `js::unknown_of(value)` of one that's always there, `value.map(js::unknown_of)` of an `Option`");
   }
 });
 

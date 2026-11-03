@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "nested-field-set-boxed",
     breaks: "a nested field set, `changed.sdp_mid = Some(None)`, holds the box (#470)",
     file: "src/lower/mir/assign.rs",
-    find: "                    let boxed = self.value_expr(boxed, span)?;\n                    self.held_of_boxed(boxed, out)\n",
+    find: "                    let boxed = self.value_expr(boxed, span)?;\n                    self.held_of_boxed(boxed, ty, out)\n",
     replace: "                    self.value_expr(boxed, span)?\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_nullable_field.rs$"],
   },

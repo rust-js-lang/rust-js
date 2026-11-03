@@ -690,7 +690,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a held `Option` of an `Option` is tested `!= null`, so its `Some(None)`, `null`, is `None` (ADR 1017)",
     file: "src/lower/mir/rvalues.rs",
-    find: "                return Ok(Value::Tested(Expr::bin(Op::Ne, held, Expr::undefined())));\n",
+    find: "                return Ok(Value::Tested(Expr::bin(Op::Ne, held, none)));\n",
     replace:
       "                return Ok(Value::Tested(Expr::bin(Op::LooseNe, held, Expr::null())));\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
@@ -762,5 +762,14 @@ export const mutations: Mutation[] = [
       "-t",
       "each field is its own symbol's"
     ]
+  },
+  {
+    name: "held-discriminant-undefined",
+    breaks:
+      "a `match` of a nullable field of what may be `undefined` tests `!== undefined`, its `Some` a `None` (rd645)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                let none = self.held_none(place.ty(decls, tcx).ty);\n",
+    replace: "                let none = Expr::undefined();\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
   },
 ];

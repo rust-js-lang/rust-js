@@ -1023,4 +1023,13 @@ export const mutations: Mutation[] = [
     replace: "                if self.krate.foreign.nulled_param(callee.0, i) {\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "nullable parameter its calls give null"],
   },
+  {
+    name: "held-is-some-undefined",
+    breaks:
+      "`is_some()` of a nullable field of what may be `undefined`, through a reference, is `!== undefined`, its `Some` a `None` (rd645)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            let none = self.held_none(x.ty(state.body, self.tcx));\n",
+    replace: "            let none = Expr::undefined();\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
+  },
 ];

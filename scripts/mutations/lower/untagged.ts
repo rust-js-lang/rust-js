@@ -788,4 +788,13 @@ export const mutations: Mutation[] = [
     replace: "                .is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^untagged_null_option_held.rs$"],
   },
+  {
+    name: "undefined-never-null-of-null",
+    breaks:
+      "an untagged enum of `undefined` and `null` is held as its value in a nullable field, its `null` variant `None` (rd645)",
+    file: "src/lower/untagged.rs",
+    find: "kinds.contains(&Kind::Undefined) && !kinds.contains(&Kind::Null)",
+    replace: "kinds.contains(&Kind::Undefined)",
+    tests: ["test/lowering-nested-options.test.ts", "-t", "what may be undefined"],
+  },
 ];

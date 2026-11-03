@@ -8,8 +8,8 @@ export const mutations: Mutation[] = [
     name: "nested-field-declared-undefined",
     breaks: "a nullable `Option<Option<T>>` field is declared `T | undefined`, where JS holds `null` too (#470)",
     file: "src/lower/declarations.rs",
-    find: "                    match is_nullable(self.tcx, field) || nested || self.null_fields.contains(&field.did) {\n",
-    replace: "                    match is_nullable(self.tcx, field) || self.null_fields.contains(&field.did) {\n",
+    find: "                    match is_nullable(self.tcx, field) || nested || value || self.null_fields.contains(&field.did) {\n",
+    replace: "                    match is_nullable(self.tcx, field) || value || self.null_fields.contains(&field.did) {\n",
     tests: ["test/declarations.test.ts", "-t", "declarations take JS's null"],
   },
   {
@@ -363,7 +363,7 @@ export const mutations: Mutation[] = [
     breaks:
       "every `Option` field is declared `?: T | null`, so a TypeScript caller reading one passes `null` where a default takes only `undefined`",
     file: "src/lower/declarations.rs",
-    find: "                    match is_nullable(self.tcx, field) || nested || self.null_fields.contains(&field.did) {\n",
+    find: "                    match is_nullable(self.tcx, field) || nested || value || self.null_fields.contains(&field.did) {\n",
     replace:
       "                    match true || is_nullable(self.tcx, field) {\n",
     tests: ["test/declarations.test.ts", "-t", "null for an Option"],
@@ -958,8 +958,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a plain `Option` field a `js::null()` is written to is declared `?: T | undefined`, though it holds `null` (ADR 0935, amended)",
     file: "src/lower/declarations.rs",
-    find: "                    match is_nullable(self.tcx, field) || nested || self.null_fields.contains(&field.did) {\n",
-    replace: "                    match is_nullable(self.tcx, field) {\n",
+    find: "                    match is_nullable(self.tcx, field) || nested || value || self.null_fields.contains(&field.did) {\n",
+    replace: "                    match is_nullable(self.tcx, field) || nested || value {\n",
     tests: ["test/lowering-nullable-constants.test.ts", "-t", "is declared"],
   },
   {
@@ -1094,5 +1094,23 @@ export const mutations: Mutation[] = [
     find: "                        true => (!present, json!({ \"kind\": \"union\", \"types\": [inner, keyword(\"null\")] })),\n",
     replace: "                        true => (!present || true, json!({ \"kind\": \"union\", \"types\": [inner, keyword(\"null\")] })),\n",
     tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
+  },
+  {
+    name: "value-field-declared-optional",
+    breaks:
+      "a nullable field of what may be `undefined` is declared optional, `serverModuleMap?: ServerManifest | null | undefined` (rd645)",
+    file: "src/lower/declarations.rs",
+    find: "                    let present = self.constructed.contains(&field.did) || value;\n",
+    replace: "                    let present = self.constructed.contains(&field.did);\n",
+    tests: ["test/lowering-nested-options.test.ts", "-t", "what may be undefined"],
+  },
+  {
+    name: "value-field-declared-without-null",
+    breaks:
+      "a nullable field of what may be `undefined` is declared without `| null` (rd645)",
+    file: "src/lower/declarations.rs",
+    find: "                    match is_nullable(self.tcx, field) || nested || value || self.null_fields.contains(&field.did) {\n",
+    replace: "                    match is_nullable(self.tcx, field) || nested || self.null_fields.contains(&field.did) {\n",
+    tests: ["test/lowering-nested-options.test.ts", "-t", "what may be undefined"],
   },
 ];

@@ -235,7 +235,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(fields) = self.derived_default_fields(base, ty) else {
             return Ok(None);
         };
-        let (props, kept) = self.update_default(fields, &given, span)?;
+        let (props, kept) = self.update_default(ty, fields, &given, span)?;
         Ok((!kept).then_some(props))
     }
 

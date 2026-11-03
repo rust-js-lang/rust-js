@@ -41,11 +41,11 @@ pub(super) use imports::{Export, file_stem, js_import, module_binding, namespace
 use indexed::indexed_refused;
 pub(in crate::lower) use indexed::is_indexed_list;
 pub(super) use nullable::{
-    holds_nested, holds_none_as_null, is_js_null, is_nullable, is_optional, nested_refused, null_result,
-    null_where_made, nullable_bindings, nullable_const_refused, nullable_init, nullable_items, nullable_local,
-    nullable_local_option, nullable_option, nullable_params, nullable_result, nullable_tuple_item, nullable_values,
-    of_type_parameter, optional_result, reads_a_nullable_value, reject_nullable_held, takes_nullable,
-    takes_nullable_entries,
+    holds_nested, holds_none_as_null, holds_value, is_held, is_js_null, is_nullable, is_optional, nested_refused,
+    null_result, null_where_made, nullable_bindings, nullable_const_refused, nullable_init, nullable_items,
+    nullable_local, nullable_local_option, nullable_option, nullable_params, nullable_result, nullable_tuple_item,
+    nullable_values, of_type_parameter, optional_result, reads_a_nullable_value, reject_nullable_held, takes_nullable,
+    takes_nullable_entries, undefined_never_null,
 };
 pub(in crate::lower) use paths::{Step, first_name, has_steps, read as read_path, steps, unbound};
 pub(super) use rest_values::{is_rest_value, reads_rest_value, rest_items};
@@ -211,7 +211,13 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
                 let once = matches!(ty.kind(), ty::Adt(cell, _)
                     if super::recognition::is_std_def(tcx, cell.did(), super::recognition::StdItem::OnceCell));
                 let cell_of_option = nullable_option(tcx, ty).is_some_and(|option| option != ty);
-                if is_optional(tcx, field) && !is_nullable(tcx, field) && !once && !cell_of_option {
+                // One that holds a `Some` of what may be `undefined` as it
+                // is (rd645) can't leave a `None` out: it'd be that `Some`.
+                if is_optional(tcx, field) && holds_value(tcx, field) {
+                    let message = "rust-js: a `#[rust_js::nullable]` field of an `Option` of what may be `undefined` holds its `Some` as it is, `undefined` too, so it can't be `#[rust_js::optional]`, absent for `None`: its `None` is `null` where it's made";
+                    tcx.dcx().span_err(tcx.def_span(field.did), message);
+                    valid = false;
+                } else if is_optional(tcx, field) && !is_nullable(tcx, field) && !once && !cell_of_option {
                     let message = "rust-js: `#[rust_js::optional]` is of a cell, a `Cell<Option<T>>`, a `RefCell` of one or a `OnceCell`, left out where it's made `None` or empty, or of a `#[rust_js::nullable]` field, whose `None` is then left out where its struct is made and `null` where it's set; an `Option` field's `None` is left out already";
                     tcx.dcx().span_err(tcx.def_span(field.did), message);
                     valid = false;

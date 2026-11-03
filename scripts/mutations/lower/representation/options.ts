@@ -110,4 +110,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^untagged_null_option_held.rs$"],
     snapshots: true,
   },
+  {
+    name: "undefined-payload-unseen",
+    breaks:
+      "an `Option` of what may be `undefined` held in a nullable field is held as an `Option` of an `Option`, its `None` `undefined` (rd645)",
+    file: "src/lower/representation/options.rs",
+    find: "        bindings::undefined_never_null(self.tcx, held).then_some(held)\n",
+    replace: "        bindings::undefined_never_null(self.tcx, held).then_some(held).filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
+  },
+  {
+    name: "any-of-of-anything",
+    breaks:
+      "`js::any_of(5u32)` compiles, a second conversion of a value that's always there beside `js::unknown_of` (rd645, ADR 0909)",
+    file: "src/lower/representation/options.rs",
+    find: "        ty.is_unit() || matches!(ty.kind(), ty::Adt(adt, _) if super::super::untagged::holds_nullish(self.tcx, *adt))\n",
+    replace: "        true\n",
+    tests: ["test/lowering-nested-options.test.ts", "-t", "refuses what would box it"],
+  },
 ];

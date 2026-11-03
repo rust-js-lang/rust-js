@@ -148,3 +148,21 @@ export function push(cursor, value, fiber) {
   and popped in Node, its `push(cursor, value, fiber)` with no `TId` and
   no pair; and `js::any_of` of a `u32` and of an `Option<&str>` refused.
 - Mutation `any-of-of-a-known-type`.
+
+## Amendment: of what may be `undefined` or `null` as it is (2026-11-03, rd645)
+
+`js::unknown` and `js::unknown_of` take a value that's always there. A
+value that may be `undefined` or `null` as it is, a `()` or an untagged
+enum with such a variant, had no way to be given as any value, and
+neither had an `Option` of one. React's unbundled Flight client gives
+`options.serverConsumerManifest.serverModuleMap`, of `type ServerManifest
+= void`, to createResponse as it is. `js::any_of` now takes such a value
+(`nullish_as_it_is`): no other conversion does, so it's still one way.
+Of an `Option` of a value never `null` that may be `undefined`, it gives
+what a nullable field holds (ADR 1070): `null` for `None`, the value for
+`Some`, `undefined` too, as any value whose `None` is either. Every other
+known type is still refused, and the error names both.
+
+Held by `test/lowering-nested-options.test.ts`'s rd645 tests, with
+mutations `any-of-of-nullish-refused`, `any-of-of-anything`,
+`held-any-of-unheld` and `any-of-of-a-held-local-boxed`.

@@ -454,4 +454,23 @@ export const mutations: Mutation[] = [
       "each field is its own symbol's"
     ]
   },
+  {
+    name: "value-field-default-undefined",
+    breaks:
+      "a derived `Default` of a nullable field of what may be `undefined` is `undefined`, its `Some` (rd645)",
+    file: "src/lower/aggregates.rs",
+    find: "            Some(field) if bindings::holds_value(self.tcx, field) => Ok(Expr::null()),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
+  },
+  {
+    name: "value-field-key-left-out",
+    breaks:
+      "a literal's `undefined` of a nullable field of what may be `undefined`, its `Some`, is left out, `{ name: \"some\" }` (rd645)",
+    file: "src/lower/aggregates.rs",
+    find: "                kept.extend(values);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
+    snapshots: true,
+  },
 ];

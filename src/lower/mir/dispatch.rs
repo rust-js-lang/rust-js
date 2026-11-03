@@ -460,6 +460,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(equal) = self.nested_equality(state, callee, operands, span, out)? {
             return Ok(Value::Expr(equal));
         }
+        if let Some(value) = self.held_any_of(state, callee.0, operands, span, out)? {
+            return Ok(Value::Expr(value));
+        }
         // A map that's the option itself, `lane.map(EventPriority::from)`:
         // the option alone, its function never named, so one only it names
         // is written nowhere (ADR 0584, amended).
@@ -603,14 +606,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }));
         }
         // `is_some()` and `is_none()` of one, through a reference: a test of
-        // its `None`, `last !== undefined` (ADR 1017, amended).
+        // its `None`, `last !== undefined` (ADR 1017, amended), `null` of a
+        // value never `null` (rd645).
         if let [x] = operands
             && nested(x)
             && let Some(known @ (Std::IsSome | Std::IsNone)) = self.recognition().classify(def_id, generic_args)
         {
+            let none = self.held_none(x.ty(state.body, self.tcx));
             let x = self.nested_operand(state, x, span, out)?;
             let op = if known == Std::IsSome { Op::Ne } else { Op::Eq };
-            return Ok(Some(Expr::bin(op, x, Expr::undefined())));
+            return Ok(Some(Expr::bin(op, x, none)));
         }
         let negate = match self
             .tcx

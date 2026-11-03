@@ -814,7 +814,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             .into_iter()
                             .enumerate()
                             .map(|(i, (key, t))| {
-                                let value = self.default_value(t, span)?;
+                                let value = self.field_default(ty, i, t, span)?;
                                 let value = self.holding(value, self.struct_field_def(ty, i), t);
                                 // One a symbol names, `[SYMBOL]: ..` (ADR 1051).
                                 Ok(match key.symbol_item() {

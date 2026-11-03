@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "nested-nullable-outer-null",
     breaks: "a nullable `Option<Option<T>>` field's `None` is `null`, as a nullable `Option`'s, and its `Some(None)` boxed (#470)",
     file: "src/lower/bindings/nullable.rs",
-    find: "    said_nullable(tcx, field) && !nested_option(tcx, field)\n",
-    replace: "    said_nullable(tcx, field)\n",
+    find: "    said_nullable(tcx, field) && !nested_option(tcx, field) && !value_option(tcx, field)\n",
+    replace: "    said_nullable(tcx, field) && !value_option(tcx, field)\n",
     tests: ["test/lowering-nested-options.test.ts", "-t", "a dictionary's nullable Option of an Option"],
   },
   {
@@ -269,5 +269,24 @@ export const mutations: Mutation[] = [
     replace:
       "                return fields.is_empty() && fields.iter().all(|&field| {",
     tests: ["test/js-collections.test.ts", "-t", "a Map's value is any value"],
+  },
+  {
+    name: "value-field-boxed",
+    breaks:
+      "a nullable field of what may be `undefined` holds ADR 0051's box, `$some(undefined)` (rd645)",
+    file: "src/lower/bindings/nullable.rs",
+    find: "    undefined_never_null(tcx, value)\n",
+    replace: "    false && undefined_never_null(tcx, value)\n",
+    tests: ["test/lowering-nested-options.test.ts", "-t", "what may be undefined"],
+  },
+  {
+    name: "unit-held-boxed",
+    breaks:
+      "a nullable field of an `Option<()>` holds the box, `$some(undefined)`, not `undefined` (rd645)",
+    file: "src/lower/bindings/nullable.rs",
+    find: "    match ty.kind() {\n        ty::Tuple(items) => items.is_empty(),\n",
+    replace: "    match ty.kind() {\n        ty::Tuple(_) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
+    snapshots: true,
   },
 ];

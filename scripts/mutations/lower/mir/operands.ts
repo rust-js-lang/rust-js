@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "nested-field-read-unboxed",
     breaks: "a nested field read whole is given as it's held to code that boxes, `format!(\"{:?}\", init.sdp_mid)` of `null` `None` (#470)",
     file: "src/lower/mir/operands.rs",
-    find: "            && self.nested_field(state.body, place.as_ref())\n        {\n            let held = self.value_expr(read, Span::default())?;\n",
-    replace: "            && self.nested_field(state.body, place.as_ref())\n            && false\n        {\n            let held = self.value_expr(read, Span::default())?;\n",
+    find: "            && self.nested_field(state.body, place.as_ref())\n        {\n            let ty = operand.ty(&state.body.local_decls, self.tcx);\n",
+    replace: "            && self.nested_field(state.body, place.as_ref())\n            && false\n        {\n            let ty = operand.ty(&state.body.local_decls, self.tcx);\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_nullable_field.rs$"],
   },
   {

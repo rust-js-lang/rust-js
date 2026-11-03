@@ -462,6 +462,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .filter(|(_, field)| !bindings::is_optional(self.tcx, field))
                     .filter_map(|((name, _), _)| name.name().map(str::to_owned));
                 kept.extend(cells);
+                // One that holds a `Some` of what may be `undefined` as it
+                // is keeps its key, as that `undefined` isn't a `None`, but
+                // `undefined` (rd645).
+                let values = (names.iter().zip(&variant.fields))
+                    .filter(|(_, field)| bindings::holds_value(self.tcx, field))
+                    .filter_map(|((name, _), _)| name.name().map(str::to_owned));
+                kept.extend(values);
                 let mut items: Vec<Option<Expr>> = (names.iter().zip(&variant.fields).zip(fields))
                     .map(|((&(_, field_ty), field), value)| Some(self.holding(value, Some(field), field_ty)))
                     .collect();
@@ -534,12 +541,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// An update's derived `Default` base, `..Default::default()`, of
-    /// `fields`: each one's default, but none for a field the update gives
+    /// The default of field `i` of the struct `ty`, of type `field_ty`, as
+    /// the field holds it: of one that holds a `Some` of what may be
+    /// `undefined` as it is, its `None`, `null` (rd645); else
+    /// `default_value`'s.
+    pub(super) fn field_default(&mut self, ty: Ty<'tcx>, i: usize, field_ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        match self.struct_field_def(ty, i) {
+            Some(field) if bindings::holds_value(self.tcx, field) => Ok(Expr::null()),
+            _ => self.default_value(field_ty, span),
+        }
+    }
+
+    /// An update's derived `Default` base, `..Default::default()`, of the
+    /// struct `ty`'s `fields`: each one's default, as the field holds it
+    /// (`field_default`), but none for a field the update gives
     /// where making it does nothing, as a `ReactNode`'s does (ADR 0201). And
     /// whether one the update gives is made still, for its effects.
     pub(super) fn update_default(
         &mut self,
+        ty: Ty<'tcx>,
         fields: Vec<(String, Ty<'tcx>)>,
         given: &[usize],
         span: Span,
@@ -551,7 +571,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let value = if replaced && self.is_node_param(field_ty) {
                 Expr::undefined()
             } else {
-                let value = self.default_value(field_ty, span)?;
+                let value = self.field_default(ty, i, field_ty, span)?;
                 if replaced && !value.has_effects() {
                     Expr::undefined()
                 } else {

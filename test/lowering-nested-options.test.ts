@@ -5,7 +5,8 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, compiler, fixture, run, target } from "./support";
+import { runSync } from "./child";
+import { buildReact, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -370,4 +371,162 @@ pub fn body(init: &RequestInit) -> &'static str {
   expect(lib.mouse(undefined)).toEqual({ relatedTarget: null, clientX: 3 });
   expect(lib.mouse(related).relatedTarget).toBe(related);
   expect([{}, { body: null }, { body: "t" }].map(lib.body)).toEqual(["missing", "null", "value"]);
+});
+
+// rd645 (the user's (B)): a `#[rust_js::nullable]` field of an `Option` of
+// a value never `null` that may be `undefined`, upstream's `serverModuleMap:
+// null | ServerManifest` of `type ServerManifest = void`, holds the value
+// itself: `null` for `None`, `undefined` for its `Some`, tested `!== null`.
+// `js::any_of` of it is what it holds, given to createResponse as
+// upstream's read; of a box, what the box holds. An enum that may be `null`
+// too keeps the box. A JS-made `{ serverModuleMap: undefined }` is a `Some`.
+test("a nullable field of what may be undefined holds the value itself", async () => {
+  const dir = fixture("nullable-field-of-undefined");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use js::Unknown;
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum ServerManifest {
+    #[cfg_attr(rust_js, rust_js::undefined)]
+    Undefined,
+}
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Slot {
+    #[cfg_attr(rust_js, rust_js::undefined)]
+    Missing,
+    #[cfg_attr(rust_js, rust_js::null)]
+    Cleared,
+}
+
+pub struct ServerConsumerManifest {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub server_module_map: Option<&'static ServerManifest>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub slot: Option<&'static Slot>,
+}
+
+pub struct Options {
+    pub server_consumer_manifest: &'static ServerConsumerManifest,
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(server_reference_config))]
+fn create_response(server_reference_config: Option<&'static Unknown>) -> Option<&'static Unknown> {
+    server_reference_config
+}
+
+pub fn given(options: &'static Options) -> Option<&'static Unknown> {
+    create_response(js::any_of(options.server_consumer_manifest.server_module_map))
+}
+
+pub fn present(manifest: &ServerConsumerManifest) -> bool {
+    manifest.server_module_map.is_some()
+}
+
+pub fn slot_present(manifest: &ServerConsumerManifest) -> bool {
+    manifest.slot.is_some()
+}
+
+pub fn kept(manifest: &ServerConsumerManifest) -> Option<&'static Unknown> {
+    let map = manifest.server_module_map;
+    let tested = map.is_some();
+    if tested { js::any_of(map) } else { None }
+}
+
+pub fn boxed(some: bool) -> Option<&'static Unknown> {
+    let map = if some { Some(&ServerManifest::Undefined) } else { None };
+    shown(map);
+    js::any_of(map)
+}
+
+fn shown<T>(_: T) {}
+
+pub fn made(some: bool) -> ServerConsumerManifest {
+    ServerConsumerManifest {
+        server_module_map: if some { Some(&ServerManifest::Undefined) } else { None },
+        slot: None,
+    }
+}
+
+pub fn nothing() -> Option<&'static Unknown> {
+    js::any_of(())
+}
+`,
+  );
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return createResponse(options.serverConsumerManifest.serverModuleMap);");
+  expect(js).toContain("return manifest.serverModuleMap !== null;");
+  expect(js).toContain("return manifest.slot != null;");
+  expect(js).toContain("const map = manifest.serverModuleMap;\n  const tested = map !== null;");
+  expect(js).toContain("serverModuleMap: some ? undefined : null,");
+  const dts = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(dts).toContain("serverModuleMap: ServerManifest | null;");
+  const lib = await import(join(dir, "lib.js"));
+  const manifests = [{ serverModuleMap: undefined }, { serverModuleMap: null }, {}];
+  expect(manifests.map(lib.present)).toEqual([true, false, true]);
+  expect(manifests.map((m) => lib.given({ serverConsumerManifest: m }))).toStrictEqual([undefined, null, undefined]);
+  expect(manifests.map(lib.kept)).toStrictEqual([undefined, undefined, undefined]);
+  expect([{ slot: undefined }, { slot: null }].map(lib.slotPresent)).toEqual([false, false]);
+  expect([true, false].map(lib.boxed)).toStrictEqual([undefined, null]);
+  expect([true, false].map((some) => lib.present(lib.made(some)))).toEqual([true, false]);
+  expect(lib.nothing()).toBe(undefined);
+});
+
+// rd645: such a field can't be `#[rust_js::optional]`, whose absent key
+// would be its `Some`, nor borrowed `&mut`, which would write a box in it;
+// and `js::any_of` of a value that's always there is still refused.
+test("a nullable field of what may be undefined refuses what would box it", () => {
+  const dir = fixture("nullable-field-of-undefined-refused");
+  const lib = (body: string) =>
+    `use js::Unknown;
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum ServerManifest {
+    #[cfg_attr(rust_js, rust_js::undefined)]
+    Undefined,
+}
+
+${body}
+`;
+  const refused = (name: string, body: string) => {
+    writeFileSync(join(dir, `${name}.rs`), lib(body));
+    const flags = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target, "--crate-name", name];
+    return runSync([compiler, join(dir, `${name}.rs`), "-o", join(dir, `${name}.js`), ...flags], root, 60_000).stderr;
+  };
+  expect(
+    refused(
+      "optional",
+      `pub struct Manifest {
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub map: Option<&'static ServerManifest>,
+}`,
+    ),
+  ).toContain("holds its `Some` as it is, `undefined` too, so it can't be `#[rust_js::optional]`");
+  expect(
+    refused(
+      "borrowed",
+      `pub struct Manifest {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub map: Option<&'static ServerManifest>,
+}
+
+pub fn taken(manifest: &mut Manifest) -> bool {
+    manifest.map.take().is_some()
+}
+
+pub fn unknown() -> Option<&'static Unknown> {
+    None
+}`,
+    ),
+  ).toContain("a `&mut` to a `#[rust_js::nullable]` field that holds its `Option` as it's made");
+  expect(
+    refused(
+      "known",
+      `pub fn known() -> Option<&'static Unknown> {
+    js::any_of(5u32)
+}`,
+    ),
+  ).toContain("`js::any_of` is of a type parameter's value, or of one that may be `undefined` or `null` as it is");
 });

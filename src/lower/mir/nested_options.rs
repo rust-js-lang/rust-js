@@ -2,17 +2,54 @@
 //! 1017): its `None` `undefined`, its `Some(None)` `null` and its
 //! `Some(Some(v))` `v`, where each of its reads knows what its writes made;
 //! and so an `Option` of a value that's `null` but never `undefined`, its
-//! `Some(v)` `v` (ADR 1017, amended).
+//! `Some(v)` `v` (ADR 1017, amended), and one of a value that's `undefined`
+//! but never `null`, its `None` `null` (rd645).
 
 use super::*;
 use rustc_span::def_id::DefId;
 
+/// What an `Option` held where it's made holds (ADR 1017): of an `Option`
+/// of an `Option`, `undefined` for `None`, `null` for `Some(None)` and `v`
+/// for `Some(Some(v))`; of a value that's `null` but never `undefined`,
+/// `undefined` for `None` and `v` for `Some(v)`; and of a value that's
+/// `undefined` but never `null`, `null` for `None` and `v` for `Some(v)`
+/// (rd645).
+#[derive(Clone, Copy, PartialEq)]
+pub(super) enum Held {
+    Nested,
+    Defined,
+    Value,
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// Whether `place` is a `#[rust_js::nullable]` field of an `Option` of
-    /// an `Option`, WebIDL's optional nullable member, whole: held as its
-    /// payload where it's made, its `None` no key, `undefined`, its
-    /// `Some(None)` `null` (`bindings::holds_nested`, #470, the user's
-    /// decision).
+    /// How an `Option` of type `ty`, or a reference to one, is held where
+    /// it's held as its payload: by `undefined_payload`, `defined_payload`,
+    /// else as an `Option` of an `Option`.
+    pub(super) fn held_form(&self, ty: Ty<'tcx>) -> Held {
+        let ty = ty.peel_refs();
+        match (self.undefined_payload(ty), self.defined_payload(ty)) {
+            (Some(_), _) => Held::Value,
+            (None, Some(_)) => Held::Defined,
+            (None, None) => Held::Nested,
+        }
+    }
+
+    /// What an `Option` of type `ty` held as its payload is for `None`:
+    /// `null` of one of a value that may be `undefined` (rd645), else
+    /// `undefined`.
+    pub(super) fn held_none(&self, ty: Ty<'tcx>) -> Expr {
+        match self.held_form(ty) {
+            Held::Value => Expr::null(),
+            Held::Nested | Held::Defined => Expr::undefined(),
+        }
+    }
+
+    /// Whether `place` is a `#[rust_js::nullable]` field held where it's
+    /// made, whole: of an `Option` of an `Option`, WebIDL's optional
+    /// nullable member, held as its payload, its `None` no key,
+    /// `undefined`, its `Some(None)` `null` (`bindings::holds_nested`,
+    /// #470, the user's decision); or of a value never `null` that may be
+    /// `undefined`, its `None` `null` (`bindings::holds_value`, rd645).
     pub(super) fn nested_field(&self, body: &mir::Body<'tcx>, place: mir::PlaceRef<'tcx>) -> bool {
         if self.held_capture_read(body, place) {
             return true;
@@ -21,9 +58,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return false;
         };
         match base.ty(body, self.tcx).ty.kind() {
-            ty::Adt(adt, _) if adt.is_struct() => {
-                bindings::holds_nested(self.tcx, &adt.non_enum_variant().fields[field])
-            }
+            ty::Adt(adt, _) if adt.is_struct() => bindings::is_held(self.tcx, &adt.non_enum_variant().fields[field]),
             _ => false,
         }
     }
@@ -47,7 +82,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty::Adt(adt, _) = place.ty_before_projection(last).kind() else {
             return None;
         };
-        if !adt.is_struct() || !bindings::holds_nested(self.tcx, &adt.non_enum_variant().fields[field]) {
+        if !adt.is_struct() || !bindings::is_held(self.tcx, &adt.non_enum_variant().fields[field]) {
             return None;
         }
         match captured.info.capture_kind {
@@ -85,8 +120,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         value => value,
                     });
                 }
+                let ty = operands.get(i).map(|operand| operand.ty(state.body, self.tcx));
                 let boxed = self.value_expr(value, Span::default())?;
-                Ok(Value::Expr(self.held_of_boxed(boxed, out)))
+                Ok(Value::Expr(self.held_of_boxed(boxed, ty.expect("a capture"), out)))
             })
             .collect()
     }
@@ -128,23 +164,60 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// of an `Option` held as its payload, a local's or a nested field's:
     /// `undefined`, and `x` with its `None` `null`, as a nullable field's
     /// is already, `previousInstance = instance`; of a value never
-    /// `undefined` (`defined`), `x` (ADR 1017, amended; #470).
+    /// `undefined`, `x` (ADR 1017, amended; #470); and of a value never
+    /// `null`, `null` and `x` (rd645). Each as `form` holds it.
     pub(super) fn held_made(
         &mut self,
         state: &mut State<'_, 'tcx>,
         operands: &IndexVec<FieldIdx, Operand<'tcx>>,
-        defined: bool,
+        form: Held,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         Ok(match operands.iter().next() {
+            None if form == Held::Value => Expr::null(),
             None => Expr::undefined(),
-            Some(operand) if defined => self.mir_expr(state, operand, out)?,
+            Some(operand) if form != Held::Nested => self.mir_expr(state, operand, out)?,
             Some(operand) => {
                 let nulled = self.stored_given(state, operand) == crate::lower::aggregates::Given::Nulled;
                 let held = self.mir_expr(state, operand, out)?;
                 js::Storage::NullForNone.written(held, nulled)
             }
         })
+    }
+
+    /// `js::any_of` of an `Option` of a value never `null` that may be
+    /// `undefined` (`undefined_payload`): what a nullable place holds of
+    /// it, its `None` `null` and its `Some` the value, `undefined` too, as
+    /// any value is, whose `None` is `undefined` or `null` (rd645): of one
+    /// held so, a field's or a local's, as it's held,
+    /// `options.serverConsumerManifest.serverModuleMap`; of a box, what it
+    /// holds. `None` of any other call.
+    pub(super) fn held_any_of(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        def_id: DefId,
+        operands: &[&Operand<'tcx>],
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        let [given] = operands else { return Ok(None) };
+        let ty = given.ty(state.body, self.tcx);
+        if !crate::lower::recognition::is_any_of(self.tcx, def_id) || self.undefined_payload(ty).is_none() {
+            return Ok(None);
+        }
+        if let Some(place) = given.place()
+            && self.held_nested(state, place, place.projection.len())
+        {
+            return Ok(Some(match place.projection.is_empty() {
+                true => {
+                    let value = (self.take_operands(state, &[*given], out)?.into_iter().next()).expect("one operand");
+                    self.value_expr(value, span)?
+                }
+                false => self.mir_place(state, place, span, out)?,
+            }));
+        }
+        let boxed = self.mir_expr(state, given, out)?;
+        Ok(Some(self.held_of_boxed(boxed, ty, out)))
     }
 
     /// Whether `operand` reads an `Option` of an `Option` held as its
@@ -156,8 +229,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What a struct literal gives its `field`, `value` of `operand`: of a
-    /// nested field (`bindings::holds_nested`), held as its payload, what
-    /// one holding it so holds as it is, else the box's (#470).
+    /// field held where it's made (`bindings::is_held`), what one holding
+    /// it so holds as it is, else the box's (#470, rd645).
     pub(super) fn given_field(
         &mut self,
         state: &State<'_, 'tcx>,
@@ -167,45 +240,52 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> Expr {
         let local = operand.place().filter(|place| place.projection.is_empty());
-        match bindings::holds_nested(self.tcx, field) && !local.is_some_and(|place| self.held_nested(state, place, 0)) {
-            true => self.held_of_boxed(value, out),
+        match bindings::is_held(self.tcx, field) && !local.is_some_and(|place| self.held_nested(state, place, 0)) {
+            true => self.held_of_boxed(value, operand.ty(state.body, self.tcx), out),
             false => value,
         }
     }
 
-    /// An `Option` of an `Option` held as its payload, `held`, as ADR
-    /// 0051's box that code which doesn't hold it so reads: `held ===
-    /// undefined ? undefined : $some(held)`, its `Some(None)` `$some(null)`.
-    pub(super) fn boxed_of_held(&mut self, held: Expr, out: &mut Vec<Stmt>) -> Expr {
+    /// An `Option` of type `ty` held as its payload, `held`, as ADR 0051's
+    /// box that code which doesn't hold it so reads: `held === undefined ?
+    /// undefined : $some(held)`, its `Some(None)` `$some(null)`; of one
+    /// whose `None` is held `null`, `held === null ? undefined :
+    /// $some(held)` (rd645).
+    pub(super) fn boxed_of_held(&mut self, held: Expr, ty: Ty<'tcx>, out: &mut Vec<Stmt>) -> Expr {
         let held = match held.reads_same() {
             true => held,
             false => self.spill("option", held, out),
         };
         let some = self.some(held.clone());
-        Expr::cond(Expr::bin(Op::Eq, held, Expr::undefined()), Expr::undefined(), some)
+        Expr::cond(Expr::bin(Op::Eq, held, self.held_none(ty)), Expr::undefined(), some)
     }
 
-    /// ADR 0051's box of an `Option` of an `Option`, `boxed`, held as its
-    /// payload, as a nested field holds it (`nested_field`): `undefined`
-    /// of its `None`, and else what its `Some` holds, its `None` `null`,
-    /// `boxed === undefined ? undefined : $someValue(boxed) ?? null`. Of
+    /// ADR 0051's box of an `Option` of type `ty`, `boxed`, held as its
+    /// payload, as a field held where it's made holds it (`nested_field`):
+    /// of an `Option` of an `Option`, `undefined` of its `None`, and else
+    /// what its `Some` holds, its `None` `null`, `boxed === undefined ?
+    /// undefined : $someValue(boxed) ?? null`; of one of a value never
+    /// `null`, `boxed === undefined ? null : $someValue(boxed)` (rd645). Of
     /// what `boxed_of_held` made, what it was made of.
-    pub(super) fn held_of_boxed(&mut self, boxed: Expr, out: &mut Vec<Stmt>) -> Expr {
-        if let js::ExprKind::Cond(test, none, some) = &boxed.kind
-            && matches!(none.kind, js::ExprKind::Undefined)
+    pub(super) fn held_of_boxed(&mut self, boxed: Expr, ty: Ty<'tcx>, out: &mut Vec<Stmt>) -> Expr {
+        let none = self.held_none(ty);
+        let value_form = self.held_form(ty) == Held::Value;
+        if let js::ExprKind::Cond(test, undefined, some) = &boxed.kind
+            && matches!(undefined.kind, js::ExprKind::Undefined)
             && let js::ExprKind::Call(callee, args) = &some.kind
             && callee.helper_name() == Some("$some")
             && let [held] = args.as_slice()
-            && matches!(&test.kind, js::ExprKind::Binary(Op::Eq, x, u) if **x == *held && matches!(u.kind, js::ExprKind::Undefined))
+            && matches!(&test.kind, js::ExprKind::Binary(Op::Eq, x, u) if **x == *held && u.kind == none.kind)
         {
             return held.clone();
         }
         if matches!(boxed.kind, js::ExprKind::Undefined) {
-            return boxed;
+            return none;
         }
         // A `Some` just made, `$some(x)`, of an `Option` whose `None` is
         // `undefined`: `x ?? null`; and a constant that's there, itself.
-        if let js::ExprKind::Call(callee, args) = &boxed.kind
+        if !value_form
+            && let js::ExprKind::Call(callee, args) = &boxed.kind
             && callee.helper_name() == Some("$some")
             && let [inner] = args.as_slice()
         {
@@ -219,8 +299,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => self.spill("option", boxed, out),
         };
         let value = self.some_value(boxed.clone());
-        let held = js::Storage::NullForNone.written(value, false);
-        Expr::cond(Expr::bin(Op::Eq, boxed, Expr::undefined()), Expr::undefined(), held)
+        let held = match value_form {
+            true => value,
+            false => js::Storage::NullForNone.written(value, false),
+        };
+        Expr::cond(Expr::bin(Op::Eq, boxed, Expr::undefined()), none, held)
     }
 
     /// The locals `OptionWrites::nested` says (ADR 1017): each an `Option`
@@ -250,7 +333,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .filter(|&local| local.as_usize() > body.arg_count || (result && local == mir::RETURN_PLACE))
             .filter(|&local| {
                 let ty = decls[local].ty;
-                (self.nested_payload(ty).is_some() || self.defined_payload(ty).is_some())
+                (self.nested_payload(ty).is_some()
+                    || self.defined_payload(ty).is_some()
+                    || self.undefined_payload(ty).is_some())
                     && !ty.needs_drop(self.tcx, self.typing_env)
             })
             .collect();
@@ -436,7 +521,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     {
                         let fields = &self.tcx.adt_def(did).non_enum_variant().fields;
                         for (field, operand) in fields.iter().zip(operands.iter()) {
-                            if bindings::holds_nested(self.tcx, field)
+                            if bindings::is_held(self.tcx, field)
                                 && let Some(from) = operand.place().and_then(|place| place.as_local())
                                 && nested.contains(&from)
                             {
@@ -481,6 +566,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             && payload(of)
                             && (!of.projection[2..].iter().all(|elem| *elem == PlaceElem::Deref)
                                 || self.defined_payload(decls[of.local].ty).is_some()
+                                || self.undefined_payload(decls[of.local].ty).is_some()
                                 || of_field(of.local)
                                 || to
                                     .as_local()
@@ -529,6 +615,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let Some(reference) = tested {
                     allowed.insert((body.terminator_loc(block), reference));
                 }
+            }
+            // `js::any_of` of one of a value never `null`, what it holds
+            // as it is (`held_any_of`, rd645).
+            if let mir::TerminatorKind::Call { func, args, .. } = &data.terminator().kind
+                && let Some((def_id, _)) = func.const_fn_def()
+                && crate::lower::recognition::is_any_of(self.tcx, def_id)
+                && let [given] = &args[..]
+                && let Some(from) = given.node.place().and_then(|place| place.as_local())
+                && nested.contains(&from)
+                && self.undefined_payload(decls[from].ty).is_some()
+            {
+                allowed.insert((body.terminator_loc(block), from));
             }
             // `flatten()` of one that's a nested field's read alone, which
             // gives what it holds, its `None` `null` as the field's is
