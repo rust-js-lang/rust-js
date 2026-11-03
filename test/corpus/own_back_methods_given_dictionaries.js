@@ -10,6 +10,7 @@ import {
   $nextBack,
   $nth,
   $nthBack,
+  $nthSome,
   $rangeNext,
   $rangeNextBack,
   $some,
@@ -40,20 +41,10 @@ function twoIterator_fold(two, init, f, LIterator, RIterator) {
 function twoIterator_nth(two, n, LIterator, RIterator) {
   if (two.TAG === "Left") {
     const inner = two._0;
-    return Array.from(
-      $lent($given(inner, LIterator, true))
-        .drop(n)
-        .take(1)
-        .map($some),
-    )[0];
+    return $nthSome($lent($given(inner, LIterator, true)), n);
   }
   const inner = two._0;
-  return Array.from(
-    $lent($given(inner, RIterator, true))
-      .drop(n)
-      .take(1)
-      .map($some),
-  )[0];
+  return $nthSome($lent($given(inner, RIterator, true)), n);
 }
 
 function twoDoubleEndedIterator_nextBack(two, LDoubleEndedIterator, RDoubleEndedIterator) {

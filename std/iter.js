@@ -19,6 +19,7 @@ import {
   $given,
   $held,
   $lastDropping,
+  $lastSome,
   $lent,
   $neverShortCircuitTry,
   $next,
@@ -26,6 +27,7 @@ import {
   $nextSome,
   $nthBack,
   $nthDropping,
+  $nthSome,
   $overflowing,
   $peekableHint,
   $pretty,
@@ -34,7 +36,6 @@ import {
   $revAdvanceBy,
   $sizeHint,
   $some,
-  $someAt,
   $someMut,
   $someValue,
   $stdIterator,
@@ -3019,12 +3020,7 @@ export function copiedIterator_tryFold(
 }
 
 export function copiedIterator_nth(copied, n, IIterator = { next: $next }, TCopy, dropI) {
-  const nth = Array.from(
-    $lent($given(copied.it, IIterator, true))
-      .drop(n)
-      .take(1)
-      .map($some),
-  )[0];
+  const nth = $nthSome($lent($given(copied.it, IIterator, true)), n);
   if (nth != null) {
     const value = $someValue(nth);
     return $some(TCopy ? TCopy.copy(value) : value);
@@ -3035,8 +3031,7 @@ export function copiedIterator_last(copied, IIterator = { next: $next }, TCopy, 
   const iter = copied.it;
   let result;
   try {
-    const items = Array.from($given(iter, IIterator, true));
-    result = $someAt(items, items.length - 1);
+    result = $lastSome($given(iter, IIterator, true));
   } finally {
     if (IIterator.fold === undefined) {
       dropI?.(iter);

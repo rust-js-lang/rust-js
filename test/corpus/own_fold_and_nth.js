@@ -17,6 +17,7 @@ import {
   $max,
   $minByKey,
   $next,
+  $nth,
   $partition,
   $rangeInclusiveNext,
   $sortedEntries,
@@ -61,7 +62,7 @@ function total(items) {
 }
 
 function third(items) {
-  return Array.from($lent(Iterator.from(items)).drop(2).take(1))[0];
+  return $nth($lent(Iterator.from(items)), 2);
 }
 
 function boxedTotal(items) {

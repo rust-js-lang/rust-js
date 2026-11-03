@@ -15,6 +15,7 @@ import {
   $lent,
   $next,
   $nextIf,
+  $nth,
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
@@ -25,7 +26,7 @@ export function entry() {
 }
 
 function firstTwo(it) {
-  const p = iterator_peekable(it);
+  const p = iterator_peekable(it, { next: $next, nth: $nth, last: $last });
   const a = $next(p);
   const b = $nextIf(p, (x) => x % 2 === 0);
   const c = $next(p);
@@ -33,7 +34,7 @@ function firstTwo(it) {
 }
 
 function fromBack(it) {
-  const p = iterator_peekable(it);
+  const p = iterator_peekable(it, { next: $next, nth: $nth, last: $last });
   const out = [peekableDoubleEndedIterator_nextBack(p) ?? 0];
   out.push($next(p) ?? 0);
   out.push(peekableDoubleEndedIterator_nextBack(p) ?? 0);
@@ -45,7 +46,7 @@ function summed(it, IIterator, IClone, PeekableClone) {
   const copy = PeekableClone.clone(p);
   const total = p.reduce((acc, x) => (acc + x) >>> 0, 0);
   const again = PeekableClone.clone(copy);
-  const third = Array.from($lent(again).drop(2).take(1))[0];
+  const third = $nth($lent(again), 2);
   return [total, $count(copy), third, $last(again)];
 }
 

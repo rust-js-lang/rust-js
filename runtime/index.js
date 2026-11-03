@@ -2751,7 +2751,8 @@ export function $nextSome(it) {
 }
 
 // `it.nth(k)` of an iterator whose `nth` is its own, the crate's or std's
-// adapter's (#182): its item, or `undefined` for `None`, as `$next`'s.
+// adapter's (#182), or generic code's, a `$Steps` its caller gives (#496):
+// its item, or `undefined` for `None`, as `$next`'s.
 export function $nth(it, k) {
   const step = it.nth(k);
   return step.done ? undefined : step.value;
@@ -2764,16 +2765,25 @@ export function $nthSome(it, k) {
 }
 
 // `it.last()` of an iterator whose `last` is the crate's own, or std's
-// adapter's passing it on (#182): its item, or `undefined` for `None`.
+// adapter's passing it on (#182): its item, or `undefined` for `None`. Of
+// generic code's, which may be JS's own, with no `last`, std's default,
+// its last item (#496).
 export function $last(it) {
-  const step = it.last();
+  const step = $lastStep(it);
   return step.done ? undefined : step.value;
 }
 
 // `it.last()` of items that look like `None`: its `Some` boxed (ADR 0051).
 export function $lastSome(it) {
-  const step = it.last();
+  const step = $lastStep(it);
   return step.done ? undefined : $some(step.value);
+}
+
+export function $lastStep(it) {
+  if (typeof it.last === "function") return it.last();
+  let step = { done: true, value: undefined };
+  for (const value of it) step = { done: false, value };
+  return step;
 }
 
 // `next_back()` of a JS iterator that knows its back, a `$iter` or a

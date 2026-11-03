@@ -5,10 +5,12 @@ import {
   $given,
   $iter,
   $iterator,
+  $last,
   $lazyRange,
   $lent,
   $next,
   $nextSome,
+  $nth,
   $rangeNext,
 } from "@rust-js/runtime";
 
@@ -34,7 +36,7 @@ function doubled(inner) {
 }
 function sumDoubled(j) {
   return $iterator({ inner: j }, (iterator) =>
-    doubledIterator_next(iterator, { next: $next }),
+    doubledIterator_next(iterator, { next: $next, nth: $nth, last: $last }),
   ).reduce((a, b) => (a + b) | 0, 0);
 }
 // Given back, stepped through what holds it, and through itself.

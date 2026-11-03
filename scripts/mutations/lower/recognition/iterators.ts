@@ -675,17 +675,8 @@ export const mutations: Mutation[] = [
     name: "folds-by-own-nth-not-through-map",
     breaks: "a map's fold is its source's",
     file: "src/lower/recognition/iterators.rs",
-    find: "                .flat_map(|source| self.nth_folded_sources(source)),\n",
-    replace: "                .flat_map(|_| Vec::<Ty<'tcx>>::new()),\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
-  },
-  {
-    name: "folds-by-own-nth-not-generic",
-    breaks:
-      "a skip of a type parameter folds as it may ask the crate's own nth",
-    file: "src/lower/recognition/iterators.rs",
-    find: ".any(|source| self.nths_its_own(source) || matches!(source.kind(), ty::Param(_)))",
-    replace: ".any(|source| self.nths_its_own(source))",
+    find: "            sources.extend(self.nth_folded_sources(source));\n",
+    replace: "            let _ = source;\n",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
   {
@@ -934,5 +925,21 @@ export const mutations: Mutation[] = [
     replace: "            ) && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^array_counted_loops.rs$"],
     snapshots: true,
+  },
+  {
+    name: "lasts-its-own-not-generic",
+    breaks: "generic code's `last()` steps its iterator to its end, never asking the type's own `last` (#496)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "        let ty::Adt(adt, args) = ty.kind() else {\n            return matches!(ty.kind(), ty::Param(_));\n        };\n        let sources = match",
+    replace: "        let ty::Adt(adt, args) = ty.kind() else {\n            return false;\n        };\n        let sources = match",
+    tests: ["test/corpus.test.ts", "-t", "^generic_own_last.rs$"],
+  },
+  {
+    name: "nths-its-own-not-generic",
+    breaks: "generic code's dictionary of its iterator gives std's compiled `Fuse` no `nth`, so a fuse's `nth` never asks the type's own (#496)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "        let ty::Adt(adt, args) = ty.kind() else {\n            return matches!(ty.kind(), ty::Param(_));\n        };\n        // A chain's, its second side's",
+    replace: "        let ty::Adt(adt, args) = ty.kind() else {\n            return false;\n        };\n        // A chain's, its second side's",
+    tests: ["test/corpus.test.ts", "-t", "^generic_own_last.rs$"],
   },
 ];

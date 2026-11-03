@@ -7,6 +7,7 @@ import {
   $iterator,
   $next,
   $nextSome,
+  $nth,
   $some,
   $someValue,
   $traitImpl,
@@ -32,7 +33,10 @@ function tExt(TIterator) {
     },
     positionMax(self, SelfItemOrd) {
       const option = tExt({ next: $nextSome }).widest(
-        iterator_map(iterator_enumerate(self, TIterator), ([i, x]) => [x, i], { next: $nextSome }),
+        iterator_map(iterator_enumerate(self, TIterator), ([i, x]) => [x, i], {
+          next: $nextSome,
+          nth: $nth,
+        }),
         { cmp: (a, b) => SelfItemOrd.cmp(a[0], b[0]) || $cmp(a[1], b[1]) },
       );
       return option?.[1];

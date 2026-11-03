@@ -245,3 +245,29 @@ All 1,100 of #220's programs agree, and of the 2,100 with a destructor
 all but #206's nine; #216's 2,044 still agree. `own_back_through_adapters`
 and `own_iterator_dropped_through_adapters` hold them, with nine
 mutations.
+
+## Amendment: generic code's `last` and `nth` may be the type's own (2026-11-03, #496)
+
+Generic code's `last()` of a `T: Iterator`, alone or through a `skip`, a
+`fuse`, a `peekable` or a `chain`, stepped its iterator to the end, and
+never asked the crate's own `last`, which a `Count` given to it writes.
+Std's `last` and those adapters' ask it. A `fuse`'s `nth` likewise never
+reached the crate's own `nth`: generic code's dictionary of its type,
+`{ next: $nextSome }`, gave std's compiled `Fuse` neither. A type
+parameter now *may* step by its own `last` and `nth`, as it may fold by
+its own `nth` already (`lasts_its_own`, `nths_its_own`). So generic code
+asks `$last(it)` and `$nth(it, k)` of the JS iterator it's given, and its
+dictionary gives `nth: $nthSome, last: $lastSome`. Of an iterator with
+none of its own, a `$Steps`' `last` and `nth` are std's defaults.
+`$last` asks for std's default too, the last item, of one that is JS's
+own and has no `last` (`$lastStep`). std's compiled `Copied::nth` and
+`last` read `$nthSome(..)` and `$lastSome(..)` now. Results change, so
+Rust's behavior is kept (ADR 0262, C). `generic_own_last.rs` holds the
+shapes against native Rust, with the mutations
+`lasts-its-own-not-generic`, `nths-its-own-not-generic`
+(`recognition/iterators.ts`) and `last-of-js-iterator-asked` (`nth.ts`).
+`folds-by-own-nth-not-generic` is gone: the type parameter's case is
+`nths_its_own`'s now. Sixteen corpus snapshots gain the dictionary's
+entries or read `$nth`. The crate's own `count` is never asked through
+an adapter or in generic code either. That gap predates this change and
+is filed as #505.

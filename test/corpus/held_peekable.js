@@ -14,8 +14,10 @@ import {
   $foldOf,
   $iter,
   $iterator,
+  $lastSome,
   $next,
   $nextSome,
+  $nthSome,
   $peek,
   $peekSome,
   $pretty,
@@ -42,7 +44,7 @@ function withPositionClone_clone(withPosition, IClone, IItemClone) {
     peekable: peekableClone_clone(
       withPosition.peekable,
       fuseClone(IClone),
-      { next: $nextSome, fold: $foldOf },
+      { next: $nextSome, fold: $foldOf, nth: $nthSome, last: $lastSome },
       IItemClone,
     ),
   };
@@ -54,6 +56,8 @@ function withPosition(iter, IIterator, IFused) {
     peekable: iterator_peekable(iterator_fuse(iter, IIterator, IFused), {
       next: $nextSome,
       fold: $foldOf,
+      nth: $nthSome,
+      last: $lastSome,
     }),
   };
 }

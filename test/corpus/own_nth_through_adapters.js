@@ -5,6 +5,7 @@ import {
   $folded,
   $iter,
   $iterator,
+  $last,
   $lazyRange,
   $lent,
   $next,
@@ -49,7 +50,7 @@ function maybeIterator_nth(maybe, n) {
 
 // In generic code, of what it's given: the crate's own, an array's.
 function lastSkipped(it) {
-  return Array.from($folded(Iterator.from(it).drop(3))).at(-1);
+  return $last(Iterator.from(it).drop(3));
 }
 
 function main() {

@@ -11,8 +11,10 @@ import {
   $debugStr,
   $foldToArray,
   $iter,
+  $last,
   $next,
   $nextBack,
+  $nth,
   $range,
   $rest,
   $roomForHint,
@@ -33,7 +35,7 @@ function reversedTwice(it, IIterator, IDoubleEndedIterator, IClone) {
 }
 
 function backLen(it) {
-  const back = iterator_rev(it);
+  const back = iterator_rev(it, { next: $next, nth: $nth, last: $last });
   $next(back);
   return revExactSizeIterator_len(back, { len: (iterator) => iterator.len() });
 }
