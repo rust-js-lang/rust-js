@@ -52,6 +52,8 @@ function idDeserialize_deserialize(json) {
 }
 
 export const Id = {
+  EPOCH: 1288834974657n,
+
   new(millis, worker, sequence) {
     worker = BigInt(worker & 0x3ff);
     sequence = BigInt(sequence & 0xfff);

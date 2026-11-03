@@ -1730,6 +1730,50 @@ export function click() {
   ([ADR 0096](../../decisions/0096-statics.md), amended;
   [Module variables](global-scope.md#a-static-mut)).
 
+A type's constants, an inherent impl's `pub const`s of a `pub` type, are
+its object's, as its methods are, and each use is its value where it's
+written, as TypeScript's `const enum` compiles: named flags of an `i32`
+field, which a fieldless enum's variants can't be combinations of
+([ADR 0410](../../decisions/0410-an-impls-function-constant-is-code.md#amendment-a-types-value-constants-are-its-objects-498),
+amended):
+
+```rust
+pub struct ReactiveFlags;
+
+impl ReactiveFlags {
+    #[cfg_attr(rust_js, rust_js::name = "Mutable")]
+    pub const MUTABLE: i32 = 1;
+    #[cfg_attr(rust_js, rust_js::name = "Watching")]
+    pub const WATCHING: i32 = 2;
+}
+
+pub fn watched(flags: i32) -> bool {
+    flags & (ReactiveFlags::MUTABLE | ReactiveFlags::WATCHING) != 0
+}
+```
+
+```js
+export const ReactiveFlags = { Mutable: 1, Watching: 2 };
+
+export function watched(flags) {
+  return (flags & (1 | 2)) !== 0;
+}
+```
+
+```ts
+export const ReactiveFlags: {
+    readonly Mutable: number;
+    readonly Watching: number;
+};
+
+export function watched(flags: number): boolean;
+```
+
+- **A private type's, or a generic impl's, are no object**: JS can't name
+  them, and each use is its value as before. One of a type with `pub`
+  methods too is its object's in the JS, and its `.d.ts` declares neither
+  yet (#507).
+
 ## Modules and `pub use`
 
 Each module is its own file, `mod text` being `text.js` beside its

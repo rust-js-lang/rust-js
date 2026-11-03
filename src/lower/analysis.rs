@@ -364,6 +364,22 @@ pub(super) fn impl_const(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
                 .any(|p| matches!(p.kind, ty::GenericParamDefKind::Type { .. })))
 }
 
+/// Whether `def_id` is an inherent impl's constant, not a class's, that
+/// another crate or JS can name,
+/// `ReactiveFlags::WATCHING` of a `pub` type: a property of its type's
+/// object, `export const ReactiveFlags = { WATCHING: 2 }`, as a constant of
+/// code is (ADR 0410), each use still its value where it's written, as a
+/// TypeScript `const enum`'s is (#498).
+pub(super) fn exported_value_const(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    matches!(tcx.def_kind(def_id), DefKind::AssocConst { .. })
+        && tcx.inherent_impl_of_assoc(def_id).is_some()
+        && tcx.generics_of(def_id).count() == 0
+        && super::classes::member(tcx, def_id).is_none()
+        && def_id
+            .as_local()
+            .is_some_and(|local| tcx.effective_visibilities(()).is_exported(local))
+}
+
 /// Whether `d`, a body's owner, is a constant only rustc evaluates: one in
 /// a type, `FixedOutput<'_, 10>`'s `10` or a const generic's default,
 /// which JS never runs, and which rustc can't typecheck as a body before it
@@ -793,6 +809,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             // prototype's property, whoever reads it (ADR 0761).
             DefKind::AssocConst { .. } => {
                 impl_const(tcx, d.to_def_id())
+                    || exported_value_const(tcx, d.to_def_id())
                     || super::classes::member(tcx, d.to_def_id()) == Some(super::classes::Member::Const)
             }
             _ => false,

@@ -2,6 +2,7 @@
 //! module's functions, of no `self`, and its type `typeof
 //! ReactFiberReconciler`, the module imported whole.
 
+use rustc_hir::def::DefKind;
 use rustc_span::def_id::DefId;
 use serde_json::{Value, json};
 
@@ -67,5 +68,38 @@ impl Declarations<'_, '_> {
         };
         self.namespaces.insert((from, name.clone()));
         json!({ "kind": "typeof", "name": name })
+    }
+
+    /// The object of `adt`'s constants another crate or JS can name, an
+    /// inherent impl's, `export const ReactiveFlags: { readonly NONE: number;
+    /// .. };`, where it has any (#498): each its own type, read only. Not
+    /// one of `pub` methods too, which no object type declares yet (#507).
+    pub(super) fn type_constants(&mut self, adt: DefId) -> Option<Value> {
+        let tcx = self.tcx;
+        let items: Vec<DefId> = (tcx.inherent_impls(adt).iter())
+            .flat_map(|&imp| tcx.associated_item_def_ids(imp).iter().copied())
+            .collect();
+        let methods = items
+            .iter()
+            .any(|&item| tcx.def_kind(item) == DefKind::AssocFn && tcx.visibility(item).is_public());
+        let constants: Vec<DefId> = (items.into_iter())
+            .filter(|&item| crate::lower::analysis::exported_value_const(tcx, item))
+            .collect();
+        if constants.is_empty() || methods {
+            return None;
+        }
+        let members: Vec<Value> = (constants.into_iter())
+            .map(|constant| {
+                let ty = self.ts(tcx.type_of(constant).instantiate_identity().skip_normalization());
+                json!({ "kind": "property", "name": self.js_name(constant), "optional": false, "readonly": true, "type": ty })
+            })
+            .collect();
+        Some(json!({
+            "kind": "const",
+            "name": type_name(tcx, adt),
+            "exported": true,
+            "declare": false,
+            "type": { "kind": "object", "members": members },
+        }))
     }
 }

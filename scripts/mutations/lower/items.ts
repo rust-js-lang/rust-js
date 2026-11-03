@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "type-constant-read-by-name",
+    breaks: "an exported impl constant's use reads its object, `ReactiveFlags.MUTABLE`, where TypeScript's `const enum` and every other impl constant is its value (#498)",
+    file: "src/lower/items.rs",
+    find: "        if super::analysis::exported_value_const(self.tcx, def_id) {\n",
+    replace: "        if false && super::analysis::exported_value_const(self.tcx, def_id) {\n",
+    tests: ["test/impl-constants.test.ts"],
+  },
+  {
     name: "any-derived-impl-not-compiled",
     breaks:
       "a library's derived `Debug` a consumer asks, which its JS doesn't export, is taken for a codec and imported, not compiled by the consumer",

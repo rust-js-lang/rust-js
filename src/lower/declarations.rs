@@ -165,6 +165,10 @@ pub(super) fn module<'tcx>(
         if tcx.def_kind(def_id) == DefKind::Enum {
             items.extend(out.variant_constants(def_id));
         }
+        // Its object of constants (#498), a value beside its type.
+        if matches!(tcx.def_kind(def_id), DefKind::Struct | DefKind::Enum | DefKind::Union) {
+            items.extend(out.type_constants(def_id));
+        }
     }
     // A binding it holds as a value, a global function's `typeof
     // Object.assign`, as TypeScript has it (ADR 0622), a static's its type

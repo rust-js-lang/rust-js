@@ -475,6 +475,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// loads, its own module's before what reads it (`js::in_load_order`),
     /// and a module it imports, of no cycle, before it (ADR 0031, amended).
     pub(super) fn reads_by_name(&self, def_id: DefId) -> bool {
+        // An inherent impl's exported value constant, its type's object's
+        // property, is its value where it's used, as any other impl's
+        // constant is (ADR 0410, #498).
+        if super::analysis::exported_value_const(self.tcx, def_id) {
+            return false;
+        }
         let module = self.krate.fns.get(&def_id).map(|info| info.module);
         module.is_none_or(|module| module == self.module) || !self.krate.loads_in_cycles.borrow().contains(&self.item)
     }

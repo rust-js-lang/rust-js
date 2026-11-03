@@ -3,6 +3,38 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "type-constants-unexported",
+    breaks: "a `pub` type's `pub` constants are no property of its object, so JS can't name `ReactiveFlags.RecursedCheck` (#498)",
+    file: "src/lower/analysis.rs",
+    find: "                    || exported_value_const(tcx, d.to_def_id())\n",
+    replace: "",
+    tests: ["test/impl-constants.test.ts"],
+  },
+  {
+    name: "type-constants-of-a-private-type",
+    breaks: "a private type's constants make an object nothing can name (#498)",
+    file: "src/lower/analysis.rs",
+    find: "            .is_some_and(|local| tcx.effective_visibilities(()).is_exported(local))\n",
+    replace: "            .is_some()\n",
+    tests: ["test/impl-constants.test.ts"],
+  },
+  {
+    name: "type-constants-of-a-class",
+    breaks: "a class's constant, its prototype's property, is taken for a plain type's object's (#498)",
+    file: "src/lower/analysis.rs",
+    find: "        && super::classes::member(tcx, def_id).is_none()\n",
+    replace: "",
+    tests: ["test/impl-constants.test.ts"],
+  },
+  {
+    name: "type-constants-of-a-generic-impl",
+    breaks: "a generic impl's constant, which rustc can't say for every type at once, is taken for its object's (#498)",
+    file: "src/lower/analysis.rs",
+    find: "        && tcx.generics_of(def_id).count() == 0\n",
+    replace: "",
+    tests: ["test/impl-constants.test.ts"],
+  },
+  {
     name: "self-handle-counted-lowered",
     breaks:
       "a closure's handle on itself whose `Rc` the program counts, `Rc::strong_count`, is written as no JS too, its upgrade its own name, where its counts must be kept",

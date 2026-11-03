@@ -32,6 +32,7 @@ function vec2Debug_fmt(vec2) {
 }
 
 export const Vec2 = {
+  ZERO: { x: 0, y: 0 },
   new(x, y) {
     return { x, y };
   },
