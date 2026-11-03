@@ -123,8 +123,8 @@ function entered(fresh, n) {
   return settled.TAG === "Done" ? settled._0 : $byteLen(settled._0) | 0;
 }
 
-// The arm's variable is written again after it's bound, so it isn't the
-// field's own.
+// The arm's variable is written again after it's bound: the field's own
+// still, written where the arm makes it, then again (#481).
 function rebound(n) {
   if (n > 0) {
     return n;
@@ -134,21 +134,40 @@ function rebound(n) {
   return reason;
 }
 
-// The same, made in two places: what each makes is a value of its own,
-// which the arm's variable is bound to, as the arm writes it again, not a
-// write of that variable (#479: since a00a916cd, `rebound` alone is the
-// same JS either way).
+// The same, made in two places: each writes the arm's variable, `let
+// reason; if (a) { reason = 1; } ..`, which the arm writes again, never a
+// `tmp` the program didn't name (#481).
 function reboundMadeTwice(a, b) {
-  let tmp;
+  let reason;
   if (a) {
-    tmp = 1;
+    reason = 1;
   } else if (b) {
-    tmp = 2;
+    reason = 2;
   } else {
     return 3;
   }
-  let reason = tmp;
   reason = (reason * 2) | 0;
+  return reason;
+}
+
+function bump(n) {
+  n.value = (n.value + 7) | 0;
+}
+
+// The same, the arm's variable lent `&mut` after it's bound: its box made
+// of the value each place wrote.
+function lent(a, b) {
+  let reason;
+  if (a) {
+    reason = 1;
+  } else if (b) {
+    reason = 2;
+  } else {
+    return 3;
+  }
+  const n = { value: reason };
+  bump(n);
+  reason = n.value;
   return reason;
 }
 
@@ -266,6 +285,7 @@ function main() {
   console.log(
     `${reboundMadeTwice(true, false)} ${reboundMadeTwice(false, true)} ${reboundMadeTwice(false, false)}`,
   );
+  console.log(`${lent(true, false)} ${lent(false, true)} ${lent(false, false)}`);
   console.log(`${(scaled({ TAG: "Pending", _0: [] }, 2) + scaled("Halted", 2)) | 0}`);
   loud(0);
   loud(3);

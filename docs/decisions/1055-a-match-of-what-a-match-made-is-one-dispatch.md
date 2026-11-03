@@ -176,3 +176,23 @@ String(n) : undefined`; mutations
 `threaded-unboxed-option-of-no-borrow`, `threaded-loop-value-kept` and
 `threaded-unboxed-option-past-a-borrow-kept` (`mir/threaded.rs`).
 
+
+## Amendment: an arm's variable the arm writes again is the field's own too (#481, 2026-11-02)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. `given_to` gave a
+field to the arm's variable only where nothing else wrote it
+(`writes_of(body, to) == 1`, c5abc7e10), so `Err(mut reason) => { reason
+*= 2; reason }` of an `Err` made in two places read the field through a
+local of its own, `let tmp; if (a) { tmp = 1; } else if (b) { tmp = 2;
+} .. let reason = tmp;`, a name the program never wrote. The rule held no
+answer: each place the variant is made writes the variable before the
+switch, and the arm only after, which reads what the place wrote, as
+the binding's `reason = tmp` did; a `&mut` lent to it after is a box made
+of that value, `const n = { value: reason }; bump(n); reason = n.value;`.
+**The arm's variable is the field's own whatever the arm does with it**:
+`let reason; if (a) { reason = 1; } else if (b) { reason = 2; } else {
+return 3; } reason = (reason * 2) | 0;`, as `rebound`, made in one
+place, already printed. The rule, `writes_of` and the mutation
+`threaded-rebound-given` that held it are gone. Held by the corpus case
+`match_of_what_a_match_made` (`rebound_made_twice`, and `lent`, new),
+against native Rust.

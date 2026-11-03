@@ -289,7 +289,9 @@ struct Part<'tcx> {
 }
 
 /// Of a field read once, `x = move (settled as Err).0`, by a variable the
-/// program names, which nothing else writes: that variable, and where.
+/// program names: that variable, and where. One the arm writes again,
+/// `Err(mut reason) => { reason *= 2; .. }`, too: each place the variant is
+/// made writes it first, before the switch, and the arm, after (#481).
 fn given_to(body: &mir::Body<'_>, part: &Part<'_>) -> Option<(Local, mir::Location)> {
     let [at] = part.reads[..] else {
         return None;
@@ -306,22 +308,7 @@ fn given_to(body: &mir::Body<'_>, part: &Part<'_>) -> Option<(Local, mir::Locati
     }
     let named = (body.var_debug_info.iter())
         .any(|info| matches!(info.value, mir::VarDebugInfoContents::Place(p) if p.as_local() == Some(to)));
-    (named && writes_of(body, to) == 1).then_some((to, at))
-}
-
-/// How many times `body` writes `local`, or borrows it to.
-fn writes_of(body: &mir::Body<'_>, local: Local) -> usize {
-    struct Writes(Local, usize);
-    impl<'tcx> Visitor<'tcx> for Writes {
-        fn visit_local(&mut self, local: Local, context: PlaceContext, _: mir::Location) {
-            if local == self.0 && context.is_mutating_use() {
-                self.1 += 1;
-            }
-        }
-    }
-    let mut writes = Writes(local, 0);
-    writes.visit_body(body);
-    writes.1
+    named.then_some((to, at))
 }
 
 impl<'tcx> Threading<'tcx> {

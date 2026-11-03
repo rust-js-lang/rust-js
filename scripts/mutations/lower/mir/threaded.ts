@@ -126,14 +126,4 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^loop_value_given_in_its_test.rs$"],
     snapshots: true,
   },
-  {
-    name: "threaded-rebound-given",
-    breaks:
-      "a field read by a variable the arm writes again, `Err(mut reason) => { reason += 100; .. }`, is written where the arm makes it, as one written once is",
-    file: "src/lower/mir/threaded.rs",
-    find: "    (named && writes_of(body, to) == 1).then_some((to, at))\n",
-    replace: "    named.then_some((to, at))\n",
-    tests: corpus,
-    snapshots: true,
-  },
 ];

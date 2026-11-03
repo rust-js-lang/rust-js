@@ -183,8 +183,8 @@ fn entered(fresh: bool, n: i32) -> i32 {
     }
 }
 
-// The arm's variable is written again after it's bound, so it isn't the
-// field's own.
+// The arm's variable is written again after it's bound: the field's own
+// still, written where the arm makes it, then again (#481).
 fn rebound(n: i32) -> i32 {
     let settled = if n > 0 { Ok(n) } else { Err(-n) };
     match settled {
@@ -196,10 +196,9 @@ fn rebound(n: i32) -> i32 {
     }
 }
 
-// The same, made in two places: what each makes is a value of its own,
-// which the arm's variable is bound to, as the arm writes it again, not a
-// write of that variable (#479: since a00a916cd, `rebound` alone is the
-// same JS either way).
+// The same, made in two places: each writes the arm's variable, `let
+// reason; if (a) { reason = 1; } ..`, which the arm writes again, never a
+// `tmp` the program didn't name (#481).
 fn rebound_made_twice(a: bool, b: bool) -> i32 {
     let settled = if a {
         Err(1)
@@ -212,6 +211,29 @@ fn rebound_made_twice(a: bool, b: bool) -> i32 {
         Ok(v) => v,
         Err(mut reason) => {
             reason *= 2;
+            reason
+        }
+    }
+}
+
+fn bump(n: &mut i32) {
+    *n += 7;
+}
+
+// The same, the arm's variable lent `&mut` after it's bound: its box made
+// of the value each place wrote.
+fn lent(a: bool, b: bool) -> i32 {
+    let settled = if a {
+        Err(1)
+    } else if b {
+        Err(2)
+    } else {
+        Ok(3)
+    };
+    match settled {
+        Ok(v) => v,
+        Err(mut reason) => {
+            bump(&mut reason);
             reason
         }
     }
@@ -328,6 +350,7 @@ fn main() {
         rebound_made_twice(false, true),
         rebound_made_twice(false, false)
     );
+    println!("{} {} {}", lent(true, false), lent(false, true), lent(false, false));
     println!("{}", scaled(&State::Pending(vec![]), 2) + scaled(&State::Halted, 2));
     loud(0);
     loud(3);
