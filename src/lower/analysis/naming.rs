@@ -304,9 +304,16 @@ pub(super) fn name_imports(
             // its default or its name: `use shared::enqueue_task::enqueue_task
             // as queue_macrotask;` is `import queueMacrotask from
             // "../shared/enqueueTask.js"`, as React's ReactAct has it (ADR
-            // 0202, amended).
+            // 0202, amended); and a binding named through a library's
+            // module that holds it, its holder's import, `import
+            // ReactSharedInternalsClient` (rd651).
+            let mut held_uses = bindings::library_uses(tcx, foreign, module);
             let library_renamed: HashMap<Export, &String> = (renamed.iter())
-                .filter_map(|(&id, alias)| foreign.import_key(id, module).map(|export| (export, alias)))
+                .filter_map(|(&id, alias)| {
+                    (foreign.import_key(id, module))
+                        .or_else(|| held_uses.remove(&id))
+                        .map(|export| (export, alias))
+                })
                 .collect();
             // What the module imports is named first, so it's named as it is
             // where another module imports another of its name: next/image's

@@ -234,6 +234,37 @@ fn library_held(
     })
 }
 
+/// The import each `use` of `module` makes of a binding it names through a
+/// library's module that holds it, by the binding: `use
+/// shared::internals::REACT_SHARED_INTERNALS as ..;`'s
+/// `shared/ReactSharedInternals`'s default, which a `use .. as` names as it
+/// renames it, as any import is (rd651, ADR 0633, amended).
+pub(in crate::lower) fn library_uses(
+    tcx: TyCtxt<'_>,
+    foreign: &crate::lower::library::Foreign<'_, '_>,
+    module: LocalModId,
+) -> HashMap<DefId, (String, String)> {
+    (tcx.hir_module_items(module).free_items())
+        .filter_map(|id| {
+            let ItemKind::Use(path, rustc_hir::UseKind::Single(_)) = tcx.hir_item(id).kind else {
+                return None;
+            };
+            let Some(Res::Def(_, binding)) = path.res.value_ns else {
+                return None;
+            };
+            let [.., holder, last] = path.segments else { return None };
+            let Res::Def(DefKind::Mod, holder) = holder.res else {
+                return None;
+            };
+            let read = library_held(foreign, holder, last.ident.name, binding)?;
+            let Holder::Library(from) = read.holder else {
+                return None;
+            };
+            Some((binding, (from, read.import)))
+        })
+        .collect()
+}
+
 /// How the crate's `module`, of what it holds, `held`, holds `binding` by
 /// `ident`, and exports it.
 fn found_in(module: LocalModId, held: &[HeldBinding], ident: Symbol, binding: DefId) -> Option<HeldRead> {
@@ -337,11 +368,15 @@ fn held_of<'tcx>(
         }
         let through = named_through(tcx, foreign, module, path.segments, binding, modules);
         // A library's, which a private `use` reads through it; a `pub use`
-        // re-exports it from the library's file (ADR 0240, amended).
+        // re-exports it from the library's file (ADR 0240, amended). And
+        // another module's of the crate a private `use` renames, `use
+        // crate::held::assign as merge;`, imported from it by that name, no
+        // global's `const` of its own (rd651).
         if !export
-            && through
-                .as_ref()
-                .is_some_and(|read| matches!(read.holder, Holder::Library(_)))
+            && through.as_ref().is_some_and(|read| match read.holder {
+                Holder::Library(_) => true,
+                Holder::Module(_) => !named_default,
+            })
         {
             continue;
         }

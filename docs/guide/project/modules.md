@@ -161,7 +161,13 @@ A `use .. as` names the import as it renames the item, cased as the
 item's own name is, a thread-local's camelCase, `use shared::object_is::OBJECT_IS
 as IS;`'s `import is`, a function's camelCase as any name is: another module's function, a library's item, a module's default
 too, `import queueMacrotask from "../shared/enqueueTask.js"`, and a
-binding's export, `import { useId as makeId } from "react"`; by its
+binding's export, `import { useId as makeId } from "react"`, and a
+binding named through a module that holds it, that module's import,
+`use shared::internals::REACT_SHARED_INTERNALS as
+REACT_SHARED_INTERNALS_CLIENT;`'s `import ReactSharedInternalsClient from
+"shared/internals.js"`
+([ADR 0633](../../decisions/0633-a-binding-named-through-a-module-is-read-through-it.md),
+amended); by its
 `#[rust_js::name]` where it has one. Of an item its own
 `#[rust_js::name]` names, as that name is cased: `use
 scheduler::IDLE_PRIORITY as IDLE_SCHEDULER_PRIORITY` of `IdlePriority` is

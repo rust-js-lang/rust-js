@@ -846,4 +846,13 @@ export const mutations: Mutation[] = [
     replace: "            DefKind::Trait => false,\n",
     tests: ["test/class-components.test.ts", "-t", "superclass is imported where its use is"],
   },
+  {
+    name: "held-library-rename-ignored",
+    breaks:
+      "a `use .. as` of a binding through a library's module that holds it keeps the `const`'s name, react-markup's `import ReactSharedInternals` for `REACT_SHARED_INTERNALS as REACT_SHARED_INTERNALS_CLIENT` (rd651)",
+    file: "src/lower/analysis/naming.rs",
+    find: "                        .or_else(|| held_uses.remove(&id))\n",
+    replace: "",
+    tests: ["test/cargo-link.test.ts", "-t", "holds a binding"],
+  },
 ];

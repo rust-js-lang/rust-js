@@ -263,6 +263,27 @@ pub fn versioned() -> u32 {
   const first = join(dir, "first/lib.js");
   run([compiler, join(dir, "first/lib.rs"), "-o", first, "--dependency", libraryManifest, "--", "--crate-name", "first", "--extern", `shared=${metadata}`, ...extern]);
   expect(readFileSync(first, "utf8")).toContain('import ReactSharedInternals from "../shared/internals.js";\nimport assign from "../shared/assign.js";\nimport { version } from "react";\n');
+  // A `use .. as` of one names its import as it renames it, cased as the
+  // binding's own name is, as any alias is: react-markup's
+  // `ReactSharedInternalsClient` (rd651).
+  mkdirSync(join(dir, "renamed"), { recursive: true });
+  writeFileSync(join(dir, "renamed/lib.rs"), `use shared::internals::REACT_SHARED_INTERNALS as REACT_SHARED_INTERNALS_CLIENT;
+use shared::assign::assign as merge;
+
+pub fn internals() -> &'static shared::Internals {
+    REACT_SHARED_INTERNALS_CLIENT
+}
+
+pub fn merged<'a>(target: &'a js::Unknown, source: &js::Unknown) -> &'a js::Unknown {
+    merge(target, (source,))
+}
+`);
+  const renamed = join(dir, "renamed/lib.js");
+  run([compiler, join(dir, "renamed/lib.rs"), "-o", renamed, "--dependency", libraryManifest, "--", "--crate-name", "renamed", "--extern", `shared=${metadata}`, ...extern]);
+  const renamedJs = readFileSync(renamed, "utf8");
+  expect(renamedJs).toContain('import ReactSharedInternalsClient from "../shared/internals.js";\nimport merge from "../shared/assign.js";\n');
+  expect(renamedJs).toContain("  return ReactSharedInternalsClient;\n");
+  expect(renamedJs).toContain("  return merge(target, source);\n");
   // And of the crate's own module that holds it, before what sorts first.
   mkdirSync(join(dir, "own"), { recursive: true });
   writeFileSync(join(dir, "own/lib.rs"), "pub mod aaa;\npub mod held;\npub mod user;\n");
@@ -279,6 +300,17 @@ pub fn merged<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
 `);
   run([compiler, join(dir, "own/lib.rs"), "-o", join(dir, "own/lib.js"), "--", "--crate-name", "own", "--crate-type", "lib", ...extern]);
   expect(readFileSync(join(dir, "own/user.js"), "utf8")).toContain('import assign from "./held.js";\nimport { a } from "./aaa.js";\n');
+  writeFileSync(join(dir, "own/lib.rs"), "pub mod aaa;\npub mod held;\npub mod renamed;\npub mod user;\n");
+  writeFileSync(join(dir, "own/renamed.rs"), `use crate::held::assign as merge;
+
+pub fn merged<'a>(target: &'a js::Unknown, source: &js::Unknown) -> &'a js::Unknown {
+    merge(target, (source,))
+}
+`);
+  run([compiler, join(dir, "own/lib.rs"), "-o", join(dir, "own/lib.js"), "--", "--crate-name", "own", "--crate-type", "lib", ...extern]);
+  const ownRenamed = readFileSync(join(dir, "own/renamed.js"), "utf8");
+  expect(ownRenamed).toContain('import merge from "./held.js";\n');
+  expect(ownRenamed).toContain("  return merge(target, source);\n");
   mkdirSync(join(dir, "node_modules/react"), { recursive: true });
   writeFileSync(join(dir, "node_modules/react/package.json"), '{ "name": "react", "type": "module", "main": "index.js" }\n');
   writeFileSync(join(dir, "node_modules/react/index.js"), "export const __CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE = { H: null };\n");
@@ -286,6 +318,9 @@ pub fn merged<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
   expect(lib.merged({ a: 1 }, { b: 2 })).toEqual({ a: 1, b: 2 });
   const react = await import(join(dir, "node_modules/react/index.js"));
   expect(lib.internals()).toBe(react.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE);
+  // The crate's renamed one runs: it was a `merge` nothing declared, a
+  // ReferenceError.
+  expect((await import(join(dir, "own/renamed.js"))).merged({ a: 1 }, { b: 2 })).toEqual({ a: 1, b: 2 });
 }, 120_000);
 
 // A `use` of a library's namespace, ADR 1037's unit struct, or of a module

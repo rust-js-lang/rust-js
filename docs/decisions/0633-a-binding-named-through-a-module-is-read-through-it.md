@@ -3,7 +3,8 @@
 Status: Accepted. Amends [0622](0622-a-global-binding-a-module-names-is-its-const.md);
 extends [0100](0100-separate-crates.md) and [0240](0240-reexports.md). Amended by
 [0773](0773-a-held-default-is-exported-once.md): a binding the default names is
-exported as the default alone.
+exported as the default alone. Amended (rd651): a `use .. as` of a
+binding through a module that holds it names its import.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): the program can't
 observe it: the module's `const` is the JS value the binding reads, read
@@ -189,3 +190,39 @@ wrote before has none, read as holding nothing.
   `held-call-named-at-call`, `held-fn-pointer-in-place`,
   `held-static-in-place`, `held-read-imported-too`,
   `held-import-named-by-module`, `held-unlisted`, `held-static-typeof`.
+
+## Amendment: a `use .. as` of one names its import as it renames it (rd651)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none for a library's,
+a name; for the crate's own, results changed, a ReferenceError where Rust
+runs (P0).
+
+react-markup's server entry writes `use
+shared::react_shared_internals::REACT_SHARED_INTERNALS as
+REACT_SHARED_INTERNALS_CLIENT;`, where upstream writes `import
+ReactSharedInternalsClient from 'shared/ReactSharedInternals'`. It printed
+`import ReactSharedInternals`, the library's `const`'s name: the
+importer's names (`naming::name_imports`) follow a `use`'s rename of a
+library's item by what the library's manifest lists of it, its functions
+and constants (`Foreign::import_key`), which a binding a library's module
+holds isn't, its import being the holder's (`held`). The crate's own
+holder, `use crate::held::assign as merge;`, was worse: taken for a
+renamed global (ADR 0622, amended), a `const` of the module's own that it
+then didn't write, since it names the binding through another module, nor
+imported, so `merge(..)` threw a ReferenceError.
+
+**A private `use .. as` of a binding through a module that holds it names
+that module's import as it renames it, cased as any alias is** (ADR 0874,
+`alias_cased`): `import ReactSharedInternalsClient from
+"shared/ReactSharedInternals"`, `import merge from "./held.js"`, read so
+in the module. A library's is the import its `use` makes
+(`bindings::library_uses`, of `library_held`, the manifest's `held`); the
+crate's own is never the module's `const` (`held_of`), but the holder's
+export, which the linker names as the `use` renames it, as it did.
+
+Held by `test/cargo-link.test.ts`'s "a library's module that holds a
+binding is what a consumer reads it through", a library's static and
+function renamed, and the crate's own renamed, run in Node; mutations
+`held-library-rename-ignored` (`analysis/naming.ts`),
+`library-uses-none` and `held-renamed-through-module-a-const`
+(`bindings/held.ts`).
