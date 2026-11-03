@@ -2,8 +2,9 @@
 
 Status: Accepted. Extends [0484](0484-a-returned-closure-carries-its-drop.md)
 and [0098](0098-destructors.md). Amended: a type parameter's function is
-one that may be, below; and a borrowed function made a `dyn Fn` carries
-no drop, below.
+one that may be, below; a borrowed function made a `dyn Fn` carries
+no drop, below; and a capture holds a type parameter's value only where
+it owns one, below (#497).
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): what's dropped, and
 when, as std's.
@@ -158,3 +159,38 @@ ask a `Task`'s count (ADR 0843), and a `Request` holds `Rc<Task>`s.
   `borrowed-fn-dyn-in-counted-rc-unwrapped` and
   `boxed-fn-dyn-boxed-again-drops-itself` (`lower/traits/dyns.ts`), and
   `borrowed-is-the-function` (`runtime/dropping.ts`).
+
+## Amendment: a capture holds a type parameter's value only where it owns one (#497)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
+difference: what's taken to drop drops nothing more than Rust's.
+
+alien-signals' `createReactiveSystem<K>` keeps its callbacks in an
+`Rc<System<K>>`, `struct System<K> { notify: Box<dyn Fn(&K)> }`, and
+returns closures that capture it. A closure "captured a value of a type
+parameter" where its capture's type named one at all, so once the crate
+had any `Drop`, a guard restoring state in a `try`/`finally`, every `dyn
+Fn` was taken to drop, `System<K>` to hold what drops, and its uncounted
+`Rc` was refused: "a std type holding a value with a destructor,
+`Rc<System<K>>`". A `K` that only a function's signature names, or a
+reference, is never dropped by what holds it.
+
+**A capture holds a type parameter's value where it owns one**
+(`owns_a_param`, `analysis/closures.rs`): the parameter itself, or a
+field, an item, a `Box`'s value or a `PhantomData`'s, by which std's own
+types, an `Rc`, a `Vec`, a map, mark what they own, that does. A
+reference, a raw pointer (`raw_pointee`'s, a `NonNull` too), a `fn` and a
+`dyn` own none (a `dyn`'s own coercion answers for it, as before); an
+associated type, or anything else, may.
+
+### What holds it
+
+- `test/corpus/rc_of_functions_of_a_param.rs`, against native Rust: the
+  generic `Rc<System<K>>` beside a `Drop`, which compiled to nothing it
+  drops.
+- `test/corpus/dyn_fn_generic_owned_drops.rs`: a generic closure holding
+  a `Vec<K>`, made a `dyn Fn` by generic code alone, given a `Noisy`,
+  drops it where Rust does.
+- Mutations `param-owned-through-a-fn-dyn`,
+  `param-owned-through-a-raw-pointer` and
+  `param-unowned-through-phantom-data` (`lower/analysis/closures.ts`).

@@ -3,6 +3,32 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "param-owned-through-a-fn-dyn",
+    breaks:
+      "a struct holding `Box<dyn Fn(&K)>` is taken to own a `K`, so a generic `Rc` of it is refused once the crate has a `Drop` (#497)",
+    file: "src/lower/analysis/closures.rs",
+    find: "        ty::Ref(..) | ty::FnPtr(..) | ty::FnDef(..) | ty::Dynamic(..) => false,\n",
+    replace: "        ty::Ref(..) | ty::FnPtr(..) | ty::FnDef(..) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_of_functions_of_a_param.rs$"],
+  },
+  {
+    name: "param-owned-through-a-raw-pointer",
+    breaks: "an `Rc`'s `NonNull` is taken to own what it points at, so a generic `Rc` of functions is refused (#497)",
+    file: "src/lower/analysis/closures.rs",
+    find: "    if !ty.has_non_region_param() || !seen.insert(ty) || raw_pointee(tcx, ty).is_some() {\n",
+    replace: "    if !ty.has_non_region_param() || !seen.insert(ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_of_functions_of_a_param.rs$"],
+  },
+  {
+    name: "param-unowned-through-phantom-data",
+    breaks:
+      "a generic closure holding a `Vec<K>` made a `dyn Fn` by generic code is taken to hold no `K`, so the `dyn Fn` drops nothing of one with a destructor",
+    file: "src/lower/analysis/closures.rs",
+    find: "        ty::Adt(adt, args) if adt.is_box() || adt.is_phantom_data() => owns_a_param(tcx, args.type_at(0), seen),\n",
+    replace: "        ty::Adt(adt, args) if adt.is_box() => owns_a_param(tcx, args.type_at(0), seen),\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_generic_owned_drops.rs$"],
+  },
+  {
     name: "fn-dyn-drops-unseen",
     breaks:
       "a function holding a value with a destructor made a `dyn Fn` leaves the `dyn Fn` dropping nothing",
@@ -16,8 +42,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a type parameter made a `dyn Fn`, given a closure holding a value with a destructor, leaves the `dyn Fn` dropping nothing",
     file: "src/lower/analysis/closures.rs",
-    find: "            (holds_a_param(function) && closure_drops()).then_some(DroppingFnDyn {\n",
-    replace: "            (false && holds_a_param(function) && closure_drops()).then_some(DroppingFnDyn {\n",
+    find: "            (holds_a_param(tcx, function) && closure_drops()).then_some(DroppingFnDyn {\n",
+    replace: "            (false && holds_a_param(tcx, function) && closure_drops()).then_some(DroppingFnDyn {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_generic_drops.rs$"],
   },
   {
@@ -53,8 +79,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure holding a value with a destructor, given to a type parameter made a `dyn Fn`, isn't seen to drop",
     file: "src/lower/analysis/closures.rs",
-    find: "                    drops(ty) || params_may_drop && holds_a_param(ty)\n",
-    replace: "                    params_may_drop && holds_a_param(ty)\n",
+    find: "                    drops(ty) || params_may_drop && holds_a_param(tcx, ty)\n",
+    replace: "                    params_may_drop && holds_a_param(tcx, ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_generic_drops.rs$"],
   },
   {
@@ -177,21 +203,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure a generic function boxes holding only its own `Rc`, chainThenableValue<T>'s, is taken to hold a type parameter's value, and every `dyn Fn` of the crate drops (ADR 0521, amended)",
     file: "src/lower/analysis/closures.rs",
-    find: "        ty::Closure(_, args) => (args.as_closure().upvar_tys().iter()).any(|t| t.has_non_region_param()),\n",
-    replace: "        ty::Closure(..) => ty.has_non_region_param(),\n",
-    tests: [
-      "test/cross-crate-dyn-fns.test.ts",
-      "-t",
-      "a library's dyn Fn drops in its consumer only where",
-    ],
-  },
-  {
-    name: "dyn-made-dyn-holds-a-param",
-    breaks:
-      "a generic `dyn Fn` made another, React's useReducer's reducer, is taken to be a type parameter's function, so the library's contract says it makes a `dyn Fn` of what drops (ADR 0521, amended)",
-    file: "src/lower/analysis/closures.rs",
-    find: "        ty::Dynamic(..) => false,\n",
-    replace: "",
+    find: "        ty::Closure(_, args) => (args.as_closure().upvar_tys().iter()).any(|t| owns_a_param(tcx, t, seen)),\n",
+    replace: "        ty::Closure(..) => true,\n",
     tests: [
       "test/cross-crate-dyn-fns.test.ts",
       "-t",

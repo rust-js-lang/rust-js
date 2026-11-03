@@ -4,6 +4,7 @@
 //! a `dyn Any`, whether a value with a destructor is made one (ADR 0691).
 
 use crate::lower::passed_on::Taker;
+use crate::lower::pointers::raw_pointee;
 use crate::lower::recognition::{PureStd, any_trait, given_back, is_fn_dyn, pure_std, rc_pointee};
 use crate::lower::{Body, bindings};
 use rustc_hir::attrs::lang_items::LangItem;
@@ -225,7 +226,7 @@ pub(super) fn dropping_fn_dyn<'tcx>(
                 let id = body.def_id;
                 tcx.is_closure_like(id) && {
                     let ty = tcx.type_of(id).instantiate_identity().skip_normalization();
-                    drops(ty) || params_may_drop && holds_a_param(ty)
+                    drops(ty) || params_may_drop && holds_a_param(tcx, ty)
                 }
             })
     };
@@ -247,7 +248,7 @@ pub(super) fn dropping_fn_dyn<'tcx>(
                     held: held.unwrap_or(function),
                 });
             }
-            (holds_a_param(function) && closure_drops()).then_some(DroppingFnDyn {
+            (holds_a_param(tcx, function) && closure_drops()).then_some(DroppingFnDyn {
                 span,
                 function,
                 held: function,
@@ -300,11 +301,31 @@ pub(super) fn refuse_dropping_fn_dyn<'tcx>(
 /// generic arguments but holds what it captures, which `drops` answers
 /// for; nor a `dyn Fn` made another, `&dyn Fn(S, A) -> S`, a function
 /// already, whose own coercion answers (ADR 0521, amended).
-fn holds_a_param(ty: Ty<'_>) -> bool {
+fn holds_a_param<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    owns_a_param(tcx, ty, &mut HashSet::new())
+}
+
+/// Whether dropping a value of `ty` may drop a value of a type parameter:
+/// one it owns, in its fields, a `Box`'s, or what std's own types own by
+/// the `PhantomData` they mark it with, an `Rc`'s, a `Vec`'s. Not one that
+/// only a reference, a raw pointer (`raw_pointee`'s, a `NonNull` too) or a
+/// function's signature names, `&K`, `Box<dyn Fn(&K)>`, a `dyn` whose own
+/// coercion answers for it (ADR 0521, amended). An associated type or a
+/// coroutine may hold one.
+fn owns_a_param<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, seen: &mut HashSet<Ty<'tcx>>) -> bool {
+    if !ty.has_non_region_param() || !seen.insert(ty) || raw_pointee(tcx, ty).is_some() {
+        return false;
+    }
     match ty.kind() {
-        ty::Closure(_, args) => (args.as_closure().upvar_tys().iter()).any(|t| t.has_non_region_param()),
-        ty::Dynamic(..) => false,
-        _ => ty.has_non_region_param(),
+        ty::Ref(..) | ty::FnPtr(..) | ty::FnDef(..) | ty::Dynamic(..) => false,
+        ty::Tuple(items) => items.iter().any(|item| owns_a_param(tcx, item, seen)),
+        ty::Array(item, _) | ty::Slice(item) => owns_a_param(tcx, *item, seen),
+        ty::Closure(_, args) => (args.as_closure().upvar_tys().iter()).any(|t| owns_a_param(tcx, t, seen)),
+        ty::Adt(adt, args) if adt.is_box() || adt.is_phantom_data() => owns_a_param(tcx, args.type_at(0), seen),
+        ty::Adt(adt, args) => adt
+            .all_fields()
+            .any(|field| owns_a_param(tcx, field.ty(tcx, args).skip_normalization(), seen)),
+        _ => true,
     }
 }
 

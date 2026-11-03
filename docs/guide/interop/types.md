@@ -1815,7 +1815,11 @@ export function share(doc) {
   ([ADR 0626](../../decisions/0626-what-a-library-hands-a-crate.md)).
   A `dyn Fn` carries a drop, `$dropping(f, drop)`, only where the crate
   makes one of a function holding a value with a destructor, a generic
-  function's closure by what it captures, or a library hands it one whose
+  function's closure by what it captures, a value of its type parameter
+  where it owns one, not where only a function's signature or a reference
+  names it, `Rc<System<K>>` of a `Box<dyn Fn(&K)>`
+  ([ADR 0521](../../decisions/0521-a-dyn-fn-carries-its-drop.md#amendment-a-capture-holds-a-type-parameters-value-only-where-it-owns-one-497),
+  amended), or a library hands it one whose
   contract says the library makes one so: React's reconciler's `Rc<dyn
   Fn()>` listeners are an array of functions beside `react`'s `dyn Fn`s
   ([ADR 0521](../../decisions/0521-a-dyn-fn-carries-its-drop.md),
