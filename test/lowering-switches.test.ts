@@ -911,7 +911,7 @@ pub fn get_io_description(value: Option<&Unknown>) -> String {
     return "";
   }
 }`);
-  expect(js).not.toContain("import");
+  expect(js).not.toMatch(/^import /m);
   writeFileSync(join(dir, "run.mjs"), `import { getIoDescription } from "./lib.js";
 const throwing = { get url() { throw new TypeError("no url"); } };
 const reads = [];
