@@ -482,6 +482,70 @@ pub(super) fn calls_of<'tcx>(body: &Body<'tcx>) -> Vec<(DefId, ty::GenericArgsRe
     called.0
 }
 
+/// Each function `body` calls or names as a value, as `calls_of` gives
+/// them, that's given its type parameters' values: not one of rest
+/// arguments given where JS alone reads it (`read_by_js_alone`), which no
+/// call gives anything, so needs no copy of its own (ADR 0051, amended,
+/// #565).
+pub(super) fn given_calls_of<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    body: &Body<'tcx>,
+) -> Vec<(DefId, ty::GenericArgsRef<'tcx>, rustc_span::Span)> {
+    let alone = match body.root() {
+        Some(_) => read_by_js_alone(tcx, Some(&body.thir), None),
+        None => read_by_js_alone(tcx, None, body.mir.as_ref().map(|mir| &mir.body)),
+    };
+    (calls_of(body).into_iter())
+        .filter(|&(callee, _, at)| !alone.iter().any(|&(f, given)| f == callee && given.contains(at)))
+        .collect()
+}
+
+/// Each function of rest arguments `body` gives a binding where JS alone
+/// reads it, `js::function::name(&signal_oper::<()>)`, and where it's
+/// given: its JS function itself, its own JS, which the binding calls with
+/// what Rust gives it alone, or not at all, so it's no call that gives its
+/// type parameters anything, `()` here, that would need a copy of it
+/// (`FnCx::rest_function_itself`, #565). alien-signals' `isSignal` compares
+/// `signalOper`'s name with what `signal` binds, its own JS.
+pub(in crate::lower) fn read_by_js_alone<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    thir: Option<&rustc_middle::thir::Thir<'tcx>>,
+    mir: Option<&mir::Body<'tcx>>,
+) -> Vec<(DefId, rustc_span::Span)> {
+    use crate::lower::binding_calls::{Itself, function_itself};
+    let mut alone = Vec::new();
+    let mut given = |callee: DefId, index: usize, ty: Ty<'tcx>, span: rustc_span::Span| {
+        if crate::lower::bindings::is_binding(tcx, callee)
+            && function_itself(tcx, callee, index) == Some(Itself::Unreturned)
+            && let ty::FnDef(f, _) = *ty.peel_refs().kind()
+            && crate::lower::bindings::takes_rest(tcx, f)
+        {
+            alone.push((f, span));
+        }
+    };
+    for expr in thir.iter().flat_map(|thir| thir.exprs.iter()) {
+        if let rustc_middle::thir::ExprKind::Call { fun, args, .. } = &expr.kind
+            && let Some(thir) = thir
+            && let ty::FnDef(callee, _) = *thir[*fun].ty.kind()
+        {
+            for (index, &arg) in args.iter().enumerate() {
+                given(callee, index, thir[arg].ty, thir[arg].span);
+            }
+        }
+    }
+    for data in mir.iter().flat_map(|mir| mir.basic_blocks.iter()) {
+        if let TerminatorKind::Call { func, args, .. } = &data.terminator().kind
+            && let Some(mir) = mir
+            && let ty::FnDef(callee, _) = *func.ty(mir, tcx).kind()
+        {
+            for (index, arg) in args.iter().enumerate() {
+                given(callee, index, arg.node.ty(mir, tcx), arg.span);
+            }
+        }
+    }
+    alone
+}
+
 /// A call of a namespace's method through a value: the method, its generic
 /// arguments, where it's called, and the local its result is.
 type ThroughCall<'tcx> = (DefId, ty::GenericArgsRef<'tcx>, rustc_span::Span, mir::Local);

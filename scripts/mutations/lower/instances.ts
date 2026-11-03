@@ -280,4 +280,31 @@ export const mutations: Mutation[] = [
     replace: "                    DefKind::AssocConst { .. } => false,\n",
     tests: ["test/crates.test.ts", "-t", "three crates: generic_impl_const_of_instance"],
   },
+  {
+    name: "js-alone-given-counted",
+    breaks:
+      "`function::name(&signal_oper::<()>)` counts as a call giving `()`, so `signalOper` boxes its `Some` and `signal` binds a copy, `signalOperUnboxed`: `isSignal` is false (#565)",
+    file: "src/lower/instances.rs",
+    find: "        .filter(|&(callee, _, at)| !alone.iter().any(|&(f, given)| f == callee && given.contains(at)))\n",
+    replace: "        .filter(|_| true)\n",
+    tests: ["test/rest-parameters.test.ts", "-t", "a generic function of rest arguments JS alone reads is its own JS"],
+  },
+  {
+    name: "js-alone-of-a-function-given-back",
+    breaks:
+      "a function `function::bind` gives back, which Rust calls, gives its type parameters nothing: `first::<()>`'s `Some(())` isn't boxed, so `is_some()` of it is false (#565)",
+    file: "src/lower/instances.rs",
+    find: "            && function_itself(tcx, callee, index) == Some(Itself::Unreturned)\n",
+    replace: "            && function_itself(tcx, callee, index).is_some()\n",
+    tests: ["test/rest-parameters.test.ts", "-t", "a generic function of rest arguments JS alone reads is its own JS"],
+  },
+  {
+    name: "js-alone-of-no-rest",
+    breaks:
+      "a generic function of no rest arguments given to `function::name` gives its type parameters nothing, though its value is still lowered as its call's copy, which no analysis made: refused (#565)",
+    file: "src/lower/instances.rs",
+    find: "            && crate::lower::bindings::takes_rest(tcx, f)\n",
+    replace: "",
+    tests: ["test/rest-parameters.test.ts", "-t", "a generic function of rest arguments JS alone reads is its own JS"],
+  },
 ];

@@ -31,6 +31,7 @@ pub fn module(module: &mut js::Module) {
     initializers::assigned_in_place(&mut module.items);
     forwarding::functions(module);
     forwarding::fields(module);
+    forwarding::members(module);
     for function in module.items.iter_mut().flat_map(js::Item::functions_mut) {
         prepared(function);
     }

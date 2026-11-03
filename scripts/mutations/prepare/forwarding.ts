@@ -124,4 +124,40 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/emission.test.ts", "-t", "inline\\(never\\)"],
   },
+  {
+    name: "members-of-a-value-read",
+    breaks:
+      "a thread-local also read as a value is taken apart, `return [createContainer(1), KEPT]` reads a `KEPT` no longer declared (#561)",
+    file: "src/prepare/forwarding.rs",
+    find: "            || calls != reads\n",
+    replace: "",
+    tests: ["test/lowering-forwarding.test.ts", "-t", "a private thread-local of a namespace read only for its methods is taken apart once"],
+  },
+  {
+    name: "members-name-taken",
+    breaks:
+      "a member named as the module's own function is taken apart, so `createContainer()` calls the member, and the module declares the name twice (#561)",
+    file: "src/prepare/forwarding.rs",
+    find: "                .any(|m| !crate::names::is_identifier(m) || names.contains(m))\n",
+    replace: "                .any(|m| !crate::names::is_identifier(m))\n",
+    tests: ["test/lowering-forwarding.test.ts", "-t", "a private thread-local of a namespace read only for its methods is taken apart once"],
+  },
+  {
+    name: "members-this-read",
+    breaks:
+      "a JS object's method, which may read its `this`, is read apart from it, `const { getTime } = new Date(0)`, whose call throws (#561)",
+    file: "src/prepare/forwarding.rs",
+    find: "    (e.facts.has(js::Known::ThisUnread) && matches!(&of.kind, ExprKind::Var(v) if v == value)).then_some(member)\n",
+    replace: "    matches!(&of.kind, ExprKind::Var(v) if v == value).then_some(member)\n",
+    tests: ["test/lowering-forwarding.test.ts", "-t", "a private thread-local of a namespace read only for its methods is taken apart once"],
+  },
+  {
+    name: "members-names-unreserved",
+    breaks:
+      "a second thread-local of the same methods is taken apart too, declaring `createContainer` twice (#561)",
+    file: "src/prepare/forwarding.rs",
+    find: "        names.extend(members);\n",
+    replace: "",
+    tests: ["test/lowering-forwarding.test.ts", "-t", "a private thread-local of a namespace read only for its methods is taken apart once"],
+  },
 ];

@@ -91,7 +91,7 @@ impl JsGiven {
         let mut calls: HashMap<DefId, Vec<(DefId, ty::GenericArgsRef<'tcx>)>> = HashMap::new();
         for body in all_bodies {
             let caller = tcx.typeck_root_def_id(body.def_id);
-            let called = crate::lower::instances::calls_of(body).into_iter();
+            let called = crate::lower::instances::given_calls_of(tcx, body).into_iter();
             let routed = called.filter(|&(callee, ..)| given.routed.contains(&callee));
             (calls.entry(caller).or_default()).extend(routed.map(|(callee, args, _)| (callee, args)));
         }

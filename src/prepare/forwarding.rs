@@ -240,6 +240,119 @@ pub(super) fn fields(module: &mut js::Module) {
     });
 }
 
+/// `const flightClient = ReactFlightClient({..});` of a private
+/// thread-local, each of whose reads calls its member, a function that
+/// reads no `this` (`Known::ThisUnread`), a namespace's method through
+/// it, `flightClient.createResponse(..)`: that value taken apart where
+/// it's made, each member by its name, called alone, `const {
+/// createResponse, close } = ReactFlightClient({..});` and
+/// `createResponse(..)`, as upstream's noop Flight client writes it (ADR
+/// 0610, amended, #561). Nothing sets the constant or writes its members,
+/// so each call read the function the value was made with, which the
+/// destructuring reads once. Not where a member's name is no identifier or
+/// any name the module has already, which its call would then read.
+pub(super) fn members(module: &mut js::Module) {
+    let mut names: HashSet<String> = HashSet::new();
+    for item in &module.items {
+        match item {
+            js::Item::Const(constant) => {
+                names.insert(constant.name.clone());
+                js::names_in(&[StmtKind::Expr(constant.value.clone()).at(constant.span)], &mut names);
+            }
+            js::Item::Statements(stmts) => js::names_in(stmts, &mut names),
+            js::Item::Function(function) => js::names_in(
+                &[StmtKind::Function(Box::new(function.clone())).at(function.span)],
+                &mut names,
+            ),
+            js::Item::Namespace(namespace) => {
+                names.insert(namespace.name.clone());
+                for method in &namespace.methods {
+                    js::names_in(
+                        &[StmtKind::Function(Box::new(method.clone())).at(method.span)],
+                        &mut names,
+                    );
+                }
+            }
+        }
+    }
+    for import in &module.imports {
+        names.extend(import.named.iter().map(|(_, local)| local.clone()));
+        names.extend(import.namespace.clone());
+    }
+    for package in &module.packages {
+        names.extend(package.named.iter().map(|(_, local)| local.clone()));
+        names.extend(package.default.clone().into_iter().chain(package.namespace.clone()));
+    }
+    for at in 0..module.items.len() {
+        let js::Item::Const(constant) = &module.items[at] else {
+            continue;
+        };
+        let value = constant.name.clone();
+        if constant.export
+            || !constant.fields.is_empty()
+            || module.aliases.iter().any(|(local, _)| *local == value)
+            || module.default_export.as_deref() == Some(value.as_str())
+        {
+            continue;
+        }
+        let mut reads = 0;
+        for item in &module.items {
+            item.visit_vars(&mut |v| reads += usize::from(v == value));
+        }
+        // Each member it's called through, in the order they're first called.
+        let mut members: Vec<String> = Vec::new();
+        let mut calls = 0;
+        js::each_item_expr_mut(&mut module.items, &mut |e| {
+            if let Some(member) = member_called(e, &value) {
+                calls += 1;
+                if !members.iter().any(|m| m == member) {
+                    members.push(member.to_string());
+                }
+            }
+        });
+        if reads == 0
+            || calls != reads
+            || members
+                .iter()
+                .any(|m| !crate::names::is_identifier(m) || names.contains(m))
+        {
+            continue;
+        }
+        js::each_item_expr_mut(&mut module.items, &mut |e| {
+            if let Some(member) = member_called(e, &value).map(str::to_string)
+                && let ExprKind::Call(callee, _) = &mut e.kind
+            {
+                **callee = Expr::var(&member);
+            }
+        });
+        let js::Item::Const(constant) = &module.items[at] else {
+            unreachable!("found")
+        };
+        let pattern = (members.iter())
+            .map(|member| (member.clone(), js::Pattern::Name(member.clone()), None))
+            .collect();
+        let destructure = StmtKind::Destructure {
+            pattern: js::Pattern::Object(pattern, None),
+            value: constant.value.clone(),
+            mutable: false,
+        };
+        module.items[at] = js::Item::Statements(vec![destructure.at(constant.span)]);
+        names.extend(members);
+    }
+}
+
+/// The member of `value` that `e` calls, `value.member(..)`, where its
+/// function reads no `this` (`Known::ThisUnread`).
+fn member_called<'e>(e: &'e Expr, value: &str) -> Option<&'e str> {
+    let ExprKind::Call(callee, _) = &e.kind else {
+        return None;
+    };
+    let ExprKind::Member(of, member) = &callee.kind else {
+        return None;
+    };
+    (e.facts.has(js::Known::ThisUnread) && matches!(&of.kind, ExprKind::Var(v) if v == value)).then_some(member)
+}
+
 /// Whether each read of `name` in `items` but the function at `at` is a
 /// call of it by at most `arity` arguments: one that leaves its last
 /// `undefined`s out, `unlink(sub)`, gives what the function gives on, as

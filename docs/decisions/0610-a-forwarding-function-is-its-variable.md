@@ -197,3 +197,59 @@ another function, named as a value, a method, a `Deref` of the crate's,
 (`prepare.ts`), `reads-no-this-of-own-fields-unseen`
 (`analysis/fn_pointers.ts`),
 `this-unread-unmarked` (`mir/calls.ts`).
+
+## Amendment: a private thread-local of a namespace value read only for its methods is taken apart (#561)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Each call calls the
+function it did, with the same arguments, at the same time.
+
+React's noop Flight client makes one instance of the Flight client's
+module, through its factory, and takes it apart once:
+
+```js
+const { createResponse, createStreamState, processBinaryChunk, getRoot, close } = ReactFlightClient({ .. });
+```
+
+Its port keeps the instance, a `#[rust_js::namespace]` value (ADR 1037),
+in a private thread-local and calls through it,
+`FLIGHT_CLIENT.with(|client| client.create_response(..))`, which printed
+`const FLIGHT_CLIENT = ReactFlightClient({ .. });` and a member call at
+each use, `FLIGHT_CLIENT.createResponse(..)`. Here there's no wrapping
+function for #533's rule to take apart.
+
+**A module's private `const`, each of whose reads is a call of its
+member through it, of a function that reads no `this`
+(`Known::ThisUnread`), is taken apart where it's made, each member by its
+name, and each call is the function's alone**
+(`prepare::forwarding::members`, after `fields`):
+
+```js
+const { createContainer, updateContainer } = createReconciler({ base: 100 });
+
+export function noop() {
+  return (createContainer(4) + updateContainer(1)) >>> 0;
+}
+```
+
+- **A namespace's method through a value reads no `this`**: it's its
+  module's function (ADR 1037), so its call is marked `ThisUnread` where
+  it's lowered (`crate_called_copy`), as a field the crate fills with its
+  own functions is (#533). A JS object's method, `epoch.getTime()`,
+  isn't, and stays called through its object.
+- **Only calls read it**: one also read as a value, `(kept.f(1), *kept)`,
+  stays, and so does one set, a `let` its assignment reads, or one
+  exported or a `pub use` names. So
+  nothing writes its members, and reading each once where it's made
+  reads what each call read.
+- **Each member's name is new to the module**: one named as a function,
+  a variable, a parameter or an import the module has already, which the
+  call would then read, keeps the whole value. Of two such values with a
+  member of one name, the first is taken apart and the second stays.
+
+What holds it: `test/lowering-forwarding.test.ts`, "a private
+thread-local of a namespace read only for its methods is taken apart
+once", run in Node against a factory's instance (taken apart; kept: one
+also read as a value, one the module sets, one whose member's name the
+module's function has, the second of one name, a `Date`'s method). Mutations
+`namespace-through-this-read` (`mir/calls.ts`) and `members-*`
+(`prepare/forwarding.ts`).

@@ -200,8 +200,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// what it's given to reads it as JS's function and gives no function
     /// of it back for Rust to call with a slice (`functions_themselves`):
     /// not the arrow its value is elsewhere, `(xs) => total(...xs)` (ADR
-    /// 0664, amended, #540). `None` of any other, a class's member or one
-    /// whose call converts what it's given, which keeps its arrow.
+    /// 0664, amended, #540). Its own JS, the one its module names it by,
+    /// whatever its type parameters are: what JS alone reads gives them
+    /// nothing, so no copy of it is made for it (`instances::
+    /// read_by_js_alone`, #565). `None` of any other, a class's member or
+    /// one whose call converts what it's given, which keeps its arrow.
     pub(super) fn rest_function_itself(
         &mut self,
         def_id: DefId,
@@ -214,13 +217,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(None);
         }
-        let copy = self.called_copy((def_id, args), span)?;
         // Named as its path in the call names it, `Dep.total` of
         // `&dep::total` (rd114, ADR 1018).
         let named = (self.krate.module_paths.iter())
             .find(|(at, through)| through.function == def_id && span.contains(**at))
             .map_or(span, |(at, _)| *at);
-        Ok(Some(self.named_fn_ref(def_id, copy, named)))
+        Ok(Some(self.named_fn_ref(def_id, None, named)))
     }
 
     /// Whether `def_id`, the crate's function or a library's, reads

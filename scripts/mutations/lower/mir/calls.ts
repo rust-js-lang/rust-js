@@ -1161,4 +1161,13 @@ export const mutations: Mutation[] = [
     replace: "                Expr::member(args.remove(0), name)\n",
     tests: ["test/corpus.test.ts", "-t", "^class_getters.rs$"],
   },
+  {
+    name: "namespace-through-this-read",
+    breaks:
+      "a namespace's method through a value is taken for one that may read its `this`, so the noop Flight client's thread-local stays `NOOP.createContainer(..)`, not taken apart (#561)",
+    file: "src/lower/mir/calls.rs",
+    find: "                    facts: js::Facts::of(js::Known::ThisUnread),\n                    ..Expr::call(\n                        Expr::member(receiver,",
+    replace: "                    facts: js::Facts::NONE,\n                    ..Expr::call(\n                        Expr::member(receiver,",
+    tests: ["test/lowering-forwarding.test.ts", "-t", "a private thread-local of a namespace read only for its methods is taken apart once"],
+  },
 ];

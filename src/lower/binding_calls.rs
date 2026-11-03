@@ -568,7 +568,45 @@ pub(super) fn keyed(this: Expr, key: Expr) -> Expr {
     }
 }
 
-/// Whether a call of binding `def_id` looks its method up on a JS value of
+/// What a function given to `def_id`, a binding, as its parameter `index`
+/// is, where JS calls it with what Rust gives it alone, or not at all: a
+/// parameter of a function of any shape, `F: js::AnyFunction<M>` or
+/// `js::AnyShape<M>` (ADR 0907, amended); `Unreturned` where what the
+/// binding gives back doesn't name it, so Rust calls no function of it, as
+/// `bind`'s `<(F, M) as Bound<L>>::Rest` would be. `None` of any other
+/// parameter.
+pub(in crate::lower) fn function_itself(tcx: TyCtxt<'_>, def_id: DefId, index: usize) -> Option<Itself> {
+    let sig = tcx
+        .fn_sig(def_id)
+        .instantiate_identity()
+        .skip_normalization()
+        .skip_binder();
+    let param = sig.inputs().get(index)?.peel_refs();
+    let ty::Param(_) = param.kind() else {
+        return None;
+    };
+    let of_any_shape = (tcx.clauses_of(def_id).instantiate_identity(tcx).into_iter()).any(|(clause, _)| {
+        matches!(clause.skip_normalization().kind().skip_binder(), ty::ClauseKind::Trait(predicate)
+            if predicate.self_ty() == param
+                && super::recognition::is_function_value_trait(tcx, predicate.def_id()))
+    });
+    of_any_shape.then(
+        || match sig.output().walk().any(|named| named == ty::GenericArg::from(param)) {
+            true => Itself::Returned,
+            false => Itself::Unreturned,
+        },
+    )
+}
+
+/// Whether what a binding gives back names the function it's given
+/// (`function_itself`).
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(in crate::lower) enum Itself {
+    Returned,
+    Unreturned,
+}
+
+/// Whether a binding's call of `def_id` looks its method up on a JS value of
 /// any shape, `js::Unknown`, `obj.send(a, b)`: once the receiver is read,
 /// before its other arguments run, where Rust runs them first, and a
 /// getter may answer the lookup, or an argument replace the method (#187,
@@ -609,40 +647,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<()> {
         let tcx = self.tcx;
-        let sig = tcx.fn_sig(def_id);
-        let declared = sig
-            .instantiate_identity()
-            .skip_normalization()
-            .skip_binder()
-            .inputs()
-            .to_vec();
-        let given = sig
+        let given = (tcx
+            .fn_sig(def_id)
             .instantiate(tcx, generic_args)
             .skip_normalization()
             .skip_binder()
-            .inputs()
-            .to_vec();
-        let of_any_shape = |param: ty::Ty<'tcx>| {
-            (tcx.clauses_of(def_id).instantiate_identity(tcx).into_iter()).any(|(clause, _)| {
-                matches!(clause.skip_normalization().kind().skip_binder(), ty::ClauseKind::Trait(predicate)
-                    if predicate.self_ty() == param
-                        && super::recognition::is_function_value_trait(tcx, predicate.def_id()))
-            })
-        };
-        // What it gives back: one that names the parameter, `bind`'s
-        // `<(F, M) as Bound<L>>::Rest`, may be a function of it Rust calls.
-        let output = sig.instantiate_identity().skip_normalization().skip_binder().output();
-        for ((arg, declared), given) in args.iter_mut().zip(declared).zip(given) {
-            let param = declared.peel_refs();
+            .inputs())
+        .to_vec();
+        for (index, (arg, given)) in args.iter_mut().zip(given).enumerate() {
+            let Some(itself) = function_itself(tcx, def_id, index) else {
+                continue;
+            };
             let ty::FnDef(f, f_args) = *given.peel_refs().kind() else {
                 continue;
             };
-            if !matches!(param.kind(), ty::Param(_)) || !of_any_shape(param) {
-                continue;
-            }
-            if super::bindings::is_binding(tcx, f) {
+            if is_binding(tcx, f) {
                 *arg = self.binding_fn_pointer(f, f_args.skip_binder(), span, span)?;
-            } else if !output.walk().any(|named| named == ty::GenericArg::from(param))
+            } else if itself == Itself::Unreturned
                 && let Some(itself) = self.rest_function_itself(f, f_args.skip_binder(), span)?
             {
                 *arg = itself;

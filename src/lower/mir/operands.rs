@@ -239,6 +239,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Operand::Constant(c) if let Some((def_id, args)) = fn_def(c.ty()) => {
                 match self.fn_item_value(def_id, args, c.ty(), c.span, out)? {
                     Some(f) => Ok(Value::Expr(f)),
+                    // Of rest arguments, given where JS alone reads it: its
+                    // JS function itself, which no call of it is (#565).
+                    None if crate::lower::instances::read_by_js_alone(self.tcx, None, Some(state.body))
+                        .iter()
+                        .any(|&(f, given)| f == def_id && given.contains(c.span))
+                        && let Some(itself) = self.rest_function_itself(def_id, args, c.span)? =>
+                    {
+                        Ok(Value::Expr(itself))
+                    }
                     None => Ok(Value::Expr(self.mir_called_value(state, (def_id, args), c.span)?)),
                 }
             }

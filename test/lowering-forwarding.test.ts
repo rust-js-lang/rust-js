@@ -352,3 +352,122 @@ pub fn some<T>(x: Option<T>) -> bool {
   // What a JS caller gives past their parameters, none of theirs.
   expect([lib.twin(1), lib.count({ n: 4 }), lib.halved(8, 4), lib.held(5, 6), lib.counted(), lib.nested({ value: undefined })]).toEqual([3, 4, 4, 1, 1, true]);
 });
+
+// ADR 0610, amended (#561): React's noop Flight client makes one instance
+// of the Flight client's module and takes it apart once, `const {
+// createResponse, .. } = ReactFlightClient({..})`. Its port's private
+// thread-local of the namespace value, read only to call its methods, is
+// that destructuring, each call the function alone. Not one also read as a
+// value, nor one whose method's name the module has already, nor a JS
+// object's method, which may read its `this`.
+test("a private thread-local of a namespace read only for its methods is taken apart once", async () => {
+  const dir = fixture("forwarding-namespace-members");
+  writeFileSync(join(dir, "reconciler.rs"), `#[cfg_attr(rust_js, rust_js::namespace)]
+pub struct Reconciler;
+
+unsafe impl js::Defined for Reconciler {}
+
+#[cfg_attr(rust_js, rust_js::namespace)]
+impl Reconciler {
+    pub fn create_container(&self, tag: u32) -> u32 {
+        self.update_container(tag) + 1
+    }
+
+    pub fn update_container(&self, n: u32) -> u32 {
+        n * 2
+    }
+}
+`);
+  writeFileSync(join(dir, "make.js"), "export default (config) => ({ createContainer: (n) => n + config.base, updateContainer: (n) => n * 3 });\n");
+  const factory = `use crate::reconciler::Reconciler;
+
+pub struct Config {
+    pub base: u32,
+}
+
+unsafe impl js::Defined for Config {}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./make.js#default")]
+fn create_reconciler(_config: &Config) -> &'static Reconciler {
+    unreachable!()
+}
+`;
+  writeFileSync(join(dir, "lib.rs"), `pub mod other;
+pub mod reconciler;
+
+${factory}
+thread_local! {
+    static NOOP: &'static Reconciler = create_reconciler(&Config { base: 100 });
+    static SECOND: &'static Reconciler = create_reconciler(&Config { base: 400 });
+    static EPOCH: &'static js::Date = js::date::new(Some(&0.0));
+}
+
+pub fn noop() -> u32 {
+    NOOP.with(|noop| noop.create_container(4) + noop.update_container(1))
+}
+
+pub fn again(n: u32) -> u32 {
+    NOOP.with(|noop| noop.update_container(n))
+}
+
+pub fn epoch() -> f64 {
+    EPOCH.with(|epoch| epoch.get_time())
+}
+
+pub fn second() -> u32 {
+    SECOND.with(|second| second.create_container(5))
+}
+`);
+  writeFileSync(join(dir, "other.rs"), `${factory}
+thread_local! {
+    static KEPT: &'static Reconciler = create_reconciler(&Config { base: 200 });
+    static NAMED: &'static Reconciler = create_reconciler(&Config { base: 300 });
+}
+
+pub fn kept() -> (u32, &'static Reconciler) {
+    KEPT.with(|kept| (kept.create_container(1), *kept))
+}
+
+pub fn named() -> u32 {
+    NAMED.with(|named| named.create_container(2)) + create_container()
+}
+
+fn create_container() -> u32 {
+    1
+}
+
+thread_local! {
+    static SWAPPED: std::cell::Cell<&'static Reconciler> = std::cell::Cell::new(create_reconciler(&Config { base: 500 }));
+}
+
+pub fn swapped() -> u32 {
+    let before = SWAPPED.get().update_container(1);
+    SWAPPED.set(create_reconciler(&Config { base: 600 }));
+    before + SWAPPED.get().update_container(2)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const { createContainer, updateContainer } = make({ base: 100 });\n");
+  expect(js).toContain("  return (createContainer(4) + updateContainer(1)) >>> 0;\n");
+  expect(js).toContain("  return updateContainer(n);\n");
+  // A JS object's method, which may read its `this`.
+  expect(js).toContain("  return EPOCH.getTime();\n");
+  // Another's of a name the first took.
+  expect(js).toContain("const SECOND = make({ base: 400 });\n");
+  expect(js).toContain("  return SECOND.createContainer(5);\n");
+  const other = readFileSync(join(dir, "other.js"), "utf8");
+  expect(other).toContain("const KEPT = make({ base: 200 });\n");
+  expect(other).toContain("  return [KEPT.createContainer(1), KEPT];\n");
+  expect(other).toContain("const NAMED = make({ base: 300 });\n");
+  expect(other).toContain("  return (NAMED.createContainer(2) + createContainer()) >>> 0;\n");
+  // One the module sets.
+  expect(other).toContain("let SWAPPED = make({ base: 500 });\n");
+  expect(other).toContain("  const before = SWAPPED.updateContainer(1);\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.noop(), lib.again(2), lib.epoch(), lib.second()]).toEqual([107, 6, 0, 405]);
+  const other$ = await import(join(dir, "other.js"));
+  expect(other$.kept()[0]).toBe(201);
+  expect(other$.named()).toBe(303);
+  expect(other$.swapped()).toBe(9);
+});

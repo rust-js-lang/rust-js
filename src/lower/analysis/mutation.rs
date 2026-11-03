@@ -355,7 +355,7 @@ fn given_params<'a, 'tcx>(
     let mut passed = Vec::new();
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id);
-        for (callee, args, _) in crate::lower::instances::calls_of(body) {
+        for (callee, args, _) in crate::lower::instances::given_calls_of(tcx, body) {
             if !is_item(callee) {
                 continue;
             }

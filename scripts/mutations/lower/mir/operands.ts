@@ -312,4 +312,13 @@ export const mutations: Mutation[] = [
     replace: "                && false =>\n",
     tests: ["test/crates.test.ts", "-t", "unit_struct_of_instance"],
   },
+  {
+    name: "js-alone-value-its-call",
+    breaks:
+      "a function of rest arguments JS alone reads is lowered as its call's arrow, whose call of `signal_oper::<()>` needs a copy the analysis didn't make: refused (#565)",
+    file: "src/lower/mir/operands.rs",
+    find: "                    None if crate::lower::instances::read_by_js_alone(self.tcx, None, Some(state.body))\n",
+    replace: "                    None if false && crate::lower::instances::read_by_js_alone(self.tcx, None, Some(state.body))\n",
+    tests: ["test/rest-parameters.test.ts", "-t", "a generic function of rest arguments JS alone reads is its own JS"],
+  },
 ];

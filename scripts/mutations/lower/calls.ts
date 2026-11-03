@@ -307,8 +307,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's function of rest arguments JS reads, `function::name(&dep::total)`, is its import by name, `total$1.name` beside `import * as Dep`, where its path names it through its module, `Dep.total.name` (#540, ADR 1018)",
     file: "src/lower/calls.rs",
-    find: "        Ok(Some(self.named_fn_ref(def_id, copy, named)))\n",
-    replace: "        Ok(Some(self.named_fn_ref(def_id, copy, span)))\n",
+    find: "        Ok(Some(self.named_fn_ref(def_id, None, named)))\n",
+    replace: "        Ok(Some(self.named_fn_ref(def_id, None, span)))\n",
     tests: ["test/rest-parameters.test.ts", "-t", "a function of rest arguments JS reads as a value is the function itself"],
   },
   {

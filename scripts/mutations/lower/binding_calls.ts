@@ -641,7 +641,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a function of the crate's given to `function::name` is taken for a binding's, its arrow made of its call, `add.name` lost (ADR 0907, amended)",
     file: "src/lower/binding_calls.rs",
-    find: "            if super::bindings::is_binding(tcx, f) {\n",
+    find: "            if is_binding(tcx, f) {\n",
     replace: "            if true {\n",
     tests: [
       "test/js-object.test.ts",
@@ -654,8 +654,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding's function given as a binding's callback is the function itself, `then(parseFloat)`, which JS may give more than Rust does (ADR 0907, amended)",
     file: "src/lower/binding_calls.rs",
-    find: "            if !matches!(param.kind(), ty::Param(_)) || !of_any_shape(param) {\n",
-    replace: "            if !matches!(param.kind(), ty::Param(_)) {\n",
+    find: "    of_any_shape.then(\n",
+    replace: "    true.then(\n",
     tests: [
       "test/js-object.test.ts",
       "-t",
@@ -954,7 +954,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a function of rest arguments given to `function::bind` is the function itself, whose bound function Rust calls with a slice: `offset.bind(null, by)([1, 2])` gives the rest one array (#540, ADR 0664, amended)",
     file: "src/lower/binding_calls.rs",
-    find: "            } else if !output.walk().any(|named| named == ty::GenericArg::from(param))\n                && let Some(itself)",
+    find: "            } else if itself == Itself::Unreturned\n                && let Some(itself)",
     replace: "            } else if let Some(itself)",
     tests: ["test/rest-parameters.test.ts", "-t", "a function of rest arguments JS reads as a value is the function itself"],
   },

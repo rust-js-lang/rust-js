@@ -1,6 +1,6 @@
 # 0051. `Option<T>` in generic code: boxed only when it looks like `None`
 
-Status: Accepted. Extends [0030](0030-option.md) and [0049](0049-traits-and-generics.md). Amended: concrete code boxes too; a lazy iterator's `find` boxes its own; a box keeps the `null` it holds; a `&mut` of what a `Some` holds is `$someMut(o)`; a type parameter bound by a function trait is a function; a type parameter no call gives what may look like `None` is never boxed; a function JS calls takes what JS gives as it gives it, its crate's Rust calling a copy that boxes. Amended by [1017](1017-an-option-of-an-option-held-where-its-made-is-its-payload.md): a local `Option` of an `Option` made and read only where it's held is its payload, `Some(None)` `null`. Amended: a thread-local's `with` and `with_borrow` give their closure's, boxed as it makes it.
+Status: Accepted. Extends [0030](0030-option.md) and [0049](0049-traits-and-generics.md). Amended: concrete code boxes too; a lazy iterator's `find` boxes its own; a box keeps the `null` it holds; a `&mut` of what a `Some` holds is `$someMut(o)`; a type parameter bound by a function trait is a function; a type parameter no call gives what may look like `None` is never boxed; a function JS calls takes what JS gives as it gives it, its crate's Rust calling a copy that boxes. Amended by [1017](1017-an-option-of-an-option-held-where-its-made-is-its-payload.md): a local `Option` of an `Option` made and read only where it's held is its payload, `Some(None)` `null`. Amended: a thread-local's `with` and `with_borrow` give their closure's, boxed as it makes it. Amended: a function JS alone reads gives its type parameters nothing (#565).
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -573,3 +573,34 @@ name in its function is named apart first**, as tidy names one apart:
 - Held by corpus `copy_call_named_for_its_function`, against native Rust,
   and the crate corpus's chrono probe. Mutation `copy-target-shadowed`
   (`lower/pipeline/copies.ts`).
+
+## Amendment (2026-11-04): a function JS alone reads gives its type parameters nothing (#565)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Nothing calls the
+function where it's given, so nothing is given to it there to box.
+
+alien-signals' `isSignal` compares a function's name with its
+`signalOper`'s, which a generic `signal_oper<T>` names with some type,
+`js::function::name(&signal_oper::<()>)`. That counted as a call giving
+`T` a `()`, which may look like `None`, so `signalOper` boxed its
+`Some`, and the closure of `pub fn signal<T>` that passes all on to it
+bound a copy, `signalOperUnboxed.bind(null, this$)`: `isSignal` was
+false, a wrong answer.
+
+**A function of rest arguments given to a binding's parameter of any
+shape whose result doesn't name it (`function::name`, `length`, `call`,
+`js::unknown_of`), where JS alone reads it, gives its type parameters
+nothing, and is its own JS, the one its module names it by**
+(`instances::given_calls_of`, `read_by_js_alone`, which the analyses of
+what each call gives read, `js_given` and `mutation::given_params`; and
+`FnCx::rest_function_itself`, which the operand's lowering asks there
+first, ADR 0664, amended). One the binding gives back, `function::bind`'s,
+is called by Rust, and gives what it's given as before. A function of no
+rest arguments is unchanged: its value is lowered as its call's arrow
+elsewhere, which needs its copy.
+
+What holds it: `test/rest-parameters.test.ts`, "a generic function of
+rest arguments JS alone reads is its own JS" (`isSignal` true, one
+`signalOper`; `bind` of `first::<()>` boxing its `Some(())`; a function
+of no rest arguments named so). Mutations `js-alone-*`
+(`instances.ts`, `mir/operands.ts`).

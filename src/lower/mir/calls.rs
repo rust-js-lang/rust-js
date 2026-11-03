@@ -668,10 +668,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let (Some(at), Some(span), false) = (copy, named, flattened) {
                     (self.dependencies.borrow_mut().through_copies).push((def_id, at, span));
                 }
-                return Expr::call(
-                    Expr::member(receiver, crate::lower::classes::property(self.tcx, def_id)),
-                    args,
-                );
+                // Its module's function, which reads no `this` (ADR 1037):
+                // read apart from the value, it's called as it was (#561).
+                return Expr {
+                    facts: js::Facts::of(js::Known::ThisUnread),
+                    ..Expr::call(
+                        Expr::member(receiver, crate::lower::classes::property(self.tcx, def_id)),
+                        args,
+                    )
+                };
             }
         }
         // One that's the function it passes its parameters on to, which its

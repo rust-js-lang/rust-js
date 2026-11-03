@@ -241,6 +241,83 @@ pub fn offset_bound(by: f64) -> f64 {
   expect(lib.offsetBound(10)).toBe(13);
 });
 
+// #565: a generic one given where JS alone reads it, `function::name(&
+// signal_oper::<()>)`, gives its type parameter nothing, though `()` may
+// look like `None`: it's its own JS, as the closure that passes all on to
+// it binds, so `isSignal` compares `signalOper` with `signalOper` and holds.
+// It made a copy that boxed its `Some`, `signalOperUnboxed` bound, and
+// `isSignal` was false. What `bind` gives Rust is called still, a copy made
+// for what it gives.
+test("a generic function of rest arguments JS alone reads is its own JS", async () => {
+  const dir = fixture("rest-function-itself-generic");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+use std::rc::Rc;
+
+use js::{IntoUnknown, Kind, Rest, Unknown, function};
+
+pub struct Node {
+    pub current: Cell<Option<&'static Unknown>>,
+}
+
+fn signal_oper<T: 'static>(
+    this: &Node,
+    #[cfg_attr(rust_js, rust_js::rest)] value: &[Option<&'static Unknown>],
+) -> Option<T> {
+    if let Some(&value) = value.first() {
+        this.current.set(value);
+        None
+    } else {
+        // SAFETY: \`signal\` sets only \`T\`s here.
+        Some(unsafe { js::cast::<T>(this.current.get()) })
+    }
+}
+
+pub fn signal<T: 'static>(initial_value: T) -> impl Fn(&dyn Rest<dyn IntoUnknown>) -> Option<T> {
+    let this = Rc::new(Node {
+        current: Cell::new(js::any_of(initial_value)),
+    });
+    move |value: &dyn Rest<dyn IntoUnknown>| signal_oper::<T>(&this, value)
+}
+
+pub fn is_signal(r#fn: &dyn Fn(&dyn Rest<dyn IntoUnknown>) -> Option<u32>) -> bool {
+    function::name(r#fn) == format!("bound {}", function::name(&signal_oper::<()>))
+}
+
+fn first<T: 'static>(#[cfg_attr(rust_js, rust_js::rest)] xs: &[Option<&'static Unknown>]) -> Option<T> {
+    // SAFETY: \`first_unit\` gives \`()\`s alone.
+    xs.first().map(|&x| unsafe { js::cast::<T>(x) })
+}
+
+pub fn first_unit() -> bool {
+    let at = function::bind(first::<()>, Some(&Kind::Null), ());
+    at(&[None]).is_some()
+}
+
+fn plain<T: 'static>(x: Option<&'static Unknown>) -> Option<T> {
+    // SAFETY: no caller calls it.
+    x.map(|x| unsafe { js::cast::<T>(Some(x)) })
+}
+
+pub fn plain_name() -> String {
+    function::name(&plain::<()>)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
+  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(out).toContain("return signalOper.bind(null, this$);");
+  expect(out).toContain("`bound ${signalOper.name}`");
+  expect(out).not.toContain("signalOperUnboxed");
+  const lib = await import(join(dir, "lib.js"));
+  const signal = lib.signal(1);
+  expect(signal.name).toBe("bound signalOper");
+  expect(lib.isSignal(signal)).toBe(true);
+  expect([signal(), signal(2), signal()]).toEqual([1, undefined, 2]);
+  // `Some(())`, boxed where Rust reads it.
+  expect(lib.firstUnit()).toBe(true);
+  // One of no rest arguments, its function too, given its `()` as before.
+  expect(lib.plainName()).toBe("plain");
+});
+
 // Where it isn't JS's rest parameter, it's an error that says what to write.
 for (const [name, source, message] of [
   ["not the last parameter", "pub fn f(#[cfg_attr(rust_js, rust_js::rest)] xs: &[f64], n: f64) -> f64 { xs.len() as f64 + n }",

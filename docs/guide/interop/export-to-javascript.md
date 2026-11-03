@@ -424,7 +424,10 @@ export function order(prices: number[]): number;
   `object`, and `js::unknown_of`, it's the function itself:
   `function::name(&total)` is `total.name`, `"total"`, and
   `function::call(&total, None, (1.0, 2.0))` is `total.call(undefined, 1,
-  2)`. A `function::bind` of it stays the arrow's, as Rust calls what it
+  2)`. A generic one is its own JS whatever it's named with, as no call
+  gives its type parameters anything: `function::name(&signal_oper::<()>)`
+  is `signalOper.name`, the function a closure that passes all on to
+  `signal_oper::<T>` binds (#565). A `function::bind` of it stays the arrow's, as Rust calls what it
   gives with a slice. A `fn`
   JS calls with its arguments is one of rest arguments as a value
   ([below](#a-closure-js-calls-with-its-arguments)), whose closure that
@@ -1711,6 +1714,63 @@ export function updateContainer(n) {
   only passes its argument on to it, `Box::new(|r#fn| ..)`, is the
   function, `unstable_flushSync: flushSyncFromReconciler`
   ([ADR 1037](../../decisions/1037-a-module-namespace-is-a-unit-struct-of-its-functions.md), amended).
+- **A private thread-local of a namespace value, read only to call its
+  methods, is taken apart where it's made**, each method called alone, as
+  React's noop Flight client takes apart the instance of the Flight
+  client it makes, `const { createResponse, close } =
+  ReactFlightClient({..})`. A method is its module's function, which
+  reads no `this`, and nothing sets the thread-local, so each call reads
+  the function it did. One also read as a value stays, and so does one
+  whose method's name the module has already, which the call would then
+  read
+  ([ADR 0610](../../decisions/0610-a-forwarding-function-is-its-variable.md),
+  amended, #561):
+
+```rust
+pub mod reconciler {
+    #[cfg_attr(rust_js, rust_js::namespace)]
+    pub struct Reconciler;
+
+    unsafe impl js::Defined for Reconciler {}
+
+    #[cfg_attr(rust_js, rust_js::namespace)]
+    impl Reconciler {
+        pub fn create_container(&self, tag: u32) -> u32 {
+            self.update_container(tag) + 1
+        }
+
+        pub fn update_container(&self, n: u32) -> u32 {
+            n * 2
+        }
+    }
+}
+
+use reconciler::Reconciler;
+
+#[cfg_attr(rust_js, rust_js::link_name = "./create-reconciler.js#default")]
+fn create_reconciler() -> &'static Reconciler {
+    unreachable!()
+}
+
+thread_local! {
+    static NOOP: &'static Reconciler = create_reconciler();
+}
+
+pub fn noop() -> u32 {
+    NOOP.with(|noop| noop.create_container(4) + noop.update_container(1))
+}
+```
+
+```js
+import createReconciler from "./create-reconciler.js";
+
+const { createContainer, updateContainer } = createReconciler();
+
+export function noop() {
+  return (createContainer(4) + updateContainer(1)) >>> 0;
+}
+```
+
 - **Refused, each with what to write**: a struct with fields or type
   parameters; one that's a `#[rust_js::class]` or `#[rust_js::object]`
   too; an impl in another module than its struct's; an item that's no
