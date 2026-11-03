@@ -21,13 +21,6 @@ import {
   NormalPriority,
   UserBlockingPriority,
 } from "../SchedulerPriorities.js";
-export {
-  IdlePriority as unstable_IdlePriority,
-  ImmediatePriority as unstable_ImmediatePriority,
-  LowPriority as unstable_LowPriority,
-  NormalPriority as unstable_NormalPriority,
-  UserBlockingPriority as unstable_UserBlockingPriority,
-} from "../SchedulerPriorities.js";
 
 let getCurrentTime;
 if (typeof performance !== "undefined" && typeof performance.now !== "undefined") {
@@ -452,6 +445,14 @@ function cancelHostTimeout() {
   }
   taskTimeoutId = undefined;
 }
+
+export {
+  IdlePriority as unstable_IdlePriority,
+  ImmediatePriority as unstable_ImmediatePriority,
+  LowPriority as unstable_LowPriority,
+  NormalPriority as unstable_NormalPriority,
+  UserBlockingPriority as unstable_UserBlockingPriority,
+} from "../SchedulerPriorities.js";
 
 export const unstable_Profiling = undefined;
 

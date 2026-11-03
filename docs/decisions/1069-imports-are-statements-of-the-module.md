@@ -112,11 +112,19 @@ Rejected:
   shadowed } from` and its namespace imports are at its end, after the
   functions above it.
 - The map places each import and re-export at its `use`.
+- In React's port, 174 generated files change, 156 of them by blank lines
+  alone: ReactFizzConfigMarkup's `const`s are between its imports, 89 lines
+  from upstream to 72, and ReactDOMClient's groups are upstream's. Where a
+  port's `use` groups aren't upstream's import groups, its JS now shows it,
+  ReactFiberBeginWork's blank lines between `use`s upstream has none
+  between: the port regroups its `use`s, the work ADR 1063 already asked.
+  Scheduler's and ReactServerStreamConfigEdge's `pub use`s, written last,
+  print last, as upstream's `export`s are, the runtime's helpers after them.
 
 ## What holds it
 
 `test/lowering-comments-items.test.ts`'s "the header's blank lines are
 the Rust's" (rd637) and "an item between two uses is between their
-imports" (rd652), with the tests ADR 1063 and its amendments name for the
-order, now of `entries`; snapshots `imports`, `modules` and `playground`.
+imports" (rd652), `test/modules.test.ts`'s re-exports, with the tests ADR
+1063 and its amendments name for the order, now of `entries`; snapshots `imports`, `modules` and `playground`.
 Mutations in `to_oxc/header.ts` and `format.ts`.

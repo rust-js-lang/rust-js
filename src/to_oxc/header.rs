@@ -31,8 +31,8 @@ pub fn import_line(clause: &str, from: &str) -> String {
 /// What's above a module's code: its header, the module's own `//!`s,
 /// `docs`, and its directives, then a blank line, but where the Rust has
 /// none right after its `//!`s, or after leading comments right above the
-/// code of a module that imports nothing, `imports`, as the source has none
-/// (#419).
+/// code of a module whose JS doesn't start with an import, `imports`, as
+/// the source has none (#419).
 pub(super) fn header(module: &Module, imports: bool, docs: &Docs) -> String {
     let mut code = format!("{}\n", module.header);
     // The module's `//!`s, then what's next right after them where the
@@ -293,7 +293,8 @@ impl<'a> Cx<'a> {
 /// their Rust, before where it's placed in its file, a `const` between two
 /// `use`s between their imports (rd652), one of a `use` inside a function
 /// right above the function; one placed nowhere right after the one before
-/// it, so their order is what JS loads (ADR 1063). Whether it has any.
+/// it, so their order is what JS loads (ADR 1063). Whether one is first,
+/// before the code.
 pub(super) fn among<'a>(
     body: &mut ArenaVec<'a, Statement<'a>>,
     made: Vec<(Statement<'a>, js::Span)>,
@@ -328,6 +329,7 @@ pub(super) fn among<'a>(
         }
         placed.push((after, statement));
     }
+    let first = placed.first().is_some_and(|&(at, _)| at == 0);
     let code = std::mem::replace(body, ArenaVec::new_in(b));
     let mut placed = placed.into_iter().peekable();
     for (i, statement) in code.into_iter().enumerate() {
@@ -337,5 +339,5 @@ pub(super) fn among<'a>(
         body.push(statement);
     }
     body.extend(placed.map(|(_, made)| made));
-    true
+    first
 }

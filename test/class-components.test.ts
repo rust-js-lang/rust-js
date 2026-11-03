@@ -790,5 +790,5 @@ impl Component<CounterProps> for Counter {
 }
 `,
   );
-  expect(js).toContain('import { Component } from "react";\nimport { label } from "./labels.js";\n');
+  expect(js).toContain('import { Component } from "react";\n\nimport { label } from "./labels.js";\n');
 });

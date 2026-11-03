@@ -157,6 +157,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments-items.test.ts", "-t", "an item between two uses"],
   },
   {
+    name: "header-apart-from-code-after-imports",
+    breaks: "a file's leading comments right above its code are a blank line above it where its imports are after the code, `use super::answer;` written last (#419, rd652)",
+    file: "src/to_oxc/header.rs",
+    find: "    let first = placed.first().is_some_and(|&(at, _)| at == 0);\n",
+    replace: "    let first = !placed.is_empty();\n",
+    tests: ["test/emission.test.ts", "-t", "a file's leading comments are its JS's"],
+  },
+  {
     name: "declared-import-spaced",
     breaks: "imports placed at bindings' declarations are a blank line apart, as the function items are, where they're one block (rd637)",
     file: "src/to_oxc/header.rs",

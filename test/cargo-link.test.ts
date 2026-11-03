@@ -262,7 +262,10 @@ pub fn versioned() -> u32 {
 `);
   const first = join(dir, "first/lib.js");
   run([compiler, join(dir, "first/lib.rs"), "-o", first, "--dependency", libraryManifest, "--", "--crate-name", "first", "--extern", `shared=${metadata}`, ...extern]);
-  expect(readFileSync(first, "utf8")).toContain('import ReactSharedInternals from "../shared/internals.js";\nimport assign from "../shared/assign.js";\nimport { version } from "react";\n');
+  // \`react\`'s where its binding is declared, after the functions above it
+  // (ADR 1069).
+  expect(readFileSync(first, "utf8")).toContain('import ReactSharedInternals from "../shared/internals.js";\nimport assign from "../shared/assign.js";\n\nexport function internals() {');
+  expect(readFileSync(first, "utf8")).toContain('}\n\nimport { version } from "react";\n\nexport function versioned() {');
   // A `use .. as` of one names its import as it renames it, cased as the
   // binding's own name is, as any alias is: react-markup's
   // `ReactSharedInternalsClient` (rd651).
@@ -402,7 +405,7 @@ impl Reconciler {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-name", "own", "--crate-type", "lib", ...extern]);
   expect(readFileSync(join(dir, "reconciler.js"), "utf8")).toContain(
-    'export { createPortal } from "./portal.js";\nimport { a } from "./aaa.js";\n/** Found by its name. */\nexport { find } from "./selectors.js";\n\n',
+    'export { createPortal } from "./portal.js";\nimport { a } from "./aaa.js";\n\n/** Found by its name. */\nexport { find } from "./selectors.js";\n\n',
   );
 }, 120_000);
 
