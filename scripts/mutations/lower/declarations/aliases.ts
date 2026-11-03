@@ -116,4 +116,12 @@ export const mutations: Mutation[] = [
       "declarations name a type alias",
     ],
   },
+  {
+    name: "library-plain-alias-expanded",
+    breaks: "a library's plain alias is written out where it's used, `Map<string, unknown>`, not named, `TemporaryReferenceSet` (rd642)",
+    file: "src/lower/declarations/aliases.rs",
+    find: "            None => match self.foreign.declared_type(did) {\n",
+    replace: "            None => match self.foreign.declared_type(did).filter(|_| own) {\n",
+    tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
+  },
 ];

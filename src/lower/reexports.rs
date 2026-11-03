@@ -15,6 +15,11 @@ use rustc_span::Symbol;
 use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalModId};
 use std::collections::HashMap;
 
+/// One type a module's declarations alone re-export (`type_reexports`):
+/// its statement, where it's from, none where it's the module's own, and
+/// `(export, alias)`.
+pub(super) type TypeReexport = (rustc_span::Span, Option<js::ImportFrom>, (String, String));
+
 /// One name a module re-exports, where it's written: the statement, which
 /// its names of one module share; where it's from; and `(export, alias)`,
 /// what that exports it as and the name it's re-exported by.
@@ -89,12 +94,7 @@ pub(super) fn reexports(
         if !tcx.visibility(item.owner_id).is_public() {
             continue;
         }
-        // The whole statement, from its `pub`, which each of a tree's
-        // leaves shares, its comments before it.
-        let statement = match item.vis_span.is_empty() {
-            true => item.span,
-            false => item.vis_span.to(item.span),
-        };
+        let statement = statement_of(item);
         let hir::UseKind::Single(ident) = kind else {
             // `pub use m::*;` of what has JS: each name it gives the module,
             // as rustc resolves it, past what the module's own items and
@@ -268,6 +268,69 @@ pub(super) fn reexports(
     }
     forwarded_methods(tcx, module, (fns, forwarded), paths, &mut found);
     found
+}
+
+/// What `module`'s `pub use`s of types re-export in its declarations
+/// alone, `export type { TemporaryReferenceSet } from "..";` (rd642): each
+/// type another module's declarations export by its name
+/// (`declarations::declares_type`), the crate's from its module's file, a
+/// library's from its file (`Foreign::declared_type`), by the name the
+/// `use` gives it; the module's own by another name from none, `export
+/// type { Size as Measure };`. A type has no JS to re-export (ADR 0240); a
+/// class is its constructor, which `reexports` re-exports.
+pub(super) fn type_reexports(
+    tcx: TyCtxt<'_>,
+    module: LocalModId,
+    foreign: &super::library::Foreign<'_, '_>,
+    paths: &HashMap<LocalModId, Vec<String>>,
+) -> Vec<TypeReexport> {
+    let mut found = Vec::new();
+    for id in tcx.hir_module_items(module).free_items() {
+        let item = tcx.hir_item(id);
+        let hir::ItemKind::Use(path, hir::UseKind::Single(ident)) = item.kind else {
+            continue;
+        };
+        let Some(Res::Def(DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::TyAlias, named)) =
+            path.res.type_ns
+        else {
+            continue;
+        };
+        if !tcx.visibility(item.owner_id).is_public() || super::classes::is_class(tcx, named) {
+            continue;
+        }
+        let (from, export) = match named.as_local() {
+            Some(local) => {
+                let home = tcx.parent_module_from_def_id(local);
+                let declared = tcx.visibility(named).is_public() && super::declarations::declares_type(tcx, named);
+                match paths.get(&home) {
+                    Some(_) if declared && home == module => (None, tcx.item_name(named).to_string()),
+                    Some(from) if declared => (
+                        Some(js::ImportFrom::Module(from.clone())),
+                        tcx.item_name(named).to_string(),
+                    ),
+                    _ => continue,
+                }
+            }
+            None => match foreign.declared_type(named) {
+                Some((from, name, default)) => (
+                    Some(js::ImportFrom::Specifier(from.clone())),
+                    if *default { "default".to_string() } else { name.clone() },
+                ),
+                None => continue,
+            },
+        };
+        found.push((statement_of(item), from, (export, ident.to_string())));
+    }
+    found
+}
+
+/// A `pub use`'s whole statement, from its `pub`, which each of a tree's
+/// leaves shares, its comments before it.
+fn statement_of(item: &hir::Item<'_>) -> rustc_span::Span {
+    match item.vis_span.is_empty() {
+        true => item.span,
+        false => item.vis_span.to(item.span),
+    }
 }
 
 /// The `export { .. } from`s of what a module re-exports, `found`

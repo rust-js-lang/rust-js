@@ -150,8 +150,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `pub use m::{a, b};` is a statement for each name, and its comments are lost (ADR 0240, amended)",
     file: "src/lower/reexports.rs",
-    find: "            false => item.vis_span.to(item.span),\n",
-    replace: "            false => item.span,\n",
+    find: "        false => item.vis_span.to(item.span),\n",
+    replace: "        false => item.span,\n",
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],
   },
   {
@@ -338,5 +338,29 @@ export const mutations: Mutation[] = [
     find: "            let (module, export) = through?;\n",
     replace: "            let (module, export) = through.filter(|_| false)?;\n",
     tests: ["test/reexports-through.test.ts", "-t", "a use through a module"],
+  },
+  {
+    name: "type-reexports-left-out",
+    breaks: "a `pub use` of a type re-exports nothing in the declarations, so a consumer can't name react-client's `TemporaryReferenceSet` through the Flight client (rd642)",
+    file: "src/lower/reexports.rs",
+    find: "        found.push((statement_of(item), from, (export, ident.to_string())));\n",
+    replace: "        let _ = (from, export, ident);\n",
+    tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
+  },
+  {
+    name: "type-reexport-by-its-own-name",
+    breaks: "a `pub use .. as` of a type re-exports it by its own name, `Size`, not the name the `use` gives it, `Measure` (rd642)",
+    file: "src/lower/reexports.rs",
+    find: "        found.push((statement_of(item), from, (export, ident.to_string())));\n",
+    replace: "        found.push((statement_of(item), from, (export.clone(), export)));\n",
+    tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
+  },
+  {
+    name: "own-type-reexported-from-itself",
+    breaks: "a `pub use self::Count as Total;` of the module's own type re-exports it from the module's own file (rd642)",
+    file: "src/lower/reexports.rs",
+    find: "                    Some(_) if declared && home == module =>",
+    replace: "                    Some(_) if false =>",
+    tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
   },
 ];

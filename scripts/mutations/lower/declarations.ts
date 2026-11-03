@@ -1096,7 +1096,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's alias whose `#[rust_js::types]` writes a union isn't in its contract's declared types, so a consumer writes it out, its names unimported (rd538)",
     file: "src/lower/declarations.rs",
-    find: "        DefKind::TyAlias => declares_written_alias(tcx, did),",
+    find: "        DefKind::TyAlias => true,",
     replace: "        DefKind::TyAlias => false,",
     tests: ["test/declarations-libraries.test.ts", "-t", "declared as written"],
   },
@@ -1141,5 +1141,13 @@ export const mutations: Mutation[] = [
     find: "                ty::Param(_) => true,\n                ty::Adt(adt, _) => self.flattened.keyed.contains(&adt.did()),\n",
     replace: "                ty::Param(_) => false,\n                ty::Adt(adt, _) => self.flattened.keyed.contains(&adt.did()),\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "intersection"],
+  },
+  {
+    name: "library-plain-alias-undeclared",
+    breaks: "a library's alias without `#[rust_js::types]` isn't among its contract's declared types, so a consumer writes it out and can't re-export it (rd642)",
+    file: "src/lower/declarations.rs",
+    find: "        DefKind::TyAlias => true,",
+    replace: "        DefKind::TyAlias => aliases::declares_written_alias(tcx, did),",
+    tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
   },
 ];

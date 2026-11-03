@@ -92,16 +92,17 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 }
                 name
             }
-            // A library's that writes a type of its own, imported from the
-            // declarations that export it (ADR 0210, amended), else as written.
-            None if own => match self.foreign.declared_type(did) {
+            // A library's, imported from the declarations that export it
+            // (ADR 0210, amended, rd642); where none do, one that writes a
+            // type of its own as written, another expanded.
+            None => match self.foreign.declared_type(did) {
                 Some((from, name, default)) => {
                     self.library_imports.insert((from.clone(), name.clone(), *default));
                     name.clone()
                 }
-                None => return self.written_alias(written),
+                None if own => return self.written_alias(written),
+                None => return None,
             },
-            None => return None,
         };
         let given: Vec<&hir::Ty<'tcx>> = (path.segments.last()?.args.map(|args| args.args).unwrap_or_default())
             .iter()

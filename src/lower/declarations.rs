@@ -37,7 +37,6 @@ use comments::documented;
 pub(in crate::lower) use comments::jsdoc_of;
 use parts::{flattened_keys, opaque_fn_signature};
 
-use aliases::declares_written_alias;
 pub use written::validate_types;
 use written::{Member, Signature};
 pub(super) use written::{Written, written_types};
@@ -224,10 +223,13 @@ pub(super) fn module<'tcx>(
     // can be recursive; and its own private types, as TypeScript declares an
     // interface an exported function names.
     items.splice(0..0, out.unexported.into_values().flatten());
-    if items.is_empty() && reexports.is_empty() {
+    // What its `pub use`s of types re-export, `export type { .. } from`.
+    let types = super::reexports::type_reexports(tcx, module, foreign, files);
+    if items.is_empty() && reexports.is_empty() && types.is_empty() {
         return None;
     }
-    let mut declarations = imports::imports((&out.imports, &out.library_imports, &out.module_imports), reexports);
+    let imported = (&out.imports, &out.library_imports, &out.module_imports);
+    let mut declarations = imports::imports(imported, (reexports, &types));
     declarations.splice(0..0, imports::namespaces(&out.namespaces));
     declarations.extend(items);
     // `export { greetAll as unstable_greet };`, its `pub use` of its own
@@ -255,8 +257,10 @@ fn by_own_name(fns: &HashMap<DefId, super::FnInfo>, item: DefId, export: &str) -
 /// enum or a union of the crate's another module's or a library's consumer
 /// names by its name (ADR 0210, amended): an enum, a union, a
 /// `#[repr(transparent)]` struct, or one of named fields; not a tuple
-/// struct, which has no declaration; and an alias whose `#[rust_js::types]`
-/// writes a type of its own (`declares_written_alias`).
+/// struct, which has no declaration; and an alias, a library's plain one
+/// too, as the crate's own is (rd642). One whose `#[rust_js::types]` names
+/// a type is declared as well, but is that type where it's written
+/// (`aliases::written_alias`).
 pub(super) fn declares_type(tcx: TyCtxt<'_>, did: DefId) -> bool {
     match tcx.def_kind(did) {
         DefKind::Struct => {
@@ -264,7 +268,7 @@ pub(super) fn declares_type(tcx: TyCtxt<'_>, did: DefId) -> bool {
             adt.non_enum_variant().ctor.is_none() || super::recognition::transparent_field(tcx, adt).is_some()
         }
         DefKind::Enum | DefKind::Union => true,
-        DefKind::TyAlias => declares_written_alias(tcx, did),
+        DefKind::TyAlias => true,
         _ => false,
     }
 }

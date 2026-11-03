@@ -5,6 +5,14 @@ use std::collections::BTreeSet;
 
 use serde_json::{Value, json};
 
+/// A statement's types of one module a module's declarations re-export,
+/// `export type { Kind, Size as Measure } from "./shapes.js";`.
+type TypeExport<'a> = (
+    rustc_span::Span,
+    &'a Option<crate::js::ImportFrom>,
+    Vec<&'a (String, String)>,
+);
+
 /// The types a module's declarations import, each by where it's from and
 /// its name.
 type Imported<K> = BTreeSet<(K, String)>;
@@ -22,10 +30,12 @@ type ModuleImports<K> = BTreeSet<(K, String, bool)>;
 /// path, which the output makes their file's (ADR 0210); then its `pub
 /// use`s of another module's functions, `export { Challenges } from
 /// "./Challenges.js";` (ADR 0240), a JS module's by its specifier, which
-/// the output makes the file's too.
+/// the output makes the file's too; and of types, `export type {
+/// TemporaryReferenceSet } from ".."`, a statement's of one module one
+/// (rd642).
 pub(super) fn imports(
     (packages, libraries, modules): (&Imported<String>, &ModuleImports<String>, &ModuleImports<Vec<String>>),
-    reexports: &[crate::program::Reexport],
+    (reexports, types): (&[crate::program::Reexport], &[crate::lower::reexports::TypeReexport]),
 ) -> Vec<Value> {
     let mut declarations = Vec::new();
     for (from, names) in grouped(packages) {
@@ -47,6 +57,23 @@ pub(super) fn imports(
             .as_object_mut()
             .expect("an object")
             .extend(from.as_object().expect("an object").clone());
+        declarations.push(declaration);
+    }
+    let mut grouped: Vec<TypeExport<'_>> = Vec::new();
+    for (at, from, named) in types {
+        match grouped.last_mut() {
+            Some((was, was_from, names)) if was.lo() == at.lo() && *was_from == from => names.push(named),
+            _ => grouped.push((*at, from, vec![named])),
+        }
+    }
+    for (_, from, names) in grouped {
+        let from = match from {
+            Some(crate::js::ImportFrom::Module(path)) => json!({ "module": path }),
+            Some(crate::js::ImportFrom::Specifier(specifier)) => json!({ "specifier": specifier }),
+            None => json!({}),
+        };
+        let mut declaration = json!({ "kind": "export", "names": names, "typeOnly": true });
+        (declaration.as_object_mut().expect("an object")).extend(from.as_object().expect("an object").clone());
         declarations.push(declaration);
     }
     declarations

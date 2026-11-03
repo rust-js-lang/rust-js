@@ -127,3 +127,43 @@ block's comments kept from oxc's orphans another way would be a second rule
 for one comment. `test/lowering-comments-items.test.ts` "a re-export
 printed first takes no comment of a block before it"; mutations
 `reexport-at-its-place` and `reexport-comments-left`.
+
+## Amendment: a `pub use` of a type is its type-only re-export (rd642)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. It's a
+declaration file's form, and the JS is the same.
+
+React's Flight clients re-export react-client's `TemporaryReferenceSet`,
+`export type {TemporaryReferenceSet};`, and their `Options` names it,
+`temporaryReferences?: TemporaryReferenceSet`. The port's `pub use
+react_client::react_flight_temporary_references::{TemporaryReferenceSet,
+create_temporary_reference_set};` re-exported the function alone, and
+`Options` wrote the alias out, `Map<string, unknown>`. A type has no JS,
+so a `pub use` of one re-exported nothing (above), and a library's alias
+was expanded where a consumer wrote it, though the crate's own is named.
+
+**A `pub use` of a type that a module's declarations export by its name
+is `export type { .. } from` that module's file in the declarations, by
+the name the `use` gives it** (`reexports::type_reexports`): the crate's
+from its module's file, a library's from its file, and the module's own
+type by another name from none, `export type { Count as Total };`. A
+statement's types of one module are one statement, after the JS's
+re-exports. A class is its constructor, re-exported as before.
+
+**A library's alias is declared by its name, as the crate's own is**
+(`declarations::declares_type`, so its contract's declared types hold it,
+ADR 0210), and a consumer names it where it's written, imported from its
+file (`aliases::alias_named`): `temporaryReferences?:
+TemporaryReferenceSet | undefined`, and `named(event: DispatchEvent):
+PluginName`, which wrote `string`. An alias whose `#[rust_js::types]`
+names a type is still that type where it's written.
+
+- Held by `test/declarations-libraries.test.ts`, "a pub use of a type is
+  its type-only re-export, and a library's alias is named where it's
+  used", whose caller TypeScript checks. The mutations are
+  `type-reexports-left-out`, `type-reexport-by-its-own-name` and
+  `own-type-reexported-from-itself` (`reexports.ts`),
+  `library-plain-alias-undeclared` (`declarations.ts`),
+  `library-plain-alias-expanded` (`declarations/aliases.ts`), and
+  `type-reexports-ungrouped` and `type-reexports-of-values`
+  (`declarations/imports.ts`).

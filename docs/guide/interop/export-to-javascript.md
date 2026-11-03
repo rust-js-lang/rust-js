@@ -1928,9 +1928,10 @@ export function firstWord(text) {
 }
 ```
 
-A `pub use` of a type re-exports nothing yet: JS imports a type's methods
-from the module that defines it. A class's is its constructor's, and a
-module's its namespace, `export * as ns from`
+A `pub use` of a type has no JS: JS imports a type's methods from the
+module that defines it. Its declarations re-export the type,
+`export type { Kind } from "./shapes.js";`. A class's is its
+constructor's, and a module's its namespace, `export * as ns from`
 ([ADR 0874](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md)).
 
 A function that only passes its parameters on, each as it is, in order,
@@ -2043,11 +2044,12 @@ export { delete$ as delete };
 | a function of rest arguments as a value, `impl Fn(&dyn js::Rest<str>)` | `(...args: string[]) => void` |
 | `Box<T>`, an `Rc<T>` whose counts nothing reads | `T` |
 | its `Weak<T>` | `T \| null` ([ADR 0845](../../decisions/0845-an-rcs-declaration-is-what-it-points-at.md)) |
-| a type alias | `export type`, by its name |
+| a type alias | `export type`, by its name where it's used, a library's consumer's too ([ADR 0240](../../decisions/0240-reexports.md), amended) |
 | a type alias whose `#[rust_js::types]` writes a type of its own, `pub type ReactServerValue = Unknown;` of `"string \| number \| ReactServerValue[]"` | `export type ReactServerValue = string \| number \| ReactServerValue[];`, by its name where it's used, a library's consumer's too ([ADR 0811](../../decisions/0811-console-create-task-may-be-absent.md), amended) |
 | another module's struct or enum, or a library crate's whose declarations export it | `import type { Context } from "../react/ReactContext.js"`, by its name ([ADR 0210](../../decisions/0210-declarations-import-module-types.md), amended) |
 | a function that never returns, `-> !` | `never` |
 | a `pub use` of a function | `export { firstWord } from "./text.js"` |
+| a `pub use` of a struct, an enum or an alias another module declares | `export type { Kind, Size as Measure } from "./shapes.js"` ([ADR 0240](../../decisions/0240-reexports.md), amended) |
 | a doc comment | its JSDoc |
 | a `//` comment before a type, a field or a function, past its attributes | the same comment before its declaration, as written ([ADR 0196](../../decisions/0196-typescript-declarations.md), amended) |
 

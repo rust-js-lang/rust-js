@@ -37,4 +37,20 @@ export const mutations: Mutation[] = [
       "a class is its module's default export",
     ],
   },
+  {
+    name: "type-reexports-ungrouped",
+    breaks: "a `pub use` of two types of one module is two `export type` statements, not one (rd642)",
+    file: "src/lower/declarations/imports.rs",
+    find: "if was.lo() == at.lo() && *was_from == from =>",
+    replace: "if false && *was_from == from =>",
+    tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
+  },
+  {
+    name: "type-reexports-of-values",
+    breaks: "a type's re-export is a value's, `export { Kind } from`, which names no value of the module (rd642)",
+    file: "src/lower/declarations/imports.rs",
+    find: "        let mut declaration = json!({ \"kind\": \"export\", \"names\": names, \"typeOnly\": true });\n",
+    replace: "        let mut declaration = json!({ \"kind\": \"export\", \"names\": names });\n",
+    tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
+  },
 ];

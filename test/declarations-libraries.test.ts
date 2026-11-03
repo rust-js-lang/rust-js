@@ -143,7 +143,9 @@ pub fn named(event: &DispatchEvent) -> PluginName {
   expect([existsSync(join(dir, "dep", "plugin_types.js")), readFileSync(join(dir, "dep", "plugin_types.d.ts"), "utf8")])
     .toEqual([false, expect.stringContaining("export type PluginName = string;")]);
   const declarations = readFileSync(join(dir, "app", "lib.d.ts"), "utf8");
-  expect(declarations).toContain('import type { DispatchEvent } from "../dep/plugin_types.js";\n');
+  // Its alias by its name too, as the crate's own is (rd642).
+  expect(declarations).toContain('import type { DispatchEvent, PluginName } from "../dep/plugin_types.js";\n');
+  expect(declarations).toContain("export function named(event: DispatchEvent): PluginName;");
   writeFileSync(join(dir, "caller.ts"), `import { named } from "./app/lib.js";
 
 named({ name: "one" });
@@ -404,4 +406,77 @@ decodeAction(1, "manifest");
   expect([module.swapped(1, 2), module.wraps(3), module.holds({ 0: 4 }), module.shows(5), module.generic(6, {})]).toEqual([21, true, 1, "<5>", 7]);
   // What a JS caller gives past their parameters, none of theirs.
   expect([module.holdsPlain(4, 5), module.counted(), module.nested({ value: undefined })]).toEqual([1, 1, true]);
+});
+
+// React's Flight clients re-export react-client's `TemporaryReferenceSet`,
+// `export type {TemporaryReferenceSet};`, and their Options names it,
+// `temporaryReferences?: TemporaryReferenceSet`. A `pub use` of a type that
+// another module's declarations export by its name is `export type { .. }
+// from` its file, the crate's or a library's, by the name the `use` gives
+// it; and a library's alias is named where it's written, imported from
+// its declarations, as the crate's own is (rd642).
+test("a pub use of a type is its type-only re-export, and a library's alias is named where it's used", () => {
+  const dir = fixture("declarations-library-type-reexports");
+  compiled(dir, {
+    "dep.rs": "pub mod refs;\n",
+    "refs.rs": `use std::collections::HashMap;
+
+use js::Unknown;
+
+/// What a reply's references are kept by.
+pub type TemporaryReferenceSet = HashMap<String, &'static Unknown>;
+
+pub fn create_temporary_reference_set() -> TemporaryReferenceSet {
+    HashMap::new()
+}
+`,
+  }, `pub mod shapes {
+    pub type Size = u32;
+
+    pub enum Kind {
+        Round,
+        Square,
+    }
+
+    pub fn size(kind: &Kind) -> Size {
+        match kind {
+            Kind::Round => 1,
+            Kind::Square => 2,
+        }
+    }
+}
+
+pub use dep::refs::{TemporaryReferenceSet, create_temporary_reference_set};
+pub use shapes::{Kind, Size as Measure, size};
+
+pub type Count = usize;
+pub use self::Count as Total;
+
+pub struct Options {
+    pub temporary_references: Option<TemporaryReferenceSet>,
+}
+
+pub fn count(options: &Options) -> Total {
+    options.temporary_references.as_ref().map_or(0, |set| set.len())
+}
+`);
+  const declarations = readFileSync(join(dir, "app", "lib.d.ts"), "utf8");
+  expect(declarations).toContain('export { createTemporaryReferenceSet } from "../dep/refs.js";\n');
+  expect(declarations).toContain('export type { TemporaryReferenceSet } from "../dep/refs.js";\n');
+  expect(declarations).toContain('export type { Kind, Size as Measure } from "./shapes.js";\n');
+  expect(declarations).toContain("export type { Count as Total };\n");
+  expect(declarations).toContain('import type { TemporaryReferenceSet } from "../dep/refs.js";\n');
+  expect(declarations).toContain("temporaryReferences?: TemporaryReferenceSet | undefined;");
+  writeFileSync(join(dir, "caller.ts"), `import { count, createTemporaryReferenceSet, size, type Kind, type Measure, type TemporaryReferenceSet, type Total } from "./app/lib.js";
+
+const set: TemporaryReferenceSet = createTemporaryReferenceSet();
+const total: Total = count({});
+const kind: Kind = "Round";
+const measured: Measure = size(kind);
+count({ temporaryReferences: set });
+count({ temporaryReferences: measured });
+`);
+  const errors = typeChecked(dir, "caller.ts");
+  expect(errors).toHaveLength(1);
+  expect(errors[0]).toContain("caller.ts(8,");
 });
