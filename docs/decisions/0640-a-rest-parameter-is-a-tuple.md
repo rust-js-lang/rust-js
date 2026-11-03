@@ -179,3 +179,10 @@ slice declared refused; `test/webapi-bindings.test.ts`'s
 `el.append(...children)` and `classList.add(...names)`; and mutations in
 `scripts/mutations/lower/binding_calls.ts`: a `Vec` refused, a slice
 declared accepted.
+
+## Amended by
+
+[ADR 0851](0851-a-closure-of-rest-arguments-is-jss-rest-parameter.md),
+amended (#576): any sized type `Takes` itself, a struct's or a type
+parameter's as a number does, `impl<T> Takes<T> for T`, so rest
+arguments of a type parameter are given each of its own type.

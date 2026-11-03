@@ -1171,7 +1171,8 @@ export async function open(other) {
   ([ADR 0640](../../decisions/0640-a-rest-parameter-is-a-tuple.md)):
   given a tuple, its arguments, each of its own type that a `T` takes,
   `dyn IntoUnknown` of `any`, `str` of `string`, `f64` of `number`, which
-  takes any number JS has as one, each `f64::from` takes, `(x,)` one and
+  takes any number JS has as one, each `f64::from` takes, any other sized
+  type itself, a struct's or a type parameter's (#576), `(x,)` one and
   `()` none; given a slice, a `Vec` or a typed array by reference, spread,
   `log(&values)` being `log(...values)` and `string::from_char_code(bytes)`
   `String.fromCharCode(...bytes)`

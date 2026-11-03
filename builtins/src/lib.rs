@@ -1519,9 +1519,10 @@ pub trait Rest<T: ?Sized> {}
 
 /// What a rest parameter of `T`s takes as one of its arguments, an `A`: any
 /// value, of `dyn IntoUnknown`; text, of `str`, a `&str`, a `&String` or a
-/// `String`; a number of its own type; and a union's members, or an
-/// interface and the ones that extend it, as webapi and node say (ADR
-/// 0640). And what [`dict::from_entries`] takes as a key, text.
+/// `String`; a value of its own type, a number's or a type parameter's,
+/// `Rc<T>` of `Rc<T>`s (#576); any JS number, of `f64`; and a union's
+/// members, or an interface and the ones that extend it, as webapi and node
+/// say (ADR 0640). And what [`dict::from_entries`] takes as a key, text.
 #[diagnostic::on_unimplemented(message = "a parameter of `{Self}`s takes no `{A}`")]
 pub trait Takes<A> {}
 
@@ -1530,14 +1531,9 @@ impl<'a> Takes<&'a str> for str {}
 impl<'a> Takes<&'a String> for str {}
 impl Takes<String> for str {}
 
-/// A number, TypeScript's `number` or `bigint`, of its own type.
-macro_rules! takes_itself {
-    ($($t:ty),*) => {
-        $(impl Takes<$t> for $t {})*
-    };
-}
-
-takes_itself!(i8, u8, i16, u16, i32, u32, i64, u64, f32);
+/// A value of its own type: a number's, TypeScript's `number` or `bigint`,
+/// a type parameter's, any sized type's (#576).
+impl<T> Takes<T> for T {}
 
 /// TypeScript's `number` itself, an `f64`: any number JS has as one, each
 /// that `f64::from` takes, a `u8` of a `Uint8Array` spread too (ADR 0718).
@@ -1547,7 +1543,7 @@ macro_rules! takes_number {
     };
 }
 
-takes_number!(i8, u8, i16, u16, i32, u32, f32, f64);
+takes_number!(i8, u8, i16, u16, i32, u32, f32);
 
 /// A slice of them, spread.
 impl<'a, T: ?Sized + Takes<A>, A> Rest<T> for &'a [A] {}
@@ -1575,8 +1571,9 @@ impl<'a, T: ?Sized + RestItem> core::ops::Deref for dyn Rest<T> + 'a {
 }
 
 /// What one of rest arguments of `T`s is, read (ADR 0851): of `dyn
-/// IntoUnknown`, any value, an `Option<&Unknown>`; of `str`, text; of a
-/// number, its own type. Each is what JS gives, so of any lifetime.
+/// IntoUnknown`, any value, an `Option<&Unknown>`; of `str`, text; of any
+/// sized type, a number's, a type parameter's, a `Rc<T>`, itself (#576).
+/// Each is what JS gives, so of any lifetime.
 pub trait RestItem {
     type Item;
 }
@@ -1588,14 +1585,10 @@ impl RestItem for str {
     type Item = &'static str;
 }
 
-/// A number, read as its own type.
-macro_rules! rest_number {
-    ($($t:ty),*) => {
-        $(impl RestItem for $t { type Item = $t; })*
-    };
+/// A sized type, read as itself.
+impl<T> RestItem for T {
+    type Item = T;
 }
-
-rest_number!(i8, u8, i16, u16, i32, u32, i64, u64, f32, f64);
 
 /// A tuple of up to 16, each item one `T` takes.
 macro_rules! rest {

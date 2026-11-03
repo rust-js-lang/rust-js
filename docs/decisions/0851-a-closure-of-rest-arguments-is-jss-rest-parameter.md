@@ -173,3 +173,74 @@ count(1, "a", 2) + count(...v)
 - Mutations in `scripts/mutations/lower/mir.ts`, `mir/calls.ts`,
   `support.ts`, `traits/calls.ts`, `bindings.ts`, `calls.ts` and
   `declarations.ts`.
+
+## Amendment: rest arguments of any sized type are each itself (#576)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. JS's rest parameter
+is the array of what it's given, whatever its type; only Rust's types
+change, which say what each is.
+
+alien-signals' `signal<T>(initialValue: T)` gives a function its callers
+write with, `count(2)`, and read with, `count()`. Its port keeps each
+value as an `Rc<T>`, shared as upstream's object is, so its closure takes
+rest arguments of a type parameter, `&dyn Rest<Rc<T>>`. Those had no
+`Deref`: `js::RestItem` had impls for any value, `str` and each number
+alone, so the closure couldn't read what it was given; and `js::Takes`
+had a number's own type alone, so a Rust caller couldn't give one. A port
+typed the rest `dyn Rest<dyn IntoUnknown>` and cast, which let safe Rust
+write a string into a `signal::<i32>`.
+
+**Rest arguments of any sized type, a number's, a struct's, an `Rc<T>`'s
+or a type parameter's, are each itself, read and given: the js crate's
+`impl<T> RestItem for T { type Item = T; }` and `impl<T> Takes<T> for T
+{}`, which replace the impls of each number; `dyn IntoUnknown` and `str`
+keep theirs, and `f64` still takes any JS number (ADR 0718). This amends
+ADR 0640, where a number alone took its own type.**
+
+```rust
+pub fn signal<T: 'static>(initial_value: T) -> impl Fn(&dyn Rest<Rc<T>>) -> Option<Rc<T>> {
+    let this = Rc::new(Node { current: RefCell::new(Rc::new(initial_value)) });
+    move |value: &dyn Rest<Rc<T>>| signal_oper(&this, value)
+}
+
+let name = signal(String::from("a"));
+name(&(Rc::new(String::from("b")),));
+```
+
+```js
+export function signal(initialValue) {
+  const this$ = { current: initialValue };
+  return signalOper.bind(null, this$);
+}
+
+name("b");
+```
+
+```ts
+export function signal<T>(initialValue: T): (...args: T[]) => T | null | undefined;
+```
+
+- **Read, each is itself**, as a number was: `value[0]`, `points.iter()`.
+  The lowering is unchanged, as a rest of any type is JS's array.
+- **Given, each is of its own type**, `name(&(Rc::new(s),))`, as a number
+  was; a `&dyn Rest<Element>` of webapi's takes an `Element` as well as
+  the `&Element`s its interfaces' impls take.
+- **Its `.d.ts` is `(...args: T[])`**: `bindings::rest_items`
+  normalizes the `Deref`'s target with each type parameter it names
+  sized, as Rust's implicit bound has it, where it normalized with none,
+  so `T: RestItem` didn't hold and the parameter was declared a
+  function's.
+- **No native comparison**: rest arguments as a value are the js crate's,
+  which runs nowhere but JS; what changes is which Rust compiles.
+
+Alternative: **an impl for each type a port needs**, `RestItem for
+Rc<T>`: one per wrapper, and none could cover a type parameter itself,
+`dyn Rest<T>`, which `firsts<T>` reads. A blanket impl is Rust's way of
+saying "any sized type", and it doesn't overlap the `dyn` and `str`
+impls, which aren't sized.
+
+What holds it: `test/rest-parameters.test.ts`, "rest arguments of a type
+parameter or any sized type are read as themselves" (a generic `signal`
+of `Rc<T>`s, a struct's, `firsts<T>` of a `T` and of an `Option<u8>`,
+each given and read, its JS, `.d.ts` and run). Mutation
+`rest-items-of-a-param-unsized` (`bindings/rest_values.ts`).

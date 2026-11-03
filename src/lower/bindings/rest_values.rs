@@ -2,9 +2,9 @@
 //! type is one, and what it's read as, the array JS's rest parameter is.
 
 use rustc_hir::attrs::lang_items::LangItem;
-use rustc_middle::ty::{self, Ty, TyCtxt};
-use rustc_span::Symbol;
+use rustc_middle::ty::{self, Ty, TyCtxt, Upcast};
 use rustc_span::def_id::DefId;
+use rustc_span::{DUMMY_SP, Symbol};
 
 /// Whether `ty` is rest arguments as a value, `&dyn js::Rest<T>`, of the
 /// trait marked `#[rust_js::rest]` (ADR 0667): spread where it's given, to
@@ -24,18 +24,27 @@ pub(in crate::lower) fn is_rest_value(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 
 /// What rest arguments as a value, `ty`, a `&dyn js::Rest<T>`, are read as:
 /// the slice their `Deref` gives, `[Option<&Unknown>]` of any value's, which
-/// JS's rest parameter is the array of (ADR 0851). `None` of another type,
-/// or of rest arguments of a `T` no `js::RestItem` reads.
+/// JS's rest parameter is the array of (ADR 0851); `[T]` of a type
+/// parameter's, which `js::RestItem` reads as itself as it does any sized
+/// type (#576), each parameter sized, as Rust's implicit bound has it. `None`
+/// of another type, or of rest arguments of a `T` no `js::RestItem` reads.
 pub(in crate::lower) fn rest_items<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     let ty::Ref(_, rest, _) = ty.kind() else { return None };
     if !is_rest_value(tcx, ty) {
         return None;
     }
     let target = tcx.lang_items().deref_target()?;
-    let projection = Ty::new_projection(tcx, ty::IsRigid::No, target, [tcx.erase_and_anonymize_regions(*rest)]);
+    let rest = tcx.erase_and_anonymize_regions(*rest);
+    let projection = Ty::new_projection(tcx, ty::IsRigid::No, target, [rest]);
+    let sized = tcx.require_lang_item(LangItem::Sized, DUMMY_SP);
+    let clauses = (rest.walk())
+        .filter_map(|arg| arg.as_type())
+        .filter(|t| matches!(t.kind(), ty::Param(_)))
+        .map(|param| -> ty::Clause<'tcx> { ty::TraitRef::new(tcx, sized, [param]).upcast(tcx) });
+    let param_env = ty::ParamEnv::new(tcx.mk_clauses_from_iter(clauses));
     let read: Ty<'tcx> = tcx
         .try_normalize_erasing_regions(
-            ty::TypingEnv::fully_monomorphized(),
+            ty::TypingEnv::new(param_env, ty::TypingMode::PostAnalysis),
             ty::Unnormalized::new_wip(projection),
         )
         .ok()?;

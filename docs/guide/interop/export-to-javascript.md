@@ -461,7 +461,8 @@ A closure's last parameter of rest arguments as a value, `args: &dyn
 js::Rest<T>`, is JS's rest parameter, `(...args) =>`, which a JS caller
 gives its arguments one by one, as React's `cache` gives JS what it
 caches. It reads them as the slice they deref to, of what each `T` reads
-as, `Option<&Unknown>` of any value's, `&str` of `str`'s; and every call
+as, `Option<&Unknown>` of any value's, `&str` of `str`'s, and any sized
+type's itself, a number's, a struct's or a type parameter's; and every call
 through a type that says so spreads them, its own, a `dyn Fn`, a `Box`,
 a `fn` pointer, an `impl Fn`
 ([ADR 0851](../../decisions/0851-a-closure-of-rest-arguments-is-jss-rest-parameter.md)):
@@ -528,6 +529,67 @@ export function named(names: string[]): [
   binding's call is given them.
 - **Its `.d.ts` is a rest parameter** of what each reads as, `(...args:
   string[]) => string`.
+- **Rest arguments of a type parameter, or of any sized type, are each
+  itself**, read and given, so a generic closure's are typed: a Rust
+  caller gives each of its own type, `first()(&(1, 2))`, and its `.d.ts`
+  is `(...args: T[])`
+  ([ADR 0851](../../decisions/0851-a-closure-of-rest-arguments-is-jss-rest-parameter.md),
+  amended, #576):
+
+```rust
+use js::Rest;
+
+#[derive(Clone)]
+pub struct Point {
+    pub x: f64,
+    pub y: f64,
+}
+
+pub fn sum_x() -> impl Fn(&dyn Rest<Point>) -> f64 {
+    |points: &dyn Rest<Point>| points.iter().map(|p| p.x).sum()
+}
+
+pub fn first<T: Clone + 'static>() -> impl Fn(&dyn Rest<T>) -> Option<T> {
+    |items: &dyn Rest<T>| items.first().cloned()
+}
+
+pub fn used() -> (f64, Option<u32>) {
+    let sum = sum_x();
+    (sum(&(Point { x: 1.0, y: 2.0 }, Point { x: 3.0, y: 4.0 })), first()(&(1, 2)))
+}
+```
+
+```js
+export function sumX() {
+  return (...points) => points.map((p) => p.x).reduce((a, b) => a + b, -0);
+}
+
+export function first() {
+  return (...items) => items[0];
+}
+
+export function used() {
+  const sum = sumX();
+  return [sum({ x: 1, y: 2 }, { x: 3, y: 4 }), first()(1, 2)];
+}
+```
+
+```ts
+export interface Point {
+    x: number;
+    y: number;
+}
+
+export function sumX(): (...args: Point[]) => number;
+
+export function first<T>(): (...args: T[]) => T | null | undefined;
+
+export function used(): [
+    number,
+    number | null | undefined
+];
+```
+
 - **A closure that captures nothing as a `fn` of rest arguments, that
   passes them all on to a function's rest, is that function**, as
   React's renderer configs export one `shim` as each function a renderer

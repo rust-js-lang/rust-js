@@ -683,6 +683,92 @@ pub fn named(names: &[&str]) -> (String, String) {
   expect(lib.joined()("p", "q")).toBe("p, q");
 });
 
+// #576: rest arguments of any sized type, a type parameter's, a struct's, a
+// `Rc<T>`, read as themselves (`js::RestItem`), and a Rust caller gives
+// them, each of its own type (`js::Takes`): alien-signals' `signal<T>`,
+// whose writes are typed. The `.d.ts` is `(...args: T[])` of a type
+// parameter's, each sized, as Rust's implicit bound has it.
+test("rest arguments of a type parameter or any sized type are read as themselves", async () => {
+  const dir = fixture("rest-items-of-any-type");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+use js::Rest;
+
+pub struct Node<T> {
+    current: RefCell<Rc<T>>,
+}
+
+fn signal_oper<T>(this: &Node<T>, #[cfg_attr(rust_js, rust_js::rest)] value: &[Rc<T>]) -> Option<Rc<T>> {
+    if !value.is_empty() {
+        this.current.replace(Rc::clone(&value[0]));
+        None
+    } else {
+        Some(Rc::clone(&this.current.borrow()))
+    }
+}
+
+pub fn signal<T: 'static>(initial_value: T) -> impl Fn(&dyn Rest<Rc<T>>) -> Option<Rc<T>> {
+    let this = Rc::new(Node {
+        current: RefCell::new(Rc::new(initial_value)),
+    });
+    move |value: &dyn Rest<Rc<T>>| signal_oper(&this, value)
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Point {
+    pub x: f64,
+    pub y: f64,
+}
+
+pub fn sum_x() -> impl Fn(&dyn Rest<Point>) -> f64 {
+    |points: &dyn Rest<Point>| points.iter().map(|p| p.x).sum()
+}
+
+pub fn firsts<T: Clone + 'static>() -> impl Fn(&dyn Rest<T>) -> Option<T> {
+    |items: &dyn Rest<T>| items.first().cloned()
+}
+
+pub fn used() -> (Option<Rc<String>>, f64, f64, Option<u8>, bool, usize) {
+    let name = signal(String::from("a"));
+    name(&(Rc::new(String::from("b")),));
+    let held = [Point { x: 1.0, y: 2.0 }, Point { x: 3.0, y: 4.0 }];
+    let sum = sum_x();
+    let nested = firsts::<Option<u8>>();
+    (
+        name(&()),
+        sum(&(Point { x: 1.0, y: 0.0 }, Point { x: 2.5, y: 0.0 })),
+        sum(&&held[..]),
+        firsts::<u8>()(&(7, 8)),
+        nested(&(None,)).is_some(),
+        nested(&(None, Some(1))).iter().count(),
+    )
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
+  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  // A rest function of them is JS's, its value the function itself.
+  expect(out).toContain("function signalOper(this$, ...value) {\n  if (value.length !== 0) {\n    this$.current = value[0];\n");
+  expect(out).toContain("return signalOper.bind(null, this$);");
+  expect(out).toContain("return (...points) => points.map((p) => p.x).reduce((a, b) => a + b, -0);");
+  expect(out).toContain("return (...items) => items[0];");
+  // Each given as itself, a tuple's items written out, a slice spread.
+  expect(out).toContain('name("b");');
+  expect(out).toContain("sum({ x: 1, y: 0 }, { x: 2.5, y: 0 });");
+  expect(out).toContain("sum(...held);");
+  const dts = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(dts).toContain("export function signal<T>(initialValue: T): (...args: T[]) => T | null | undefined;");
+  expect(dts).toContain("export function sumX(): (...args: Point[]) => number;");
+  expect(dts).toContain("export function firsts<T>(): (...args: T[]) => T | null | undefined;");
+  const lib = await import(join(dir, "lib.js"));
+  // Native Rust's: `Some("b")`, 3.5, 4, `Some(7)`, `Some(None)` is some, one.
+  expect(lib.used()).toEqual(["b", 3.5, 4, 7, true, 1]);
+  const count = lib.signal(1);
+  expect([count(), count(2), count()]).toEqual([1, undefined, 2]);
+  expect(lib.firsts()(undefined, 1)).toBe(undefined);
+});
+
 // Where rest arguments as a value aren't JS's rest parameter, it's an error
 // that says what to write (ADRs 0667, 0851).
 for (const [name, source, message] of [

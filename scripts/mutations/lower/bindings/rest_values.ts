@@ -26,4 +26,17 @@ export const mutations: Mutation[] = [
       "spreads them, through any type",
     ],
   },
+  {
+    name: "rest-items-of-a-param-unsized",
+    breaks:
+      "rest arguments of a type parameter aren't sized where they're declared, so `firsts<T>`'s closure is declared one parameter of `(...args: any[]) => any`, not `...args: T[]` (#576)",
+    file: "src/lower/bindings/rest_values.rs",
+    find: "        .filter(|t| matches!(t.kind(), ty::Param(_)))\n",
+    replace: "        .filter(|t| matches!(t.kind(), ty::Param(_)) && false)\n",
+    tests: [
+      "test/rest-parameters.test.ts",
+      "-t",
+      "read as themselves",
+    ],
+  },
 ];
