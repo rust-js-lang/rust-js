@@ -598,7 +598,8 @@ pub fn kept_else(n: Option<u32>, given: Option<u32>) -> Option<u32> {
 // A comment above a `_` arm whose pattern's comment holds brackets, `_ /*
 // "{" "}" */ => {`: the code between it and the `default`'s start is read
 // as if that comment weren't there, so it's before the `default`, not lost
-// or above the `switch` (rd525).
+// or above the `switch` (rd525). The pattern's own was after the arm's
+// first statement, `log.push(row); /* "{" "}" */` (d1).
 test("a comment above a _ arm whose pattern's comment has brackets is before its default", async () => {
   const { js, lib } = await compiled("comment-above-bracketed-default", `pub fn process(tag: u8, row: &str) -> Vec<String> {
     let mut log = Vec::new();
@@ -620,7 +621,9 @@ test("a comment above a _ arm whose pattern's comment has brackets is before its
     log
 }
 `);
-  expect(js).toContain("      break;\n    // We assume anything else is JSON.\n    default:\n");
+  // And the pattern's comment after its `default:`, the arm's first
+  // statement, an expression, on the next line, not after it (d1).
+  expect(js).toContain('      break;\n    // We assume anything else is JSON.\n    default: /* "{" "}" */\n      log.push(row);\n');
   const process = lib.process as (tag: number, row: string) => string[];
   expect([process(125, "x"), process(1, "{}")]).toEqual([["close"], ["{}"]]);
 });

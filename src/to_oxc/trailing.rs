@@ -358,14 +358,19 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
             });
             if let Some((line, text)) = clause {
                 let colon = text.find("default:").expect("found") + "default:".len();
-                match text[colon..].trim_start().starts_with('{') {
-                    true => {
+                // Before its block's `{`, `default: /* .. */ {`; ending
+                // its line where its first statement is on it, the rest on
+                // the next, `default: /* .. */\n log.push(row);` (d1).
+                let rest = text[colon..].trim_start();
+                match (rest.starts_with('{'), rest.is_empty()) {
+                    (true, _) => {
                         inside
                             .entry(line)
                             .or_default()
                             .push(((colon + 1) as u32, Inside::BeforeCode, &comment.text))
                     }
-                    false => after.entry(line).or_default().push(&comment.text),
+                    (false, false) => ends.entry(line).or_default().push((colon as u32, &comment.text)),
+                    (false, true) => after.entry(line).or_default().push(&comment.text),
                 }
             }
             continue;

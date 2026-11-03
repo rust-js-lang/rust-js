@@ -133,9 +133,18 @@ export const mutations: Mutation[] = [
     breaks:
       "a `_` arm's pattern comment of a block clause is after its `{`, `default: { /* .. */`, not before it as upstream's `default: /* .. */ {` (rd525)",
     file: "src/to_oxc/trailing.rs",
-    find: "                match text[colon..].trim_start().starts_with('{') {\n",
-    replace: "                match false {\n",
+    find: "                match (rest.starts_with('{'), rest.is_empty()) {\n",
+    replace: "                match (false, rest.is_empty()) {\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "opens with a `let`"],
+  },
+  {
+    name: "default-pattern-comment-after-statement",
+    breaks:
+      "a `_` arm's pattern comment, `_ /* \"{\" \"}\" */ => { log.push(row); }`, is after the arm's first statement, `log.push(row); /* .. */`, not after its `default:` (d1)",
+    file: "src/to_oxc/trailing.rs",
+    find: "                    (false, false) => ends.entry(line).or_default().push((colon as u32, &comment.text)),\n",
+    replace: "                    (false, false) => after.entry(line).or_default().push(&comment.text),\n",
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "pattern.s comment has brackets"],
   },
   {
     name: "statement-comment-on-last-item",

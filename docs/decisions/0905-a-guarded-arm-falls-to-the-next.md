@@ -842,6 +842,17 @@ mutations `default-let-start-unread`, `default-let-start-of-no-let`
 `default-pattern-comment-after-brace` (`to_oxc/trailing.ts`) and
 `default-pattern-comment-unmarked` (`to_oxc.ts`).
 
+Amended (d1): of a clause whose first statement is an expression, which
+oxc writes on the `default:`'s line, `default: log.push(row);`, the
+comment was after that line's code, `log.push(row); /* "{" "}" */` once
+the statement is on its own. **It ends the `default:`'s line, the
+statement on the next**, `default: /* "{" "}" */\n log.push(row);`, as a
+line comment after a parameter ends its (`ends`, ADR 0708); a clause of
+nothing on that line, an `if` first, has it after `default:` as before.
+Held by "a comment above a _ arm whose pattern's comment has brackets is
+before its default", run, and the mutation
+`default-pattern-comment-after-statement` (`to_oxc/trailing.ts`).
+
 
 ## Amendment: a guarded `|` of constants is its cases, the guard's `if` once (rd136, 2026-11-02)
 
