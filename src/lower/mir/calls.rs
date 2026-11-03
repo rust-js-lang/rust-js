@@ -216,7 +216,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match own {
             // One that may be a `function::with_this` function that reads
             // `js::arguments()`: every argument (rd509).
-            false if self.krate.reads_arguments.may_call(self.tcx, arg_tys[1]) => {
+            false
+                if self
+                    .krate
+                    .reads_arguments
+                    .may_call(self.tcx, self.krate.foreign, arg_tys[1]) =>
+            {
                 crate::lower::calls::given_to_js(&mut exprs)
             }
             true => crate::lower::calls::own_absent(&mut exprs, absent),

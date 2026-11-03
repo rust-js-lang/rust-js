@@ -184,3 +184,78 @@ test("a library's function that reads arguments is given each by its consumer", 
   const lib = await import(join(dir, "app", "lib.js"));
   expect([lib.counted(), lib.passing()(1, 2, 3)]).toEqual([2, 2]);
 });
+
+// A library's `function::with_this` function that reads `arguments`,
+// called by its consumer through its `dyn Fn` or a generic `Fn`: the
+// library's contract names its parameters' tuple, so the consumer's call
+// gives every argument, the trailing `undefined`s too, as the library's own
+// call does (#553). Before, `Dep.counter()()` counted 0.
+test("a library's function::with_this function that reads arguments is given each by its consumer", async () => {
+  const dir = fixture("arguments-library-with-this");
+  mkdirSync(join(dir, "dep"));
+  writeFileSync(join(dir, "dep.rs"), `use js::{Unknown, function};
+
+type Counter = dyn Fn(Option<&'static Unknown>, Option<&'static Unknown>) -> Option<&'static Unknown>;
+
+pub fn counter() -> &'static Counter {
+    function::with_this(|_, (_a, _b): (Option<&'static Unknown>, Option<&'static Unknown>)| {
+        js::get(js::arguments(), "length")
+    })
+}
+
+pub struct Holder {
+    pub f: &'static Counter,
+}
+
+pub fn holder() -> Holder {
+    Holder { f: counter() }
+}
+
+pub fn inside() -> Option<&'static Unknown> {
+    counter()(None, None)
+}
+`);
+  run([compiler, join(dir, "dep.rs"), "-o", join(dir, "dep", "lib.js"), "--library", "--manifest", join(dir, "dep", "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(dir, "libdep.rmeta")}`, ...js]);
+  mkdirSync(join(dir, "app"));
+  writeFileSync(join(dir, "app", "lib.rs"), `use js::Unknown;
+
+pub fn direct() -> Option<&'static Unknown> {
+    dep::counter()(None, None)
+}
+
+pub fn held() -> Option<&'static Unknown> {
+    let f = dep::counter();
+    f(Some(js::unknown("a")), None)
+}
+
+pub fn field() -> Option<&'static Unknown> {
+    let holder = dep::holder();
+    (holder.f)(None, None)
+}
+
+fn call<F: Fn(Option<&'static Unknown>, Option<&'static Unknown>) -> Option<&'static Unknown>>(f: F) -> Option<&'static Unknown> {
+    f(None, None)
+}
+
+pub fn generic() -> Option<&'static Unknown> {
+    call(dep::counter())
+}
+
+/// Of other parameters than the library's function's: no such function.
+pub fn other(f: &dyn Fn(Option<&'static Unknown>) -> Option<&'static Unknown>) -> Option<&'static Unknown> {
+    f(None)
+}
+`);
+  run([compiler, join(dir, "app", "lib.rs"), "-o", join(dir, "app", "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
+    "--", "--crate-name", "app", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir, ...js]);
+  const manifest = JSON.parse(readFileSync(join(dir, "dep", "lib.manifest.json"), "utf8"));
+  expect(manifest.library.with_this_arguments).toHaveLength(1);
+  const app = readFileSync(join(dir, "app", "lib.js"), "utf8");
+  expect(app).toContain("return Dep.counter()(undefined, undefined);");
+  expect(app).toContain('return f("a", undefined);');
+  expect(app).toContain("return f();");
+  const dep = await import(join(dir, "dep", "lib.js"));
+  const lib = await import(join(dir, "app", "lib.js"));
+  expect([dep.inside(), lib.direct(), lib.held(), lib.field(), lib.generic()]).toEqual([2, 2, 2, 2, 2]);
+});

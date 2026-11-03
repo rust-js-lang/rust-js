@@ -274,6 +274,13 @@ pub struct Library {
     /// does. None where it counts none.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub counted_rcs: Vec<RcShape>,
+    /// The parameters' tuple of each `function::with_this` function it
+    /// makes that reads `js::arguments()` (ADR 1048, amended, #553): a
+    /// consumer's call of a `dyn Fn`, a generic one or a pointer, of one of
+    /// these may call one, and gives every argument, an `undefined` too.
+    /// None where it makes none.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub with_this_arguments: Vec<RcShape>,
     /// What its code changes in place (ADR 0052), its mutated types and
     /// changed `Vec`s, which its JS copies where Rust copies one: a
     /// consumer compiles its own of a function of its only where it may
@@ -472,6 +479,9 @@ pub struct Exports {
     pub makes_dropping_fn_dyns: bool,
     /// What the `Rc`s it counts point at (ADR 0852).
     pub counted_rcs: Vec<RcShape>,
+    /// The parameters' tuples of its `function::with_this` functions that
+    /// read `js::arguments()` (ADR 1048, amended, #553).
+    pub with_this_arguments: Vec<RcShape>,
     /// What it changes in place, which its JS copies (ADR 0914, amended).
     pub changed: Vec<RcShape>,
     /// What it does with its `RefCell`s (ADR 0863).
@@ -572,6 +582,7 @@ impl Dependencies {
                     .map(|associated| (associated.key, associated.facts))
                     .collect(),
                 changed: library.changed,
+                with_this_arguments: library.with_this_arguments,
                 counted_rcs: library.counted_rcs,
                 ref_cells: library.ref_cells,
                 impls: library.impls.into_iter().collect(),
@@ -723,6 +734,7 @@ impl Dependencies {
                 .collect(),
             changed: library.changed,
             counted_rcs: library.counted_rcs,
+            with_this_arguments: library.with_this_arguments,
             ref_cells: library.ref_cells,
             impls: library.impls.into_iter().collect(),
             ..Exports::default()

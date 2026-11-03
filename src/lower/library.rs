@@ -69,8 +69,9 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) type_facts: &'a HashMap<DefId, Vec<(u32, super::recognition::TypeFact)>>,
     /// Those that take their caller's location (ADR 0427).
     pub(super) caller_locations: &'a HashSet<DefId>,
-    /// Those that read `js::arguments()` (rd332).
-    pub(super) reads_arguments: &'a HashSet<DefId>,
+    /// Those that read `js::arguments()` (rd332), and the parameters'
+    /// tuples of its `function::with_this` functions that do (#553).
+    pub(super) reads_arguments: &'a super::analysis::arguments::ReadsArguments<'tcx>,
     /// Whether it keeps a `Vec`'s capacity, which its consumers then do
     /// too, as what they give it may be asked (ADR 0419).
     pub(super) keeps_capacity: bool,
@@ -294,7 +295,7 @@ pub(super) fn exports<'tcx>(
                     ),
                     (ItemFact::TakesLocation, caller_locations.contains(&id)),
                     (ItemFact::Rest, super::bindings::takes_rest(tcx, id)),
-                    (ItemFact::Arguments, reads_arguments.contains(&id)),
+                    (ItemFact::Arguments, reads_arguments.functions.contains(&id)),
                     (
                         ItemFact::Lazy,
                         id.as_local()
@@ -369,6 +370,16 @@ pub(super) fn exports<'tcx>(
                 }],
                 false => counted.types.iter().map(|&ty| rc_shape(tcx, ty)).collect(),
             };
+            shapes.sort();
+            shapes.dedup();
+            shapes
+        },
+        // Its own: a library's whose function it hands on says its own, as
+        // its consumers are given every library's contract (`libraries`).
+        with_this_arguments: {
+            let mut shapes: Vec<RcShape> = (reads_arguments.with_this.iter())
+                .map(|&params| rc_shape(tcx, params))
+                .collect();
             shapes.sort();
             shapes.dedup();
             shapes
@@ -862,6 +873,16 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// contract says (rd332)?
     pub(super) fn reads_arguments(&self, id: DefId) -> bool {
         self.item(id).is_some_and(|item| item.calling.has(ItemFact::Arguments))
+    }
+
+    /// May a call of a `dyn Fn`, a generic one or a pointer, given `args`,
+    /// its arguments' tuple, call a library's `function::with_this`
+    /// function that reads `js::arguments()`, as its contract says (ADR
+    /// 1048, amended, #553)?
+    pub(super) fn may_call_reading_arguments(&self, args: rustc_middle::ty::Ty<'tcx>) -> bool {
+        (self.dependencies.libraries.values()).any(|library| {
+            !library.builtin && (library.with_this_arguments.iter()).any(|shape| may_be_shape(self.tcx, shape, args))
+        })
     }
 
     /// Does any of the libraries make a `dyn Any` of what drops, which the

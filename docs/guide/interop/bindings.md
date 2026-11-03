@@ -410,7 +410,11 @@ export function LinearGradient(stops, x1, y1) {
 ```
 
 - **Each call rust-js writes of it gives every argument**, an `undefined`
-  too, and no closure that passes its arguments on to it is it.
+  too, and no closure that passes its arguments on to it is it. Of a
+  `function::with_this` one, that's each call of a `dyn Fn`, a generic
+  `Fn` or a pointer of its parameters, a consumer's of a library's too,
+  `Dep.counter()(undefined, undefined)`, as the library's contract names
+  them (#553).
 - **Only where its JS's `arguments` is the Rust's**: a function of the
   crate's that isn't generic, a class's constructor, method or static, or
   a `function::with_this` closure, a JS `function`. In another closure, a

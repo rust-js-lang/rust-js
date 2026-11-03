@@ -34,9 +34,16 @@ pub(in crate::lower) struct ReadsArguments<'tcx> {
 
 impl<'tcx> ReadsArguments<'tcx> {
     /// Whether a call of a `dyn Fn`, a generic one or a pointer, given
-    /// `args`, its arguments' tuple, may call one that reads it.
-    pub(in crate::lower) fn may_call(&self, tcx: TyCtxt<'tcx>, args: ty::Ty<'tcx>) -> bool {
-        self.with_this.contains(&tcx.erase_and_anonymize_regions(args))
+    /// `args`, its arguments' tuple, may call one that reads it: one the
+    /// crate makes, or one a library does, as its contract says, which it
+    /// may hand the crate (ADR 1048, amended, #553).
+    pub(in crate::lower) fn may_call(
+        &self,
+        tcx: TyCtxt<'tcx>,
+        foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+        args: ty::Ty<'tcx>,
+    ) -> bool {
+        self.with_this.contains(&tcx.erase_and_anonymize_regions(args)) || foreign.may_call_reading_arguments(args)
     }
 }
 

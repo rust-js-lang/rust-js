@@ -1,6 +1,6 @@
 # 1048. A function that reads `js::arguments()` is given each argument
 
-Status: Accepted. The user's decision (2026-11-01, rd332, option A). Amended (rd509): a `function::with_this` function's own.
+Status: Accepted. The user's decision (2026-11-01, rd332, option A). Amended (rd509): a `function::with_this` function's own. Amended (#553): a library's, called by its consumer.
 Extends [0313](0313-console-forms.md)'s and
 [0443](0443-a-value-a-caller-may-leave-out-is-an-option.md)'s trailing
 `undefined`s, and [0605](0605-an-arrow-that-passes-on-has-one-owner.md)'s
@@ -139,12 +139,38 @@ parameters' tuple gives every argument (`ReadsArguments::may_call`, in
 (`passed_on`; an array method's generic callback, given the index and the
 array too, is the case that matters). Case: as above, preserve Rust's.
 
-Not yet: a library's `with_this` function that reads it, called by a
-consumer through its `dyn Fn` with a trailing `None`. ReplyClient's take
-no parameters, and JS calls them.
-
 Held by `test/arguments.test.ts`' `counter`, called by JS with two
 arguments and by Rust with one `None`, and forwarded to, and the mutations
 `with-this-arguments-refused` (`analysis/arguments.rs`) and
 `with-this-call-left-out` (`mir/calls.rs`).
+
+## Amendment: a library's `with_this` function, called by its consumer (#553)
+
+The amendment above left a library's `with_this` function that reads
+`arguments` to "not yet", and nothing refused it: a consumer's call of
+one through its `dyn Fn` left its trailing `None`s out, the wrong answer
+of #553. `dep::counter()(None, None)` gave 2 in the library,
+`counter()(undefined, undefined)`, and 0 in its consumer,
+`Dep.counter()()`; `f(Some(x), None)` gave 1, and a field's `(h.f)(None,
+None)` 0. Case: results change; preserve Rust's.
+
+**A library's contract names the parameters' tuple of each `with_this`
+function it makes that reads `arguments`** (`with_this_arguments`, a
+shape each, as `counted_rcs` names a type, ADR 0852), and a consumer's
+call of a `dyn Fn`, a generic `Fn` or a pointer that may be of one of
+them, `may_be_shape`, gives every argument, as the library's own does
+(`ReadsArguments::may_call`, asking `Foreign::may_call_reading_arguments`).
+A consumer is given every library's contract, so a library that hands on
+another's function says only its own. A call of other parameters is as
+before, `f()` of a `dyn Fn(Option<&Unknown>)`: no such function is of its
+type.
+
+`js::arguments()` has no native Rust behavior to compare with, so
+`test/arguments.test.ts`' "a library's function::with_this function that
+reads arguments is given each by its consumer" runs the four shapes in
+Node, beside the library's own call: through the function's value, a
+`let`, a struct's field and a generic `Fn`, each 2. Mutations
+`contract-with-this-arguments-unsaid`,
+`with-this-arguments-unread-by-consumer` and
+`with-this-arguments-any-shape` (`library.rs`).
 
