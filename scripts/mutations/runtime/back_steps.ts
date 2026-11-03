@@ -174,8 +174,8 @@ export const mutations: Mutation[] = [
     name: "enumerate-nth-by-next",
     breaks: "$enumerate's nth is its source's",
     file: "src/runtime/back_steps.js",
-    find: "    enumerated.nth = (k) => {",
-    replace: "    enumerated.nthUnused = (k) => {",
+    find: "    enumerated.nth = (k, drop) => {",
+    replace: "    enumerated.nthUnused = (k, drop) => {",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
   {
@@ -434,5 +434,13 @@ export const mutations: Mutation[] = [
     find: "  if (it.rfold !== undefined) return it.rfold(init, f, unwind);\n",
     replace: "  if (it.rfold !== undefined) return it.rfold(init, f);\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^panic_in_own_rfold_drops with"],
+  },
+  {
+    name: "enumerate-nth-drop-unpassed",
+    breaks: "`rev().fuse().take(1).enumerate().nth(1)` of a `Vec` of destructors asks the take's `nth` without the items' drop, so what its past-end `nth(0)` of its source gives back is never dropped (#492)",
+    file: "src/runtime/back_steps.js",
+    find: "enumerated.iter.nth(k, drop && ((x) => drop([0, x])));",
+    replace: "enumerated.iter.nth(k);",
+    tests: ["test/corpus.test.ts", "-t", "^skip_of_short_take_drops.rs$"],
   },
 ];

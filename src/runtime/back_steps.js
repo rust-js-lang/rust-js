@@ -443,10 +443,13 @@ function $enumerate(iter) {
   // Std's `nth(k)`: its source's, counted `k` more, the crate's own where
   // it writes one (#182); its own where its source's is, which drops what
   // it passes itself, a reversed `Vec`'s, as a `step_by` over it asks (#277).
+  // Its source's is given the items' drop, a pair's of the item it counts,
+  // by which a `take` past its end drops what its source's `nth` gives
+  // back (#492).
   if (iter.ownNth) enumerated.ownNth = true;
   if (iter.nth !== undefined) {
-    enumerated.nth = (k) => {
-      const step = enumerated.iter.nth(k);
+    enumerated.nth = (k, drop) => {
+      const step = enumerated.iter.nth(k, drop && ((x) => drop([0, x])));
       if (step.done) return step;
       const at = enumerated.count + k;
       enumerated.count = at + 1;

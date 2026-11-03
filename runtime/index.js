@@ -2438,7 +2438,7 @@ export function $skipping(iter, n, drop) {
       if (skipping.n > 0) {
         const k = skipping.n;
         skipping.n = 0;
-        const step = skipping.iter.nth(k - 1);
+        const step = skipping.iter.nth(k - 1, dropItem);
         if (step.done) {
           skipping.return();
           return 0;
@@ -2456,7 +2456,7 @@ export function $skipping(iter, n, drop) {
       if (skipping.n > 0) {
         const k = skipping.n;
         skipping.n = 0;
-        const step = skipping.iter.nth(k - 1);
+        const step = skipping.iter.nth(k - 1, drop);
         if (step.done) {
           skipping.return();
           return init;
@@ -2472,7 +2472,7 @@ export function $skipping(iter, n, drop) {
       if (skipping.n > 0) {
         const k = skipping.n;
         skipping.n = 0;
-        const step = skipping.iter.nth(k - 1);
+        const step = skipping.iter.nth(k - 1, drop);
         if (step.done) return init;
         drop?.(step.value);
       }
@@ -2485,7 +2485,7 @@ export function $skipping(iter, n, drop) {
     if (skipping.n > 0 && skipping.iter.ownNth) {
       const k = skipping.n;
       skipping.n = 0;
-      const step = skipping.iter.nth(k - 1);
+      const step = skipping.iter.nth(k - 1, drop);
       if (step.done) return undefined;
       drop?.(step.value);
       return skipping.iter;
@@ -2501,12 +2501,15 @@ export function $skipping(iter, n, drop) {
     return skipping.iter;
   };
   // Std's `Skip::nth(k)`, its source's `nth(n + k)`, where that drops what
-  // it passes over itself, a reversed `Vec`'s as one slice (#234).
+  // it passes over itself, a reversed `Vec`'s as one slice (#234). Each
+  // `nth` it asks of its source here, and its count's, fold's, try_fold's
+  // and last's, is given the items' drop, which a `take` past its end
+  // drops what its source's `nth` gives back by (#492).
   if (iter.ownNth) {
-    skipping.nth = (k) => {
+    skipping.nth = (k, dropItem = drop) => {
       const skip = skipping.n;
       skipping.n = 0;
-      return skipping.iter.nth(skip + k);
+      return skipping.iter.nth(skip + k, dropItem);
     };
     skipping.ownNth = true;
   }
@@ -3210,10 +3213,13 @@ export function $enumerate(iter) {
   // Std's `nth(k)`: its source's, counted `k` more, the crate's own where
   // it writes one (#182); its own where its source's is, which drops what
   // it passes itself, a reversed `Vec`'s, as a `step_by` over it asks (#277).
+  // Its source's is given the items' drop, a pair's of the item it counts,
+  // by which a `take` past its end drops what its source's `nth` gives
+  // back (#492).
   if (iter.ownNth) enumerated.ownNth = true;
   if (iter.nth !== undefined) {
-    enumerated.nth = (k) => {
-      const step = enumerated.iter.nth(k);
+    enumerated.nth = (k, drop) => {
+      const step = enumerated.iter.nth(k, drop && ((x) => drop([0, x])));
       if (step.done) return step;
       const at = enumerated.count + k;
       enumerated.count = at + 1;

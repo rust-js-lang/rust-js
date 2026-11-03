@@ -750,3 +750,31 @@ them and of std's structs, against native Rust; and the mutations
 (`closing.ts`), `rev-try-fold-unwind-lost`
 (`rev.ts`), `fold-to-array-collected-last`, `fold-of-unwind-lost`
 (`fold_of.ts`) and `find-dropping-throw-keeps-item` (`find_dropping.ts`).
+
+## Amendment: a `skip` and an `enumerate` give the `nth` they ask the items' drop (2026-11-03, #492)
+
+The #289 amendment had `$stepBy` pass its drop to the `nth` it asks, and
+noted that `$skipping` would need the same once a case reached it. The
+nightly's fuzz seed 12456541 reached it:
+`fuse().take(2).skip(1).nth(2)` of a `Vec` of destructors never dropped
+`D(28)`. Std's `Skip::nth(2)` is the take's `nth(3)`. Past the take's end,
+that asks its source for `nth(1)` and drops the item it gets back. A take
+has no drop of its own over a compiled `Fuse`, so it uses the one it's
+given (#285), and `$skipping`'s `nth` gave none. Its `count`, `fold`,
+`try_fold` and `last` (`skipped`) each ask `nth(k - 1)` first, and they
+had the same gap, so `take(1).skip(3).count()` lost its first item.
+`$enumerate`'s `nth` gave none either. It now gives a pair's drop,
+`(x) => drop([0, x])`, since its source's items are what it counts.
+Results change, so Rust's behavior is kept (ADR 0262, C). The gap started
+when 85ce01714 made a take its own `nth` wherever its source is. Matrices of
+`take(t)` under skip, nth, count, fold, last, any, find, enumerate,
+step_by, chain, zip, map, filter, inspect, peekable and by_ref, over
+`Vec`, fuse, rev-fuse, peekable and an own-`nth` source, now agree with
+native Rust on what is dropped. 16 cells, all a reversed `Vec` or an
+own-`nth` source, drop the same items in a different order, filed as
+#493. `skip_of_short_take_drops` holds the
+shapes against native Rust. The mutations `skipping-nth-drop-unpassed`,
+`skipping-count-drop-unpassed`, `skipping-fold-drop-unpassed`,
+`skipping-try-fold-drop-unpassed`, `skipping-last-drop-unpassed`
+(`skipping.ts`) and `enumerate-nth-drop-unpassed` (`back_steps.ts`) are
+caught.
