@@ -1,6 +1,7 @@
 # 0868. What std's impls and derives run is what their bounds say
 
-Status: Accepted. Amends [0863](0863-a-refcell-of-an-object-is-the-object.md)
+Status: Accepted. Amended (2026-11-03): of a type of a type parameter too
+(#499). Amends [0863](0863-a-refcell-of-an-object-is-the-object.md)
 and [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md): what
 std's code a call runs may borrow, of the types it's given.
 
@@ -129,3 +130,40 @@ Held by `test/lowering-cell-borrows.test.ts`'s "std's function given to
 std's runs what its bounds say, not what it's of", both; mutation
 `std-function-given-its-types`.
 
+
+## Amendment (2026-11-03): of a type of a type parameter too (#499)
+
+Case: A, as above.
+
+alien-signals' graph is generic over its node's kind, `Link<K> { dep:
+Rc<ReactiveNode<K>>, next_dep: RefCell<Option<Rc<Link<K>>>>, .. }`, and
+reads each link for a moment, `let next = link.next_dep.borrow().clone();`.
+Once its crate had a closure JS calls with rest arguments, whose code
+rust-js can't see, every one of those borrows was counted, and each field
+was its one cell: system.js read `const borrow = $borrow($fieldCell(link,
+"nextDep"), true); const next = borrow.value; $unborrow(borrow);` where
+upstream reads `link.nextDep`. `std_impl_bounds` gave up on any type with
+a type parameter in it, so `Option<Rc<Link<K>>>`'s `Clone` was taken to
+run anything, although it clones only an `Rc`, which clones no `K`. The
+cost was more than the reading: each borrow defined a property on its
+cell, and the port ran 55 to 280 times slower than upstream (149 ms per
+update of a 100 by 100 grid, against upstream's 0.5 ms).
+
+**Std's impl of a type of a type parameter is selected as one of no type
+parameter is, and runs what its bounds say**: `Option<T>`'s `Clone` its
+`T: Clone`'s, `Rc<T, A>`'s its `A: Clone`'s, `Global`'s nothing. A type
+parameter itself, `K: Clone`, selects no impl of std's, and stays what any
+type parameter is: anything, where the crate has impls of its own. So
+`slot.item.borrow().clone()` of a `RefCell<Option<K>>` is still counted,
+and panics `already borrowed` where `K`'s clone borrows the cell, as
+Rust's does.
+
+The port's system.js and index.js have no borrow helper left, and upstream's
+suite passes. A 100 by 100 grid's update takes 1.3 to 1.6 times upstream's
+(0.65 ms against 0.42 to 0.51 ms), and making 100,000 signals, computeds
+and effects 2 times (88 ms against 44 ms), on a loaded machine.
+
+Held by `test/lowering-cell-borrows.test.ts`'s "std's impl of a type of a
+type parameter runs what its bounds say", the graph's plain read and the
+slot's counted borrow, run; mutation
+`std-impl-bounds-of-a-param-type-unread` (`lower/analysis/cell_borrows.ts`).

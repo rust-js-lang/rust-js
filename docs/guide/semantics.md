@@ -438,7 +438,9 @@ borrow throws as Rust's panics
 A function of std's given so, `get_or_insert_with(Vec::new)`, runs what
 its bounds say, as a call of it does: nothing of a `Vec` of callbacks
 ([0868](../decisions/0868-what-stds-impls-and-derives-run-is-what-their-bounds-say.md),
-amended).
+amended). So does std's impl of a type of a type parameter: a generic
+graph's `link.next.borrow().clone()` of a `RefCell<Option<Rc<Link<K>>>>`
+clones no `K`, and reads `link.next` (#499).
 So is one whose module hands on its cell, `with(bump)`, or the `&mut`
 of what it holds, `with_borrow_mut(|depth| fill(depth))`; a `with` lends
 its closure the cell, which, used in place, is the variable too,

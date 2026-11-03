@@ -1169,9 +1169,11 @@ fn bound_runs<'tcx>(
 
 /// The bounds std's impls of `traits` for `ty` are under, each a type and
 /// the trait it's bound by, `T: Clone` of `Option<T>`'s `Clone`: what
-/// they may run of what `ty` is made of (ADR 0868). `None` where `ty` is
-/// the crate's, a cell, which its own impl borrows, or has a trait of
-/// `traits` that isn't std's impl, a built-in one or one not selected.
+/// they may run of what `ty` is made of (ADR 0868), of a type of a type
+/// parameter too, `Rc<Node<K>>`'s `Clone`, which clones no `K` (#499).
+/// `None` where `ty` is the crate's, a cell, which its own impl borrows, or
+/// has a trait of `traits` that isn't std's impl, a built-in one or one not
+/// selected, a type parameter's own.
 fn std_impl_bounds<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     ty: Ty<'tcx>,
@@ -1179,7 +1181,7 @@ fn std_impl_bounds<'tcx>(
 ) -> Option<Vec<(Ty<'tcx>, DefId)>> {
     let tcx = recognition.tcx;
     let ours = matches!(ty.kind(), ty::Adt(adt, _) if adt.did().is_local());
-    if ours || recognition.is_borrowed_cell(ty) || ty.has_param() || ty.has_aliases() {
+    if ours || recognition.is_borrowed_cell(ty) || ty.has_aliases() {
         return None;
     }
     // A trait alias, `ptr::Thin`, which may stand for any, and has no impls.

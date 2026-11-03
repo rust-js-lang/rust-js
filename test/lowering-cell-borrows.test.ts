@@ -866,6 +866,84 @@ pub fn push_hook(hook: fn() -> u32) -> u32 {
   expect(() => lib.pushHook(() => 4)).toThrow("RefCell already mutably borrowed");
 });
 
+// alien-signals' graph, generic over its node's kind, beside a signal JS
+// calls with rest arguments, whose code rust-js can't see: std's impl of a
+// type of a type parameter runs what its bounds say, as one of no type
+// parameter does, `Rc<Node<K>>`'s `Clone` clones no `K`, so the momentary
+// borrow of `node.next` is the field itself (#499, ADR 0868, amended).
+// `Option<K>`'s clones a `K`, which may be one whose clone borrows the
+// cell, and stays counted, as its panic shows.
+test("std's impl of a type of a type parameter runs what its bounds say", async () => {
+  const dir = fixture("generic-std-impl-bounds");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+use js::{IntoUnknown, Rest};
+
+pub struct Node<K> {
+    pub next: RefCell<Option<Rc<Node<K>>>>,
+    pub kind: K,
+}
+
+pub fn last<K>(node: &Rc<Node<K>>) -> Rc<Node<K>> {
+    let mut node = Rc::clone(node);
+    loop {
+        let next = node.next.borrow().clone();
+        let Some(next) = next else {
+            break;
+        };
+        node = next;
+    }
+    node
+}
+
+pub fn chain(n: u32) -> Rc<Node<u32>> {
+    let head = Rc::new(Node { next: RefCell::new(None), kind: 0 });
+    let mut tail = Rc::clone(&head);
+    for kind in 1..n {
+        let node = Rc::new(Node { next: RefCell::new(None), kind });
+        *tail.next.borrow_mut() = Some(Rc::clone(&node));
+        tail = node;
+    }
+    head
+}
+
+pub fn signal(node: Rc<Node<u32>>) -> impl Fn(&dyn Rest<dyn IntoUnknown>) -> u32 {
+    move |_: &dyn Rest<dyn IntoUnknown>| last(&node).kind
+}
+
+pub struct Slot<K> {
+    pub item: RefCell<Option<K>>,
+}
+
+pub fn taken<K: Clone>(slot: &Slot<K>) -> Option<K> {
+    slot.item.borrow().clone()
+}
+
+pub struct Grabby(pub Rc<Slot<Grabby>>);
+
+impl Clone for Grabby {
+    fn clone(&self) -> Self {
+        self.0.item.borrow_mut().take();
+        Grabby(Rc::clone(&self.0))
+    }
+}
+
+pub fn grab() -> bool {
+    let slot = Rc::new(Slot { item: RefCell::new(None) });
+    *slot.item.borrow_mut() = Some(Grabby(Rc::clone(&slot)));
+    taken(&slot).is_some()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function last(node) {\n  let next;\n  while ((next = node.next) != null) {\n    node = next;\n  }\n  return node;\n}");
+  expect(js).toContain('const borrow = $borrow($fieldCell(slot, "item"), true);');
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.signal(lib.chain(4))()).toBe(3);
+  expect(() => lib.grab()).toThrow("RefCell already borrowed");
+});
+
 // React Float's hydrateHoistable: in a loop over a `RefCell`'s borrow, one
 // `try` around it, a condition written with `||` of comparisons each with
 // a value `if`, its one `continue`, is one `if` of it all, `if (a !== (..)

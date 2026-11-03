@@ -653,4 +653,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^held_borrow_of_own_cell.rs$"],
     snapshots: true,
   },
+  {
+    name: "std-impl-bounds-of-a-param-type-unread",
+    breaks: "std's impl of a type of a type parameter, `Rc<Node<K>>`'s `Clone`, is taken to run anything, so every momentary borrow of a generic graph's field is counted where code rust-js can't see runs (#499)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "    if ours || recognition.is_borrowed_cell(ty) || ty.has_aliases() {\n",
+    replace: "    if ours || recognition.is_borrowed_cell(ty) || ty.has_param() || ty.has_aliases() {\n",
+    tests: ["test/lowering-cell-borrows.test.ts", "-t", "type of a type parameter"],
+  },
+
 ];
