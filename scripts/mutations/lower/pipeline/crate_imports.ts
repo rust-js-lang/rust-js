@@ -89,8 +89,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a copy of another module's function a module calls by the name its `use` gives isn't imported, so `relay_named`'s `wrappedUnboxed` has no import, and the case fails",
     file: "src/lower/pipeline/crate_imports.rs",
-    find: "            .insert((target, name, export, local, target));",
-    replace: "            .get(&(target, name, export, local, target));",
+    find: "            .insert((target, name, export, local, target, None));",
+    replace: "            .get(&(target, name, export, local, target, None));",
     tests: ["test/corpus.test.ts", "-t", "js_given_copies"],
   },
   {
@@ -120,5 +120,23 @@ export const mutations: Mutation[] = [
       "-t",
       "a function called through its module is read through its namespace",
     ],
+  },
+  {
+    name: "namespace-at-first-use",
+    breaks:
+      "a module's namespace, `import * as Lanes`, is at the first `use` of the module, not at `use crate::lanes;` (rd649)",
+    file: "src/lower/pipeline/crate_imports.rs",
+    find: "                Some(target.to_def_id()),\n",
+    replace: "                None,\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "two uses of one module"],
+  },
+  {
+    name: "crate-item-use-unnamed",
+    breaks:
+      "a crate's item is imported at its module's first `use`, not at the `use` naming it, so two `use`s of a module are one import (rd649)",
+    file: "src/lower/pipeline/crate_imports.rs",
+    find: "                Some(id),\n            ),\n        };\n",
+    replace: "                None,\n            ),\n        };\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "two uses of one module"],
   },
 ];

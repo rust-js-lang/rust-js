@@ -647,8 +647,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a comment above the `use` of a binding is lost, not above its JS file's import (rd92)",
     file: "src/lower/analysis/naming.rs",
-    find: "        export.is_some_and(|(of, _)| of == from)\n",
-    replace: "        export.is_some_and(|(of, _)| of == from && false)\n",
+    find: "            export.is_some_and(of)\n",
+    replace: "            export.is_some_and(|_| false)\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "above a use"],
   },
   {
@@ -761,17 +761,17 @@ export const mutations: Mutation[] = [
     breaks:
       "a `use` of a binding through a library's module that holds it, `use shared::internals::REACT_SHARED_INTERNALS;`, places no import, so ReactCurrentFiber's `shared/ReactSharedInternals` goes after every `use`'s (rd609, ADR 1063, amended)",
     file: "src/lower/analysis/naming.rs",
-    find: "            |holder| matches!(holder, bindings::Holder::Library(of) if of == from),\n",
-    replace: "            |_| false,\n",
+    find: "    move |through| matches!(&through.holder, bindings::Holder::Library(of) if of == from)\n",
+    replace: "    move |_| false\n",
     tests: ["test/cargo-link.test.ts", "-t", "holds a binding"],
   },
   {
     name: "imports-held-module-unplaced",
     breaks:
-      "a `use` of a binding through the crate's module that holds it, `use crate::held::assign;`, places no import, which goes after every `use`'s (rd609, ADR 1063, amended)",
+      "a `use` of a binding through the crate's module that holds it, `use crate::held::assign as merge;`, isn't of that module's import, so the `use crate::held::size;` after it is an import of its own, not in its run's `import merge, { size }` (rd609, rd649)",
     file: "src/lower/analysis/naming.rs",
-    find: "            |holder| matches!(holder, bindings::Holder::Module(of) if *of == target),\n",
-    replace: "            |_| false,\n",
+    find: "        let holds = |through: &NamedThrough| matches!(through.holder, bindings::Holder::Module(of) if of == target);\n",
+    replace: "        let holds = |_: &NamedThrough| false;\n",
     tests: ["test/cargo-link.test.ts", "-t", "holds a binding"],
   },
   {
@@ -779,8 +779,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding a `use` names through a module that holds it is taken for its own JS module's too, so a `use shared::internals::REACT_SHARED_INTERNALS;` places `react`'s import, which the module doesn't make there (rd609, ADR 1063, amended)",
     file: "src/lower/analysis/naming.rs",
-    find: "                        Some(holder) => holders.push(holder),\n",
-    replace: "                        Some(holder) => {\n                            holders.push(holder);\n                            named.push(id);\n                        }\n",
+    find: "                            import: Some(read.import),\n                        }),\n",
+    replace: "                            import: Some(read.import),\n                        })\n                        .max(named.push(id)),\n",
     tests: ["test/cargo-link.test.ts", "-t", "holds a binding"],
   },
   {
@@ -842,7 +842,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `use` of a binding's class a class extends, `use react::Component;`, places no import, so ReactART's `import { Component } from \"react\"` goes after its own modules' (rd629)",
     file: "src/lower/analysis/naming.rs",
-    find: "            DefKind::Trait => crate::lower::classes::base_class(tcx, id).is_some_and(|(of, _)| of == from),\n",
+    find: "            DefKind::Trait => crate::lower::classes::base_class(tcx, id).is_some_and(of),\n",
     replace: "            DefKind::Trait => false,\n",
     tests: ["test/class-components.test.ts", "-t", "superclass is imported where its use is"],
   },
@@ -860,7 +860,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `use` through a module that re-exports what it names places that module's import nowhere, so `./config_markup.js` is after `../dep/config.js`, whose `use` is after it (rd650)",
     file: "src/lower/analysis/naming.rs",
-    find: "                            Some(module) => holders.push(bindings::Holder::Module(module)),\n",
+    find: "                            Some(module) => holders.push(NamedThrough {\n                                holder: bindings::Holder::Module(module),\n                                id,\n                                import: None,\n                            }),\n",
     replace: "                            Some(_) => named.push(id),\n",
     tests: ["test/reexports-through.test.ts", "-t", "a use through a module"],
   },
@@ -879,5 +879,41 @@ export const mutations: Mutation[] = [
     find: "        && (adt.is_box()\n",
     replace: "        && (false\n",
     tests: ["test/lowering-mir-lets.test.ts", "-t", "a method's self of an Rc is named after its type"],
+  },
+  {
+    name: "use-run-unjoined",
+    breaks:
+      "a run of `use`s of one module, nothing but attributes between, is an import of each, `import { ImmediatePriority as ImmediateSchedulerPriority }` and `import { NormalPriority as .. }` of one `./priorities.js`, not one as a run of `pub use`s is one re-export (rd649)",
+    file: "src/lower/analysis/naming.rs",
+    find: "                between.is_ok_and(|between| crate::lower::reexports::only_attributes(&between, false))\n",
+    replace: "                between.is_ok_and(|_| false)\n",
+    tests: ["test/modules.test.ts", "-t", "rust_js::name"],
+  },
+  {
+    name: "use-run-past-a-comment",
+    breaks:
+      "a `use` of a module after a comment joins the run before it, so `// The next.` is above no import of its own and `next` is in the one before (rd649)",
+    file: "src/lower/analysis/naming.rs",
+    find: "                between.is_ok_and(|between| crate::lower::reexports::only_attributes(&between, false))\n",
+    replace: "                between.is_ok_and(|between| crate::lower::reexports::only_attributes(&between, true) || between.contains(\"//\"))\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "two uses of one module"],
+  },
+  {
+    name: "use-run-past-another-module",
+    breaks:
+      "a `use` of a module after another module's `use` joins the run before that, so `use crate::lanes::last;` after `use crate::lanes::inner::deep;` is in `import { clear }` (rd649)",
+    file: "src/lower/analysis/naming.rs",
+    find: "            && of(before)\n",
+    replace: "            && (of(before) || true)\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "two uses of one module"],
+  },
+  {
+    name: "use-named-at-first-use",
+    breaks:
+      "what a `use` names is imported at the first `use` of its module, so ReactFiberCommitWork's second `use` of ReactFiberLane is in its first import (rd649)",
+    file: "src/lower/analysis/naming.rs",
+    find: "        let mut at = self.first(naming, naming_through)?;\n",
+    replace: "        let mut at = self.first(&makes, &holds)?;\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "two uses of one module"],
   },
 ];

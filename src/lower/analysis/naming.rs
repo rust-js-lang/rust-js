@@ -530,10 +530,23 @@ pub(in crate::lower) fn renamed_in(tcx: TyCtxt<'_>, module: LocalModId) -> HashM
 pub(in crate::lower) struct UsesWritten {
     module: LocalModId,
     /// Each, and whether it's a `pub use`, a re-export.
-    uses: Vec<(rustc_span::Span, Vec<DefId>, Vec<bindings::Holder>, bool)>,
+    uses: Vec<(rustc_span::Span, Vec<DefId>, Vec<NamedThrough>, bool)>,
     /// Each binding the module declares itself, a function or a static of
     /// its own or of an `extern` block, where it's written.
     declared: Vec<(rustc_span::Span, DefId)>,
+    /// Each statement after one with nothing but attributes between, and
+    /// that one.
+    joined: Vec<(rustc_span::Span, rustc_span::Span)>,
+}
+
+/// What a `use` names through another module, whose import it makes: the
+/// module that holds the binding it names (rd609) or re-exports the item
+/// (rd650), what it names, and what's imported of a module that holds it,
+/// `shared/assign`'s default (ADR 0633).
+struct NamedThrough {
+    holder: bindings::Holder,
+    id: DefId,
+    import: Option<String>,
 }
 
 impl UsesWritten {
@@ -557,7 +570,7 @@ impl UsesWritten {
         let statement = |span: rustc_span::Span| {
             (lists.iter().filter(|list| list.contains(span))).fold(span, |outer, &list| outer.to(list))
         };
-        let mut uses: Vec<(rustc_span::Span, Vec<DefId>, Vec<bindings::Holder>, bool)> = (items())
+        let mut uses: Vec<(rustc_span::Span, Vec<DefId>, Vec<NamedThrough>, bool)> = (items())
             .filter_map(|item| {
                 let ItemKind::Use(path, UseKind::Single(_)) = item.kind else {
                     return None;
@@ -567,12 +580,20 @@ impl UsesWritten {
                 let (mut named, mut holders) = (Vec::new(), Vec::new());
                 for res in path.res.present_items() {
                     let Res::Def(_, id) = res else { continue };
-                    match held.use_holder(foreign, path.segments, id) {
-                        Some(holder) => holders.push(holder),
+                    match held.use_read(foreign, path.segments, id) {
+                        Some(read) => holders.push(NamedThrough {
+                            holder: read.holder,
+                            id,
+                            import: Some(read.import),
+                        }),
                         // And one imported from a module that re-exports
                         // it, that module's (rd650).
                         None => match through(id) {
-                            Some(module) => holders.push(bindings::Holder::Module(module)),
+                            Some(module) => holders.push(NamedThrough {
+                                holder: bindings::Holder::Module(module),
+                                id,
+                                import: None,
+                            }),
                             None => named.push(id),
                         },
                     }
@@ -581,6 +602,17 @@ impl UsesWritten {
             })
             .collect();
         uses.sort_by_key(|(span, ..)| span.lo());
+        // Each statement after one with nothing but attributes between, no
+        // comment or blank line, as a run of `pub use`s is (ADR 0874).
+        let mut statements: Vec<rustc_span::Span> = uses.iter().map(|&(span, ..)| span).collect();
+        statements.dedup();
+        let joined = (statements.windows(2))
+            .filter(|pair| {
+                let between = tcx.sess.source_map().span_to_snippet(pair[0].between(pair[1]));
+                between.is_ok_and(|between| crate::lower::reexports::only_attributes(&between, false))
+            })
+            .map(|pair| (pair[1], pair[0]))
+            .collect();
         let items = tcx.hir_module_items(module);
         let mut declared: Vec<(rustc_span::Span, DefId)> = (items.free_items().map(|id| id.owner_id.to_def_id()))
             .chain(items.foreign_items().map(|id| id.owner_id.to_def_id()))
@@ -588,17 +620,18 @@ impl UsesWritten {
             .map(|id| (tcx.def_span(id), id))
             .collect();
         declared.sort_by_key(|(span, _)| span.lo());
-        UsesWritten { module, uses, declared }
+        UsesWritten {
+            module,
+            uses,
+            declared,
+            joined,
+        }
     }
 
     /// The first naming what `makes` says is of the import, or a binding
     /// through a module `holds` says it is; a `pub use` where no other
     /// `use` does (rd620).
-    fn first(
-        &self,
-        makes: impl Fn(DefId) -> bool,
-        holds: impl Fn(&bindings::Holder) -> bool,
-    ) -> Option<rustc_span::Span> {
+    fn first(&self, makes: impl Fn(DefId) -> bool, holds: impl Fn(&NamedThrough) -> bool) -> Option<rustc_span::Span> {
         let first = |reexport: bool| {
             (self.uses.iter())
                 .filter(|use_| use_.3 == reexport)
@@ -606,6 +639,32 @@ impl UsesWritten {
                 .map(|&(span, ..)| span)
         };
         first(false).or_else(|| first(true))
+    }
+
+    /// Where the import is of what `naming` says the `use` names, itself or
+    /// through a module that holds or re-exports it, of the import `makes`
+    /// and `holds` say: each `use` an import of its own, and a run of them
+    /// of one module, nothing but attributes between, one, at its first, as
+    /// a run of `pub use`s is one re-export (rd649, ADR 0874); a `pub use`
+    /// where no other `use` does.
+    fn written_at(
+        &self,
+        (naming, naming_through): (impl Fn(DefId) -> bool, impl Fn(&NamedThrough) -> bool),
+        makes: impl Fn(DefId) -> bool,
+        holds: impl Fn(&NamedThrough) -> bool,
+    ) -> Option<rustc_span::Span> {
+        let mut at = self.first(naming, naming_through)?;
+        let of = |span: rustc_span::Span| {
+            (self.uses.iter()).any(|(at, named, holders, _)| {
+                *at == span && (named.iter().any(|&id| makes(id)) || holders.iter().any(&holds))
+            })
+        };
+        while let Some(&(_, before)) = self.joined.iter().find(|&&(after, _)| after == at)
+            && of(before)
+        {
+            at = before;
+        }
+        Some(at)
     }
 
     /// Where each `use` and `pub use` statement is: a re-export written
@@ -622,9 +681,26 @@ impl UsesWritten {
         foreign: &crate::lower::library::Foreign<'_, '_>,
         from: &str,
     ) -> Option<rustc_span::Span> {
-        self.first(
-            |id| self.imports_from(tcx, foreign, id, from),
-            |holder| matches!(holder, bindings::Holder::Library(of) if of == from),
+        self.first(|id| self.imports_from(tcx, foreign, id, (from, None)), held_in(from))
+    }
+
+    /// The `use` of the import of `export` from its JS file (`written_at`,
+    /// rd649): of the first naming it, itself or through a module that
+    /// holds it.
+    pub(in crate::lower) fn export_at(
+        &self,
+        tcx: TyCtxt<'_>,
+        foreign: &crate::lower::library::Foreign<'_, '_>,
+        (from, name): (&str, &str),
+    ) -> Option<rustc_span::Span> {
+        let holder = held_in(from);
+        self.written_at(
+            (
+                |id| self.imports_from(tcx, foreign, id, (from, Some(name))),
+                |through| holder(through) && through.import.as_deref() == Some(name),
+            ),
+            |id| self.imports_from(tcx, foreign, id, (from, None)),
+            held_in(from),
         )
     }
 
@@ -640,15 +716,16 @@ impl UsesWritten {
         from: &str,
     ) -> Option<rustc_span::Span> {
         let declared = (self.declared.iter())
-            .find(|&&(_, id)| self.imports_from(tcx, foreign, id, from))
+            .find(|&&(_, id)| self.imports_from(tcx, foreign, id, (from, None)))
             .map(|&(span, _)| span);
         (self.package_at(tcx, foreign, from).into_iter())
             .chain(declared)
             .min_by_key(|span| span.lo())
     }
 
-    /// Whether what `id` names is imported from the JS file `from`: a
-    /// library's item a consumer imports from it (ADR 0100), or a binding's.
+    /// Whether what `id` names is imported from the JS file `from`, its
+    /// export `name` where one is asked (rd649): a library's item a consumer
+    /// imports from it (ADR 0100), or a binding's.
     /// Of a library's namespace, ADR 1037's unit struct, its methods',
     /// `use ..::ReactFiberReconciler;`'s; of another crate's module, each
     /// item's in it, a binding's, `use art::transform;`'s (rd611, ADR 1063,
@@ -660,8 +737,9 @@ impl UsesWritten {
         tcx: TyCtxt<'_>,
         foreign: &crate::lower::library::Foreign<'_, '_>,
         id: DefId,
-        from: &str,
+        (from, name): (&str, Option<&str>),
     ) -> bool {
+        let of = |(of, export): (String, String)| of == from && name.is_none_or(|name| export == name);
         let own = |id: DefId| {
             let export = foreign.import_key(id, self.module).or_else(|| {
                 (is_binding(tcx, id))
@@ -669,7 +747,7 @@ impl UsesWritten {
                     .flatten()
                     .and_then(|path| js_import(&path).map(|(export, _)| export))
             });
-            export.is_some_and(|(of, _)| of == from)
+            export.is_some_and(of)
         };
         match tcx.def_kind(id) {
             DefKind::Struct if !id.is_local() && crate::lower::classes::is_namespace(tcx, id) => {
@@ -679,7 +757,7 @@ impl UsesWritten {
             // A binding's class a class of the module's extends, `use
             // react::Component;`'s `import { Component } from "react"`
             // (rd629).
-            DefKind::Trait => crate::lower::classes::base_class(tcx, id).is_some_and(|(of, _)| of == from),
+            DefKind::Trait => crate::lower::classes::base_class(tcx, id).is_some_and(of),
             _ => own(id),
         }
     }
@@ -692,18 +770,37 @@ impl UsesWritten {
         fns: &HashMap<DefId, FnInfo>,
         target: LocalModId,
     ) -> Option<rustc_span::Span> {
-        self.first(
-            |id| match tcx.def_kind(id) {
-                DefKind::Mod => tcx.is_descendant_of(target.to_def_id(), id),
-                _ => {
-                    (fns.get(&id).map(|f| f.module))
-                        .or_else(|| id.as_local().map(|local| tcx.parent_module_from_def_id(local)))
-                        == Some(target)
-                }
-            },
-            |holder| matches!(holder, bindings::Holder::Module(of) if *of == target),
-        )
+        self.module_import_at(tcx, fns, target, None)
     }
+
+    /// The `use` of the import from the crate's module `target` of what a
+    /// `use` names, `named` (`written_at`, rd649); of what none names, or
+    /// the module, `module_at`'s.
+    pub(in crate::lower) fn module_import_at(
+        &self,
+        tcx: TyCtxt<'_>,
+        fns: &HashMap<DefId, FnInfo>,
+        target: LocalModId,
+        named: Option<DefId>,
+    ) -> Option<rustc_span::Span> {
+        let makes = |id| match tcx.def_kind(id) {
+            DefKind::Mod => tcx.is_descendant_of(target.to_def_id(), id),
+            _ => {
+                (fns.get(&id).map(|f| f.module))
+                    .or_else(|| id.as_local().map(|local| tcx.parent_module_from_def_id(local)))
+                    == Some(target)
+            }
+        };
+        let holds = |through: &NamedThrough| matches!(through.holder, bindings::Holder::Module(of) if of == target);
+        (named.and_then(|named| self.written_at((|id| id == named, |through| through.id == named), makes, holds)))
+            .or_else(|| self.first(makes, holds))
+    }
+}
+
+/// Whether a `use` names a binding through a library's module of the JS
+/// file `from` that holds it, whose import it makes (rd609).
+fn held_in(from: &str) -> impl Fn(&NamedThrough) -> bool + '_ {
+    move |through| matches!(&through.holder, bindings::Holder::Library(of) if of == from)
 }
 
 /// Each `use` of the module that renames an item, in the order written:

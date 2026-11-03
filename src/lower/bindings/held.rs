@@ -281,26 +281,26 @@ fn found_in(module: LocalModId, held: &[HeldBinding], ident: Symbol, binding: De
 impl Held {
     /// The module a `use` names `binding` through where that module holds
     /// it, its path's last but one, `shared::assign` of `use
-    /// shared::assign::assign;`, the crate's or a library's: what its
-    /// import is of, placed where the `use` is (rd609, ADR 1063, amended).
-    pub(in crate::lower) fn use_holder(
+    /// shared::assign::assign;`, the crate's or a library's, and what's
+    /// imported of it: what its import is of, placed where the `use` is
+    /// (rd609, ADR 1063, amended; rd649).
+    pub(in crate::lower) fn use_read(
         &self,
         foreign: &crate::lower::library::Foreign<'_, '_>,
         segments: &[rustc_hir::PathSegment<'_>],
         binding: DefId,
-    ) -> Option<Holder> {
+    ) -> Option<HeldRead> {
         let [.., module, last] = segments else { return None };
         let Res::Def(DefKind::Mod, module) = module.res else {
             return None;
         };
-        let read = match module.as_local() {
+        match module.as_local() {
             None => library_held(foreign, module, last.ident.name, binding),
             Some(local) => {
                 let local = LocalModId::new_unchecked(local);
                 found_in(local, self.modules.get(&local)?, last.ident.name, binding)
             }
-        };
-        read.map(|read| read.holder)
+        }
     }
 }
 

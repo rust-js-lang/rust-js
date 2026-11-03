@@ -365,4 +365,13 @@ export const mutations: Mutation[] = [
     replace: "        (found.is_some() || found.is_none())\n",
     tests: ["test/libraries.test.ts", "-t", "another package"],
   },
+  {
+    name: "manifest-imports-repeated",
+    breaks:
+      "the manifest lists a file a module imports once for each of its `use`s (rd649)",
+    file: "src/output.rs",
+    find: "            imports.retain(|import| seen.insert(import.clone()));\n",
+    replace: "            imports.retain(|import| seen.insert(import.clone()) || true);\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "two uses of one module"],
+  },
 ];

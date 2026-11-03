@@ -610,11 +610,14 @@ impl OutputPlan {
                 planned.extend([file.clone(), map.clone()]);
             }
             planned.extend(types.clone());
-            let imports = module
+            // Each module it imports once, of however many `use`s (rd649).
+            let mut imports = module
                 .imports
                 .iter()
                 .map(|import| absolute(&self.js_path(&import.path)))
                 .collect::<Result<Vec<_>, _>>()?;
+            let mut seen = std::collections::HashSet::new();
+            imports.retain(|import| seen.insert(import.clone()));
             modules.push(manifest::Module {
                 module: module.path.clone(),
                 file,

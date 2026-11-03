@@ -455,6 +455,89 @@ pub fn named() -> u32 {
   expect((inside.lib.named as () => number)()).toBe(3);
 });
 
+// React's ReactFiberCommitWork imports `./ReactFiberLane` twice, its first
+// group's `import {..}` and `import {clearTransitionsForLanes}` ~180 lines
+// later: each `use` of a module is its import, where it's written, a
+// module of the crate's and a binding's JS module alike, and a run of them
+// of one module, nothing but attributes between, one, as a run of `pub
+// use`s is one re-export; a namespace's at the `use` of the module (rd649,
+// the user's decision).
+test("two uses of one module are two imports, each where its use is", async () => {
+  const dir = fixture("two-uses-of-a-module");
+  writeFileSync(join(dir, "host.js"), "export const create = () => 16;\nexport const update = () => 32;\nexport const destroy = () => 64;\n");
+  writeFileSync(join(dir, "lib.rs"), "pub mod commit;\nmod config;\nmod lanes;\n");
+  writeFileSync(join(dir, "commit.rs"), `use crate::config::{create, update};
+use crate::lanes::{lane, merge};
+
+// Its transitions.
+use crate::config::destroy;
+use crate::lanes;
+use crate::lanes::clear;
+use crate::lanes::inner::deep;
+use crate::lanes::last;
+// The next.
+use crate::lanes::next;
+
+pub fn run() -> u32 {
+    let lanes = lane() + merge(clear()) + lanes::untouched() + crate::lanes::NO_LANE;
+    lanes + create() + update() + destroy() + last() + deep() + next()
+}
+`);
+  writeFileSync(join(dir, "lanes.rs"), `pub fn lane() -> u32 {
+    1
+}
+
+pub fn merge(a: u32) -> u32 {
+    a + 2
+}
+
+pub fn clear() -> u32 {
+    4
+}
+
+pub fn untouched() -> u32 {
+    8
+}
+
+pub const NO_LANE: u32 = 128;
+
+pub fn last() -> u32 {
+    256
+}
+
+pub fn next() -> u32 {
+    1024
+}
+
+pub mod inner {
+    pub fn deep() -> u32 {
+        512
+    }
+}
+`);
+  const binding = (name: string) => `#[cfg_attr(rust_js, rust_js::link_name = "./host.js#${name}")]\npub fn ${name}() -> u32 {\n    unreachable!()\n}\n`;
+  writeFileSync(join(dir, "config.rs"), ["create", "update", "destroy"].map(binding).join("\n"));
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--manifest", join(dir, "manifest.json")]);
+  const js = readFileSync(join(dir, "commit.js"), "utf8");
+  expect(js).toContain(`import { create, update } from "./host.js";
+import { lane, merge } from "./lanes.js";
+
+// Its transitions.
+import { destroy } from "./host.js";
+import { clear } from "./lanes.js";
+import * as Lanes from "./lanes.js";
+import { deep } from "./lanes/inner.js";
+import { last } from "./lanes.js";
+// The next.
+import { next } from "./lanes.js";
+`);
+  expect((await import(join(dir, "commit.js"))).run()).toBe(2047);
+  // The manifest lists each of the crate's files the module imports once.
+  const manifest = JSON.parse(readFileSync(join(dir, "manifest.json"), "utf8"));
+  const commit = manifest.modules.find((module: { module: string[] }) => module.module.join() === "commit");
+  expect(commit.imports.map((file: string) => file.slice(dir.length + 1)).sort()).toEqual(["lanes.js", "lanes/inner.js"]);
+});
+
 // The pilot's modules start with what each is for, `//! Where the app is:
 // ..`, above their `use`s: the file's description, a JSDoc, as upstream's
 // files write theirs, `/** Where the app is: .. */`, and a `/*! .. */` a

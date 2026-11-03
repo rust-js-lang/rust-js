@@ -170,3 +170,62 @@ above its import", with mutations `js-import-comments-lost` and
 `js-import-placed-where-written` in `lower/pipeline/packages.ts`, and
 `import-after-later-code-keeps-blank` and `import-blank-of-one-use-dropped`
 in `to_oxc.ts`.
+
+## Amendment: each `use` of a module is an import of its own, a run of them one (rd649, the user's decision)
+
+Upstream imports one module twice in four of the React port's files.
+ReactFiberCommitWork has `import {..} from './ReactFiberLane'` in its
+first lines and `import {clearTransitionsForLanes} from './ReactFiberLane'`
+about 180 lines later. ReactFiberRootScheduler imports
+`./ReactFiberAsyncAction` twice, ten lines apart, and ReactFiberReconciler
+imports `./ReactFiberLane` under two specifiers. Rule 1 made one import of
+a module, at the first `use` of it, so the port's second `use` printed
+nothing where it's written: the linker grouped the crate's imports by path
+(`link.rs::resolve`), and the packages were grouped by specifier
+(`pipeline/packages.rs::of_module`).
+
+**Each `use` of a module is its import, where it's written, and a run of
+them of one module, with only attributes between, is one import at its
+first.** This is the rule a run of `pub use`s already follows for one
+re-export (ADR 0874, `reexports::assembled`), and they share
+`reexports::only_attributes`. A blank line, a comment, another module's
+`use` or an item between two `use`s ends the run. `UsesWritten` keeps
+which statement follows another with nothing but attributes between
+(`joined`). `written_at` gives the import's `use`: the `use` naming the
+item, itself or through a module that holds or re-exports it, moved back
+over the run's earlier `use`s that name something of the same module. The
+crate's imports ask `module_import_at`, with the item each request is of
+(`ImportTarget`'s last field), and the linker groups them by path and
+`use`. The packages ask `export_at` and are grouped by specifier and
+`use`. What no `use` names goes in the import at the module's first `use`:
+of the crate, a function read through the namespace or a copy
+(`module_at`); of a package, a binding the module declares itself, whose
+import is the only one ordered by `package_named_at`. A namespace is at
+the `use` of its module. `through_reexports` finds a re-exported item in
+whichever of a file's imports holds it. The manifest still lists each
+imported file once.
+
+A run is one import because the user's c23b decision (ADR 0874, amended)
+lets `#[rust_js::name]` name only a `use` of one name, so a module's
+renamed imports are a run of `use`s. ReactFiberConfigDOM's `isEnabled as
+ReactBrowserEventEmitterIsEnabled, setEnabled as ..` is one import in
+upstream and stays one. That's also the form rustfmt keeps, since it
+sorts a group's `use`s and leaves them apart.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, none. ES modules
+evaluate a module once, and the first import of it, which decides when it
+loads, is where it was. So neither the load order nor any binding changes.
+
+Rejected: (B) one import per `use`, a run too. It would give
+ReactDOMComponent's two adjacent `import {..} from
+'shared/CheckStringCoercion'`, but every run of named single-name `use`s
+would print as one import per name, which the port couldn't say otherwise.
+The user accepted ReactDOMComponent's single import by name.
+
+Held by `test/lowering-comments-items.test.ts`'s "two uses of one module
+are two imports, each where its use is" (a crate's module and a binding's
+JS module, a namespace, and a comment ending a run), and by
+`test/modules.test.ts`'s renamed and `#[rust_js::name]` runs, which stay
+one import, and by `test/cargo-link.test.ts`'s run of a binding a crate's
+module holds and that module's own function, `import merge, { size }`. Mutations are in `lower/analysis/naming.ts`,
+`lower/pipeline/packages.ts` and `link.ts`.

@@ -304,15 +304,20 @@ pub fn merged<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
   run([compiler, join(dir, "own/lib.rs"), "-o", join(dir, "own/lib.js"), "--", "--crate-name", "own", "--crate-type", "lib", ...extern]);
   expect(readFileSync(join(dir, "own/user.js"), "utf8")).toContain('import assign from "./held.js";\nimport { a } from "./aaa.js";\n');
   writeFileSync(join(dir, "own/lib.rs"), "pub mod aaa;\npub mod held;\npub mod renamed;\npub mod user;\n");
+  // And with the module's own function in one run of `use`s, one import
+  // (rd649).
+  writeFileSync(join(dir, "own/held.rs"), "pub use js::object::assign;\n\njs::export_default!(assign);\n\npub fn size() -> u32 {\n    2\n}\n");
   writeFileSync(join(dir, "own/renamed.rs"), `use crate::held::assign as merge;
+use crate::held::size;
 
 pub fn merged<'a>(target: &'a js::Unknown, source: &js::Unknown) -> &'a js::Unknown {
+    let _ = size();
     merge(target, (source,))
 }
 `);
   run([compiler, join(dir, "own/lib.rs"), "-o", join(dir, "own/lib.js"), "--", "--crate-name", "own", "--crate-type", "lib", ...extern]);
   const ownRenamed = readFileSync(join(dir, "own/renamed.js"), "utf8");
-  expect(ownRenamed).toContain('import merge from "./held.js";\n');
+  expect(ownRenamed).toContain('import merge, { size } from "./held.js";\n');
   expect(ownRenamed).toContain("  return merge(target, source);\n");
   mkdirSync(join(dir, "node_modules/react"), { recursive: true });
   writeFileSync(join(dir, "node_modules/react/package.json"), '{ "name": "react", "type": "module", "main": "index.js" }\n');

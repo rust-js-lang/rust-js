@@ -67,4 +67,13 @@ export const mutations: Mutation[] = [
     replace: "        .filter(|request| read.contains(&request.symbol))\n",
     tests: ["test/reexports-through.test.ts", "-t", "a use through a module"],
   },
+  {
+    name: "crate-uses-one-import",
+    breaks:
+      "two `use`s of one of the crate's modules are one import at the first, `import { clear, lane, last, merge, next } from \"./lanes.js\"` (rd649)",
+    file: "src/link.rs",
+    find: "            let key = (request.path.clone(), (request.at.lo, request.at.hi));\n",
+    replace: "            let key = (request.path.clone(), (0, 0));\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "two uses of one module"],
+  },
 ];

@@ -79,9 +79,11 @@ fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: Has
             read: &mut read,
         },
     );
-    let mut grouped: BTreeMap<Vec<String>, Vec<(String, String)>> = BTreeMap::new();
-    let mut namespaces: HashMap<Vec<String>, String> = HashMap::new();
-    let mut at: HashMap<Vec<String>, crate::js::Span> = HashMap::new();
+    // One import of each `use` of a module, where it's written (rd649): by
+    // its path and its `use`'s place.
+    type Written = (Vec<String>, (u32, u32));
+    let mut grouped: BTreeMap<Written, Vec<(String, String)>> = BTreeMap::new();
+    let mut namespaces: HashMap<Written, String> = HashMap::new();
     // An import of what the module reads: one its lowering asked for whose
     // read tidy took out, a test of a numbered enum's variant an
     // exhaustive `match` needn't write, `Dark` (ADR 0722), isn't written.
@@ -94,30 +96,26 @@ fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: Has
                 true => request.local.clone(),
                 false => fresh_in(&mut names, &request.local),
             };
-            let named = grouped.entry(request.path.clone()).or_default();
+            let key = (request.path.clone(), (request.at.lo, request.at.hi));
+            let named = grouped.entry(key.clone()).or_default();
             // The module itself, its own `import * as` (rd114, ADR 1018).
             match request.export == crate::js::NAMESPACE {
-                true => _ = namespaces.insert(request.path.clone(), alias.clone()),
+                true => _ = namespaces.insert(key, alias.clone()),
                 false => named.push((request.export.clone(), alias.clone())),
-            }
-            // The first `use` of any of its imports.
-            let first = at.entry(request.path.clone()).or_insert(request.at);
-            if first.is_none() || (!request.at.is_none() && request.at.lo < first.lo) {
-                *first = request.at;
             }
             (request.symbol.clone(), alias)
         })
         .collect();
     module.imports = grouped
         .into_iter()
-        .map(|(path, named)| {
-            let span = at.remove(&path).unwrap_or(crate::js::Span::NONE);
-            let namespace = namespaces.remove(&path);
+        .map(|(key, named)| {
+            let namespace = namespaces.remove(&key);
+            let (path, (lo, hi)) = key;
             LoweredImport {
                 path,
                 named,
                 namespace,
-                span,
+                span: crate::js::Span { lo, hi },
             }
         })
         .collect();

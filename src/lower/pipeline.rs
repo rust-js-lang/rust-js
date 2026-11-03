@@ -1394,13 +1394,14 @@ pub fn lower_crate<'tcx>(
                 &loaded,
                 (imported_through.iter())
                     .filter(|((from, _), _)| *from == module)
-                    .filter_map(|(&(_, id), through)| Some((foreign.import_key(id, module)?, through))),
+                    .filter_map(|(&(_, id), through)| Some((foreign.import_key(id, module)?, id, through))),
             );
             let imports = targets.remove(&module).unwrap_or_default();
             let reexporters = (pass.reexporters.iter()).filter_map(|&(from, to)| (from == module).then_some(to));
-            let candidates = crate_imports::requests(tcx, module, (imports, reimported, reexporters), &paths, &|of| {
-                written(uses.module_at(tcx, &fns, of))
-            });
+            let candidates =
+                crate_imports::requests(tcx, module, (imports, reimported, reexporters), &paths, &|of, named| {
+                    written(uses.module_import_at(tcx, &fns, of, named))
+                });
             UnlinkedModule {
                 module: lowered,
                 imports: candidates,

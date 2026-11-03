@@ -56,8 +56,26 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's item imported from the crate's module that re-exports it is imported from the library's file too, `import { createState, other }` (rd650)",
     file: "src/lower/pipeline/packages.rs",
-    find: ".map(|at| package.named.remove(at).1),\n",
-    replace: ".map(|at| package.named[at].1.clone()),\n",
+    find: ".map(|at| package.named.remove(at).1)\n",
+    replace: ".map(|at| package.named[at].1.clone())\n",
     tests: ["test/reexports-through.test.ts", "-t", "a use through a module"],
+  },
+  {
+    name: "package-uses-one-import",
+    breaks:
+      "two `use`s of one JS module are one import at the first, `import { create, destroy, update } from \"./host.js\"` (rd649)",
+    file: "src/lower/pipeline/packages.rs",
+    find: "        let key = (from.as_str(), at.map(|at| (at.lo(), at.hi())));\n",
+    replace: "        let key = (from.as_str(), first.map(|at| (at.lo(), at.hi())));\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "two uses of one module"],
+  },
+  {
+    name: "package-later-use-ordered-first",
+    breaks:
+      "a JS module's later `use`'s import is ordered where its first is, so `import { destroy } from \"./host.js\"` prints at the top (rd649)",
+    file: "src/lower/pipeline/packages.rs",
+    find: "            named_at: match at == first {\n",
+    replace: "            named_at: match true {\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "two uses of one module"],
   },
 ];

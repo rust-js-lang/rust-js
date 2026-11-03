@@ -142,7 +142,20 @@ and the crate's own alike, a module that holds a binding the `use`
 names through it, `use shared::assign::assign;`'s `shared/assign`, a
 library's namespace, its functions' module, and a module of bindings,
 `use art::transform;`'s `art/core/transform`, and a binding's class a
-class extends, `use react::Component;`'s `react`. rustfmt sorts the `use`s of one group, the
+class extends, `use react::Component;`'s `react`. Each `use` of a module
+is an import of its own, where it's written, as React's
+ReactFiberCommitWork imports `./ReactFiberLane` in its first lines and
+`import {clearTransitionsForLanes} from './ReactFiberLane'` further on.
+A run of `use`s of one module, with only attributes between, is one
+import, as a run of `pub use`s is one `export {..} from`, so `use
+dom::is_enabled as ..;` and a `#[rust_js::name]`d `use dom::set_enabled
+as ..;` on the next line are `import { isEnabled as .., setEnabled as
+.. }`. A blank line, a comment or another module's `use` between them
+makes two imports. What no `use` names goes in the module's first
+import, and its namespace, `import * as`, goes at the `use` of the
+module, `use crate::lanes;`, or else with the first
+([ADR 1069](../../decisions/1069-imports-are-statements-of-the-module.md),
+amended). rustfmt sorts the `use`s of one group, the
 lines between blank ones, and keeps the groups as written, so a module
 whose imports must load in an order writes them in groups, as React DOM's
 ReactDOMFizzServerNode writes `use react_server::..;`, a blank line, then

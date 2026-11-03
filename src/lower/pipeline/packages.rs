@@ -9,13 +9,16 @@ use super::super::library::Foreign;
 use crate::js;
 use crate::program::LoweredModule;
 use rustc_middle::ty::TyCtxt;
-use rustc_span::def_id::LocalModId;
+use rustc_span::def_id::{DefId, LocalModId};
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 /// What `module` imports of each JS module, `imported`'s of it and what its
 /// lowering `used`, each by its local name in `names`, its `import` where
-/// its `use` is written; and what it imports for its effects, `js::import!
-/// ("./App.css")`, the specifiers of which are the second.
+/// its `use` is written: one of each `use` of it, an import of its own
+/// (rd649), what no `use` names in the first's, which is where the source
+/// first names the module (`package_named_at`). And what it imports for its
+/// effects, `js::import!("./App.css")`, the specifiers of which are the
+/// second.
 pub(super) fn of_module(
     tcx: TyCtxt<'_>,
     module: LocalModId,
@@ -25,20 +28,27 @@ pub(super) fn of_module(
     (uses, foreign): (&UsesWritten, &Foreign<'_, '_>),
     written: &dyn Fn(Option<rustc_span::Span>) -> js::Span,
 ) -> (Vec<js::Package>, HashSet<String>) {
-    let mut packages: BTreeMap<&str, js::Package> = BTreeMap::new();
+    type Use = Option<(rustc_span::BytePos, rustc_span::BytePos)>;
+    let mut packages: BTreeMap<(&str, Use), js::Package> = BTreeMap::new();
     for export in imported
         .iter()
         .filter(|(export, users)| users.contains(&module) || used(export))
         .map(|(export, _)| export)
     {
         let (from, name) = export;
-        let package = packages.entry(from).or_insert_with(|| js::Package {
+        let first = uses.package_at(tcx, foreign, from);
+        let at = uses.export_at(tcx, foreign, (from, name)).or(first);
+        let key = (from.as_str(), at.map(|at| (at.lo(), at.hi())));
+        let package = packages.entry(key).or_insert_with(|| js::Package {
             from: from.clone(),
             default: None,
             named: Vec::new(),
             namespace: None,
-            span: written(uses.package_at(tcx, foreign, from)),
-            named_at: written(uses.package_named_at(tcx, foreign, from)),
+            span: written(at),
+            named_at: match at == first {
+                true => written(uses.package_named_at(tcx, foreign, from)),
+                false => written(at),
+            },
         });
         let local = names[export].clone();
         match name.as_str() {
@@ -116,28 +126,29 @@ pub(super) fn unread(
 
 /// Of `packages`, the imports of a library's items each of `through` says
 /// the module names through another of the crate's modules that re-exports
-/// it, taken out, each a package's export, `(from, export)`, and where
-/// it's imported instead (rd650, ADR 0874, amended): each, that module,
-/// what it exports it as, and the name the module reads it by, which
-/// stays. A package left of nothing is gone, but one imported for its
-/// effects, `loaded`.
+/// it, taken out, each a package's export, `(from, export)`, the item, and
+/// where it's imported instead (rd650, ADR 0874, amended): each, that
+/// module, what it exports it as, the name the module reads it by, which
+/// stays, and the item, whose `use` it's imported at (rd649). A package
+/// left of nothing is gone, but one imported for its effects, `loaded`.
 pub(super) fn through_reexports<'t>(
     packages: &mut Vec<js::Package>,
     loaded: &HashSet<String>,
-    through: impl Iterator<Item = (Export, &'t super::super::reexports::Through)>,
-) -> Vec<(LocalModId, String, String)> {
+    through: impl Iterator<Item = (Export, DefId, &'t super::super::reexports::Through)>,
+) -> Vec<super::crate_imports::Reimported> {
     let (mut moved, mut emptied) = (Vec::new(), HashSet::new());
-    for ((from, export), through) in through {
-        let Some(package) = packages.iter_mut().find(|package| package.from == from) else {
-            continue;
-        };
-        let local = match export.as_str() {
-            "default" => package.default.take(),
-            "*" => None,
-            _ => (package.named.iter().position(|(named, _)| *named == export)).map(|at| package.named.remove(at).1),
-        };
+    for ((from, export), id, through) in through {
+        // Of whichever of the file's imports has it, one of each `use`.
+        let local =
+            (packages.iter_mut().filter(|package| package.from == from)).find_map(|package| match export.as_str() {
+                "default" => package.default.take(),
+                "*" => None,
+                _ => {
+                    (package.named.iter().position(|(named, _)| *named == export)).map(|at| package.named.remove(at).1)
+                }
+            });
         if let Some(local) = local {
-            moved.push((through.module, through.export.clone(), local));
+            moved.push((through.module, through.export.clone(), local, id));
             emptied.insert(from);
         }
     }

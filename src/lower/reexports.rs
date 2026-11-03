@@ -331,7 +331,7 @@ pub(super) fn assembled(mut found: Vec<Named>, sources: &super::sources::Capture
 /// Whether `between`, the text between two items, is only whitespace and
 /// attributes, `#[cfg_attr(..)]`, with no comment, and no blank line but
 /// where `blank_lines`.
-fn only_attributes(between: &str, blank_lines: bool) -> bool {
+pub(in crate::lower) fn only_attributes(between: &str, blank_lines: bool) -> bool {
     let mut rest = between;
     let mut blank = false;
     loop {
