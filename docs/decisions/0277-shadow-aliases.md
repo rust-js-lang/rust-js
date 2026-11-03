@@ -3,7 +3,8 @@
 Status: Accepted. Amended: another's variable only where nothing runs
 before it's read (below); and past a `try`'s start and a binding's call
 that runs nothing (below); and set after its last read, in a loop too (below);
-and past a way that ends, but not by a `break` (below).
+and past a way that ends, but not by a `break` (below); and a destructuring's
+names are the function's own (rd712, below).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -368,3 +369,33 @@ native Rust. Its mutation, `shadow-break-leaves`, is gone with #515's
 `top`, which looks at no `if` way by way inside a labeled block or a
 `switch`, so no `break` there is asked of; one in the copy's own list
 leaves it, out of the copy's scope.
+
+## Amendment: a destructuring's names are the function's own (rd712)
+
+React's Flight client's preloadModule, ported, writes `let (Async((id,
+chunks, ..)) | Sync((id, chunks, ..))) = metadata;` and, before a `move`
+closure, `let id = id.clone();`. Its JS was `const id = metadata[0];` and
+the closure read `id`, till rd687 (b9ac9eca3, [0214](0214-untagged-enums.md))
+printed the or-pattern's alike arms once, `const [id, chunks] = metadata;`.
+Then `const id$1 = id;` came back: a function's own names, which only it
+and its closures set (`own_names`, `prepare/shadows.rs`), were each
+`const`, `let`, `for`, `catch` and declared function's, and not a
+destructuring's. A name not of them is read in place only where nothing that
+may run code comes before its reads, never in a closure, as a module's
+variable is; so `id`, read in the closure, stayed a copy.
+
+**Each name a destructuring declares is the function's own**: `const
+[id, chunks] = ..`'s, and a loop's `const [name, count] = names[i];`, as
+a `const`'s is. Nothing outside the function declares or sets them. What
+sets them still keeps the copy, as of any other own name: a `let`
+pattern's name set after the copy, or in a closure, or in a loop the copy
+is in. A `for…of`'s parts, a map's entries, already printed the one name,
+and the case holds that too.
+
+Case "none" ([0262](0262-when-rust-and-js-disagree.md)): a `String`'s
+clone is the same JS string, so no program can tell. A struct's clone is
+`{ ...point }`, never a `const` of the variable, so it stays a copy the
+closure changes apart from the binding. Held by the corpus case
+`shadow_of_a_destructured_binding`, preloadModule's shape, a loop's tuple's
+parts, a map's `for…of` entries and a struct's clone, run against native
+Rust; the mutation `shadow-destructured-not-own` (`prepare/shadows.ts`).

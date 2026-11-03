@@ -225,4 +225,13 @@ export const mutations: Mutation[] = [
     replace: "        Some(&mut *body).map(|body| {\n",
     tests: ["test/corpus.test.ts", "-t", "shadow_beside_closure_own_of_its_name"],
   },
+  {
+    name: "shadow-destructured-not-own",
+    breaks: "a name `const [id, chunks] = metadata;` declares isn't the function's own, so `let id = id.clone();` read in a closure keeps `const id$1 = id;`, React's Flight client's preloadModule's (rd712)",
+    file: "src/prepare/shadows.rs",
+    find: "                StmtKind::Destructure { pattern, .. } => {\n",
+    replace: "                StmtKind::Destructure { pattern, .. } if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^shadow_of_a_destructured_binding.rs$"],
+    snapshots: true,
+  },
 ];

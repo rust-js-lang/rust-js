@@ -33,6 +33,11 @@ fn own_names(params: &[Pattern], body: &mut Vec<Stmt>) -> HashSet<String> {
                 StmtKind::Const(name, _) | StmtKind::Let(name, _) | StmtKind::For { name, .. } => {
                     _ = own.insert(name.clone());
                 }
+                // Each name a pattern declares, `const [id, chunks] =
+                // metadata;`'s, an or-pattern's alike arms' (rd712).
+                StmtKind::Destructure { pattern, .. } => {
+                    own.extend(pattern.names().into_iter().map(str::to_string));
+                }
                 StmtKind::TryCatch(_, Some(name), _) => _ = own.insert(name.clone()),
                 StmtKind::Function(function) => _ = own.insert(function.name.clone()),
                 _ => {}

@@ -499,6 +499,12 @@ a global", run where the host has no `Document`. Mutations
 `alike-arms-tested`, `unalike-arms-taken` (`mir/structure.ts`) and
 `same-without-facts` (`js/stmt_walk.ts`).
 
+An or-pattern's alike arms are one too, so their parts are destructured,
+`const [id, chunks] = metadata;`, where each was `const id = metadata[0];`.
+A clone of one shadowing it, `let id = id.clone();` before a closure, then
+printed `const id$1 = id;`, as ADR 0277 didn't count a destructuring's names
+as the function's own; it does now (rd712, [0277](0277-shadow-aliases.md)).
+
 ## Amendment: a class is told in any realm, or refused (#555, P0)
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): C, Rust's answer, where
