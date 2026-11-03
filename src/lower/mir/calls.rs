@@ -31,7 +31,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let (pointers, holder) = (self.krate.cell_borrows.pointers(), self.called_holder(state, called));
         if !pointers.may_read_this(self.tcx, called, holder) {
-            return Ok(Value::Expr(Expr::call(*callee, args)));
+            return Ok(Value::Expr(Expr {
+                facts: pointers.call_facts(holder),
+                ..Expr::call(*callee, args)
+            }));
         }
         // A variable of the program's is called with none as it is, as a
         // closure that only calls it is that function (`passed_on`); MIR's

@@ -931,6 +931,13 @@ pub enum Known {
     /// which gives it that `this`, as preparation writes it
     /// (`Expr::own_method_call`, rd334).
     OwnMethodCall,
+    /// A call of a function its holder's member is, which reads no `this`
+    /// though JS gives it the holder: a field the crate fills with its own
+    /// functions alone, `system.link(dep, sub)`
+    /// (`Pointers::call_facts`). Its function may be read apart from
+    /// its holder and called alone, `const { link } = system;` (ADR 0610,
+    /// amended, #533).
+    ThisUnread,
 }
 
 /// A cross-module reference, resolved before preparation or printing.

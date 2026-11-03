@@ -1208,6 +1208,73 @@ export function count() {
 }
 ```
 
+- **A private function only called, that only calls a function a
+  thread-local's value holds**, a field the crate fills with its own
+  functions, which reads no `this`, is that field, the value taken apart
+  where it's made, each field by its function's name, as alien-signals
+  takes its system apart. Only those functions read the thread-local, so
+  each call read the function the value was made with. A binding's
+  method, `date.get_time()`, which reads its `this`, stays called by its
+  function; so does a function of a value another reads, or one the
+  module sets. A call that leaves a `None` out, `unlink(sub)`, is one
+  by its parameters, as it gives what it would given `undefined`
+  ([ADR 0313](../../decisions/0313-undefined-arguments.md))
+  ([ADR 0610](../../decisions/0610-a-forwarding-function-is-its-variable.md),
+  amended, #533):
+
+```rust
+use std::rc::Rc;
+
+pub struct ReactiveSystem {
+    pub link: Rc<dyn Fn(u32, u32)>,
+    pub unlink: Rc<dyn Fn(u32, Option<u32>) -> Option<u32>>,
+}
+
+pub fn create_reactive_system(base: u32) -> ReactiveSystem {
+    ReactiveSystem {
+        link: Rc::new(move |dep, sub| println!("{}", base + dep + sub)),
+        unlink: Rc::new(|link, sub| sub.map(|sub| sub + link)),
+    }
+}
+
+thread_local! {
+    static SYSTEM: ReactiveSystem = create_reactive_system(0);
+}
+
+fn link(dep: u32, sub: u32) {
+    SYSTEM.with(|system| (system.link)(dep, sub));
+}
+
+fn unlink(link: u32, sub: Option<u32>) -> Option<u32> {
+    SYSTEM.with(|system| (system.unlink)(link, sub))
+}
+
+pub fn run(dep: u32) -> Option<u32> {
+    link(dep, 1);
+    unlink(dep, None)
+}
+```
+
+```js
+export function createReactiveSystem(base) {
+  return {
+    link(dep, sub) {
+      console.log(`${(((base + dep) >>> 0) + sub) >>> 0}`);
+    },
+    unlink(link, sub) {
+      return sub != null ? (sub + link) >>> 0 : undefined;
+    },
+  };
+}
+
+const { link, unlink } = createReactiveSystem(0);
+
+export function run(dep) {
+  link(dep, 1);
+  return unlink(dep);
+}
+```
+
 One of a value where a test holds and `None` where it doesn't is the
 conditional, `undefined` where it's `None`, exported or not, as React's
 ReactJSX writes `const jsxDEV = __DEV__ ? _jsxDEV : undefined;` and React

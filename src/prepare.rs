@@ -9,6 +9,7 @@ use std::collections::HashSet;
 mod assigned_breaks;
 mod catches;
 mod do_whiles;
+mod forwarding;
 mod initializers;
 mod labels;
 mod objects;
@@ -28,7 +29,8 @@ pub fn module(module: &mut js::Module) {
     module.each_expr_mut(&mut Expr::own_method_call); // `f.call(o, ..)` of `o.f` is `o.f(..)` (rd334).
     initializers::declared_at_top(module);
     initializers::assigned_in_place(&mut module.items);
-    forwarding_functions(module);
+    forwarding::functions(module);
+    forwarding::fields(module);
     for function in module.items.iter_mut().flat_map(js::Item::functions_mut) {
         prepared(function);
     }
@@ -160,164 +162,6 @@ fn named_as(value: &mut Expr, property: &str) {
     {
         function.name = property.to_owned();
     }
-}
-
-/// `function getTime(n) { return GET_TIME(n); }`, a function that only
-/// calls a module variable's function with its parameters, a thread-local's
-/// of a closure: that variable, by the function's name, `let getTime; if
-/// (..) { getTime = (n) => .. }`, exported where the function was (ADR
-/// 0610). Not where the module's load calls the function, which a
-/// declaration's hoisting lets run before the variable is set.
-fn forwarding_functions(module: &mut js::Module) {
-    let mut i = 0;
-    while i < module.items.len() {
-        // One kept out of line, `#[inline(never)]`, stays itself (ADR 0649).
-        let js::Item::Function(function) = &module.items[i] else {
-            i += 1;
-            continue;
-        };
-        if function.noinline {
-            i += 1;
-            continue;
-        }
-        // Its call's value, `return GET_TIME(n);`, or none, `QUEUE(callback);`
-        // of a function of no value.
-        let returns = matches!(
-            function.body.as_slice(),
-            [Stmt {
-                kind: StmtKind::Return(_),
-                ..
-            }]
-        );
-        let arity = function.params.len();
-        // The module variable it calls with its parameters.
-        let variable = match js::passes_on(&function.params, &function.body, true).map(|callee| &callee.kind) {
-            Some(ExprKind::Var(v)) if *v != function.name => Some(v.clone()),
-            _ => None,
-        };
-        let (name, export) = (function.name.clone(), function.export);
-        // Its variable's declaration: a `const`, or a `let` set in place.
-        let declared = variable.as_ref().and_then(|v| {
-            module.items.iter().position(|item| match item {
-                js::Item::Const(constant) => constant.name == *v && !constant.export,
-                js::Item::Statements(stmts) => {
-                    matches!(stmts.first().map(|s| &s.kind), Some(StmtKind::Let(n, None)) if n == v)
-                }
-                _ => false,
-            })
-        });
-        // Called where the module loads, by a constant's value or its code.
-        let mut loaded = Vec::new();
-        for item in &module.items {
-            match item {
-                js::Item::Const(constant) => loaded.push(StmtKind::Expr(constant.value.clone()).at(constant.span)),
-                js::Item::Statements(stmts) => loaded.extend(stmts.iter().cloned()),
-                _ => {}
-            }
-        }
-        let (Some(variable), Some(at)) = (variable, declared) else {
-            i += 1;
-            continue;
-        };
-        // Each value it's given an arrow of Rust's, which takes no more than
-        // its parameters, as the function did: not a JS function, which a
-        // caller would give what it's given past them.
-        fn arrows(e: &Expr) -> bool {
-            match &e.kind {
-                ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) => true,
-                ExprKind::Cond(_, a, b) => arrows(a) && arrows(b),
-                _ => false,
-            }
-        }
-        let mut given = Vec::new();
-        match &module.items[at] {
-            js::Item::Const(constant) => given.push(constant.value.clone()),
-            js::Item::Statements(stmts) => {
-                let mut stmts = stmts.clone();
-                js::each_block_mut(&mut stmts, &mut |list| {
-                    for s in list.iter() {
-                        if let StmtKind::Assign(target, value) = &s.kind
-                            && matches!(&target.kind, ExprKind::Var(v) if *v == variable)
-                        {
-                            given.push(value.clone());
-                        }
-                    }
-                });
-            }
-            _ => {}
-        }
-        // Or only called, by the crate's own code, by its parameters: a
-        // function of a value gives the variable's, and one of none gives
-        // `undefined`, which no caller reads, a `()` being `undefined`
-        // where it's read; and none gives it more than its parameters, a
-        // JS function's too. React's ReactAct has `const
-        // queueSeveralMicrotasks = .. ? (callback) => { .. } :
-        // queueMacrotask;` (ADR 0610, amended).
-        let called_only = !export
-            && !module.aliases.iter().any(|(local, _)| *local == name)
-            && only_called(&module.items, i, &name, arity);
-        if given.is_empty() || !(returns && given.iter().all(arrows) || called_only) {
-            i += 1;
-            continue;
-        }
-        if js::mentions_in(&loaded, &name) > 0 || module.default_export.as_ref() == Some(&name) {
-            i += 1;
-            continue;
-        }
-        module.items.remove(i);
-        let at = if at > i { at - 1 } else { at };
-        let rename = |n: &mut String| {
-            if *n == variable {
-                n.clone_from(&name);
-            }
-        };
-        js::each_item_expr_mut(&mut module.items, &mut |e| {
-            if let ExprKind::Var(v) = &mut e.kind {
-                rename(v);
-            }
-        });
-        match &mut module.items[at] {
-            js::Item::Const(constant) => {
-                rename(&mut constant.name);
-                constant.export = export;
-            }
-            js::Item::Statements(stmts) => {
-                if let Some(StmtKind::Let(n, None)) = stmts.first_mut().map(|s| &mut s.kind) {
-                    rename(n);
-                }
-                if export {
-                    module.aliases.push((name.clone(), name.clone()));
-                }
-            }
-            _ => unreachable!("found"),
-        }
-    }
-}
-
-/// Whether each read of `name` in `items` but the function at `at` is a
-/// call of it by `arity` arguments.
-fn only_called(items: &[js::Item], at: usize, name: &str, arity: usize) -> bool {
-    let (mut reads, mut calls) = (0, 0);
-    let mut each = |e: &Expr| {
-        calls += usize::from(matches!(&e.kind, ExprKind::Call(callee, args)
-            if args.len() == arity && matches!(&callee.kind, ExprKind::Var(v) if v == name)));
-    };
-    for (j, item) in items.iter().enumerate() {
-        if j == at {
-            continue;
-        }
-        item.visit_vars(&mut |v| reads += usize::from(v == name));
-        match item {
-            js::Item::Function(function) => js::each_expr(&function.body, &mut each),
-            js::Item::Statements(stmts) => js::each_expr(stmts, &mut each),
-            js::Item::Const(constant) => constant.value.each(&mut each),
-            js::Item::Namespace(namespace) => {
-                namespace.constants.iter().for_each(|c| c.value.each(&mut each));
-                namespace.methods.iter().for_each(|m| js::each_expr(&m.body, &mut each));
-            }
-        }
-    }
-    reads == calls
 }
 
 /// An `if` whose branch never goes on, `js::ends`', by a `return`, a

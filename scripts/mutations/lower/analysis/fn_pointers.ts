@@ -594,4 +594,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
   },
+  {
+    name: "reads-no-this-of-own-fields-unseen",
+    breaks: "a field the crate fills with its own functions alone is taken to read its `this`, alien-signals' `function link(..) { system.link(..); }` kept beside its system (#533)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "        match matches!(holder, Holder::Field(field) if self.own_fields.get(&field) == Some(&true)) {\n",
+    replace: "        match matches!(holder, Holder::Field(field) if self.own_fields.get(&field) == Some(&false)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_field_forwarders.rs$"],
+    snapshots: true,
+  },
 ];

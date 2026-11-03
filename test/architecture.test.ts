@@ -1260,7 +1260,7 @@ test("an arrow that passes on what it's given is passed_on's alone", () => {
   expect(sources.filter((file) => functions(file).some(optional))).toEqual(["src/lower/passed_on.rs"]);
   const owned = /fn (passed_on\(f: &Expr|passes_on|passed_handler|called_alone|called_by_name|calls_rust|closure_calls_rust|forwarded_to)\b/;
   expect(sources.filter((file) => owned.test(read(file)))).toEqual(["src/js/stmt_walk.rs", "src/lower/passed_on.rs"]);
-  expect(sources.filter((file) => /\bpasses_on\(/.test(read(file).replace(/fn passes_on/g, ""))).sort()).toEqual(["src/lower/passed_on.rs", "src/prepare.rs"]);
+  expect(sources.filter((file) => /\bpasses_on\(/.test(read(file).replace(/fn passes_on/g, ""))).sort()).toEqual(["src/lower/passed_on.rs", "src/prepare/forwarding.rs"]);
   // Who asks, each by its position, and where the closure's fact is made:
   // once, where MIR makes the closure.
   const asking = sources.filter((file) => file !== "src/lower/passed_on.rs" && /\bpassed_on\(/.test(read(file).replace(/fn passed_on\(/g, "")));

@@ -97,3 +97,103 @@ another module's function one way, one a closure calls, and kept: one
 passed as a value, one `pub`, and one a `pub use` exports by another
 name. Mutations: each of the three left out, and the rule never taken.
 
+## Amendment: a private function only called of a thread-local's field is that field (#533)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Each call calls the
+same function with the same arguments, at the same time; only its
+identity, `name` and `length` tell the function from the field's, and no
+code reads them of a function only called.
+
+alien-signals builds its system where its module loads and takes it
+apart:
+
+```ts
+const { link, unlink, propagate, checkDirty, shallowPropagate } = createReactiveSystem({ .. });
+```
+
+Rust has no module-level `let` of a pattern, so its port keeps the system
+in a thread-local and wraps each function, as idiomatic Rust does:
+
+```rust
+thread_local! {
+    static SYSTEM: ReactiveSystem<NodeKind> = create_reactive_system(ReactiveSystemOptions { .. });
+}
+
+fn link(dep: &Node, sub: &Node, version: u32) {
+    SYSTEM.with(|system| (system.link)(dep, sub, version));
+}
+
+fn unlink(link: &Rc<Link<NodeKind>>, sub: Option<&Node>) -> Option<Rc<Link<NodeKind>>> {
+    SYSTEM.with(|system| (system.unlink)(link, sub))
+}
+```
+
+which printed `const system = createReactiveSystem(..);` and five
+functions, `function link(dep, sub, version) { system.link(dep, sub,
+version); }`, a second name for each of the system's functions, as a
+thread-local's function's caller was before this decision.
+
+**A private function only called, by its parameters, that only calls a
+function its module's constant's value holds, one that reads no `this`,
+with its parameters, is that function: the value taken apart where it's
+made, each field by its function's name, the functions gone, where only
+those functions read the constant** (`prepare::forwarding::fields`):
+
+```js
+const { link, unlink, propagate, checkDirty, shallowPropagate } = createReactiveSystem({ .. });
+```
+
+`{ unlink: unlinkDep }` where the names differ. It's this decision's rule,
+of a field: the function is the module's own, not exported nor a `pub
+use`'s, and only called, by its parameters, so no caller gives it more nor
+reads what a function of no value gives; not kept out of line (ADR 0649).
+What's new is the field's:
+
+- **It reads no `this`** (`Known::ThisUnread`, `Pointers::call_facts`):
+  a field the crate fills with its own functions alone (#405), a `dyn
+  Fn`'s or a `fn`'s. A binding's method,
+  `epoch.getTime()`, reads its object as its `this`, and stays called
+  through it, as does a function of an object JS made, which
+  `may_read_this` calls through it.
+- **It's the function the value was made with at each call**: only those
+  functions read the constant, no export, so nothing writes its fields
+  or sets it, each a read of it too, and reading each once where it's
+  made reads what each call read. One another function reads, one
+  another module imports, and one its module sets, a `let`, stay.
+- **Its key is an identifier**, which a destructuring's key is unquoted:
+  a field named `check-dirty` stays.
+- **Where the module's load calls the function** makes no difference: a
+  call before the value is made read it before it was made, as the
+  function did, and the thread-locals made where they're first used read
+  it after.
+
+And of either rule now, **a call that leaves its last `undefined`s out,
+`unlink(sub)` of `unlink(&sub, None)`, is one by its parameters**: it
+gives what a call of them would, only `arguments.length` telling, which
+is how rust-js writes every such call (ADR 0313). alien-signals' port
+writes `unlink(sub)` as upstream does, which kept its function before.
+
+Alternatives: a check of the wrappers in lowering, of THIR's `with`, its
+closure's call of a field and rustc's `Freeze` (tried first): a second
+owner of what this decision already asks of a function of the module's
+own, and its JS's shape, which only this pass sees whole. A struct of the
+functions as a `pub` thread-local exported, `#[rust_js::namespace]` (ADR
+1037), is an export, which alien-signals' system isn't.
+
+The port reads `const { link, unlink, propagate, checkDirty,
+shallowPropagate } = createReactiveSystem({ .. });`, and upstream's suite
+passes 202/202.
+
+What holds it: `test/lowering-forwarding.test.ts`, "a private function
+only called that only calls a thread-local's field is that field", run
+(taken apart, a call of a `None` left out; kept: a binding's method, a
+field of no identifier, a thread-local set, a call that converts what
+it's given); the corpus case `thread_local_field_forwarders` against
+native Rust (an `Rc`'s, a `Box`'s, a `fn`'s and a reference's fields, by
+other names, of no value, read where the module loads; kept: read by
+another function, named as a value, a method, a `Deref` of the crate's,
+`#[inline(never)]`, exported, read by another module). Mutations
+`forwarding-fields-*` and `forwarding-called-only-by-as-many`
+(`prepare.ts`), `reads-no-this-of-own-fields-unseen`
+(`analysis/fn_pointers.ts`),
+`this-unread-unmarked` (`mir/calls.ts`).

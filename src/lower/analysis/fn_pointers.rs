@@ -242,6 +242,20 @@ impl<'tcx> FnPointers<'tcx> {
     /// called through its object, `s.f()`, as JS calls it (#404), but a with_this function and a binding's pointer; and one
     /// that may only be a Rust function, which reads no `this`, is called
     /// as it is.
+    /// What's known of a call through what holds it, `(s.f)()`, that
+    /// `may_read_this` calls through it: `Known::ThisUnread` where its
+    /// function reads no `this`, whatever JS gives it, of a field the crate
+    /// fills with its own functions alone (#405), a `dyn Fn`'s or a `fn`'s.
+    /// Read apart from its holder, `const { f } = s;`, it's called as it
+    /// was (ADR 0610, amended, #533). Not one of an object JS made, its own
+    /// method, which may read it.
+    pub(in crate::lower) fn call_facts(&self, holder: Holder) -> crate::js::Facts {
+        match matches!(holder, Holder::Field(field) if self.own_fields.get(&field) == Some(&true)) {
+            true => crate::js::Facts::of(crate::js::Known::ThisUnread),
+            false => crate::js::Facts::NONE,
+        }
+    }
+
     pub(in crate::lower) fn may_read_this(&self, tcx: TyCtxt<'tcx>, called: Called<'tcx>, holder: Holder) -> bool {
         // A field the crate fills with its own functions alone (#405, #427).
         if let Holder::Field(field) = holder

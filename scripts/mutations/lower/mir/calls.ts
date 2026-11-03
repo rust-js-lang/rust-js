@@ -1144,4 +1144,13 @@ export const mutations: Mutation[] = [
     replace: "            && false\n        {\n            return Ok(Value::Expr(Expr::call(*callee, args)));\n",
     tests: ["test/lowering-passed-on.test.ts", "-t", "a closure that ignores what it's given is the function it calls"],
   },
+  {
+    name: "this-unread-unmarked",
+    breaks: "a call of a field's function that reads no `this` isn't marked so, and alien-signals' `function link(..) { system.link(..); }` stays beside its system (#533)",
+    file: "src/lower/mir/calls.rs",
+    find: "                facts: pointers.call_facts(holder),\n",
+    replace: "                facts: js::Facts::NONE,\n",
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_field_forwarders.rs$"],
+    snapshots: true,
+  },
 ];

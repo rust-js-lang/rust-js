@@ -104,6 +104,99 @@ pub fn count() -> u32 {
   expect(lib.count()).toBe(1221);
 });
 
+// ADR 0610, amended (#533): alien-signals builds its system where its
+// module loads and takes it apart, `const { link, unlink, .. } =
+// createReactiveSystem(..)`. Its port's thread-local of the system and the
+// private functions that each only call one of its fields are that
+// destructuring, each field by its function's name, a call that leaves a
+// `None` out, `unlinkDep(1)`, too (ADR 0313). Not where what the
+// call reads its `this`, a binding's method, nor where the field's JS name
+// is no identifier, nor where the thread-local is set, nor where the
+// function's JS converts what it's given.
+test("a private function only called that only calls a thread-local's field is that field", async () => {
+  const dir = fixture("forwarding-local-fields");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+use std::rc::Rc;
+
+pub struct System {
+    link: Rc<dyn Fn(u32, u32) -> u32>,
+    unlink: Box<dyn Fn(u32, Option<u32>)>,
+    #[cfg_attr(rust_js, rust_js::name = "check-dirty")]
+    check_dirty: Rc<dyn Fn(u32) -> bool>,
+}
+
+fn create_reactive_system(base: u32) -> System {
+    System {
+        link: Rc::new(move |dep, sub| base + dep * 10 + sub),
+        unlink: Box::new(|_, _| {}),
+        check_dirty: Rc::new(|n| n > 2),
+    }
+}
+
+thread_local! {
+    static SYSTEM: System = create_reactive_system(1000);
+    static EPOCH: &'static js::Date = js::date::new(Some(&0.0));
+    static NAMED: System = create_reactive_system(2000);
+    static SWAPPED: Cell<&'static System> = Cell::new(Box::leak(Box::new(create_reactive_system(3000))));
+    static GIVEN: System = create_reactive_system(4000);
+}
+
+fn link(dep: u32, sub: u32) -> u32 {
+    SYSTEM.with(|system| (system.link)(dep, sub))
+}
+
+fn unlink_dep(dep: u32, sub: Option<u32>) {
+    SYSTEM.with(|system| (system.unlink)(dep, sub));
+}
+
+fn epoch_time() -> f64 {
+    EPOCH.with(|epoch| epoch.get_time())
+}
+
+fn check_dirty(n: u32) -> bool {
+    NAMED.with(|named| (named.check_dirty)(n))
+}
+
+fn swapped_link(dep: u32, sub: u32) -> u32 {
+    (SWAPPED.get().link)(dep, sub)
+}
+
+fn given_link(dep: Option<u32>, sub: u32) -> u32 {
+    GIVEN.with(|given| (given.link)(dep.unwrap_or(5), sub))
+}
+
+pub fn run() -> Vec<f64> {
+    unlink_dep(1, None);
+    unlink_dep(1, Some(2));
+    let before = swapped_link(1, 2);
+    SWAPPED.set(Box::leak(Box::new(create_reactive_system(5000))));
+    vec![
+        link(1, 2) as f64,
+        epoch_time(),
+        f64::from(u8::from(check_dirty(3))),
+        before as f64,
+        swapped_link(1, 2) as f64,
+        given_link(None, 1) as f64,
+    ]
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const { link, unlink: unlinkDep } = createReactiveSystem(1000);\n");
+  expect(js).not.toContain("function link(");
+  expect(js).not.toContain("function unlinkDep(");
+  expect(js).toContain("  unlinkDep(1);\n");
+  // A binding's method, which reads its \`this\`; a field of no identifier;
+  // a thread-local set; and a call that converts what it's given: each a
+  // function still.
+  expect(js).toContain("function epochTime() {\n  return epoch.getTime();\n}");
+  expect(js).toContain("function checkDirty(n) {\n");
+  expect(js).toContain("function swappedLink(dep, sub) {\n");
+  expect(js).toContain("function givenLink(dep, sub) {\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.run()).toEqual([1012, 0, 1, 3012, 5012, 4051]);
+});
+
 // A function that only passes its parameters on to another module's
 // function is that function, re-exported by its own name or its
 // `rust_js::name`, which another module imports from it as before, and
