@@ -711,4 +711,13 @@ export const mutations: Mutation[] = [
     replace: "                        true\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment above an arm that does nothing is the arm.s"],
   },
+  {
+    name: "default-comment-marks-unread",
+    breaks: "a comment above a last `_ => {}` keeps its `match` from being a `switch`, each arm its own copy of what follows (rd701)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "        let marks = default_marks(list, i, switches);\n",
+    replace: "        let marks: Vec<usize> = Vec::new();\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_default_comment.rs$"],
+    snapshots: true,
+  },
 ];

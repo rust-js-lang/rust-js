@@ -53,7 +53,31 @@ fn walk(
     let mut i = 0;
     while i < list.len() {
         written_after(list, i, switches);
-        if let Some((switch, taken)) = switch_at(list, i, switches, around.as_deref_mut(), turn) {
+        // What's said above a last `_ => {}`, its `()`'s mark, wherever MIR
+        // put that, read past: the end of the `switch`'s last case, where
+        // the `switch` falls out to what follows, as React's
+        // attemptEarlyBailoutIfNoScheduledUpdate's `// Fallthrough` (rd701).
+        let marks = default_marks(list, i, switches);
+        let unmarked: Vec<Stmt> = (list.iter().enumerate())
+            .filter(|(k, _)| !marks.contains(k))
+            .map(|(_, s)| s.clone())
+            .collect();
+        if let Some((mut switch, taken)) = switch_at(&unmarked, i, switches, around.as_deref_mut(), turn) {
+            if let Some(StmtKind::Switch { cases, default, .. }) = switch
+                .iter_mut()
+                .map(|s| &mut s.kind)
+                .find(|k| matches!(k, StmtKind::Switch { .. }))
+            {
+                let last = match default {
+                    Some(default) if !default.is_empty() => Some(default),
+                    _ => cases.last_mut().map(|case| &mut case.body),
+                };
+                last.into_iter()
+                    .for_each(|last| last.extend(marks.iter().map(|&k| list[k].clone())));
+            }
+            for &k in marks.iter().rev() {
+                list.remove(k);
+            }
             list.splice(i..i + taken, switch);
             if discriminant_in_place(list, i) {
                 i -= 1;
@@ -297,6 +321,26 @@ struct Values {
 /// pattern of which its test is written at, a `switch`, and how many they
 /// are. `around`, the loop it's in, whose label each `break` of it names
 /// now.
+/// Where, of `list` from `at`, the comments' marks of the last `_ => {}`
+/// of the `match` whose chain starts at `at` are (rd701).
+fn default_marks(list: &[Stmt], at: usize, switches: &[Switch]) -> Vec<usize> {
+    let Some(written) =
+        tested_at(&list[at]).and_then(|t| (switches.iter()).find(|s| s.arms.iter().any(|arm| within(t, arm.pattern))))
+    else {
+        return Vec::new();
+    };
+    let Some(default) = written
+        .arms
+        .last()
+        .filter(|arm| arm.constants.is_empty() && arm.guard.is_none())
+    else {
+        return Vec::new();
+    };
+    (at + 1..list.len())
+        .filter(|&k| matches!(list[k].kind, StmtKind::Comments) && within(list[k].span.lo, default.span))
+        .collect()
+}
+
 fn switch_at(
     stmts: &[Stmt],
     at: usize,

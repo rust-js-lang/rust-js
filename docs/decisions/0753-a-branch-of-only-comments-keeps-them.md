@@ -304,3 +304,21 @@ nothing is at its try's end", run; and the mutations
 `commented-case-in-its-body` (`lower/mir/tidy/switches.ts`),
 `first-arm-then-marker-kept` (`prepare/catches.ts`) and
 `loop-try-said-unfolded` (`prepare/labels.ts`).
+
+## Amendment: a comment above a last `_ => {}` keeps its `switch` (rd701, 2026-11-03)
+
+The #508 amendment gave a `{}` arm's `()` a mark of its comments. Of a last
+`_ => {}`, MIR puts that `()` where the arms meet, after the chain, and
+the mark there kept `switches` from making the `switch`: React's
+attemptEarlyBailoutIfNoScheduledUpdate printed each of its 12 cases with
+its own `return bailoutOnAlreadyFinishedWork(..)`, and `// Fallthrough` in
+its first case. `switches` now reads the chain past the marks of the
+`match`'s last `_ => {}` (`default_marks`) and puts them at the end of the
+`switch`'s last case: each case `break;`, one `return` after the `switch`.
+The comment prints after the `switch`, above that `return`, where upstream
+writes it inside the last case, before its `}`: left for a later change
+(the printer's clause ends, `commented_clause`). Case
+([0262](0262-when-rust-and-js-disagree.md)): N. Held by corpus
+`switch_default_comment.rs` against native Rust and the mutation
+`default-comment-marks-unread`.
+
