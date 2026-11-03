@@ -3,6 +3,7 @@
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { stripVTControlCharacters } from "node:util";
 import { compiler, fixture, root } from "./support";
 
 /** A crate, `app`, of `files`, each by its path in the crate, `src/lib.rs`
@@ -49,8 +50,10 @@ export function rustJsTest(dir: string, args: string[] = [], targetDir?: string)
 }
 
 /** How many tests passed, failed and were skipped, as `runner`'s summary
- * says. */
-export function counts(runner: string, said: string): { pass: number; fail: number; skip: number } {
+ * says, its colors left out: Vitest colors it wherever `CI` is set, as
+ * on GitHub's runners, though no terminal is there. */
+export function counts(runner: string, colored: string): { pass: number; fail: number; skip: number } {
+  const said = stripVTControlCharacters(colored);
   const count = (pattern: RegExp) => Number(pattern.exec(said)?.[1] ?? 0);
   switch (runner) {
     case "node":
