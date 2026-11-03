@@ -832,3 +832,70 @@ pub fn zeroed(depth: &Cell<u32>, fail: bool) -> u32 {
   expect(() => lib.zeroed(depth, true)).toThrow("failed");
   expect(depth.value).toBe(0);
 });
+
+test("a dyn Fn of a closure holding a type parameter's function drops what its callers give it", async () => {
+  // #580: in a crate with a guard's `Drop`, a closure holding a type
+  // parameter's function, made a `dyn Fn`, made every `dyn Fn` drop and
+  // so every `Rc` counted, and `js::any_of` of a counted `Rc` was refused,
+  // though nothing gives `computed`'s getter a destructor: JS calls it.
+  // It drops where `drop_params` says a caller gives one (ADR 0521,
+  // amended); alien-signals' `computed<T>` wraps its getter so.
+  const { js, dir } = compiled(
+    "dyn-fn-of-a-params-function",
+    `use std::cell::Cell;
+use std::rc::Rc;
+
+use js::Unknown;
+
+type Value = Option<&'static Unknown>;
+
+struct Finally<F: FnMut()>(F);
+
+impl<F: FnMut()> Drop for Finally<F> {
+    fn drop(&mut self) {
+        (self.0)();
+    }
+}
+
+thread_local! {
+    static DEPTH: Cell<u32> = const { Cell::new(0) };
+}
+
+pub fn depth() -> u32 {
+    DEPTH.get()
+}
+
+pub struct CNode {
+    value: Cell<Value>,
+    getter: Box<dyn Fn(Value) -> Value>,
+}
+
+fn computed_oper<T: 'static>(this: &CNode) -> Rc<T> {
+    DEPTH.set(DEPTH.get() + 1);
+    let _restore = Finally(|| DEPTH.set(DEPTH.get() - 1));
+    this.value.set((this.getter)(this.value.get()));
+    // SAFETY: a computed's value is what its getter gave, an \`Rc<T>\` (ADR 0909).
+    Rc::clone(unsafe { js::cast::<&Rc<T>>(this.value.get()) })
+}
+
+pub fn computed<T: 'static>(getter: impl Fn(Option<Rc<T>>) -> T + 'static) -> impl Fn() -> Rc<T> {
+    let this = Rc::new(CNode {
+        value: Cell::new(None),
+        getter: Box::new(move |previous: Value| {
+            // SAFETY: as above.
+            let previous = previous.map(|previous| Rc::clone(unsafe { js::cast::<&Rc<T>>(Some(previous)) }));
+            js::any_of(Rc::new(getter(previous)))
+        }),
+    });
+    move || computed_oper::<T>(&this)
+}
+`,
+  );
+  expect(js).not.toContain("strong");
+  expect(js).not.toContain("$dropping");
+  const lib = await import(join(dir, "lib.js"));
+  const count = lib.computed((previous: number | undefined) => (previous ?? 0) + lib.depth());
+  expect(count()).toBe(1);
+  expect(count()).toBe(2);
+  expect(lib.depth()).toBe(0);
+});

@@ -1972,7 +1972,12 @@ export function share(doc) {
   where it owns one, not where only a function's signature or a reference
   names it, `Rc<System<K>>` of a `Box<dyn Fn(&K)>`
   ([ADR 0521](../../decisions/0521-a-dyn-fn-carries-its-drop.md#amendment-a-capture-holds-a-type-parameters-value-only-where-it-owns-one-497),
-  amended), or a library hands it one whose
+  amended), and only where a caller gives that parameter one whose drop
+  runs: alien-signals' `computed<T>`, whose getter JS gives, boxes a
+  closure of it beside a guard's `Drop`, and drops nothing
+  ([ADR 0521](../../decisions/0521-a-dyn-fn-carries-its-drop.md#amendment-a-type-parameters-value-drops-where-a-caller-gives-it-one-whose-drop-runs-580),
+  amended; a library, which can't see its callers, takes any closure it
+  makes for one), or a library hands it one whose
   contract says the library makes one so: React's reconciler's `Rc<dyn
   Fn()>` listeners are an array of functions beside `react`'s `dyn Fn`s
   ([ADR 0521](../../decisions/0521-a-dyn-fn-carries-its-drop.md),

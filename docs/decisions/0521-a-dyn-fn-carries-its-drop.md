@@ -4,7 +4,8 @@ Status: Accepted. Extends [0484](0484-a-returned-closure-carries-its-drop.md)
 and [0098](0098-destructors.md). Amended: a type parameter's function is
 one that may be, below; a borrowed function made a `dyn Fn` carries
 no drop, below; and a capture holds a type parameter's value only where
-it owns one, below (#497).
+it owns one, below (#497); and a type parameter's value drops only where a
+caller gives it one whose drop runs, below (#580).
 
 Case: C ([0262](0262-when-rust-and-js-disagree.md)): what's dropped, and
 when, as std's.
@@ -194,3 +195,52 @@ associated type, or anything else, may.
 - Mutations `param-owned-through-a-fn-dyn`,
   `param-owned-through-a-raw-pointer` and
   `param-unowned-through-phantom-data` (`lower/analysis/closures.ts`).
+
+## Amendment: a type parameter's value drops where a caller gives it one whose drop runs (#580)
+
+alien-signals' generic `computed<T>` (design B4) boxes a closure of its
+getter, `Box::new(move |previous: Value| js::any_of(Rc::new(getter(..))))`,
+and the crate has a guard's `Drop`. A function holding a type parameter's
+value, the closure or `F` itself, was taken to drop wherever the crate had
+any destructor (`params_may_drop`), and `F` itself wherever any closure of
+the crate's held one: so every `dyn Fn` dropped, every `Rc` holding one
+was counted, `Rc<T>` too (ADR 0852), and `js::any_of` of a counted `Rc`
+was refused (ADR 0844). Nothing gives `computed`'s getter a destructor:
+JS calls it.
+
+**A function made a `dyn Fn` that owns a type parameter's value drops it
+where a caller gives that parameter one whose drop runs**, `drop_params`'
+answer (ADR 0098, the one owner of what generic code is given to drop),
+which `analysis.rs` keeps beside the counted `Rc`s it settles with
+(`counted_with`) and gives `dropping_fn_dyn` as `given`. `owns_a_param`
+asks it of each type parameter it finds, and a `Box::new(f)` of an `F`
+is a function that owns one, as a closure holding it is. The crate-wide
+guess, that any closure of the crate's may be what `F` is given, is gone:
+`drop_params` sees each call's type arguments, a closure holding a
+`Guard` among them, through the crate's generic functions and trait
+impls, and what a library's function the crate reaches makes
+(`foreign_drops`) may hold anything, as before. A library keeps the
+guess (`given` is `None`): its callers are its consumers, which it can't
+see, so a type parameter's function may be any closure it makes, and one
+holding a type parameter's value drops wherever it has a destructor. Its
+JS and its contract's `makes_dropping_fn_dyns` are as they were.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, what's dropped, and
+when, is Rust's: a `dyn Fn` given a closure holding a `Guard` drops it as
+the last `Rc` of what holds it is dropped.
+
+### What holds it
+
+- `test/corpus/dyn_fn_of_a_params_function.rs`, against native Rust: a
+  closure holding `computed`'s `F`, made a `dyn Fn` beside a `Guard`,
+  that no caller gives a destructor, is the node itself, no `Rc` counted;
+  as a library, which keeps the guess, it's counted (`library-differs`).
+- `test/corpus/dyn_fn_of_a_params_function_drops.rs`, against native
+  Rust: one caller gives it a closure holding a `Guard`, dropped as the
+  last `Rc` of its node is.
+- `test/lowering-drop-guards.test.ts`, "a dyn Fn of a closure holding a
+  type parameter's function drops what its callers give it": #580's
+  `computed<T>`, `js::any_of` of its `Rc<T>`, compiled and run.
+- Mutations `fn-dyn-param-given-unasked`, `fn-dyn-closure-drops-unseen`,
+  `fn-dyn-generic-unseen` (`lower/analysis/closures.ts`) and
+  `fn-dyn-library-params-ungiven` (`lower/analysis.ts`).

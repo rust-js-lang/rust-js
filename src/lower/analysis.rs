@@ -935,7 +935,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
                 .flat_map(|(id, indices)| indices.into_iter().map(move |index| (id, index)))
                 .collect();
             if more.is_subset(&given) {
-                return counted;
+                return (counted, given);
             }
             given.extend(more);
         }
@@ -953,21 +953,27 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let mut explicit_adapters = held_adapters::held_adapters(tcx);
     explicit_adapters.retain(|&id| !super::recognition::is_held_compiled_def(tcx, id));
     let mut closure_facts = ClosureFacts::new(tcx, all_bodies, &cloned, library);
-    let mut counted = counted_with(&closure_facts);
+    let (mut counted, given) = counted_with(&closure_facts);
     // Whether the crate makes a `dyn Fn` of a function holding a value with
     // a destructor, or a library hands it one whose contract says its own
     // may (ADR 0626, amended): what its `dyn Fn`s drop by, a library's as a
     // program's, and what its contract says of them. A consumer's closure
     // given a library's generic function that holds what drops is its own
-    // instance's, or refused (ADR 0914).
+    // instance's, or refused (ADR 0914). A program's of a type parameter's
+    // value drops where a caller gives it one whose drop runs (#580); a
+    // library's callers are its consumers, which it can't see.
     let library_drops = (reached.fn_dyns_of.iter()).any(|name| foreign.drops_fn_dyns(name));
-    let made = closures::dropping_fn_dyn(tcx, all_bodies, (params_may_drop, reached.functions), |ty| {
-        super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty)
-    });
+    let given_a_drop = |owner, index| given.contains(&(owner, index));
+    let made = closures::dropping_fn_dyn(
+        tcx,
+        all_bodies,
+        (params_may_drop, (!library).then_some(&given_a_drop), reached.functions),
+        |ty| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty),
+    );
     let drops = library_drops || made.is_some();
     if drops {
         closure_facts.fn_dyns_drop = true;
-        counted = counted_with(&closure_facts);
+        counted = counted_with(&closure_facts).0;
     }
     // A library whose `dyn Fn`s drop nothing that holds one the crate's
     // may be: it would drop nothing of one it's given (ADR 0626, amended).
@@ -985,7 +991,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         |ty| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, ty),
     ) {
         closure_facts.any_dyns_drop = true;
-        counted = counted_with(&closure_facts);
+        counted = counted_with(&closure_facts).0;
     }
     // A library that counts no `Rc` of a type hands the crate one, which the
     // two share as it is, the value itself: the crate can't count it either

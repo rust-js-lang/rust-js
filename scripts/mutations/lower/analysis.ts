@@ -457,6 +457,15 @@ export const mutations: Mutation[] = [
     ],
   },
   {
+    name: "fn-dyn-library-params-ungiven",
+    breaks:
+      "a library's closure holding its type parameter's function, made a `dyn Fn`, drops only what its own calls give, though a consumer may give the parameter a destructor (#580)",
+    file: "src/lower/analysis.rs",
+    find: "        (params_may_drop, (!library).then_some(&given_a_drop), reached.functions),\n",
+    replace: "        (params_may_drop, Some(&given_a_drop), reached.functions),\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_of_a_params_function.rs$"],
+  },
+  {
     name: "any-drops-of-any-library",
     breaks:
       "a crate whose library has destructors but makes no `dyn Any` of one drops what its `catch_unwind` caught, `error.impl.$drop?.(error.value)`, as React's react crate did of shared's guards",
@@ -564,7 +573,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis.rs",
     find: "            let runs = |ty, owner| runs_where(closure_facts, &counted, ty, owner);\n",
     replace:
-      "            if library {\n                return counted;\n            }\n            let runs = |ty, owner| runs_where(closure_facts, &counted, ty, owner);\n",
+      "            if library {\n                return (counted, given);\n            }\n            let runs = |ty, owner| runs_where(closure_facts, &counted, ty, owner);\n",
     tests: ["test/crates.test.ts", "-t", "counts another library"],
   },
   {

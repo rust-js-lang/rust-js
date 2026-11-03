@@ -226,18 +226,27 @@ pub(super) struct DroppingFnDyn<'tcx> {
     pub(super) held: Ty<'tcx>,
 }
 
+/// Whether a caller gives function `DefId`'s type parameter of an index
+/// one whose drop runs, `drop_params`' answer (ADR 0098).
+pub(super) type GivenADrop<'a> = dyn Fn(DefId, u32) -> bool + 'a;
+
 /// The first of `all_bodies`' coercions of a function to a `dyn Fn` that
-/// `drops` says has something to drop, or of one of a type parameter's,
-/// given a closure: where a closure the crate makes has, or, where
+/// `drops` says has something to drop, or that holds a value of a type
+/// parameter a caller gives one whose drop runs, `given` by its function
+/// and index, `drop_params`' answer, where `params_may_drop`; or of one of
+/// a type parameter's where `foreign_drops`, as a library's function may
+/// be given it (ADR 0521, amended by #580). Of a library's, whose callers
+/// it can't see, `given` is `None`: one of a type parameter's may be any
+/// closure it makes, given a closure: where one has, or, where
 /// `foreign_drops`, one a library makes may.
 pub(super) fn dropping_fn_dyn<'tcx>(
     tcx: TyCtxt<'tcx>,
     all_bodies: &[&Body<'tcx>],
-    (params_may_drop, foreign_drops): (bool, bool),
+    (params_may_drop, given, foreign_drops): (bool, Option<&GivenADrop<'_>>, bool),
     drops: impl Fn(Ty<'tcx>) -> bool,
 ) -> Option<DroppingFnDyn<'tcx>> {
-    // A type parameter's: in Rust a function is a closure, a `fn` or a
-    // `dyn Fn`, whose own coercion answers for it.
+    // A library's type parameter's: in Rust a function is a closure, a
+    // `fn` or a `dyn Fn`, whose own coercion answers for it.
     let closure_drops = || {
         foreign_drops
             || all_bodies.iter().any(|body| {
@@ -249,8 +258,11 @@ pub(super) fn dropping_fn_dyn<'tcx>(
             })
     };
     (all_bodies.iter())
-        .flat_map(|body| fn_dyn_sources(tcx, &body.thir))
-        .find_map(|(span, function, handed)| {
+        .flat_map(|body| {
+            let owner = tcx.typeck_root_def_id(body.def_id);
+            fn_dyn_sources(tcx, &body.thir).map(move |source| (owner, source))
+        })
+        .find_map(|(owner, (span, function, handed))| {
             if handed {
                 return None;
             }
@@ -266,7 +278,18 @@ pub(super) fn dropping_fn_dyn<'tcx>(
                     held: held.unwrap_or(function),
                 });
             }
-            (holds_a_param(tcx, function) && closure_drops()).then_some(DroppingFnDyn {
+            // A type parameter's, or a closure holding one: in Rust a
+            // function is a closure, a `fn` or a `dyn Fn`, of what a caller
+            // gives it, which `given` answers for.
+            let held = match given {
+                Some(given) => {
+                    foreign_drops && holds_a_param(tcx, function)
+                        || params_may_drop
+                            && owns_a_param(tcx, function, &|index| given(owner, index), &mut HashSet::new())
+                }
+                None => holds_a_param(tcx, function) && closure_drops(),
+            };
+            held.then_some(DroppingFnDyn {
                 span,
                 function,
                 held: function,
@@ -320,7 +343,7 @@ pub(super) fn refuse_dropping_fn_dyn<'tcx>(
 /// for; nor a `dyn Fn` made another, `&dyn Fn(S, A) -> S`, a function
 /// already, whose own coercion answers (ADR 0521, amended).
 fn holds_a_param<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-    owns_a_param(tcx, ty, &mut HashSet::new())
+    owns_a_param(tcx, ty, &|_| true, &mut HashSet::new())
 }
 
 /// Whether dropping a value of `ty` may drop a value of a type parameter:
@@ -328,21 +351,28 @@ fn holds_a_param<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
 /// the `PhantomData` they mark it with, an `Rc`'s, a `Vec`'s. Not one that
 /// only a reference, a raw pointer (`raw_pointee`'s, a `NonNull` too) or a
 /// function's signature names, `&K`, `Box<dyn Fn(&K)>`, a `dyn` whose own
-/// coercion answers for it (ADR 0521, amended). An associated type or a
-/// coroutine may hold one.
-fn owns_a_param<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, seen: &mut HashSet<Ty<'tcx>>) -> bool {
+/// coercion answers for it (ADR 0521, amended). Of the type parameters,
+/// those `given` says by index, a caller gives one whose drop runs (#580).
+/// An associated type or a coroutine may hold one.
+fn owns_a_param<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    ty: Ty<'tcx>,
+    given: &dyn Fn(u32) -> bool,
+    seen: &mut HashSet<Ty<'tcx>>,
+) -> bool {
     if !ty.has_non_region_param() || !seen.insert(ty) || raw_pointee(tcx, ty).is_some() {
         return false;
     }
     match ty.kind() {
         ty::Ref(..) | ty::FnPtr(..) | ty::FnDef(..) | ty::Dynamic(..) => false,
-        ty::Tuple(items) => items.iter().any(|item| owns_a_param(tcx, item, seen)),
-        ty::Array(item, _) | ty::Slice(item) => owns_a_param(tcx, *item, seen),
-        ty::Closure(_, args) => (args.as_closure().upvar_tys().iter()).any(|t| owns_a_param(tcx, t, seen)),
-        ty::Adt(adt, args) if adt.is_box() || adt.is_phantom_data() => owns_a_param(tcx, args.type_at(0), seen),
+        ty::Param(param) => given(param.index),
+        ty::Tuple(items) => items.iter().any(|item| owns_a_param(tcx, item, given, seen)),
+        ty::Array(item, _) | ty::Slice(item) => owns_a_param(tcx, *item, given, seen),
+        ty::Closure(_, args) => (args.as_closure().upvar_tys().iter()).any(|t| owns_a_param(tcx, t, given, seen)),
+        ty::Adt(adt, args) if adt.is_box() || adt.is_phantom_data() => owns_a_param(tcx, args.type_at(0), given, seen),
         ty::Adt(adt, args) => adt
             .all_fields()
-            .any(|field| owns_a_param(tcx, field.ty(tcx, args).skip_normalization(), seen)),
+            .any(|field| owns_a_param(tcx, field.ty(tcx, args).skip_normalization(), given, seen)),
         _ => true,
     }
 }

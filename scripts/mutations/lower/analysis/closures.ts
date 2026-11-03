@@ -24,8 +24,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic closure holding a `Vec<K>` made a `dyn Fn` by generic code is taken to hold no `K`, so the `dyn Fn` drops nothing of one with a destructor",
     file: "src/lower/analysis/closures.rs",
-    find: "        ty::Adt(adt, args) if adt.is_box() || adt.is_phantom_data() => owns_a_param(tcx, args.type_at(0), seen),\n",
-    replace: "        ty::Adt(adt, args) if adt.is_box() => owns_a_param(tcx, args.type_at(0), seen),\n",
+    find: "        ty::Adt(adt, args) if adt.is_box() || adt.is_phantom_data() => owns_a_param(tcx, args.type_at(0), given, seen),\n",
+    replace: "        ty::Adt(adt, args) if adt.is_box() => owns_a_param(tcx, args.type_at(0), given, seen),\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_generic_owned_drops.rs$"],
   },
   {
@@ -42,9 +42,18 @@ export const mutations: Mutation[] = [
     breaks:
       "a type parameter made a `dyn Fn`, given a closure holding a value with a destructor, leaves the `dyn Fn` dropping nothing",
     file: "src/lower/analysis/closures.rs",
-    find: "            (holds_a_param(tcx, function) && closure_drops()).then_some(DroppingFnDyn {\n",
-    replace: "            (false && holds_a_param(tcx, function) && closure_drops()).then_some(DroppingFnDyn {\n",
-    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_generic_drops.rs$"],
+    find: "                        || params_may_drop\n                            && owns_a_param(tcx, function, &|index| given(owner, index), &mut HashSet::new())\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_generic_drops.rs$|^dyn_fn_of_a_params_function_drops.rs$"],
+  },
+  {
+    name: "fn-dyn-param-given-unasked",
+    breaks:
+      "a closure holding a type parameter's function made a `dyn Fn`, in a crate with a `Drop`, drops though no caller gives the parameter a destructor, so every `Rc` is counted and `js::any_of` of one refused (#580)",
+    file: "src/lower/analysis/closures.rs",
+    find: "        ty::Param(param) => given(param.index),\n",
+    replace: "        ty::Param(_) => true,\n",
+    tests: ["test/lowering-drop-guards.test.ts", "-t", "a dyn Fn of a closure holding a type parameter's function"],
   },
   {
     name: "dropping-fn-dyn-holds-itself",
@@ -79,9 +88,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure holding a value with a destructor, given to a type parameter made a `dyn Fn`, isn't seen to drop",
     file: "src/lower/analysis/closures.rs",
-    find: "                    drops(ty) || params_may_drop && holds_a_param(tcx, ty)\n",
-    replace: "                    params_may_drop && holds_a_param(tcx, ty)\n",
-    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_generic_drops.rs$"],
+    find: "        ty::Param(param) => given(param.index),\n",
+    replace: "        ty::Param(_) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_generic_drops.rs$|^dyn_fn_of_a_params_function_drops.rs$"],
   },
   {
     name: "fn-dyn-closure-uncarried",
@@ -203,7 +212,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure a generic function boxes holding only its own `Rc`, chainThenableValue<T>'s, is taken to hold a type parameter's value, and every `dyn Fn` of the crate drops (ADR 0521, amended)",
     file: "src/lower/analysis/closures.rs",
-    find: "        ty::Closure(_, args) => (args.as_closure().upvar_tys().iter()).any(|t| owns_a_param(tcx, t, seen)),\n",
+    find: "        ty::Closure(_, args) => (args.as_closure().upvar_tys().iter()).any(|t| owns_a_param(tcx, t, given, seen)),\n",
     replace: "        ty::Closure(..) => true,\n",
     tests: [
       "test/cross-crate-dyn-fns.test.ts",
