@@ -471,3 +471,34 @@ pub fn swapped() -> u32 {
   expect(other$.named()).toBe(303);
   expect(other$.swapped()).toBe(9);
 });
+
+// #584: React's ReactJSXElement has `const createFakeCallStack = {
+// react_stack_bottom_frame: (callStackForError) => callStackForError() };`,
+// read only to call its field, `createFakeCallStack.react_stack_bottom_frame(UnknownOwner)`.
+// A struct's field reads no `this` either, but it's data, which upstream
+// keeps by its name: only a namespace's methods are taken apart (#561).
+test("a const struct of fields read only to call them keeps its name", async () => {
+  const dir = fixture("forwarding-const-struct-fields");
+  writeFileSync(join(dir, "lib.rs"), `pub struct FakeCallStack {
+    pub react_stack_bottom_frame: fn(fn() -> u32) -> u32,
+}
+
+const CREATE_FAKE_CALL_STACK: FakeCallStack = FakeCallStack {
+    react_stack_bottom_frame: |call_stack_for_error| call_stack_for_error(),
+};
+
+fn unknown_owner() -> u32 {
+    7
+}
+
+pub fn stack() -> u32 {
+    (CREATE_FAKE_CALL_STACK.react_stack_bottom_frame)(unknown_owner)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const CREATE_FAKE_CALL_STACK = {\n");
+  expect(js).toContain("  return CREATE_FAKE_CALL_STACK.reactStackBottomFrame(unknownOwner);\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.stack()).toBe(7);
+});

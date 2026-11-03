@@ -671,7 +671,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // Its module's function, which reads no `this` (ADR 1037):
                 // read apart from the value, it's called as it was (#561).
                 return Expr {
-                    facts: js::Facts::of(js::Known::ThisUnread),
+                    facts: js::Facts::of(js::Known::ThisUnread).with(js::Known::NamespaceMethod),
                     ..Expr::call(
                         Expr::member(receiver, crate::lower::classes::property(self.tcx, def_id)),
                         args,

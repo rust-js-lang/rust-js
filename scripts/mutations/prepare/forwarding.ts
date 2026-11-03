@@ -147,9 +147,18 @@ export const mutations: Mutation[] = [
     breaks:
       "a JS object's method, which may read its `this`, is read apart from it, `const { getTime } = new Date(0)`, whose call throws (#561)",
     file: "src/prepare/forwarding.rs",
-    find: "    (e.facts.has(js::Known::ThisUnread) && matches!(&of.kind, ExprKind::Var(v) if v == value)).then_some(member)\n",
+    find: "    (e.facts.has(js::Known::NamespaceMethod) && matches!(&of.kind, ExprKind::Var(v) if v == value)).then_some(member)\n",
     replace: "    matches!(&of.kind, ExprKind::Var(v) if v == value).then_some(member)\n",
     tests: ["test/lowering-forwarding.test.ts", "-t", "a private thread-local of a namespace read only for its methods is taken apart once"],
+  },
+  {
+    name: "members-of-a-struct-of-fields",
+    breaks:
+      "a `const` struct of a fn field, read only to call it, is taken apart, `const { react_stack_bottom_frame } = {..}`, where upstream keeps `createFakeCallStack.react_stack_bottom_frame(..)` (#584)",
+    file: "src/prepare/forwarding.rs",
+    find: "    (e.facts.has(js::Known::NamespaceMethod) && matches!(&of.kind, ExprKind::Var(v) if v == value)).then_some(member)\n",
+    replace: "    (e.facts.has(js::Known::ThisUnread) && matches!(&of.kind, ExprKind::Var(v) if v == value)).then_some(member)\n",
+    tests: ["test/lowering-forwarding.test.ts", "-t", "a const struct of fields read only to call them keeps its name"],
   },
   {
     name: "members-names-unreserved",

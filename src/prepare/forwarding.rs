@@ -252,16 +252,20 @@ pub(super) fn fields(module: &mut js::Module) {
 }
 
 /// `const flightClient = ReactFlightClient({..});` of a private
-/// thread-local, each of whose reads calls its member, a function that
-/// reads no `this` (`Known::ThisUnread`), a namespace's method through
-/// it, `flightClient.createResponse(..)`: that value taken apart where
+/// thread-local, each of whose reads calls its member, a namespace's
+/// method through it (`Known::NamespaceMethod`), its module's function,
+/// which reads no `this`, `flightClient.createResponse(..)`: that value
+/// taken apart where
 /// it's made, each member by its name, called alone, `const {
 /// createResponse, close } = ReactFlightClient({..});` and
 /// `createResponse(..)`, as upstream's noop Flight client writes it (ADR
 /// 0610, amended, #561). Nothing sets the constant or writes its members,
 /// so each call read the function the value was made with, which the
 /// destructuring reads once. Not where a member's name is no identifier or
-/// any name the module has already, which its call would then read.
+/// any name the module has already, which its call would then read; nor a
+/// struct of fields called through, React's `const createFakeCallStack =
+/// { react_stack_bottom_frame: .. }`, data upstream keeps by its name
+/// (#584).
 pub(super) fn members(module: &mut js::Module) {
     let mut names: HashSet<String> = HashSet::new();
     for item in &module.items {
@@ -352,8 +356,8 @@ pub(super) fn members(module: &mut js::Module) {
     }
 }
 
-/// The member of `value` that `e` calls, `value.member(..)`, where its
-/// function reads no `this` (`Known::ThisUnread`).
+/// The member of `value` that `e` calls, `value.member(..)`, where it's a
+/// namespace's method, its module's function (`Known::NamespaceMethod`).
 fn member_called<'e>(e: &'e Expr, value: &str) -> Option<&'e str> {
     let ExprKind::Call(callee, _) = &e.kind else {
         return None;
@@ -361,7 +365,7 @@ fn member_called<'e>(e: &'e Expr, value: &str) -> Option<&'e str> {
     let ExprKind::Member(of, member) = &callee.kind else {
         return None;
     };
-    (e.facts.has(js::Known::ThisUnread) && matches!(&of.kind, ExprKind::Var(v) if v == value)).then_some(member)
+    (e.facts.has(js::Known::NamespaceMethod) && matches!(&of.kind, ExprKind::Var(v) if v == value)).then_some(member)
 }
 
 /// Whether each read of `name` in `items` but the function at `at` is a

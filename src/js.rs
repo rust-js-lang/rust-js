@@ -980,14 +980,14 @@ pub enum Known {
     /// which gives it that `this`, as preparation writes it
     /// (`Expr::own_method_call`, rd334).
     OwnMethodCall,
-    /// A call of a function its holder's member is, which reads no `this`
-    /// though JS gives it the holder: a field the crate fills with its own
-    /// functions alone, `system.link(dep, sub)`
-    /// (`Pointers::call_facts`), or a namespace's method through a value,
-    /// `client.createResponse(..)`, its module's function (ADR 1037). Its
-    /// function may be read apart from its holder and called alone, `const
-    /// { link } = system;` (ADR 0610, amended, #533, #561).
+    /// A call of a function its holder's member is, which reads no `this`:
+    /// a field the crate fills with its own functions, `system.link(..)`
+    /// (`Pointers::call_facts`), or a namespace's method through a value
+    /// (ADR 1037). It may be read apart and called alone (ADR 0610, #533).
     ThisUnread,
+    /// Of those, a namespace's method, which `prepare::forwarding::members`
+    /// takes its value apart for; not a struct's field (#561, #584).
+    NamespaceMethod,
     /// A member a key names of a value of any shape, `js::method((value,
     /// key))`'s, which is read only as its value's method (rd334): the
     /// form of no other call, which a `let` of its value only it reads

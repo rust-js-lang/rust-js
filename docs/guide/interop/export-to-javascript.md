@@ -1817,9 +1817,11 @@ export function updateContainer(n) {
   reads no `this`, and nothing sets the thread-local, so each call reads
   the function it did. One also read as a value stays, and so does one
   whose method's name the module has already, which the call would then
-  read
+  read. A struct's value, read only to call its fields, keeps its name
+  and its field reads, as React's `createFakeCallStack.react_stack_bottom_frame(..)`
+  does
   ([ADR 0610](../../decisions/0610-a-forwarding-function-is-its-variable.md),
-  amended, #561):
+  amended, #561, #584):
 
 ```rust
 pub mod reconciler {

@@ -253,3 +253,43 @@ also read as a value, one the module sets, one whose member's name the
 module's function has, the second of one name, a `Date`'s method). Mutations
 `namespace-through-this-read` (`mir/calls.ts`) and `members-*`
 (`prepare/forwarding.ts`).
+
+## Amendment: only a namespace's methods are taken apart, not a struct's fields (#584)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Either form calls
+the same function with the same arguments; this one keeps upstream's
+names.
+
+#561's rule asked `ThisUnread`, which a field the crate fills with its
+own functions has too (#533). So React's ReactJSXElement, a `const`
+struct of data read only to call its one field, was taken apart:
+
+```js
+const { react_stack_bottom_frame } = {
+  react_stack_bottom_frame: (callStackForError) => callStackForError(),
+};
+```
+
+where upstream keeps `createFakeCallStack` and calls the field through
+it, a frame React's owner stacks look for by its name off the object.
+
+**A call of a namespace's method through a value is marked
+`Known::NamespaceMethod` as well as `ThisUnread` where it's lowered, and
+`members` asks for it.** A struct's field, which only reads no `this`,
+keeps its value's name and its field reads:
+
+```js
+const CREATE_FAKE_CALL_STACK = {
+  reactStackBottomFrame: (callStackForError) => callStackForError(),
+};
+..
+return CREATE_FAKE_CALL_STACK.reactStackBottomFrame(unknownOwner);
+```
+
+#533's `fields` still asks `ThisUnread`: a function of the module's own
+that only passes on to such a field is that field.
+
+What holds it: `test/lowering-forwarding.test.ts`, "a const struct of
+fields read only to call them keeps its name". Mutations
+`members-of-a-struct-of-fields` (`prepare/forwarding.ts`) and
+`namespace-method-unmarked` (`mir/calls.ts`).

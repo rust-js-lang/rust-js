@@ -1166,8 +1166,16 @@ export const mutations: Mutation[] = [
     breaks:
       "a namespace's method through a value is taken for one that may read its `this`, so the noop Flight client's thread-local stays `NOOP.createContainer(..)`, not taken apart (#561)",
     file: "src/lower/mir/calls.rs",
-    find: "                    facts: js::Facts::of(js::Known::ThisUnread),\n                    ..Expr::call(\n                        Expr::member(receiver,",
+    find: "                    facts: js::Facts::of(js::Known::ThisUnread).with(js::Known::NamespaceMethod),\n                    ..Expr::call(\n                        Expr::member(receiver,",
     replace: "                    facts: js::Facts::NONE,\n                    ..Expr::call(\n                        Expr::member(receiver,",
+    tests: ["test/lowering-forwarding.test.ts", "-t", "a private thread-local of a namespace read only for its methods is taken apart once"],
+  },
+  {
+    name: "namespace-method-unmarked",
+    breaks: "a namespace's method through a value isn't marked one, so a thread-local of a namespace read only for its methods keeps its member calls (#561, #584)",
+    file: "src/lower/mir/calls.rs",
+    find: "                    facts: js::Facts::of(js::Known::ThisUnread).with(js::Known::NamespaceMethod),\n",
+    replace: "                    facts: js::Facts::of(js::Known::ThisUnread),\n",
     tests: ["test/lowering-forwarding.test.ts", "-t", "a private thread-local of a namespace read only for its methods is taken apart once"],
   },
   {
