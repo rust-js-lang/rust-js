@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
     name: "cargo-app-not-library",
     breaks: "the package Cargo was asked for is built as the app, and fresh as that when another build uses it",
     file: "src/cargo.rs",
-    find: "    if !tests\n        && std::env::var(APP)\n            .ok()\n            .is_none_or(|app| std::env::var(\"CARGO_PKG_NAME\").ok() != Some(app))\n    {\n",
+    find: "    if !tests && !is_app()? {\n",
     replace: "    if !tests && std::env::var_os(\"CARGO_PRIMARY_PACKAGE\").is_none() {\n",
     tests: ["test/cargo-workspace.test.ts", "-t", "app's crate is a program"],
   },

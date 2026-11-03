@@ -277,6 +277,9 @@ test("the app's crate is a program where no crate uses it, and a library, the sa
   run(cargo(manifest, "generate-lockfile"));
   const used = await check(manifest, { packageNames: ["shell"] });
   expect([printed(used.js!), disposed(used.crates.get("user")!.js)]).toEqual(["5 5 2\n2\n4\n5 5\n", true]);
+  // Built alone, the package asked for, it's the same library.
+  const library = readFileSync(used.crates.get("user")!.js, "utf8");
+  expect(readFileSync((await check(manifest, { packageNames: ["user"] })).js!, "utf8")).toBe(library);
 }, 600_000);
 
 // `rust-js build` of a workspace's root builds every member at once, and
