@@ -35,6 +35,17 @@ pub(super) fn read_vars<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) -
                 arg: inner,
             } => reads(tcx, thir, inner, vars),
             ExprKind::Binary { lhs, rhs, .. } => reads(tcx, thir, lhs, vars) && reads(tcx, thir, rhs, vars),
+            // An `if`'s value of what reads, `if replace { 1 } else { 0 }`,
+            // and a block's of no statement (rd376).
+            ExprKind::If {
+                cond,
+                then,
+                else_opt: Some(otherwise),
+                ..
+            } => reads(tcx, thir, cond, vars) && reads(tcx, thir, then, vars) && reads(tcx, thir, otherwise, vars),
+            ExprKind::Block { block } if thir[block].stmts.is_empty() => {
+                thir[block].expr.is_some_and(|value| reads(tcx, thir, value, vars))
+            }
             ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. } => {
                 vars.push(id);
                 true

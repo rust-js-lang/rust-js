@@ -298,4 +298,14 @@ export const mutations: Mutation[] = [
     replace: "        if arm.guard.is_none() && value.is_some() {\n",
     tests: ["test/corpus.test.ts", "-t", "^match_of_a_length\\.rs$"],
   },
+  {
+    name: "filtered-not-empty-unknown",
+    breaks:
+      "a `Vec` an `Option`'s `filter(|q| !q.is_empty())` shows isn't empty isn't known at least one long, so `queue[0]` is `$index(queue, 0)` (rd376)",
+    file: "src/lower/body_queries/ranges/narrowing.rs",
+    find: "                    k.at_least(&((Vec::new(), var), Below::LENGTH), 1);\n",
+    replace: "                    k.at_least(&((Vec::new(), var), Below::LENGTH), 0);\n",
+    tests: ["test/corpus.test.ts", "-t", "^filtered_not_empty.rs$"],
+    snapshots: true,
+  },
 ];

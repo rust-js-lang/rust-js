@@ -998,11 +998,13 @@ pub(in crate::lower) fn slice_length<'tcx>(
 /// What a call of `def_id` gives of an item where it's there: a slice's
 /// `get(i)` of a `usize`, a `Vec`'s by its slice, the item at `i`, `Get`;
 /// or `Option`'s `copied()` or `cloned()`, `Some` where what it's given
-/// is, `Passed` (ADR 0881, amended).
+/// is, `Passed` (ADR 0881, amended); or its `filter(p)`, `Some` where what
+/// it's given is and `p` holds of it, `Filtered` (rd376).
 #[derive(Clone, Copy, PartialEq)]
 pub(in crate::lower) enum PresentItem {
     Get,
     Passed,
+    Filtered,
 }
 
 pub(in crate::lower) fn present_item<'tcx>(
@@ -1018,6 +1020,9 @@ pub(in crate::lower) fn present_item<'tcx>(
         "get" if owner.is_slice() && args.types().nth(1).is_some_and(|i| i.is_usize()) => Some(PresentItem::Get),
         "copied" | "cloned" if matches!(owner.kind(), ty::Adt(adt, _) if tcx.is_diagnostic_item(sym::Option, adt.did())) => {
             Some(PresentItem::Passed)
+        }
+        "filter" if matches!(owner.kind(), ty::Adt(adt, _) if tcx.is_diagnostic_item(sym::Option, adt.did())) => {
+            Some(PresentItem::Filtered)
         }
         _ => None,
     }

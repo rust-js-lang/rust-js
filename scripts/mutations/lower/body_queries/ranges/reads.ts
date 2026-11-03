@@ -53,4 +53,14 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-collections.test.ts", "-t", "as long as another"],
   },
+  {
+    name: "if-value-unread",
+    breaks:
+      "an `if`'s value, `if replace { 1 } else { 0 }`, isn't read as pure, so `&queue[if replace { 1 } else { 0 }..]` isn't shown in bounds and stays `$slice` (rd376)",
+    file: "src/lower/body_queries/ranges/reads.rs",
+    find: "            } => reads(tcx, thir, cond, vars) && reads(tcx, thir, then, vars) && reads(tcx, thir, otherwise, vars),\n",
+    replace: "            } => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^filtered_not_empty.rs$"],
+    snapshots: true,
+  },
 ];

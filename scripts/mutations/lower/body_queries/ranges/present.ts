@@ -41,4 +41,23 @@ export const mutations: Mutation[] = [
       "a stepped index to a slice of references is counted to its length",
     ],
   },
+  {
+    name: "any-filter-not-empty",
+    breaks:
+      "an `Option`'s `filter` of any test, `|q| q.len() < 3`, is taken to show its `Vec` isn't empty, so `&queue[1..]` of an empty one loops nothing where Rust panics (rd376)",
+    file: "src/lower/body_queries/ranges/present.rs",
+    find: "        _ => false,\n    }\n}\n\n/// The variable `e` is",
+    replace: "        _ => true,\n    }\n}\n\n/// The variable `e` is",
+    tests: ["test/corpus.test.ts", "-t", "^filtered_not_empty.rs$"],
+  },
+  {
+    name: "filtered-borrow-unread",
+    breaks:
+      "a `filter`'s `!queue.is_empty()`, of `&*queue`, isn't seen as a test of the closure's `queue`, so its `Vec` isn't known at least one long (rd376)",
+    file: "src/lower/body_queries/ranges/present.rs",
+    find: "            ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => e = arg,\n            ExprKind::VarRef { id } => return Some(id),\n",
+    replace: "            ExprKind::Deref { arg } => e = arg,\n            ExprKind::VarRef { id } => return Some(id),\n",
+    tests: ["test/corpus.test.ts", "-t", "^filtered_not_empty.rs$"],
+    snapshots: true,
+  },
 ];

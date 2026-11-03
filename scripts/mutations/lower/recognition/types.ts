@@ -423,4 +423,13 @@ export const mutations: Mutation[] = [
     replace: "            if false)\n        })\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_payload_where_read.rs$"],
   },
+  {
+    name: "option-filter-unrecognized",
+    breaks: "an `Option`'s `filter` isn't a present item, so what it shows of a `Vec` isn't known (rd376)",
+    file: "src/lower/recognition/types.rs",
+    find: "            Some(PresentItem::Filtered)\n",
+    replace: "            None\n",
+    tests: ["test/corpus.test.ts", "-t", "^filtered_not_empty.rs$"],
+    snapshots: true,
+  },
 ];

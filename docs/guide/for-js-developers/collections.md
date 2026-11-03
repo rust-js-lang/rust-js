@@ -71,10 +71,13 @@ index of it read, `xs[i]` then `xs[j]` of a `j <= i`. A `Vec` a
 may change it: a call but its reads, or a drop of what runs code. Where
 `v.get(i)` is `Some`, `while let Some(x) = v.get(i)`'s, a thread-local's
 `with_borrow(|v| v.get(i))` too, `i` is below a length, so its `i += 1`
-is `i++`, no wrap
+is `i++`, no wrap. Where an `Option`'s `filter(|q| !q.is_empty())` is
+`Some`, its `Vec` is at least one long, `queue[0]`; and a start given by
+an `if`, `&queue[if replace { 1 } else { 0 }..]`, is as large as its
+largest branch, in bounds there
 ([ADR 0292](../../decisions/0292-known-bounds.md),
 [ADR 0746](../../decisions/0746-a-length-held-in-a-variable-shows-the-slice-so-long.md),
-[ADR 0881](../../decisions/0881-a-refcells-vec-is-indexed-by-its-tests.md)).
+[ADR 0881](../../decisions/0881-a-refcells-vec-is-indexed-by-its-tests.md#amendment-a-vec-an-options-filter-shows-isnt-empty-rd376-2026-11-03)).
 An index tested below two lengths, `i < prev.len() && i < next.len()`,
 is below each, `prev[i]` and `next[i]`; and so in a closure made there,
 `KEY.with(|_| same(&next[i], &prev[i]))`, of what it captures by shared

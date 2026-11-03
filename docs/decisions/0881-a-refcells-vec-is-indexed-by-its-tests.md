@@ -188,3 +188,38 @@ time the rule was taken saw it taken nowhere: not in the corpus, not in
 `check:fast --all`, and not in the React port's 13 crates.
 `refcell_vec_bounds` still holds `queue.splice(0, i);` against its
 snapshot and native Rust.
+
+## Amendment: a `Vec` an `Option`'s `filter` shows isn't empty (rd376, 2026-11-03)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. Where `if let
+Some(queue) = queue.filter(|queue| !queue.is_empty())` holds, `queue` is
+at least one long: `filter` gives `Some` only of what its closure holds
+of. React's Fizz processUpdateQueue's port wrote it, and its
+`old_queue[0]` was `$index(oldQueue, 0)`, where upstream writes
+`oldQueue[0]`. **A `Some(v)` pattern of an `Option`'s `filter` whose
+closure is `!v.is_empty()` of what it's given, through its references,
+makes `v` at least one long** (`present::
+present_not_empty`, narrowing's `Let`, the closure's body from the
+crate's bodies, as a thread-local's `with_borrow` closure is read). A
+`filter` of any other test says nothing of the length. `Option::filter`
+is a present item too (`PresentItem::Filtered`): what `v.get(i).filter(p)`
+shows of `i` is what `v.get(i)` shows.
+
+And the start of that range, `&old_queue[if old_replace { 1 } else {
+0 }..]`, is an `if`'s value, which the ranges walk read as nothing,
+`read_vars` not taking an `if`: it stayed `$slice`. An `if` with an
+`else` of reads, and a block of no statement, read only what their parts
+do, so their value is the join of their branches', `0..=1`, at most the
+length known, and the loop counts its indices, `for (let i = value; i <
+oldQueue.length; i++)` (ADR 1042).
+
+Not yet: MIR holds the start in a temporary, `const value = oldReplace ?
+1 : 0;`, which tidy's `inlined` doesn't read into a `for`'s start, where
+upstream writes `for (let i = oldReplace ? 1 : 0; ..)`.
+
+Held by the corpus's `filtered_not_empty`, run against native Rust,
+which panics where a `filter` of another test is empty; and the mutations
+`filtered-not-empty-unknown` (`ranges/narrowing.ts`),
+`any-filter-not-empty`, `filtered-borrow-unread` (`ranges/present.ts`),
+`if-value-unread` (`ranges/reads.ts`) and `option-filter-unrecognized`
+(`recognition/types.ts`).

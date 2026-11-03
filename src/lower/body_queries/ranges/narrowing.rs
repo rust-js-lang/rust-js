@@ -20,6 +20,12 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 if let Some(var) = present::present_index(self.tcx, thir, expr, self.bodies) {
                     present::below_most(var, self.volatile.contains(&var), known);
                 }
+                // What a `filter` showed isn't empty, at least one long.
+                if let Some(var) = present::present_not_empty(self.tcx, thir, expr, pat, self.bodies)
+                    && let Some(k) = known.as_mut()
+                {
+                    k.at_least(&((Vec::new(), var), Below::LENGTH), 1);
+                }
             }
             // A variable that holds a test, the test's (ADR 0806).
             ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. }
