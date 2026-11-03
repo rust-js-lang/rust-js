@@ -3167,7 +3167,14 @@ export function isAdult(p) {
   let Some(types) = types && ..`: `const types = prev.types; if (dev &&
   types != null && types !== other)`
   ([ADR 0866](../../decisions/0866-a-let-only-its-if-let-reads-is-read-there.md),
-  amended, rd226, the user's decision). A chain's binding of a field its test read, `if let Some(fiber) =
+  amended, rd226, the user's decision). One named as the property it
+  reads, whose one read is the left side of a `||` or `??` the statement
+  right after it evaluates first, is the property read there: `let r#type
+  = blob.r#type(); let mime_type = if r#type.is_empty() { "none" } else {
+  &r#type };` is `const mimeType = blob.type || "none";`, read once either
+  way. Read again, after something else, or named otherwise, it stays
+  ([ADR 0866](../../decisions/0866-a-let-only-its-if-let-reads-is-read-there.md),
+  amended, rd664, the user's decision). A chain's binding of a field its test read, `if let Some(fiber) =
   &fiber && let Some(task) = fiber.debug_task.get() { return
   task.run(..); }`, where the body reads it first, before anything runs:
   `if (fiber != null && fiber._debugTask) { return

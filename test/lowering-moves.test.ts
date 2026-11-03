@@ -966,3 +966,112 @@ pub fn copies(n: u32) -> u32 {
   const part = lib.part() as unknown as () => string;
   expect([part(), part(), reads]).toEqual(["1", "1", 1]);
 });
+
+// A `let` the program wrote, named as the getter it reads, whose one read
+// is the left side of the `||` or `??` the next statement evaluates first:
+// the getter read there, once, where it was read, React's readAsDataURL's
+// `blob.type || 'application/octet-stream'` (rd664, the user's decision,
+// an exception to rd226). Read twice, after something else, named
+// otherwise, or past the next statement, the `let` stays, the getter read
+// once, before what comes between; read first by what's no fallback, it
+// stays too.
+test("a let read first by the next statement's fallback is its getter read there", async () => {
+  const { js, lib } = await compiled("fallback-reads", `use js::Unknown;
+
+#[cfg_attr(rust_js, rust_js::link_name = "get type")]
+fn kind(this: &Unknown) -> String {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "get name")]
+fn name(this: &Unknown) -> Option<String> {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.fallbackNote")]
+fn note(what: &str) -> String {
+    unreachable!()
+}
+
+pub fn mime(blob: &Unknown) -> String {
+    let r#type = kind(blob);
+    let mime_type = if r#type.is_empty() {
+        "application/octet-stream"
+    } else {
+        &r#type
+    };
+    "data:".to_owned() + mime_type
+}
+
+pub fn named(info: &Unknown) -> String {
+    let name = name(info);
+    name.unwrap_or_else(|| "unknown".to_owned())
+}
+
+pub fn twice(blob: &Unknown) -> String {
+    let r#type = kind(blob);
+    let mime_type = if r#type.is_empty() { "none" } else { &r#type };
+    mime_type.to_owned() + &r#type
+}
+
+pub fn not_first(blob: &Unknown) -> String {
+    let r#type = kind(blob);
+    note("first") + if r#type.is_empty() { "none" } else { &r#type }
+}
+
+pub fn other_name(blob: &Unknown) -> String {
+    let t = kind(blob);
+    let mime_type = if t.is_empty() { "none" } else { &t };
+    mime_type.to_owned()
+}
+
+pub fn tested(info: &Unknown) -> bool {
+    let name = name(info);
+    name.is_some()
+}
+
+pub fn not_next(blob: &Unknown) -> String {
+    let r#type = kind(blob);
+    let between = note("between");
+    let mime_type = if r#type.is_empty() { "none" } else { &r#type };
+    between + mime_type
+}
+`);
+  expect(js).toContain('  const mimeType = blob.type || "application/octet-stream";\n');
+  expect(js).toContain('  return info.name ?? "unknown";\n');
+  expect(js).toContain('  const type = blob.type;\n  const mimeType = type || "none";\n  return mimeType + type;\n');
+  expect(js).toContain('  const type = blob.type;\n  return globalThis.fallbackNote("first") + (type || "none");\n');
+  expect(js).toContain('  const t = blob.type;\n  const mimeType = t || "none";\n');
+  // Read first, by no `||` nor `??`, it's a `let` the program wrote (rd226).
+  expect(js).toContain("  const name = info.name;\n  return name != null;\n");
+  expect(js).toContain('  const type = blob.type;\n  const between = globalThis.fallbackNote("between");\n');
+  const events: string[] = [];
+  (globalThis as Record<string, unknown>).fallbackNote = (what: string) => {
+    events.push(what);
+    return "";
+  };
+  const blob = (type: string) => ({
+    get type() {
+      events.push("type");
+      return type;
+    },
+  });
+  const ran = (f: (blob: never) => unknown, type: string) => {
+    events.length = 0;
+    return [f(blob(type) as never), [...events]];
+  };
+  expect(ran(lib.mime, "")).toEqual(["data:application/octet-stream", ["type"]]);
+  expect(ran(lib.mime, "text/plain")).toEqual(["data:text/plain", ["type"]]);
+  expect(ran(lib.twice, "a")).toEqual(["aa", ["type"]]);
+  expect(ran(lib.notFirst, "a")).toEqual(["a", ["type", "first"]]);
+  expect(ran(lib.otherName, "")).toEqual(["none", ["type"]]);
+  expect(ran(lib.notNext, "a")).toEqual(["a", ["type", "between"]]);
+  let reads = 0;
+  const info = (name: string | undefined) => ({
+    get name() {
+      reads += 1;
+      return name;
+    },
+  });
+  expect([lib.named(info("n") as never), lib.named(info(undefined) as never), reads]).toEqual(["n", "unknown", 2]);
+});

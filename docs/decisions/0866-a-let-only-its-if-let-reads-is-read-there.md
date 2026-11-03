@@ -4,7 +4,9 @@ Status: Accepted; its first decision, a `let` the program wrote read in its `if 
 borrow; and a let chain's binding of a field its
 test read is read again where the body reads it first; and an `if let`'s
 binding of a thread-local's value only its test reads; and a `let` that
-ends a borrow that the statement after it stores. Extends [0842](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)'s
+ends a borrow that the statement after it stores; and a `let` the program
+wrote read first by the next statement's `||` or `??` (rd664, the user's
+decision). Extends [0842](0842-a-let-chain-after-a-test-of-its-own-reads-its-place-once.md)'s
 and [0780](0780-an-or-patterns-tests-are-as-written-of-a-field-read-in-place.md)'s
 places read in a test to a `let` the program names, of a `RefCell`'s value
 too, which [0863](0863-a-refcell-of-an-object-is-the-object.md) made the
@@ -393,3 +395,43 @@ structs' reads as pattern bindings now, and hold a JS-made struct's by a
 `let` that ends a borrow, `const child = current.child;`, which still reads
 in place where the field is the program's.
 
+
+## Amendment: a `let` read first by the next statement's fallback is read there (rd664, the user's decision)
+
+The user's decision (2026-11-03), an exception to rd226's rule: **a `let`
+the program wrote, named as the property it reads, whose one read is the
+left side of a `||` or a `??` in the statement right after it, and the
+first thing that statement evaluates, is the property read there.** React's
+readAsDataURL writes `const mimeType = blob.type ||
+'application/octet-stream';`. Its port, the idiomatic `let r#type =
+blob.r#type(); let mime_type = if r#type.is_empty() { .. } else { &r#type
+};`, printed `const type = blob.type; const mimeType = type || ..`: Rust
+holds the value because its `if` reads it twice, its test and its `else`,
+and borrows it; JS's `||` reads it once, so the `let` has no job left in
+the JS. Across the port's JS, each `const k = o.k;` read once, as the left
+side of the next statement's `||` or `??`, was `o.k` read in place
+upstream, 12 of 12: readAsDataURL's three, ReactFlightClient's `ioInfo.name
+|| 'unknown'`, EnterLeaveEventPlugin's `relatedTarget ||`,
+ReactDOMEventReplaying's `ownerDocument ||`, the bundlers' `transferSize ||
+0` and react-art's `scale ?? 1`.
+
+ADR 0262's case N: what the program does is the same. The property, a
+getter's too, is read once either way, as the `||`'s left side is
+evaluated once, and where it was, as nothing at all runs between the
+`const` and that read; it throws where it threw. `moves.rs`'s
+`fallback_reads` (pass "fallback reads", after "ended borrows") takes only
+that: a `const` of `LetNames::named`, of a `Member` whose property is its
+name, mentioned once in what follows, by the next statement, as a `||`'s
+or `??`'s left side, that `leads` says is read before anything else there
+is evaluated, not even a variable. It stays where it's read twice,
+`const type = ..; const mimeType = type || ..; return mimeType + type;`;
+after something else, `note() + (type || ..)`; named otherwise, `const t =
+blob.type;`; past the next statement; and where what reads it first is no
+fallback, `name != null`, rd226's case.
+
+Held by `test/corpus/let_read_in_its_fallback.rs` against native Rust and
+`test/lowering-moves.test.ts`'s "a let read first by the next statement's
+fallback is its getter read there", whose getters count their reads and
+their order, mutations `fallback-reads-unread` (snapshots),
+`fallback-read-twice`, `fallback-read-of-another-name`,
+`fallback-read-after-a-call` and `fallback-read-of-any-read`.

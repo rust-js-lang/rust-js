@@ -702,6 +702,12 @@ pub(super) const STAGES: &[Stage] = &[
             pass("ended borrows", |b, h| {
                 js::statement_lists(b, &mut |s| ended_borrows(s, &h.lets.ends_borrow))
             }),
+            // A `let` the program wrote, named as the property it reads,
+            // read only first by a `||` or `??` in the statement after it:
+            // read there (rd664, the user's decision).
+            pass("fallback reads", |b, h| {
+                js::statement_lists(b, &mut |s| fallback_reads(s, &h.lets.named))
+            }),
             pass("while heads", |b, h| {
                 js::statement_lists(b, &mut |s| while_heads(s, &h.written.loops))
             }),

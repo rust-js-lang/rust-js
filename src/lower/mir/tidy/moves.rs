@@ -554,6 +554,58 @@ pub(super) fn ended_borrows(stmts: &mut Vec<Stmt>, ends_borrow: &HashSet<String>
     }
 }
 
+/// `const type = blob.type; const mimeType = type || "..";`: a `let` the
+/// program wrote, `named`'s, named as the property it reads, `let r#type =
+/// blob.r#type();`, whose one read is the left side of a `||` or a `??` in
+/// the statement right after it, the first thing that statement evaluates:
+/// read in place there, `const mimeType = blob.type || "..";`, as React's
+/// readAsDataURL writes it. Rust holds the value because its `if
+/// r#type.is_empty() { .. } else { &r#type }` reads it twice; JS's `||`
+/// reads it once. So the property is read once either way, a getter's too,
+/// and where it was, as nothing runs between (rd664, the user's decision,
+/// 2026-11-03, an exception to rd226's "a `let` the program wrote stays").
+/// Read twice, read after something else, named otherwise, or read past
+/// the next statement, it stays.
+pub(super) fn fallback_reads(stmts: &mut Vec<Stmt>, named: &HashSet<String>) {
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        if !fallback_read(stmts, i, named) {
+            i += 1;
+        }
+    }
+}
+
+/// `fallback_reads` of `stmts[at]`: whether it was read in place.
+fn fallback_read(stmts: &mut Vec<Stmt>, at: usize, named: &HashSet<String>) -> bool {
+    let (StmtKind::Const(name, value), Some(next)) = (&stmts[at].kind, stmts.get(at + 1)) else {
+        return false;
+    };
+    let own_name = matches!(&value.kind, ExprKind::Member(_, property) if property == name);
+    if !named.contains(name) || !own_name || js::mentions_in(&stmts[at + 1..], name) != 1 {
+        return false;
+    }
+    let Some(read) = read_of(next, name, false) else {
+        return false;
+    };
+    let expr = read.of(next);
+    let mut fallback = false;
+    expr.each(&mut |e| {
+        if let ExprKind::Binary(Op::Or | Op::Coalesce, left, _) = &e.kind {
+            fallback |= matches!(&left.kind, ExprKind::Var(v) if v == name);
+        }
+    });
+    // The first thing the statement evaluates: nothing before it at all.
+    if !fallback || leads(expr, name, None, &|_| false) != Some(true) {
+        return false;
+    }
+    let Some(replaced) = expr.substitute(&|v| (v == name).then(|| value.clone())) else {
+        return false;
+    };
+    *read.of_mut(&mut stmts[at + 1]) = replaced;
+    stmts.remove(at);
+    true
+}
+
 /// Whether `stmt` stores `name` whole, `target = name`: where the program
 /// would write the place (ADR 0866, amended). Not an argument's, `push(..,
 /// handlerOnStack, ..)`, a test's, `if (alternate == null && ..)`, nor a
