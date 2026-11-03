@@ -414,6 +414,12 @@ pub(super) const STAGES: &[Stage] = &[
             // A copy made of what's spread, read in place, `{ ...a, ...{ ...b
             // } }`: what it's a copy of.
             pass("spread spreads", |b, _| js::each_expr_mut(b, &mut spread_spreads)),
+            // What its passes emptied, an `if` of nothing, gone, its test kept
+            // where it does anything, as it ensures: `if let Some(_x) =
+            // Some(..) {}` in a loop, whose binding `named temporaries` reads
+            // in place of the temporary, leaving `if (_x != null) {}`
+            // (generated program 2900000355; #247).
+            pass("never taken", |b, _| bottom_up(b, &mut never_taken)),
         ],
         ensures: &[contracts::LABELS_NAMED, contracts::NO_EMPTY_IF],
         again: &[],

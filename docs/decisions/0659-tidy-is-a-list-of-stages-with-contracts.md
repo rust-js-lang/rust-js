@@ -486,7 +486,7 @@ removed** (ADR 0093: a mutation no test can catch names no behavior). The
 stage's contract, nothing after a jump, still refuses in a debug build
 what would come back. The amendment above is superseded in that part.
 
-## Amendment: `in place`'s own `never taken` goes, dead since 3aa30746a (2026-11-01)
+## Amendment: `in place`'s own `never taken` goes, dead since 3aa30746a (2026-11-01; superseded below)
 
 `in place` ended with `never taken` for #247's seed 43967, whose `if let`
 in a loop a guard outlives was emptied in `in place`'s run again, after
@@ -503,3 +503,21 @@ its mutation are removed** (ADR 0093). The stage still ensures no empty
 `if`, so a debug build refuses what would come back. `names` and
 `written` keep theirs, held by `names-empty-if-kept` and
 `written-empty-if-kept`.
+
+## Amendment: `in place`'s own `never taken` is back, for its own passes (2026-11-03)
+
+The amendment above was wrong: `in place` empties an `if` of its own, not
+only one `scopes` left it. A generated program (ADR 0092, seed
+2900000355), reduced to `for _k in 0..3 { if let Some(_x) = Some(if
+id(false) { 1 } else { 2 }) {} }`, crashed the debug compiler: `names`
+leaves `if (_13 != null) { .. }`, whose body binds `_x`, and `in place`'s
+`named temporaries` reads `_x` where the temporary was, which empties the
+`if`; the stage's contract then panics, "tidy's `in place` stage broke
+\"no empty if\"". A release build, which checks no contract, printed the
+right JS, the `if` taken away later. Since 52fdf0ab2 every debug build,
+the one the tests and the hosts' development builds run, crashed on it.
+**The pass is back**, last in `in place`, as `names` and `written` end
+theirs: what its passes emptied, gone, its test kept where it does
+anything. Held by the corpus case `empty_if_let_in_a_loop.rs`, run
+against native Rust, and the mutation `in-place-empty-if-kept`, restored
+with it as its test. Case: N.

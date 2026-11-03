@@ -841,6 +841,15 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "in-place-empty-if-kept",
+    breaks:
+      "an `if` that tidy's `in place` stage empties, `if (_x != null) {}` of an `if let` in a loop whose binding `named temporaries` reads in place, stays, and the stage's contract panics: the compiler crashes (generated program 2900000355)",
+    file: "src/lower/mir/tidy/stages.rs",
+    find: '            // (generated program 2900000355; #247).\n            pass("never taken", |b, _| bottom_up(b, &mut never_taken)),\n',
+    replace: "            // (generated program 2900000355; #247).\n",
+    tests: ["test/corpus.test.ts", "-t", "^empty_if_let_in_a_loop.rs$"],
+  },
+  {
     name: "names-empty-if-kept",
     breaks:
       "an `if let` whose binding is only read, emptied by tidy's `names` stage, stays, and the stage's contract panics: the compiler crashes (#247)",
