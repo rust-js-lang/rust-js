@@ -53,4 +53,12 @@ export const mutations: Mutation[] = [
     replace: "        let mut declaration = json!({ \"kind\": \"export\", \"names\": names });\n",
     tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
   },
+  {
+    name: "package-default-type-imported-as-a-name",
+    breaks: "a JS module's default type is imported among its names, `import type { ModuleDependency } from ..`, which the module doesn't export (rd678)",
+    file: "src/lower/declarations/imports.rs",
+    find: "        declarations.extend(type_imports(json!({ \"from\": from }), names, default));\n",
+    replace: "        declarations.extend(type_imports(json!({ \"from\": from }), [names, default.into_iter().collect()].concat(), None));\n",
+    tests: ["test/binding-subclasses.test.ts", "-t", "its module's default is imported as its default"],
+  },
 ];

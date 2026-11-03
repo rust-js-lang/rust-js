@@ -13,13 +13,9 @@ type TypeExport<'a> = (
     Vec<&'a (String, String)>,
 );
 
-/// The types a module's declarations import, each by where it's from and
-/// its name.
-type Imported<K> = BTreeSet<(K, String)>;
-
-/// The types of the crate's other modules, or of a library's, it imports,
-/// each by its module, its path or its file's specifier, its name and
-/// whether it's that module's default.
+/// The types of JS modules, of the crate's other modules or of a library's
+/// it imports, each by its module, its path or its file's specifier, its
+/// name and whether it's that module's default.
 type ModuleImports<K> = BTreeSet<(K, String, bool)>;
 
 /// The declarations that import and re-export, first in a `.d.ts`: the
@@ -34,12 +30,16 @@ type ModuleImports<K> = BTreeSet<(K, String, bool)>;
 /// TemporaryReferenceSet } from ".."`, a statement's of one module one
 /// (rd642).
 pub(super) fn imports(
-    (packages, libraries, modules): (&Imported<String>, &ModuleImports<String>, &ModuleImports<Vec<String>>),
+    (packages, libraries, modules): (
+        &ModuleImports<String>,
+        &ModuleImports<String>,
+        &ModuleImports<Vec<String>>,
+    ),
     (reexports, types): (&[crate::program::Reexport], &[crate::lower::reexports::TypeReexport]),
 ) -> Vec<Value> {
     let mut declarations = Vec::new();
-    for (from, names) in grouped(packages) {
-        declarations.push(json!({ "kind": "import", "from": from, "names": names, "typeOnly": true }));
+    for (from, names, default) in of_modules(packages) {
+        declarations.extend(type_imports(json!({ "from": from }), names, default));
     }
     for (from, names, default) in of_modules(libraries) {
         declarations.extend(type_imports(json!({ "specifier": from }), names, default));
@@ -132,16 +132,4 @@ fn of_modules<K: Ord>(imported: &ModuleImports<K>) -> Vec<(&K, Vec<&str>, Option
             (module, names, of(true).map(|(_, n, _)| n.as_str()).next())
         })
         .collect()
-}
-
-/// Each module of `imported`, in order, and the names imported from it.
-fn grouped<K: Ord>(imported: &Imported<K>) -> Vec<(&K, Vec<&str>)> {
-    let mut groups: Vec<(&K, Vec<&str>)> = Vec::new();
-    for (from, name) in imported {
-        match groups.last_mut() {
-            Some((last, names)) if *last == from => names.push(name),
-            _ => groups.push((from, vec![name])),
-        }
-    }
-    groups
 }

@@ -306,9 +306,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a namespace's member is imported by its whole name, `JSX.Element`, not as its namespace, `JSX`",
     file: "src/lower/declarations.rs",
-    find: "            self.imports.insert((from.to_string(), imported(name)));\n",
-    replace:
-      "            self.imports.insert((from.to_string(), name.to_string()));\n",
+    find: "        let first = imported(name);\n",
+    replace: "        let first = name.to_string();\n",
     tests: tests,
   },
   {
@@ -1262,5 +1261,21 @@ export const mutations: Mutation[] = [
     find: "        // The notes of what the item before left out, after it (#559).\n        items.append(&mut out.notes);\n",
     replace: "",
     tests: ["test/declarations-ungiven.test.ts"],
+  },
+  {
+    name: "default-type-imported-by-name",
+    breaks: "a type a module exports as its default, `ModuleDependency#default`, is imported as a name, `import type { default } from ..`, which TypeScript refuses (rd678)",
+    file: "src/lower/declarations.rs",
+    find: "        if first != \"default\" {\n",
+    replace: "        if true {\n",
+    tests: ["test/binding-subclasses.test.ts", "-t", "its module's default is imported as its default"],
+  },
+  {
+    name: "default-type-named-after-its-module",
+    breaks: "a module's default a Rust type types is imported by its module's name, `Request`, not its own, `WebRequest`, as its JS imports it (rd678)",
+    file: "src/lower/declarations.rs",
+    find: "            Some(item) => self.tcx.item_name(item).to_string(),\n",
+    replace: "            Some(_) => crate::lower::namespace_name(super::bindings::file_stem(from)),\n",
+    tests: ["test/binding-subclasses.test.ts", "-t", "its module's default is imported as its default"],
   },
 ];

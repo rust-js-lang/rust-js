@@ -521,7 +521,10 @@ This is how `webapi` lays out each interface: the type, its members in an
   rust-js writes. Without it, the type is `any` there. Its value is a
   TypeScript type, which rust-js reads into the declaration it prints
   ([ADR 0811](../../decisions/0811-console-create-task-may-be-absent.md)):
-  a name, of a module, `chart.js#Chart`, which the `.d.ts` imports, or of
+  a name, of a module, `chart.js#Chart`, which the `.d.ts` imports, or a
+  module's default, `webpack/lib/dependencies/ModuleDependency#default`,
+  imported as its default by the Rust type's name, `import type
+  ModuleDependency from ".."`, or of
   a namespace, `NodeJS.TypedArray`, with its arguments, `Map<string, T>`;
   a keyword, `string`; a string, `"auto"`; a union, `string | URL`; an
   array, `T[]` or `readonly T[]`; a function, `(f: () => T) => T`; or an

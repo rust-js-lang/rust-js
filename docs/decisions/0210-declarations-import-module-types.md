@@ -105,3 +105,35 @@ the crate's modules and a library's alike (`declarations/imports.rs`'s
 - Held by `test/classes.test.ts`, "a class is its module's default
   export", run: mutation `type-import-default-beside-names`
   (`lower/declarations/imports.ts`).
+
+## Amendment: a JS module's default type is imported as its default (rd678)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, a declaration
+file's form.
+
+React's ReactFlightWebpackPlugin.js extends webpack's `ModuleDependency`,
+`webpack/lib/dependencies/ModuleDependency`'s default export, which its
+binding's trait names `#[rust_js::types =
+"webpack/lib/dependencies/ModuleDependency#default"]`. Its JS imported it
+as the default, `import ModuleDependency from ".."`, as a binding of a
+default is (ADR 0028), but the declarations imported the name `default`,
+`import type { default } from ".."`, and wrote `extends default`, which
+TypeScript refuses ("'default' is a reserved word"), so the build failed:
+rust-js can't read the declarations it wrote.
+
+**A `#[rust_js::types]` name that's a JS module's default is imported as
+that module's default, by the name of the Rust type it types**, `import
+type ModuleDependency from ".."`, where it's written, `extends
+ModuleDependency`, as its JS is named after the binding (`declarations.rs`'
+`imported_from`); its default and its names are two imports, as above.
+One whose type isn't an item's, inside a union, is named after its module,
+as a default's JS is where no binding names it. A namespace's member of
+it, `#default.Template`, is that name's, `ModuleDependency.Template`.
+
+- Held by `test/binding-subclasses.test.ts`'s "a binding's class that's its
+  module's default is imported as its default", run in Node, of a class
+  and a type alone named otherwise than its module, `WebRequest` of
+  `Request#default`: mutations `default-type-imported-by-name`,
+  `default-type-named-after-its-module` (`lower/declarations.ts`),
+  `package-default-type-imported-as-a-name`
+  (`lower/declarations/imports.ts`).

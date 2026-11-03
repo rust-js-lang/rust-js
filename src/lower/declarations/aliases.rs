@@ -185,8 +185,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 }
                 args.push(self.written_value(wanted, &mut param, &mut Vec::new())?);
             }
-            self.imported_from(from.as_deref(), name);
-            return Some(reference(name, args));
+            let name = self.imported_from(from.as_deref(), name, Some(did));
+            return Some(reference(&name, args));
         }
         self.written_value(&declared, &mut param, &mut Vec::new())
     }

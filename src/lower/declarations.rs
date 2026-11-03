@@ -420,8 +420,9 @@ struct Declarations<'a, 'tcx> {
     /// What a library's contract says its declarations export (ADR 0210,
     /// amended).
     foreign: &'a super::library::Foreign<'a, 'tcx>,
-    /// The types of JS modules' it names, `("react", "ReactNode")`, imported from them.
-    imports: BTreeSet<(String, String)>,
+    /// The types of JS modules' it names, `("react", "ReactNode")`, imported
+    /// from them, and whether each is that module's default (rd678).
+    imports: BTreeSet<(String, String, bool)>,
     /// The types of libraries' modules it names, by their file's specifier.
     library_imports: BTreeSet<(String, String, bool)>,
     /// The types of the crate's other modules it names, by their path.
@@ -544,7 +545,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
         // `JSX::Element<T>` is a `JSX.Element` whatever its tag's element
         // (ADR 0224).
         if let Written::Reference { from, name, args: None } = declared {
-            self.imported_from(from.as_deref(), name);
+            let name = &self.imported_from(from.as_deref(), name, Some(did));
             let type_args = args.types().map(|t| self.ts(t)).collect();
             return reference(name, type_args);
         }
@@ -598,7 +599,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                         Given::NotParam => {}
                     }
                 }
-                self.imported_from(from.as_deref(), name);
+                let name = &self.imported_from(from.as_deref(), name, None);
                 let args = (args.iter().flatten())
                     .map(|arg| self.written_value(arg, param, bound))
                     .collect::<Option<Vec<_>>>()?;
@@ -679,10 +680,26 @@ impl<'tcx> Declarations<'_, 'tcx> {
 
     /// A type named of a module, `react#ReactNode`, imported from it; a
     /// namespace's member, `JSX.Element`, the namespace.
-    fn imported_from(&mut self, from: Option<&str>, name: &str) {
-        if let Some(from) = from {
-            self.imports.insert((from.to_string(), imported(name)));
+    /// A module's default, `webpack/lib/dependencies/ModuleDependency#default`,
+    /// is imported as its default, by the name of `item`, the Rust type it
+    /// types, or of its module, as its JS imports it, `import type
+    /// ModuleDependency from ".."` (rd678): the name written, its first
+    /// part that one, `NullDependency.Template` of `default.Template`.
+    fn imported_from(&mut self, from: Option<&str>, name: &str, item: Option<DefId>) -> String {
+        let Some(from) = from else {
+            return name.to_owned();
+        };
+        let first = imported(name);
+        if first != "default" {
+            self.imports.insert((from.to_string(), first, false));
+            return name.to_owned();
         }
+        let local = match item {
+            Some(item) => self.tcx.item_name(item).to_string(),
+            None => crate::lower::namespace_name(super::bindings::file_stem(from)),
+        };
+        self.imports.insert((from.to_string(), local.clone(), true));
+        format!("{local}{}", &name[first.len()..])
     }
 
     /// `Option<T>`'s `T` as written, where `written` is one.

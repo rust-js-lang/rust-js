@@ -147,3 +147,43 @@ test("a getter of the class a class extends is marked as the trait marks it", ()
     expect(ran.stderr).toContain(message);
   }
 });
+
+// rd678: a class a module exports as its default, as webpack's
+// `webpack/lib/dependencies/ModuleDependency` exports `ModuleDependency`,
+// is extended where it's imported as its default, `import ModuleDependency
+// from ".."`, in the JS and in the declarations, `import type
+// ModuleDependency from ".."`, as a type of a module's default is
+// imported by the name of the Rust type it types, `WebRequest` of
+// `Request#default`; `import type { default }` isn't TypeScript.
+test("a binding's class that's its module's default is imported as its default", async () => {
+  const dir = fixture("binding-subclass-default");
+  const module = join(dir, "node_modules", "webpackish", "lib", "dependencies");
+  mkdirSync(module, { recursive: true });
+  writeFileSync(join(dir, "node_modules", "webpackish", "package.json"), `{ "name": "webpackish", "type": "module" }\n`);
+  writeFileSync(join(module, "ModuleDependency.js"), moduleDependency.replace("export class", "export default class"));
+  writeFileSync(join(module, "Request.js"), "export default class Request {}\n");
+  writeFileSync(join(dir, "dep.rs"), `${dependency.replace("webpackish#ModuleDependency", "webpackish/lib/dependencies/ModuleDependency#default")}
+/// A module's default of no methods, a type alone, named as its Rust is.
+#[cfg_attr(rust_js, rust_js::types = "webpackish/lib/dependencies/Request#default")]
+pub struct WebRequest(core::marker::PhantomData<js::JsObject>);
+`);
+  run([compiler, "--rustc", "--edition=2024", "--crate-type=lib", "--crate-name=dep", "--emit=metadata", "--target=wasm32-unknown-unknown", join(dir, "dep.rs"), ...js, "-o", join(dir, "libdep.rmeta")]);
+  writeFileSync(join(dir, "lib.rs"), `${subclass}
+/// Whether it's given a request.
+pub fn given(_request: &dep::WebRequest) -> bool {
+    true
+}
+`);
+  run([compiler, ...app(dir)]);
+  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  const ts = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(out).toContain('import ModuleDependency from "webpackish/lib/dependencies/ModuleDependency";');
+  expect(out).toContain("export class ClientReferenceDependency extends ModuleDependency {");
+  expect(ts).toContain('import type ModuleDependency from "webpackish/lib/dependencies/ModuleDependency";');
+  expect(ts).toContain('import type WebRequest from "webpackish/lib/dependencies/Request";');
+  expect(ts).toContain("export function given(request: WebRequest): boolean;");
+  expect(ts).not.toContain("{ default }");
+  const lib = await import(join(dir, "lib.js"));
+  const base = (await import(join(module, "ModuleDependency.js"))).default;
+  expect(new lib.ClientReferenceDependency("./client.js") instanceof base).toBe(true);
+});
