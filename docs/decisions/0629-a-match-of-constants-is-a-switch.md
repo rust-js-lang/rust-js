@@ -1089,6 +1089,21 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same JS. A
   `break;` that tidy leaves at a clause's end is the one the printer
   would write. The mutant is removed; the pass, which shapes the bodies
   that the passes after it read, stays.
+- *Since (2026-11-04, the user's decision, red-main run):* `to_oxc`'s
+  `written_apart` no longer leaves out an arm of only comments, `3 => {
+  // .. }`. It left them out so their comments, the last clause's only
+  statements, weren't lost where the case was printed at its value; now
+  a `break;` follows them, so they stay. A comment above such an arm is
+  above its `case`, as rd619 has it above any arm that opens a block, not
+  inside the case before the arm's own: `// Above the last case.\ncase
+  3:\n  // The last case ..\n  break;`. No corpus case has one (the JS of
+  all 1,572 files is the same). Held by `test/lowering-comments-ends.test.ts`'s
+  "a last arm of only comments keeps them in its clause"; its mutation
+  `commented-arm-written-apart` goes with the guard, and
+  `commented-arm-not-written-apart` puts it back. The same `break;` left
+  `default-pattern-comment-after-statement` reached only by a `default:`
+  of one statement that leaves, `_ /* "{" */ => continue`, which
+  `test/lowering-comments-jumps.test.ts` now holds.
 
 ## Amendment: an `Option<bool>`'s `Some(false)` and `Some(true)` are a `switch`'s cases (#545, 2026-11-04, the user's decision)
 

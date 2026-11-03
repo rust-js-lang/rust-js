@@ -168,13 +168,11 @@ pub(crate) fn at_its_value(case: &js::Case, source: &str) -> bool {
 /// Whether `case`'s arm, in `source`, where its first value is, opens a
 /// block or is guarded and does nothing (`opens_or_guards`): what a
 /// comment above it is above, not its body, as upstream writes one
-/// (rd619).
+/// (rd619). An arm of only comments, `3 => { // .. }`, too: they're its
+/// clause's own, before the `break;` every clause that goes on ends with
+/// (ADR 0629, amended).
 fn written_apart(case: &js::Case, source: &str) -> bool {
-    // Not of an arm of only comments, `3 => { // .. }`, which are its
-    // clause's own where it ends, before its `break;`.
-    let commented = matches!(case.body.first().map(|s| &s.kind), Some(StmtKind::Comments));
-    !commented
-        && (case.values.first()).is_some_and(|first| !first.span.is_none() && opens_or_guards(source, first.span.hi))
+    (case.values.first()).is_some_and(|first| !first.span.is_none() && opens_or_guards(source, first.span.hi))
 }
 
 /// Whether the arm whose pattern ends at `hi` in `source` opens a block,

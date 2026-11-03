@@ -290,6 +290,7 @@ pub fn last(reason: i32, log: &mut Vec<i32>) {
     match reason {
         1 => log.push(1),
         2 => log.push(2),
+        // Above the last case.
         3 => {
             // The last case: its comment stays in it.
         }
@@ -298,7 +299,9 @@ pub fn last(reason: i32, log: &mut Vec<i32>) {
 }
 `);
   expect(js).toContain("      default:\n        // Last: this comment belongs to the default case.\n        break;\n    }\n  }\n}");
-  expect(js).toContain("// The last case: its comment stays in it.\n      break;\n  }\n}");
+  // A comment above an arm of only comments is above its `case`, as above
+  // any arm that opens a block (rd619, ADR 0629 amended).
+  expect(js).toContain("    // Above the last case.\n    case 3:\n      // The last case: its comment stays in it.\n      break;\n  }\n}");
   const log: number[] = [];
   for (const reason of [1, 2, 3]) {
     lib.mark(reason as never, log as never);

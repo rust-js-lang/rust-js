@@ -137,12 +137,13 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "commented-arm-written-apart",
+    name: "commented-arm-not-written-apart",
     breaks:
-      "a case whose arm is only comments, `3 => { // The last case .. }`, is printed where its value is, and its comments, the clause's own, are lost (rd619)",
+      "a comment above an arm of only comments, `// Above the last case.` above `3 => { // .. }`, is inside its `case`, not above it, as it is above any arm that opens a block (rd619, ADR 0629 amended)",
     file: "src/to_oxc/cases.rs",
-    find: "    !commented\n",
-    replace: "    (commented || !commented)\n",
+    find: "    (case.values.first()).is_some_and(|first| !first.span.is_none() && opens_or_guards(source, first.span.hi))\n",
+    replace:
+      "    !matches!(case.body.first().map(|s| &s.kind), Some(StmtKind::Comments))\n        && (case.values.first()).is_some_and(|first| !first.span.is_none() && opens_or_guards(source, first.span.hi))\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "a last arm of only comments keeps them in its clause"],
   },
 ];
