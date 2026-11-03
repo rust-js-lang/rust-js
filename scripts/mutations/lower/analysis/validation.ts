@@ -366,7 +366,7 @@ export const mutations: Mutation[] = [
     name: "keyed-param-given-anything",
     breaks: "a struct's flattened type parameter given a number compiles, though it has no keys (#504)",
     file: "src/lower/analysis/validation.rs",
-    find: "                    _ => \"a flattened type parameter is given an enum each of whose variants has a field no other has, one at most none\".into(),\n",
+    find: "                    _ => \"a flattened type parameter is given a struct of named fields, a JS object, or an enum whose variants each have a field no other variant has, with at most one variant of no fields\".into(),\n",
     replace: "                    _ => continue,\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "no key tells"],
   },

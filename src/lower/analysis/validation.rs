@@ -296,7 +296,7 @@ pub(super) fn reject_flatten_misuse<'tcx>(
                 refuse(
                     tcx.def_span(field.did),
                     format!(
-                        "flattening `{ty}`: a flattened field is a struct of named fields, a JS object, a `RefCell` of a `#[rust_js::tag]` enum, or an enum each of whose variants has a field no other has, one at most none"
+                        "flattening `{ty}`: a flattened field is a struct of named fields, a JS object, a `RefCell` of a `#[rust_js::tag]` enum, or an enum whose variants each have a field no other variant has, with at most one variant of no fields"
                     ),
                 );
             }
@@ -335,7 +335,7 @@ pub(super) fn reject_flatten_misuse<'tcx>(
                     // A struct or a JS object, flattened as a field of one is
                     // (ADR 0204).
                     ty::Adt(adt, args) if plain(*adt, args) => continue,
-                    _ => "a flattened type parameter is given an enum each of whose variants has a field no other has, one at most none".into(),
+                    _ => "a flattened type parameter is given a struct of named fields, a JS object, or an enum whose variants each have a field no other variant has, with at most one variant of no fields".into(),
                 };
                 refuse(
                     expr.span,

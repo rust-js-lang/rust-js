@@ -112,7 +112,7 @@ pub struct Node {
 pub fn node() -> Node { Node { kind: Kind::Root } }
 `,
     ),
-  ).toContain("flattening `Kind`: a flattened field is a struct of named fields, a JS object, a `RefCell` of a `#[rust_js::tag]` enum, or an enum each of whose variants has a field no other has, one at most none");
+  ).toContain("flattening `Kind`: a flattened field is a struct of named fields, a JS object, a `RefCell` of a `#[rust_js::tag]` enum, or an enum whose variants each have a field no other variant has, with at most one variant of no fields");
   // A variant whose every key another has.
   expect(
     refused(
@@ -151,7 +151,7 @@ pub fn node() -> Node { Node { value: 1, kind: Kind::Scope } }
 pub fn node() -> u32 { let n = Node { flags: 1, kind: 2u32 }; n.flags }
 `,
     ),
-  ).toContain("flattening `u32` into `Node`: a flattened type parameter is given an enum each of whose variants has a field no other has");
+  ).toContain("flattening `u32` into `Node`: a flattened type parameter is given a struct of named fields, a JS object, or an enum whose variants each have a field no other variant has");
   // Given a keyed enum whose key the parent has.
   expect(
     refused(

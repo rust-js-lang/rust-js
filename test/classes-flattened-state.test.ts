@@ -226,7 +226,7 @@ pub fn n(outer: &Outer) -> u32 {
 }
 `,
     ),
-  ).toContain("a flattened field is a struct of named fields, a JS object or a `RefCell` of a `#[rust_js::tag]` enum");
+  ).toContain("a flattened field is a struct of named fields, a JS object, a `RefCell` of a `#[rust_js::tag]` enum, or an enum whose variants each have a field no other variant has, with at most one variant of no fields");
 });
 
 // rd430: an or-pattern of a field each variant has at one key,
