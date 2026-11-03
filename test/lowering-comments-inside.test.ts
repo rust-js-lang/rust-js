@@ -828,3 +828,57 @@ pub fn back(xs: &[u32], log: &mut Vec<u32>) {
   (lib.back as (xs: number[], log: number[]) => void)([1, 2], log);
   expect(log).toEqual([7, 5, 4, 2]);
 });
+
+
+// React's ReactDOMRootFB, unmountComponentAtNode: `container.nodeType ===
+// ELEMENT_NODE && isValidContainer(container.parentNode) && //
+// $FlowFixMe[prop-missing] .. !!container.parentNode._reactRootContainer`.
+// Its port's `js::truthy(..)` last in the `&&`: of a `const`, kept as
+// upstream has it, a boolean, its comments before it, which were lost as
+// the `!!` was (ADR 0298, amended, rd719); of an `if`'s test, read by its
+// truth, the `x` of `!!x`, its comments before it too.
+test("a comment before an && operand of a value's truth is kept", async () => {
+  const { js, lib } = await compiled("comment-before-a-truth-operand", `use js::Unknown;
+
+pub const ELEMENT_NODE: f64 = 1.0;
+
+fn is_valid_container(node: Option<&Unknown>) -> bool {
+    js::truthy(node)
+}
+
+pub fn unmount(container: &Unknown, log: &mut Vec<&'static str>) {
+    // Check if the container itself is a React root node.
+    let is_container_react_root = js::strict_equals(js::get(container, "nodeType"), ELEMENT_NODE)
+        && is_valid_container(js::get(container, "parentNode"))
+        // $FlowFixMe[prop-missing]
+        // $FlowFixMe[incompatible-use]
+        && js::truthy(js::get(js::get(container, "parentNode"), "_reactRootContainer"));
+
+    log.push(if is_container_react_root { "root" } else { "not" });
+}
+
+pub fn rooted(container: &Unknown, log: &mut Vec<&'static str>) {
+    if is_valid_container(js::get(container, "parentNode"))
+        // $FlowFixMe[incompatible-use]
+        && js::truthy(js::get(js::get(container, "parentNode"), "_reactRootContainer"))
+    {
+        log.push("rooted");
+    }
+}
+`);
+  expect(js).toContain(
+    "    isValidContainer(container.parentNode) &&\n    // $FlowFixMe[prop-missing]\n    // $FlowFixMe[incompatible-use]\n    !!container.parentNode._reactRootContainer;\n",
+  );
+  expect(js).toContain(
+    "    isValidContainer(container.parentNode) &&\n    // $FlowFixMe[incompatible-use]\n    container.parentNode._reactRootContainer\n  ) {\n",
+  );
+  const log: string[] = [];
+  const unmount = lib.unmount as (container: unknown, log: string[]) => void;
+  const rooted = lib.rooted as (container: unknown, log: string[]) => void;
+  unmount({ nodeType: 1, parentNode: { _reactRootContainer: {} } }, log);
+  unmount({ nodeType: 1, parentNode: { _reactRootContainer: null } }, log);
+  unmount({ nodeType: 3, parentNode: null }, log);
+  rooted({ parentNode: { _reactRootContainer: {} } }, log);
+  rooted({ parentNode: { _reactRootContainer: 0 } }, log);
+  expect(log).toEqual(["root", "not", "not", "rooted"]);
+});

@@ -423,7 +423,6 @@ fn checked_item(checked: &Expr, other: &Expr) -> bool {
 fn prepared(function: &mut js::Function) {
     function_body(&mut function.params, &mut function.body);
     shadows::function(function);
-    tested_constants(&mut function.body);
     unread(&mut function.body);
     js::each_block_mut(&mut function.body, &mut |stmts| imported(stmts));
 }
@@ -774,68 +773,6 @@ fn fallen_held(body: &mut [Stmt]) {
 /// the value and whose `Err` reads no error, is `try { x = f(); } catch {
 /// .. }`, as JS writes it (ADR 0035): only the call is in the `try`, as only
 /// it is in `$try`.
-/// A `const` only tests read, `const hide = !!(a & b) || !ready`, is a
-/// test itself: what it's made of is read by its truth, `a & b || !ready`,
-/// as a person writes it (ADR 0298). One read as a value keeps its boolean.
-/// An `Option`'s presence is `x != null` already, a boolean either way.
-fn tested_constants(body: &mut Vec<Stmt>) {
-    let mut candidates = Vec::new();
-    js::each_block_mut(body, &mut |stmts| {
-        for stmt in stmts.iter() {
-            if let StmtKind::Const(name, value) = &stmt.kind
-                && value.retested().is_some()
-            {
-                candidates.push(name.clone());
-            }
-        }
-    });
-    for name in candidates {
-        // Each read a test makes, marked: none is left if they all are.
-        let mut marked = body.clone();
-        js::each_block_mut(&mut marked, &mut |stmts| {
-            for stmt in stmts.iter_mut() {
-                match &mut stmt.kind {
-                    StmtKind::If(cond, ..) | StmtKind::While { cond, .. } => mark_tested(cond, &name),
-                    StmtKind::For { test, .. } => mark_tested(test, &name),
-                    _ => {}
-                }
-            }
-        });
-        js::each_expr_mut(&mut marked, &mut |e| {
-            if let ExprKind::Cond(test, ..) = &mut e.kind {
-                mark_tested(test, &name);
-            }
-        });
-        if js::mentions_in(&marked, &name) != 0 {
-            continue;
-        }
-        js::each_block_mut(body, &mut |stmts| {
-            for stmt in stmts.iter_mut() {
-                if let StmtKind::Const(declared, value) = &mut stmt.kind
-                    && *declared == name
-                    && let Some(tested) = value.retested()
-                {
-                    *value = tested;
-                }
-            }
-        });
-    }
-}
-
-/// `name`'s reads in `test`, a test, and in the parts of it a test reads by
-/// their truth, `!a`, `a && b`, `a || b`, renamed apart.
-fn mark_tested(test: &mut Expr, name: &str) {
-    match &mut test.kind {
-        ExprKind::Var(var) if var == name => *var = String::from("$tested"),
-        ExprKind::Unary(js::UnaryOp::Not, a) => mark_tested(a, name),
-        ExprKind::Binary(js::Op::And | js::Op::Or, a, b) => {
-            mark_tested(a, name);
-            mark_tested(b, name);
-        }
-        _ => {}
-    }
-}
-
 /// `a` of `a || b`, whose value is kept only where it's truthy, as one
 /// that's the same where it is and falsy where it isn't (ADR 0647): `t ? x :
 /// undefined` is `t && x`, and of a chain `x != null && .. && x[k]`, whose

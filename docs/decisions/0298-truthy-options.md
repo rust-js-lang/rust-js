@@ -24,6 +24,9 @@ says the `None` it can be").
 exactly, `o === true`** (below, "An `Option<bool>` compared with one is
 that value"); its truth stays where the program asks for its truth,
 `unwrap_or(false)` and `is_some_and(|&w| w)`.
+**Amended (2026-11-04, decided on the user's behalf while they were
+away): a `const` keeps its boolean, whatever reads it** (below, "a
+`const` keeps its boolean").
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -52,7 +55,8 @@ it's never falsy; JS's `!!s` alone may be text's, `!s.is_empty()`, which
 
 **A `const` only tests read is read by its truth too**: `const hideContent
 = !!error || ..` read only by `if`s, `?:`s and `!`, is `error || ..`, as
-react.dev writes it. One read as a value keeps its boolean.
+react.dev writes it. One read as a value keeps its boolean. (Reversed
+below, 2026-11-04: a `const` keeps its boolean, whatever reads it.)
 
 **`o == Some(true)` of an `Option<bool>` is `!!o`**, which a test reads as
 `o`: `true`, `false` and `undefined` test alike either way.
@@ -646,3 +650,39 @@ not a boolean, and the boolean otherwise. Case
 `test/js-any-values.test.ts` ("a value of any shape that's true is ===
 true") and the mutations `typeof-boolean-and-kept` and
 `typeof-boolean-not-flipped`.
+
+## Amendment (2026-11-04, decided on the user's behalf while they were away): a `const` keeps its boolean
+
+React's ReactDOMRootFB writes `const isRootRenderedBySomeReact =
+!!container._reactRootContainer;`, and unmountComponentAtNode's
+`isContainerReactRoot = .. && !!container.parentNode._reactRootContainer`.
+The port, `let is_root_rendered_by_some_react =
+js::truthy(js::get(container, "_reactRootContainer"));`, printed `const
+isRootRenderedBySomeReact = container._reactRootContainer;`, and the
+`&&`'s last operand, read by its truth, lost the two `// $FlowFixMe`
+comments before it: its `x` of `!!x`, rebuilt into the `&&`, was placed
+where its own Rust was.
+`prepare.rs`'s `tested_constants` read a `const` that only tests read by
+its truth. That rule came from react.dev's `const hideContent = error ||
+..`, an `Option`'s presence, which is `error != null` since the user's
+decision of 2026-10-28. So what it still dropped was a `!!` the program
+asked for, `js::truthy`'s, or a bool's bits, `!!(a & b)` (rd719, #578).
+
+The coordinator decided on the user's behalf (2026-11-04), while the user
+was away: **a `const` keeps its boolean, read as a value or only by tests**,
+as upstream writes it. `tested_constants` and `mark_tested` are gone, and
+so are their mutations. An `if`'s test, a `?:`'s, a `!`'s operand and an
+`&&`'s or `||`'s part that a test reads still read `!!x` as `x`
+(`Expr::tested`): `if (x)`, as before. ADR 0262 case N: a value only
+tests read tests the same either way.
+
+No corpus case's JS changed. The tests that held the dropped form, which
+now expect the `!!`, are `test/lowering-bits.test.ts`'s "a const of a
+bool's bits keeps its boolean, whatever reads it", `const both = !!(a &
+b) || !ready;`, which says it's a boolean, as its name does, where `a & b
+|| !ready` gave `1`; and `test/lowering-comments-inside.test.ts`'s "a
+comment before an && operand of a value's truth is kept", which holds
+ReactDOMRootFB's `!!container.parentNode._reactRootContainer;` with its
+comments again, and those before an `if`'s operand of `js::truthy`, read
+by its truth, as before. No other test of the lowering, the bindings, JSX or the
+snapshots moved.

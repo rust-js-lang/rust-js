@@ -307,35 +307,22 @@ impl Expr {
     /// truthy is set. `x ?? false` is `x`, as `undefined` and `null` are
     /// falsy too, of any falsy constant's fallback.
     pub fn tested(&self) -> Expr {
-        self.as_test(&mut false)
-    }
-
-    /// `tested`, if it's not this as it is.
-    pub fn retested(&self) -> Option<Expr> {
-        let mut changed = false;
-        let tested = self.as_test(&mut changed);
-        changed.then_some(tested)
-    }
-
-    /// `tested`, telling `changed` if it's not this as it is.
-    fn as_test(&self, changed: &mut bool) -> Expr {
         match &self.kind {
             ExprKind::Unary(UnaryOp::Not, inner) if let ExprKind::Unary(UnaryOp::Not, value) = &inner.kind => {
-                *changed = true;
-                value.as_test(changed)
+                value.tested()
             }
             ExprKind::Binary(Op::And, ..) => {
-                fn parts(e: &Expr, out: &mut Vec<Expr>, changed: &mut bool) {
+                fn parts(e: &Expr, out: &mut Vec<Expr>) {
                     match &e.kind {
                         ExprKind::Binary(Op::And, a, b) => {
-                            parts(a, out, changed);
-                            parts(b, out, changed);
+                            parts(a, out);
+                            parts(b, out);
                         }
-                        _ => out.push(e.as_test(changed)),
+                        _ => out.push(e.tested()),
                     }
                 }
                 let mut all = Vec::new();
-                parts(self, &mut all, changed);
+                parts(self, &mut all);
                 let set_and_true = |i: usize| {
                     null_test(&all[i], true).is_some_and(|x| all.get(i + 1).is_some_and(|next| same_path(next, x)))
                 };
@@ -343,7 +330,6 @@ impl Expr {
                     .filter(|&i| !set_and_true(i))
                     .map(|i| all[i].clone())
                     .collect();
-                *changed |= kept.len() < all.len();
                 let span = self.span;
                 kept.into_iter()
                     .reduce(|a, b| Expr {
@@ -355,13 +341,10 @@ impl Expr {
             }
             ExprKind::Binary(op @ Op::Or, a, b) => Expr {
                 facts: Facts::NONE,
-                kind: ExprKind::Binary(*op, Box::new(a.as_test(changed)), Box::new(b.as_test(changed))),
+                kind: ExprKind::Binary(*op, Box::new(a.tested()), Box::new(b.tested())),
                 span: self.span,
             },
-            ExprKind::Binary(Op::Coalesce, x, fallback) if fallback.is_falsy_constant() => {
-                *changed = true;
-                x.as_test(changed)
-            }
+            ExprKind::Binary(Op::Coalesce, x, fallback) if fallback.is_falsy_constant() => x.tested(),
             _ => self.clone(),
         }
     }
