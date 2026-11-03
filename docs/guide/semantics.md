@@ -498,7 +498,13 @@ itself, `if (didWarn != null) { didWarn.add(componentName); }`, where the
 arm never sets it through the handle; one that does keeps its copy,
 `const held = names;`
 ([0840](../decisions/0840-a-thread-locals-with-is-its-closures-body.md),
-amended, rd723).
+amended, rd723). And one held by a `let` that returns a value before its
+end, `let first = NAMES.with_borrow_mut(|names| { if let Some(names) =
+names { ..; return first; } .. })`, is `let first;` and its body in
+place, each `return` setting it, `first = first$1;`, what follows the
+`return`'s `if` its `else`; one that returns in a loop stays a call
+([0840](../decisions/0840-a-thread-locals-with-is-its-closures-body.md),
+amended, #591).
 A `with` in another's closure, reading what the outer one lends, is each
 one's body too, `const a = ReactSharedInternals.A;` of
 `DEFAULT.with(|d| INTERNALS.with(|internals| ..))`

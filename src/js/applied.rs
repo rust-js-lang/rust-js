@@ -83,6 +83,11 @@ fn applied_in(body: &mut Vec<Stmt>, ends_function: bool) -> bool {
                 done = true;
                 return;
             }
+            if let Some((i, inlined)) = (0..stmts.len()).find_map(|i| Some((i, set_of(&stmts[i], &whole)?))) {
+                stmts.splice(i..=i, inlined);
+                done = true;
+                return;
+            }
             // The last of a case whose end leaves its `switch`, where its
             // `return;` is the `break;` there (rd379).
             done = (stmts.iter_mut()).any(|stmt| {
@@ -320,6 +325,53 @@ fn tested_of(stmts: &[Stmt], at: usize, whole: &[Stmt]) -> Option<Vec<Stmt>> {
         ExprKind::Bool(false) => Some(no.clone()),
         _ => None,
     })
+}
+
+/// `const x = ((d) => { if (..) { ..; return a; } ..; return b; })(d);`,
+/// `stmt` in `whole`, the function's body: a closure called where it's
+/// made whose value a `const` or a `let` is, which returns before its end,
+/// so `value_of` can't take it. `let x;`, then its body in its place, each
+/// `return v` setting it, `x = v;`, what follows a `return`'s `if` its
+/// `else`, as rd60's `try` writes it (`returns_replaced`). React-style
+/// `const first = NAMES.with_borrow_mut(|names| { if let Some(n) = names {
+/// ..; return first; } .. name });` of a nullable thread-local reads and
+/// writes its variable, not a handle on it (#591). The same program: the
+/// body runs where the call did, and each `return` ended what ran of it,
+/// as setting `x` does where nothing of the body follows. Not where a
+/// `return` is in a loop, a `switch` or a `try`, which `returns_replaced`
+/// refuses, nor where a block of the body declares `x`.
+fn set_of(stmt: &Stmt, whole: &[Stmt]) -> Option<Vec<Stmt>> {
+    let (StmtKind::Const(name, value) | StmtKind::Let(name, Some(value))) = &stmt.kind else {
+        return None;
+    };
+    let ExprKind::Call(callee, args) = &value.kind else {
+        return None;
+    };
+    let ExprKind::Arrow(params, body) = &callee.kind else {
+        return None;
+    };
+    if !body.split_last().is_some_and(|(_, before)| returns(before).1) {
+        return None;
+    }
+    let declared = StmtKind::Let(name.clone(), None).at(stmt.span);
+    let inlined = in_place(
+        stmt,
+        whole,
+        std::slice::from_ref(&declared),
+        (params, args),
+        body.clone(),
+        true,
+    )?;
+    // Not where the body names `x`, a block's own, which its sets would
+    // be of: lowering names such a block's `x` apart, `x$1`, as JS's `const
+    // x` isn't made until the call's done.
+    if declares(&inlined, name) || mentions_in(&inlined, name) > 0 {
+        return None;
+    }
+    let to = Expr::var(name);
+    let set = |value: &Expr, at: Span| Some(vec![StmtKind::Assign(to.clone(), value.clone()).at(at)]);
+    let set = returns_replaced(&inlined, &set)?;
+    Some(std::iter::once(declared).chain(set).collect())
 }
 
 /// Whether `e` is the call of a closure made where it's called.
@@ -1274,6 +1326,41 @@ mod tests {
         // One that reads `n`, the block's: the call stays, as in place the
         // branch would read the block's `n`, not the function's.
         assert!(tested(Expr::var("n")).is_none());
+    }
+
+    #[test]
+    fn a_value_that_returns_early_sets_its_let_but_where_a_block_declares_its_name() {
+        // `const x = ((d) => { if (c) { const <own> = d; return <own>; }
+        // return 2; })(d); return x;`.
+        let applied = |own: &str| {
+            let block = vec![
+                StmtKind::Const(own.into(), Expr::var("d")).at(Span::NONE),
+                StmtKind::Return(Some(Expr::var(own))).at(Span::NONE),
+            ];
+            let body = vec![
+                StmtKind::If(Expr::var("c"), block, None).at(Span::NONE),
+                StmtKind::Return(Some(Expr::int(2))).at(Span::NONE),
+            ];
+            let call = Expr::call(Expr::arrow(vec![Pattern::Name("d".into())], body), vec![Expr::var("d")]);
+            let mut stmts = vec![
+                StmtKind::Const("x".into(), call).at(Span::NONE),
+                StmtKind::Return(Some(Expr::var("x"))).at(Span::NONE),
+            ];
+            applied_blocks(&mut stmts, true);
+            stmts
+        };
+        // `let x; if (c) { const y = d; x = y; } else { x = 2; } return x;`.
+        let set = applied("y");
+        assert!(matches!(&set[0].kind, StmtKind::Let(name, None) if name == "x"));
+        let StmtKind::If(_, then, Some(otherwise)) = &set[1].kind else {
+            panic!("an `if` and its `else`");
+        };
+        let sets_x =
+            |s: &Stmt| matches!(&s.kind, StmtKind::Assign(to, _) if matches!(&to.kind, ExprKind::Var(v) if v == "x"));
+        assert!(then.last().is_some_and(sets_x) && otherwise.last().is_some_and(sets_x));
+        // A block's own `x`, which its set would be of: the call stays.
+        let kept = applied("x");
+        assert!(matches!(&kept[0].kind, StmtKind::Const(name, value) if name == "x" && closure_called(value)));
     }
 
     #[test]

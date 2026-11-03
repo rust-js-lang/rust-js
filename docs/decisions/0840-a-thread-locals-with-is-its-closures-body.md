@@ -1,7 +1,7 @@
 # 0840. A thread-local's `with` is its closure's body, wherever it's called
 
 Status: Accepted; amended (in a closure's body too; one that only throws;
-at the end of a branch that ends the function; a `with` in a `with`, rd661; a flag that only the next `if` tests, #571; a `Some` binding of the lent place, rd723). Extends [0581](0581-a-closure-called-as-a-statement-is-its-body.md),
+at the end of a branch that ends the function; a `with` in a `with`, rd661; a flag that only the next `if` tests, #571; a `Some` binding of the lent place, rd723; a value that returns early sets its `let`, #591). Extends [0581](0581-a-closure-called-as-a-statement-is-its-body.md),
 whose closure called as a statement in a function is its body, to what a
 module runs when it's loaded and to a closure whose value a statement
 reads first.
@@ -351,8 +351,9 @@ N of ADR 0262.
 So `if (didWarn != null) { if (didWarn.has(componentName)) { return; }
 didWarn.add(componentName); } else { didWarn = new Set([componentName]);
 }`, upstream's. Held by `test/corpus/closure_returned_early_tested.rs`
-against native Rust, whose kept cases are a flag read again, a branch that
-does more than return, and a closure that returns a number; mutations
+against native Rust, whose cases a flag read again, a branch that does
+more than return, and a closure that returns a number stayed calls, until
+#591 set their `let`s in place; mutations
 `tested-flag-*` in `scripts/mutations/js/applied.ts`. A branch reading
 what a block of the body declares is held by the unit test
 `a_tested_flag_is_in_place_but_where_a_block_shadows_what_its_branch_reads`
@@ -413,3 +414,66 @@ that begins with a call, each kept), `closure_returned_early_tested`'s
 (`js/applied.rs`; lowering names a block's own `x` apart, so no program
 reaches the shadow guard), and mutations `set-value-held-*` in
 `scripts/mutations/js/applied.ts`.
+
+## Amendment (2026-11-04, #591): a value that returns early sets its `let`
+
+A closure called where it's made whose value a `const` or a `let` holds,
+and which returns a value before its end, stayed a call: `value_of` takes
+only a body that returns at its end, and `tested_of` only a flag the next
+`if` tests. A nullable thread-local's `with_borrow_mut` closure was then
+given #541's seven-line getter and setter handle:
+
+```rust
+let first = NAMES.with_borrow_mut(|names| {
+    if let Some(names) = names {
+        let first = names[0].clone();
+        names.push(name.to_string());
+        return first;
+    }
+    *names = Some(vec![name.to_string()]);
+    name.to_string()
+});
+```
+
+**Such a closure is `let x;`, then its body in place, each `return v`
+setting it, `x = v;`** (`applied::set_of`), after `tested_of`, whose
+form is the better one where both apply. `returns_replaced` places each
+set, as rd60's `try` does: a `return` that ends what runs of an `if`'s
+branch makes what follows that `if` its `else`, so nothing of the body
+runs after a set, as nothing ran after the `return`. The body reads no
+other `x`, as JS's `const x` isn't made until the call's done, and
+lowering names a block's own apart, `first$1`, so each set is the
+`let`'s. Its parameter is read as
+what it's given, as in place elsewhere, so the handle is the variable and
+rd723's `Some` binding is the place:
+
+```js
+let first;
+if (names != null) {
+  const first$1 = $index(names, 0);
+  names.push(name);
+  first = first$1;
+} else {
+  names = [name];
+  first = name;
+}
+```
+
+**Not** where `returns_replaced` can't place a `return`: one in a loop or
+a `switch`, which setting the value wouldn't leave, or in a `try`; nor
+where a block of the body declares `x`, whose sets would be the block's.
+Each stays a call, as before.
+
+It's the same program: the body runs where the call did, before anything
+after the statement, and each way through it ends setting `x` to what
+that way returned. Case N of ADR 0262.
+
+Held by `test/corpus/closure_returned_early_set.rs` against native Rust:
+a nullable thread-local's `Some` arm returning its first name, one whose
+body declares the `let`'s name at its top and whose `let` is set again, a
+plain thread-local's `with`, and a `return` in a loop, kept a call; and
+`closure_returned_early_tested`'s three that `tested_of` doesn't take.
+The block's own `x` is held by the unit test
+`a_value_that_returns_early_sets_its_let_but_where_a_block_declares_its_name`
+(`js/applied.rs`), as no program reaches it. Mutations `set-of-never`
+and `set-of-return-dropped` in `scripts/mutations/js/applied.ts`.

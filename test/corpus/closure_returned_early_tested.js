@@ -29,13 +29,13 @@ function firstTime(n) {
 }
 
 function readAgain(n) {
-  const fresh = ((seen) => {
-    if (seen.includes(n)) {
-      return false;
-    }
+  let fresh;
+  if (seen.includes(n)) {
+    fresh = false;
+  } else {
     seen.push(n);
-    return true;
-  })(seen);
+    fresh = true;
+  }
   if (fresh) {
     return `fresh ${fresh}`;
   }
@@ -43,13 +43,13 @@ function readAgain(n) {
 }
 
 function logged(n) {
-  const seenBefore = ((seen) => {
-    if (seen.includes(n)) {
-      return true;
-    }
+  let seenBefore;
+  if (seen.includes(n)) {
+    seenBefore = true;
+  } else {
     seen.push(n);
-    return false;
-  })(seen);
+    seenBefore = false;
+  }
   if (seenBefore) {
     console.log(`seen ${n}`);
     return;
@@ -58,13 +58,13 @@ function logged(n) {
 }
 
 function counted(n) {
-  const count = ((seen) => {
-    if (seen.includes(n)) {
-      return 0;
-    }
+  let count;
+  if (seen.includes(n)) {
+    count = 0;
+  } else {
     seen.push(n);
-    return seen.length;
-  })(seen);
+    count = seen.length;
+  }
   if (count === 0) {
     return 99;
   }

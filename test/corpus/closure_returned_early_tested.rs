@@ -7,8 +7,9 @@
 // (didWarn.has(componentName)) { return; }`, of a nullable thread-local
 // that's its module's variable too. Tested negated, `if !fresh`, of a
 // function that returns a value, and of a branch that reads the function's
-// `n` beside a block's own, `n$1`. Kept a call: a flag read again, a branch
-// that does more than return, and a value not a `bool` written.
+// `n` beside a block's own, `n$1`. Not tested so: a flag read again, a
+// branch that does more than return, and a value not a `bool` written,
+// each its body in place setting its `let`, `fresh = false;` (#591).
 use std::cell::RefCell;
 use std::collections::HashSet;
 

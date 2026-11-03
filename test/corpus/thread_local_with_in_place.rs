@@ -1,7 +1,9 @@
 // A thread-local's `with(|x| ..)` is its closure's body where it's called,
 // its parameter the thread-local itself: as a statement, as an `if`'s test
 // and as a value, each run where the call was, before what's after it; one
-// that returns early stays a closure, whose `return` is its own (ADR 0840).
+// that returns a value early, held by a `let`, is in place too, each `return`
+// setting it (#591); one whose `return;` isn't its end stays a closure,
+// whose `return` is its own (ADR 0840).
 // A shadow of its parameter, `let held = held.as_ref().unwrap();`, is a
 // name of its own from there on, `const held$1 = $unwrap(held);`, the
 // thread-local never set (ADR 0840, amended).

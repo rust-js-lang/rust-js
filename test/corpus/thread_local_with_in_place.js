@@ -29,13 +29,13 @@ function flagged() {
 }
 
 function early(limit) {
-  const found = ((internals) => {
-    if (internals.calls > limit) {
-      return internals.calls;
-    }
+  let found;
+  if (internals.calls > limit) {
+    found = internals.calls;
+  } else {
     internals.calls = (internals.calls + bump(2)) >>> 0;
-    return 0;
-  })(internals);
+    found = 0;
+  }
   return (found + 1) >>> 0;
 }
 

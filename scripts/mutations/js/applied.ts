@@ -519,4 +519,22 @@ export const mutations: Mutation[] = [
     replace: "            substituted(&mut read, &|v| (v == set).then(|| value.clone()));\n",
     tests: ["test/corpus.test.ts", "-t", "^lent_place_set_read_in_place.rs$"],
   },
+  {
+    name: "set-of-never",
+    breaks:
+      "a closure whose value a `let` holds that returns before its end stays a call, a nullable thread-local's given its seven-line getter and setter handle (#591)",
+    file: "src/js/applied.rs",
+    find: "find_map(|i| Some((i, set_of(&stmts[i], &whole)?)))",
+    replace: "find_map(|i| Some((i, None::<Vec<Stmt>>?)))",
+    tests: ["test/corpus.test.ts", "-t", "^closure_returned_early_set.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "set-of-return-dropped",
+    breaks: "each `return v` is `v;`, which sets nothing, so the `let` is `undefined` (#591, a wrong answer)",
+    file: "src/js/applied.rs",
+    find: "Some(vec![StmtKind::Assign(to.clone(), value.clone()).at(at)]);\n    let set = returns_replaced(&inlined, &set)?;",
+    replace: "Some(vec![StmtKind::Expr(value.clone()).at(at)]);\n    let set = returns_replaced(&inlined, &set)?;",
+    tests: ["test/corpus.test.ts", "-t", "^closure_returned_early_set.rs$"],
+  },
 ];
