@@ -886,7 +886,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0451 A guard in generic code: its `Deref` a dictionary's, its drop given, what's read before it](0451-a-guard-in-generic-code.md) *(amended: what's read through a guard whose drop writes nothing, #452)*
 - [0452 `{:?}` of a `PhantomData` of a type parameter shows the name its caller gives](0452-a-phantom-datas-name.md)
 - [0453 `{:?}` of a slice's iterator is what's left of it](0453-a-slice-iterators-debug.md)
-- [0454 A `&mut` given as a type parameter's value is a box](0454-a-mut-given-as-a-type-parameter.md)
+- [0454 A `&mut` given as a type parameter's value is a box](0454-a-mut-given-as-a-type-parameter.md) *(amended: what's moved out of an in-place cell is apart)*
 - [0455 `nth_back`, `rfold` and `rfind` step from the back](0455-stepping-from-the-back.md)
 - [0456 A generic `ExactSizeIterator` knows its length](0456-a-generic-exact-size-iterator.md) *(amended: `rposition` of what `as_exact_size` makes knowing both)*
 - [0457 An `IntoIterator` bound on a reference is given its dictionary](0457-an-into-iterator-bound-on-a-reference.md)

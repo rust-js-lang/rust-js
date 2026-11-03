@@ -267,4 +267,22 @@ export const mutations: Mutation[] = [
       "    false && (holds(sig.output()) || others.into_iter().any(holds))",
     tests: ["test/corpus.test.ts", "-t", "^generic_mut_moved_out.rs$"],
   },
+  {
+    name: "moved-out-shared",
+    breaks:
+      "`Cell::from_mut(&mut v).replace(vec![3])` gives `[3]`: what's moved out of an in-place cell is the object its write changes after, not a copy apart (#527)",
+    file: "src/lower/mut_refs.rs",
+    find: "            true => Expr::call_helper(\"$apart\", vec![old]),\n            false => old,\n",
+    replace: "            _ => old,\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_cell_(replaced|moved_out).rs$"],
+  },
+  {
+    name: "moved-out-of-object-shared",
+    breaks:
+      "`Cell::from_mut(v).replace(..)` of a known `Vec` or struct gives the new value: only a type parameter's moved out apart (#527)",
+    file: "src/lower/mut_refs.rs",
+    find: "        match self.is_unknown(item) || self.written_in_place(item) {\n",
+    replace: "        match self.is_unknown(item) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_cell_replaced.rs$"],
+  },
 ];

@@ -735,4 +735,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^match_clone_nested_results.rs$"],
     snapshots: true,
   },
+  {
+    name: "unread-apart-kept",
+    breaks:
+      "`dest.clone_from(&source)` of a generic `T` keeps `$apart(dest.value);`, a copy of the old value nothing reads, where the write alone was (#527)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                ExprKind::Call(callee, args) if callee.helper_name() == Some(\"$apart\") && args.len() == 1 => &args[0],\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^clone_from.rs$"],
+    snapshots: true,
+  },
 ];

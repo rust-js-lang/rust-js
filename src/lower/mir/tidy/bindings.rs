@@ -7,16 +7,21 @@ use super::*;
 /// turn, `loud(1);`, as the array, made here, is never seen; `const x =
 /// f()`, what a call gave, its `fmt::Result` say: `f();`; and `const old =
 /// task.callback; task.callback = next;`, the old value a `replace` read of
-/// the place it writes: `task.callback = next;`. Not another read, which
-/// may be a binding's getter, `el.offsetWidth`, which lays the page out.
+/// the place it writes, a copy apart of it too, `$apart(dest.value)` (#527):
+/// `task.callback = next;`. Not another read, which may be a binding's
+/// getter, `el.offsetWidth`, which lays the page out.
 pub(super) fn unread_made(stmts: &mut Vec<Stmt>, mentions: &HashMap<String, usize>) {
     let mut i = 0;
     while i < stmts.len() {
         if let StmtKind::Const(name, value) = &stmts[i].kind
             && !mentions.contains_key(name)
             && !value.has_effects()
+            && let read = match &value.kind {
+                ExprKind::Call(callee, args) if callee.helper_name() == Some("$apart") && args.len() == 1 => &args[0],
+                _ => value,
+            }
             && matches!(stmts.get(i + 1).map(|next| &next.kind),
-                Some(StmtKind::Assign(target, _)) if target.kind == value.kind)
+                Some(StmtKind::Assign(target, _)) if target.kind == read.kind)
         {
             stmts.remove(i);
             continue;

@@ -306,7 +306,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     },
                     false => next,
                 };
-                let old = self.spill("old", place.clone(), out);
+                // What was moved out apart from what's written, which an
+                // in-place cell, `Cell::from_mut`'s, writes into the same
+                // object (`moved_out`). Not a `RefCell`'s, nor a
+                // thread-local's, which are never one.
+                let moved = match of_key || self.is_std_type(held, StdItem::RefCell) {
+                    true => place.clone(),
+                    false => self.moved_out(place.clone(), item),
+                };
+                let old = self.spill("old", moved, out);
                 out.push(StmtKind::Assign(place, next).at(js_span));
                 match stores_null {
                     true => old.defined(),

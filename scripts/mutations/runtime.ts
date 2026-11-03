@@ -54,4 +54,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_places.rs$"],
     snapshots: true,
   },
+  {
+    name: "apart-acts",
+    breaks:
+      "a cell's `replace(vec![9])` names its new value first, `const value$1 = [9];`, before `const old = $apart(value.value)`: `$apart`, which only copies what it's given, counted as doing something (#527)",
+    file: "src/runtime.rs",
+    find: "    \"$apart\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_cell_replaced.rs$"],
+    snapshots: true,
+  },
 ];

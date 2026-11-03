@@ -188,4 +188,32 @@ export const mutations: Mutation[] = [
     replace: "        let place = |e: &Expr| !e.has_effects();\n",
     tests: ["test/corpus.test.ts", "-t", "^swap_replace.rs$"],
   },
+  {
+    name: "generic-moved-out-shared",
+    breaks:
+      "generic code's `mem::replace(h.get(), v)` of a dictionary's `&mut Self::Out`, an in-place cell, gives the new value: what's moved out of a box not copied apart (#527)",
+    file: "src/lower/mir/entries.rs",
+    find: "            true => cx.moved_out(e, pointee),\n",
+    replace: "            true => e,\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_cell_moved_out.rs$"],
+  },
+  {
+    name: "replaced-holder-reached-twice",
+    breaks:
+      "`mem::replace(h.get(), v)` calls `h.get()` twice, once for its read and once for its write, printing what it prints twice",
+    file: "src/lower/mir/entries.rs",
+    find: "                    Value::Ref(match e.has_effects_before_assigned() {\n",
+    replace: "                    Value::Ref(match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_cell_moved_out.rs$"],
+  },
+  {
+    name: "own-place-moved-out-apart",
+    breaks:
+      "`mem::take(&mut self.0)` of a generic struct's field copies the old value, `$apart(holder[0])`, where a write of the field rebinds it and nothing changes the old one (#527)",
+    file: "src/lower/mir/entries.rs",
+    find: "cx.is_unknown(pointee) && !cx.borrows_own_place(def_id, span, i)",
+    replace: "cx.is_unknown(pointee)",
+    tests: ["test/corpus.test.ts", "-t", "^drop_guard_of_a_closure.rs$"],
+    snapshots: true,
+  },
 ];

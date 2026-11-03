@@ -4281,9 +4281,12 @@ export function $cellReplace(cell, value) {
   return previous;
 }
 
-// `a.swap(&b)` of two cells: each the other's value.
+// `a.swap(&b)` of two cells: each the other's value, a copy apart of it.
+// Either may be an in-place cell, `Cell::from_mut`'s of an object, whose
+// write changes the object its `value` gave, so each is moved out apart
+// before either is written (#527).
 export function $cellSwap(a, b) {
-  [a.value, b.value] = [b.value, a.value];
+  [a.value, b.value] = [$apart(b.value), $apart(a.value)];
 }
 
 // A `LazyCell`'s value, made by its `init` the first time.
@@ -7769,11 +7772,7 @@ export function $assign(target, value) {
 // `mem::replace(r, v)` and `mem::take(r)` of an object a `&mut` is (ADR
 // 0147): what it was, a copy, as `r` itself becomes `v` in place.
 export function $take(target, value) {
-  const old = Array.isArray(target)
-    ? target.slice()
-    : target instanceof Map || target instanceof Set
-      ? new target.constructor(target)
-      : { ...target };
+  const old = $apart(target);
   $assign(target, value);
   return old;
 }

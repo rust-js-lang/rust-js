@@ -413,4 +413,13 @@ export const mutations: Mutation[] = [
     replace: "        && (tcx.crates(()).iter())\n",
     tests: ["test/crates.test.ts", "-t", "crate_named_core"],
   },
+  {
+    name: "from-mut-not-whole",
+    breaks:
+      "a `Copy` struct `get()` of `Cell::from_mut`'s cell, then `set`, reads the new value: the cell's write in place not counted, so the read isn't copied (#527)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "\"std::mem::take\" | \"std::cell::Cell::<T>::from_mut\"",
+    replace: "\"std::mem::take\"",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_cell_moved_out.rs$"],
+  },
 ];

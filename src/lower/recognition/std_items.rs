@@ -1259,11 +1259,16 @@ impl StdItem {
 }
 
 /// Is `id` `mem::swap`, `mem::replace` or `mem::take`, which replace what a
-/// `&mut` is to whole (ADR 0147)?
+/// `&mut` is to whole (ADR 0147), or `Cell::from_mut`, whose cell's writes
+/// do, in place (ADR 0153, amended, #527)?
 pub(crate) fn replaces_whole(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.is_diagnostic_item(Symbol::intern("mem_swap"), id)
         || tcx.is_diagnostic_item(Symbol::intern("mem_replace"), id)
-        || of_std_crate(tcx, id, StdCrate::Core) && std_path(tcx, id) == "std::mem::take"
+        || of_std_crate(tcx, id, StdCrate::Core)
+            && matches!(
+                std_path(tcx, id).as_str(),
+                "std::mem::take" | "std::cell::Cell::<T>::from_mut"
+            )
 }
 
 /// Is `id` a slice of arrays' `as_flattened_mut`, a `&mut` to the items of

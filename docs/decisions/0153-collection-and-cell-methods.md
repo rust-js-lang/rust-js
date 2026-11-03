@@ -82,7 +82,9 @@ and whose write changes it in place, as writing through the `&mut` does,
 cell holds, read straight through a `$cellOf`. The `cell_from_mut` corpus
 case writes a number, a slice's items, an array's, a whole array through a
 parameter and strings, against native Rust; rustc's
-`rfcs/rfc-1789-as-cell/from-mut.rs` passes.
+`rfcs/rfc-1789-as-cell/from-mut.rs` passes. What its `replace`, `take` and `swap`
+move out of an object's cell is a copy apart, `$apart`, where the cell's
+write changes the object in place (ADR 0454, amended, #527).
 
 ## Amendment: a slice's `to_owned()`, and no copy of an array made here
 

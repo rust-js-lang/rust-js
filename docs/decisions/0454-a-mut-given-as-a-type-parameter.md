@@ -2,7 +2,8 @@
 
 Status: Accepted; amended by [0566](0566-fuse-is-stds.md), which lifts the
 refusal of a closure's parameter below: a function given for an `F:
-Fn(&mut T)` takes generic code's box apart. Extends [0099](0099-mut-references.md) and
+Fn(&mut T)` takes generic code's box apart; and (2026-11-03, #527) what's
+moved out of an in-place cell is a copy apart. Extends [0099](0099-mut-references.md) and
 [0180](0180-generic-writers.md). Decided with the user.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): the same writes, to
@@ -178,3 +179,53 @@ nothing for them to disagree on. Case N
   message of a `&mut ast::parse::Parser` in its `ParserI<'s, P>`, is
   rule 2's own: the field holds the value, generic code's box, where its
   caller would have the object.
+
+## Amendment: what's moved out of an in-place cell is apart (#527)
+
+`Cell::from_mut(&mut v).replace(vec![3])` gave `[3]` where Rust gives `[1,
+2]`: an in-place cell, `$cellOf(v)`, `Cell::from_mut`'s of an object (ADR
+0153) and a dictionary's `&mut Self::Out` (above), has the object as its
+`value` and writes it in place, `$assign`, so `const old = cell.value;
+cell.value = next;` read the object that the write then changed. `take`,
+`swap` and generic code's `mem::replace`, `mem::take` and `mem::swap` of
+such a cell were the same, and so was a `Copy` struct `get()` read before a
+`set`. A wrong answer. Case R ([0262](0262-when-rust-and-js-disagree.md)),
+now Rust's.
+
+- **What's moved out of a cell or a box is apart from what's written
+  next**, `mut_refs::moved_out`, the one answer: of an object or a type
+  parameter's, `$apart(old)`, the copy an object's box holds where it's
+  given (ADR 0074). `Cell`'s `replace` and `take` ask it; and generic
+  code's `mem::replace`, `mem::take` and `mem::swap` through a reference,
+  which may be a box, an in-place cell too: `const old = $apart(r.value);
+  r.value = v;`. Never in place, and read as before: a number's or a
+  string's cell, a `RefCell`, a thread-local's cell, a place of the body's
+  own, `&mut self.0` (`borrows_own_place`), and an object's `&mut`,
+  `$take(r, v)` (ADR 0147), whose copy `$apart` now makes too.
+- **`$cellSwap` moves each out apart** before either is written, as either
+  may be in place.
+- **`Cell::from_mut` replaces whole** the object its `&mut` is to
+  (`replaces_whole`), as `mem::replace` does, so a `Copy` value read from
+  its cell is copied where it's changed in place after.
+- A replace whose old value nothing reads is the write alone, as before:
+  tidy drops `$apart(dest.value)` as it dropped `dest.value`.
+- **What a `&mut` given to `mem::replace` is reached through is named
+  once**, `const item = h.get();`: `mem::replace(h.get(), v)` called
+  `h.get()` for its read and again for its write, and store_get_mut's
+  `insert_at` called `lm_get_mut` twice, a wrong answer of its own where
+  the call does something.
+- An object's box given to generic code still holds a copy apart (ADR
+  0074, `may_move_out`), so what generic code moves out of it is copied
+  twice: once where it's given and once where it's moved. Kept: the box's
+  copy also covers what generic code moves out other than through these
+  calls, which `moved_out` doesn't see.
+- Held by `test/corpus/in_place_cell_replaced.rs` and
+  `test/corpus/in_place_cell_moved_out.rs`, against native Rust: `replace`,
+  `take` and `swap` of `Cell::from_mut`'s cells of a `Vec`, a `String` and
+  a struct, of a parameter's and a local's, through generic code and a
+  dictionary's `&mut Self::Out`, and a `Copy` struct's `get()` before a
+  `set`, and a `get()` that prints, reached once. Mutations
+  `moved-out-shared`, `moved-out-of-object-shared`,
+  `generic-moved-out-shared`, `cell-swap-shared`, `from-mut-not-whole`,
+  `replaced-holder-reached-twice`, `own-place-moved-out-apart`,
+  `ref-cell-moved-out-apart`, `unread-apart-kept` and `apart-acts`.

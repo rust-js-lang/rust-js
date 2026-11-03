@@ -289,9 +289,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Value::Ref(Expr::held(cell))
                 }
                 // A `&mut` MIR gives of a place, a variable's or a field's.
+                // What holds it named once where reaching it does something,
+                // `h.get().value`'s `h.get()`, which its read and its write
+                // would each call.
                 Value::Ref(e) => {
                     made_here |= i == 0;
-                    Value::Ref(e)
+                    Value::Ref(match e.has_effects_before_assigned() {
+                        true => self.fixed_place_of(e, out),
+                        false => e,
+                    })
                 }
                 value => value,
             });
@@ -354,15 +360,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // j)` is (#369); not of two variables, which a `const` declares
         // where nothing else assigns them.
         let place = |e: &Expr| !e.has_effects() && !matches!(e.kind, js::ExprKind::Var(_));
+        // Of a type parameter's, through a reference, a box generic code
+        // has, which may be an in-place cell, `$cellOf`'s: what's moved out
+        // of each, apart from what's written next (`moved_out`, #527). Not
+        // of a place of the body's own, which a write rebinds.
+        let moved =
+            |cx: &Self, i: usize, e: Expr| match cx.is_unknown(pointee) && !cx.borrows_own_place(def_id, span, i) {
+                true => cx.moved_out(e, pointee),
+                false => e,
+            };
         if let Some(b) = &b_place
             && place(&a)
             && place(b)
         {
-            let swap = StmtKind::Assign(Expr::array(vec![a.clone(), b.clone()]), Expr::array(vec![b.clone(), a]));
+            let swapped = Expr::array(vec![moved(self, 1, b.clone()), moved(self, 0, a.clone())]);
+            let swap = StmtKind::Assign(Expr::array(vec![a, b.clone()]), swapped);
             out.push(swap.at(js_span));
             return Ok(Value::Expr(Expr::undefined()));
         }
-        let old = self.spill(if b_place.is_some() { "t" } else { "old" }, a.clone(), out);
+        let b = match b_place.is_some() {
+            true => moved(self, 1, b),
+            false => b,
+        };
+        let old = self.spill(
+            if b_place.is_some() { "t" } else { "old" },
+            moved(self, 0, a.clone()),
+            out,
+        );
         out.push(StmtKind::Assign(a, b).at(js_span));
         Ok(Value::Expr(match b_place {
             Some(b) => {

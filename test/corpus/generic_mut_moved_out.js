@@ -15,20 +15,20 @@ const stackDrain = {
     return { default: () => ({ items: [] }) };
   },
   drainOut(self) {
-    const old = self.value;
+    const old = $apart(self.value);
     self.value = stackDrain.Default().default();
     return old;
   },
 };
 
 function put(slot, value) {
-  const old = slot.value;
+  const old = $apart(slot.value);
   slot.value = value;
   return old;
 }
 
 function exchange(a, b) {
-  [a.value, b.value] = [b.value, a.value];
+  [a.value, b.value] = [$apart(b.value), $apart(a.value)];
 }
 
 function main() {

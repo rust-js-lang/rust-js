@@ -426,6 +426,9 @@ const PURE: &[&str] = &[
     "$escapeDebug",
     "$escapeUnicode",
     "$escapeAscii",
+    // A copy apart of what it's given, a box's or a moved out value's (ADR
+    // 0074, #527).
+    "$apart",
 ];
 
 /// The helpers that change what they're given but never throw: a range's

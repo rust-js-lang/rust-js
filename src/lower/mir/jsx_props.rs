@@ -199,6 +199,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .is_some_and(|place| matches!(place, thir::ExprKind::Field { .. }))
     }
 
+    /// Whether the call's `i`th argument borrows a place of the body's own,
+    /// a variable, a field or an item, `&mut self.0`: not what a reference
+    /// is to, `&mut *r`, nor a reference given as it is, `r` or `h.get()`,
+    /// which generic code's may be a box, an in-place cell too (#527).
+    pub(super) fn borrows_own_place(&self, def_id: rustc_span::def_id::DefId, span: Span, i: usize) -> bool {
+        self.borrowed_place(def_id, span, i)
+            .is_some_and(|place| !matches!(place, thir::ExprKind::Deref { .. }))
+    }
+
     /// What the call's `i`th argument borrows by `&mut`, as THIR has it.
     fn borrowed_place(&self, def_id: rustc_span::def_id::DefId, span: Span, i: usize) -> Option<&thir::ExprKind<'tcx>> {
         let place = self

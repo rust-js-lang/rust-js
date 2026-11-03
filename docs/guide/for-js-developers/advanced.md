@@ -1136,6 +1136,31 @@ export function entangle(root, index, lane) {
 
 - A `Cell<T>` is the same for a `Copy` value, a number say, with `get` and
   `set` and no borrows to count.
+- **`Cell::from_mut(&mut v)` of an object is a cell that writes `v` in
+  place**, `$cellOf(v)`, as a write through the `&mut` does. What its
+  `replace`, `take` or `swap` moves out is a copy of it, `$apart(..)`,
+  since `v` itself becomes the new value
+  ([ADR 0454](../../decisions/0454-a-mut-given-as-a-type-parameter.md), amended):
+
+```rust
+use std::cell::Cell;
+
+pub fn emptied(v: &mut Vec<u32>) -> Vec<u32> {
+    Cell::from_mut(v).replace(Vec::new())
+}
+```
+
+```js
+import { $apart, $cellOf } from "@rust-js/runtime";
+
+export function emptied(v) {
+  const item = $cellOf(v);
+  const old = $apart(item.value);
+  item.value = [];
+  return old;
+}
+```
+
 - In a React component, state is a hook instead: [Hooks](../react/hooks.md).
 
 ## Iterators and generators

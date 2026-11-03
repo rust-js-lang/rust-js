@@ -836,4 +836,14 @@ export const mutations: Mutation[] = [
     replace: "                ..value.defined()\n            },\n",
     tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
   },
+  {
+    name: "ref-cell-moved-out-apart",
+    breaks:
+      "React's `StackCursor`, a generic `RefCell<T>`, copies what `replace` moves out, `$apart(cursor.current)`, where no `RefCell` is an in-place cell (#527)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                let moved = match of_key || self.is_std_type(held, StdItem::RefCell) {\n",
+    replace: "                let moved = match of_key {\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_generic_fields.rs$"],
+    snapshots: true,
+  },
 ];
