@@ -31,12 +31,8 @@ function update(state, gesture, memoized) {
 }
 
 function main() {
-  const none = {
-    clones: null,
-  };
-  const some = {
-    clones: [1, 2, 3],
-  };
+  const none = { clones: null };
+  const some = { clones: [1, 2, 3] };
   const memoized = { value: [4] };
   console.log(`${update(none, true, memoized)} ${update(some, true, memoized)}`);
   console.log(`${update(none, false, memoized)} ${update(some, false, memoized)}`);
