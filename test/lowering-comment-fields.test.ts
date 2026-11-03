@@ -150,6 +150,34 @@ pub fn last(props: u32) -> Element {
   expect(keys).toEqual([["_threadCount", "Provider", "Consumer"], ["props", "_owner", "ref"], ["props", "_owner", "ref"]]);
 });
 
+// React's Flight client's stream controller, `{ .., error(error) { .. } else
+// { .. // We shouldn't get any more enqueues ..\n previous.then(..) } }`: a
+// comment inside a field's value, a method's body, is its code's, not one
+// after the object's fields, though no key follows it (rd321).
+test("a comment inside a field's value stays there", async () => {
+  const { js, lib } = await compiled("comment-inside-field-value", `pub struct Controller {
+    pub close: Box<dyn Fn(u32) -> u32>,
+}
+
+pub fn controller(base: u32) -> Controller {
+    Controller {
+        close: Box::new(move |n| {
+            let m = n + base;
+            // We shouldn't get any more after this.
+            m * 2
+        }),
+    }
+}
+
+pub fn closed(n: u32) -> u32 {
+    (controller(1).close)(n)
+}
+`);
+  expect(js).toMatch(/const m = .*;\n\s*\/\/ We shouldn't get any more after this\.\n\s*return /);
+  expect(js).not.toMatch(/\n\s*\/\/ We shouldn't get any more after this\.\n\s*};/);
+  expect(lib.closed(2 as never)).toBe(6);
+});
+
 // React's ReactFiberThenable makes its thenable's `ReactIOInfo` with `// We
 // don't know the requesting owner nor stack.` before `owner: None`, and
 // `None`s after it, each `#[rust_js::nullable, rust_js::optional]`: absent
@@ -243,6 +271,23 @@ pub fn later() -> Later {
     }
 }
 
+pub struct Boundary {
+    pub status: u32,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub row: std::cell::RefCell<Option<std::rc::Rc<u32>>>,
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub error_message: std::cell::RefCell<Option<String>>,
+}
+
+pub fn boundary(row: Option<std::rc::Rc<u32>>) -> Boundary {
+    Boundary {
+        status: 0,
+        row: std::cell::RefCell::new(row.clone()),
+        // DEV-only fields for hidden class
+        error_message: std::cell::RefCell::new(None),
+    }
+}
+
 pub fn has_owner() -> (bool, bool, bool) {
     let info = io_info("a".to_string(), 0.0);
     let last = led_last("b".to_string());
@@ -277,6 +322,11 @@ pub fn has_owner() -> (bool, bool, bool) {
     // Set later.
   };
 }`);
+  // Of a value the JS writes of no place of its own, `row ?? null`, where
+  // its literal writes it, React's createSuspenseBoundary's.
+  expect(js).toContain(`    row: row ?? null,
+    // DEV-only fields for hidden class
+  };`);
   expect(js).not.toContain("undefined");
   expect(Object.keys(lib.ioInfo("a" as never, 0 as never) as object)).toEqual(["name", "start"]);
   expect(Object.keys(lib.ledLast("b" as never) as object)).toEqual(["name", "start"]);

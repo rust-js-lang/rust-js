@@ -183,9 +183,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Where each field of the struct literal written at `span` is written,
-    /// its value's start, by its declared index (`WrittenFields::starts`):
-    /// none of a macro's literal.
-    fn field_starts(&self, adt: &ty::AdtDef<'tcx>, variant_index: VariantIdx, span: Span) -> Vec<(usize, u32)> {
+    /// its value, by its declared index (`WrittenFields::written`): none of
+    /// a macro's literal.
+    fn field_starts(&self, adt: &ty::AdtDef<'tcx>, variant_index: VariantIdx, span: Span) -> Vec<(usize, js::Span)> {
         if span.from_expansion() || adt.variant(variant_index).ctor_kind().is_some() {
             return Vec::new();
         }
@@ -204,7 +204,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .filter(|&(_, s)| !s.from_expansion() && span.contains(s))
             .map(|(i, s)| (i, self.js_span(s)))
             .filter(|(_, s)| !s.is_none())
-            .map(|(i, s)| (i, s.lo))
             .collect()
     }
 
@@ -399,7 +398,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // The keys whose `undefined`, a `None`'s, is kept: one a comment is
         // written on, the comment's place (ADR 0280, amended).
-        let (mut kept, mut docs, mut starts) = (Vec::new(), Vec::new(), Vec::new());
+        let (mut kept, mut docs, mut written) = (Vec::new(), Vec::new(), Vec::new());
         let (shape, items) = match shape {
             // A `Cell` in an object's field is what it holds (ADR 0288).
             Shape::Object(names) => {
@@ -413,7 +412,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 kept = keys(on);
                 // Where each field is written, what's before it is before.
-                starts = (self.field_starts(&adt_def, variant_index, span).into_iter())
+                written = (self.field_starts(&adt_def, variant_index, span).into_iter())
                     .filter_map(|(i, at)| Some((names.get(i)?.0.name()?.to_owned(), at)))
                     .collect();
                 // Its fields' doc comments, where it's the struct's one
@@ -475,7 +474,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if !self.written_literal(&adt_def, variant_index, span) {
                 docs.clear();
             }
-            let fields = js::WrittenFields { docs, starts };
+            let fields = js::WrittenFields { docs, written };
             *layout = js::ObjectLayout {
                 kept,
                 fields: (fields != js::WrittenFields::default()).then(|| Box::new(fields)),

@@ -33,7 +33,7 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 
 /// Byte offsets `lo..hi` into the Rust source file. `Span::NONE` (empty)
 /// means "no mapping": oxc skips empty spans when building the source map.
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Span {
     pub lo: u32,
     pub hi: u32,
@@ -1018,8 +1018,14 @@ pub struct ObjectLayout {
 impl ObjectLayout {
     /// Where `key`'s field is written, of those its literal says.
     pub fn start(&self, key: &str) -> Option<u32> {
+        self.written(key).map(|written| written.lo)
+    }
+
+    /// Where `key`'s field's value is written, of those its literal says,
+    /// from its start to its end.
+    pub fn written(&self, key: &str) -> Option<Span> {
         let fields = self.fields.as_deref()?;
-        fields.starts.iter().find(|(k, _)| k == key).map(|&(_, at)| at)
+        fields.written.iter().find(|(k, _)| k == key).map(|&(_, at)| at)
     }
 
     /// `key`'s JSDoc, of those its literal's struct documents.
@@ -1036,11 +1042,12 @@ pub struct WrittenFields {
     /// writes one literal of the struct, the one object it describes (ADR
     /// 0444, amended): printed before the field.
     pub docs: Vec<(String, String)>,
-    /// Where each key's field is written in its literal, its value's start,
-    /// `create_instance: Box::new({ .. })`'s `Box::new`, not where the JS
+    /// Where each key's field is written in its literal, its value,
+    /// `create_instance: Box::new({ .. })`'s `Box::new(..)`, not where the JS
     /// value's own place is, inside it: what a comment and a blank line
-    /// before the field are before (ADR 0708, amended).
-    pub starts: Vec<(String, u32)>,
+    /// before the field are before (ADR 0708, amended), and what a comment
+    /// past its end is after (rd321).
+    pub written: Vec<(String, Span)>,
 }
 
 /// A piece of a template as its format string is written, `concat!`'s

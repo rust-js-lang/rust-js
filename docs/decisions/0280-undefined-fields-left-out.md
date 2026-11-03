@@ -280,10 +280,17 @@ follows, before the object's `}`, on lines of their own, as one after its
 last field is (ADR 0708, amended): `{ name, start, // We don't know ..\n
 }`. Which keys the object writes is preparation's alone
 (`js::undefined_keys::left_out`); where the comment goes is the printer's,
-which asks the object as it's printed where the last key it writes starts
-(`to_oxc::closing`'s `ObjectEnd::last_written`, of `ObjectLayout::start`):
-a comment of the innermost literal it's in, after that key, is before
-the `}`, as one with only `,` and comments after it was. The literal's
+which asks the object as it's printed where the keys it writes end, the
+last's value's end (`to_oxc::closing`'s `ObjectEnd::written_to`): where
+the literal writes each field's value, from its start to its end
+(`ObjectLayout::written`, which the field's start, `ObjectLayout::start`,
+is of, so a JS value of no place of its own, `row ?? null`, is known),
+else the value's span; where one's is known neither way, the comment
+isn't placed there, and is before the statement. A comment of the
+innermost literal it's in, past them, is before the `}`, as one with only `,` and
+comments after it was. One inside a written field's value, a method's
+body's, React's Flight client's `// We shouldn't get any more enqueues
+..` in its stream controller's `error`, is that code's, as before. The literal's
 "led" keys, `ObjectLayout::led`, which only this exception read, are gone.
 An object that writes no key, all its fields `None`, is `{\n // why\n }`.
 
@@ -301,10 +308,12 @@ Held by `test/lowering-comment-fields.test.ts`'s "a comment before a last
 None is before the object's closing brace, the None left out" (React's
 `ReactIOInfo`, a comment before the last-written `None`, one in a nested
 literal, one of an object of no keys, and the program's `js::has`, run),
+"a comment inside a field's value stays there",
 and "a comment before a field changes no key but where it has no other
 place", now `Object.keys` of `["props", "_owner", "ref"]`; mutations
 `object-end-comment-before-left-out-unplaced`,
-`object-end-comment-of-outer-literal`, `object-end-last-written-first`
+`object-end-comment-of-outer-literal`, `object-end-last-written-first`,
+`object-end-value-end-unread`, `object-end-written-value-unread`
 (`to_oxc/closing.ts`). The mutations of the exception,
 `led-none-always-kept`, `led-none-last-left-out`,
 `commented-field-leading-unread` and `commented-field-leading-as-on`, go

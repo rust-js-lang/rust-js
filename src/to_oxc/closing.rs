@@ -12,14 +12,14 @@ use super::*;
 pub(super) type Closing = Vec<(u32, Vec<String>)>;
 
 /// An object literal of fields: where it starts and ends, and where the
-/// last field it writes starts, where each it writes says
-/// (`ObjectLayout::start`, or its value's span): a field left out, a
-/// `None`, is no code of it (ADR 0280).
+/// fields it writes end, the last's value's end, as its literal writes each
+/// (`ObjectLayout::written`), else its value's span: a field left out, a
+/// `None`, is no code of it (ADR 0280). `None` where one's isn't known.
 #[derive(Clone, Copy)]
 pub(super) struct ObjectEnd {
     lo: u32,
     hi: u32,
-    last_written: Option<u32>,
+    written_to: Option<u32>,
 }
 
 /// Where each object literal of fields starts and ends.
@@ -30,20 +30,22 @@ pub(super) fn object_ends(module: &Module) -> Vec<ObjectEnd> {
             if let ExprKind::Object(props, layout) = &e.kind
                 && !e.span.is_none()
             {
-                let at = |value: &js::Expr| (!value.span.is_none()).then_some(value.span.lo);
-                let start = |prop: &js::Prop| match prop {
+                // Where a field's value ends, of its code a comment inside
+                // is in, a method's body's `// ..` (rd321).
+                let end = |value: &js::Expr| (!value.span.is_none()).then_some(value.span.hi);
+                let written_to = |prop: &js::Prop| match prop {
                     js::Prop::Field(key, value)
                     | js::Prop::Method(key, value)
                     | js::Prop::Getter(key, value)
-                    | js::Prop::Setter(key, value) => layout.start(key).or(at(value)),
-                    js::Prop::Keyed(_, value) | js::Prop::KeyedMethod(_, value) => at(value),
-                    js::Prop::Spread(value) => at(value),
+                    | js::Prop::Setter(key, value) => layout.written(key).map(|written| written.hi).or(end(value)),
+                    js::Prop::Keyed(_, value) | js::Prop::KeyedMethod(_, value) | js::Prop::Spread(value) => end(value),
                 };
-                let last_written = (props.iter().map(start)).try_fold(e.span.lo, |last, at| at.map(|at| last.max(at)));
+                let written_to =
+                    (props.iter().map(written_to)).try_fold(e.span.lo, |last, to| to.map(|to| last.max(to)));
                 ends.push(ObjectEnd {
                     lo: e.span.lo,
                     hi: e.span.hi,
-                    last_written,
+                    written_to,
                 });
             }
         });
@@ -61,8 +63,8 @@ pub(super) fn object_ends(module: &Module) -> Vec<ObjectEnd> {
 
 /// Where the `}` is of the innermost object literal `c` is after the last
 /// field of, only what closes it after it, `,` and `}`, and other comments;
-/// or after the last field it writes, of the innermost literal it's in,
-/// those after it each left out (rd321).
+/// or after the fields it writes, past the last's value, of the innermost
+/// literal it's in, those after it each left out (rd321).
 pub(super) fn end_of(
     c: &crate::program::Comment,
     ends: &[ObjectEnd],
@@ -90,7 +92,7 @@ pub(super) fn end_of(
     let braced = |end: &&ObjectEnd| {
         end.lo < c.lo && c.hi < end.hi && sources.text.get(end.hi as usize - 1..end.hi as usize) == Some("}")
     };
-    let written_before = |end: &ObjectEnd| end.last_written.is_some_and(|last| last < c.lo);
+    let written_before = |end: &ObjectEnd| end.written_to.is_some_and(|to| to <= c.lo);
     (ends.iter().filter(braced).filter(|end| closing(end.hi)))
         .min_by_key(|end| end.hi - end.lo)
         .or_else(|| (ends.iter().filter(braced).min_by_key(|end| end.hi - end.lo)).filter(|end| written_before(end)))
