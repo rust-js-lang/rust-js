@@ -329,7 +329,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // leaves out, stays its arrow (#502).
                 let thunk = matches!(&arrow.kind, js::ExprKind::Arrow(params, _) if params.is_empty());
                 let ignores = match self.tcx.type_of(def_id).skip_binder().kind() {
-                    ty::Closure(_, args) => args.as_closure().sig().inputs().skip_binder()[0].tuple_fields().len() > 0,
+                    ty::Closure(_, args) => !args.as_closure().sig().inputs().skip_binder()[0]
+                        .tuple_fields()
+                        .is_empty(),
                     _ => true,
                 };
                 let kept = thunk && (ignores || self.handed_on(made_at));
