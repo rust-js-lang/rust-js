@@ -513,6 +513,14 @@ order against the key's and the argument's, and whose call records its
 `own-keyed-method-of-a-binding`, `own-method-called-again` (`js/make.ts`)
 and `keyed-method-unmarked` (`mir/calls/method_paths.ts`).
 
+## Amendment: rd226b stays narrow (the user's decision)
+
+Decided by the user (2026-11-04): the exception above (f8d1ca317,
+`receiver_reads`) stays of keyed calls alone, `function::call(js::method((x,
+key)), Some(&x), ..)`. It doesn't cover a binding's method, a `match`
+arm's binding, or a call a `return` gives, each of which keeps the
+program's `const` as rd226 has it, until a port shows a case of one.
+
 ## Amendment: an `if let`'s binding of a field's own name, read again where the next statement reads it first (rd416, 2026-11-04)
 
 Decided on the user's behalf (2026-11-03, the user away). This widens the

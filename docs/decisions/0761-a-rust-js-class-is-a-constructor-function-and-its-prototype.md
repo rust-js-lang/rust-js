@@ -771,3 +771,9 @@ subclass; mutations `es-class-a-constructor-function`,
 `es-class-prototype-replaced-allowed` (`lower/binding_calls.rs`),
 `es-class-default-declared-alone` (`to_oxc/statements.rs`),
 `es-class-default-exported-twice` (`to_oxc.rs`).
+
+## Amendment: `class(es)` confirmed as the one way (rd682, the user's decision)
+
+Decided by the user (2026-11-04): `#[cfg_attr(rust_js,
+rust_js::class(es))]` on the struct is the one way to ask for an ES
+class; no other attribute, option or rule asks for one.

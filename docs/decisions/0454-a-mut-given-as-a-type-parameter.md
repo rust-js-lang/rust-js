@@ -260,3 +260,14 @@ in place (ADR 0147). A wrong answer. Case R
   written through after, of a `String`, a struct and a number, and through
   a generic function that gives it on, and a `Copy` struct read before.
   Mutation `outliving-object-handle`.
+
+## Amendment: regex-syntax's `ParserI` stays refused (#516, the user's decision)
+
+Decided by the user (2026-11-04): #516's unfixed half, regex-syntax's
+`ParserI<'s, P> { parser: P }` given a `&mut ast::parse::Parser`, stays
+refused for now, a documented limitation (the guide's limitations page,
+a `&mut` to an object given for a type parameter inside what generic
+code takes or gives). Its field holds generic code's box where its
+caller would hold the object, rule 2's own case (the `PhantomData`
+amendment above). Revisit it once #527's `moved_out` owner (above) has
+settled.

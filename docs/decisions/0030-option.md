@@ -142,3 +142,15 @@ knows the locals only ever made `Some(..)`, and a shared reference to
 one (`OptionWrites::made_some`); `eq_value` writes `==` only of a
 payload that's its `Some`, so that's the one question asked. Decided
 with the user. Case N: the same answer.
+
+## Amendment: `$unwrap` stays the one `expect` (rd661, the user's decision)
+
+Decided by the user (2026-11-04): `$unwrap(o, "why")` stays the one form
+of `expect`. ReactSharedInternalsServer's thread-local of its binding's
+`expect` (ADR 0633, amended, rd661) is `$unwrap(..)` where upstream
+writes `if (!ReactSharedInternalsServer) { throw new Error(..); }`; that
+file's difference is accepted (react-in-rust's PORTING.md lists it), not
+a second form of `expect` for a module's load check. Case N
+([0262](0262-when-rust-and-js-disagree.md)): both throw `new Error` of
+the same message as the module loads, and the internals, an object, are
+falsy only where they're absent.

@@ -1347,3 +1347,17 @@ sets again, as what a pattern matched is fixed where it's matched, so no
 binding's root is one set again; and `lent_field`'s variant, as each
 corpus case's flow tells its cell apart already, its borrow quiet by its
 class (`quiet_cell_borrow`), where a struct's `x.f` is asked the same.
+
+## Amendment: #503's two points confirmed (the user's decision)
+
+Decided by the user (2026-11-04), of the two amendments above
+(80814f061..c85a56a19):
+
+- **The rule's extension to a struct's `ref` bindings stays**: a
+  struct's pattern binding by reference of a `RefCell` field, `let Wrap {
+  n } = &wrap;`, is the field's own place, as a variant's is; one rule of
+  a field's binding.
+- **A `RefCell` field's binding read twice with no write between keeps
+  reading the field twice**: its handle is read where it's used, each
+  read the property's, and isn't held in a `const` as a `Cell`'s is (ADR
+  0287, amended, #532).

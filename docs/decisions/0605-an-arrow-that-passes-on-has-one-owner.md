@@ -794,6 +794,15 @@ Rust, and the guide's `later`. Mutations `bound-of-parameters-alone`,
 `rest-given-whole-passed-on` (`js/stmt_walk.ts`);
 `bound-thunk` goes, the condition it held gone.
 
+## Amendment: #502's thunk line confirmed (the user's decision)
+
+Decided by the user (2026-11-04): the line the amendment above draws
+stays. A thunk handed on as a callback, given to a call, boxed, lent or
+wrapped, stays an arrow, `scheduleWork(() => performWork(request))`; a
+thunk kept as a value, returned or held as it is, or one an `Rc` or an
+`Arc` is made of, is the function bound, `computedOper.bind(null,
+this$)`.
+
 ## Amendment: a prototype's method that only passes its parameters on (rd715)
 
 React's ReactDOMRoot gives its hydration root's prototype a module
