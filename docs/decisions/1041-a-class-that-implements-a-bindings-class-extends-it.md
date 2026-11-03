@@ -430,3 +430,20 @@ mutations `subclass-getter-a-method`, `subclass-getter-misuse-unchecked`
 (`lower/mir/calls.rs`), `subclass-getter-declared-a-method`
 (`lower/declarations/functions.rs`) and `subclass-getter-printed-as-method`
 (`to_oxc/statements.rs`).
+
+## Amendment: its declaration extends a class of no type parameters as it's named (rd680)
+
+A trait whose `#[rust_js::types]` names its class alone, webpack's
+`webpack#ModuleDependency`, a class of no type parameters, is of the
+Rust type's arguments, as a name alone is (ADR 0224): a trait's are its
+`Self` first, so the subclass was declared `extends
+ModuleDependency<ClientReferenceDependency>`, a type argument of a class
+of none, which TypeScript refuses where the declaration is checked.
+**A trait's name alone is of its arguments but `Self`**, which no
+TypeScript class has a parameter of: `extends ModuleDependency`
+(`declarations.rs`' `written`). react's `react#Component<P, S>` names its
+own, as before, `extends Component<CounterProps, undefined>`. Case:
+none, a declaration file's form. Held by
+`test/binding-subclasses.test.ts`'s "a getter of the binding's class a
+class extends is its class's getter" and the mutation
+`trait-self-a-type-argument` (`lower/declarations.ts`).

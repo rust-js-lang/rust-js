@@ -1278,4 +1278,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) => crate::lower::namespace_name(super::bindings::file_stem(from)),\n",
     tests: ["test/binding-subclasses.test.ts", "-t", "its module's default is imported as its default"],
   },
+  {
+    name: "trait-self-a-type-argument",
+    breaks: "a class that extends a binding's class whose trait names it alone, `webpack#ModuleDependency`, is declared `extends ModuleDependency<ClientReferenceDependency>`, the trait's `Self` a type argument of a class of none (rd680)",
+    file: "src/lower/declarations.rs",
+    find: "            let type_args = args.types().skip(usize::from(of_self)).map(|t| self.ts(t)).collect();\n",
+    replace: "            let type_args = args.types().skip(usize::from(of_self && false)).map(|t| self.ts(t)).collect();\n",
+    tests: ["test/binding-subclasses.test.ts", "-t", "is its class's getter"],
+  },
 ];

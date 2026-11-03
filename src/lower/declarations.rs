@@ -546,7 +546,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
         // (ADR 0224).
         if let Written::Reference { from, name, args: None } = declared {
             let name = &self.imported_from(from.as_deref(), name, Some(did));
-            let type_args = args.types().map(|t| self.ts(t)).collect();
+            // Of a trait's, a binding's class a class extends, not its
+            // `Self`, which TypeScript's class has no parameter of:
+            // `extends ModuleDependency` (rd680).
+            let of_self = self.tcx.def_kind(did) == DefKind::Trait && args.len() == self.tcx.generics_of(did).count();
+            let type_args = args.types().skip(usize::from(of_self)).map(|t| self.ts(t)).collect();
             return reference(name, type_args);
         }
         // A name written that's one of the Rust type's own type parameters

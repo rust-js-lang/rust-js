@@ -84,10 +84,11 @@ pub fn kind(d: &ClientReferenceDependency) -> String {
 }
 `;
 
-// rd679: the getter a subclass writes is its class's getter, \`get type()
-// { .. }\`, which webpack reads as \`dependency.type\`, not a method, and
+// rd679: the getter a subclass writes is its class's getter, `get type()
+// { .. }`, which webpack reads as `dependency.type`, not a method, and
 // declared one; a Rust call of it reads it, its body run where Rust runs
-// it, before what's called after it.
+// it, before what's called after it. rd680: it's declared extending its
+// class, of no type arguments, not the trait's `Self`.
 test("a getter of the binding's class a class extends is its class's getter", async () => {
   const dir = fixture("binding-subclass-getter");
   bindings(dir, dependency);
@@ -107,6 +108,8 @@ test("a getter of the binding's class a class extends is its class's getter", as
 }`);
   expect(out).toContain('return `${d.type} ${noted("then")} ${d.request}`;');
   expect(ts).toContain("    get type(): string;\n");
+  // rd680: of no type arguments, the trait's `Self` none of its class's.
+  expect(ts).toContain("export declare class ClientReferenceDependency extends ModuleDependency {\n");
   const lib = await import(join(dir, "lib.js"));
   const base = (await import(join(dir, "node_modules", "webpackish", "index.js"))).ModuleDependency;
   const dependencyMade = new lib.ClientReferenceDependency("./client.js");
@@ -180,6 +183,7 @@ pub fn given(_request: &dep::WebRequest) -> bool {
   expect(out).toContain('import ModuleDependency from "webpackish/lib/dependencies/ModuleDependency";');
   expect(out).toContain("export class ClientReferenceDependency extends ModuleDependency {");
   expect(ts).toContain('import type ModuleDependency from "webpackish/lib/dependencies/ModuleDependency";');
+  expect(ts).toContain("export declare class ClientReferenceDependency extends ModuleDependency {\n");
   expect(ts).toContain('import type WebRequest from "webpackish/lib/dependencies/Request";');
   expect(ts).toContain("export function given(request: WebRequest): boolean;");
   expect(ts).not.toContain("{ default }");
