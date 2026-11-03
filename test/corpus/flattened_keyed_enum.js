@@ -56,8 +56,7 @@ function pending(node) {
   if (!("current" in node)) {
     return;
   }
-  const pending = node.pending;
-  return pending;
+  return node.pending;
 }
 
 function set(node, value) {

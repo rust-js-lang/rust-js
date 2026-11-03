@@ -3326,7 +3326,11 @@ export function isAdult(p) {
   &store.count;` of a `Cell`, which a call may `set` meanwhile, is the
   field read where it's used
   ([ADR 0287](../../decisions/0287-cells-as-variables.md), amended,
-  rd658).
+  rd658). A `match` arm's binding of a `Cell` field read once,
+  `Kind::Signal { current } => current.get()`, is the field read there,
+  `return kind.current;`, not a `const` of it
+  ([ADR 0287](../../decisions/0287-cells-as-variables.md), amended,
+  #532).
 - `if let Some(cancel) = root.cancel.take()` tests the field and takes it
   where it's there, `if (root.cancel != null) { const cancel =
   root.cancel; root.cancel = undefined; .. }`, as JS writes it, of a

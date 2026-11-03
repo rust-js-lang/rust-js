@@ -1424,8 +1424,7 @@ export function computed(getter) {
 
 export function read(node) {
   if ("current" in node) {
-    const current = node.current;
-    return current;
+    return node.current;
   }
   if ("getter" in node) {
     node.value = node.getter();

@@ -620,7 +620,7 @@ fn its_place(place: &Expr) -> bool {
 /// `const h = { get value() { return o.f; }, .. }`, a `&Cell`'s handle on a
 /// field, whose `value` alone is used, the handle never given: read before
 /// anything could set `o.f`, `const h = o.f`, `h` where its `value` is
-/// read (ADR 0287); else `o.f` where its `value` is, the `o` it was made
+/// read (ADR 0287), but where that's once (#532); else `o.f` where its `value` is, the `o` it was made
 /// of, as MIR holds a reference written again before it's made, and where
 /// it's written through, a closure's `h.value = 5` too (#192).
 ///
@@ -633,7 +633,8 @@ fn its_place(place: &Expr) -> bool {
 /// `let chunks = store.chunks.borrow();`, is read where it's made, `const
 /// chunks = store.chunks;`, whatever runs before its uses: Rust lets
 /// nothing change what it's to while it's held (rd658).
-pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, frozen: &HashSet<String>) {
+pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, lets: &super::LetNames) {
+    let frozen = &lets.frozen;
     let mut handles: Vec<(String, Expr, bool, js::Storage)> = Vec::new();
     js::each_list(body, &mut |stmts| {
         for (k, stmt) in stmts.iter().enumerate() {
@@ -716,7 +717,7 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, frozen: &HashSe
     }
     handles
         .retain(|(name, _, _, storage)| !(matches!(storage, js::Storage::InPlace(_)) && written_whole.contains(name)));
-    handles.retain(|(name, place, at_once, _)| {
+    handles.retain_mut(|(name, place, at_once, _)| {
         // Each use of it one of its `value`: none left once those are.
         let mut rest = body.clone();
         js::each_expr_mut(&mut rest, &mut |e| {
@@ -727,12 +728,21 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, frozen: &HashSe
                 *e = Expr::undefined();
             }
         });
-        let mut root = place;
+        let mut root = &*place;
         while let ExprKind::Member(of, _) = &root.kind {
             root = of;
         }
-        js::mentions_in(&rest, name) == 0
-            && (*at_once || matches!(root.kind, ExprKind::Var(_) | ExprKind::This | ExprKind::Handle(..)))
+        let rereads = matches!(root.kind, ExprKind::Var(_) | ExprKind::This | ExprKind::Handle(..));
+        // Read once, where it's read, as Rust's `.get()` reads it, no
+        // `const` of it: `return kind.current;` of `Kind::Signal { current }
+        // => current.get()`, an arm's binding (#532). Not a `let`'s the
+        // program wrote, `let Fiber { tag, .. } = fiber;`, which keeps its
+        // name, as `lets side by side` does (ADR 0287, amended).
+        let written = lets.patterns.contains(name.as_str()) || lets.named.contains(name.as_str());
+        if *at_once && rereads && !written && js::mentions_in(body, name) == 1 {
+            *at_once = false;
+        }
+        js::mentions_in(&rest, name) == 0 && (*at_once || rereads)
     });
     if handles.is_empty() {
         return;

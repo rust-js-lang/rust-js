@@ -327,8 +327,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `&Cell` handle on a field of `this` read later is kept, not its place, `const reads = { get value() { .. } }` (#359)",
     file: "src/lower/mir/tidy/values.rs",
-    find: "            && (*at_once || matches!(root.kind, ExprKind::Var(_) | ExprKind::This | ExprKind::Handle(..)))\n",
-    replace: "            && (*at_once || matches!(root.kind, ExprKind::Var(_) | ExprKind::Handle(..)))\n",
+    find: "        let rereads = matches!(root.kind, ExprKind::Var(_) | ExprKind::This | ExprKind::Handle(..));\n",
+    replace: "        let rereads = matches!(root.kind, ExprKind::Var(_) | ExprKind::Handle(..));\n",
     tests: ["test/classes.test.ts", "-t", "Cell fields"],
   },
   {
@@ -421,5 +421,24 @@ export const mutations: Mutation[] = [
     replace: "    if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_let_borrow.rs$"],
     snapshots: true,
+  },
+  {
+    name: "handle-read-once-held",
+    breaks:
+      "a `match` arm's binding of a `Cell` field read once is held first, `const current = kind.current; return current;`, not `return kind.current;` (#532)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "        if *at_once && rereads && !written && js::mentions_in(body, name) == 1 {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^cell_binding_read_once.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "handle-of-a-let-read-in-place",
+    breaks:
+      "a `let` the program wrote of a cell field, `let Fiber { tag, type_, .. } = fiber;`, read once, loses its name, `fiber.tag` where it's read (#532)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "        if *at_once && rereads && !written && js::mentions_in(body, name) == 1 {\n",
+    replace: "        if *at_once && rereads && js::mentions_in(body, name) == 1 {\n",
+    tests: ["test/lowering-field-cells.test.ts", "-t", "lets side by side are consts as written"],
   },
 ];

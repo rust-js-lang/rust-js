@@ -105,3 +105,29 @@ it was borrowed through given another store; a `&Cell` across a call that
 sets it), and the mutations `mir-tidy-frozen-handle-at-its-uses`
 (`mir/tidy/values.ts`), `frozen-borrow-of-a-cell` and
 `frozen-borrow-not-of-a-ref` (`mir/patterns.ts`).
+
+## Amendment: an arm's binding of a cell field read once is read there (#532, 2026-11-03)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. `.get()` reads the
+field where it's called, which is where the JS reads it now. A handle read
+at once read the same value there anyway.
+
+A handle on a field read before anything could set it was held,
+`const h = o.f;`, and `h` was read where its `value` was, even when that
+was once: `Kind::Signal { current } => current.get()` printed `const
+current = kind.current; return current;`. An arm that set another field
+first read its field in place, `kind.dirty = false; return kind.value;`,
+so one construct had two forms. **A handle whose `value` is read once,
+on a place whose root reads the same (a variable, `this`, a handle), is
+that place read where it's read**, `return kind.current;`. That's the form
+a handle not read at once already had. A handle read twice is still held
+once, `const current = kind.current; return (current + current) | 0;`. A
+`let` the program wrote, `let Fiber { tag, .. } = fiber;` or `let chunks
+= store.chunks.borrow();` (`LetNames`), keeps its name as before, as
+does a handle on a place that doesn't read the same.
+
+Held by corpus `cell_binding_read_once.rs` against native Rust (an arm
+read once, read twice, read after another field's set, and read after a
+call that sets it) and the mutation `handle-read-once-held`
+(`mir/tidy/values.ts`). flattened_keyed_enum's `pending` and the guide's
+alien-signals `read` are re-blessed, `return node.pending;`.
