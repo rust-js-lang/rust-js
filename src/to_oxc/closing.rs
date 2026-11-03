@@ -2,7 +2,8 @@
 //! before its `}`, `Info { name, start, // c\n }`: there in the JS's
 //! object too, on lines of its own (ADR 0708, amended), which oxc's printer
 //! writes no comment before, so its line is split there, as a conditional's
-//! branch's is (ADR 0658).
+//! branch's is (ADR 0658). So is one after the last field the object
+//! writes, before fields it leaves out, `None`s (ADR 0280, amended, rd321).
 
 use super::*;
 
@@ -10,16 +11,40 @@ use super::*;
 /// on lines of their own, as written.
 pub(super) type Closing = Vec<(u32, Vec<String>)>;
 
+/// An object literal of fields: where it starts and ends, and where the
+/// last field it writes starts, where each it writes says
+/// (`ObjectLayout::start`, or its value's span): a field left out, a
+/// `None`, is no code of it (ADR 0280).
+#[derive(Clone, Copy)]
+pub(super) struct ObjectEnd {
+    lo: u32,
+    hi: u32,
+    last_written: Option<u32>,
+}
+
 /// Where each object literal of fields starts and ends.
-pub(super) fn object_ends(module: &Module) -> Vec<(u32, u32)> {
+pub(super) fn object_ends(module: &Module) -> Vec<ObjectEnd> {
     let mut ends = Vec::new();
     let mut of = |mut stmts: Vec<js::Stmt>| {
         js::each_expr_mut(&mut stmts, &mut |e| {
-            if let ExprKind::Object(props, _) = &e.kind
+            if let ExprKind::Object(props, layout) = &e.kind
                 && !e.span.is_none()
-                && !props.is_empty()
             {
-                ends.push((e.span.lo, e.span.hi));
+                let at = |value: &js::Expr| (!value.span.is_none()).then_some(value.span.lo);
+                let start = |prop: &js::Prop| match prop {
+                    js::Prop::Field(key, value)
+                    | js::Prop::Method(key, value)
+                    | js::Prop::Getter(key, value)
+                    | js::Prop::Setter(key, value) => layout.start(key).or(at(value)),
+                    js::Prop::Keyed(_, value) | js::Prop::KeyedMethod(_, value) => at(value),
+                    js::Prop::Spread(value) => at(value),
+                };
+                let last_written = (props.iter().map(start)).try_fold(e.span.lo, |last, at| at.map(|at| last.max(at)));
+                ends.push(ObjectEnd {
+                    lo: e.span.lo,
+                    hi: e.span.hi,
+                    last_written,
+                });
             }
         });
     };
@@ -35,10 +60,12 @@ pub(super) fn object_ends(module: &Module) -> Vec<(u32, u32)> {
 }
 
 /// Where the `}` is of the innermost object literal `c` is after the last
-/// field of, only what closes it after it, `,` and `}`, and other comments.
+/// field of, only what closes it after it, `,` and `}`, and other comments;
+/// or after the last field it writes, of the innermost literal it's in,
+/// those after it each left out (rd321).
 pub(super) fn end_of(
     c: &crate::program::Comment,
-    ends: &[(u32, u32)],
+    ends: &[ObjectEnd],
     sources: &crate::program::Sources,
     comments: &[crate::program::Comment],
 ) -> Option<u32> {
@@ -60,10 +87,14 @@ pub(super) fn end_of(
                     between.is_some_and(|gap| gap.chars().all(|ch| ch.is_whitespace() || ch == ','))
                 })
     };
-    (ends.iter())
-        .filter(|&&(lo, hi)| lo < c.lo && c.hi < hi && closing(hi))
-        .min_by_key(|&&(lo, hi)| hi - lo)
-        .map(|&(_, hi)| hi - 1)
+    let braced = |end: &&ObjectEnd| {
+        end.lo < c.lo && c.hi < end.hi && sources.text.get(end.hi as usize - 1..end.hi as usize) == Some("}")
+    };
+    let written_before = |end: &ObjectEnd| end.last_written.is_some_and(|last| last < c.lo);
+    (ends.iter().filter(braced).filter(|end| closing(end.hi)))
+        .min_by_key(|end| end.hi - end.lo)
+        .or_else(|| (ends.iter().filter(braced).min_by_key(|end| end.hi - end.lo)).filter(|end| written_before(end)))
+        .map(|end| end.hi - 1)
 }
 
 /// Of `own_line`, each comment on lines of its own, those before an
@@ -71,7 +102,7 @@ pub(super) fn end_of(
 /// and where each taken starts, which nothing else places.
 pub(super) fn taken<'c>(
     own_line: Vec<&'c crate::program::Comment>,
-    (ends, closing): (&[(u32, u32)], &mut Closing),
+    (ends, closing): (&[ObjectEnd], &mut Closing),
     sources: &crate::program::Sources,
     comments: &[crate::program::Comment],
 ) -> (Vec<&'c crate::program::Comment>, Vec<u32>) {

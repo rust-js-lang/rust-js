@@ -61,8 +61,8 @@ pub fn create_cache_node() -> CacheNode {
 // `// Record the component responsible for creating this element.` before
 // `_owner` leaves out `_store`; and ReactFiberCacheComponent's `// We'll
 // initialize these at the root.` before two `None`s writes them alike,
-// the comment before `_threadCount`. Where no key follows, the `None` it's
-// before keeps its key, the comment's place.
+// the comment before `_threadCount`. Where no key follows, it's before the
+// object's `}`, the `None` left out still (rd321).
 test("a comment before a field changes no key but where it has no other place", async () => {
   const { js, lib } = await compiled("comment-before-fields", `use std::cell::Cell;
 
@@ -145,10 +145,147 @@ pub fn last(props: u32) -> Element {
   };`);
   expect(js).toContain(`    ref: null,
     // Set where it's validated.
-    _store: undefined,
   };`);
   const keys = [lib.createContext(), lib.element(1 as never, 2 as never), lib.last(1 as never)].map((made) => Object.keys(made as object));
-  expect(keys).toEqual([["_threadCount", "Provider", "Consumer"], ["props", "_owner", "ref"], ["props", "_owner", "ref", "_store"]]);
+  expect(keys).toEqual([["_threadCount", "Provider", "Consumer"], ["props", "_owner", "ref"], ["props", "_owner", "ref"]]);
+});
+
+// React's ReactFiberThenable makes its thenable's `ReactIOInfo` with `// We
+// don't know the requesting owner nor stack.` before `owner: None`, and
+// `None`s after it, each `#[rust_js::nullable, rust_js::optional]`: absent
+// until set (ADR 0810). A comment is no reason for a key: each `None` is
+// left out as without it, and the comment, after the last key written, is
+// before the object's `}` (rd321). Before, the last `None` it led was
+// written, `owner: undefined`, so `"owner" in ioInfo`, which the program
+// asks itself, was true for a comment's sake.
+test("a comment before a last None is before the object's closing brace, the None left out", async () => {
+  const { js, lib } = await compiled("comment-before-last-none", `pub struct ReactIOInfo {
+    pub name: String,
+    pub start: f64,
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub env: Option<String>,
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub owner: Option<u32>,
+    #[cfg_attr(rust_js, rust_js::nullable, rust_js::optional)]
+    pub stack: Option<String>,
+    pub debug_task: Option<u32>,
+}
+
+pub fn io_info(name: String, start: f64) -> ReactIOInfo {
+    ReactIOInfo {
+        name,
+        start,
+        env: None,
+        // We don't know the requesting owner nor stack.
+        owner: None,
+        stack: None,
+        debug_task: None,
+    }
+}
+
+pub fn led_last(name: String) -> ReactIOInfo {
+    ReactIOInfo {
+        name,
+        start: 1.0,
+        env: None,
+        stack: None,
+        debug_task: None,
+        // Set later.
+        owner: None,
+    }
+}
+
+pub struct Pending {
+    pub owner: Option<u32>,
+    pub info: ReactIOInfo,
+}
+
+pub fn unknown() -> Pending {
+    Pending {
+        // Nothing is known yet.
+        owner: None,
+        info: ReactIOInfo {
+            name: "c".to_string(),
+            // Not started.
+            start: 0.0,
+            env: None,
+            // Its owner's.
+            owner: None,
+            stack: None,
+            debug_task: None,
+        },
+    }
+}
+
+pub fn none_known() -> Pending {
+    Pending {
+        info: ReactIOInfo {
+            name: "d".to_string(),
+            start: 0.0,
+            env: None,
+            owner: None,
+            stack: None,
+            debug_task: None,
+        },
+        // Nothing else.
+        owner: None,
+    }
+}
+
+pub struct Later {
+    pub owner: Option<u32>,
+}
+
+pub fn later() -> Later {
+    Later {
+        // Set later.
+        owner: None,
+    }
+}
+
+pub fn has_owner() -> (bool, bool, bool) {
+    let info = io_info("a".to_string(), 0.0);
+    let last = led_last("b".to_string());
+    (js::has(&info, "owner"), js::has(&info, "debugTask"), js::has(&last, "owner"))
+}
+`);
+  expect(js).toContain(`  return {
+    name,
+    start,
+    // We don't know the requesting owner nor stack.
+  };`);
+  expect(js).toContain(`    start: 1,
+    // Set later.
+  };`);
+  expect(js).toContain(`  return {
+    // Nothing is known yet.
+    info: {
+      name: "c",
+      // Not started.
+      start: 0,
+      // Its owner's.
+    },
+  };`);
+  expect(js).toContain(`    info: {
+      name: "d",
+      start: 0,
+    },
+    // Nothing else.
+  };`);
+  expect(js).toContain(`export function later() {
+  return {
+    // Set later.
+  };
+}`);
+  expect(js).not.toContain("undefined");
+  expect(Object.keys(lib.ioInfo("a" as never, 0 as never) as object)).toEqual(["name", "start"]);
+  expect(Object.keys(lib.ledLast("b" as never) as object)).toEqual(["name", "start"]);
+  expect([lib.unknown(), lib.noneKnown(), lib.later()].map((made) => JSON.stringify(made))).toEqual([
+    '{"info":{"name":"c","start":0}}',
+    '{"info":{"name":"d","start":0}}',
+    "{}",
+  ]);
+  expect(lib.hasOwner()).toEqual([false, false, false]);
 });
 
 // React's getSuspendedCache: `return {\n // We must also save the parent ..\n

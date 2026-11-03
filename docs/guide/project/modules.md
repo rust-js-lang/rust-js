@@ -1050,7 +1050,7 @@ A comment after a struct literal's field's value on its line is the
 field's, and a field that's `None`, which JS leaves out, keeps its key for
 it, `v: undefined, // why`. One on lines of their own before a field heads
 what follows: it changes no key, and is before the next key the object
-has, but where none follows, where the `None` it's before keeps its key
+has, or, where none follows, before the object's `}`
 ([ADR 0280](../../decisions/0280-undefined-fields-left-out.md), amended).
 One before an `unsafe` block is its code's
 ([ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md), amended):
@@ -1068,6 +1068,7 @@ pub fn create_cache_node() -> CacheNode {
     CacheNode {
         status: Cell::new(0), // whether it returned or threw
         value: None, // what it returned, or threw
+        // Set where the next is made.
         next: None,
     }
 }
@@ -1083,6 +1084,7 @@ export function createCacheNode() {
   return {
     status: 0, // whether it returned or threw
     value: undefined, // what it returned, or threw
+    // Set where the next is made.
   };
 }
 

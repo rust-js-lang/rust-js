@@ -182,13 +182,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// The fields of the struct literal made at `span`, by their declared
-    /// index, a comment is written on: after its value on its line, `v:
-    /// Cell::new(None), // why`, or in it, whose `None` keeps its key, the
-    /// comment's only place (ADR 0280, amended); and those a comment on lines
-    /// of their own is right before, which heads what follows: a `None`'s
-    /// key is left out, the comment before the next key, but where none is
-    /// (ADR 0280, amended again).
     /// Where each field of the struct literal written at `span` is written,
     /// its value's start, by its declared index (`WrittenFields::starts`):
     /// none of a macro's literal.
@@ -215,12 +208,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect()
     }
 
-    fn commented_fields(
-        &self,
-        adt: &ty::AdtDef<'tcx>,
-        variant_index: VariantIdx,
-        span: Span,
-    ) -> (Vec<usize>, Vec<usize>) {
+    /// The fields of the struct literal made at `span`, by their declared
+    /// index, a comment is written on: after its value on its line, `v:
+    /// Cell::new(None), // why`, or in it, whose `None` keeps its key, the
+    /// comment's only place (ADR 0280, amended). One on lines of their own
+    /// before a field heads what follows and changes no key: it's before the
+    /// next key, or the object's `}` (amended again, rd321).
+    fn commented_fields(&self, adt: &ty::AdtDef<'tcx>, variant_index: VariantIdx, span: Span) -> Vec<usize> {
         use rustc_lexer::TokenKind;
         let Some(made) = (self.frame.thir.exprs.iter()).find_map(|e| match &e.kind {
             thir::ExprKind::Adt(made)
@@ -249,10 +243,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             rustc_lexer::tokenize(piece, rustc_lexer::FrontmatterAllowed::No)
                 .any(|t| matches!(t.kind, TokenKind::LineComment { .. } | TokenKind::BlockComment { .. }))
         };
-        // Its `{`, before its first field's value, and its `}`.
-        let open = (fields.first())
-            .and_then(|(_, first)| text[..first.start].rfind('{'))
-            .map_or(0, |brace| brace + 1);
+        // Its `}`.
         let close = text.rfind('}').unwrap_or(text.len());
         let index = |k: usize| fields[k].0.as_usize();
         // From its value to its line's end.
@@ -264,16 +255,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|tail| tail.find('\n').map_or(next, |n| value.end + n));
             end.and_then(|end| text.get(value.start..end)).is_some_and(commented)
         };
-        // From the line after what's before it to its value.
-        let before = |k: usize| {
-            let from = if k == 0 { open } else { fields[k - 1].1.end };
-            let lead = text.get(from..fields[k].1.start);
-            lead.and_then(|lead| lead.find('\n').map(|n| &lead[n..]))
-                .is_some_and(commented)
-        };
-        let on = (0..fields.len()).filter(|&k| after(k)).map(index).collect();
-        let led = (0..fields.len()).filter(|&k| before(k)).map(index).collect();
-        (on, led)
+        (0..fields.len()).filter(|&k| after(k)).map(index).collect()
     }
 
     /// How the struct or variant literal made at `span` is written, which
@@ -417,11 +399,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // The keys whose `undefined`, a `None`'s, is kept: one a comment is
         // written on, the comment's place (ADR 0280, amended).
-        let (mut kept, mut led, mut docs, mut starts) = (Vec::new(), Vec::new(), Vec::new(), Vec::new());
+        let (mut kept, mut docs, mut starts) = (Vec::new(), Vec::new(), Vec::new());
         let (shape, items) = match shape {
             // A `Cell` in an object's field is what it holds (ADR 0288).
             Shape::Object(names) => {
-                let (on, before) = self.commented_fields(&adt_def, variant_index, span);
+                let on = self.commented_fields(&adt_def, variant_index, span);
                 // The layout's keys are text: one a symbol names is laid out
                 // as any value (ADR 1051).
                 let keys = |at: Vec<usize>| -> Vec<String> {
@@ -430,7 +412,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .collect()
                 };
                 kept = keys(on);
-                led = keys(before);
                 // Where each field is written, what's before it is before.
                 starts = (self.field_starts(&adt_def, variant_index, span).into_iter())
                     .filter_map(|(i, at)| Some((names.get(i)?.0.name()?.to_owned(), at)))
@@ -497,7 +478,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let fields = js::WrittenFields { docs, starts };
             *layout = js::ObjectLayout {
                 kept,
-                led,
                 fields: (fields != js::WrittenFields::default()).then(|| Box::new(fields)),
                 ..self.object_layout(&adt_def, variant_index, span)
             };

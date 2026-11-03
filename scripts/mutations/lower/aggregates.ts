@@ -315,33 +315,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "commented-field-leading-unread",
-    breaks:
-      "a comment on lines of its own before the last field, a `None`, isn't kept a place, so it's before the object, `// Set where it's validated.` above `return {`",
-    file: "src/lower/aggregates.rs",
-    find: "        let led = (0..fields.len()).filter(|&k| before(k)).map(index).collect();\n",
-    replace: "        let led = Vec::new();\n        let _ = before;\n",
-    tests: [
-      "test/lowering-comment-fields.test.ts",
-      "-t",
-      "a comment before a field changes no key but where it has no other place",
-    ],
-  },
-  {
-    name: "commented-field-leading-as-on",
-    breaks:
-      "a comment on lines of its own before a field keeps its `None`'s key, so React's createContext writes `_currentRenderer: undefined` upstream leaves out",
-    file: "src/lower/aggregates.rs",
-    find: "                kept = keys(on);\n",
-    replace:
-      "                kept = keys(on.into_iter().chain(before.iter().copied()).collect());\n",
-    tests: [
-      "test/lowering-comment-fields.test.ts",
-      "-t",
-      "a comment before a field changes no key but where it has no other place",
-    ],
-  },
-  {
     name: "nullable-refcell-made-undefined",
     breaks:
       "a nullable plain `RefCell` field's `None` is left out where it's made, `{ tag }`, where upstream's `child: null` is what React's JS tests `=== null`",

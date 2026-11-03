@@ -1010,11 +1010,6 @@ pub struct ObjectLayout {
     /// later, `destroy: undefined`, the object's shape whole from its start
     /// (amended, the user's decision, 2026-10-27).
     pub kept: Vec<String>,
-    /// The keys a comment on lines of their own is before: whose `undefined`
-    /// is left out as any is, the comment before the next key kept, and
-    /// kept only where no key after it is, the comment's place then (ADR
-    /// 0280, amended again).
-    pub led: Vec<String>,
     /// What its literal writes of each field, where it does: boxed, as
     /// few objects are a literal's, so an expression is no larger.
     pub fields: Option<Box<WrittenFields>>,

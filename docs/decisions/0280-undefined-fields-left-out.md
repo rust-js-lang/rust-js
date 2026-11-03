@@ -2,8 +2,9 @@
 
 Status: Accepted. Amended: an optional `OnceCell` field is left out where it's made empty; a `None` field a comment is written after on
 its line keeps its key, `undefined`, the comment's place; a comment before a
-field changes no key, but where no key follows it; a field that holds a
-cell keeps its key where it's made `None` (the user's decision, 2026-10-27).
+field changes no key, and where no key follows it, it's before the object's
+`}` (rd321); a field that holds a cell keeps its key where it's made `None`
+(the user's decision, 2026-10-27).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)); B where upstream writes the key, `_owner: undefined`, the user's decision (2026-11-01, rd391): `in`, `Object.keys` and `hasOwnProperty` tell them apart, listed in 0262's Consequences.
 
@@ -249,3 +250,62 @@ refusal names the cells it's of. Held by
 `test/lowering-optional-fields.test.ts`'s "an optional Cell of an Option is
 left out where it's made None", run in Node, and the mutation
 `optional-cell-refused` (`lower/bindings.rs`).
+
+## Amendment: a comment before a last `None` is before the object's `}` (rd321, 2026-11-03)
+
+The amendment of 2026-10-26 kept the key of a `None` a comment on lines of
+their own was before where no key followed, "the comment's place then, as
+it would otherwise be outside the object". React's ReactFiberThenable
+makes its thenable's `ReactIOInfo` so:
+
+```rust
+let io_info = Rc::new(ReactIOInfo {
+    name: .., start: .., end: .., byte_size: None, value: .., env: None,
+    // We don't know the requesting owner nor stack.
+    owner: None,
+    stack: None, debug_stack: None, debug_task: None,
+});
+```
+
+Its fields are `#[rust_js::nullable, rust_js::optional]`, absent until set
+(ADR 0810), and upstream's object has no `owner`; the port's printed
+`owner: undefined`, so `"owner" in ioInfo`, `Object.keys` and DevTools,
+which reads these objects, saw a key a comment had made. So did the
+program: `js::has(&info, "owner")` was `true` with the comment and `false`
+without it. A comment changed what a program computes.
+
+**A comment changes no key.** A comment on lines of their own before a
+field is before the next key the object writes, as before, or, where none
+follows, before the object's `}`, on lines of their own, as one after its
+last field is (ADR 0708, amended): `{ name, start, // We don't know ..\n
+}`. Which keys the object writes is preparation's alone
+(`js::undefined_keys::left_out`); where the comment goes is the printer's,
+which asks the object as it's printed where the last key it writes starts
+(`to_oxc::closing`'s `ObjectEnd::last_written`, of `ObjectLayout::start`):
+a comment of the innermost literal it's in, after that key, is before
+the `}`, as one with only `,` and comments after it was. The literal's
+"led" keys, `ObjectLayout::led`, which only this exception read, are gone.
+An object that writes no key, all its fields `None`, is `{\n // why\n }`.
+
+A comment after a field's value on its line still keeps its `None`'s key,
+`v: undefined, // why`, React's createCacheNode's, where upstream writes
+the key too: that comment's place is its field's line.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change: a
+program's `in`, `Object.keys` and `hasOwnProperty` of its own struct, and
+JS's, now see the keys its fields say, whatever the comments. Native Rust
+has no `in`, so the corpus can't show it; the test runs the program's own
+`js::has`.
+
+Held by `test/lowering-comment-fields.test.ts`'s "a comment before a last
+None is before the object's closing brace, the None left out" (React's
+`ReactIOInfo`, a comment before the last-written `None`, one in a nested
+literal, one of an object of no keys, and the program's `js::has`, run),
+and "a comment before a field changes no key but where it has no other
+place", now `Object.keys` of `["props", "_owner", "ref"]`; mutations
+`object-end-comment-before-left-out-unplaced`,
+`object-end-comment-of-outer-literal`, `object-end-last-written-first`
+(`to_oxc/closing.ts`). The mutations of the exception,
+`led-none-always-kept`, `led-none-last-left-out`,
+`commented-field-leading-unread` and `commented-field-leading-as-on`, go
+with its code.

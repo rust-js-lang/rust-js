@@ -3,22 +3,6 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "led-none-always-kept",
-    breaks: "a `None` a comment on lines of its own is before keeps its key where a key follows, so `// We'll initialize these at the root.` writes `_currentValue: undefined` and not `_currentValue2`",
-    file: "src/js/undefined_keys.rs",
-    find: "            let kept = !undefined(p) || (led && !kept_after);\n",
-    replace: "            let kept = !undefined(p) || led;\n",
-    tests: ["test/lowering-comment-fields.test.ts", "-t", "a comment before a field changes no key but where it has no other place"],
-  },
-  {
-    name: "led-none-last-left-out",
-    breaks: "a last `None` a comment on lines of its own is before is left out, and the comment is before the object",
-    file: "src/js/undefined_keys.rs",
-    find: "            let kept = !undefined(p) || (led && !kept_after);\n",
-    replace: "            let kept = !undefined(p) || (led && false);\n",
-    tests: ["test/lowering-comment-fields.test.ts", "-t", "a comment before a field changes no key but where it has no other place"],
-  },
-  {
     name: "kept-none-left-out",
     breaks: "a `None` field whose key its object keeps, a comment's or a cell's, is left out, `v: undefined, // why` and `destroy: undefined` gone",
     file: "src/js/undefined_keys.rs",
