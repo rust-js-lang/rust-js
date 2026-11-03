@@ -16,6 +16,8 @@ use rustc_hir::def::{CtorKind, CtorOf, DefKind, Res};
 use rustc_middle::ty::{self, AdtDef, GenericArgsRef, Ty, TyCtxt, VariantDef};
 use rustc_span::def_id::DefId;
 
+pub(in crate::lower) mod field_reads;
+
 /// What JS can tell a value is.
 #[derive(Clone, PartialEq)]
 pub(super) enum Kind {

@@ -1,7 +1,9 @@
 //! A method of a trait of classes that gives a reference to a field of
 //! what it's given, read as that field where it's called (rd283, rd304,
 //! ADR 1035): in every body, and in a trait of classes' default, compiled
-//! for each class, once its `Self` is known.
+//! for each class, once its `Self` is known. And an untagged enum's method
+//! that reads the same field of each variant's value, read where it's
+//! called as its JS reads it (rd317).
 
 use super::*;
 
@@ -69,5 +71,26 @@ impl<'tcx> Mir<'tcx> {
             ));
             data.terminator_mut().kind = TerminatorKind::Goto { target };
         }
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A call of `callee`, given `values`, of a method of an untagged
+    /// enum that reads the same field of each variant's value
+    /// (`untagged::field_reads`), whose JS is that read of its parameter,
+    /// lowered before its callers: that read of the value it's given,
+    /// `parentInstance.children` (rd317). `None` of another call.
+    pub(super) fn variant_field_read(
+        &mut self,
+        callee: rustc_span::def_id::DefId,
+        values: &[Value<'tcx>],
+        span: Span,
+    ) -> R<Option<Expr>> {
+        let [value] = values else { return Ok(None) };
+        let Some((param, read)) = self.krate.field_reads.borrow().get(&callee).cloned() else {
+            return Ok(None);
+        };
+        let value = self.value_expr(value.clone(), span)?;
+        Ok(read.substitute(&|v| (v == param).then(|| value.clone())))
     }
 }

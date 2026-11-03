@@ -23,9 +23,7 @@ use std::sync::Arc;
 use rustc_ast::LitKind;
 use rustc_hir::def::{CtorKind, DefKind};
 use rustc_hir::find_attr;
-
 use rustc_middle::thir::{ExprId, LocalVarId, Pat, PatKind, Thir};
-
 use rustc_middle::ty::{self, GenericArgsRef, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalModId};
 use rustc_span::{ErrorGuaranteed, SourceFile, Span};
@@ -489,6 +487,8 @@ struct CrateFacts<'a, 'tcx> {
     loads_in_cycles: std::cell::RefCell<HashSet<DefId>>,
     /// Each module's function of a recursive type's `==`, clone or order.
     module_fns: RefCell<recursive_fns::ModuleFns<'tcx>>,
+    /// Each method that reads each variant's field, its JS's parameter and read (rd317).
+    field_reads: RefCell<HashMap<DefId, (String, Expr)>>,
     /// The own nullable parameters each call gives `null` or a value, as
     /// lowering sees their calls (ADR 0861, amended, rd613).
     nulled_params: &'a analysis::nulled_params::NulledParams,

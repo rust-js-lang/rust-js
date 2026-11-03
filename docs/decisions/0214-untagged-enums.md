@@ -378,3 +378,71 @@ Case R: the test was false of what it holds. Held by
 array", run in JS: a match and a string told apart, the `.d.ts`, and one
 beside a `Vec` refused. Mutation `intersected-array-unknown`
 (`untagged.ts`).
+
+## Amendment: a method that reads the same field of each variant's value is that read (rd317)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. The call's value
+is what the method's JS gives of the value it's called on, read once, in
+its place.
+
+The test renderer's `parentInstance: Instance | Container` reads
+`parentInstance.children` in appendChild, insertBefore and removeChild.
+The port's `Parent` gives it as Rust writes it,
+
+```rust
+fn children(&self) -> &RefCell<Vec<Child>> {
+    match self {
+        Parent::Container(container) => &container.children,
+        Parent::Instance(instance) => &instance.children,
+    }
+}
+```
+
+whose JS was `const Parent = { children(parent) { return
+parent.children; } }`, an object no one else used, called through it,
+`Parent.children(parentInstance).push(child)`.
+
+**An untagged enum's method of the crate's, of no type parameters, whose
+one parameter is its `self` and whose body is a `match` of it, an arm of
+each variant giving its one value's field, borrowed or read, of the same
+JS key in each, is that field's read** (`untagged::field_reads::
+reads_each_variants_field`, of its THIR). Each such method is lowered
+before the rest (`pipeline::field_reads::first`, which changes no
+module's order, its items' own); where its JS is a read of its parameter
+alone, a path of members and literal keys, `return parent.children;`
+(`read_of_its_parameter`), each call of it lowered from MIR is that read
+of the value it's given, `parentInstance.children`
+(`FnCx::variant_field_read`, at `mir_crate_call`): JS reads it the same,
+the value evaluated once, as the call's argument was. The read is made
+anew, so nothing the method's lowering knew of its own reads is taken
+for its callers'. One no other crate reaches is written only where
+something reads it as a value (`reached::written_where_reached`, as ADR
+0264's own names), so no call leaves it behind.
+
+What the field is in JS is the method's own lowering's: a `RefCell` of
+an object is the object, read as it is; a field each variant holds as a
+box, a `Cell<u32>`'s `{ get value() .. }`, makes no read alone, and its
+method stays, called as before, as does one giving each variant's own
+field, `container.root_id` and `instance.tag`.
+
+### Alternatives
+
+- **Rewriting the call in MIR to the first variant's field**, as ADR
+  1038's trait of classes' accessors are: the field's representation and
+  its borrows' checks are each field's own (`representation`,
+  `drops/ref_cells`), so another variant's may differ, and the analyses
+  would see only one field borrowed.
+- **A plain function for a method that stays**, `function children(parent)`:
+  a type's methods are its object's (ADR 0047), which another crate
+  imports; left as it is.
+
+### Consequences
+
+- Held by the corpus case `untagged_field_of_each_variant.rs` (against
+  native Rust: a container's and an instance's children appended and
+  removed through the method, `parentInstance.children.push(..)`, its
+  `Cell` field's and its own fields' methods kept) and the guide's types
+  page. Mutations `field-read-uninlined` (`mir/fields_read.ts`),
+  `field-read-written-anyway` (`pipeline/reached.ts`),
+  `field-read-lowered-in-order` (`pipeline/field_reads.ts`),
+  `field-read-of-any-return` (`untagged/field_reads.ts`).

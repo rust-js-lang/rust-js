@@ -156,4 +156,14 @@ export const mutations: Mutation[] = [
     replace: ")\n",
     tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
   },
+  {
+    name: "field-read-written-anyway",
+    breaks:
+      "an untagged enum's method every call of which reads its field in place is written all the same, `const Parent = { children(parent) { .. } }`, an object no one uses (rd317)",
+    file: "src/lower/pipeline/reached.rs",
+    find: "                || id.is_local() && !super::super::library::reachable(tcx, id) && field_read(id)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_field_of_each_variant.rs$"],
+    snapshots: true,
+  },
 ];

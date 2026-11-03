@@ -2,6 +2,7 @@
 
 mod copies;
 mod crate_imports;
+mod field_reads;
 mod forwarders;
 mod holes;
 mod load_cycles;
@@ -508,6 +509,7 @@ pub fn lower_crate<'tcx>(
         constructed: &constructed,
         loads_in_cycles: Default::default(),
         module_fns: Default::default(),
+        field_reads: Default::default(),
         nulled_params: &nulled_params,
     };
     // What a library's manifest says of its writers (ADR 0137).
@@ -538,6 +540,9 @@ pub fn lower_crate<'tcx>(
         .chain(dictionaries.iter().map(|id| (*id, None, None)))
         .chain(initialized.iter().map(|body| (body.def_id, Some(*body), None)))
         .collect();
+    // Each method that reads each variant's field, first, so its callers read it (rd317).
+    let field_reads = field_reads::found(tcx, &bodies);
+    field_reads::first(&mut work, &field_reads);
     let (mut used, mut queued) = (HashSet::new(), HashSet::new());
     let no_facts = super::body_queries::BodyFacts::default();
     let mut next = 0;
@@ -676,6 +681,11 @@ pub fn lower_crate<'tcx>(
                     lowered_copies.retain(|(at, _)| *at != (def_id, copy));
                     lowered_copies.push(((def_id, copy), lowered));
                     continue;
+                }
+                if field_reads.contains(&def_id)
+                    && let Some(read) = super::untagged::field_reads::read_of_its_parameter(&lowered.function)
+                {
+                    crate_facts.field_reads.borrow_mut().insert(def_id, read);
                 }
                 // One lowered again, its values read: in its place.
                 match lowered_items.iter_mut().find(|(id, _)| *id == def_id) {

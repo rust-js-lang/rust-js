@@ -81,11 +81,18 @@ pub(super) fn written_where_reached<'tcx>(
         // methods or a function, only what its code reaches (ADR 0914,
         // amended): a default asked for that a call then made through its
         // library's dictionary isn't (#483).
+        // And an untagged enum's method that reads each variant's field,
+        // each call of which is that read where its JS is (rd317).
         .chain(lowered.filter(|&id| {
+            let field_read = |id| {
+                (function_bodies.get(&id))
+                    .is_some_and(|body| super::super::untagged::field_reads::reads_each_variants_field(tcx, body))
+            };
             foreign.is_instance(id)
                 || id.is_local()
                     && !super::super::library::reachable(tcx, id)
                     && super::super::patterns::gives_its_argument(tcx, function_bodies, id)
+                || id.is_local() && !super::super::library::reachable(tcx, id) && field_read(id)
         }))
         .collect();
     (identities, derived)

@@ -921,6 +921,55 @@ export function untrack(node) {
   `node.length = 4; node[2] = []; node[3] = undefined;`. A copy or a clone
   of one is its own, `node.slice()`
   ([ADR 1046](../../decisions/1046-an-untagged-enums-arrays-are-told-by-their-length.md)).
+- **A method that reads the same field of each variant's value is that
+  read**, where the JS it makes is the read of the value alone: an
+  untagged enum's of the crate's, of no type parameters, its one
+  parameter `self`, whose body is a `match` of it giving each variant's
+  value's field, borrowed or read, of one JS key. Its call is the field's
+  read of the value it's called on, `parentInstance.children`, as the
+  test renderer reads `Instance | Container`'s; one that only the crate
+  calls is written nowhere. A field each variant holds as a box, a
+  `Cell`'s, has a method still, as does one of each variant's own field
+  ([ADR 0214](../../decisions/0214-untagged-enums.md), amended, rd317):
+
+```rust
+use std::cell::RefCell;
+
+pub struct Container {
+    pub children: RefCell<Vec<String>>,
+    #[cfg_attr(rust_js, rust_js::test)]
+    pub root_id: &'static str,
+}
+
+pub struct Instance {
+    pub children: RefCell<Vec<String>>,
+}
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Parent<'a> {
+    Container(&'a Container),
+    Instance(&'a Instance),
+}
+
+impl Parent<'_> {
+    fn children(&self) -> &RefCell<Vec<String>> {
+        match self {
+            Parent::Container(container) => &container.children,
+            Parent::Instance(instance) => &instance.children,
+        }
+    }
+}
+
+pub fn append_child(parent_instance: Parent, child: String) {
+    parent_instance.children().borrow_mut().push(child);
+}
+```
+
+```js
+export function appendChild(parentInstance, child) {
+  parentInstance.children.push(child);
+}
+```
 
 ## Option and Result
 
