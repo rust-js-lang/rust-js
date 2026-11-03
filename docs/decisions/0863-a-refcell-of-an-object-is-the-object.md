@@ -1,6 +1,6 @@
 # 0863. A `RefCell` of an object is the object, and one no borrow of which can meet another is never checked
 
-Status: Accepted; amended below (`as_deref` of an `Option` of a guard, a guard that's only a call's receiver, a guard read only for a binding's argument (rd427), a held borrow counts the cells that can be its own (#445), a library's cell only its own code and constants reach is its flow's (#456), and a `RefCell` that's a box is declared `{ value: T }`, and an enum variant's `RefCell` field holds its value by its declaration (#503)). Amends [0328](0328-refcell-borrow-counts.md) (what a
+Status: Accepted; amended below (`as_deref` of an `Option` of a guard, a guard that's only a call's receiver, a guard read only for a binding's argument (rd427), a held borrow counts the cells that can be its own (#445), a library's cell only its own code and constants reach is its flow's (#456), and a `RefCell` that's a box is declared `{ value: T }`, an enum variant's `RefCell` field holds its value by its declaration, and a pattern's binding by reference of a field is that field's own place (#503)). Amends [0328](0328-refcell-borrow-counts.md) (what a
 `RefCell` is, and which of its borrows are counted),
 [0362](0362-refcell-fields-never-counted.md) (a field's plain cell, a
 library's too), [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md)
@@ -1201,8 +1201,9 @@ by its index, is asked only where the value is a struct's.
 
 - **Made**, its `None` is the key kept, `cleanup: undefined`, as a
   struct's cell field's is (ADR 0280, amended).
-- **A pattern's binding of it** lends it, as a struct's does (above): its
-  one cell, `$fieldCell(e, "cleanup")`, whose `value` is the property.
+- **A pattern's binding of it** lent it, as a struct's did (above): its
+  one cell, `$fieldCell(e, "cleanup")`, whose `value` is the property; one
+  by reference is the field's own place now (below).
   Moved out whole, `let Outcome::Finished { lines, tries } = outcome;`, a
   cell of its own of what it held.
 - **Its enum's derives** read it as a struct's do: `Clone` copies a
@@ -1240,3 +1241,104 @@ each against native Rust. Mutations `variant-refcell-boxed` (`drops/ref_cells.ts
 `variant-eq-boxes-cells` (`std_impls.ts`), `variant-refcell-const-boxed`
 (`representation/consts.ts`) and `variant-refcell-declared-box`
 (`declarations.ts`).
+
+## Amendment: a pattern's binding by reference of a field is that field's own place (#503)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
+difference: the binding's borrows are the field's, as `x.f.borrow()`'s
+are, and each that may meet another is counted on the field's one cell,
+which panics where std's does.
+
+A variant's field is reached only through a pattern, `let
+NodeKind::Effect { r#fn, cleanup } = &e.kind else { .. }`, and a pattern
+that binds a field lent it (above): so each variant's `RefCell` field was
+its one cell, `$fieldCell(e, "cleanup")`, where alien-signals writes
+`e.cleanup = e.fn()`. The binding is a `&RefCell` to the field, as `&x.f`
+is, but no more is done with it than with `x.f` of `x.f.borrow_mut()`:
+borrowck keeps it the field for as long as it's bound.
+
+**A pattern's binding by reference of a struct's or a variant's `RefCell`
+field, `cleanup` of `&e.kind`, `ref cell` too, is that field's own place**
+(`ref_cells.rs`'s `bound_ref_cells`): each use of it is the field's. One
+that's a borrow of it, `cleanup.borrow_mut()`, `replace`, `take` or
+`get_mut`, is a borrow of the field, counted where it may meet another
+(`counted_in`); any other, given on, `bump(cleanup)`, or captured, lends
+the field, as `&x.f` does. So `quiet_field` follows it: a field none of
+whose borrows can meet another is the property, `e.cleanup = e.fn()`.
+
+- **A binding by value**, moved out, `let Outcome::Finished { lines, tries
+  } = outcome;`, or `mut`, is a value of its own, as before: the field
+  lent, `{ value }` of what it held.
+- **A variant's field is quiet** where its bindings' uses are, as a
+  struct's: the quiet fields are each struct's and each enum's. A
+  derive's read of one, `Clone`'s, `==`'s, `Debug`'s, is asked as a
+  struct's is (above).
+- **MIR's**, `_5 = &((*_1) as Effect).1` and `borrow_mut(copy _5)`: the
+  field its `Downcast` reads (`local_facts.rs`'s `lent_field`), so its
+  guard releases nothing. A binding of a variant's field whose cell is the
+  property is a handle on that place, read where it's used
+  (`handle_on_kept_field`), of a variable nothing sets again, `kind` of
+  `kind.cleanup`, as borrowck keeps what it's in: what the pattern matched
+  is fixed where it's matched, `const job = task.job;`, so a variable the
+  program sets after, `task = second`, changes no binding of it. And a guard's handle a
+  `let` declares only once it sinks to its branch is read as its place
+  too (`tidy/values.rs`'s `read_handles`).
+- **A generic variant's `RefCell<T>` field made where its variant is**,
+  `Slot::Full { current: RefCell::new(value) }`, and a binding of it, are
+  the field's own, no `RefCell<T>` of any value (`made_places`,
+  `property_reads`), as a struct's are; and where some borrow of it may
+  meet another, each `RefCell` of an object it's made of is a box, as a
+  generic struct's is (`of_objects`), so its generic code's `$fieldCell`
+  and its concrete code's agree.
+
+```rust
+use std::cell::RefCell;
+use std::rc::Rc;
+
+pub enum Kind {
+    Effect { cleanup: RefCell<Option<Rc<dyn Fn()>>> },
+    Scope,
+}
+
+pub fn set_cleanup(kind: &Kind, cleanup: Rc<dyn Fn()>) {
+    if let Kind::Effect { cleanup: cell } = kind {
+        *cell.borrow_mut() = Some(cleanup);
+    }
+}
+```
+
+```js
+export function setCleanup(kind, cleanup) {
+  if (kind.TAG === "Effect") {
+    kind.cleanup = cleanup;
+  }
+}
+```
+
+A struct's pattern binding by reference, `let Wrap { n } = &wrap;`, is so
+too: the one rule of a field's binding. Its uses before, a call given it,
+lent it, and still do: corpus `refcell_bound_field_held` is as it was.
+
+The readability baseline's corpus gains the cases below; three existing
+outputs read a binding's place where it was a `const`: `flattened_keyed_enum`'s
+`return node.pending;`, `match_arm_guard_first`'s `$index(pair, 0).sibling
+= node;` and the guide's keyed `read`'s `return node.current;`.
+
+Held by `test/lowering-field-cells.test.ts`, "an enum variant's RefCell
+field holds its value by its declaration", now its binding the field, no
+`$fieldCell`, no `.value`; the corpus's cases of the amendment above,
+their JS the property's where nothing meets, against native Rust, and
+`refcell_variant_fields`'s `moved_on`, a binding of a task whose variable
+is set to another after. Mutations `variant-refcell-never-quiet`,
+`bound-place-lent`, `bound-place-given-on-unlent`,
+`bound-place-borrow-uncounted`, `variant-derive-unasked`,
+`variant-made-a-value`, `bound-place-read-any-value` and
+`generic-variant-objects-unboxed` (`drops/ref_cells.ts`),
+`variant-field-reference-held` (`mir/assign.ts`) and
+`late-field-handles-unread` (`mir/tidy/values.ts`); and
+`plain-refcell-bound-kept`, of a field moved out, follows the binding by
+value. Two hold no mutation: that a handle's root is a variable nothing
+sets again, as what a pattern matched is fixed where it's matched, so no
+binding's root is one set again; and `lent_field`'s variant, as each
+corpus case's flow tells its cell apart already, its borrow quiet by its
+class (`quiet_cell_borrow`), where a struct's `x.f` is asked the same.

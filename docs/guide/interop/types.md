@@ -2026,10 +2026,13 @@ export function shared() {
   [ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md)).
   One whose every borrow lasts a moment, as `borrow_mut().push(..)`,
   `replace` and `take` do, is never checked: its borrows are the property.
-  One lent, `&x.f`, bound by a pattern, or borrowed while code that may
-  borrow it runs is its one cell there, `$fieldCell(x, "f")`, whose `value`
-  is the property and which counts its borrows, beside the object whoever
-  made it; one moved out whole is a `{ value }` of what it held.
+  A pattern's binding of it by reference, `Kind::Effect { cleanup, .. }`
+  of `&e.kind`, is the field itself, its borrows the field's: `e.cleanup =
+  f()`. One lent, `&x.f`, its binding given on, or borrowed while code that
+  may borrow it runs is its one cell there, `$fieldCell(x, "f")`, whose
+  `value` is the property and which counts its borrows, beside the object
+  whoever made it; one moved out whole, bound by value, is a `{ value }` of
+  what it held.
   A `#[rust_js::nullable]` one's `None` is `null` where it's made and
   written, `child: null`.
   A `#[repr(transparent)]` struct's field isn't a property: the struct is

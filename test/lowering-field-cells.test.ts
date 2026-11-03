@@ -348,8 +348,8 @@ pub fn destroyed(instance: &EffectInstance) -> u32 {
 
 // alien-signals' effect node (#503): a variant's `RefCell` field holds its
 // value by its declaration, as a struct's does, made, set through a
-// pattern's binding, which lends it, its one cell, and declared as what it
-// holds; given objects JS made, a keyed enum's flattened in its node too.
+// pattern's binding, which is the field's own place, and declared as what
+// it holds; given objects JS made, a keyed enum's flattened in its node too.
 test("an enum variant's RefCell field holds its value by its declaration", async () => {
   const dir = fixture("refcell-variant-fields");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::{Cell, RefCell};
@@ -408,9 +408,11 @@ pub fn cleaned(node: &Node) -> Option<u32> {
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('    TAG: "Effect",\n    cleanup: undefined,\n');
-  expect(js).toContain('    const cell = $fieldCell(kind, "cleanup");\n    cell.value = cleanup;\n');
+  expect(js).toContain("    kind.cleanup = cleanup;\n");
   expect(js).toContain('  if (!("cleanup" in node)) {\n');
-  expect(js).toContain('  const cleanup = $fieldCell(node, "cleanup");\n  const old = cleanup.value;\n');
+  expect(js).toContain("  const old = node.cleanup;\n  node.cleanup = node.flags;\n  return old;\n");
+  expect(js).not.toContain("$fieldCell");
+  expect(js).not.toContain(".value");
   const types = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(types).toContain('    TAG: "Effect";\n    cleanup: (() => void) | null | undefined;\n');
   expect(types).toContain("    cleanup: number | null | undefined;\n");

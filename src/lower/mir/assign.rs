@@ -775,6 +775,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => false,
         };
+        // A reference to a variant's field whose cell is the property it
+        // holds, made once, a pattern's binding of it, `cleanup` of
+        // `Kind::Effect { cleanup, .. }`, a derive's too: a handle on that
+        // place, read where it's used (`handle_on_kept_field`, #503).
+        if place.projection.is_empty()
+            && state.locals.writes[local] == 1
+            && !state.locals.borrowed[local]
+            && !state.named.contains(&local)
+            && !state.facts.pointed().locals.contains(&local)
+            && let Value::Expr(handle) | Value::Place(handle) = &value
+            && self.handle_on_kept_field(handle)
+            && refers_to_a_variant_field(state)
+        {
+            state.in_place.insert(local, handle.clone());
+            return Ok(());
+        }
         if place.projection.is_empty()
             && !state.facts.pointed().locals.contains(&local)
             && self.foldable(state, local)
@@ -1311,4 +1327,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         Expr { facts, ..fixed }
     }
+}
+
+/// Whether the statement being lowered makes a reference to a variant's
+/// field, `_5 = &((*_1) as Effect).0`, a pattern's binding of it. Not a
+/// struct's, which a `let`'s pattern destructures as it's written.
+fn refers_to_a_variant_field(state: &State<'_, '_>) -> bool {
+    matches!(
+        state.body.stmt_at(state.location()),
+        rustc_data_structures::either::Either::Left(mir::Statement {
+            kind: StatementKind::Assign(assign),
+            ..
+        }) if matches!(&assign.1, Rvalue::Ref(_, mir::BorrowKind::Shared, from)
+            if matches!(from.projection.as_slice(), [.., PlaceElem::Downcast(..), PlaceElem::Field(..)]))
+    )
 }

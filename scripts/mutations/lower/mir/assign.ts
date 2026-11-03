@@ -1101,4 +1101,13 @@ export const mutations: Mutation[] = [
     replace: "                if false {\n                    exprs.push(crate::lower::mut_refs::in_place_cell(place));\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_mut_written_whole.rs$"],
   },
+  {
+    name: "variant-field-reference-held",
+    breaks: "a pattern's binding of a variant's field whose cell is the property it holds is a `const` of a handle on it, `const cleanup = { get value() { return kind.cleanup; }, .. }` (#503)",
+    file: "src/lower/mir/assign.rs",
+    find: "            && refers_to_a_variant_field(state)\n",
+    replace: "            && false\n",
+    tests: ["test/lowering-field-cells.test.ts", "-t", "an enum variant's RefCell field"],
+    snapshots: true,
+  },
 ];

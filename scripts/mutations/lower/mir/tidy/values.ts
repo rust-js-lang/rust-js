@@ -441,4 +441,13 @@ export const mutations: Mutation[] = [
     replace: "        if *at_once && rereads && js::mentions_in(body, name) == 1 {\n",
     tests: ["test/lowering-field-cells.test.ts", "-t", "lets side by side are consts as written"],
   },
+  {
+    name: "late-field-handles-unread",
+    breaks: "a handle on a field declared only once its `let` sinks to its branch, a guard's of a binding's `*tries.borrow_mut() += 1`, stays a handle, `const borrowMut = { get value() .. }` (#503)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "                && (matches!(place.kind, ExprKind::Member(..))\n                    && !(in_place && matches!(storage, js::Storage::InPlace(_)))\n",
+    replace: "                && (matches!(place.kind, ExprKind::Member(..))\n                    && !in_place\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_variant_fields.rs$"],
+    snapshots: true,
+  },
 ];

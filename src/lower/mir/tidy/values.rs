@@ -624,10 +624,13 @@ fn its_place(place: &Expr) -> bool {
 /// of, as MIR holds a reference written again before it's made, and where
 /// it's written through, a closure's `h.value = 5` too (#192).
 ///
-/// Of a flattened state's alone, `in_place`: one a let chain's guard is,
-/// which MIR declares before its `if`, a `const` only once `declarations`
-/// made it one (rd533); a field's others are their place later, in place
+/// Of a flattened state's, `in_place`: one a let chain's guard is, which
+/// MIR declares before its `if`, a `const` only once `declarations` made it
+/// one (rd533); a field's others are their place later, in place
 /// (`handles_in_place`), where what's made before them is read into them.
+/// And one on a field declared only then, a guard's of a field's `RefCell`
+/// no borrow of which is counted, `*tries.borrow_mut() += 1` of a pattern's
+/// binding, assigned in the branch its `let` sinks to (#503).
 ///
 /// A `let` of a shared borrow of what has no cell of its own, `frozen`'s,
 /// `let chunks = store.chunks.borrow();`, is read where it's made, `const
@@ -640,7 +643,8 @@ pub(super) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, lets: &super::L
         for (k, stmt) in stmts.iter().enumerate() {
             if let StmtKind::Const(name, value) = &stmt.kind
                 && let ExprKind::Handle(place, storage) = &value.kind
-                && (matches!(place.kind, ExprKind::Member(..)) && !in_place
+                && (matches!(place.kind, ExprKind::Member(..))
+                    && !(in_place && matches!(storage, js::Storage::InPlace(_)))
                     || matches!(storage, js::Storage::InPlace(_)) && place.reads_same())
             {
                 let at_once = frozen.contains(name) || read_at_once(stmts, k, name);

@@ -451,7 +451,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             );
             let thir = &body.thir;
             let facts = find_facts(&query, self.krate.cell_borrows, thir, body.def_id);
-            let founds = self.counted_in(&recognition, thir, &facts);
+            // A field a pattern binds by reference is that field's own place,
+            // its binding's uses the field's; one bound otherwise is a value
+            // of its own, lent (ADR 0863, amended, #503).
+            let (places, bound) = bound_ref_cells(&recognition, thir);
+            for (field, span) in bound {
+                lent.entry(field).or_insert(span);
+            }
+            let founds = self.counted_in(&recognition, (thir, &places), &facts);
             // How many of a callee's borrows are written at each place: its
             // MIR's of as many there are its cells' classes (`CellFlow`).
             let mut written: HashMap<(rustc_span::Span, DefId), usize> = HashMap::new();
@@ -545,28 +552,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     uses.entry(field).or_insert(expr.span);
                 }
             }
-            // One bound by a pattern is a value of its own, lent.
-            let mut bound = BoundRefCells {
-                recognition: self.recognition(),
-                thir,
-                found: &mut lent,
-            };
-            for expr in thir.exprs.iter() {
-                if let ExprKind::Let { ref pat, .. } = expr.kind {
-                    rustc_middle::thir::visit::Visitor::visit_pat(&mut bound, pat);
-                }
-            }
-            for stmt in thir.stmts.iter() {
-                if let ThirStmt::Let { ref pattern, .. } = stmt.kind {
-                    rustc_middle::thir::visit::Visitor::visit_pat(&mut bound, pattern);
-                }
-            }
-            for arm in thir.arms.iter() {
-                rustc_middle::thir::visit::Visitor::visit_pat(&mut bound, &arm.pattern);
-            }
-            for param in thir.params.iter() {
-                if let Some(pat) = &param.pat {
-                    rustc_middle::thir::visit::Visitor::visit_pat(&mut bound, pat);
+            // A binding that's a field's own place is the field: a use of it
+            // that's no borrow of it, given on, `f(cleanup)`, or captured,
+            // lends it, as `&x.f` does (#503).
+            let receivers: HashSet<rustc_middle::thir::ExprId> = (borrowed_there.iter())
+                .filter_map(|&at| bound_place(thir, &places, at).map(|(read, _)| read))
+                .collect();
+            for (id, expr) in thir.exprs.iter_enumerated() {
+                if let ExprKind::VarRef { id: var } = expr.kind
+                    && let Some(&field) = places.get(&var)
+                    && !receivers.contains(&id)
+                {
+                    let given = match derive {
+                        true => &mut derived,
+                        false => &mut lent,
+                    };
+                    given.entry(field).or_insert(expr.span);
                 }
             }
         }
@@ -585,7 +586,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if crate::lower::recognition::known_derive(tcx, imp.to_def_id())
                     && !crate::lower::recognition::is_std_def(tcx, of, StdItem::Default)
                     && let ty::Adt(adt, _) = self_ty.kind()
-                    && adt.is_struct()
+                    && !adt.is_union()
                 {
                     for field in adt.all_fields() {
                         let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
@@ -675,11 +676,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
             }
         }
-        // Each field of the crate's structs that's a `RefCell` none of whose
-        // borrows can meet another: never lent, bound or moved, and never
-        // borrowed while code that may borrow it runs.
+        // Each field of the crate's structs and enums' variants that's a
+        // `RefCell` none of whose borrows can meet another: never lent, bound
+        // by value or moved, and never borrowed while code that may borrow
+        // it runs (#503).
         for id in tcx.hir_crate_items(()).definitions() {
-            if matches!(tcx.def_kind(id), DefKind::Struct) {
+            if matches!(tcx.def_kind(id), DefKind::Struct | DefKind::Enum) {
                 for field in tcx.adt_def(id).all_fields() {
                     let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
                     if !self.is_std_type(ty, StdItem::RefCell) || !object_field(tcx, field.did) {
@@ -785,7 +787,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let of_objects = |ty: Ty<'tcx>, boxed: &mut HashSet<Ty<'tcx>>| {
             for part in ty.walk().filter_map(|part| part.as_type()) {
                 let ty::Adt(adt, args) = part.kind() else { continue };
-                if !adt.is_struct() {
+                if adt.is_union() {
                     continue;
                 }
                 for field in adt.all_fields() {
@@ -815,7 +817,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // reads it as `{ value }` of any type, and what's made of it
             // there, its guard: not one of any value, which code given one
             // reads, nor one of what may be boxed.
-            let reads = property_reads(tcx, thir);
+            let (places, _) = bound_ref_cells(&recognition, thir);
+            let reads = property_reads(tcx, (thir, &places));
             // The cell a place is made of, its own (ADR 0863, amended): no
             // value of its type at all.
             let places = made_places(tcx, body);
@@ -920,7 +923,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn counted_in(
         &self,
         recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
-        thir: &rustc_middle::thir::Thir<'tcx>,
+        (thir, places): (&rustc_middle::thir::Thir<'tcx>, &BoundPlaces),
         facts: &Facts,
     ) -> Vec<Found<'tcx>> {
         use crate::lower::Std;
@@ -982,12 +985,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             let borrow = crate::lower::analysis::borrowed(recognition, thir, id);
             if a_borrow && let Some(cell) = borrow.and_then(cell_of) {
-                // Of a struct's field, `x.f` of `x.f.borrow()`, or of what a
-                // call that gives one may, `self.internal_root()` (rd304).
+                // Of a struct's field, `x.f` of `x.f.borrow()`, a binding
+                // that's a field's own place, `cleanup` of `cleanup.borrow()`
+                // (#503), or of what a call that gives one may,
+                // `self.internal_root()` (rd304).
                 let fields = match args.first().map(|&lent| cell_lent(thir, lent)) {
                     Some(lent) => match thir[lent].kind {
                         ExprKind::Call { .. } => fields_given(recognition, thir, lent),
-                        _ => field_of(thir, lent).map(|field| field.did).into_iter().collect(),
+                        _ => (field_of(thir, lent).map(|field| field.did))
+                            .or_else(|| bound_place(thir, places, lent).map(|(_, field)| field))
+                            .into_iter()
+                            .collect(),
                     },
                     None => Vec::new(),
                 };
@@ -1049,12 +1057,70 @@ struct Found<'tcx> {
     span: rustc_span::Span,
 }
 
-/// Each `RefCell` field of a struct or an enum's variant a pattern binds,
-/// not as `_` (ADR 0362, #503).
+/// What a body's patterns bind of its `RefCell` fields (`bound_ref_cells`).
 struct BoundRefCells<'a, 'b, 'tcx> {
-    recognition: crate::lower::recognition::Recognition<'a, 'tcx>,
+    recognition: &'b crate::lower::recognition::Recognition<'a, 'tcx>,
     thir: &'b rustc_middle::thir::Thir<'tcx>,
-    found: &'b mut HashMap<DefId, rustc_span::Span>,
+    places: BoundPlaces,
+    found: Vec<(DefId, rustc_span::Span)>,
+}
+
+/// Each binding of a body that's a field's own place, of the field it is.
+type BoundPlaces = HashMap<rustc_middle::thir::LocalVarId, DefId>;
+
+/// Of a body, each `RefCell` field of a struct or of an enum's variant its
+/// patterns bind, not as `_` (ADR 0362): one bound by reference, `cleanup`
+/// of `let Kind::Effect { cleanup, .. } = &e.kind`, is that field's own
+/// place, by its binding, whose uses are the field's (ADR 0863, amended,
+/// #503); one bound by value, moved out, a cell of its own, lent there.
+fn bound_ref_cells<'tcx>(
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    thir: &rustc_middle::thir::Thir<'tcx>,
+) -> (BoundPlaces, Vec<(DefId, rustc_span::Span)>) {
+    let mut bound = BoundRefCells {
+        recognition,
+        thir,
+        places: HashMap::new(),
+        found: Vec::new(),
+    };
+    for expr in thir.exprs.iter() {
+        if let ExprKind::Let { ref pat, .. } = expr.kind {
+            rustc_middle::thir::visit::Visitor::visit_pat(&mut bound, pat);
+        }
+    }
+    for stmt in thir.stmts.iter() {
+        if let ThirStmt::Let { ref pattern, .. } = stmt.kind {
+            rustc_middle::thir::visit::Visitor::visit_pat(&mut bound, pattern);
+        }
+    }
+    for arm in thir.arms.iter() {
+        rustc_middle::thir::visit::Visitor::visit_pat(&mut bound, &arm.pattern);
+    }
+    for param in thir.params.iter() {
+        if let Some(pat) = &param.pat {
+            rustc_middle::thir::visit::Visitor::visit_pat(&mut bound, pat);
+        }
+    }
+    (bound.places, bound.found)
+}
+
+/// The read of a binding that's a field's own place `expr` is, `cleanup`
+/// or `*cleanup`, and the field (`bound_ref_cells`).
+fn bound_place(
+    thir: &rustc_middle::thir::Thir<'_>,
+    places: &BoundPlaces,
+    expr: rustc_middle::thir::ExprId,
+) -> Option<(rustc_middle::thir::ExprId, DefId)> {
+    use crate::lower::body_queries::strip;
+    let expr = strip(thir, expr);
+    let read = match thir[expr].kind {
+        ExprKind::Deref { arg } => strip(thir, arg),
+        _ => expr,
+    };
+    match thir[read].kind {
+        ExprKind::VarRef { id } => places.get(&id).map(|&field| (read, field)),
+        _ => None,
+    }
 }
 
 impl<'b, 'tcx> rustc_middle::thir::visit::Visitor<'b, 'tcx> for BoundRefCells<'_, 'b, 'tcx> {
@@ -1082,11 +1148,21 @@ impl<'b, 'tcx> rustc_middle::thir::visit::Visitor<'b, 'tcx> for BoundRefCells<'_
         };
         if let Some((variant, subpatterns)) = variant {
             for field in subpatterns {
-                if !matches!(field.pattern.kind, PatKind::Wild)
-                    && self.recognition.is_std_type(field.pattern.ty, StdItem::RefCell)
+                if matches!(field.pattern.kind, PatKind::Wild)
+                    || !self.recognition.is_std_type(field.pattern.ty, StdItem::RefCell)
                 {
-                    let did = variant.fields[field.field].did;
-                    self.found.entry(did).or_insert(field.pattern.span);
+                    continue;
+                }
+                let did = variant.fields[field.field].did;
+                match field.pattern.kind {
+                    // By reference, the field's own place (ADR 0863, amended).
+                    PatKind::Binding {
+                        mode: rustc_hir::BindingMode(rustc_hir::ByRef::Yes(..), _),
+                        var,
+                        subpattern: None,
+                        ..
+                    } if object_field(self.recognition.tcx, did) => _ = self.places.insert(var, did),
+                    _ => self.found.push((did, field.pattern.span)),
                 }
             }
         }
@@ -1254,18 +1330,18 @@ fn held_parts<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<Ty<'tcx>> {
 
 /// Of a body, each expression whose value is the cell a place is made of,
 /// the place's own and no value of its cell's type (ADR 0863, amended): of a
-/// struct's literal, each `RefCell` field's that holds its value by its
-/// declaration (`RefCells::holds_value`), `current: RefCell::new(value)`;
+/// struct's or a variant's literal, each `RefCell` field's that holds its
+/// value by its declaration (`RefCells::holds_value`), `current: RefCell::new(value)`;
 /// and of a thread-local's `init`, what it gives, the thread-local's cell.
 fn made_places<'tcx>(tcx: TyCtxt<'tcx>, body: &crate::lower::Body<'tcx>) -> HashSet<rustc_middle::thir::ExprId> {
     let thir = &body.thir;
     let mut made: Vec<rustc_middle::thir::ExprId> = Vec::new();
     for expr in thir.exprs.iter() {
         if let ExprKind::Adt(ref adt) = expr.kind
-            && adt.adt_def.is_struct()
+            && !adt.adt_def.is_union()
         {
             for field in adt.fields.iter() {
-                let def = &adt.adt_def.non_enum_variant().fields[field.name];
+                let def = &adt.adt_def.variant(adt.variant_index).fields[field.name];
                 let declared = tcx.type_of(def.did).instantiate_identity().skip_normalization();
                 if matches!(declared.kind(), ty::Adt(cell, _) if crate::lower::recognition::is_std_def(tcx, cell.did(), StdItem::RefCell))
                     && object_field(tcx, def.did)
@@ -1310,22 +1386,25 @@ fn made_places<'tcx>(tcx: TyCtxt<'tcx>, body: &crate::lower::Body<'tcx>) -> Hash
 /// that generic code is given (ADR 0863, amended).
 fn property_reads<'tcx>(
     tcx: TyCtxt<'tcx>,
-    thir: &rustc_middle::thir::Thir<'tcx>,
+    (thir, places): (&rustc_middle::thir::Thir<'tcx>, &BoundPlaces),
 ) -> HashSet<rustc_middle::thir::ExprId> {
     use crate::lower::body_queries::strip;
+    let generic = |field: DefId| {
+        let declared = tcx.type_of(field).instantiate_identity().skip_normalization();
+        let ty::Adt(cell, args) = declared.kind() else {
+            return false;
+        };
+        crate::lower::recognition::is_std_def(tcx, cell.did(), StdItem::RefCell)
+            && object_field(tcx, field)
+            && crate::lower::analysis::head(tcx, args.type_at(0)).is_none()
+    };
     let mut reads = HashSet::new();
     for _ in 0..2 {
         for (id, expr) in thir.exprs.iter_enumerated() {
             let read = match expr.kind {
-                ExprKind::Field { .. } => field_of(thir, id).is_some_and(|field| {
-                    let declared = tcx.type_of(field.did).instantiate_identity().skip_normalization();
-                    let ty::Adt(cell, args) = declared.kind() else {
-                        return false;
-                    };
-                    crate::lower::recognition::is_std_def(tcx, cell.did(), StdItem::RefCell)
-                        && object_field(tcx, field.did)
-                        && crate::lower::analysis::head(tcx, args.type_at(0)).is_none()
-                }),
+                ExprKind::Field { .. } => field_of(thir, id).is_some_and(|field| generic(field.did)),
+                // A binding that's a field's own place, as its read (#503).
+                ExprKind::VarRef { id } => places.get(&id).is_some_and(|&field| generic(field)),
                 ExprKind::Borrow { arg, .. } | ExprKind::RawBorrow { arg, .. } | ExprKind::Deref { arg } => {
                     reads.contains(&strip(thir, arg))
                 }

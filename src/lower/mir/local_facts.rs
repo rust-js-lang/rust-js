@@ -625,7 +625,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
-        // The field `operand` lends, `&x.f`, where it's one of a struct's.
+        // The field `operand` lends, `&x.f`, where it's one of a struct's, or
+        // of the variant its enum is read as, a pattern's binding of it,
+        // `&((*e) as Effect).cleanup` (#503).
         let lent_field = |operand: &Operand<'tcx>| -> Option<&'tcx ty::FieldDef> {
             let place = operand.place()?;
             if !place.projection.is_empty() {
@@ -641,8 +643,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 local: lent.local,
                 projection: parent,
             };
-            match parent.ty(body, tcx).ty.kind() {
+            let parent = parent.ty(body, tcx);
+            match parent.ty.kind() {
                 ty::Adt(adt, _) if adt.is_struct() => Some(&adt.non_enum_variant().fields[*field]),
+                ty::Adt(adt, _) if adt.is_enum() => Some(&adt.variant(parent.variant_index?).fields[*field]),
                 _ => None,
             }
         };

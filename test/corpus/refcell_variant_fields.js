@@ -23,21 +23,15 @@ export function run(node) {
   if (!("run" in node)) {
     return 0;
   }
-  const cleanup = $fieldCell(node, "cleanup");
-  const old = cleanup.value;
-  cleanup.value = undefined;
+  const old = node.cleanup;
+  node.cleanup = undefined;
   const ran = old != null ? old() : 0;
-  cleanup.value = node.run();
+  node.cleanup = node.run();
   return ran;
 }
 
 export function hasCleanup(node) {
-  if ("run" in node) {
-    const cleanup = $fieldCell(node, "cleanup");
-    return cleanup.value != null;
-  } else {
-    return false;
-  }
+  return "run" in node && node.cleanup != null;
 }
 
 export function stop(node) {
@@ -66,10 +60,8 @@ export function attempt(task, line) {
     return $borrow(tries).value;
   }
   if (task.job.TAG === "Paired") {
-    const count = $fieldCell(task.job, "_0");
-    const value = $borrowMut(count);
-    value.value = (value.value + task.job._1) >>> 0;
-    return $borrow(count).value;
+    task.job._0 = (task.job._0 + task.job._1) >>> 0;
+    return task.job._0;
   }
   return 0;
 }

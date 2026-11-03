@@ -569,6 +569,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether `e` is a handle on a field of a variable nothing sets again,
+    /// `{ get value() { return kind.cleanup; }, .. }`, of a pattern's binding
+    /// of a field whose cell is the property it holds, `cleanup` of
+    /// `Kind::Effect { cleanup, .. }`: that place, wherever the binding's
+    /// used, as borrowck keeps what it's in while it's borrowed (#503).
+    pub(super) fn handle_on_kept_field(&self, e: &Expr) -> bool {
+        let js::ExprKind::Handle(place, _) = &e.kind else {
+            return false;
+        };
+        let mut root = &**place;
+        while let js::ExprKind::Member(object, _) = &root.kind {
+            if root.facts.has(js::Known::Getter) {
+                return false;
+            }
+            root = object;
+        }
+        !std::ptr::eq(root, &**place)
+            && matches!(&root.kind, js::ExprKind::Var(name) if self.locals.mir.alike.contains(name))
+    }
+
     /// How an `Assert`, `terminator`, isn't an `if` that throws: left out,
     /// as THIR knows it passes or the helper that runs next checks it, or
     /// made where the element is read. Neither where its panic has something
