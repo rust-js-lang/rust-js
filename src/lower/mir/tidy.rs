@@ -973,6 +973,7 @@ mod tests {
                 "written ors",
                 "written tests",
                 "commented jumps",
+                "jumps made next",
                 "named texts",
                 "stepped slices"
             ]

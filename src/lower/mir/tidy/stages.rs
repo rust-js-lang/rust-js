@@ -462,7 +462,13 @@ pub(super) const STAGES: &[Stage] = &[
             // (f(a)) { .. } }`, `if (a && f(a))`.
             pass("and tests", |b, h| {
                 bottom_up(b, &mut |s| {
-                    and_tests(s, &h.written.conditions, &h.written.switches, &h.lets.own_field)
+                    and_tests(
+                        s,
+                        &h.written.conditions,
+                        &h.written.switches,
+                        &h.lets.own_field,
+                        &h.written.guards,
+                    )
                 })
             }),
             // A pattern's binding of a property by its name, read only by
@@ -552,7 +558,13 @@ pub(super) const STAGES: &[Stage] = &[
             // written (Fizz's `use(usable)`).
             pass("and tests settled", |b, h| {
                 bottom_up(b, &mut |s| {
-                    and_tests(s, &h.written.conditions, &h.written.switches, &h.lets.own_field)
+                    and_tests(
+                        s,
+                        &h.written.conditions,
+                        &h.written.switches,
+                        &h.lets.own_field,
+                        &h.written.guards,
+                    )
                 })
             }),
             pass("declarations", |b, _| declarations(b)),
@@ -1030,6 +1042,11 @@ pub(super) const STAGES: &[Stage] = &[
             // The comments before a `break` or `continue` the program wrote,
             // after what's before it, where the jumps are settled (rd109).
             pass("commented jumps", |b, h| super::commented_jumps(b, h.commented_jumps)),
+            // An `if`'s `then` that ends with the jump made after it, MIR's:
+            // going on to it, `if (x != null) { .. } break;`.
+            pass("jumps made next", |b, _| {
+                js::statement_lists(b, &mut |s| jumps_made_next(s))
+            }),
             // A literal a pattern names by a `const`, each copy tidy made
             // of it, that `const`, once tidy's read it as a literal (ADR
             // 0590, amended).

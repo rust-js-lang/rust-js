@@ -120,4 +120,24 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^switch_default_comment_after_return.rs$"],
     snapshots: true,
   },
+  {
+    name: "commented-break-popped-after-any-block",
+    breaks:
+      "an `else` of only comments after an `else if` in a loop loses its `else if`, whose `if` is in an `else` under the comments (rd722)",
+    file: "src/lower/mir/tidy/jumps/branch_ends.rs",
+    find: "            at + 1 < s.len() && matches!(&s[at].kind, StmtKind::Labeled(_, body) if body.last().is_some_and(exits))\n",
+    replace: "            at + 1 < s.len() && matches!(&s[at].kind, StmtKind::Labeled(..))\n",
+    tests: ["test/corpus.test.ts", "-t", "^else_of_only_comments_in_a_loop.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "jump-made-next-kept",
+    breaks:
+      "a guarded arm of only an `if let` breaks in its `if` too, `if (x != null) { ..; break; } break;`",
+    file: "src/lower/mir/tidy/jumps/branch_ends.rs",
+    find: "            then.pop();\n        }\n    }\n}\n",
+    replace: "        }\n    }\n}\n",
+    tests: ["test/corpus.test.ts", "-t", "^(guarded_arm_of_an_if_let|switch_default_comment_after_return)\\.rs$"],
+    snapshots: true,
+  },
 ];

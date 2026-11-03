@@ -498,6 +498,7 @@ fn comments_of(
     let else_ifs = else_if_starts(module);
     // And each `switch`'s case, which a comment before its arm is before.
     let case_starts = cases::case_starts(module, &sources.text);
+    let defaulted = cases::defaulted_switches(module);
     // And each value of a case of more than one, which a comment between
     // an arm's patterns is before (rd139), or above the arm (rd143).
     let pattern_starts = cases::pattern_starts(module, &sources.text);
@@ -581,10 +582,16 @@ fn comments_of(
         // map gives the JS of.
         // One on the line of a field its object leaves out, a `None`, is no
         // code's: placed as one on lines of its own (ADR 0280, amended).
+        // And a block comment first on its line before a call's argument
+        // there (`arguments::before_argument`, rd710).
+        let before_argument = |c: &crate::program::Comment| arguments::before_argument(c, &sources.text, &parts);
+        // And one on a `_` arm's pattern of no `default:` (`cases::of_no_default`, #574).
+        let of_no_default = |c: &crate::program::Comment| cases::of_no_default(c, &sources.text, &defaulted);
         let after_code = |c: &crate::program::Comment| {
             let line_start = sources.text[..c.lo as usize].rfind('\n').map_or(0, |i| i + 1);
-            !sources.text[line_start..c.lo as usize].trim().is_empty()
+            (!sources.text[line_start..c.lo as usize].trim().is_empty() || before_argument(c))
                 && !closing::of_left_out(c, &left_out, &sources.text, &file.comments)
+                && !of_no_default(c)
         };
         for c in file
             .comments
@@ -907,7 +914,8 @@ fn comments_of(
                         || macro_opening(&rest[..=i])
                         || unsafe_opening(head)
                         || match_opening(head) && rest[i + 1..].trim().is_empty()
-                        || arm_opening(head) && receiver_only(&rest[i + 1..])
+                        || (arm_opening(head) || head.trim() == "=>" && of_no_default(c))
+                            && receiver_only(&rest[i + 1..])
                 }) || default;
                 // And a type alias's, an item with no JS, `pub type
                 // ActivityInstance = Unknown;` (ADR 0444, amended);

@@ -885,4 +885,14 @@ export const mutations: Mutation[] = [
     replace: "            if !read_again(&mut read, k) {\n                read.remove(k);\n            }\n",
     tests: ["test/lowering-condition-lets.test.ts"],
   },
+  {
+    name: "guarded-test-span-kept",
+    breaks:
+      "a comment above a guarded arm that does nothing, `1 if skip => {}`, whose test the next arm's is, is lost (#574)",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "        if (guards.iter()).any(|g| g.span == inner_span && g.tested.first() == Some(&span)) {\n",
+    replace: "        if false && (guards.iter()).any(|g| g.span == inner_span && g.tested.first() == Some(&span)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_arm_comments_kept.rs$"],
+    snapshots: true,
+  },
 ];

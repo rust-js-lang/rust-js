@@ -397,3 +397,20 @@ nothing. Held by the corpus `if_only_comment_or_test.rs` and
 `switch_default_comment_after_return.rs` against native Rust, and the
 mutations `ending-merged-past-a-comment-before-code` and
 `ending-own-break-after-comments-kept`.
+
+## Amendment: an `else` of only comments after an `else if` (rd722)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments only.
+rd702's rule popped a block's own `break` after its comments wherever it
+merged a block MIR made before them, for a `return` arm's `return result;`
+after it. React's scheduleContextWorkOnParentPath, an `else if` then an
+`else` of only comments in a loop that goes on, has that shape too, and
+its `break` is the jump past the `else`: without it the `else if`'s `if`
+was inside an `else` under the comments. **The `break` is popped only
+after a block whose body never goes on, its last a `return` or a `throw`**
+(`exits`), not one whose `if` does, so the `else` of only comments stays
+as written, `} else if (..) { .. } else { // Neither .. }`.
+
+Held by corpus `else_of_only_comments_in_a_loop` and
+`switch_default_comment_after_return`, and the mutation
+`commented-break-popped-after-any-block`.

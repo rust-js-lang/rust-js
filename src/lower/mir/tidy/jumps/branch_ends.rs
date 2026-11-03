@@ -28,18 +28,15 @@ pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &str) {
     // s }`'s, whose mark ends that `then` (rd714). And past this block's own
     // `break` after them, which goes on where it ends anyway, `bb1: { .. }
     // // Fallthrough break bb24;`, left where a `return` arm's `return
-    // result;` after it was gone only then (rd702).
+    // result;` after it was gone only then (rd702): after a block it merges
+    // that never goes on, its `return`, not one whose `if` does, `if (c) {
+    // s; break l; } else { .. }` then `// Neither .. break l;`, whose
+    // `break` is the jump past its `else` of only comments (rd722).
     let commented = |s: &[Stmt]| {
-        matches!(
-            s,
-            [
-                ..,
-                Stmt {
-                    kind: StmtKind::Comments,
-                    ..
-                }
-            ]
-        )
+        let code = s.iter().rposition(|s| !matches!(s.kind, StmtKind::Comments));
+        code.is_some_and(|at| {
+            at + 1 < s.len() && matches!(&s[at].kind, StmtKind::Labeled(_, body) if body.last().is_some_and(exits))
+        })
     };
     if let [
         rest @ ..,
@@ -135,4 +132,28 @@ pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &str) {
         .reduce(|b, a| Expr::bin(Op::And, a, b))
         .expect("one");
     stmts.push(StmtKind::If(test, then, (!rest.is_empty()).then_some(rest)).at(span));
+}
+
+/// An `if` of no `else` whose `then` ends with the jump the statement after
+/// it makes, MIR's, `if (x != null) { log.push(x); break; } break;` of a
+/// guarded arm of only an `if let`: that `then` goes on to it, `if (x !=
+/// null) { log.push(x); } break;`, as a person writes it. Not a jump the
+/// program wrote, which is where it's written; nor a `then` of only the
+/// jump, whose `if` would then do nothing.
+pub(in crate::lower::mir::tidy) fn jumps_made_next(stmts: &mut [Stmt]) {
+    for at in 1..stmts.len() {
+        let (before, after) = stmts.split_at_mut(at);
+        let next = &after[0];
+        if !matches!(next.kind, StmtKind::Break(_) | StmtKind::Continue(_)) {
+            continue;
+        }
+        if let StmtKind::If(_, then, None) = &mut before[at - 1].kind
+            && then.len() > 1
+            && then
+                .last()
+                .is_some_and(|last| last.kind == next.kind && last.span.is_none())
+        {
+            then.pop();
+        }
+    }
 }

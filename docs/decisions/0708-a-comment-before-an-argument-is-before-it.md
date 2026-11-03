@@ -516,3 +516,33 @@ return type, generic, with an arrow in its generics, and a method; and
 the mutations `after-params-of-no-parameter-unplaced`,
 `after-params-generics-unread` and `after-params-generics-end-at-an-arrow`
 (`to_oxc/trailing.ts`).
+
+## Amendment: an argument's comment on its line, of a call across lines (rd710)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments only.
+React's preinitModuleForSSR writes `.M(/* preinitModuleScript */ href,
+{ .. })`, and rustfmt writes its call an argument a line, `(..)(\n /*
+preinitModuleScript */ href,\n Some(..),\n)`. Three things moved its
+comments. A reborrow's argument, `&*href`, took its span only where its
+temporary went to the call that ends its block (rd205), so one made
+before an argument that's a call itself, `nonce.map(..)`, had none, and
+its comment was before the next argument. oxc writes a comment before an
+argument on a line of its own, so `/* c */ href` was two lines and no
+call could be one. And the comment ending the line of a link of the
+callee's chain, `.d() /* ReactDOMCurrentDispatcher */`, was placed by the
+next line's first code, which no JS maps to when the arguments are on
+lines of their own.
+
+**A block comment first on its line, before a call's argument there, is
+inside the call, before the argument, on its line**: placed as one inside
+an expression is (ADR 0630), before the argument's code
+(`Inside::BeforeCode`), so `dispatcher.M(/* preinitModuleScript */ href,
+options)` fits a line as written. **A reborrow made for any call's
+argument has the argument's span** (`given_to_call`, of any block's
+call). **A comment ending a link's line is before the next link by the
+first code at or after the link's line** (rd63's rule), `Internals.d(..)
+/* ReactDOMCurrentDispatcher */ .preinitModuleScript(`.
+
+Held by corpus `call_argument_comments_across_lines`, and the mutations
+`before-argument-never`, `given-to-call-own-block-only` and
+`before-link-own-line-only`.

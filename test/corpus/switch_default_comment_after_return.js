@@ -28,7 +28,6 @@ function bail(tag, log, instance) {
       if (ENABLE_A) {
         if (instance != null) {
           push(log, instance);
-          break;
         }
         break;
       }

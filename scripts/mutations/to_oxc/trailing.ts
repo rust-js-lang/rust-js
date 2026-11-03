@@ -252,4 +252,24 @@ export const mutations: Mutation[] = [
     replace: "            .all(|c| \";,\".contains(c) || \")]}\".contains(c))\n",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "a comment after a guard.s let"],
   },
+  {
+    name: "before-link-own-line-only",
+    breaks:
+      "a comment ending a link's line, `.d() /* ReactDOMCurrentDispatcher */`, of a call whose arguments rustfmt writes a line each, is lost (rd710)",
+    file: "src/to_oxc/trailing.rs",
+    find: "                .filter(|t| t.get_src_line() >= next)\n",
+    replace: "                .filter(|t| t.get_src_line() == next)\n",
+    tests: ["test/corpus.test.ts", "-t", "^call_argument_comments_across_lines.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "of-default-same-line-unread",
+    breaks:
+      "a block comment on a `_` pattern whose arm is on its line, `_ /* \"x\" */ => panic!(..)`, is lost (#574)",
+    file: "src/to_oxc/trailing.rs",
+    find: "                        || (t.get_src_line() == comment.line && t.get_src_col() > comment.column)\n",
+    replace: "                        || (false && t.get_src_line() == comment.line && t.get_src_col() > comment.column)\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_arm_comments_kept.rs$"],
+    snapshots: true,
+  },
 ];

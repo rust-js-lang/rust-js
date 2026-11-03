@@ -433,6 +433,7 @@ pub(super) fn and_tests(
     conditions: &[(js::Span, js::Span)],
     switches: &[Switch],
     own_field: &HashSet<String>,
+    guards: &[super::super::hints::Guard],
 ) {
     guards_before_others(stmts, conditions);
     let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
@@ -447,6 +448,7 @@ pub(super) fn and_tests(
             continue;
         };
         let one = (conditions.iter()).any(|(first, then)| within(first, span) && within(then, inner.span));
+        let inner_span = inner.span;
         // Not a test of a `match` of constants, its `switch`'s, inside an
         // `if` of its own, whose first arm does nothing, `case "checked":
         // break;` (ADR 0629, rd133).
@@ -472,6 +474,13 @@ pub(super) fn and_tests(
         };
         let first = std::mem::replace(test, Expr::undefined());
         *test = unimplied(Expr::bin(Op::And, first, second));
+        // Of a `match`'s guarded arm, `1 if skip => {}`, whose test of its
+        // pattern is where the `match` tests, shared with the arms' before
+        // it: where its guard is, so what's written above the arm is before
+        // it (#574).
+        if (guards.iter()).any(|g| g.span == inner_span && g.tested.first() == Some(&span)) {
+            stmt.span = inner_span;
+        }
         let made = then.len() + body.len();
         then.extend(body);
         unread_bound(then, bound);

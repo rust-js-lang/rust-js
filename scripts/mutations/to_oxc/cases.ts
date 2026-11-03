@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a comment above an arm of one pattern that opens a block, `// Don't fire the event ..` above `\"mousedown\" => {`, is in its case's body, not before its `case` (rd166, rd619)",
     file: "src/to_oxc/cases.rs",
-    find: "        false => !head.contains(['{', '}', ';']) && body.starts_with('{'),\n",
+    find: "        false => !head.contains(['{', '}', ';']) && (body.starts_with('{') || unit),\n",
     replace: "        false => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^(switch_guard_skips_its_case|switch_guarded_or_pattern).rs$"],
     snapshots: true,
@@ -121,8 +121,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a comment above a guarded arm that does nothing, `// Chrome and IE fire ..` above `\"selectionchange\" if skip => {}`, is in its case, before the guard's `if`, not above `case \"selectionchange\":` as upstream writes it (rd619)",
     file: "src/to_oxc/cases.rs",
-    find: "        true => body\n",
-    replace: "        true => false && body\n",
+    find: "            unit || body\n",
+    replace: "            false && body\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_guard_skips_its_case.rs$"],
     snapshots: true,
   },
@@ -131,8 +131,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a comment above a guarded arm that does something, `// Remove unwanted keypresses.` above `\"keypress\" if char_code(..) == 0 => return None`, is above its `case`, not before the guard's `if` in it, as upstream's SimpleEventPlugin writes it (rd619)",
     file: "src/to_oxc/cases.rs",
-    find: "        true => body\n",
-    replace: "        true => true || body\n",
+    find: "            unit || body\n",
+    replace: "            true || body\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_text_guard_falls.rs$"],
     snapshots: true,
   },
@@ -145,5 +145,15 @@ export const mutations: Mutation[] = [
     replace:
       "    !matches!(case.body.first().map(|s| &s.kind), Some(StmtKind::Comments))\n        && (case.values.first()).is_some_and(|first| !first.span.is_none() && opens_or_guards(source, first.span.hi))\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "a last arm of only comments keeps them in its clause"],
+  },
+  {
+    name: "unit-arm-not-apart",
+    breaks:
+      "a comment above an arm of the unit value, `1 => (),`, is above the `switch`, not its `case` (#574)",
+    file: "src/to_oxc/cases.rs",
+    find: "        false => !head.contains(['{', '}', ';']) && (body.starts_with('{') || unit),\n",
+    replace: "        false => !head.contains(['{', '}', ';']) && body.starts_with('{'),\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_arm_comments_kept.rs$"],
+    snapshots: true,
   },
 ];

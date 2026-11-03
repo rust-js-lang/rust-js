@@ -193,11 +193,18 @@ fn opens_or_guards(source: &str, hi: u32) -> bool {
     // Past a block comment on its pattern, `125 /* "}" */ => {` (rd525).
     let (head, body) = (uncommented(&rest[..arrow]), rest[arrow + 2..].trim_start());
     let pattern = head.split(['{', '}', ';']).next().unwrap_or_default();
+    // An arm of the unit value, `1 => (),`, does nothing as `1 => {}` does,
+    // its case only its `break;` (#574).
+    let unit = body
+        .strip_prefix("()")
+        .is_some_and(|rest| rest.trim_start().starts_with([',', '}']));
     match pattern.split_whitespace().any(|word| word == "if") {
-        true => body
-            .strip_prefix('{')
-            .is_some_and(|inside| inside.trim_start().starts_with('}')),
-        false => !head.contains(['{', '}', ';']) && body.starts_with('{'),
+        true => {
+            unit || body
+                .strip_prefix('{')
+                .is_some_and(|inside| inside.trim_start().starts_with('}'))
+        }
+        false => !head.contains(['{', '}', ';']) && (body.starts_with('{') || unit),
     }
 }
 
@@ -258,6 +265,36 @@ pub(super) fn case_starts(module: &Module, source: &str) -> Vec<u32> {
     starts.sort_unstable();
     starts.dedup();
     starts
+}
+
+/// Whether `c` is a block comment on a `_` arm's pattern, `_ /* "{" */ =>
+/// {`, in `text`, in none of the `switch`es of a `default:`, `defaulted`'s
+/// (`defaulted_switches`): the arm an `if`'s `else` or the `match` gone, so
+/// it's on a line of its own before the arm's first code, as one above the
+/// arm is, never lost (ADR 0629, amended, #574).
+pub(super) fn of_no_default(c: &crate::program::Comment, text: &str, defaulted: &[(u32, u32)]) -> bool {
+    let line_start = text[..c.lo as usize].rfind('\n').map_or(0, |i| i + 1);
+    text[line_start..c.lo as usize].trim() == "_"
+        && text[c.hi as usize..].trim_start().starts_with("=>")
+        && !defaulted.iter().any(|&(lo, hi)| lo <= c.lo && c.hi <= hi)
+}
+
+/// Where each of `module`'s `switch`es that has a `default` is, what a `_`
+/// arm's comment inside one is of (#574).
+pub(super) fn defaulted_switches(module: &Module) -> Vec<(u32, u32)> {
+    let mut spans = Vec::new();
+    for mut body in bodies(module) {
+        js::each_block_mut(&mut body, &mut |stmts| {
+            for stmt in stmts.iter() {
+                if let StmtKind::Switch { default: Some(_), .. } = &stmt.kind
+                    && !stmt.span.is_none()
+                {
+                    spans.push((stmt.span.lo, stmt.span.hi));
+                }
+            }
+        });
+    }
+    spans
 }
 
 /// Where a `switch`'s `default` is printed: its first statement's start.

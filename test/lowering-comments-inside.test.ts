@@ -655,7 +655,9 @@ pub fn math() -> bool {
 // `(previous.preconnect)(\n /* preconnect */ href,\n cross_origin,\n)`:
 // before that argument in the JS too, as before a function's, not after it
 // before the next, `previousDispatcher.C(href, /* preconnect */ crossOrigin)`,
-// nor, of one argument, before the statement (rd657).
+// nor, of one argument, before the statement (rd657); on the argument's line,
+// as written, so the call is one line where it fits,
+// `previousDispatcher.C(/* preconnect */ href, crossOrigin)` (rd710).
 test("a comment before a dyn Fn call's argument is before it", async () => {
   const { js, lib } = await compiled("comment-before-a-dyn-fn-argument", `pub struct Dispatcher {
     pub one: &'static dyn Fn(&str) -> String,
@@ -677,8 +679,8 @@ pub fn calls(href: &str, n: u32) -> String {
     one + &two
 }
 `);
-  expect(js).toContain("d.one(\n    /* one */\n    href,\n  );");
-  expect(js).toContain("d.two(\n    /* two */\n    href,\n    n,\n  );");
+  expect(js).toContain("const one = d.one(/* one */ href);");
+  expect(js).toContain("const two = d.two(/* two */ href, n);");
   expect((lib.calls as (href: string, n: number) => string)("a", 1)).toBe("aa1");
 });
 

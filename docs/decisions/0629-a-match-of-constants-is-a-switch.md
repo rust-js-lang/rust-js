@@ -1153,3 +1153,26 @@ basics.md, the unit test `a_none_is_a_default_but_of_a_break`
 (`switches.ts`). No program has a `None` of a `break;` in the `else`, as
 the branch that leaves is the `if` first (ADR 0237), so the unit test alone
 holds that guard.
+
+## Amendment: a match's comments, each kept (#574)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments only.
+Three of a `match`'s comments were lost or moved. **A comment above an
+arm of the unit value, `1 => (),`, is above its `case`**, as above `1 =>
+{}`: the arm does nothing (`opens_or_guards`). **A block comment on a `_`
+pattern, `_ /* "{" */ => {`, of no `default:`**, the `match` an `if` and
+its arm the `else`, or the `match` gone, **is on a line of its own before
+the arm's first code**, as one above the arm is (`of_no_default`); of a
+`default:`, its arm on its line, `_ /* "x" */ => panic!(..)`, after the
+`default:` as before, found by the arm's code on the comment's line too.
+**A comment above a guarded arm that does nothing, `1 if skip => {}`,
+whose test the next arm's `if` is, `else if (n !== 1 || !skip)`, is before
+that test**, the merged test placed where the guard is (`and_tests`, of a
+`Written::guards` guard), so in the `else`'s block, which Cx::commented
+keeps (ADR 0444, amended). A comment in an arm before only a `continue`,
+`1 => { // Skipped. continue; }`, is still above the `switch`: the
+`continue` MIR's goto has no span of its own (#574 stays open for it).
+
+Held by corpus `match_arm_comments_kept`, and the mutations
+`unit-arm-not-apart`, `of-no-default-never`, `of-default-same-line-unread`
+and `guarded-test-span-kept`.

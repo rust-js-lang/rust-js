@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`if (a) { if (b) { s } }` of one condition is one test only after `written elses`, so a let chain's written `else` in a loop is `if (a && b) { s; continue; } t`",
     file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("and tests", |b, h| {\n                bottom_up(b, &mut |s| {\n                    and_tests(s, &h.written.conditions, &h.written.switches, &h.lets.own_field)\n                })\n            }),\n',
+    find: '            pass("and tests", |b, h| {\n                bottom_up(b, &mut |s| {\n                    and_tests(\n                        s,\n                        &h.written.conditions,\n                        &h.written.switches,\n                        &h.lets.own_field,\n                        &h.written.guards,\n                    )\n                })\n            }),\n',
     replace: "",
     tests: [
       "test/lowering-branches.test.ts",
@@ -1105,7 +1105,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a let chain's tests that `settle branches` made `if`s of, its guard `break`s, stay nested, `if (usable != null) { if (kindOf(usable) === \"object\") { .. } }`, not `&&` as written (Fizz's `use(usable)`)",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "            pass(\"and tests settled\", |b, h| {\n                bottom_up(b, &mut |s| {\n                    and_tests(s, &h.written.conditions, &h.written.switches, &h.lets.own_field)\n                })\n",
+    find: "            pass(\"and tests settled\", |b, h| {\n                bottom_up(b, &mut |s| {\n                    and_tests(\n                        s,\n                        &h.written.conditions,\n                        &h.written.switches,\n                        &h.lets.own_field,\n                        &h.written.guards,\n                    )\n                })\n",
     replace: "            pass(\"and tests settled\", |b, h| {\n                let _ = (b, h);\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_settled_and.rs$"],
     snapshots: true,

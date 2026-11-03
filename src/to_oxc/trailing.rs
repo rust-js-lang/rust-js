@@ -333,11 +333,13 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
         }
         // One ending a call chain's link's line, before the `.` of the
         // next's, found back from that line's first code, past its `(` and
-        // its name: `internals.d /* CurrentDispatcher */.r(form)` (rd63).
+        // its name: `internals.d /* CurrentDispatcher */.r(form)` (rd63);
+        // or the first code after it, of a link whose arguments rustfmt
+        // writes on lines of their own, `.m)(\n href,` (rd710).
         if let Some((next, _)) = comment.before_link
             && let Some(found) = (map.get_tokens())
-                .filter(|t| t.get_src_line() == next)
-                .min_by_key(|t| t.get_src_col())
+                .filter(|t| t.get_src_line() >= next)
+                .min_by_key(|t| (t.get_src_line(), t.get_src_col()))
                 .and_then(|t| {
                     let text = generated_lines.get(t.get_dst_line() as usize)?;
                     let head = text[..in_bytes(text, t.get_dst_col())].trim_end();
@@ -355,9 +357,14 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
         }
         // On a `_` arm's pattern: after the `default:` above the JS of the
         // arm's first code, past the comments between.
+        // Its first code, on a line after it or after it on its own, `_ /*
+        // "x" */ => panic!(..)` (#574).
         if comment.of_default {
             let first = (map.get_tokens())
-                .filter(|t| t.get_src_line() > comment.line)
+                .filter(|t| {
+                    t.get_src_line() > comment.line
+                        || (t.get_src_line() == comment.line && t.get_src_col() > comment.column)
+                })
                 .min_by_key(|t| (t.get_src_line(), t.get_src_col()));
             let clause = first.and_then(|t| {
                 let lines = generated_lines.get(..=t.get_dst_line() as usize)?;

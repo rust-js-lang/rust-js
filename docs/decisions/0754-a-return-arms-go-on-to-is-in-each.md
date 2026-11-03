@@ -106,3 +106,19 @@ if (typeof value !== "string") {
   written once", and the mutations `return-into-branches-never`,
   `return-into-branches-break-kept`, `return-into-branches-test-unturned`
   and `return-into-branches-of-any-value`.
+
+## Amendment: a branch's jump the next statement makes (rd702)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, readability only.
+A guarded arm whose body is only an `if let`, `4 if ready => { if let
+Some(i) = x { .. } }`, printed `if (x != null) { log.push(x); break; }
+break;`, the `then`'s `break` one the statement after it makes anyway.
+**An `if` of no `else` whose `then` ends with the jump the next statement
+is, MIR's, no span of its own, goes on to it**: `if (x != null) {
+log.push(x); } break;` (`jumps_made_next`, late, once the jumps are
+settled). Not a jump the program wrote, which is where it's written, nor
+a `then` of only the jump.
+
+Held by corpus `guarded_arm_of_an_if_let` and
+`switch_default_comment_after_return`, and the mutation
+`jump-made-next-kept`.

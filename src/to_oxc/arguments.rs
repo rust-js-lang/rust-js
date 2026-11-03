@@ -82,6 +82,24 @@ pub(super) fn before_parenthesis(
     made
 }
 
+/// Whether `c` is a block comment first on its line before a call's
+/// argument there, `/* preinitModuleScript */ href,` of a call rustfmt
+/// writes an argument a line, `parts` being `part_starts`: inside the call,
+/// before the argument, as written, where oxc would write it on a line of
+/// its own (ADR 0708, amended, rd710).
+pub(super) fn before_argument(
+    c: &crate::program::Comment,
+    text: &str,
+    parts: &std::collections::HashMap<u32, (u32, bool)>,
+) -> bool {
+    let written = &text[c.lo as usize..c.hi as usize];
+    let rest = &text[c.hi as usize..];
+    let at = c.hi as usize + (rest.len() - rest.trim_start_matches([' ', '\t']).len());
+    written.starts_with("/*")
+        && !written.contains('\n')
+        && (parts.get(&(at as u32))).is_some_and(|&(whole, field)| !field && whole < c.lo)
+}
+
 /// Where each call's and `new`'s argument starts, and each object literal's
 /// field's value, of those that say, and where what they're parts of
 /// starts: what a comment before one in the Rust, inside what it's part

@@ -1225,7 +1225,9 @@ fn overflow_read(body: &mir::Body<'_>, at: mir::Location) -> bool {
 }
 
 /// Whether the statement being lowered makes a call's argument: what it
-/// assigns, moved into the call that ends its block (rd205).
+/// assigns, moved into a call, the one that ends its block (rd205) or a
+/// later one's, of an argument made before another that's a call itself,
+/// `f(href, nonce.map(..))`'s `href` (rd710).
 fn given_to_call(state: &State<'_, '_>) -> bool {
     let data = &state.body.basic_blocks[state.at];
     let Some(mir::Statement {
@@ -1235,9 +1237,8 @@ fn given_to_call(state: &State<'_, '_>) -> bool {
     else {
         return false;
     };
-    let mir::TerminatorKind::Call { args, .. } = &data.terminator().kind else {
-        return false;
-    };
-    args.iter()
-        .any(|arg| matches!(arg.node, Operand::Move(given) if given == assign.0))
+    state.body.basic_blocks.iter().any(|block| {
+        matches!(&block.terminator().kind, mir::TerminatorKind::Call { args, .. }
+            if args.iter().any(|arg| matches!(arg.node, Operand::Move(given) if given == assign.0)))
+    })
 }

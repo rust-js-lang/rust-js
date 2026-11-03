@@ -772,4 +772,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
     snapshots: true,
   },
+  {
+    name: "given-to-call-own-block-only",
+    breaks:
+      "a reborrow given to a call a later block makes, `f(href, nonce.map(..))`'s `href`, has no span, so a comment before it is before the next argument (rd710)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "    state.body.basic_blocks.iter().any(|block| {\n",
+    replace: "    std::iter::once(data).any(|block| {\n",
+    tests: ["test/corpus.test.ts", "-t", "^call_argument_comments_across_lines.rs$"],
+    snapshots: true,
+  },
 ];

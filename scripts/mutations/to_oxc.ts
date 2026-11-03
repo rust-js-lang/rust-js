@@ -611,7 +611,7 @@ export const mutations: Mutation[] = [
     name: "arm-opening-not-an-opening",
     breaks: "a comment before an arm whose body is a block, `// Nothing is released.` before `None => { DOWN.set(false); }`, moves above the chain, not into its `else` before its first statement, React DOM's SelectEventPlugin (rd119, ADR 0905 amended)",
     file: "src/to_oxc.rs",
-    find: "                        || arm_opening(head) && receiver_only(&rest[i + 1..])\n",
+    find: "                        || (arm_opening(head) || head.trim() == \"=>\" && of_no_default(c))\n                            && receiver_only(&rest[i + 1..])\n",
     replace: "",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "an arm of a block of an if chain"],
   },
@@ -774,5 +774,25 @@ export const mutations: Mutation[] = [
     find: "        && !declares_default_class(module)\n",
     replace: "",
     tests: ["test/es-classes.test.ts", "-t", "whose struct says es is an ES class"],
+  },
+  {
+    name: "before-argument-never",
+    breaks:
+      "a block comment first on its line before a call's argument, `/* preinitModuleScript */ href,`, is on a line of its own above the argument, so the call can't be one line (rd710)",
+    file: "src/to_oxc.rs",
+    find: "            (!sources.text[line_start..c.lo as usize].trim().is_empty() || before_argument(c))\n",
+    replace: "            (!sources.text[line_start..c.lo as usize].trim().is_empty() || false && before_argument(c))\n",
+    tests: ["test/corpus.test.ts", "-t", "^call_argument_comments_across_lines.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "of-no-default-never",
+    breaks:
+      "a block comment on a `_` pattern of no `default:`, `_ /* \"{\" */ => {` of an `else` or a `match` gone, is lost (#574)",
+    file: "src/to_oxc.rs",
+    find: "                && !of_no_default(c)\n",
+    replace: "                && !(false && of_no_default(c))\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_arm_comments_kept.rs$"],
+    snapshots: true,
   },
 ];
