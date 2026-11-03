@@ -284,6 +284,16 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "temporary-cell-unnamed",
+    breaks:
+      "a temporary holding a `Cell` of the program's type isn't named after what it holds, `point` of `Cell::new(Some(point))` (rd413)",
+    file: "src/lower/mir/hints.rs",
+    find: "                ty::Adt(_, args) if self.is_std_type(ty, StdItem::Cell) || self.is_value_cell(ty) => {\n",
+    replace: "                ty::Adt(_, args) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^temporary_names.rs$"],
+    snapshots: true,
+  },
+  {
     name: "temporary-result-named-by-ok",
     breaks:
       "a `Result` temporary is named after its `Ok` type, `order.TAG`, as JS holds it `{ TAG, _0 }`",

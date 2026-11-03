@@ -57,10 +57,10 @@ function insert(root, word) {
         throw error;
       }
       let entry;
-      let tmp$1;
+      let node;
       try {
         entry = $entry(borrowMut.children, c);
-        tmp$1 = cur;
+        node = cur;
         label$live = false;
       } catch (error) {
         $unborrow(borrowMut);
@@ -83,7 +83,7 @@ function insert(root, word) {
             }
             let parent;
             try {
-              parent = $downgrade(tmp$1);
+              parent = $downgrade(node);
             } catch (error) {
               $dropItems($sortedEntries(tmp, $cmp), ([, value]) => {
                 $rcDrop(value, dropNode);

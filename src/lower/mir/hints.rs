@@ -1369,16 +1369,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The name a value of `ty` is kept by, its type's, `order` of an
     /// `Order`, through a reference and what JS holds as the value it
-    /// holds, an `Option`, a `Box`, an `Rc`: of the program's own or a
-    /// library's type, `None` of std's. Not a `Result`'s `Ok`, as
-    /// rust-analyzer's is: JS holds a `Result` as `{ TAG, _0 }`, which
-    /// `order.TAG` would misname.
+    /// holds, an `Option`, a `Box`, an `Rc`, a `Cell` and a `RefCell` of the
+    /// value itself: of the program's own or a library's type, `None` of
+    /// std's. Not a `Result`'s `Ok`, as rust-analyzer's is: JS holds a
+    /// `Result` as `{ TAG, _0 }`, which `order.TAG` would misname.
     fn held_type_name(&self, ty: Ty<'tcx>) -> Option<String> {
         let mut ty = ty.peel_refs();
         loop {
             ty = match ty.kind() {
                 _ if let Some(inner) = self.option_of(ty) => inner.peel_refs(),
                 ty::Adt(_, args) if ty.is_box() || self.is_std_type(ty, StdItem::Rc) => args.type_at(0).peel_refs(),
+                // A `Cell` a temporary holds, and a `RefCell` of the value
+                // itself, are what they hold: `Cell::new(Some(error))`'s
+                // `error` (rd413).
+                ty::Adt(_, args) if self.is_std_type(ty, StdItem::Cell) || self.is_value_cell(ty) => {
+                    args.type_at(0).peel_refs()
+                }
                 _ => break,
             };
         }

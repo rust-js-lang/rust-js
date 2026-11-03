@@ -6,8 +6,21 @@ export function entry() {
   main();
 }
 
+function pointDebug_fmt(point) {
+  return `Point { x: ${point.x}, y: ${point.y} }`;
+}
+
 function find(points, x) {
   return points.find((p) => p.x === x);
+}
+
+function marks(points) {
+  const point = { x: 5, y: points.length };
+  const p = find(points, 3);
+  return {
+    at: point,
+    next: p != null ? Math.imul(p.x, p.y) : undefined,
+  };
 }
 
 function main() {
@@ -52,5 +65,10 @@ function main() {
     count = (count + step) | 0;
   }
   console.log(`${count}`);
+  const marks$1 = marks(points);
+  const at = marks$1.at;
+  console.log(
+    `${at == null ? "None" : `Some(${pointDebug_fmt(at)})`} ${marks$1.next == null ? "None" : `Some(${marks$1.next})`}`,
+  );
 }
 //# sourceMappingURL=case.js.map

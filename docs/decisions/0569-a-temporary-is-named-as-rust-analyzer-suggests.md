@@ -183,3 +183,23 @@ Held by the corpus's `match_clone_nested_results` (`tok`) and
 `option_combinator_drops` (`value`), against native Rust, and the mutation
 `temporary-named-positional` (`tidy/bindings.rs`).
 
+## Amendment: a cell's box, after what it holds (rd413, 2026-11-04)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, a name.
+
+A struct literal's `debug_stack: Cell::new(Some(js::error::new(..)))`,
+held apart from a later field whose JS is made first, React's
+`debugTask: console.createTask(..)`, was `const value = new Error(..)`:
+the field's cell is its box, `{ value: x }`, as it's made, and an object
+held apart is each of its fields held, named after its key, the box's
+`value`. The same field without its `Cell` was `const error`. **What a
+cell's box holds is held apart as the temporary that holds the cell**
+(`mir/temporaries.rs`'s `cell_box_value`), and that temporary is named
+after what it holds, a `Cell` and a `RefCell` of the value itself seen
+through as an `Option` is (`hints.rs`'s `held_type_name`): `const error
+= new Error(..)`.
+
+Held by the corpus's `temporary_names` (a `Cell<Option<Point>>` held
+apart from a field made of a closure's `map`, `const point`), against
+native Rust, and the mutations `cell-box-captured-as-value`
+(`mir/temporaries.rs`) and `temporary-cell-unnamed` (`mir/hints.rs`).

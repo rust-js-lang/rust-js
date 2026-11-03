@@ -257,3 +257,35 @@ Option field js::null() is written to is declared | null, and no other".
 Mutations `js-null-made-undeclared`, `js-null-assigned-undeclared`,
 `js-null-lent-undeclared`, `js-null-through-a-variable-undeclared`
 (`body_queries.rs`) and `js-null-fields-unread` (`declarations.rs`).
+
+## Amendment: a cell's `Option`, declared as the `Option` (rd414, rd415, 2026-11-04)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, a declaration.
+
+A field whose cell is the property it holds (ADR 0772: a `Cell`'s, a
+`RefCell`'s that holds its value) is what it holds, but its `.d.ts` read
+only an `Option` as one: `#[rust_js::optional] byte_size:
+Cell<Option<f64>>` was `byteSize: number | null | undefined`, where
+`size: Option<f64>` is `size?: number | undefined`; and a nullable
+`stack: RefCell<Option<Trace>>` was `stack?: [string, number][] | null |
+undefined`, the alias it's written with lost, where a nullable
+`Option<Trace>` is `Trace | null | undefined`. **A cell's `Option` is
+declared as the `Option`** (`declarations.rs`'s `cell_item`, the one
+rule `field_ts` reads too): `byteSize?: number | undefined`, a property
+a caller may leave out, as an `Option`'s; and **it's named as the
+field's type writes it** (`written_option` sees through a `Cell` and a
+`RefCell`): `stack?: Trace | null | undefined`.
+
+The `null` such a cell may hold is the one this decision declares: a
+`js::null()` it's made of, `Cell::new(js::null())`, `set` or
+`replace`d with, `fiber.state.set(js::null())`, or assigned through its
+`borrow_mut()`, declares it `| null` as an `Option` field's does
+(`null_written_fields`), so no field that holds `null` is declared
+without it.
+
+Held by `test/declarations-cells.test.ts`, "a cell's Option field is
+declared as its Option, as written", and the mutations
+`cell-option-field-required`, `cell-option-unwritten`
+(`declarations.rs`), `cell-made-null-undeclared`,
+`cell-set-null-undeclared` and `cell-borrowed-null-undeclared`
+(`body_queries.rs`).

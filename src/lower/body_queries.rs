@@ -546,13 +546,25 @@ pub(super) fn orders_by_utf16_units<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, 
 /// amended): a struct literal's, `Fiber { name: js::null() }`; an
 /// assignment's, `fiber.name = js::null()`, through a `&mut` too; and one
 /// lent mutably to a call given a `js::null()`, `mem::replace(&mut
-/// fiber.name, js::null())`. Each is declared `| null`.
+/// fiber.name, js::null())`. And a cell's that's the property it holds
+/// (rd415): one made of a `js::null()`, `Cell::new(js::null())`, one lent
+/// to a call given one, `fiber.state.set(js::null())`, and what its
+/// `borrow_mut()` lends, assigned one. Each is declared `| null`.
 pub(super) fn null_written_fields(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<DefId> {
+    use super::recognition::{StdItem, is_std_def};
+    let is_std = |ty: ty::Ty<'_>, items: &[StdItem]| matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if items.iter().any(|&item| is_std_def(tcx, adt.did(), item)));
+    let is_cell = |e: ExprId| is_std(thir[strip(thir, e)].ty, &[StdItem::Cell, StdItem::RefCell]);
     let is_null = |e: ExprId| match thir[strip(thir, e)].kind {
         ExprKind::Call { fun, .. } => {
             super::fn_def(thir[fun].ty).is_some_and(|(f, _)| super::bindings::is_js_null(tcx, f))
         }
         _ => false,
+    };
+    // `js::null()`, or a cell made of one, `Cell::new(js::null())`.
+    let made_null = |e: ExprId| {
+        is_null(e)
+            || matches!(thir[strip(thir, e)].kind, ExprKind::Call { ref args, .. }
+                if is_cell(e) && matches!(args[..], [arg] if is_null(arg)))
     };
     // What each variable is made of, `let slot = &mut fiber.name;`.
     let made: HashMap<LocalVarId, ExprId> = (thir.stmts.iter())
@@ -575,6 +587,14 @@ pub(super) fn null_written_fields(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<DefId
         match thir[e].kind {
             ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => e = arg,
             ExprKind::VarRef { id } if thir[e].ty.is_ref() => e = *made.get(&id)?,
+            // What a cell's `borrow_mut()` lends, the cell's, through its
+            // guard's `deref_mut`.
+            ExprKind::Call { ref args, .. }
+                if let [lent] = args[..]
+                    && (is_cell(lent) || is_std(thir[strip(thir, lent)].ty, &[StdItem::RefCellRefMut])) =>
+            {
+                e = lent
+            }
             ExprKind::Field {
                 lhs,
                 variant_index,
@@ -596,14 +616,16 @@ pub(super) fn null_written_fields(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<DefId
                 let fields = &made.adt_def.variant(made.variant_index).fields;
                 written.extend(
                     (made.fields.iter())
-                        .filter(|f| is_null(f.expr))
+                        .filter(|f| made_null(f.expr))
                         .map(|f| fields[f.name].did),
                 );
             }
             ExprKind::Assign { lhs, rhs } if is_null(rhs) => written.extend(field_of(lhs)),
-            ExprKind::Call { ref args, .. } if args.iter().any(|&a| is_null(a)) => {
-                written.extend(args.iter().filter(|&&a| lent_mutably(a)).filter_map(|&a| field_of(a)))
-            }
+            ExprKind::Call { ref args, .. } if args.iter().any(|&a| is_null(a)) => written.extend(
+                (args.iter())
+                    .filter(|&&a| lent_mutably(a) || is_cell(a))
+                    .filter_map(|&a| field_of(a)),
+            ),
             _ => {}
         }
     }

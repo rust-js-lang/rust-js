@@ -14,6 +14,15 @@ export const mutations: Mutation[] = [
     tests: ["test/declarations-function-types.test.ts", "-t", "apart from a word JS keeps"],
   },
   {
+    name: "cell-option-field-required",
+    breaks:
+      "a plain `Cell<Option<f64>>` field is declared `byteSize: number | null | undefined`, its cell's `Option` not seen, where it's `byteSize?: number | undefined` as an `Option` field is (rd415)",
+    file: "src/lower/declarations.rs",
+    find: "                    .or_else(|| self.cell_item(ty, Some(field)).and_then(|item| self.option(item))),\n",
+    replace: "                    .or(None),\n",
+    tests: ["test/declarations-cells.test.ts"],
+  },
+  {
     name: "nested-field-declared-undefined",
     breaks: "a nullable `Option<Option<T>>` field is declared `T | undefined`, where JS holds `null` too (#470)",
     file: "src/lower/declarations.rs",
@@ -505,20 +514,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "alias-option-unwritten",
-    breaks:
-      "an `Option` of an alias, an optional field's, isn't read as written, so it's the alias expanded",
-    file: "src/lower/declarations.rs",
-    find: "        if !self.tcx.is_lang_item(did, LangItem::Option) {",
-    replace:
-      "        if true || !self.tcx.is_lang_item(did, LangItem::Option) {",
-    tests: [
-      "test/declarations.test.ts",
-      "-t",
-      "aliases as the Rust names them",
-    ],
-  },
-  {
     name: "namespace-member-imported-whole",
     breaks:
       '`JSX.Element` is imported as `import type { JSX.Element } from "react"`, which isn\'t TypeScript',
@@ -573,19 +568,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "cell-field-declared-any",
-    breaks: "a `Cell` field is declared `any`, where it's the number it holds",
-    file: "src/lower/declarations.rs",
-    find: "                if is_std_def(self.tcx, adt.did(), StdItem::Cell)\n                    || field.is_some_and(|field| self.ref_cells.holds_value(self.tcx, field))\n",
-    replace:
-      "                if field.is_some_and(|field| self.ref_cells.holds_value(self.tcx, field))\n",
-    tests: [
-      "test/declarations.test.ts",
-      "-t",
-      "declarations type what a module exports",
-    ],
-  },
-  {
     name: "lent-cell-declared-any",
     breaks: "a `&Cell` parameter is declared `any`, where it's `{ value }`",
     file: "src/lower/declarations.rs",
@@ -620,15 +602,6 @@ export const mutations: Mutation[] = [
     replace:
       "            crate::js::ExprKind::Bool(b) => json!(b.to_string()),\n",
     tests: ["test/declarations.test.ts"],
-  },
-  {
-    name: "plain-refcell-declared-cell",
-    breaks: "a field's `RefCell` held as its value is declared `{ value }`",
-    file: "src/lower/declarations.rs",
-    find: "                    || field.is_some_and(|field| self.ref_cells.holds_value(self.tcx, field))\n                    || self.ref_cells.is_value_cell(self.tcx, ty) =>",
-    replace:
-      "                    || self.ref_cells.is_value_cell(self.tcx, ty) =>",
-    tests: ["test/declarations.test.ts", "test/lowering-field-cells.test.ts"],
   },
   {
     name: "declarations-private-type-any",
@@ -828,8 +801,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `OnceCell` field is declared as one that's always there, where it's absent until it's set, `ioInfo?: string | undefined`",
     file: "src/lower/declarations.rs",
-    find: "                false => self.option(ty).or_else(|| self.once_cell_item(ty)),\n",
-    replace: "                false => self.option(ty),\n",
+    find: "                false => (self.option(ty).or_else(|| self.once_cell_item(ty)))\n",
+    replace: "                false => (self.option(ty))\n",
     tests: [
       "test/declarations.test.ts",
       "-t",

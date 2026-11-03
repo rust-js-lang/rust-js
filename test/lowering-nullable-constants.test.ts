@@ -330,7 +330,8 @@ pub fn siblings() -> [Option<u8>; 2] {
 // plain `Option` field is `?: T | undefined`, as @types/react's props are
 // (ADR 0935, amended). Written where it's made, by an assignment, through
 // a `&mut`, by a call it's lent to with one, and in a constant. A cell's
-// is its `Option`'s, `T | null | undefined`, as it was.
+// that's the property it holds is its `Option`'s, made of one too (ADR
+// 0935, amended, rd415).
 test("a plain Option field js::null() is written to is declared | null, and no other", () => {
   const dir = fixture("js-null-declared");
   const js = ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
@@ -377,7 +378,7 @@ pub fn reset(fiber: &mut Fiber) -> Option<String> {
   const ts = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(ts).toContain("    name?: string | null | undefined;\n");
   expect(ts).toContain("    key?: string | undefined;\n");
-  expect(ts).toContain("    debugStack: number | null | undefined;\n");
+  expect(ts).toContain("    debugStack?: number | null | undefined;\n");
   expect(ts).toContain("    index?: number | null | undefined;\n");
   expect(ts).toContain("    title?: string | null | undefined;\n");
   expect(ts).toContain("    ref_?: number | null | undefined;\n");

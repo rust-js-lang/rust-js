@@ -944,7 +944,7 @@ export function createFiber(tag, dev) {
 export declare class FiberNode {
     constructor(tag: number, dev: boolean);
     tag: number;
-    memoizedState: unknown | null | undefined;
+    memoizedState?: unknown | null | undefined;
     actualDuration?: number | null | undefined;
     _debugOwner?: unknown | null | undefined;
 }

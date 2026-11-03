@@ -3,6 +3,33 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "cell-made-null-undeclared",
+    breaks:
+      "a cell field made `Cell::new(js::null())` is declared `made?: number | undefined`, never `null`, which it holds (rd415)",
+    file: "src/lower/body_queries.rs",
+    find: "                        .filter(|f| made_null(f.expr))\n",
+    replace: "                        .filter(|f| is_null(f.expr))\n",
+    tests: ["test/declarations-cells.test.ts"],
+  },
+  {
+    name: "cell-set-null-undeclared",
+    breaks:
+      "a cell field `set` or `replace`d to `js::null()` is declared `set?: number | undefined`, never `null`, which it holds (rd415)",
+    file: "src/lower/body_queries.rs",
+    find: "                    .filter(|&&a| lent_mutably(a) || is_cell(a))\n",
+    replace: "                    .filter(|&&a| lent_mutably(a))\n",
+    tests: ["test/declarations-cells.test.ts"],
+  },
+  {
+    name: "cell-borrowed-null-undeclared",
+    breaks:
+      "a `RefCell` field whose `borrow_mut()` is assigned `js::null()` is declared `queue?: number | undefined`, never `null`, which it holds (rd415)",
+    file: "src/lower/body_queries.rs",
+    find: "                e = lent\n",
+    replace: "                return None\n",
+    tests: ["test/declarations-cells.test.ts"],
+  },
+  {
     name: "named-constant-signed-as-unsigned",
     breaks:
       "a negative `const` is read as its bits, `-1` as 2^64 - 1, so a test against it narrows what can't be",
@@ -389,8 +416,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a plain `Option` field a struct literal makes `js::null()` is declared `?: T | undefined`, where it holds `null` (ADR 0935, amended)",
     file: "src/lower/body_queries.rs",
-    find: "                        .filter(|f| is_null(f.expr))\n",
-    replace: "                        .filter(|f| is_null(f.expr) && false)\n",
+    find: "                        .filter(|f| made_null(f.expr))\n",
+    replace: "                        .filter(|f| made_null(f.expr) && false)\n",
     tests: ["test/lowering-nullable-constants.test.ts", "-t", "is declared"],
   },
   {
@@ -407,9 +434,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a plain `Option` field lent to `mem::replace` with a `js::null()` is declared `?: T | undefined` (ADR 0935, amended)",
     file: "src/lower/body_queries.rs",
-    find: "            ExprKind::Call { ref args, .. } if args.iter().any(|&a| is_null(a)) => {\n",
+    find: "            ExprKind::Call { ref args, .. } if args.iter().any(|&a| is_null(a)) => written.extend(\n",
     replace:
-      "            ExprKind::Call { ref args, .. } if false && args.iter().any(|&a| is_null(a)) => {\n",
+      "            ExprKind::Call { ref args, .. } if false && args.iter().any(|&a| is_null(a)) => written.extend(\n",
     tests: ["test/lowering-nullable-constants.test.ts", "-t", "is declared"],
   },
   {

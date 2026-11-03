@@ -11,7 +11,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use crate::program::Reexport;
 use rustc_hir as hir;
 use rustc_hir::attrs::lang_items::LangItem;
-use rustc_hir::def::{DefKind, Res};
+use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::{DefId, LocalModId};
 use serde_json::{Value, json};
@@ -24,6 +24,7 @@ use super::recognition::{StdItem, is_std_def};
 use super::representation::Num;
 
 mod aliases;
+mod cells;
 mod classes;
 mod comments;
 mod functions;
@@ -714,23 +715,6 @@ impl<'tcx> Declarations<'_, 'tcx> {
         format!("{local}{}", &name[first.len()..])
     }
 
-    /// `Option<T>`'s `T` as written, where `written` is one.
-    fn written_option<'h>(&self, written: &'h hir::Ty<'tcx>) -> Option<&'h hir::Ty<'tcx>> {
-        let hir::TyKind::Path(hir::QPath::Resolved(None, path)) = &written.kind else {
-            return None;
-        };
-        let Res::Def(DefKind::Enum, did) = path.res else {
-            return None;
-        };
-        if !self.tcx.is_lang_item(did, LangItem::Option) {
-            return None;
-        }
-        match path.segments.last()?.args?.args {
-            [hir::GenericArg::Type(inner)] => Some(inner.as_unambig_ty()),
-            _ => None,
-        }
-    }
-
     /// `export function Tag(props: TagProps): ReactNode;`
     /// A function's or a `const`'s name, as its JS has it.
     fn js_name(&self, def_id: DefId) -> String {
@@ -834,7 +818,10 @@ impl<'tcx> Declarations<'_, 'tcx> {
             let option = match is_nullable(self.tcx, field) {
                 true => super::bindings::nullable_option(self.tcx, ty).and_then(|option| self.option(option)),
                 false if nested => self.option(ty).and_then(|option| self.option(option)),
-                false => self.option(ty).or_else(|| self.once_cell_item(ty)),
+                // A plain one's too, of a cell that's the property it holds,
+                // `byteSize?: number | undefined` (rd415).
+                false => (self.option(ty).or_else(|| self.once_cell_item(ty)))
+                    .or_else(|| self.cell_item(ty, Some(field)).and_then(|item| self.option(item))),
             };
             let outer = self.function_names.len();
             self.fill_names(field.did, ty);
@@ -1157,22 +1144,6 @@ impl<'tcx> Declarations<'_, 'tcx> {
         self.tcx.hir_node_by_def_id(def_id.as_local()?).ty()
     }
 
-    /// What a `OnceCell` or a `OnceLock` holds: in a field, the property,
-    /// absent until it's set (ADR 0847).
-    fn once_cell_item(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-        match ty.kind() {
-            ty::Adt(adt, args) if is_std_def(self.tcx, adt.did(), StdItem::OnceCell) => Some(args.type_at(0)),
-            _ => None,
-        }
-    }
-
-    fn option(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-        match ty.kind() {
-            ty::Adt(adt, args) if self.tcx.is_lang_item(adt.did(), LangItem::Option) => Some(args.type_at(0)),
-            _ => None,
-        }
-    }
-
     /// `(event: MouseEvent<Element>) => void`: a function type, each
     /// parameter named as the Rust names it, `named` (#543), else by its
     /// type, as a person names one.
@@ -1242,15 +1213,9 @@ impl<'tcx> Declarations<'_, 'tcx> {
             let item = self.ts(item);
             return or_undefined(item);
         }
-        match ty.kind() {
-            ty::Adt(adt, args)
-                if is_std_def(self.tcx, adt.did(), StdItem::Cell)
-                    || field.is_some_and(|field| self.ref_cells.holds_value(self.tcx, field))
-                    || self.ref_cells.is_value_cell(self.tcx, ty) =>
-            {
-                self.ts(args.type_at(0))
-            }
-            _ => self.ts(ty),
+        match self.cell_item(ty, field) {
+            Some(item) => self.ts(item),
+            None => self.ts(ty),
         }
     }
 

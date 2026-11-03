@@ -3,6 +3,17 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "cell-box-captured-as-value",
+    breaks:
+      "a cell's box held apart from a later field, `Cell::new(Some(point))`, is named after the box's key, `const value`, not after what it holds, `point` (rd413)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "            if !named && let Some(held) = self.cell_box_value(&mut expr, state.body.local_decls[local].ty) {\n",
+    replace:
+      "            if false && !named && let Some(held) = self.cell_box_value(&mut expr, state.body.local_decls[local].ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^temporary_names.rs$"],
+    snapshots: true,
+  },
+  {
     name: "flushed-mut-ref-a-handle",
     breaks:
       "a `&mut lanes[index]` held before an argument that changes `index` is a handle, `{ get value() { .. }, set value(value) { .. } }`, where the place is boxed and written back: since 157e916f1 gives a `&mut` to a cell held as a value on as the box it is, the handle runs as Rust does, so only the JS reads worse (#280)",

@@ -1187,6 +1187,12 @@ export function ratio(a, b) {
   through a `let r = &context.renderer;` or a helper given `&Cell` too: a
   handle on it stores `value ?? null`
   ([ADR 0791](../../decisions/0791-a-cells-storage-says-what-it-stores.md)).
+  A cell field's `Option` is declared as an `Option` field is, named as
+  the field's type writes it: `byteSize?: number | undefined` of a
+  `Cell<Option<f64>>`, `stack?: Trace | null | undefined` of a nullable
+  `RefCell<Option<Trace>>`, and `| null` where a `js::null()` is written
+  to it, `Cell::new(js::null())` or `set(js::null())`
+  ([ADR 0935](../../decisions/0935-js-null-is-null-where-its-written.md), amended).
   A nullable cell field that each of the crate's constructors of its
   struct, `Class::of(function::with_this(..))`, sets among its first
   statements, before it gives `this` or reads the field, is present:
@@ -1660,8 +1666,8 @@ export function hasState(fiber) {
 
 ```ts
 export interface Fiber {
-    memoizedState: unknown | null | undefined;
-    debugStack: any | null | undefined;
+    memoizedState?: unknown | null | undefined;
+    debugStack?: any | null | undefined;
     name?: string | null | undefined;
 }
 

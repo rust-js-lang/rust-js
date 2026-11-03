@@ -17,7 +17,7 @@ export type Callback = (value: boolean) => Callback | null | undefined;
 
 export interface Task {
     id: number;
-    callback: Callback | null | undefined;
+    callback?: Callback | undefined;
     priorityLevel: PriorityLevel;
     startTime: number;
     expirationTime: number;

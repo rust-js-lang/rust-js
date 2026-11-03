@@ -101,9 +101,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 state.in_place.insert(local, expr);
                 continue;
             }
+            // A cell's box, `{ value: x }`, what it holds read here, as the
+            // temporary that holds the cell is named, after what it holds
+            // (ADR 0569, amended, rd413): `error` of
+            // `Cell::new(Some(error))`, not the box's `value`.
+            let before = made.len();
+            if !named && let Some(held) = self.cell_box_value(&mut expr, state.body.local_decls[local].ty) {
+                let name = state.locals.names[local].clone();
+                let value = std::mem::replace(held, Expr::var(&name));
+                made.push(StmtKind::Const(name.clone(), value).at(js::Span::NONE));
+                self.locals.mir.made.captured.insert(name.clone());
+                self.locals.mir.alike.insert(name.clone());
+                state.own_names.insert(name);
+                state.in_place.insert(local, expr);
+                continue;
+            }
             // An element, or an object, what it's made of read here, made
             // where it's used.
-            let before = made.len();
             if !named && (self.capture_jsx(&mut expr, &mut made) || self.capture_object(&mut expr, &mut made)) {
                 for stmt in &made[before..] {
                     match &stmt.kind {
@@ -130,6 +144,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         state.pending = kept;
         self.unwinding_to(state, unwind, made, out, Vec::new())
+    }
+
+    /// What a cell's box of type `ty` holds, `x` of `{ value: x }`, where
+    /// `expr` is one and `x` may read otherwise elsewhere.
+    fn cell_box_value<'e>(&self, expr: &'e mut Expr, ty: Ty<'tcx>) -> Option<&'e mut Expr> {
+        let js::ExprKind::Object(props, ..) = &mut expr.kind else {
+            return None;
+        };
+        let [Prop::Field(key, value)] = props.as_mut_slice() else {
+            return None;
+        };
+        let cell = self.is_std_type(ty, StdItem::Cell) || self.is_std_type(ty, StdItem::RefCell);
+        (cell && key == js::HELD && !value.reads_same()).then_some(value)
     }
 
     /// Each value kept to be read in place that reads through a shared

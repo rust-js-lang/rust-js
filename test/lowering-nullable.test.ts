@@ -296,8 +296,9 @@ pub fn leaf(tag: u8) -> Fiber {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  return {\n    tag,\n    child: null,\n    sibling: undefined,\n  };\n");
   const types = readFileSync(join(dir, "lib.d.ts"), "utf8");
-  // Nullable, so there, whoever makes it (ADR 1072, amended).
-  expect(types).toContain("    child: Fiber | null;\n    sibling: Fiber | null | undefined;\n");
+  // Nullable, so there, whoever makes it (ADR 1072, amended); a plain
+  // one's `Option`, one a caller may leave out (ADR 0935, amended, rd415).
+  expect(types).toContain("    child: Fiber | null;\n    sibling?: Fiber | undefined;\n");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.tag(lib.leaf(3)), lib.leaf(3).child]).toEqual([3, null]);
   // Not one of a type whose borrow is held while code that may borrow it
