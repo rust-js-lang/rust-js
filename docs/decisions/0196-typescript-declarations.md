@@ -203,3 +203,20 @@ property declares. Case N: nothing runs a declaration.
 Held by `test/declarations-bound-methods.test.ts` and the mutations
 `bound-methods-undeclared` and `bound-methods-private-declared`.
 
+
+## Amendment: a function type's parameter is named apart from a word JS keeps (rd673)
+
+A function type's parameters are named after their types' last words,
+`event` of a `MouseEvent`, `value` of what has no name. React's Flight
+Node loaders type Node's next hooks as upstream's recursive function
+types, each a `#[repr(transparent)] struct ResolveFunction(pub &'static
+dyn Fn(&str, &ResolveContext, ResolveFunction) -> ..)`, so the third
+parameter was named `function`, `(value: string, context: ResolveContext,
+function: ResolveFunction) => ..`: a word JS keeps, which TypeScript can't
+parse, and the app's Prettier refused the module. **A parameter whose name
+would be a word JS keeps is named apart, as a variable is, `function$`**
+(`declarations::param_name`, of `names::kept_word`, the one list of those
+words). Case N: nothing runs a declaration. Held by test/declarations.test.ts's
+"declarations name a function type's parameter apart from a word JS keeps",
+which type-checks a module calling it, and the mutation
+`kept-word-parameter-declared`.

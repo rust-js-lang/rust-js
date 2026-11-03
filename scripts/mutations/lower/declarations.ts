@@ -5,6 +5,15 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "kept-word-parameter-declared",
+    breaks:
+      "a function type's parameter named after a type whose last word JS keeps is `function`, a `.d.ts` TypeScript can't parse (rd673)",
+    file: "src/lower/declarations.rs",
+    find: "            if crate::names::kept_word(&word) {\n",
+    replace: "            if false && crate::names::kept_word(&word) {\n",
+    tests: ["test/declarations.test.ts", "-t", "apart from a word JS keeps"],
+  },
+  {
     name: "nested-field-declared-undefined",
     breaks: "a nullable `Option<Option<T>>` field is declared `T | undefined`, where JS holds `null` too (#470)",
     file: "src/lower/declarations.rs",
