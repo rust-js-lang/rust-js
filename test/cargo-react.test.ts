@@ -49,13 +49,13 @@ test("a component of a Cargo workspace using the react crate is the JS it is out
   buildReact();
   const dir = fixture("cargo-react");
   const manifest = withReact(dir, counter);
-  const { js } = await check(manifest, { packageName: "ui" });
+  const { js } = await check(manifest, { packageNames: ["ui"] });
   const direct = join(dir, "direct");
   run([compiler, join(dir, "ui", "src", "lib.rs"), "-o", join(direct, "lib.js"), "--library", "--manifest", join(direct, "lib.manifest.json"),
     "--", "--crate-name", "ui", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
   expect(js).toEndWith("lib.jsx");
-  expect(body(js)).toContain('import { useState } from "react";');
-  expect(body(js)).toBe(body(join(direct, "lib.jsx")));
+  expect(body(js!)).toContain('import { useState } from "react";');
+  expect(body(js!)).toBe(body(join(direct, "lib.jsx")));
 }, 600_000);
 
 // Found in review: the bindings as the tooling installs them, under the
@@ -68,8 +68,8 @@ test("the bindings installed inside a Cargo workspace are rustc's to check, as o
     for (const file of run(["git", "ls-files", crate]).trim().split("\n")) cpSync(join(root, file), join(installed, file));
   }
   const manifest = withReact(dir, counter, join(installed, "react"));
-  const { js } = await check(manifest, { packageName: "ui" });
-  expect(body(js)).toContain('import { useState } from "react";');
+  const { js } = await check(manifest, { packageNames: ["ui"] });
+  expect(body(js!)).toContain('import { useState } from "react";');
   // A check of the whole workspace too, the bindings with it.
   run(cargo(manifest, "check", "--target", "wasm32-unknown-unknown"), 600_000, await throughRustJs(manifest));
 }, 600_000);
@@ -77,7 +77,7 @@ test("the bindings installed inside a Cargo workspace are rustc's to check, as o
 test("a Cargo build is for the React release it's asked for, and follows a change of it", async () => {
   const dir = fixture("cargo-react-versions");
   const manifest = withReact(dir, usesUseEffectEvent);
-  const attempt = (react: string) => check(manifest, { packageName: "ui", react });
+  const attempt = (react: string) => check(manifest, { packageNames: ["ui"], react });
   // The build script's `cfg`s are `react/build.sh`'s, from `cfg.js`.
   const build = join(dir, "target", "wasm32-unknown-unknown", "debug", "build");
   const flags = () => {

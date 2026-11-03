@@ -6,10 +6,10 @@
 //                                        Rust against the bindings here, each
 //                                        push that changes them (react-in-rust.yml)
 //   bun scripts/react-in-rust.ts regen [crate ..]
-//                                        each of its crates, or those named,
-//                                        compiled to JS by this compiler,
-//                                        against the JS the pin committed
-//                                        (the nightly's `port`)
+//                                        its workspace, or the crates named,
+//                                        compiled to JS by this compiler in
+//                                        one `rust-js build`, against the JS
+//                                        the pin committed (the nightly's `port`)
 //
 // The port is fetched at the pin into a directory of its own, beside a
 // `rust-js` that is this checkout, as its Cargo.toml and package.json name
@@ -143,19 +143,21 @@ if (command === "check") {
   if (!existsSync(compiler)) throw new Error(`no compiler at ${compiler}: \`bun run build\`, or set RUST_JS_COMPILER`);
   fetch();
   layout();
-  const failed: string[] = [];
+  // One build, as its porter's `yarn rust` is: the workspace's members at
+  // once, or those named, each crate checked once and Cargo's on every core.
   const named = process.argv.slice(3);
-  for (const name of members().filter((name) => !named.length || named.includes(name))) {
-    const built = run(["node", join(root, "tooling/cli.js"), "build", "--package", name], port, { RUST_JS_COMPILER: compiler });
-    if (!built.ok) failed.push(`#### ${name}\n\n\`\`\`\n${built.out.trim().split("\n").slice(-40).join("\n")}\n\`\`\``);
-  }
+  const crates = members();
+  const unknown = named.filter((name) => !crates.includes(name));
+  if (unknown.length) throw new Error(`react-in-rust has no crate with JS named ${unknown.join(", ")}: ${crates.join(", ")}`);
+  const built = run(["node", join(root, "tooling/cli.js"), "build", ...named.flatMap((name) => ["--package", name])], port, { RUST_JS_COMPILER: compiler });
+  const failed = built.ok ? [] : [`\`\`\`\n${built.out.trim().split("\n").slice(-80).join("\n")}\n\`\`\``];
   // Every file the build changed or added, as git sees it.
   const changed = run(["git", "status", "--porcelain=v1", "--untracked-files=all"], port).stdout.split("\n").filter(Boolean);
   run(["git", "add", "-A", "--intent-to-add"], port);
   const diff = run(["git", "diff", "--no-color"], port).stdout;
   mkdirSync(join(root, "target"), { recursive: true });
   writeFileSync(join(root, "target/react-in-rust.diff"), diff);
-  if (failed.length) report(`### react-in-rust at ${pin.slice(0, 9)}: ${failed.length} crate(s) don't compile\n\n${failed.join("\n\n")}`);
+  if (failed.length) report(`### react-in-rust at ${pin.slice(0, 9)} doesn't compile\n\n${failed.join("\n\n")}`);
   if (changed.length) {
     // Each file's first lines of change, so a person can tell a regression
     // from an intended change; the whole diff is the artifact's.

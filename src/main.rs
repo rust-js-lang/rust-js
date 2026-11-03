@@ -126,7 +126,7 @@ struct RustJs {
     tidy_until: Option<String>,
     /// `--std-iterators`, the differential job's hook (ADR 0908).
     std_iterators: bool,
-    /// Cargo's build (ADR 0101), which is told what `RUST_JS_APP` was.
+    /// Cargo's build (ADR 0101), which is told what `RUST_JS_APPS` was.
     cargo: bool,
     /// `-C panic=abort`, which rust-js unwinds (ADR 0090): unwinding is
     /// refused of it (ADR 0660).
@@ -244,16 +244,16 @@ impl Callbacks for RustJs {
     }
 
     fn after_crate_root_parsing(&mut self, compiler: &Compiler, krate: &mut rustc_ast::Crate) -> Compilation {
-        // Whether the crate is the app is `RUST_JS_APP`'s, which Cargo
+        // Whether the crate is a program is `RUST_JS_APPS`'s, which Cargo
         // reads of the dep-info, as of an `env!`: another value is another
         // build (ADR 0360).
         if self.cargo {
-            let value = std::env::var(cargo::APP).ok().map(|value| Symbol::intern(&value));
+            let value = std::env::var(cargo::APPS).ok().map(|value| Symbol::intern(&value));
             compiler
                 .sess
                 .env_depinfo
                 .lock()
-                .insert((Symbol::intern(cargo::APP), value));
+                .insert((Symbol::intern(cargo::APPS), value));
         }
         Syntax.after_crate_root_parsing(compiler, krate)
     }

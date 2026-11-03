@@ -34,9 +34,11 @@ pub enum Invocation {
 /// lints it, and none is compiled; the rest are rustc's, as Cargo asked.
 pub const CLIPPY: &str = "RUST_JS_CLIPPY";
 
-/// The package the tooling builds as the app, a program no crate uses
-/// (ADR 0360).
-pub const APP: &str = "RUST_JS_APP";
+/// The crates compiled as programs, by their directories, as the tooling
+/// says: each of the workspace's that no crate of it uses, whichever of its
+/// packages Cargo builds, so the list is the same for every build of the
+/// workspace (ADR 0360, amended).
+pub const APPS: &str = "RUST_JS_APPS";
 
 /// The crates rust-js compiles, the app's own, by their directories, as the
 /// tooling says: each of Cargo's packages of a path, its workspace's, a path
@@ -187,16 +189,7 @@ enum Whose {
 
 /// Who compiles the crate Cargo builds, by where Cargo has it.
 fn whose() -> Result<Whose, String> {
-    let listed = |var: &str| -> Result<Vec<PathBuf>, String> {
-        let list = std::env::var(var).map_err(|_| {
-            format!(
-                "Cargo ran rust-js without `{var}`, the crates it compiles, which `rust-js build` gives it: run that"
-            )
-        })?;
-        serde_json::from_str(&list).map_err(|e| format!("`{var}` isn't a list of directories: {e}"))
-    };
-    let dir = std::env::var("CARGO_MANIFEST_DIR").map_err(|_| "Cargo gave no CARGO_MANIFEST_DIR")?;
-    let dir = std::fs::canonicalize(&dir).map_err(|e| format!("{dir}: {e}"))?;
+    let dir = manifest_dir()?;
     // One rust-js reads as rustc builds it is rustc's, wherever it is; one
     // whose API rust-js writes, only crates.io's, at a version it's
     // qualified at (ADR 0529).
@@ -229,6 +222,27 @@ fn whose() -> Result<Whose, String> {
         true => Whose::Dependency,
         false => Whose::Rustc,
     })
+}
+
+/// The crates the tooling lists in `var`, by their directories, a JSON
+/// array: `RUST_JS_CRATES`, `RUST_JS_DEPENDENCIES` or `RUST_JS_APPS`.
+fn listed(var: &str) -> Result<Vec<PathBuf>, String> {
+    let list = std::env::var(var).map_err(|_| {
+        format!("Cargo ran rust-js without `{var}`, the crates it compiles, which `rust-js build` gives it: run that")
+    })?;
+    serde_json::from_str(&list).map_err(|e| format!("`{var}` isn't a list of directories: {e}"))
+}
+
+/// The directory of the package Cargo builds, as the tooling lists them.
+fn manifest_dir() -> Result<PathBuf, String> {
+    let dir = std::env::var("CARGO_MANIFEST_DIR").map_err(|_| "Cargo gave no CARGO_MANIFEST_DIR")?;
+    std::fs::canonicalize(&dir).map_err(|e| format!("{dir}: {e}"))
+}
+
+/// Whether the crate Cargo builds is one `RUST_JS_APPS` lists, a program
+/// (ADR 0360).
+fn is_app() -> Result<bool, String> {
+    Ok(listed(APPS)?.contains(&manifest_dir()?))
 }
 
 /// A dependency (ADR 0415), tried in a process of its own, what it says held:
@@ -333,15 +347,12 @@ fn compile(flags: &[String]) -> Result<Vec<String>, String> {
     if !tests {
         ours.push("--declarations".into());
     }
-    // Each is a library, but the app, the package `RUST_JS_APP` names, which
-    // the tooling builds and no crate of its workspace uses (ADR 0360), and
-    // a test build, a harness's. What `RUST_JS_APP` is, rust-js records for
-    // Cargo, which builds it again where it changes.
-    if !tests
-        && std::env::var(APP)
-            .ok()
-            .is_none_or(|app| std::env::var("CARGO_PKG_NAME").ok() != Some(app))
-    {
+    // Each is a library, but an app, a crate `RUST_JS_APPS` lists, which no
+    // crate of its workspace uses (ADR 0360), and a test build, a harness's.
+    // What `RUST_JS_APPS` is, rust-js records for Cargo, which builds it
+    // again where it changes: the workspace's, it's the same whichever of
+    // its packages is built, and a crate built for one is fresh for another.
+    if !tests && !is_app()? {
         ours.push("--library".into());
     }
     for manifest in dependencies(flags)? {

@@ -124,11 +124,11 @@ test("the builder builds an app's Cargo package, and a failed build leaves its J
     expect(version.exitCode).toBe(0);
     expect(parseCompilerIdentity(version.stdout.toString())).toEqual(result.compiler);
     expect(result.sources).toContain(join(root, "src", "lib.rs"));
-    expect((await import(built.js)).answer()).toBe(42);
-    const previous = readFileSync(built.js, "utf8");
+    expect((await import(built.js!)).answer()).toBe(42);
+    const previous = readFileSync(built.js!, "utf8");
     writeFileSync(join(root, "src", "lib.rs"), "pub fn broken(");
     await expect(builder.checkCargo(options)).rejects.toThrow();
-    expect(readFileSync(built.js, "utf8")).toBe(previous);
+    expect(readFileSync(built.js!, "utf8")).toBe(previous);
   } finally { rmSync(root, { recursive: true, force: true }); }
 }, 600_000);
 
@@ -149,7 +149,7 @@ test("the builder refuses an app without the compiler's @rust-js/runtime", async
     rmSync(join(root, "node_modules"), { recursive: true });
     installRuntime(root);
     const built = await builder().checkCargo(options);
-    expect((await import(built.js)).answer()).toBe(42);
+    expect((await import(built.js!)).answer()).toBe(42);
   } finally { rmSync(root, { recursive: true, force: true }); }
 }, 600_000);
 
@@ -165,7 +165,7 @@ test("the builder's Cargo builds run the compiler's Rust", async () => {
     const { packages } = await builder.cargoWorkspace({ manifestPath: options.manifestPath, offline: true });
     expect([...packages.keys()]).toEqual(["app"]);
     const built = await builder.checkCargo(options);
-    expect(readFileSync(built.js, "utf8")).toContain("export function answer() {\n  return 42;\n}");
+    expect(readFileSync(built.js!, "utf8")).toContain("export function answer() {\n  return 42;\n}");
   } finally { rmSync(root, { recursive: true, force: true }); }
 }, 600_000);
 

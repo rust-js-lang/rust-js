@@ -5,7 +5,7 @@ app's directory. It writes each module's JavaScript beside its Rust, and
 your dev server or bundler, Vite's or Next.js's, takes it from there.
 
 ```bash
-rust-js build                       # the package of the Cargo.toml here
+rust-js build                       # the package of the Cargo.toml here, or a workspace's members
 rust-js build --package frontend    # a workspace's package: the app's client
 rust-js build --check               # writes nothing; fails if a file is stale
 ```
@@ -222,18 +222,23 @@ maps aren't compared, nor an npm package's JS, which isn't yours to commit.
 
 ## A Cargo workspace
 
-In a workspace whose root `Cargo.toml` is only `[workspace]`, name the
-app's package:
+In a workspace whose root `Cargo.toml` is only `[workspace]`, `rust-js
+build` builds every member at once, as `cargo check` does there; name a
+package, or several, as Cargo's `-p` names them, to build those and what
+they use:
 
 ```bash
-rust-js build --package frontend
+rust-js build                                    # every member
+rust-js build --package frontend                 # the app's client
+rust-js build --package frontend --package admin # two apps, at once
 ```
 
-Without it, `rust-js build` stops:
-
-```
-rust-js: /path/to/app/Cargo.toml is a workspace's: name the app's package, `rust-js build --package <name>`
-```
+One build checks each crate once, and Cargo checks the crates that don't
+use each other on the machine's cores at once: a workspace of several apps
+is one `rust-js build`, not one for each. Each crate's JS is the same
+whichever packages a build names, so a crate one build checked is done for
+the next, whatever it names
+([ADR 1068](../../decisions/1068-a-workspace-built-whole.md)).
 
 Every crate of the workspace that `frontend` uses gets its JS beside its
 Rust too, and `frontend` imports it there, a function or a `const` alike
@@ -255,9 +260,10 @@ stay std's beside it. Only a `#![no_std]` crate can use one named
 `std`, as in Rust, where it would be any other crate's prelude
 ([ADR 1054](../../decisions/1054-a-crate-is-stds-by-the-lang-item-it-defines.md)).
 
-The package built is compiled as a program only where no crate of the
-workspace uses it; one another crate uses is a library, whichever package
-is built ([ADR 0360](../../decisions/0360-the-app-is-a-program.md)). A
+A package is compiled as a program where no crate of the workspace uses
+it, whether a build names it or builds the whole workspace; one another
+crate uses is a library, whichever packages are built
+([ADR 0360](../../decisions/0360-the-app-is-a-program.md)). A
 library's generic function takes the copies and drops its own crate's
 calls give it, as a program's does, so a crate's JS is the same whether
 another crate uses it or not, the one its JS callers call:

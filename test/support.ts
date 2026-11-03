@@ -247,7 +247,7 @@ export function cargoApp(dir: string, rust: string, { lib = "src/lib.rs", react 
   const path = lib === "src/lib.rs" ? "" : `\n[lib]\npath = "${lib}"\n`;
   const dependencies = react ? `react = { package = "rust-js-react", path = ${JSON.stringify(join(root, "react"))} }\n` : "";
   writeFileSync(join(dir, "Cargo.toml"), `[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n${path}\n[dependencies]\n${dependencies}${toml ? `\n${toml}` : ""}\n[workspace]\n`);
-  return { manifestPath: join(dir, "Cargo.toml"), packageName: "app", offline: true };
+  return { manifestPath: join(dir, "Cargo.toml"), packageNames: ["app"], offline: true };
 }
 
 /** `@rust-js/runtime` and `@rust-js/std`, installed in an app outside the

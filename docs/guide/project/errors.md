@@ -153,7 +153,6 @@ And from `rust-js build` itself:
 | It says | Do |
 | --- | --- |
 | ``rust-js: no Cargo.toml in ..: run `rust-js build` where the app's is`` | run it in the app's directory |
-| ``rust-js: .. is a workspace's: name the app's package, `rust-js build --package <name>` `` | add `--package` |
 | ``rust-js: the JS beside the Rust isn't what it compiles to; run `rust-js build`:`` | `--check` found stale files: build, and commit them |
 | `the JS rust-js 0.0.4 writes imports @rust-js/runtime 0.0.4: install it` | install `@rust-js/runtime` and `@rust-js/std` at the compiler's version |
 | `rust-js: no rust-js at ..: install rust-js ..` | install `@rust-js/native`, or set `RUST_JS_COMPILER` |

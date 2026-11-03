@@ -92,11 +92,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cargo-app-a-library",
-    breaks: "the app, `RUST_JS_APP`'s package, is compiled as a library, and copies a `Copy` struct only a library's consumers could change (ADR 0844)",
+    breaks: "an app, a crate `RUST_JS_APPS` lists, is compiled as a library, and copies a `Copy` struct only a library's consumers could change (ADR 0844)",
     file: "src/cargo.rs",
-    find: "    if !tests\n        && std::env::var(APP)\n            .ok()\n            .is_none_or(|app| std::env::var(\"CARGO_PKG_NAME\").ok() != Some(app))\n    {\n",
+    find: "    if !tests && !is_app()? {\n",
     replace: "    if !tests {\n",
-    tests: ["test/cargo-workspace.test.ts", "-t", "app's crate is a program"],
+    tests: ["test/cargo-workspace.test.ts", "-t", "app's crate is a program|members at once"],
+  },
+  {
+    name: "cargo-apps-every-crate",
+    breaks: "every crate the tooling has rust-js compile is a program, one another crate uses too, whose `Rc` that crate may share goes uncounted (ADRs 0320, 1068)",
+    file: "src/cargo.rs",
+    find: "    Ok(listed(APPS)?.contains(&manifest_dir()?))\n",
+    replace: "    Ok(listed(APPS).is_ok())\n",
+    tests: ["test/cargo-workspace.test.ts", "-t", "app's crate is a program|members at once"],
   },
   {
     name: "cargo-prettier-config-unrecorded",

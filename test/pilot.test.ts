@@ -168,7 +168,7 @@ test("the pilot's committed JS is what rust-js writes from its Rust", async () =
   expect(committed.size).toBeGreaterThan(0);
   // Built here, as `rust-js build` builds it, so a build that fails fails this.
   const react = JSON.parse(readFileSync(join(pilot, "node_modules", "react", "package.json"), "utf8")).version;
-  await checkCargo({ manifestPath: join(pilot, "Cargo.toml"), toolchain: channel, compiler, packageName: "frontend", offline: true, react, inSource: true });
+  await checkCargo({ manifestPath: join(pilot, "Cargo.toml"), toolchain: channel, compiler, packageNames: ["frontend"], offline: true, react, inSource: true });
   // Blessed as the corpus is, `BLESS=1`: what's written, committed.
   if (process.env.BLESS) {
     for (const [path, js] of writtenJs(pilot)) writeFileSync(join(checkout, path), js);

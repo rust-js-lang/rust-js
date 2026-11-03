@@ -47,7 +47,7 @@ test("a Cargo workspace built with rust-js as its wrapper prints what native Rus
   const manifest = workspace(dir);
   const native = () => run(cargo(manifest, "run", "-p", "check"));
   // `models` built first on its own, the package Cargo was asked for, then used.
-  await check(manifest, { packageName: "models" });
+  await check(manifest, { packageNames: ["models"] });
   const { js, crates } = await check(manifest);
   expect([...crates.keys()].sort()).toEqual(["frontend", "models", "validation"]);
   // serde's crates, which rust-js reads as rustc builds them (ADR 0077),
@@ -55,15 +55,15 @@ test("a Cargo workspace built with rust-js as its wrapper prints what native Rus
   // why it isn't compiled.
   const deps = join(dir, "target", "wasm32-unknown-unknown", "debug", "deps");
   expect(readdirSync(deps).filter((file) => file.startsWith("libserde") && file.endsWith(".rust-js-refused"))).toEqual([]);
-  const before = printed(js);
+  const before = printed(js!);
   expect(before).toBe(native());
   const validation = join(dir, "validation", "src", "lib.rs");
   writeFileSync(validation, readFileSync(validation, "utf8").replace("isn't an email address", "is no email address"));
-  const after = printed((await check(manifest)).js);
+  const after = printed((await check(manifest)).js!);
   expect(after).toBe(native());
   expect(after).not.toBe(before);
   // A crate told of the libraries its dependency was compiled against.
-  expect(printed((await check(manifest, { packageName: "shell" })).js)).toBe(after);
+  expect(printed((await check(manifest, { packageNames: ["shell"] })).js!)).toBe(after);
 }, 600_000);
 
 // Which rust-js runs is in what Cargo hashes into each crate's fingerprint
@@ -96,11 +96,11 @@ test("a Cargo build of rust-js's crates is done when their JS is, and not before
   const dir = fixture("crates-cargo-fresh");
   const manifest = workspace(dir);
   const { js, crates } = await check(manifest);
-  const written = statSync(js).mtimeMs;
+  const written = statSync(js!).mtimeMs;
   expect((await check(manifest)).js).toBe(js);
-  expect(statSync(js).mtimeMs).toBe(written);
+  expect(statSync(js!).mtimeMs).toBe(written);
   const deps = join(dir, "target", "wasm32-unknown-unknown", "debug", "deps");
-  expect(dirname(dirname(js))).toBe(join(deps, "rust-js"));
+  expect(dirname(dirname(js!))).toBe(join(deps, "rust-js"));
   const recorded = readdirSync(deps).filter((f) => f.startsWith("validation-") && f.endsWith(".d")).map((f) => readFileSync(join(deps, f), "utf8"));
   expect(recorded.length).toBe(1);
   // The compiler that ran, which a change to makes Cargo build again: an
@@ -116,7 +116,7 @@ test("a Cargo build of rust-js's crates is done when their JS is, and not before
   rmSync(crates.get("models")!.js);
   await expect(check(manifest)).rejects.toThrow("cargo clean -p models --target wasm32-unknown-unknown");
   run(cargo(manifest, "clean", "-p", "models", "--target", "wasm32-unknown-unknown"));
-  expect(printed((await check(manifest)).js)).toBe(printed(js));
+  expect(printed((await check(manifest)).js!)).toBe(printed(js!));
   // A library's manifest gone, the crates using it are refused, not compiled
   // as if it were a crate rustc built.
   rmSync(dirname(crates.get("validation")!.manifest), { recursive: true });
@@ -138,7 +138,7 @@ test("a Cargo build is done until the app's Prettier config changes", async () =
   writeFileSync(join(dir, "app", "src", "lib.rs"), 'pub fn greeting() -> &\'static str {\n    "hi"\n}\n');
   writeFileSync(join(dir, ".prettierrc"), "{}\n");
   const manifest = join(dir, "Cargo.toml");
-  const built = async () => readFileSync((await check(manifest, { packageName: "app" })).js, "utf8");
+  const built = async () => readFileSync((await check(manifest, { packageNames: ["app"] })).js!, "utf8");
   expect(await built()).toContain('return "hi";');
   writeFileSync(join(dir, ".prettierrc"), '{"singleQuote": true}\n');
   expect(await built()).toContain("return 'hi';");
@@ -160,7 +160,7 @@ const value = (js: string) => run([node ?? "node", "--input-type=module", "--eva
 test("a Cargo build of another feature set, and back, is each one's JS", async () => {
   const manifest = featured(fixture("cargo-features"));
   const values = [];
-  for (const features of [[], ["alternate"], []]) values.push(value((await check(manifest, { packageName: "app", features })).js));
+  for (const features of [[], ["alternate"], []]) values.push(value((await check(manifest, { packageNames: ["app"], features })).js!));
   expect(values).toEqual(["1", "2", "1"]);
 }, 600_000);
 
@@ -168,7 +168,7 @@ test("a Cargo build of another feature set, and back, is each one's JS", async (
 test("a crate Cargo checked without rust-js is compiled by it once it's the wrapper", async () => {
   const manifest = featured(fixture("cargo-wrapper-added"));
   run(cargo(manifest, "check", "--target", "wasm32-unknown-unknown"));
-  expect(value((await check(manifest, { packageName: "app" })).js)).toBe("1");
+  expect(value((await check(manifest, { packageNames: ["app"] })).js!)).toBe("1");
 }, 600_000);
 
 // Found in review: what Cargo is told of a crate was written after its JS was
@@ -176,16 +176,16 @@ test("a crate Cargo checked without rust-js is compiled by it once it's the wrap
 test("a Cargo build that can't record what it made leaves the previous build's JS", async () => {
   const dir = fixture("cargo-record-blocked");
   const manifest = featured(dir);
-  const { js } = await check(manifest, { packageName: "app" });
-  const before = readFileSync(js, "utf8");
+  const { js } = await check(manifest, { packageNames: ["app"] });
+  const before = readFileSync(js!, "utf8");
   const deps = join(dir, "target", "wasm32-unknown-unknown", "debug", "deps");
   const marker = join(deps, readdirSync(deps).find((f) => f.endsWith(".rust-js"))!);
   rmSync(marker);
   mkdirSync(join(marker, "in the way"), { recursive: true });
   const lib = join(dir, "app", "src", "lib.rs");
   writeFileSync(lib, readFileSync(lib, "utf8").replace("    1\n", "    3\n"));
-  await expect(check(manifest, { packageName: "app" })).rejects.toThrow();
-  expect(readFileSync(js, "utf8")).toBe(before);
+  await expect(check(manifest, { packageNames: ["app"] })).rejects.toThrow();
+  expect(readFileSync(js!, "utf8")).toBe(before);
 }, 600_000);
 // Another crate's derive, as strum's and thiserror's are: what it writes is
 // `#[automatically_derived]`, as std's derives' is, but it's the crate's own
@@ -207,8 +207,8 @@ test("what another crate's derive writes is compiled as the crate's own code", a
   writeFileSync(join(dir, "check", "Cargo.toml"), '[package]\nname = "check"\nversion = "0.1.0"\nedition = "2024"\n\n[dependencies]\napp = { path = "../app" }\n');
   writeFileSync(join(dir, "check", "src", "main.rs"), "fn main() {\n    app::main();\n}\n");
   const manifest = join(dir, "Cargo.toml");
-  const { js } = await check(manifest, { packageName: "app" });
-  expect(printed(js)).toBe(run(cargo(manifest, "run", "-p", "check")));
+  const { js } = await check(manifest, { packageNames: ["app"] });
+  expect(printed(js!)).toBe(run(cargo(manifest, "run", "-p", "check")));
 }, 600_000);
 
 // The app, the package the tooling builds, is compiled as a program where
@@ -218,9 +218,8 @@ test("what another crate's derive writes is compiled as the crate's own code", a
 // a count, as the crates sharing it count it (ADRs 0523, 0844): a crate's JS is the same however
 // it's reached, alone or through a dependent, its `dyn Fn` dropped as a
 // library's is (ADR 0521), as React's `shared` is (ADR 0360, amended).
-test("the app's crate is a program where no crate uses it, and a library, the same bytes, where one does", async () => {
+test("the app's crate is a program where no crate uses it, and a library, the same bytes, where one does, whichever packages are built", async () => {
   const dir = fixture("crates-app-program");
-  writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["app", "user"]\nresolver = "2"\n');
   const counts = "use std::rc::Rc;\n\npub struct Shared(pub Rc<u32>);\n\npub fn enqueue(task: Box<dyn Fn()>) {\n    task();\n}\n\npub fn main() {\n    let a = Rc::new(5);\n    let b = Rc::clone(&a);\n    println!(\"{} {} {}\", *a, *b, Rc::strong_count(&a));\n}\n";
   // `user` reads no count, and holds a `Copy` struct it never changes in
   // place, which neither a program nor a library copies (ADR 0914, amended).
@@ -237,29 +236,92 @@ test("the app's crate is a program where no crate uses it, and a library, the sa
     writeFileSync(join(dir, name, "src", "lib.rs"), source);
   }
   const manifest = join(dir, "Cargo.toml");
-  run(cargo(manifest, "generate-lockfile"));
   const counted = (js: string) => readFileSync(js, "utf8").includes("strong: 1");
-  const app = await check(manifest, { packageName: "app" });
-  const alone = readFileSync(app.js, "utf8");
-  expect([printed(app.js), counted(app.js)]).toEqual(["5 5 2\n", true]);
-  const user = await check(manifest, { packageName: "user" });
+  writeFileSync(manifest, '[workspace]\nmembers = ["app", "user"]\nresolver = "2"\n');
+  run(cargo(manifest, "generate-lockfile"));
+  const deps = join(dir, "target", "wasm32-unknown-unknown", "debug", "deps");
+  const checked = () => statSync(join(deps, readdirSync(deps).find((f) => f.startsWith("libapp-") && f.endsWith(".rmeta"))!)).mtimeMs;
+  const app = await check(manifest, { packageNames: ["app"] });
+  const alone = readFileSync(app.js!, "utf8");
+  const first = checked();
+  expect([printed(app.js!), counted(app.js!)]).toEqual(["5 5 2\n", true]);
+  const user = await check(manifest, { packageNames: ["user"] });
   const copied = (js: string) => readFileSync(js, "utf8").includes("{ ...p }");
   // A program's own trait object, whose implementors drop nothing, needs
   // no drop; a library's may hold a consumer's that does (ADRs 0163, 0360).
   const disposed = (js: string) => readFileSync(js, "utf8").includes("shape.impl.$drop?.(shape.value);");
-  expect([printed(user.js), counted(user.js), copied(user.js), disposed(user.js)]).toEqual(["5 5 2\n2\n4\n5 5\n", false, false, false]);
+  expect([printed(user.js!), counted(user.js!), copied(user.js!), disposed(user.js!)]).toEqual(["5 5 2\n2\n4\n5 5\n", false, false, false]);
   expect(readFileSync(user.crates.get("app")!.js, "utf8")).toBe(alone);
-  const again = await check(manifest, { packageName: "app" });
-  expect(readFileSync(again.js, "utf8")).toBe(alone);
-  // The whole workspace, each member a package Cargo was asked for: no app,
-  // so every crate is a library, `user` too, which reads no count and is
-  // handed no `Rc`: it counts none (ADR 0844), and copies its `Point` as
-  // its program does, not at all: a consumer that changes one compiles its
-  // own of what copies it (ADR 0914, amended).
-  await expect(check(manifest, { packageName: undefined })).rejects.toThrow("compiled no library");
-  const deps = join(dir, "target", "wasm32-unknown-unknown", "debug", "deps");
-  const marker = join(deps, readdirSync(deps).find((f) => f.startsWith("libuser-") && f.endsWith(".rust-js"))!);
-  const built = JSON.parse(readFileSync(readFileSync(marker, "utf8").split("\n")[0], "utf8"));
-  const root = built.modules.find((m: { module: string[] }) => m.module.length === 0).file;
-  expect([counted(root), copied(root), disposed(root)]).toEqual([false, false, true]);
+  const own = readFileSync(user.js!, "utf8");
+  const again = await check(manifest, { packageNames: ["app"] });
+  expect(readFileSync(again.js!, "utf8")).toBe(alone);
+  // Which programs there are is the workspace's, whichever package is
+  // built: `app`, checked for itself, was done for `user`'s build and for
+  // its own again, never checked twice (rd662).
+  expect(checked()).toBe(first);
+  // The whole workspace at once, each member a package Cargo was asked
+  // for: each crate's JS is what its own build wrote, `user` a program,
+  // which nothing uses, and `app` the library `user` uses (ADR 0360,
+  // amended); there is no one package's JS.
+  const whole = await check(manifest, { packageNames: [] });
+  expect(whole.js).toBeUndefined();
+  expect([readFileSync(whole.crates.get("user")!.js, "utf8"), readFileSync(whole.crates.get("app")!.js, "utf8")]).toEqual([own, alone]);
+  expect(checked()).toBe(first);
+  // Once a crate of the workspace uses `user`, it's a library, built again,
+  // whose trait object may hold a consumer's that drops: which crates are
+  // programs is recorded for Cargo (ADR 0360).
+  mkdirSync(join(dir, "shell", "src"), { recursive: true });
+  writeFileSync(join(dir, "shell", "Cargo.toml"), '[package]\nname = "shell"\nversion = "0.1.0"\nedition = "2024"\n\n[dependencies]\nuser = { path = "../user" }\n');
+  writeFileSync(join(dir, "shell", "src", "lib.rs"), "pub fn main() {\n    user::main();\n}\n");
+  writeFileSync(manifest, '[workspace]\nmembers = ["app", "user", "shell"]\nresolver = "2"\n');
+  run(cargo(manifest, "generate-lockfile"));
+  const used = await check(manifest, { packageNames: ["shell"] });
+  expect([printed(used.js!), disposed(used.crates.get("user")!.js)]).toEqual(["5 5 2\n2\n4\n5 5\n", true]);
+}, 600_000);
+
+// `rust-js build` of a workspace's root builds every member at once, and
+// `--package`, as often as Cargo's `-p`, those it names: each crate checked
+// once, the independent ones on Cargo's cores, and each crate's JS, `.d.ts`
+// and map in source byte for byte what a build of its own package writes
+// (ADR 1068).
+test("rust-js build builds a workspace's members at once, or the packages named, each crate's files what its own package's build writes", () => {
+  const dir = fixture("crates-whole-workspace");
+  writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["app", "user", "other"]\nresolver = "2"\n');
+  writeFileSync(join(dir, "package.json"), '{ "private": true, "type": "module" }\n');
+  const counts = "use std::rc::Rc;\n\npub fn count() -> usize {\n    let a = Rc::new(5);\n    let b = Rc::clone(&a);\n    *b + Rc::strong_count(&a)\n}\n";
+  const shapes = "pub trait Shape {\n    fn area(&self) -> u32;\n}\n\npub struct Square(pub u32);\n\nimpl Shape for Square {\n    fn area(&self) -> u32 {\n        self.0 * self.0\n    }\n}\n\npub fn main() {\n    let shape: Box<dyn Shape> = Box::new(Square(2));\n    println!(\"{}\", shape.area() as usize + app::count());\n}\n";
+  for (const [name, uses, source] of [["app", "", counts], ["user", 'app = { path = "../app" }\n', shapes], ["other", 'app = { path = "../app" }\n', shapes]]) {
+    mkdirSync(join(dir, name, "src"), { recursive: true });
+    writeFileSync(join(dir, name, "Cargo.toml"), `[package]\nname = "${name}"\nversion = "0.1.0"\nedition = "2024"\n\n[dependencies]\n${uses}`);
+    writeFileSync(join(dir, name, "src", "lib.rs"), source);
+  }
+  run(cargo(join(dir, "Cargo.toml"), "generate-lockfile"));
+  const build = (...args: string[]) => {
+    const built = Bun.spawnSync([process.execPath, join(root, "tooling", "cli.js"), "build", ...args], { cwd: dir, env: { ...process.env, RUST_JS_COMPILER: compiler }, stdout: "pipe", stderr: "pipe" });
+    expect([built.exitCode, built.stderr.toString()]).toEqual([0, ""]);
+  };
+  // Every file written beside the Rust, by its path, then gone, so the
+  // next build writes each again.
+  const written = () => {
+    const files = new Map<string, string>();
+    for (const name of ["app", "user", "other"]) {
+      for (const file of readdirSync(join(dir, name, "src")).filter((file) => !file.endsWith(".rs")).sort()) {
+        files.set(`${name}/src/${file}`, readFileSync(join(dir, name, "src", file), "utf8"));
+        rmSync(join(dir, name, "src", file));
+      }
+    }
+    return files;
+  };
+  build("--package", "user");
+  build("--package", "other");
+  const alone = written();
+  expect([...alone.keys()]).toEqual(["app/src/lib.d.ts", "app/src/lib.js", "app/src/lib.js.map", "user/src/lib.d.ts", "user/src/lib.js", "user/src/lib.js.map", "other/src/lib.d.ts", "other/src/lib.js", "other/src/lib.js.map"]);
+  // `user` and `other` are programs, which nothing uses: their own trait
+  // object drops nothing; `app`, which both use, is a library (ADR 0360).
+  expect(["user", "other", "app"].map((name) => alone.get(`${name}/src/lib.js`)!.includes("$drop?."))).toEqual([false, false, false]);
+  expect(alone.get("app/src/lib.js")).toContain("strong: 1");
+  build();
+  expect(written()).toEqual(alone);
+  build("--package", "user", "--package", "other");
+  expect(written()).toEqual(alone);
 }, 600_000);

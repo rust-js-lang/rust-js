@@ -399,7 +399,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0357 A local reuses a name where JS's scopes keep each read its own](0357-scoped-local-names.md)
 - [0358 A number from a `bool` or a `char` is its cast](0358-numbers-from-bool-and-char.md)
 - [0359 next/font: each Google Font a function, generated](0359-next-font.md)
-- [0360 The app's crate is a program: `RUST_JS_APP`, recorded for Cargo](0360-the-app-is-a-program.md) *(amended: a crate another uses is a library, whichever is built; amended by 0914: its generic functions are its program's; amended: each push builds as libraries only the corpus cases whose JS differs)*
+- [0360 The app's crate is a program: `RUST_JS_APP`, recorded for Cargo](0360-the-app-is-a-program.md) *(amended: a crate another uses is a library, whichever is built; amended by 0914: its generic functions are its program's; amended: each push builds as libraries only the corpus cases whose JS differs; amended by 1068: the programs are the workspace's, `RUST_JS_APPS`)*
 - [0361 Node's events are names of their own, typed by their emitters](0361-node-events.md) *(amended by 0656: `emit` takes what TypeScript's does)*
 - [0362 A field's `RefCell` never counted is the value it holds](0362-refcell-fields-never-counted.md) *(amended by 0863: a library's plain field too, by its contract)*
 - [0363 Children of any node are given by reference](0363-children-of-any-node.md)
@@ -451,7 +451,8 @@ reordered, and git merges this file by keeping both sides' lines
 - [0409 A struct of a `dyn` last field is the struct, with its `impl`](0409-a-struct-of-a-dyn-last-field.md)
 - [0410 An impl's constant of a function is lowered as code](0410-an-impls-function-constant-is-code.md)
 - [0411 An iterator given as it is is stepped by its dictionary](0411-an-iterator-given-as-it-is-has-its-dictionary.md) *(amended by 0690: the crate's own `fold` and `nth` in it, `$given`)*
-- [0412 `rust-js build` is its own process](0412-rust-js-build-is-its-own-process.md)
+- [0412 `rust-js build` is its own process](0412-rust-js-build-is-its-own-process.md) *(amended by 1068: a workspace built whole, `--package` as often as `-p`)*
+- [1068 A workspace is built whole, its programs the workspace's](1068-a-workspace-built-whole.md)
 - [0413 A declaration means the same under every tsconfig](0413-a-declaration-means-the-same-under-every-tsconfig.md)
 - [0414 A library is shared on npm, as ReScript's are](0414-a-library-on-npm-as-rescripts-are.md) *(extended by 1008: what a package's entry re-exports is imported by its name; amended: a module past its crate's directory is named from it too, `../Runtime.rs`)*
 - [0415 A crate of crates.io's is compiled into the app, where it can be](0415-a-crate-of-crates-io-in-an-app.md)

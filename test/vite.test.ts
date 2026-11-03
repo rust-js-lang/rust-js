@@ -324,7 +324,7 @@ thread_local! {
 }, 120_000);
 
 // A Cargo workspace (ADR 0101), a full-stack app's: Cargo builds each crate,
-// rust-js as its workspace wrapper, of the package `--package` names, and
+// rust-js as its workspace wrapper, of each member or the package `--package` names, and
 // writes each crate's JS beside its Rust. The app is a directory of the
 // workspace, Vite's root, which imports the package's JS where it is, and a
 // package the Rust imports is the app's, in the workspace's node_modules.
@@ -361,9 +361,10 @@ pub fn App() -> JSX::Element {
   mkdirSync(join(web, "src"), { recursive: true });
   writeFileSync(join(web, "index.html"), '<div id="root"></div><script type="module" src="/src/main.jsx"></script>');
   writeFileSync(join(web, "src/main.jsx"), 'import {createRoot} from "react-dom/client"; import {App} from "../../ui/src/lib"; createRoot(document.getElementById("root")).render(<App/>);');
-  // A workspace has no package of its own: `--package` names the app's.
-  const unnamed = rustJs(dir);
-  expect([unnamed.code, unnamed.output.includes("`rust-js build --package <name>`")]).toEqual([1, true]);
+  // A workspace's root, which has no package of its own, builds each of its
+  // members; `--package` names the app's (ADR 1068).
+  const whole = rustJs(dir);
+  expect([whole.code, whole.output]).toEqual([0, ""]);
   const built = rustJs(dir, ["--package", "ui"]);
   expect([built.code, built.output]).toEqual([0, ""]);
   // Each crate's JS imports the others' beside their Rust (ADR 0041).

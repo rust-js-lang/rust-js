@@ -5,8 +5,8 @@ command, run in the app's directory, its own process beside the app's dev
 server or build, `next dev` or `vite`, which are the host's alone (ADR 0412).
 
 ```sh
-rust-js build                       # the package the app's Cargo.toml is of
-rust-js build --package frontend    # a workspace's: the app's client
+rust-js build                       # the package the app's Cargo.toml is of, or a workspace's members
+rust-js build --package frontend    # a workspace's: the app's client, as often as Cargo's `-p`
 rust-js build --check               # writes nothing; fails, naming each file, if one is stale
 ```
 
@@ -158,12 +158,15 @@ multi-file replacement.
 Cargo builds a workspace's libraries with rust-js as its workspace wrapper
 ([ADR 0101](../docs/decisions/0101-cargo-workspace-wrapper.md)), each to JS of
 its own ([ADR 0100](../docs/decisions/0100-separate-crates.md)), as `rust-js
-build --package frontend` asks for:
+build --package frontend` asks for, or every member at once, as `rust-js
+build` at a workspace's root does (ADR 1068):
 
 It runs `RUSTC_WRAPPER=<compiler> cargo check --target
 wasm32-unknown-unknown`, with the app's own crates, Cargo's packages of a
 path, in `RUST_JS_CRATES`
 ([ADR 0414](../docs/decisions/0414-a-library-on-npm-as-rescripts-are.md)),
+the programs, the workspace's crates no crate of it uses, whichever packages
+are built, in `RUST_JS_APPS` ([ADR 0360](../docs/decisions/0360-the-app-is-a-program.md)),
 and its crates of crates.io's or git's, which rust-js compiles where it can,
 in `RUST_JS_DEPENDENCIES`, their JS the app's, in `rust-js/crates/`
 ([ADR 0415](../docs/decisions/0415-a-crate-of-crates-io-in-an-app.md)).

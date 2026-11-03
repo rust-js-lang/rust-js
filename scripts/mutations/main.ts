@@ -60,9 +60,9 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cargo-app-untracked",
-    breaks: "Cargo isn't told what `RUST_JS_APP` was, so the app compiled as a program is fresh when another crate uses it",
+    breaks: "Cargo isn't told what `RUST_JS_APPS` was, so a crate compiled as a program is fresh once another crate uses it",
     file: "src/main.rs",
-    find: "            compiler\n                .sess\n                .env_depinfo\n                .lock()\n                .insert((Symbol::intern(cargo::APP), value));\n",
+    find: "            compiler\n                .sess\n                .env_depinfo\n                .lock()\n                .insert((Symbol::intern(cargo::APPS), value));\n",
     replace: "            let _ = value;\n",
     tests: ["test/cargo-workspace.test.ts", "-t", "app's crate is a program"],
   },

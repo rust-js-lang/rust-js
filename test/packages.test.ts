@@ -86,7 +86,7 @@ test(`installed packages compile using ${runtime} without the other runtime`, ()
     const command = join(root, "node_modules/.bin/rust-js");
     const installed = join(root, "node_modules/@rust-js/native/bin/rust-js");
     expect(JSON.parse(run([runtime, installed, "--version-json"]))).toEqual(JSON.parse(run([compiler, "--version-json"])));
-    expect(() => run([runtime, command, "--version-json"])).toThrow("usage: rust-js build [--package <name>] [--check]");
+    expect(() => run([runtime, command, "--version-json"])).toThrow("usage: rust-js build [--package <name>]... [--check]");
     // The app's Rust, a Cargo package (ADR 0101), its crate React's, named
     // by version: `rust-js build`'s patch tells Cargo it's in node_modules.
     mkdirSync(join(root, "src"));

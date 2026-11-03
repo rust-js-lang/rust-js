@@ -124,12 +124,13 @@ function main() {
     writeFileSync(join(dir, "lib.rs"), existsSync(probe) ? readFileSync(probe, "utf8") : "");
     writeFileSync(join(dir, "main.rs"), "fn main() {\n    print!(\"{}\", probe::report());\n}\n");
     // Every crate the probe builds is rust-js's to compile, a registry's too.
+    // Each a library, as a crate of crates.io is to the apps that use it.
     const metadata = spawnSync("cargo", [`+${toolchain}`, "metadata", "--format-version=1"], { cwd: dir, maxBuffer: 256 * 1024 * 1024, encoding: "utf8" });
     const crates = (JSON.parse(metadata.stdout).packages as { manifest_path: string }[]).map((pkg) => realpathSync(dirname(pkg.manifest_path)));
     const run = spawnSync(
       "cargo",
       [`+${toolchain}`, "check", "--lib", "--keep-going", "--message-format=json", "--target", "wasm32-unknown-unknown"],
-      { cwd: dir, env: cargoEnv(compiler, undefined, { crates }), maxBuffer: 256 * 1024 * 1024, encoding: "utf8" },
+      { cwd: dir, env: cargoEnv(compiler, undefined, { apps: [], crates }), maxBuffer: 256 * 1024 * 1024, encoding: "utf8" },
     );
     const compiled: string[] = [];
     const refused = new Map<string, string>();

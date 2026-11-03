@@ -220,17 +220,18 @@ export function createNativeBuilder({ root, rustJs }) {
 /**
  * `rust-js build`, an app's Rust compiled once, by its own process beside
  * the app's dev server or build, whatever runs that (ADR 0412): `cargo
- * check` of the package `app`'s `Cargo.toml` is of, or of a workspace's,
- * `packageName`, a full-stack app's client say, each module's JS and
+ * check` of the package `app`'s `Cargo.toml` is of, or of a workspace's
+ * `packageNames`, a full-stack app's client say, all at once, or each of a
+ * workspace's members where its root's names none, each module's JS and
  * `.d.ts` written beside its Rust, to be committed (ADR 0041), and the
  * crate's checks of a build (ADR 0117), what they say given to `log`. With
  * `check`, nothing is written: a file that isn't what the Rust compiles to
  * is an error. A Next.js app's Pages Router routes get no declarations,
  * which it would take as routes (ADR 0276).
- * @param {{ app: string, packageName?: string, check?: boolean, log?: (line: string) => void }} options
+ * @param {{ app: string, packageNames?: string[], check?: boolean, log?: (line: string) => void }} options
  * @returns {Promise<void>}
  */
-export async function buildApp({ app, packageName: named, check = false, log = (line) => process.stderr.write(`${line}\n`) }) {
+export async function buildApp({ app, packageNames = [], check = false, log = (line) => process.stderr.write(`${line}\n`) }) {
   const { writePatch } = await import("./patch.js");
   // The app's Cargo, and its editor, find the crates its npm packages have
   // by a patch, which an install's `postinstall` writes, and again here:
@@ -241,22 +242,19 @@ export async function buildApp({ app, packageName: named, check = false, log = (
   const builder = createNativeBuilder({ root: app, rustJs: compiler });
   const manifestPath = join(app, "Cargo.toml");
   if (!existsSync(manifestPath)) throw new Error(`rust-js: no Cargo.toml in ${app}: run \`rust-js build\` where the app's is`);
-  const { own } = await builder.cargoWorkspace({ manifestPath });
-  const packageName = named ?? own;
-  if (!packageName) throw new Error(`rust-js: ${manifestPath} is a workspace's: name the app's package, \`rust-js build --package <name>\``);
-  await builder.build({ manifestPath, packageName, check, routes: nextRoutes(app), packages, warn: (message) => log(message.trimEnd()) });
+  await builder.build({ manifestPath, packageNames, check, routes: nextRoutes(app), packages, warn: (message) => log(message.trimEnd()) });
 }
 
 /**
  * `rust-js clippy` (ADR 0888): the app's Rust, `cargo check` of the package
- * `app`'s `Cargo.toml` is of, or `packageName`, linted by clippy's lints as
+ * `app`'s `Cargo.toml` is of, or `packageNames`, linted by clippy's lints as
  * rust-js reads it, inside JSX, and what JS reads used (ADR 0440), with
  * `lints`, clippy's flags, `["-D", "warnings"]`. Nothing is written beside
  * the Rust, in a target directory of its own. Cargo's exit code.
- * @param {{ app: string, packageName?: string, lints: string[] }} options
+ * @param {{ app: string, packageNames?: string[], lints: string[] }} options
  * @returns {Promise<number>}
  */
-export async function clippyApp({ app, packageName, lints }) {
+export async function clippyApp({ app, packageNames, lints }) {
   const { writePatch } = await import("./patch.js");
   // Its crates where its npm packages have them, as a build's.
   if (existsSync(join(app, "package.json"))) writePatch(app);
@@ -264,20 +262,20 @@ export async function clippyApp({ app, packageName, lints }) {
   if (!existsSync(manifestPath)) throw new Error(`rust-js: no Cargo.toml in ${app}: run \`rust-js clippy\` where the app's is`);
   const builder = createNativeBuilder({ root: app, rustJs: await findCompiler(app) });
   const targetDir = process.env.CARGO_TARGET_DIR ?? join(cacheDirOf(app), "clippy");
-  return builder.lintCheck({ manifestPath, packageName, lints, targetDir });
+  return builder.lintCheck({ manifestPath, packageNames, lints, targetDir });
 }
 
 /**
  * `rust-js test` (ADR 0916): the `#[test]`s of the library of the package
- * `app`'s `Cargo.toml` is of, or `packageName`, compiled to JS as `cargo
+ * `app`'s `Cargo.toml` is of, or each of `packageNames`, compiled to JS as `cargo
  * check --profile test --lib` builds them, with its dependencies' JS as a
  * build has it, in a target directory of its own, out of source; then run by
  * bun, which gives the `test()` its `lib.test.js` calls, `args` given it as
  * well. bun's exit code.
- * @param {{ app: string, packageName?: string, args?: string[] }} options
+ * @param {{ app: string, packageNames?: string[], args?: string[] }} options
  * @returns {Promise<number>}
  */
-export async function testApp({ app, packageName: named, args = [] }) {
+export async function testApp({ app, packageNames = [], args = [] }) {
   const { writePatch } = await import("./patch.js");
   const packages = existsSync(join(app, "package.json")) ? writePatch(app).map(({ name, dir }) => ({ name, dir })) : [];
   const compiler = await findCompiler(app);
@@ -287,12 +285,15 @@ export async function testApp({ app, packageName: named, args = [] }) {
   const builder = createNativeBuilder({ root: app, rustJs: compiler });
   const targetDir = process.env.CARGO_TARGET_DIR ?? join(cacheDirOf(app), "test");
   const { own } = await builder.cargoWorkspace({ manifestPath, targetDir });
-  const packageName = named ?? own;
-  if (!packageName) throw new Error(`rust-js: ${manifestPath} is a workspace's: name the package, \`rust-js test --package <name>\``);
-  const { js } = await builder.checkCargo({ manifestPath, packageName, packages, targetDir, tests: true });
+  const named = packageNames.length ? packageNames : own ? [own] : [];
+  if (!named.length) throw new Error(`rust-js: ${manifestPath} is a workspace's: name the package, \`rust-js test --package <name>\``);
+  // Each package's harness, one at a time: Cargo has what one checked as
+  // done for the next (ADR 0360, amended).
+  const js = [];
+  for (const packageName of named) js.push((await builder.checkCargo({ manifestPath, packageNames: [packageName], packages, targetDir, tests: true })).js);
   const bun = process.versions.bun ? process.execPath : "bun";
   return new Promise((resolve, reject) => {
-    const child = spawn(bun, ["test", ...args, js], { cwd: app, stdio: "inherit" });
+    const child = spawn(bun, ["test", ...args, ...js], { cwd: app, stdio: "inherit" });
     child.on("error", reject);
     child.on("close", (code) => resolve(code ?? 1));
   });

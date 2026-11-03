@@ -18,33 +18,34 @@ const execute = promisify(execFile);
 
 /** Cargo's environment of a check through rust-js: rust-js as the wrapper
  * of every crate, compiling those `crates` names, the app's own, and
- * rustc's shim, the React the react crate is built for, the app,
- * `RUST_JS_APP`, a program no crate of the workspace uses (ADR 0360), and
+ * rustc's shim, the React the react crate is built for, the apps,
+ * `RUST_JS_APPS`, the programs, those no crate of the workspace uses (ADR 0360), and
  * where `@rust-js/typescript` is, `@rust-js/build`'s own, which prints each
  * module's `.d.ts` (ADRs 0207, 0412).
  * @param {string} compiler
  * @param {string | undefined} react
- * @param {{ app?: string, crates: string[], dependencies?: { dir: string }[] }} build
+ * @param {{ apps: string[], crates: string[], dependencies?: { dir: string }[] }} build
  * @returns {NodeJS.ProcessEnv} */
-export function cargoEnv(compiler, react, { app, crates, dependencies = [] }) {
+export function cargoEnv(compiler, react, { apps, crates, dependencies = [] }) {
   const env = {
     ...process.env,
     RUSTC_WRAPPER: resolve(compiler),
     RUSTC: rustcShim(resolve(compiler)),
+    RUST_JS_APPS: JSON.stringify(apps),
     RUST_JS_CRATES: JSON.stringify(crates),
     RUST_JS_DEPENDENCIES: JSON.stringify(dependencies.map(({ dir }) => dir)),
     RUST_JS_TYPESCRIPT: createRequire(import.meta.url).resolve("@rust-js/typescript"),
   };
   if (react) env.RUST_JS_REACT = react;
   else delete env.RUST_JS_REACT;
-  if (app) env.RUST_JS_APP = app;
-  else delete env.RUST_JS_APP;
   return env;
 }
 
-/** What a check builds: the app, the package it's asked for, or else its
- * manifest's own, as Cargo says, a workspace's root without one having
- * none, nor one another crate of the workspace uses; and the crates
+/** What a check builds: the apps, the programs, each of the workspace's
+ * packages that no crate of it uses, as Cargo's metadata resolves the
+ * workspace, by its directory: which packages Cargo is asked for is no part
+ * of it, so a crate's JS is the same whichever are built, and Cargo has a
+ * crate one build checked as done for the next (ADR 0360, amended); and the crates
  * rust-js compiles, the app's own, each of Cargo's packages of a path, not a registry's or git's: the workspace's members,
  * a path dependency, and a crate an npm package has, which the patch names
  * (ADR 0414), by its directory. A binding crate, one whose
@@ -53,23 +54,23 @@ export function cargoEnv(compiler, react, { app, crates, dependencies = [] }) {
  * crates of crates.io's or git's, `dependencies`, each by its directory,
  * name and version, which rust-js compiles where it can, its types alone
  * where it can't (ADR 0415).
- * @param {{ manifestPath: string, packageName?: string, toolchain?: string, offline?: boolean }} options
- * @returns {Promise<{ app?: string, crates: string[], dependencies: { dir: string, name: string, version: string }[] }>} */
-export async function cargoBuild({ manifestPath, packageName, toolchain, offline = false }) {
+ * @param {{ manifestPath: string, toolchain?: string, offline?: boolean }} options
+ * @returns {Promise<{ apps: string[], crates: string[], dependencies: { dir: string, name: string, version: string }[], own?: string }>} */
+export async function cargoBuild({ manifestPath, toolchain, offline = false }) {
   const manifest = resolve(manifestPath);
   const args = [...(toolchain ? [`+${toolchain}`] : []), "metadata", "--format-version=1", "--manifest-path", manifest, ...(offline ? ["--offline"] : [])];
   const { stdout } = await execute("cargo", args, { cwd: dirname(manifest), maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
     throw new Error(`cargo metadata failed:\n${error.stderr ?? error.message}`);
   });
-  const { packages, resolve: graph } = JSON.parse(stdout);
-  const asked = packageName
-    ? packages.find((pkg) => pkg.name === packageName)
-    : packages.find((pkg) => realpathSync(pkg.manifest_path) === realpathSync(manifest));
+  const { packages, resolve: graph, workspace_members: members } = JSON.parse(stdout);
   // A crate another of the workspace uses is a library whichever package
   // is built: its JS, written once beside its Rust, is the same built alone
   // as through the crate that uses it (ADR 0360, amended).
   const used = new Set((graph?.nodes ?? []).flatMap((node) => node.deps.map((dep) => dep.pkg)));
-  const app = asked && !used.has(asked.id) ? asked.name : undefined;
+  const apps = packages
+    .filter((pkg) => members.includes(pkg.id) && !used.has(pkg.id))
+    .map((pkg) => realpathSync(dirname(pkg.manifest_path)))
+    .sort();
   const compiled = packages.filter((pkg) => pkg.metadata?.["rust-js"]?.bindings !== true);
   const crates = compiled
     .filter((pkg) => pkg.source === null)
@@ -79,7 +80,7 @@ export async function cargoBuild({ manifestPath, packageName, toolchain, offline
     .filter((pkg) => pkg.source !== null)
     .map((pkg) => ({ dir: realpathSync(dirname(pkg.manifest_path)), name: pkg.name, version: pkg.version }))
     .sort((a, b) => a.dir.localeCompare(b.dir));
-  return { app, crates, dependencies };
+  return { apps, crates, dependencies, own: ownPackage(packages, manifest) };
 }
 
 /**
@@ -92,16 +93,16 @@ export async function cargoBuild({ manifestPath, packageName, toolchain, offline
  * With `lints`, it's `rust-js clippy`'s (ADR 0888): each crate of the app's
  * own linted by clippy's lints, with those flags, `["-D", "warnings"]`, as
  * rust-js reads it, and none compiled; what Cargo says printed as Cargo
- * prints it, of `packageName`'s, or the manifest's.
- * @param {{ manifestPath: string, toolchain: string, compiler: string, react?: string, targetDir: string, packageName?: string, lints?: string[] }} options
+ * prints it, of `packageNames`', or Cargo's default, the manifest's.
+ * @param {{ manifestPath: string, toolchain: string, compiler: string, react?: string, targetDir: string, packageNames?: string[], lints?: string[] }} options
  * @returns {Promise<number>} Cargo's exit code
  */
-export async function lintCheck({ manifestPath, toolchain, compiler, react, targetDir, packageName, lints }) {
+export async function lintCheck({ manifestPath, toolchain, compiler, react, targetDir, packageNames = [], lints }) {
   if (!exactToolchain(toolchain)) throw new Error("Cargo builds require an exact toolchain pin");
   const manifest = resolve(manifestPath);
-  const linted = lints ? [...(packageName ? ["--package", packageName] : [])] : ["--message-format=json"];
+  const linted = lints ? packageNames.flatMap((name) => ["--package", name]) : ["--message-format=json"];
   const args = [`+${toolchain}`, "check", ...linted, "--target", target, "--manifest-path", manifest];
-  const env = { ...cargoEnv(compiler, react, await cargoBuild({ manifestPath: manifest, packageName, toolchain })), CARGO_TARGET_DIR: targetDir };
+  const env = { ...cargoEnv(compiler, react, await cargoBuild({ manifestPath: manifest, toolchain })), CARGO_TARGET_DIR: targetDir };
   if (lints) env.RUST_JS_CLIPPY = JSON.stringify(lints);
   else delete env.RUST_JS_CLIPPY;
   return new Promise((done, failed) => {
@@ -137,8 +138,11 @@ const exactToolchain = toolchain => /^(\d+\.\d+\.\d+|nightly-\d{4}-\d{2}-\d{2})$
  * workspace wrapper (ADR 0101), and where each crate rust-js compiled has its
  * JS: beside the metadata Cargo keeps for that build of it, so a feature set
  * built before is the JS it was. Cargo reports each crate it built or found
- * fresh; the `.rust-js` beside its metadata says where its manifest is. `js` is
- * the selected package's, or the manifest's own package's. `react` is the
+ * fresh; the `.rust-js` beside its metadata says where its manifest is.
+ * `packageNames` are the packages Cargo is asked for, `-p` each, all at
+ * once: none is Cargo's default, the manifest's own package, or each member
+ * of a workspace's root without one. `js` is the package's built, where one
+ * is: the one named, or the manifest's own. `react` is the
  * React release the react crate is checked for (ADR 0043), or its latest.
  * With `inSource`, each module's JS is written beside its Rust too, as a
  * project commits it (`writeInSource`), and `js` and `crates` are those;
@@ -148,24 +152,24 @@ const exactToolchain = toolchain => /^(\d+\.\d+\.\d+|nightly-\d{4}-\d{2}-\d{2})$
  * names each (ADR 0412).
  * `files` is each crate's modules' JS, by its name, where it's served from.
  * `targetDir` is where Cargo builds, its own `target/` without one.
- * @param {{ manifestPath: string, toolchain: string, compiler: string, packageName?: string, features?: string[], noDefaultFeatures?: boolean, offline?: boolean, react?: string, inSource?: boolean, check?: boolean, routes?: string[], targetDir?: string }} options
+ * @param {{ manifestPath: string, toolchain: string, compiler: string, packageNames?: string[], features?: string[], noDefaultFeatures?: boolean, offline?: boolean, react?: string, inSource?: boolean, check?: boolean, routes?: string[], targetDir?: string }} options
  * `manifests` is each crate's, validated, as the compiler wrote it.
  * `warnings` are what rust-js says of a build that succeeds, past rustc's
  * diagnostics, each a line.
- * @returns {Promise<{ js: string, crates: Map<string, { js: string, manifest: string }>, manifests: Map<string, any>, files: Map<string, string[]>, warnings: string[] }>}
+ * @returns {Promise<{ js?: string, crates: Map<string, { js: string, manifest: string }>, manifests: Map<string, any>, files: Map<string, string[]>, warnings: string[] }>}
  */
-export async function checkCargo({ manifestPath, toolchain, compiler, packageName, features = [], noDefaultFeatures = false, offline = false, react, inSource = false, check = false, routes = [], packages = [], targetDir, tests = false }) {
+export async function checkCargo({ manifestPath, toolchain, compiler, packageNames = [], features = [], noDefaultFeatures = false, offline = false, react, inSource = false, check = false, routes = [], packages = [], targetDir, tests = false }) {
   if (!exactToolchain(toolchain)) throw new Error("Cargo builds require an exact toolchain pin");
   const manifest = resolve(manifestPath);
   const args = [`+${toolchain}`, "check", "--message-format=json", "--target", target, "--manifest-path", manifest];
   // Its library's `#[test]`s, `rust-js test`'s (ADR 0916): rustc's `--test`,
   // which the wrapper gives rust-js's.
   if (tests) args.push("--profile", "test", "--lib");
-  if (packageName) args.push("-p", packageName);
+  for (const name of packageNames) args.push("-p", name);
   if (features.length) args.push("--features", features.join(","));
   if (noDefaultFeatures) args.push("--no-default-features");
   if (offline) args.push("--offline");
-  const build = await cargoBuild({ manifestPath: manifest, packageName, toolchain, offline });
+  const build = await cargoBuild({ manifestPath: manifest, toolchain, offline });
   const env = { ...cargoEnv(compiler, react, build), ...(targetDir ? { CARGO_TARGET_DIR: targetDir } : {}) };
   const { stdout, stderr } = await execute("cargo", args, { cwd: dirname(manifest), env, maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
     const messages = String(error.stdout ?? "").split("\n").filter(Boolean).map(line => JSON.parse(line));
@@ -177,7 +181,8 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   });
   const crates = new Map();
   let js;
-  let compiled = false;
+  // The packages asked for that rust-js compiled, by their names.
+  const compiled = new Set();
   // What's written in source, and how, beside Cargo's builds: `cargo clean`
   // forgets it, and then nothing in source is taken as this build's.
   let ledger;
@@ -203,15 +208,21 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
     ledger ??= join(dirname(dirname(marker)), "rust-js-in-source.json");
     const entry = { js: built.modules.find(module => module.module.length === 0)?.file, manifest: library };
     crates.set(message.target.name, entry);
-    const ours = packageName ? packageNameOf(message.package_id) === packageName : message.manifest_path === manifest;
+    const name = packageNameOf(message.package_id);
+    const ours = packageNames.length ? packageNames.includes(name) : message.manifest_path === manifest;
     // Of a test build, the package's test target, its harness's: its
     // `lib.test.js`, beside its JS.
     if (ours && tests === Boolean(message.profile?.test)) {
-      compiled = true;
+      compiled.add(name);
       js = tests ? join(dirname(library), "lib.test.js") : entry.js;
     }
   }
-  if (!compiled) throw new Error(`rust-js compiled no ${tests ? "tests" : "library"} of ${packageName ?? manifest}`);
+  // Each package asked for, or the manifest's own, where it has one: a
+  // workspace's root without one asks for its members, whichever have JS.
+  const asked = packageNames.length ? packageNames : build.own ? [build.own] : [];
+  const missing = asked.find((name) => !compiled.has(name));
+  if (missing) throw new Error(`rust-js compiled no ${tests ? "tests" : "library"} of ${packageNames.length ? missing : manifest}`);
+  if (asked.length !== 1) js = undefined;
   // What rust-js says of a build that succeeds, past rustc's diagnostics,
   // which Cargo passes on as it is: the app's Prettier's layout not taken,
   // and why (ADR 0381, amended).
@@ -483,8 +494,16 @@ export async function cargoWorkspace({ manifestPath, toolchain, offline = false,
     const lib = pkg.targets.find((target) => target.kind.includes("lib"));
     return lib ? [[pkg.name, lib.src_path]] : [];
   }));
-  const own = metadata.packages.find((pkg) => realpathSync(pkg.manifest_path) === realpathSync(manifest))?.name;
+  const own = ownPackage(metadata.packages, manifest);
   return { root: metadata.workspace_root, target: metadata.target_directory, packages, libs, own };
+}
+
+/** The package of Cargo's metadata `manifest` is of, by its name: none of
+ * a workspace's root without one.
+ * @param {{ name: string, manifest_path: string }[]} packages
+ * @param {string} manifest */
+function ownPackage(packages, manifest) {
+  return packages.find((pkg) => realpathSync(pkg.manifest_path) === realpathSync(manifest))?.name;
 }
 
 /** The package's name in a Cargo package ID: `path+file:///dir#name@1.0`, or `path+file:///dir/name#1.0`. */

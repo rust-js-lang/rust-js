@@ -242,6 +242,16 @@ What keeps them there:
 - **`bun run port measure`** fails when the port's compile does: a module
   that fails keeps its JS from before, which reads as no difference.
 
+- **A workspace is one `rust-js build`** (ADR 1068): every member at its
+  root, or each `--package` named, in one `cargo check`, each crate checked
+  once and the crates that don't use each other on every core. Which
+  crates are programs is the workspace's, the same for every build, so a
+  crate one build checked is done for the next. React's port, `bun
+  scripts/react-in-rust.ts regen`, on the M3 Max under another job's load
+  (2026-11-02): 475 s cold, 931 s of CPU, up to seven crates at once, and
+  1.7 s warm; one `--package` build per crate took 2,186 s cold and
+  2,405 s warm, one core busy, each dependency checked again in every
+  build that used it.
 - **A corpus case's runs are kept by what they ran** (ADR 0567), in
   `target/corpus-cache`: the same JS, native output, runtime modules and
   harness again, its four runs aren't run again; its two compiles always
@@ -309,6 +319,9 @@ as a wrong answer is.
   to the list below, with what it costs and what would fix it, so the next
   agent starts from it. A fix moves its line to "What keeps them there",
   above, or out.
+- **Build a workspace whole**: `rust-js build` at its root, or with
+  `--package` as often as needed, never a loop of one build per crate,
+  which runs one core at a time (ADR 1068).
 - **Build what the tests use.** The tests, `check:fast` and an app built
   from this checkout run the debug compiler, `target/debug/rust-js`
   (`bun run build`); `cargo build --release` builds one nothing here runs.
@@ -376,7 +389,6 @@ checked:
 | `test/architecture.test.ts`'s "each runtime helper is asked for, or needed by another" | 0.8 s alone; past bun's 5 s beside `check:fast`'s other jobs, failing runs that passed with it alone, until its timeout was raised to 30 s; it reads every source and each helper's JS on each run | The sources read once for the file, shared by its tests, not again per test |
 | `test/runtime-package.test.ts`'s "room asked of a length, a resize's, a collect's or a hash table's, ends where wasm32's std ends it" | 2.5 s alone on the M3 Max (2026-11-02); killed at bun's 5 s in a loaded `check:fast --all`, its Node run reserving 117 MB | A timeout that fits it, as the snapshot tests declare |
 | rust-js compiling regex's graph, `bun scripts/crate-corpus.ts regex` | 6.3 GB at its peak in one process (the debug compiler, 2026-11-02), 10 s; four at once took a CI runner's 16 GB and shut it down (nightly 41417626908), so the nightly's `crates` job runs Cargo one crate at a time | Find which crate of the graph, aho-corasick's or regex-automata's, and what of its lowering holds that much |
-| React's port compiled again, `bun scripts/react-in-rust.ts regen` | 30 min on the Mac at 2 cores under load (1,827 s, 2026-11-02), each of its 18 crates a `rust-js build` of its own, the same dependencies' checks each time | One `cargo check` of the workspace's crates at once, each writing its JS, where rust-js's build lets a workspace be built whole |
 
 ## Working on `main`
 

@@ -49,7 +49,7 @@ async function cargoBuilt(source: string, prettier?: object, editorconfig?: stri
   if (prettier) writeFileSync(join(dir, ".prettierrc"), JSON.stringify(prettier));
   if (editorconfig) writeFileSync(join(dir, ".editorconfig"), editorconfig);
   writeFileSync(join(dir, "Cargo.toml"), `[package]\nname = "set"\nversion = "0.0.0"\nedition = "2024"\n\n[dependencies]\n${dependencies}`);
-  const { js } = await check(join(dir, "Cargo.toml"), { packageName: "set" });
+  const js = (await check(join(dir, "Cargo.toml"), { packageNames: ["set"] })).js!;
   const text = (file: string) => (existsSync(file) ? readFileSync(file, "utf8") : "");
   return { dir, js: text(js), map: text(`${js}.map`), types: text(js.replace(/\.jsx?$/, ".d.ts")) };
 }
@@ -277,7 +277,7 @@ test("rust-js build says why the app's Prettier's layout wasn't taken", async ()
   );
   const warnings: string[] = [];
   const builder = createNativeBuilder({ root: dir, rustJs: compiler });
-  await builder.build({ manifestPath: join(dir, "Cargo.toml"), packageName: "set", offline: true, warn: (warning: string) => warnings.push(warning) });
+  await builder.build({ manifestPath: join(dir, "Cargo.toml"), packageNames: ["set"], offline: true, warn: (warning: string) => warnings.push(warning) });
   expect(warnings.join("\n")).toContain("warning: rust-js: the app's Prettier changed the program: it added a ");
   expect(readFileSync(join(dir, "src", "lib.js"), "utf8")).not.toContain("changed();");
 }, 300_000);

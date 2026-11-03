@@ -1,6 +1,8 @@
 # 0412. `rust-js build` is its own process
 
-Status: Accepted. Supersedes [0380](0380-with-rust-js.md); amends
+Status: Accepted. Amended by [1068](1068-a-workspace-built-whole.md): a
+workspace's root builds every member, and `--package` may be given as often
+as Cargo's `-p`. Supersedes [0380](0380-with-rust-js.md); amends
 [0192](0192-next.md), [0101](0101-cargo-workspace-wrapper.md),
 [0117](0117-output-hooks.md), [0118](0118-bindings-on-npm-only.md),
 [0196](0196-typescript-declarations.md) and

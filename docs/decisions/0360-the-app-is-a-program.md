@@ -3,7 +3,9 @@
 Status: Accepted. Amends [0100](0100-separate-crates.md) and
 [0101](0101-cargo-workspace-wrapper.md). Amended by
 [0914](0914-a-librarys-generic-function-is-its-programs.md): a library's
-generic function is its program's.
+generic function is its program's. Amended by
+[1068](1068-a-workspace-built-whole.md): the programs are the workspace's,
+`RUST_JS_APPS`, whichever packages are built.
 
 ## Context
 
@@ -118,3 +120,15 @@ the nightly's, a mutation's, and one by hand.**
   checks the marked cases, and `test/crates.test.ts` still checks libraries
   and their consumers.
 - A local run of the 1,319 cases went from 47 s to 26 s.
+
+## Amendment: the programs are the workspace's ([1068](1068-a-workspace-built-whole.md))
+
+`RUST_JS_APP`, the package asked for, changed with each build, and every
+crate rust-js compiles records it: React's port, built one package at a
+time, checked each dependency again in every build that used it, the same
+library each time. **`RUST_JS_APPS` lists, by directory, each member of
+the workspace no crate of it uses, whichever packages are built**: the
+same for every build of the workspace, so a crate one build checked is
+done for the next, and a build of the whole workspace makes each crate
+what its own package's build does, a member nothing uses a program, where
+it had made every crate a library.
