@@ -121,6 +121,13 @@ Rejected:
   Scheduler's and ReactServerStreamConfigEdge's `pub use`s, written last,
   print last, as upstream's `export`s are, the runtime's helpers after them.
 
+- The user's decisions (2026-11-03), both to keep what this ADR prints:
+  an import no `use` places, the runtime's helpers' and a fallback's,
+  stays right after the import before it, even at a file's end, so the
+  modules load in ADR 1063's order; and a `use` written right above code,
+  with no blank line, prints its import with none before that code, as
+  the Rust is written.
+
 ## What holds it
 
 `test/lowering-comments-items.test.ts`'s "the header's blank lines are
