@@ -132,26 +132,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
-    /// Where each argument of the closure call at `span` is written, `a`
-    /// and `b` of `(f)(a, b)`: THIR's arguments' tuple's fields, of the one
-    /// call there; none where there's no such call.
-    fn closure_arguments_written(&self, span: Span) -> Vec<Span> {
-        let thir = self.frame.thir;
-        let mut calls = thir.exprs.iter().filter_map(|e| match &e.kind {
-            thir::ExprKind::Call { args, .. } if e.span == span && args.len() == 2 => {
-                match &thir[crate::lower::body_queries::strip(thir, args[1])].kind {
-                    thir::ExprKind::Tuple { fields } => Some(fields.iter().map(|&field| thir[field].span).collect()),
-                    _ => None,
-                }
-            }
-            _ => None,
-        });
-        match (calls.next(), calls.next()) {
-            (Some(fields), None) => fields,
-            _ => Vec::new(),
-        }
-    }
-
     /// A closure called, `Fn::call(&f, (a, b))`: in JS, `f(a, b)`, and an
     /// `async` one's, `AsyncFn::async_call`, which gives its promise.
     pub(super) fn mir_closure_call(

@@ -267,6 +267,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         calls.next().is_none().then_some(call)
     }
 
+    /// Where each argument of the closure call at `span` is written, `a`
+    /// and `b` of `(f)(a, b)`: THIR's arguments' tuple's fields, of the one
+    /// call there; none where there's no such call.
+    pub(super) fn closure_arguments_written(&self, span: Span) -> Vec<Span> {
+        let thir = self.frame.thir;
+        let mut calls = thir.exprs.iter().filter_map(|e| match &e.kind {
+            thir::ExprKind::Call { args, .. } if e.span == span && args.len() == 2 => {
+                match &thir[crate::lower::body_queries::strip(thir, args[1])].kind {
+                    thir::ExprKind::Tuple { fields } => Some(fields.iter().map(|&field| thir[field].span).collect()),
+                    _ => None,
+                }
+            }
+            _ => None,
+        });
+        match (calls.next(), calls.next()) {
+            (Some(fields), None) => fields,
+            _ => Vec::new(),
+        }
+    }
+
     /// A future whose `Future` is the crate's own made a JS promise: by a
     /// call that asks a `Future` or an `IntoFuture` of it, `.await`'s
     /// `into_future` or a generic function's `F: Future`, or as a `dyn

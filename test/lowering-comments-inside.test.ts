@@ -678,7 +678,7 @@ pub fn calls(href: &str, n: u32) -> String {
 `);
   expect(js).toContain("d.one(\n    /* one */\n    href,\n  );");
   expect(js).toContain("d.two(\n    /* two */\n    href,\n    n,\n  );");
-  expect(lib.calls("a", 1)).toBe("aa1");
+  expect((lib.calls as (href: string, n: number) => string)("a", 1)).toBe("aa1");
 });
 
 // React's ReactFlightPerformanceTrack, `if (description.charCodeAt(queryIdx
