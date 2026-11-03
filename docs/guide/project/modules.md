@@ -1251,6 +1251,22 @@ export function track(
 }
 ```
 
+A block comment after a function's return type, before its body, is
+after its parameters' `)`, where JS has no type
+([ADR 0708](../../decisions/0708-a-comment-before-an-argument-is-before-it.md#amendment-a-comment-after-a-functions-return-type-rd641)):
+
+```rust
+pub fn encode(value: Option<&'static str>) -> Option<&'static str> /* Not yet one. */ {
+    value
+}
+```
+
+```js
+export function encode(value) /* Not yet one. */ {
+  return value;
+}
+```
+
 One inside an array literal isn't yet: oxc writes no comment between an
 array's elements, so it's before the argument after the array.
 

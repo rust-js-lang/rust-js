@@ -190,4 +190,13 @@ export const mutations: Mutation[] = [
     replace: "                if depth == 0 {\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "a comment after an argument.s closing brackets"],
   },
+  {
+    name: "after-params-before-paren",
+    breaks:
+      "a block comment after a function's return type is inside its parameters' list, `options /* .. */) {`, not after its `)` (rd641)",
+    file: "src/to_oxc/trailing.rs",
+    find: "                        let open = text.get(from..)?.find(\") {\")? + from + 2;\n",
+    replace: "                        let open = text.get(from..)?.find(\") {\")? + from;\n",
+    tests: ["test/lowering-comments-ends.test.ts", "-t", "after a function.s return type"],
+  },
 ];

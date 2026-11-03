@@ -45,6 +45,12 @@ pub(super) struct Trailing {
     /// of its line maps to: the line its last bracket opened on, whose
     /// lines' JS, the argument's, it's after (rd615).
     pub(super) opened_on: Option<u32>,
+    /// Of a block comment after a function's parameters and its return
+    /// type, before its body's `{`, `) -> Promise<ReplyBody> /* .. */ {`:
+    /// where its last parameter starts, its line and column, the JS of
+    /// whose list's `)` it's after, `options) /* .. */ {`, as upstream has
+    /// it (rd641).
+    pub(super) after_params: Option<(u32, u32)>,
 }
 
 /// Of a comment at `at` in `text` after only closing brackets and a `,` on
@@ -105,6 +111,32 @@ pub(super) fn after_param(
     let code = text[line_start..at].trim_end();
     let code = code.strip_suffix(',').unwrap_or(code).trim_end();
     let &lo = param_starts.get(&((line_start + code.len()) as u32))?;
+    let start = text[..lo as usize].rfind('\n').map_or(0, |i| i + 1);
+    Some((text[..lo as usize].matches('\n').count() as u32, lo - start as u32))
+}
+
+/// Of a block comment from `at` to `end` of its line, which ends at
+/// `line_end`, in `text`, after a function's last parameter, the list's
+/// `)` and its return type, with the function's body's `{` after it: the
+/// line and column that parameter starts at (rd641).
+pub(super) fn after_params(
+    text: &str,
+    (at, end, line_end): (usize, usize, usize),
+    param_starts: &HashMap<u32, u32>,
+) -> Option<(u32, u32)> {
+    if !text[end..line_end].trim_start().starts_with('{') {
+        return None;
+    }
+    let signature_end = |hi: usize| {
+        let past = text[hi..at].trim_start_matches(|c: char| c.is_whitespace() || c == ',');
+        past.strip_prefix(')').is_some_and(|returned| {
+            let returned = returned.trim();
+            returned.is_empty() || returned.starts_with("->") && !returned.contains(['{', '}', ';'])
+        })
+    };
+    let (_, &lo) = (param_starts.iter())
+        .filter(|&(&hi, _)| (hi as usize) < at && signature_end(hi as usize))
+        .max_by_key(|&(&hi, _)| hi)?;
     let start = text[..lo as usize].rfind('\n').map_or(0, |i| i + 1);
     Some((text[..lo as usize].matches('\n').count() as u32, lo - start as u32))
 }
@@ -186,6 +218,31 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
                 })
         {
             ends.entry(found.0).or_default().push((found.1, &comment.text));
+            continue;
+        }
+        // One after a function's parameters, before its body: before the
+        // `{` after the JS of its last parameter's list's `)` (rd641).
+        if let Some((line, column)) = comment.after_params
+            && let Some(found) = (map.get_tokens())
+                .filter(|t| t.get_src_line() == line && t.get_src_col() == column)
+                .find_map(|t| {
+                    let first = t.get_dst_line() as usize;
+                    (first..generated_lines.len().min(first + 8)).find_map(|at| {
+                        let text = generated_lines[at];
+                        let from = if at == first {
+                            in_bytes(text, t.get_dst_col())
+                        } else {
+                            0
+                        };
+                        let open = text.get(from..)?.find(") {")? + from + 2;
+                        Some((at as u32, open as u32))
+                    })
+                })
+        {
+            inside
+                .entry(found.0)
+                .or_default()
+                .push((found.1, Inside::BeforeCode, &comment.text));
             continue;
         }
         // One ending the line before a setter's link, of the place it

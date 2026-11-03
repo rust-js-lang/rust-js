@@ -89,6 +89,39 @@ impl Info {
   expect(lib.first("ab" as never, 1 as never)).toBe(3);
 });
 
+// React's encodeReply: `function encodeReply(value, options) /* We don't
+// use URLSearchParams yet but maybe */ {`. Its port's block comment after
+// the return type, before the body's `{`, was lost: no JS is of the type.
+// It's after the parameters' `)`, as upstream has it (rd641); a line
+// comment there, and one inside the parameters, stay where they were.
+test("a block comment after a function's return type is before its body", async () => {
+  const { js, lib } = await compiled("comment-after-return-type", `pub fn encode_reply(
+    value: Option<&'static str>,
+    options: Option<&'static str>,
+) -> Option<&'static str> /* We don't use URLSearchParams yet but maybe */ {
+    value.or(options)
+}
+
+pub fn twice(value: u32) -> u32 /* Doubled. */ {
+    value * 2
+}
+
+pub fn logged(value: u32, log: &mut Vec<u32>) /* Kept. */ {
+    log.push(value);
+}
+
+pub fn spaced(value: u32 /* The count. */) -> u32 {
+    value + 1
+}
+`);
+  expect(js).toContain("export function encodeReply(value, options) /* We don't use URLSearchParams yet but maybe */ {\n");
+  expect(js).toContain("export function twice(value) /* Doubled. */ {\n");
+  expect(js).toContain("export function logged(value, log) /* Kept. */ {\n");
+  expect(js).toContain("export function spaced(value /* The count. */) {\n");
+  expect(lib.encodeReply(undefined as never, "o" as never)).toBe("o");
+  expect(lib.twice(4 as never)).toBe(8);
+});
+
 // React's getActivityInstanceFromFiber ends `// TODO: Implement this on
 // ActivityComponent.` then `return null;`. The port's tail `None` of a
 // nullable result is `return null;`, where the `None`'s comments end: they

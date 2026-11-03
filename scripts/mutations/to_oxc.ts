@@ -740,4 +740,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/namespace-values.test.ts", "-t", "of an entry.s own fields of one value"],
   },
+  {
+    name: "after-params-unplaced",
+    breaks:
+      "a block comment after a function's return type, `) -> T /* We don't use URLSearchParams yet but maybe */ {`, is lost, not after the parameters' `)` (rd641)",
+    file: "src/to_oxc.rs",
+    find: "                let after_params = block\n",
+    replace: "                let after_params = false\n",
+    tests: ["test/lowering-comments-ends.test.ts", "-t", "after a function.s return type"],
+  },
 ];

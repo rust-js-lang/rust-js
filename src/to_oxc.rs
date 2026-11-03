@@ -625,6 +625,14 @@ fn comments_of(
                 let opened_on = (!block)
                     .then(|| trailing::opened_on(&sources.text, (line_start, c.lo as usize)))
                     .flatten();
+                // One after a function's parameters and its return type,
+                // before its body, `) -> T /* .. */ {` (rd641).
+                let after_params = block
+                    .then(|| {
+                        let at = (c.lo as usize, c.hi as usize, line_end);
+                        trailing::after_params(&sources.text, at, &param_starts)
+                    })
+                    .flatten();
                 trailing.push(Trailing {
                     line,
                     column: (c.lo as usize - line_start) as u32,
@@ -636,6 +644,7 @@ fn comments_of(
                     of_default,
                     closes,
                     opened_on,
+                    after_params,
                 });
             }
         }
@@ -665,6 +674,7 @@ fn comments_of(
                     of_default: false,
                     closes: 0,
                     opened_on: None,
+                    after_params: None,
                 });
             }
         }
@@ -684,6 +694,7 @@ fn comments_of(
                     of_default: false,
                     closes: 0,
                     opened_on: None,
+                    after_params: None,
                 });
             }
         }
@@ -705,6 +716,7 @@ fn comments_of(
                     of_default: false,
                     closes: 0,
                     opened_on: None,
+                    after_params: None,
                 });
             }
         }

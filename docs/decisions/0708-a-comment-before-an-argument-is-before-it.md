@@ -468,3 +468,26 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): none, a comment's place.
 Held by `lowering-comments-inside`'s "a comment before a dyn Fn call's
 argument is before it", run, and the mutation `closure-arguments-unplaced`
 (`lower/mir/calls.ts`).
+
+## Amendment: a comment after a function's return type (rd641)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments only.
+React's encodeReply writes `function encodeReply(value, options) /* We
+don't use URLSearchParams yet but maybe */ {`; its port, `) ->
+Promise<ReplyBody> /* .. */ {`, printed none: a block comment with code
+after it on its line is placed after the JS of the code right before it
+(ADR 0630), and no JS is of a return type. **A block comment after a
+function's last parameter, its list's `)` and its return type, with its
+body's `{` after it, is before that `{`, after the parameters' `)`**:
+`encodeReply(value, options) /* .. */ {`. Which parameter is last is
+where each ends, the parameters `comments_of` already places a line
+comment after (`trailing::param_starts`, rd554); the comment is placed
+from the JS of that parameter, to the first `) {` from there
+(`trailing::after_params`). A function of no parameter has none to place
+it by, and its comment is still lost.
+
+Held by `test/lowering-comments-ends.test.ts`'s "a block comment after a
+function's return type is before its body", run: of several parameters
+across lines, of one, of no return type, and one inside the parameters,
+which stays there; and the mutations `after-params-unplaced` (`to_oxc.ts`)
+and `after-params-before-paren` (`to_oxc/trailing.ts`).
