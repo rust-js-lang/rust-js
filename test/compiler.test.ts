@@ -1344,7 +1344,7 @@ test("values' JS: boxes for &mut to primitives, and recursive clones", async () 
   expect(js).toContain("count.value = (count.value + by) >>> 0;");
   expect(js).toContain("const count$2 = { value: stats.hits };");
   expect(js).toContain("stats.hits = count$2.value;");
-  expect(js).toContain("const cloneValue = (value) =>");
+  expect(js).toContain("function cloneValue(value) {");
 });
 
 // ADR 0076: a struct's `..base` is worked out after its fields, and a few

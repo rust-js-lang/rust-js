@@ -158,10 +158,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let params: Vec<String> = params.iter().map(|p| super::fresh_in(&mut names, p)).collect();
         let names = std::mem::replace(&mut self.names, names);
         let uses = self.dependencies.replace(Dependencies::default());
-        let given = std::mem::take(&mut self.given);
+        let given = self.set_given_aside();
         let mut body = Vec::new();
         let value = make(self, params.iter().map(|p| Expr::var(p)).collect(), &mut body);
-        self.given = given;
+        self.restore_given(given);
         self.names = names;
         let own = self.dependencies.replace(uses);
         self.krate.module_fns.borrow_mut().building.pop();

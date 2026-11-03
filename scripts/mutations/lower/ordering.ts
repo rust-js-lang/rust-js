@@ -201,9 +201,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a derived order of a type inside itself is inlined into its own fields' without end, and the compiler overflows its stack",
     file: "src/lower/ordering.rs",
-    find: "            if let Some((.., name)) = self.ordering.iter().find(|&&(t, p, _)| t == ty && p == partial) {\n",
-    replace:
-      "            if let Some((.., name)) = self.ordering.iter().find(|_| false) {\n",
+    find: "        if self.is_recursive(ty) {\n            let ty::Adt(adt, _) = ty.kind() else {\n",
+    replace: "        if false && self.is_recursive(ty) {\n            let ty::Adt(adt, _) = ty.kind() else {\n",
     tests: ["test/corpus.test.ts", "-t", "^recursive_order.rs$"],
   },
   {

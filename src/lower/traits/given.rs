@@ -62,6 +62,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.given.type_facts.truncate(scope.facts);
     }
 
+    /// Lower what's given nothing of this item's, a recursive type's own
+    /// function of its module (`recursive_fns`): what it's given, set
+    /// aside, which `restore_given` gives back.
+    pub(in crate::lower) fn set_given_aside(&mut self) -> super::super::Given<'tcx> {
+        std::mem::take(&mut self.given)
+    }
+
+    /// What `set_given_aside` set aside, given again.
+    pub(in crate::lower) fn restore_given(&mut self, given: super::super::Given<'tcx>) {
+        self.given = given;
+    }
+
     /// `value` in the impl's terms, in a copied default: its trait's
     /// parameters, `Self` among them, replaced by the impl's arguments for
     /// them (ADR 0049). Anywhere else, `value` itself.
