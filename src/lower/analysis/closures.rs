@@ -205,7 +205,12 @@ pub(in crate::lower) fn taken_by_value(tcx: TyCtxt<'_>, closure: DefId) -> Vec<b
         return Vec::new();
     };
     (tcx.closure_captures(local).iter())
-        .map(|captured| matches!(captured.info.capture_kind, ty::UpvarCapture::ByValue | ty::UpvarCapture::ByUse))
+        .map(|captured| {
+            matches!(
+                captured.info.capture_kind,
+                ty::UpvarCapture::ByValue | ty::UpvarCapture::ByUse
+            )
+        })
         .collect()
 }
 
