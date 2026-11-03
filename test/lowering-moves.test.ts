@@ -770,7 +770,7 @@ pub fn margin_of(style: &Unknown, props: &Unknown) {
 `);
   expect(js).toContain("  fiber.parent = undefined;\n  return fiber.tag > 3 ? fiber.tag : 0;\n");
   expect(js).toContain("  fiber.parent = parent;\n  update.next = update;\n");
-  expect(js).toContain("    queue.pending = update;\n");
+  expect(js).toContain("    fiber.queue.pending = update;\n");
   expect(js).toContain("    fiber.updates.lane = (fiber.updates.lane | 1) >>> 0;\n");
   expect(js).toContain("  if (view.margin != null) {\n    style.margin = view.margin;\n");
   expect(js).not.toContain("const old");

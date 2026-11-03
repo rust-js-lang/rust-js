@@ -464,8 +464,19 @@ fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(&Expr) -> b
 /// getViewTransitionName writes it (ADR 0866, amended, the user's decision,
 /// 2026-10-27). A `let` the program wrote stays, `named`'s, as it wrote it
 /// (rd226, the user's decision, 2026-10-30). What's read where
-/// `tested_read` says it may be.
+/// `tested_read` says it may be. And `if (info.key != null) { const key =
+/// info.key; add("key", key); }`, a plain `if let`'s binding of the
+/// field's own name first in the `then` of an `if` whose test read that
+/// field, read again where the statement after it reads it first, as a let
+/// chain's is (`tested_binding`, `read_again`; rd416, ADR 0866, amended).
 pub(super) fn tested_reads(stmts: &mut Vec<Stmt>, named: &HashSet<String>) {
+    for stmt in stmts.iter_mut() {
+        if let StmtKind::If(test, then, _) = &mut stmt.kind
+            && tested_binding(test, then, named)
+        {
+            read_again(then, 0);
+        }
+    }
     let mut i = 0;
     while i + 1 < stmts.len() {
         let Some((test, then)) = tested_read(&stmts[i], &stmts[i + 1..], named) else {
@@ -480,6 +491,26 @@ pub(super) fn tested_reads(stmts: &mut Vec<Stmt>, named: &HashSet<String>) {
         // A `let` before it may now be read by the `if` too.
         i = i.saturating_sub(1);
     }
+}
+
+/// Whether `then`, an `if`'s branch, starts with `const x = p.x;`, of the
+/// property's own name and no `let` the program wrote, `named`'s, of a
+/// variable's property no getter may answer, which `test`, which does
+/// nothing, read: the place holds what the test read there, nothing run
+/// between.
+fn tested_binding(test: &Expr, then: &[Stmt], named: &HashSet<String>) -> bool {
+    let Some(StmtKind::Const(name, value)) = then.first().map(|s| &s.kind) else {
+        return false;
+    };
+    let own_name = matches!(&value.kind, ExprKind::Member(_, property) if property == name);
+    if !own_name || named.contains(name) || !place_read(value, name) || test.has_effects() {
+        return false;
+    }
+    let mut read = false;
+    js::each_expr(&[StmtKind::Expr(test.clone()).at(js::Span::NONE)], &mut |e| {
+        read |= js::same_path(e, value);
+    });
+    read
 }
 
 /// Of `stmt`, `const x = p.x;`, of the property's own name and no `let`

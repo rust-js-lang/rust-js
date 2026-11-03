@@ -511,3 +511,36 @@ order against the key's and the argument's, and whose call records its
 `receiver-read-of-any-statement` (`tidy/moves.ts`),
 `own-keyed-method-of-a-binding`, `own-method-called-again` (`js/make.ts`)
 and `keyed-method-unmarked` (`mir/calls/method_paths.ts`).
+
+## Amendment: an `if let`'s binding of a field's own name, read again where the next statement reads it first (rd416, 2026-11-04)
+
+Decided on the user's behalf (2026-11-03, the user away). This widens the
+2026-10-27 amendment above, "a binding of a field's own name is the field
+where the `then` gives it", which read the field in place only where the
+`then`'s first statement gives it alone, `return x`.
+
+React's ReactFlightClient writes `if (info.key != null) { add("key",
+info.key); }`; its port, `if let Some(key) = info.key.clone() {
+add("key", Some(js::unknown_of(key)), &mut properties); }`, printed `if
+(info.key != null) { const key = info.key; add("key", key, properties);
+}`: the test reads the field itself, the binding first in the `then`,
+which no rule read in place, as a let chain's is (the amendment "a let
+chain's binding of a field its test read").
+
+**A plain `if let`'s binding named as the field it reads, `const x =
+p.x` first in the `then` of an `if` whose test read `p.x`, is the field
+read again where the statement after it reads it first, nothing JS
+evaluates before it there doing anything**, as a let chain's binding is
+(`moves::tested_binding`, `read_again`): `if (info.key != null) {
+add("key", info.key, properties); }`. The place holds what the test read
+there: the test does nothing, no getter answers the field (`place_read`),
+and nothing runs between. Another name keeps its `const`, as the
+2026-10-27 amendment says; so does a binding read after something runs, or
+read again, and a `let` the program wrote (rd226). Case N
+([0262](0262-when-rust-and-js-disagree.md)): a plain property read
+twice, nothing between, is one value.
+
+Held by the corpus's `if_let_field_read_again` (read in place, `name` and
+`props`; kept, `id` of another name, `depth` read after a call, `owner`
+read twice, `key` a clone held before its test), against native Rust, and the mutation
+`tested-binding-never-read-again` (`tidy/moves.ts`).

@@ -4,6 +4,16 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "tested-binding-never-read-again",
+    breaks:
+      "a plain `if let`'s binding of a field's own name, first in the `then` of an `if` that tested the field, keeps its `const`, `const props = info.props; add(props, ..)`, where it's the field read again, `add(info.props, ..)` (rd416)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "            read_again(then, 0);\n",
+    replace: "            let _ = then;\n",
+    tests: ["test/corpus.test.ts", "-t", "^if_let_field_read_again.rs$"],
+    snapshots: true,
+  },
+  {
     name: "fixed-place-holder-kept",
     breaks:
       "what holds a place MIR's lowering fixed stays `const item = $unwrap(resource.state); return (item.loading & 4) === 0;`, an `&&` split around it, not read where it's read once (rd202)",

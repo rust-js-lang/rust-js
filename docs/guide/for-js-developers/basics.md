@@ -3367,8 +3367,11 @@ export function isAdult(p) {
   One named as the field it reads, `if let Some(auto_name) =
   &*instance.auto_name.borrow() { return auto_name.clone(); }`, is the
   field read in place where the `then` gives it first, `if
-  (instance.autoName != null) { return instance.autoName; }`; of another
-  name, `const name = instance.autoName;` (ADR 0866, amended). And a `let`
+  (instance.autoName != null) { return instance.autoName; }`, and where
+  the statement after it reads it first, before anything runs, `if let
+  Some(props) = info.props { add("props", props); }`'s `if (info.props !=
+  null) { add("props", info.props); }` (rd416); of another name, `const
+  name = instance.autoName;` (ADR 0866, amended). And a `let`
   that ends a borrow that the statement after it stores, `let child =
   current.child.borrow().clone(); work_in_progress.child.replace(child);`,
   is the place read there, `workInProgress.child = current.child;`, where
