@@ -392,6 +392,15 @@ other accessor reading `this`. Mutations `handle-of-a-getters-object-kept` (`tid
 `this-handles-not-read-apart` (`prepare.rs`) and #359's
 `class-handle-this-unnamed`, now `js/stmt_walk.rs`'s.
 
+*Amended (2026-11-04):* since 8fec690ea (#503), `read_handles` reads a
+field's handle where it's used in an `in_place` body too, so the
+constructor's write is the place before `its_place` sees it, and
+`handle-of-a-getters-object-kept` changes no program: the corpus's JS,
+fifteen suites and five probes are the same with it. It's removed as
+equivalent; whether `its_place`'s arm for a property of what reads the
+same is still needed, or should go, is #569. The test's `this$` case is
+now a handle that stays one, `bump(either(..))`.
+
 
 Amended, 2026-11-02 (#459): the rule covers a trait's default too.
 1035's default copied into a class's prototype, `Keys.prototype.step`,
