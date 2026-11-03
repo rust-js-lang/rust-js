@@ -1087,6 +1087,77 @@ pub fn kept(target: &EventTarget) {
   expect(state.count).toBe(1);
 });
 
+// A closure that only converts what it's given and gives back, each
+// conversion the value itself in JS, `js::cast`, `js::any_of`, an `Rc` not
+// counted, and passes it on to a function value it captured is that
+// function where it's made (ADR 0605, amended, decided on the user's
+// behalf): alien-signals' `computed<T>` boxes its getter so, `getter,`,
+// as upstream keeps it. Its `this` is what holds it, which Rust can't
+// read. Not where the crate reads a function's identity (ADR 1043's #500
+// rule), nor one whose conversion is JS of its own.
+test("a closure that only converts what it passes on to a function value it captured is that function", async () => {
+  const dir = fixture("converting-closures");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+use std::rc::Rc;
+
+use js::Unknown;
+
+type Value = Option<&'static Unknown>;
+
+pub struct CNode {
+    value: Cell<Value>,
+    getter: Box<dyn Fn(Value) -> Value>,
+    double: Box<dyn Fn(f64) -> f64>,
+}
+
+fn computed_oper<T: 'static>(this: &CNode) -> Rc<T> {
+    this.value.set((this.getter)(this.value.get()));
+    // SAFETY: a computed's value is what its getter gave, an \`Rc<T>\` (ADR 0909).
+    Rc::clone(unsafe { js::cast::<&Rc<T>>(this.value.get()) })
+}
+
+pub fn computed<T: 'static>(
+    getter: impl Fn(Option<Rc<T>>) -> T + 'static,
+    scale: impl Fn(f64) -> f64 + 'static,
+) -> impl Fn() -> Rc<T> {
+    let this = Rc::new(CNode {
+        value: Cell::new(None),
+        getter: Box::new(move |previous: Value| {
+            // SAFETY: as above.
+            let previous = previous.map(|previous| Rc::clone(unsafe { js::cast::<&Rc<T>>(Some(previous)) }));
+            js::any_of(Rc::new(getter(previous)))
+        }),
+        double: Box::new(move |n| scale(n * 2.0)),
+    });
+    move || {
+        let _ = (this.double)(1.0);
+        computed_oper::<T>(&this)
+    }
+}
+
+pub struct Reporter {
+    pub report: Box<dyn Fn(&f64)>,
+}
+
+pub fn reporter(log: impl Fn(f64) -> f64 + 'static) -> Reporter {
+    Reporter {
+        report: Box::new(move |n: &f64| {
+            log(*n);
+        }),
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("    getter,\n");
+  expect(js).toContain("    double: (n) => scale(n * 2),\n");
+  const lib = await import(join(dir, "lib.js"));
+  const count = lib.computed((previous: number | undefined) => (previous ?? 0) + 1, (n: number) => n);
+  expect([count(), count(), count()]).toEqual([1, 2, 3]);
+  // Of `()`, it discards what its call gives, which the function wouldn't.
+  expect(lib.reporter((n: number) => n + 7).report(1)).toBeUndefined();
+});
+
 // rd616: a `dyn Fn` parameter of a function only the crate's calls reach,
 // which each call fills with a function that reads no `this` and nothing
 // it's given more, is one, so a closure that ignores what it's given and

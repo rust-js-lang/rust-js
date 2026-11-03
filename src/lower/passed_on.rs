@@ -629,8 +629,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// which reads them all. And whether it adapts (`Forwarding`'s
     /// `adapts`): a function of the crate's whose signature isn't the
     /// closure's; and whether it's a function item (`item`). The closure is
-    /// written at `span`.
-    pub(in crate::lower) fn forwarded_to(&self, body: &crate::lower::Body<'tcx>, span: js::Span) -> Option<Forwarding> {
+    /// written at `span`, made at `made_at`.
+    pub(in crate::lower) fn forwarded_to(
+        &self,
+        body: &crate::lower::Body<'tcx>,
+        (span, made_at): (js::Span, rustc_span::Span),
+    ) -> Option<Forwarding> {
         let thir = &body.thir;
         let mut call = super::body_queries::strip(thir, body.root()?);
         // Of a statement alone, `{ js::set_timeout(callback, None); }`, what
@@ -661,6 +665,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && super::analysis::flattened_by_name(&self.recognition(), &mir.body, called).is_some()
         {
             call = inner;
+        }
+        // One whose call of a function value it captured isn't all it is,
+        // which converts what it's given or gives back (`converting`).
+        if let Some(fact) = self.converting(body, (span, made_at), call) {
+            return Some(fact);
         }
         let ExprKind::Call { fun, ref args, .. } = thir[call].kind else {
             return None;
@@ -706,37 +715,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             |args: &[rustc_middle::thir::ExprId]| args.last().is_some_and(|&last| left_out(self.tcx, thir, last));
         match self.tcx.trait_of_assoc(def_id) {
             Some(fn_trait) if self.tcx.fn_trait_kind_from_def_id(fn_trait).is_some() => {
-                // What it calls, a variable it captured, not its own
-                // parameter, `move |_| ping()`'s `ping`.
-                let captured = captured(self.tcx, thir, args[0]);
-                let ty = thir[args[0]].ty.peel_refs();
-                // A `dyn Fn`, as it is or boxed, `Box<dyn Fn()>`'s own `Fn`.
-                let dyn_fn = match ty.kind() {
-                    ty::Dynamic(..) => true,
-                    ty::Adt(adt, args) => adt.is_box() && matches!(args.type_at(0).kind(), ty::Dynamic(..)),
-                    _ => false,
-                };
-                let callee = match ty.kind() {
-                    ty::Closure(..) => Callee::Own,
-                    ty::Param(_) => Callee::Generic,
-                    // One only the crate's functions fill (ADR 0330).
-                    ty::FnPtr(..) if self.krate.cell_borrows.pointers().rust_only(self.tcx, ty) => Callee::Own,
-                    // A bound function of the crate's (rd196), or one each
-                    // of the crate's calls gives (rd616).
-                    _ if dyn_fn && captured.is_some_and(|var| self.bound_own(var)) => Callee::Own,
-                    _ if dyn_fn => Callee::Dyn,
-                    _ => return None,
-                };
-                // Not one that may be a `function::with_this` function that
-                // reads `js::arguments()`, which counts what JS gives it (rd509).
-                if callee != Callee::Own
-                    && self
-                        .krate
-                        .reads_arguments
-                        .may_call(self.tcx, self.krate.foreign, thir[args[1]].ty)
-                {
-                    return None;
-                }
+                let (callee, captured, dyn_fn) = self.function_value(thir, args)?;
                 let given = match thir[super::body_queries::strip(thir, args[1])].kind {
                     ExprKind::Tuple { ref fields } if leaves_out(fields) => return None,
                     ExprKind::Tuple { ref fields } => fields.is_empty(),
@@ -799,6 +778,182 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 statement,
             }),
         }
+    }
+
+    /// What `args`, those of a call through an `Fn` trait, calls: a
+    /// function value, a closure, a generic `impl Fn`'s, a `dyn Fn`'s or a
+    /// fn pointer only the crate's functions fill; the variable it captured
+    /// that the value is, if it is one, not its own parameter, `move |_|
+    /// ping()`'s `ping`; and whether it's a `dyn Fn`.
+    fn function_value(
+        &self,
+        thir: &rustc_middle::thir::Thir<'tcx>,
+        args: &[rustc_middle::thir::ExprId],
+    ) -> Option<(Callee, Option<rustc_hir::HirId>, bool)> {
+        let captured = captured(self.tcx, thir, args[0]);
+        let ty = thir[args[0]].ty.peel_refs();
+        // A `dyn Fn`, as it is or boxed, `Box<dyn Fn()>`'s own `Fn`.
+        let dyn_fn = match ty.kind() {
+            ty::Dynamic(..) => true,
+            ty::Adt(adt, args) => adt.is_box() && matches!(args.type_at(0).kind(), ty::Dynamic(..)),
+            _ => false,
+        };
+        let callee = match ty.kind() {
+            ty::Closure(..) => Callee::Own,
+            ty::Param(_) => Callee::Generic,
+            // One only the crate's functions fill (ADR 0330).
+            ty::FnPtr(..) if self.krate.cell_borrows.pointers().rust_only(self.tcx, ty) => Callee::Own,
+            // A bound function of the crate's (rd196), or one each of the
+            // crate's calls gives (rd616).
+            _ if dyn_fn && captured.is_some_and(|var| self.bound_own(var)) => Callee::Own,
+            _ if dyn_fn => Callee::Dyn,
+            _ => return None,
+        };
+        // Not one that may be a `function::with_this` function that reads
+        // `js::arguments()`, which counts what JS gives it (rd509).
+        if callee != Callee::Own
+            && self
+                .krate
+                .reads_arguments
+                .may_call(self.tcx, self.krate.foreign, thir[args[1]].ty)
+        {
+            return None;
+        }
+        Some((callee, captured, dyn_fn))
+    }
+
+    /// Whether `e` is a call through an `Fn` trait of a function value the
+    /// closure captured.
+    fn calls_a_function_value(&self, thir: &rustc_middle::thir::Thir<'tcx>, e: rustc_middle::thir::ExprId) -> bool {
+        let ExprKind::Call { fun, ref args, .. } = thir[e].kind else {
+            return false;
+        };
+        fn_def(thir[fun].ty).is_some_and(|(id, _)| {
+            (self.tcx.trait_of_assoc(id)).is_some_and(|tr| self.tcx.fn_trait_kind_from_def_id(tr).is_some())
+        }) && !args.is_empty()
+            && captured(self.tcx, thir, args[0]).is_some()
+    }
+
+    /// A closure whose one call, of a function value it captured, isn't all
+    /// it is, its body, `root`, not that call of its parameters as they are:
+    /// it converts what it's given, or what the call gives back, as
+    /// alien-signals' `computed<T>` boxes its getter, `move |previous: Value|
+    /// js::any_of(Rc::new(getter(previous.map(..))))`. Where each
+    /// conversion is the value itself in JS, `js::any_of`, an `Rc` that
+    /// isn't counted, `js::cast`, its arrow only passes on what it's given,
+    /// `(previous) => getter(previous)`, which the arrow's shape says
+    /// (`js::passes_on`), and it's that function where it's made (`eta`):
+    /// Rust can name it no other way, as its types aren't the function's.
+    /// Of a generic `impl Fn`'s or a `dyn Fn`'s, which may be a JS function
+    /// reading more than it's given, only where it's boxed into a field,
+    /// which Rust alone calls, with what the closure is given
+    /// (`boxed_into_a_field`): not one given on, `xs.map(|x| f(x))`, whose
+    /// method gives the index too (ADR 0279).
+    /// Only where the crate reads no function's identity, as two closures
+    /// of one function are one in JS (ADR 1043, amended, #500); and not one
+    /// of `()` that discards what the call gives (ADR 0605, amended).
+    fn converting(
+        &self,
+        body: &crate::lower::Body<'tcx>,
+        (span, made_at): (js::Span, rustc_span::Span),
+        root: rustc_middle::thir::ExprId,
+    ) -> Option<Forwarding> {
+        if self.krate.counted.points_at_functions || !self.tcx.is_closure_like(body.def_id) {
+            return None;
+        }
+        let thir = &body.thir;
+        let mut calls = (thir.exprs.iter_enumerated()).filter(|&(e, _)| self.calls_a_function_value(thir, e));
+        let (call, None) = (calls.next()?, calls.next()) else {
+            return None;
+        };
+        let ExprKind::Call { ref args, .. } = call.1.kind else {
+            return None;
+        };
+        // Its parameters, each as it is: the plain call's, which Rust could
+        // have named as the function itself, `move |x| f(x)`.
+        let params: Vec<_> = (thir.params.iter())
+            .filter_map(|param| match param.pat.as_deref()?.kind {
+                rustc_middle::thir::PatKind::Binding { var, .. } => Some(var),
+                _ => None,
+            })
+            .collect();
+        let as_they_are = match thir[super::body_queries::strip(thir, args[1])].kind {
+            // One whose last argument its JS leaves out, `tagged(n, None)`'s
+            // `tagged(n)`, isn't the function, whose JS caller would fill
+            // it, `[3, 4].map(tagged)`'s index (ADR 0443, amended).
+            ExprKind::Tuple { ref fields } if fields.last().is_some_and(|&last| left_out(self.tcx, thir, last)) => {
+                return None;
+            }
+            ExprKind::Tuple { ref fields } => {
+                fields.len() == params.len()
+                    && (fields.iter().zip(&params)).all(|(&field, &param)| {
+                        matches!(thir[super::body_queries::strip(thir, field)].kind, ExprKind::VarRef { id } if id == param)
+                    })
+            }
+            _ => false,
+        };
+        if call.0 == root && as_they_are {
+            return None;
+        }
+        let (callee, _, _) = self.function_value(thir, args)?;
+        if callee != Callee::Own && !self.boxed_into_a_field(made_at) {
+            return None;
+        }
+        let ty::Closure(_, closure_args) = *self
+            .tcx
+            .type_of(body.def_id)
+            .instantiate_identity()
+            .skip_normalization()
+            .kind()
+        else {
+            return None;
+        };
+        let sig = self
+            .tcx
+            .instantiate_bound_regions_with_erased(closure_args.as_closure().sig());
+        if sig.output().is_unit() && !call.1.ty.is_unit() {
+            return None;
+        }
+        Some(Forwarding {
+            span,
+            callee,
+            adapts: false,
+            item: false,
+            binds: false,
+            ignores: false,
+            eta: true,
+            fixed: false,
+            statement: false,
+        })
+    }
+
+    /// Whether the closure written at `span` is boxed into a struct's
+    /// field where it's made, `Node { getter: Box::new(move |previous| ..)
+    /// }`: a `dyn Fn` the crate's code calls, which nothing hands on as it's
+    /// made.
+    fn boxed_into_a_field(&self, span: rustc_span::Span) -> bool {
+        let thir = self.frame.thir;
+        // Its box made the field's `dyn Fn`, `Box<dyn Fn(Value) -> Value>`.
+        let unsized_ = |mut e: rustc_middle::thir::ExprId| loop {
+            e = super::body_queries::strip(thir, e);
+            match thir[e].kind {
+                ExprKind::PointerCoercion { source, .. } => e = source,
+                _ => return e,
+            }
+        };
+        let boxed = |e: rustc_middle::thir::ExprId| match thir[unsized_(e)].kind {
+            ExprKind::Call { fun, ref args, .. } => {
+                fn_def(thir[fun].ty)
+                    .is_some_and(|(id, _)| super::recognition::is_std_def(self.tcx, id, StdItem::BoxNew))
+                    && args.iter().any(|&a| {
+                        let made = &thir[super::body_queries::strip(thir, a)];
+                        matches!(made.kind, ExprKind::Closure(..)) && made.span == span
+                    })
+            }
+            _ => false,
+        };
+        (thir.exprs.iter())
+            .any(|e| matches!(&e.kind, ExprKind::Adt(adt) if adt.fields.iter().any(|field| boxed(field.expr))))
     }
 
     /// Whether variable `var`, never changed, is a function that reads no

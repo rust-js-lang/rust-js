@@ -318,7 +318,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         stmts.splice(0..0, directives);
         let made_at = span;
         let span = self.js_span(span);
-        let forwarded = self.forwarded_to(body, span);
+        let forwarded = self.forwarded_to(body, (span, made_at));
         let concise = self.closure_calls_for_nothing(body);
         if forwarded.is_some() || concise.is_some() {
             let arrow = Expr {

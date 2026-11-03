@@ -161,7 +161,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an `impl Fn` called with what it's given is `(x, i) => f(x, i)`, not `f`",
     file: "src/lower/passed_on.rs",
-    find: "                    ty::Param(_) => Callee::Generic,\n",
+    find: "            ty::Param(_) => Callee::Generic,\n",
     replace: "                    ty::Param(_) => return None,\n",
     tests: callback,
   },
@@ -170,7 +170,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Box<dyn Fn()>` prop's call isn't a Rust function's, `() => onClear()` kept",
     file: "src/lower/passed_on.rs",
-    find: "                    ty::Adt(adt, args) => adt.is_box() && matches!(args.type_at(0).kind(), ty::Dynamic(..)),\n",
+    find: "            ty::Adt(adt, args) => adt.is_box() && matches!(args.type_at(0).kind(), ty::Dynamic(..)),\n",
     replace: "                    ty::Adt(adt, args) => adt.is_box() && matches!(args.type_at(0).kind(), ty::Never),\n",
     tests: handler,
   },
@@ -440,7 +440,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a bound function of the crate's is taken for a `dyn Fn` a JS function may be, `move |_| ping()` kept an arrow (rd196)",
     file: "src/lower/passed_on.rs",
-    find: "                    _ if dyn_fn && captured.is_some_and(|var| self.bound_own(var)) => Callee::Own,\n",
+    find: "            _ if dyn_fn && captured.is_some_and(|var| self.bound_own(var)) => Callee::Own,\n",
     replace: "",
     tests: ["test/lowering-passed-on.test.ts", "-t", "ignores what it's given"],
   },
@@ -887,5 +887,50 @@ export const mutations: Mutation[] = [
     find: "    let elsewhere = prototype && module(target) != module(method);\n",
     replace: "    let elsewhere = false;\n",
     tests: ["test/method-forwarding.test.ts", "-t", "a declaration its module's load can read"],
+  },
+  {
+    name: "converting-unseen",
+    breaks:
+      "a closure that only converts what it passes on to a function value it captured keeps its arrow, alien-signals' `getter: (previous) => getter(previous)` (ADR 0605, amended)",
+    file: "src/lower/passed_on.rs",
+    find: "            eta: true,\n",
+    replace: "            eta: false,\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "only converts what it passes on"],
+  },
+  {
+    name: "converting-identity-unasked",
+    breaks:
+      "a converting closure is its function where the crate compares two boxes of them by `ptr::addr_eq`, which JS says are one, where Rust says two (ADR 0605, amended)",
+    file: "src/lower/passed_on.rs",
+    find: "        if self.krate.counted.points_at_functions || !self.tcx.is_closure_like(body.def_id) {\n",
+    replace: "        if !self.tcx.is_closure_like(body.def_id) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_converting_identity_read.rs$"],
+  },
+  {
+    name: "converting-of-a-js-function-given-on",
+    breaks:
+      "`xs.iter().map(|x| f(x))` of a `dyn Fn(&u32)`, a reborrow its arrow converts, is `xs.map(f)`, which gives a JS function the index and the array (ADR 0279, ADR 0605, amended)",
+    file: "src/lower/passed_on.rs",
+    find: "        if callee != Callee::Own && !self.boxed_into_a_field(made_at) {\n",
+    replace: "        if false {\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "only where the function would see and give what the closure does"],
+  },
+  {
+    name: "converting-left-out",
+    breaks:
+      "a closure whose call leaves its last `None` out, `|n| tagged(n, None)`, is the function, so `[3, 4].map(tagged)` gives it the index for its tag (ADR 0605, amended)",
+    file: "src/lower/passed_on.rs",
+    find: "            ExprKind::Tuple { ref fields } if fields.last().is_some_and(|&last| left_out(self.tcx, thir, last)) => {\n                return None;\n            }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^option_arguments.rs$"],
+  },
+  {
+    name: "converting-unit-discarding",
+    breaks:
+      "a converting closure of `()` that discards what its call gives is the function, which gives it to a JS caller (ADR 0605, amended)",
+    file: "src/lower/passed_on.rs",
+    find: "        if sig.output().is_unit() && !call.1.ty.is_unit() {\n",
+    replace: "        if false {\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "only converts what it passes on"],
   },
 ];

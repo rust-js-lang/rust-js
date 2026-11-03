@@ -29,10 +29,8 @@ function main() {
     false,
     (values) => values.reduce((a, b) => (a + b) | 0, 0),
   );
-  const b = $collectOptions(
-    [1, 2].values().map((x) => t(x)),
-    false,
-    (values) => values.reduce((a, b) => (a + b) | 0, 0),
+  const b = $collectOptions([1, 2].values().map(t), false, (values) =>
+    values.reduce((a, b) => (a + b) | 0, 0),
   );
   const c =
     $collectOptions($iter([200, 100]), false, (values) =>

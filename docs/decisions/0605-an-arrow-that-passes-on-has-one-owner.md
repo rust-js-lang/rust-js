@@ -16,7 +16,10 @@ given, calling with nothing a function that reads no `this` and nothing
 more, is that function wherever it's given (rd196, rd212, the user's
 decision); and a binding that says it reads only its parameters is its
 function as a value (rd648, the user's decision); and a closure bound so
-needs no parameter of its own, and may spread its rest on (#502).
+needs no parameter of its own, and may spread its rest on (#502); and a
+closure that only converts what it passes on to a function value it
+captured is that function where it's made (decided on the user's behalf,
+alien-signals run 10).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A: the output is
 unchanged.
@@ -849,3 +852,74 @@ Mutations `prototype-forwarding-unasked`, `forwarded-result-unasked`,
 `prototype-forwarding-unplaced` (lower/classes.ts),
 `prototype-forwarding-printed-as-function` (to_oxc/statements.ts) and
 `prototype-forwarding-load-unread` (prepare/forwarding.ts).
+
+## Amendment: a closure that only converts what it passes on to a function value it captured (alien-signals run 10, decided on the user's behalf)
+
+alien-signals' generic `computed<T>` (design B4) keeps its getter in an
+erased node, `getter: Box<dyn Fn(Value) -> Value>`, of `Value = Option<&'static
+Unknown>`, so it boxes a closure that converts the getter's types,
+`Box::new(move |previous: Value| { let previous = previous.map(|previous|
+Rc::clone(unsafe { js::cast::<&Rc<T>>(Some(previous)) }));
+js::any_of(Rc::new(getter(previous))) })`. Each conversion is the value
+itself in JS, so its arrow only passes on what it's given,
+`getter: (previous) => getter(previous)`, where upstream, and the port's
+erased version before B4, keep `getter`.
+
+**A closure whose one call of a function value it captured, a generic
+`impl Fn`'s, a `dyn Fn`'s or a closure's, isn't all it is, and whose
+arrow, once lowered, only passes all it's given on to that function,
+giving back what it gives (`js::passes_on`), is that function, wherever
+it's made** (`FnCx::converting`, a `Forwarding` that's `eta`): its
+conversions, `js::cast`, `js::any_of`, an `Rc` that isn't counted,
+`Option::map` of one, are none in JS, which the arrow's shape says, as
+any that is JS of its own, `n * 2.0`, `{ value, strong, weak }`, keeps
+the arrow. Rust can name the function no other way there, as its types
+aren't the function's; one of the function's own types, `move |x| f(x)`,
+which Rust could have written `f`, is one the program wrote to be a
+function of its own, and keeps its arrow (rd284's boundary, above).
+Not where the crate reads a function's identity, `Rc::ptr_eq` of an
+`Rc<dyn Fn>` it doesn't count or a raw pointer to one
+(`Counted::points_at_functions`, ADR 1043's #500 rule), nor one an `Rc`
+is made of where it compares them (`counted_closure`, ADR 0959); nor a
+closure of `()` whose call gives a value it discards. Of a generic `impl
+Fn`'s or a `dyn Fn`'s, which may be a JS function that reads more than
+it's given, only where the closure is boxed into a struct's field where
+it's made, `Node { getter: Box::new(..) }`, a `dyn Fn` the crate's code
+calls with what the closure is given (`boxed_into_a_field`): one given
+on, `xs.iter().map(|x| f(x))` of a `&dyn Fn(&u32)`, whose reborrow is a
+conversion too, keeps its arrow, as the method gives the index and the
+array (ADR 0279). Nor one whose call's
+last argument its JS leaves out, `|n| tagged(n, None)`, whose function a
+JS caller would fill it for, `[3, 4].map(tagged)`'s index (ADR 0443,
+amended); nor a function that may read `js::arguments()` (rd509).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N for Rust, the user's
+exception family for a JS caller. What tells them apart, none of which
+Rust reads:
+
+- **Its `this`**: the arrow calls the function with none, and the
+  function, called as its holder's member, `this$.getter(this$.value)`,
+  gets the holder, as upstream's `this.getter(..)` gives it. A JS
+  function given as the getter may read it; Rust can't.
+- **What more a JS caller gives**: the arrow passed on only its
+  parameters. Rust calls the `dyn Fn` with those alone.
+- **Its `.length` and its identity**: as a function passed on, and the
+  identity only where nothing reads it, above.
+
+Decided on the user's behalf (2026-11-04, alien-signals run 10, design
+B4's option 1, the user asleep): the user's #500 rule, a closure that
+passes on is its function where nothing reads its identity, extended to
+the conversions a closure needs to pass on at all.
+
+Held by `test/lowering-passed-on.test.ts`, "a closure that only converts
+what it passes on to a function value it captured is that function"
+(`getter,`, run; `(n) => scale(n * 2)` kept), and the corpus's
+`closure_converting_to_a_function_value` (a generic `computed<T>`'s
+`Rc::new(getter(previous.as_deref()))`, `next(n + 1)` and a statement of
+`()` kept) and `closure_converting_identity_read` (two boxes compared by
+`ptr::addr_eq`, `false`, each its arrow), against native Rust. Mutations
+`converting-identity-unasked`, `converting-unit-discarding`,
+`converting-left-out` (the corpus's `option_arguments`),
+`converting-of-a-js-function-given-on` ("a once-callback is the function
+only where .."'s `dyn_mapped`) and
+`converting-unseen` (`passed_on.ts`).

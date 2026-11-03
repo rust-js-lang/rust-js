@@ -718,6 +718,23 @@ What's refused is in [the limitations](limitations.md).
   stays an arrow of its own, so two of one method compare `false`, as in
   Rust ([1043](../decisions/1043-a-functions-scope-struct-is-its-scope.md),
   amended, the user's decision).
+- **A closure that only converts what it passes on to a function value
+  it captured is that function**, where it's made, where each conversion
+  is the value itself in JS, `js::cast`, `js::any_of`, an `Rc` that isn't
+  counted, and the crate reads no closure's identity: alien-signals'
+  generic `computed<T>` boxes its getter for an erased node,
+  `Box::new(move |previous: Value| js::any_of(Rc::new(getter(previous.map(..)))))`,
+  which is `getter`, as upstream keeps it. The function, called as what
+  holds it, `this$.getter(..)`, gets that `this`, which Rust can't read.
+  A generic `impl Fn` or a `dyn Fn`, which may be a JS function reading
+  more than it's given, is so only where the closure is boxed into a
+  struct's field where it's made; one given on, `xs.iter().map(|x|
+  f(x))`, keeps its arrow, as `map` gives the index too. A
+  closure of the function's own types, `move |x| f(x)`, which Rust could
+  have written `f`, stays an arrow, as does one whose conversion is JS of
+  its own, `next(n + 1)`, and one of `()` that discards what its call
+  gives ([0605](../decisions/0605-an-arrow-that-passes-on-has-one-owner.md),
+  amended, decided on the user's behalf).
 
 Differences:
 
