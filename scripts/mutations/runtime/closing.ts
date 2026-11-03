@@ -162,4 +162,12 @@ export const mutations: Mutation[] = [
     replace: "closing.nth = (k) => done(it.nth(k));",
     tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
   },
+  {
+    name: "closing-own-count-unforwarded",
+    breaks: "what holds the crate's iterator with its own `count` doesn't pass it on, so a `skip`'s `count` of one with a destructor steps it (#505)",
+    file: "src/runtime/closing.js",
+    find: "  if (it.ownCount) {\n    closing.count = () => {\n",
+    replace: "  if (false) {\n    closing.count = () => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
+  },
 ];

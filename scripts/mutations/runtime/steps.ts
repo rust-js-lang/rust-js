@@ -403,4 +403,12 @@ export const mutations: Mutation[] = [
     replace: "      const made = true ? (x) => f(x, i++) :",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
   },
+  {
+    name: "skip-count-folded",
+    breaks: "a `skip`'s `count` of the crate's iterator with its own `count` folds it, never asking it (#505)",
+    file: "src/runtime/steps.js",
+    find: "    skipped.count = (drop) => {\n",
+    replace: "    skipped.countUnused = (drop) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
+  },
 ];

@@ -336,7 +336,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.drop_value(held, receiver, span, &mut dropped)?;
         if !dropped.is_empty() {
             let fold = crate::lower::bindings::trait_method_name(self.tcx, by, fold);
-            let unfolded = Expr::bin(Op::Eq, Expr::member(dictionary, fold), Expr::undefined());
+            let mut unfolded = Expr::bin(Op::Eq, Expr::member(dictionary.clone(), fold), Expr::undefined());
+            // Of `count`, its dictionary's `count` too, the crate's own,
+            // which took it and dropped it (#505).
+            if self.recognition().iterator_method(method) == Some(IterMethod::Count) {
+                let count = crate::lower::bindings::trait_method_name(self.tcx, by, "count");
+                let uncounted = Expr::bin(Op::Eq, Expr::member(dictionary, count), Expr::undefined());
+                unfolded = Expr::bin(Op::And, unfolded, uncounted);
+            }
             made.push(StmtKind::If(unfolded, dropped, None).at(self.js_span(span)));
         }
         Ok(())

@@ -271,3 +271,35 @@ shapes against native Rust, with the mutations
 entries or read `$nth`. The crate's own `count` is never asked through
 an adapter or in generic code either. That gap predates this change and
 is filed as #505.
+
+## Amendment: the crate's own `count`, passed on as std passes it (2026-11-03, #505)
+
+The crate's own `count` was called only on the crate's type itself.
+`$iterator` took no `count`, so a `skip`'s, a `fuse`'s, a `peekable`'s, a
+chain's, an `enumerate`'s and generic code's `count` all fell back to
+std's default, stepping by `next`. Now `count` is one of the steps the
+crate's iterator passes on, beside `fold`, `nth` and `last`:
+- `own_methods` gives it (`OwnMethods::count`), of the iterator itself,
+  not through a `&mut`, whose `count` is std's. `$iterator` takes it last
+  (`ownCount`), and so do its dictionaries and `$given` for std's compiled
+  `Fuse` and `Peekable`. `counts_its_own` says where it's reached: through
+  `skip`, `fuse`, `peekable`, `enumerate`, `copied`, `cloned`, either side
+  of a `chain`, or a type parameter.
+- `$closing`, `$lazyChain` and a `skip`, `$skipping`'s and `$Steps`'
+  `drop(n)`'s, pass it on. A skip asks `nth(n - 1)` first. An `enumerate`
+  of one is `$enumerate`, whose count is its source's (ADR 0988,
+  amended).
+- The crate's own `count` takes the iterator and drops what it holds.
+  So std's compiled `count` of one drops it after only where its
+  dictionary has neither a `fold` nor a `count` of its own. Before, a
+  fused one's items were dropped twice.
+Results change, so Rust's behavior is kept (ADR 0262, C).
+`own_count_through_adapters.rs` holds the shapes against native Rust,
+with the mutations `own-count-unlisted` (`stepping.ts`),
+`counts-its-own-not-through-adapters` (`recognition/iterators.ts`),
+`own-count-dropped-again` (`lower/mir/iter.ts`, by std's package),
+`enumerate-of-own-count-mapped` (`backs.ts`), `iterator-own-count-unset`,
+`given-count-lost` (`iterator.ts`), `closing-own-count-unforwarded`
+(`closing.ts`), `skipping-count-of-own-count-folded` (`skipping.ts`),
+`skip-count-folded` (`steps.ts`) and `chain-own-count-unsaid`
+(`lazy_chain.ts`).

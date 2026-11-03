@@ -10,7 +10,7 @@
 // `nth_back`, which std's consumers and adapters stepped from the back call
 // (#220), and `try_rfold`, std's compiled struct's, a `Take`'s, which what
 // folds it from its back asks (ADR 0930).
-function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold) {
+function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold, count) {
   // A range's, stepped by its own step, has std's `Range::nth` (#231), and
   // its `size_hint`, exact, of its bounds (ADR 0918).
   nth ??= $rangeNthOf(next);
@@ -62,10 +62,17 @@ function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth
   }
   if (nthBack !== undefined) it.nthBack = (k) => step(nthBack(iterator, k));
   if (tryRfold !== undefined) it.tryRfold = (init, f, broke, unwind) => tryRfold(iterator, init, f, broke, unwind);
+  // And its own `count`, which takes it and drops it itself, as std's
+  // adapters whose `count` is their source's, and generic code's, call it
+  // (#505).
+  if (count !== undefined) {
+    it.count = () => count(iterator);
+    it.ownCount = true;
+  }
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0525,
   // amended).
-  it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold);
+  it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold, count);
   if (nextBack !== undefined) {
     it.back = () => step(nextBack(iterator));
   }
@@ -120,6 +127,7 @@ function $given(value, iterator, boxed = false, back, len) {
     back?.rfold,
     back?.nthBack,
     back?.tryRfold,
+    iterator.count,
   );
   // Made of the value, which `$givenClone` clones.
   it.given = true;

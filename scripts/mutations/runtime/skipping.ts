@@ -162,4 +162,12 @@ export const mutations: Mutation[] = [
     replace: "      const folded = skipping.iter.fold(init, f);\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
   },
+  {
+    name: "skipping-count-of-own-count-folded",
+    breaks: "a `skip`'s `count` of the crate's iterator with its own `count`, of items with a destructor, folds it (#505)",
+    file: "src/runtime/skipping.js",
+    find: "  if (iter.ownNth || iter.ownCount) {\n",
+    replace: "  if (iter.ownNth) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
+  },
 ];

@@ -71,6 +71,9 @@ pub(in crate::lower) struct OwnMethods {
     pub(in crate::lower) last: Option<Expr>,
     pub(in crate::lower) rfold: Option<Expr>,
     pub(in crate::lower) nth_back: Option<Expr>,
+    /// Its own `count`, which a `skip`'s, a `fuse`'s, a `peekable`'s, a
+    /// chain's and generic code's `count` call (#505).
+    pub(in crate::lower) count: Option<Expr>,
 }
 
 /// `stepped`'s, given `len` too, its length, one that knows it, an
@@ -94,6 +97,7 @@ pub(in crate::lower) fn stepped_ends(
         last,
         rfold,
         nth_back,
+        count,
     } = own;
     let given = [
         boxed.then(|| Expr::bool(true)),
@@ -105,6 +109,8 @@ pub(in crate::lower) fn stepped_ends(
         last,
         rfold,
         nth_back,
+        None,
+        count,
     ];
     let Some(last) = given.iter().rposition(Option::is_some) else {
         return Expr::call(Expr::helper("$iterator"), vec![value, next]);

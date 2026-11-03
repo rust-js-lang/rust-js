@@ -688,26 +688,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
   {
-    name: "lasts-its-own-not-through-skip",
-    breaks:
-      "`skip(n).last()` of the crate's iterator with its own `last` folds, not `nth(n - 1)` then its `last`",
-    file: "src/lower/recognition/iterators.rs",
-    find: '            Some("Skip" | "Fuse" | "Peekable" | "Copied" | "Cloned") => 1,\n',
-    replace:
-      '            Some("Fuse" | "Peekable" | "Copied" | "Cloned") => 1,\n',
-    tests: ["test/corpus.test.ts", "-t", "^own_last_and_nth_passed_on.rs$"],
-  },
-  {
-    name: "lasts-its-own-not-through-chain",
-    breaks:
-      "a chain's `last` of the crate's iterators with their own `last` folds, not each side's `last`",
-    file: "src/lower/recognition/iterators.rs",
-    find: '            Some("Skip" | "Fuse" | "Peekable" | "Copied" | "Cloned") => 1,\n            Some("Chain") => 2,\n',
-    replace:
-      '            Some("Skip" | "Fuse" | "Peekable" | "Copied" | "Cloned") => 1,\n            Some("Chain") => 0,\n',
-    tests: ["test/corpus.test.ts", "-t", "^own_last_and_nth_passed_on.rs$"],
-  },
-  {
     name: "nths-its-own-no-fuse",
     breaks:
       "`fuse().nth(k)` of the crate's iterator with its own `nth` is `.drop(k).take(1)`, not `$nth(it, k)`",
@@ -925,14 +905,6 @@ export const mutations: Mutation[] = [
     replace: "            ) && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^array_counted_loops.rs$"],
     snapshots: true,
-  },
-  {
-    name: "lasts-its-own-not-generic",
-    breaks: "generic code's `last()` steps its iterator to its end, never asking the type's own `last` (#496)",
-    file: "src/lower/recognition/iterators.rs",
-    find: "        let ty::Adt(adt, args) = ty.kind() else {\n            return matches!(ty.kind(), ty::Param(_));\n        };\n        let sources = match",
-    replace: "        let ty::Adt(adt, args) = ty.kind() else {\n            return false;\n        };\n        let sources = match",
-    tests: ["test/corpus.test.ts", "-t", "^generic_own_last.rs$"],
   },
   {
     name: "nths-its-own-not-generic",

@@ -247,12 +247,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // And its own `fold`, `nth` and `last`, which std's consumers of it
         // call, `$foldBy`'s (#162, #182).
-        let crate::lower::iterators::OwnMethods { fold, nth, last, .. } = self.own_methods(ty, false, span)?;
+        let crate::lower::iterators::OwnMethods {
+            fold, nth, last, count, ..
+        } = self.own_methods(ty, false, span)?;
         let iterator = std_item(self.tcx, StdItem::Iterator);
         // Of std's adapter over the crate's own, the JS iterator's, which
         // passes them on as std's does (#214).
-        let (fold, nth, last) = match self.is_user_iterator(ty) {
-            true => (fold, nth, last),
+        let (fold, nth, last, count) = match self.is_user_iterator(ty) {
+            true => (fold, nth, last, count),
             false => {
                 let recognition = self.recognition();
                 let boxed = self.iterator_item(ty).is_some_and(|item| self.boxed_payload(item));
@@ -270,10 +272,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     recognition
                         .lasts_its_own(ty)
                         .then(|| Expr::helper(if boxed { "$lastSome" } else { "$last" })),
+                    recognition.counts_its_own(ty).then(|| Expr::helper("$count")),
                 )
             }
         };
-        for (name, own) in [("fold", fold), ("nth", nth), ("last", last)] {
+        for (name, own) in [("fold", fold), ("nth", nth), ("last", last), ("count", count)] {
             if let Some(own) = own {
                 props.push(js::Prop::Field(
                     crate::lower::bindings::trait_method_name(self.tcx, iterator, name),

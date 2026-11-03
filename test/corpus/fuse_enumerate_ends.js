@@ -37,21 +37,21 @@ function backPairs(it) {
 }
 
 function ends(it) {
-  const e = iterator_enumerate(it, { next: $next, nth: $nth, last: $last });
+  const e = iterator_enumerate(it, { next: $next, nth: $nth, last: $last, count: $count });
   const first = $next(e);
   const last = enumerateDoubleEndedIterator_nextBack(e, { len: (iterator) => iterator.len() });
   return [first, last, enumerateExactSizeIterator_len(e, { len: (iterator) => iterator.len() })];
 }
 
 function fusedLen(it, IFused) {
-  const f = iterator_fuse(it, { next: $next, nth: $nth, last: $last }, IFused);
+  const f = iterator_fuse(it, { next: $next, nth: $nth, last: $last, count: $count }, IFused);
   $next(f);
   const left = fuseExactSizeIterator_len(f, { len: (iterator) => iterator.len() });
   return [left, $count(f)];
 }
 
 function fusedBack(it, IFused) {
-  const f = iterator_fuse(it, { next: $next, nth: $nth, last: $last }, IFused);
+  const f = iterator_fuse(it, { next: $next, nth: $nth, last: $last, count: $count }, IFused);
   const last = fuseDoubleEndedIterator_nextBack(f, { next_back: $nextBack }, IFused);
   const rest = Array.from(
     $rev(
@@ -64,7 +64,7 @@ function fusedBack(it, IFused) {
           fuseDoubleEndedIterator_nthBack(
             iterator,
             k,
-            { next: $next, nth: $nth, last: $last },
+            { next: $next, nth: $nth, last: $last, count: $count },
             { next_back: $nextBack },
             IFused,
           ),
@@ -73,7 +73,7 @@ function fusedBack(it, IFused) {
             iterator,
             init,
             f,
-            { next: $next, nth: $nth, last: $last },
+            { next: $next, nth: $nth, last: $last, count: $count },
             { next_back: $nextBack },
             $tryOf(broke),
             IFused,

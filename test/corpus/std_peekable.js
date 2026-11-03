@@ -26,7 +26,7 @@ export function entry() {
 }
 
 function firstTwo(it) {
-  const p = iterator_peekable(it, { next: $next, nth: $nth, last: $last });
+  const p = iterator_peekable(it, { next: $next, nth: $nth, last: $last, count: $count });
   const a = $next(p);
   const b = $nextIf(p, (x) => x % 2 === 0);
   const c = $next(p);
@@ -34,7 +34,7 @@ function firstTwo(it) {
 }
 
 function fromBack(it) {
-  const p = iterator_peekable(it, { next: $next, nth: $nth, last: $last });
+  const p = iterator_peekable(it, { next: $next, nth: $nth, last: $last, count: $count });
   const out = [peekableDoubleEndedIterator_nextBack(p) ?? 0];
   out.push($next(p) ?? 0);
   out.push(peekableDoubleEndedIterator_nextBack(p) ?? 0);

@@ -906,7 +906,7 @@ export function peekableIterator_count(peekable, IIterator = { next: $next }, dr
         try {
           result$1 = $count($given(iter, IIterator, true), dropIItem);
         } finally {
-          if (IIterator.fold === undefined) {
+          if (IIterator.fold === undefined && IIterator.count === undefined) {
             dropI?.(iter);
           }
         }
@@ -933,7 +933,7 @@ export function peekableIterator_count(peekable, IIterator = { next: $next }, dr
         try {
           result$1 = $count($given(iter, IIterator, true), dropIItem);
         } finally {
-          if (IIterator.fold === undefined) {
+          if (IIterator.fold === undefined && IIterator.count === undefined) {
             dropI?.(iter);
           }
         }
@@ -1401,7 +1401,7 @@ export function fuseIterator_count(fuse, IIterator = { next: $next }, dropI, dro
     try {
       return $count($given(iter, IIterator, true), dropIItem);
     } finally {
-      if (IIterator.fold === undefined) {
+      if (IIterator.fold === undefined && IIterator.count === undefined) {
         dropI?.(iter);
       }
     }
@@ -2115,7 +2115,7 @@ export function enumerateIterator_count(enumerate, IIterator = { next: $next }, 
   try {
     return $count($given(iter, IIterator, true), dropIItem);
   } finally {
-    if (IIterator.fold === undefined) {
+    if (IIterator.fold === undefined && IIterator.count === undefined) {
       dropI?.(iter);
     }
   }
@@ -3048,7 +3048,7 @@ export function copiedIterator_count(copied, IIterator = { next: $next }, TCopy,
   try {
     return $count($given(iter, IIterator, true));
   } finally {
-    if (IIterator.fold === undefined) {
+    if (IIterator.fold === undefined && IIterator.count === undefined) {
       dropI?.(iter);
     }
   }
@@ -5371,7 +5371,7 @@ export function skipIterator_count(skip, IIterator = { next: $next }, dropI, dro
   try {
     return $count($given(iter, IIterator, true), dropIItem);
   } finally {
-    if (IIterator.fold === undefined) {
+    if (IIterator.fold === undefined && IIterator.count === undefined) {
       dropI?.(iter);
     }
   }
@@ -6557,7 +6557,7 @@ export function chainIterator_count(
       try {
         result = $count($given(iter, AIterator, true), dropAItem);
       } finally {
-        if (AIterator.fold === undefined) {
+        if (AIterator.fold === undefined && AIterator.count === undefined) {
           dropA?.(iter);
         }
       }
@@ -6579,7 +6579,7 @@ export function chainIterator_count(
     try {
       result = $count($given(iter, BIterator, true), dropAItem);
     } finally {
-      if (BIterator.fold === undefined) {
+      if (BIterator.fold === undefined && BIterator.count === undefined) {
         dropB?.(iter);
       }
     }

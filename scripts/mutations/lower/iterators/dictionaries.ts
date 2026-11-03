@@ -160,9 +160,9 @@ export const mutations: Mutation[] = [
     breaks:
       "the crate's iterator's dictionary leaves out its own `fold`, `nth` and `last`",
     file: "src/lower/iterators/dictionaries.rs",
-    find: '        for (name, own) in [("fold", fold), ("nth", nth), ("last", last)] {\n',
+    find: '        for (name, own) in [("fold", fold), ("nth", nth), ("last", last), ("count", count)] {\n',
     replace:
-      '        for (name, own) in [("fold", fold), ("nth", nth), ("last", last)].into_iter().filter(|_| false) {\n',
+      '        for (name, own) in [("fold", fold), ("nth", nth), ("last", last), ("count", count)].into_iter().filter(|_| false) {\n',
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },
   {
@@ -179,8 +179,8 @@ export const mutations: Mutation[] = [
     breaks:
       "std's adapter over the crate's own iterator, given to std's compiled code, is a dictionary of `next` alone, so a `fuse` over a `skip` asks `nth(2)`, not std's `nth(3)` (#214)",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "        let (fold, nth, last) = match self.is_user_iterator(ty) {\n",
-    replace: "        let (fold, nth, last) = match true {\n",
+    find: "        let (fold, nth, last, count) = match self.is_user_iterator(ty) {\n",
+    replace: "        let (fold, nth, last, count) = match true {\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },

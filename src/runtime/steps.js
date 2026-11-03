@@ -395,6 +395,19 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       n = 0;
       return this.nth(skip + k);
     };
+    // Its `count`, std's: its source's `nth(n - 1)`, then its source's
+    // `count`, the crate's own where it writes one (#505).
+    skipped.count = (drop) => {
+      if (n > 0) {
+        const k = n;
+        n = 0;
+        if (this.nth(k - 1).done) {
+          this.return();
+          return 0;
+        }
+      }
+      return $count(this, drop);
+    };
     // Its `advance_by(m)`, std's: its source advanced past what it skips
     // and `m` more (#213).
     skipped.advanceBy = (m, drop) => {

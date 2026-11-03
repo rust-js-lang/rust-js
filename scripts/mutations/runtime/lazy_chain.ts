@@ -114,4 +114,12 @@ export const mutations: Mutation[] = [
     replace: "  chained.fold = (init, f, unwind) =>\n    ((run) => run())(() => {",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
   },
+  {
+    name: "chain-own-count-unsaid",
+    breaks: "a chain of the crate's iterators with their own `count` doesn't say so, so a `skip`'s `count` of it folds it (#505)",
+    file: "src/runtime/lazy_chain.js",
+    find: "  if (first.ownCount || second.ownCount) chained.ownCount = true;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
+  },
 ];

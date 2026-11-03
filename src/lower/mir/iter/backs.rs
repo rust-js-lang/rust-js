@@ -199,8 +199,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     || self.knows_its_length(output)
                     || self.recognition().nths_its_own(output)
                     // Or one whose `nth` drops what it passes as one slice,
-                    // a reversed `Vec`'s, its source's (#277).
-                    || self.recognition().nths_a_slice(output) =>
+                    // a reversed `Vec`'s, its source's (#277); or whose
+                    // `count` is the crate's own, its source's (#505).
+                    || self.recognition().nths_a_slice(output)
+                    || self.recognition().counts_its_own(output) =>
             {
                 // Of the crate's, what it can be made to know.
                 let back = self.knows_its_back(iter_ty) || self.user_double_ended(iter_ty);

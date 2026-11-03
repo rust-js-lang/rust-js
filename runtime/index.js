@@ -552,7 +552,7 @@ export function $shift(items) {
 // `nth_back`, which std's consumers and adapters stepped from the back call
 // (#220), and `try_rfold`, std's compiled struct's, a `Take`'s, which what
 // folds it from its back asks (ADR 0930).
-export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold) {
+export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold, count) {
   // A range's, stepped by its own step, has std's `Range::nth` (#231), and
   // its `size_hint`, exact, of its bounds (ADR 0918).
   nth ??= $rangeNthOf(next);
@@ -604,10 +604,17 @@ export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fo
   }
   if (nthBack !== undefined) it.nthBack = (k) => step(nthBack(iterator, k));
   if (tryRfold !== undefined) it.tryRfold = (init, f, broke, unwind) => tryRfold(iterator, init, f, broke, unwind);
+  // And its own `count`, which takes it and drops it itself, as std's
+  // adapters whose `count` is their source's, and generic code's, call it
+  // (#505).
+  if (count !== undefined) {
+    it.count = () => count(iterator);
+    it.ownCount = true;
+  }
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0525,
   // amended).
-  it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold);
+  it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold, count);
   if (nextBack !== undefined) {
     it.back = () => step(nextBack(iterator));
   }
@@ -662,6 +669,7 @@ export function $given(value, iterator, boxed = false, back, len) {
     back?.rfold,
     back?.nthBack,
     back?.tryRfold,
+    iterator.count,
   );
   // Made of the value, which `$givenClone` clones.
   it.given = true;
@@ -1787,6 +1795,19 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       n = 0;
       return this.nth(skip + k);
     };
+    // Its `count`, std's: its source's `nth(n - 1)`, then its source's
+    // `count`, the crate's own where it writes one (#505).
+    skipped.count = (drop) => {
+      if (n > 0) {
+        const k = n;
+        n = 0;
+        if (this.nth(k - 1).done) {
+          this.return();
+          return 0;
+        }
+      }
+      return $count(this, drop);
+    };
     // Its `advance_by(m)`, std's: its source advanced past what it skips
     // and `m` more (#213).
     skipped.advanceBy = (m, drop) => {
@@ -2355,6 +2376,14 @@ export function $closing(it, drop, slices = true) {
     close();
     return folded;
   };
+  // Its `count`, the crate's own, likewise (#505).
+  if (it.ownCount) {
+    closing.count = () => {
+      closed = true;
+      return it.count();
+    };
+    closing.ownCount = true;
+  }
   // Its `last`, the crate's own, which takes it and drops what it has left
   // itself, as a `skip`'s `last` asks it (#494).
   if (it.ownLast) {
@@ -2443,8 +2472,9 @@ export function $skipping(iter, n, drop) {
     return m - Math.max(advanced - skip, 0);
   };
   // Std's `Skip::count`: its source's `nth(n - 1)`, then its `count`, where
-  // its source drops what it passes over itself (#261).
-  if (iter.ownNth) {
+  // its source drops what it passes over itself (#261), or counts itself,
+  // the crate's own `count` (#505).
+  if (iter.ownNth || iter.ownCount) {
     skipping.count = (dropItem) => {
       if (skipping.n > 0) {
         const k = skipping.n;
@@ -12234,6 +12264,8 @@ export function $lazyChain(a, b) {
   };
   // Its `nth` drops what it passes over itself where each side's does, a
   // `Vec`'s (#250).
+  // Its `count`, each side's, the crate's own where one writes it (#505).
+  if (first.ownCount || second.ownCount) chained.ownCount = true;
   if (first.ownNth && second.ownNth) {
     chained.ownNth = true;
     chained.dropItem = first.dropItem ?? second.dropItem;

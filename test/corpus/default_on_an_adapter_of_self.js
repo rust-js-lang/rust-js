@@ -3,6 +3,7 @@
 import { iterator_enumerate, iterator_map } from "@rust-js/std/iter.js";
 import {
   $cmp,
+  $count,
   $iter,
   $iterator,
   $next,
@@ -36,6 +37,7 @@ function tExt(TIterator) {
         iterator_map(iterator_enumerate(self, TIterator), ([i, x]) => [x, i], {
           next: $nextSome,
           nth: $nth,
+          count: $count,
         }),
         { cmp: (a, b) => SelfItemOrd.cmp(a[0], b[0]) || $cmp(a[1], b[1]) },
       );

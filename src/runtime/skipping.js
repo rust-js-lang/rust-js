@@ -44,8 +44,9 @@ function $skipping(iter, n, drop) {
     return m - Math.max(advanced - skip, 0);
   };
   // Std's `Skip::count`: its source's `nth(n - 1)`, then its `count`, where
-  // its source drops what it passes over itself (#261).
-  if (iter.ownNth) {
+  // its source drops what it passes over itself (#261), or counts itself,
+  // the crate's own `count` (#505).
+  if (iter.ownNth || iter.ownCount) {
     skipping.count = (dropItem) => {
       if (skipping.n > 0) {
         const k = skipping.n;

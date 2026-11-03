@@ -171,4 +171,20 @@ export const mutations: Mutation[] = [
     replace: "  if (tryRfold !== undefined) it.tryRfold = (init, f, broke) => tryRfold(iterator, init, f, broke);\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^generic_folds_unwind with"],
   },
+  {
+    name: "iterator-own-count-unset",
+    breaks: "a JS iterator of the crate's with its own `count` counts by stepping, never asking it (#505)",
+    file: "src/runtime/iterator.js",
+    find: "  if (count !== undefined) {\n    it.count = () => count(iterator);\n",
+    replace: "  if (false) {\n    it.count = () => count(iterator);\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
+  },
+  {
+    name: "given-count-lost",
+    breaks: "a value std's compiled `Fuse` steps is made a JS iterator without its dictionary's `count`, the crate's own (#505)",
+    file: "src/runtime/iterator.js",
+    find: "    back?.tryRfold,\n    iterator.count,\n",
+    replace: "    back?.tryRfold,\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
+  },
 ];

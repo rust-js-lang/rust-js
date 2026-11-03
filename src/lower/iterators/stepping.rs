@@ -411,6 +411,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 },
                 rfold: self.own_fold(ty, ("rfold", folds), span)?,
                 nth_back: self.own_method(ty, ("nth_back", true), span)?,
+                count: match folds {
+                    true => self.own_method(ty, ("count", false), span)?,
+                    false => None,
+                },
             },
         })
     }
@@ -451,7 +455,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => std_item(self.tcx, StdItem::Iterator),
         };
         let params: &[&str] = match name {
-            "last" => &[],
+            "last" | "count" => &[],
             _ => &["n"],
         };
         Ok(Some(self.user_method(ty, trait_id, name, params, span)?.0))

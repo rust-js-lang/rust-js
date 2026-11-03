@@ -33,7 +33,7 @@ function counterIterator_next(counter) {
 }
 
 function consumed(it, dropI) {
-  const iter = iterator_peekable(it, { next: $next, nth: $nth, last: $last }, dropI);
+  const iter = iterator_peekable(it, { next: $next, nth: $nth, last: $last, count: $count }, dropI);
   try {
     return iter.reduce((a, b) => (a + b) >>> 0, 0);
   } finally {

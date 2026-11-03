@@ -20,8 +20,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `enumerate()` of a reversed `Vec` is a JS `map`, whose `nth` steps each item back to front, not the source's one slice (#277)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                    || self.recognition().nths_a_slice(output) =>\n",
-    replace: "                    || false =>\n",
+    find: "                    || self.recognition().nths_a_slice(output)\n                    || self.recognition().counts_its_own(output) =>\n",
+    replace: "                    || false\n                    || self.recognition().counts_its_own(output) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^step_by_compiled_source_nth.rs$"],
   },
   {
@@ -249,11 +249,11 @@ export const mutations: Mutation[] = [
   {
     name: "enumerate-ends-native",
     breaks:
-      "generic code's `enumerate` of what knows its back is a JS helper, which doesn't",
+      "an `enumerate` of what knows its back or its length is a JS helper, which knows neither (a type parameter's is `$enumerate` as its `nth` may be its own, #496)",
     file: "src/lower/mir/iter/backs.rs",
     find: "                if self.knows_its_back(output)\n                    || self.knows_its_length(output)\n",
     replace: "                if false\n                    || false\n",
-    tests: ["test/corpus.test.ts", "-t", "^fuse_enumerate_ends.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_known_length.rs$"],
   },
   {
     name: "rev-stored-items-lazy",
@@ -548,5 +548,13 @@ export const mutations: Mutation[] = [
       "-t",
       "the committed @rust-js/std is std",
     ],
+  },
+  {
+    name: "enumerate-of-own-count-mapped",
+    breaks: "an `enumerate()` of the crate's iterator with its own `count` is a map of it, whose `count` steps it (#505)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                    || self.recognition().counts_its_own(output) =>",
+    replace: " =>",
+    tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
   },
 ];

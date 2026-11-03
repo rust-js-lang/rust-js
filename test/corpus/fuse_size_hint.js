@@ -2,6 +2,7 @@
 
 import { iterator_fuse } from "@rust-js/std/iter.js";
 import {
+  $count,
   $iter,
   $lastSome,
   $next,
@@ -16,7 +17,11 @@ export function entry() {
 }
 
 function hint(it, IFused) {
-  const fused = iterator_fuse(it, { next: $nextSome, nth: $nthSome, last: $lastSome }, IFused);
+  const fused = iterator_fuse(
+    it,
+    { next: $nextSome, nth: $nthSome, last: $lastSome, count: $count },
+    IFused,
+  );
   $nextSome(fused);
   return $sizeHint(fused);
 }

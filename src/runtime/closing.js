@@ -80,6 +80,14 @@ function $closing(it, drop, slices = true) {
     close();
     return folded;
   };
+  // Its `count`, the crate's own, likewise (#505).
+  if (it.ownCount) {
+    closing.count = () => {
+      closed = true;
+      return it.count();
+    };
+    closing.ownCount = true;
+  }
   // Its `last`, the crate's own, which takes it and drops what it has left
   // itself, as a `skip`'s `last` asks it (#494).
   if (it.ownLast) {

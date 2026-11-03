@@ -594,4 +594,12 @@ export const mutations: Mutation[] = [
     replace: "                f if f.is_identity() && !self.recognition().reaches_own_steps(iter_ty) => it,\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_order_through_take_adapters.rs$"],
   },
+  {
+    name: "own-count-dropped-again",
+    breaks: "std's compiled `Fuse::count` of the crate's iterator with its own `count` drops what it holds after the crate's `count` did, so @rust-js/std isn't what the compiler compiles (#505)",
+    file: "src/lower/mir/iter.rs",
+    find: "                unfolded = Expr::bin(Op::And, unfolded, uncounted);\n",
+    replace: "                let _ = uncounted;\n",
+    tests: ["test/std-package.test.ts"],
+  },
 ];

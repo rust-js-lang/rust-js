@@ -354,4 +354,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/diagnostics.test.ts", "-t", "own fold asking of its own type parameter"],
   },
+  {
+    name: "own-count-unlisted",
+    breaks: "the crate's iterator made a JS one has no `count` of its own, so a `skip`'s and generic code's `count` never ask it (#505)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "                    true => self.own_method(ty, (\"count\", false), span)?,\n",
+    replace: "                    true => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
+  },
 ];

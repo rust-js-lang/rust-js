@@ -688,6 +688,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             last: None,
             rfold: forward.fold,
             nth_back: forward.nth,
+            count: None,
         };
         Ok(stepped_ends(value, next, boxed, back, len, hint, own))
     }

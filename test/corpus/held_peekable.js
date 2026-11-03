@@ -10,6 +10,7 @@ import {
   peekableDebug_fmt,
 } from "@rust-js/std/iter.js";
 import {
+  $count,
   $debugStr,
   $foldOf,
   $iter,
@@ -44,7 +45,7 @@ function withPositionClone_clone(withPosition, IClone, IItemClone) {
     peekable: peekableClone_clone(
       withPosition.peekable,
       fuseClone(IClone),
-      { next: $nextSome, fold: $foldOf, nth: $nthSome, last: $lastSome },
+      { next: $nextSome, fold: $foldOf, nth: $nthSome, last: $lastSome, count: $count },
       IItemClone,
     ),
   };
@@ -58,6 +59,7 @@ function withPosition(iter, IIterator, IFused) {
       fold: $foldOf,
       nth: $nthSome,
       last: $lastSome,
+      count: $count,
     }),
   };
 }
