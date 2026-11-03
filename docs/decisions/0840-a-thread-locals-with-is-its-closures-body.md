@@ -1,7 +1,7 @@
 # 0840. A thread-local's `with` is its closure's body, wherever it's called
 
 Status: Accepted; amended (in a closure's body too; one that only throws;
-at the end of a branch that ends the function; a `with` in a `with`, rd661). Extends [0581](0581-a-closure-called-as-a-statement-is-its-body.md),
+at the end of a branch that ends the function; a `with` in a `with`, rd661; a flag that only the next `if` tests, #571). Extends [0581](0581-a-closure-called-as-a-statement-is-its-body.md),
 whose closure called as a statement in a function is its body, to what a
 module runs when it's loaded and to a closure whose value a statement
 reads first.
@@ -311,3 +311,50 @@ Held by corpus `thread_local_with_nested`, against native Rust: a `with`
 in a `with`'s statement and one in a `with` whose value is returned,
 each reading the outer parameter, which print where they run; and the
 mutation `applied-nested-not-again` (`js/applied.ts`).
+
+## Amendment (2026-11-04, #571): a flag that only the next `if` tests
+
+React's warnAboutUpdateOnNotYetMountedFiberInDEV dedupes its warning in a
+nullable thread-local, `let did_warn =
+DID_WARN.with_borrow_mut(|did_warn| { match did_warn { Some(did_warn) => {
+if did_warn.contains(&component_name) { return true; } did_warn.insert(..);
+} None => *did_warn = Some(HashSet::from([..])) } false }); if did_warn {
+return; }`: Rust can't return from the function inside the closure, so it
+returns a flag the function then tests. Its `return true` is before its
+end, so the closure stayed a call, and since #541 (ADR 1078) it was given
+a seven-line getter and setter handle on the module's variable. Upstream
+writes `if (didWarn !== null) { if (didWarn.has(componentName)) { return;
+} didWarn.add(componentName); } else { didWarn = new Set([componentName]);
+}`.
+
+- **A closure called where it's made, the value of a `const x = ..` or a
+  `let`, each of whose `return`s gives `true` or `false`, and whose value
+  only the `if` right after it tests, `if (x)` or `if (!x)`, is its body
+  in place, each `return` what that `if` does with its value**
+  (`applied::tested_of`): the branch it takes, where each branch is
+  nothing or a `return` of what does nothing, so writing it at each of
+  the body's `return`s copies no work. A `return` the body ends with is
+  what follows the `if` where its branch is empty; one before its end is
+  that branch's `return`, which ends there as the closure's did
+  (`returns_replaced`, rd60's, as a `try`'s arm uses it).
+- **Not** where the flag is read anywhere else, where a branch does more
+  than return, where a `return` gives what isn't a `bool` constant, where
+  a branch reads a name a block of the body declares, nor where
+  `returns_replaced` can't place a `return`, in a loop or a `switch` whose
+  branch goes on. Each stays a call, as before.
+
+It's the same program: the closure's `return v` ends its body, and the
+`if` then runs the branch `v` takes; in place, that branch runs where the
+`return` was, and nothing of the body runs after it, as nothing did. Case
+N of ADR 0262.
+
+So `if (didWarn != null) { if (didWarn.has(componentName)) { return; }
+didWarn.add(componentName); } else { didWarn = new Set([componentName]);
+}`, upstream's. Held by `test/corpus/closure_returned_early_tested.rs`
+against native Rust, whose kept cases are a flag read again, a branch that
+does more than return, and a closure that returns a number; mutations
+`tested-flag-*` in `scripts/mutations/js/applied.ts`. A branch reading
+what a block of the body declares is held by the unit test
+`a_tested_flag_is_in_place_but_where_a_block_shadows_what_its_branch_reads`
+(`js/applied.rs`): lowering names such a block's `n` apart, `n$1`, so no
+program reaches it today.

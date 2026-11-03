@@ -486,6 +486,13 @@ where it's made, whose `return` is its own, and so does one in what a
 module runs when it's loaded that ends with a `return;`, which a module
 can't
 ([0840](../decisions/0840-a-thread-locals-with-is-its-closures-body.md)).
+But one whose every `return` gives `true` or `false`, held by a `let`
+that only the `if` after it tests, `let did_warn = DID_WARN.with_borrow_mut(|did_warn| { .. return true; .. false }); if did_warn { return; }`,
+where each branch is nothing or a `return`, is its body in place, each
+`return` the branch its value takes: `if (didWarn.has(componentName)) {
+return; }`
+([0840](../decisions/0840-a-thread-locals-with-is-its-closures-body.md),
+amended, #571).
 A `with` in another's closure, reading what the outer one lends, is each
 one's body too, `const a = ReactSharedInternals.A;` of
 `DEFAULT.with(|d| INTERNALS.with(|internals| ..))`

@@ -433,4 +433,43 @@ export const mutations: Mutation[] = [
     replace: "                    let written = std::mem::replace(value, Expr::undefined());\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
   },
+  {
+    name: "tested-flag-unapplied",
+    breaks:
+      "a closure whose `bool` only the next `if` tests stays a call given a handle, `((didWarn) => { .. })({ get value() { .. } })`, not upstream's `if (didWarn.has(componentName)) { return; }` (#571)",
+    file: "src/js/applied.rs",
+    find: "            if let Some((i, inlined)) = (0..stmts.len()).find_map(|i| Some((i, tested_of(stmts, i, &whole)?))) {\n",
+    replace:
+      "            if let Some((i, inlined)) = (0..stmts.len()).find_map(|i| Some((i, tested_of(stmts, i, &whole).filter(|_| false)?))) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_returned_early_tested.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "tested-flag-read-again",
+    breaks:
+      "a flag read again after the `if` that tests it, `format!(\"seen {fresh}\")`, is folded into the closure's returns, and that read finds no variable (#571)",
+    file: "src/js/applied.rs",
+    find: " || mentions_in(whole, name) != 1 {\n",
+    replace: " {\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_returned_early_tested.rs$"],
+  },
+  {
+    name: "tested-flag-any-branch",
+    breaks:
+      "a branch that does more than return, `println!(\"seen {n}\"); return;`, is copied to each of the closure's returns (#571)",
+    file: "src/js/applied.rs",
+    find: "        _ => false,\n    };\n    if !leaves(&yes)",
+    replace: "        _ => true,\n    };\n    if !leaves(&yes)",
+    tests: ["test/corpus.test.ts", "-t", "^closure_returned_early_tested.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "tested-flag-negation-unflipped",
+    breaks:
+      "a flag tested negated, `if !fresh { return 0; }`, runs its branch where the closure gave `true`, so a fresh number is 0 (#571)",
+    file: "src/js/applied.rs",
+    find: "            (otherwise, then.clone())\n",
+    replace: "            (then.clone(), otherwise)\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_returned_early_tested.rs$"],
+  },
 ];

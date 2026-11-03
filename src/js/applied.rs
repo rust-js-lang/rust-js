@@ -78,6 +78,11 @@ fn applied_in(body: &mut Vec<Stmt>, ends_function: bool) -> bool {
                 done = true;
                 return;
             }
+            if let Some((i, inlined)) = (0..stmts.len()).find_map(|i| Some((i, tested_of(stmts, i, &whole)?))) {
+                stmts.splice(i..=i + 1, inlined);
+                done = true;
+                return;
+            }
             // The last of a case whose end leaves its `switch`, where its
             // `return;` is the `break;` there (rd379).
             done = (stmts.iter_mut()).any(|stmt| {
@@ -253,6 +258,68 @@ fn value_of(stmt: &Stmt, whole: &[Stmt]) -> Option<Vec<Stmt>> {
         inlined.push(with_value);
     }
     Some(inlined)
+}
+
+/// `const x = ((d) => { .. return true; .. return false; })(d); if (x) {
+/// return; }`, at `at` of `stmts`, in `whole`, the function's body: a
+/// closure called where it's made, each of whose returns gives `true` or
+/// `false`, and whose value only the `if` after it reads. Its body in its
+/// place, each `return` what that `if` does of its value, a branch of
+/// nothing but a `return` of what does nothing, which is written once for
+/// each `return` of the body, so no more than that. React's
+/// warnAboutUpdateOnNotYetMountedFiberInDEV's `let did_warn =
+/// DID_WARN.with_borrow_mut(|did_warn| { .. return true; .. false }); if
+/// did_warn { return; }` is upstream's `if (didWarn.has(componentName)) {
+/// return; }` (#571). Not where a branch reads what the body declares in
+/// a block of its own, there the body's, nor where a `return` is in a loop
+/// or a `switch` and its branch goes on (`returns_replaced`).
+fn tested_of(stmts: &[Stmt], at: usize, whole: &[Stmt]) -> Option<Vec<Stmt>> {
+    let (StmtKind::Const(name, value) | StmtKind::Let(name, Some(value))) = &stmts[at].kind else {
+        return None;
+    };
+    let ExprKind::Call(callee, args) = &value.kind else {
+        return None;
+    };
+    let ExprKind::Arrow(params, body) = &callee.kind else {
+        return None;
+    };
+    let StmtKind::If(test, then, otherwise) = &stmts.get(at + 1)?.kind else {
+        return None;
+    };
+    let otherwise = otherwise.clone().unwrap_or_default();
+    let (yes, no) = match &test.kind {
+        ExprKind::Var(v) if v == name => (then.clone(), otherwise),
+        ExprKind::Unary(UnaryOp::Not, inner) if matches!(&inner.kind, ExprKind::Var(v) if v == name) => {
+            (otherwise, then.clone())
+        }
+        _ => return None,
+    };
+    let leaves = |branch: &[Stmt]| match branch {
+        [] => true,
+        [only] => {
+            matches!(&only.kind, StmtKind::Return(None))
+                || matches!(&only.kind, StmtKind::Return(Some(e)) if !e.has_effects())
+        }
+        _ => false,
+    };
+    if !leaves(&yes) || !leaves(&no) || mentions_in(whole, name) != 1 {
+        return None;
+    }
+    let beside = StmtKind::Const(name.clone(), Expr::undefined()).at(stmts[at].span);
+    let inlined = in_place(&stmts[at], whole, &[beside], (params, args), body.clone(), true)?;
+    // What the branches read, none of which a block of the body declares.
+    let mut read = HashSet::new();
+    names_in(&[yes.as_slice(), no.as_slice()].concat(), &mut read);
+    let mut shadows = false;
+    each_declared(&inlined, &mut |declared| shadows |= read.contains(declared));
+    if shadows {
+        return None;
+    }
+    returns_replaced(&inlined, &|value, _| match value.kind {
+        ExprKind::Bool(true) => Some(yes.clone()),
+        ExprKind::Bool(false) => Some(no.clone()),
+        _ => None,
+    })
 }
 
 /// Whether `e` is the call of a closure made where it's called.
@@ -1118,5 +1185,42 @@ mod tests {
         assert_eq!(tried_extent(Span::NONE, at(208, 283)), at(208, 283));
         // Nothing it's made of placed: the value.
         assert_eq!(tried_extent(at(224, 233), Span::NONE), at(224, 233));
+    }
+
+    #[test]
+    fn a_tested_flag_is_in_place_but_where_a_block_shadows_what_its_branch_reads() {
+        // `const flag = ((d) => { if (c) { const n = 1; if (n) { return
+        // true; } } return false; })(d); if (flag) { return <read>; }`.
+        let tested = |read: Expr| {
+            let inner = StmtKind::If(
+                Expr::var("n"),
+                vec![StmtKind::Return(Some(Expr::bool(true))).at(Span::NONE)],
+                None,
+            );
+            let block = vec![
+                StmtKind::Const("n".into(), Expr::int(1)).at(Span::NONE),
+                inner.at(Span::NONE),
+            ];
+            let body = vec![
+                StmtKind::If(Expr::var("c"), block, None).at(Span::NONE),
+                StmtKind::Return(Some(Expr::bool(false))).at(Span::NONE),
+            ];
+            let call = Expr::call(Expr::arrow(vec![Pattern::Name("d".into())], body), vec![Expr::var("d")]);
+            let stmts = vec![
+                StmtKind::Const("flag".into(), call).at(Span::NONE),
+                StmtKind::If(
+                    Expr::var("flag"),
+                    vec![StmtKind::Return(Some(read)).at(Span::NONE)],
+                    None,
+                )
+                .at(Span::NONE),
+            ];
+            tested_of(&stmts, 0, &stmts)
+        };
+        // A branch of a value the body's block doesn't declare: in place.
+        assert!(tested(Expr::int(0)).is_some());
+        // One that reads `n`, the block's: the call stays, as in place the
+        // branch would read the block's `n`, not the function's.
+        assert!(tested(Expr::var("n")).is_none());
     }
 }
