@@ -628,8 +628,8 @@ export const mutations: Mutation[] = [
     breaks:
       'a binding\'s function given to `function::bind` or `function::name` is an arrow of it, `((label, ..) => console.timeStamp(label, ..)).bind(..)`, whose name is "" (ADR 0907, amended)',
     file: "src/lower/binding_calls.rs",
-    find: "                *arg = itself;\n",
-    replace: "                let _ = itself;\n",
+    find: "                *arg = self.binding_fn_pointer(f, f_args.skip_binder(), span, span)?;\n",
+    replace: "                let _ = self.binding_fn_pointer(f, f_args.skip_binder(), span, span)?;\n",
     tests: [
       "test/js-object.test.ts",
       "-t",
