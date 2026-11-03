@@ -66,6 +66,24 @@ export default Button;
 - **A crate with declarations needs @rust-js/typescript installed**, and
   TypeScript 7 with it.
 
+## Amendment: a name that's an identifier is as it's written (#582)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. A quoted key and
+an identifier name the same property, so it's how the `.d.ts` reads.
+
+A member's name was written as it is only where it was an ASCII
+identifier, `/^[A-Za-z_$][A-Za-z0-9_$]*$/`, and quoted otherwise, so a
+field named `名` was `"\u540D": number`, escaped by TypeScript's printer.
+**A member's name is an identifier where TypeScript's scanner reads it as
+one, `isIdentifierText`, a non-ASCII one too, `名𠀀é: number`, and quoted
+where it isn't, `"aria-label"`, `"1st"`, `""`** (`propertyName`,
+typescript/index.js). The scanner is TypeScript's own rule of what an
+identifier is, so the module keeps no second one. Held by
+test/typescript.test.ts ("print writes a name that's an identifier as it
+is") and test/settings.test.ts's non-ASCII names, whose key is now the
+name itself. Its mutations are none: scripts/mutations.ts mutates src/'s
+files.
+
 ## Amended by
 
 - [1079](1079-a-node-sessions-input-is-read-whole.md): its session reads its input whole, as one UTF-8 text, `node_session`'s

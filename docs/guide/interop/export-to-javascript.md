@@ -721,6 +721,10 @@ export function label(status: Status): string;
   its receiver first, a generic impl's type parameters on each method,
   and `new` quoted, as unquoted it'd be the type's construct signature
   ([ADR 0047](../../decisions/0047-methods.md#amended-2026-11-03-its-object-is-declared-507), amended).
+  A member's name in the `.d.ts` is as it's written where TypeScript reads
+  it as an identifier, a non-ASCII one too, `名: number`, and quoted where
+  it isn't, `"aria-label": string`
+  ([ADR 0207](../../decisions/0207-declarations-printed-by-typescript.md), amended, #582).
 - **An enum is its variants' shapes:** a variant without fields its name,
   `"Idle"`; one with fields `{ TAG: "Loading", percent }`.
 

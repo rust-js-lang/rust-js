@@ -144,6 +144,40 @@ export default Props;
   }
 });
 
+// A member's name TypeScript reads as an identifier is written as it is, a
+// non-ASCII one too; any other is quoted (#582).
+test("print writes a name that's an identifier as it is, and quotes any other", async () => {
+  const ts = await open();
+  try {
+    const names = ["名𠀀é", "$value", "_a1", "aria-label", "1st", ""];
+    const printed = await ts.print({
+      header: "",
+      declarations: [
+        {
+          kind: "interface",
+          name: "Names",
+          exported: true,
+          declare: false,
+          typeParameters: [],
+          extends: [],
+          members: names.map((name) => ({ kind: "property", name, optional: false, readonly: false, type: { kind: "keyword", keyword: "number" } })),
+        },
+      ],
+    });
+    expect(printed).toBe(`export interface Names {
+    名𠀀é: number;
+    $value: number;
+    _a1: number;
+    "aria-label": number;
+    "1st": number;
+    "": number;
+}
+`);
+  } finally {
+    await ts.close();
+  }
+});
+
 // What react's generator reads (ADR 0207): React's own element attributes.
 test("read takes @types/react's element attributes apart", async () => {
   const file = join(root, "node_modules/@types/react/index.d.ts");

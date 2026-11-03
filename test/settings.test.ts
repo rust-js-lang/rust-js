@@ -264,10 +264,10 @@ test("non-ASCII text across a Node session's stdin chunks is Prettier's whole", 
 test("non-ASCII names and docs across a Node session's stdin chunks are TypeScript's whole", async () => {
   const [name, doc] = [straddling("名𠀀"), straddling("⚛😀")];
   const out = await cargoBuilt(`/// ${doc}\npub struct Track {\n    pub ${name}: u32,\n}\n`);
-  // Its key as TypeScript writes it, quoted, `"\u540D\uD840\uDC00\u00E9.."`,
-  // of the name rustc has, in NFC: `e` and its accent are `é`, 9 bytes.
-  const key = out.types.match(/\n {4}("[^"]*"|[^\s:]+): number;\n/)?.[1];
-  expect(key?.startsWith('"') ? JSON.parse(key) === name.normalize("NFC") : key).toBe(true);
+  // Its key as it's written, an identifier TypeScript reads (#582), of the
+  // name rustc has, in NFC: `e` and its accent are `é`, 9 bytes.
+  const key = out.types.match(/\n {4}([^\s:]+): number;\n/)?.[1];
+  expect(key === name.normalize("NFC")).toBe(true);
   expect(out.types.includes(doc)).toBe(true);
 }, 300_000);
 

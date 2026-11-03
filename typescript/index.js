@@ -10,6 +10,7 @@ import { join, resolve } from "node:path";
 import { API } from "typescript/async";
 import { NodeFlags, SyntaxKind, TokenFlags } from "typescript/ast";
 import * as f from "typescript/ast/factory";
+import { isIdentifierText } from "typescript/ast/scanner";
 
 /**
  * @typedef {{ declarations: Declaration[], header?: string }} Module
@@ -512,7 +513,6 @@ function readType(node, text) {
 
 const id = (name) => f.createIdentifier(name);
 const string = (value) => f.createStringLiteral(value, TokenFlags.None);
-const IDENTIFIER = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 
 function modifiers(declaration) {
   const tokens = [];
@@ -719,7 +719,9 @@ function propertyName(name) {
       ),
     );
   }
-  return IDENTIFIER.test(name) ? id(name) : string(name);
+  // A name TypeScript reads as an identifier, a non-ASCII one too, `名`, as
+  // it's written; any other quoted, `"aria-label"` (#582).
+  return isIdentifierText(name) ? id(name) : string(name);
 }
 
 /** @param {Member} m */
