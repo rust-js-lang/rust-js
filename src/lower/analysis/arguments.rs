@@ -12,6 +12,16 @@
 //! A closure `function::with_this` makes is a JS `function`, whose
 //! `arguments` is its own (rd509): read there, each call of a `dyn Fn` of
 //! its parameters gives every argument, as no forwarding closure is it.
+//!
+//! And which read `js::this()`, JS's `this` (rd683): the `this` its JS
+//! caller gave it, where each call rust-js writes gives none, `None`, as
+//! Rust's does, so a call through a module's namespace is `(0, M.f)()`
+//! (`calls`), and no closure forwarding to it is it. Read only in a
+//! function of the crate's that isn't generic, whose JS is a `function`
+//! called by name; elsewhere a compile error, as is the function's use as
+//! a value but to call it, which JS might call on what holds it, through
+//! `function::call` and `function::apply`, which give it the `this` they're
+//! given, too.
 
 use crate::lower::Body;
 use crate::lower::refusal::{Refused, refuse};
@@ -30,6 +40,8 @@ pub(in crate::lower) struct ReadsArguments<'tcx> {
     pub with_this: HashSet<ty::Ty<'tcx>>,
     /// Each closure `function::with_this` makes that reads it.
     pub made: HashSet<DefId>,
+    /// The functions whose own body reads `js::this()` (rd683).
+    pub this: HashSet<DefId>,
 }
 
 impl<'tcx> ReadsArguments<'tcx> {
@@ -45,11 +57,26 @@ impl<'tcx> ReadsArguments<'tcx> {
     ) -> bool {
         self.with_this.contains(&tcx.erase_and_anonymize_regions(args)) || foreign.may_call_reading_arguments(args)
     }
+
+    /// Whether `def_id`'s own body reads more of its call than its
+    /// parameters, `js::arguments()` or `js::this()`, so no closure that
+    /// forwards to it is it, which its JS caller would give them (rd332,
+    /// rd683).
+    pub(in crate::lower) fn reads_its_call(&self, def_id: DefId) -> bool {
+        self.functions.contains(&def_id) || self.this.contains(&def_id)
+    }
 }
 
-/// The functions of `all_bodies` whose own body reads `js::arguments()`,
-/// each read elsewhere refused.
-pub(in crate::lower) fn reads_arguments<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> ReadsArguments<'tcx> {
+/// The functions of `all_bodies` whose own body reads `js::arguments()`
+/// or `js::this()`, each read elsewhere refused, a static's or a
+/// constant's of `initializers` too, and each use of one that reads
+/// `this` but to call it, or of another crate's that does, as its contract
+/// says (`foreign`'s).
+pub(in crate::lower) fn reads_arguments<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    (all_bodies, initializers): (&[&Body<'tcx>], &[Body<'tcx>]),
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+) -> ReadsArguments<'tcx> {
     // Each closure `function::with_this` makes, and its parameters' tuple.
     let mut functions_made: HashMap<DefId, ty::Ty<'tcx>> = HashMap::new();
     for body in all_bodies {
@@ -91,7 +118,109 @@ pub(in crate::lower) fn reads_arguments<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&
             None => _ = reading.functions.insert(body.def_id),
         }
     }
+    let anywhere: Vec<&Body<'tcx>> = all_bodies.iter().copied().chain(initializers).collect();
+    for body in &anywhere {
+        let Some(span) = (body.thir.exprs.iter()).find_map(|expr| match expr.kind {
+            ExprKind::Call { fun, .. } if is_this(tcx, body.thir[fun].ty) => Some(expr.span),
+            _ => None,
+        }) else {
+            continue;
+        };
+        match not_its_own_this(tcx, body.def_id, functions_made.contains_key(&body.def_id)) {
+            Some(why) => _ = refuse(tcx, span, Refused::Because("`js::this()` here", why)),
+            None => _ = reading.this.insert(body.def_id),
+        }
+    }
+    for body in &anywhere {
+        for span in this_values(tcx, body, &|id| {
+            reading.this.contains(&id) || !id.is_local() && foreign.reads_this(id)
+        }) {
+            _ = refuse(
+                tcx,
+                span,
+                Refused::Because(
+                    "a function that reads `js::this()` as a value",
+                    "JS would give it the `this` of what holds it where it's called, and Rust gives none: call it by \
+                     its name, or `function::call(f, this_arg, ..)`, or make it a closure, `function::with_this(..)`",
+                ),
+            );
+        }
+    }
     reading
+}
+
+/// Where `body` uses `js::this` or a function `reads_this` says reads it
+/// but to call it: as a call's function, or given to `function::call` or
+/// `function::apply`, which call it with the `this` they're given.
+fn this_values(tcx: TyCtxt<'_>, body: &Body<'_>, reads_this: &dyn Fn(DefId) -> bool) -> Vec<rustc_span::Span> {
+    use crate::lower::body_queries::strip;
+    let thir = &body.thir;
+    let mut called = HashSet::new();
+    for expr in thir.exprs.iter() {
+        let ExprKind::Call { fun, ref args, .. } = expr.kind else {
+            continue;
+        };
+        called.insert(strip(thir, fun));
+        if let ty::FnDef(id, _) = *thir[fun].ty.kind()
+            && (crate::lower::recognition::is_function_call(tcx, id)
+                || crate::lower::recognition::is_function_apply(tcx, id))
+            && let Some(&first) = args.first()
+        {
+            // The function itself, through each borrow and reborrow of it.
+            let mut f = strip(thir, first);
+            while let ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } = thir[f].kind {
+                f = strip(thir, arg);
+            }
+            called.insert(f);
+        }
+    }
+    (thir.exprs.iter_enumerated())
+        .filter(|&(id, expr)| {
+            matches!(expr.kind, ExprKind::ZstLiteral { .. })
+                && matches!(*expr.ty.kind(), ty::FnDef(f, _) if reads_this(f) || is_this(tcx, expr.ty))
+                && !called.contains(&id)
+        })
+        .map(|(_, expr)| expr.span)
+        .collect()
+}
+
+/// Whether `callee`, a call's function's type, is `js::this`.
+fn is_this(tcx: TyCtxt<'_>, callee: ty::Ty<'_>) -> bool {
+    matches!(*callee.kind(), ty::FnDef(id, _)
+        if crate::lower::recognition::js_root_fn(tcx, id).is_some_and(|name| name.as_str() == "this"))
+}
+
+/// Why `def_id`'s JS's `this` isn't the one JS calls it by name with, if it
+/// isn't: of a closure `function::with_this` makes, `with_this`, its first
+/// parameter's.
+fn not_its_own_this(tcx: TyCtxt<'_>, def_id: DefId, with_this: bool) -> Option<&'static str> {
+    let generic = || {
+        (tcx.generics_of(def_id).own_params.iter())
+            .any(|param| !matches!(param.kind, ty::GenericParamDefKind::Lifetime))
+    };
+    if with_this {
+        Some("a `function::with_this` closure's `this` is its first parameter, `|this, (a, b)|`: read that")
+    } else if tcx.is_closure_like(def_id) {
+        Some(
+            "a closure is an arrow function, whose `this` is the function's around it: read it in that function, \
+             `let this = js::this();`, and give the closure what it needs, or make the closure a `function`, \
+             `function::with_this(|this, (a, b)| ..)`",
+        )
+    } else if tcx.def_kind(def_id) == DefKind::AssocFn {
+        Some(
+            "a method's `this` is its `self`, or its type of a static, which JS calls it through: read it in a \
+             function of the crate's, or make the type a `#[rust_js::class]` and read `self`",
+        )
+    } else if tcx.def_kind(def_id) != DefKind::Fn {
+        Some("only a function is called with a `this`: read it in one")
+    } else if generic() {
+        Some(
+            "a generic function's JS is given its type parameters' dictionaries too, which no JS caller gives; read \
+             it in one that isn't generic",
+        )
+    } else {
+        None
+    }
 }
 
 /// Whether `callee`, a call's function's type, is `js::arguments`.

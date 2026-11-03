@@ -114,6 +114,10 @@ pub enum ItemFact {
     /// give it every argument the Rust does, an `undefined` too, and no
     /// closure of theirs that forwards to it is it (rd332).
     Arguments,
+    /// It reads `js::this()`, JS's `this`: its consumers' calls give it
+    /// none, never `M.f()`'s `M`, no closure of theirs that forwards to it
+    /// is it, and they use it only to call it (rd683).
+    This,
     /// Its last parameter, a slice, is JS's rest parameter,
     /// `#[rust_js::rest]` (ADR 0664), which its consumers' calls spread.
     /// rustc's metadata keeps no parameter's attributes.

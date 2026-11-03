@@ -267,6 +267,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::undefined()
             }
             (JsForm::This, Some(this)) if args.is_empty() => this,
+            // `js::this()`, of no value given: the function's own `this`,
+            // read only where it's what JS called it with
+            // (`analysis::arguments`, rd683).
+            (JsForm::This, None)
+                if args.is_empty()
+                    && super::recognition::js_root_fn(self.tcx, def_id).is_some_and(|name| name.as_str() == "this") =>
+            {
+                Expr::this()
+            }
             // A `Dict`'s, a JSON `null`'s `Some(None)`, which only an own
             // key has.
             (JsForm::GetIndex, Some(this)) if keyed_option => {

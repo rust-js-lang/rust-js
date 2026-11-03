@@ -435,6 +435,61 @@ export function LinearGradient(stops, x1, y1) {
   fillLinear"] fn fill_linear(&self) -> &'static dyn Fn(..)`, given to
   `function::apply`, `node.fillLinear.apply(node, this.args)`.
 
+### The `this` it was called with, `js::this()`
+
+`js::this()` is JS's `this` in a function of the crate's, the one its JS
+caller gave it, an `Option<&'static Unknown>`, `None` of `undefined` or
+`null`, as a `function::with_this` closure's `this` is. React DOM's root
+server entries pass both on
+([ADR 1081](../../decisions/1081-a-function-reads-its-own-this-by-js-this.md)):
+
+```rust
+use js::{IntoUnknown, Unknown, function};
+
+#[cfg_attr(rust_js, rust_js::link_name = "get ./server#renderToString")]
+#[cfg_attr(rust_js, rust_js::require)]
+fn implementation() -> &'static dyn Fn() -> Option<&'static Unknown> {
+    unreachable!()
+}
+
+pub fn render_to_string() -> Option<&'static Unknown> {
+    function::apply(
+        implementation(),
+        js::this().map(|this| this as &dyn IntoUnknown),
+        Some(js::arguments()),
+    )
+}
+
+pub fn rendered() -> Option<&'static Unknown> {
+    render_to_string()
+}
+```
+
+```js
+export function renderToString() {
+  return require("./server").renderToString.apply(this, arguments);
+}
+
+export function rendered() {
+  return renderToString();
+}
+```
+
+- **Each call rust-js writes of it gives none**, `None`, as Rust's call
+  gives none: by its name, and through its module's namespace, `(0,
+  Server.renderToString)()`, not a call of the namespace's member.
+- **It's only called**, by its name or by `function::call` and
+  `function::apply`, which give it the `this` they're given. As any other
+  value, a fn pointer, a `dyn Fn` or a generic `F`, which JS could call on
+  what holds it, it's a compile error: a JS callback that reads its
+  `this` is a `function::with_this` closure. No closure that only calls
+  it is it, nor a function that only calls it its re-export.
+- **Only where its JS's `this` is its caller's**: a function of the
+  crate's that isn't generic. In a closure, an arrow whose `this` is the
+  function's around it, read it there, `let this = js::this();`; in a
+  `with_this` closure read its first parameter; in a method, `self`. In
+  those, a generic function or a static's value, it's a compile error.
+
 To publish bindings of an npm package for others, see
 [Dependencies](../project/dependencies.md).
 

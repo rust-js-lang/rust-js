@@ -579,6 +579,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(_) => self.scope_called(def_id, copy, exprs, span)?,
             None => self.crate_called_copy((def_id, copy, Some(span)), named, exprs),
         };
+        // Of one that reads `js::this()`: called with none, as Rust calls
+        // it, its callee read unbound, `(0, M.f)()` through a module's
+        // namespace, which JS would give it as its `this`, and of a name
+        // alone, which gives none, `f()` (`Expr::unbound_variable_read`,
+        // rd683).
+        let mut called = called;
+        if self.reads_this(def_id)
+            && let js::ExprKind::Call(callee, _) = &mut called.kind
+        {
+            **callee = Expr::unbound(std::mem::replace(&mut **callee, Expr::undefined()));
+        }
         // A generic `&mut T`'s box, of an object `T` here: what's in it.
         let called = self.generic_result_values((def_id, generic_args), called, span)?;
         let called = self.fmt_result_value(def_id, generic_args, called);

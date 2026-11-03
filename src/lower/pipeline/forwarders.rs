@@ -18,7 +18,8 @@ use std::collections::{HashMap, HashSet};
 /// callers need (ADR 0051), nor one the crate compiles of a library's
 /// (ADR 0914), whose name is another; the function takes no drop a call
 /// may leave out at its end (ADR 0098), and reads no `js::arguments()`
-/// (rd332), so it takes what the forwarder's callers give it, and no more;
+/// (rd332) or `js::this()` (rd683), so it takes what the forwarder's
+/// callers give it, and no more;
 /// and no body of the forwarder's module names it, as a re-export is no
 /// name of its module's own. Its JS is the call alone, which is the
 /// module's to ask (`passed_on::forwarded_call`).
@@ -27,7 +28,10 @@ pub(super) fn found<'tcx>(
     (bodies, all_bodies): (&[&Body<'tcx>], &[&Body<'tcx>]),
     (foreign, trait_impls): (&Foreign<'_, 'tcx>, &[DefId]),
     js_given: &super::super::analysis::JsGiven,
-    (drop_params, reads_arguments): (&HashMap<DefId, Vec<u32>>, &HashSet<DefId>),
+    (drop_params, reads_arguments): (
+        &HashMap<DefId, Vec<u32>>,
+        &super::super::analysis::arguments::ReadsArguments<'tcx>,
+    ),
 ) -> HashMap<DefId, DefId> {
     let recognition = super::super::recognition::Recognition {
         tcx,
@@ -37,14 +41,14 @@ pub(super) fn found<'tcx>(
     };
     let own_js = |function: DefId, (target, args): (DefId, ty::GenericArgsRef<'tcx>)| match target.is_local() {
         true => {
-            !reads_arguments.contains(&target)
+            !reads_arguments.reads_its_call(target)
                 && drop_params.get(&target).is_none_or(Vec::is_empty)
                 && js_given.called(&recognition, &js_given.main(tcx, function), (target, args)) == Ok(None)
         }
         // A library's export, not one the crate compiles itself, which is
         // no item of its library's (ADR 0914).
         false => {
-            !foreign.reads_arguments(target)
+            !foreign.reads_its_call(target)
                 && foreign
                     .item(target)
                     .is_some_and(|item| item.member.is_none() && item.calling.drop_params().is_empty())

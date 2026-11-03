@@ -1,6 +1,6 @@
 # 1048. A function that reads `js::arguments()` is given each argument
 
-Status: Accepted. The user's decision (2026-11-01, rd332, option A). Amended (rd509): a `function::with_this` function's own. Amended (#553): a library's, called by its consumer.
+Status: Accepted. The user's decision (2026-11-01, rd332, option A). Amended (rd509): a `function::with_this` function's own. Amended (#553): a library's, called by its consumer. Extended by [1081](1081-a-function-reads-its-own-this-by-js-this.md): `js::this()`, a function's own `this`, by the same rules, which its owner, `analysis/arguments.rs`, finds too.
 Extends [0313](0313-console-forms.md)'s and
 [0443](0443-a-value-a-caller-may-leave-out-is-an-option.md)'s trailing
 `undefined`s, and [0605](0605-an-arrow-that-passes-on-has-one-owner.md)'s

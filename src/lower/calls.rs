@@ -233,6 +233,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.krate.reads_arguments.functions.contains(&def_id) || self.krate.foreign.reads_arguments(def_id)
     }
 
+    /// Whether `def_id`, the crate's function or a library's, reads
+    /// `js::this()`: each call of it gives none, so one through a member,
+    /// a module's namespace's, is `(0, M.f)()` (rd683).
+    pub(super) fn reads_this(&self, def_id: DefId) -> bool {
+        self.krate.reads_arguments.this.contains(&def_id) || self.krate.foreign.reads_this(def_id)
+    }
+
+    /// Whether `def_id`, the crate's function or a library's, reads more
+    /// of its call than its parameters, `js::arguments()` or `js::this()`,
+    /// so no closure that forwards to it is it, which its JS caller would
+    /// give them (rd332, rd683).
+    pub(super) fn reads_its_call(&self, def_id: DefId) -> bool {
+        self.krate.reads_arguments.reads_its_call(def_id) || self.krate.foreign.reads_its_call(def_id)
+    }
+
     /// Refused, a call each owner says JS can't make as Rust does: of a
     /// string's bytes' pointer (`pointers.rs`), rest arguments as a value
     /// given as a type parameter's (`check_rest_unspread`), and a counted

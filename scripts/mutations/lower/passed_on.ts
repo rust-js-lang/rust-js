@@ -573,11 +573,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "arguments-forwarded",
-    breaks: "a closure that only passes on what it's given to a function reading `js::arguments()` is that function, which then counts what its JS caller gives it (rd332)",
+    breaks: "a closure that only passes on what it's given to a function reading `js::arguments()` or `js::this()` is that function, which then counts what its JS caller gives it, or reads the `this` JS calls the closure with (rd332, rd683)",
     file: "src/lower/passed_on.rs",
-    find: "                && !self.reads_arguments(def_id)\n",
+    find: "                && !self.reads_its_call(def_id)\n",
     replace: "",
-    tests: ["test/arguments.test.ts"],
+    tests: ["test/arguments.test.ts", "test/this.test.ts"],
   },
   {
     name: "forwarder-never",

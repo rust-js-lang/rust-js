@@ -421,6 +421,26 @@ pub fn arguments() -> &'static Arguments {
     unreachable!()
 }
 
+/// [`this`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/this):
+/// the `this` the function it's read in was called with, any value, `None`
+/// of `undefined` or `null`, as [`arguments`] is what it was called with.
+/// React DOM's root server entries' `require(..).renderToString.apply(this,
+/// arguments)` of `function::apply(render_to_string(), js::this().map(|this|
+/// this as &dyn IntoUnknown), Some(js::arguments()))` (rd683, ADR 1081).
+/// Its JS caller's: `object.f()`'s
+/// `object`, `f.call(value)`'s `value`; each call rust-js writes of the
+/// function gives none, `None`, as Rust's call gives none, and the
+/// function is only called, by its name or `function::call` and
+/// `function::apply`, never held as a value, which JS might call on what
+/// holds it. Read only in the body of a function of the crate's that isn't
+/// generic: in a closure, whose arrow's `this` is the function's around it,
+/// a `function::with_this` closure, whose `this` is its first parameter,
+/// or a method, whose `this` is its `self` or its type, a compile error.
+#[cfg_attr(rust_js, rust_js::link_name = "this")]
+pub fn this() -> Option<&'static Unknown> {
+    unreachable!()
+}
+
 /// What [`arguments`] gives: TypeScript's `IArguments`, an array-like
 /// object of each argument a function was called with, which
 /// [`array::SLICE`] makes an array of.

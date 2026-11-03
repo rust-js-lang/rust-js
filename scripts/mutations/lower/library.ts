@@ -567,6 +567,14 @@ export const mutations: Mutation[] = [
     tests: ["test/arguments.test.ts"],
   },
   {
+    name: "contract-this-unsaid",
+    breaks: "a library's function that reads `js::this()` isn't one to its consumer, whose call through the module's namespace gives it the namespace, and whose use of it as a value is compiled (rd683)",
+    file: "src/lower/library.rs",
+    find: "                    (ItemFact::This, reads_arguments.this.contains(&id)),\n",
+    replace: "                    (ItemFact::This, false),\n",
+    tests: ["test/this.test.ts", "-t", "library"],
+  },
+  {
     name: "std-library-by-crate-name",
     breaks:
       "std's crates' library is found by their names, which a program's library named `core` has, so std's `core` is that library's and `@rust-js/std` is never found (#455, ADR 1054)",

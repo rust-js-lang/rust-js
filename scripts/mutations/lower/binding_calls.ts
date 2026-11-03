@@ -992,4 +992,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/es-classes.test.ts", "-t", "fields that would change what it does are refused"],
   },
+  {
+    name: "this-binding-any",
+    breaks: "a binding of its own `#[link_name = \"this\"]` given nothing reads the function's `this`, which no analysis of `js::this()` checks where it's read (rd683)",
+    file: "src/lower/binding_calls.rs",
+    find: "                    && super::recognition::js_root_fn(self.tcx, def_id).is_some_and(|name| name.as_str() == \"this\") =>\n",
+    replace: "                    && true =>\n",
+    tests: ["test/this.test.ts", "-t", "refused"],
+  },
 ];

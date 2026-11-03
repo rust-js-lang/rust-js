@@ -367,7 +367,7 @@ pub fn lower_crate<'tcx>(
     let function_bodies = bodies.iter().map(|body| (body.def_id, *body)).collect();
     // What reads `js::arguments()`, each call of which gives every argument (rd332).
     let with_closures: Vec<&Body<'tcx>> = bodies.iter().copied().chain(closures.values().copied()).collect();
-    let reads_arguments = super::analysis::arguments::reads_arguments(tcx, &with_closures);
+    let reads_arguments = super::analysis::arguments::reads_arguments(tcx, (&with_closures, initializers), &foreign);
     let nulled_params = NulledParams::scan(tcx, &with_closures, &|id| foreign.has_nulled_params(id));
     let (forwarded, prototypes) =
         reached::forwarded(tcx, &bodies, (given, &js_given), (&caller_locations, &fns), &foreign);
@@ -376,13 +376,12 @@ pub fn lower_crate<'tcx>(
     // instantiation, which its module re-exports where its JS is that call
     // alone (rd575, ADR 1064).
     let named_anywhere: Vec<&Body<'tcx>> = with_closures.iter().copied().chain(initializers).collect();
-    let facts = (&drop_params, &reads_arguments.functions);
     let forwarders = forwarders::found(
         tcx,
         (&bodies, &named_anywhere),
         (&foreign, &trait_impls),
         &js_given,
-        facts,
+        (&drop_params, &reads_arguments),
     );
     let forwarding_prototypes = reached::forwarding(prototypes, &reads_arguments.functions, &forwarders);
     // A trait impl's dictionary (ADR 0049) has no body of its own, so its

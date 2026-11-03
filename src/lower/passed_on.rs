@@ -756,11 +756,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // of rest arguments reads all JS gives it, so only where the
             // closure gathers them all too, and the arrow's shape then
             // says it spreads them all (`js::passes_on`).
-            // One that reads `js::arguments()` reads what JS gives it,
-            // never the function (rd332).
+            // One that reads `js::arguments()` or `js::this()` reads what
+            // JS gives it, never the function (rd332, rd683).
             _ => ((def_id.is_local() || self.krate.foreign.is_library(def_id.krate))
                 && !leaves_out(args)
-                && !self.reads_arguments(def_id)
+                && !self.reads_its_call(def_id)
                 && (!self.takes_rest(def_id) || self.gathers_rest(body.def_id)))
             .then(|| Forwarding {
                 span,

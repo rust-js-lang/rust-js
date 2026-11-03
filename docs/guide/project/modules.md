@@ -128,6 +128,9 @@ that module's namespace by the name it's re-exported as,
 and a value that may hold a function, `Box<dyn Fn()>`, is read by its
 name, so a call of it gives the function no `this`
 ([ADR 1018](../../decisions/1018-a-function-called-through-its-module-is-read-through-its-namespace.md)).
+A function that reads its `this`, `js::this()`, is called through the
+namespace with none, `(0, Format.shout)(..)`, as Rust's call gives none
+([ADR 1081](../../decisions/1081-a-function-reads-its-own-this-by-js-this.md)).
 
 Imports are in the order the module's `use`s are written, as JS loads
 a module's imports in their order, each a statement where its `use` is:

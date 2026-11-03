@@ -2,7 +2,10 @@
 
 Status: Accepted (the user's decision, rd114). Amended (2026-10-29): a
 function given as a value through its namespace is the namespace's
-member, `Dep.noop`, not an arrow of its call. Extends
+member, `Dep.noop`, not an arrow of its call. Amended by
+[1081](1081-a-function-reads-its-own-this-by-js-this.md): a free function
+may read its `this`, `js::this()`, so one that does is called through
+the namespace with none, `(0, Plugin.f)()`. Extends
 [0202](0202-imports-named-around-importers.md) (an import is named in
 each file that imports it) and [0100](0100-separate-crates.md) (a
 library's items imported by their module's file); beside

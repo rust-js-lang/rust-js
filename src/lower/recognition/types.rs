@@ -1347,6 +1347,12 @@ pub(in crate::lower) fn is_function_call(tcx: TyCtxt<'_>, did: DefId) -> bool {
     of_function_module(tcx, did, "call")
 }
 
+/// Whether `did` is `js::function::apply`, `f.apply(thisArg, argArray)`,
+/// which calls `f` with the `this` it's given (rd683).
+pub(in crate::lower) fn is_function_apply(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    of_function_module(tcx, did, "apply")
+}
+
 /// Whether `did` is `js::function`'s item `name`.
 fn of_function_module(tcx: TyCtxt<'_>, did: DefId, name: &str) -> bool {
     tcx.crate_name(did.krate).as_str() == "js"

@@ -304,6 +304,7 @@ pub(super) fn exports<'tcx>(
                     (ItemFact::TakesLocation, caller_locations.contains(&id)),
                     (ItemFact::Rest, super::bindings::takes_rest(tcx, id)),
                     (ItemFact::Arguments, reads_arguments.functions.contains(&id)),
+                    (ItemFact::This, reads_arguments.this.contains(&id)),
                     (
                         ItemFact::Lazy,
                         id.as_local()
@@ -915,6 +916,19 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         (self.dependencies.libraries.values()).any(|library| {
             !library.builtin && (library.with_this_arguments.iter()).any(|shape| may_be_shape(self.tcx, shape, args))
         })
+    }
+
+    /// Does `id`, a library's function, read more of its call than its
+    /// parameters, `js::arguments()` or `js::this()`, as its contract says,
+    /// so no closure that forwards to it is it (rd332, rd683)?
+    pub(super) fn reads_its_call(&self, id: DefId) -> bool {
+        self.reads_arguments(id) || self.reads_this(id)
+    }
+
+    /// Does `id`, a library's function, read `js::this()`, as its contract
+    /// says (rd683)?
+    pub(super) fn reads_this(&self, id: DefId) -> bool {
+        self.item(id).is_some_and(|item| item.calling.has(ItemFact::This))
     }
 
     /// Does any of the libraries make a `dyn Any` of what drops, which the

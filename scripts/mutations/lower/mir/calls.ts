@@ -1196,4 +1196,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(&target) if module_of(def_id) == Some(self.module) => target,\n",
     tests: ["test/method-forwarding.test.ts", "-t", "a namespace's method that only passes its parameters on to its module's function"],
   },
+  {
+    name: "this-namespace-call-bound",
+    breaks: "a call of a function that reads `js::this()` through its module's namespace is `Inner.onSomething()`, which gives it the namespace where Rust gives no `this` (rd683)",
+    file: "src/lower/mir/calls.rs",
+    find: "        if self.reads_this(def_id)\n",
+    replace: "        if false\n",
+    tests: ["test/this.test.ts"],
+  },
 ];

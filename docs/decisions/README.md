@@ -229,7 +229,8 @@ reordered, and git merges this file by keeping both sides' lines
 - [1044 A flattened state is its class's own keys](1044-a-flattened-state-is-its-classs-own-keys.md) *(amended, rd533: a let chain's borrow of it is its object too; #482: a closure's write through a borrow it captures is the keys too)*
 - [1071 A flattened enum is told apart by its keys](1071-a-flattened-enum-is-told-by-its-keys.md)
 - [1045 An or-pattern's alternatives of one JS place are one arm](1045-or-pattern-alternatives-of-one-place-are-one.md)
-- [1048 A function that reads `js::arguments()` is given each argument](1048-a-function-that-reads-arguments-is-given-each.md)
+- [1048 A function that reads `js::arguments()` is given each argument](1048-a-function-that-reads-arguments-is-given-each.md) *(extended by 1081: `js::this()`, by the same rules)*
+- [1081 A function reads the `this` its JS caller gave it by `js::this()`](1081-a-function-reads-its-own-this-by-js-this.md)
 - [1049 `js::class::<T>()` is typed by `T`'s `Classed`](1049-js-class-is-typed-by-classed.md)
 - [1051 A field may be named by a symbol](1051-a-field-may-be-named-by-a-symbol.md)
 - [1052 `Array.from` is of what Rust doesn't collect itself](1052-array-from-is-of-what-rust-doesnt-collect.md)

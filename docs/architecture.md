@@ -307,6 +307,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | What a body's `let`s and patterns bind, by name, for tidy (`tidy::LetNames`): the `let`s the program wrote, `let mut`'s, one that ends a borrow or holds a frozen one, a drop guard's, and an `if let`'s or let chain's binding named as the field its scrutinee reads, by Rust names, which alone a chain's binding read again in its place may be (ADR 0866, amended, rd226, rd706) | `mir/patterns/let_names.rs` | `let_names` |
 | A jump MIR shared after an `if` chain, given to each arm that goes on (ADR 0745, amended) | `mir/tidy/jumps/continues.rs` | `jumps_into_branches` |
 | Where a variable is JS's `this`, a `with_this` closure's and a class's method's `self`, read through a `const` in a function made in its body, and whether a body reads its own `this` (ADR 0972) | `js/stmt_walk.rs` | `read_as_this`, `reads_this` |
+| Which functions read `js::arguments()` or `js::this()`, each read where its JS isn't its caller's refused, and each use of one that reads `this` but to call it (rd332, rd683; ADRs 1048, 1081) | `analysis/arguments.rs` | `reads_arguments`, `reads_its_call` |
 | A `String` appended to twice | `std_types/text.rs` | `appended` |
 | Runtime helper identity and properties | `runtime.rs` | `exports`, `helper_of`, `is_pure`, `names_a_place` |
 | A function's rest parameter and its calls' rest arguments | `bindings.rs`; `calls.rs` | `marked_rest`, `takes_rest`; `rest_given`, `spread_rest` |

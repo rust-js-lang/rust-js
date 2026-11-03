@@ -14,20 +14,20 @@ export const mutations: Mutation[] = [
   {
     name: "forwarders-arguments-unasked",
     breaks:
-      "a function of the crate's that reads `js::arguments()` is re-exported, counting what JS gives, not what the forwarder gave it (rd575, rd332)",
+      "a function of the crate's that reads `js::arguments()` or `js::this()` is re-exported, counting what JS gives, or reading the `this` JS calls the forwarder with, not what the forwarder gave it (rd575, rd332, rd683)",
     file: "src/lower/pipeline/forwarders.rs",
-    find: "            !reads_arguments.contains(&target)\n",
+    find: "            !reads_arguments.reads_its_call(target)\n",
     replace: "            true\n",
-    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
+    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "test/this.test.ts", "-t", "is its re-export|reads its this"],
   },
   {
     name: "forwarders-library-arguments-unasked",
     breaks:
-      "a library's function that reads `js::arguments()` is re-exported, counting what JS gives (rd575, rd332)",
+      "a library's function that reads `js::arguments()` or `js::this()` is re-exported, counting what JS gives, or reading the `this` JS calls the forwarder with (rd575, rd332, rd683)",
     file: "src/lower/pipeline/forwarders.rs",
-    find: "            !foreign.reads_arguments(target)\n",
+    find: "            !foreign.reads_its_call(target)\n",
     replace: "            true\n",
-    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
+    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "test/this.test.ts", "-t", "is its re-export|reads this"],
   },
   {
     name: "forwarders-library-drops-unasked",
