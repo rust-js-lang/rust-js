@@ -2063,9 +2063,10 @@ export function $lastDropping(it, drop, boxed) {
 // which asks its source no `nth` (#213), each item given to `drop` where it
 // has one; else each item counted as it comes. Not a `count` that's a
 // field, an `$enumerate`'s, std's `Enumerate`'s, how many it's given (ADR
-// 0988).
+// 0988): its count is `countItems`, its source's (#493).
 export function $count(it, drop) {
   if (typeof it.count === "function") return it.count(drop);
+  if (it.countItems !== undefined) return it.countItems(drop);
   return it.reduce((n, x) => {
     drop?.(x);
     return n + 1;
@@ -3184,6 +3185,11 @@ export function $enumerate(iter) {
     return pair(enumerated.iter.back(), enumerated.count + left - 1);
   };
   enumerated.len = () => enumerated.iter.len();
+  // Std's `Enumerate::count`: its source's, which `$count` asks by this
+  // name, `count` being std's field of how many it's given (ADR 0988); so
+  // a reversed `Vec`'s take drops what it counts as one slice, front to
+  // back (#493). Given a pair's drop, of the item it counts.
+  enumerated.countItems = (drop) => $count(enumerated.iter, drop && ((x) => drop([0, x])));
   // Std's `fold` and `try_fold`: its source's, each item counted.
   if (iter.fold !== undefined) {
     enumerated.fold = (init, f) => enumerated.iter.fold(init, (a, x) => f(a, [enumerated.count++, x]));
@@ -13056,15 +13062,23 @@ export function $lent(it) {
 // through `fold` takes of such an iterator, `last` and `collect` into a
 // string, a hash map or set, a list (#162). Of a JS iterator with no
 // `fold`, JS's own of an array in generic code, itself, whose `next` is all
-// std's fold would step (#182).
+// std's fold would step (#182). Listed when first stepped; a consumer that
+// folds it, `$lastDropping`, folds `it` itself, so what that consumer drops
+// as each comes is dropped before what `it` drops at its end, as std's
+// fold of it is (#493).
 export function $folded(it) {
   if (it.fold === undefined) return it;
-  return it
-    .fold([], (items, item) => {
-      items.push(item);
-      return items;
-    })
-    .values();
+  let items;
+  const listed = () =>
+    (items ??= it
+      .fold([], (list, item) => {
+        list.push(item);
+        return list;
+      })
+      .values());
+  const folded = Iterator.from({ next: () => listed().next() });
+  folded.fold = (init, f, unwind) => (items === undefined ? it.fold(init, f, unwind) : listed().reduce(f, init));
+  return folded;
 }
 
 // `advance_by(m)` of `it`, by its dictionary, `iterator`: its own, which

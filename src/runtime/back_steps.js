@@ -414,6 +414,11 @@ function $enumerate(iter) {
     return pair(enumerated.iter.back(), enumerated.count + left - 1);
   };
   enumerated.len = () => enumerated.iter.len();
+  // Std's `Enumerate::count`: its source's, which `$count` asks by this
+  // name, `count` being std's field of how many it's given (ADR 0988); so
+  // a reversed `Vec`'s take drops what it counts as one slice, front to
+  // back (#493). Given a pair's drop, of the item it counts.
+  enumerated.countItems = (drop) => $count(enumerated.iter, drop && ((x) => drop([0, x])));
   // Std's `fold` and `try_fold`: its source's, each item counted.
   if (iter.fold !== undefined) {
     enumerated.fold = (init, f) => enumerated.iter.fold(init, (a, x) => f(a, [enumerated.count++, x]));

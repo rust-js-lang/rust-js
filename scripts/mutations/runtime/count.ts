@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "  if (it.count !== undefined) return it.count(drop);\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_counted_by_generic_code.rs$"],
   },
+  {
+    name: "enumerate-count-by-fold",
+    breaks: "`count()` of an `enumerate()` counts each it gives, not its source's `count`, so a reversed `Vec`'s take drops back to front (#493)",
+    file: "src/runtime/count.js",
+    find: "  if (it.countItems !== undefined) return it.countItems(drop);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^drop_order_through_take_adapters.rs$"],
+  },
 ];

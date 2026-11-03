@@ -778,3 +778,29 @@ shapes against native Rust. The mutations `skipping-nth-drop-unpassed`,
 `skipping-try-fold-drop-unpassed`, `skipping-last-drop-unpassed`
 (`skipping.ts`) and `enumerate-nth-drop-unpassed` (`back_steps.ts`) are
 caught.
+
+## Amendment: a take's order through an identity map, an enumerate's count and a folded last (2026-11-03, #493)
+
+Three shapes dropped the right items in another order than native Rust:
+- **An identity `map` of items with a destructor stays a step.** std's
+  `Map` has no `nth` of its own, so `rev().fuse().take(3).map(|d| d).nth(2)`
+  steps each item from the back. Dropping the map reached the reversed
+  `Vec`'s `nth_back`, which drops one slice front to back. The map is now
+  dropped only where its items have no destructor. Without one, nothing a
+  std `nth` does is observable. The crate's own steps still keep it (#235).
+- **An `enumerate`'s count is its source's** (ADR 0988, amended).
+- **`$folded`, what std routes through `fold`, lists its items only once
+  they're stepped.** A consumer that folds it, `$lastDropping`, folds the
+  source itself. So `last()` of `Own(..).take(2).enumerate().skip(0)`
+  drops the item it replaces before the take's source is dropped at its
+  end. Before, the source was closed first, while its items were listed.
+Results change, so Rust's order is kept (ADR 0262, C). The matrices of
+#492 now agree with native Rust in every cell. A further matrix of the
+crate's iterators under `last` and `String` and `HashMap` collects
+found other differences. They predate this change, and are filed as #494.
+`drop_order_through_take_adapters` holds the three shapes. The
+mutations `identity-map-of-destructors-dropped` (`lower/mir/iter.ts`),
+`folded-fold-unexposed` (`folded.ts`) and `enumerate-count-by-fold`
+(`count.ts`) are caught. The anchors of `identity-map-step`,
+`identity-map-dropped-over-own-steps` and `folded-steps` follow the
+changed lines.

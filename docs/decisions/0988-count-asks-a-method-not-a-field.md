@@ -39,3 +39,17 @@ removed.
 
 `test/corpus/enumerate_counted_by_generic_code.rs` checks it against
 native Rust, with the mutation `count-field-called`.
+
+## Amendment: an `enumerate`'s count is its source's (2026-11-03, #493)
+
+std's `Enumerate::count` is `self.iter.count()`. `$count` counted an
+`$enumerate` by stepping each item, because its `count` is std's field.
+Through a `take` of a reversed `Vec`, std's count is the take's
+`advance_by`, one slice dropped front to back, and the JS dropped back to
+front. `$enumerate` now gives its count as `countItems`, its source's
+`$count`, with a pair's drop of the item it counts, and `$count` asks it
+where the iterator has no `count` function. A second name is the cost of
+keeping std's field. Renaming the field would change what std's compiled
+`Debug` and `Clone` of an `Enumerate` read. Held by
+`drop_order_through_take_adapters.rs` against native Rust, with the
+mutation `enumerate-count-by-fold`.

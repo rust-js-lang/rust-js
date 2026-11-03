@@ -190,7 +190,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a map by an untagged variant constructor stays a step, `.map((value) => value)`",
     file: "src/lower/mir/iter.rs",
-    find: "                f if f.is_identity() && !self.recognition().reaches_own_steps(iter_ty) => it,\n",
+    find: "                f if f.is_identity() && dropping.is_none() && !self.recognition().reaches_own_steps(iter_ty) => it,\n",
     replace: "",
     tests: [
       "test/lowering-iterators.test.ts",
@@ -467,8 +467,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an identity `map` over the crate's iterator is dropped, so a `skip` and `last()` past it reach its own `nth` and `last`, which std's `Map` hides (#235)",
     file: "src/lower/mir/iter.rs",
-    find: "                f if f.is_identity() && !self.recognition().reaches_own_steps(iter_ty) => it,\n",
-    replace: "                f if f.is_identity() => it,\n",
+    find: "                f if f.is_identity() && dropping.is_none() && !self.recognition().reaches_own_steps(iter_ty) => it,\n",
+    replace: "                f if f.is_identity() && dropping.is_none() => it,\n",
     tests: ["test/corpus.test.ts", "-t", "^identity_map_hides_own_nth.rs$"],
   },
   {
@@ -585,5 +585,13 @@ export const mutations: Mutation[] = [
       "-t",
       "the committed @rust-js/std is std",
     ],
+  },
+  {
+    name: "identity-map-of-destructors-dropped",
+    breaks: "an identity `map` of items with a destructor is dropped, so `rev().fuse().take(3).map(|d| d).nth(2)` reaches the reversed `Vec`'s `nth_back`, one slice front to back, where std's `Map` steps each from the back (#493)",
+    file: "src/lower/mir/iter.rs",
+    find: "                f if f.is_identity() && dropping.is_none() && !self.recognition().reaches_own_steps(iter_ty) => it,\n",
+    replace: "                f if f.is_identity() && !self.recognition().reaches_own_steps(iter_ty) => it,\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_order_through_take_adapters.rs$"],
   },
 ];

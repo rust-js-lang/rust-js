@@ -657,10 +657,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let own = arg_tys.get(1).is_some_and(|ty| self.is_called_as_written(*ty));
         let method = |name: &str, it: Expr, args: Vec<Expr>| Expr::call(Expr::member(it, name), args);
         Ok(Some(match std_method {
-            // By what gives each as it is, `map(StaticPath::Params)`: no step,
-            // but where a `Map` hides the crate's own steps (#235).
+            // By what gives each as it is, `map(StaticPath::Params)`: no step, but where a `Map`
+            // hides the crate's own steps (#235), or its source's `nth` of what it drops (#493).
             Some(IterMethod::Map) => match self.unary_callback(arg(), own) {
-                f if f.is_identity() && !self.recognition().reaches_own_steps(iter_ty) => it,
+                f if f.is_identity() && dropping.is_none() && !self.recognition().reaches_own_steps(iter_ty) => it,
                 f => method("map", it, vec![f]),
             },
             // Of items with a destructor: each it doesn't keep dropped as it
