@@ -656,6 +656,15 @@ pub fn none(options: &Options) -> bool {
     }
     negated(callbacks)
 }
+
+#[cfg_attr(rust_js, rust_js::nullable(callbacks))]
+fn either(callbacks: Option<&'static Unknown>) -> bool {
+    callbacks.is_some()
+}
+
+pub fn chosen(c: bool, d: bool) -> bool {
+    either(if c { js::null() } else if d { None } else { js::null() })
+}
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
@@ -663,6 +672,8 @@ pub fn none(options: &Options) -> bool {
   expect(js).toContain("function create(callbacks) {\n  return callbacks !== null;\n}");
   expect(js).toContain("function untested(callbacks) {\n  return callbacks != null;\n}");
   expect(js).toContain("function negated(callbacks) {\n  return callbacks != null;\n}");
+  // A temporary `js::null()` writes is `null` already, so its `None` is too.
+  expect(js).toContain("return either(null);");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.root(undefined), lib.root({}), lib.root({ callbacks: 1 })]).toEqual([false, false, true]);
   expect([lib.other({ other: 1 }), lib.other({ other: 1, callbacks: 1 }), lib.other({ callbacks: 1 })]).toEqual([

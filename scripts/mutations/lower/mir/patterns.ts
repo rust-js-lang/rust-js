@@ -601,8 +601,8 @@ export const mutations: Mutation[] = [
     name: "let-arms-uncounted",
     breaks: "a `let` whose arm is a `let` of its own, `let previous = previous_of(..); previous`, has a write that isn't what it makes, so it's never `null` for `None` and `measure(previous)` stays `!= null` (rd632)",
     file: "src/lower/mir/patterns.rs",
-    find: "                && writes + arms.len() == locals.writes[local]\n",
-    replace: "                && writes == locals.writes[local]\n",
+    find: "                && writes + arms.len() - moved == locals.writes[local]\n",
+    replace: "                && writes - moved == locals.writes[local]\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "read by a nullable parameter and alike"],
   },
   {
@@ -612,5 +612,25 @@ export const mutations: Mutation[] = [
     find: "                nulled.extend(arms);\n",
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "read by a nullable parameter and alike"],
+  },
+  {
+    name: "let-arm-some-counted-twice",
+    breaks:
+      "a `Some` an arm moves into a late `let` is counted as its write twice, so the `let`'s `None` is `undefined`, `previousMeasurements = undefined` (rd647)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                && writes + arms.len() - moved == locals.writes[local]\n",
+    replace: "                && writes + arms.len() == locals.writes[local]\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_let_set_in_arms.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "let-arms-counted-each-copy",
+    breaks:
+      "an arm a `let` is copied from twice in MIR's statements is counted as two writes, so the `let`'s `None` is `undefined` (rd647)",
+    file: "src/lower/mir/patterns.rs",
+    find: "            let arms: std::collections::BTreeSet<Local> = (copies.iter())\n",
+    replace: "            let arms: Vec<Local> = (copies.iter())\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_let_set_in_arms.rs$"],
+    snapshots: true,
   },
 ];

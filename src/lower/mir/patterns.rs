@@ -303,6 +303,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A `Some(..)` MIR makes in a temporary of its own, read once, then
         // moves in, `found = Some(Rc::clone(&n))`'s: a write of a `Some`.
+        let mut moved_in = std::collections::HashSet::new();
         for &(copy, of) in &copies.iter().copied().collect::<std::collections::HashSet<_>>() {
             if made
                 .get(&of)
@@ -310,6 +311,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && locals.reads[of] == 1
             {
                 made.entry(copy).or_default().0 += 1;
+                moved_in.insert((copy, of));
             }
         }
         // A `#[rust_js::nullable]` function's result is read by its return,
@@ -336,10 +338,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             let given = given.get(&local).copied().unwrap_or_default();
-            let arms: Vec<Local> = (copies.iter())
+            let arms: std::collections::BTreeSet<Local> = (copies.iter())
                 .filter(|&&(copy, of)| copy == local && arm(of))
                 .map(|&(_, of)| of)
                 .collect();
+            // Each arm's write once: a `Some` one moves in is among `writes`
+            // already (rd647).
+            let moved = arms.iter().filter(|&&of| moved_in.contains(&(local, of))).count();
             let called = called.contains(&local) || arms.iter().any(|of| called.contains(of));
             if !(called && !stored.contains(&local)) {
                 if made.contains_key(&local) && none && writes == locals.writes[local] && given == locals.reads[local] {
@@ -353,7 +358,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if toward.contains(&local)
                 && lets.contains(&local)
                 && given + alike == locals.reads[local]
-                && writes + arms.len() == locals.writes[local]
+                && writes + arms.len() - moved == locals.writes[local]
             {
                 nulled.insert(local);
                 nulled.extend(arms);

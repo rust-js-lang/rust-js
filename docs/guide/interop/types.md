@@ -1065,7 +1065,8 @@ export function ratio(a, b) {
   a call writes that only such parameters and tests that read `null` and
   `undefined` alike read, `is_some()`, `map_or`, whose `None` is then
   `null` where it's written, `previousMeasurements = state.clones?.map(..)
-  ?? null`, rd632)
+  ?? null`, and so is a late `let` each arm of an `if` or a `match` sets,
+  `previousMeasurements = null;`, rd632, rd647)
   and nothing uses the function but to call it, or to `function::bind`
   each of its parameters, `completeRoot.bind(null, root, ..)`, its body
   tests it `!== null`, `if

@@ -574,3 +574,41 @@ and `closure-map-unrecognized` and `closure-map-effects-dropped`
 (`lower/std_types/option.ts`). Each excluded read is a read `alike_reads`
 doesn't count, so the corpus case holds it rather than a mutation of a
 condition of its own.
+
+## Amendment: a late `let` each arm writes counts each write once (2026-11-03, rd647 (C))
+
+React's measureUpdateViewTransition, ported in upstream's shape, sets a late `let` in each arm:
+
+```rust
+let previous_measurements: Option<Vec<&'static Unknown>>;
+if gesture {
+    match clones.as_ref() {
+        None => { previous_measurements = None; }
+        Some(clones) => { previous_measurements = Some(..collect()); }
+    }
+} else {
+    previous_measurements = unsafe { js::cast(old_fiber.memoized_state.get()) };
+    ..
+}
+```
+
+It's read by the nullable parameter and by `map_or`, as the amendment above
+asks. Still, its `None` printed `undefined`, where upstream writes `null`.
+MIR writes each arm into a temporary and copies it in. The rule counted
+the `Some(..)` temporary twice, once as a write of a `Some` it moves in
+and once as an arm. It also counted each arm once per copy MIR records,
+two for these arms. So its writes never added up. Each arm is now counted
+once (a set), and one whose `Some` is moved in already is not counted
+again. It prints `previousMeasurements = null;`, upstream's, and the
+`match` keeps its arms, `if (clones == null) { .. = null; } else { .. }`,
+upstream's shape. The case is ADR 0262's "no observable difference":
+every reader tests `null` and `undefined` alike.
+
+Held by corpus `nullable_let_set_in_arms` against native Rust, and
+mutations `let-arm-some-counted-twice` and `let-arms-counted-each-copy`
+(`lower/mir/patterns.ts`); `let-arms-uncounted` is retargeted to the new
+count. Now that the count adds up, rd623's `let` of `js::null()` would be
+`null` by this rule as well. So `null-call-called` is held by a temporary
+instead, `either(if c { js::null() } else { None })`'s `either(null)`.
+Only the rule that `js::null()` isn't a call that may give `undefined`
+makes it so, because a temporary isn't a `let`.
