@@ -63,35 +63,51 @@ fn literal_layout(tcx: ty::TyCtxt<'_>, span: Span) -> js::ObjectLayout {
 /// Of the crate's own structs: std's `Range`, `a..b`'s, documents its
 /// fields for Rust's readers, not for any object a program writes.
 pub(super) fn struct_literals(tcx: ty::TyCtxt<'_>) -> std::collections::HashMap<DefId, usize> {
+    let mut counts = std::collections::HashMap::new();
+    each_struct_literal(tcx, |typeck, e| {
+        if let Some(ty) = typeck.expr_ty_opt(e)
+            && let ty::Adt(adt, _) = ty.kind()
+            && adt.is_struct()
+            && adt.did().is_local()
+        {
+            *counts.entry(adt.did()).or_default() += 1;
+        }
+    });
+    counts
+}
+
+/// Each struct or variant literal the crate writes, `P { .. }`, with the
+/// types of the body it's in: the one walk of them, which `struct_literals`
+/// counts and a declaration names a field's function's parameters by
+/// (ADR 1075).
+pub(super) fn each_struct_literal<'tcx>(
+    tcx: ty::TyCtxt<'tcx>,
+    mut each: impl FnMut(&'tcx ty::TypeckResults<'tcx>, &'tcx rustc_hir::Expr<'tcx>),
+) {
     use rustc_hir::intravisit::{self, Visitor};
-    struct Literals<'a, 'tcx> {
+    struct Literals<'f, 'tcx, F> {
         typeck: &'tcx ty::TypeckResults<'tcx>,
-        counts: &'a mut std::collections::HashMap<DefId, usize>,
+        each: &'f mut F,
     }
-    impl<'tcx> Visitor<'tcx> for Literals<'_, 'tcx> {
+    impl<'tcx, F: FnMut(&'tcx ty::TypeckResults<'tcx>, &'tcx rustc_hir::Expr<'tcx>)> Visitor<'tcx>
+        for Literals<'_, 'tcx, F>
+    {
         fn visit_expr(&mut self, e: &'tcx rustc_hir::Expr<'tcx>) {
-            if let rustc_hir::ExprKind::Struct(..) = e.kind
-                && let Some(ty) = self.typeck.expr_ty_opt(e)
-                && let ty::Adt(adt, _) = ty.kind()
-                && adt.is_struct()
-                && adt.did().is_local()
-            {
-                *self.counts.entry(adt.did()).or_default() += 1;
+            if let rustc_hir::ExprKind::Struct(..) = e.kind {
+                (self.each)(self.typeck, e);
             }
             intravisit::walk_expr(self, e);
         }
     }
-    let mut counts = std::collections::HashMap::new();
     for owner in tcx.hir_body_owners() {
         let body = tcx.hir_body_owned_by(owner);
         let typeck = tcx.typeck(owner);
         Literals {
             typeck,
-            counts: &mut counts,
+            each: &mut each,
         }
         .visit_body(body);
     }
-    counts
 }
 
 /// A `const`'s or a `static`'s object, of the value rustc computed, as its

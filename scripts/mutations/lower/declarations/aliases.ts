@@ -124,4 +124,12 @@ export const mutations: Mutation[] = [
     replace: "            None => match self.foreign.declared_type(did).filter(|_| own) {\n",
     tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
   },
+  {
+    name: "written-function-names-ungathered",
+    breaks: "a fn pointer written in a field, `fn(count: u32, _sum: u32)`, is named by what fills it, `total(count, total)`",
+    file: "src/lower/declarations/aliases.rs",
+    find: "            self.written_function_names(written, &mut function_names);\n",
+    replace: "",
+    tests: ["test/declarations-function-types.test.ts"],
+  },
 ];

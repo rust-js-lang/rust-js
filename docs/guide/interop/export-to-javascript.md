@@ -2043,14 +2043,16 @@ export { delete$ as delete };
 |---|---|
 | `bool`, a number, a 64-bit one | `boolean`, `number`, `bigint` |
 | `&str`, `String`, `char` | `string` |
-| `Option<T>` | `T \| null \| undefined`; a trailing parameter `x?:`, a field `x?: T \| undefined` |
+| `Option<T>` | `T \| null \| undefined`; a trailing parameter `x?:`, a function type's too, `(link: Link, sub?: Node \| null \| undefined) => void`, but a JS class's constructor's; a field `x?: T \| undefined` ([ADR 1075](../../decisions/1075-a-function-types-parameters-are-named-as-the-rust-names-them.md)) |
 | a `#[rust_js::rest]` slice `&[T]` | a rest parameter, `...args: T[]` |
 | `Vec<T>`, a slice, a tuple | `T[]`, `[A, B]` |
 | `HashMap<K, V>`, `BTreeMap<K, V>`; `HashSet<T>`, `BTreeSet<T>` | `Map<K, V>`; `Set<T>` ([ADR 0876](../../decisions/0876-a-maps-declaration-is-map.md)) |
 | a struct with named fields | an `interface` of its fields, and of each `pub` method of `self` its impl binds of the JS object, `#[rust_js::link_name = "isPersistent"] pub fn is_persistent(&self) -> bool`'s `isPersistent(): boolean` ([ADR 0196](../../decisions/0196-typescript-declarations.md), amended) |
 | an enum without fields | the union of its names, `"Red" \| "Green"` |
 | an enum with fields | the union of its variants' objects, `{ TAG: "Loading"; percent: number }` |
-| `impl Fn(u32) -> u32`, taken or given | `(value: number) => number` |
+| `impl Fn(u32) -> u32`, taken or given | `(value: number) => number`, each parameter named after its type |
+| a fn pointer, `fn(count: u32, _sum: u32) -> u32` | `(count: number, sum: number) => number`, named as its type writes them ([ADR 1075](../../decisions/1075-a-function-types-parameters-are-named-as-the-rust-names-them.md)) |
+| a field's `dyn Fn(&Node, &Node, u32)`, each literal of its struct filling it `Rc::new(move \|dep, sub, version\| ..)` | `(dep: Node, sub: Node, version: number) => void`: named as what every literal fills it with names them, else after its type; a library's by its own literals ([ADR 1075](../../decisions/1075-a-function-types-parameters-are-named-as-the-rust-names-them.md)) |
 | a function of rest arguments as a value, `impl Fn(&dyn js::Rest<str>)` | `(...args: string[]) => void` |
 | `Box<T>`, an `Rc<T>` whose counts nothing reads | `T` |
 | its `Weak<T>` | `T \| null` ([ADR 0845](../../decisions/0845-an-rcs-declaration-is-what-it-points-at.md)) |

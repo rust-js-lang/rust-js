@@ -82,6 +82,8 @@ pub(super) fn module<'tcx>(
         unexported: BTreeMap::new(),
         erased: HashMap::new(),
         named: Vec::new(),
+        function_names: Vec::new(),
+        filled: None,
     };
     // What `js::export_default! { .. }` holds, a function or a constant, is
     // the module's default and nothing else, as its JS is, `export default
@@ -417,6 +419,14 @@ struct Declarations<'a, 'tcx> {
     /// rustc's, which has them expanded, and what TypeScript names it
     /// (`as_written`).
     named: Vec<(Ty<'tcx>, Value)>,
+    /// The function types in the type being declared whose parameters the
+    /// Rust names, each by its type, rustc's, and its parameters' names:
+    /// a fn pointer's as written, `fn(dep: &Node)`, and a field's `dyn Fn`
+    /// as the crate fills it (#543).
+    function_names: Vec<(Ty<'tcx>, Vec<Option<String>>)>,
+    /// Each function-typed field's parameters as every literal of the
+    /// crate fills it, made once, when first asked (`filled_names`).
+    filled: Option<HashMap<DefId, Vec<Option<String>>>>,
 }
 
 impl<'tcx> Declarations<'_, 'tcx> {
@@ -477,7 +487,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 .find(|p| matches!(p.self_ty().kind(), ty::Param(q) if q.index == param.index))
                 .and_then(|p| p.term.as_type())
                 .unwrap_or(self.tcx.types.unit);
-            let function = self.function_type(inputs.as_slice(), output);
+            let function = self.function_type(inputs.as_slice(), output, &[], true);
             erased.insert(param.index, function);
         }
         self.erased = outer;
@@ -767,6 +777,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 false if nested => self.option(ty).and_then(|option| self.option(option)),
                 false => self.option(ty).or_else(|| self.once_cell_item(ty)),
             };
+            let outer = self.function_names.len();
+            self.fill_names(field.did, ty);
             let (optional, ty) = match option {
                 Some(inner) => {
                     let inner = self.as_written(written.and_then(|w| self.written_option(w)), |out| out.ts(inner));
@@ -785,6 +797,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     self.as_written(written, |out| out.field_ts(ty, Some(field))),
                 ),
             };
+            self.function_names.truncate(outer);
             // One a caller may leave out takes `undefined` too, as leaving it
             // out does, under `exactOptionalPropertyTypes` as without it.
             let ty = if optional { or_undefined(ty) } else { ty };
@@ -902,7 +915,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
                         }
                         let tag = (!keyed).then(|| json!({ "kind": "property", "name": key, "optional": false, "readonly": false, "type": name }));
                         let fields = v.fields.iter().enumerate().map(|(i, field)| {
-                            let ty = self.field_ts(field.ty(self.tcx, args).skip_normalization(), Some(field));
+                            let ty = field.ty(self.tcx, args).skip_normalization();
+                            let outer = self.function_names.len();
+                            self.fill_names(field.did, ty);
+                            let ty = self.field_ts(ty, Some(field));
+                            self.function_names.truncate(outer);
                             let name = crate::lower::representation::variant_field(self.tcx, v, i);
                             json!({ "kind": "property", "name": name, "optional": false, "readonly": false, "type": ty })
                         });
@@ -1094,33 +1111,54 @@ impl<'tcx> Declarations<'_, 'tcx> {
     }
 
     /// `(event: MouseEvent<Element>) => void`: a function type, each
-    /// parameter named by its type, as a person names one.
+    /// parameter named as the Rust names it, `named` (#543), else by its
+    /// type, as a person names one.
     /// Its last parameter of rest arguments as a value, `&dyn js::Rest<T>`,
     /// a rest parameter of what each reads as, `...args: unknown[]` (ADR
-    /// 0851).
-    fn function_type(&mut self, inputs: &[Ty<'tcx>], output: Ty<'tcx>) -> Value {
-        let mut names: Vec<String> = Vec::new();
+    /// 0851). Its trailing `Option`s are optional, `sub?: Node | null`, as
+    /// a function's are (`optional_from`), where a caller of what may
+    /// leave them out does (ADR 0313, #544): not a JS class's constructor.
+    fn function_type(
+        &mut self,
+        inputs: &[Ty<'tcx>],
+        output: Ty<'tcx>,
+        named: &[Option<String>],
+        may_leave_out: bool,
+    ) -> Value {
         let count = inputs.len();
+        let rest = (inputs.last())
+            .and_then(|&last| super::bindings::rest_items(self.tcx, last))
+            .map(|items| (count - 1, items));
+        let optional_from = match may_leave_out {
+            true => functions::optional_from(self.tcx, inputs, rest.map(|(at, _)| at), |_| false),
+            false => count,
+        };
+        let mut names: Vec<String> = named.iter().flatten().cloned().collect();
         let params: Vec<Value> = (inputs.iter().enumerate())
             .map(|(i, &input)| {
-                if i + 1 == count
-                    && let Some(items) = super::bindings::rest_items(self.tcx, input)
+                let given = named.get(i).cloned().flatten();
+                if let Some((at, items)) = rest
+                    && at == i
                 {
-                    return json!({ "name": "args", "optional": false, "rest": true, "type": self.ts(items) });
+                    let name = given.unwrap_or_else(|| "args".to_string());
+                    return json!({ "name": name, "optional": false, "rest": true, "type": self.ts(items) });
                 }
                 let ty = self.ts(input);
-                let base = param_name(&ty);
-                let taken = names
-                    .iter()
-                    .filter(|n| n.trim_end_matches(char::is_numeric) == base)
-                    .count();
-                let name = if taken == 0 {
-                    base
-                } else {
-                    format!("{base}{}", taken + 1)
-                };
-                names.push(name.clone());
-                json!({ "name": name, "optional": false, "rest": false, "type": ty })
+                let name = given.unwrap_or_else(|| {
+                    let base = param_name(&ty);
+                    let taken = names
+                        .iter()
+                        .filter(|n| n.trim_end_matches(char::is_numeric) == base)
+                        .count();
+                    let name = if taken == 0 {
+                        base
+                    } else {
+                        format!("{base}{}", taken + 1)
+                    };
+                    names.push(name.clone());
+                    name
+                });
+                json!({ "name": name, "optional": i >= optional_from, "rest": false, "type": ty })
             })
             .collect();
         let returns = match output.is_unit() {
@@ -1189,7 +1227,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
             // `dyn Fn(&event::MouseEvent)` is `(event: MouseEvent<Element>) => void`.
             ty::FnPtr(..) => {
                 let sig = ty.fn_sig(tcx).skip_binder();
-                self.function_type(sig.inputs(), sig.output())
+                let named = self.function_names(erased);
+                self.function_type(sig.inputs(), sig.output(), &named, true)
             }
             ty::Dynamic(traits, ..)
                 if traits
@@ -1203,7 +1242,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 let output = (traits.projection_bounds())
                     .find_map(|output| output.skip_binder().term.as_type())
                     .unwrap_or(tcx.types.unit);
-                self.function_type(inputs, output)
+                let named = self.function_names(erased);
+                self.function_type(inputs, output, &named, true)
             }
             // A `dyn` of a trait that says what it is to TypeScript:
             // `dyn ReactNode` is a `ReactNode` (ADR 0242).
@@ -1221,7 +1261,9 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     kind: ty::Opaque { .. },
                     ..
                 },
-            ) if let Some((inputs, output)) = opaque_fn_signature(tcx, *alias) => self.function_type(&inputs, output),
+            ) if let Some((inputs, output)) = opaque_fn_signature(tcx, *alias) => {
+                self.function_type(&inputs, output, &[], true)
+            }
             // `(...args: any[]) => any`: a closure's own type, which no
             // signature names, or a `dyn` of another trait.
             ty::Closure(..) | ty::Dynamic(..) => json!({
@@ -1297,7 +1339,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     && let ty::FnPtr(..) = signature.kind()
                 {
                     let sig = signature.fn_sig(tcx).skip_binder();
-                    let mut constructor = self.function_type(sig.inputs(), sig.output());
+                    let named = self.function_names(tcx.erase_and_anonymize_regions(signature));
+                    let mut constructor = self.function_type(sig.inputs(), sig.output(), &named, false);
                     constructor["construct"] = json!(true);
                     return constructor;
                 }

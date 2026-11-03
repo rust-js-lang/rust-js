@@ -296,7 +296,8 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Function-value mutable arguments | `mut_refs.rs` | `unboxed_by_function` |
 | Body module placement | `lower.rs` | `body_module` |
 | Which `const`s written in a function's body are its, a `const` there, and what reads each (ADR 0031, amended) | `analysis/naming.rs` | `local_consts` |
-| A parameter's JS name, its body's and its declaration's | `lower.rs` | `parameter_name` |
+| A parameter's JS name, its body's and its declaration's, and a fn pointer's written one (ADR 1075) | `parameter_names.rs` | `parameter_name`, `written_parameter_name` |
+| A declared function type's parameter names, a fn pointer's as written and a `dyn Fn` field's as every literal fills it, and which trailing parameters may be left out (ADRs 0443, 1075) | `declarations/functions.rs` | `optional_from`, `filled_names`, `written_function_names`, `function_names` |
 | Std body capture | `analysis.rs` | `collect_std_bodies` |
 | Dictionary cache names | `names.rs` | `dictionary_cache` |
 | String offsets in JS units | `mir/offsets.rs`; `std_types/text.rs` | `in_units`, `call_in_units`, `step`, `cut`, `seed`; `found`, `sliced_in_units` |

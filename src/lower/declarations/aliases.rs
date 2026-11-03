@@ -31,13 +31,17 @@ impl<'tcx> Declarations<'_, 'tcx> {
     /// what it is to TypeScript, `MouseEventHandler<HTMLButtonElement>`.
     pub(super) fn as_written(&mut self, written: Option<&hir::Ty<'tcx>>, of: impl FnOnce(&mut Self) -> Value) -> Value {
         let mut named = Vec::new();
+        let mut function_names = Vec::new();
         if let Some(written) = written {
             self.aliases_in(written, &mut named);
+            self.written_function_names(written, &mut function_names);
         }
-        let outer = self.named.len();
+        let outer = (self.named.len(), self.function_names.len());
         self.named.extend(named);
+        self.function_names.extend(function_names);
         let value = of(self);
-        self.named.truncate(outer);
+        self.named.truncate(outer.0);
+        self.function_names.truncate(outer.1);
         value
     }
 

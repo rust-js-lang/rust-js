@@ -394,7 +394,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a range, `a..b`, std's `Range` literal, prints std's `/** The lower bound of the range (inclusive). */` before its `start` (ADR 0444, amended)",
     file: "src/lower/aggregates.rs",
-    find: "                && adt.did().is_local()\n",
+    find: "            && adt.did().is_local()\n",
     replace: "",
     tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
   },
