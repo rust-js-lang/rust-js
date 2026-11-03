@@ -1139,7 +1139,9 @@ export function entangle(root, index, lane) {
 - **`Cell::from_mut(&mut v)` of an object is a cell that writes `v` in
   place**, `$cellOf(v)`, as a write through the `&mut` does. What its
   `replace`, `take` or `swap` moves out is a copy of it, `$apart(..)`,
-  since `v` itself becomes the new value
+  since `v` itself becomes the new value. A `&mut` of an object a generic
+  function keeps past the call, `fn set_get<'a, T>(a: &'a mut T, v: T) ->
+  &'a mut T`'s, is the same cell, `set_get($cellOf(v), w)`
   ([ADR 0454](../../decisions/0454-a-mut-given-as-a-type-parameter.md), amended):
 
 ```rust

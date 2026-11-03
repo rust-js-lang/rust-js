@@ -58,6 +58,16 @@ pub(super) fn boxed(place: Expr) -> Expr {
     Expr::object(vec![Prop::Field(js::HELD.into(), place)])
 }
 
+/// An in-place cell of `object`, `$cellOf(object)`: a `&mut` to an object
+/// as generic code has it, a box, whose `value` is the object and whose
+/// write of the whole changes it in place, `$assign`, as `*r = v` of the
+/// object's own `&mut` does (ADRs 0153, 0454). `Cell::from_mut`'s, a
+/// dictionary's `&mut Self::Out`, and a `&mut` given for longer than the
+/// call (#528). What's moved out of one is apart (`moved_out`).
+pub(in crate::lower) fn in_place_cell(object: Expr) -> Expr {
+    Expr::call_helper("$cellOf", vec![object])
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What a box, `boxed`, the call it was given to returned, writes back to
     /// its `place`: an object's changed in place, `$assign(place, box.value)`,

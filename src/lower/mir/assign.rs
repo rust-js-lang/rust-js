@@ -1152,7 +1152,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // What it returns, or another parameter, can hold the borrow: a
             // box would be copied back before it's used.
+            // Of an object, an in-place cell of it, whose write of the whole
+            // changes the object, as `*r = v` of its `&mut` does: the caller's,
+            // a parameter's or a field's too, not the variable that names it
+            // here (#528, ADR 0454, amended).
             if self.borrow_outlives_call(def_id, i) {
+                if object {
+                    exprs.push(crate::lower::mut_refs::in_place_cell(place));
+                    continue;
+                }
                 if !fixed_place(&place) {
                     return Err(self.unsupported(span, "a `&mut` of a number given back, from its MIR"));
                 }

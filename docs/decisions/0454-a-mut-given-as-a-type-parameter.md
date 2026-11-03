@@ -2,8 +2,9 @@
 
 Status: Accepted; amended by [0566](0566-fuse-is-stds.md), which lifts the
 refusal of a closure's parameter below: a function given for an `F:
-Fn(&mut T)` takes generic code's box apart; and (2026-11-03, #527) what's
-moved out of an in-place cell is a copy apart. Extends [0099](0099-mut-references.md) and
+Fn(&mut T)` takes generic code's box apart; and (2026-11-03) what's moved
+out of an in-place cell is a copy apart (#527), and a `&mut` of an object
+given for longer than the call is one (#528). Extends [0099](0099-mut-references.md) and
 [0180](0180-generic-writers.md). Decided with the user.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): the same writes, to
@@ -231,3 +232,31 @@ now Rust's.
   `replaced-holder-reached-twice`, `checked-index-named-for-replace`,
   `own-place-moved-out-apart`, `indexed-item-moved-out-apart`,
   `ref-cell-moved-out-apart`, `unread-apart-kept` and `apart-acts`.
+
+## Amendment: a `&mut` of an object given for longer than the call is an in-place cell (#528)
+
+`fn set_get<'a, T>(a: &'a mut T, v: T) -> &'a mut T { *a = v; a }`, given
+`&mut v` of a `Vec`, wrote nothing the caller saw where `v` was a `&mut
+Vec` parameter, and threw "assignment to constant `v2`" where it was a
+local: a `&mut` whose borrow outlives the call (`borrow_outlives_call`,
+ADR 0099) was a handle on the variable that names it here, `set value(x)
+{ v = x; }`, which rebinds a parameter's copy of the caller's object, or a
+`const`, where a write through a `&mut` to an object changes the object
+in place (ADR 0147). A wrong answer. Case R
+([0262](0262-when-rust-and-js-disagree.md)), now Rust's.
+
+- **Of an object, it's an in-place cell**, `$cellOf(v)`,
+  `mut_refs::in_place_cell`, the one form of a box whose write of the
+  whole changes the object, `Cell::from_mut`'s and a dictionary's `&mut
+  Self::Out`'s (above). A number's or a string's stays a handle on its
+  place, which JS can't change in place.
+- What generic code moves out of it is a copy apart (`moved_out`, above).
+- The objects such a call is given read as written, `const c = { n: 1 }`,
+  `pick(true, $cellOf(c), $cellOf(d))`, where each was a `let` a handle of
+  nine lines rebinds: `generic_mut_ref_kept`, `mut_assoc_through_dictionary`
+  and `phantom_mut_marker` lost 119 lines.
+- Held by `test/corpus/generic_mut_written_whole.rs`, against native Rust:
+  `set_get` of a `Vec` given by a parameter and by a local, its result
+  written through after, of a `String`, a struct and a number, and through
+  a generic function that gives it on, and a `Copy` struct read before.
+  Mutation `outliving-object-handle`.

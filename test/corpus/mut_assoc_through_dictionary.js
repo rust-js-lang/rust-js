@@ -53,21 +53,11 @@ function bump(g, GGet) {
 }
 
 function main() {
-  let h = [[5]];
+  const h = [[5]];
   const g = { value: h };
   push(g, holderGet);
   $assign(h, g.value);
-  first(
-    {
-      get value() {
-        return h;
-      },
-      set value(value) {
-        h = value;
-      },
-    },
-    holderGet,
-  ).value.push(2);
+  first($cellOf(h), holderGet).value.push(2);
   console.log(`[${h[0].join(", ")}]`);
   const kept = $ptr(h, 0);
   const value = [7, 8];
@@ -77,37 +67,14 @@ function main() {
   } finally {
     $assign(h, g$1.value);
   }
-  $assign(
-    first(
-      {
-        get value() {
-          return h;
-        },
-        set value(value) {
-          h = value;
-        },
-      },
-      holderGet,
-    ).value,
-    [9],
-  );
+  $assign(first($cellOf(h), holderGet).value, [9]);
   console.log(`[${h[0].join(", ")}] ${$ptrEq(kept, $ptr(h, 0), 12)}`);
 
-  let n = [1];
+  const n = [1];
   const g$2 = { value: n };
   bump(g$2, numGet);
   $assign(n, g$2.value);
-  const value$1 = first(
-    {
-      get value() {
-        return n;
-      },
-      set value(value) {
-        n = value;
-      },
-    },
-    numGet,
-  );
+  const value$1 = first($cellOf(n), numGet);
   value$1.value = (value$1.value + 5) >>> 0;
   const g$3 = { value: n };
   reset(g$3, 40, numGet);
@@ -117,21 +84,11 @@ function main() {
   $assign(n, g$4.value);
   console.log(`${n[0]}`);
 
-  let slot = [[1]];
+  const slot = [[1]];
   const g$5 = { value: slot };
   push(g$5, slotGet);
   $assign(slot, g$5.value);
-  first(
-    {
-      get value() {
-        return slot;
-      },
-      set value(value) {
-        slot = value;
-      },
-    },
-    slotGet,
-  ).value.push(2);
+  first($cellOf(slot), slotGet).value.push(2);
   const value$2 = [3, 4];
   const g$6 = { value: slot };
   try {
@@ -139,17 +96,7 @@ function main() {
   } finally {
     $assign(slot, g$6.value);
   }
-  first(
-    {
-      get value() {
-        return slot;
-      },
-      set value(value) {
-        slot = value;
-      },
-    },
-    slotGet,
-  ).value.push(5);
+  first($cellOf(slot), slotGet).value.push(5);
   const count = [1];
   const g$7 = { value: count };
   bump(g$7, slotGet);

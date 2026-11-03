@@ -333,7 +333,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // in place, as writing through the `&mut` does.
             Std::CellFromMut => match self.is_boxable(generic_args.type_at(0)) {
                 true => arg(),
-                false => Expr::call(Expr::helper("$cellOf"), vec![arg()]),
+                false => crate::lower::mut_refs::in_place_cell(arg()),
             },
             // A cell of each item, a handle on it (ADR 0152).
             Std::CellItems => Expr::call(Expr::helper("$mutItems"), vec![cell_contents(arg())]),

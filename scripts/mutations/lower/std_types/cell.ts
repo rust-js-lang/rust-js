@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`Cell::from_mut` of a `&mut` to an array is the array, so `set` writes a `value` property on it, not the array",
     file: "src/lower/std_types/cell.rs",
-    find: '                false => Expr::call(Expr::helper("$cellOf"), vec![arg()]),\n',
+    find: "                false => crate::lower::mut_refs::in_place_cell(arg()),\n",
     replace: "                false => arg(),\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_from_mut.rs$"],
   },

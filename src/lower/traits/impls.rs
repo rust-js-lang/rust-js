@@ -489,9 +489,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // impl's own type parameter, the trait's is generic too, and the
             // method's box is it.
             let call = match self.boxed_in_call(item.def_id, declared_output, args) {
-                Some(_) => Some(Expr::call(
-                    Expr::helper("$cellOf"),
-                    vec![call.unwrap_or_else(|| Expr::call(callee.clone(), values.clone()))],
+                Some(_) => Some(crate::lower::mut_refs::in_place_cell(
+                    call.unwrap_or_else(|| Expr::call(callee.clone(), values.clone())),
                 )),
                 None => call,
             };

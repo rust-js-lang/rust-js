@@ -1092,4 +1092,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-comments-items.test.ts", "-t", "a comment after a view argument"],
   },
+  {
+    name: "outliving-object-handle",
+    breaks:
+      "`set_get(&mut v, vec![3, 4])` of a generic `fn set_get<'a, T>(a: &'a mut T, v: T) -> &'a mut T`, whose borrow outlives the call, rebinds the variable that names `v`, `v = value`, a `const`'s, or a parameter's copy the caller never sees, not the object in place (#528)",
+    file: "src/lower/mir/assign.rs",
+    find: "                if object {\n                    exprs.push(crate::lower::mut_refs::in_place_cell(place));\n",
+    replace: "                if false {\n                    exprs.push(crate::lower::mut_refs::in_place_cell(place));\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_mut_written_whole.rs$"],
+  },
 ];
