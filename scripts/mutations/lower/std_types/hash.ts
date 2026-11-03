@@ -112,4 +112,13 @@ export const mutations: Mutation[] = [
     replace: "                        let pointer = hashed;\n",
     tests: ["test/corpus.test.ts", "-t", "^identity_keys.rs$"],
   },
+  {
+    name: "nothing-written-looped",
+    breaks: "a slice of `PhantomData`s' `hash_slice` loops over its items, `for (const item of items) {}`, writing nothing",
+    file: "src/lower/std_types/hash.rs",
+    find: "        if body.is_empty() {\n            return Ok(());\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^hash_phantom_data.rs$"],
+    snapshots: true,
+  },
 ];

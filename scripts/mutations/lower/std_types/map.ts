@@ -724,4 +724,23 @@ export const mutations: Mutation[] = [
       "into_keys of values with a destructor is refused",
     ],
   },
+  {
+    name: "phantom-data-key-not-by-value",
+    breaks:
+      "a set or a map keyed by a struct holding a `PhantomData`, litemap's `LiteMap`, is refused, the marker taken for a part that doesn't compare by value (#514)",
+    file: "src/lower/std_types/map.rs",
+    find: "            // a field left out of its object, is to `$key` (#514).\n            ty::Adt(..) if self.is_lang_adt(ty, LangItem::PhantomData) => true,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^hash_phantom_data.rs$"],
+  },
+  {
+    name: "phantom-data-key-not-ordered-by-value",
+    breaks:
+      "a B-tree keyed by a struct holding a `PhantomData`, litemap's `LiteMap`, finds it by its `cmp`, an `$OrdMap`, not by its value, a `$KeySet` (#514)",
+    file: "src/lower/std_types/map.rs",
+    find: "            // Every `PhantomData` is `Equal` to every other (#514).\n            ty::Adt(..) if self.is_lang_adt(ty, LangItem::PhantomData) => true,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^hash_phantom_data.rs$"],
+    snapshots: true,
+  },
 ];

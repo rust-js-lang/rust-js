@@ -336,8 +336,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::call(read, vec![Expr::var(json)])
                 }
                 Some(SerdeDefault::Path) => self.default_path(field.did, span)?,
-                // A `PhantomData`.
-                None if self.is_std_type(field_ty, StdItem::PhantomData) => Expr::undefined(),
                 _ => self.default_value(field_ty, span)?,
             });
         }

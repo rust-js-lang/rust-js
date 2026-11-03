@@ -5,7 +5,8 @@ amends [0425](0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md).
 Extends [0121](0121-value-keys.md), [0141](0141-std-trait-objects.md).
 Extended by
 [0864](0864-a-type-equal-only-to-itself-keys-a-set-by-itself.md):
-`ptr::hash` writes its pointer's address.
+`ptr::hash` writes its pointer's address. Amended 2026-11-03: a
+`PhantomData` is known by its lang item, and writes nothing (#514).
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): the same hash, bit for
 bit, as `wasm32`'s native Rust, rust-js's target (ADR 0090).
@@ -98,3 +99,37 @@ hasher.finish(); // 14828406784900857967n, as std's
   sends a server; refusing it stops the port, not the program.
 - **A hasher of JS's, FNV over strings.** Its numbers wouldn't be std's, so
   a value hashed in the browser and on the server wouldn't agree.
+
+## Amendment: a `PhantomData` is known by its lang item, and writes nothing (#514)
+
+Case: N ([0262](0262-when-rust-and-js-disagree.md)): a refusal lifted;
+what's written is std's, nothing.
+
+Since this decision, litemap, which url's graph builds, was refused at
+`Hash::hash` of its map's `PhantomData<K>`: `#[derive(Hash)] pub struct
+LiteMap<K: ?Sized, V: ?Sized, S> { values: S, _key_type: PhantomData<K>,
+_value_type: PhantomData<V> }`. Before it, no `Hash` was lowered, and
+litemap compiled. `hashed_as` had `PhantomData` writing nothing, as std's
+`impl Hash for PhantomData<T>` does, but asked `StdItem::PhantomData`,
+whose diagnostic item, `PhantomData`, std doesn't have: a `PhantomData` is
+the lang item `phantom_data` alone. So the arm never matched, and the
+marker's `hash` was taken for a crate's, whose dictionary isn't one.
+
+**A `PhantomData` is known by its lang item, as every other module knew
+it already, and its `hash` writes nothing:** `StdItem::PhantomData` is
+gone, and with it serde's arm of it, which was never reached either, a
+skipped field's default being `undefined` already. A slice of items that
+write nothing is no loop, `hashSlice(items, state, H) {}`.
+
+`test/architecture.test.ts`'s "each std item is known by what std gives
+it" holds that each `StdItem` recognition asks of its diagnostic item is
+one std's source gives, or that `is_std_def` knows it otherwise, by its
+lang item or name, as `MaybeUninit`, `OnceCell` and `LazyCell`.
+
+- `test/corpus/hash_phantom_data.rs`: litemap's struct, of unsized `K` and
+  `V`, hashed through `Hash::hash`, as its store is, a slice of markers
+  and a marker with a number, each `finish()` as native Rust's for
+  `wasm32`.
+- Mutations: `phantom-data-hash-unrecognized` (`recognition/types.rs`)
+  and `nothing-written-looped` (`std_types/hash.rs`).
+- The first bad commit, bisected: 88383e402, this decision's.

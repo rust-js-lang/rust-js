@@ -432,4 +432,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^filtered_not_empty.rs$"],
     snapshots: true,
   },
+  {
+    name: "phantom-data-hash-unrecognized",
+    breaks:
+      "a derived `Hash` of a struct holding a `PhantomData<K>`, litemap's `LiteMap`, is refused at `Hash::hash` of the marker, which std's impl writes nothing of (#514)",
+    file: "src/lower/recognition/types.rs",
+    find: "            ty::Adt(..) if self.is_lang_adt(ty, LangItem::PhantomData) => Hashed::Tuple(Vec::new()),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^hash_phantom_data.rs$"],
+  },
 ];

@@ -303,10 +303,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             ty::Adt(adt, _) if adt.is_enum() => Err(self.unsupported(span, &format!("comparing `{ty}`s"))),
             // Another crate's struct orders as its impl says, which may not be
-            // field by field; but a derive's is, as the crate's own (ADR 0555).
+            // field by field; but a derive's is, as the crate's own (ADR 0555),
+            // and a `PhantomData`'s is `Equal`, as a type of one value's (#514).
             ty::Adt(adt, _)
                 if !adt.did().is_local()
-                    && !self.recognition().derives(if partial { partial_ord } else { ord }, ty) =>
+                    && !self.recognition().derives(if partial { partial_ord } else { ord }, ty)
+                    && !self.is_lang_adt(ty, LangItem::PhantomData) =>
             {
                 Err(self.unsupported(span, &format!("comparing `{ty}`s")))
             }
@@ -335,6 +337,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let total = !partial || parts.iter().all(|&(_, _, t)| self.is_total(t));
                 let mut orders = Vec::new();
                 for (x, y, t) in parts {
+                    // A part of one value, a `PhantomData`, is `Equal`: no order.
+                    if self.one_value(t) {
+                        continue;
+                    }
                     orders.push(self.cmp_value(x, y, t, partial, span, out)?);
                 }
                 if orders.is_empty() {

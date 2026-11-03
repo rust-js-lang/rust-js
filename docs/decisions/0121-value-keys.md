@@ -4,6 +4,8 @@ Status: Accepted. Extends [0059](0059-hashmap.md). Amended: an `Option`
 key is found by its value. Amended by
 [1015](1015-what-holds-an-identity-is-never-eq-of-its-contents.md): a
 key holding a type equal only to itself finds it by itself, `$id`.
+Amended 2026-11-03: a key holding a `PhantomData` is found by its value
+(#514).
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -136,3 +138,25 @@ the same.
 - Mutation `option-keys-by-identity` (`std_types/map.rs`).
 - The cost: `new $KeyMap()` for `new Map()` of an `Option` key, which
   makes each key's string, where rare idiomatic code keys by one.
+
+## Amendment: a key holding a `PhantomData` is found by its value (#514)
+
+Case: N ([0262](0262-when-rust-and-js-disagree.md)): a refusal lifted;
+JS finds the keys Rust's `Eq` does.
+
+A key whose derive holds a `PhantomData` field, litemap's `LiteMap<K, V,
+S>` or an id typed by what it identifies, `Id<T> { raw: u32, t:
+PhantomData<T> }`, was refused, as the guide's limitations said: its
+`PhantomData` was a std type whose `PartialEq` isn't derived, so the key
+didn't compare by value. It does: std's `PhantomData` is equal to every
+other, and `Equal` to it, and in JS it's `undefined`, a field left out of
+its object, which `$key` and `$eq` read as nothing.
+
+**A `PhantomData` compares and orders by value** (`compares_by_value`,
+`orders_by_value`), so a key holding one is a `$KeyMap`'s, `$KeySet`'s or
+a B-tree's of its value, as any other derived key.
+
+- `test/corpus/hash_phantom_data.rs`: litemap's struct a `HashSet`'s and
+  a `HashMap`'s key, its `entry`, and a `BTreeSet`'s, as natively.
+- Mutations `phantom-data-key-not-by-value` and
+  `phantom-data-key-not-ordered-by-value` (`std_types/map.rs`).

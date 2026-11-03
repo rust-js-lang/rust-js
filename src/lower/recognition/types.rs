@@ -82,7 +82,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 Hashed::Result(args.type_at(0), args.type_at(1))
             }
             ty::Adt(..) if self.is_lang_adt(ty, LangItem::String) => Hashed::Text,
-            ty::Adt(..) if self.is_std_type(ty, StdItem::PhantomData) => Hashed::Tuple(Vec::new()),
+            ty::Adt(..) if self.is_lang_adt(ty, LangItem::PhantomData) => Hashed::Tuple(Vec::new()),
             _ => return None,
         })
     }

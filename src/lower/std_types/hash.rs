@@ -399,6 +399,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let name = self.fresh("item");
         let mut body = Vec::new();
         self.hash_writes(Expr::var(&name), item, hasher, span, &mut body)?;
+        // Of items that write nothing, a `PhantomData`'s, no loop.
+        if body.is_empty() {
+            return Ok(());
+        }
         out.push(
             StmtKind::ForOf {
                 label: None,

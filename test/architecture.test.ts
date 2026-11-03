@@ -1035,6 +1035,28 @@ test("only recognition spells std's names", () => {
   expect(strays).toEqual([]);
 });
 
+// Each std item recognition knows by its diagnostic item is one std gives,
+// or `is_std_def` knows it otherwise, by its lang item or its name: a
+// `StdItem::PhantomData` of `PhantomData`, a lang item of no diagnostic
+// item, was never matched, and a `PhantomData`'s `Hash` was refused (#514).
+test("each std item is known by what std gives it", () => {
+  const source = read("src/lower/recognition/std_items.rs");
+  const names = source.match(/ fn name\(self\) -> Symbol \{[\s\S]*?\n {4}\}\n/)?.[0] ?? "";
+  const otherwise = source.match(/ fn is_std_def\([\s\S]*?\n {8}_ => tcx\.is_diagnostic_item/)?.[0] ?? "";
+  expect(otherwise).not.toBe("");
+  const sysroot = Bun.spawnSync(["rustc", "--print", "sysroot"], { cwd: root }).stdout.toString().trim();
+  const library = join(sysroot, "lib/rustlib/src/rust/library");
+  const grep = Bun.spawnSync(["grep", "-rhoE", 'rustc_diagnostic_item = "[A-Za-z_]+"', library]);
+  const given = new Set([...grep.stdout.toString().matchAll(/"(\w+)"/g)].map((m) => m[1]));
+  expect(given.has("Vec")).toBe(true);
+  const items = [...names.matchAll(/StdItem::(\w+) => (?:Symbol::intern\("(\w+)"\)|sym::(\w+))/g)];
+  expect(items.length).toBeGreaterThan(50);
+  const unknown = items
+    .filter(([, item, interned, symbol]) => !given.has(interned ?? symbol) && !otherwise.includes(`StdItem::${item}`))
+    .map(([, item]) => item);
+  expect(unknown).toEqual([]);
+});
+
 // An app's Rust is compiled one way, `rust-js build`, its own process
 // beside the app's own dev server or build (ADR 0412): no host's plugin,
 // no config that compiles, no second command that compiles the app, and

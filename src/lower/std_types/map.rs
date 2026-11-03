@@ -955,6 +955,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ if self.js_eq(ty).is_some() => true,
             ty::Tuple(parts) => parts.iter().all(|t| self.orders_by_value(t, seen)),
             ty::Array(item, _) | ty::Slice(item) => self.orders_by_value(*item, seen),
+            // Every `PhantomData` is `Equal` to every other (#514).
+            ty::Adt(..) if self.is_lang_adt(ty, LangItem::PhantomData) => true,
             ty::Adt(_, args) if self.is_lang_adt(ty, LangItem::Option) || ty.is_box() || self.is_vec_like(ty) => {
                 self.orders_by_value(args.type_at(0), seen)
             }
@@ -1180,6 +1182,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ if let Some(eq) = self.js_eq(ty) => eq == crate::lower::std_impls::JsEq::SameValue,
             ty::Tuple(parts) => parts.iter().all(|t| self.compares_by_value(t, seen)),
             ty::Array(item, _) | ty::Slice(item) => self.compares_by_value(*item, seen),
+            // A `PhantomData` is equal to every other, as its `undefined`,
+            // a field left out of its object, is to `$key` (#514).
+            ty::Adt(..) if self.is_lang_adt(ty, LangItem::PhantomData) => true,
             ty::Adt(_, args) if self.is_lang_adt(ty, LangItem::Option) || ty.is_box() || self.is_vec_like(ty) => {
                 self.compares_by_value(args.type_at(0), seen)
             }

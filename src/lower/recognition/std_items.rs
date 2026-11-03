@@ -1177,7 +1177,6 @@ pub(crate) enum StdItem {
     /// `OnceCell` or `OnceLock`, which have no diagnostic items.
     OnceCell,
     Ord,
-    PhantomData,
     Rc,
     RefCell,
     RefCellRef,
@@ -1241,7 +1240,6 @@ impl StdItem {
             StdItem::SliceIndex => Symbol::intern("SliceIndex"),
             StdItem::OnceCell => Symbol::intern("OnceCell"),
             StdItem::Ord => sym::Ord,
-            StdItem::PhantomData => Symbol::intern("PhantomData"),
             StdItem::Rc => sym::Rc,
             StdItem::RefCell => Symbol::intern("RefCell"),
             StdItem::RefCellRef => Symbol::intern("RefCellRef"),

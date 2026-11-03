@@ -337,4 +337,22 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^partial_ord_other_through_refs.rs$"],
   },
+  {
+    name: "phantom-data-order-refused",
+    breaks:
+      "`cmp` of a struct holding a `PhantomData`, litemap's `LiteMap`, is refused, the marker taken for another crate's struct whose `Ord` isn't derived (#514)",
+    file: "src/lower/ordering.rs",
+    find: "                    && !self.is_lang_adt(ty, LangItem::PhantomData) =>\n",
+    replace: " =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_phantom_data.rs$"],
+  },
+  {
+    name: "one-value-part-ordered",
+    breaks: "a struct's `PhantomData` field is ordered too, `$cmpItems(..) || 0 || 0`, where it's always `Equal`",
+    file: "src/lower/ordering.rs",
+    find: "                    if self.one_value(t) {\n                        continue;\n                    }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^hash_phantom_data.rs$"],
+    snapshots: true,
+  },
 ];
