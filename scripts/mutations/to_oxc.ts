@@ -3,6 +3,15 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "import-after-later-code-keeps-blank",
+    breaks:
+      "a `js::import!` written above the `use`s, a blank line above it, prints that blank line between the imports it's after, `import \"./App.css\";` apart from the vite-react example's imports (rd666)",
+    file: "src/to_oxc.rs",
+    find: "        if code_end > top && matches!(body[i], Statement::ImportDeclaration(_)) {\n",
+    replace: "        if false && code_end > top && matches!(body[i], Statement::ImportDeclaration(_)) {\n",
+    tests: ["test/modules.test.ts", "-t", "comments above a js::import"],
+  },
+  {
     name: "module-doc-lost",
     breaks: "a module's `//!` above a trait or a struct, items with no JS, is lost (#486)",
     file: "src/to_oxc.rs",

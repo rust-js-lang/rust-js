@@ -667,6 +667,9 @@ its default is exported as the default alone, as every caller reads it,
 
 `js::import!` with a string imports a module for what it does when it's
 loaded, a stylesheet say. Write it at the top of the module that needs it.
+It's imported after what the module's `use`s import, wherever it's written, and
+the comments above it are above its import
+([ADR 1069](../../decisions/1069-imports-are-statements-of-the-module.md), amended).
 
 ```rust
 // src/lib.rs
@@ -868,7 +871,10 @@ A comment above a `use` is above the import it makes, `// TODO: ..` above
 "react-reconciler/src/ReactCurrentFiber";`, wherever the imports' order
 puts it; one above a `use` that makes none, a type's, is above the next
 import, or with none the module's first statement
-([ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md), amended).
+([ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md), amended);
+one above a `js::import!` is above its import, `// Imports are resolved
+statically ..` above `import "./runtime.js";`
+([ADR 1069](../../decisions/1069-imports-are-statements-of-the-module.md), amended).
 
 A doc comment's JSDoc keeps its lines: `///` lines are `/** one */`, or
 `/**\n * a\n * b\n */` of more, and a `/** */` block is as written, so

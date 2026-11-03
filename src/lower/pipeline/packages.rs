@@ -49,7 +49,10 @@ pub(super) fn of_module(
     }
     let mut packages: Vec<js::Package> = packages.into_values().collect();
     // `js::import!("./App.css");`: `import "./App.css";`, for what a
-    // module does when loaded, as a bundler's CSS does (ADR 0110).
+    // module does when loaded, as a bundler's CSS does (ADR 0110), its
+    // span the `js::import!`, as a `use`'s is its `use`, so the comments
+    // above it are before its import (rd666, ADR 1069, amended); placed
+    // nowhere, so it loads where ADR 1063 orders it, after what's named.
     let mut loaded = HashSet::new();
     for attr in super::super::bindings::marks(tcx, module, "import") {
         let Some(from) = attr.value_str().map(|s| s.to_string()) else {
@@ -64,7 +67,7 @@ pub(super) fn of_module(
                 default: None,
                 named: Vec::new(),
                 namespace: None,
-                span: js::Span::NONE,
+                span: written(Some(attr.span())),
                 named_at: js::Span::NONE,
             });
         }

@@ -135,3 +135,35 @@ the Rust's" (rd637) and "an item between two uses is between their
 imports" (rd652), `test/modules.test.ts`'s re-exports, with the tests ADR
 1063 and its amendments name for the order, now of `entries`; snapshots `imports`, `modules` and `playground`.
 Mutations in `to_oxc/header.ts` and `format.ts`.
+
+## Amendment: a `js::import!`'s comments are above its import (rd666)
+
+React DOM's ReactDOMServerExternalRuntime writes `// Imports are resolved
+statically by the closure compiler in release bundles ..` above `import
+'./fizz-instruction-set/ReactDOMFizzInstructionSetExternalRuntime';`, as
+its port writes it above its `js::import!(..)`. The comment was lost: an
+import for its effect had no span (`Package::span` `NONE`), so no comment
+was before it, and the `js::import!`'s `const _` writes no JS of its own
+that one could be before.
+
+Its span is now its `js::import!`, as a `use`'s import's is its `use`
+(`pipeline/packages.rs`'s `of_module`), the one path a `use`'s comments
+take: `commented_at` attaches the comments above it to its statement,
+and `apart` sets it apart as the Rust has it. It's still placed nowhere
+(`Package::named_at` `NONE`), so it's where rule 1 orders it, after the
+named imports, right after the import before it: where it loads is
+unchanged, wherever it's written. Case N of
+[0262](0262-when-rust-and-js-disagree.md): a comment runs nothing.
+
+One printed after code written after it, the vite-react example's
+`js::import!("./App.css");` above its `use`s and TodoMVC's two, follows
+an import whose `use` is below it: the blank line above it in the Rust
+isn't one between them, so `apart` gives it none (`to_oxc.rs`), and the
+imports stay one block, as rule 4 has it and create-vite's `App.jsx`
+writes them. One in the Rust's order, after the `use` before it, has the
+blank lines the Rust has between them.
+
+Held by `test/modules.test.ts`'s "the comments above a js::import! are
+above its import", with mutations `js-import-comments-lost` and
+`js-import-placed-where-written` in `lower/pipeline/packages.ts`, and
+`import-after-later-code-keeps-blank` in `to_oxc.ts`.
