@@ -268,7 +268,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let items = match ty {
             Some(ty) => {
                 let items = self.iterable_items(items, ty, span, out)?;
-                self.by_its_fold(items, ty)
+                self.by_its_fold(items, ty, false)
             }
             None => items,
         };

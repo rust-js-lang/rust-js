@@ -489,15 +489,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
   {
-    name: "map-extend-steps",
-    breaks:
-      "`extend` of a hash map or set by the crate's iterator steps it by `next`, not by its own `fold`",
-    file: "src/lower/std_types/map.rs",
-    find: "                let items = self.by_its_fold(items, tys[1]);\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
-  },
-  {
     name: "std-enum-key-refused",
     breaks: "a set of std's `Component`s, compared by value, is refused",
     file: "src/lower/std_types/map.rs",

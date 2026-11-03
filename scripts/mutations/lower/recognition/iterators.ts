@@ -675,8 +675,8 @@ export const mutations: Mutation[] = [
     name: "folds-by-own-nth-not-through-map",
     breaks: "a map's fold is its source's",
     file: "src/lower/recognition/iterators.rs",
-    find: "        self.folded_sources(ty).any(|source| self.folds_by_its_own_nth(source))",
-    replace: "        false",
+    find: "                .flat_map(|source| self.nth_folded_sources(source)),\n",
+    replace: "                .flat_map(|_| Vec::<Ty<'tcx>>::new()),\n",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
   {
@@ -684,8 +684,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a skip of a type parameter folds as it may ask the crate's own nth",
     file: "src/lower/recognition/iterators.rs",
-    find: ".is_some_and(|source| self.nths_its_own(source) || matches!(source.kind(), ty::Param(_)))",
-    replace: ".is_some_and(|source| self.nths_its_own(source))",
+    find: ".any(|source| self.nths_its_own(source) || matches!(source.kind(), ty::Param(_)))",
+    replace: ".any(|source| self.nths_its_own(source))",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
   {

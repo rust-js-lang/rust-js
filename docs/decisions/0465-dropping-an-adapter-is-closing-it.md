@@ -804,3 +804,52 @@ mutations `identity-map-of-destructors-dropped` (`lower/mir/iter.ts`),
 (`count.ts`) are caught. The anchors of `identity-map-step`,
 `identity-map-dropped-over-own-steps` and `folded-steps` follow the
 changed lines.
+
+## Amendment: what a consumer by `fold` takes of a `skip` (2026-11-03, #494)
+
+A matrix of the crate's iterators, and of reversed `Vec`s, under `skip`,
+`take` and `chain`, then `last` or a `collect` into a `String`, a
+`HashMap` or a `HashSet`, found five gaps against native Rust:
+- **A `skip` of the crate's iterator with its own `fold`, folded:** std's
+  `Skip::fold` is `nth(n - 1)` and then the source's `fold`. `$skipping`
+  had a `fold` only for a source with its own `nth`, so the crate's `fold`
+  was never asked, and what the skip passed was never dropped. It now has
+  one for a source whose `fold` is its own too, giving `unwind` on (#423).
+  `$closing`'s `nth` gives the items' drop to the crate's iterator's
+  default `nth` (#289's note).
+- **`last` of items with a destructor is `$lastDropping` alone,** never
+  `$folded` first, and never `$last`. `$lastDropping` asks a `skip`'s `nth`,
+  a `chain`'s sides' `last` and the crate's own `last` itself. `$folded`
+  folded a chain's sides as one. `$last` of a chain of the crate's
+  iterators with their own `last` dropped neither side's `a` where `b` had
+  one. `$closing` now gives the crate's own `last` on (`ownLast`).
+- **A map's `extend` and `collect` fold what has its own `fold`**
+  (`$extendMap`), as std's `extend` is `for_each`. So a value it replaces
+  is dropped as each comes, before what the take's source holds at its
+  end, and a `skip`'s first step is `nth(n - 1)`. A map's `extend` no
+  longer wraps what it's given in `$folded`, which `$extendMap` would
+  fold itself. Without its own `fold`, `for..of` steps it, which closes
+  it where a step throws, as the `try` it replaces did.
+- **What asks an `nth` of items with a destructor is folded by a
+  collection's `collect`** (`by_its_fold`, `nth_folded_sources`). A
+  reversed `Vec`'s `nth_back` drops a slice front to back, so a skip's
+  `nth(n - 1)` and a step by `next`'s `nth(n)` drop in different orders.
+- **A `String` collected of `String`s or `Cow<str>`s takes its first item
+  by `next`,** then extends with the rest, as std's `FromIterator` does:
+  `$folded(it, true)`. Of `char`s, `&str`s and `Box<str>`s, it folds them
+  all.
+Results change, so Rust's behavior is kept (ADR 0262, C). Two more gaps
+the matrix found predate this change and are filed on their own: a
+`String` collect of `Cow<str>`s prints `[object Object]` (#495), and a
+`skip`'s `last` in generic code never asks the crate's own `last` (#496).
+`skip_folded_by_consumers` holds the shapes against native Rust. The
+mutations `skipping-fold-of-own-fold-by-next`, `skipping-fold-unwind-lost`
+(`skipping.ts`), `closing-own-last-unforwarded`,
+`closing-nth-drop-unpassed` (`closing.ts`), `extend-map-by-next`
+(`map_ops.ts`), `by-fold-ignores-dropping-nth`,
+`string-of-strings-folded-whole` (`lower/mir/iter/collect.ts`),
+`folded-first-by-fold` (`folded.ts`), `own-last-of-destructors-undropped`
+and `dropping-last-folded-first` (`lower/mir/iter/closing.ts`) are caught.
+`map-extend-steps` and `extend-map-unclosed-on-throw` are gone with the
+code they held. `skipping-nth-only-own` and `folded-fold-unexposed` now
+name the case that reaches their code.

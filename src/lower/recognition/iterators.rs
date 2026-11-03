@@ -484,25 +484,33 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// Whether std's `fold` of a `ty`, an iterator, asks an `nth` that
-    /// reaches the crate's own (#182), or may, of a type parameter: a
-    /// `skip`'s, its source's `nth(n - 1)`, and a `step_by`'s, each step its
-    /// source's `nth`; and each adapter's whose `fold` is its source's, of
-    /// its sources.
+    /// reaches the crate's own (#182), or may, of a type parameter.
     pub(in crate::lower) fn folds_by_its_own_nth(&self, ty: Ty<'tcx>) -> bool {
+        self.nth_folded_sources(ty)
+            .into_iter()
+            .any(|source| self.nths_its_own(source) || matches!(source.kind(), ty::Param(_)))
+    }
+
+    /// What std's `fold` of a `ty`, an iterator, asks an `nth` of: a
+    /// `skip`'s source, its `nth(n - 1)`, and a `step_by`'s, each step its
+    /// `nth`; and those of each adapter's whose `fold` is its source's.
+    pub(in crate::lower) fn nth_folded_sources(&self, ty: Ty<'tcx>) -> Vec<Ty<'tcx>> {
         let ty = self.reveal(ty);
+        let mut sources = Vec::new();
         if let ty::Adt(adt, args) = ty.kind()
             && matches!(
                 std_path(self.tcx, adt.did()).as_str(),
                 "std::iter::Skip" | "std::iter::StepBy"
             )
-            && args
-                .types()
-                .next()
-                .is_some_and(|source| self.nths_its_own(source) || matches!(source.kind(), ty::Param(_)))
+            && let Some(source) = args.types().next()
         {
-            return true;
+            sources.push(source);
         }
-        self.folded_sources(ty).any(|source| self.folds_by_its_own_nth(source))
+        sources.extend(
+            self.folded_sources(ty)
+                .flat_map(|source| self.nth_folded_sources(source)),
+        );
+        sources
     }
 
     /// Whether what std asks of an iterator of type `ty` reaches the crate's

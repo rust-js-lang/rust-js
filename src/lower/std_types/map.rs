@@ -644,9 +644,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::TreeAppend => map_ops("$treeAppend", vec![arg(), arg(), Expr::bool(set)]),
             MapOp::Extend => {
                 let (m, items) = (arg(), arg());
-                // By `for_each`, std's, so through the crate's own `fold`.
+                // By `for_each`, std's, so through the crate's own `fold`:
+                // `$extendMap`'s, by what it's given's own (#494).
                 let items = self.iterable_items(items, tys[1], span, out)?;
-                let items = self.by_its_fold(items, tys[1]);
                 let list = vec![m, items, Expr::bool(set)];
                 map_ops("$extendMap", with_drops(list, vec![values_drop, keys_drop]))
             }

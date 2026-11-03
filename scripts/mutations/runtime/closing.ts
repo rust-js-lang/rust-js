@@ -146,4 +146,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_folds_unwind.rs$"],
   },
+  {
+    name: "closing-own-last-unforwarded",
+    breaks: "what holds the crate's iterator with its own `last` doesn't say so, so a `skip`'s `last` of it folds it (#494)",
+    file: "src/runtime/closing.js",
+    find: "  if (it.ownLast) {\n    closing.last = () => {\n",
+    replace: "  if (false) {\n    closing.last = () => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
+  },
+  {
+    name: "closing-nth-drop-unpassed",
+    breaks: "what holds the crate's iterator asks its `nth` without the items' drop, so std's default `nth` of it, by a `skip`'s `fold`, drops none it passes (#494)",
+    file: "src/runtime/closing.js",
+    find: "closing.nth = (k, dropItem) => done(it.nth(k, dropItem));",
+    replace: "closing.nth = (k) => done(it.nth(k));",
+    tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
+  },
 ];

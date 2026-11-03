@@ -187,29 +187,32 @@ function $isDisjoint(a, b) {
 // one, the one given where an equal's there by `dropKey` (ADR 0467).
 //
 // Where stepping `items` throws, a panic in a closure, what's left of them
-// closed, as Rust drops the iterator `extend` took as it unwinds (#423).
+// closed, as Rust drops the iterator `extend` took as it unwinds (#423): by
+// its own `fold`, which closes it, or by `for..of`, which does. Of an
+// iterator with a `fold` of its own, an adapter's, the crate's or
+// `$folded`'s, by it, as std's `extend` is its `for_each`: so what it
+// replaces is dropped as each comes, before what its source drops at its
+// end, and a `skip`'s first step is its `nth(n - 1)` (#494).
 function $extendMap(m, items, set, drop, dropKey) {
-  const it = items[Symbol.iterator]();
-  try {
-    for (let step = it.next(); !step.done; step = it.next()) {
-      const item = step.value;
-      if (set) {
-        if (m.has(item)) dropKey?.(item);
-        else m.add(item);
-        continue;
-      }
-      const replaced = m.has(item[0]);
-      const old = m.get(item[0]);
-      m.set(item[0], item[1]);
-      if (replaced) {
-        dropKey?.(item[0]);
-        drop?.(old);
-      }
+  const put = (item) => {
+    if (set) {
+      if (m.has(item)) dropKey?.(item);
+      else m.add(item);
+      return;
     }
-  } catch (error) {
-    it.return?.();
-    throw error;
+    const replaced = m.has(item[0]);
+    const old = m.get(item[0]);
+    m.set(item[0], item[1]);
+    if (replaced) {
+      dropKey?.(item[0]);
+      drop?.(old);
+    }
+  };
+  if (Object.hasOwn(items, "fold")) {
+    items.fold(undefined, (_, item) => put(item));
+    return m;
   }
+  for (const item of items) put(item);
   return m;
 }
 

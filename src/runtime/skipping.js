@@ -62,9 +62,11 @@ function $skipping(iter, n, drop) {
   }
   // Std's `Skip::fold` and `try_fold`: its source's `nth(n - 1)`, where
   // that drops what it passes over itself, then its source's; its `fold`,
-  // consuming it, closed at its end (#250).
-  if (iter.ownNth) {
-    skipping.fold = (init, f) => {
+  // consuming it, closed at its end (#250). Its `fold` so of a source whose
+  // `fold` is its own too, the crate's, which a consumer by `fold` reaches
+  // through it, after its `nth(n - 1)` drops what it skips (#494).
+  if (iter.ownNth || Object.hasOwn(iter, "fold")) {
+    skipping.fold = (init, f, unwind) => {
       if (skipping.n > 0) {
         const k = skipping.n;
         skipping.n = 0;
@@ -75,10 +77,12 @@ function $skipping(iter, n, drop) {
         }
         drop?.(step.value);
       }
-      const folded = skipping.iter.fold(init, f);
+      const folded = skipping.iter.fold(init, f, unwind);
       skipping.return();
       return folded;
     };
+  }
+  if (iter.ownNth) {
     // And its `try_fold`, the same first step, then its source's.
     skipping.tryFold = (init, f, broke) => {
       if (skipping.n > 0) {

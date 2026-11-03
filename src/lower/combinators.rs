@@ -1221,7 +1221,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<(Expr, Option<Expr>)> {
         let items = self.iterable_items(items, iterable, span, out)?;
         let items = match self.collects_by_fold(into) {
-            true => self.by_its_fold(items, iterable),
+            true => self.by_its_fold(items, iterable, false),
             false => items,
         };
         // Of an array's items from its start, `$iter(xs)` made here or a

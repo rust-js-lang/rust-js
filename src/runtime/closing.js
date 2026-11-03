@@ -52,8 +52,9 @@ function $closing(it, drop, slices = true) {
   }
   // Its `nth`, its iterator's, the crate's own where it writes one, or a
   // compiled std struct's, which drops what it passes itself, `ownNth`, as
-  // a `step_by` over it asks it (#261).
-  if (it.nth !== undefined) closing.nth = (k) => done(it.nth(k));
+  // a `step_by` over it asks it (#261), given the items' drop, which std's
+  // default `nth` of the crate's iterator drops what it passes by (#494).
+  if (it.nth !== undefined) closing.nth = (k, dropItem) => done(it.nth(k, dropItem));
   if (it.ownNth) closing.ownNth = true;
   // Closed though `f` throws, a panic, as Rust's `fold` drops what's left
   // of what it took as it unwinds (#422); done with, not closed, where its
@@ -79,6 +80,15 @@ function $closing(it, drop, slices = true) {
     close();
     return folded;
   };
+  // Its `last`, the crate's own, which takes it and drops what it has left
+  // itself, as a `skip`'s `last` asks it (#494).
+  if (it.ownLast) {
+    closing.last = () => {
+      closed = true;
+      return it.last();
+    };
+    closing.ownLast = true;
+  }
   // Its `nth_back` and `rfold`, its iterator's, the crate's own where it
   // writes them, done with after its `rfold` as after its `fold` (#220).
   if (it.nthBack !== undefined) closing.nthBack = (k) => done(it.nthBack(k));

@@ -379,17 +379,15 @@ function main() {
   set = new Set();
   $extendMap(
     set,
-    $folded(
-      $iterator(
-        up(),
-        upIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        upIterator_fold,
-        upIterator_nth,
-      ),
+    $iterator(
+      up(),
+      upIterator_next,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      upIterator_fold,
+      upIterator_nth,
     ),
     true,
   );
@@ -413,17 +411,15 @@ function main() {
   const tree = new $BTreeSet();
   $extendMap(
     tree,
-    $folded(
-      $iterator(
-        up(),
-        upIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        upIterator_fold,
-        upIterator_nth,
-      ),
+    $iterator(
+      up(),
+      upIterator_next,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      upIterator_fold,
+      upIterator_nth,
     ),
     true,
   );
@@ -431,36 +427,32 @@ function main() {
   map = new Map();
   $extendMap(
     map,
-    $folded(
-      $iterator(
-        up(),
-        upIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        upIterator_fold,
-        upIterator_nth,
-      ).map((x) => [x, x]),
-    ),
+    $iterator(
+      up(),
+      upIterator_next,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      upIterator_fold,
+      upIterator_nth,
+    ).map((x) => [x, x]),
     false,
   );
   console.log(`extend map ${map.size}`);
   const sorted = new $BTreeMap();
   $extendMap(
     sorted,
-    $folded(
-      $iterator(
-        up(),
-        upIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        upIterator_fold,
-        upIterator_nth,
-      ).map((x) => [x, x]),
-    ),
+    $iterator(
+      up(),
+      upIterator_next,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      upIterator_fold,
+      upIterator_nth,
+    ).map((x) => [x, x]),
     false,
   );
   console.log(

@@ -326,8 +326,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `String` extended by a range of `char`s or an `Option` takes `Array.from` of the range's object or of the `Option`'s value, not their items as `iterable_items` steps them",
     file: "src/lower/std_types/text.rs",
-    find: "                let items = self.iterable_items(items, ty, span, out)?;\n                self.by_its_fold(items, ty)\n",
-    replace: "                self.by_its_fold(items, ty)\n",
+    find: "                let items = self.iterable_items(items, ty, span, out)?;\n                self.by_its_fold(items, ty, false)\n",
+    replace: "                self.by_its_fold(items, ty, false)\n",
     tests: ["test/corpus.test.ts", "-t", "^text_extended.rs$"],
   },
   {
@@ -409,7 +409,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`extend` of a `String` by the crate's iterator steps it by `next`, not by its own `fold`",
     file: "src/lower/std_types/text.rs",
-    find: "                self.by_its_fold(items, ty)\n",
+    find: "                self.by_its_fold(items, ty, false)\n",
     replace: "                items\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },

@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/skipping.js",
     find: "(skipping.iter.ownNth || Object.hasOwn(skipping.iter, \"tryFold\"))",
     replace: "skipping.iter.ownNth",
-    tests: ["test/corpus.test.ts", "-t", "^step_by_compiled_source_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
   },
   {
     name: "skipping-advance-by-stepped",
@@ -86,8 +86,8 @@ export const mutations: Mutation[] = [
     name: "skipping-fold-by-next",
     breaks: "`rev().skip(2).fold(..)` of a `Vec` asks its source's `nth(2)`, one slice of both, where std's `Skip::fold` asks `nth(1)` and drops the one it gives after (#250)",
     file: "src/runtime/skipping.js",
-    find: "    skipping.fold = (init, f) => {",
-    replace: "    skipping.foldUnused = (init, f) => {",
+    find: "    skipping.fold = (init, f, unwind) => {",
+    replace: "    skipping.foldUnused = (init, f, unwind) => {",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
   },
   {
@@ -145,5 +145,21 @@ export const mutations: Mutation[] = [
     find: "skipping.iter.nth(k - 1, drop);\n      if (step.done) return undefined;",
     replace: "skipping.iter.nth(k - 1);\n      if (step.done) return undefined;",
     tests: ["test/corpus.test.ts", "-t", "^skip_of_short_take_drops.rs$"],
+  },
+  {
+    name: "skipping-fold-of-own-fold-by-next",
+    breaks: "a `skip` of the crate's iterator with its own `fold` is folded by `next`, so `Folds(..).skip(2).last()` never asks its `fold` and drops none it skips (#494)",
+    file: "src/runtime/skipping.js",
+    find: "  if (iter.ownNth || Object.hasOwn(iter, \"fold\")) {\n",
+    replace: "  if (iter.ownNth) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
+  },
+  {
+    name: "skipping-fold-unwind-lost",
+    breaks: "a `skip`'s `fold` gives its source's no `unwind`, so `inspect(..).skip(1).fold(..)` whose stage panics never drops the accumulator (#423, #494)",
+    file: "src/runtime/skipping.js",
+    find: "      const folded = skipping.iter.fold(init, f, unwind);\n",
+    replace: "      const folded = skipping.iter.fold(init, f);\n",
+    tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
   },
 ];

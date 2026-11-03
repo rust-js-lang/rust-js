@@ -672,7 +672,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`extend` of a `LinkedList` by the crate's iterator steps it by `next`, not by its own `fold`",
     file: "src/lower/combinators.rs",
-    find: "            true => self.by_its_fold(items, iterable),\n",
+    find: "            true => self.by_its_fold(items, iterable, false),\n",
     replace: "            true => items,\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },

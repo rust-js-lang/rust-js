@@ -531,4 +531,20 @@ export const mutations: Mutation[] = [
       "^generic_folds_unwind.rs$|^panic_mid_fold_drops with",
     ],
   },
+  {
+    name: "by-fold-ignores-dropping-nth",
+    breaks: "a collect into a hash map of a `rev().take(3).skip(2)` of items with a destructor steps it by `next`, whose `nth(2)` drops a slice front to back, where std's fold drops each from the back (#494)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            || recognition.nth_folded_sources(iter_ty).into_iter().any(drops)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
+  },
+  {
+    name: "string-of-strings-folded-whole",
+    breaks: "a `String` collected of `String`s folds its first item too, so a `skip`'s first step asks the crate's `nth(n - 1)`, not `nth(n)` (#494)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "            true if first_by_next => Expr::call_helper(\"$folded\", vec![it, Expr::bool(true)]),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
+  },
 ];

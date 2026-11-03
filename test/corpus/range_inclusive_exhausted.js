@@ -176,7 +176,10 @@ function main() {
   );
   const t = { start: 1, end: 3 };
   const text = Array.from(
-    $folded($lent($iterator(t, $rangeInclusiveNext)).map((x) => String(x))),
+    $folded(
+      $lent($iterator(t, $rangeInclusiveNext)).map((x) => String(x)),
+      true,
+    ),
   ).join("");
   console.log(
     `${text} ${(t.exhausted ?? t).start & 255}..=${(t.exhausted ?? t).end & 255}${t.exhausted !== undefined || t.start > 255 || t.end < 0 ? " (exhausted)" : ""}`,

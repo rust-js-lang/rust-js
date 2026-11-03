@@ -7,7 +7,6 @@ import {
   $dropEach,
   $enumerate,
   $foldOf,
-  $folded,
   $held,
   $iter,
   $iterator,
@@ -122,47 +121,8 @@ function main() {
   const value$1 = nth != null ? map(nth) : undefined;
   console.log(`nth ${value$1 == null ? "None" : `Some(${value$1})`}`);
   let last = $lastDropping(
-    $folded(
-      $skipping(
-        $enumerate(
-          $closing(
-            $iterator(
-              [ds()],
-              ownIterator_next,
-              false,
-              undefined,
-              undefined,
-              undefined,
-              undefined,
-              ownIterator_nth,
-            ),
-            (it) => {
-              for (const item of it.of[0]) {
-                dDrop_drop(item);
-              }
-            },
-          ).take(2),
-        ),
-        0,
-        (value) => {
-          dDrop_drop(value[1]);
-        },
-      ),
-    ),
-    (value) => {
-      dDrop_drop(value[1]);
-    },
-  );
-  function map$1([, d]) {
-    const result = d[0];
-    dDrop_drop(d);
-    return result;
-  }
-  const value$2 = last != null ? map$1(last) : undefined;
-  console.log(`last ${value$2 == null ? "None" : `Some(${value$2})`}`);
-  last = $lastDropping(
-    $folded(
-      $skipping(
+    $skipping(
+      $enumerate(
         $closing(
           $iterator(
             [ds()],
@@ -179,10 +139,45 @@ function main() {
               dDrop_drop(item);
             }
           },
-        ).take(3),
-        0,
-        dDrop_drop,
+        ).take(2),
       ),
+      0,
+      (value) => {
+        dDrop_drop(value[1]);
+      },
+    ),
+    (value) => {
+      dDrop_drop(value[1]);
+    },
+  );
+  function map$1([, d]) {
+    const result = d[0];
+    dDrop_drop(d);
+    return result;
+  }
+  const value$2 = last != null ? map$1(last) : undefined;
+  console.log(`last ${value$2 == null ? "None" : `Some(${value$2})`}`);
+  last = $lastDropping(
+    $skipping(
+      $closing(
+        $iterator(
+          [ds()],
+          ownIterator_next,
+          false,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          ownIterator_nth,
+        ),
+        (it) => {
+          for (const item of it.of[0]) {
+            dDrop_drop(item);
+          }
+        },
+      ).take(3),
+      0,
+      dDrop_drop,
     ),
     dDrop_drop,
   );

@@ -311,13 +311,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         made: &mut Vec<Stmt>,
     ) -> R<Expr> {
         // Or of std's struct, of items with nothing to drop, by its own
-        // `last`, its compiled `fold`'s, a zip's `SpecFold` (#380).
+        // `last`, its compiled `fold`'s, a zip's `SpecFold` (#380). Of items
+        // with a destructor, `$lastDropping`, which asks the crate's own
+        // `last` too, and drops a chain's `a` where `b` has one (#494).
         let drops_none = item.is_none_or(|item| self.drops(item) == crate::lower::drops::Drops::Nothing);
-        if self.recognition().lasts_its_own(iter_ty) || drops_none && self.compiled_struct_at(iter_ty, span) {
+        if drops_none && (self.recognition().lasts_its_own(iter_ty) || self.compiled_struct_at(iter_ty, span)) {
             let boxed = item.is_some_and(|item| self.boxed_payload(item));
             return Ok(Expr::call_helper(if boxed { "$lastSome" } else { "$last" }, vec![it]));
         }
-        let it = self.by_its_fold(it, iter_ty);
+        // Of items with a destructor, `$lastDropping`, which asks what std's
+        // `last` asks itself, a `skip`'s `nth`, a `chain`'s sides' `last`,
+        // the crate's own `last` or `fold`, each dropped as the next comes:
+        // listed first by its fold, `$folded`, a chain's sides' were folded
+        // as one (#494).
+        let it = match drops_none {
+            true => self.by_its_fold(it, iter_ty, false),
+            false => it,
+        };
         self.last_value(it, item, span, made)
     }
 

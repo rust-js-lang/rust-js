@@ -7,9 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`last()` of std's struct, a zip's, steps it by `next()`, not by its `fold` as std's default `last` does: its closure runs once more (#380)",
     file: "src/lower/mir/iter/closing.rs",
-    find: "|| drops_none && self.compiled_struct_at(iter_ty, span) {",
-    replace:
-      "|| false && drops_none && self.compiled_struct_at(iter_ty, span) {",
+    find: "|| self.compiled_struct_at(iter_ty, span)) {",
+    replace: "|| false && self.compiled_struct_at(iter_ty, span)) {",
     tests: ["test/corpus.test.ts", "-t", "^zip_fold_steps_the_shorter.rs$"],
   },
   {
@@ -259,5 +258,23 @@ export const mutations: Mutation[] = [
     find: "            false => self.closing(it, iter_ty, span),\n        }\n    }\n",
     replace: "            false => Ok(it),\n        }\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_iteration_drops.rs$"],
+  },
+  {
+    name: "own-last-of-destructors-undropped",
+    breaks:
+      "`last()` of items with a destructor through a `chain` of the crate's iterators with their own `last` is the chain's own `last`, which drops neither side's `a` where `b` has one (#494)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "if drops_none && (self.recognition().lasts_its_own(iter_ty) || self.compiled_struct_at(iter_ty, span)) {",
+    replace: "if self.recognition().lasts_its_own(iter_ty) || drops_none && self.compiled_struct_at(iter_ty, span) {",
+    tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
+  },
+  {
+    name: "dropping-last-folded-first",
+    breaks:
+      "`last()` of items with a destructor is of `$folded`, which folds a chain's sides as one and passes the `last` std asks of each (#494)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "            true => self.by_its_fold(it, iter_ty, false),\n            false => it,\n",
+    replace: "            _ => self.by_its_fold(it, iter_ty, false),\n",
+    tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },
 ];

@@ -2327,8 +2327,9 @@ export function $closing(it, drop, slices = true) {
   }
   // Its `nth`, its iterator's, the crate's own where it writes one, or a
   // compiled std struct's, which drops what it passes itself, `ownNth`, as
-  // a `step_by` over it asks it (#261).
-  if (it.nth !== undefined) closing.nth = (k) => done(it.nth(k));
+  // a `step_by` over it asks it (#261), given the items' drop, which std's
+  // default `nth` of the crate's iterator drops what it passes by (#494).
+  if (it.nth !== undefined) closing.nth = (k, dropItem) => done(it.nth(k, dropItem));
   if (it.ownNth) closing.ownNth = true;
   // Closed though `f` throws, a panic, as Rust's `fold` drops what's left
   // of what it took as it unwinds (#422); done with, not closed, where its
@@ -2354,6 +2355,15 @@ export function $closing(it, drop, slices = true) {
     close();
     return folded;
   };
+  // Its `last`, the crate's own, which takes it and drops what it has left
+  // itself, as a `skip`'s `last` asks it (#494).
+  if (it.ownLast) {
+    closing.last = () => {
+      closed = true;
+      return it.last();
+    };
+    closing.ownLast = true;
+  }
   // Its `nth_back` and `rfold`, its iterator's, the crate's own where it
   // writes them, done with after its `rfold` as after its `fold` (#220).
   if (it.nthBack !== undefined) closing.nthBack = (k) => done(it.nthBack(k));
@@ -2451,9 +2461,11 @@ export function $skipping(iter, n, drop) {
   }
   // Std's `Skip::fold` and `try_fold`: its source's `nth(n - 1)`, where
   // that drops what it passes over itself, then its source's; its `fold`,
-  // consuming it, closed at its end (#250).
-  if (iter.ownNth) {
-    skipping.fold = (init, f) => {
+  // consuming it, closed at its end (#250). Its `fold` so of a source whose
+  // `fold` is its own too, the crate's, which a consumer by `fold` reaches
+  // through it, after its `nth(n - 1)` drops what it skips (#494).
+  if (iter.ownNth || Object.hasOwn(iter, "fold")) {
+    skipping.fold = (init, f, unwind) => {
       if (skipping.n > 0) {
         const k = skipping.n;
         skipping.n = 0;
@@ -2464,10 +2476,12 @@ export function $skipping(iter, n, drop) {
         }
         drop?.(step.value);
       }
-      const folded = skipping.iter.fold(init, f);
+      const folded = skipping.iter.fold(init, f, unwind);
       skipping.return();
       return folded;
     };
+  }
+  if (iter.ownNth) {
     // And its `try_fold`, the same first step, then its source's.
     skipping.tryFold = (init, f, broke) => {
       if (skipping.n > 0) {
@@ -5974,29 +5988,32 @@ export function $isDisjoint(a, b) {
 // one, the one given where an equal's there by `dropKey` (ADR 0467).
 //
 // Where stepping `items` throws, a panic in a closure, what's left of them
-// closed, as Rust drops the iterator `extend` took as it unwinds (#423).
+// closed, as Rust drops the iterator `extend` took as it unwinds (#423): by
+// its own `fold`, which closes it, or by `for..of`, which does. Of an
+// iterator with a `fold` of its own, an adapter's, the crate's or
+// `$folded`'s, by it, as std's `extend` is its `for_each`: so what it
+// replaces is dropped as each comes, before what its source drops at its
+// end, and a `skip`'s first step is its `nth(n - 1)` (#494).
 export function $extendMap(m, items, set, drop, dropKey) {
-  const it = items[Symbol.iterator]();
-  try {
-    for (let step = it.next(); !step.done; step = it.next()) {
-      const item = step.value;
-      if (set) {
-        if (m.has(item)) dropKey?.(item);
-        else m.add(item);
-        continue;
-      }
-      const replaced = m.has(item[0]);
-      const old = m.get(item[0]);
-      m.set(item[0], item[1]);
-      if (replaced) {
-        dropKey?.(item[0]);
-        drop?.(old);
-      }
+  const put = (item) => {
+    if (set) {
+      if (m.has(item)) dropKey?.(item);
+      else m.add(item);
+      return;
     }
-  } catch (error) {
-    it.return?.();
-    throw error;
+    const replaced = m.has(item[0]);
+    const old = m.get(item[0]);
+    m.set(item[0], item[1]);
+    if (replaced) {
+      dropKey?.(item[0]);
+      drop?.(old);
+    }
+  };
+  if (Object.hasOwn(items, "fold")) {
+    items.fold(undefined, (_, item) => put(item));
+    return m;
   }
+  for (const item of items) put(item);
   return m;
 }
 
@@ -13065,19 +13082,25 @@ export function $lent(it) {
 // std's fold would step (#182). Listed when first stepped; a consumer that
 // folds it, `$lastDropping`, folds `it` itself, so what that consumer drops
 // as each comes is dropped before what `it` drops at its end, as std's
-// fold of it is (#493).
-export function $folded(it) {
+// fold of it is (#493). `firstByNext`, of a consumer that takes its first
+// item by `next` and folds the rest, a `String` collected of `String`s,
+// whose first step is a `skip`'s `nth(n)`, not its fold's `nth(n - 1)`
+// (#494).
+export function $folded(it, firstByNext = false) {
   if (it.fold === undefined) return it;
+  const foldOf = (init, f, unwind) => {
+    if (!firstByNext) return it.fold(init, f, unwind);
+    const first = it.next();
+    return first.done ? init : it.fold(f(init, first.value), f, unwind);
+  };
   let items;
   const listed = () =>
-    (items ??= it
-      .fold([], (list, item) => {
-        list.push(item);
-        return list;
-      })
-      .values());
+    (items ??= foldOf([], (list, item) => {
+      list.push(item);
+      return list;
+    }).values());
   const folded = Iterator.from({ next: () => listed().next() });
-  folded.fold = (init, f, unwind) => (items === undefined ? it.fold(init, f, unwind) : listed().reduce(f, init));
+  folded.fold = (init, f, unwind) => (items === undefined ? foldOf(init, f, unwind) : listed().reduce(f, init));
   return folded;
 }
 

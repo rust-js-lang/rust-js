@@ -140,18 +140,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `it`, an iterator of type `iter_ty`, as a consumer std routes through
     /// `fold` takes it: where that reaches the crate's own `fold` (#162), or
-    /// asks its `nth`, as a `skip`'s and a `step_by`'s does (#182), or
-    /// steps a lent inclusive range (#414), `$folded(it)`, its items as that
-    /// gives them; else `it`.
-    pub(in crate::lower) fn by_its_fold(&self, it: Expr, iter_ty: Ty<'tcx>) -> Expr {
+    /// asks its `nth`, as a `skip`'s and a `step_by`'s does (#182), or steps
+    /// a lent inclusive range (#414), or asks an `nth` of items with a
+    /// destructor, which a reversed `Vec` drops as a slice, so its
+    /// `nth(n - 1)` and a step by `next`'s `nth(n)` drop them in another
+    /// order (#494), `$folded(it)`, its items as that gives them; else `it`.
+    /// `first_by_next`, of a consumer that takes its first item by `next`
+    /// and folds the rest, a `String` collected of `String`s, `$folded(it,
+    /// true)` (#494).
+    pub(in crate::lower) fn by_its_fold(&self, it: Expr, iter_ty: Ty<'tcx>, first_by_next: bool) -> Expr {
         let recognition = self.recognition();
+        let drops = |source| {
+            self.iterator_item(source)
+                .is_some_and(|item| self.drops(item) != crate::lower::drops::Drops::Nothing)
+        };
         match recognition.folds_its_own(iter_ty)
             || recognition.folds_by_its_own_nth(iter_ty)
             || self.steps_lent_inclusive(iter_ty)
+            || recognition.nth_folded_sources(iter_ty).into_iter().any(drops)
         {
+            true if first_by_next => Expr::call_helper("$folded", vec![it, Expr::bool(true)]),
             true => Expr::call_helper("$folded", vec![it]),
             false => it,
         }
+    }
+
+    /// Whether std's `collect` into an `output` of `item`s takes its first
+    /// item by `next`, then extends with the rest: a `String`'s of `String`s
+    /// or of `Cow<str>`s; of `char`s, `&str`s and `Box<str>`s, it extends
+    /// with them all.
+    fn takes_first_by_next(&self, output: Ty<'tcx>, item: Ty<'tcx>) -> bool {
+        self.is_lang_adt(output, LangItem::String)
+            && (self.is_lang_adt(item, LangItem::String) || self.recognition().is_cow(item))
     }
 
     /// `collect()` of `it`, an iterator of type `iter_ty`, into `output` of
@@ -344,7 +364,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let method = |name: &str, it: Expr, args: Vec<Expr>| Expr::call(Expr::member(it, name), args);
         let it = match iter_ty {
-            Some(iter_ty) if self.collects_by_fold(output) => self.by_its_fold(it, iter_ty),
+            Some(iter_ty) if self.collects_by_fold(output) => {
+                let first_by_next = item.is_some_and(|item| self.takes_first_by_next(output, item));
+                self.by_its_fold(it, iter_ty, first_by_next)
+            }
             _ => it,
         };
         let items = |it: Expr| match iter_ty {
