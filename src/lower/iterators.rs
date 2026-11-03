@@ -355,12 +355,34 @@ pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, p
         && tcx.trait_impl_of_assoc(id).is_none()
         && {
             let sig = tcx.fn_sig(id).instantiate_identity().skip_binder();
-            has(sig.output())
-                || sig.inputs().iter().any(|&input| {
-                    !matches!(input.peel_refs().kind(), ty::Param(p) if p.index == param.index) && has(input)
-                })
+            let itself = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Param(p) if p.index == param.index);
+            // A `&mut I` and another value of it, an `I` or a `&mut I`,
+            // which its body may write there, `*it = next`, `mem::swap(a,
+            // b)`: its caller's own, one representation, written in place
+            // (#537).
+            let lent = |ty: Ty<'tcx>| matches!(*ty.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if itself(inner));
+            let inputs = sig.inputs();
+            let given = inputs.iter().filter(|&&input| itself(input) || lent(input));
+            let meet = inputs.iter().any(|&input| lent(input)) && given.count() > 1;
+            let inside = inputs.iter().any(|&input| !itself(input.peel_refs()) && has(input));
+            has(sig.output()) || meet || inside
         };
     held || signature || read
+}
+
+/// Whether `callee`'s type parameter `param` is bound by `Iterator`, a
+/// trait that extends it, or `IntoIterator`, as its bounds elaborate them:
+/// what's given for it may be stepped, a JS iterator where it's not given
+/// as it is (ADR 0061). One bound by neither holds what it's given, as
+/// `mem::replace`'s `T` and `Vec::push`'s do (#537).
+pub(in crate::lower) fn bound_as_iterator(tcx: ty::TyCtxt<'_>, callee: DefId, param: ty::ParamTy) -> bool {
+    let (iterator, into_iterator) = (std_item(tcx, StdItem::Iterator), std_item(tcx, StdItem::IntoIterator));
+    (tcx.param_env(callee).caller_bounds().iter())
+        .filter_map(|clause| clause.as_trait_clause())
+        .any(|bound| {
+            matches!(bound.self_ty().skip_binder().kind(), ty::Param(p) if p.index == param.index)
+                && (bound.def_id() == iterator || bound.def_id() == into_iterator)
+        })
 }
 
 /// The value `(p) => p === value` or `(p) => value === p` looks for, if

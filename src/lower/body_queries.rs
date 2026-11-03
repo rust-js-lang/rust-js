@@ -911,18 +911,18 @@ fn in_place_adapters<'tcx>(
             return false;
         }
         let std = super::recognition::is_std_crate(tcx, callee) && !super::recognition::is_compiled_std(tcx, callee);
-        // A trait's method called on it but an iterator trait's, which the
-        // recognizers step it by, `next_back()` and `len()` too: `clone()`
-        // or `fmt`, its own compiled impl's, of its struct.
-        let on_it_by_its_impl = tcx
-            .trait_of_assoc(callee)
-            .is_some_and(|tr| !iterator_traits.contains(&tr) && !super::recognition::is_iterator_extension(tcx, tr));
+        // What it's given for, a type parameter bound by `Iterator` or
+        // `IntoIterator`, which steps it, `filter`'s `Self`, `zip`'s `U`,
+        // `next_back()`'s and `len()`'s too: not one that holds it,
+        // `mem::replace`'s `T`, `Vec::push`'s, `clone()`'s or `fmt`'s
+        // `Self`, its own compiled impl's, of its struct (#537).
         let inputs = tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
-        let input = inputs.get(index).map(|input| input.peel_refs().kind());
-        let its_self = matches!(input, Some(ty::Param(param)) if super::recognition::is_trait_self(*param));
-        let given_js = callee.is_local()
-            && matches!(input, Some(ty::Param(param)) if !super::iterators::given_as_it_is(tcx, callee, *param));
-        std && !(its_self && on_it_by_its_impl) || given_js
+        let input = inputs.get(index).map(|input| *input.peel_refs().kind());
+        let Some(ty::Param(param)) = input else {
+            return false;
+        };
+        super::iterators::bound_as_iterator(tcx, callee, param)
+            && (std || callee.is_local() && !super::iterators::given_as_it_is(tcx, callee, param))
     };
     let (mut found, mut steps) = (HashSet::new(), HashSet::new());
     // What a closure gives that's stepped where it's given, `flat_map`'s:

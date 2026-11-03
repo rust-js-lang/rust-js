@@ -90,3 +90,14 @@ const w = $iterator({ inner: { start: 0, end: 4 } }, (iterator) =>
 [ADR 0690](0690-an-iterator-given-as-it-is-folds-by-its-own-fold.md): the
 dictionary carries the crate's own `fold` and `nth`, and a value given
 as it is is stepped by `$given(it, IIterator)`, which reads them.
+
+## Amendment: a `&mut I` and another `I` are given as they are (#537)
+
+A function whose signature has a `&mut I` and another `I` or `&mut I`,
+`replace_in<I: Iterator>(it: &mut I, next: I)` or `swap_in(a: &mut I, b:
+&mut I)`, may write one where its caller holds the other, so `I` is given
+as it is, as one it gives back is: its caller's own value, the same
+representation as the place it's written to, and `*it = next` is
+`$assign(it, next)` (ADR 0481), where of a JS iterator it was refused.
+One with a single `&mut I`, or `I`s alone, stays a JS iterator (ADR
+0061). See [ADR 0871's amendment](0871-rev-is-stds.md#amendment-what-holds-a-value-doesnt-step-it-so-one-type-is-one-representation-537).

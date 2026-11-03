@@ -729,6 +729,50 @@ export function pairs(a, b) {
 }
 ```
 
+An iterator you keep, in a variable, a field or a `Vec`, or give to code
+that holds it, `mem::replace`, `Vec::push` or a generic function's `&mut I`
+and `I`, is std's own struct for its type, `iterator_map(..)`, so every
+value of that type is the same JS and one can be written where another
+was. Only one stepped where it's made, as above, is JS's own lazy iterator
+([ADR 0871](../../decisions/0871-rev-is-stds.md#amendment-what-holds-a-value-doesnt-step-it-so-one-type-is-one-representation-537)):
+
+```rust
+fn tens(x: u32) -> u32 {
+    x * 10
+}
+
+pub fn refill<I: Iterator<Item = u32>>(it: &mut I, next: I) {
+    *it = next;
+}
+
+pub fn left_after_refill() -> usize {
+    let mut it = (0..3).map(tens);
+    it.next();
+    refill(&mut it, (5..7).map(tens));
+    it.len()
+}
+```
+
+```js
+import { iterator_map, mapExactSizeIterator_len } from "@rust-js/std/iter.js";
+import { $assign, $next, $rangeLen, $rangeNext } from "@rust-js/runtime";
+
+function tens(x) {
+  return (x * 10) >>> 0;
+}
+
+export function refill(it, next) {
+  $assign(it, next);
+}
+
+export function leftAfterRefill() {
+  const it = iterator_map({ start: 0, end: 3 }, tens, { next: $rangeNext });
+  $next(it);
+  refill(it, iterator_map({ start: 5, end: 7 }, tens, { next: $rangeNext }));
+  return mapExactSizeIterator_len(it, { len: $rangeLen });
+}
+```
+
 Your own iterators, the Rust for a generator function, are in
 [Advanced: iterators and generators](advanced.md#iterators-and-generators)
 ([ADR 0036](../../decisions/0036-iterators-and-sorting.md), [ADR 0139](../../decisions/0139-lazy-chains.md)).

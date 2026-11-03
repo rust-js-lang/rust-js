@@ -6,6 +6,9 @@ function $apart(value) {
   if (Array.isArray(value)) return value.slice();
   if (value instanceof Map) return new Map(value);
   if (value instanceof Set) return new Set(value);
+  // std's compiled struct, whose methods step itself: another of its
+  // fields (#537).
+  if (value?.$copy !== undefined) return value.$copy();
   // An instance's prototype kept, a hasher's methods.
   if (value !== null && typeof value === "object") return Object.assign(Object.create(Object.getPrototypeOf(value)), value);
   return value;

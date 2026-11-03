@@ -7763,6 +7763,10 @@ export function $assign(target, value) {
   } else if (target instanceof Set) {
     target.clear();
     for (const item of value) target.add(item);
+  } else if (target.$become !== undefined) {
+    // std's compiled struct, whose methods step itself: its fields
+    // `value`'s (#537).
+    target.$become(value);
   } else {
     for (const key of Object.keys(target)) if (!(key in value)) delete target[key];
     Object.assign(target, value);
@@ -10846,6 +10850,21 @@ export function $stdIterator(struct, steps) {
     // Its compiled `try_rfold`, which `rfind` asks (ADR 0930).
     if (tryRfold !== undefined) it.tryRfold = (init, f, broke, unwind) => tryRfold(it, init, f, broke, unwind);
   };
+  // Its fields, the struct's, are what a move copies and what a write of
+  // the whole replaces; its methods step `it` itself (#537). Moved out
+  // apart, `$apart`'s: another of a copy of its fields, stepped as it is.
+  // Written whole, `$assign`'s: its fields `value`'s, in place, and closed
+  // where `value` is, as Rust's `*it = value` drops what it held, closing
+  // it, and moves in `value`, which drops its own later. Its back and its
+  // length are each use site's, `$knowing`'s, as they were.
+  const fields = Object.keys(struct);
+  const of = (value) => Object.fromEntries(fields.map((field) => [field, value[field]]));
+  const closed = (target, value) => {
+    target.$closed = value.$closed;
+    return target;
+  };
+  it.$copy = () => closed($stdIterator(of(it), steps), it);
+  it.$become = (value) => closed(Object.assign(it, of(value)), value);
   return it;
 }
 
@@ -12839,6 +12858,9 @@ export function $apart(value) {
   if (Array.isArray(value)) return value.slice();
   if (value instanceof Map) return new Map(value);
   if (value instanceof Set) return new Set(value);
+  // std's compiled struct, whose methods step itself: another of its
+  // fields (#537).
+  if (value?.$copy !== undefined) return value.$copy();
   // An instance's prototype kept, a hasher's methods.
   if (value !== null && typeof value === "object") return Object.assign(Object.create(Object.getPrototypeOf(value)), value);
   return value;

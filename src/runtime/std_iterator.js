@@ -81,5 +81,20 @@ function $stdIterator(struct, steps) {
     // Its compiled `try_rfold`, which `rfind` asks (ADR 0930).
     if (tryRfold !== undefined) it.tryRfold = (init, f, broke, unwind) => tryRfold(it, init, f, broke, unwind);
   };
+  // Its fields, the struct's, are what a move copies and what a write of
+  // the whole replaces; its methods step `it` itself (#537). Moved out
+  // apart, `$apart`'s: another of a copy of its fields, stepped as it is.
+  // Written whole, `$assign`'s: its fields `value`'s, in place, and closed
+  // where `value` is, as Rust's `*it = value` drops what it held, closing
+  // it, and moves in `value`, which drops its own later. Its back and its
+  // length are each use site's, `$knowing`'s, as they were.
+  const fields = Object.keys(struct);
+  const of = (value) => Object.fromEntries(fields.map((field) => [field, value[field]]));
+  const closed = (target, value) => {
+    target.$closed = value.$closed;
+    return target;
+  };
+  it.$copy = () => closed($stdIterator(of(it), steps), it);
+  it.$become = (value) => closed(Object.assign(it, of(value)), value);
   return it;
 }

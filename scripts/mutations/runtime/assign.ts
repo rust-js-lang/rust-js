@@ -18,4 +18,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","generic_mut_map"],
   },
+  {
+    name: "assign-std-struct-methods",
+    breaks:
+      "`$assign` of std's compiled struct copies the value's methods, which step the value: what it knew of its back is lost (#537)",
+    file: "src/runtime/assign.js",
+    find: "    target.$become(value);\n",
+    replace: "    for (const key of Object.keys(target)) if (!(key in value)) delete target[key];\n    Object.assign(target, value);\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_values_meet.rs$"],
+  },
 ];

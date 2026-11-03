@@ -15,6 +15,10 @@ function $assign(target, value) {
   } else if (target instanceof Set) {
     target.clear();
     for (const item of value) target.add(item);
+  } else if (target.$become !== undefined) {
+    // std's compiled struct, whose methods step itself: its fields
+    // `value`'s (#537).
+    target.$become(value);
   } else {
     for (const key of Object.keys(target)) if (!(key in value)) delete target[key];
     Object.assign(target, value);

@@ -357,3 +357,63 @@ Tested by `flatten_of_iterators_from_back.rs` against native Rust: an
 iterators from both ends, and a `flat_map` reversed. The readability
 baseline is blessed with it, `$iter` 76.3 to 77.1, the case's own slices'
 iterators; no other program's JS changed.
+
+## Amendment: what holds a value doesn't step it, so one type is one representation (#537)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): results change.
+Two values of one type, `Map<Range<u32>, fn(u32) -> u32>`, were two
+representations: a variable's, held, std's struct, `iterator_map({ start,
+end }, f, ..)`, and one made where it's given to `mem::replace`,
+`Vec::push`, `Box::new` or the crate's `fn set_get<T>(place: &mut T,
+value: T)`, the recognizers', `$mapEnds(..)` or `$lazyRange(5, 7).map(f)`,
+as every std function not compiled, and every type parameter of the
+crate's not given as it is, counted as stepping what it's given. Where they
+met, code compiled for one read the other: `it.size_hint()` gave `(0,
+None)` where Rust gives `(3, Some(3))`, `len()` threw `reading 'start'`,
+and a `rev()` of it `it.back is not a function`. It never worked: before
+`Map` was std's struct, these were refused.
+
+- **A value given for a type parameter is stepped there only where the
+  parameter is bound by `Iterator`, a trait that extends it, or
+  `IntoIterator`** (`iterators::bound_as_iterator`, of the callee's
+  elaborated bounds): `filter`'s `Self`, `zip`'s `U`, `next_back()`'s
+  `Self`. One bound by neither holds it, `mem::replace`'s `T`,
+  `Vec::push`'s, `Box::new`'s, `clone()`'s and `fmt`'s `Self`, so what's
+  made there is std's struct, as a `let` holds it. That one question
+  replaces the exception of `clone()` and `fmt` (`on_it_by_its_impl`) and
+  `mem::drop`'s, which closes std's struct as it closes a JS iterator.
+- **A generic function's `&mut I` and another `I` or `&mut I` meet**:
+  `fn replace_in<I: Iterator>(it: &mut I, next: I) { *it = next }`
+  writes one where its caller holds the other, so `I` is given as it is
+  (ADR 0411's `given_as_it_is`, amended there), and `*it = next`, refused
+  of a JS iterator, is `$assign(it, next)` (ADR 0481).
+- **std's compiled struct moves as a value of its fields**: its methods
+  step the struct itself, so `$apart`'s copy of it, what `mem::replace`
+  and `mem::take` move out, is another of its fields with its steps
+  (`$copy`), and `$assign`'s write of the whole is its fields the
+  value's, in place (`$become`), closed where the value is: Rust's `*it =
+  next` drops what `it` held, closing it, and moves in `next`, which drops
+  its own later. Its back and length stay each use site's, `$knowing`'s.
+  A shallow copy kept the methods: what was moved out stepped what was
+  written there, `old.collect()` `[]` where Rust gives `[10, 20]`; and a
+  write copied the value's, so a `rev()` after asked the value, not the
+  struct, for its back, and threw.
+
+```js
+// `let mut it = (0..3).map(tens); replace_in(&mut it, (5..7).map(tens))`
+const it = iterator_map({ start: 0, end: 3 }, tens, { next: $rangeNext });
+replaceIn(it, iterator_map({ start: 5, end: 7 }, tens, { next: $rangeNext }));
+```
+
+Tested by `iterator_values_meet.rs` against native Rust: the issue's
+generic write, `mem::replace` and `mem::swap` in place and in generic
+code, a `T` bound by nothing, a `Vec` pushed one, a struct's field
+refilled, of `map`, `filter`, `chain`, `rev`, `take` and `skip`; and
+`iterator_values_meet_drops.rs`, their items' drops. Two cases' JS
+changed: a `Box<dyn Iterator>`'s `map()` and a `take()` given to the
+crate's `wrap<I>(it: I) -> Holder<I>` are std's structs,
+`iterator_map($iter(v), f)` where it was `v.values().map(f)`. Mutations
+`rev-own-impl-in-place`, `rev-given-js-held`, `extension-step-held` and
+`given-as-it-is-not-in-input` follow the code; `holder-param-steps-js`,
+`lent-param-meets-unseen`, `apart-std-struct-shares-steps`,
+`assign-std-struct-methods` and `std-iterator-copy-opened` are new.

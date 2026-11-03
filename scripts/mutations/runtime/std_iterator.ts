@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "    it.last = () => step(steps.last(it));\n",
     tests: ["test/corpus.test.ts", "-t", "^last_takes_its_source.rs$"],
   },
+  {
+    name: "std-iterator-copy-opened",
+    breaks: "a copy of std's compiled struct moved out isn't closed where it was, so a `Rev` closed before drops what it holds again (#537)",
+    file: "src/runtime/std_iterator.js",
+    find: "    target.$closed = value.$closed;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_values_meet(_drops)?.rs$"],
+  },
 ];

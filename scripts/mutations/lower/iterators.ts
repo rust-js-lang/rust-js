@@ -96,8 +96,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`second(Wrap(7..10))`'s range, in what's given, is stepped as a JS iterator",
     file: "src/lower/iterators.rs",
-    find: "                    !matches!(input.peel_refs().kind(), ty::Param(p) if p.index == param.index) && has(input)\n",
-    replace: "                    false\n",
+    find: "            let inside = inputs.iter().any(|&input| !itself(input.peel_refs()) && has(input));\n",
+    replace: "            let inside = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
   {
@@ -332,6 +332,29 @@ export const mutations: Mutation[] = [
       "test/corpus.test.ts",
       "-t",
       "^step_by_of_a_call_holds_its_items.rs$",
+    ],
+  },
+  {
+    name: "lent-param-meets-unseen",
+    breaks:
+      "a generic function's `&mut I` and another `I`, `replace_in(it: &mut I, next: I)`'s, leave `I` a JS iterator, so `*it = next` is refused (#537)",
+    file: "src/lower/iterators.rs",
+    find: "&& given.count() > 1;",
+    replace: "&& given.count() > 2;",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_values_meet.rs$"],
+  },
+  {
+    name: "extension-step-held",
+    breaks:
+      "`v.iter().map(f).rfold(..)` takes the `map()` as std's struct, which `DoubleEndedIterator`'s methods steps where it's made",
+    file: "src/lower/iterators.rs",
+    find: "    (tcx.param_env(callee).caller_bounds().iter())\n        .filter_map(|clause| clause.as_trait_clause())\n",
+    replace: "    (tcx.clauses_of(callee).instantiate_identity(tcx).into_iter())\n        .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())\n",
+    snapshots: true,
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(extension_map_rfold|generic_map_folded_and_rfolded|map_stepped_from_its_back|exact_size_len).rs$",
     ],
   },
 ];

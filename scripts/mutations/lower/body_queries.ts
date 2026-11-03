@@ -191,17 +191,26 @@ export const mutations: Mutation[] = [
     breaks:
       "`rev().next_back()`, `Rev`'s own compiled impl's, is given what the recognizers make of it",
     file: "src/lower/body_queries.rs",
-    find: "        std && !(its_self && on_it_by_its_impl) || given_js\n",
-    replace: "        std || given_js\n",
-    tests: ["test/corpus.test.ts", "-t", "^std_rev.rs$"],
+    find: "        super::iterators::bound_as_iterator(tcx, callee, param)\n            && (std ||",
+    replace: "        (std || super::iterators::bound_as_iterator(tcx, callee, param))\n            && (std ||",
+    tests: ["test/corpus.test.ts", "-t", "^(std_rev|iterator_values_meet).rs$"],
+  },
+  {
+    name: "holder-param-steps-js",
+    breaks:
+      "a `map()` given to the crate's `T` bound by nothing, `set_get(&mut it, (5..8).map(f))`'s, is made a JS iterator, which the caller's std struct then reads as its own (#537)",
+    file: "src/lower/body_queries.rs",
+    find: "        super::iterators::bound_as_iterator(tcx, callee, param)\n            && (std ||",
+    replace: "        (callee.is_local() || super::iterators::bound_as_iterator(tcx, callee, param))\n            && (std ||",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_values_meet.rs$"],
   },
   {
     name: "rev-given-js-held",
     breaks:
       "a `rev()` given to the crate's generic function as a JS iterator is std's struct",
     file: "src/lower/body_queries.rs",
-    find: "        let given_js = callee.is_local()\n",
-    replace: "        let given_js = false && callee.is_local()\n",
+    find: "            && (std || callee.is_local() && !super::iterators::given_as_it_is(tcx, callee, param))\n",
+    replace: "            && (std || false && callee.is_local() && !super::iterators::given_as_it_is(tcx, callee, param))\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^iterables_given_to_generics.rs$"],
   },
@@ -249,20 +258,6 @@ export const mutations: Mutation[] = [
     ],
   },
 
-  {
-    name: "extension-step-held",
-    breaks:
-      "`v.iter().map(f).rfold(..)` takes the `map()` as std's struct, which `DoubleEndedIterator`'s methods steps where it's made",
-    file: "src/lower/body_queries.rs",
-    find: " && !super::recognition::is_iterator_extension(tcx, tr));\n",
-    replace: ");\n",
-    snapshots: true,
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(extension_map_rfold|generic_map_folded_and_rfolded|map_stepped_from_its_back|exact_size_len).rs$",
-    ],
-  },
   {
     name: "local-adapter-made-of-held",
     breaks:
