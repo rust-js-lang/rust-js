@@ -348,8 +348,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`v.iter().map(f).rfold(..)` takes the `map()` as std's struct, which `DoubleEndedIterator`'s methods steps where it's made",
     file: "src/lower/iterators.rs",
-    find: "    (tcx.param_env(callee).caller_bounds().iter())\n        .filter_map(|clause| clause.as_trait_clause())\n",
-    replace: "    (tcx.clauses_of(callee).instantiate_identity(tcx).into_iter())\n        .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())\n",
+    find: "        .filter_map(|clause| clause.as_trait_clause())\n",
+    replace:
+      "        .filter_map(|clause| clause.as_trait_clause())\n        .filter(|_| !tcx.trait_of_assoc(callee).is_some_and(|tr| super::recognition::is_iterator_extension(tcx, tr)))\n",
     snapshots: true,
     tests: [
       "test/corpus.test.ts",
