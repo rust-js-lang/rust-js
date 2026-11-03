@@ -202,7 +202,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`mem::replace(h.get(), v)` calls `h.get()` twice, once for its read and once for its write, printing what it prints twice",
     file: "src/lower/mir/entries.rs",
-    find: "                    Value::Ref(match e.has_effects_before_assigned() {\n",
+    find: "                    Value::Ref(match reached_by_a_call(&e) {\n",
     replace: "                    Value::Ref(match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_cell_moved_out.rs$"],
   },
@@ -214,6 +214,16 @@ export const mutations: Mutation[] = [
     find: "cx.is_unknown(pointee) && !cx.borrows_own_place(def_id, span, i)",
     replace: "cx.is_unknown(pointee)",
     tests: ["test/corpus.test.ts", "-t", "^drop_guard_of_a_closure.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "checked-index-named-for-replace",
+    breaks:
+      "`mem::take(&mut links[0].to)` names the item, `const item$1 = $index(links, 0);`, where `$index` reaches the same place each time it's read",
+    file: "src/lower/mir/entries.rs",
+    find: "        js::ExprKind::Call(callee, args) if callee.helper_name().is_some_and(crate::runtime::names_a_place) => {\n            args.iter().any(reached_by_a_call)\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^weak_uncounted_uses.rs$"],
     snapshots: true,
   },
 ];

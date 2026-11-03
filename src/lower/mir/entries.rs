@@ -289,12 +289,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Value::Ref(Expr::held(cell))
                 }
                 // A `&mut` MIR gives of a place, a variable's or a field's.
-                // What holds it named once where reaching it does something,
+                // What holds it named once where reaching it calls something,
                 // `h.get().value`'s `h.get()`, which its read and its write
-                // would each call.
+                // would each call; not a checked index, `$index(v, 0)`, the
+                // same place each time.
                 Value::Ref(e) => {
                     made_here |= i == 0;
-                    Value::Ref(match e.has_effects_before_assigned() {
+                    Value::Ref(match reached_by_a_call(&e) {
                         true => self.fixed_place_of(e, out),
                         false => e,
                     })
@@ -395,5 +396,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             None => old,
         }))
+    }
+}
+
+/// Whether reaching `place` calls something, what holds it, `h.get()` of
+/// `h.get().value`: not a helper that names a place, `$index(v, i)` (ADR
+/// 0056), which reaches the same one each time.
+fn reached_by_a_call(place: &Expr) -> bool {
+    match &place.kind {
+        js::ExprKind::Member(object, _) => reached_by_a_call(object),
+        js::ExprKind::Index(object, index) => reached_by_a_call(object) || index.has_effects(),
+        js::ExprKind::Call(callee, args) if callee.helper_name().is_some_and(crate::runtime::names_a_place) => {
+            args.iter().any(reached_by_a_call)
+        }
+        _ => place.has_effects(),
     }
 }

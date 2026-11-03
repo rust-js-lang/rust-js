@@ -70,4 +70,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^replace_held_given_iterator.rs$"],
     snapshots: true,
   },
+  {
+    name: "indexed-item-moved-out-apart",
+    breaks:
+      "the scheduler's `mem::replace(&mut heap[0], last)` of a generic `Vec<T>` copies the old item, `$apart(heap[0])`, where a write of the item rebinds it (#527)",
+    file: "src/lower/mir/jsx_props.rs",
+    find: "            thir::ExprKind::Deref { arg } => self.indexes_items(arg),\n",
+    replace: "            thir::ExprKind::Deref { arg } => self.indexes_items(arg) && false,\n",
+    tests: ["test/port-scheduler.test.ts"],
+    snapshots: true,
+  },
 ];

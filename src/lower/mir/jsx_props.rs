@@ -200,12 +200,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether the call's `i`th argument borrows a place of the body's own,
-    /// a variable, a field or an item, `&mut self.0`: not what a reference
-    /// is to, `&mut *r`, nor a reference given as it is, `r` or `h.get()`,
-    /// which generic code's may be a box, an in-place cell too (#527).
+    /// a variable, a field or an item, `&mut self.0`, an array's or a
+    /// `Vec`'s, `&mut heap[0]`: not what a reference is to, `&mut *r`, nor a
+    /// reference given as it is, `r` or `h.get()`, which generic code's may
+    /// be a box, an in-place cell too (#527).
     pub(super) fn borrows_own_place(&self, def_id: rustc_span::def_id::DefId, span: Span, i: usize) -> bool {
-        self.borrowed_place(def_id, span, i)
-            .is_some_and(|place| !matches!(place, thir::ExprKind::Deref { .. }))
+        self.borrowed_place(def_id, span, i).is_some_and(|place| match *place {
+            thir::ExprKind::Deref { arg } => self.indexes_items(arg),
+            _ => true,
+        })
+    }
+
+    /// Whether `e` is an `IndexMut` call of a slice, an array or a `Vec`,
+    /// whose `&mut` is to one of its items, a place of the array JS has.
+    fn indexes_items(&self, e: thir::ExprId) -> bool {
+        let thir::ExprKind::Call { fun, ref args, .. } = self.frame.thir[self.strip(e)].kind else {
+            return false;
+        };
+        let Some((id, _)) = crate::lower::fn_def(self.frame.thir[fun].ty) else {
+            return false;
+        };
+        let indexed = args.first().map(|&a| self.frame.thir[a].ty.peel_refs());
+        (self.tcx.trait_of_assoc(id)).is_some_and(|tr| self.tcx.is_lang_item(tr, LangItem::IndexMut))
+            && indexed.is_some_and(|ty| ty.is_slice() || ty.is_array() || self.is_vec_like(ty))
     }
 
     /// What the call's `i`th argument borrows by `&mut`, as THIR has it.

@@ -200,7 +200,8 @@ now Rust's.
   which may be a box, an in-place cell too: `const old = $apart(r.value);
   r.value = v;`. Never in place, and read as before: a number's or a
   string's cell, a `RefCell`, a thread-local's cell, a place of the body's
-  own, `&mut self.0` (`borrows_own_place`), and an object's `&mut`,
+  own, `&mut self.0` or a `Vec`'s item, `&mut heap[0]` (`borrows_own_place`),
+  and an object's `&mut`,
   `$take(r, v)` (ADR 0147), whose copy `$apart` now makes too.
 - **`$cellSwap` moves each out apart** before either is written, as either
   may be in place.
@@ -227,5 +228,6 @@ now Rust's.
   `set`, and a `get()` that prints, reached once. Mutations
   `moved-out-shared`, `moved-out-of-object-shared`,
   `generic-moved-out-shared`, `cell-swap-shared`, `from-mut-not-whole`,
-  `replaced-holder-reached-twice`, `own-place-moved-out-apart`,
+  `replaced-holder-reached-twice`, `checked-index-named-for-replace`,
+  `own-place-moved-out-apart`, `indexed-item-moved-out-apart`,
   `ref-cell-moved-out-apart`, `unread-apart-kept` and `apart-acts`.

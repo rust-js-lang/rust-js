@@ -397,9 +397,9 @@ export const mutations: Mutation[] = [
     breaks:
       "an old value a `replace` gave and nothing reads stays, `const old = task.callback;`",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                Some(StmtKind::Assign(target, _)) if target.kind == value.kind)\n",
+    find: "                Some(StmtKind::Assign(target, _)) if target.kind == read.kind)\n",
     replace:
-      "                Some(StmtKind::Assign(target, _)) if false && target.kind == value.kind)\n",
+      "                Some(StmtKind::Assign(target, _)) if false && target.kind == read.kind)\n",
     tests: ["test/lowering-cells.test.ts", "-t", "written by replace and take"],
   },
   {
