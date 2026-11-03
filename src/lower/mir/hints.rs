@@ -81,6 +81,11 @@ pub(super) struct Written {
     /// passes that read `breaks` take a `match`'s as MIR made it, `if`s of
     /// its arms that one test may join (`do_while_advances.rs`).
     pub arm_breaks: Vec<(js::Span, js::Span)>,
+    /// And each that is, or ends a block with, a `continue`: where its
+    /// `match` is written, where the arm is, its pattern and what it does,
+    /// and where the `continue` is, which `continues written` gives MIR's
+    /// jump of it (#518).
+    pub arm_continues: Vec<(js::Span, js::Span, js::Span)>,
     /// Each loop, whether as a `while`, and its label.
     pub loops: Vec<(js::Span, bool, Option<String>)>,
     /// Each block the program labeled, `'desc: { .. }` (`labeled_blocks`).
@@ -407,7 +412,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let break_of = |kind: &thir::ExprKind<'tcx>| matches!(kind, thir::ExprKind::Break { label, .. } if !labeled.contains(&label.local_id));
         let breaks = self.jump_ifs(&break_of, false);
         let else_breaks = self.jump_ifs(&break_of, true);
-        let arm_breaks = self.jump_arms(&break_of);
+        let arm_breaks = (self.jump_arms(&break_of, false).into_iter())
+            .map(|(_, test, at)| (test, at))
+            .collect();
+        let arm_continues = self.jump_arms(&continue_of, true);
         // Where each loop is written, and whether as a `while`.
         // Each loop's label the program wrote, `'rows`, by the loop.
         let labels: std::collections::HashMap<thir::ExprId, String> = (self.frame.thir.exprs.iter())
@@ -560,6 +568,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             else_continues,
             else_breaks,
             arm_breaks,
+            arm_continues,
             loops,
             blocks: self.labeled_blocks(),
             switches,
@@ -1134,8 +1143,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `if` of either branch, and where that jump is (`jump_ifs`; React
     /// DOM's hideOrUnhideDehydratedBoundary, rd165b). Of a `break`: a
     /// `continue` an arm ends with where the turn ends anyway, tidy takes
-    /// (ADR 0753).
-    fn jump_arms(&self, jump: &dyn Fn(&thir::ExprKind<'tcx>) -> bool) -> Vec<(js::Span, js::Span)> {
+    /// (ADR 0753). Of `own`, where the jumping arm itself is (#518); and
+    /// first, where the `match` is.
+    fn jump_arms(
+        &self,
+        jump: &dyn Fn(&thir::ExprKind<'tcx>) -> bool,
+        own: bool,
+    ) -> Vec<(js::Span, js::Span, js::Span)> {
         let stripped = |mut e: thir::ExprId| {
             while let thir::ExprKind::Scope { value: inner, .. } | thir::ExprKind::NeverToAny { source: inner } =
                 self.frame.thir[e].kind
@@ -1150,10 +1164,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ref arms,
                     match_source: rustc_hir::MatchSource::Normal,
                     ..
-                } => Some(arms),
+                } => Some((self.js_span(e.span), arms)),
                 _ => None,
             })
-            .flat_map(|arms| {
+            .flat_map(|(matched, arms)| {
                 let jumps = arms.iter().filter_map(move |&arm| {
                     let mut only = stripped(self.frame.thir[arm].body);
                     if let thir::ExprKind::Block { block } = self.frame.thir[only].kind {
@@ -1167,13 +1181,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             _ => return None,
                         });
                     }
-                    jump(&self.frame.thir[only].kind).then(|| self.js_span(self.frame.thir[only].span))
+                    let written = self.js_span(self.frame.thir[arm].span);
+                    jump(&self.frame.thir[only].kind).then(|| (written, self.js_span(self.frame.thir[only].span)))
                 });
                 // Each arm's pattern, which the `if` MIR made of it tests.
                 let tests: Vec<js::Span> = (arms.iter())
                     .map(|&arm| self.js_span(self.frame.thir[arm].pattern.span))
                     .collect();
-                jumps.flat_map(move |at| tests.clone().into_iter().map(move |test| (test, at)))
+                jumps.flat_map(move |(written, at)| match own {
+                    true => vec![(matched, written, at)],
+                    false => tests.iter().map(|&test| (matched, test, at)).collect(),
+                })
             })
             .collect()
     }

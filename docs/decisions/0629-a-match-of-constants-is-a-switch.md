@@ -1029,3 +1029,15 @@ Rust, `lowering-labels.test.ts`'s "a label the program wrote is the
 switch's whose inner switch leaves it", and the mutations
 `case-ending-breaks-kept`, `case-ending-written-breaks-dropped` and
 `empty-last-case-kept` (`lower/mir/tidy/switches.ts`).
+
+## Amendment: an arm's `continue` at the turn's end stays `break;` (2026-11-03, the user's decision, #518)
+
+ADR 0684's #518 amendment keeps an arm's `continue` where more of the turn
+follows the `match` (`case "SCRIPT": continue;`). Of a `match` that ends
+the turn, the user's 2026-10-29 decision to keep each jump the program
+wrote, though redundant, could have kept it too: `case 0: continue;`.
+**The user decided to keep `case 0: break;`** for such an arm, as this
+ADR wrote it: the `switch` goes on to the turn's end anyway, and `break;`
+is what JS writes there. `switch_tail_continues.rs` and
+`switch_arms_continue.rs`'s `at_the_end` hold it, with the mutation
+`arm-continues-written-at-the-turns-end`.

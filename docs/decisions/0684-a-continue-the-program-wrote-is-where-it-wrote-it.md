@@ -10,7 +10,8 @@ Amended below: a loop's `break` the program wrote is where it wrote it too
 (#298); and a `for…in`'s guards, with their comments, as React's
 hydration diffs write them; and (2026-10-29, the user's decision) each
 `continue` and loop `break` the program wrote is kept, though the turn or
-the function ends there anyway.
+the function ends there anyway; and (#518) an arm's `continue` before more
+of the turn is where it's written.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. How the JS reads, and
 a comment, which nothing runs.
@@ -442,3 +443,77 @@ continue` first, middle and last, `'outer` loops, `while let`, arms of
 drops), and its mutation `switch-tail-continue-kept` survived. The
 removal and the mutation are gone; `switch_tail_continues.rs` prints
 `case 0: break;` as before, of `tail continues`.
+
+## Amendment: an arm's `continue` before more of the turn (#518, 2026-11-03)
+
+"Not covered yet" above: a `match` of strings in a loop whose arms
+`continue`, with more of the turn after it, printed an `if` chain whose
+rest was an `else`, where the same `match` of `return`s outside a loop is
+a `switch`:
+
+```js
+if (name === "HTML" || name === "HEAD" || name === "BODY") {
+  out.push(1);
+} else if (name !== "SCRIPT" && name !== "STYLE") {
+  ..
+  out.push(0);
+}
+```
+
+MIR jumps from each such arm to a block whose end is the loop's
+`continue`, `bb24: { if (name === "A") { out.push(1); break bb24; } .. }
+continue bb2;`, and the other arms go on to the rest of the turn inside
+the block. Tidy read `break bb24` as the end of a branch: each arm's `if`
+an `else`, the rest in it, and the `continue`s, which then end the turn,
+dropped (`drop_tail`, `tail continues`). A `match` of numbers, MIR's
+`switchInt`, printed its `switch` already.
+
+**An arm's `continue` before more of the turn is the program's, where it's
+written**:
+
+- `hints::jump_arms` says, of each arm that is or ends a block with a
+  `continue`, where its `match` and the arm are and where the `continue`
+  is (`Written::arm_continues`).
+- `continues written`, which gave a written `if`'s `continue` past MIR's
+  block back (ADR 0702), gives each such arm's: the `break` of the block
+  followed by the `continue` that ends a list after what the arm does, or
+  the `then` of the `if` of its pattern, `if (name === "C") { break bb24;
+  }`, is that `continue`, at the place it's written. An or-pattern's arm,
+  whose alternatives MIR joins in a block first, `bb19: { if (name ===
+  "HTML") { break bb19; } .. } out.push(1); break bb31;`, is found by what
+  it does; one that does nothing but `continue`, by its block's test.
+- Only of a `match` before something its block holds, which the arm
+  skips. One that ends the turn skips nothing, and its arms' `continue`s
+  are MIR's, as before: `case 0: break;` (ADR 0629,
+  `switch_tail_continues.rs`).
+- A `continue` with a place is the program's: `drop_tail` keeps it as it
+  keeps a `break` the program wrote of its labeled block (ADR 0790), and
+  `tail continues` doesn't keep what follows its `if` an `else`, as of a
+  written `if`'s (`ends_going_on`).
+
+Then `switches` makes the `switch` it makes of `return`s: `case "SCRIPT":
+case "STYLE": continue;`, what follows the `match` after it.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The jump goes where
+MIR's did.
+
+The port: React DOM's clearContainerSparingly printed its `switch`
+already, through its guarded `"LINK"` arm (rd184, ADR 0636); no other
+arm of the port that `continue`s is of a `match` of strings.
+
+Not covered: an arm's `continue` at the turn's end, which the user's
+2026-10-29 decision would keep (`case 0: continue;`), is still `case 0:
+break;` (ADR 0629), left for the user.
+
+Corpus `guarded_arm_falls_to_tail.rs` reads as written too: `owned` is
+the `switch` its comment says, `case "C": if (keep) { continue; } //
+falls through default: ..`, and `kinds` keeps its `"A"` arm's `continue`,
+the rest after it, not an `else`.
+
+Held by corpus `switch_arms_continue.rs` against native Rust (a `while
+let`'s or-patterns, a `for`'s arms, one at the turn's end, one of
+numbers), and mutations `mir-match-arm-continues-unknown`,
+`mir-match-arm-continue-of-its-pattern` (`hints.ts`),
+`arm-continues-written-at-the-turns-end` (of `at_the_end`),
+`arm-continue-of-the-ifs-test-unseen`, `arm-continue-elsed` (`continues.ts`) and
+`written-arm-continue-tail-dropped` (`tails.ts`).

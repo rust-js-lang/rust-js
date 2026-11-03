@@ -1070,7 +1070,9 @@ const JUMPS: &[Pass] = &[
     // A `continue` of a loop around the program wrote, MIR's jump past a
     // block to it: where it wrote it (ADR 0702, amended).
     pass("continues written", |b, h| {
-        js::statement_lists(b, &mut |s| continues_written(s, &h.written.continues))
+        js::statement_lists(b, &mut |s| {
+            continues_written(s, &h.written.continues, &h.written.arm_continues)
+        })
     }),
     pass("joined ands", |b, _| js::statement_lists(b, &mut |s| joined_ands(s))),
     pass("branch ends", |b, _| js::statement_lists(b, &mut |s| branch_ends(s))),

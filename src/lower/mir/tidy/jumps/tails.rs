@@ -822,6 +822,7 @@ pub(in crate::lower::mir::tidy) fn drop_tail(stmts: &mut Vec<Stmt>, jump: &StmtK
         {
             false
         }
+        (StmtKind::Continue(Some(_)), StmtKind::Continue(Some(_))) if !stmt.span.is_none() => false,
         (StmtKind::Break(Some(a)), StmtKind::Break(Some(b)))
         | (StmtKind::Continue(Some(a)), StmtKind::Continue(Some(b))) => a == b,
         _ => false,

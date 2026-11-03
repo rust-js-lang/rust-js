@@ -202,8 +202,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `match`'s `None => break` in the loop a function ends with isn't known, so React DOM's hideOrUnhideDehydratedBoundary prints MIR's `return;` (rd165b)",
     file: "src/lower/mir/hints.rs",
-    find: "        let arm_breaks = self.jump_arms(&break_of);\n",
-    replace: "        let arm_breaks = Vec::new();\n",
+    find: "        let arm_breaks = (self.jump_arms(&break_of, false).into_iter())\n",
+    replace: "        let arm_breaks = (Vec::<(js::Span, js::Span, js::Span)>::new().into_iter())\n",
     tests: ["test/corpus.test.ts", "-t", "^written_jumps_kept.rs$"],
     snapshots: true,
   },
@@ -693,6 +693,26 @@ export const mutations: Mutation[] = [
     find: "                    match_source: rustc_hir::MatchSource::Normal,\n                    ..\n                } if e.ty.is_unit() && !arms.is_empty() => {\n",
     replace: "                    ..\n                } if e.ty.is_unit() && !arms.is_empty() => {\n",
     tests: ["test/corpus.test.ts", "-t", "^match_statement_arms.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "mir-match-arm-continues-unknown",
+    breaks:
+      "a `match` of strings in a loop whose arms `continue`, more of the turn after it, is an `if` chain, the rest an `else`, not a `switch` whose cases `continue` (#518)",
+    file: "src/lower/mir/hints.rs",
+    find: "        let arm_continues = self.jump_arms(&continue_of, true);\n",
+    replace: "        let arm_continues = Vec::new();\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_arms_continue.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "mir-match-arm-continue-of-its-pattern",
+    breaks:
+      "an arm that `continue`s is known by its pattern alone, so an or-pattern's arm, whose `continue` MIR jumps to past the block of its alternatives, `\"HTML\" | \"HEAD\" => { ..; continue; }`, isn't (#518)",
+    file: "src/lower/mir/hints.rs",
+    find: "                    let written = self.js_span(self.frame.thir[arm].span);\n",
+    replace: "                    let written = self.js_span(self.frame.thir[arm].pattern.span);\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_arms_continue.rs$"],
     snapshots: true,
   },
 ];

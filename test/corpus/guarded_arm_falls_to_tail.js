@@ -60,19 +60,19 @@ function kinds(items) {
     const [name, keep] = items[i];
     if (name === "A") {
       out.push("a");
-    } else {
-      if (name === "B" && keep) {
-        continue;
-      }
-      if (name !== "C") {
-        if (name === "D" && keep) {
-          out.push("kept d");
-        } else {
-          out.push(`other ${name}`);
-        }
-      }
-      out.push(`tail ${name}`);
+      continue;
     }
+    if (name === "B" && keep) {
+      continue;
+    }
+    if (name !== "C") {
+      if (name === "D" && keep) {
+        out.push("kept d");
+      } else {
+        out.push(`other ${name}`);
+      }
+    }
+    out.push(`tail ${name}`);
   }
   return out;
 }
@@ -85,14 +85,21 @@ function owned(items) {
   const out = [];
   for (let i = 0; i < items.length; i++) {
     const [name, keep] = items[i];
-    if (name !== "A") {
-      if (name === "B") {
+    switch (name) {
+      case "A":
+        continue;
+      case "B":
         out.push("b");
-      } else if (name !== "C" || !keep) {
+        continue;
+      case "C":
+        if (keep) {
+          continue;
+        }
+      // falls through
+      default:
         out.push(`other ${name}`);
-        out.push(`tail ${name}`);
-      }
     }
+    out.push(`tail ${name}`);
   }
   return out;
 }

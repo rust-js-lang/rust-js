@@ -198,8 +198,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a written `else` after a `then` that ends in a written `continue` is gone, `if (x > 3) { ..; continue; } out.push(0);` (the user's decision, ADR 0684, amended)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "        && tests_continue(continues, *span)\n        && !test.facts.has(js::Known::Else)\n",
-    replace: "        && tests_continue(continues, *span)\n",
+    find: "        && (tests_continue(continues, *span) || !at.is_none())\n        && !test.facts.has(js::Known::Else)\n",
+    replace: "        && (tests_continue(continues, *span) || !at.is_none())\n",
     tests: ["test/corpus.test.ts", "-t", "^written_jumps_kept.rs$"],
     snapshots: true,
   },
@@ -424,8 +424,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `continue` the program wrote, its rest made an `else` by `jumps into branches`, is dropped as a tail one, so rev_loops' `if (x > 100) { break; }` and what follows it, after a written `continue`, is `if (!(x > 100)) { ..; continue; } break;`",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "        && tests_continue(continues, *span)\n",
-    replace: "        && false\n",
+    find: "        && (tests_continue(continues, *span) || !at.is_none())\n",
+    replace: "        && !at.is_none()\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -532,7 +532,7 @@ export const mutations: Mutation[] = [
     breaks:
       "getHostSibling's `if (isScope(node)) { continue siblings; }` is a `break` past MIR's block to its one `continue`, the rest nested in negated tests",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "            replaced(body, block, &after[0], guards);\n",
+    find: "            replaced(body, &of, None);\n",
     replace: "",
     tests: [
       "test/lowering-early-exits.test.ts",
@@ -545,9 +545,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `break` past a block to a `continue` is that `continue` where the program wrote no `continue`, a `break` of its own labeled block's (ADR 0790)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                        && tests_continue(guards, span) =>\n                {\n                    then[0] = Stmt {\n",
-    replace:
-      "                        && true =>\n                {\n                    then[0] = Stmt {\n",
+    find: "                    if matches!(then.as_slice(), [only] if breaks(only)) && tests_continue(of.guards, span) =>\n",
+    replace: "                    if matches!(then.as_slice(), [only] if breaks(only)) =>\n",
     tests: [
       "test/lowering-matches.test.ts",
       "-t",
@@ -645,6 +644,36 @@ export const mutations: Mutation[] = [
     find: "                    && !kept.is_some_and(|elses| written_else(body.last().expect(\"matched\"), elses))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^while_test_continues_of_chain.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "arm-continues-written-at-the-turns-end",
+    breaks:
+      "an arm's `continue` of a `match` that ends the loop's turn is kept, `case \"C\": continue;`, where the `switch` goes on there anyway (ADR 0629)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                    .filter(|(matched, ..)| !matched.is_none() && past >= matched.hi)\n",
+    replace: "                    .filter(|(matched, ..)| !matched.is_none())\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_arms_continue.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "arm-continue-of-the-ifs-test-unseen",
+    breaks:
+      "an arm that does nothing but `continue`, `\"C\" => continue`, isn't known by the `if` of its pattern, so its `match` is an `if` chain, not a `switch` (#518)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                    replaced(then, of, (!span.is_none()).then_some(span.lo));\n",
+    replace: "                    replaced(then, of, None);\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_arms_continue.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "arm-continue-elsed",
+    breaks:
+      "an arm's written `continue` keeps what follows it an `else`, so its `match` is an `if` chain, not a `switch` (#518)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "        && (tests_continue(continues, *span) || !at.is_none())\n",
+    replace: "        && tests_continue(continues, *span)\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_arms_continue.rs$"],
     snapshots: true,
   },
 ];

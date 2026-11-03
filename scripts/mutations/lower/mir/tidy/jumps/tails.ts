@@ -923,4 +923,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^late_let_before_written_else.rs$"],
     snapshots: true,
   },
+  {
+    name: "written-arm-continue-tail-dropped",
+    breaks:
+      "an arm's written `continue` that ends a branch of the `if` chain ending a loop's turn is dropped, so its `match` is an `if` chain, not a `switch` (#518)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "        (StmtKind::Continue(Some(_)), StmtKind::Continue(Some(_))) if !stmt.span.is_none() => false,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^switch_arms_continue.rs$"],
+    snapshots: true,
+  },
 ];

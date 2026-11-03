@@ -2082,6 +2082,49 @@ something is still called, `case 1: noted(log); break;`. A last case
 that's then nothing is no case
 ([ADR 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md#amendment-a-guarded-arm-that-only-continues-is-its-cases-break-2026-11-03-488)).
 
+An arm that `continue`s, of a `match` with more of the loop's turn after
+it, skips that rest: its case's `continue;`, as written, the rest after
+the `switch`, whether the `match` is of numbers or of strings, as React
+DOM's clearContainerSparingly writes it
+([ADR 0684](../../decisions/0684-a-continue-the-program-wrote-is-where-it-wrote-it.md#amendment-an-arms-continue-before-more-of-the-turn-518-2026-11-03)):
+
+```rust
+pub fn kept(names: &[&str], out: &mut Vec<u32>) {
+    for &name in names {
+        match name {
+            "HTML" | "BODY" => {
+                out.push(1);
+                continue;
+            }
+            "SCRIPT" | "STYLE" => continue,
+            "LINK" => out.push(2),
+            _ => {}
+        }
+        out.push(0);
+    }
+}
+```
+
+```js
+export function kept(names, out) {
+  for (let i = 0; i < names.length; i++) {
+    const name = names[i];
+    switch (name) {
+      case "HTML":
+      case "BODY":
+        out.push(1);
+        continue;
+      case "SCRIPT":
+      case "STYLE":
+        continue;
+      case "LINK":
+        out.push(2);
+    }
+    out.push(0);
+  }
+}
+```
+
 A guarded arm just before a last `_` that does something falls through to
 the `default`, which Rust tries next, as React writes `describeFiber`
 ([ADR 0636](../../decisions/0636-a-guarded-arm-is-a-case.md), amended):

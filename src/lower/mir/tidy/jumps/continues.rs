@@ -128,33 +128,69 @@ fn continued_loop(
 /// one (`Written::continues`) that leaves the block, the `continue` itself,
 /// `if (c) { continue outer; }`, where it wrote it, which then needs no
 /// block. React's getHostSibling's `if isScope(node) { continue 'siblings;
-/// }` (ADR 0702, amended). The `break` goes to the `continue` and nowhere
-/// else, so the two run the same; not into a loop inside the block, whose
-/// own `continue` an unlabeled one would be.
-pub(in crate::lower::mir::tidy) fn continues_written(stmts: &mut [Stmt], guards: &[(js::Span, js::Span)]) {
-    fn replaced(stmts: &mut [Stmt], block: &str, jump: &Stmt, guards: &[(js::Span, js::Span)]) {
+/// }` (ADR 0702, amended). And the `break` MIR made of a `match`'s arm that
+/// ends with a `continue` (`Written::arm_continues`), which ends a list
+/// after what the arm does, or the `then` of the `if` of its pattern, `if
+/// (name === "SCRIPT") { break l; }`, where the block holds what's written
+/// past the `match`, which the arm skips: its `continue`, where it's
+/// written, as an arm's `return` is, which tidy keeps (`drop_tail`,
+/// `tail_continues`). Its `match` is a `switch` whose cases `continue`, as
+/// React DOM's clearContainerSparingly writes it, not one whose rest of the
+/// turn is an `else` (#518). One of a `match` that ends the turn, which
+/// skips nothing, is MIR's as before, `case 0: break;` (ADR 0629). The
+/// `break` goes to the `continue` and nowhere else, so the two run the
+/// same; not into a loop inside the block, whose own `continue` an
+/// unlabeled one would be.
+pub(in crate::lower::mir::tidy) fn continues_written(
+    stmts: &mut [Stmt],
+    guards: &[(js::Span, js::Span)],
+    arms: &[(js::Span, js::Span, js::Span)],
+) {
+    /// A block's `break`s, `block`, each of which goes on to `jump`, and
+    /// the arms of a `continue` whose `match` is before something it holds.
+    struct Of<'w> {
+        block: &'w str,
+        jump: &'w Stmt,
+        guards: &'w [(js::Span, js::Span)],
+        arms: Vec<(js::Span, js::Span)>,
+    }
+    // `stmts`' `break`s of the block, the `then` of an `if` tested where
+    // `tested` is.
+    fn replaced(stmts: &mut [Stmt], of: &Of, tested: Option<u32>) {
+        let breaks = |s: &Stmt| matches!(&s.kind, StmtKind::Break(Some(l)) if l == of.block);
+        // What an arm of a `continue` does last, its `break`: where that
+        // arm is, of what's before it, or of the `if` of its pattern.
+        let n = stmts.len();
+        if stmts.last().is_some_and(breaks)
+            && let Some(at) = (n.checked_sub(2).and_then(|k| first_written(&stmts[k..k + 1]))).or(tested)
+            && let Some(&(_, written)) = of.arms.iter().find(|(arm, _)| arm.lo <= at && at < arm.hi)
+        {
+            stmts[n - 1] = Stmt {
+                kind: of.jump.kind.clone(),
+                span: written,
+            };
+        }
         for stmt in stmts.iter_mut() {
             let span = stmt.span;
             match &mut stmt.kind {
                 StmtKind::If(_, then, otherwise)
-                    if matches!(then.as_slice(), [Stmt { kind: StmtKind::Break(Some(l)), .. }] if l == block)
-                        && tests_continue(guards, span) =>
+                    if matches!(then.as_slice(), [only] if breaks(only)) && tests_continue(of.guards, span) =>
                 {
                     then[0] = Stmt {
-                        kind: jump.kind.clone(),
+                        kind: of.jump.kind.clone(),
                         span: then[0].span,
                     };
                     if let Some(otherwise) = otherwise {
-                        replaced(otherwise, block, jump, guards);
+                        replaced(otherwise, of, None);
                     }
                 }
                 StmtKind::If(_, then, otherwise) => {
-                    replaced(then, block, jump, guards);
+                    replaced(then, of, (!span.is_none()).then_some(span.lo));
                     if let Some(otherwise) = otherwise {
-                        replaced(otherwise, block, jump, guards);
+                        replaced(otherwise, of, None);
                     }
                 }
-                StmtKind::Labeled(_, body) => replaced(body, block, jump, guards),
+                StmtKind::Labeled(_, body) => replaced(body, of, None),
                 _ => {}
             }
         }
@@ -162,7 +198,23 @@ pub(in crate::lower::mir::tidy) fn continues_written(stmts: &mut [Stmt], guards:
     for at in 1..stmts.len() {
         let (before, after) = stmts.split_at_mut(at);
         if let (StmtKind::Labeled(block, body), StmtKind::Continue(_)) = (&mut before[at - 1].kind, &after[0].kind) {
-            replaced(body, block, &after[0], guards);
+            let mut past = 0;
+            js::each_list(body, &mut |list| {
+                past = (list.iter()).fold(
+                    past,
+                    |past, s| if s.span.is_none() { past } else { past.max(s.span.lo) },
+                );
+            });
+            let of = Of {
+                block,
+                jump: &after[0],
+                guards,
+                arms: (arms.iter())
+                    .filter(|(matched, ..)| !matched.is_none() && past >= matched.hi)
+                    .map(|&(_, arm, written)| (arm, written))
+                    .collect(),
+            };
+            replaced(body, &of, None);
         }
     }
 }
@@ -420,9 +472,13 @@ fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>, written: &crate
         kind: StmtKind::If(test, then, otherwise @ Some(_)),
         span,
     }) = stmts.last_mut()
-        && tests_continue(continues, *span)
+        && let Some(Stmt {
+            kind: StmtKind::Continue(l),
+            span: at,
+        }) = then.last()
+        && (tests_continue(continues, *span) || !at.is_none())
         && !test.facts.has(js::Known::Else)
-        && matches!(then.last(), Some(Stmt { kind: StmtKind::Continue(l), .. }) if going_on(l))
+        && going_on(l)
     {
         let rest = otherwise.take().expect("matched");
         stmts.extend(rest);
