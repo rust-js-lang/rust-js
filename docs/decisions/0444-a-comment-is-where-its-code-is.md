@@ -1,6 +1,6 @@
 # 0444. A comment is in the JS where its code is, and so is a blank line
 
-Status: Accepted. Amended (2026-11-01): a `// SAFETY:` comment is left out of the JS, the user's decision. Amended (2026-10-29): a comment above a `use` is above the import it makes; an inner doc comment is JS's plain one. Amended (2026-10-28): a field's doc comment is its struct's one literal's. Amended (2026-10-26): a blank line before a statement rustfmt starts with a receiver on a line before its call is kept; a comment before a `match` an `if` is made of is the `if`'s. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
+Status: Accepted. Amended (2026-11-03): an index loop's item is before its body's comments. Amended (2026-11-01): a `// SAFETY:` comment is left out of the JS, the user's decision. Amended (2026-10-29): a comment above a `use` is above the import it makes; an inner doc comment is JS's plain one. Amended (2026-10-28): a field's doc comment is its struct's one literal's. Amended (2026-10-26): a blank line before a statement rustfmt starts with a receiver on a line before its call is kept; a comment before a `match` an `if` is made of is the `if`'s. Extended by [0835](0835-an-object-is-across-lines-where-its-literal-is.md):
 an object is across lines where its struct literal is. Extends [0383](0383-a-files-leading-comments-are-its-jss.md),
 whose rules for what JS can hold are now every comment's, and
 [0018](0018-print-with-oxc.md). Its amendment, a branch's comment keeps it a statement, is
@@ -903,3 +903,29 @@ the pilot's committed JS are re-blessed for their JSDoc.
   comment is one JSDoc, its file's description", run, and the tests #486
   names; mutations `module-doc-plain`, `module-block-doc-plain` and
   `module-doc-runs-joined` (`to_oxc/header.ts`).
+
+## Amendment: an index loop's item is the loop's, before its body's comments (2026-11-03, #526)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments only.
+
+A loop over a slice counts its indices (ADR 1042) and binds its item
+first, `const x = xs[i];`, with no Rust of its own. So, as rule 6's
+temporary, it was printed at the start of the body's first statement,
+after that statement's comments: `// Big ones.\n const x = xs[i];\n if (x
+> 3)`. The same happened to a comment above a `match`'s first arm that
+does nothing, which the `if` is placed at (#508), `// Next.` of `Ok(())
+=> {}`. But that binding isn't the statement's temporary. It's the
+loop's pattern, which the program writes in `for x in xs`, before the
+body. In a `for…of` the comment is inside the body, above its statement.
+**An index loop's item is placed at its loop's `for`** (`loops::item_at`),
+that of a loop stepped from its end too. A comment above the body's
+first statement is after it, `const x = xs[i];\n // Big ones.\n if (x >
+3)`, as a person writes it. A comment above the `for` is still the
+`for`'s, as the `for` is printed first.
+
+Held by `test/lowering-comments-inside.test.ts`'s "a comment above a loop
+body's first statement is after its item", run, and the mutations
+`loop-item-a-temporary` and `loop-from-the-end-item-a-temporary`
+(`mir/tidy/loops.ts`). The corpus cases matrix_strings and
+multiply_by_a_constant are re-blessed, each a comment after its loop's
+item.

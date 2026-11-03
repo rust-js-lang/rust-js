@@ -115,8 +115,8 @@ function main() {
       `${$debugStr(a)}: find ${find == null ? "None" : `Some(${find})`} ${rfind == null ? "None" : `Some(${rfind})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${count} replace ${$debugStr(replace)} ${$debugStr(repeat)} fmt [${$pad(a, 8, ">")}] [${$pad(a, 8, "<")}] [${$pad(a, 8, "^")}] [${Array.from(a).slice(0, 2).join("")}] parse ${parse.TAG === "Ok" ? `Ok(${parse._0})` : `Err(${$debugParseError(parse._0, "ParseIntError")})`} ${value$6.TAG === "Ok" ? `Ok(${$debugF64(value$6._0)})` : `Err(${$debugParseError(value$6._0, "ParseFloatError")})`} lossy ${$debugStr(value$7._0)} all ${arg$3}`,
     );
     for (let j = 0; j < STRINGS.length; j++) {
-      // JS's `sort()`, by UTF-16 units (ADR 0945).
       const b = STRINGS[j];
+      // JS's `sort()`, by UTF-16 units (ADR 0945).
       const startsWith = a.startsWith(b);
       const endsWith = a.endsWith(b);
       const contains = a.includes(b);

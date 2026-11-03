@@ -732,4 +732,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^range_rev_from_computed.rs$"],
     snapshots: true,
   },
+  {
+    name: "loop-item-a-temporary",
+    breaks:
+      "an index loop's item, `const x = xs[i];`, is taken for a temporary of the body's first statement, so the comment above that is above it (#526)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "    let mut stepped = vec![bound.at(item_at(span))];\n    stepped.extend(body);\n",
+    replace: "    let mut stepped = vec![bound.at(js::Span::NONE)];\n    stepped.extend(body);\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "a comment above a loop body's first statement is after its item"],
+  },
+  {
+    name: "loop-from-the-end-item-a-temporary",
+    breaks:
+      "a loop stepped from its end's item, `let x = xs[i];`, is taken for a temporary of the body's first statement, so the comment above that is above it (#526)",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "        let mut stepped = vec![bound.at(item_at(span))];\n",
+    replace: "        let mut stepped = vec![bound.at(js::Span::NONE)];\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "a comment above a loop body's first statement is after its item"],
+  },
 ];

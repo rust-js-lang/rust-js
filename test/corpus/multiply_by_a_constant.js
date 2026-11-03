@@ -21,8 +21,8 @@ function main() {
   console.log(`${(small[0] * SCALE) | 0} ${(small[1] * SCALE) | 0}`);
   const unsigned = [4294967295, (1 << 31) >>> 0, 7];
   for (let i = 0; i < unsigned.length; i++) {
-    // Past 2^21, a product past 2^53, rounded in a double: `Math.imul`.
     const n = unsigned[i];
+    // Past 2^21, a product past 2^53, rounded in a double: `Math.imul`.
     console.log(
       `${(n * 3) >>> 0} ${(n * 2097152) >>> 0} ${Math.imul(n, 4194305) >>> 0} ${Math.imul(n, n) >>> 0}`,
     );

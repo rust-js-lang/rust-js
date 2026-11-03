@@ -938,7 +938,9 @@ where it's written in the function
 ([ADR 0882](../../decisions/0882-a-field-of-statements-is-a-method.md#amendment-a-function-declared-in-a-closure-has-its-comments-where-written));
 and a comment before what the JS reads away, an arm of
 `prev?.types`, is before the statement it's in, never lost ([ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md),
-amended). A file's
+amended). One above a loop body's first statement is after the item an
+index loop binds, `const x = xs[i];\n// Big ones.\nif (x > 3)`
+([ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md), amended). A file's
 leading comments, a license's, are its JS's first
 ([ADR 0383](../../decisions/0383-a-files-leading-comments-are-its-jss.md),
 [ADR 0444](../../decisions/0444-a-comment-is-where-its-code-is.md)).

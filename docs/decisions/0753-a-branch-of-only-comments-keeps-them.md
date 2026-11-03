@@ -316,8 +316,11 @@ its first case. `switches` now reads the chain past the marks of the
 `match`'s last `_ => {}` (`default_marks`) and puts them at the end of the
 `switch`'s last case: each case `break;`, one `return` after the `switch`.
 The comment prints after the `switch`, above that `return`, where upstream
-writes it inside the last case, before its `}`: left for a later change
-(the printer's clause ends, `commented_clause`). Case
+writes it inside the last case, before its `}`. That difference is
+accepted, the user's decision (rd701, option A): oxc's codegen prints a
+case of one statement on its line and flushes the comments that end it
+only at the next statement, the `return`. Moving them would take a
+`break;` upstream doesn't have, or a change to oxc_codegen. Case
 ([0262](0262-when-rust-and-js-disagree.md)): N. Held by corpus
 `switch_default_comment.rs` against native Rust and the mutation
 `default-comment-marks-unread`.

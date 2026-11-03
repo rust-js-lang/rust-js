@@ -328,7 +328,7 @@ pub(super) fn for_of(
                     },
                 };
                 return counted_range(range, (label, pattern, mutable, body, exit, span), (numbers, mentions));
-            } else if let Some(down) = from_the_end(&iterable, &pattern, mutable, &body, (numbers, mentions)) {
+            } else if let Some(down) = from_the_end(&iterable, &pattern, mutable, &body, span, (numbers, mentions)) {
                 let (name, start, test, body) = down;
                 StmtKind::For {
                     label: label.clone(),
@@ -339,7 +339,7 @@ pub(super) fn for_of(
                     body,
                 }
             } else if let Some((name, start, test, body)) =
-                indexed(source, &iterable, &pattern, mutable, &body, mentions)
+                indexed(source, &iterable, &pattern, mutable, &body, span, mentions)
             {
                 StmtKind::For {
                     label: label.clone(),
@@ -508,6 +508,7 @@ fn indexed(
     pattern: &js::Pattern,
     mutable: bool,
     body: &[Stmt],
+    span: js::Span,
     mentions: &HashMap<String, usize>,
 ) -> Option<(String, Expr, Expr, Vec<Stmt>)> {
     let (iterable, start, end) = match &iterable.kind {
@@ -563,9 +564,23 @@ fn indexed(
     };
     let end = end.unwrap_or_else(|| Expr::member(iterable.clone(), "length"));
     let test = Expr::bin(Op::Lt, Expr::var(&index), end);
-    let mut stepped = vec![bound.at(js::Span::NONE)];
+    let mut stepped = vec![bound.at(item_at(span))];
     stepped.extend(body);
     Some((index, start, test, stepped))
+}
+
+/// Where an index loop's item, `const x = v[i];`, is: the loop's own, at
+/// its `for`, not a temporary of the body's first
+/// statement, so the comments above that are after it, as in a `for…of`'s
+/// body (#526, ADR 0444, amended).
+fn item_at(span: js::Span) -> js::Span {
+    match span.is_none() {
+        true => span,
+        false => js::Span {
+            lo: span.lo,
+            hi: span.lo + 1,
+        },
+    }
 }
 
 /// Whether `stmts` hold a loop `indexed` made counting with `name`: `for
@@ -617,6 +632,7 @@ fn from_the_end(
     pattern: &js::Pattern,
     mutable: bool,
     body: &[Stmt],
+    span: js::Span,
     (numbers, mentions): (&HashSet<String>, &HashMap<String, usize>),
 ) -> Option<(String, Expr, Expr, Vec<Stmt>)> {
     let fresh = |base: &str| {
@@ -645,7 +661,7 @@ fn from_the_end(
         };
         let last = Expr::bin(Op::Sub, Expr::member(items.clone(), "length"), Expr::int(1));
         let test = Expr::bin(Op::Ge, Expr::var(&index), Expr::int(0));
-        let mut stepped = vec![bound.at(js::Span::NONE)];
+        let mut stepped = vec![bound.at(item_at(span))];
         stepped.extend(body.iter().cloned());
         return Some((index, last, test, stepped));
     }

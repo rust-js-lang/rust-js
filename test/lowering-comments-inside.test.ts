@@ -783,3 +783,46 @@ pub fn pick(v: Option<u32>, out: &mut Vec<u32>) -> bool {
   const pick = lib.pick as (v: number | undefined, out: number[]) => boolean;
   expect([pick(4, out), pick(undefined, out), out]).toEqual([true, false, [4]]);
 });
+
+// A loop over a slice counts its indices (ADR 1042), its item bound first,
+// `const x = xs[i];`: that's the loop's, where it's written, so a comment
+// above the body's first statement, or above a `match`'s first arm that
+// does nothing, is after it, above that statement, as in a `for…of`'s
+// body (#526, ADR 0444, amended).
+test("a comment above a loop body's first statement is after its item", async () => {
+  const { js, lib } = await compiled("comment-after-a-loops-item", `pub fn count(xs: &[Result<(), u32>], log: &mut Vec<u32>) {
+    for x in xs {
+        match x {
+            // Next.
+            Ok(()) => {}
+            Err(e) => log.push(*e),
+        }
+    }
+}
+
+pub fn big(xs: &[u32], log: &mut Vec<u32>) {
+    for x in xs {
+        // Big ones.
+        if *x > 3 {
+            log.push(*x);
+        }
+    }
+}
+
+pub fn back(xs: &[u32], log: &mut Vec<u32>) {
+    for &(mut x) in xs.iter().rev() {
+        // Doubled.
+        x *= 2;
+        log.push(x);
+    }
+}
+`);
+  expect(js).toContain('    const x = xs[i];\n    // Next.\n    if (x.TAG !== "Ok") {\n');
+  expect(js).toContain("    const x = xs[i];\n    // Big ones.\n    if (x > 3) {\n");
+  expect(js).toMatch(/let x = xs\[i\];\n {4}\/\/ Doubled\.\n/);
+  const log: number[] = [];
+  (lib.count as (xs: unknown[], log: number[]) => void)([{ TAG: "Ok" }, { TAG: "Err", _0: 7 }], log);
+  (lib.big as (xs: number[], log: number[]) => void)([2, 5], log);
+  (lib.back as (xs: number[], log: number[]) => void)([1, 2], log);
+  expect(log).toEqual([7, 5, 4, 2]);
+});
