@@ -30,10 +30,17 @@
 //! what's lowered. A struct is one where:
 //!
 //! - it has fields, an object (a unit struct is `undefined`), is not
-//!   `pub`, has no type or const parameters, and no trait is
-//!   implemented for it: no `Clone` copies it, no `Drop` runs of it, and no
-//!   generic code is given it;
-//! - every item of its impls is a method of `&self`, `&mut self` or
+//!   `pub`, has no const parameters, and no trait is implemented for it:
+//!   no `Clone` copies it, no `Drop` runs of it, and no generic code is
+//!   given it. It may have type parameters (#500): each call still makes
+//!   its one value, of its own types, the literal's (`Scope::args`), which
+//!   each of its methods is called with, so the function's lowering
+//!   declares the lowering of each that it calls (`nest_scope_copies`);
+//!   but each method is given nothing besides its arguments, no drop, no
+//!   dictionary, no fact and no location, which a function declared in
+//!   another is never given (`Scopes::retain`, once that's known);
+//! - each impl of it is of its own parameters, `impl<K> System<K>`, and
+//!   every item of its impls is a method of `&self`, `&mut self` or
 //!   `self: &Rc<Self>` (or an `Arc`'s), of no type parameters and not
 //!   `async`, taking and giving nothing else of the struct, and not a
 //!   class's, an object's or a namespace's (ADRs 0761, 0943, 1037);
@@ -41,8 +48,8 @@
 //!   closure's nor one of its methods', nor an `async` one's, held by a
 //!   `let` of that body's outermost block, which each call runs once,
 //!   itself or in an `Rc::new` (`Arc::new`). A generic function's is one
-//!   too (rd536): the struct and its methods are of no type parameter, so
-//!   each of its lowerings, a copy its callers need too, declares them;
+//!   too (rd536): each of its lowerings, a copy its callers need too,
+//!   declares them;
 //! - and nothing holds it but that function, its methods and the closures
 //!   made in them: in each of them, what holds it, or a reference to it, or
 //!   an `Rc` of it, is given to no call but its methods', as their `self`,
@@ -65,7 +72,7 @@ use rustc_span::def_id::DefId;
 use std::collections::{HashMap, HashSet};
 
 /// A function's scope struct.
-pub(crate) struct Scope {
+pub(crate) struct Scope<'tcx> {
     /// The function whose scope it is.
     pub(crate) function: DefId,
     /// The struct.
@@ -74,19 +81,22 @@ pub(crate) struct Scope {
     pub(crate) local: Local,
     /// Its methods, in the order they're written.
     pub(crate) methods: Vec<DefId>,
+    /// Its literal's type arguments, in its function's terms, which each of
+    /// its methods is called with: each impl of it is of its own parameters.
+    pub(crate) args: ty::GenericArgsRef<'tcx>,
     /// The `let` of its value, which its methods' functions are declared after.
     pub(crate) written: Span,
 }
 
 /// The crate's scope structs.
 #[derive(Default)]
-pub(crate) struct Scopes {
-    scopes: Vec<Scope>,
+pub(crate) struct Scopes<'tcx> {
+    scopes: Vec<Scope<'tcx>>,
 }
 
-impl Scopes {
+impl<'tcx> Scopes<'tcx> {
     /// Those `bodies` have, read of their MIR.
-    pub(crate) fn new<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> Scopes {
+    pub(crate) fn new(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> Scopes<'tcx> {
         let of: HashMap<DefId, &mir::Body<'tcx>> = (bodies.iter())
             .filter_map(|body| Some((body.def_id, &body.mir.as_ref()?.body)))
             .collect();
@@ -99,19 +109,20 @@ impl Scopes {
     }
 
     /// The scopes `function` makes, in the order their structs are written.
-    pub(crate) fn of_function(&self, function: DefId) -> impl Iterator<Item = &Scope> {
+    pub(crate) fn of_function(&self, function: DefId) -> impl Iterator<Item = &Scope<'tcx>> {
         self.scopes.iter().filter(move |s| s.function == function)
     }
 
     /// The scope `method` is a method of, if any.
-    pub(crate) fn of_method(&self, method: DefId) -> Option<&Scope> {
+    pub(crate) fn of_method(&self, method: DefId) -> Option<&Scope<'tcx>> {
         self.scopes.iter().find(|s| s.methods.contains(&method))
     }
 
-    /// Keep those of the structs `keep` keeps: an `Rc` counted is an object
-    /// of its own, `{ value, strong, weak }` (ADR 0320), no scope.
-    pub(crate) fn retain(&mut self, keep: impl Fn(DefId) -> bool) {
-        self.scopes.retain(|s| keep(s.adt));
+    /// Keep those `keep` keeps: an `Rc` counted is an object of its own,
+    /// `{ value, strong, weak }` (ADR 0320), no scope; nor is a struct whose
+    /// method is given more than its arguments (#500).
+    pub(crate) fn retain(&mut self, keep: impl Fn(&Scope<'tcx>) -> bool) {
+        self.scopes.retain(keep);
     }
 }
 
@@ -134,9 +145,9 @@ fn scope_of<'tcx>(
     of: &HashMap<DefId, &mir::Body<'tcx>>,
     bodies: &[&Body<'tcx>],
     adt: DefId,
-) -> Option<Scope> {
+) -> Option<Scope<'tcx>> {
     let generics = tcx.generics_of(adt);
-    if tcx.visibility(adt).is_public() || generics.own_counts().types > 0 || generics.own_counts().consts > 0 {
+    if tcx.visibility(adt).is_public() || generics.own_counts().consts > 0 {
         return None;
     }
     let def = tcx.adt_def(adt);
@@ -158,15 +169,16 @@ fn scope_of<'tcx>(
                 for statement in &data.statements {
                     if let StatementKind::Assign(assign) = &statement.kind
                         && let Rvalue::Aggregate(kind, _) = &assign.1
-                        && matches!(**kind, AggregateKind::Adt(did, ..) if did == adt)
+                        && let AggregateKind::Adt(did, _, args, ..) = **kind
+                        && did == adt
                     {
-                        literals.push((body.def_id, promoted, assign.0));
+                        literals.push((body.def_id, promoted, assign.0, args));
                     }
                 }
             }
         }
     }
-    let [(function, false, made)] = literals[..] else {
+    let [(function, false, made, args)] = literals[..] else {
         return None;
     };
     let body = of.get(&function)?;
@@ -193,6 +205,7 @@ fn scope_of<'tcx>(
         adt,
         local,
         methods,
+        args,
         written,
     })
 }
@@ -202,6 +215,14 @@ fn scope_of<'tcx>(
 fn methods_of(tcx: TyCtxt<'_>, adt: DefId) -> Option<Vec<DefId>> {
     let mut methods = Vec::new();
     for &imp in tcx.inherent_impls(adt) {
+        // Of its own parameters, `impl<K> System<K>`, so a method's are its
+        // literal's.
+        let ty::Adt(_, args) = tcx.type_of(imp).instantiate_identity().skip_normalization().kind() else {
+            return None;
+        };
+        if *args != ty::GenericArgs::identity_for_item(tcx, imp) {
+            return None;
+        }
         for &item in tcx.associated_item_def_ids(imp) {
             if tcx.def_kind(item) != DefKind::AssocFn
                 || !tcx.associated_item(item).is_method()

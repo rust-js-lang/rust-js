@@ -497,7 +497,7 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub self_handles: SelfHandles<'tcx>,
     /// Each function's scope struct, whose methods are functions declared
     /// in it (ADR 1043).
-    pub scopes: Scopes,
+    pub scopes: Scopes<'tcx>,
     /// What each body may borrow, of its cells (ADR 0580).
     pub cell_borrows: CellBorrows<'tcx>,
     /// Which results and fields are whole numbers (rd537, ADR 0994).
@@ -1015,7 +1015,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     self_handles.uncounted(|pointee| counted.counts(tcx, pointee));
     // A function's scope struct, of an `Rc` counted none (ADR 1043).
     let mut scopes = Scopes::new(tcx, all_bodies);
-    scopes.retain(|adt| !counted.counts(tcx, tcx.type_of(adt).instantiate_identity().skip_normalization()));
+    scopes.retain(|s| !counted.counts(tcx, tcx.type_of(s.adt).instantiate_identity().skip_normalization()));
     // The map and filter types it steps from their back (ADR 0545), and of
     // an array's items with a destructor, which its native forms don't step.
     let back_stepped = back_stepped::back_stepped(tcx, recognition, all_bodies, |item| {
@@ -1273,6 +1273,17 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let throwing = throwing::throwing_fns(tcx, &recognition, all_bodies);
     let never_unwinding = unwinding::never_unwinding(tcx, &recognition, all_bodies);
     let caller_locations = caller_locations::caller_location_fns(tcx, all_bodies, &foreign);
+    // A scope struct whose methods are given nothing besides their
+    // arguments, no dictionary, fact, drop or location, as a function
+    // declared in another is given none (#500).
+    scopes.retain(|s| {
+        s.methods.iter().all(|&m| {
+            crate::lower::traits::bounds(tcx, &foreign, given, m).is_empty()
+                && drop_params.get(&m).is_none_or(Vec::is_empty)
+                && !type_facts.contains_key(&m)
+                && !caller_locations.contains(&m)
+        })
+    });
     let asks_capacity = asks_capacity(tcx, all_bodies);
     let generic_consts = generic_consts(tcx, all_bodies);
     // `@rust-js/std`'s writers take whether they're pretty: its consumers

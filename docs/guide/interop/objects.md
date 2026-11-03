@@ -164,7 +164,7 @@ export function processReply(depth) {
 
 - **Each call is a scope of its own**: each call of `process_reply` makes
   its value and its functions, as each call of a JS function does.
-- **What makes one**: the struct isn't `pub`, has no type parameters and
+- **What makes one**: the struct isn't `pub`, has no const parameters and
   no trait impls; its methods take `&self`, `&mut self` or `self:
   &Rc<Self>`; the crate writes one literal of it, held by a `let` of the
   function's outermost block, itself or in an `Rc::new`; and it's given to
@@ -179,9 +179,56 @@ export function processReply(depth) {
 - **Its function may be generic**, taking its callbacks as `impl Fn`, as
   processReply's `resolve` and `reject`: the struct and its methods are of
   no type parameter, so each of the function's lowerings declares them.
+- **Its struct may be of type parameters**, alien-signals' `System<K>`
+  of its callbacks, where each impl is of its own, `impl<K> System<K>`,
+  and no method is given anything besides its arguments: no drop of a
+  `K`, no bound's dictionary. Each call makes its one value, of its own
+  types. A struct whose method drops a `K` or is given a bound's
+  dictionary stays its type's object, given those as before; so does one
+  whose method is `#[track_caller]`, whose calls give it their location.
 - **A field is a `const`** where nothing writes it, and the parameter it's
   given where nothing assigns that. Where the JS reads the value whole, a
   tuple struct's array say, it keeps its object, `reply.nextId`.
+
+alien-signals' `createReactiveSystem`, generic over its nodes' kind:
+
+```rust
+use std::cell::Cell;
+use std::rc::Rc;
+
+struct System<K> {
+    notify: Box<dyn Fn(&K)>,
+    count: Cell<u32>,
+}
+
+impl<K> System<K> {
+    fn propagate(&self, node: &K) {
+        self.count.set(self.count.get() + 1);
+        (self.notify)(node);
+    }
+}
+
+pub fn create_system<K: 'static>(notify: Box<dyn Fn(&K)>) -> Rc<dyn Fn(&K)> {
+    let system = Rc::new(System {
+        notify,
+        count: Cell::new(0),
+    });
+    Rc::new(move |node| system.propagate(node))
+}
+```
+
+```js
+export function createSystem(notify) {
+  let count = 0;
+
+  function propagate(node) {
+    count = (count + 1) >>> 0;
+    notify(node);
+  }
+
+  return (node) => propagate(node);
+}
+```
 
 ## Traits
 

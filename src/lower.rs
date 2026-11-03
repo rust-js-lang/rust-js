@@ -353,7 +353,7 @@ struct CrateFacts<'a, 'tcx> {
     self_handles: &'a analysis::SelfHandles<'tcx>,
     /// Each function's scope struct, whose methods are functions declared
     /// in it (ADR 1043).
-    scopes: &'a analysis::Scopes,
+    scopes: &'a analysis::Scopes<'tcx>,
     /// What each body may borrow, of its cells (ADR 0580).
     cell_borrows: &'a analysis::CellBorrows<'tcx>,
     /// The functions whose result is whole, and the fields each write of
@@ -576,6 +576,8 @@ struct FnCx<'a, 'tcx> {
     /// in it, each method's function's name, which calls of it call (ADR
     /// 1043).
     scope_functions: HashMap<DefId, String>,
+    /// And the lowering of each this one declares, a copy or none (#500).
+    scope_copies: HashMap<DefId, Option<usize>>,
     /// While one of them is lowered, the name of the variable it closes
     /// over, its `self`'s.
     scope_self: Option<String>,

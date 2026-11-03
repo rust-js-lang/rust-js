@@ -6,6 +6,26 @@ use super::*;
 use std::collections::{HashMap, HashSet};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Of the function being lowered, the lowering of each of its scope
+    /// structs' methods it declares: the one a call of it given the
+    /// literal's type arguments calls, as this lowering takes its own (ADR
+    /// 0051, amended, #500). The function's own JS declares the methods'
+    /// own; a copy of it, their copies its calls need. One whose call needs
+    /// a copy none was made of is called nowhere it can be (`scope_called`).
+    pub(in crate::lower) fn nest_scope_copies(&mut self) {
+        let params = self.krate.given.js_given.params(self.tcx, self.item, self.copy);
+        let recognition = self.recognition();
+        let mut copies = HashMap::new();
+        for scope in self.krate.scopes.of_function(self.item) {
+            for &method in &scope.methods {
+                if let Ok(copy) = (self.krate.given.js_given).called(&recognition, &params, (method, scope.args)) {
+                    copies.insert(method, copy);
+                }
+            }
+        }
+        self.scope_copies = copies;
+    }
+
     /// Of the body `state` lowers, its scope structs' methods, if it's a
     /// function with any (`analysis::Scopes`), its `own` body, not a
     /// closure's, each a function declared in `out` after the statements
@@ -46,8 +66,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .ok_or_else(|| self.unsupported(span, "a scope struct's method, without its body"))?;
         let mir =
             (body.mir.as_ref()).ok_or_else(|| self.unsupported(span, "a scope struct's method, without its MIR"))?;
-        // Its own typing environment, and no copy of it; its names apart
-        // from every one of its function's, which it may read.
+        // The lowering of it its function's calls (#500), which its body
+        // takes its type parameters as (`lowered_params`).
+        if !self.scope_copies.contains_key(&method) {
+            return Err(self.unsupported(span, "a scope struct's method, of no lowering its function calls"));
+        }
+        // Its own typing environment, and no copy of its function's; its
+        // names apart from every one of its function's, which it may read.
         let typing_env = std::mem::replace(&mut self.typing_env, ty::TypingEnv::post_analysis(self.tcx, method));
         let copy = self.copy.take();
         self.scope_self = Some(value.to_string());

@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "scope-lowering-params-unasked",
+    breaks: "a scope's method declared as a copy takes its type parameters as its own JS does, not as that copy, `put(item)` for `put($some(item))` (#500)",
+    file: "src/lower/representation/options.rs",
+    find: "        if let Some(&copy) = self.scope_copies.get(&owner) {",
+    replace: "        if let Some(&copy) = self.scope_copies.get(&owner).filter(|copy| copy.is_none()) {",
+    tests: ["test/corpus.test.ts", "-t", "scope_struct"],
+    snapshots: true,
+  },
+  {
     name: "uncounted-weak-never-nullish",
     breaks: "`Some(Weak::new())` is `null`, the same as `None` (ADR 0843)",
     file: "src/lower/representation/options.rs",

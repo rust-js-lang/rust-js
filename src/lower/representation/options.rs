@@ -130,6 +130,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// default copied into an impl, whose are its own.
     pub(in crate::lower) fn lowered_params(&self) -> Option<super::super::analysis::Params> {
         let owner = self.tcx.typeck_root_def_id(self.frame.owner);
+        // A scope struct's method, as its function's lowering declares it (#500).
+        if let Some(&copy) = self.scope_copies.get(&owner) {
+            return Some(self.krate.given.js_given.params(self.tcx, owner, copy));
+        }
         (owner == self.tcx.typeck_root_def_id(self.item))
             .then(|| self.krate.given.js_given.params(self.tcx, owner, self.copy))
     }

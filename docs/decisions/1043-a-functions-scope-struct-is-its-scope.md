@@ -2,7 +2,8 @@
 
 Status: Accepted (the user's rd345 decision, B1, 2026-11-01). Amended
 (B2, the same decision): its fields are the function's variables.
-Amended (rd536): its function may be generic. Extends
+Amended (rd536): its function may be generic. Amended (#500): its
+struct may be of type parameters. Extends
 [0047](0047-methods.md), whose object of a type's methods stays every
 other struct's, and [0308](0308-local-functions.md), whose functions
 declared in a body are written there.
@@ -310,3 +311,77 @@ before a call, in a call's object argument, in an `if`'s branch, and kept
 past a call that sets the field, a write of it, and an `if` whose branch
 calls; mutations `scope-copies-*` in `scripts/mutations/lower/mir/scopes.ts`.
 
+## Amended (#500): its struct may be of type parameters
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
+difference, as above.
+
+alien-signals' `createReactiveSystem` is generic over its nodes' kind, so
+its scope is `struct System<K>` of its callbacks, whose methods `link`,
+`propagate` and the rest call each other and the callbacks, and it gives
+back closures of them, `Rc::new(move |link| system.shallow_propagate(link))`.
+A struct of type parameters was no scope, so it was ADR 0047's object,
+each closure an arrow calling it with the state, and each callback a
+field read, `(0, system.update)(dep)`:
+
+```js
+export function createReactiveSystem({ update, notify, unwatched }) {
+  const system = { update, notify, unwatched };
+  return {
+    link: (dep, sub, version) => System.link(system, dep, sub, version),
+    ..
+  };
+}
+
+const System = {
+  link(system, dep, sub, version) { .. },
+  ..
+};
+```
+
+**A scope struct may be of type parameters** (not const ones), where each
+impl of it is of its own parameters, `impl<K> System<K>`. Each call of its
+function still makes its one value, of its own types, the literal's, and
+nothing else holds it, so each call's functions close over that call's
+value, and each of its methods is called with the literal's type
+arguments, in the function's terms (`Scope::args`).
+
+- **Each lowering of the function declares the lowering of each method
+  that it calls** (`nest_scope_copies`): `createReactiveSystem` is `pub`,
+  so its own JS takes `K` as JS gives it (ADR 0051, amended), and calls the
+  copy of each method that takes `K` so, which it declares; a copy of the
+  function its crate's calls need, whose `Some` of `T` is a box,
+  `keepLastBoxed`, declares the methods' copies that box, `put($some(item))`.
+  A method lowered so takes its type parameters as that copy does
+  (`lowered_params`), and calls of the others are of the lowering its
+  function declares (`scope_called`); any other refused.
+- **Each method is given nothing besides its arguments**: no drop of a
+  type parameter (ADR 0098), no bound's dictionary (ADR 0049), no fact (ADR
+  0145) and no caller's location (ADR 0427), as a function declared in
+  another is given none. A struct one of whose methods is given any stays
+  the object, its calls given each as before, `Stack.pop(stack, dropT)`
+  (`analysis.rs`, once those are known). Its method can't read its
+  function's: a method's `K` is its impl's, numbered as its own, and
+  reading the function's drop of the parameter numbered so would drop with
+  another's, or, of a concrete `Stack<Loud>`, with none.
+
+```js
+export function createReactiveSystem({ update, notify, unwatched }) {
+  function link(dep, sub, version) { .. }
+  ..
+  return {
+    link: (dep, sub, version) => link(dep, sub, version),
+    ..
+  };
+}
+```
+
+Held by `test/corpus/scope_struct_of_type_parameters.rs`, run against
+native Rust: alien-signals' system made twice, of two kinds, its
+closures calling its functions; a `pub` function whose crate's calls of
+`Option`s call a copy that boxes, its methods' copies declared; and a
+struct whose methods drop a `K`, in a generic function and of a concrete
+type, and one given a bound's dictionary, which stay objects. Mutations
+`scope-of-type-parameters-refused`, `scope-impl-of-other-args`,
+`scope-method-given-evidence-kept`, `scope-method-copy-unnested` and
+`scope-lowering-params-unasked`.

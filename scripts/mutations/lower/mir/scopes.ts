@@ -5,6 +5,15 @@ const scopes = ["test/corpus.test.ts", "-t", "scope_struct"];
 
 export const mutations: Mutation[] = [
   {
+    name: "scope-method-copy-unnested",
+    breaks: "a copy of a function its callers need declares its scope's methods' own JS, not the copies its calls of them need, `put(item)` for `put($some(item))` (#500)",
+    file: "src/lower/mir/scopes.rs",
+    find: "                    copies.insert(method, copy);",
+    replace: "                    copies.insert(method, copy.and(None));",
+    tests: scopes,
+    snapshots: true,
+  },
+  {
     name: "scope-functions-before-their-value",
     breaks: "a scope struct's methods' functions are declared before its value's `let`, not after it",
     file: "src/lower/mir/scopes.rs",

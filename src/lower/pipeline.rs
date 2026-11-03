@@ -639,9 +639,11 @@ pub fn lower_crate<'tcx>(
             walks: Default::default(),
             drop_state: Default::default(),
             scope_functions,
+            scope_copies: HashMap::new(),
             scope_self: None,
             scope_values: Vec::new(),
         };
+        cx.nest_scope_copies();
         let result = match body {
             // Each body, a function's or an initializer's, from its MIR (ADR 0364).
             Some(body) if let Some(mir) = &body.mir => cx.lower_fn_mir(body, mir),

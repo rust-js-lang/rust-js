@@ -591,7 +591,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         mut args: Vec<Expr>,
         span: Span,
     ) -> R<Expr> {
-        let name = (self.scope_functions.get(&def_id).filter(|_| copy.is_none()))
+        let name = (self.scope_functions.get(&def_id))
+            .filter(|_| self.scope_copies.get(&def_id) == Some(&copy))
             .ok_or_else(|| self.unsupported(span, "a scope struct's method, called outside its function"))?;
         if !matches!(args.first().map(|e| &e.kind), Some(js::ExprKind::Var(_))) {
             return Err(self.unsupported(span, "a scope struct's method, given a `self` that's no variable"));
