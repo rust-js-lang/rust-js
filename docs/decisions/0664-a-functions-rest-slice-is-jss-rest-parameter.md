@@ -213,5 +213,6 @@ each place Rust calls the value with a slice. Mutations
 `rest-function-itself-never`, `rest-function-itself-unnamed`
 (`lower/calls.ts`), `rest-function-itself-given-back`
 (`lower/binding_calls.ts`) and `rest-value-itself-anywhere` (`lower.ts`);
-`fn-item-conversion-unasked` and `namespace-method-value-itself` move to
-`lower/calls.ts` with the condition.
+the condition's five, `fn-item-conversion-unasked`,
+`getter-value-unread` and the class's, object's and namespace's
+members' (`*-value-itself`), move to `lower/calls.ts` with it.
