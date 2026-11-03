@@ -446,9 +446,13 @@ pub(in crate::lower) fn only_attributes(between: &str, blank_lines: bool) -> boo
 /// The names a module's `pub use m::*;`, `glob`, gives it, each where
 /// rustc resolves it there, past what the module's own items and single
 /// `use`s shadow (rd153): a function, constant or thread-local of the
-/// crate's, from its module, or a library's, from its file, by what it's
-/// exported as; a type, a trait or a macro, nothing. What has JS but can't
-/// be said, a binding, a class or a module, is refused, never left out.
+/// crate's, or a library's, from the module the glob names, by what that
+/// module exports it as, its re-export's name, `unstable_createEventHandle`
+/// of ReactDOMFB's `pub use ..::create_event_handle as
+/// unstable_create_event_handle` (#592); of a library's module, from its
+/// file, by its own name. A type, a trait or a macro, nothing. What has JS
+/// but can't be said, a binding, a class or a module, or a library's item
+/// its module renames, is refused, never left out.
 fn globbed(
     tcx: TyCtxt<'_>,
     (module, glob, statement): (LocalModId, DefId, rustc_span::Span),
@@ -470,28 +474,31 @@ fn globbed(
         let name = child.ident.to_string();
         match kind {
             DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. } => {
-                if let Some(info) = fns
+                // Its own, through a module that re-exports it: written already.
+                if fns
                     .get(&id)
-                    .filter(|info| info.owner.is_none() && info.module != module)
-                    && let Some(from) = paths.get(&info.module)
+                    .is_some_and(|info| info.owner.is_none() && info.module == module)
                 {
-                    let export = super::default_exports::exported_as(tcx, id, info.exported());
-                    let alias = match child.ident.name == tcx.item_name(id) {
-                        true => info.exported().to_string(),
-                        false => super::bindings::alias_name(tcx, glob, child.ident.name),
-                    };
-                    found.push((written, js::ImportFrom::Module(from.clone()), (export, alias)));
-                } else if let Some(imported) = foreign.item(id)
-                    && imported.member.is_none()
+                    continue;
+                }
+                let crate_item = fns.get(&id).is_some_and(|info| info.owner.is_none());
+                let library_item = !crate_item && foreign.item(id).is_some_and(|imported| imported.member.is_none());
+                if (crate_item || library_item)
+                    && let Some((source, export)) = glob_export(tcx, (fns, foreign), glob, (child.ident.name, id))
+                    && let Some(from) = paths.get(&source)
+                {
+                    found.push((written, js::ImportFrom::Module(from.clone()), (export.clone(), export)));
+                } else if library_item
+                    && child.ident.name == tcx.item_name(id)
                     && let Some((from, export)) = foreign.import_key(id, module)
+                    && let Some(imported) = foreign.item(id)
                 {
+                    // Of a library's module, from its file, by its own name.
                     found.push((
                         written,
                         js::ImportFrom::Specifier(from),
                         (export, imported.name.clone()),
                     ));
-                } else if fns.get(&id).is_some_and(|info| info.module == module) {
-                    // Its own, through a module that re-exports it: written already.
                 } else {
                     refuse(
                         format!("a `pub use` of every name of a module, of `{name}`"),
@@ -507,6 +514,85 @@ fn globbed(
             }
             // A type, a trait or a macro: no JS (ADR 0240).
             _ => {}
+        }
+    }
+}
+
+/// The crate's module the glob `glob`, `pub use m::*;`, names: `m`.
+fn glob_source(tcx: TyCtxt<'_>, glob: DefId) -> Option<LocalModId> {
+    let hir::ItemKind::Use(path, hir::UseKind::Glob) = tcx.hir_expect_item(glob.as_local()?).kind else {
+        return None;
+    };
+    match path.res.type_ns {
+        Some(Res::Def(DefKind::Mod, source)) => Some(LocalModId::new_unchecked(source.as_local()?)),
+        _ => None,
+    }
+}
+
+/// The crate's module a glob, `glob`, re-exports `item`, by `name`, from,
+/// the module it names, and what that module exports it as
+/// (`exported_by`, #592).
+fn glob_export(
+    tcx: TyCtxt<'_>,
+    (fns, foreign): (&HashMap<DefId, FnInfo>, &super::library::Foreign<'_, '_>),
+    glob: DefId,
+    (name, item): (Symbol, DefId),
+) -> Option<(LocalModId, String)> {
+    let source = glob_source(tcx, glob)?;
+    Some((source, exported_by(tcx, (fns, foreign), source, (name, item))?))
+}
+
+/// What the crate's `module` exports `item` as, where it names it `name`
+/// (#592): its own item's name, or its alias (`exported_in`); a `pub use`'s
+/// `#[rust_js::name]`; of one that keeps the name its path gives, through
+/// a module of the crate's, what that module exports it as by that name,
+/// `unstable_createEventHandle` of ReactDOMFB's `pub use
+/// crate::react_dom_client_fb::unstable_create_event_handle`, else its
+/// alias camelCased, or the item's own JS name (`bindings::use_name`); and
+/// of what a glob of its gives it, what the glob's module exports it as.
+/// `None` where it exports it by none.
+pub(super) fn exported_by(
+    tcx: TyCtxt<'_>,
+    (fns, foreign): (&HashMap<DefId, FnInfo>, &super::library::Foreign<'_, '_>),
+    mut module: LocalModId,
+    (mut name, item): (Symbol, DefId),
+) -> Option<String> {
+    use rustc_middle::metadata::Reexport as Via;
+    let mut seen = std::collections::HashSet::new();
+    let own = |name: Symbol| match fns.get(&item) {
+        Some(info) => info.exported().to_string(),
+        None => foreign
+            .item(item)
+            .map_or_else(|| name.to_string(), |imported| imported.name.clone()),
+    };
+    loop {
+        if !seen.insert((module, name)) {
+            return None;
+        }
+        if fns.get(&item).is_some_and(|info| info.module == module) {
+            return exported_in(tcx, fns, module, name, item);
+        }
+        if let Some(used) = reexporting_use(tcx, module, name, item) {
+            let hir::ItemKind::Use(path, hir::UseKind::Single(ident)) = tcx.hir_expect_item(used.as_local()?).kind
+            else {
+                return None;
+            };
+            let through = written_module(path).filter(|_| Some(ident.name) == last_name(path));
+            match (super::bindings::given_name(tcx, used), through) {
+                (Some(given), _) => return Some(given),
+                (None, Some(through)) => {
+                    (module, name) = (through, last_name(path)?);
+                    continue;
+                }
+                (None, None) => return Some(super::bindings::use_name(tcx, used, (name, item), || own(name))),
+            }
+        }
+        // A glob's, of its module's.
+        let child = (tcx.module_children_local(module.to_local_def_id()).iter())
+            .find(|child| child.ident.name == name && child.res.opt_def_id() == Some(item))?;
+        match child.reexport_chain.first() {
+            Some(Via::Glob(glob)) => module = glob_source(tcx, *glob)?,
+            _ => return None,
         }
     }
 }

@@ -682,4 +682,13 @@ export const mutations: Mutation[] = [
     replace: "                impl_const(tcx, def_id.to_def_id())\n",
     tests: ["test/impl-constants.test.ts", "-t", "no value tree"],
   },
+  {
+    name: "glob-module-unwritten",
+    breaks:
+      "a module whose only re-exports are globs writes no file, so its importers fail to load (#592)",
+    file: "src/lower/analysis.rs",
+    find: "            || globs_values(tcx, module);\n",
+    replace: ";\n",
+    tests: ["test/glob-reexports.test.ts", "-t", "a glob re-exports each name as the module it names exports it"],
+  },
 ];

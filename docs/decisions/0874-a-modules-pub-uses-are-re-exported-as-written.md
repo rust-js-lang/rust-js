@@ -1,6 +1,6 @@
 # 0874. A module's `pub use`s are re-exported as written, or refused
 
-Status: Accepted; amended (a `#[rust_js::name]` names a `use` of one name, an error on a group, below; a glob's names, each, rd153; through a module that re-exports it, whatever it is, rd338; a private `use` through one imports from it, rd650; a `pub use` list's comments are its names', rd338). Amends [0240](0240-reexports.md), whose re-exports were
+Status: Accepted; amended (a `#[rust_js::name]` names a `use` of one name, an error on a group, below; a glob's names, each, rd153; through a module that re-exports it, whatever it is, rd338; a private `use` through one imports from it, rd650; a `pub use` list's comments are its names', rd338; a glob's names are its module's, #592). Amends [0240](0240-reexports.md), whose re-exports were
 one statement for each module, ordered by its path, of the crate's
 functions and bindings alone, and refused a JS module's namespace; and
 [0596](0596-a-pub-use-of-a-modules-own-item-exports-it.md), whose private
@@ -422,3 +422,49 @@ What's left of rd338 is nothing: its names (React's `Fragment`, the
 port's nine `#[rust_js::name]`s gone in its d41c07e4) and its modules (a
 library's item, a class and a module through ReactClient) are the
 amendment above's, and a private `use` through it rd650's.
+
+## Amendment: a glob's names are its module's (#592)
+
+React DOM's ReactDOMTestingFB is upstream's `export * from './ReactDOMFB'`,
+its port's `pub use crate::react_dom_fb::*;`. ReactDOMFB re-exports
+ReactDOMClientFB's renamed re-exports by their names, `#[rust_js::name =
+"unstable_createEventHandle"] pub use react_dom_bindings::..::
+create_event_handle as unstable_create_event_handle;` among them. Each of
+the glob's names was re-exported from where its item is declared, by
+that item's name, `export {createEventHandle} from
+'react-dom-bindings/..'`: the module exported `createEventHandle`,
+`runWithPriority`, `batchedUpdates` and `REACT_VERSION`, and none of
+`unstable_createEventHandle`, `unstable_runWithPriority`,
+`unstable_batchedUpdates` or `version`, which a JS importer read as
+`undefined`. A wrong answer. And a module of nothing but globs wrote no
+file at all.
+
+**A glob's name is re-exported from the module the glob names, by what
+that module exports it as** (`reexports::exported_by`): its own item's
+name or alias; a `pub use`'s `#[rust_js::name]`; through a `pub use` that
+keeps the name its path gives, what the module the path names exports it
+as by that name; through a glob of its own, what that glob's module
+exports it as. `export { unstable_createEventHandle, version, .. } from
+"./ReactDOMFB.js"`, as upstream's `export *` re-exports them, from the
+module it names. **A module whose only re-exports are globs is a file of
+its own** (`analysis::globs_values`). **A glob of a library's module**
+re-exports each name from the file that has it, by its own name, as
+before; one the module renames, a name its manifest doesn't say, is
+refused, never exported by its definer's name.
+
+- Case C ([0262](0262-when-rust-and-js-disagree.md)): the module's
+  exports are the names Rust gives them.
+- **Not yet `export * from`**: JS's `export *` re-exports each of the
+  module's exports, one a private item of its exported for another
+  module of the crate too, and isn't shadowed by a private `use` of the
+  name, as Rust's glob is. Printing it where the two sets are one is a
+  follow-up.
+
+Held by `test/glob-reexports.test.ts`: "a glob re-exports each name as
+the module it names exports it" (a library's items renamed, the crate's,
+and a glob of a glob; each module's keys and values run) and "a glob of
+a library's module that renames an item is refused". Mutations
+`glob-names-its-definer`, `glob-export-kept-name-unfollowed`,
+`glob-export-glob-unfollowed`, `glob-library-renamed-unrefused`
+(lower/reexports.ts) and `glob-module-unwritten` (lower/analysis.ts).
+

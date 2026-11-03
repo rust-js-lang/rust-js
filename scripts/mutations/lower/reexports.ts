@@ -218,9 +218,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `pub use m::*;` of a library's module refuses its functions and constants, which its file exports (rd153)",
     file: "src/lower/reexports.rs",
-    find: "                    && let Some((from, export)) = foreign.import_key(id, module)\n                {\n                    found.push((\n",
-    replace:
-      "                    && let Some((from, export)) = foreign.import_key(id, module)\n                    && false\n                {\n                    found.push((\n",
+    find: "                    && let Some(imported) = foreign.item(id)\n                {\n",
+    replace: "                    && let Some(imported) = foreign.item(id)\n                    && false\n                {\n",
     tests: [
       "test/cross-crate-items.test.ts",
       "-t",
@@ -397,5 +396,41 @@ export const mutations: Mutation[] = [
     find: "                .filter(|&from| from != module);\n",
     replace: ";\n",
     tests: ["test/method-forwarding.test.ts", "-t", "a namespace's method that only passes its parameters on to its module's function"],
+  },
+  {
+    name: "glob-names-its-definer",
+    breaks:
+      "a glob's name is re-exported from where its item is declared, by that item's name, `export { createEventHandle } from`, so a JS importer of `unstable_createEventHandle` reads `undefined` (#592)",
+    file: "src/lower/reexports.rs",
+    find: "                    && let Some((source, export)) = glob_export(tcx, (fns, foreign), glob, (child.ident.name, id))\n",
+    replace: "                    && let Some((source, export)) = glob_export(tcx, (fns, foreign), glob, (child.ident.name, id)).filter(|_| false)\n",
+    tests: ["test/glob-reexports.test.ts", "-t", "a glob re-exports each name as the module it names exports it"],
+  },
+  {
+    name: "glob-export-kept-name-unfollowed",
+    breaks:
+      "a `pub use` that keeps the name its path gives is taken for its own name, `unstableCreateEventHandle`, not what the module the path names exports it as (#592)",
+    file: "src/lower/reexports.rs",
+    find: "            let through = written_module(path).filter(|_| Some(ident.name) == last_name(path));\n",
+    replace: "            let through = written_module(path).filter(|_| false);\n",
+    tests: ["test/glob-reexports.test.ts", "-t", "a glob re-exports each name as the module it names exports it"],
+  },
+  {
+    name: "glob-export-glob-unfollowed",
+    breaks:
+      "a glob of a module that has its names by a glob of its own is refused (#592)",
+    file: "src/lower/reexports.rs",
+    find: "            Some(Via::Glob(glob)) => module = glob_source(tcx, *glob)?,\n",
+    replace: "            Some(Via::Glob(_)) => return None,\n",
+    tests: ["test/glob-reexports.test.ts", "-t", "a glob re-exports each name as the module it names exports it"],
+  },
+  {
+    name: "glob-library-renamed-unrefused",
+    breaks:
+      "a glob of a library's module re-exports an item it renames by its definer's name, which the module doesn't export (#592)",
+    file: "src/lower/reexports.rs",
+    find: "                    && child.ident.name == tcx.item_name(id)\n",
+    replace: "",
+    tests: ["test/glob-reexports.test.ts", "-t", "a glob of a library's module that renames an item is refused"],
   },
 ];

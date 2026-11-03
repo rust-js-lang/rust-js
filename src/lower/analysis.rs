@@ -1178,7 +1178,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         }
         let reexports = tcx
             .hir_module_free_items(module)
-            .any(|id| is_reexport(tcx, tcx.hir_item(id)));
+            .any(|id| is_reexport(tcx, tcx.hir_item(id)))
+            || globs_values(tcx, module);
         // Or a default that's another module's function (ADR 0240).
         let defaulted = || !super::default_exports::default_exports(tcx, module).is_empty();
         if (reexports || defaulted()) && seen_modules.insert(module) {
@@ -1449,6 +1450,20 @@ fn asks_capacity<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> bool {
 /// a function, the crate's, a library's or a binding's, or of a binding's
 /// `static`; and of the crate's module, its namespace, or a class (ADR 0240,
 /// amended).
+/// Whether a `pub use m::*;` of `module`'s gives it a function, a constant
+/// or a thread-local, which its file re-exports (`reexports::globbed`),
+/// though it has nothing of its own (#592).
+fn globs_values(tcx: TyCtxt<'_>, module: rustc_span::def_id::LocalModId) -> bool {
+    use rustc_middle::metadata::Reexport as Via;
+    (tcx.module_children_local(module.to_local_def_id()).iter()).any(|child| {
+        matches!(child.reexport_chain.first(), Some(Via::Glob(_)))
+            && matches!(
+                child.res,
+                rustc_hir::def::Res::Def(DefKind::Fn | DefKind::Const { .. } | DefKind::Static { .. }, _)
+            )
+    })
+}
+
 pub(super) fn is_reexport(tcx: TyCtxt<'_>, item: &rustc_hir::Item<'_>) -> bool {
     let rustc_hir::ItemKind::Use(path, rustc_hir::UseKind::Single(_)) = item.kind else {
         return false;

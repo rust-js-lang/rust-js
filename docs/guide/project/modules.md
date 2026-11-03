@@ -406,7 +406,11 @@ ns from`, as is a JS module's, `#*`. A private `use .. as`'s
 `#[rust_js::name]` is its import's name. A `pub use m::*;` re-exports
 each name it gives the module, as rustc resolves it, past what the
 module's own items shadow, `export { cloneInstance, supportsPersistence }
-from`, its types nothing. One that has JS but can't be re-exported yet,
+from`, its types nothing: from the module the glob names, by what that
+module exports it as, a name its `pub use` gives it too,
+`unstable_createEventHandle`, and of a library's module from the file
+that has it; a module of globs alone is a file of its own
+([ADR 0874, amended](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md#amendment-a-globs-names-are-its-modules-592)). One that has JS but can't be re-exported yet,
 a glob's module or class, or std's function, is refused, never left out
 ([ADR 0874](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md)):
 
