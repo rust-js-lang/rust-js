@@ -517,3 +517,39 @@ numbers), and mutations `mir-match-arm-continues-unknown`,
 `arm-continues-written-at-the-turns-end` (of `at_the_end`),
 `arm-continue-of-the-ifs-test-unseen`, `arm-continue-elsed` (`continues.ts`) and
 `written-arm-continue-tail-dropped` (`tails.ts`).
+
+## Amendment: an arm's `continue` skips what follows the block it's in too (#530, 2026-11-03)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The jump goes where
+MIR's did.
+
+The amendment above took an arm's `continue` as the program's only where
+the labeled block MIR made holds what's written past the `match`. With a
+guarded arm before the others, `"X" if keep => { ..; continue; } "Y" =>
+continue, _ => {}` then `out.push(..)`, MIR nests the blocks: `bb9: {
+bb25: { if (name === "X") { if (!keep) { break bb9; } ..; break bb25; }
+.. } continue; } out.push(..)`. The `match`'s block, `bb25`, holds the
+`match` alone, and what the arm skips follows `bb9`. So the arms were
+MIR's, and the `switch` kept `bb9:` and `break bb9;`, labels the program
+didn't write.
+
+**What a block's `break` that goes on to a `continue` skips is everything
+written past that block, in the lists it's in** (`continues::turn_rests`,
+by each block's label), not just what it holds. Now `switch (name) {
+case "X": if (keep) { ..; continue; } break; case "Y": continue; }
+out.push(..)`. A `match` that ends the turn still skips nothing. It keeps
+MIR's form, as before, in a loop inside another too. The same block
+nesting in guarded_arm_falls_to_tail's `apart`, `"C" if keep =>
+continue` first, now prints each arm's `continue` where it's written,
+the rest after it, not `(name === "C" && keep) || name === "A"` and an
+`else`.
+
+Held by corpus `switch_guarded_arm_continues_first.rs` against native
+Rust (a guarded arm of a block first, a guard of `&&` and a call, one
+that only continues, a `match` that ends the turn, one in a loop inside
+another, and one ending an inner loop's turn) and the mutation
+`turn-rest-unread` (`continues.ts`). Whether a block in a loop inside
+another counts what the outer turn does past the inner loop changes no
+JS of any shape found, because the `continue` goes where MIR's `break`
+did either way. So `turn_rests` doesn't stop at a loop, and that has no
+mutation.

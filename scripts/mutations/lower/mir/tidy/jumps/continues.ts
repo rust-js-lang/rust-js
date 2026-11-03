@@ -676,4 +676,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^switch_arms_continue.rs$"],
     snapshots: true,
   },
+  {
+    name: "turn-rest-unread",
+    breaks:
+      "a guarded arm that continues before the `match`'s other arms, whose block MIR nests in the one the rest of the turn follows, keeps MIR's `bb9: { switch (..) { .. break bb9; } continue; }`, labels the program didn't write (#530)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "            let past = latest(body).max(rests.get(block.as_str()).copied().unwrap_or(0));\n",
+    replace: "            let past = latest(body);\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_guarded_arm_continues_first.rs$"],
+    snapshots: true,
+  },
 ];

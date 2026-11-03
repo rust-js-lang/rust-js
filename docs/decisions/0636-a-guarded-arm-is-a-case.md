@@ -321,7 +321,9 @@ mutation. `guard-failing-past-any-default` still holds `held_past`.
 The guard's peel in `guarded`, an `if` of the guard's alone inside
 joined to its test (ADR 0905), gives the same JS without it across the
 corpus, `lowering-switches` and falling guarded arms of two tests, `4 if
-a && b => continue` then `4 | 5 if a => ..`. `tails::joined_ands` joins
-the same `if`s after `switches`. Its mutation `switch-guard-inner-if-apart`
-was an equivalent mutant and is removed. The peel stays, as the end it
-gives says whether a falling arm's `if` takes the next case's `else`.
+a && b => continue` then `4 | 5 if a => ..`: in each, the case printed
+the guard as one `if` either way. Which pass joins it there wasn't found;
+`tails::joined_ands`, of comparisons of one subject, is not it.
+Its mutation `switch-guard-inner-if-apart` was an equivalent
+mutant and is removed. The peel stays, as the end it gives says whether a
+falling arm's `if` takes the next case's `else`.

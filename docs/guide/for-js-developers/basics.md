@@ -2131,7 +2131,8 @@ that's then nothing is no case
 
 An arm that `continue`s, of a `match` with more of the loop's turn after
 it, skips that rest: its case's `continue;`, as written, the rest after
-the `switch`, whether the `match` is of numbers or of strings, as React
+the `switch`, whether the `match` is of numbers or of strings, and
+whether a guarded arm comes first, `"X" if keep => { ..; continue; }`, as React
 DOM's clearContainerSparingly writes it
 ([ADR 0684](../../decisions/0684-a-continue-the-program-wrote-is-where-it-wrote-it.md#amendment-an-arms-continue-before-more-of-the-turn-518-2026-11-03)):
 

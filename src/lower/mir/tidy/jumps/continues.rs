@@ -137,14 +137,18 @@ fn continued_loop(
 /// `tail_continues`). Its `match` is a `switch` whose cases `continue`, as
 /// React DOM's clearContainerSparingly writes it, not one whose rest of the
 /// turn is an `else` (#518). One of a `match` that ends the turn, which
-/// skips nothing, is MIR's as before, `case 0: break;` (ADR 0629). The
-/// `break` goes to the `continue` and nowhere else, so the two run the
-/// same; not into a loop inside the block, whose own `continue` an
-/// unlabeled one would be.
+/// skips nothing, is MIR's as before, `case 0: break;` (ADR 0629). What
+/// the block holds or the turn does past it (`turn_rests`): MIR may nest
+/// the `match`'s block in the one the rest of the turn follows, `bb9: {
+/// bb25: { .. } continue; } out.push(..)`, of a guarded arm before the
+/// others (#530). The `break` goes to the `continue` and nowhere else, so
+/// the two run the same; not into a loop inside the block, whose own
+/// `continue` an unlabeled one would be.
 pub(in crate::lower::mir::tidy) fn continues_written(
     stmts: &mut [Stmt],
     guards: &[(js::Span, js::Span)],
     arms: &[(js::Span, js::Span, js::Span)],
+    rests: &HashMap<String, u32>,
 ) {
     /// A block's `break`s, `block`, each of which goes on to `jump`, and
     /// the arms of a `continue` whose `match` is before something it holds.
@@ -198,13 +202,7 @@ pub(in crate::lower::mir::tidy) fn continues_written(
     for at in 1..stmts.len() {
         let (before, after) = stmts.split_at_mut(at);
         if let (StmtKind::Labeled(block, body), StmtKind::Continue(_)) = (&mut before[at - 1].kind, &after[0].kind) {
-            let mut past = 0;
-            js::each_list(body, &mut |list| {
-                past = (list.iter()).fold(
-                    past,
-                    |past, s| if s.span.is_none() { past } else { past.max(s.span.lo) },
-                );
-            });
+            let past = latest(body).max(rests.get(block.as_str()).copied().unwrap_or(0));
             let of = Of {
                 block,
                 jump: &after[0],
@@ -217,6 +215,51 @@ pub(in crate::lower::mir::tidy) fn continues_written(
             replaced(body, &of, None);
         }
     }
+}
+
+/// Where the last statement of `stmts` starts, however deep, that has a
+/// place.
+fn latest(stmts: &[Stmt]) -> u32 {
+    let mut past = 0;
+    js::each_list(stmts, &mut |list| {
+        past = (list.iter()).fold(
+            past,
+            |past, s| if s.span.is_none() { past } else { past.max(s.span.lo) },
+        );
+    });
+    past
+}
+
+/// Of each block `body` labels, where the last statement past it starts,
+/// in the lists it's in (`latest`): what a `break` of it that goes on to a
+/// `continue` skips (`continues_written`, #530).
+pub(in crate::lower::mir::tidy) fn turn_rests(body: &[Stmt]) -> HashMap<String, u32> {
+    fn walk(stmts: &[Stmt], later: u32, rests: &mut HashMap<String, u32>) {
+        for (i, stmt) in stmts.iter().enumerate() {
+            let after = later.max(latest(&stmts[i + 1..]));
+            match &stmt.kind {
+                StmtKind::Labeled(label, inner) => {
+                    rests.insert(label.clone(), after);
+                    walk(inner, after, rests);
+                }
+                StmtKind::If(_, then, otherwise) => {
+                    walk(then, after, rests);
+                    walk(otherwise.as_deref().unwrap_or_default(), after, rests);
+                }
+                StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                    walk(a, after, rests);
+                    walk(b, after, rests);
+                }
+                StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
+                    walk(body, after, rests)
+                }
+                _ => {}
+            }
+        }
+    }
+    let mut rests = HashMap::new();
+    walk(body, 0, &mut rests);
+    rests
 }
 
 /// Each `continue` and loop `break` the program wrote last in a branch of

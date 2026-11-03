@@ -108,15 +108,18 @@ function apart(items) {
   const out = [];
   for (let i = 0; i < items.length; i++) {
     const [name, keep] = items[i];
-    if ((name === "C" && keep) || name === "A") {
+    if (name === "C" && keep) {
+      continue;
+    }
+    if (name === "A") {
       continue;
     }
     if (name === "B") {
       out.push("b");
-    } else {
-      out.push(`other ${name}`);
-      out.push(`tail ${name}`);
+      continue;
     }
+    out.push(`other ${name}`);
+    out.push(`tail ${name}`);
   }
   return out;
 }
