@@ -432,3 +432,39 @@ class's constructor that gives an Rc of it makes this", the corpus's
 `moved`; mutations `param-trailing-comment-of-a-method-after-the-line`
 (`to_oxc/trailing.ts`) and `object-method-params-unplaced`
 (`to_oxc/statements.ts`).
+
+## Amendment: a closure call's arguments are where they're written (rd657)
+
+React's Flight host dispatcher calls the previous dispatcher's function,
+a `&dyn Fn` field, with a comment before its first argument:
+
+```rust
+(PREVIOUS_DISPATCHER.with(|previous_dispatcher| previous_dispatcher.preconnect))(
+    /* preconnect */ href,
+    cross_origin,
+);
+```
+
+It printed `previousDispatcher.C(href, /* preconnect */ crossOrigin)`,
+and of one argument, `/* prefetchDNS */ previousDispatcher.D(href);`, the
+comment before the statement. A function's arguments are placed by MIR's
+call, each of its operands where it's written; a closure's, a `dyn Fn`'s
+or a fn pointer's are one tuple, `Fn::call(&f, (href, cross_origin))`,
+whose items MIR keeps no place of, so `href`, a parameter read, had none,
+and the comment went before the first JS after it that had one.
+
+**A closure call's arguments are placed where they're written**, THIR's
+arguments' tuple's fields, of the one call at MIR's call's place
+(`closure_arguments_written`); one with a place of its own keeps it, and
+none of a macro's is placed: `previousDispatcher.C(\n  /* preconnect
+*/\n  href,\n  crossOrigin,\n);`, as a function's call is, its comment on
+lines of its own (this ADR). Upstream writes it on one line,
+`previousDispatcher.C(/* preconnect */ href, crossOrigin);`: a block
+comment on its argument's line as written there is the printer's, the
+same for every call, not decided here.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, a comment's place.
+
+Held by `lowering-comments-inside`'s "a comment before a dyn Fn call's
+argument is before it", run, and the mutation `closure-arguments-unplaced`
+(`lower/mir/calls.ts`).

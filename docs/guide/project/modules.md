@@ -1085,8 +1085,10 @@ export function phase(entered, now) {
 ```
 
 So is a comment before a call's argument, or before an object literal's
-field: before it, on lines of their own
-([ADR 0708](../../decisions/0708-a-comment-before-an-argument-is-before-it.md)):
+field: before it, on lines of their own, a closure's or a `dyn Fn`'s
+call's too, `(previous.preconnect)(/* preconnect */ href, cross_origin)`
+([ADR 0708](../../decisions/0708-a-comment-before-an-argument-is-before-it.md),
+amended, rd657):
 
 ```rust
 fn at_least(value: f64, low: f64) -> f64 {

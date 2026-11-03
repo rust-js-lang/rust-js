@@ -9,6 +9,15 @@ const isFunctionValue = [
 
 export const mutations: Mutation[] = [
   {
+    name: "closure-arguments-unplaced",
+    breaks:
+      "a `dyn Fn` call's arguments have no place, so a comment before the first is after it, `d.two(href, /* two */ n)`, or, of one argument, before the statement (rd657)",
+    file: "src/lower/mir/calls.rs",
+    find: "        let written = self.closure_arguments_written(span);\n",
+    replace: "        let written: Vec<Span> = (span, Vec::new()).1;\n",
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "a comment before a dyn Fn call's argument is before it"],
+  },
+  {
     name: "any-value-set-nulled",
     breaks: "a map of any value's `set` writes `value ?? null` (#443)",
     file: "src/lower/mir/calls.rs",

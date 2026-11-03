@@ -649,6 +649,38 @@ pub fn math() -> bool {
   expect(lib.math()).toBe(true);
 });
 
+// React's Flight host dispatcher calls the previous dispatcher's function,
+// a `&dyn Fn` field, with a comment before its first argument,
+// `(previous.preconnect)(\n /* preconnect */ href,\n cross_origin,\n)`:
+// before that argument in the JS too, as before a function's, not after it
+// before the next, `previousDispatcher.C(href, /* preconnect */ crossOrigin)`,
+// nor, of one argument, before the statement (rd657).
+test("a comment before a dyn Fn call's argument is before it", async () => {
+  const { js, lib } = await compiled("comment-before-a-dyn-fn-argument", `pub struct Dispatcher {
+    pub one: &'static dyn Fn(&str) -> String,
+    pub two: &'static dyn Fn(&str, u32) -> String,
+}
+
+pub fn calls(href: &str, n: u32) -> String {
+    let d = Dispatcher {
+        one: &|href| href.to_owned(),
+        two: &|href, n| format!("{href}{n}"),
+    };
+    let one = (d.one)(
+        /* one */ href,
+    );
+    let two = (d.two)(
+        /* two */ href,
+        n,
+    );
+    one + &two
+}
+`);
+  expect(js).toContain("d.one(\n    /* one */\n    href,\n  );");
+  expect(js).toContain("d.two(\n    /* two */\n    href,\n    n,\n  );");
+  expect(lib.calls("a", 1)).toBe("aa1");
+});
+
 // React's ReactFlightPerformanceTrack, `if (description.charCodeAt(queryIdx
 // - 1) === 47 /* "/" */) {`, whose port rustfmt writes with the comment on
 // a line of its own before the `{`: after the condition's last code, as

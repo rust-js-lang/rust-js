@@ -132,6 +132,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
+    /// Where each argument of the closure call at `span` is written, `a`
+    /// and `b` of `(f)(a, b)`: THIR's arguments' tuple's fields, of the one
+    /// call there; none where there's no such call.
+    fn closure_arguments_written(&self, span: Span) -> Vec<Span> {
+        let thir = self.frame.thir;
+        let mut calls = thir.exprs.iter().filter_map(|e| match &e.kind {
+            thir::ExprKind::Call { args, .. } if e.span == span && args.len() == 2 => {
+                match &thir[crate::lower::body_queries::strip(thir, args[1])].kind {
+                    thir::ExprKind::Tuple { fields } => Some(fields.iter().map(|&field| thir[field].span).collect()),
+                    _ => None,
+                }
+            }
+            _ => None,
+        });
+        match (calls.next(), calls.next()) {
+            (Some(fields), None) => fields,
+            _ => Vec::new(),
+        }
+    }
+
     /// A closure called, `Fn::call(&f, (a, b))`: in JS, `f(a, b)`, and an
     /// `async` one's, `AsyncFn::async_call`, which gives its promise.
     pub(super) fn mir_closure_call(
@@ -164,9 +184,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A writer callable's `Formatter`, `writes`, isn't given it, as a
         // writer function's isn't (ADR 0054).
         let given = |i: &usize| Some(*i) != writes;
+        // Each where it's written, as a function's argument is, so a
+        // comment before it is before it, `(d.preconnect)(/* preconnect */
+        // href, cross_origin)` (rd657).
+        let written = self.closure_arguments_written(span);
         let mut exprs = (list.into_iter().enumerate())
             .filter(|(i, _)| given(i))
-            .map(|(_, v)| self.value_expr(v, span))
+            .map(|(i, v)| {
+                let mut e = self.value_expr(v, span)?;
+                if e.span.is_none()
+                    && let Some(at) = written.get(i).filter(|at| !at.from_expansion())
+                {
+                    e.span = self.js_span(*at);
+                }
+                Ok(e)
+            })
             .collect::<R<Vec<_>>>()?;
         if let ty::Tuple(tys) = arg_tys[1].kind() {
             let tys: Vec<Ty<'tcx>> = (tys.iter().enumerate())
