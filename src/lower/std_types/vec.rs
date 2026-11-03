@@ -97,6 +97,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                 }
             }
+            // Of `Cow<str>`s, text: each one's `str`, joined by the
+            // separator, as `Join<&str>` of what borrows a `str` is (#495).
+            Std::JoinItems
+                if let Some(item) = self
+                    .slice_item(tys[0].peel_refs())
+                    .filter(|&item| self.recognition().is_cow(item)) =>
+            {
+                let items = self.cow_texts(arg(), item);
+                Expr::call(Expr::member(items, "join"), vec![arg()])
+            }
             // The separator `&T` between each two, or `&[T]`'s items; each
             // item cloned, as `Join`'s are.
             Std::JoinItems => {

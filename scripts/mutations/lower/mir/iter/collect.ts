@@ -547,4 +547,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
   },
+  {
+    name: "collected-cows-as-objects",
+    breaks: "`collect::<String>()` of `Cow<str>`s joins the `Cow`s themselves, `[object Object]` (#495)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "                Some(item) => self.cow_texts(items, item),\n",
+    replace: "                Some(_) => items,\n",
+    tests: ["test/corpus.test.ts", "-t", "^cow_texts_joined.rs$"],
+  },
 ];

@@ -472,6 +472,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(unwinding) => unwinding.collected(it),
                 None => items(it),
             };
+            let items = match item {
+                Some(item) => self.cow_texts(items, item),
+                None => items,
+            };
             method("join", items, vec![Expr::str("")])
         } else if self.option_of(output).is_some() || self.recognition().is_result(output) {
             // What's left of what it steps, dropped where it stops: closed.

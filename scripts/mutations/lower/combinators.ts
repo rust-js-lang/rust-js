@@ -815,4 +815,12 @@ export const mutations: Mutation[] = [
     replace: "            .at(js::Span::NONE),\n        );\n        Ok(Expr::undefined())\n",
     tests: ["test/lowering-index-loops.test.ts", "-t", "extend of an indexed list"],
   },
+  {
+    name: "concat-cows-as-lists",
+    breaks: "`concat()` of `Cow<str>`s flattens them as lists, `[object Object],[object Object]` (#495)",
+    file: "src/lower/combinators.rs",
+    find: "        let text = |item: &Ty<'tcx>| self.is_string_like(*item) || self.recognition().is_cow(*item);\n",
+    replace: "        let text = |item: &Ty<'tcx>| self.is_string_like(*item);\n",
+    tests: ["test/corpus.test.ts", "-t", "^cow_texts_joined.rs$"],
+  },
 ];

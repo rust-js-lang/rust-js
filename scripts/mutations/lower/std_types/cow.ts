@@ -38,4 +38,12 @@ export const mutations: Mutation[] = [
       "            let variant = rustc_abi::VariantIdx::from_usize(usize::from(!owned));\n",
     tests: ["test/corpus.test.ts", "-t", "^std_conversions.rs$"],
   },
+  {
+    name: "cow-texts-as-objects",
+    breaks: "a `String` made of `Cow<str>`s joins the `Cow`s themselves, `[object Object]` (#495)",
+    file: "src/lower/std_types/cow.rs",
+    find: "        if !self.recognition().is_cow(item) {\n            return items;\n",
+    replace: "        if true {\n            return items;\n",
+    tests: ["test/corpus.test.ts", "-t", "^cow_texts_joined.rs$"],
+  },
 ];

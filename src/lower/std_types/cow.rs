@@ -81,6 +81,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Some((Expr::member(cow.clone(), crate::js::positional(0)), borrowed))
     }
 
+    /// `items`, an array of `item`s a `String` is made of, as text: of
+    /// `Cow<str>`s, each one's `str`, its `_0`, `items.map((cow) => cow._0)`,
+    /// as std's `FromIterator<Cow<str>>` and `Extend<Cow<str>>` push each's
+    /// (#495); of others, as they are.
+    pub(in crate::lower) fn cow_texts(&mut self, items: Expr, item: Ty<'tcx>) -> Expr {
+        let item = item.peel_refs();
+        if !self.recognition().is_cow(item) {
+            return items;
+        }
+        let cow = self.fresh("cow");
+        let (read, _) = self.cow_deref(&Expr::var(&cow), item).expect("a Cow's parts");
+        let read = vec![StmtKind::Return(Some(read)).at(crate::js::Span::NONE)];
+        Expr::call(Expr::member(items, "map"), vec![Expr::arrow(vec![cow.into()], read)])
+    }
+
     /// One side of `==` of a `Cow` and what it borrows: a `Cow`'s, through
     /// its references, what it borrows; another's, as it is.
     pub(in crate::lower) fn cow_side(&self, value: Expr, ty: Ty<'tcx>) -> (Expr, Ty<'tcx>) {

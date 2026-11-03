@@ -840,14 +840,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Comb::Windows => helper("$windows", vec![subject, next()]),
             Comb::Chunks => helper("$chunks", vec![subject, next()]),
-            // Of strings, one string; of `Vec`s or arrays, one array.
-            Comb::Concat
-                if self
-                    .slice_item(subject_ty)
-                    .is_some_and(|item| self.is_string_like(item)) =>
-            {
-                Expr::call(Expr::member(subject, "join"), vec![Expr::str("")])
-            }
             Comb::Concat => self.concatenated(subject, subject_ty, span)?,
         })
     }
@@ -1008,8 +1000,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// `parts.flat()`, of arrays, `concat_copies`.
+    /// `concat()` of `parts`: of strings, one string, of `Cow<str>`s each
+    /// one's `str` (`cow_texts`, #495); of `Vec`s or arrays, one array,
+    /// `parts.flat()`, `concat_copies`.
     fn concatenated(&mut self, parts: Expr, parts_ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let text = |item: &Ty<'tcx>| self.is_string_like(*item) || self.recognition().is_cow(*item);
+        if let Some(item) = self.slice_item(parts_ty).filter(text) {
+            let parts = self.cow_texts(parts, item);
+            return Ok(Expr::call(Expr::member(parts, "join"), vec![Expr::str("")]));
+        }
         self.concat_copies(Expr::call(Expr::member(parts, "flat"), Vec::new()), parts_ty, span)
     }
 

@@ -450,4 +450,12 @@ export const mutations: Mutation[] = [
     replace: "            Std::Concat => Expr::bin(Op::Add, arg(), arg()),\n",
     tests: ["test/bindings.test.ts", "-t", "any value is read as JS reads it"],
   },
+  {
+    name: "extended-cows-as-objects",
+    breaks: "a `String`'s `extend` of `Cow<str>`s pushes the `Cow`s themselves, `[object Object]` (#495)",
+    file: "src/lower/std_types/text.rs",
+    find: "            Some(item) => self.cow_texts(items, item),\n",
+    replace: "            Some(_) => items,\n",
+    tests: ["test/corpus.test.ts", "-t", "^cow_texts_joined.rs$"],
+  },
 ];

@@ -278,6 +278,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => items,
             false => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]),
         };
+        let items = match ty.map(|ty| self.iterable_item(ty)) {
+            Some(item) => self.cow_texts(items, item),
+            None => items,
+        };
         Ok(Expr::call(Expr::member(items, "join"), vec![Expr::str("")]))
     }
 

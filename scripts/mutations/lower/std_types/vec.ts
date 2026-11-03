@@ -202,4 +202,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^utf16_sort.rs$"],
     snapshots: true,
   },
+  {
+    name: "joined-cows-as-lists",
+    breaks: "`join(\",\")` of `Cow<str>`s joins them as lists, `$joinWith`, which throws `list is not iterable` (#495)",
+    file: "src/lower/std_types/vec.rs",
+    find: "                    .filter(|&item| self.recognition().is_cow(item)) =>",
+    replace: "                    .filter(|_| false) =>",
+    tests: ["test/corpus.test.ts", "-t", "^cow_texts_joined.rs$"],
+  },
 ];
