@@ -806,6 +806,10 @@ test("a let a call writes, read by a nullable parameter and alike, is null for N
   expect(js).toContain("    previous = clones != null ? measured(clones) : null;\n");
   expect(js).toContain("    previous = previousOf(state, gesture) ?? null;\n");
   expect(js).toContain("function measureMatched(previous) {\n  return previous !== null ?");
+  // The cell's read is the `let`'s write, `null` for `None` there, read
+  // before the cell is cleared.
+  expect(js).toContain("function measureCleared(previous) {\n  return previous !== null ?");
+  expect(js).not.toContain("previous$1 ?? null");
   for (const kept of ["Shown", "Returned", "Stored", "Captured", "Lent"]) {
     expect(js).toContain(`function measure${kept}(previous) {\n  return previous != null ?`);
   }

@@ -12,6 +12,10 @@ pub struct State {
     pub clones: Option<Vec<u32>>,
 }
 
+pub struct Fiber {
+    pub memoized: std::cell::Cell<Option<&'static [u32]>>,
+}
+
 pub struct Kept {
     pub previous: Option<Vec<u32>>,
 }
@@ -124,6 +128,28 @@ pub fn update_matched(state: &State, gesture: bool) -> (u32, usize) {
     (in_viewport, previous.map_or(0, |previous| previous.len()))
 }
 
+// React's own arm: what a cell held, read, then the cell cleared, `let
+// previous = js::cast(old_fiber.memoized_state.get()); old_fiber
+// .memoized_state.set(js::null()); previous`.
+pub fn update_cleared(state: &State, fiber: &Fiber, gesture: bool) -> u32 {
+    let previous = if gesture {
+        state.clones.as_ref().map(|clones| measured(clones))
+    } else {
+        let previous = fiber.memoized.get().map(<[u32]>::to_vec);
+        fiber.memoized.set(None);
+        previous
+    };
+    measure_cleared(previous.as_deref()) + previous.map_or(0, |previous| previous.len() as u32)
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(previous))]
+fn measure_cleared(previous: Option<&[u32]>) -> u32 {
+    match previous {
+        Some(previous) => previous.iter().sum(),
+        None => 0,
+    }
+}
+
 pub fn update_shown(state: &State, gesture: bool) -> (u32, String) {
     let previous = if gesture { state.clones.as_ref().map(|clones| measured(clones)) } else { previous_of(state, gesture) };
     (measure_shown(previous.as_deref()), shown(previous.as_deref()))
@@ -162,6 +188,10 @@ fn main() {
         for gesture in [true, false] {
             println!("{:?}", update(state, gesture));
             println!("{:?}", update_matched(state, gesture));
+            let fiber = Fiber {
+                memoized: std::cell::Cell::new(Some(&[4, 5])),
+            };
+            println!("{} {}", update_cleared(state, &fiber, gesture), update_cleared(state, &fiber, gesture));
             println!("{:?}", update_shown(state, gesture));
             println!("{:?}", update_returned(state, gesture));
             let (measured, kept) = update_stored(state, gesture);

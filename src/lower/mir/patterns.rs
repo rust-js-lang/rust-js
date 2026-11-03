@@ -318,9 +318,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What a `let` is written, besides what it makes, of its arms' own
         // `let`s or temporaries, each written once by what makes an
         // `Option`, read once, there: `let x = if c { let y = f(); y }
-        // else { g() };`'s `y` (rd632). Each is a `let` read alike as `x`
-        // is, its copy's (`lets`, `alike`, `toward` above), so `null` for
-        // `None` where `x` is.
+        // else { g() };`'s `y` (rd632), `null` for `None` where it's
+        // written as `x` is, so `x`'s copy of it is as it is.
         let arm = |of: Local| {
             locals.writes[of] == 1 && locals.reads[of] == 1 && made.get(&of).is_some_and(|&(writes, _)| writes == 1)
         };
@@ -357,6 +356,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && writes + arms.len() == locals.writes[local]
             {
                 nulled.insert(local);
+                nulled.extend(arms);
             }
         }
         nulled

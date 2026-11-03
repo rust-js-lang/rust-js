@@ -605,4 +605,12 @@ export const mutations: Mutation[] = [
     replace: "                && writes == locals.writes[local]\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "read by a nullable parameter and alike"],
   },
+  {
+    name: "let-arms-unnulled",
+    breaks: "a `let`'s arm that's a `let` of its own, read before a cell it read is cleared, `let previous = fiber.memoized.get()..; fiber.memoized.set(None); previous`, isn't `null` for `None` where it's written, so its copy is `previous = previous$1 ?? null` (rd632)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                nulled.extend(arms);\n",
+    replace: "",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "read by a nullable parameter and alike"],
+  },
 ];

@@ -53,9 +53,8 @@ export function update(state, gesture) {
     const clones = state.clones;
     previous = clones != null ? measured(clones) : null;
   } else {
-    const previous$1 = previousOf(state, gesture);
+    previous = previousOf(state, gesture) ?? null;
     console.log("cleared");
-    previous = previous$1 ?? null;
   }
   const inViewport = measure(previous);
   const some = previous != null;
@@ -78,6 +77,24 @@ export function updateMatched(state, gesture) {
   }
   const inViewport = measureMatched(previous);
   return [inViewport, previous?.length ?? 0];
+}
+
+// React's own arm: what a cell held, read, then the cell cleared, `let
+// previous = js::cast(old_fiber.memoized_state.get()); old_fiber
+// .memoized_state.set(js::null()); previous`.
+export function updateCleared(state, fiber, gesture) {
+  let previous;
+  if (gesture) {
+    previous = state.clones != null ? measured(state.clones) : null;
+  } else {
+    previous = fiber.memoized?.slice() ?? null;
+    fiber.memoized = undefined;
+  }
+  return (measureCleared(previous) + (previous?.length ?? 0)) >>> 0;
+}
+
+function measureCleared(previous) {
+  return previous !== null ? previous.reduce((a, b) => (a + b) >>> 0, 0) : 0;
 }
 
 export function updateShown(state, gesture) {
@@ -147,6 +164,12 @@ function main() {
       console.log(`(${value[0]}, ${value[1]}, ${value[2]})`);
       const value$1 = updateMatched(state, gesture);
       console.log(`(${value$1[0]}, ${value$1[1]})`);
+      const fiber = {
+        memoized: [4, 5],
+      };
+      console.log(
+        `${updateCleared(state, fiber, gesture)} ${updateCleared(state, fiber, gesture)}`,
+      );
       const value$2 = updateShown(state, gesture);
       console.log(`(${value$2[0]}, ${$debugStr(value$2[1])})`);
       const value$3 = updateReturned(state, gesture);

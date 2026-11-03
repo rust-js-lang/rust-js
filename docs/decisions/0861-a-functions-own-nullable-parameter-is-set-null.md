@@ -568,7 +568,7 @@ excluded read, against native Rust; the binding `String` says
 call writes, read by a nullable parameter and alike, is null for None"
 and "a closure that gives its argument maps an option to itself". Mutations
 `let-alike-of-a-temporary`, `let-read-otherwise-nulled` and
-`let-arms-uncounted` (`lower/mir/patterns.ts`), `alike-as-deref-unsaid`,
+`let-arms-uncounted` and `let-arms-unnulled` (`lower/mir/patterns.ts`), `alike-as-deref-unsaid`,
 `alike-is-some-unread` and `alike-map-or-unread` (`lower/mir/nulled.ts`),
 and `closure-map-unrecognized` and `closure-map-effects-dropped`
 (`lower/std_types/option.ts`). Each excluded read is a read `alike_reads`
