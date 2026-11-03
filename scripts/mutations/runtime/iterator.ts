@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
     name: "own-steps-not-the-value",
     breaks: "std's struct given with `fold: $foldOf` is wrapped, losing its own `advance_by`, so a chain's `nth` steps each item of a reversed `Vec` back to front (ADR 0912)",
     file: "src/runtime/iterator.js",
-    find: "  if (own(iterator, { next: $next, fold: $foldOf, nth: $nth, last: $last }) && len === undefined\n",
+    find: "  if (own(iterator, { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count }) && len === undefined\n",
     replace: "  if (own(iterator, { next: $next }) && len === undefined\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },
@@ -186,5 +186,14 @@ export const mutations: Mutation[] = [
     find: "    back?.tryRfold,\n    iterator.count,\n",
     replace: "    back?.tryRfold,\n",
     tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
+  },
+  {
+    name: "given-count-not-own",
+    breaks:
+      "a value of a type parameter whose dictionary's `count` is `$count` is made a JS iterator again, losing its own `tryFold`, so a generic `map(..).any(..)` of a `skip` asks `nth(n)` where Rust asks `nth(n - 1)` (#520)",
+    file: "src/runtime/iterator.js",
+    find: "last: $last, count: $count })",
+    replace: "last: $last })",
+    tests: ["test/iterator-forms.test.ts", "-t", "^skip_try_fold with"],
   },
 ];

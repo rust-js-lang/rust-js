@@ -303,3 +303,18 @@ with the mutations `own-count-unlisted` (`stepping.ts`),
 (`closing.ts`), `skipping-count-of-own-count-folded` (`skipping.ts`),
 `skip-count-folded` (`steps.ts`) and `chain-own-count-unsaid`
 (`lazy_chain.ts`).
+
+## Amendment: a dictionary's `count` is the value's own (2026-11-03, #520)
+
+`$given` gives a value of a type parameter back as it is when each entry
+of its dictionary only calls the value's own step: `$next`, `$foldOf`,
+`$nth`, `$last`. The amendment above added `count: $count` to generic
+code's dictionaries but not to that list, so every such value was made a
+JS iterator again, stepped by its `next`, and lost its own `tryFold`. A
+generic `it.map(f).any(p)` of a `skip` over an iterator with its own
+`nth` asked `nth(n)` where std's `Skip::try_fold` asks `nth(n - 1)`.
+`$count` calls the value's own `count` as `$nth` calls its `nth`, so it
+joins the list. Results change, so Rust's behavior is kept (ADR 0262, C).
+`skip_try_fold.rs` holds it in the build of std's structs
+(`iterator-forms.test.ts`), with the mutation `given-count-not-own`
+(`iterator.ts`).

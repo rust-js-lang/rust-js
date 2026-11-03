@@ -105,12 +105,13 @@ function $knowing(it, back, len, rfold, nthBack, tryRfold) {
 function $given(value, iterator, boxed = false, back, len) {
   // A JS iterator stepped as it is, its dictionary its own steps, each one
   // that calls the value's, `$next` and `$foldOf` of std's struct (ADR
-  // 0912): itself, whose own `last`, `nth`, `fold` and `advanceBy` are std's
-  // for its kind, a chain's sides' (#276). Its reader by index, which steps
-  // nothing, aside (ADR 0975).
+  // 0912): itself, whose own `last`, `nth`, `fold`, `count` and `advanceBy`
+  // are std's for its kind, a chain's sides' (#276, #505). Its reader by
+  // index, which steps nothing, aside (ADR 0975). Made a JS iterator again,
+  // it would lose its own `tryFold`, a `skip`'s source's `nth(n - 1)` (#520).
   const own = (dictionary, steps) =>
     Object.entries(dictionary).every(([name, step]) => name === "getUnchecked" || steps[name] === step);
-  if (own(iterator, { next: $next, fold: $foldOf, nth: $nth, last: $last }) && len === undefined
+  if (own(iterator, { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count }) && len === undefined
     && (back === undefined || own(back, { next_back: $nextBack }))) {
     return value;
   }
