@@ -389,7 +389,9 @@ it, a `Drop` impl's body, in the function, its comments with it ([ADR 0753](deci
 re-exports' order, and their statements among the code, where their `use`s
 are ([ADR 1069](decisions/1069-imports-are-statements-of-the-module.md));
 `src/to_oxc/starts.rs` says where each statement and item starts, what a
-comment is attached to ([ADR 0444](decisions/0444-a-comment-is-where-its-code-is.md));
+comment is attached to ([ADR 0444](decisions/0444-a-comment-is-where-its-code-is.md)),
+and where a function `prepare` made a declaration elsewhere was, whose
+comments are that declaration's (`js::Module::taken_into`, [ADR 0610](decisions/0610-a-forwarding-function-is-its-variable.md), amended);
 `src/format.rs` lays it out with oxfmt and remaps changed text. Declarations
 flow from `src/lower/declarations.rs` through `src/typescript.rs` to `typescript/`.
 `src/output.rs` coordinates crate transforms, optional application Prettier,

@@ -178,4 +178,20 @@ export const mutations: Mutation[] = [
     replace: "                    .filter_map(|method| class.forwarded(method).filter(|_| false))\n",
     tests: ["test/method-forwarding.test.ts", "-t", "a declaration its module's load can read"],
   },
+  {
+    name: "forwarding-function-comments-untaken",
+    breaks: "a function that's its variable loses its comments, `// The next one.` of its body (#535)",
+    file: "src/prepare/forwarding.rs",
+    find: "        // (#535).\n        module.taken_into.push((function.span, declared));\n",
+    replace: "        // (#535).\n        let _ = (function.span, declared);\n",
+    tests: ["test/lowering-forwarding.test.ts", "-t", "keeps its comments above the declaration"],
+  },
+  {
+    name: "forwarding-fields-comments-untaken",
+    breaks: "a function that's a thread-local's field taken apart loses its comments, `// Links.` above it (#535)",
+    file: "src/prepare/forwarding.rs",
+    find: "                module.taken_into.push((function.span, declared));\n",
+    replace: "                let _ = (function.span, declared);\n",
+    tests: ["test/lowering-forwarding.test.ts", "-t", "keeps its comments above the declaration"],
+  },
 ];

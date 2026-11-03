@@ -293,3 +293,65 @@ What holds it: `test/lowering-forwarding.test.ts`, "a const struct of
 fields read only to call them keeps its name". Mutations
 `members-of-a-struct-of-fields` (`prepare/forwarding.ts`) and
 `namespace-method-unmarked` (`mir/calls.ts`).
+
+## Amendment: a function's comments are its declaration's (#535)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. Comments don't
+run; this is where they're printed.
+
+A function that became its variable, or a thread-local's field taken
+apart, lost every comment it had, those above it, its `///` doc, and
+those in its body, a line's own or after code on its line:
+
+```rust
+thread_local! {
+    static RUN: fn(u32) -> u32 = |n| n + 1;
+}
+
+fn run(n: u32) -> u32 {
+    // The next one.
+    RUN.with(|f| f(n))
+}
+```
+
+printed `const run = (n) => (n + 1) >>> 0;`, `// The next one.` gone: a
+comment is placed before the code its Rust is before (ADR 0444), and the
+function's code is gone.
+
+**Its comments are before the declaration it is, after the
+declaration's own, in the order they're written**:
+
+```js
+// The next one.
+const run = (n) => (n + 1) >>> 0;
+```
+
+and of fields, each function's before the destructuring, `// Links.\n
+const { link, unlink } = ..`. The pass that takes the function out
+(`prepare::forwarding`) says where it was and what it is now,
+`js::Module::taken_into`, and the comments' owner, `to_oxc`'s
+`comments_of`, places what's before the function, and in it, before the
+declaration: the function's span is a start (`starts::statement_spans`),
+which those inside it are of (ADR 0444, amended), one after code on its
+line too, whose line has no JS now. No blank line is set before them or
+between them and the declaration's own: the declaration's place in the
+Rust, not the function's, says where one is, wherever the function is
+written, above or below it.
+
+Alternatives: keeping a function its comments are in a function, as ADR
+1064 keeps a forwarder a function where a re-export has no place for
+its comment: a declaration has a place, so that would keep the second
+name this decision takes away for a comment the declaration can hold.
+Each field's comment before its key in the destructuring, `const { //
+Links.\n link, .. }`, which no pattern of the JS tree places: before the
+statement, the comments still read in order, by the functions' order.
+
+What holds it: `test/lowering-forwarding.test.ts`, "a function that's
+its variable or field keeps its comments above the declaration" (a
+`const`'s, after its own; a `let` an `if` sets; a doc, a comment above,
+in and after the body's call, and one after code on its line; a function
+written above its declaration; one of no comments, no blank line; two
+fields'). Mutations `forwarding-function-comments-untaken`,
+`forwarding-fields-comments-untaken` (`prepare/forwarding.ts`),
+`taken-function-unstarted` (`to_oxc/starts.ts`) and `taken-*`
+(`to_oxc.ts`).

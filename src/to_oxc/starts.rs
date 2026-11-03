@@ -203,6 +203,10 @@ pub(super) fn statement_spans(module: &Module) -> Spans {
             js::Item::Statements(stmts) => of_stmts(stmts, &mut starts),
         }
     }
+    // A function that's now a declaration elsewhere, whose comments, before
+    // it and in it, are the declaration's (`taken_into`, #535).
+    let taken = (module.taken_into.iter()).map(|&(function, _)| (function.lo, function.hi));
+    starts.0.extend(taken);
     starts
 }
 

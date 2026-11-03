@@ -1120,7 +1120,9 @@ A thread-local an `if` makes is a `let` each branch assigns, as JS picks
 what it uses where it loads; and a function that only calls a thread-local
 of a closure is that variable, by the function's name
 ([ADR 0601](../../decisions/0601-a-module-variable-an-if-makes-is-a-let.md),
-[ADR 0610](../../decisions/0610-a-forwarding-function-is-its-variable.md)).
+[ADR 0610](../../decisions/0610-a-forwarding-function-is-its-variable.md)),
+its comments, those above it, its doc and those in its body, before the
+variable's declaration, after the declaration's own (#535).
 Where each branch is one value, a function too, it's a `const` of `c ? a :
 b`, as a function's `let` is: `const pick = typeof fast !== "undefined" ?
 fast : (n) => ..`; a branch that does something first, as the `else` below
@@ -1138,12 +1140,14 @@ thread_local! {
     };
 }
 
+/// Milliseconds since an arbitrary start, as precisely as the host tells.
 pub fn get_time() -> f64 {
     GET_TIME.with(|get_time| get_time())
 }
 ```
 
 ```js
+/** Milliseconds since an arbitrary start, as precisely as the host tells. */
 let getTime;
 if (typeof performance !== "undefined" && typeof performance.now !== "undefined") {
   const localPerformance = performance;
@@ -1213,7 +1217,8 @@ export function count() {
   thread-local's value holds**, a field the crate fills with its own
   functions, which reads no `this`, is that field, the value taken apart
   where it's made, each field by its function's name, as alien-signals
-  takes its system apart. Only those functions read the thread-local, so
+  takes its system apart, each function's comments before it, in the
+  order they're written. Only those functions read the thread-local, so
   each call read the function the value was made with. A binding's
   method, `date.get_time()`, which reads its `this`, stays called by its
   function; so does a function of a value another reads, or one the

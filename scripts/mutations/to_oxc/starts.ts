@@ -98,4 +98,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/es-classes.test.ts", "-t", "fields are apart from its first member"],
   },
+  {
+    name: "taken-function-unstarted",
+    breaks: "a function that's now its variable is no start, and the comments in its body are lost (#535)",
+    file: "src/to_oxc/starts.rs",
+    find: "    starts.0.extend(taken);\n",
+    replace: "",
+    tests: ["test/lowering-forwarding.test.ts", "-t", "keeps its comments above the declaration"],
+  },
 ];

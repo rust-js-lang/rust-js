@@ -473,6 +473,7 @@ fn comments_of(
     use oxc_ast::{CommentKind, CommentPosition};
     let mut text = sources.text.clone();
     let mut found = Vec::new();
+    let mut after_own = Vec::new();
     // The cases whose comments the program wrote say they're fallen to.
     let mut said_fallen = std::collections::HashSet::new();
     let mut tops = std::collections::HashMap::new();
@@ -488,6 +489,11 @@ fn comments_of(
             _ => None,
         })
         .map(|(declared, constructor)| (declared.lo, constructor.lo))
+        .collect();
+    // Where each function that's now a declaration elsewhere is, and that
+    // declaration, which its comments are before (#535).
+    let taken_into: std::collections::HashMap<u32, u32> = (module.taken_into.iter())
+        .map(|&(function, declared)| (function.lo, declared.lo))
         .collect();
     let noinline = noinline_starts(module);
     let set_apart = set_apart_starts(module);
@@ -587,11 +593,17 @@ fn comments_of(
         let before_argument = |c: &crate::program::Comment| arguments::before_argument(c, &sources.text, &parts);
         // And one on a `_` arm's pattern of no `default:` (`cases::of_no_default`, #574).
         let of_no_default = |c: &crate::program::Comment| cases::of_no_default(c, &sources.text, &defaulted);
+        // And one in a function that's now a declaration elsewhere, whose
+        // line has no JS: on a line of its own before the declaration (#535).
+        let in_taken = |c: &crate::program::Comment| {
+            (module.taken_into.iter()).any(|&(function, _)| function.lo <= c.lo && c.hi <= function.hi)
+        };
         let after_code = |c: &crate::program::Comment| {
             let line_start = sources.text[..c.lo as usize].rfind('\n').map_or(0, |i| i + 1);
             (!sources.text[line_start..c.lo as usize].trim().is_empty() || before_argument(c))
                 && !closing::of_left_out(c, &left_out, &sources.text, &file.comments)
                 && !of_no_default(c)
+                && !in_taken(c)
         };
         for c in file
             .comments
@@ -1127,6 +1139,11 @@ fn comments_of(
             // has one where its struct literal's has (ADR 0444, amended), as
             // Prettier keeps between properties, none before the first.
             let part = (parts.get(&at)).is_some_and(|&(_, field)| !field) && !spans.iter().any(|&(lo, _)| lo == at);
+            // A function's that's now a declaration elsewhere: after the
+            // declaration's own, no blank line before or between them,
+            // nor where its Rust starts, which the declaration's tells
+            // (#535).
+            let taken = taken_into.contains_key(&at);
             let mut pieces: Vec<(u32, u32)> = Vec::new();
             // A function kept out of line, `#[inline(never)]`, says so in its
             // JSDoc, the last line of its own, or one of its own (ADR 0649).
@@ -1139,6 +1156,7 @@ fn comments_of(
                 // took, `return c ? a : b`'s: before the keyword.
                 if (blank_before(if_keyword(&comment).unwrap_or(comment.lo)) || (i == 0 && set_apart.contains(&at)))
                     && !part
+                    && !taken
                 {
                     pieces.push(blank(&text));
                 }
@@ -1165,7 +1183,7 @@ fn comments_of(
             // the `let` it's written in.
             let line_start = sources.text[..at as usize].rfind('\n').map_or(0, |i| i + 1) as u32;
             let first_on_line = !statement_starts.iter().any(|&s| s >= line_start && s < at);
-            if part {
+            if part || taken {
             } else if (own.is_empty() && ((first_on_line && blank_before(written)) || set_apart.contains(&at)))
                 || (!own.is_empty() && last <= at && {
                     // A line of nothing between: not a closure's opening's.
@@ -1214,6 +1232,7 @@ fn comments_of(
             // said above (#489).
             let attached_to = (commented_at.get(&at).copied())
                 .or(classes.get(&at).copied())
+                .or(taken_into.get(&at).copied())
                 .or(case)
                 .or(field)
                 .or(comments_before.get(&at).copied())
@@ -1255,10 +1274,17 @@ fn comments_of(
                 made.position = CommentPosition::Leading;
                 made.set_preceded_by_newline(true);
                 made.set_followed_by_newline(true);
-                found.push(made);
+                match taken {
+                    true => after_own.push(made),
+                    false => found.push(made),
+                }
             }
         }
     }
+    // A function's that's now a declaration elsewhere, after the
+    // declaration's own, a blank line before them too, wherever the
+    // function is written (#535).
+    found.extend(after_own);
     cases::fallthroughs((module, &sources.text), &said_fallen, &mut text, &mut found);
     // Each comment of a statement's place of its own, keyed by which of
     // `own_places` it's of until the statement's place is given (`owned`).

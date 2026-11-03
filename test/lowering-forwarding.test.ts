@@ -197,6 +197,110 @@ pub fn run() -> Vec<f64> {
   expect(lib.run()).toEqual([1012, 0, 1, 3012, 5012, 4051]);
 });
 
+// #535: a function that's its variable, or a thread-local's field, has
+// no place of its own for its comments, those above it, its doc and
+// those in its body: they're before the declaration it is, after the
+// declaration's own, as written, never lost (ADR 0610, amended).
+test("a function that's its variable or field keeps its comments above the declaration", async () => {
+  const dir = fixture("forwarding-commented");
+  writeFileSync(join(dir, "lib.rs"), `use std::rc::Rc;
+
+thread_local! {
+    // The run's own.
+    static RUN: fn(u32) -> u32 = |n| n + 1;
+    static PLAIN: fn(u32) -> u32 = |n| n + 3;
+    static GET_TIME: Box<dyn Fn() -> f64> = if js::is_defined(webapi::Performance::now) {
+        Box::new(|| 1.0)
+    } else {
+        let start = js::date::now();
+        Box::new(move || js::date::now() - start + 2.0)
+    };
+}
+
+/// Runs it.
+// Above.
+fn run(n: u32) -> u32 {
+    // The next one.
+    RUN.with(|f| f(n))
+    // After.
+}
+
+fn plain(n: u32) -> u32 {
+    PLAIN.with(|f| f(n))
+}
+
+pub fn get_time() -> f64 {
+    // The clock picked where the module loads.
+    GET_TIME.with(|get_time| get_time())
+}
+
+pub struct System {
+    pub link: Rc<dyn Fn(u32) -> u32>,
+    pub unlink: Rc<dyn Fn(u32) -> u32>,
+}
+
+pub fn make_system(base: u32) -> System {
+    System {
+        link: Rc::new(move |n| n + base),
+        unlink: Rc::new(move |n| n * base),
+    }
+}
+
+thread_local! {
+    static SYSTEM: System = make_system(2);
+}
+
+// Links.
+fn link(n: u32) -> u32 {
+    SYSTEM.with(|system| (system.link)(n))
+}
+
+fn unlink(n: u32) -> u32 {
+    /* Unlinks. */
+    SYSTEM.with(|system| (system.unlink)(n))
+}
+
+pub fn more(n: u32) -> u32 {
+    twice(n) + 1
+}
+// Above twice.
+fn twice(n: u32) -> u32 {
+    TWICE.with(|f| f(n)) // Doubled.
+}
+
+thread_local! {
+    static TWICE: fn(u32) -> u32 = |n| n * 2;
+}
+
+pub fn go(n: u32) -> u32 {
+    run(n) + plain(n) + link(n) + unlink(n) + more(n)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(
+    "\n// The run's own.\n/** Runs it. */\n// Above.\n// The next one.\n// After.\nconst run = (n) => (n + 1) >>> 0;\n",
+  );
+  // One of no comments: no blank line where it's written.
+  expect(js).toContain(
+    "\nconst run = (n) => (n + 1) >>> 0;\nconst plain = (n) => (n + 3) >>> 0;\n// The clock picked where the module loads.\nlet getTime;\nif (",
+  );
+
+  expect(js).toContain("\n// Links.\n/* Unlinks. */\nconst { link, unlink } = makeSystem(2);\n");
+  // Written above its declaration, one after code on its line too, whose
+  // line has no JS: after the blank line before the declaration, which
+  // the declaration's place tells, not the function's, right below
+  // `more`.
+  expect(js).toContain("\n}\n\n// Above twice.\n// Doubled.\nconst twice = (n) => (n * 2) >>> 0;\n");
+  expect(js).not.toContain("function run(");
+  expect(js).not.toContain("function getTime(");
+  expect(js).not.toContain("function link(");
+  expect(js).not.toContain("function twice(");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.go(3)).toBe(4 + 6 + 5 + 6 + 7);
+  expect(lib.getTime()).toBe(1);
+});
+
 // A function that only passes its parameters on to another module's
 // function is that function, re-exported by its own name or its
 // `rust_js::name`, which another module imports from it as before, and

@@ -95,7 +95,9 @@ pub(super) fn functions(module: &mut js::Module) {
             i += 1;
             continue;
         }
-        module.items.remove(i);
+        let js::Item::Function(function) = module.items.remove(i) else {
+            unreachable!("found")
+        };
         let at = if at > i { at - 1 } else { at };
         let rename = |n: &mut String| {
             if *n == variable {
@@ -107,10 +109,11 @@ pub(super) fn functions(module: &mut js::Module) {
                 rename(v);
             }
         });
-        match &mut module.items[at] {
+        let declared = match &mut module.items[at] {
             js::Item::Const(constant) => {
                 rename(&mut constant.name);
                 constant.export = export;
+                constant.span
             }
             js::Item::Statements(stmts) => {
                 if let Some(StmtKind::Let(n, None)) = stmts.first_mut().map(|s| &mut s.kind) {
@@ -119,9 +122,13 @@ pub(super) fn functions(module: &mut js::Module) {
                 if export {
                     module.aliases.push((name.clone(), name.clone()));
                 }
+                stmts[0].span
             }
             _ => unreachable!("found"),
-        }
+        };
+        // Its comments, which it has no place for now, the declaration's
+        // (#535).
+        module.taken_into.push((function.span, declared));
     }
 }
 
@@ -241,8 +248,15 @@ pub(super) fn fields(module: &mut js::Module) {
             value: constant.value.clone(),
             mutable: false,
         };
-        module.items[at] = js::Item::Statements(vec![destructure.at(constant.span)]);
+        let declared = constant.span;
+        module.items[at] = js::Item::Statements(vec![destructure.at(declared)]);
         gone.extend(fields.iter().map(|&(i, ..)| i));
+        // Each function's comments, the destructuring's (#535).
+        for &(i, ..) in &fields {
+            if let js::Item::Function(function) = &module.items[i] {
+                module.taken_into.push((function.span, declared));
+            }
+        }
     }
     let mut i = 0;
     module.items.retain(|_| {

@@ -136,6 +136,11 @@ pub struct Module {
     /// Where its code is in the Rust, what a comment after its last code
     /// ends (ADR 0621).
     pub code: Span,
+    /// Each function that's now a declaration elsewhere, the variable or
+    /// the field it only called (ADR 0610), as `(function, declaration)`,
+    /// where each is written: the comments before the function, its doc
+    /// too, and in it are before the declaration, after its own (#535).
+    pub taken_into: Vec<(Span, Span)>,
 }
 
 /// A module's item.
@@ -1378,6 +1383,7 @@ mod tests {
             default_declared: false,
             aliases: Vec::new(),
             code: Span::NONE,
+            taken_into: Vec::new(),
         }
     }
 
