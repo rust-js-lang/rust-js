@@ -15,8 +15,9 @@
 //! Usage: `rust-js [--test] <input.rs> [-o <output.js>] [--manifest <file.json>]
 //! [--library] [--dependency <manifest.json>] [-- <rustc flags>]`. Also
 //! writes `<output.js>.map`. Flags after `--` go to rustc unchanged. With
-//! `--test`, the crate's `#[test]` functions are compiled too, and
-//! `<output>.test.js` runs them with `bun test` (ADR 0026).
+//! `--test`, the crate's `#[test]` functions are compiled too, each
+//! module's registered in a `<module>.test.js` beside its JS, for the
+//! runner the crate names (ADRs 0026, 1076).
 
 #![feature(rustc_private)]
 
@@ -537,7 +538,6 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
     let command::Build {
         input,
         output,
-        test,
         cargo,
         library: export_library,
         dependencies: dependency_paths,
@@ -555,7 +555,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         declarations,
         ..read_settings
     };
-    let mut plan = output::OutputPlan::new(input, output, test, manifest);
+    let mut plan = output::OutputPlan::new(input, output, manifest);
     plan.metadata = metadata.clone();
     plan.settings = settings;
     plan.std_bodies = std_bodies;

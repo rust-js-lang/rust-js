@@ -60,7 +60,7 @@ export function link(files) {
 }
 
 /**
- * A small `bun test` look-alike for the Result frame: `test` and `test.skip`
+ * A small test runner's look-alike for the Result frame: `test` and `test.skip`
  * collect the tests, which then run one after another. What they leave in
  * the page is replaced by the report.
  */
@@ -108,8 +108,9 @@ const FRAME_STYLE = `<style>
 
 /**
  * The page that runs the root module's `main()`, if it exports one
- * (`main`), or with `test`, the crate's tests by their runner (`tests`),
- * as the compiler's manifest says, and reports as run number `run`.
+ * (`main`), or with `test`, the crate's tests, each test file of `tests`,
+ * which import `test` from its module, as the compiler's manifest says
+ * (ADR 1076), and reports as run number `run`.
  */
 export function prepare(files, modules, styles, rootFile, main, tests, test, run) {
   // The program's modules, its JSX as JS (Sucrase's), and what they import
@@ -133,15 +134,18 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
     sources,
     modules.values().map((item) => [item[0], item[1]]),
   );
-  let runnable;
-  if (test) {
-    runnable = tests;
-  } else if (main) {
-    runnable = rootFile;
+  let entries;
+  if (!test) {
+    entries = main ? [rootFile] : [];
+  } else if (tests != null) {
+    const [module, files] = tests;
+    // The runner's `test`, as the test files import it: the frame's.
+    sources.push([module, "export const test = globalThis.test;\n"]);
+    entries = files.slice();
   } else {
-    runnable = undefined;
+    entries = [];
   }
-  if (runnable == null) {
+  if (entries.length === 0) {
     return "Nothing";
   }
   // A stylesheet a module imports, `import "todomvc-app-css/index.css";`
@@ -182,10 +186,14 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
   }
   const report = (message) => `parent.postMessage({ run: ${run}, ${message} }, "*")`;
   const linked = link(sources);
-  const entry = JSON.stringify(`rust-js:${runnable}`);
-  const start = test
-    ? `await import(${entry});\n${TEST_RUNNER}`
-    : `const root = await import(${entry});\nawait root.main();`;
+  const entry = (file) => JSON.stringify(`rust-js:${file}`);
+  let start;
+  if (test) {
+    const imports = entries.map((file) => `await import(${entry(file)});\n`);
+    start = imports.join("") + TEST_RUNNER;
+  } else {
+    start = `const root = await import(${entry(entries[0])});\nawait root.main();`;
+  }
   const finished = test
     ? report('tested: { passed: count("pass"), failed: count("fail"), ignored: count("skip") }')
     : report("ran: true");
@@ -200,7 +208,7 @@ ${linked}
   addEventListener("error", (e) => ${report("error: String(e.message)")});
   // And in async code, which rejects its promise instead (ADR 0029).
   addEventListener("unhandledrejection", (e) => ${report("error: String(e.reason)")});
-  // What a test file calls, as bun test provides it (ADR 0026).
+  // What a test file imports, as its runner gives it (ADRs 0026, 1076).
   const registered = [];
   globalThis.test = (name, f) => registered.push({ name, f });
   test.skip = (name) => registered.push({ name });

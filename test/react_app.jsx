@@ -1,7 +1,7 @@
 // React runs the components of test/components.rs (ADR 0041), compiled to
 // JSX by rust-js: on the server, then in happy-dom's DOM, clicking and typing.
 // test/react.test.ts copies this beside the compiled `components.jsx`, and runs
-// it with `bun test --preload ./test/happydom.ts`.
+// it with `bun test --preload ./test/happydom.js`.
 
 import { expect, test } from "bun:test";
 import { act } from "react";

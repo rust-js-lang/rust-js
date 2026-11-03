@@ -158,6 +158,8 @@ And from `rust-js build` itself:
 | `rust-js: no rust-js at ..: install rust-js ..` | install `@rust-js/native`, or set `RUST_JS_COMPILER` |
 | `rust-js can't write the JS in source: .. would both be ..; rename the module` | two modules would be one file: rename one ([Emitting modules](modules.md#where-each-modules-file-goes)) |
 | ``rust-js: the check `tsc` failed:`` | a check of the crate's `Cargo.toml` failed; its lines name the Rust ([Building](building.md#run-your-tools-on-what-it-writes)) |
+| ``unknown variant `mocha`, expected one of `node`, `bun`, `vitest`, `jest` `` | `[package.metadata.rust-js.test] runner` names one of the four ([Testing](testing.md#the-runner)) |
+| `rust-js: the crate's tests are for vitest, which .. doesn't have installed` | add the runner to the app's `devDependencies` |
 
 A setting that's gone is an error that names the one to use:
 `[package.metadata.rust-js.format]` names `.prettierrc`, and

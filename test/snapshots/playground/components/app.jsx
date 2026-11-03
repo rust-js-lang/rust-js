@@ -99,7 +99,8 @@ export function App() {
   function run(compiled, loaded, test) {
     const n = (runs.current + 1) >>> 0;
     runs.current = n;
-    const tests = compiled.tests;
+    const tests =
+      compiled.tests != null ? [compiled.tests.module, compiled.tests.files] : undefined;
     const prepared = prepare(
       compiled.files,
       loaded.modules,

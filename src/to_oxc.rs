@@ -40,7 +40,6 @@ use self::arms::{Arm, arm_starts, else_if_starts};
 pub(crate) use self::cases::{default_fallen_to, fallen_to};
 pub(crate) use self::expressions::*;
 use self::header::header;
-pub use self::header::import_line;
 pub(crate) use self::loads::{entry_exports, loaded_modules};
 use self::openings::{
     arm_opening, closure_opening, leading_statements, let_end, macro_opening, match_opening, receiver_only, type_alias,

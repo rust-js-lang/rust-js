@@ -3,7 +3,11 @@
 Status: Accepted. Extends [0012](0012-panics-and-runtime-helpers.md) to
 `panic!` and the assertion macros. Amended by
 [0660](0660-catch-unwind-catches-what-js-throws.md): `$shouldPanic` asks
-`$isPanic` what a panic is.
+`$isPanic` what a panic is. Amended by
+[1076](1076-each-modules-tests-are-its-test-file-for-the-crates-runner.md):
+the tests are each module's `.test.js`, beside its JS, importing `test`
+from the runner the crate names, Node's by default, no global; a DOM is
+that runner's own setup.
 
 Case: N, C ([0262](0262-when-rust-and-js-disagree.md)).
 

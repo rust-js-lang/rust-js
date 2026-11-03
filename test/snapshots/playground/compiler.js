@@ -227,8 +227,8 @@ export async function compile(loaded, sources, rootFile, test) {
   const outFile = rootFile.endsWith(".rs")
     ? `/out/${rootFile.slice(0, -3)}.js`
     : `/out/${rootFile}`;
-  // `--test`: the `#[test]` functions too, and `<root>.test.js` to run them
-  // (ADR 0026). This is a real browser, so tests marked `#[cfg(browser)]` run
+  // `--test`: the `#[test]` functions too, each module's in its `.test.js`
+  // (ADRs 0026, 1076). This is a real browser, so tests marked `#[cfg(browser)]` run
   // too (ADR 0027). Every program may use the webapi and js crates; rustc
   // only reads them if one does.
   const args = ["rust-js"];
@@ -273,7 +273,7 @@ export async function compile(loaded, sources, rootFile, test) {
     exit = `trap (${e instanceof Error ? e.message : String(e)})`;
   }
 
-  // What it wrote, as its manifest says: each module's JS, and the runner.
+  // What it wrote, as its manifest says: each module's JS, and its tests'.
   const written = new Map();
   if (ok) {
     textsIn(outDir.dir, "", written);
@@ -298,12 +298,19 @@ export async function compile(loaded, sources, rootFile, test) {
       }
     }
     if (manifest.tests != null) {
-      const file = path(manifest.tests);
-      const text = written.get(file);
-      if (text != null) {
-        files.set(file, text);
+      const testFiles = [];
+      for (let file of manifest.tests.files) {
+        file = path(file);
+        const text = written.get(file);
+        if (text != null) {
+          files.set(file, text);
+        }
+        testFiles.push(file);
       }
-      tests = file;
+      tests = {
+        module: manifest.tests.module,
+        files: testFiles,
+      };
     }
   }
   const memory = instance.exports.memory.buffer;
@@ -316,7 +323,10 @@ export async function compile(loaded, sources, rootFile, test) {
     root,
     /** Whether it exports `main`, what running the program calls. */
     main,
-    /** The `#[test]` functions' runner, of a compile with `test`. */
+    /**
+     * Of a compile with `test`, its test files, and the module they import
+     * `test` from.
+     */
     tests,
     stderr: stderr.join("\n"),
     instantiate: t1 - t0,

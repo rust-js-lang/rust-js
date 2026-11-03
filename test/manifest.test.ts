@@ -18,7 +18,9 @@ test("hosts reject incompatible and malformed manifests before consuming paths",
     { ...manifest, output: "relative.js" }, { ...manifest, artifacts: [] },
     { ...manifest, modules: [{ ...manifest.modules[0], imports: ["/missing.js"] }] },
     { ...manifest, modules: [{ ...manifest.modules[0], exports: [1] }] },
-    { ...manifest, tests: "/virtual/missing.test.js" }]) {
+    // ADR 1076: the one entry of an older build's tests, and test files it didn't write.
+    { ...manifest, tests: "/virtual/lib.test.js" },
+    { ...manifest, tests: { runner: "node", module: "node:test", files: ["/virtual/missing.test.js"] } }]) {
     expect(() => parseManifest(JSON.stringify(value))).toThrow();
   }
   expect(parseManifest(JSON.stringify(manifest))).toEqual(manifest);
@@ -51,8 +53,9 @@ fn adds() { assert_eq!(Total { first_part: util::helper() + 1 }.first_part, 2); 
   // And, built to run them, its `#[test]` functions, which the runner imports.
   // `main` by `start` alone, as `pub use self::main as start;` exports it (ADR 0596, amended).
   expect([...root.exports].sort()).toEqual(["LIMIT", "adds", "helper", "start"]);
-  expect(read.tests).toBe(join(realpathSync(out), "lib.test.js"));
-  expect(existsSync(read.tests)).toBe(true);
+  // Its test files, and the runner they're for (ADR 1076).
+  expect(read.tests).toEqual({ runner: "node", module: "node:test", files: [join(realpathSync(out), "lib.test.js")] });
+  expect(existsSync(read.tests.files[0])).toBe(true);
 });
 
 test("compiler identities reject incompatible ABI and missing version fields", () => {

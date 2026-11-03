@@ -146,6 +146,18 @@ pub struct TestFn {
     pub ignore: bool,
     /// It returns a `Result`: an `Err` fails it, as libtest's does.
     pub returns_result: bool,
+    /// The module whose test file registers it, `<module>.test.js`: its
+    /// own, or, in a module of tests, that module's parent (ADR 1076).
+    pub home: Vec<String>,
+}
+
+/// A crate's tests, and where their test files are (ADR 1076).
+#[derive(Default)]
+pub struct Tests {
+    pub fns: Vec<TestFn>,
+    /// Each module of tests that's its parent's test file, of no file of
+    /// its own: a parent's one `#[cfg(test)]` module of `#[test]`s.
+    pub placed: Vec<Vec<String>>,
 }
 
 /// Source arena used by the owned JS spans, with original file boundaries.
@@ -167,7 +179,7 @@ pub struct Lowered {
     pub library: Option<crate::library::Library>,
     pub sources: Sources,
     pub modules: Vec<LoweredModule>,
-    pub tests: Vec<TestFn>,
+    pub tests: Tests,
 }
 
 /// A module dependency expressed without frontend identities.
@@ -201,5 +213,5 @@ pub struct Unlinked {
     pub library: Option<crate::library::Library>,
     pub sources: Sources,
     pub modules: Vec<UnlinkedModule>,
-    pub tests: Vec<TestFn>,
+    pub tests: Tests,
 }

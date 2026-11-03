@@ -22,12 +22,6 @@ use oxc_span::{GetSpan, SPAN};
 use super::{Cx, span};
 use crate::js::{self, Module};
 
-/// `import clause from "from";`, an import's line, of the `#[test]` runner
-/// (`output.rs`), which is text: a module's are statements (`Cx::entry`).
-pub fn import_line(clause: &str, from: &str) -> String {
-    format!("import {clause} from {from:?};\n")
-}
-
 /// What's above a module's code: its header, the module's own `//!`s,
 /// `docs`, and its directives, then a blank line, but where the Rust has
 /// none right after its `//!`s, or after leading comments right above the

@@ -729,7 +729,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0913 Std's generic `R: Try` is a dictionary, so a held `Skip` or `Take` is std's, and std's adapters fold and try as std's do](0913-std-s-generic-try-is-a-dictionary.md)
 - [0914 A library's generic function is its program's; a consumer that gives it more compiles its own](0914-a-librarys-generic-function-is-its-programs.md) *(amended: its trait impls and copies are its program's too, a consumer compiling what it asks more of; amended: a consumer gives an export the copy functions its contract says it takes; amended: a `Clone` bound, and a program's `Rc` of a type parameter's value, are what its callers give; amended: a binding's result copies nothing; amended: a box its optimized MIR reads through a pointer is the value it holds; amended: a binding's static is JS's, read by an instance; amended: a `()` given is the export's where nothing boxes it, a copy setting its library's variable refused; amended: a copy of what the library changes too is its library's, rd606; amended: an operator of a library's type is called through the dictionary it exports, #468; amended: a struct of no fields its optimized MIR names as a constant is made, #474; amended: a library's constructor given as a function is made in place, #476; amended: what a consumer compiles of a library is written where its code reaches it, #483)*
 - [0915 What's held to be cloned is std's struct](0915-what-s-held-to-be-cloned-is-std-s-struct.md)
-- [0916 `rust-js test` runs a crate's `#[test]`s as JS, through Cargo](0916-rust-js-test-runs-a-crates-tests-as-js.md) *(amended: a unit's directory is Cargo's to give)*
+- [0916 `rust-js test` runs a crate's `#[test]`s as JS, through Cargo](0916-rust-js-test-runs-a-crates-tests-as-js.md) *(amended: a unit's directory is Cargo's to give; amended by 1076: it runs the crate's runner, Node's by default, and its integration tests)*
 - [0917 A held `StepBy` is std's, a precondition check never runs, and a std struct is the JS iterator it is where it's first one](0917-a-held-step-by-is-std-s.md)
 - [0918 A range given to generic code knows how many it has left, and std's struct's default `len` is its exact `size_hint`](0918-a-range-given-knows-how-many-it-has-left.md)
 - [0920 A held `Chain` is std's, stepped from its back by its own compiled methods](0920-a-held-chain-is-std-s.md)
@@ -1006,8 +1006,9 @@ reordered, and git merges this file by keeping both sides' lines
 - [0570 A closing source is dropped when it's done](0570-a-closing-source-is-dropped-when-done.md)
 - [0571 `pin!` and a ready future](0571-pin-macro-and-a-ready-future.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](0050-snapshots.md)
-- [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](0026-testing.md) *(amended by 0660: a panic is what `$isPanic` says)*
-- [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](0027-real-browser-tests.md)
+- [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](0026-testing.md) *(amended by 0660: a panic is what `$isPanic` says; amended by 1076: each module's `.test.js`, importing its runner's `test`)*
+- [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](0027-real-browser-tests.md) *(amended by 1076: its runners are given a build's manifests)*
+- [1076 Each module's tests are its `.test.js`, written for the runner the crate names, Node's by default](1076-each-modules-tests-are-its-test-file-for-the-crates-runner.md)
 - [0032 The playground is written in Rust, compiled by rust-js, a part at a time](0032-dogfooding-the-playground.md)
 - [0044 The playground on React, one component per file](0044-playground-on-react.md)
 - [0045 The playground is a Vite app, with React Compiler and Tailwind](0045-playground-on-vite.md)

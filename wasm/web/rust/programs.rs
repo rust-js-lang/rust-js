@@ -138,7 +138,7 @@ pub fn link(files: &[(String, String)]) -> String {
     format!(r#"<script type="importmap">{{"imports":{{{entries}}}}}</script>"#)
 }
 
-/// A small `bun test` look-alike for the Result frame: `test` and `test.skip`
+/// A small test runner's look-alike for the Result frame: `test` and `test.skip`
 /// collect the tests, which then run one after another. What they leave in
 /// the page is replaced by the report.
 const TEST_RUNNER: &str = r#"
@@ -184,8 +184,9 @@ const FRAME_STYLE: &str = r#"<style>
 </style>"#;
 
 /// The page that runs the root module's `main()`, if it exports one
-/// (`main`), or with `test`, the crate's tests by their runner (`tests`),
-/// as the compiler's manifest says, and reports as run number `run`.
+/// (`main`), or with `test`, the crate's tests, each test file of `tests`,
+/// which import `test` from its module, as the compiler's manifest says
+/// (ADR 1076), and reports as run number `run`.
 #[allow(clippy::too_many_arguments)]
 pub fn prepare(
     files: &HashMap<String, String>,
@@ -193,7 +194,7 @@ pub fn prepare(
     styles: &[(String, String)],
     root_file: &str,
     main: bool,
-    tests: Option<&str>,
+    tests: Option<(&str, &[String])>,
     test: bool,
     run: u32,
 ) -> Prepared {
@@ -216,13 +217,18 @@ pub fn prepare(
         })
         .collect();
     sources.extend(modules.iter().cloned());
-    let runnable = match test {
-        true => tests,
-        false => main.then_some(root_file),
+    let entries: Vec<String> = if !test {
+        main.then(|| vec![root_file.to_string()]).unwrap_or_default()
+    } else if let Some((module, files)) = tests {
+        // The runner's `test`, as the test files import it: the frame's.
+        sources.push((module.to_string(), "export const test = globalThis.test;\n".to_string()));
+        files.to_vec()
+    } else {
+        Vec::new()
     };
-    let Some(entry_file) = runnable else {
+    if entries.is_empty() {
         return Prepared::Nothing;
-    };
+    }
     // A stylesheet a module imports, `import "todomvc-app-css/index.css";`
     // (ADR 0028), is the page's, as a bundler makes it: in a `<style>`, in
     // the order imported, and the program's look, not the frame's.
@@ -270,11 +276,15 @@ pub fn prepare(
     }
     let report = |message: &str| format!("parent.postMessage({{ run: {run}, {message} }}, \"*\")");
     let linked = link(&sources);
-    let entry = json::stringify(&format!("rust-js:{entry_file}"));
+    let entry = |file: &String| json::stringify(&format!("rust-js:{file}"));
     let start = if test {
-        format!("await import({entry});\n{TEST_RUNNER}")
+        let imports: Vec<String> = entries
+            .iter()
+            .map(|file| format!("await import({});\n", entry(file)))
+            .collect();
+        format!("{}{TEST_RUNNER}", imports.concat())
     } else {
-        format!("const root = await import({entry});\nawait root.main();")
+        format!("const root = await import({});\nawait root.main();", entry(&entries[0]))
     };
     let finished = if test {
         report(r#"tested: { passed: count("pass"), failed: count("fail"), ignored: count("skip") }"#)
@@ -291,7 +301,7 @@ pub fn prepare(
   addEventListener("error", (e) => {});
   // And in async code, which rejects its promise instead (ADR 0029).
   addEventListener("unhandledrejection", (e) => {});
-  // What a test file calls, as bun test provides it (ADR 0026).
+  // What a test file imports, as its runner gives it (ADRs 0026, 1076).
   const registered = [];
   globalThis.test = (name, f) => registered.push({{ name, f }});
   test.skip = (name) => registered.push({{ name }});

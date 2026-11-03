@@ -1,7 +1,11 @@
 # 0916. `rust-js test` runs a crate's `#[test]`s as JS, through Cargo
 
 Status: Accepted. Extends [0026](0026-testing.md) and
-[0412](0412-rust-js-build-is-its-own-process.md).
+[0412](0412-rust-js-build-is-its-own-process.md). Amended by
+[1076](1076-each-modules-tests-are-its-test-file-for-the-crates-runner.md):
+the runner is the one `[package.metadata.rust-js.test]` names, Node's by
+default, given each module's `.test.js`, not bun given `lib.test.js`; and
+the package's integration tests are built and run too.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N: a command; what the
 tests do is what the JS rust-js writes for them does.

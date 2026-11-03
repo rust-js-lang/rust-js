@@ -46,8 +46,8 @@ pub fn main() {
     ));
 }
 
-// Tests, in Rust (ADR 0026): `rust-js --test` compiles them, and `bun test`
-// runs them in happy-dom's DOM.
+// Tests, in Rust (ADR 0026): `rust-js --test` compiles them, and Node's test
+// runner runs them in happy-dom's DOM (ADR 1076).
 #[cfg(test)]
 mod tests {
     use super::*;

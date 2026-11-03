@@ -126,7 +126,7 @@ pub fn App() -> JSX::Element {
     let run = move |compiled: &Compiled, loaded: &Loaded, test: bool| {
         let n = runs.current() + 1;
         runs.set_current(n);
-        let tests = compiled.tests.as_deref();
+        let tests = (compiled.tests.as_ref()).map(|tested| (tested.module.as_str(), tested.files.as_slice()));
         match prepare(
             &compiled.files,
             &loaded.modules,

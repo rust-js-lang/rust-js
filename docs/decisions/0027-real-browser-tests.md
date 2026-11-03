@@ -1,6 +1,10 @@
 # 0027. Real-browser tests: Playwright Test and Vitest's browser mode, on Bun
 
-Status: Accepted. Extends [0026](0026-testing.md).
+Status: Accepted. Extends [0026](0026-testing.md). Amended by
+[1076](1076-each-modules-tests-are-its-test-file-for-the-crates-runner.md):
+`RUST_JS_TESTS` names a build's manifests, whose test files each runner
+runs; Playwright's page gives them its recording `test` in place of their
+runner's module, and Vitest's browser mode runs those of `runner = "vitest"`.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

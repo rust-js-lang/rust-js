@@ -58,4 +58,20 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(Settings::default());",
     tests: ["test/declarations.test.ts", "-t", "no Cargo.toml above it has its declarations"],
   },
+  {
+    name: "test-runner-default-bun",
+    breaks: "a crate that names no runner has its tests written for bun's, not Node's, which every app has (ADR 1076)",
+    file: "src/settings.rs",
+    find: "            Runner::Node => \"node:test\",\n",
+    replace: "            Runner::Node => \"bun:test\",\n",
+    tests: ["test/test-files.test.ts", "-t", "one module of tests is its test file"],
+  },
+  {
+    name: "test-settings-unread",
+    breaks: "a crate's `[package.metadata.rust-js.test]` is read and dropped: its tests are Node's, whatever runner it names (ADR 1076)",
+    file: "src/settings.rs",
+    find: "            test: settings.test,\n",
+    replace: "            test: Default::default(),\n",
+    tests: ["test/test-files.test.ts", "-t", "the runner the crate names"],
+  },
 ];

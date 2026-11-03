@@ -1,5 +1,5 @@
 # `bun test` finds tests under test/ only: the generated *.test.js files in
-# target/ are run by test/browser.test.ts, with a DOM (ADR 0026).
+# target/ are run by test/browser.test.ts, with a DOM (ADRs 0026, 1076).
 [test]
 root = "test"
 preload = ["./test/setup.ts"]

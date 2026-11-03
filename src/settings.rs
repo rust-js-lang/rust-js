@@ -1,5 +1,6 @@
 //! A crate's settings for the JS rust-js writes (ADR 0117), in its
-//! `Cargo.toml`'s `[package.metadata.rust-js]`: the hooks it runs. How the
+//! `Cargo.toml`'s `[package.metadata.rust-js]`: the hooks it runs, and the
+//! runner its `#[test]`s are written for. How the
 //! JS is laid out isn't one: the app's Prettier config says (ADR 0381); nor
 //! whether it has declarations: `rust-js build` always writes them (ADR
 //! 0412).
@@ -15,6 +16,8 @@ pub use cargo_toml::read;
 #[derive(Default)]
 pub struct Settings {
     pub hooks: Hooks,
+    /// `[package.metadata.rust-js.test]`: how its `#[test]`s run as JS.
+    pub test: Test,
     /// A `.d.ts` beside each module's JS, for TypeScript that imports it
     /// (ADR 0196): the build's `--declarations`, which `rust-js build`'s,
     /// through Cargo, always says (ADR 0412).
@@ -50,6 +53,52 @@ pub struct Check {
     pub fail: Fail,
 }
 
+/// `[package.metadata.rust-js.test]`: the one place a crate says how its
+/// `#[test]`s run as JS.
+#[derive(Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Test {
+    /// The JS test runner they're written for and `rust-js test` runs.
+    #[serde(default)]
+    pub runner: Runner,
+}
+
+/// A JS test runner: what a test file imports `test` from, and, the host's
+/// to know, the command that runs it (`tooling/build.js`).
+#[derive(Default, Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
+#[serde(rename_all = "lowercase")]
+pub enum Runner {
+    /// Node's own, `node --test`: what every app already has, for npm.
+    #[default]
+    Node,
+    Bun,
+    Vitest,
+    Jest,
+}
+
+impl Runner {
+    /// Its name, as `runner = ".."` says it and the manifest records it.
+    pub fn name(self) -> &'static str {
+        match self {
+            Runner::Node => "node",
+            Runner::Bun => "bun",
+            Runner::Vitest => "vitest",
+            Runner::Jest => "jest",
+        }
+    }
+
+    /// The module a test file imports `test` from: none of these has it
+    /// as a global by default, `node:test` none at all.
+    pub fn module(self) -> &'static str {
+        match self {
+            Runner::Node => "node:test",
+            Runner::Bun => "bun:test",
+            Runner::Vitest => "vitest",
+            Runner::Jest => "@jest/globals",
+        }
+    }
+}
+
 /// What a check's failure, an exit otherwise than 0, is.
 #[derive(Default, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -68,7 +117,7 @@ mod cargo_toml {
 
     use serde::Deserialize;
 
-    use super::{Hooks, Settings};
+    use super::{Hooks, Settings, Test};
 
     /// `[package.metadata.rust-js]`, of which these are two tables: ADR
     /// 0116's are others.
@@ -78,6 +127,8 @@ mod cargo_toml {
         format: Option<toml::Value>,
         #[serde(default)]
         hooks: Hooks,
+        #[serde(default)]
+        test: Test,
         /// Gone, whether it has declarations: `rust-js build` always writes them.
         declarations: Option<toml::Value>,
     }
@@ -157,6 +208,7 @@ mod cargo_toml {
         }
         Ok(Settings {
             hooks: settings.hooks,
+            test: settings.test,
             declarations: false,
             dir,
             cargo,

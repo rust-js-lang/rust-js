@@ -868,9 +868,11 @@ What's refused of async, threads and time is in
 
 ## Tests
 
-`rust-js --test` writes a crate's `#[test]` functions and a `.test.js`
-that registers each, for `bun test` or a browser runner
-([0026](../decisions/0026-testing.md), [0027](../decisions/0027-real-browser-tests.md)).
+`rust-js --test` writes a crate's `#[test]` functions and, beside each
+module's JS that has tests, a `.test.js` that registers each, for the
+runner the crate names, Node's by default, or a browser runner
+([0026](../decisions/0026-testing.md), [0027](../decisions/0027-real-browser-tests.md),
+[1076](../decisions/1076-each-modules-tests-are-its-test-file-for-the-crates-runner.md)).
 `#[should_panic]` and `#[ignore]` are libtest's, assertion messages are
 Rust's, and a test returning a `Result` fails on `Err`. A struct error in
 that failure shows without its type's name.

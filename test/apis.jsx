@@ -1,7 +1,7 @@
 // React 19.3 runs the components of test/apis.rs (ADR 0043), compiled by
 // rust-js, in happy-dom's DOM. test/react.test.ts copies this beside the
 // compiled `apis.jsx`, with the lazily loaded `lazy-card.jsx`, and runs it
-// with `bun test --preload ./test/happydom.ts`.
+// with `bun test --preload ./test/happydom.js`.
 
 import { expect, test } from "bun:test";
 import { act } from "react";

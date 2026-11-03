@@ -16,7 +16,9 @@
 // fence after them is headed by the module it's of, `// src/x.js`. A `toml`
 // fence of `[dependencies]` right before an example makes it an app that
 // `rust-js build` builds, a crate of crates.io's JS headed by its path,
-// `// rust-js/crates/either-1.15.0/src/lib.js`.
+// `// rust-js/crates/either-1.15.0/src/lib.js`. A `rust test` fence is compiled
+// with its tests, `rust-js --test`, and a fence headed `// src/x.test.js` is
+// that module's test file (ADR 1076).
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { dirname, join, relative } from "node:path";
@@ -29,7 +31,7 @@ const work = join(target, "docs");
 type Fence = { info: string; body: string; start: number; end: number };
 /** An example: its files, its output fences, and, of an app `rust-js build`
  * builds, the dependencies its `Cargo.toml` adds. */
-type Example = { page: string; sources: { path: string; code: string }[]; outputs: Fence[]; dependencies?: string };
+type Example = { page: string; sources: { path: string; code: string }[]; outputs: Fence[]; dependencies?: string; test?: boolean };
 
 /** Each fence of `text`: its info string, its body, where its body is. */
 function fences(text: string): Fence[] {
@@ -57,7 +59,7 @@ function examples(page: string, text: string, problems: string[]): Example[] {
       }
       continue;
     }
-    if (fence.info !== "rust") continue;
+    if (fence.info !== "rust" && fence.info !== "rust test") continue;
     // A run of files, `// src/x.rs`, or one.
     const sources = [{ path: header(fence.body) ?? "src/lib.rs", code: fence.body }];
     let j = i + 1;
@@ -79,7 +81,7 @@ function examples(page: string, text: string, problems: string[]): Example[] {
       before?.info === "toml" && before.body.startsWith("[dependencies]\n") && between(text, before, fence)
         ? before.body.slice("[dependencies]\n".length)
         : undefined;
-    found.push({ page, sources, outputs, dependencies });
+    found.push({ page, sources, outputs, dependencies, test: fence.info === "rust test" });
     i = j - 1;
   }
   return found;
@@ -166,7 +168,7 @@ async function compile(example: Example, n: number): Promise<{ bodies: string[];
   const proc = Bun.spawn(
     app
       ? [process.execPath, join(root, "tooling", "cli.js"), "build"]
-      : [compiler, join(dir, rootFile), "-o", out, ...(declarations ? ["--declarations"] : []), "--",
+      : [compiler, ...(example.test ? ["--test"] : []), join(dir, rootFile), "-o", out, ...(declarations ? ["--declarations"] : []), "--",
           "--crate-name=example", ...crates(code)],
     { cwd: dir, stdout: "pipe", stderr: "pipe", env: { ...process.env, RUST_JS_COMPILER: compiler } },
   );

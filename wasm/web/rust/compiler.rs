@@ -209,10 +209,17 @@ struct Packages {
 }
 
 /// What rust-js says it wrote (ADR 0091): each module's JS, what each
-/// exports, and its tests' runner. The playground reads it, not the JS.
+/// exports, and its test files. The playground reads it, not the JS.
 struct Manifest {
     modules: Vec<ManifestModule>,
-    tests: Option<String>,
+    tests: Option<ManifestTests>,
+}
+
+/// A test build's test files, each module's `.test.js`, and the module
+/// they import `test` from, which the Result frame gives its own (ADR 1076).
+struct ManifestTests {
+    module: String,
+    files: Vec<String>,
 }
 
 struct ManifestModule {
@@ -376,6 +383,12 @@ pub async fn load_example(name: String, paths: Vec<String>) -> Vec<(String, Stri
 
 // ── Running rust-js ─────────────────────────────────────────────────────
 
+/// A test build's test files, and the module they import `test` from.
+pub struct Tested {
+    pub module: String,
+    pub files: Vec<String>,
+}
+
 /// What a compile gives back. `exit` is its code, or how it trapped.
 pub struct Compiled {
     pub exit: String,
@@ -386,8 +399,9 @@ pub struct Compiled {
     pub root: String,
     /// Whether it exports `main`, what running the program calls.
     pub main: bool,
-    /// The `#[test]` functions' runner, of a compile with `test`.
-    pub tests: Option<String>,
+    /// Of a compile with `test`, its test files, and the module they import
+    /// `test` from.
+    pub tests: Option<Tested>,
     pub stderr: String,
     pub instantiate: f64,
     pub run: f64,
@@ -478,8 +492,8 @@ pub async fn compile(loaded: &Loaded, sources: &HashMap<String, String>, root_fi
         Some(stem) => format!("/out/{stem}.js"),
         None => format!("/out/{root_file}"),
     };
-    // `--test`: the `#[test]` functions too, and `<root>.test.js` to run them
-    // (ADR 0026). This is a real browser, so tests marked `#[cfg(browser)]` run
+    // `--test`: the `#[test]` functions too, each module's in its `.test.js`
+    // (ADRs 0026, 1076). This is a real browser, so tests marked `#[cfg(browser)]` run
     // too (ADR 0027). Every program may use the webapi and js crates; rustc
     // only reads them if one does.
     let mut args = vec!["rust-js".to_string()];
@@ -537,7 +551,7 @@ pub async fn compile(loaded: &Loaded, sources: &HashMap<String, String>, root_fi
         ),
     };
 
-    // What it wrote, as its manifest says: each module's JS, and the runner.
+    // What it wrote, as its manifest says: each module's JS, and its tests'.
     let mut written = HashMap::new();
     if ok {
         texts_in(preopen_dir(out_dir), "", &mut written);
@@ -557,12 +571,19 @@ pub async fn compile(loaded: &Loaded, sources: &HashMap<String, String>, root_fi
                 files.insert(file, text.clone());
             }
         }
-        if let Some(runner) = &manifest.tests {
-            let file = path(runner);
-            if let Some(text) = written.get(&file) {
-                files.insert(file.clone(), text.clone());
+        if let Some(tested) = &manifest.tests {
+            let mut test_files = Vec::new();
+            for file in &tested.files {
+                let file = path(file);
+                if let Some(text) = written.get(&file) {
+                    files.insert(file.clone(), text.clone());
+                }
+                test_files.push(file);
             }
-            tests = Some(file);
+            tests = Some(Tested {
+                module: tested.module.clone(),
+                files: test_files,
+            });
         }
     }
     let memory = exported_memory(instance.exports()).buffer();

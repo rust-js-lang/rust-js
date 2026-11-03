@@ -106,7 +106,9 @@ export function parseManifest(text) {
       || !Array.isArray(result.artifacts) || !result.artifacts.every(artifact => object(artifact)
         && path(artifact.file) && typeof artifact.hash === "string" && /^[0-9a-f]{16}$/.test(artifact.hash))
       || (result.stale !== undefined && !(Array.isArray(result.stale) && result.stale.every(fingerprint)))
-      || (result.tests !== undefined && !path(result.tests))) {
+      // ADR 1076: a test build's test files, and the runner they're for.
+      || (result.tests !== undefined && !(object(result.tests) && typeof result.tests.runner === "string" && typeof result.tests.module === "string"
+        && paths(result.tests.files)))) {
     throw new Error("Invalid rust-js manifest: expected absolute paths, modules and fingerprinted artifacts");
   }
   const artifacts = new Set(result.artifacts.map(artifact => artifact.file));
@@ -116,7 +118,7 @@ export function parseManifest(text) {
       || result.modules.some(module => !module.types_only && (!artifacts.has(module.file) || !artifacts.has(module.map))
         || (module.types !== undefined && !artifacts.has(module.types))
         || module.imports.some(file => !modules.has(file)))
-      || (result.tests !== undefined && !artifacts.has(result.tests))) {
+      || (result.tests !== undefined && !result.tests.files.every(file => artifacts.has(file)))) {
     throw new Error("Invalid rust-js manifest: inconsistent module artifacts or imports");
   }
   return result;
@@ -138,6 +140,7 @@ export function mapManifestPaths(manifest, map) {
     })),
     artifacts: manifest.artifacts.map(artifact => ({ ...artifact, file: map(artifact.file) })),
     ...(manifest.stale === undefined ? {} : { stale: manifest.stale.map(old => ({ ...old, file: map(old.file) })) }),
+    ...(manifest.tests === undefined ? {} : { tests: { ...manifest.tests, files: manifest.tests.files.map(map) } }),
     ...(manifest.library === undefined ? {} : { library: {
       ...manifest.library, inputs: manifest.library.inputs.map(input => ({ ...input, file: map(input.file) })),
     } }),

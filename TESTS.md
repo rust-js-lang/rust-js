@@ -4,10 +4,10 @@ As of 2026-10-30, `main` at `120772e2`; times are CI's, check run 41022723550.
 
 | Suite | Size | What it proves | Time |
 |---|---|---|---|
-| `bun run test` | 3,727 tests in 163 files | Everything below except mutations, rustc, fuzz and the nightly's files | 11–13 min on 2 machines: each one's corpus parts, 8.5–9.6 min, then its browser files |
+| `bun run test` | 3,736 tests in 165 files | Everything below except mutations, rustc, fuzz and the nightly's files | 11–13 min on 2 machines: each one's corpus parts, 8.5–9.6 min, then its browser files |
 | ↳ the nightly's files (`nightly` in `scripts/shard.ts`, ADR 1030) | 19 files, ~170 tests: tidy's stages, iterator forms, fuzz's seeds, the release's packaging, the coverage ratchets, React's releases, the editor's check, the harness, build history, limitations | What each says; a mutation that names one still runs it | ~1,000 s of CPU, run only by the nightly's suite, `--nightly` |
 | ↳ corpus | 1,323 Rust programs (`test/corpus/*.rs`) | Each one's JS prints what native Rust prints, and matches its snapshot; built as a library too, each push only the 120 marked `library-differs`, the nightly every one (ADR 0360) | about half the suite |
-| ↳ the other 161 files | ~2,350 tests | Lowering rules, diagnostics, bindings (js, webapi, React, Node), hosts (Vite, Next, cargo), React's ported modules against their snapshots, docs, architecture | the rest |
+| ↳ the other 163 files | ~2,360 tests | Lowering rules, diagnostics, bindings (js, webapi, React, Node), hosts (Vite, Next, cargo), `rust-js test` by each runner (node, bun, Vitest, Jest; ADR 1076), React's ported modules against their snapshots, docs, architecture | the rest |
 | `cargo test` | 57 unit tests | Tidy's passes and decisions | <1 min |
 | Mutations | ~7,700 (`scripts/mutations/`) | Each rule has a test that fails without it | a check runs only the changed ones: ~10 min on up to 16 machines; built up to 32 to a compiler (ADR 1031) |
 | rustc's suite | 3,762 run-pass tests, 1,493 of them out of scope | rustc's own programs run the same as JS | a check runs a sample in 1 min; all of them take ~2 h 45 min |

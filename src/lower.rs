@@ -86,7 +86,6 @@ mod unions;
 mod untagged;
 
 use crate::names::{fresh_in, js_ident};
-use crate::program::TestFn;
 pub use analysis::{
     build_std_structs_as_meaning, collect_bodies, collect_initializers, collect_mir, collect_ranges, collect_std_bodies,
 };

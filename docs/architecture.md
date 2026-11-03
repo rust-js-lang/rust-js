@@ -52,7 +52,7 @@ compiled for WASI; it is a separate build package, not a second compiler.
 | Artifact planning, manifest and publication | `src/output.rs`, `src/manifest.rs`, `src/publish.rs` |
 | Runtime helper catalog and implementations | `src/runtime.rs`, `src/runtime/`; generated package in `runtime/` |
 | Compiled standard-library bodies | `std/lib.rs`, generated `std/*.js` and `std/manifest.json` |
-| Native app build and editor check | `tooling/cli.js`, `tooling/build.js`, `tooling/cargo.js`, `tooling/check.js` |
+| Native app build and editor check; the command each JS test runner runs a crate's tests by (ADR 1076) | `tooling/cli.js`, `tooling/build.js`, `tooling/cargo.js`, `tooling/check.js`, `tooling/runners.js` |
 | Host manifest validation and file publication | `tooling/manifest.js`, `tooling/publish.js` |
 | npm/Cargo integration and shipped binding catalog | `tooling/patch.js`, `tooling/crates.js` |
 | Shipped JS, web, React, Node and Next.js bindings | `builtins/`, `webapi/`, `react/`, `node/`, `next/`; the authoritative list is `tooling/crates.js` |
@@ -170,7 +170,8 @@ These are dependency rules, not execution order. Paths are relative to `src/`.
 
 The named orchestration exceptions are `output.rs`, which invokes the printing
 adapters, and `hooks.rs`, which invokes `format.rs`. Only printing adapters use
-oxc. `output.rs` also writes manifest JSON and the test runner's imports/calls.
+oxc. `output.rs` also writes manifest JSON and each test file's registrations
+of its tests, by the runner's `test` (ADR 1076).
 The architecture test checks top-level dependency cycles; it treats the parts
 of `lower/` as one module, not as individually cycle-checked units.
 
@@ -295,6 +296,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Generic IntoIterator representation | `iterators.rs`, `recognition/iterators.rs` | `into_iter_held_as_it_is`, `into_iter_as_it_is`, `into_iter_by_dictionary` |
 | Function-value mutable arguments | `mut_refs.rs` | `unboxed_by_function` |
 | Body module placement | `lower.rs` | `body_module` |
+| A crate's `#[test]`s, which module's test file registers each, and which module of tests is its parent's test file (ADR 1076); what each runner's `test` is imported from | `analysis/tests.rs`; `settings.rs` | `collect_tests`; `Runner` |
 | Which `const`s written in a function's body are its, a `const` there, and what reads each (ADR 0031, amended) | `analysis/naming.rs` | `local_consts` |
 | A parameter's JS name, its body's and its declaration's, and a fn pointer's written one (ADR 1075) | `parameter_names.rs` | `parameter_name`, `written_parameter_name` |
 | A declared function type's parameter names, a fn pointer's as written and a `dyn Fn` field's as every literal fills it, and which trailing parameters may be left out (ADRs 0443, 1075) | `declarations/functions.rs` | `optional_from`, `filled_names`, `written_function_names`, `function_names` |

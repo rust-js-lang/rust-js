@@ -121,7 +121,7 @@ test("as for…of steps them", () => {
   expect(found(made())).toBe(2);
 });
 `);
-  const p = Bun.spawnSync(["bun", "test", "--preload", "./test/happydom.ts", join(dir, "driver.test.js")], { cwd: root, stderr: "pipe" });
+  const p = Bun.spawnSync(["bun", "test", "--preload", "./test/happydom.js", join(dir, "driver.test.js")], { cwd: root, stderr: "pipe" });
   const output = p.stdout.toString() + p.stderr.toString();
   expect([p.exitCode, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "1"]);
 });
@@ -191,7 +191,7 @@ test("as Rust's extend", () => {
   expect(huge(300000)).toBe(300000);
 });
 `);
-  const p = Bun.spawnSync(["bun", "test", "--preload", "./test/happydom.ts", join(dir, "driver.test.js")], { cwd: root, stderr: "pipe" });
+  const p = Bun.spawnSync(["bun", "test", "--preload", "./test/happydom.js", join(dir, "driver.test.js")], { cwd: root, stderr: "pipe" });
   const output = p.stdout.toString() + p.stderr.toString();
   expect([p.exitCode, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "1"]);
 });

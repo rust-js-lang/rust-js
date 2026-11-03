@@ -217,7 +217,7 @@ test("owned compiler output and downstream phases do not depend on rustc", () =>
 test("runtime imports are chosen before printing", () => {
   // The printer is given them, chosen where the module is prepared.
   expect(read("src/to_oxc.rs")).not.toMatch(/imported_helpers|read_vars/);
-  expect(read("src/output.rs")).toContain("imported_helpers(&helper_sources, &js_module.read_vars())");
+  expect(read("src/output.rs")).toContain("imported_helpers(helper_sources, &js_module.read_vars())");
   expect(read("src/runtime.rs")).not.toMatch(/fn imported_helpers\([^)]*code: &str/);
 });
 
@@ -869,8 +869,9 @@ const identity: [string, RegExp][] = [
   ["a std type by its name", /\bis_std_adt\s*\(/],
   // A std item's own name, `sym::Target` of `Deref`'s, or std's layout,
   // `sym::value` of a `Cell`'s field (the third architecture audit); a
-  // binding's attribute's, `link_name`, is the crate's.
-  ["a std name by rustc's symbol", /\bsym::(?!name\b|link_name\b)\w+/],
+  // binding's attribute's, `link_name`, is the crate's, and the cfg a test
+  // build sets, `test`, rustc's (ADR 1076).
+  ["a std name by rustc's symbol", /\bsym::(?!name\b|link_name\b|test\b)\w+/],
 ];
 // A std type is known one way, by its `StdItem`, `is_std_type(ty,
 // StdItem::Mutex)`, not also by a diagnostic item's name, `Symbol::intern(

@@ -1,8 +1,9 @@
 # Tests in real browsers
 
 rust-js compiles a crate's `#[test]` functions with `rust-js --test`, into a
-`.test.js` file that calls `test()` for each one (ADR 0026). `bun test` runs
-it in happy-dom; this folder runs the same file in **Chromium**, through
+`.test.js` beside each module's JS that has tests, each importing `test` from
+the crate's runner (ADRs 0026, 1076). Node's test runner runs them in
+happy-dom; this folder runs the same files in **Chromium**, through
 Playwright, on Bun. See
 [ADR 0027](../docs/decisions/0027-real-browser-tests.md).
 
@@ -10,14 +11,24 @@ Playwright, on Bun. See
 bun run setup                                  # once: the tools, and the browsers
 
 # Compile the tests for a browser: `--cfg browser` turns on the ones that need one.
-./target/debug/rust-js --test examples/counter.rs -o out/counter.js -- --extern webapi=target/libwebapi.rmeta --cfg=browser
+./target/debug/rust-js --test examples/counter.rs -o out/counter.js --manifest out/manifest.json -- --extern webapi=target/libwebapi.rmeta --cfg=browser
 
-# Then either runner:
-RUST_JS_TESTS=out/counter.test.js bunx --bun playwright test -c browser/playwright.config.ts
-RUST_JS_TESTS=out/counter.test.js bunx --bun vitest run -c browser/vitest.config.ts
+# Then Playwright Test, whose pages give the files their runner's `test`:
+RUST_JS_TESTS=out/manifest.json bunx --bun playwright test -c browser/playwright.config.ts
 ```
 
-`RUST_JS_TESTS` takes several files, separated by spaces.
+`RUST_JS_TESTS` takes several manifests, separated by spaces. Vitest's
+browser mode runs files written for Vitest, of a crate whose `Cargo.toml`
+says so:
+
+```toml
+[package.metadata.rust-js.test]
+runner = "vitest"
+```
+
+```bash
+RUST_JS_TESTS=out/manifest.json bunx --bun vitest run -c browser/vitest.config.ts
+```
 
 | File | What it is |
 |---|---|

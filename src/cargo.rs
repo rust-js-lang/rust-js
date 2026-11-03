@@ -331,13 +331,24 @@ fn compile(flags: &[String]) -> Result<Vec<String>, String> {
     // own, as it has metadata, so a build Cargo has as done is still its JS.
     let dir = out_dir.join("rust-js").join(format!("{name}{extra}"));
     // Its `#[test]`s, rust-js's `--test`, which gives rustc its own (ADR 0026):
-    // `lib.test.js` beside its JS, which `rust-js test` runs (ADR 0916).
+    // a `.test.js` beside each module's JS that has tests, which `rust-js
+    // test` runs (ADRs 0916, 1076). A test build's root is named as its file
+    // is, an integration test's `tests/shapes.rs` `shapes.js`, its tests
+    // `shapes.test.js`, as a library's `src/lib.rs` is `lib.js`.
     let tests = builds_tests(flags);
+    let root = match tests {
+        true => Path::new(&source)
+            .file_stem()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .into_owned(),
+        false => "lib".to_string(),
+    };
     let mut ours: Vec<String> = tests.then(|| "--test".to_string()).into_iter().collect();
     ours.extend([
         source.clone(),
         "-o".into(),
-        dir.join("lib.js").display().to_string(),
+        dir.join(format!("{root}.js")).display().to_string(),
         "--manifest".into(),
         dir.join("lib.manifest.json").display().to_string(),
         "--cargo".into(),

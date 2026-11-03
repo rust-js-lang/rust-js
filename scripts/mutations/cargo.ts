@@ -4,11 +4,19 @@ import type { Mutation } from "../mutations";
 export const mutations: Mutation[] = [
   {
     name: "cargo-tests-rustcs",
-    breaks: "a library's test build, `rust-js test`'s, is rustc's, and rust-js writes no `lib.test.js` (ADR 0916)",
+    breaks: "a library's test build, `rust-js test`'s, is rustc's, and rust-js writes none of its `.test.js` files (ADRs 0916, 1076)",
     file: "src/cargo.rs",
     find: '    let tests = builds_tests(&flags);\n',
     replace: '    let tests = false;\n',
     tests: ["test/rust-js-test.test.ts"],
+  },
+  {
+    name: "cargo-test-root-lib",
+    breaks: "an integration test's root, `tests/quadruples.rs`, is `lib.js`, its tests `lib.test.js`, not named as its file is (ADR 1076)",
+    file: "src/cargo.rs",
+    find: "        true => Path::new(&source)\n",
+    replace: "        true => Path::new(\"lib\")\n",
+    tests: ["test/rust-js-test.test.ts", "-t", "an integration test's too"],
   },
   {
     name: "cargo-tests-test-twice",

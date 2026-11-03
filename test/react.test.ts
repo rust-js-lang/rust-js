@@ -41,7 +41,7 @@ test("React components are hand-written JSX, and React runs them", () => {
   // `!` of a `&bool`, which rustc writes as `Not::not`.
   expect(js).toContain("setDark((d) => !d)");
   copyFileSync(join(root, "test", "react_app.jsx"), join(out, "react_app.test.jsx"));
-  const p = Bun.spawnSync(["bun", "test", "--preload", "./test/happydom.ts", join(out, "react_app.test.jsx")], { cwd: root, stderr: "pipe" });
+  const p = Bun.spawnSync(["bun", "test", "--preload", "./test/happydom.js", join(out, "react_app.test.jsx")], { cwd: root, stderr: "pipe" });
   const output = p.stdout.toString() + p.stderr.toString();
   expect([p.exitCode, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "3"]);
 }, 60_000);
@@ -192,7 +192,7 @@ test("React's and React DOM's APIs are hand-written React, and they run", () => 
   expect(js).toContain('const LazyCard = lazy(() => import("./lazy-card.jsx"));');
   Bun.write(join(out, "lazy-card.jsx"), 'export default function LazyCard() {\n  return <em className="lazy">lazy card</em>;\n}\n');
   copyFileSync(join(root, "test", "apis.jsx"), join(out, "apis.test.jsx"));
-  const p = Bun.spawnSync(["bun", "test", "--preload", "./test/happydom.ts", join(out, "apis.test.jsx")], { cwd: root, stderr: "pipe" });
+  const p = Bun.spawnSync(["bun", "test", "--preload", "./test/happydom.js", join(out, "apis.test.jsx")], { cwd: root, stderr: "pipe" });
   const output = p.stdout.toString() + p.stderr.toString();
   expect([p.exitCode, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "8"]);
 }, 120_000);

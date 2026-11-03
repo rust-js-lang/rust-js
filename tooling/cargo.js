@@ -158,19 +158,21 @@ const exactToolchain = toolchain => /^(\d+\.\d+\.\d+|nightly-\d{4}-\d{2}-\d{2})$
  * diagnostics, each a line.
  * @returns {Promise<{ js?: string, crates: Map<string, { js: string, manifest: string }>, manifests: Map<string, any>, files: Map<string, string[]>, warnings: string[] }>}
  */
-export async function checkCargo({ manifestPath, toolchain, compiler, packageNames = [], features = [], noDefaultFeatures = false, offline = false, react, inSource = false, check = false, routes = [], packages = [], targetDir, tests = false }) {
+export async function checkCargo({ manifestPath, toolchain, compiler, packageNames = [], features = [], noDefaultFeatures = false, offline = false, react, inSource = false, check = false, routes = [], packages = [], targetDir, tests = false, integrationTests = [] }) {
   if (!exactToolchain(toolchain)) throw new Error("Cargo builds require an exact toolchain pin");
   const manifest = resolve(manifestPath);
   const args = [`+${toolchain}`, "check", "--message-format=json", "--target", target, "--manifest-path", manifest];
-  // Its library's `#[test]`s, `rust-js test`'s (ADR 0916): rustc's `--test`,
-  // which the wrapper gives rust-js's.
-  if (tests) args.push("--profile", "test", "--lib");
+  // Its library's `#[test]`s and its integration tests', `rust-js test`'s
+  // (ADRs 0916, 1076): rustc's `--test`, which the wrapper gives rust-js's.
+  if (tests) args.push("--profile", "test", "--lib", ...integrationTests.flatMap((name) => ["--test", name]));
   for (const name of packageNames) args.push("-p", name);
   if (features.length) args.push("--features", features.join(","));
   if (noDefaultFeatures) args.push("--no-default-features");
   if (offline) args.push("--offline");
   const build = await cargoBuild({ manifestPath: manifest, toolchain, offline });
-  const env = { ...cargoEnv(compiler, react, build), ...(targetDir ? { CARGO_TARGET_DIR: targetDir } : {}) };
+  // Of a test build, each package's library is one: its integration tests
+  // use it, as a crate of their own, by its contract (ADR 1076).
+  const env = { ...cargoEnv(compiler, react, tests ? { ...build, apps: [] } : build), ...(targetDir ? { CARGO_TARGET_DIR: targetDir } : {}) };
   const { stdout, stderr } = await execute("cargo", args, { cwd: dirname(manifest), env, maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
     const messages = String(error.stdout ?? "").split("\n").filter(Boolean).map(line => JSON.parse(line));
     // A package's crate is quiet: what it warns of is its author's, which
@@ -183,6 +185,8 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   let js;
   // The packages asked for that rust-js compiled, by their names.
   const compiled = new Set();
+  // Of a test build, each test target's test files, and their runner.
+  const testRuns = [];
   // What's written in source, and how, beside Cargo's builds: `cargo clean`
   // forgets it, and then nothing in source is taken as this build's.
   let ledger;
@@ -210,11 +214,14 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
     crates.set(message.target.name, entry);
     const name = packageNameOf(message.package_id);
     const ours = packageNames.length ? packageNames.includes(name) : message.manifest_path === manifest;
-    // Of a test build, the package's test target, its harness's: its
-    // `lib.test.js`, beside its JS.
+    // Of a test build, each of the package's test targets, its library's
+    // and each integration test's: its test files and their runner, as its
+    // manifest says (ADR 1076).
     if (ours && tests === Boolean(message.profile?.test)) {
       compiled.add(name);
-      js = tests ? join(dirname(library), "lib.test.js") : entry.js;
+      if (tests) {
+        if (built.tests) testRuns.push(built.tests);
+      } else js = entry.js;
     }
   }
   // Each package asked for, or the manifest's own, where it has one: a
@@ -227,7 +234,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   // which Cargo passes on as it is: the app's Prettier's layout not taken,
   // and why (ADR 0381, amended).
   const warnings = String(stderr ?? "").split("\n").filter((line) => line.startsWith("warning: rust-js:"));
-  if (tests) return { js, crates, warnings };
+  if (tests) return { tests: testRuns, crates, warnings };
   // Each with its crate's name, as Cargo has it: the app's manifest, a
   // program's, has no library to say it (ADR 0360).
   const validated = new Map([...crates].map(([crate, { manifest }]) => [crate, parseManifest(readFileSync(manifest, "utf8"))]));
@@ -494,8 +501,10 @@ export async function cargoWorkspace({ manifestPath, toolchain, offline = false,
     const lib = pkg.targets.find((target) => target.kind.includes("lib"));
     return lib ? [[pkg.name, lib.src_path]] : [];
   }));
+  // Each package's integration tests, `tests/*.rs`, by their targets' names.
+  const integrationTests = new Map(metadata.packages.map((pkg) => [pkg.name, pkg.targets.filter((target) => target.kind.includes("test")).map((target) => target.name)]));
   const own = ownPackage(metadata.packages, manifest);
-  return { root: metadata.workspace_root, target: metadata.target_directory, packages, libs, own };
+  return { root: metadata.workspace_root, target: metadata.target_directory, packages, libs, integrationTests, own };
 }
 
 /** The package of Cargo's metadata `manifest` is of, by its name: none of

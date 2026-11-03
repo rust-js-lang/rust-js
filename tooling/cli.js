@@ -8,12 +8,13 @@
 // asks before a build. `rust-js clippy` lints it with clippy's lints, as
 // rust-js reads it, its lint flags after `--`, `-- -D warnings`, as `cargo
 // clippy`'s are (ADR 0888). `rust-js test` runs its library's `#[test]`s as
-// JS, as `cargo test` runs them natively, bun's flags after `--` (ADR 0916).
+// JS, as `cargo test` runs them natively, by the test runner the crate names,
+// its flags after `--` (ADRs 0916, 1076).
 // The compiler is this command's, not the app's to run.
 import { buildApp, clippyApp, testApp } from "./build.js";
 
 const usage = (said) => {
-  process.stderr.write(`rust-js: ${said}\nusage: rust-js build [--package <name>]... [--check]\n       rust-js clippy [--package <name>]... [-- <lint flags>]\n       rust-js test [--package <name>]... [-- <bun test flags>]\n`);
+  process.stderr.write(`rust-js: ${said}\nusage: rust-js build [--package <name>]... [--check]\n       rust-js clippy [--package <name>]... [-- <lint flags>]\n       rust-js test [--package <name>]... [-- <test runner flags>]\n`);
   process.exit(2);
 };
 const [command, ...rest] = process.argv.slice(2);

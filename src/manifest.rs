@@ -66,10 +66,24 @@ pub struct Manifest {
     /// none: a build over an older one leaves what a build from nothing does.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub stale: Vec<Artifact>,
-    /// Its `#[test]` functions' runner, `<output>.test.js`, of a build with
-    /// `--test` (ADR 0026): what a host runs them by.
+    /// Its `#[test]`s, of a build with `--test` (ADR 1076): what a host
+    /// runs them by.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub tests: Option<PathBuf>,
+    pub tests: Option<Tests>,
+}
+
+/// A test build's test files, one beside each module's JS that has tests,
+/// and the runner they're written for, which runs them (ADR 1076).
+#[derive(Serialize, Deserialize)]
+pub struct Tests {
+    /// `[package.metadata.rust-js.test]`'s `runner`: `node`, `bun`,
+    /// `vitest` or `jest`.
+    pub runner: String,
+    /// The module each test file imports `test` from, the runner's,
+    /// `node:test`: what a host that runs them in a page of its own gives
+    /// them in its place, as the playground does.
+    pub module: String,
+    pub files: Vec<PathBuf>,
 }
 
 #[derive(Serialize, Deserialize)]

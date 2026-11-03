@@ -266,37 +266,48 @@ export async function clippyApp({ app, packageNames, lints }) {
 }
 
 /**
- * `rust-js test` (ADR 0916): the `#[test]`s of the library of the package
- * `app`'s `Cargo.toml` is of, or each of `packageNames`, compiled to JS as `cargo
- * check --profile test --lib` builds them, with its dependencies' JS as a
- * build has it, in a target directory of its own, out of source; then run by
- * bun, which gives the `test()` its `lib.test.js` calls, `args` given it as
- * well. bun's exit code.
+ * `rust-js test` (ADRs 0916, 1076): the `#[test]`s of the package `app`'s
+ * `Cargo.toml` is of, or each of `packageNames`, its library's and its
+ * integration tests', compiled to JS as `cargo check --profile test` builds
+ * them, with its dependencies' JS as a build has it, in a target directory
+ * of its own, out of source; then run by the JS test runner the package's
+ * `[package.metadata.rust-js.test]` names, Node's by default, each module's
+ * `.test.js` given it, and `args` before them. Packages of one runner run
+ * together; the first exit code that isn't 0, or 0.
  * @param {{ app: string, packageNames?: string[], args?: string[] }} options
  * @returns {Promise<number>}
  */
 export async function testApp({ app, packageNames = [], args = [] }) {
   const { writePatch } = await import("./patch.js");
+  const { runnerCommand } = await import("./runners.js");
   const packages = existsSync(join(app, "package.json")) ? writePatch(app).map(({ name, dir }) => ({ name, dir })) : [];
   const compiler = await findCompiler(app);
   if (!existsSync(compiler)) throw new Error(`rust-js: ${withoutCompiler(compiler)}`);
   const manifestPath = join(app, "Cargo.toml");
   if (!existsSync(manifestPath)) throw new Error(`rust-js: no Cargo.toml in ${app}: run \`rust-js test\` where the crate's is`);
   const builder = createNativeBuilder({ root: app, rustJs: compiler });
-  const targetDir = process.env.CARGO_TARGET_DIR ?? join(cacheDirOf(app), "test");
-  const { own } = await builder.cargoWorkspace({ manifestPath, targetDir });
+  const targetDir = resolve(app, process.env.CARGO_TARGET_DIR ?? join(cacheDirOf(app), "test"));
+  const { own, integrationTests } = await builder.cargoWorkspace({ manifestPath, targetDir });
   const named = packageNames.length ? packageNames : own ? [own] : [];
   if (!named.length) throw new Error(`rust-js: ${manifestPath} is a workspace's: name the package, \`rust-js test --package <name>\``);
-  // Each package's harness, one at a time: Cargo has what one checked as
-  // done for the next (ADR 0360, amended).
-  const js = [];
-  for (const packageName of named) js.push((await builder.checkCargo({ manifestPath, packageNames: [packageName], packages, targetDir, tests: true })).js);
-  const bun = process.versions.bun ? process.execPath : "bun";
-  return new Promise((resolve, reject) => {
-    const child = spawn(bun, ["test", ...args, ...js], { cwd: app, stdio: "inherit" });
-    child.on("error", reject);
-    child.on("close", (code) => resolve(code ?? 1));
-  });
+  // Each package's tests, one at a time: Cargo has what one checked as
+  // done for the next (ADR 0360, amended). Each runner's files, together.
+  const byRunner = new Map();
+  for (const packageName of named) {
+    const { tests } = await builder.checkCargo({ manifestPath, packageNames: [packageName], packages, targetDir, tests: true, integrationTests: integrationTests.get(packageName) ?? [] });
+    for (const { runner, files } of tests) byRunner.set(runner, [...(byRunner.get(runner) ?? []), ...files]);
+  }
+  let exit = 0;
+  for (const [runner, files] of byRunner) {
+    const run = runnerCommand(runner, { app, targetDir, files, args });
+    const code = await new Promise((resolve, reject) => {
+      const child = spawn(run.command, run.args, { cwd: app, stdio: "inherit", env: { ...process.env, ...run.env } });
+      child.on("error", reject);
+      child.on("close", (code) => resolve(code ?? 1));
+    });
+    exit ||= code;
+  }
+  return exit;
 }
 
 /** A Next.js app's Pages Router directories, where a file is a route, of

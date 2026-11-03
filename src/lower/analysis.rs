@@ -37,6 +37,7 @@ mod scopes;
 pub(super) use scopes::Scopes;
 mod self_handles;
 pub(super) use self_handles::SelfHandles;
+mod tests;
 mod throwing;
 mod unwinding;
 mod wholes;
@@ -52,7 +53,7 @@ mod validation;
 
 use super::bindings::{self, Export, is_binding};
 use super::traits;
-use super::{Body, FnInfo, TestFn, module_path};
+use super::{Body, FnInfo, module_path};
 use crate::lower::recognition::{
     Recognition, StdItem, TypeFact, is_js_object_deref, is_std_def, is_unlowered_impl, known_derive,
 };
@@ -488,7 +489,7 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// Keep collecting lowering diagnostics after item-name validation fails.
     pub failed: bool,
     pub called_from_elsewhere: HashSet<DefId>,
-    pub tests: Vec<TestFn>,
+    pub tests: crate::program::Tests,
     pub paths: HashMap<LocalModId, Vec<String>>,
     pub mutated: HashSet<Ty<'tcx>>,
     /// The `Rc`s counted, whose counts the crate reads (ADR 0320).
@@ -1217,7 +1218,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let imported = uses.imported;
     let required = uses.required;
     let mut called_from_elsewhere = exported_across_modules(tcx, all_bodies, &fns, instances);
-    let tests = collect_tests(tcx, &markers, &bodies, &fns, &mut called_from_elsewhere);
+    let tests = tests::collect_tests(tcx, &markers, &bodies, &fns, &mut called_from_elsewhere);
 
     let paths: HashMap<LocalModId, Vec<String>> = modules.iter().map(|&m| (m, module_path(tcx, m))).collect();
 
@@ -1350,47 +1351,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         module_paths,
         null_fields,
     })
-}
-
-/// The tests: each marker names a function beside it, of the same name.
-/// The test file imports them, so they're `exported` too.
-fn collect_tests<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    markers: &[(LocalDefId, Symbol)],
-    bodies: &[&Body<'tcx>],
-    fns: &HashMap<DefId, FnInfo>,
-    exported: &mut HashSet<DefId>,
-) -> Vec<TestFn> {
-    let mut tests = Vec::new();
-    for &(marker, label) in markers {
-        let module = tcx.parent_module_from_def_id(marker);
-        let name = tcx.item_name(marker.to_def_id());
-        let Some(test) = bodies
-            .iter()
-            .filter_map(|body| body.def_id.as_local())
-            .find(|&f| tcx.parent_module_from_def_id(f) == module && tcx.item_name(f.to_def_id()) == name)
-        else {
-            continue;
-        };
-        exported.insert(test.to_def_id());
-        let should_panic = find_attr!(tcx, test, ShouldPanic { reason, .. } => reason.map(|r| r.to_string()));
-        let output = tcx
-            .fn_sig(test)
-            .instantiate_identity()
-            .skip_normalization()
-            .skip_binder()
-            .output();
-        tests.push(TestFn {
-            module: module_path(tcx, module),
-            namespace: namespace_of(tcx, module),
-            name: fns[&test.to_def_id()].name.clone(),
-            label: label.to_string(),
-            should_panic,
-            ignore: find_attr!(tcx, test, Ignore { .. }),
-            returns_result: matches!(output.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Result)),
-        });
-    }
-    tests
 }
 
 /// The trait constants generic code reads, `S::SIDES` (ADR 0106): a

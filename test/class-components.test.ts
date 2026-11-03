@@ -34,7 +34,7 @@ function refused(name: string, rust: string): string {
 /** `driver`, a bun test of the module in `dir`, run with a DOM: how many of its tests passed, or what it printed. */
 function rendered(dir: string, driver: string) {
   writeFileSync(join(dir, "driver.test.jsx"), driver);
-  const p = Bun.spawnSync(["bun", "test", "--preload", "./test/happydom.ts", join(dir, "driver.test.jsx")], { cwd: root, stderr: "pipe" });
+  const p = Bun.spawnSync(["bun", "test", "--preload", "./test/happydom.js", join(dir, "driver.test.jsx")], { cwd: root, stderr: "pipe" });
   const output = p.stdout.toString() + p.stderr.toString();
   return { code: p.exitCode, passed: output.match(/(\d+) pass/)?.[1], output };
 }
