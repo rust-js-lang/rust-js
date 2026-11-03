@@ -39,8 +39,9 @@ export function bail(tag, log) {
       if (ENABLE_B) {
         return 9;
       }
+      // Fallthrough
+      break;
   }
-  // Fallthrough
   return finish(log);
 }
 

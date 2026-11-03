@@ -1609,6 +1609,7 @@ export function render(reason, work) {
         case 2:
         case 3:
           work(reason);
+          break;
       }
       status = 1;
       break;
@@ -1714,7 +1715,8 @@ symbol, or a `Some` of them, [ADR
 a last `_`, or a last name, `current => current`, which is the value, is a
 `switch`: `|`'s constants are stacked `case`s, `_` or the name is the
 `default`, of a `Some`'s constants `None`'s too, left out where it does nothing, and each case ends in `break;`
-where it'd go on, the case's own where it's left for what follows the
+where it'd go on, the last case and the `default` too, as React writes
+them ([ADR 0629](../../decisions/0629-a-match-of-constants-is-a-switch.md#amendment-every-case-that-goes-on-ends-with-break-the-last-too-2026-11-03-the-users-decision)), the case's own where it's left for what follows the
 `switch` ([ADR 0731](../../decisions/0731-a-cases-break-past-the-switch-is-its-own.md)),
 or for the function's end or the one `return` after the `match`, not a
 copy of that `return` ([ADR 0905](../../decisions/0905-a-guarded-arm-falls-to-the-next.md), amended),
@@ -1872,6 +1874,7 @@ export function unchecked(names) {
         break;
       default:
         found = (found + 1) >>> 0;
+        break;
     }
   }
   return found;
@@ -1925,6 +1928,7 @@ export function extract(name, skip, log) {
     // falls through
     case "keydown":
       log.push(2);
+      break;
   }
 }
 ```
@@ -1968,7 +1972,9 @@ export function resolve(status, log) {
           return 3;
         case "stale":
           log.push("stale");
+          break;
       }
+      break;
   }
   return 0;
 }
@@ -2008,6 +2014,7 @@ export function name(kind, tracing) {
       if (tracing) {
         return "TracingMarker";
       }
+      break;
   }
 }
 ```
@@ -2017,8 +2024,7 @@ constant of the guarded one's, and one of its own, the guarded arm's case
 is its guard's `if`, and falls through to the next arm's case, as React
 writes `getComponentNameFromFiber`. Each guard runs where Rust runs it, in
 order, once its constant matched; an arm that does nothing where its
-guard holds is a `break`, but in the last case, a `default`'s too, which
-JS falls out of. One `match` may have guards of both kinds, as React's
+guard holds is a `break`, in the last case and a `default` too. One `match` may have guards of both kinds, as React's
 `getOwnerStackByFiberInDev` does, and several chains of guarded arms, each
 falling to the next, as `commitDeletionEffectsOnFiber` does, each arm's
 body in its guard's `if`; each case's guard is one `if`, `if
@@ -2122,6 +2128,7 @@ export function earlyBailout(fiber, onB, onC) {
       if (onC || fiber.lanes > 4) {
         return 0;
       }
+      break;
   }
   return bailout(fiber);
 }
@@ -2172,6 +2179,7 @@ export function kept(names, out) {
         continue;
       case "LINK":
         out.push(2);
+        break;
     }
     out.push(0);
   }
@@ -2456,6 +2464,7 @@ export function tagOf(type) {
         }
       }
       tag = "throw";
+      break;
   }
   return tag;
 }

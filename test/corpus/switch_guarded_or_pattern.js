@@ -37,6 +37,7 @@ function extra(names, transitions) {
       // Fallthrough
       default:
         found.push(name);
+        break;
     }
   }
   return found;
@@ -64,6 +65,7 @@ function flagged(names, transitions) {
       // Fallthrough
       default:
         found.push(name);
+        break;
     }
   }
   return found;
@@ -84,6 +86,7 @@ function unguarded(names) {
         break;
       default:
         found.push(name);
+        break;
     }
   }
   return found;
@@ -118,6 +121,7 @@ function sources(names, tag) {
         break;
       default:
         note("other");
+        break;
     }
   }
   return found;
@@ -141,6 +145,7 @@ function described(tag, onThem) {
     // falls through
     default:
       note("other");
+      break;
   }
   return tag * 2;
 }
@@ -159,6 +164,7 @@ function visited(tag, onThem) {
         break;
       }
       note("three or four");
+      break;
   }
   note("after");
 }

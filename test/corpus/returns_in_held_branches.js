@@ -29,6 +29,7 @@ function throwException(tag, legacy, log) {
         if (legacy) {
           return false;
         }
+        break;
     }
     throw new Error(`Unexpected tag (${boundary.tag})`);
   } else if (legacy) {
@@ -48,6 +49,7 @@ function ofABox(tag, legacy) {
         if (legacy) {
           return 40;
         }
+        break;
     }
     return boundary.tag;
   } else if (legacy) {

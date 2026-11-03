@@ -4,7 +4,8 @@ Status: Accepted. Amends [0636](0636-a-guarded-arm-is-a-case.md), whose
 guarded arm was a case only where its failed guard went on to nothing,
 and [0629](0629-a-match-of-constants-is-a-switch.md), whose cases each
 ended where they went on. Amended below: the last clause has no `break`
-tidy ended it with; and a guard that falls to nothing beside one that
+tidy ended it with (superseded by ADR 0629's amendment of 2026-11-03, the
+user's decision: the last clause that goes on ends with `break;`); and a guard that falls to nothing beside one that
 falls to the next is a case too, and a case's `if` ends with no `break;`
 its end does; and the arm fallen to may be guarded and fall to nothing,
 what's past the `match` follows the `switch`, a guard is its case's
@@ -168,6 +169,12 @@ switch (tag) {
   `scripts/mutations/to_oxc/statements.ts` and `scripts/mutations/to_oxc.ts`.
 
 ## Amendment: the last clause has no `break` tidy ended it with
+
+(Superseded, 2026-11-03, the user's decision: the last clause that goes
+on ends with `break;`, the printer's, as upstream mostly writes it. See
+ADR 0629's amendment "every case that goes on ends with `break;`, the
+last too". `unstable_runWithPriority`'s port is `default: priorityLevel
+= NormalPriority; break; }`.)
 
 React's scheduler's `unstable_runWithPriority` ends its `switch` with
 `default: priorityLevel = NormalPriority; }`. Of a guarded case that falls

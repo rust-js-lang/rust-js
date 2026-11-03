@@ -605,11 +605,15 @@ pub(in crate::lower::mir::tidy) fn branch_ends(stmts: &mut [Stmt]) {
 /// `stmts`, which end where block `label` does, as `branch_ends` has them.
 pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &str) {
     // Not a block the program labeled, `'desc: { .. }`, which is where
-    // it's written, by the name it gave it (ADR 0742, 0745).
-    if let Some(Stmt {
-        kind: StmtKind::Labeled(inner, body),
-        span,
-    }) = stmts.last_mut()
+    // it's written, by the name it gave it (ADR 0742, 0745). Past the
+    // comments after it, a last `_ => {}`'s, kept before the jump its
+    // statements end with, where `default_marks` reads them (rd702).
+    let last = (stmts.iter()).rposition(|s| !matches!(s.kind, StmtKind::Comments));
+    if let Some(at) = last
+        && let Stmt {
+            kind: StmtKind::Labeled(inner, body),
+            span,
+        } = &mut stmts[at]
         && span.is_none()
     {
         let (inner, mut body) = (inner.clone(), std::mem::take(body));
@@ -620,8 +624,11 @@ pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &str) {
                 }
             }
         });
-        stmts.pop();
-        stmts.extend(body);
+        let comments: Vec<Stmt> = stmts.drain(at + 1..).collect();
+        let jump = (body.last().is_some_and(ends) && !comments.is_empty()).then(|| body.pop());
+        stmts.splice(at..=at, body);
+        stmts.extend(comments);
+        stmts.extend(jump.flatten());
     }
     // Not a `let … else`'s, `if (c) { s; break l; } throw e;`: a guard.
     // Nor one before a loop that never goes on, as a `return` doesn't,

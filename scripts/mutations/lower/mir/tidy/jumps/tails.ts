@@ -103,9 +103,10 @@ export const mutations: Mutation[] = [
     breaks:
       "a block that ends another stays a block of its own, its `break`s labeled",
     file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "        stmts.pop();\n        stmts.extend(body);\n",
-    replace: "        let _ = body;\n        return;\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
+    find: "        && span.is_none()\n    {\n        let (inner, mut body)",
+    replace: "        && span.is_none()\n        && false\n    {\n        let (inner, mut body)",
+    tests: ["test/corpus.test.ts", "-t", "^switch_default_comment_falls.rs$"],
+    snapshots: true,
   },
   {
     name: "mir-tidy-let-else-branch-ends",
@@ -357,8 +358,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a block the program labeled that ends a block MIR made is merged into it, `'desc` named by MIR's block (ADR 0745)",
     file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "    }) = stmts.last_mut()\n        && span.is_none()\n",
-    replace: "    }) = stmts.last_mut()\n        && (span.is_none() || true)\n",
+    find: "        } = &mut stmts[at]\n        && span.is_none()\n",
+    replace: "        } = &mut stmts[at]\n        && (span.is_none() || true)\n",
     tests: [
       "test/port-performance-track.test.ts",
       "-t",
@@ -931,6 +932,24 @@ export const mutations: Mutation[] = [
     find: "        (StmtKind::Continue(Some(_)), StmtKind::Continue(Some(_))) if !stmt.span.is_none() => false,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^switch_arms_continue.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "ending-block-before-comments-kept",
+    breaks: "a block MIR made that ends its block but for the comments after it, a last `_ => {}`'s `// Fallthrough`, keeps its label, so the `switch` is in a labeled block the Rust lacks (rd702)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "    let last = (stmts.iter()).rposition(|s| !matches!(s.kind, StmtKind::Comments));\n",
+    replace: "    let last = stmts.len().checked_sub(1);\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_default_comment_falls.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "ending-comments-after-jump",
+    breaks: "the comments after a block MIR made are after the jump its statements end with, where nothing reaches them, so they're dropped (rd702)",
+    file: "src/lower/mir/tidy/jumps/tails.rs",
+    find: "        let jump = (body.last().is_some_and(ends) && !comments.is_empty()).then(|| body.pop());\n",
+    replace: "        let jump = (body.last().is_some_and(ends) && comments.is_empty()).then(|| body.pop());\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_default_comment_falls.rs$"],
     snapshots: true,
   },
 ];

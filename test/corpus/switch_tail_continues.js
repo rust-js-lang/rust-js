@@ -19,6 +19,7 @@ function count(v) {
         break;
       default:
         n = (n + 10) >>> 0;
+        break;
     }
   }
   return n;

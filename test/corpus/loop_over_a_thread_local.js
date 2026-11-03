@@ -20,6 +20,7 @@ function popToNextHostParent(fiber) {
         return 3;
       default:
         hydrationParentFiber = hydrationParentFiber.parent;
+        break;
     }
   }
   return 0;

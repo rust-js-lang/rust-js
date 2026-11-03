@@ -53,7 +53,8 @@ function ctor(name, n, log) {
       ctor = 3;
       break;
     default:
-    // Unknown event.
+      // Unknown event.
+      break;
   }
   return ctor + n;
 }

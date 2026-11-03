@@ -202,11 +202,17 @@ pub(super) fn guard_held(stmts: &mut Vec<Stmt>, switches: &[Switch]) {
     // break; }` is as written (ADR 0905, amended).
     let arm = (switches.iter().flat_map(|s| &s.arms))
         .find(|arm| (arm.guard).is_some_and(|guard| test_at(test, first.span).is_some_and(|at| within(at, guard))));
-    if !arm.is_some_and(|arm| (rest.iter()).all(|s| written_at(s).is_some_and(|at| within(at, arm.span)))) {
+    // Past the comments above a last `_ => {}`, which `switches` put
+    // before the jump the case ends with: after the `if`, where the case
+    // goes on (`default_marks`, rd702).
+    let mine = |s: &Stmt| arm.is_some_and(|arm| written_at(s).is_some_and(|at| within(at, arm.span)));
+    let marks = |s: &Stmt| matches!(s.kind, StmtKind::Comments) && !mine(s);
+    if !(rest.iter()).all(|s| mine(s) || marks(s)) {
         return;
     }
-    let held = StmtKind::If(test.clone().negated_test(), rest.to_vec(), None).at(first.span);
-    *stmts = vec![held];
+    let (after, held): (Vec<Stmt>, Vec<Stmt>) = rest.iter().cloned().partition(marks);
+    let held = StmtKind::If(test.clone().negated_test(), held, None).at(first.span);
+    *stmts = std::iter::once(held).chain(after).collect();
 }
 
 /// `if (a) { if (b) { .. } }`, `list`'s, of a guard MIR tests in parts,

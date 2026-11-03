@@ -19,6 +19,7 @@ function kinds(names) {
       default:
         seen.push(9);
         level = 3;
+        break;
     }
     seen.push(level);
   }

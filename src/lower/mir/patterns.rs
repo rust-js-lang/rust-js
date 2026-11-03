@@ -1022,8 +1022,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What the body's `let`s bind, by the names `state` gives them: a
     /// struct or tuple pattern's bindings (`let_pattern_bindings`); a name
     /// alone, `let init = lazy.init;`, a statement of its own, which no
-    /// pattern of a part read beside it is (ADR 0598, amended), a cast's
-    /// too, `let lazy: &LazyComponent = unsafe { js::cast(children) };`,
+    /// pattern of a part read beside it is (ADR 0598, amended), but a copy
+    /// of a pattern's binding named as it is, `let x = *x;`, the pattern's
+    /// (#546); a cast's too, `let lazy: &LazyComponent = unsafe { js::cast(children) };`,
     /// `const lazy = children;`; and of those, one an `if let` takes
     /// apart, its scrutinee the variable alone, `let types =
     /// t.types.borrow().clone(); if let Some(types) = types` (ADR 0866),
@@ -1106,6 +1107,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             held.is_some_and(|held| !held.has_escaping_bound_vars() && held.is_freeze(self.tcx, self.typing_env))
         };
+        // A copy of a struct pattern's field's binding, named as it is, `let
+        // parent_object = *parent_object;`: the pattern's own, the value it
+        // reads, which nothing runs between, not a statement of its own (#546).
+        let copied_field = |binding: rustc_span::Symbol, initializer: Option<thir::ExprId>| {
+            let Some(thir::ExprKind::Deref { arg }) = initializer.map(|e| &thir[through(e)].kind) else {
+                return false;
+            };
+            matches!(thir[through(*arg)].kind, thir::ExprKind::VarRef { id }
+                if self.tcx.hir_name(id.0) == binding
+                    && matches!(self.tcx.parent_hir_node(id.0), rustc_hir::Node::PatField(_)))
+        };
         let mut named = Vec::new();
         let mut mutable = Vec::new();
         let mut ends_borrow = Vec::new();
@@ -1122,7 +1134,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ..
                 } = pattern.kind
             {
-                named.push(pattern.span);
+                if !copied_field(binding, *initializer) {
+                    named.push(pattern.span);
+                }
                 if mode.1.is_mut() {
                     mutable.push(pattern.span);
                 }

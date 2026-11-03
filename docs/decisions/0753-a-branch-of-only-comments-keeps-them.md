@@ -325,3 +325,45 @@ only at the next statement, the `return`. Moving them would take a
 `switch_default_comment.rs` against native Rust and the mutation
 `default-comment-marks-unread`.
 
+
+## Amendment: the comment is in the last case, before its `break;` (rd701's remainder, 2026-11-03)
+
+Since ADR 0629's amendment of 2026-11-03, the user's decision, the last
+case that goes on ends with `break;`. A one-statement case now has two
+statements, so the comments that end it print inside it, above the
+`break;`: `case 5: if (ENABLE_B) { return 9; } // Fallthrough break; }`,
+where upstream writes `// Fallthrough` before the case's `}`. The
+difference rd701 accepted, the comment above the `return` after the
+`switch`, is gone. `switch_default_comment.js` is re-blessed.
+
+## Amendment: a comment above a last `_ => {}` after guarded arms that fall (rd702, 2026-11-03)
+
+rd701's fix missed React's own attemptEarlyBailoutIfNoScheduledUpdate.
+There a guarded arm falls to another guarded arm of the same value,
+`TRACING_MARKER if ENABLE_TRANSITION_TRACING`, then `TRACING_MARKER |
+LEGACY_HIDDEN if ENABLE_LEGACY_HIDDEN`, before `// Fallthrough _ => {}`.
+Each case still ended with `return bailoutOnAlreadyFinishedWork(..)`, or
+the `switch` sat in a labeled block, `bb22: { switch .. break bb22; }`,
+which the Rust lacks, and the comment printed in the first case or above
+the function's first statement. Three places read the comment's mark as
+a statement that does something:
+
+- `jumps::ending` merges a block MIR made into the block it ends. It now
+  looks past the comments after the inner block. They stay after its
+  statements, or before the jump those statements end with, which nothing
+  may follow (`unreachable_after` would drop them there).
+- `switches`' `default_marks` puts the marks before the jump the last case
+  ends with. Where the `default` only leaves, `_ => {}`'s `break bb1;`,
+  the marks go to the last case, not to that `default`.
+- `guards::guard_held` turns `if (!on) { break; } ..; return 7;` into `if
+  (on) { ..; return 7; }`. It now holds past those marks, which follow its
+  `if`.
+
+The JS is the `switch` without the comment: `case 23: if (ENABLE_C) {
+lanes.value = 0; return 7; } // Fallthrough break; }` and one tail after
+the `switch`, whether the tail is a call, a value or a sum. Case
+([0262](0262-when-rust-and-js-disagree.md)): N, the comment runs nothing.
+Held by corpus `switch_default_comment_falls.rs` against native Rust,
+and by the mutations `ending-block-before-comments-kept`,
+`ending-comments-after-jump`, `default-marks-after-jump`,
+`default-of-a-jump-marked` and `guard-held-before-marks`.

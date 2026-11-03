@@ -476,6 +476,7 @@ export function Score({ points }) {
       break;
     default:
       label = <b>{points} points</b>;
+      break;
   }
   return <p>{label}</p>;
 }

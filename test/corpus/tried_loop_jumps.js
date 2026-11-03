@@ -35,6 +35,7 @@ function render(start) {
           break;
         default:
           work(reason);
+          break;
       }
       status = 1;
       break;
@@ -84,6 +85,7 @@ function kept(reason) {
               return;
             }
             status = 5;
+            break;
         }
       })();
       break;

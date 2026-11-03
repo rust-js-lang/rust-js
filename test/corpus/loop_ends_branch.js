@@ -46,6 +46,7 @@ function nested(items, kind) {
               break rows;
             case 2:
               count = (count + 2) >>> 0;
+              break;
           }
           count = (count + item) >>> 0;
           continue;

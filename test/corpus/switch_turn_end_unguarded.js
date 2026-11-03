@@ -29,6 +29,7 @@ function clear(items) {
         if (held != null) {
           out.push(`kept ${held}`);
         }
+        break;
     }
   }
   return out;

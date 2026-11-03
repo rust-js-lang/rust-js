@@ -46,6 +46,7 @@ function described(tag, owned, flags, log) {
       if (!owned && on(log, "empty", !info)) {
         info += "forwardRef";
       }
+      break;
   }
   let owner = 2;
   while (owner !== undefined) {
@@ -71,6 +72,7 @@ function counted(tags, log) {
         break;
       case LAZY:
         total = (total + 300) >>> 0;
+        break;
     }
     total = (total + 1) >>> 0;
   }

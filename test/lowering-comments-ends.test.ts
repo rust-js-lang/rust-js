@@ -297,8 +297,8 @@ pub fn last(reason: i32, log: &mut Vec<i32>) {
     }
 }
 `);
-  expect(js).toContain("      default:\n      // Last: this comment belongs to the default case.\n    }\n  }\n}");
-  expect(js).toContain("// The last case: its comment stays in it.\n  }\n}");
+  expect(js).toContain("      default:\n        // Last: this comment belongs to the default case.\n        break;\n    }\n  }\n}");
+  expect(js).toContain("// The last case: its comment stays in it.\n      break;\n  }\n}");
   const log: number[] = [];
   for (const reason of [1, 2, 3]) {
     lib.mark(reason as never, log as never);

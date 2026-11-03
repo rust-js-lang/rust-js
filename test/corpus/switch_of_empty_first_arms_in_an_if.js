@@ -26,6 +26,7 @@ function updated(keys, next, log) {
           if (!next.includes(key)) {
             log.push(key);
           }
+          break;
       }
     }
   }
@@ -49,6 +50,7 @@ function extra(names, transitions) {
       // falls through
       default:
         found.push(name);
+        break;
     }
   }
   return found;

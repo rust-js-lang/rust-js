@@ -128,6 +128,7 @@ function labeled(rows) {
           break;
         default:
           n = (n + 10) >>> 0;
+          break;
       }
       n = (n + 100) >>> 0;
     }

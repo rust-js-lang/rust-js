@@ -116,10 +116,10 @@ pub fn again(n: u32, on: bool, log: &mut Vec<u32>) {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain(
-    '  switch (ty) {\n    case REACT_FRAGMENT_TYPE:\n      return "Fragment";\n    case REACT_PROFILER_TYPE:\n      return "Profiler";\n    case REACT_TRACING_MARKER_TYPE:\n      if (tracing) {\n        return "TracingMarker";\n      }\n  }\n',
+    '  switch (ty) {\n    case REACT_FRAGMENT_TYPE:\n      return "Fragment";\n    case REACT_PROFILER_TYPE:\n      return "Profiler";\n    case REACT_TRACING_MARKER_TYPE:\n      if (tracing) {\n        return "TracingMarker";\n      }\n      break;\n  }\n',
   );
   expect(js).toContain('    case C:\n      if (on) {\n        return "c";\n      }\n      break;\n    case B:\n      return "b";\n  }\n  return "none";\n');
-  expect(js).toContain("    case C:\n      if (on) {\n        log.push(3);\n      }\n  }\n  log.push(0);\n");
+  expect(js).toContain("    case C:\n      if (on) {\n        log.push(3);\n      }\n      break;\n  }\n  log.push(0);\n");
   // An arm that breaks the loop, which goes on past the `match`: its arms
   // an `if` chain, no label the program didn't write (#389).
   expect(js).toContain("    } else if (x === B) {\n      break;\n    } else if (x === C && on) {\n      continue;\n    }\n");
@@ -306,6 +306,7 @@ pub fn named(value: &Unknown) -> String {
           break;
         default:
           others = (others + 1) >>> 0;
+          break;
       }
     }`);
   // An or-pattern's cases as it names them; a guarded arm's, its guard in
@@ -322,6 +323,7 @@ pub fn named(value: &Unknown) -> String {
       if (on) {
         n += 3;
       }
+      break;
   }`);
   // An \`Object\` arm whose arrays are \`_\`'s: \`case "object"\` would take
   // them, so an \`if\` chain, \`Object\` tested as an object not an array.
@@ -722,6 +724,7 @@ pub fn kept(expected: Option<&'static Unknown>) -> Option<&'static Unknown> {
       if (expected === false) {
         return expected;
       }
+      break;
   }
   return null;
 }`);
@@ -1077,6 +1080,7 @@ pub fn code(thenable: &'static Thenable) -> u32 {
         case "rejected":
           throw thenable.reason;
       }
+      break;
   }
   throw thenable;
 }`);
@@ -1151,6 +1155,7 @@ test("an or-pattern of an Option's strings leaves its None arm the default", () 
       break;
     default:
       v.push(2);
+      break;
   }
 }`);
 });
@@ -1214,7 +1219,7 @@ pub fn attach(finished_work: &Fiber) -> Option<&'static js::Unknown> {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  switch (finishedWork.tag) {\n    case HOST_COMPONENT:\n");
   expect(js).toContain(
-    "    case FRAGMENT:\n      finishedWork.stateNode ??= rustJsFragment(finishedWork);\n      instanceToUse = finishedWork.stateNode;\n      break;\n    default:\n      instanceToUse = finishedWork.stateNode;\n  }\n",
+    "    case FRAGMENT:\n      finishedWork.stateNode ??= rustJsFragment(finishedWork);\n      instanceToUse = finishedWork.stateNode;\n      break;\n    default:\n      instanceToUse = finishedWork.stateNode;\n      break;\n  }\n",
   );
   const global = globalThis as Record<string, unknown>;
   global.rustJsPublic = (x: unknown) => ["public", x ?? null];
@@ -1312,7 +1317,7 @@ pub fn fiber(tag: u8, parent: Option<Rc<Fiber>>) -> Rc<Fiber> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain(
-    "      case 27:\n        log.push(2);\n        return;\n      default:\n        parent = parent.parent;\n    }\n  }\n}\n",
+    "      case 27:\n        log.push(2);\n        return;\n      default:\n        parent = parent.parent;\n        break;\n    }\n  }\n}\n",
   );
   const lib = await import(join(dir, "lib.js"));
   const log: number[] = [];
@@ -1384,7 +1389,7 @@ pub fn fiber(tag: u8, parent: Option<Rc<Fiber>>) -> Rc<Fiber> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain(
-    "      case 5:\n      case 13:\n        log.push(1);\n        return;\n      case 3:\n      case 27:\n        log.push(2);\n        return;\n      default:\n        log.push(3);\n    }\n  }\n}\n",
+    "      case 5:\n      case 13:\n        log.push(1);\n        return;\n      case 3:\n      case 27:\n        log.push(2);\n        return;\n      default:\n        log.push(3);\n        break;\n    }\n  }\n}\n",
   );
   // An arm that only returns, its `break` straight after the `_` arm's
   // `if`: the `return` after that `if`'s test.

@@ -308,3 +308,27 @@ the run destructured, 45 differences added to fix 17; (C) a pattern of
 `RefCell` fields read once, `let Link { prev_dep, .. } = &**link;`,
 which bends the port's Rust. Case N either way: each field is read once,
 in its order. Nothing in the compiler changed.
+
+## Amendment: a pattern's binding copied right after it is the pattern's (#546, 2026-11-03)
+
+React's fulfillReference takes a reference's fields in one pattern and
+then copies one of them:
+
+```rust
+let InitializationReference { handler, parent_object, key, map, path, .. } = &**reference;
+let parent_object = *parent_object;
+```
+
+The copy is a `let` of a name alone, which ends a run of parts
+(`LetNames::named`), so the destructuring split in three: `const {
+handler } = reference; const parentObject = reference.parentObject;
+const { key, map, path } = reference;`. **A `let` of a deref of a
+struct pattern's binding, named as that binding, `let x = *x;`, is the
+pattern's own binding** (`let_names`' `copied_field`), not a statement
+of its own: `const { handler, parentObject, key, map, path } =
+reference;`, as upstream writes it. Case
+([0262](0262-when-rust-and-js-disagree.md)): N. Nothing runs between the
+pattern and the copy, so the field the pattern reads has the value the
+copy reads. A copy that's changed after it, `let mut x = *x;`, makes the
+pattern's `const` a `let`. Held by corpus `pattern_binding_copied.rs`
+against native Rust and the mutation `copied-field-binding-own-let`.

@@ -127,6 +127,7 @@ pub fn apart(n: u32, on: bool) -> u32 {
       if (enableViewTransition) {
         return "LegacyHidden";
       }
+      break;
   }
   return null;
 `);
@@ -142,6 +143,7 @@ pub fn apart(n: u32, on: bool) -> u32 {
     case CLASS_COMPONENT:
       log.push(3);
       log.push(4);
+      break;
   }
   log.push(0);
 `);
@@ -279,6 +281,7 @@ pub fn owner_stack(tag: u8, owned: bool, view_transitions: bool) -> String {
       if (!owned && !info) {
         info += "forwardRef";
       }
+      break;
   }
   let owner = 2;
 `);

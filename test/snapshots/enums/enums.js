@@ -93,6 +93,7 @@ export function discriminants(i) {
       break;
     default:
       level = "High";
+      break;
   }
   let status;
   switch (i % 3) {
@@ -104,6 +105,7 @@ export function discriminants(i) {
       break;
     default:
       status = "Teapot";
+      break;
   }
   return [
     ["Low", "Mid", "High"].indexOf(level),

@@ -661,7 +661,7 @@ pub fn tag_of(r#type: Option<&Unknown>, strict: bool) -> &'static str {
       expect(js).toContain('        if (strict) {\n          tag = "strict";\n          break;\n        }\n        tag = "mode";\n        break;\n');
     }
     expect(js).toContain('            case REACT_CONTEXT_TYPE:\n              tag = "context";\n              break getTag;\n');
-    expect(js).toContain('              tag = "lazy";\n              break getTag;\n          }\n        }\n        tag = "throw";\n    }\n  }\n  return tag;\n');
+    expect(js).toContain('              tag = "lazy";\n              break getTag;\n          }\n        }\n        tag = "throw";\n        break;\n    }\n  }\n  return tag;\n');
     expect(await tags(`lib.js?${strict}${host}`)).toEqual([
       "fragment",
       strict ? "strict" : "mode",
@@ -686,7 +686,7 @@ pub fn tag_of(r#type: Option<&Unknown>, strict: bool) -> &'static str {
   const js = readFileSync(join(dir, "bare.js"), "utf8");
   expect(js).not.toMatch(/\bbb\d+/);
   expect(js).toContain('  let tag;\n  getTag: switch (type) {\n');
-  expect(js).toContain('            tag = "lazy";\n            break getTag;\n        }\n      }\n      tag = "throw";\n  }\n  return tag;\n');
+  expect(js).toContain('            tag = "lazy";\n            break getTag;\n        }\n      }\n      tag = "throw";\n      break;\n  }\n  return tag;\n');
   expect(await tags("bare.js")).toEqual(["fragment", "mode", "mode", "context", "memo", "lazy", "throw", "throw", "throw", "throw", "throw"]);
 });
 

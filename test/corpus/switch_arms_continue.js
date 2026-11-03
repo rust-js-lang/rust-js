@@ -23,6 +23,7 @@ function cleared(names, held, out) {
         if (held != null) {
           out.push(held);
         }
+        break;
     }
     out.push(0);
   }
@@ -39,6 +40,7 @@ function looped(names, out) {
         continue;
       case "D":
         out.push(4);
+        break;
     }
     out.push(0);
   }
@@ -59,6 +61,7 @@ function atTheEnd(names, out) {
         break;
       default:
         out.push(5);
+        break;
     }
   }
 }
@@ -75,6 +78,7 @@ function numbers(values, out) {
         continue;
       case 4:
         out.push(4);
+        break;
     }
     out.push(0);
   }

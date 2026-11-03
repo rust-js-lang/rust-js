@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`I if legacy_off => {}` before `I => { .. }`, React's completeWork's `case I: if (legacyOff) { break; } ..`, is turned, `if (!legacyOff) { .. } break;` (ADR 0905, amended)",
     file: "src/lower/mir/tidy/switches/guards.rs",
-    find: "    if !arm.is_some_and(|arm| (rest.iter()).all(|s| written_at(s).is_some_and(|at| within(at, arm.span)))) {\n",
+    find: "    if !(rest.iter()).all(|s| mine(s) || marks(s)) {\n",
     replace: "    if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_guard_does_nothing.rs$"],
     snapshots: true,
@@ -70,6 +70,15 @@ export const mutations: Mutation[] = [
     find: "            if guard_of(inner) != Some(guard) {\n",
     replace: "            if guard_of(inner) != Some(guard) || true {\n",
     tests: ["test/corpus.test.ts", "-t", "^match_guard_of_ands.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "guard-held-before-marks",
+    breaks: "a guarded case's `if (!on) { break; } ..; return` stays so where a last `_ => {}`'s comments follow it, not `if (on) { ..; return } // Fallthrough break;` (rd702)",
+    file: "src/lower/mir/tidy/switches/guards.rs",
+    find: "    let marks = |s: &Stmt| matches!(s.kind, StmtKind::Comments) && !mine(s);\n",
+    replace: "    let marks = |_: &Stmt| false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_default_comment_falls.rs$"],
     snapshots: true,
   },
 ];

@@ -651,4 +651,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-moves.test.ts", "-t", "a binding closures take is one const"],
   },
+  {
+    name: "copied-field-binding-own-let",
+    breaks: "`let x = *x;` right after a pattern is a `let` of its own, which splits the pattern's destructuring in three, `const { handler } = r; const parentObject = r.parentObject; const { key } = r;` (#546)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                if !copied_field(binding, *initializer) {\n",
+    replace: "                if !copied_field(binding, *initializer) || true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^pattern_binding_copied.rs$"],
+    snapshots: true,
+  },
 ];

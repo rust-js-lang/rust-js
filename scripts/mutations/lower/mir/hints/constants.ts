@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
     find: "                && !self.boxed_payload(some.pattern.ty) =>\n",
     replace:
       "                && !self.boxed_payload(some.pattern.ty)\n                && false =>\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
+    tests: ["test/lowering-switch-ends.test.ts", "-t", "strings from MIR is the"],
   },
   {
     name: "switch-of-registered-symbols-unseen",

@@ -28,6 +28,7 @@ function createRequest(name, onAllReady, onShellReady, early) {
       return request;
     case "All":
       completeAll(request);
+      break;
   }
   request.log.push("made");
   return request;

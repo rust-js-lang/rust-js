@@ -1,7 +1,8 @@
-// How a `switch`'s case ends (ADR 0629): a `break` only where it's needed,
-// none after a case that leaves, a `try` each of whose arms returns
-// among them, and none at the end of the last case, which JS falls out
-// of. Each test is a program of its own, compiled and run.
+// How a `switch`'s case ends (ADR 0629): a `break` where it goes on, the
+// last case's and the `default`'s too (amended 2026-11-03, the user's
+// decision), none after a case that leaves, a `try` each of whose arms
+// returns among them; and which `match` from MIR is a `switch` at all.
+// Each test is a program of its own, compiled and run.
 
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -14,7 +15,7 @@ beforeAll(buildReact, 600_000);
 // (enableViewTransition) { return 'ViewTransition'; } }`, its last case
 // falling out of the `switch`; and its lazy case, `try { return ..; }
 // catch { return ''; }`, which never goes on to the next.
-test("a case needs no break where it leaves or it's the last", async () => {
+test("a case needs no break where it leaves, and the last that goes on has one", async () => {
   const dir = fixture("switch-ends");
   writeFileSync(join(dir, "lib.rs"), `use std::panic::catch_unwind;
 
@@ -64,11 +65,12 @@ pub fn counted(kind: u32, on: bool, log: &mut Vec<u32>) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('    case VIEW:\n      if (ENABLE_VIEW) {\n        return "ViewTransition";\n      }\n  }\n');
+  // The last case that goes on ends with `break;`, as upstream's do (ADR
+  // 0629, amended 2026-11-03, the user's decision).
+  expect(js).toContain('    case VIEW:\n      if (ENABLE_VIEW) {\n        return "ViewTransition";\n      }\n      break;\n  }\n');
   expect(js).toContain('        } catch {\n          return "";\n        }\n      case MEMO:\n');
-  // A case before another still ends in a `break`, and the last that's left
-  // out doesn't.
-  expect(js).toContain("      log.push(2);\n      }\n      break;\n    case LAZY:\n      log.push(3);\n  }\n");
+  // A case before another ends in a `break`, and the last too.
+  expect(js).toContain("      log.push(2);\n      }\n      break;\n    case LAZY:\n      log.push(3);\n      break;\n  }\n");
   const lib = await import(join(dir, "lib.js"));
   const runs = [1, 2, 3, 4].map((kind) => {
     const log: number[] = [];
@@ -175,9 +177,10 @@ pub fn scanned(value: Option<&Unknown>, log: &mut Vec<String>) {
 
 // React's scheduler's unstable_runWithPriority: `default: priorityLevel =
 // NormalPriority; }`. Of a guarded case that falls through (ADR 0905), tidy
-// ends each case with a `break;`, the `default`'s too, which, last, JS
-// falls out of anyway: none there, as upstream writes it.
-test("a default after a guarded case needs no break", async () => {
+// ends each case with a `break;`, the `default`'s too: one `break;`, the
+// printer's, as each clause that goes on ends with (ADR 0629, amended
+// 2026-11-03, the user's decision), as upstream mostly writes it.
+test("a default after a guarded case ends with one break", async () => {
   const dir = fixture("switch-ends-guarded");
   writeFileSync(join(dir, "lib.rs"), `pub fn guarded(level: u32, strict: bool) -> u32 {
     let level = match level {
@@ -190,7 +193,7 @@ test("a default after a guarded case needs no break", async () => {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("    case 3:\n      break;\n    default:\n      level = 0;\n  }\n");
+  expect(js).toContain("    case 3:\n      break;\n    default:\n      level = 0;\n      break;\n  }\n");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.guarded(1, true), lib.guarded(1, false), lib.guarded(3, true), lib.guarded(9, true)]).toEqual([102, 2, 4, 1]);
 });
@@ -436,4 +439,84 @@ pub fn last(n: u32) {
   expect(js).toContain("let SEEN = 0;");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.mark(1), lib.mark(0), lib.mark(1), lib.mark(2), lib.last(1), lib.seen(), lib.mark(7)]).toEqual([1, 6, 11, 12, undefined, 7, 2]);
+});
+
+test("a `match` of an `Option`'s strings from MIR is the `switch` or `else if` chain a person writes", async () => {
+  const dir = fixture("mir-option-string-match");
+  writeFileSync(join(dir, "lib.rs"), `pub fn flagged(flag: Option<&str>, mut arg: String) -> String {
+    match flag {
+        Some("s") => arg += "",
+        Some("d") | Some("i") => arg = arg.trim().to_string(),
+        Some("f") => arg = arg.to_uppercase(),
+        _ => {}
+    }
+    arg
+}
+pub fn named(flag: Option<&str>, v: &mut Vec<u32>) {
+    match flag {
+        Some("s") => v.push(1),
+        Some("d") => v.push(2),
+        _ => v.push(3),
+    }
+}
+pub fn nested(flag: Option<&str>, v: &mut Vec<u32>) {
+    if flag.is_some() {
+        if flag == Some("s") {
+            v.push(1);
+        } else {
+            v.push(2);
+        }
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  // Of three cases or more, a `switch`, a `Some`'s constants its cases
+  // (ADRs 0629, 0634).
+  expect(js).toContain(`export function flagged(flag, arg) {
+  switch (flag) {
+    case "s":
+      arg += "";
+      break;
+    case "d":
+    case "i":
+      arg = $trim(arg);
+      break;
+    case "f":
+      arg = arg.toUpperCase();
+      break;
+  }
+  return arg;
+}`);
+  expect(js).toContain(`export function named(flag, v) {
+  switch (flag) {
+    case "s":
+      v.push(1);
+      break;
+    case "d":
+      v.push(2);
+      break;
+    default:
+      v.push(3);
+      break;
+  }
+}`);
+  expect(js).toContain(`export function nested(flag, v) {
+  if (flag != null) {
+    if (flag === "s") {
+      v.push(1);
+    } else {
+      v.push(2);
+    }
+  }
+}`);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.flagged("d", " x "), lib.flagged("f", "x"), lib.flagged(undefined, "y"), lib.flagged("q", "z")]).toEqual(["x", "X", "y", "z"]);
+  // A guard its chain's last `else` doesn't say stays.
+  const pushed: number[] = [];
+  lib.nested(undefined, pushed);
+  lib.nested("q", pushed);
+  lib.named(undefined, pushed);
+  lib.named("d", pushed);
+  expect(pushed).toEqual([2, 3, 2]);
 });

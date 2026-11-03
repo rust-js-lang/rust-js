@@ -60,6 +60,7 @@ function counted(tags, log) {
       // falls through
       default:
         total = (total + ((tag * 1000) >>> 0)) >>> 0;
+        break;
     }
     total = (total + 1) >>> 0;
   }

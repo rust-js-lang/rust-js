@@ -67,6 +67,7 @@ pub fn kind(children: Option<&'static Unknown>) -> u32 {
           case REACT_LAZY_TYPE:
             return 2;
         }
+        break;
     }`);
   const lib = await import(join(dir, "lib.js"));
   const of = (name: string) => ({ $$typeof: Symbol.for(name) });
@@ -243,6 +244,7 @@ pub fn guarded(values: &[&'static Unknown], limit: u32) -> Vec<u32> {
       default:
         seen.push(look());
         level = 3;
+        break;
     }`);
   expect(js).not.toContain("symbolFor != null) {\n        switch");
   // An arm that leaves the loop, `Some(C) => break`, an `if` chain, each

@@ -67,6 +67,7 @@ function cased(code, a, b, log) {
       break;
     case 3:
       log.push(3);
+      break;
   }
   log.push(0);
 }

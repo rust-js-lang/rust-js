@@ -35,6 +35,7 @@ function earlyBailout(fiber, onB, onC) {
         fiber.lanes = 3;
         return updateC(fiber);
       }
+      break;
   }
   return bailout(fiber);
 }
@@ -55,6 +56,7 @@ function captured(fiber, legacy) {
         fiber.lanes = 5;
         return false;
       }
+      break;
   }
   throw new Error(`Unexpected tag (${fiber.tag})`);
 }
@@ -75,6 +77,7 @@ function held(handler, legacy) {
           handler.lanes = 5;
           return false;
         }
+        break;
     }
     throw new Error(`Unexpected tag (${handler.tag})`);
   }

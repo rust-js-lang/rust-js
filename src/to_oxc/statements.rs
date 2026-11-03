@@ -459,16 +459,15 @@ impl<'a> Cx<'a> {
     /// on, as a case falls through to the next where nothing ends it, and in
     /// a block of their own, `case 1: { const s = ..; }`, where they
     /// declare, which the cases' one scope would share (ADR 0629).
-    /// A case's statements, a `break` last where it goes on to another,
-    /// not where it falls through to the next, `falls`, nor in the last
-    /// clause, `last`, which JS falls out of, `default: level = 0;` (ADR
-    /// 0905, amended). Tidy's own `break` ending a clause that goes on past
-    /// the `switch` it leaves out (`switches::breaks_past_switches`, #488),
-    /// the one rule of it (#512).
-    fn case_body(&self, body: &[js::Stmt], falls: bool, last: bool) -> ArenaVec<'a, Statement<'a>> {
-        let falls_out = falls || last;
+    /// A case's statements, a `break` last where it goes on, the last
+    /// clause's too, `default: level = 0; break;`, as upstream writes it
+    /// (ADR 0629, amended by the user's decision of 2026-11-03); not where
+    /// it falls through to the next, `falls` (ADR 0905). Tidy's own `break`
+    /// ending a clause that goes on past the `switch` it leaves out
+    /// (`switches::breaks_past_switches`, #488), the one rule of it (#512).
+    fn case_body(&self, body: &[js::Stmt], falls: bool) -> ArenaVec<'a, Statement<'a>> {
         let mut stmts = self.stmts(body);
-        if !falls_out && !body.last().is_some_and(js::ends) {
+        if goes_on(body, falls) {
             // After the case's comments, where they end, so they're before
             // it (ADR 0753, amended): `case 4: // TODO .. break;`.
             let at = match body.last() {
@@ -620,9 +619,6 @@ impl<'a> Cx<'a> {
                 // One that does nothing, `_ => {}`'s, tidy's `switches` left
                 // out (#268).
                 let default = default.as_ref();
-                // The last clause, which JS falls out of, needs no `break`
-                // (ADR 0629, amended).
-                let last_case = cases.iter().rposition(|case| !case.values.is_empty());
                 for (k, case) in cases.iter().enumerate() {
                     let Some((last, stacked)) = case.values.split_last() else {
                         continue;
@@ -650,12 +646,12 @@ impl<'a> Cx<'a> {
                         };
                     }
                     // One that falls through to the next case goes on to it,
-                    // no `break` (ADR 0905).
-                    let ends = default.is_none() && Some(k) == last_case;
+                    // no `break` (ADR 0905). Comments it ends with are before
+                    // the `break;` that follows them, in it (ADR 0753).
                     clauses.push(SwitchCase::new(
-                        if ends { commented_clause(at, &case.body) } else { at },
+                        at,
                         Some(self.expr(last)),
-                        self.case_body(&case.body, case.falls, ends),
+                        self.case_body(&case.body, case.falls),
                         b,
                     ));
                 }
@@ -671,8 +667,7 @@ impl<'a> Cx<'a> {
                     let at = (super::default_fallen_to(self.source, cases, Some(default)))
                         .or_else(|| super::cases::clause_start(self.source, default))
                         .map_or(SPAN, |lo| Span::new(lo, lo));
-                    let at = commented_clause(at, default);
-                    clauses.push(SwitchCase::new(at, None, self.case_body(default, false, true), b));
+                    clauses.push(SwitchCase::new(at, None, self.case_body(default, false), b));
                 }
                 Statement::new_switch_statement(sp, self.expr(discriminant), clauses, b)
             }
@@ -945,20 +940,11 @@ fn commented_end(stmts: &[js::Stmt]) -> Span {
     end.map_or(SPAN, |end| Span::new(end, end + 1))
 }
 
-/// The last clause's place, `at`, of one ending with comments of its own,
-/// `default: // ..` (`StmtKind::Comments`): where nothing follows them, no
-/// `break` nor a next clause, it ends past them, so oxc prints them in it,
-/// before its end, as a block's (ADR 0753, amended). Empty, so nothing is
-/// mapped there.
-fn commented_clause(at: Span, body: &[js::Stmt]) -> Span {
-    // No `break` ends it, a guarded fall-through's `default: // ..` (rd138):
-    // tidy leaves out its own (`switches::breaks_past_switches`, #488, #512).
-    match body.last() {
-        Some(end) if at == SPAN && matches!(end.kind, StmtKind::Comments) && !end.span.is_none() => {
-            Span::new(end.span.lo + 1, end.span.lo + 1)
-        }
-        _ => at,
-    }
+/// Whether a case of `body` goes on past its end, and so ends with
+/// `break;`: not where it falls through to the next, `falls` (ADR 0905),
+/// nor where its last statement leaves (`js::ends`).
+fn goes_on(body: &[js::Stmt], falls: bool) -> bool {
+    !falls && !body.last().is_some_and(js::ends)
 }
 
 /// `a op= b`'s operator of `op`, a compound assignment preparation makes.

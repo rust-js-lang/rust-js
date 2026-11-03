@@ -26,6 +26,7 @@ function nameOf(kind, viewTransitions, tracing) {
       if (tracing) {
         return "TracingMarker";
       }
+      break;
   }
 }
 

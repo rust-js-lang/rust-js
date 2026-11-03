@@ -34,8 +34,8 @@ pub(super) fn fallthroughs(
 
 /// Where a clause whose arm opens a block, of `body`, is printed: just past
 /// its `{` (`opened_at`). Not of an arm of only comments, `_ => { //
-/// Unknown event. }`, which are the clause's own where it ends
-/// (`commented_clause`).
+/// Unknown event. }`, which are the clause's own where it ends, before its
+/// `break;`.
 pub(crate) fn clause_start(source: &str, body: &[js::Stmt]) -> Option<u32> {
     if matches!(body.first().map(|s| &s.kind), Some(StmtKind::Comments)) {
         return None;
@@ -171,7 +171,7 @@ pub(crate) fn at_its_value(case: &js::Case, source: &str) -> bool {
 /// (rd619).
 fn written_apart(case: &js::Case, source: &str) -> bool {
     // Not of an arm of only comments, `3 => { // .. }`, which are its
-    // clause's own where it ends (`commented_clause`).
+    // clause's own where it ends, before its `break;`.
     let commented = matches!(case.body.first().map(|s| &s.kind), Some(StmtKind::Comments));
     !commented
         && (case.values.first()).is_some_and(|first| !first.span.is_none() && opens_or_guards(source, first.span.hi))

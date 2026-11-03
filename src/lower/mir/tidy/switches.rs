@@ -69,12 +69,27 @@ fn walk(
                 .map(|s| &mut s.kind)
                 .find(|k| matches!(k, StmtKind::Switch { .. }))
             {
+                // Not a `default` that only leaves, `_ => {}`'s `break bb1;`,
+                // left out where that's nothing (`breaks_past_switches`).
+                let leaves = |d: &[Stmt]| {
+                    matches!(
+                        d,
+                        [] | [Stmt {
+                            kind: StmtKind::Break(_),
+                            ..
+                        }]
+                    )
+                };
                 let last = match default {
-                    Some(default) if !default.is_empty() => Some(default),
+                    Some(default) if !leaves(default) => Some(default),
                     _ => cases.last_mut().map(|case| &mut case.body),
                 };
-                last.into_iter()
-                    .for_each(|last| last.extend(marks.iter().map(|&k| list[k].clone())));
+                // Before the jump it ends with, which nothing may follow:
+                // the `return` of a guarded case that falls to it (rd702).
+                if let Some(last) = last {
+                    let at = last.len() - usize::from(last.last().is_some_and(js::ends));
+                    last.splice(at..at, marks.iter().map(|&k| list[k].clone()));
+                }
             }
             for &k in marks.iter().rev() {
                 list.remove(k);

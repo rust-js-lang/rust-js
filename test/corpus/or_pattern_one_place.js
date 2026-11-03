@@ -47,6 +47,7 @@ export function weight(n) {
       break;
     case 3:
       w += 30;
+      break;
   }
   return w;
 }
@@ -101,6 +102,7 @@ function main() {
         break;
       default:
         shape = "Dot";
+        break;
     }
     const shape$1 = { value: shape };
     grow(shape$1);

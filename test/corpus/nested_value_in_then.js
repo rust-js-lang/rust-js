@@ -66,6 +66,7 @@ function tier(variant) {
       break;
     default:
       rank = 3;
+      break;
   }
   return (rank + 1) & 255;
 }

@@ -27,6 +27,7 @@ function clear(items) {
         if (keep) {
           continue;
         }
+        break;
     }
     out.push(`removed ${name}`);
   }
@@ -48,6 +49,7 @@ function codes(items) {
         if (keep) {
           continue;
         }
+        break;
     }
     out.push(code);
   }
@@ -98,6 +100,7 @@ function owned(items) {
       // falls through
       default:
         out.push(`other ${name}`);
+        break;
     }
     out.push(`tail ${name}`);
   }
@@ -137,6 +140,7 @@ function pick(name, keep) {
       if (keep) {
         return 2;
       }
+      break;
   }
   n += 5;
   return n;
@@ -159,6 +163,7 @@ function counted(name, keep) {
       break;
     case "C":
       n += 3;
+      break;
   }
   n += 5;
   return n;

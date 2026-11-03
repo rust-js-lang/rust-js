@@ -44,6 +44,7 @@ function name(tag, ty, flags, log) {
           return "LegacyHidden";
         }
       }
+      break;
   }
 }
 

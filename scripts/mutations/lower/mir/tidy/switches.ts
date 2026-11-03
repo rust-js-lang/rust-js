@@ -505,15 +505,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "case-own-break-kept",
-    breaks:
-      "a clause that goes on past the `switch` keeps the `break;` MIR ended it with, `default: level = 0; break;`, which JS falls out of anyway; tidy is the one rule of it, the printer's gone (#488, #512)",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "                if matches!(body.last().map(|s| &s.kind), Some(StmtKind::Break(None))) {\n",
-    replace: "                if false && matches!(body.last().map(|s| &s.kind), Some(StmtKind::Break(None))) {\n",
-    tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment between an arm.s patterns or in a last _"],
-  },
-  {
     name: "case-ending-written-breaks-dropped",
     breaks:
       "a `break 'get_tag;` the program wrote, ending an `if` with no `else` in a case, goes, so what follows the `if` is its `else` (#488, ADR 0944)",
@@ -649,6 +640,24 @@ export const mutations: Mutation[] = [
     find: "        let marks = default_marks(list, i, switches);\n",
     replace: "        let marks: Vec<usize> = Vec::new();\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_default_comment.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "default-marks-after-jump",
+    breaks: "a last `_ => {}`'s comments are after the `return` its last case ends with, which nothing may follow (rd702)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "                    let at = last.len() - usize::from(last.last().is_some_and(js::ends));\n",
+    replace: "                    let at = last.len();\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_default_comment_falls.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "default-of-a-jump-marked",
+    breaks: "a last `_ => {}`'s comments are its `default`'s where that only leaves, `default: // Fallthrough break;`, not the last case's (rd702)",
+    file: "src/lower/mir/tidy/switches.rs",
+    find: "                    Some(default) if !leaves(default) => Some(default),\n",
+    replace: "                    Some(default) if !default.is_empty() => Some(default),\n",
+    tests: ["test/corpus.test.ts", "-t", "^switch_default_comment_falls.rs$"],
     snapshots: true,
   },
 ];

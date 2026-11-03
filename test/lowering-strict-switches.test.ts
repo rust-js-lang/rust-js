@@ -190,9 +190,9 @@ pub fn tail(s: &'static Unknown, a: &'static Unknown, b: &'static Unknown, log: 
   expect(js).toContain("    case b:\n      return 2;\n    default:\n      return s !== c ? 3 : 4;\n  }\n}");
   // The `else` the program wrote, followed by its value: the `default`,
   // the value after the `switch` (ADR 0879, amended).
-  expect(js).toContain("    default:\n      if (s !== c) {\n        return 3;\n      }\n      log.push(4);\n  }\n  return 4;\n}");
+  expect(js).toContain("    default:\n      if (s !== c) {\n        return 3;\n      }\n      log.push(4);\n      break;\n  }\n  return 4;\n}");
   expect(js).toContain(
-    "  if (s === a) {\n    return 1;\n  } else {\n    switch (s) {\n      case b:\n        log.push(2);\n        break;\n      case componentType:\n        log.push(3);\n        break;\n      default:\n        log.push(4);\n    }\n    log.push(5);\n  }\n  return 6;\n}",
+    "  if (s === a) {\n    return 1;\n  } else {\n    switch (s) {\n      case b:\n        log.push(2);\n        break;\n      case componentType:\n        log.push(3);\n        break;\n      default:\n        log.push(4);\n        break;\n    }\n    log.push(5);\n  }\n  return 6;\n}",
   );
   const lib = await import(join(dir, "lib.js"));
   expect([0, 2, 3].map((t) => lib.selectorToString({ typeof: t }))).toEqual(["component", "role", "text"]);

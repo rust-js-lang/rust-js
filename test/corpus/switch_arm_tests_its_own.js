@@ -48,6 +48,7 @@ function extract(name, n, target, log) {
     case "keydown":
     case "keyup":
       construct(log, n);
+      break;
   }
 }
 
@@ -68,6 +69,7 @@ function focus(name, n, target, log) {
     case "dragend":
       down = false;
       construct(log, n);
+      break;
   }
 }
 

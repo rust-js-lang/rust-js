@@ -62,6 +62,7 @@ function main() {
       break;
     default:
       v = "many";
+      break;
   }
   const value$1 = label(98);
   const arg = label(122);

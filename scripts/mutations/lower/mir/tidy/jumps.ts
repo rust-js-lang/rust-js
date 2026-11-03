@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
     find: "            (false, false) => stmts.push(StmtKind::If(test, then, Some(rest)).at(span)),\n",
     replace:
       "            (false, false) => stmts.push(StmtKind::If(test, then, None).at(span)),\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "strings from MIR is the"],
+    tests: ["test/lowering-switch-ends.test.ts", "-t", "strings from MIR is the"],
   },
   {
     name: "mir-tidy-tail-return-emptied-then-kept",

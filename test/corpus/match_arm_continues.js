@@ -14,6 +14,7 @@ function numbers(xs) {
         continue;
       case 1:
         out.push(2);
+        break;
     }
     if (x > 5) {
       out.push(x);

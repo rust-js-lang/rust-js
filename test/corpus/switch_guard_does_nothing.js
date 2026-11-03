@@ -102,6 +102,7 @@ function completeAll(tag, legacyOff, resources, singletons, scope) {
         // Only Legacy Mode completes an errored node.
         return 7;
       }
+      break;
   }
   throw new Error(`Unknown unit of work tag (${tag}).`);
 }

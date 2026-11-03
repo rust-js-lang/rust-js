@@ -824,6 +824,7 @@ export function describe(value) {
       break;
     default:
       desc = String(value);
+      break;
   }
   return desc + "!";
 }

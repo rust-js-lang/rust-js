@@ -14,6 +14,7 @@ function runWithPriority(priorityLevel) {
       break;
     default:
       priorityLevel = 3;
+      break;
   }
   return (priorityLevel * 10) & 255;
 }
@@ -31,6 +32,7 @@ function guarded(level, strict) {
       break;
     default:
       level = 0;
+      break;
   }
   return (level + 1) >>> 0;
 }
@@ -51,6 +53,7 @@ function namedInACase(level) {
     }
     default:
       level = 0;
+      break;
   }
   return level;
 }
@@ -79,6 +82,7 @@ function setAgain(level) {
       break;
     default:
       level = 0;
+      break;
   }
   for (let step = 0; step < 2; step++) {
     level = (((level * 2) >>> 0) + step) >>> 0;
@@ -97,6 +101,7 @@ function readAfter(level) {
       break;
     default:
       level$1 = 0;
+      break;
   }
   return [old(), level$1];
 }
@@ -111,6 +116,7 @@ function droppedAfter(n) {
       break;
     default:
       noisy = [0];
+      break;
   }
   console.log(`made ${noisy[0]}`);
   console.log(`drop ${noisy[0]}`);

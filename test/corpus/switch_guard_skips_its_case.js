@@ -44,6 +44,7 @@ function extract(name, n, log) {
     case "keydown":
     case "keyup":
       construct(log, n);
+      break;
   }
 }
 

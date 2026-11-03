@@ -30,6 +30,7 @@ function pick([a, b, c, d], i) {
     default:
       d$live = false;
       result = d;
+      break;
   }
   try {
     try {

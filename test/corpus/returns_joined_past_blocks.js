@@ -118,6 +118,7 @@ function popHost(fiber, log) {
         return;
       default:
         log.push("other");
+        break;
     }
   }
 }

@@ -32,6 +32,7 @@ function resolve(thenable) {
         case "rejected":
           return { TAG: "Err", _0: "late" };
       }
+      break;
   }
   thenable.log.push("thrown");
   return { TAG: "Err", _0: "pending" };

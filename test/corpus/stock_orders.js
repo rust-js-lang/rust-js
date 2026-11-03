@@ -39,6 +39,7 @@ function categoryDisplay_fmt(category, options) {
       break;
     case "Kitchen":
       name = "kitchen";
+      break;
   }
   return $formatted(name, options);
 }

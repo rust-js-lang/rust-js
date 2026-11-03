@@ -227,7 +227,8 @@ test("a comment between an arm's patterns or in a last _ of a guarded switch is 
       break;
 `);
   expect(js).toContain(`    default:
-    // Unknown event. Nothing to do.
+      // Unknown event. Nothing to do.
+      break;
   }
   log.push(\`\${name} \${kind}\`);
 `);
@@ -758,7 +759,8 @@ pub fn none_first(o: Option<u32>, log: &mut Vec<u32>) {
       break;
     default:`);
   expect(js).toContain(`    default:
-    // Others are fine.
+      // Others are fine.
+      break;
   }`);
   expect(js).toContain(`  // Nothing yet.
   if (o != null) {

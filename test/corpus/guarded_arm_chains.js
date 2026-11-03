@@ -78,6 +78,7 @@ function delete$(f, resources, singletons, view, log) {
       break;
     default:
       traverse(f, log, 11);
+      break;
   }
   if (hidden && f.state > 2) {
     traverse(f, log, 12);
@@ -114,6 +115,7 @@ function named(tag, a, b, c, log) {
       break;
     default:
       log.push(6);
+      break;
   }
   log.push(0);
 }
@@ -153,6 +155,7 @@ function finished(exitStatus, lanes, log) {
       break;
     default:
       log.push(11);
+      break;
   }
   log.push(3);
 }
@@ -175,6 +178,7 @@ function compared(exitStatus, lanes, log) {
       break;
     default:
       log.push(11);
+      break;
   }
   log.push(2);
 }

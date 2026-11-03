@@ -16,6 +16,7 @@ function counted(v, log) {
         break;
       case 2:
         n = (n + 1) >>> 0;
+        break;
     }
   }
   return n;
@@ -36,6 +37,7 @@ function guarded(v, log) {
         break;
       case 2:
         n = (n + 1) >>> 0;
+        break;
     }
   }
   return n;
@@ -52,6 +54,7 @@ function lastGuarded(v, log) {
         break;
       case 4:
         log.push(x);
+        break;
     }
   }
   return n;

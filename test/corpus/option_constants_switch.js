@@ -17,6 +17,7 @@ function tagOf(sub) {
       break;
     default:
       tag = "throw";
+      break;
   }
   return tag;
 }
@@ -76,6 +77,7 @@ function fallen(kind) {
       if (ENABLE_C) {
         return "c";
       }
+      break;
   }
   return "none";
 }

@@ -18,7 +18,9 @@ case falls through to the next where the next arm names its constants.
 By [0958](0958-a-chain-of-strict-equals-tests-is-a-switch.md): an
 `if` chain of `js::strict_equals` tests of one subject is a `switch` too.
 Amended below: a last arm of a name, `current => current`, is the
-`default`, as a last `_` is.
+`default`, as a last `_` is; and, the user's decision of 2026-11-03, the
+last clause that goes on ends with `break;` too, superseding "a `break`
+only where a case goes on to another".
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, nothing the program
 can observe: a `switch` compares what it's given with each `case` by
@@ -171,6 +173,9 @@ loop: for (const c of s) {
   `scripts/mutations/to_oxc/statements.ts`.
 
 ## Amendment: a `break` only where a case goes on to another
+
+(Superseded below, 2026-11-03: the last clause that goes on ends with
+`break;` too.)
 
 **A case ends in `break;` only where it goes on and a case follows it**:
 the last of a `switch`'s, which JS falls out of, has none, as React's
@@ -1041,3 +1046,46 @@ ADR wrote it: the `switch` goes on to the turn's end anyway, and `break;`
 is what JS writes there. `switch_tail_continues.rs` and
 `switch_arms_continue.rs`'s `at_the_end` hold it, with the mutation
 `arm-continues-written-at-the-turns-end`.
+
+## Amendment: every case that goes on ends with `break;`, the last too (2026-11-03, the user's decision)
+
+The amendment "a `break` only where a case goes on to another" left out
+the `break;` of a `switch`'s last clause, a last case or a `default`,
+because JS falls out of it anyway. Upstream React writes that `break;`.
+In the reconciler and the server (`packages/react-reconciler/src`,
+`packages/react-server/src`), 29 of the 43 last `default`s that go on end
+with `break;`, and so do 26 of the 39 last cases. Control-flow run 46
+counted about 42 hunks in the port's ten largest files where upstream has
+that `break;` and the port has none. **The user decided (2026-11-03) that
+every clause that goes on ends with `break;`, the last included, in one
+form.**
+
+- `to_oxc`'s `case_body` ends a clause with `break;` wherever it goes on
+  (`goes_on`). It adds none where the clause falls through to the next
+  (ADR 0905) or where its last statement leaves (`js::ends`). The last
+  clause is no exception. `commented_clause` places only a last clause
+  that has no `break;`, whose comments then end it (ADR 0753, amended).
+  Where it has a `break;`, the `break;` comes after them, as in any case.
+- Tidy is unchanged: `breaks_past_switches` still removes the `break` it
+  made at a clause's end, and the printer writes the one `break;`
+  (#512).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, the same JS. A
+`break;` at the end of the last clause goes where the clause's end goes.
+
+- The corpus and readability snapshots are re-blessed. Each change is a
+  `break;` added at the end of a last case or a `default`.
+- `test/lowering-switch-ends.test.ts`: "a case needs no break where it
+  leaves, and the last that goes on has one" and "a default after a
+  guarded case ends with one break", run.
+- Mutations `last-case-unbroken` and `default-unbroken`
+  (`scripts/mutations/to_oxc/statements.ts`). They replace
+  `last-case-broken`, which held the old rule.
+- `commented_clause` is gone. A clause that ends with comments always
+  goes on, so it has a `break;`, and its comments print before it; the
+  function only ever returned the place it was given. Its mutation,
+  `last-clause-comments-unflushed` (ADR 0753), went with it. Tidy's
+  `case-own-break-kept` (ADR 0905, #512) is now an equivalent mutant: a
+  `break;` that tidy leaves at a clause's end is the one the printer
+  would write. The mutant is removed; the pass, which shapes the bodies
+  that the passes after it read, stays.

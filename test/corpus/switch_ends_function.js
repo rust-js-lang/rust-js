@@ -61,6 +61,7 @@ function visit(tag, flags, resources, singletons, log) {
         }
         log.push(10 + i);
       }
+      break;
   }
 }
 
@@ -109,6 +110,7 @@ function attempt(tag, lanes, log) {
         log.push(25);
         return lanes;
       }
+      break;
   }
   return bailout(tag, log);
 }
