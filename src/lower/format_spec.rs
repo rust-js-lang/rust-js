@@ -157,6 +157,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::FmtDisplay => self.display_handed_on(value, ty),
             _ => (value, ty),
         };
+        // An untagged enum's that writes each variant's value, a plain `{}`
+        // of it: what JS's template makes of it (#557).
+        if kind == Std::FmtDisplay
+            && spec == Spec::plain()
+            && width.is_none()
+            && precision.is_none()
+            && self.displays_its_value(ty)
+        {
+            return Ok(super::display::shown_text(value));
+        }
         let num = Num::of(ty);
         // `{:x?}` of an integer: its hex, as `{:x}` shows it (ADR 0559). Of
         // another leaf, a string, a float or a `bool`, nothing: std's `fmt`

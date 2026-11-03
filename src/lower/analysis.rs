@@ -58,6 +58,7 @@ use crate::lower::recognition::{
     Recognition, StdItem, TypeFact, is_js_object_deref, is_std_def, is_unlowered_impl, known_derive,
 };
 pub(super) use closures::{ClosureFacts, borrowed_fixed_bindings, clone_shares, taken_by_value};
+pub(super) use debug::{FormatCall, format_calls};
 use debug::{uses_debug_hex, uses_format_options, uses_pretty_debug};
 use drops::drop_params;
 pub(super) use mutation::{clone_bounded, clones_itself, copies_itself, copy_bounded};

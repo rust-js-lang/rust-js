@@ -520,3 +520,68 @@ The table's `instanceof` row, of a JS object type's class, is now
 So a class's test leaving its subclasses out, `File` of `Blob`, is
 `instanceof` no longer made: two binding classes are told by members or
 refused. The rest of this ADR stands. Held as 1062's amendment lists.
+
+## Amendment: a `Display` of each variant's value is the value in JS's template (#557)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. JS's template
+makes Rust's `Display` text of a string, an integer, a `bool` and a
+`char`, so the value in a template is the text Rust writes.
+
+webpack's module id is `string | number`. In Rust it's the untagged
+`enum ModuleId { Name(String), Number(u32) }`, whose `Display` writes
+each variant's value, `ModuleId::Name(name) => write!(f, "{name}")`.
+resolveClientReference's panic, `"Could not find the module \"{id}\" .."`,
+printed `${moduleIdDisplay_fmt(id)}`, a function of a `typeof` test that
+gives the string or `String(n)`, where upstream writes `${metadata[ID]}`.
+
+**An untagged enum of the crate's, of no type parameters, whose
+`Display::fmt` is a `match self` of an arm of each variant, binding its
+one value, each writing that value to its `Formatter` as it is, of a type
+whose JS text is Rust's, a string's, an integer's, a `bool`'s or a
+`char`'s, is shown by a plain `{}`, and by `to_string()`, as the value in
+JS's template, `${id}`** (`untagged::displayed`, `displays_its_value`, of
+the impl's THIR). An arm writes it as it is by `write!(f, "{x}")`, one
+plain `{}` placeholder of its `Display` and no other text, by
+`x.fmt(f)` or `Display::fmt(x, f)`, or by `f.write_str(x)` or
+`f.write_char(x)`, through its references, a `Box`, or std's `Deref`, a
+`String`'s to its `str`. A payload is what JS holds of it
+(`untagged_payload`), past a `Box` and an `Rc`.
+
+Only a plain `{}` is the value in place. A placeholder with options,
+`{:>6}`, still calls the impl's `fmt`, given them: `write!` gives the
+value no options and `x.fmt(f)` gives it the `Formatter`'s, so the arms
+don't agree on what options do, and that's the impl's to say. A
+`Formatter`'s options handed on, a writer's `self.id.fmt(f)` where the
+crate's writers take options, is so too (`Pretty::Plain` only).
+
+Not taken, each its `fmt` call still: an `f64`'s arm, whose JS text isn't
+Rust's (`1e21`, `-0`), an arm writing more than the value, `"#{n}"`, its
+`Debug`, `"{name:?}"`, or with options, `"{n:>3}"`, and an enum of
+another crate, whose impl's THIR this crate hasn't.
+
+The THIR of a `format_args!` is read where `analysis::debug` reads it
+(`format_calls`, which now names each one's `Arguments::new` call), and
+an argument it keeps in its `let args = (&x,)`, `&*args.0`, followed to
+`x` (`captured`).
+
+### Alternatives
+
+- **The fmt function's JS**, `typeof x === "string" ? x : String(x)`,
+  recognized as the value's text: a JS shape standing in for a decision,
+  and `String(x)` of a number that isn't Rust's text of it, an `f64`,
+  would need the type again.
+- **Any placeholder, its options padding the text**, as a `js::shown`
+  type's are (ADR 0312): wrong where an arm is `x.fmt(f)` of an integer,
+  `{:+}` or `{:05}`, and where it's `write!`, which pads nothing.
+
+### Consequences
+
+- Held by the corpus case `untagged_displayed_in_place.rs` (against
+  native Rust: webpack's module id formatted and its `to_string()` a
+  map's key, each form of arm, a `u64`, an `i128`, a `char` and a `Box<str>`,
+  options given to `write!` and `x.fmt(f)` arms, and kept calls of an
+  `f64`'s, a `"#{n}"`, a `"{name:?}"` and a `"{n:>3}"` arm) and the
+  guide's types page. Mutations `displayed-value-*`
+  (`untagged/displayed.ts`), `displayed-value-given-options`
+  (`format_spec.ts`), `displayed-value-given-pretty`
+  (`display/written.ts`).

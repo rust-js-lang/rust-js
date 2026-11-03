@@ -258,4 +258,13 @@ export const mutations: Mutation[] = [
     replace: "        let whole = Num::of(ty) == Some(Num::F64);\n",
     tests: ["test/webapi-bindings.test.ts", "-t", "WebIDL integer"],
   },
+  {
+    name: "displayed-value-given-pretty",
+    breaks:
+      "a `Formatter`'s options given on, `{:>6}`, shows the value in place, so `Key::Wide(7)` shows `7`, not padded (#557)",
+    file: "src/lower/display/written.rs",
+    find: "matches!(pretty, Pretty::Plain) && self.displays_its_value(ty)",
+    replace: "self.displays_its_value(ty)",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_displayed_in_place.rs$"],
+  },
 ];

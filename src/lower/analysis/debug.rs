@@ -12,10 +12,13 @@ use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
 use std::collections::HashMap;
 
-/// Each `format_args!` in `thir`: its placeholders, and the argument at
-/// each, `Argument::new_display(&x)` and the like, where they can be told:
-/// `None` for one whose arguments can't.
-fn format_calls(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<(Vec<Piece>, Option<Vec<ExprId>>)> {
+/// A `format_args!`'s `Arguments::new` call, its placeholders, and the
+/// argument at each, `Argument::new_display(&x)` and the like, where they
+/// can be told: `None` for one whose arguments can't.
+pub(in crate::lower) type FormatCall = (ExprId, Vec<Piece>, Option<Vec<ExprId>>);
+
+/// Each `format_args!` in `thir`, its `FormatCall`.
+pub(in crate::lower) fn format_calls(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<FormatCall> {
     let through = |mut e: ExprId| loop {
         e = strip(thir, e);
         match thir[e].kind {
@@ -40,8 +43,8 @@ fn format_calls(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<(Vec<Piece>, Option<Vec
         })
         .collect();
     thir.exprs
-        .iter()
-        .filter_map(|expr| {
+        .iter_enumerated()
+        .filter_map(|(call, expr)| {
             let ExprKind::Call { fun, ref args, .. } = expr.kind else {
                 return None;
             };
@@ -64,7 +67,7 @@ fn format_calls(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<(Vec<Piece>, Option<Vec
                 Some(ExprKind::Array { fields }) => Some(fields.iter().map(|&field| through(field)).collect()),
                 _ => None,
             };
-            Some((pieces, fields))
+            Some((call, pieces, fields))
         })
         .collect()
 }
@@ -81,7 +84,7 @@ pub(super) fn uses_pretty_debug(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]) -> bo
                 if matches!(*thir[fun].ty.kind(), ty::FnDef(id, _)
                     if formatter_query(tcx, id) == Some(FormatterQuery::Alternate)))
         });
-        asks || format_calls(tcx, thir).into_iter().any(|(pieces, fields)| {
+        asks || format_calls(tcx, thir).into_iter().any(|(_, pieces, fields)| {
             let alternates: Vec<usize> = pieces
                 .iter()
                 .filter_map(|piece| match piece {
@@ -111,7 +114,7 @@ pub(super) fn uses_pretty_debug(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]) -> bo
 /// what its writers show of an integer is in hex where their options say.
 pub(super) fn uses_debug_hex(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]) -> bool {
     all_bodies.iter().any(|body| {
-        format_calls(tcx, &body.thir).into_iter().any(|(pieces, _)| {
+        format_calls(tcx, &body.thir).into_iter().any(|(_, pieces, _)| {
             pieces
                 .iter()
                 .any(|piece| matches!(piece, Piece::Argument(_, spec) if spec.debug_hex.is_some()))
@@ -146,7 +149,7 @@ pub(super) fn uses_format_options(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]) -> 
     };
     all_bodies.iter().any(|body| {
         let thir = &body.thir;
-        format_calls(tcx, thir).into_iter().any(|(pieces, fields)| {
+        format_calls(tcx, thir).into_iter().any(|(_, pieces, fields)| {
             let given: Vec<usize> = pieces
                 .iter()
                 .filter_map(|piece| match piece {

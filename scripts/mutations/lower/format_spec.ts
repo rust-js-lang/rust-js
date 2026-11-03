@@ -274,4 +274,13 @@ export const mutations: Mutation[] = [
     replace: " => {\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_text_precision.rs$"],
   },
+  {
+    name: "displayed-value-given-options",
+    breaks:
+      "`{:+}` of an enum whose arm is `x.fmt(f)` is the value in place, so `Key::Wide(7)` shows `7`, not `+7` (#557)",
+    file: "src/lower/format_spec.rs",
+    find: "        if kind == Std::FmtDisplay\n            && spec == Spec::plain()\n",
+    replace: "        if kind == Std::FmtDisplay\n",
+    tests: ["test/corpus.test.ts", "-t", "^untagged_displayed_in_place.rs$"],
+  },
 ];

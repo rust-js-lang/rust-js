@@ -863,6 +863,13 @@ export function size(input) {
   null)`, a nullable field's `a.key === b.key`; one holding a `Vec`
   compares its items, `$eq(a, b)`
   ([ADR 0214](../../decisions/0214-untagged-enums.md), amended).
+  One whose `Display` writes each variant's value as it is, a string, an
+  integer, a `bool` or a `char`, by `write!(f, "{x}")`, `x.fmt(f)` or
+  `f.write_str(x)`, as webpack's module id of `string | number` does, is
+  the value in JS's template where a plain `{}` or `to_string()` shows
+  it, `${id}`; a placeholder with options, `{:>6}`, still calls its `fmt`,
+  as does one whose arm writes an `f64` or more than the value
+  ([ADR 0214](../../decisions/0214-untagged-enums.md), amended, #557).
 
 Arrays of different lengths, as React's Fizz server keeps a replay node,
 `[name, key, children, slots]` or a boundary's six, are told by their

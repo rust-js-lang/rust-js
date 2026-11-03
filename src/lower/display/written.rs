@@ -403,8 +403,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (value, ty) = self.shown_through(value, ty);
         let ty = self.shown_type(ty);
         // `js::shown`'s: the text JS's template makes of the value,
-        // `${value}`, a string, which the value itself may not be (ADR 0312).
-        if self.displays_itself(ty) {
+        // `${value}`, a string, which the value itself may not be (ADR 0312);
+        // an untagged enum's that writes each variant's value, given no
+        // options (#557).
+        if self.displays_itself(ty) || matches!(pretty, Pretty::Plain) && self.displays_its_value(ty) {
             return Ok(shown_text(value));
         }
         if let Some(shown) = self.formatted(value.clone(), (Std::FmtDisplay, ty), pretty) {
