@@ -606,3 +606,51 @@ their `this`, and a function and a `with_this` function that read
 `js::arguments()`, run: each counts none). Mutations `own-callback-*`,
 `own-target-reads-arguments` and `with-this-reading-arguments-own`
 (`passed_on.ts`).
+
+## Amendment: a statement of a function of `()` (rd660)
+
+React's Flight host dispatcher lends each of its functions as a `&dyn
+Fn` of the dispatcher's own signature, adapting one, `L: &|href, r#as,
+options| { preload(Some(js::unknown(href)), Some(js::unknown_of(
+r#as.to_owned())), options); }`, whose conversions print nothing. It
+printed `L(href, as, options) { preload(href, as, options); }`, where
+upstream writes `L: preload`: `forwarded_to` gave no fact of a statement
+of the crate's function, as a closure that discards what its call gives,
+`|a| { first(a); }`, isn't the function, whose value a JS caller would see.
+
+**A statement of a function item's call that gives `()` or never
+returns is a fact as the call given back is** (`gives_nothing`, of its
+signature at what it's given): its JS gives `undefined` as the closure's
+does, so each taker that takes a statement takes it, here the `&dyn
+Fn`'s (`Taker::FnPointer`), under its rules, `adapts` among them. Case
+([0262](0262-when-rust-and-js-disagree.md)): the user's exception this
+ADR's `fn` amendment applies, no more: only `.length` and identity tell
+them apart.
+
+**A statement is never the function bound** (`Forwarding`'s `statement`,
+which `binds` asks): `move |state| { on_action_success(&queue, &node,
+state); }` stays upstream's arrow, `(nextState) => {
+onActionSuccess(actionQueue, node, nextState); }`; bound, React's port
+changed three such `.then` callbacks, ReactFiberHooks' and
+ReactFlightReplyServer's two, from upstream's form.
+
+**createBackingFormData's callback stays an arrow.** Its `formData.for_each(
+|value, key, _| { let value = ..; append_backing_entry(&backing_store,
+value, key); })` borrows the store, and upstream binds it,
+`appendBackingEntry.bind(null, backingStore)`. A closure's `let`s that
+print nothing, and a variable it borrows that JS assigns nowhere, could be
+bound as soundly as what it took by value is; tried, React's port bound
+some twenty other callbacks upstream writes otherwise: ReactChildFiber's
+`existingChildren.forEach(child => deleteChild(returnFiber, child))`
+twice, ReactFiberHooks' and ReactFlightReplyServer's `.then` arrows, and
+Fizz's and ReactFiberConfigDOM's `forEach(flushResource, destination)`,
+JS's `thisArg`, which a function of the crate's, reading no `this`, has no
+form of. Upstream is no one way here, so which a borrowed capture is waits
+on the user's decision.
+
+Held by `test/lowering-passed-on.test.ts`'s "a closure lent as a dyn Fn
+whose statement only passes on to the crate's function of () is the
+function" (run: `preload`, `count`'s arrow of a function of a value, and
+`onSuccess`'s arrow); mutations `own-unit-statement-kept`,
+`own-statement-of-a-value`, `statement-bound` and `own-statement-passed-on`
+(`passed_on.ts`).

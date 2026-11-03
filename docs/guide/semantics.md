@@ -652,6 +652,13 @@ What's refused is in [the limitations](limitations.md).
   it's given ([0605](../decisions/0605-an-arrow-that-passes-on-has-one-owner.md),
   amended). One of rest arguments as a value that passes them all on to a
   function's rest is that function too, `|args| shim(args)` being `shim`.
+  So is one whose call is a statement of a function that gives `()`, its
+  conversions JS of none: React's Flight dispatcher's `L: &|href, r#as,
+  options| { preload(Some(js::unknown(href)), Some(js::unknown_of(
+  r#as.to_owned())), options); }` is `L: preload`, as both give
+  `undefined`; of one that gives a value, which the closure discards,
+  `|a| { first(a); }`, it stays the arrow (rd660). A statement is never a
+  function bound, below.
 - **A closure that only passes what it took by value, then each of its
   own parameters, to a function of the crate's is that function bound,**
   `startTransition.bind(null, fiber, queue, true, false)`: `bind` reads

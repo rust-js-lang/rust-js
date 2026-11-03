@@ -35,6 +35,33 @@ const restCallee = [
 
 export const mutations: Mutation[] = [
   {
+    name: "own-unit-statement-kept",
+    breaks:
+      "a closure lent as a `&dyn Fn` whose statement only passes on to the crate's function of `()`, `{ preload(Some(href), ..); }`, stays an arrow, where upstream's `L: preload` is the function (rd660)",
+    file: "src/lower/passed_on.rs",
+    find: "            output.is_unit() || output.is_never()\n",
+    replace: "            let _ = output;\n            false\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "whose statement only passes on to the crate's function"],
+  },
+  {
+    name: "own-statement-of-a-value",
+    breaks:
+      "a closure that discards the crate's function's value, `{ counted(n); }`, is that function, so a JS caller sees what it gives (rd660)",
+    file: "src/lower/passed_on.rs",
+    find: "            output.is_unit() || output.is_never()\n",
+    replace: "            let _ = output;\n            true\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "whose statement only passes on to the crate's function"],
+  },
+  {
+    name: "statement-bound",
+    breaks:
+      "a closure's statement of the crate's function of what it took, then its parameter, is the function bound, `succeed.bind(null, queue)`, where upstream's `.then((s) => { onActionSuccess(queue, node, s); })` keeps its arrow (rd660)",
+    file: "src/lower/passed_on.rs",
+    find: "        && !fact.statement\n",
+    replace: "",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "whose statement only passes on to the crate's function"],
+  },
+  {
     name: "passed-on-array-method-kept",
     breaks:
       "`xs.map((x) => double(x))` keeps its arrow: `map` isn't an array method whose callback may be the function (ADR 0279)",
@@ -371,9 +398,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure that discards the crate's function's value, `|a| { first(a); }`, is that function, so a JS caller sees what it gives (rd158)",
     file: "src/lower/passed_on.rs",
-    find: "        if statement && !super::bindings::is_binding(self.tcx, def_id) {\n",
+    find: "        if statement && !super::bindings::is_binding(self.tcx, def_id) && !gives_nothing() {\n",
     replace:
-      "        if false && statement && !super::bindings::is_binding(self.tcx, def_id) {\n",
+      "        if false && statement && !super::bindings::is_binding(self.tcx, def_id) && !gives_nothing() {\n",
     tests: [
       "test/lowering-passed-on.test.ts",
       "-t",

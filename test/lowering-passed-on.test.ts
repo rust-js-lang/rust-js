@@ -306,6 +306,77 @@ pub fn call(dispatcher: &Dispatcher) -> (u32, u32, u32) {
   expect(() => lib.call(lib.CONTEXT_ONLY)).toThrow("Invalid hook call.");
 });
 
+// React's Flight host dispatcher lends each of its functions as a `&dyn
+// Fn` of the dispatcher's own signature, `L: |href, as, options| {
+// preload(Some(js::unknown(href)), .., options); }`, whose call is a
+// statement and whose conversions print nothing: where the function gives
+// `()`, its JS gives `undefined` as the closure's does, so the closure is
+// the function, upstream's `L: preload` (rd660). Of one that gives a value,
+// which the closure discards, `{ counted(n); }`, it stays the arrow; and a
+// statement is never the function bound to what the closure took.
+test("a closure lent as a dyn Fn whose statement only passes on to the crate's function of () is the function", async () => {
+  const dir = fixture("dyn-fn-statement-passed-on");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+pub struct HostDispatcher {
+    pub preload: &'static dyn Fn(&str, &str),
+    pub count: &'static dyn Fn(u32),
+}
+
+thread_local! {
+    static SEEN: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
+}
+
+pub fn preload(href: Option<&str>, r#as: Option<String>) {
+    SEEN.with_borrow_mut(|seen| seen.push(format!("{href:?} {as:?}")));
+}
+
+fn counted(n: u32) -> u32 {
+    SEEN.with_borrow_mut(|seen| seen.push(format!("{n}")));
+    n + 1
+}
+
+pub fn dispatcher() -> HostDispatcher {
+    HostDispatcher {
+        preload: &|href, r#as| {
+            preload(Some(href), Some(r#as.to_owned()));
+        },
+        count: &|n| {
+            counted(n);
+        },
+    }
+}
+
+pub fn seen() -> Vec<String> {
+    SEEN.with_borrow(Clone::clone)
+}
+
+fn succeed(queue: &str, state: u32) {
+    SEEN.with_borrow_mut(|seen| seen.push(format!("{queue} {state}")));
+}
+
+// What it took by value, then its parameter, given on in a statement, as
+// React's \`.then((nextState) => { onActionSuccess(queue, node, nextState); })\`:
+// an arrow, as upstream's, not the function bound.
+pub fn on_success(queue: String) -> Box<dyn Fn(u32)> {
+    Box::new(move |state| {
+        succeed(&queue, state);
+    })
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("    preload,\n");
+  expect(js).toContain("    count(n) {\n      counted(n);\n    },\n");
+  const lib = await import(join(dir, "lib.js"));
+  const dispatcher = lib.dispatcher();
+  expect(dispatcher.preload("a", "b")).toBe(undefined);
+  expect(dispatcher.count(4)).toBe(undefined);
+  expect(js).not.toContain("succeed.bind");
+  lib.onSuccess("q")(7);
+  expect(lib.seen()).toEqual(['Some("a") Some("b")', "4", "q 7"]);
+});
+
 // React's ReactFiberConfigWithNoPersistence exports `function shim(...args)`
 // as each function the renderer lacks, `export const cloneInstance = shim;`,
 // which the reconciler calls with that function's arguments. Ported, a `fn`

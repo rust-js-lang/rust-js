@@ -117,6 +117,12 @@ pub(in crate::lower) struct Forwarding {
     /// React's `handleNavigateComplete`, which a `let` of the closure reads
     /// in its place (`held_functions`, rd284b).
     pub(in crate::lower) fixed: bool,
+    /// Whether its call is a statement, `{ preload(href, ..); }`, of a
+    /// function item that gives `()` or never returns (rd660): never bound
+    /// (`binds`), which the user decided of a closure that gives back its
+    /// call, as upstream's `.then((s) => { onActionSuccess(queue, node, s);
+    /// })` keeps its arrow.
+    pub(in crate::lower) statement: bool,
 }
 
 /// What a closure's one call calls.
@@ -417,6 +423,7 @@ pub(in crate::lower) fn binds(f: &Expr, fact: &Forwarding, moved: &[String]) -> 
     let taken = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(v) if moved.contains(v));
     fact.item
         && fact.callee == Callee::Own
+        && !fact.statement
         && bound_parts(f)
             .is_some_and(|(_, bound)| bound.iter().any(taken) && bound.iter().all(|e| taken(e) || e.is_constant()))
 }
@@ -629,10 +636,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ignores: true,
                 eta: false,
                 fixed: false,
+                statement: false,
             });
         }
         let (def_id, generic_args) = fn_def(thir[fun].ty)?;
-        if statement && !super::bindings::is_binding(self.tcx, def_id) {
+        // A statement of a function item's call that gives `()` or never
+        // returns, `{ preload(href, ..); }`, whose JS gives `undefined` as
+        // the closure's does (rd660); of one that gives a value, the closure
+        // discards it, which the function wouldn't.
+        let gives_nothing = || {
+            let sig = self.tcx.fn_sig(def_id).instantiate(self.tcx, generic_args).skip_normalization();
+            let output = sig.skip_binder().output();
+            output.is_unit() || output.is_never()
+        };
+        if statement && !super::bindings::is_binding(self.tcx, def_id) && !gives_nothing() {
             return None;
         }
         // A call whose last argument is one its JS leaves out, a `None` or a
@@ -683,6 +700,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ignores: callee == Callee::Own && given && captured.is_some(),
                     eta: false,
                     fixed: dyn_fn && callee == Callee::Own,
+                    statement: false,
                 })
             }
             // A binding's global function, JS's own, called as a function,
@@ -701,6 +719,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ignores: false,
                 eta: false,
                 fixed: false,
+                statement,
             }),
             // The crate's, or a library's, whose JS rust-js compiled from
             // its Rust as it compiles the crate's (ADR 0605, amended). One
@@ -722,6 +741,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ignores: args.is_empty(),
                 eta: super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Namespace),
                 fixed: false,
+                statement,
             }),
         }
     }
