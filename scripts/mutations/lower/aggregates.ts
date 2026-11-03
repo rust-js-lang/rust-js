@@ -193,9 +193,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable `Cell` field made `Cell::new(None)` is `{ value: undefined } ?? null`'s, its cell, not `null`",
     file: "src/lower/aggregates.rs",
-    find: "            let cell = self.property_cell(Some(field), field_ty).is_some();\n",
-    replace:
-      "            let cell = !self.is_std_type(field_ty, StdItem::Cell) && self.property_cell(Some(field), field_ty).is_some();\n",
+    find: "        let cell = self.property_cell(Some(field), field_ty).is_some();\n",
+    replace: "        let cell = !self.is_std_type(field_ty, StdItem::Cell) && self.property_cell(Some(field), field_ty).is_some();\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
@@ -207,9 +206,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an optional nullable field made `None`, or `Cell::new(None)`, is `null` in its literal, not left out (ADR 0810)",
     file: "src/lower/aggregates.rs",
-    find: "            if bindings::is_optional(self.tcx, field)\n                && (given == Given::WrittenNone\n",
-    replace:
-      "            if false\n                && (given == Given::WrittenNone\n",
+    find: "        if bindings::is_optional(self.tcx, field)\n            && (given == Given::WrittenNone\n",
+    replace: "        if false\n            && (given == Given::WrittenNone\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
@@ -221,8 +219,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an optional nullable field made of another's value is `{ name: abort.name ?? null }`, `null` where upstream's copy is `undefined` (ADR 0810, amended)",
     file: "src/lower/aggregates.rs",
-    find: "            let copied = given == Given::Optional && bindings::is_optional(self.tcx, field);\n",
-    replace: "            let copied = false;\n",
+    find: "        let copied = given == Given::Optional && bindings::is_optional(self.tcx, field);\n",
+    replace: "        let copied = false;\n",
     tests: [
       "test/lowering-optional-fields.test.ts",
       "-t",
@@ -234,8 +232,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable field that isn't optional, made of an optional one's value, takes it as it is, `undefined` where it's absent, not `null` (ADR 0810, amended)",
     file: "src/lower/aggregates.rs",
-    find: "            let copied = given == Given::Optional && bindings::is_optional(self.tcx, field);\n",
-    replace: "            let copied = given == Given::Optional;\n",
+    find: "        let copied = given == Given::Optional && bindings::is_optional(self.tcx, field);\n",
+    replace: "        let copied = given == Given::Optional;\n",
     tests: [
       "test/lowering-optional-fields.test.ts",
       "-t",
@@ -247,8 +245,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an optional nullable field's `Cell::new(None)` of what has drop glue, a temporary MIR makes, is `undefined ?? null` in its literal, not left out (ADR 0810, amended)",
     file: "src/lower/aggregates.rs",
-    find: "                && (given == Given::WrittenNone\n                    || matches!(",
-    replace: "                && (matches!(",
+    find: "            && (given == Given::WrittenNone\n                || matches!(",
+    replace: "            && (matches!(",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
@@ -348,9 +346,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable plain `RefCell` field's `None` is left out where it's made, `{ tag }`, where upstream's `child: null` is what React's JS tests `=== null`",
     file: "src/lower/aggregates.rs",
-    find: "            let cell = self.property_cell(Some(field), field_ty).is_some();\n",
-    replace:
-      "            let cell = self.is_std_type(field_ty, StdItem::Cell);\n",
+    find: "        let cell = self.property_cell(Some(field), field_ty).is_some();\n",
+    replace: "        let cell = self.is_std_type(field_ty, StdItem::Cell);\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "no body borrows"],
   },
   {
@@ -467,7 +464,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a derived `Default` of a nullable field of what may be `undefined` is `undefined`, its `Some` (rd645)",
     file: "src/lower/aggregates.rs",
-    find: "            Some(field) if bindings::holds_value(self.tcx, field) => Ok(Expr::null()),\n",
+    find: "            Some(field) if bindings::holds_value(self.tcx, field) => Expr::null(),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
   },
@@ -512,5 +509,14 @@ export const mutations: Mutation[] = [
     find: "        let kept = std::mem::take(&mut layout.kept);\n",
     replace: "        let kept = Vec::new();\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_const.rs$"],
+  },
+  {
+    name: "nullable-field-default-undefined",
+    breaks:
+      "a derived `Default` of a nullable field leaves its `None` `undefined`, which a `=== null` test reads as a `Some` (rd647)",
+    file: "src/lower/aggregates.rs",
+    find: "                if bindings::is_nullable(self.tcx, field)\n                    && bindings::nullable_option(self.tcx, field_ty).is_some() =>\n",
+    replace: "                if false =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
   },
 ];

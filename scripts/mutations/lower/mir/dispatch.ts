@@ -1032,4 +1032,14 @@ export const mutations: Mutation[] = [
     replace: "            let none = Expr::undefined();\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
   },
+  {
+    name: "strict-is-none-of-a-borrow-loose",
+    breaks:
+      "`state.clones.borrow().is_none()` of a field that's `null` or a value is `== null` (rd647)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "        if let Some(tested) = self.null_or_value_tested(state, callee, operands, span, out)? {\n",
+    replace: "        if let Some(tested) = self.null_or_value_tested(state, callee, operands, span, out)?.filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
+    snapshots: true,
+  },
 ];

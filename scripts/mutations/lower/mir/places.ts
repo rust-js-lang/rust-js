@@ -209,4 +209,14 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "or_pattern_one_place"],
   },
+  {
+    name: "strict-field-read-unsaid",
+    breaks:
+      "a read of a nullable field that's `null` or a value says nothing, so it's tested `== null` (rd647)",
+    file: "src/lower/mir/places.rs",
+    find: "                Ok(match self.null_or_value_field(ty.ty, i) {\n",
+    replace: "                Ok(match self.null_or_value_field(ty.ty, i) && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
+    snapshots: true,
+  },
 ];

@@ -399,33 +399,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if bindings::nullable_option(self.tcx, field_ty).is_none() {
                 continue;
             }
-            // And a `RefCell`'s that's the property it holds (ADR 0863).
-            let cell = self.property_cell(Some(field), field_ty).is_some();
             let made = std::mem::replace(value, Expr::undefined());
-            let held = match cell {
-                true => Expr::held(made.clone()),
-                false => made.clone(),
-            };
-            if bindings::is_optional(self.tcx, field)
-                && (given == Given::WrittenNone
-                    || matches!(held.kind, js::ExprKind::Undefined | js::ExprKind::GivenUndefined))
-            {
-                // An `Option`'s the `None` it is, a read of what's only
-                // `None`; a cell's as it's made, which a drop may read.
-                *value = match self.option_of(field_ty) {
-                    Some(_) => Expr::undefined(),
-                    None => made,
-                };
-                continue;
-            }
-            // What one optional field holds, given another, is as it is,
-            // `undefined` where it's absent (ADR 0810, amended).
-            let copied = given == Given::Optional && bindings::is_optional(self.tcx, field);
-            let stored = js::Storage::NullForNone.written(held, given == Given::Nulled || copied);
-            *value = match cell {
-                true => Expr::object(vec![Prop::Field(js::HELD.into(), stored)]),
-                false => stored,
-            };
+            *value = self.nullable_field_made(field, field_ty, made, given);
         }
         // A keyed enum's variant is its keys, no tag, each kept where it's
         // `undefined`, which `in` tells it by (#504).
@@ -562,15 +537,55 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// The default of field `i` of the struct `ty`, of type `field_ty`, as
-    /// the field holds it: of one that holds a `Some` of what may be
-    /// `undefined` as it is, its `None`, `null` (rd645); else
-    /// `default_value`'s.
-    pub(super) fn field_default(&mut self, ty: Ty<'tcx>, i: usize, field_ty: Ty<'tcx>, span: Span) -> R<Expr> {
-        match self.struct_field_def(ty, i) {
-            Some(field) if bindings::holds_value(self.tcx, field) => Ok(Expr::null()),
-            _ => self.default_value(field_ty, span),
+    /// What a `#[rust_js::nullable]` field of an `Option` or a cell of one,
+    /// of type `field_ty`, holds of `made`, which MIR tells is `given`:
+    /// its `None` `null`, what's `null` or a value already as it is, and an
+    /// optional one's `None` left out (ADRs 0275, 0772, 0810).
+    fn nullable_field_made(&mut self, field: &ty::FieldDef, field_ty: Ty<'tcx>, made: Expr, given: Given) -> Expr {
+        // And a `RefCell`'s that's the property it holds (ADR 0863).
+        let cell = self.property_cell(Some(field), field_ty).is_some();
+        let held = match cell {
+            true => Expr::held(made.clone()),
+            false => made.clone(),
+        };
+        if bindings::is_optional(self.tcx, field)
+            && (given == Given::WrittenNone
+                || matches!(held.kind, js::ExprKind::Undefined | js::ExprKind::GivenUndefined))
+        {
+            // An `Option`'s the `None` it is, a read of what's only
+            // `None`; a cell's as it's made, which a drop may read.
+            return match self.option_of(field_ty) {
+                Some(_) => Expr::undefined(),
+                None => made,
+            };
         }
+        // What one optional field holds, given another, is as it is,
+        // `undefined` where it's absent (ADR 0810, amended).
+        let copied = given == Given::Optional && bindings::is_optional(self.tcx, field);
+        let stored = js::Storage::NullForNone.written(held, given == Given::Nulled || copied);
+        match cell {
+            true => Expr::object(vec![Prop::Field(js::HELD.into(), stored)]),
+            false => stored,
+        }
+    }
+
+    /// The default of field `i` of the struct `ty`, of type `field_ty`, as
+    /// the field holds it: of a `#[rust_js::nullable]` one, its `None`
+    /// `null`, as a literal's is, so it's `null` or a value wherever it's
+    /// read (rd647); of one that holds a `Some` of what may be `undefined`
+    /// as it is, `null` (rd645); else `default_value`'s.
+    pub(super) fn field_default(&mut self, ty: Ty<'tcx>, i: usize, field_ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let made = self.default_value(field_ty, span)?;
+        Ok(match self.struct_field_def(ty, i) {
+            Some(field) if bindings::holds_value(self.tcx, field) => Expr::null(),
+            Some(field)
+                if bindings::is_nullable(self.tcx, field)
+                    && bindings::nullable_option(self.tcx, field_ty).is_some() =>
+            {
+                self.nullable_field_made(field, field_ty, made, Given::WrittenNone)
+            }
+            _ => made,
+        })
     }
 
     /// An update's derived `Default` base, `..Default::default()`, of the

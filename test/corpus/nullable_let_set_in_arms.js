@@ -16,7 +16,7 @@ function update(state, gesture, memoized) {
   let previousMeasurements;
   if (gesture) {
     const clones = state.clones;
-    if (clones == null) {
+    if (clones === null) {
       previousMeasurements = null;
     } else {
       previousMeasurements = clones.map(measure);

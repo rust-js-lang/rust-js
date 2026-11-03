@@ -463,6 +463,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(value) = self.held_any_of(state, callee.0, operands, span, out)? {
             return Ok(Value::Expr(value));
         }
+        if let Some(tested) = self.null_or_value_tested(state, callee, operands, span, out)? {
+            return Ok(Value::Expr(tested));
+        }
         // A map that's the option itself, `lane.map(EventPriority::from)`:
         // the option alone, its function never named, so one only it names
         // is written nowhere (ADR 0584, amended).

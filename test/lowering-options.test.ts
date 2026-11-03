@@ -227,6 +227,17 @@ pub fn chosen(code: Option<&str>) -> Props {
 pub fn moved(p: Props) -> Props {
     Props { code: p.code, message: Some(p.title.unwrap_or_default()), title: None }
 }
+
+// Of a struct only JS gives, whose read isn't tested \`=== null\` (rd647),
+// still as it is: \`null\` or a value, as it's declared.
+pub struct Input {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub code: Option<String>,
+}
+
+pub fn from_input(input: Input) -> Props {
+    Props { code: input.code, message: None, title: None }
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
@@ -236,6 +247,7 @@ pub fn moved(p: Props) -> Props {
   // A conditional of `Some` or `None` is one of the value or `null`.
   expect(js).toContain("return {\n    code: code || null,\n    message: null,\n  };");
   expect(js).toContain('return { code: p.code, message: p.title ?? "" };');
+  expect(js).toContain("return { code: input.code, message: null };");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.given(undefined), lib.given("1")]).toEqual([{ code: null, message: null }, { code: "1", message: null }]);
   expect(JSON.stringify(lib.passed(lib.given(undefined)))).toBe('{"code":null,"message":null}');

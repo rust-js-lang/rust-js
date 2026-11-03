@@ -925,3 +925,46 @@ pub fn hydrate(options: Option<&'static Options>) -> bool {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.hydrate(undefined), lib.hydrate(null), lib.hydrate({ prefix: "" })]).toEqual([false, false, true]);
 });
+
+// rd647 (B), the user's (1): a nullable field is tested `=== null` only
+// where it's `null` or a value wherever it's read, of a struct only the
+// crate makes. Of one only JS gives, which may leave the field out, it's
+// `== null`, and `{}`'s field is `None`; so is one the crate never makes.
+test("a nullable field is tested === null only where only the crate makes its struct", async () => {
+  const dir = fixture("nullable-field-strict");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::RefCell;
+
+use js::Unknown;
+
+pub struct Given {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub x: Option<&'static Unknown>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub cell: RefCell<Option<u32>>,
+}
+
+pub struct Own {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub x: Option<&'static Unknown>,
+}
+
+pub fn given(g: &Given) -> bool {
+    g.x.is_none() && g.cell.borrow().is_none()
+}
+
+pub fn own(x: Option<&'static Unknown>) -> bool {
+    let own = Own { x };
+    own.x.is_none()
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return g.x == null && g.cell == null;");
+  expect(js).toContain("return own.x === null;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.given({}), lib.given({ x: null, cell: null }), lib.given({ x: 1 })]).toEqual([true, true, false]);
+  expect([lib.own(undefined), lib.own(1)]).toEqual([true, false]);
+});

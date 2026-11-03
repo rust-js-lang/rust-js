@@ -16,6 +16,157 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.stored_given(state, operand) == Given::Nulled
     }
 
+    /// Whether field `i` of `ty`, a struct, is `null` or a value wherever
+    /// it's read, its `None` never `undefined`, so it's tested `=== null`
+    /// (rd647, the user's (1)). That holds where it's
+    /// `#[rust_js::nullable]` and not optional, an `Option` or a cell of one
+    /// (`null_where_made`), and only the crate makes its struct
+    /// (`only_the_crate_makes`), each literal writing it `null`; or each
+    /// constructor of its struct, `Class::of(function::with_this(..))`,
+    /// sets it first, so it's there from where `new` makes it (rd628).
+    pub(super) fn null_or_value_field(&self, ty: Ty<'tcx>, i: usize) -> bool {
+        let ty::Adt(adt, args) = ty.kind() else { return false };
+        let Some(field) = self.struct_field_def(ty, i) else {
+            return false;
+        };
+        let field_ty = field.ty(self.tcx, args).skip_normalization();
+        // Not one of a type parameter's value, which generic code stores
+        // as it's given, `undefined` too (ADR 0586, amended).
+        let declared = self.tcx.type_of(field.did).instantiate_identity().skip_normalization();
+        bindings::null_where_made(self.tcx, field)
+            && bindings::nullable_option(self.tcx, field_ty).is_some()
+            && !bindings::of_type_parameter(self.tcx, declared)
+            && (self.krate.constructed.contains(&field.did)
+                || self.krate.cell_borrows.pointers().only_the_crate_makes(adt.did()))
+    }
+
+    /// Whether `place`, read in `body`, is such a field
+    /// (`null_or_value_field`) or reads one: through a shared reference
+    /// made once, a copy of one, or a `RefCell` field's guard, which is the
+    /// field's value, `state.clones.borrow()`, or a `Deref` of it (ADR 0863,
+    /// rd647). The `Option` a `let` holds of it then says its `None` is
+    /// `null` (`mir_nones`).
+    pub(super) fn reads_null_or_value(&self, body: &mir::Body<'tcx>, place: Place<'tcx>, depth: usize) -> bool {
+        if depth > 8 {
+            return false;
+        }
+        if let Some((base, PlaceElem::Field(field, _))) = place.as_ref().last_projection() {
+            let base = base.ty(body, self.tcx);
+            return base.variant_index.is_none() && self.null_or_value_field(base.ty, field.as_usize());
+        }
+        if !matches!(place.projection.as_slice(), [] | [PlaceElem::Deref]) {
+            return false;
+        }
+        let local = place.local;
+        let mut writes = (body.basic_blocks.iter()).flat_map(|data| {
+            let statements = (data.statements.iter()).filter_map(move |statement| match &statement.kind {
+                mir::StatementKind::Assign(assign) if assign.0.local == local => Some(Ok(&assign.1)),
+                _ => None,
+            });
+            let call = match &data.terminator().kind {
+                mir::TerminatorKind::Call {
+                    func,
+                    args,
+                    destination,
+                    ..
+                } if destination.local == local => Some(Err((func, args))),
+                _ => None,
+            };
+            statements.chain(call)
+        });
+        let (Some(write), None) = (writes.next(), writes.next()) else {
+            return false;
+        };
+        match write {
+            // `&place`, read through, and a copy of a reference.
+            Ok(Rvalue::Ref(_, BorrowKind::Shared, of)) if !place.projection.is_empty() => {
+                self.reads_null_or_value(body, *of, depth + 1)
+            }
+            Ok(Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _)) if of.projection.is_empty() => self
+                .reads_null_or_value(
+                    body,
+                    Place::from(of.local).project_deeper(place.projection, self.tcx),
+                    depth + 1,
+                ),
+            // A guard of a shared `borrow()`, and a `Deref` of one: what the
+            // `RefCell` it's given holds.
+            Err((func, args)) => {
+                let (Some((def_id, generic_args)), [arg]) = (func.const_fn_def(), &args[..]) else {
+                    return false;
+                };
+                let deref = (self.tcx.trait_of_assoc(def_id))
+                    .is_some_and(|t| self.tcx.is_lang_item(t, LangItem::Deref))
+                    && matches!(generic_args.type_at(0).kind(), ty::Adt(guard, _)
+                        if crate::lower::recognition::is_std_def(self.tcx, guard.did(), StdItem::RefCellRef));
+                let through = match self.recognition().classify(def_id, generic_args) {
+                    Some(Std::Borrow {
+                        mutable: false,
+                        lock: false,
+                    }) => place.projection.is_empty(),
+                    _ => deref && !place.projection.is_empty(),
+                };
+                let given = arg.node.place().filter(|given| given.projection.is_empty());
+                through
+                    && given.is_some_and(|given| {
+                        self.reads_null_or_value(body, given.project_deeper(&[PlaceElem::Deref], self.tcx), depth + 1)
+                    })
+            }
+            _ => false,
+        }
+    }
+
+    /// `is_some()` or `is_none()` of a field that's `null` or a value, read
+    /// through a reference (`reads_null_or_value`), `state.clones.borrow()
+    /// .is_none()`: `=== null` (rd647). `None` of any other call.
+    pub(super) fn null_or_value_tested(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        operands: &[&Operand<'tcx>],
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        let some = match self.recognition().classify(def_id, generic_args) {
+            Some(Std::IsSome) => true,
+            Some(Std::IsNone) => false,
+            _ => return Ok(None),
+        };
+        let [given] = operands else { return Ok(None) };
+        let Some(place) = given.place() else { return Ok(None) };
+        if !self.reads_null_or_value(state.body, place.project_deeper(&[PlaceElem::Deref], self.tcx), 0) {
+            return Ok(None);
+        }
+        let value = (self.take_operands(state, operands, out)?.into_iter().next()).expect("one operand");
+        let value = self.value_expr(value, span)?;
+        let value = Expr {
+            facts: value.facts.with(js::Known::NoneNull),
+            ..value
+        };
+        Ok(Some(Expr::presence(value, some)))
+    }
+
+    /// Of a call of `func` with `args`, an `as_ref()` or `as_deref()`, or a `Cell`'s `get()`, of a
+    /// shared reference to a field that's `null` or a value
+    /// (`reads_null_or_value`): its `None`'s, `null` (rd647).
+    pub(super) fn as_ref_of_null_or_value(
+        &self,
+        body: &mir::Body<'tcx>,
+        func: &Operand<'tcx>,
+        args: &[rustc_span::Spanned<Operand<'tcx>>],
+    ) -> Option<js::Known> {
+        let (def_id, generic_args) = func.const_fn_def()?;
+        let [arg] = args else { return None };
+        let given = arg.node.place()?;
+        let shared = matches!(given.ty(body, self.tcx).ty.kind(), ty::Ref(_, _, ty::Mutability::Not));
+        (shared
+            && matches!(
+                self.recognition().classify(def_id, generic_args),
+                Some(Std::Pointee | Std::CellGet)
+            )
+            && self.reads_null_or_value(body, given.project_deeper(&[PlaceElem::Deref], self.tcx), 0))
+        .then_some(js::Known::NoneNull)
+    }
+
     /// What `operand`, an `Option`, is to a `#[rust_js::nullable]` place
     /// it's stored in: `null` or a value already (`nulled`), what an
     /// optional nullable field holds, read, which another such takes as it

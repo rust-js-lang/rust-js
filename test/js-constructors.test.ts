@@ -654,6 +654,16 @@ pub fn late(twice: &Twice) -> &'static Unknown {
 pub fn value(early: &Early) -> &'static Unknown {
     prepare(early.value.get())
 }
+
+// A field set first is tested \`=== null\`; one set in an \`if\` may be
+// absent, \`== null\` (rd647).
+pub fn has_in_if(response: &Response) -> bool {
+    response.in_if.get().is_some()
+}
+
+pub fn has_module_loading(response: &Response) -> bool {
+    response.module_loading.get().is_some()
+}
 `,
     {
       "config.js":
@@ -674,8 +684,11 @@ pub fn value(early: &Early) -> &'static Unknown {
   for (const read of ["twice.one", "twice.late", "early.value", "held.held"]) {
     expect(js).toContain(`  return prepare(${read} ?? null);\n`);
   }
+  expect(js).toContain("  return response.inIf != null;\n");
+  expect(js).toContain("  return response.moduleLoading !== null;\n");
   // Rust gives each `None` as `null`, absent or not.
   const response = new lib.Response(undefined, false);
+  expect([lib.hasInIf(response), lib.hasModuleLoading(response)]).toEqual([false, false]);
   const reads = [lib.moduleLoading, lib.copy, lib.readFirst, lib.inIf, lib.afterGiven, lib.never];
   expect(reads.map((f) => f(response))).toEqual(Array(6).fill("null"));
   expect(lib.nonce(response)).toBe("chunks");

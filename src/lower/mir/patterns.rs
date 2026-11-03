@@ -526,6 +526,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Rvalue::Use(Operand::Copy(read) | Operand::Move(read), _) if read.projection.is_empty() => {
                     Write::Of(read.local)
                 }
+                Rvalue::Use(Operand::Copy(read) | Operand::Move(read), _)
+                    if self.reads_null_or_value(body, *read, 0) =>
+                {
+                    Write::Made(Some(js::Known::NoneNull))
+                }
                 Rvalue::Ref(_, BorrowKind::Shared, of)
                     if matches!(of.projection.as_slice(), [] | [mir::ProjectionElem::Deref]) =>
                 {
@@ -540,9 +545,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         for block in body.basic_blocks.iter() {
             match &block.terminator().kind {
-                mir::TerminatorKind::Call { func, destination, .. } => {
+                mir::TerminatorKind::Call {
+                    func,
+                    args,
+                    destination,
+                    ..
+                } => {
                     let given =
                         (func.const_fn_def()).and_then(|(def_id, _)| crate::lower::calls::none_given_by(tcx, def_id));
+                    // `as_ref()` of a field that's `null` or a value (rd647).
+                    let given = given.or_else(|| self.as_ref_of_null_or_value(body, func, args));
                     match given {
                         Some(none) if destination.projection.is_empty() => {
                             writes

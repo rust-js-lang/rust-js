@@ -355,7 +355,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (ty::Adt(adt, _), _) if adt.is_box() => {
                 Err(self.unsupported(span, "a box's pointer, from its optimized MIR"))
             }
-            (ty::Tuple(_) | ty::Adt(..), _) => Ok(self.project(base, ty.ty, i)),
+            // A nullable field that's `null` or a value wherever it's read
+            // says so, so it's tested `=== null` (rd647).
+            (ty::Tuple(_) | ty::Adt(..), _) => {
+                let read = self.project(base, ty.ty, i);
+                Ok(match self.null_or_value_field(ty.ty, i) {
+                    true => Expr {
+                        facts: read.facts.with(js::Known::NoneNull),
+                        ..read
+                    },
+                    false => read,
+                })
+            }
             _ => Err(self.unsupported(span, "this field, from its MIR")),
         }
     }

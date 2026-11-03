@@ -348,6 +348,14 @@ impl<'tcx> FnPointers<'tcx> {
         self.js_made.structs.contains(&adt) || (self.js_made.any && !self.built.contains(&adt))
     }
 
+    /// Whether every value of the struct `adt` is one the crate's code
+    /// makes: it makes some (`built`), and no code that isn't the crate's
+    /// makes one (`js_may_make`). Not a struct only JS gives, which may
+    /// leave a field out (rd647).
+    pub(in crate::lower) fn only_the_crate_makes(&self, adt: DefId) -> bool {
+        self.built.contains(&adt) && !self.js_may_make(adt)
+    }
+
     /// The structs the crate's code makes a value of (`built`), which its
     /// contract says, so a consumer takes them as the program's own data,
     /// as the crate does (rd221; ADR 1022, amended).
