@@ -81,8 +81,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // changes what it reads, `&mut lanes[index]` before `{ index += 1;
             // 10 }`: the place, fixed here, `$index(ps, i).x`'s object named
             // (`fixed_place_of`), as `refs` keeps one, so the call boxes it and
-            // writes it back, not a handle on it, which it would take for the
-            // object (#280).
+            // writes it back, as any place, not a handle on it, `{ get value()
+            // .. }`, which runs alike since 157e916f1 but reads worse (#280).
             let value = match value {
                 Value::Ref(place)
                     if !named && matches!(place.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..)) =>

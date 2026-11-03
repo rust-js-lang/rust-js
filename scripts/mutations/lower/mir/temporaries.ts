@@ -5,7 +5,7 @@ export const mutations: Mutation[] = [
   {
     name: "flushed-mut-ref-a-handle",
     breaks:
-      "a `&mut lanes[index]` held before an argument that changes `index` is a handle, which the call boxes as an object: `$assign(handle, ..)` throws a `TypeError` (#280)",
+      "a `&mut lanes[index]` held before an argument that changes `index` is a handle, `{ get value() { .. }, set value(value) { .. } }`, where the place is boxed and written back: since 157e916f1 gives a `&mut` to a cell held as a value on as the box it is, the handle runs as Rust does, so only the JS reads worse (#280)",
     file: "src/lower/mir/temporaries.rs",
     find: "                    if !named && matches!(place.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..)) =>\n",
     replace:
@@ -15,11 +15,12 @@ export const mutations: Mutation[] = [
       "-t",
       "^mut_arg_before_its_index_changes.rs$",
     ],
+    snapshots: true,
   },
   {
     name: "flushed-mut-ref-unfixed",
     breaks:
-      'a `&mut ps[i].x` held before an argument that changes `i` keeps its object unnamed, `$handleOn($index(ps, i), "x")`, which the call boxes as an object (#280)',
+      'a `&mut ps[i].x` held before an argument that changes `i` keeps its object unnamed, `$handleOn($index(ps, i), "x")`, where `$index(ps, i)` is named and its field boxed and written back: since 157e916f1 the handle is given on as the box it is and runs as Rust does, so only the JS reads worse (#280)',
     file: "src/lower/mir/temporaries.rs",
     find: "                    let place = self.fixed_place_of(place, &mut made);\n",
     replace: "                    let place = place;\n",
@@ -28,6 +29,7 @@ export const mutations: Mutation[] = [
       "-t",
       "^mut_arg_before_its_index_changes.rs$",
     ],
+    snapshots: true,
   },
   {
     name: "macro-match-first-of-them",
