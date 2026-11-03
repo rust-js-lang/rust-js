@@ -315,7 +315,11 @@ class are refused, saying what to write. A setter would be a
 getter is refused says what to write", `test/corpus/class_getters.rs`, and
 the mutations `getter-a-method`, `getter-of-no-class-allowed`,
 `getter-of-any-shape-allowed`, `getter-called`, `getter-value-unread` and
-`getter-printed-as-method`.
+`getter-printed-as-method`. Its read runs its body where Rust calls it,
+never moved past a call after it, as a field's read may be: amended by
+[ADR 1041](1041-a-class-that-implements-a-bindings-class-extends-it.md)'s
+rd679 amendment, which makes a getter of a class that extends a
+binding's too.
 
 ## Amendment: its `Display` is its prototype's `toString` (#358)
 

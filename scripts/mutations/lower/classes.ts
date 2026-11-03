@@ -664,4 +664,20 @@ export const mutations: Mutation[] = [
     replace: "                if !thread_local || !tcx.visibility(id).is_public() {\n",
     tests: ["test/namespace-values.test.ts", "-t", "no struct of named fields"],
   },
+  {
+    name: "subclass-getter-a-method",
+    breaks: "a getter of the binding's class a class extends, `get type()` its trait marks, is a method, `type() { .. }`, which webpack reads as a function (rd679)",
+    file: "src/lower/classes.rs",
+    find: "        return Some(match trait_getter(tcx, def_id) {\n",
+    replace: "        return Some(match false {\n",
+    tests: ["test/binding-subclasses.test.ts", "-t", "is its class's getter"],
+  },
+  {
+    name: "subclass-getter-misuse-unchecked",
+    breaks: "a getter's mark on a method of the class a class extends that can't apply is dropped, not refused (rd679)",
+    file: "src/lower/classes.rs",
+    find: "                if let Some(why) = trait_getter_misuse(tcx, id) {\n",
+    replace: "                if let Some(why) = None::<String> {\n",
+    tests: ["test/binding-subclasses.test.ts", "-t", "marked as the trait marks it"],
+  },
 ];

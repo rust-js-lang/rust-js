@@ -705,9 +705,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let this = args.remove(0);
                 Expr::call(Expr::member(this, name), args)
             }
-            // A getter's, its read, `position.leftDiagonal` (#357).
+            // A getter's, its read, `position.leftDiagonal` (#357), which
+            // runs its body: never moved past what else runs (rd679).
             (Some(crate::lower::classes::Member::Getter), js::ExprKind::Member(_, name)) if args.len() == 1 => {
-                Expr::member(args.remove(0), name)
+                Expr::member(args.remove(0), name).answered_by_a_getter()
             }
             // An object's method, its own property's (ADR 0943).
             (Some(crate::lower::classes::Member::Own), _) if !args.is_empty() => {

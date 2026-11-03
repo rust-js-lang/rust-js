@@ -1024,7 +1024,18 @@ export function createRequest(tasks) {
   it, `position.leftDiagonal`, and as a value it's the arrow of that read.
   It's a method of `&self` alone that gives a value: one of `&mut self`,
   of arguments, of no `self`, `async`, or of a struct that's no class is
-  refused.
+  refused. Its read runs its body where Rust calls it, before what's
+  called after it, as a call would. Of the binding's class a class
+  extends, a method is a getter where the binding's trait marks it one,
+  as webpack's `ModuleDependency` declares `get type()`: the impl marks
+  it too, `#[cfg_attr(rust_js, rust_js::getter)] fn r#type(&self) ->
+  &'static str`, which is `get type() { .. }` in its ES class, declared
+  `get type(): string` and read `dependency.type`. An impl's mark where
+  the trait's method isn't one, the trait's getter unmarked in the
+  impl, and the trait's mark of a method it binds, which its `link_name`
+  says is `get ..`, are refused
+  ([ADR 1041](../../decisions/1041-a-class-that-implements-a-bindings-class-extends-it.md),
+  amended).
 - **Its `impl fmt::Display` is the prototype's `toString`**, as JS's
   `toString() { return `${this.rowIndex},${this.columnIndex}`; }`: Rust's
   `{p}` and `p.to_string()` are JS's text of it, `${p}`, so JS's

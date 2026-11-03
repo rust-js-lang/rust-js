@@ -45,6 +45,36 @@ Queen.prototype.readCount = function () {
   return this.reads;
 };
 
+function noted(n) {
+  console.log(`noted ${n}`);
+  return n;
+}
+
+/** A square of the board, of fields nothing changes once it's made. */
+export function Square(row) {
+  this.row = row;
+}
+
+/**
+ * Its row, said as it's read: a getter's body runs where Rust calls
+ * it, before what's called after it (rd679).
+ */
+Object.defineProperty(Square.prototype, "announcedRow", {
+  get() {
+    console.log(`read ${this.row}`);
+    return this.row;
+  },
+});
+
+/**
+ * A square's row, read before what's noted after it: the getter of a `&`
+ * parameter's class, whose fields no call changes, still runs its body
+ * where Rust calls it, never moved past `noted` as a field's read may be.
+ */
+function announced(square) {
+  return `${square.announcedRow} ${noted(7)}`;
+}
+
 function main() {
   const queens = [
     new Queen(0, 1),
@@ -63,6 +93,7 @@ function main() {
   const diagonals = queens.map((x) => x.leftDiagonal);
   const arg = new Queen(4, 4).rightDiagonal;
   console.log(`[${diagonals.join(", ")}] ${arg}`);
+  console.log(`${announced(new Square(5))}`);
   const reads = queens.map((x) => x.readCount());
   console.log(`[${reads.join(", ")}]`);
 }

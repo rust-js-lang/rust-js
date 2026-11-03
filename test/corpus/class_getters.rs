@@ -54,6 +54,39 @@ impl Queen {
     }
 }
 
+fn noted(n: i32) -> i32 {
+    println!("noted {n}");
+    n
+}
+
+/// A square of the board, of fields nothing changes once it's made.
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Square {
+    row: i32,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Square {
+    pub fn new(row: i32) -> Self {
+        Square { row }
+    }
+
+    /// Its row, said as it's read: a getter's body runs where Rust calls
+    /// it, before what's called after it (rd679).
+    #[cfg_attr(rust_js, rust_js::getter)]
+    pub fn announced_row(&self) -> i32 {
+        println!("read {}", self.row);
+        self.row
+    }
+}
+
+/// A square's row, read before what's noted after it: the getter of a `&`
+/// parameter's class, whose fields no call changes, still runs its body
+/// where Rust calls it, never moved past `noted` as a field's read may be.
+fn announced(square: &Square) -> String {
+    format!("{} {}", square.announced_row(), noted(7))
+}
+
 fn main() {
     let queens = [
         Queen::new(0, 1),
@@ -71,6 +104,7 @@ fn main() {
     }
     let diagonals: Vec<i32> = queens.iter().map(Queen::left_diagonal).collect();
     println!("{diagonals:?} {}", Queen::new(4, 4).right_diagonal());
+    println!("{}", announced(&Square::new(5)));
     let reads: Vec<u32> = queens.iter().map(Queen::read_count).collect();
     println!("{reads:?}");
 }

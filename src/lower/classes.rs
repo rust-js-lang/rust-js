@@ -17,6 +17,7 @@ use rustc_span::def_id::DefId;
 
 mod constructors;
 mod defaults;
+mod getters;
 mod namespaces;
 mod prototypes;
 mod states;
@@ -24,6 +25,8 @@ mod subclasses;
 use constructors::gives_instance;
 pub(crate) use constructors::{refuse_counted_instances, set_where_constructed};
 pub(in crate::lower) use defaults::{prototype_defaults, take_default};
+pub(crate) use getters::extended_getter;
+use getters::{marked_getter, reads_as_getter, trait_getter, trait_getter_misuse};
 pub(crate) use namespaces::{names_namespace, taken_apart, unread_namespaces};
 pub(crate) use prototypes::{PrototypeSet, set_alone, set_prototypes, with_prototype_members};
 use states::spread_state;
@@ -269,30 +272,6 @@ pub(crate) fn own_methods(tcx: TyCtxt<'_>, adt: DefId) -> Vec<DefId> {
         .collect()
 }
 
-fn marked_getter(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    tcx.get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), Symbol::intern("getter")])
-        .next()
-        .is_some()
-}
-
-/// Is `method`, a class's, one a getter is: of `&self` alone, no type
-/// parameters, giving a value.
-fn reads_as_getter(tcx: TyCtxt<'_>, method: DefId) -> bool {
-    let sig = tcx
-        .fn_sig(method)
-        .instantiate_identity()
-        .skip_normalization()
-        .skip_binder();
-    matches!(sig.inputs(), [receiver] if matches!(receiver.kind(), ty::Ref(_, _, ty::Mutability::Not)))
-        && !sig.output().is_unit()
-        && !tcx.asyncness(method).is_async()
-        && tcx
-            .generics_of(method)
-            .own_params
-            .iter()
-            .all(|p| !p.kind.is_ty_or_const())
-}
-
 /// Is `adt` a JS class, a struct marked `#[rust_js::class]`?
 pub(crate) fn is_class(tcx: TyCtxt<'_>, adt: DefId) -> bool {
     tcx.def_kind(adt) == DefKind::Struct && marked(tcx, adt)
@@ -485,8 +464,16 @@ pub(crate) fn member(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Member> {
         return None;
     }
     // Its `Display`'s `fmt`, the prototype's `toString` (#358).
-    if shown_class(tcx, def_id).is_some() || trait_member_class(tcx, def_id).is_some() {
+    if shown_class(tcx, def_id).is_some() {
         return Some(Member::Method);
+    }
+    // A method of the binding's class it extends, or of a trait of classes:
+    // a getter where the trait's is one, webpack's `get type()` (rd679).
+    if trait_member_class(tcx, def_id).is_some() {
+        return Some(match trait_getter(tcx, def_id) {
+            true => Member::Getter,
+            false => Member::Method,
+        });
     }
     let imp = tcx.inherent_impl_of_assoc(def_id)?;
     // An object's method, its own property; its impl's other items are any
@@ -646,6 +633,13 @@ pub(super) fn reject_misuse<'tcx>(
             }
             DefKind::Enum | DefKind::Union | DefKind::Fn | DefKind::Trait if marked(tcx, id) => {
                 refuse(span, "is a struct and its impl, `struct Component { .. }`");
+            }
+            // Of the class it extends, or a trait of classes, a getter
+            // where the trait's is one (rd679).
+            DefKind::AssocFn if trait_member_class(tcx, id).is_some() => {
+                if let Some(why) = trait_getter_misuse(tcx, id) {
+                    refuse(span, &why);
+                }
             }
             _ if marked_getter(tcx, id) && class_of(tcx, id).is_none() => {
                 refuse(

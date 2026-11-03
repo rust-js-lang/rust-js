@@ -516,4 +516,20 @@ export const mutations: Mutation[] = [
       "            if false\n                && let Some((instance, entry)) = self.dictionary_entry(id, generic_args, values.len(), span)?\n            {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: operator_through_dictionary"],
   },
+  {
+    name: "subclass-getter-read-called",
+    breaks: "a Rust call of a getter of the binding's class a class extends is a call, `d.type()`, of the string its getter gives (rd679)",
+    file: "src/lower/traits/calls.rs",
+    find: "            if crate::lower::classes::extended_getter(self.tcx, id) {\n",
+    replace: "            if false {\n",
+    tests: ["test/binding-subclasses.test.ts", "-t", "is its class's getter"],
+  },
+  {
+    name: "subclass-getter-read-moved",
+    breaks: "a read of a getter of the binding's class a class extends is taken for a field's, moved past a call after it, its body's `println!` after that call's (rd679)",
+    file: "src/lower/traits/calls.rs",
+    find: "                return Ok(Some(method.answered_by_a_getter()));\n",
+    replace: "                return Ok(Some(method));\n",
+    tests: ["test/binding-subclasses.test.ts", "-t", "is its class's getter"],
+  },
 ];

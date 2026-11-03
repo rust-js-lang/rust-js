@@ -377,3 +377,56 @@ default lint, asks to write `&'static self`: the port's ReactART was
 refused by `-D warnings` where this ADR's examples, the guide's and the
 react crate's trait wrote the long form. The same receiver; each is
 written `fn render(&'static self)` now, as rustfmt and clippy leave it.
+
+## Amendment: a getter of the class it extends is its class's getter (rd679)
+
+React's ReactFlightWebpackPlugin.js extends webpack's `ModuleDependency`,
+whose `type` is a getter, `get type(): string`, which webpack reads as
+`dependency.type`, and overrides it, `get type() { return
+'client-reference'; }`. The binding's trait marked its method
+`#[rust_js::getter]` and the impl marked its own, but each mark was
+dropped without a word: a method of a class's impl of the class it
+extends was always a method (`classes::member`), so the class printed
+`type() { return "client-reference"; }` and webpack read a function where
+its value was a string, a wrong answer (P0).
+
+**A method of the binding's class a class extends is a getter where the
+binding's trait marks it one**, as the class it binds has it (case N:
+JS reads the getter as webpack's own code does, and a Rust call of it,
+`dependency.r#type()`, is its read, `dependency.type`). The trait's mark
+says it; the impl's says it again, where its JS is `get type() { .. }`,
+and its `.d.ts` `get type(): string` (`classes/getters.rs`'
+`trait_getter`). Refused, each saying what to write, where a mark can't
+apply rather than dropped: the impl's method unmarked where the trait's
+is a getter, which would read as a method; an impl's mark where the
+trait's is a method, which a getter would hide; and the trait's mark of
+a method it binds, whose `link_name`, `get request`, says it's a getter
+of the class's own (`trait_getter_misuse`). A binding crate is rustc's
+alone (`bindings = true`), so what's refused of its trait is said where a
+program's impl of it is compiled.
+
+**A getter's read runs its body where Rust calls it**: a class's own
+getter's read, `position.leftDiagonal` (ADR 0761, amended), was taken for
+a field's, which nothing changes as a call runs, and moved past a call
+after it, so `format!("{} {}", p.g(), effect())` printed `effect`'s
+`println!` first. Each class getter's read is now one a getter answers
+(`Known::Getter`, as a binding's `get ..` is), kept in Rust's order (P0;
+case N).
+
+Rejected: the trait's mark alone, which leaves the impl's method reading
+as a method where its JS is a getter; the impl's alone, which a second
+impl, or the trait's own call, couldn't know of, and which would let a
+getter override what the binding says is a method.
+
+Held by `test/binding-subclasses.test.ts`, run in Node against a module
+of the base class, whose `type` is a getter of the prototype, read in
+Rust's order, and each refusal's message; `test/corpus/class_getters.rs`'s
+`Square`'s `announced_row`, read before `noted(7)` as native Rust does; and the
+mutations `subclass-getter-a-method`, `subclass-getter-misuse-unchecked`
+(`lower/classes.rs`), `trait-getter-unmarked-allowed`,
+`trait-getter-of-a-method-allowed`, `trait-getter-of-a-binding-allowed`
+(`lower/classes/getters.rs`), `subclass-getter-read-called`,
+`subclass-getter-read-moved` (`lower/traits/calls.rs`), `getter-read-moved`
+(`lower/mir/calls.rs`), `subclass-getter-declared-a-method`
+(`lower/declarations/functions.rs`) and `subclass-getter-printed-as-method`
+(`to_oxc/statements.rs`).

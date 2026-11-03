@@ -1153,4 +1153,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^thread_local_field_forwarders.rs$"],
     snapshots: true,
   },
+  {
+    name: "getter-read-moved",
+    breaks: "a class's getter's read is taken for a field's, moved past a call after it, so its body's `println!` comes after that call's (rd679)",
+    file: "src/lower/mir/calls.rs",
+    find: "                Expr::member(args.remove(0), name).answered_by_a_getter()\n",
+    replace: "                Expr::member(args.remove(0), name)\n",
+    tests: ["test/corpus.test.ts", "-t", "^class_getters.rs$"],
+  },
 ];

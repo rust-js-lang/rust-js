@@ -348,6 +348,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut values = values;
             let this = values.remove(0);
             let method = Expr::member(this, bindings::fn_name(self.tcx, id));
+            // A getter's, its read, `dependency.type`, which runs its
+            // body, as a call does (rd679).
+            if crate::lower::classes::extended_getter(self.tcx, id) {
+                return Ok(Some(method.answered_by_a_getter()));
+            }
             return Ok(Some(Expr::call(method, values)));
         }
         // `x.to_string()` is std's, as its `Display` shows it, or a generic

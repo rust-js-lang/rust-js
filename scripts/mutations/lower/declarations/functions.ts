@@ -238,4 +238,12 @@ export const mutations: Mutation[] = [
     replace: "            .into_iter()\n            .next()\n            .filter(|_| false)?;\n        Some(format!(\n",
     tests: ["test/declarations-ungiven.test.ts"],
   },
+  {
+    name: "subclass-getter-declared-a-method",
+    breaks: "a getter of the binding's class a class extends is declared a method, `type(): string`, where its JS is `get type()` (rd679)",
+    file: "src/lower/declarations/functions.rs",
+    find: "                let declared = match getter {\n",
+    replace: "                let declared = match false {\n",
+    tests: ["test/binding-subclasses.test.ts", "-t", "is its class's getter"],
+  },
 ];

@@ -387,18 +387,25 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 // its doc, not the trait's (rd331).
                 let declaring = given.filter(|_| extending).unwrap_or(item);
                 let function = self.function(declaring);
+                let name = crate::lower::bindings::fn_name(self.tcx, item);
+                // A getter, `get type(): string`, where the trait's is one (rd679).
+                let getter = given.and_then(|own| crate::lower::classes::member(self.tcx, own))
+                    == Some(crate::lower::classes::Member::Getter);
                 let mut params = function["params"].as_array().cloned().unwrap_or_default();
                 if !params.is_empty() {
                     params.remove(0);
                 }
-                let declared = json!({
-                    "kind": "method",
-                    "name": crate::lower::bindings::fn_name(self.tcx, item),
-                    "static": false,
-                    "typeParameters": function["typeParameters"],
-                    "params": params,
-                    "returns": function["returns"],
-                });
+                let declared = match getter {
+                    true => json!({ "kind": "getter", "name": name, "returns": function["returns"] }),
+                    false => json!({
+                        "kind": "method",
+                        "name": name,
+                        "static": false,
+                        "typeParameters": function["typeParameters"],
+                        "params": params,
+                        "returns": function["returns"],
+                    }),
+                };
                 members.push(documented(declared, self.tcx, declaring));
             }
         }

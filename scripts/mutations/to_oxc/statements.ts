@@ -410,4 +410,12 @@ export const mutations: Mutation[] = [
     replace: "        let id = match c.fields.is_empty() || true {\n",
     tests: ["test/namespace-values.test.ts", "-t", "fields are its module's exports"],
   },
+  {
+    name: "subclass-getter-printed-as-method",
+    breaks: "a getter of an ES class, one that extends a binding's, is printed as a method, `type() { .. }` (rd679)",
+    file: "src/to_oxc/statements.rs",
+    find: "                false if class.getters.contains(&f.name) => (MethodDefinitionKind::Get, f.name.as_str(), false),\n",
+    replace: "                false if false => (MethodDefinitionKind::Get, f.name.as_str(), false),\n",
+    tests: ["test/binding-subclasses.test.ts", "-t", "is its class's getter"],
+  },
 ];
