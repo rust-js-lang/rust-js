@@ -291,8 +291,12 @@ test("rust-js build builds a workspace's members at once, or the packages named,
   const dir = fixture("crates-whole-workspace");
   writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["app", "user", "other"]\nresolver = "2"\n');
   writeFileSync(join(dir, "package.json"), '{ "private": true, "type": "module" }\n');
-  const counts = "use std::rc::Rc;\n\npub fn count() -> usize {\n    let a = Rc::new(5);\n    let b = Rc::clone(&a);\n    *b + Rc::strong_count(&a)\n}\n";
-  const shapes = "pub trait Shape {\n    fn area(&self) -> u32;\n}\n\npub struct Square(pub u32);\n\nimpl Shape for Square {\n    fn area(&self) -> u32 {\n        self.0 * self.0\n    }\n}\n\npub fn main() {\n    let shape: Box<dyn Shape> = Box::new(Square(2));\n    println!(\"{}\", shape.area() as usize + app::count());\n}\n";
+  // `app`'s options, which `user` and `other` build and `app` reads, as
+  // react-dom's `createRoot` reads its options: how it reads each field, a
+  // place or a getter's, `null` or a value, is `app`'s own (#579).
+  const options = "\npub struct Options {\n    pub prefix: Option<String>,\n    pub on_error: Option<fn() -> u32>,\n}\n\npub fn configure(options: Option<&Options>) -> String {\n    let mut prefix = String::new();\n    if let Some(options) = options {\n        if let Some(given) = &options.prefix {\n            prefix = given.clone();\n        }\n        if let Some(on_error) = options.on_error {\n            prefix.push_str(&on_error().to_string());\n        }\n    }\n    prefix\n}\n";
+  const counts = "use std::rc::Rc;\n\npub fn count() -> usize {\n    let a = Rc::new(5);\n    let b = Rc::clone(&a);\n    *b + Rc::strong_count(&a)\n}\n" + options;
+  const shapes = "pub trait Shape {\n    fn area(&self) -> u32;\n}\n\npub struct Square(pub u32);\n\nimpl Shape for Square {\n    fn area(&self) -> u32 {\n        self.0 * self.0\n    }\n}\n\nfn code() -> u32 {\n    7\n}\n\npub fn main() {\n    let shape: Box<dyn Shape> = Box::new(Square(2));\n    println!(\"{}\", shape.area() as usize + app::count());\n    let options = app::Options { prefix: Some(\"p\".to_string()), on_error: Some(code) };\n    println!(\"{}\", app::configure(Some(&options)));\n}\n";
   for (const [name, uses, source] of [["app", "", counts], ["user", 'app = { path = "../app" }\n', shapes], ["other", 'app = { path = "../app" }\n', shapes]]) {
     mkdirSync(join(dir, name, "src"), { recursive: true });
     writeFileSync(join(dir, name, "Cargo.toml"), `[package]\nname = "${name}"\nversion = "0.1.0"\nedition = "2024"\n\n[dependencies]\n${uses}`);
@@ -323,6 +327,11 @@ test("rust-js build builds a workspace's members at once, or the packages named,
   // object drops nothing; `app`, which both use, is a library (ADR 0360).
   expect(["user", "other", "app"].map((name) => alone.get(`${name}/src/lib.js`)!.includes("$drop?."))).toEqual([false, false, false]);
   expect(alone.get("app/src/lib.js")).toContain("strong: 1");
+  // `app` built alone, with no crate that uses it, is the same library.
+  build("--package", "app");
+  const library = written();
+  expect([...library.keys()]).toEqual(["app/src/lib.d.ts", "app/src/lib.js", "app/src/lib.js.map"]);
+  expect([...library].map(([file, text]) => text === alone.get(file))).toEqual([true, true, true]);
   build();
   expect(written()).toEqual(alone);
   build("--package", "user", "--package", "other");
