@@ -3,6 +3,32 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "shadow-ended-way-runs-on",
+    breaks: "what a way that ends runs, `if (callServer$1 == null) { throw new Error(..); }`, is taken to run before what follows it, so React's Parcel client keeps `const callServer$1 = callServer;` (rd646)",
+    file: "src/prepare/shadows.rs",
+    find: "    match (ends(a), ends(b)) {\n        (true, false) => in_b,\n",
+    replace: "    match (ends(a), ends(b)) {\n        (true, false) => in_a || in_b,\n",
+    tests: ["test/corpus.test.ts", "-t", "^copy_read_past_an_exit.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "shadow-way-going-on-runs-nothing",
+    breaks: "an `if` one of whose ways ends is taken to run nothing for what follows, so a copy read past the other way, which set the variable, is the variable, the new callback's answer (rd646)",
+    file: "src/prepare/shadows.rs",
+    find: "        (false, true) => in_a,\n",
+    replace: "        (false, true) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^copy_read_past_an_exit.rs$"],
+  },
+  {
+    name: "shadow-ended-way-sets-on",
+    breaks: "a set of the variable in a way that ends, `if (clear) { callServer = undefined; return 1; }`, is taken to be before what follows it, which keeps its copy (rd646)",
+    file: "src/prepare/shadows.rs",
+    find: "                *set = after_ways(a, b, *set, other);\n",
+    replace: "                *set |= other;\n",
+    tests: ["test/corpus.test.ts", "-t", "^copy_read_past_an_exit.rs$"],
+    snapshots: true,
+  },
+  {
     name: "shadow-receiver-read-after-getter",
     breaks: "a copy of a module's variable read as a property's object is taken to be read after the property's getter, so `activeElement.detachEvent(..)` keeps `const activeElement$1 = activeElement;` (rd146)",
     file: "src/prepare/shadows.rs",

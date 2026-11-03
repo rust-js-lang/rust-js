@@ -135,9 +135,9 @@ fn read_before_set(stmts: &[Stmt], alias: &str, of: &str, set: &mut bool) -> boo
             StmtKind::If(test, a, b) => {
                 let first = !*set || !test.mentions_var(alias);
                 let mut other = *set;
-                let ok = read_before_set(a, alias, of, set)
-                    && read_before_set(b.as_deref().unwrap_or(&[]), alias, of, &mut other);
-                *set |= other;
+                let b = b.as_deref().unwrap_or(&[]);
+                let ok = read_before_set(a, alias, of, set) && read_before_set(b, alias, of, &mut other);
+                *set = after_ways(a, b, *set, other);
                 first && ok
             }
             StmtKind::Switch {
@@ -172,6 +172,20 @@ fn read_before_set(stmts: &[Stmt], alias: &str, of: &str, set: &mut bool) -> boo
         }
     }
     true
+}
+
+/// What an `if` whose ways are `a` and `b` leaves for what follows it of
+/// what each way did, `in_a` and `in_b`, whether it ran code or set the
+/// variable: only the way that goes on reaches it, as one that ends, `if
+/// (callServer$1 == null) { throw new Error(..); }`, leaves the list,
+/// whatever it did (rd646, ADR 0277, amended).
+fn after_ways(a: &[Stmt], b: &[Stmt], in_a: bool, in_b: bool) -> bool {
+    let ends = |way: &[Stmt]| way.last().is_some_and(js::ends);
+    match (ends(a), ends(b)) {
+        (true, false) => in_b,
+        (false, true) => in_a,
+        _ => in_a || in_b,
+    }
 }
 
 /// The statements after `const alias = ..` in the list that has it.
@@ -220,9 +234,9 @@ fn read_before_code(stmts: &[Stmt], alias: &str, ran: &mut bool) -> bool {
             StmtKind::If(test, a, b) => {
                 let first = read_first(test, alias, ran);
                 let mut other = *ran;
-                let ok =
-                    read_before_code(a, alias, ran) && read_before_code(b.as_deref().unwrap_or(&[]), alias, &mut other);
-                *ran |= other;
+                let b = b.as_deref().unwrap_or(&[]);
+                let ok = read_before_code(a, alias, ran) && read_before_code(b, alias, &mut other);
+                *ran = after_ways(a, b, *ran, other);
                 first && ok
             }
             // A `try`'s `catch` or `finally` runs after any of its block,

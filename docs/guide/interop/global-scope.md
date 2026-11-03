@@ -966,6 +966,14 @@ export function last() {
   ..; TEXT.set(Some(text.clone())); text` is `if (text) { return text; }
   text = ..; return text;`, where nothing that may set it runs before a
   read ([ADR 0277](../../decisions/0277-shadow-aliases.md), amended).
+- **A `let` named as it, of what it holds, is the variable where nothing
+  that may set it runs before the `let`'s reads**: `let Some(call_server)
+  = CALL_SERVER.get() else { panic!(..) }; call_server(id)` is `if
+  (callServer == null) { throw new Error(..); } return callServer(id);`,
+  as the `else`, which ends, runs nothing the call after it sees. One read
+  past a call that may set it, or a way that sets it and goes on, stays a
+  copy, `const callServer$1 = callServer;`
+  ([ADR 0277](../../decisions/0277-shadow-aliases.md), amended).
 - **A `with_borrow` closure that may borrow the cell again keeps the cell**,
   borrowed while the closure runs, so a second `borrow_mut()` panics as
   std's does. What a closure, or a function given to `with_borrow`, may

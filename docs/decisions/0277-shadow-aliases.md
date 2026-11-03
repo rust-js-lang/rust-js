@@ -2,7 +2,8 @@
 
 Status: Accepted. Amended: another's variable only where nothing runs
 before it's read (below); and past a `try`'s start and a binding's call
-that runs nothing (below); and set after its last read, in a loop too (below).
+that runs nothing (below); and set after its last read, in a loop too (below);
+and past a way that ends (below).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -295,3 +296,46 @@ Rust; the mutations `outside-shadows-own-declaration-not-apart`,
 `shadow-renamed-in-closure-own` (`prepare/shadows.ts`). `written_back`
 renames as `shadows` did; no program yet gives a closure an own name
 that its `let n$1 = n;` is, and none is set apart there.
+
+## Amendment: a way that ends runs nothing what follows sees (rd646)
+
+React's Parcel client tests its registered callback and calls it:
+
+```js
+function callCurrentServerCallback(id, args) {
+  if (!callServer) {
+    throw new Error('No server callback has been registered. ..');
+  }
+  return callServer(id, args);
+}
+```
+
+Its port, `let Some(call_server) = CALL_SERVER.get() else { panic!(..) };
+call_server(id, args)`, printed `const callServer$1 = callServer; if
+(callServer$1 == null) { throw new Error(..); } return
+callServer$1(id, args);`. The copy's last read came after the `if`, whose
+`then` makes an `Error`, a `new` that may run code, and `read_before_code`
+took what either way of an `if` ran for what ran before the statement
+after it.
+
+**What follows an `if` sees only the way that goes on** (`after_ways`): a
+way that ends, by a `return`, a `throw`, a `break` or `continue`, or a
+call that never returns (`js::ends`), leaves the list the copy is
+declared in, so nothing it runs, or sets, comes before a read after the
+`if`. Both `read_before_code`, of what may run code, and `read_before_set`,
+of what sets the variable, ask it. So `if (callServer == null) { throw
+new Error(..); } return callServer(id, args);`, as upstream writes it.
+A copy read past the way that goes on, where that way runs code or sets
+the variable, stays one: `if (reset) { setServerCallback(double); } else
+{ return callServer$1(id) + 1; } return callServer$1(id);`, which reads
+the callback the copy holds.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The copy and the
+variable hold one value wherever the copy is read, as nothing that runs
+between them is on that read's way. Held by the corpus case
+`copy_read_past_an_exit.rs`, run against native Rust: the Parcel client's
+throw, a `return` after a set of the variable in a way that ends, a set
+between, a call that sets it between, and a way that sets it while the
+other ends; the mutations `shadow-ended-way-runs-on`,
+`shadow-way-going-on-runs-nothing` and `shadow-ended-way-sets-on`
+(`prepare/shadows.ts`).
