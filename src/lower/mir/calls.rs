@@ -727,11 +727,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// Whether a variable holding the crate's function `def_id`, of `count`
-    /// parameters, is called as that variable: one given no dictionaries,
-    /// boxes or rest arguments (ADR 0664). And `js::SymbolFor`, which is
-    /// `Symbol.for` (ADR 0964).
+    /// Whether a variable holding the function `def_id`, of `count`
+    /// parameters, is called as that variable: a binding's JS function or
+    /// getter; the crate's given no dictionaries, boxes or rest arguments
+    /// (ADR 0664). And `js::SymbolFor`, which is `Symbol.for` (ADR 0964).
     pub(super) fn called_as_held(&self, def_id: rustc_span::def_id::DefId, count: usize) -> bool {
+        // A binding's: a JS function, or a getter's, which holds its read,
+        // `() => m.version` (#581).
+        if crate::lower::bindings::is_binding(self.tcx, def_id) {
+            return !crate::lower::bindings::is_method(self.tcx, def_id)
+                && matches!(
+                    crate::lower::bindings::js_form(self.tcx, def_id),
+                    crate::lower::bindings::JsForm::Call(_) | crate::lower::bindings::JsForm::Get(_)
+                );
+        }
         if crate::lower::recognition::is_symbol_for_constructor(self.tcx, def_id) {
             return true;
         }

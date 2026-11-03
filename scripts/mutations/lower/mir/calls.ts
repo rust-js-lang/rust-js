@@ -1170,4 +1170,13 @@ export const mutations: Mutation[] = [
     replace: "                    facts: js::Facts::NONE,\n                    ..Expr::call(\n                        Expr::member(receiver,",
     tests: ["test/lowering-forwarding.test.ts", "-t", "a private thread-local of a namespace read only for its methods is taken apart once"],
   },
+  {
+    name: "held-getter-read-as-import",
+    breaks:
+      "a getter's function a variable holds, `js::import!(version).await`'s, is called as the getter, read through an import nothing made, which panics rustc (#581)",
+    file: "src/lower/mir/calls.rs",
+    find: "                    crate::lower::bindings::JsForm::Call(_) | crate::lower::bindings::JsForm::Get(_)\n",
+    replace: "                    crate::lower::bindings::JsForm::Call(_)\n",
+    tests: ["test/bindings.test.ts", "-t", "js::import! of a getter reads its export"],
+  },
 ];

@@ -2,7 +2,8 @@
 
 Status: Accepted. Amends [0028](0028-js-module-imports.md), which left
 dynamic `import()` for later. Amended (2026-11-02): a specifier known as
-the program runs is `js::import_specifier(specifier)` (rd607).
+the program runs is `js::import_specifier(specifier)` (rd607). Amended
+(2026-11-04): a getter's is its read off the module (#581).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -80,3 +81,33 @@ specifier known as the program runs"): `return import(specifier);` and
 `await import(base + file)`, run, a module's export read and a missing
 one rejected. A binding's signature has no mutation: the test doesn't
 compile without it.
+
+## Amendment: a getter's is its read off the module (#581)
+
+`js::import!(version)` of a getter binding, `get ./dialog.js#version`,
+panicked rustc: what it gave, `m => m.version`, was the export's value,
+and a call of it, `v()`, was lowered as the getter's own read, through a
+static import nothing made. Of the module's namespace, `get
+./dialog.js#*`, the read was a static `import * as`, so the module loaded
+with this one, and `{ "*": d }` read a property no module has.
+
+**`js::import!` of a getter is a promise of its read off the module,
+`import("./dialog.js").then((m) => () => m.version)`, as the getter is as
+a value, `() => version`; a call of what it gives calls that function.
+Of the namespace, it's the module itself, `() => m`.**
+
+- **Its export's value isn't the getter**: each call of a getter reads
+  the export again, as an ES module's live binding changes, `export let
+  version` after `version += 1`; a value read once wouldn't (case C,
+  [0262](0262-when-rust-and-js-disagree.md): results change).
+- **One form for a function a variable holds**: a getter held, `let v =
+  version`, is `const v = () => version`, as a function binding held is
+  `const t = (x) => twice(x)`, and a call of either is `v()`.
+- A path past the export, `get ./x.js#a.b`, is read past it, `() =>
+  m.a.b`.
+
+Held by `test/bindings.test.ts` ("js::import! of a getter reads its export
+when it's called"): a live export read before and after the module bumps
+it, `[1, 2]`, the namespace the module itself, and no static import.
+Mutations `held-getter-read-as-import`, `imported-getter-read-once` and
+`imported-namespace-a-property`.

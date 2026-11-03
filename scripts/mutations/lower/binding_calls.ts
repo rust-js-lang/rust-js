@@ -966,4 +966,22 @@ export const mutations: Mutation[] = [
     replace: "                    && let Some(adt) = super::classes::es_classes(self.tcx).into_iter().find(|_| false)\n",
     tests: ["test/es-classes.test.ts", "-t", "what an ES class is refused"],
   },
+  {
+    name: "imported-getter-read-once",
+    breaks:
+      "`js::import!` of a getter gives its export's value, `m.version`, which a call of it, `v()`, then calls, a number, and throws (#581)",
+    file: "src/lower/binding_calls.rs",
+    find: "        let value = match getter {\n",
+    replace: "        let value = match false {\n",
+    tests: ["test/bindings.test.ts", "-t", "js::import! of a getter reads its export"],
+  },
+  {
+    name: "imported-namespace-a-property",
+    breaks:
+      "`js::import!` of a namespace's getter, `get ./dialog.js#*`, reads the module's property `\"*\"`, `undefined`, not the module (#581)",
+    file: "src/lower/binding_calls.rs",
+    find: "                let export = match export == js::NAMESPACE {\n",
+    replace: "                let export = match false {\n",
+    tests: ["test/bindings.test.ts", "-t", "js::import! of a getter reads its export"],
+  },
 ];

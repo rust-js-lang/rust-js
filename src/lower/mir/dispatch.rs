@@ -111,16 +111,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Value::Expr(Expr::object(props)));
         }
         // A function a variable holds, `js::import!(f).await`'s: called as
-        // that variable, which may be all that holds it, not as its import.
-        // One a JS function, or the crate's that JS calls as it is
-        // (`called_as_held`).
-        let called_as_js = match bindings::is_binding(self.tcx, def_id) {
-            true => {
-                !crate::lower::bindings::is_method(self.tcx, def_id)
-                    && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::Call(_))
-            }
-            false => self.called_as_held(def_id, args.len()),
-        };
+        // that variable, which may be all that holds it (`called_as_held`).
+        let called_as_js = self.called_as_held(def_id, args.len());
         if let Operand::Copy(_) | Operand::Move(_) = func
             && called_as_js
         {

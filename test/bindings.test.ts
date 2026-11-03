@@ -808,6 +808,49 @@ pub async fn rooted() -> u32 {
   expect([await lib.linted(1), await lib.doubled(3), await lib.named(2), await lib.rooted()]).toEqual([2, 6, 3, 7]);
 });
 
+// #581 (ADR 0304, amended): `js::import!` of a getter binding is a promise
+// of its read off the module, `() => m.version`, as the getter is as a
+// value, `() => version`: each call reads the export again, as an ES
+// module's live binding is, and its namespace's, `get ./dialog.js#*`, is the
+// module itself. Neither is imported statically, nor panics rustc.
+test("js::import! of a getter reads its export when it's called", async () => {
+  const dir = fixture("dynamic-import-getter");
+  writeFileSync(join(dir, "dialog.js"), "export let version = 1;\nexport function bump() {\n  version += 1;\n}\n");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "get ./dialog.js#version")]
+fn version() -> f64 {
+    unreachable!()
+}
+#[cfg_attr(rust_js, rust_js::link_name = "get ./dialog.js#*")]
+fn dialog() -> &'static js::Unknown {
+    unreachable!()
+}
+#[cfg_attr(rust_js, rust_js::link_name = "./dialog.js#bump")]
+fn bump() {
+    unreachable!()
+}
+pub async fn versions() -> (f64, f64) {
+    let v = js::import!(version).await;
+    let before = v();
+    let bump = js::import!(bump).await;
+    bump();
+    (before, v())
+}
+pub async fn loaded() -> &'static js::Unknown {
+    let d = js::import!(dialog).await;
+    d()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('const v = await import("./dialog.js").then((m) => () => m.version);');
+  expect(js).toContain('const d = await import("./dialog.js").then((m) => () => m);\n  return d();');
+  expect(js).not.toMatch(/^import /m);
+  const lib = await import(join(dir, "lib.js"));
+  const dialog = await import(join(dir, "dialog.js"));
+  expect(await lib.versions()).toEqual([1, 2]);
+  expect(await lib.loaded()).toBe(dialog);
+});
+
 // ADR 0307: a trait's method that's a binding is read of the value itself,
 // as react.dev's useSandpackLint reads `error.ruleId` of ESLint's errors and
 // CodeMirror's diagnostics alike: generic code takes no dictionary, and an

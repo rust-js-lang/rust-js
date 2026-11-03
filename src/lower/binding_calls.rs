@@ -494,7 +494,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `js::import!(f)` of the function `id`: its module's export, a
-    /// binding's or the crate's, imported when it's run, or the module.
+    /// binding's or the crate's, imported when it's run, or the module. A
+    /// getter's is its read off the module, `() => m.version`, as the
+    /// getter is as a value, `() => version`, which a call of it reads
+    /// again; of its namespace, `get ./dialog.js#*`, the module itself
+    /// (#581).
     pub(super) fn dynamic_import_of(&mut self, id: DefId, module: bool, span: Span) -> R<Expr> {
         let tcx = self.tcx;
         // What holds it is called with its slice whole, where it takes
@@ -502,10 +506,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.takes_rest(id) {
             return Err(self.unsupported(span, "importing a function whose last parameter is `#[rust_js::rest]`"));
         }
-        let (from, export) = if is_binding(tcx, id) {
+        let getter = is_binding(tcx, id)
+            && !super::bindings::is_method(tcx, id)
+            && matches!(super::bindings::js_form(tcx, id), super::bindings::JsForm::Get(_));
+        let (from, export, rest) = if is_binding(tcx, id) {
             let path = super::bindings::js_path(tcx, id).unwrap_or_default();
             match super::bindings::js_import(&path) {
-                Some(((from, export), "")) => (js::ImportFrom::Specifier(from), export),
+                Some(((from, export), rest)) if rest.is_empty() || getter => {
+                    (js::ImportFrom::Specifier(from), export, rest.to_string())
+                }
                 _ => return Err(self.unsupported(span, "importing a binding that isn't a JS module's export")),
             }
         } else if let Some(info) = id.as_local().and(self.krate.fns.get(&id))
@@ -513,7 +522,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && tcx.visibility(id).is_public()
         {
             let export = super::default_exports::exported_as(tcx, id, info.exported());
-            (js::ImportFrom::Module(super::module_path(tcx, info.module)), export)
+            (
+                js::ImportFrom::Module(super::module_path(tcx, info.module)),
+                export,
+                String::new(),
+            )
         } else {
             return Err(self.unsupported(
                 span,
@@ -527,9 +540,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::import(from));
         }
         let m = "m".to_string();
+        let value = match getter {
+            true => {
+                let export = match export == js::NAMESPACE {
+                    true => Expr::var(&m),
+                    false => Expr::member(Expr::var(&m), export),
+                };
+                let read = super::bindings::read_path(export, &rest);
+                Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(read)).at(js::Span::NONE)])
+            }
+            false => Expr::member(Expr::var(&m), export),
+        };
         let read = Expr::arrow(
             vec![m.clone().into()],
-            vec![StmtKind::Return(Some(Expr::member(Expr::var(&m), export))).at(js::Span::NONE)],
+            vec![StmtKind::Return(Some(value)).at(js::Span::NONE)],
         );
         Ok(Expr::call(Expr::member(Expr::import(from), "then"), vec![read]))
     }

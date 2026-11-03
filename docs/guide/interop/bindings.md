@@ -355,7 +355,11 @@ export function initial() {
 - **`js::import!(f)` loads a binding's module when it's asked for**:
   `js::import!(highlight).await` is `const { highlight } = await
   import("./highlight.js")`, and nothing imports it statically
-  ([ADR 0304](../../decisions/0304-dynamic-import.md)).
+  ([ADR 0304](../../decisions/0304-dynamic-import.md)). A getter's,
+  `get ./dialog.js#version`, is its read off the module, `() =>
+  m.version`, which each call reads again; its namespace's, `#*`, the
+  module itself
+  ([ADR 0304, amended](../../decisions/0304-dynamic-import.md#amendment-a-getters-is-its-read-off-the-module-581)).
 - **`#[rust_js::require]` reads it through `require(module)`**, where a
   module must be read that way, an ESLint plugin's
   ([ADR 0305](../../decisions/0305-require.md)). Its module's namespace,
