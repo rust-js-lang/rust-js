@@ -376,8 +376,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what follows any `if` is what its `else` shows, so `items[0]` after `if items.is_empty() { n = 1; }` reads `undefined`",
     file: "src/lower/body_queries/ranges.rs",
-    find: "                *known = either(yes, no);",
-    replace: "                *known = no;",
+    find: "                *known = either(yes, no);\n                value.or_else(top)",
+    replace: "                *known = no;\n                value.or_else(top)",
     tests: [
       "test/lowering-numbers.test.ts",
       "-t",

@@ -29,8 +29,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`m[k]` of a map of values that could look like `None` takes a stored `None` for a missing key, and panics (#311)",
     file: "src/lower/std_types/map.rs",
-    find: "            MapOp::Index if types.get(1).is_some_and(|&value| self.boxed_payload(value)) => {\n",
-    replace: "            MapOp::Index if false => {\n",
+    find: "            MapOp::Index { .. } if types.get(1).is_some_and(|&value| self.boxed_payload(value)) => {\n",
+    replace: "            MapOp::Index { .. } if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_index_of_options.rs$"],
   },
   {
