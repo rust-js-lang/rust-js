@@ -40,9 +40,7 @@ export function useRoute() {
   useEffect(() => {
     const controller = new AbortController();
     // It's removed when the effect is cleaned up: its signal aborts.
-    const options = {
-      signal: controller.signal,
-    };
+    const options = { signal: controller.signal };
     window.addEventListener("hashchange", () => setCurrent(hash()), options);
     return () => controller.abort();
   }, []);

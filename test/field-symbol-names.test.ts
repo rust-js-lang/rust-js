@@ -97,7 +97,7 @@ pub fn moved(reason: &mut ModelReason, to: &str) {
 `,
   );
   expect(js).toContain("const RESPONSE_SYMBOL = Symbol();");
-  expect(js).toContain("    [RESPONSE_SYMBOL]: {\n      prefix,\n    },\n");
+  expect(js).toContain("    [RESPONSE_SYMBOL]: { prefix },\n");
   expect(js).toContain("return reason[RESPONSE_SYMBOL].prefix;");
   expect(js).toContain("reason[RESPONSE_SYMBOL] = { prefix: to };");
   // Nothing of the use rustc sees: it writes no JS.

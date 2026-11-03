@@ -673,7 +673,7 @@ fn InlineTocItem(InlineTocItemProps { items }: InlineTocItemProps) -> JSX::Eleme
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   // Across lines, as its literal is, and react.dev's (ADR 0835).
-  expect(jsx).toContain("const root = {\n    children: [],\n  };");
+  expect(jsx).toContain("const root = { children: [] };");
   expect(jsx).toContain("currentParent.children.push(node);");
   expect(jsx).toContain("root.children.length < 2");
   expect(jsx).not.toContain("$borrow");

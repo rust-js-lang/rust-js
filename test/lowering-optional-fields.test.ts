@@ -69,7 +69,7 @@ pub fn named(deletion: &Deletion) -> bool {
   expect(js).toContain("filtered.push({\n      name: abort.name,\n      label: abort.label,\n      endTime,\n    });");
   expect(js).toContain("deletion.name = abort.name;\n  deletion.label = abort.label;");
   // A nullable field that isn't optional is `null` or a value: what may be absent is `?? null`.
-  expect(js).toContain("name: abort.name ?? null,");
+  expect(js).toContain("{ name: abort.name ?? null }");
   const lib = await import(join(dir, "lib.js"));
   const aborts = [{ reason: 0 }, { reason: 1, name: null, label: null }, { reason: 2, name: "a", label: "b" }];
   const deletions = lib.deletions(aborts, 5);

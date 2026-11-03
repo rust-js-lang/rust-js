@@ -78,8 +78,8 @@ pub fn labelled() -> bool {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export const cacheContext = { value: null, count: 0 };\n");
   expect(js).toContain("export const numbers = { value: 1, count: 0 };\n");
-  expect(js).toContain("export const PLAIN = {\n  label: null,\n};\n");
-  expect(js).toContain("export const SLOT = {\n  items: null,\n};\n");
+  expect(js).toContain("export const PLAIN = { label: null };\n");
+  expect(js).toContain("export const SLOT = { items: null };\n");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.cacheContext).toEqual({ value: null, count: 0 });
   expect(lib.PLAIN.label).toBeNull();

@@ -59,9 +59,7 @@ async function call(url, init, ok) {
 }
 
 function get(signal) {
-  return {
-    signal,
-  };
+  return { signal };
 }
 
 /** The contacts matching `query`. */

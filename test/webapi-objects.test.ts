@@ -175,7 +175,7 @@ pub fn cancelled() -> bool {
         controller.enqueue(chunk);
         controller.close();
       },`);
-  expect(js).toContain("{\n      highWaterMark: 0,\n    },");
+  expect(js).toContain("    { highWaterMark: 0 },\n");
   const lib = await import(join(dir, "lib.js"));
   const reader = lib.bytes(new Uint8Array([1, 2, 3])).getReader();
   const read = await reader.read();

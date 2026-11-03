@@ -969,7 +969,7 @@ test("next build builds a Next.js app whose routes and components are Rust, rust
   // A page of getServerSideProps, and an API route, each the request's.
   expect([output.includes("ƒ /agent"), output.includes("ƒ /api/greet")]).toEqual([true, true]);
   const codeJsx = readFileSync(join(dir, "pages/codes/[code].jsx"), "utf8");
-  expect(codeJsx).toContain('return {\n        redirect: { permanent: false, destination: "/codes/1" },\n      };');
+  expect(codeJsx).toContain('return { redirect: { permanent: false, destination: "/codes/1" } };');
   expect(codeJsx).toContain("revalidate: 60 };");
   expect(readFileSync(join(dir, "pages/api/greet.js"), "utf8")).toContain("res.status(200).json({ hello, method: req.method ?? \"\" });");
   // The Pages Router's page, built for each path but the one not found.
