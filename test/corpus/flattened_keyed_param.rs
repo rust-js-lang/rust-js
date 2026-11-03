@@ -3,7 +3,9 @@
 // flattened into it, as alien-signals' system.ts knows only the
 // `ReactiveNode` each of index.ts's nodes extends (#504): the graph makes
 // and links nodes of any kind, and the caller's enum, told by its keys,
-// is each node's own, `'getter' in node`, matched where it's given.
+// is each node's own, `'getter' in node`, matched where it's given. A
+// struct given for the kind is flattened as any struct is (ADR 0204), as
+// React's `DetailedHTMLProps<AnchorHTMLAttributes<'_>, ..>` is.
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
@@ -86,6 +88,21 @@ fn update(node: &graph::Node<Kind>, input: i32) -> String {
     }
 }
 
+struct Label {
+    text: String,
+    width: Cell<u32>,
+}
+
+fn label(flags: i32, text: &str, width: u32) -> Rc<graph::Node<Label>> {
+    graph::node(
+        flags,
+        Label {
+            text: text.to_string(),
+            width: Cell::new(width),
+        },
+    )
+}
+
 fn triple(n: i32) -> i32 {
     n * 3
 }
@@ -105,4 +122,11 @@ fn main() {
         println!("{} {}", sub.flags.get(), update(sub, 1));
     });
     println!("{}", update(&derived, 7));
+    let total = label(8, "total", 5);
+    graph::link(&total, &label(1, "sub", 3));
+    graph::each_sub(&total, |sub| {
+        sub.kind.width.set(sub.kind.width.get() + total.kind.width.get());
+        println!("{} {} {}", sub.flags.get(), sub.kind.text, sub.kind.width.get());
+    });
+    println!("{} {}", total.kind.text, total.flags.get());
 }

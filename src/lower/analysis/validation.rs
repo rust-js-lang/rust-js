@@ -246,6 +246,12 @@ pub(super) fn reject_flatten_misuse<'tcx>(
     // but neither taken apart nor read through, as JS's object has their
     // keys mixed.
     let mut mixed = HashSet::new();
+    // A struct of named fields, not std's, which is the object it is; or a
+    // JS object, a `Dict` whose keys spread.
+    let std = |adt: ty::AdtDef<'_>| crate::lower::recognition::is_std_crate(tcx, adt.did());
+    let plain = |adt: ty::AdtDef<'tcx>, args| {
+        adt.is_struct() && adt.non_enum_variant().ctor.is_none() && !std(adt) || marks_js_object(tcx, adt, args)
+    };
     for id in tcx.hir_crate_items(()).definitions() {
         // An enum's variant's, which nothing makes flat: it'd be nested.
         if tcx.def_kind(id) == DefKind::Enum {
@@ -273,22 +279,17 @@ pub(super) fn reject_flatten_misuse<'tcx>(
         }
         for field in parent.fields.iter().filter(|f| bindings::is_flatten(tcx, f)) {
             let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
-            // A struct, or a reference to one, which is the object it is; or a
-            // JS object, a `Dict` whose keys spread.
-            // Or a `RefCell` of a discriminated union, the parent's own
-            // tag and fields (rd380, ADR 1044); no other cell, which a
-            // struct of named fields of std's is not.
-            let std = |adt: ty::AdtDef<'_>| crate::lower::recognition::is_std_crate(tcx, adt.did());
+            // A struct or a JS object (`plain`), or a reference to one. Or a
+            // `RefCell` of a discriminated union, the parent's own tag and
+            // fields (rd380, ADR 1044); no other cell, which a struct of
+            // named fields of std's is not.
             // Or an enum told by its keys, its variants' fields the
             // parent's (#504), or a type parameter, given one.
             let object = match ty.peel_refs().kind() {
                 _ if bindings::flattened_state(tcx, ty).is_some() => true,
                 ty::Adt(adt, _) if adt.is_enum() => flattened.keyed.contains(&adt.did()),
                 ty::Param(_) => !ty.is_ref(),
-                ty::Adt(adt, args) => {
-                    adt.is_struct() && adt.non_enum_variant().ctor.is_none() && !std(*adt)
-                        || marks_js_object(tcx, *adt, args)
-                }
+                ty::Adt(adt, args) => plain(*adt, args),
                 _ => false,
             };
             if !object {
@@ -331,6 +332,9 @@ pub(super) fn reject_flatten_misuse<'tcx>(
                             None => continue,
                         }
                     }
+                    // A struct or a JS object, flattened as a field of one is
+                    // (ADR 0204).
+                    ty::Adt(adt, args) if plain(*adt, args) => continue,
                     _ => "a flattened type parameter is given an enum each of whose variants has a field no other has, one at most none".into(),
                 };
                 refuse(

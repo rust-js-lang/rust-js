@@ -371,6 +371,14 @@ export const mutations: Mutation[] = [
     tests: ["test/flattened-keyed.test.ts", "-t", "no key tells"],
   },
   {
+    name: "keyed-param-given-a-struct-refused",
+    breaks: "a struct's flattened type parameter given a struct is refused as one given an enum no key tells, so React's DetailedHTMLProps<AnchorHTMLAttributes, ..> is (#504's regression)",
+    file: "src/lower/analysis/validation.rs",
+    find: "                    ty::Adt(adt, args) if plain(*adt, args) => continue,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_param.rs$"],
+  },
+  {
     name: "keyed-placed-refused",
     breaks: "a flattened keyed enum matched where it's a place, or written whole, is refused as one read whole (#504)",
     file: "src/lower/analysis/validation.rs",

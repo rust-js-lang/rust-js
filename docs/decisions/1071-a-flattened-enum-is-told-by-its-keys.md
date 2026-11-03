@@ -5,7 +5,8 @@ tag by key). Extends [0204](0204-flattened-props.md), whose flattened
 field is a struct of named fields, and
 [1044](1044-a-flattened-state-is-its-classs-own-keys.md), whose is a
 `RefCell` of a discriminated union, to an enum with no tag, and to a type
-parameter given one.
+parameter given one. Amended (2026-11-03): a type parameter given a
+struct is flattened as before.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, no observable
 difference. Each value of the enum the program makes has its variant's
@@ -111,8 +112,9 @@ Refused:
   variants without fields or because a variant's every key is another
   variant's too;
 - a key that the parent also has as a field of its own;
-- a flattened type parameter given anything but such an enum, or another
-  type parameter;
+- a flattened type parameter given anything but such an enum, a struct
+  of named fields or a JS object (as a flattened field may be, ADR 0204),
+  or another type parameter;
 - the field moved out, or lent `&mut` whole, since it's no object of its
   own.
 
@@ -169,3 +171,22 @@ for representation, validation, construction, writes and declarations.
 - `representation.rs`'s writer of rustc's values, `const_js`, moved to
   `representation/consts.rs` with its mutations, to keep the file under
   the cap.
+
+## Amended (2026-11-03): a type parameter given a struct
+
+A regression of this decision (P1, a port blocked): a flattened type
+parameter given anything but a keyed enum or another type parameter was
+refused, a struct too, so React's `DetailedHTMLProps<AnchorHTMLAttributes<'_>,
+HTMLAnchorElement>`, whose `#[rust_js::flatten]` field is its first
+parameter, was: "flattening `AnchorHTMLAttributes<'_>` into
+`DetailedHTMLProps`: a flattened type parameter is given an enum each of
+whose variants has a field no other has". A type parameter given a
+struct of named fields, or a JS object, is flattened as a field of that
+type is (ADR 0204): `validation.rs` asks one predicate, `plain`, of
+both. What's refused is a type parameter given another enum, or what's no
+object, a `u32`.
+
+Held by the corpus's `flattened_keyed_param`, whose graph is given a
+struct for its kind too (its JS `sub.width`, `total.text`), against native
+Rust, and `test/jsx-props.test.ts`'s DetailedHTMLProps cases; mutation
+`keyed-param-given-a-struct-refused` (`analysis/validation.ts`).

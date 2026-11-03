@@ -31,6 +31,13 @@ function update(node, input) {
   return "scope";
 }
 
+function label(flags, text, width) {
+  return Graph.node(flags, {
+    text,
+    width,
+  });
+}
+
 function triple(n) {
   return (n * 3) | 0;
 }
@@ -50,5 +57,12 @@ function main() {
     console.log(`${sub.flags} ${update(sub, 1)}`);
   });
   console.log(`${update(derived, 7)}`);
+  const total = label(8, "total", 5);
+  Graph.link(total, label(1, "sub", 3));
+  Graph.eachSub(total, (sub) => {
+    sub.width = (sub.width + total.width) >>> 0;
+    console.log(`${sub.flags} ${sub.text} ${sub.width}`);
+  });
+  console.log(`${total.text} ${total.flags}`);
 }
 //# sourceMappingURL=case.js.map
