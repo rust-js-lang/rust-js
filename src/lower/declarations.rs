@@ -41,6 +41,10 @@ pub use written::validate_types;
 use written::{Member, Signature};
 pub(super) use written::{Written, written_types};
 
+/// What each generic function asks of its type parameters (ADR 0145), by
+/// index: `type_fact_params`' answer.
+type TypeFacts = HashMap<DefId, Vec<(u32, super::recognition::TypeFact)>>;
+
 /// What a module's `.d.ts` declares, but its header: `None` where it
 /// exports nothing.
 #[allow(clippy::too_many_arguments)]
@@ -63,6 +67,7 @@ pub(super) fn module<'tcx>(
         &[super::bindings::HeldBinding],
         &HashMap<DefId, bool>,
     ),
+    (type_facts, given): (&TypeFacts, super::traits::Given<'_>),
 ) -> Option<Value> {
     let mut out = Declarations {
         tcx,
@@ -84,6 +89,8 @@ pub(super) fn module<'tcx>(
         named: Vec::new(),
         function_names: Vec::new(),
         filled: None,
+        type_facts,
+        bounds_given: given,
     };
     // What `js::export_default! { .. }` holds, a function or a constant, is
     // the module's default and nothing else, as its JS is, `export default
@@ -97,6 +104,7 @@ pub(super) fn module<'tcx>(
     let named_default = default_export.filter(|&d| !default_declared && super::bindings::held_path(tcx, d).is_none());
     let mut items = Vec::new();
     let mut objects = HashSet::new();
+    let mut left_out = HashSet::new();
     for item in tcx.hir_module_free_items(module) {
         let def_id = item.owner_id.to_def_id();
         // A class whose struct is another module's, declared where its
@@ -128,6 +136,16 @@ pub(super) fn module<'tcx>(
         }
         if super::classes::is_value_namespace(tcx, def_id) {
             items.extend(out.namespace_fields(def_id));
+            continue;
+        }
+        // One whose JS takes what a JS caller can't give, `size(TSize)`, is
+        // a note where it would be, not declared (#549, ADR 1077).
+        if tcx.def_kind(def_id) == DefKind::Fn
+            && !is_binding(tcx, def_id)
+            && let Some(ungiven) = out.ungiven(def_id)
+        {
+            items.push(out.ungiven_note(def_id, &ungiven));
+            left_out.insert(def_id);
             continue;
         }
         let declaration = match tcx.def_kind(def_id) {
@@ -235,7 +253,7 @@ pub(super) fn module<'tcx>(
     // `export { greetAll as unstable_greet };`, its `pub use` of its own
     // function by another name, after it, as its JS has it (ADR 0596).
     let names: Vec<&(String, String)> = (aliases.iter())
-        .filter(|(item, (_, export))| !by_own_name(fns, *item, export))
+        .filter(|(item, (_, export))| !by_own_name(fns, *item, export) && !left_out.contains(item))
         .map(|(_, names)| names)
         .collect();
     if !names.is_empty() {
@@ -427,6 +445,11 @@ struct Declarations<'a, 'tcx> {
     /// Each function-typed field's parameters as every literal of the
     /// crate fills it, made once, when first asked (`filled_names`).
     filled: Option<HashMap<DefId, Vec<Option<String>>>>,
+    /// What each generic function asks of its type parameters, `TSize`
+    /// (ADR 0145), and what its bounds' dictionaries are made of: what its
+    /// JS takes after its parameters (`ungiven`).
+    type_facts: &'a TypeFacts,
+    bounds_given: super::traits::Given<'a>,
 }
 
 impl<'tcx> Declarations<'_, 'tcx> {

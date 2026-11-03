@@ -1231,4 +1231,20 @@ export const mutations: Mutation[] = [
     replace: "                    name\n",
     tests: ["test/declarations-function-types.test.ts"],
   },
+  {
+    name: "ungiven-function-declared",
+    breaks: "a free function whose JS takes what a JS caller can't give is declared, not a note (#549)",
+    file: "src/lower/declarations.rs",
+    find: "            && let Some(ungiven) = out.ungiven(def_id)\n        {\n            items.push(out.ungiven_note(def_id, &ungiven));\n            left_out.insert(def_id);\n            continue;\n",
+    replace: "            && let Some(ungiven) = out.ungiven(def_id).filter(|_| false)\n        {\n            items.push(out.ungiven_note(def_id, &ungiven));\n            left_out.insert(def_id);\n            continue;\n",
+    tests: ["test/declarations-ungiven.test.ts"],
+  },
+  {
+    name: "ungiven-alias-exported",
+    breaks: "a function left out, `named`, is still exported by its other name, `export { named as unstable_named }`, which TypeScript refuses of a name it doesn't declare (#549)",
+    file: "src/lower/declarations.rs",
+    find: "        .filter(|(item, (_, export))| !by_own_name(fns, *item, export) && !left_out.contains(item))\n",
+    replace: "        .filter(|(item, (_, export))| !by_own_name(fns, *item, export))\n",
+    tests: ["test/declarations-ungiven.test.ts"],
+  },
 ];

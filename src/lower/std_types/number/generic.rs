@@ -214,21 +214,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// for the wasm32 target, or its name; of a type parameter, the one this
     /// function was given for it.
     pub(in crate::lower) fn type_fact_value(&mut self, of: Ty<'tcx>, fact: TypeFact, span: Span) -> R<Expr> {
-        let what = match fact {
-            TypeFact::Size => "size_of",
-            TypeFact::Align => "align_of",
-            TypeFact::Name => "type_name",
-            TypeFact::Id => "the `TypeId`",
-            TypeFact::NeedsDrop => "needs_drop",
-            TypeFact::Map | TypeFact::Set | TypeFact::TreeMap | TypeFact::TreeSet => "a map's class",
-            TypeFact::Sort => "an unstable sort",
-            TypeFact::Fused => "whether it's a `FusedIterator`",
-            TypeFact::ConstSize => "its constant size",
-            TypeFact::OneShot => "whether it's a `OneShot`",
-            TypeFact::RandomAccess => "whether it's a `TrustedRandomAccess`",
-            TypeFact::RandomAccessNoCoerce => "whether it's a `TrustedRandomAccessNoCoerce`",
-            TypeFact::TrustedLen => "whether it's a `TrustedLen`",
-        };
+        let what = fact.described();
         // An associated type's, `<A as Array>::Item`'s: its trait's
         // dictionary's (ADR 0145).
         if let ty::Alias(

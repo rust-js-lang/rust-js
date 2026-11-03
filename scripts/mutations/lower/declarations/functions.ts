@@ -222,4 +222,20 @@ export const mutations: Mutation[] = [
     replace: "            .filter(|&(i, &ty)| is_option(ty) && !nullable(i))\n",
     tests: ["test/declarations-function-types.test.ts"],
   },
+  {
+    name: "ungiven-fact-declared",
+    breaks: "a function whose JS takes a fact of its type parameter, `size(TSize)`, is declared `size<T>(): number`, which gives a JS caller `undefined` (#549)",
+    file: "src/lower/declarations/functions.rs",
+    find: "        if let Some(&(index, fact)) = self.type_facts.get(&function).and_then(|facts| facts.first()) {\n",
+    replace: "        if let Some(&(index, fact)) = self.type_facts.get(&function).and_then(|facts| facts.first()).filter(|_| false) {\n",
+    tests: ["test/declarations-ungiven.test.ts"],
+  },
+  {
+    name: "ungiven-dictionary-declared",
+    breaks: "a function whose JS takes a bound's dictionary, `shown(value, TDisplay)`, is declared, which throws for a JS caller that gives none (#549)",
+    file: "src/lower/declarations/functions.rs",
+    find: "            .into_iter()\n            .next()?;\n        Some(format!(\n",
+    replace: "            .into_iter()\n            .next()\n            .filter(|_| false)?;\n        Some(format!(\n",
+    tests: ["test/declarations-ungiven.test.ts"],
+  },
 ];

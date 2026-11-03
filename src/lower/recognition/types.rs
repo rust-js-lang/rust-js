@@ -737,6 +737,26 @@ impl TypeFact {
         TypeFact::TrustedLen,
     ];
 
+    /// What it is, as an error or a note says it: `size_of`, `the
+    /// \`TypeId\``.
+    pub(crate) fn described(self) -> &'static str {
+        match self {
+            TypeFact::Size => "size_of",
+            TypeFact::Align => "align_of",
+            TypeFact::Name => "type_name",
+            TypeFact::Id => "the `TypeId`",
+            TypeFact::NeedsDrop => "needs_drop",
+            TypeFact::Map | TypeFact::Set | TypeFact::TreeMap | TypeFact::TreeSet => "a map's class",
+            TypeFact::Sort => "an unstable sort",
+            TypeFact::Fused => "whether it's a `FusedIterator`",
+            TypeFact::ConstSize => "its constant size",
+            TypeFact::OneShot => "whether it's a `OneShot`",
+            TypeFact::RandomAccess => "whether it's a `TrustedRandomAccess`",
+            TypeFact::RandomAccessNoCoerce => "whether it's a `TrustedRandomAccessNoCoerce`",
+            TypeFact::TrustedLen => "whether it's a `TrustedLen`",
+        }
+    }
+
     /// Its word in the name of a type parameter's, `TSize`.
     /// The fact a word names, a library's manifest's (ADR 0145).
     pub(crate) fn of_word(word: &str) -> Option<TypeFact> {

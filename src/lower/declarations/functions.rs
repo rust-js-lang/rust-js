@@ -233,6 +233,43 @@ impl<'tcx> Declarations<'_, 'tcx> {
         }
     }
 
+    /// What `function`'s JS takes after its own parameters that a JS caller
+    /// can't give (#549, the user's decision, 2026-11-03, ADR 1077): a fact
+    /// of a type parameter, `size(TSize)` (ADR 0145), which only a Rust
+    /// caller knows; or a bound's dictionary, `shown(value, TDisplay)`,
+    /// which no declaration gives a JS caller a value of (#550). What
+    /// `evidence_slots` gives it of the same owners, `facts_asked`' and
+    /// `bounds`'. `None` where it takes nothing more, or only what a JS
+    /// caller leaves out, a drop or a copy's.
+    pub(super) fn ungiven(&self, function: DefId) -> Option<String> {
+        let generics = self.tcx.generics_of(function);
+        if let Some(&(index, fact)) = self.type_facts.get(&function).and_then(|facts| facts.first()) {
+            let of = match (index as usize) < generics.count() {
+                true => format!("`{}`'s", generics.param_at(index as usize, self.tcx).name),
+                false => "an associated type's".to_string(),
+            };
+            return Some(format!("{of} {}", fact.described()));
+        }
+        let bound = super::super::traits::bounds(self.tcx, self.foreign, self.bounds_given, function)
+            .into_iter()
+            .next()?;
+        Some(format!(
+            "`{}`'s `{}` dictionary",
+            bound.self_ty(),
+            self.tcx.item_name(bound.def_id)
+        ))
+    }
+
+    /// The note where a function `ungiven` leaves out would be declared: what
+    /// it takes, and that a JS caller can't give it.
+    pub(super) fn ungiven_note(&self, function: DefId, ungiven: &str) -> Value {
+        let name = self.js_name(function);
+        json!({
+            "kind": "note",
+            "text": format!("// `{name}` isn't declared: its JS takes {ungiven} after its arguments, which a JS caller can't give (ADR 1077)."),
+        })
+    }
+
     pub(super) fn function(&mut self, def_id: DefId) -> Value {
         let sig = self
             .tcx

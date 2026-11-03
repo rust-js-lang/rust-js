@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "type-object-private-methods",
     breaks: "a type's object's private methods are declared, which no other crate can call (#507)",
     file: "src/lower/declarations/namespaces.rs",
-    find: "tcx.def_kind(item) == DefKind::AssocFn && tcx.visibility(item).is_public());\n",
-    replace: "tcx.def_kind(item) == DefKind::AssocFn);\n",
+    find: "tcx.def_kind(item) == DefKind::AssocFn && tcx.visibility(item).is_public())\n",
+    replace: "tcx.def_kind(item) == DefKind::AssocFn)\n",
     tests: ["test/impl-constants.test.ts"],
   },
   {
@@ -87,5 +87,13 @@ export const mutations: Mutation[] = [
     find: "                if !tcx.visibility(method).is_public() || forwarded.contains_key(&method) {\n",
     replace: "                if !tcx.visibility(method).is_public() {\n",
     tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
+  },
+  {
+    name: "ungiven-type-method-declared",
+    breaks: "a type's method whose JS takes a fact, `Counter.sizeOf(counter, TSize)`, is declared in its object, `sizeOf<T>(counter: Counter): number` (#549)",
+    file: "src/lower/declarations/namespaces.rs",
+    find: "            .filter(|&&(_, item)| self.ungiven(item).is_none())\n",
+    replace: "",
+    tests: ["test/declarations-ungiven.test.ts"],
   },
 ];

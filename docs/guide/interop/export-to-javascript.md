@@ -2065,6 +2065,27 @@ export { delete$ as delete };
 | a doc comment | its JSDoc |
 | a `//` comment before a type, a field or a function, past its attributes | the same comment before its declaration, as written ([ADR 0196](../../decisions/0196-typescript-declarations.md), amended) |
 
+**A function whose JS takes what a JS caller can't give isn't declared**
+([ADR 1077](../../decisions/1077-a-function-js-cant-call-as-declared-isnt-declared.md),
+the user's decision). What it takes, after its arguments, is a fact of a
+type parameter, `size<T>()`'s `size(TSize)` or a `T: 'static` made a `dyn
+Any`'s `TId`, or a bound's dictionary, `shown<T: Display>`'s `TDisplay`. A
+note stands where its declaration would be:
+
+```ts
+// `size` isn't declared: its JS takes `T`'s size_of after its arguments, which a JS caller can't give (ADR 1077).
+```
+
+TypeScript that imports it is refused, `Module has no exported member
+'size'`, and a Rust caller, another module's or a library's consumer,
+calls it as before. Untyped JS can still import it and call it without
+what it takes, and gets a wrong answer: `size()` is `undefined`. For a
+function JS calls, write one it can call as declared: one of a concrete
+type, `pub fn size_of_point() -> usize`; one that keeps a value of any
+type as JS does, `js::any_of(value)` and `js::cast` back
+([ADR 0909](../../decisions/0909-a-type-parameters-value-is-any-value.md));
+or, for one only Rust calls, no `pub`.
+
 Some types aren't declared yet, and a caller of them isn't checked: a
 `Result` and an `async fn`'s result are `any`, as are a tuple struct,
 an `impl Iterator` and a counted `Rc`, and a type's methods object, `Counter`, has its

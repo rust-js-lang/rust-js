@@ -113,9 +113,14 @@ impl Declarations<'_, '_> {
                 json!({ "kind": "property", "name": self.js_name(constant), "optional": false, "readonly": true, "type": ty })
             })
             .collect();
-        let methods = (items.iter())
-            .filter(|&&(_, item)| tcx.def_kind(item) == DefKind::AssocFn && tcx.visibility(item).is_public());
-        for &(imp, method) in methods {
+        // Not one whose JS takes what a JS caller can't give, `sizeOf(TSize)`
+        // (ADR 1077).
+        let methods: Vec<(DefId, DefId)> = (items.iter())
+            .filter(|&&(_, item)| tcx.def_kind(item) == DefKind::AssocFn && tcx.visibility(item).is_public())
+            .filter(|&&(_, item)| self.ungiven(item).is_none())
+            .copied()
+            .collect();
+        for (imp, method) in methods {
             let outer = std::mem::take(&mut self.erased);
             let mut erased = self.erased(imp);
             erased.extend(self.erased(method));

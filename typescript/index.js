@@ -26,7 +26,8 @@ import * as f from "typescript/ast/factory";
  *   | { kind: "export", from?: string, names: [string, string][], typeOnly?: boolean }
  *   | { kind: "namespace", name: string, exported: boolean, declare: boolean, declarations: Declaration[] }
  *   | { kind: "class", name: string, exported: boolean, declare: boolean, extends?: Type, members: ClassMember[], docs?: string }
- *   | { kind: "other", text: string }} Declaration
+ *   | { kind: "other", text: string }
+ *   | { kind: "note", text: string }} Declaration
  *
  * @typedef {string | { computed: string }} MemberName A property's name, or a
  *   key a symbol's path names, `{ computed: "Symbol.asyncIterator" }`,
@@ -125,11 +126,15 @@ export async function open(files = []) {
       const parts = [];
       let previous;
       for (const declaration of module.declarations) {
-        const text = await documented(
-          declaration,
-          await api.printer.printNode(statement(declaration)),
-          (node) => api.printer.printNode(node),
-        );
+        // A note where a declaration would be, a `//` line (ADR 1077).
+        const text =
+          declaration.kind === "note"
+            ? declaration.text
+            : await documented(
+                declaration,
+                await api.printer.printNode(statement(declaration)),
+                (node) => api.printer.printNode(node),
+              );
         // Imports together, then a blank line before each declaration.
         const together = previous === "import" && declaration.kind === "import";
         parts.push(previous && !together ? `\n${text}` : text);

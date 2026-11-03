@@ -1371,6 +1371,7 @@ pub fn lower_crate<'tcx>(
                 &aliased_items,
                 (ref_cells, &counted, &null_fields, &flattened),
                 (&fns, module_held, &module_variables),
+                (&type_facts, given),
             );
             // A `Drop` impl's `drop` of this module no other module calls,
             // which may be its body where its one drop is (ADR 0588).

@@ -375,8 +375,17 @@ export function circles() {
 }
 ```
 
-A JS caller gives it the same way: `totalArea([{ radius: 1 }], circleShape)`.
-A type parameter with no bound takes none.
+A Rust caller gives it, and untyped JS can too, `totalArea([{ radius: 1 }],
+circleShape)`. But the `.d.ts` doesn't declare `totalArea`: it declares no
+trait or dictionary yet (#550), so TypeScript can't name `circleShape`. A
+note stands where the declaration would be ([ADR 1077](../../decisions/1077-a-function-js-cant-call-as-declared-isnt-declared.md)).
+
+A type parameter with no bound takes none, unless the function asks a fact
+of it: `size_of::<T>()`, `align_of::<T>()`, `type_name::<T>()`, its
+`TypeId` (a `T: 'static` made a `dyn Any` or compared by `TypeId::of`),
+`needs_drop::<T>()`, the class of a map keyed by it, or an unstable sort of
+its items. Then it takes that fact after its arguments, `size(TSize)`, which
+only a Rust caller knows ([ADR 0145](../../decisions/0145-type-facts.md)).
 
 ## `dyn Trait` is a value and its dictionary
 
