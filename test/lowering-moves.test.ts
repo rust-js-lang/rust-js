@@ -897,8 +897,8 @@ pub fn part() -> String {
 
 // rd656: a closure's capture its maker reads first, a variable whose JS is
 // a read of something else, is named for the variable, as React's
-// patchConsole's `const originalMethod = descriptor.value;`, apart from
-// another of its name; one of a part of a variable, `entry.value`, is
+// patchConsole's `const originalMethod = descriptor.value;`, the one
+// `const` every closure that takes it reads (rd640); one of a part of a variable, `entry.value`, is
 // `captured`, as no variable is its name, and so is a copy of the variable
 // as it is now, `let mut n = n;`'s, which its name would only name apart.
 test("a closure's capture read first is named for its variable", async () => {
@@ -953,7 +953,8 @@ pub fn copies(n: u32) -> u32 {
   // its own JS named apart where it's read, `n$1`.
   expect(js).toContain("  const captured = n;\n  const get = () => captured;\n");
   expect(lib.copies(2 as never)).toBe(2102);
-  expect(js).toContain("    const id = action._0;\n    const id$1 = action._0;\n    return [(x) => x === id, (x) => x !== id$1];\n");
+  // Two closures that take one binding close over its one `const` (rd640).
+  expect(js).toContain("    const id = action._0;\n    return [(x) => x === id, (x) => x !== id];\n");
   const [is, isnt] = lib.matchers({ TAG: "Toggle", _0: 2 } as never) as unknown as [(x: number) => boolean, (x: number) => boolean];
   expect([is(2), is(3), isnt(2), isnt(3)]).toEqual([true, false, false, true]);
   let reads = 0;
@@ -965,6 +966,72 @@ pub fn copies(n: u32) -> u32 {
   });
   const part = lib.part() as unknown as () => string;
   expect([part(), part(), reads]).toEqual(["1", "1", 1]);
+});
+
+// rd640: a pattern's binding a closure takes by value is a `const` where
+// the program binds it, read by each closure that takes it and by what
+// reads it after: React's isSignatureEqual's `let Some(bound_promise) =
+// reference_closure.bound else ..`, whose two `.then` callbacks each read
+// `bound_promise`, printed a copy for each, `const boundPromise = ..; const
+// boundPromise$1 = ..;`, where upstream closes over its one `boundPromise`.
+test("a binding closures take is one const they close over", async () => {
+  const { js, lib } = await compiled(
+    "binding-closures-take",
+    `use std::cell::Cell;
+
+pub struct Thenable {
+    pub status: Cell<u32>,
+}
+
+pub struct ReferenceClosure {
+    pub bound: Option<&'static Thenable>,
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "thenOfTest")]
+fn then(on_fulfilled: Box<dyn Fn(u32)>, on_rejected: Box<dyn Fn(u32)>) {
+    let _ = (on_fulfilled, on_rejected);
+    unreachable!()
+}
+
+pub fn is_signature_equal(reference_closure: &ReferenceClosure, count: u32) -> bool {
+    let Some(bound_promise) = reference_closure.bound else {
+        return count == 0;
+    };
+    match bound_promise.status.get() {
+        1 => true,
+        _ => {
+            then(
+                Box::new(move |v| {
+                    let fulfilled: &Thenable = bound_promise;
+                    fulfilled.status.set(v);
+                }),
+                Box::new(move |e| {
+                    let rejected: &Thenable = bound_promise;
+                    rejected.status.set(e + 10);
+                }),
+            );
+            false
+        }
+    }
+}
+`,
+  );
+  expect(js).toContain("const boundPromise = referenceClosure.bound;");
+  expect(js).not.toContain("boundPromise$1");
+  expect(js).toContain("const fulfilled = boundPromise;");
+  expect(js).toContain("const rejected = boundPromise;");
+  const thenable = { status: 0 };
+  const callbacks: ((v: number) => void)[] = [];
+  (globalThis as Record<string, unknown>).thenOfTest = (ok: (v: number) => void, err: (v: number) => void) => callbacks.push(ok, err);
+  const closure = { bound: thenable };
+  expect(lib.isSignatureEqual(closure as never, 0 as never)).toBe(false);
+  // Each callback reads what the binding took, though the field changes.
+  closure.bound = { status: 7 };
+  callbacks[0](1);
+  expect(thenable.status).toBe(1);
+  callbacks[1](2);
+  expect(thenable.status).toBe(12);
+  expect(lib.isSignatureEqual({ bound: null } as never, 0 as never)).toBe(true);
 });
 
 // A `let` the program wrote, named as the getter it reads, whose one read

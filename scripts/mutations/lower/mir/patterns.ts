@@ -633,4 +633,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^nullable_let_set_in_arms.rs$"],
     snapshots: true,
   },
+  {
+    name: "captured-payload-in-place",
+    breaks:
+      "React's isSignatureEqual's `boundPromise`, a pattern's binding two `.then` callbacks take, is read in place and copied apart for each, `const boundPromise = ..; const boundPromise$1 = ..;`, where upstream closes over one (rd640, ADR 0879, amended)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                        && !captured.contains(&place.local) =>\n",
+    replace: " =>\n",
+    tests: ["test/lowering-moves.test.ts", "-t", "a binding closures take is one const"],
+  },
 ];

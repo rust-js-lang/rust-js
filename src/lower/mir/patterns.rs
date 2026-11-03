@@ -44,10 +44,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             thir::PatKind::Binding { .. } => Some(arm.pattern.span),
             _ => None,
         }));
+        // Not one a closure takes by value: each closure that took it would
+        // read the place apart, its own copy where it's made, `const p =
+        // x.bound; const p$1 = x.bound;`, where the program wrote one
+        // variable, which they close over (rd640).
+        let captured = captured_by_closures(body);
         (body.var_debug_info.iter())
             .filter_map(|info| match info.value {
                 mir::VarDebugInfoContents::Place(place)
-                    if place.projection.is_empty() && spans.contains(&info.source_info.span) =>
+                    if place.projection.is_empty()
+                        && spans.contains(&info.source_info.span)
+                        && !captured.contains(&place.local) =>
                 {
                     Some(place.local)
                 }
@@ -1463,4 +1470,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             cases: mir.cases.clone(),
         })
     }
+}
+
+/// The locals `body`'s closures take by value where they're made,
+/// `{closure}(copy _5)`.
+fn captured_by_closures(body: &mir::Body<'_>) -> std::collections::HashSet<Local> {
+    (body.basic_blocks.iter())
+        .flat_map(|block| &block.statements)
+        .filter_map(|stmt| match &stmt.kind {
+            mir::StatementKind::Assign(assign) => match &assign.1 {
+                mir::Rvalue::Aggregate(kind, operands)
+                    if matches!(
+                        **kind,
+                        mir::AggregateKind::Closure(..)
+                            | mir::AggregateKind::Coroutine(..)
+                            | mir::AggregateKind::CoroutineClosure(..)
+                    ) =>
+                {
+                    Some(operands)
+                }
+                _ => None,
+            },
+            _ => None,
+        })
+        .flatten()
+        .filter_map(|operand| match operand {
+            Operand::Copy(place) | Operand::Move(place) => place.as_local(),
+            _ => None,
+        })
+        .collect()
 }

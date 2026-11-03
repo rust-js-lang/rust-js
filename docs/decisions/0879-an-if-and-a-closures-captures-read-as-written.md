@@ -6,7 +6,7 @@ Status: Accepted. Amends [0237](0237-no-else-after-leaving.md)'s scope (an
 is a conditional), [0607](0607-a-field-is-given-a-call-in-place.md) (a
 variable a closure captured is given a call's value in place) and extends
 [0846](0846-a-parameters-clone-is-read-by-its-name.md) (a clone of what a
-`move` closure captured is read by its name). Amended: a guard's arms in the order written, and a float's constant pattern tested value first; and an `if` that ends a guard's function keeps the `return` written between its branches (below); and a capture its maker reads first is named for its variable (rd656, below).
+`move` closure captured is read by its name). Amended: a guard's arms in the order written, and a float's constant pattern tested value first; and an `if` that ends a guard's function keeps the `return` written between its branches (below); and a capture its maker reads first is named for its variable (rd656, below); and a pattern's binding closures take is one `const` where it's bound (rd640, below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N for each, which runs
 the same; each is a form the program wrote, which MIR's structure lost.
@@ -1085,3 +1085,41 @@ named for its variable" (its `copies`, `const captured = n;`), the
 = parse._0;`), and the guide's tutorial (`const id = action._0;`);
 mutations `capture-named-captured`, `capture-copy-named-apart` and
 `capture-part-named-for-its-variable` (`lower/mir/closures.ts`).
+
+## Amendment (2026-11-03): a pattern's binding closures take is one `const` where it's bound (rd640)
+
+React's isSignatureEqual (ReactFlightReplyClient) binds the promise it
+suspends on, `let Some(bound_promise) = reference_closure.bound else ..`,
+and two `.then` callbacks take it, `move |bound_args| { let
+fulfilled_thenable: &Thenable = bound_promise; .. }` and the rejection's.
+A pattern's binding is read in place where what it's bound to reads the
+same anywhere (`mir_payloads`), so each closure took a copy of the place
+where it was made, named for the variable (rd656), `const boundPromise =
+referenceClosure.bound; const boundPromise$1 = referenceClosure.bound;`,
+and the rest of the function read `referenceClosure.bound`. Upstream
+writes one `const boundPromise = referenceClosure.bound;`, which both
+callbacks close over.
+
+**A pattern's binding a closure takes by value is no payload read in
+place** (`captured_by_closures`, of each closure's aggregate in MIR): it's
+a `const` where the program binds it, `const boundPromise =
+referenceClosure.bound;`, which each closure and every later read reads,
+`throw boundPromise;`. Rust copies the value once, where it binds it; the
+closures read that value, and so does JS's `const`. Case
+([0262](0262-when-rust-and-js-disagree.md)): N for a struct the program
+built, whose field nothing writes meanwhile; where the field is a getter
+of a struct JS made, Rust's one read is JS's one read now too, which the
+copies apart already were.
+
+React's port, regenerated: ReactFlightReplyClient's isSignatureEqual is
+upstream's `boundPromise` throughout, and the test after its `null` check
+reads `referenceClosure.bound` once, where upstream reads `boundPromise`
+(the `let else`'s test, as ADR 0866 reads it). REACT_RD640.
+
+Held by `test/lowering-moves.test.ts`'s "a binding closures take is one
+const they close over" (run; each callback reads what the binding took,
+though the field is given another value after) and "a closure's capture
+read first is named for its variable" (its `matchers`, now one `const id
+= action._0;` both closures read), corpus `binding_closures_take` against
+native Rust; mutation `captured-payload-in-place` (`mir/patterns.ts`).
+
