@@ -53,3 +53,16 @@ folded from its back, against native Rust.
 - Mutations keep every item, drop the back, stop seeing a `filter` or a
   `filter_map` as stepped from its back, make either a JS helper, and
   leave a `Some` boxed.
+
+## Amendment: a `filter_map` known to step from its back is made so in one place (2026-11-03, #491)
+
+`combinators/adapters.rs` made a `filter_map` of a source that knows its
+back as `$filterEnds($mapEnds(..))` where it was written. Since 9bea53c20
+(ADR 0545, amended), `as_double_ended` makes a `filter_map` written in
+place, `src.map(f).filter(present)`, knowing its back where it's stepped
+from there. So the earlier arm was a second way to the same JS. The
+nightly's mutation `filter-map-ends-native`, which turns it off, survived
+because the corpus's JS and output were the same without it. The arm is
+gone, and with it that mutation and `filter-map-ends-boxed`.
+`filter_ends.rs`, `held_filter_map_from_its_back.rs` and the rest of the
+corpus give the same JS and agree with native Rust.

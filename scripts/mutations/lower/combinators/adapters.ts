@@ -200,25 +200,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^scan_lazy_drops.rs$"],
   },
   {
-    name: "filter-map-ends-native",
-    breaks:
-      "a `filter_map` of what knows its back is a JS helper, which doesn't",
-    file: "src/lower/combinators/adapters.rs",
-    find: "            IterComb::FilterMap if self.knows_its_back(receiver_ty) => {\n",
-    replace:
-      "            IterComb::FilterMap if false && self.knows_its_back(receiver_ty) => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
-  },
-  {
-    name: "filter-map-ends-boxed",
-    breaks:
-      "a `filter_map` from either end gives each `Some` that looks like `None` boxed",
-    file: "src/lower/combinators/adapters.rs",
-    find: '                    true => Expr::call_helper("$mapEnds", vec![some, Expr::helper("$someValue")]),\n',
-    replace: "                    true => some,\n",
-    tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
-  },
-  {
     name: "step-by-zero-unchecked",
     breaks:
       "`step_by(0)` of a step known only at run time doesn't panic, as std asserts it doesn't, and reads no item, `i % 0` being NaN",

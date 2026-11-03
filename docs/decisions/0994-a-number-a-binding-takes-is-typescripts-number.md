@@ -436,3 +436,15 @@ half, an `f64` written by `-=`, and one borrowed; mutations
 `whole-cell-set-before-kept` and `whole-capture-lent-unseen`
 (`lower/analysis/wholes.ts`) and `whole-temporary-unmarked`
 (`lower/mir/temporaries.ts`).
+
+## Amendment: whether a binding's number is whole is `whole_locals`' (2026-11-03, #491)
+
+Two places said that an `f64` a `#[rust_js::whole]` binding gives is
+whole. `calls::given_by` marked the call's value, and since f87ccdf31
+(rd653) `whole_locals` marks the local MIR gives it to, which is read
+wherever the value is used. The nightly's mutation `whole-fact-unset`,
+which turns off `given_by`'s fact, survived for that reason. A call's
+value is always read through its destination local, so `given_by`'s fact
+is gone, and with it the mutation. `whole_locals` is the one authority.
+test/webapi-bindings.test.ts' "a WebIDL integer is a whole number in its
+type's range" holds it.

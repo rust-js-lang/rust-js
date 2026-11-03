@@ -234,15 +234,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "whole-fact-unset",
-    breaks:
-      "what a `#[rust_js::whole]` binding gives isn't known whole, so its `{}` is `$displayF64(response.status)`",
-    file: "src/lower/calls.rs",
-    find: "    if super::bindings::whole_output(tcx, output) && super::bindings::whole_range(tcx, def_id).is_some() {\n",
-    replace: "    if false {\n",
-    tests: ["test/webapi-bindings.test.ts", "-t", "WebIDL integer"],
-  },
-  {
     name: "and-then-binding-null",
     breaks:
       "an `and_then` of a nullable binding is `node != null ? node.firstChild : null`, not JS's `node?.firstChild` (rd81)",
