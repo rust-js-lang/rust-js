@@ -51,6 +51,24 @@ export const mutations: Mutation[] = [
     tests: ["test/diagnostics.test.ts", "-t", "in a struct"],
   },
   {
+    name: "phantom-mut-is-a-mut",
+    breaks:
+      "anyhow's `Mut<'a, T>` is refused, `a &mut Frame inside a generic function's parameters`: its `PhantomData<&'a mut T>`, which holds no value, taken for a `&mut` generic code has (#516)",
+    file: "src/lower/mut_refs.rs",
+    find: "                    walk.skip_current_subtree();\n                    continue;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^phantom_mut_marker.rs$"],
+  },
+  {
+    name: "phantom-mut-skips-any-struct",
+    breaks:
+      "a generic struct's `r: &mut T` field, built of an object by the caller, is read as a cell: every struct's fields skipped as a `PhantomData`'s are",
+    file: "src/lower/mut_refs.rs",
+    find: "                    && marker.is_phantom_data()\n",
+    replace: "                    && (marker.is_phantom_data() || !marker.is_box())\n",
+    tests: ["test/diagnostics.test.ts", "-t", "in a struct"],
+  },
+  {
     name: "nested-mut-object-bounds-unread",
     breaks:
       "a closure's parameter holding a `&mut` to an object, `F: FnOnce(Vec<&mut T>)`, isn't refused, and the closure is given generic code's boxes",

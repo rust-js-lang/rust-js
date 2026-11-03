@@ -328,7 +328,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let mut seen = HashSet::new();
         while let Some(ty) = todo.pop() {
-            for part in ty.walk().filter_map(|part| part.as_type()) {
+            let mut walk = ty.walk();
+            while let Some(part) = walk.next() {
+                let Some(part) = part.as_type() else {
+                    continue;
+                };
+                // A `PhantomData` holds no value: anyhow's `Mut<'a, T>`'s
+                // `PhantomData<&'a mut T>`, which only marks its lifetime, is
+                // no `&mut` generic code has (#516).
+                if let ty::Adt(marker, _) = part.kind()
+                    && marker.is_phantom_data()
+                {
+                    walk.skip_current_subtree();
+                    continue;
+                }
                 if !seen.insert(part) {
                     continue;
                 }

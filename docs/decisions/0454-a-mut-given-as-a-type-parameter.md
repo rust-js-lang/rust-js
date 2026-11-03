@@ -150,3 +150,31 @@ the caller's `&mut` of an object is the object and the adaptation is one
 level, `given_box`'s: it was a box short and threw (#167). It's refused
 (`check_call_takes`), held by `test/corpus/mut_mut_object_to_generic.rs`;
 a `&mut` of one, and a `&mut &mut` of a number, are given as they are.
+
+## Amendment: a `PhantomData` holds no `&mut` (#516)
+
+anyhow's `Mut<'a, T>`, a pointer with a `PhantomData<&'a mut T>` beside
+it that only ties it to the borrow it was made of, was refused at every
+call of a generic function that takes or gives one, "a `&mut
+error::ErrorImpl` inside a generic function's parameters or result", with
+the rest of anyhow behind it. Rule 2's walk, `nested_mut_object`, went
+into every type a parameter or the result is made of, a `PhantomData`'s
+own parameter too. But a `PhantomData` holds no value in JS or in Rust:
+generic code has no box there, and its caller no object, so there's
+nothing for them to disagree on. Case N
+([0262](0262-when-rust-and-js-disagree.md)): no observable difference.
+
+- **What a `PhantomData` is given isn't walked**: rule 2 refuses a
+  `&mut` to an object only where a value holds one.
+- `test/corpus/phantom_mut_marker.rs`, against native Rust: anyhow's
+  `Mut` and `Ref` of a struct, made, moved, given back inside an `Option`
+  and a tuple, and the struct changed while and after they're held.
+- Mutations `phantom-mut-is-a-mut` (the walk goes in again) and
+  `phantom-mut-skips-any-struct` (any struct's fields skipped as a
+  `PhantomData`'s, which `test/diagnostics.test.ts`'s refusal of a struct
+  holding a `&'a mut T` catches).
+- anyhow is refused next at `{}` of a `dyn Error + Send + Sync` made
+  where it's shown, an unrelated gap. regex-syntax's refusal, the same
+  message of a `&mut ast::parse::Parser` in its `ParserI<'s, P>`, is
+  rule 2's own: the field holds the value, generic code's box, where its
+  caller would have the object.

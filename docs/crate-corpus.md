@@ -50,7 +50,7 @@ crashed (#511).
 | arrayvec 0.7.8 | runs | measured 2026-11-02, after #468's fix |
 | hashbrown 0.17.1 | runs | its maps std's, rustc builds it (ADR 0423) |
 | thiserror 2.0.21 | runs | |
-| anyhow 1.0.104 | refused | a `&mut ErrorImpl` in a generic function's parameters; its pointer casts (ADR 0562), `Arguments::as_str` (ADR 0034), `Backtrace` (ADR 0568) and `Display::fmt` on a held `Formatter` (ADR 0461) compile |
+| anyhow 1.0.104 | refused | measured 2026-11-03, at its lock, after ADR 0454's amendment (#516): `{}` of a `dyn Error + Send + Sync` made where it's shown; its `Mut<'a, T>`, a `PhantomData<&'a mut T>` beside its pointer, compiles; its pointer casts (ADR 0562), `Arguments::as_str` (ADR 0034), `Backtrace` (ADR 0568) and `Display::fmt` on a held `Formatter` (ADR 0461) compile |
 | once_cell 1.21.4 | refused | `std::thread::current` called |
 | semver 1.0.28 | compiles | measured 2026-10-21, after ADR 0562: its tagged pointers, inline identifiers and pointer constants compile; no probe runs it yet |
 | uuid 1.29.0 | runs | measured 2026-10-21, after ADR 0555 |
