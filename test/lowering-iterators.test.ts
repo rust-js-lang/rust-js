@@ -1242,3 +1242,30 @@ pub fn maybe(items: &[Option<u32>]) -> Option<Option<u32>> {
   expect([lib.maybe([undefined]) !== undefined, lib.maybe([])]).toEqual([true, undefined]);
 });
 
+// #182: what generic code collects by `fold` of a `skip` is `$folded`, which
+// takes the items by the crate's own fold where its iterator has one; a
+// JS iterator with none, an array's, a str's chars', is stepped as it is.
+test("a fold-taking collect in generic code of a JS iterator steps it", async () => {
+  const dir = fixture("folded-of-js-iterators");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `fn skipped<I: Iterator<Item = char>>(it: I) -> String {
+    it.skip(1).collect()
+}
+
+pub fn of_vec(letters: Vec<char>) -> String {
+    skipped(letters.into_iter())
+}
+
+pub fn of_str(text: &str) -> String {
+    skipped(text.chars())
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  return Array.from($folded(Iterator.from(it).drop(1))).join("");\n');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.ofVec(["a", "b", "c"]), lib.ofStr("xyz"), lib.ofStr("")]).toEqual(["bc", "yz", ""]);
+});
+
