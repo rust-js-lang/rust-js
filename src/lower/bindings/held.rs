@@ -369,15 +369,14 @@ fn held_of<'tcx>(
         }
         let through = named_through(tcx, foreign, module, path.segments, binding, modules);
         // A library's, which a private `use` reads through it; a `pub use`
-        // re-exports it from the library's file (ADR 0240, amended). And
-        // another module's of the crate a private `use` renames, `use
-        // crate::held::assign as merge;`, imported from it by that name, no
-        // global's `const` of its own (rd651).
+        // re-exports it from the library's file (ADR 0240, amended). Another
+        // module's of the crate a private `use` renames, `use
+        // crate::held::assign as merge;`, is `named_through`'s, imported from
+        // it by that name (rd651, rd659's one rule).
         if !export
-            && through.as_ref().is_some_and(|read| match read.holder {
-                Holder::Library(_) => true,
-                Holder::Module(_) => !named_default,
-            })
+            && through
+                .as_ref()
+                .is_some_and(|read| matches!(read.holder, Holder::Library(_)))
         {
             continue;
         }

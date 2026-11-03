@@ -225,8 +225,10 @@ Held by `test/cargo-link.test.ts`'s "a library's module that holds a
 binding is what a consumer reads it through", a library's static and
 function renamed, and the crate's own renamed, run in Node; mutations
 `held-library-rename-ignored` (`analysis/naming.ts`),
-`library-uses-none` and `held-renamed-through-module-a-const`
-(`bindings/held.ts`).
+`library-uses-none` (`bindings/held.ts`). The crate's own renamed holder
+is `named_through`'s since rd659's one rule (below): `collect`'s branch
+that skipped it, and its mutation `held-renamed-through-module-a-const`,
+which then survived with the same JS, are gone.
 
 ## Amendment: a module reads what it holds by its `const` (rd659)
 

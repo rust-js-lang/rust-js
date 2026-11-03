@@ -119,15 +119,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-bindings.test.ts", "-t", "a global binding a module names as its default"],
   },
   {
-    name: "held-renamed-through-module-a-const",
-    breaks:
-      "a private `use crate::held::assign as merge;` of another module's held binding is taken for a renamed global, neither its `const` nor an import, so `merge(..)` throws a ReferenceError (rd651)",
-    file: "src/lower/bindings/held.rs",
-    find: "                Holder::Module(_) => !named_default,\n",
-    replace: "                Holder::Module(_) => false,\n",
-    tests: ["test/cargo-link.test.ts", "-t", "holds a binding"],
-  },
-  {
     name: "library-uses-none",
     breaks:
       "no `use` is taken to name a binding through a library's module, so its `use .. as` keeps the `const`'s name (rd651)",
