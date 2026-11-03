@@ -160,10 +160,13 @@ One printed after code written after it, the vite-react example's
 an import whose `use` is below it: the blank line above it in the Rust
 isn't one between them, so `apart` gives it none (`to_oxc.rs`), and the
 imports stay one block, as rule 4 has it and create-vite's `App.jsx`
-writes them. One in the Rust's order, after the `use` before it, has the
-blank lines the Rust has between them.
+writes them: an import after one whose statement starts below its own
+top. One in the Rust's order, after the `use` before it, has the blank
+lines the Rust has between them, and the two of one `use`, `use
+crate::api::{self, Failure};`, the one above it, before the first.
 
-Held by `test/modules.test.ts`'s "the comments above a js::import! are
+Held by `test/lowering-comments-items.test.ts`'s "the comments above a js::import! are
 above its import", with mutations `js-import-comments-lost` and
 `js-import-placed-where-written` in `lower/pipeline/packages.ts`, and
-`import-after-later-code-keeps-blank` in `to_oxc.ts`.
+`import-after-later-code-keeps-blank` and `import-blank-of-one-use-dropped`
+in `to_oxc.ts`.

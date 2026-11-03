@@ -1328,10 +1328,11 @@ fn apart(
     for i in 1..body.len() {
         let (code_end, start) = (ends[i - 1], body[i].span().start);
         let top = tops.get(&start).map_or(start, |&first| first.min(start));
-        // An import printed after code written after it, a `js::import!`'s
-        // where ADR 1063 orders it, after what's named: the blank line above
-        // it in the Rust isn't one between them, so none (rd666, ADR 1069).
-        if code_end > top && matches!(body[i], Statement::ImportDeclaration(_)) {
+        // An import printed after one whose code is written below it, a
+        // `js::import!`'s where ADR 1063 orders it, after what's named: the
+        // blank line above it in the Rust isn't one between them, so none
+        // (rd666, ADR 1069). Not the second of one `use`'s, at its start.
+        if start != 0 && body[i - 1].span().start > top && matches!(body[i], Statement::ImportDeclaration(_)) {
             comments.retain(|c| !(c.attached_to == start && c.span.is_empty()));
         }
         if code_end == 0

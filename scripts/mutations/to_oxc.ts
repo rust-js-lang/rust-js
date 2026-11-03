@@ -7,9 +7,18 @@ export const mutations: Mutation[] = [
     breaks:
       "a `js::import!` written above the `use`s, a blank line above it, prints that blank line between the imports it's after, `import \"./App.css\";` apart from the vite-react example's imports (rd666)",
     file: "src/to_oxc.rs",
-    find: "        if code_end > top && matches!(body[i], Statement::ImportDeclaration(_)) {\n",
-    replace: "        if false && code_end > top && matches!(body[i], Statement::ImportDeclaration(_)) {\n",
-    tests: ["test/modules.test.ts", "-t", "comments above a js::import"],
+    find: "        if start != 0 && body[i - 1].span().start > top && matches!(body[i], Statement::ImportDeclaration(_)) {\n",
+    replace: "        if false && body[i - 1].span().start > top && matches!(body[i], Statement::ImportDeclaration(_)) {\n",
+    tests: ["test/lowering-comments-items.test.ts", "-t", "comments above a js::import"],
+  },
+  {
+    name: "import-blank-of-one-use-dropped",
+    breaks:
+      "the blank line above a `use` that makes two imports, `use crate::api::{self, Failure};`, is dropped, the first's code past the second's start (rd666)",
+    file: "src/to_oxc.rs",
+    find: "        if start != 0 && body[i - 1].span().start > top && matches!(body[i], Statement::ImportDeclaration(_)) {\n",
+    replace: "        if start != 0 && code_end > top && matches!(body[i], Statement::ImportDeclaration(_)) {\n",
+    tests: ["test/pilot.test.ts", "-t", "committed JS"],
   },
   {
     name: "module-doc-lost",

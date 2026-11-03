@@ -5,7 +5,7 @@
 import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { compiler, fixture, run } from "./support";
+import { buildReact, compiler, fixture, run, target } from "./support";
 
 /** `rust` compiled in a fixture of `name`: its JS and its module. */
 async function compiled(name: string, rust: string): Promise<{ js: string; lib: Record<string, unknown> }> {
@@ -772,3 +772,70 @@ pub fn walk(id: u32, key: &str) -> usize {
   expect(js).toContain('    id,\n    [key], // path\n    "root", // name\n    true,\n  );');
   expect((lib.walk as (id: number, key: string) => number)(1, "ab")).toBe(9);
 });
+
+// React DOM's ReactDOMServerExternalRuntime writes "// Imports are resolved
+// statically by the closure compiler .." above its import, as its port
+// writes it above its `js::import!(..)`: the comment was lost (rd666). An
+// import for its effect is a statement of the module whose span is its
+// `js::import!`, as a `use`'s import's is its `use` (ADR 1069, amended), so
+// the comments above it are before it; where it loads, after what's named,
+// is ADR 1063's, wherever it's written.
+test("the comments above a js::import! are above its import", async () => {
+  buildReact();
+  const dir = fixture("js-import-comments");
+  writeFileSync(join(dir, "lib.rs"), `use crate::lanes::lane;
+
+// Imports are resolved statically by the closure compiler in release bundles
+// and by rollup in jest unit tests
+js::import!("./runtime.js");
+
+pub mod lanes {
+    pub fn lane() -> u32 {
+        1
+    }
+}
+
+pub fn first() -> u32 {
+    lane() + 1
+}
+
+// The panel's styles.
+js::import!("./panel.js");
+`);
+  writeFileSync(join(dir, "runtime.js"), "globalThis.runtimeLoaded = true;\n");
+  writeFileSync(join(dir, "panel.js"), "");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`import { lane } from "./lanes.js";
+
+// Imports are resolved statically by the closure compiler in release bundles
+// and by rollup in jest unit tests
+import "./runtime.js";
+
+// The panel's styles.
+import "./panel.js";
+
+export function first() {`);
+  expect([(await import(join(dir, "lib.js"))).first(), (globalThis as { runtimeLoaded?: boolean }).runtimeLoaded]).toEqual([2, true]);
+  // Written above the \`use\`s, as the vite-react example's \`App.css\`: it's
+  // after their imports, and the blank line above it in the Rust isn't one
+  // between them, so they're one block, as create-vite's \`App.jsx\` has it.
+  writeFileSync(join(dir, "lib.rs"), `//! The app.
+
+js::import!("./panel.js");
+
+use crate::lanes::lane;
+
+pub mod lanes {
+    pub fn lane() -> u32 {
+        1
+    }
+}
+
+pub fn first() -> u32 {
+    lane() + 1
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('import { lane } from "./lanes.js";\nimport "./panel.js";\n\nexport function first() {');
+}, 600_000);

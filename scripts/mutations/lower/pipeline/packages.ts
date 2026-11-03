@@ -18,7 +18,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline/packages.rs",
     find: "                span: written(Some(attr.span())),\n",
     replace: "                span: js::Span::NONE,\n",
-    tests: ["test/modules.test.ts", "-t", "comments above a js::import"],
+    tests: ["test/lowering-comments-items.test.ts", "-t", "comments above a js::import"],
   },
   {
     name: "js-import-placed-where-written",
@@ -27,7 +27,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline/packages.rs",
     find: "                span: written(Some(attr.span())),\n                named_at: js::Span::NONE,\n",
     replace: "                span: written(Some(attr.span())),\n                named_at: written(Some(attr.span())),\n",
-    tests: ["test/modules.test.ts", "-t", "comments above a js::import"],
+    tests: ["test/lowering-comments-items.test.ts", "-t", "comments above a js::import"],
   },
   {
     name: "unread-library-item-imported",
