@@ -556,6 +556,43 @@ test("a namespace's method that only passes its parameters on is the function it
   expect(lib.unit()).toBe("unit");
 });
 
+// React's ReactFiberReconciler keeps its namespace's forwarding methods,
+// `export {defaultOnCaughtError, ..} from './ReactFiberErrorLogger'`, and
+// `pub use`s the functions too, so its users take them as values: one
+// re-export of each, which rust-js wrote twice and then couldn't read
+// (rd424). A `pub use` of another item by the method's name is refused.
+test("a namespace's forwarding method beside a pub use of its function is one re-export", async () => {
+  const dir = fixture("namespace-forwarding-pub-use");
+  writeFileSync(join(dir, "lib.rs"), "pub mod other;\npub mod reconciler;\nmod work_loop;\n\npub fn run() -> u32 {\n    reconciler::Reconciler.flush(2) + reconciler::flush(3)\n}\n");
+  writeFileSync(join(dir, "work_loop.rs"), "pub fn flush(n: u32) -> u32 {\n    n + 1\n}\n");
+  writeFileSync(join(dir, "other.rs"), "pub fn flush(n: u32) -> u32 {\n    n + 2\n}\n");
+  const reconciler = (used: string) => `use crate::work_loop;
+
+pub use ${used};
+
+#[cfg_attr(rust_js, rust_js::namespace)]
+pub struct Reconciler;
+
+unsafe impl js::Defined for Reconciler {}
+
+#[cfg_attr(rust_js, rust_js::namespace)]
+impl Reconciler {
+    pub fn flush(&self, n: u32) -> u32 {
+        work_loop::flush(n)
+    }
+}
+`;
+  writeFileSync(join(dir, "reconciler.rs"), reconciler("crate::work_loop::flush"));
+  run([compiler, ...flags(dir)]);
+  const module = readFileSync(join(dir, "reconciler.js"), "utf8");
+  expect(module.match(/export \{ flush \} from "\.\/work_loop\.js";/g)).toHaveLength(1);
+  expect((await import(join(dir, "lib.js"))).run()).toBe(7);
+  writeFileSync(join(dir, "reconciler.rs"), reconciler("crate::other::flush"));
+  const refused = runSync([compiler, ...flags(dir)], root, 60_000);
+  expect(refused.code).not.toBe(0);
+  expect(refused.stderr).toContain("rust-js: `flush` is a `pub use` of another item");
+});
+
 test("a library's namespace's method that only passes its parameters on is the function it calls", async () => {
   const dir = fixture("namespace-forwarding-library");
   const js = ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];

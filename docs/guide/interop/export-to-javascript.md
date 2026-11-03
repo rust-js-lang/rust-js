@@ -1659,7 +1659,12 @@ export function updateContainer(n) {
   It must take what JS gives it as the function does: its parameters'
   types the function's, its generic parameters given as they are, its
   caller's location and its bounds' dictionaries alike, and no copy its
-  callers need; else it's a function of its own.
+  callers need; else it's a function of its own. A `pub use` of that
+  function by the method's name, so other modules take it as a value,
+  `pub use work_loop::batched_updates;`, is the same re-export, written
+  once. A `pub use` of another item by that name is an error, since JS
+  exports one value by a name
+  ([ADR 1037](../../decisions/1037-a-module-namespace-is-a-unit-struct-of-its-functions.md), amended).
 - **A call through a value is the value's function**, the module's own
   JS, a library's too, which its consumer never compiles of its own. One
   given what may look like `None`, a type parameter's `Option`, is

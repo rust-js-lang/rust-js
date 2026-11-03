@@ -363,4 +363,22 @@ export const mutations: Mutation[] = [
     replace: "                    Some(_) if false =>",
     tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
   },
+  {
+    name: "forwarded-method-beside-its-pub-use-refused",
+    breaks:
+      "a namespace's forwarding method beside a `pub use` of the same function is refused as a clash, ReactFiberReconciler's `default_on_caught_error` (rd424)",
+    file: "src/lower/reexports.rs",
+    find: "                    Some((_, was, already)) if *was == from && *already == named => continue,\n",
+    replace: "                    Some((_, was, already)) if false && *was == from && *already == named => continue,\n",
+    tests: ["test/namespaces.test.ts", "-t", "beside a pub use of its function"],
+  },
+  {
+    name: "forwarded-method-name-clash-unrefused",
+    breaks:
+      "a `pub use` of another item by a forwarding method's name isn't refused, so the module exports two values by one name, `Duplicated export 'flush'` (rd424)",
+    file: "src/lower/reexports.rs",
+    find: "                        tcx.dcx()\n                            .struct_span_err(span(method), message)\n                            .with_span_note(*written, \"the `pub use`\")\n                            .emit();\n",
+    replace: "                        let _ = (message, written);\n",
+    tests: ["test/namespaces.test.ts", "-t", "beside a pub use of its function"],
+  },
 ];

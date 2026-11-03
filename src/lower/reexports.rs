@@ -714,11 +714,31 @@ fn forwarded_methods(
                     continue;
                 };
                 let export = super::default_exports::exported_as(tcx, target, theirs.exported());
-                found.push((
-                    statement,
+                let (from, named) = (
                     js::ImportFrom::Module(path.clone()),
                     (export, mine.exported().to_string()),
-                ));
+                );
+                // A `pub use` of the function by its name, React's
+                // ReactFiberReconciler's `pub use
+                // crate::react_fiber_error_logger::default_on_caught_error;`
+                // beside its namespace's method: one re-export of it (rd424).
+                match found.iter().find(|(_, _, (_, alias))| *alias == named.1) {
+                    Some((_, was, already)) if *was == from && *already == named => continue,
+                    Some((written, ..)) => {
+                        let message = format!(
+                            "rust-js: `{}` is a `pub use` of another item, and this method is its namespace's \
+                             re-export of `{}` by that name: JS exports one value by a name",
+                            named.1,
+                            tcx.def_path_str(target)
+                        );
+                        tcx.dcx()
+                            .struct_span_err(span(method), message)
+                            .with_span_note(*written, "the `pub use`")
+                            .emit();
+                        continue;
+                    }
+                    None => found.push((statement, from, named)),
+                }
             }
         }
     }

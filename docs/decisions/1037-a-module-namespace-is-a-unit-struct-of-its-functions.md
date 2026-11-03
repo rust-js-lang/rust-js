@@ -507,3 +507,30 @@ mutations `export-list-comments-unread` (`to_oxc.ts`),
 `export-list-doc-listed`, `export-list-end-before-first`,
 `export-list-end-at-its-field` and `export-list-comment-of-its-own-field`
 (`to_oxc/closing.ts`).
+
+## Amendment: a `pub use` of a forwarded function is the same re-export (rd424)
+
+React's ReactFiberReconciler keeps its namespace's forwarding methods,
+`default_on_caught_error(&self, ..)`, each `export {defaultOnCaughtError,
+..} from './ReactFiberErrorLogger.js'` (rd292b). It also wants `pub use
+crate::react_fiber_error_logger::{default_on_caught_error, ..};`, so ReactART,
+ReactDOMRoot and ReactTestRenderer can take the functions as values from
+ReactFiberReconciler, as upstream does. rust-js wrote both re-exports and
+then failed on its own output: "Duplicated export 'defaultOnCaughtError'".
+
+**A forwarding method whose re-export a `pub use` already makes, the same
+function from the same module by the same name, is that one re-export**
+(`reexports::forwarded_methods`). It's printed where the `pub use` is, as
+it's written. A `pub use` of another item by the method's name would export
+two values by one name, which JS can't do, so it's a compile error naming
+both.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, none. Both say the
+same export of the same function.
+
+Held by `test/namespaces.test.ts`'s "a namespace's forwarding method
+beside a pub use of its function is one re-export": one `export { flush }
+from`, run, and the refusal. The mutations are
+`forwarded-method-beside-its-pub-use-refused` and
+`forwarded-method-name-clash-unrefused`
+(`lower/reexports.ts`).
