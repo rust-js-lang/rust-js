@@ -323,8 +323,10 @@ rd338 followed the path's module for a `pub use` alone.
 `pub use` re-exports it by the name the path gives is imported from that
 module, by what it re-exports it as** (`reexports::imported_through`, of
 `reexporting_use` and `exported_in`, rd338's own): the crate's function
-or constant, and a library's. Of a `use`'s path or a body's; of two, the
-first written. Its import is placed at that `use`, as one of the
+or constant, and a library's. Of a `use`'s path, the first written of
+each item's, one through its home too; a body's path,
+`config::create_state()`, reads the module's namespace (ADR 1018), no
+import of the item. Its import is placed at that `use`, as one of the
 module's (`UsesWritten`, its holder, as a held binding's is, rd609),
 `import { createRenderState, createResumableState,
 createRootFormatContext } from './ReactFizzConfigMarkup'`, its names
