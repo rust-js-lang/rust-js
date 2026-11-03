@@ -412,7 +412,10 @@ refilled, of `map`, `filter`, `chain`, `rev`, `take` and `skip`; and
 `iterator_values_meet_drops.rs`, their items' drops. Two cases' JS
 changed: a `Box<dyn Iterator>`'s `map()` and a `take()` given to the
 crate's `wrap<I>(it: I) -> Holder<I>` are std's structs,
-`iterator_map($iter(v), f)` where it was `v.values().map(f)`. Mutations
+`iterator_map($iter(v), f)` where it was `v.values().map(f)`. The
+readability baseline is blessed with it: `$iter` 77.3 to 77.4 in ten
+thousand lines, the source of a `map()` a `Box` holds, std's struct's, as
+a variable's is. Mutations
 `rev-own-impl-in-place`, `rev-given-js-held`, `extension-step-held` and
 `given-as-it-is-not-in-input` follow the code; `holder-param-steps-js`,
 `lent-param-meets-unseen`, `apart-std-struct-shares-steps`,

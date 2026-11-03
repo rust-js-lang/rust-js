@@ -87,8 +87,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`doubled(0..4)`, whose result holds its `I`, converts the range to a JS iterator its caller steps as a range",
     file: "src/lower/iterators.rs",
-    find: "            has(sig.output())\n",
-    replace: "            false\n",
+    find: "            has(sig.output()) || meet || inside\n",
+    replace: "            false || meet || inside\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_adapters.rs$"],
   },
   {
