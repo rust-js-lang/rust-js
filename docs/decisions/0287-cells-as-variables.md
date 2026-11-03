@@ -83,8 +83,10 @@ handle was read where it's made only where nothing that could set a field
 ran before its last use (`read_at_once`): past the call, each use was the
 field again, `backingStore.stringChunks.get(key)`, and the `let`'s name
 was lost, where upstream writes `const stringChunks =
-backingStore.stringChunks;`. getBackingBlob kept its `blobs` only because
-its last use was read into a temporary before the call that used it.
+backingStore.stringChunks;`. getBackingBlob kept its `blobs` by chance:
+its MIR held `blobs.as_ref()`, of a map of JS objects, in a temporary read
+right after the `let`, `const _5 = blobs.value;`, the handle's only use,
+before any call, which the inner `Some(blobs)` then named.
 
 **A `let` of a shared borrow, a `&T` or a `RefCell`'s `Ref<T>`, of a
 `T` with no cell of its own (`Freeze`), is read where it's made and keeps
