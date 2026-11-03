@@ -655,6 +655,23 @@ pub fn value(early: &Early) -> &'static Unknown {
     prepare(early.value.get())
 }
 
+// A JS-made struct's nullable field, read by its getter and tested
+// \`== null\` (rd647, #519), is \`null\` or a value to MIR: given a
+// nullable cell as it is (rd628).
+pub struct Given {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub value: Option<&'static Unknown>,
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./config.js#given")]
+fn given() -> &'static Given {
+    unreachable!()
+}
+
+pub fn copy_given(twice: &Twice) {
+    twice.both.set(given().value);
+}
+
 // A field set first is tested \`=== null\`; one set in an \`if\` may be
 // absent, \`== null\` (rd647).
 pub fn has_in_if(response: &Response) -> bool {
@@ -669,7 +686,8 @@ pub fn has_module_loading(response: &Response) -> bool {
       "config.js":
         "export const prepare = (m) => (m === null ? 'null' : m === undefined ? 'undefined' : m);\n" +
         "export const register = () => {};\n" +
-        "export const keep = () => {};\n",
+        "export const keep = () => {};\n" +
+        "export const given = () => ({ value: null });\n",
     },
   );
   for (const read of ["response.moduleLoading", "response.nonce", "response.copy", "twice.both"]) {
@@ -685,6 +703,7 @@ pub fn has_module_loading(response: &Response) -> bool {
     expect(js).toContain(`  return prepare(${read} ?? null);\n`);
   }
   expect(js).toContain("  return response.inIf != null;\n");
+  expect(js).toContain("  twice.both = given().value;\n");
   expect(js).toContain("  return response.moduleLoading !== null;\n");
   // Rust gives each `None` as `null`, absent or not.
   const response = new lib.Response(undefined, false);
