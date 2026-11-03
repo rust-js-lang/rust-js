@@ -675,4 +675,24 @@ export const mutations: Mutation[] = [
     replace: "                _ => return false,\n",
     tests: ["test/lowering-written-elses.test.ts", "-t", "panics is a guard"],
   },
+  {
+    name: "statement-match-folded",
+    breaks:
+      "a `match` written as a statement, each arm setting a late `let`, React's ViewTransitions' `if (clones === null) { previousMeasurements = null; } else { .. }`, is one conditional, `previous = clones == null ? undefined : ..` (rd647)",
+    file: "src/lower/mir/hints.rs",
+    find: "                } if e.ty.is_unit() && !arms.is_empty() => {\n",
+    replace: "                } if false && e.ty.is_unit() && !arms.is_empty() => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_statement_arms.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "statement-match-of-a-desugaring",
+    breaks:
+      "a `match` a desugaring writes, a `for`'s or a `?`'s, is kept as a statement's `if` too, so a value's `match` inside a `for` stays an `if` of its arms (rd647)",
+    file: "src/lower/mir/hints.rs",
+    find: "                    match_source: rustc_hir::MatchSource::Normal,\n                    ..\n                } if e.ty.is_unit() && !arms.is_empty() => {\n",
+    replace: "                    ..\n                } if e.ty.is_unit() && !arms.is_empty() => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_statement_arms.rs$"],
+    snapshots: true,
+  },
 ];

@@ -1108,7 +1108,8 @@ let`'s binding, `const s = ..; if (s != null)`, the rest is a chain of its
 own, read so; a conditional you wrote in an `if`'s `then` stays there,
 `snapshot > 0 ? (more ? "fonts" : ..) : "images"`, its test as written,
 and an `if` you wrote as a statement, of a `let` declared before it,
-stays that `if`; a comment above an arm's value is above it, in its
+stays that `if`, and a `match` so written its `if`, `let previous; if
+(clones == null) { previous = undefined; } else { .. }`; a comment above an arm's value is above it, in its
 branch, `} else if (disconnected) { // ..\n result = ..; }`, or before
 the branch of a conditional, `? // ..\n value`
 ([ADR 0969](../../decisions/0969-a-variables-value-of-a-chain-of-arms-is-the-chain.md), amended):
@@ -1146,6 +1147,19 @@ pub fn reason(blocking: &[u32], snapshot: usize) -> String {
     };
     format!("waiting on {reason}")
 }
+
+pub fn measured(clones: Option<&Vec<u32>>) -> usize {
+    let previous: Option<Vec<u32>>;
+    match clones {
+        None => {
+            previous = None;
+        }
+        Some(clones) => {
+            previous = Some(clones.iter().map(|n| n * 2).collect());
+        }
+    }
+    previous.map_or(0, |p| p.len())
+}
 ```
 
 ```js
@@ -1171,6 +1185,16 @@ export function reason(blocking, snapshot) {
   const reason =
     snapshot > 0 ? (blocking.length > snapshot ? "fonts and images" : "fonts") : "images";
   return `waiting on ${reason}`;
+}
+
+export function measured(clones) {
+  let previous;
+  if (clones == null) {
+    previous = undefined;
+  } else {
+    previous = clones.map((n) => (n * 2) >>> 0);
+  }
+  return previous?.length ?? 0;
 }
 ```
 

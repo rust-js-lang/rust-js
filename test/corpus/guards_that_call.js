@@ -224,14 +224,15 @@ function below(rows) {
       console.log(`under ${n}`);
       return n < level;
     }
-    level =
-      row.length >= 1 && (row[0] === 1 || row[row.length - 1] === 1)
-        ? 1
-        : row.length === 2 && row[0] === 2 && row[1] === 2
-          ? 2
-          : row.length >= 1 && under(row[0])
-            ? 3
-            : 5;
+    if (row.length >= 1 && (row[0] === 1 || row[row.length - 1] === 1)) {
+      level = 1;
+    } else if (row.length === 2 && row[0] === 2 && row[1] === 2) {
+      level = 2;
+    } else if (row.length >= 1 && under(row[0])) {
+      level = 3;
+    } else {
+      level = 5;
+    }
     seen.push(level);
   }
   return seen;

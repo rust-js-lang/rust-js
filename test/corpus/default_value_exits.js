@@ -153,7 +153,15 @@ function guarded(pairs) {
     const [a, b] = pairs[i];
     let level = 4;
     const below = (n) => n < level;
-    level = a === 1 || b === 1 ? 1 : a === 2 && b === 2 ? 2 : below(a) ? 3 : 5;
+    if (a === 1 || b === 1) {
+      level = 1;
+    } else if (a === 2 && b === 2) {
+      level = 2;
+    } else if (below(a)) {
+      level = 3;
+    } else {
+      level = 5;
+    }
     seen.push(level);
   }
   return seen;
@@ -306,14 +314,15 @@ function guardedRows(rows) {
     const row = rows[i];
     let level = 4;
     const below = (n) => n < level;
-    level =
-      row.length >= 1 && (row[0] === 1 || row[row.length - 1] === 1)
-        ? 1
-        : row.length === 2 && row[0] === 2 && row[1] === 2
-          ? 2
-          : row.length >= 1 && below(row[0])
-            ? 3
-            : 5;
+    if (row.length >= 1 && (row[0] === 1 || row[row.length - 1] === 1)) {
+      level = 1;
+    } else if (row.length === 2 && row[0] === 2 && row[1] === 2) {
+      level = 2;
+    } else if (row.length >= 1 && below(row[0])) {
+      level = 3;
+    } else {
+      level = 5;
+    }
     seen.push(level);
   }
   return seen;

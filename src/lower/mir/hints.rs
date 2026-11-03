@@ -330,6 +330,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     else_opt: Some(_),
                     ..
                 } if e.ty.is_unit() => Some(self.js_span(self.frame.thir[cond].span)),
+                // A `match` the program wrote as one too, each arm a
+                // statement, `None => { x = None; }`: where MIR tests it,
+                // from `match` to its scrutinee or its first arm's pattern,
+                // as `elses` has it (rd647).
+                thir::ExprKind::Match {
+                    scrutinee,
+                    ref arms,
+                    match_source: rustc_hir::MatchSource::Normal,
+                    ..
+                } if e.ty.is_unit() && !arms.is_empty() => {
+                    let (at, tested) = (self.js_span(e.span), self.js_span(self.frame.thir[scrutinee].span));
+                    let pattern = self.js_span(self.frame.thir[arms[0]].pattern.span);
+                    (!at.is_none() && !tested.is_none()).then(|| js::Span {
+                        lo: at.lo,
+                        hi: tested.hi.max(pattern.hi),
+                    })
+                }
                 _ => None,
             })
             .collect();

@@ -443,3 +443,40 @@ Held by the corpus's `conditional_branch_comments`, both forms, run, and
 the mutations `chain-arm-at-the-chain`, `chain-arms-placed-where-some-are`
 (`lower/mir/tidy/value_chains.ts`) and `part-at-its-whole-start-skipped`
 (`to_oxc.ts`).
+
+## Amendment: a `match` written as a statement, as it's written (rd647)
+
+React's ViewTransitions writes
+
+```js
+if (clones === null) {
+  previousMeasurements = null;
+} else {
+  previousMeasurements = clones.map(measureClonedInstance);
+}
+```
+
+and its port `match clones.as_ref() { None => { previous_measurements =
+None; } Some(clones) => { previous_measurements = Some(..); } }`, each arm
+a statement setting a late `let`. The rd187 amendment kept an `if` so
+written, and this `match`'s, the same program, was `previousMeasurements =
+clones == null ? undefined : clones.map(..)`. **A `match` the program
+wrote as a statement, of type `()`, stays the `if` MIR makes of it**, as
+an `if` does: `hints::Written::statement_elses` holds where MIR tests it,
+from `match` to its scrutinee or its first arm's pattern, as `elses` has
+it; `branches::written_as_statement` is the one test both ask. Not a
+`match` that's a value, `let n = match o { Some(v) => v, None => 0 };`,
+nor one a desugaring writes (`?`, `for`), nor a temporary's. Case
+([0262](0262-when-rust-and-js-disagree.md)): N, the same tests in the same
+order, the same value.
+
+Held by corpus case `match_statement_arms` against native Rust (a block's
+arms, an assignment's, a conditional in an arm, a `match` that's a value,
+still a conditional, and an `if` that's a value in a `for`, whose
+desugaring's `match` is of type `()` too), and the mutations
+`statement-match-folded` and `statement-match-of-a-desugaring`
+(`lower/mir/hints.ts`). The corpus' `default_value_exits` and
+`guards_that_call` re-blessed: their `match (a, b) { (1, _) | (_, 1) =>
+level = 1, .. }`, each arm an assignment, is its chain, `if (a === 1 || b
+=== 1) { level = 1; } else if ..`, not `level = a === 1 || b === 1 ? 1 :
+..`.
