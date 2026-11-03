@@ -166,22 +166,7 @@ fn named_through<'tcx>(
                     if ident.name == only.ident.name
                         && matches!(path.res.value_ns, Some(Res::Def(_, named)) if named == binding) =>
                 {
-                    // One the module renames, its own `const`, read by its
-                    // name there, `slice.call(arguments)` (ADR 0622, amended).
-                    let own = (ident.name != tcx.item_name(binding)
-                        && ident.name != rustc_span::symbol::kw::Underscore)
-                        .then(|| {
-                            let held = module_held(tcx, foreign, scope, modules);
-                            let found = held.iter().find(|h| h.binding == binding && h.ident == ident.name)?;
-                            Some(HeldRead {
-                                holder: Holder::Module(scope),
-                                import: found.name.clone(),
-                                name: found.name.clone(),
-                                binding,
-                            })
-                        })
-                        .flatten();
-                    own.or_else(|| named_through(tcx, foreign, scope, path.segments, binding, modules))
+                    named_through(tcx, foreign, scope, path.segments, binding, modules)
                 }
                 ItemKind::Use(path, rustc_hir::UseKind::Glob) => match path.res.type_ns {
                     Some(Res::Def(DefKind::Mod, module)) => {
@@ -195,11 +180,12 @@ fn named_through<'tcx>(
         // Else one the module holds itself, its `const`, read by its name
         // there as upstream's module reads its own: a static it declares
         // and makes its default, `if (!ReactSharedInternalsServer)`, not
-        // the path again (rd659).
+        // the path again (rd659); one its private `use` renames, a global's,
+        // `slice.call(arguments)` (ADR 0622, amended).
         return used.or_else(|| {
             let held = module_held(tcx, foreign, scope, modules);
-            let found = (held.iter())
-                .find(|h| h.binding == binding && h.ident == only.ident.name && h.through.is_none())?;
+            let own = |h: &&HeldBinding| h.binding == binding && h.ident == only.ident.name && h.through.is_none();
+            let found = held.iter().find(own)?;
             Some(HeldRead {
                 holder: Holder::Module(scope),
                 import: found.name.clone(),

@@ -239,3 +239,61 @@ test("a default import is named as the static that binds it names it", async () 
   const lib = await import(join(dir, "app", "lib.js"));
   expect(lib.modes()).toEqual([{ fast: true }, { fast: false }]);
 });
+
+// React's ReactSharedInternalsServer declares the binding it makes its
+// default and checks it as the module loads, `if (!ReactSharedInternalsServer)`:
+// a module that holds a binding reads it by its \`const\` there, in a
+// \`js::on_load!\` and a function alike, not its path again (rd659, ADR
+// 0633, amended); so does one whose \`use\` it makes its default, \`assign\`.
+test("a module that holds a binding reads it by its const", async () => {
+  const dir = fixture("held-bindings-at-home");
+  writeFileSync(join(dir, "lib.rs"), `pub mod assign;
+pub mod server;
+`);
+  writeFileSync(join(dir, "server.rs"), `pub struct Internals(core::marker::PhantomData<js::JsObject>);
+
+unsafe extern "Rust" {
+    #[cfg_attr(rust_js, rust_js::name = "ReactSharedInternalsServer")]
+    #[link_name = "react#*.__SERVER_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE"]
+    pub safe static REACT_SHARED_INTERNALS_SERVER: Option<&'static Internals>;
+}
+
+js::on_load! {
+    if REACT_SHARED_INTERNALS_SERVER.is_none() {
+        panic!("The \\"react-server\\" condition must be enabled.");
+    }
+}
+
+pub fn internals() -> Option<&'static Internals> {
+    REACT_SHARED_INTERNALS_SERVER
+}
+
+js::export_default!(REACT_SHARED_INTERNALS_SERVER);
+`);
+  writeFileSync(join(dir, "assign.rs"), `use js::Unknown;
+
+pub(crate) use js::object::assign;
+
+pub fn merged<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
+    assign(target, (source,))
+}
+
+js::export_default!(assign);
+`);
+  mkdirSync(join(dir, "node_modules/react"), { recursive: true });
+  writeFileSync(join(dir, "node_modules/react/package.json"), '{ "name": "react", "type": "module", "main": "index.js" }\n');
+  writeFileSync(join(dir, "node_modules/react/index.js"), "export const __SERVER_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE = { A: null };\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const server = readFileSync(join(dir, "server.js"), "utf8");
+  expect(server).toContain("const ReactSharedInternalsServer =\n  React.__SERVER_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;\n\nif (ReactSharedInternalsServer == null) {");
+  expect(server).toContain("  return ReactSharedInternalsServer;\n");
+  expect(server.match(/__SERVER_INTERNALS/g)).toHaveLength(1);
+  const assign = readFileSync(join(dir, "assign.js"), "utf8");
+  expect(assign).toContain("const assign = Object.assign;");
+  expect(assign).toContain("  return assign(target, source);\n");
+  const lib = await import(join(dir, "server.js"));
+  const react = await import(join(dir, "node_modules/react/index.js"));
+  expect(lib.internals()).toBe(react.__SERVER_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE);
+  expect(lib.default).toBe(lib.internals());
+  expect((await import(join(dir, "assign.js"))).merged({ a: 1 }, { b: 2 })).toEqual({ a: 1, b: 2 });
+});

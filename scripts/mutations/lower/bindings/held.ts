@@ -7,9 +7,13 @@ export const mutations: Mutation[] = [
     breaks:
       "a module's own read of a binding it holds is its path again, `if (React.__SERVER_INTERNALS_.. == null)`, not its `const` (rd659)",
     file: "src/lower/bindings/held.rs",
-    find: "                .find(|h| h.binding == binding && h.ident == only.ident.name && h.through.is_none())?;\n",
-    replace: "                .find(|h| h.binding == binding && h.ident == only.ident.name && h.through.is_none() && false)?;\n",
-    tests: ["test/lowering-bindings.test.ts", "-t", "a module that holds a binding reads it by its const"],
+    find: "            let found = held.iter().find(own)?;\n",
+    replace: "            let found = held.iter().find(own).filter(|_| false)?;\n",
+    tests: [
+      "test/lowering-binding-paths.test.ts",
+      "-t",
+      "a module that holds a binding reads it by its const|a private use renaming a global binding",
+    ],
   },
   {
     name: "bound-global-unexported",
@@ -104,14 +108,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings/held.rs",
     find: "        if !export && !named_default && !renamed_global {\n",
     replace: "        if !export && !named_default {\n",
-    tests: ["test/lowering-binding-paths.test.ts", "-t", "private use renaming"],
-  },
-  {
-    name: "renamed-global-read-in-place",
-    breaks: "a read of a global binding the module's `use` renames is the global, `Array.prototype.slice.call(list)`, not the module's `const`, `slice.call(list)` (ADR 0622, amended)",
-    file: "src/lower/bindings/held.rs",
-    find: "                    let own = (ident.name != tcx.item_name(binding)\n",
-    replace: "                    let own = (false && ident.name != tcx.item_name(binding)\n",
     tests: ["test/lowering-binding-paths.test.ts", "-t", "private use renaming"],
   },
   {

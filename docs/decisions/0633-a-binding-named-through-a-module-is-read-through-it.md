@@ -254,6 +254,14 @@ the module that makes `use js::object::assign;` its default. A module
 that only declares a binding, or names it itself by its path, still reads
 it in place.
 
-Held by `test/lowering-bindings.test.ts`'s "a module that holds a binding
-reads it by its const", run in Node against a stand-in `react`, and the
-mutation `held-at-home-in-place` (`bindings/held.ts`).
+One rule now answers what ADR 0622's amendment answered of a private
+`use` that renames a global, `slice.call(arguments)`, by a branch of its
+own: that branch is gone, as the module holds the renamed global and the
+name its `use` gives is read by its `const` as any other it holds; its
+mutation `renamed-global-read-in-place` survived the rule and is gone,
+its test, "a private use renaming a global binding is the module's
+const", one of the new mutation's.
+
+Held by `test/lowering-binding-paths.test.ts`'s "a module that holds a
+binding reads it by its const", run in Node against a stand-in `react`,
+and the mutation `held-at-home-in-place` (`bindings/held.ts`).

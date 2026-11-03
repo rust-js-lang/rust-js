@@ -152,8 +152,10 @@ private `use` that names the `const` by renaming it.
 
 Held by `test/lowering-binding-paths.test.ts`, "a private use renaming a
 global binding is the module's const", run in Node; mutations
-`private-renamed-global-unheld`, `renamed-global-read-in-place` and
-`underscore-use-held` (`bindings/held.rs`).
+`private-renamed-global-unheld`, `renamed-global-read-in-place` (gone
+since ADR 0633's rd659 amendment, a module reading what it holds by its
+`const`, which takes this case) and `underscore-use-held`
+(`bindings/held.rs`).
 
 ## Amendment: a private renamed global is no part of the module's type (rd517, P3)
 
