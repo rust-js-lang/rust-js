@@ -324,8 +324,14 @@ never returns (`leaves`), leaves the list the copy is declared in, so nothing it
 `if`. Both `read_before_code`, of what may run code, and `read_before_set`,
 of what sets the variable, ask it. So `if (callServer == null) { throw
 new Error(..); } return callServer(id, args);`, as upstream writes it.
-A copy read past the way that goes on, where that way runs code or sets
-the variable, stays one: `if (reset) { setServerCallback(double); } else
+Only of an `if` of the copy's own list, or of its `if`s (`top`): inside
+a `try`, a `throw` goes on to its `catch` and past it, and inside a
+labeled block or a `switch`, what a way does goes on to what follows
+them, so there both ways are what follows sees, as before. (Applied
+inside them too, as first landed, it was a wrong answer, #515: `let count
+= COUNT.get(); let _ = catch_unwind(|| if t { bump(); panic!() });
+count` gave the bumped count, 11 where Rust gives 1.) A copy read past the way that
+goes on, where that way runs code or sets the variable, stays one: `if (reset) { setServerCallback(double); } else
 { return callServer$1(id) + 1; } return callServer$1(id);`, which reads
 the callback the copy holds.
 
@@ -335,7 +341,8 @@ between them is on that read's way. Held by the corpus case
 `copy_read_past_an_exit.rs`, run against native Rust: the Parcel client's
 throw, a `return` after a set of the variable in a way that ends, a set
 between, a call that sets it between, and a way that sets it while the
-other ends; the mutations `shadow-ended-way-runs-on`,
+other ends, and a `try`'s, a labeled block's and a `match`'s ending ways
+(#515); the mutations `shadow-ended-way-leaves-a-try`, `shadow-ended-way-runs-on`,
 `shadow-way-going-on-runs-nothing` and `shadow-ended-way-sets-on`
 (`prepare/shadows.ts`).
 
@@ -357,4 +364,7 @@ after the copy is looked at whole, never way by way. A `break` is never
 one. Case: N, as above. Held by `copy_read_past_an_exit.rs`'s
 `set_then_break`, and its `set_then_unwind`, a set in a way that throws
 in a `try` whose `catch` reads the copy, which stays a copy, run against
-native Rust; and the mutation `shadow-break-leaves`.
+native Rust. Its mutation, `shadow-break-leaves`, is gone with #515's
+`top`, which looks at no `if` way by way inside a labeled block or a
+`switch`, so no `break` there is asked of; one in the copy's own list
+leaves it, out of the copy's scope.

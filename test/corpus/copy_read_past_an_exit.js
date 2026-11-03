@@ -5,6 +5,7 @@ export function entry() {
 }
 
 let callServer;
+let count = 1;
 
 export function setServerCallback(callback) {
   callServer = callback;
@@ -95,6 +96,45 @@ function setThenUnwind(id, swap) {
   return callServer$1(id);
 }
 
+function bump() {
+  count = (count + 10) >>> 0;
+}
+
+function caught(t) {
+  const count$1 = count;
+  try {
+    if (t) {
+      bump();
+      throw new Error("bumped");
+    }
+  } catch {}
+  return count$1;
+}
+
+function labeled(t) {
+  const count$1 = count;
+  out: {
+    if (t) {
+      count = 5;
+      break out;
+    }
+    count = 7;
+  }
+  return count$1;
+}
+
+function matched(k) {
+  const count$1 = count;
+  if (k === 0) {
+    if (count$1 > 0) {
+      count = 9;
+    }
+  } else {
+    count = 3;
+  }
+  return count$1;
+}
+
 function double(n) {
   return (n * 2) >>> 0;
 }
@@ -114,6 +154,9 @@ function main() {
   console.log(`${callPastAReset(7, false)}`);
   console.log(`${resetOrKeep(2, false)} ${resetOrKeep(2, true)}`);
   console.log(`${callThenClear(4)}`);
+  console.log(`${caught(true)} ${count}`);
+  console.log(`${labeled(true)} ${labeled(false)}`);
+  console.log(`${matched(0)} ${matched(1)} ${count}`);
   console.log(`${callServer == null}`);
   setServerCallback(double);
   console.log(`${setThenBreak(1, false, true)} ${setThenBreak(1, false, false)}`);

@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "shadow-ended-way-leaves-a-try",
+    breaks: "a way that ends inside a `try`, a labeled block or a `switch` is taken to leave the copy's list, so a copy read after its `catch` is the variable a call in the `try` set, `caught(true)` giving 11 where Rust gives 1 (rd646's P0)",
+    file: "src/prepare/shadows.rs",
+    find: "    let ends = |way: &[Stmt]| top && way.last().is_some_and(leaves);\n",
+    replace: "    let ends = |way: &[Stmt]| way.last().is_some_and(leaves);\n",
+    tests: ["test/corpus.test.ts", "-t", "^copy_read_past_an_exit.rs$"],
+  },
+  {
     name: "shadow-ended-way-runs-on",
     breaks: "what a way that ends runs, `if (callServer$1 == null) { throw new Error(..); }`, is taken to run before what follows it, so React's Parcel client keeps `const callServer$1 = callServer;` (rd646)",
     file: "src/prepare/shadows.rs",
@@ -23,20 +31,12 @@ export const mutations: Mutation[] = [
     name: "shadow-ended-way-sets-on",
     breaks: "a set of the variable in a way that ends, `if (clear) { callServer = undefined; return 1; }`, is taken to be before what follows it, which keeps its copy (rd646)",
     file: "src/prepare/shadows.rs",
-    find: "                *set = after_ways(a, b, *set, other);\n",
+    find: "                *set = after_ways((a, b), (*set, other), top);\n",
     replace: "                *set |= other;\n",
     tests: ["test/corpus.test.ts", "-t", "^copy_read_past_an_exit.rs$"],
     snapshots: true,
   },
-  {
-    name: "shadow-break-leaves",
-    breaks: "a way that ends by a `break` is taken to reach nothing after the copy, so `done: { if (swap) { callServer = triple; break done; } } return callServer(id);` calls the callback the way set, not the one the copy holds",
-    file: "src/prepare/shadows.rs",
-    find: "        StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Continue(_) => true,\n",
-    replace: "        StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Continue(_) | StmtKind::Break(_) => true,\n",
-    tests: ["test/corpus.test.ts", "-t", "^copy_read_past_an_exit.rs$"],
-    snapshots: true,
-  },
+
   {
     name: "shadow-receiver-read-after-getter",
     breaks: "a copy of a module's variable read as a property's object is taken to be read after the property's getter, so `activeElement.detachEvent(..)` keeps `const activeElement$1 = activeElement;` (rd146)",
@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
     name: "shadow-of-outer-variable-aliased",
     breaks: "a local copy of a module's variable, `const count$1 = count;`, is taken for the variable, which a call then changes, so `let count = COUNT.get(); bump(); count` gives the new count (ADR 0277, amended)",
     file: "src/prepare/shadows.rs",
-    find: "        let seen = own.contains(&of) || rest.is_some_and(|rest| read_before_code(rest, &alias, &mut false));\n",
+    find: "        let seen = own.contains(&of) || rest.is_some_and(|rest| read_before_code(rest, &alias, &mut false, true));\n",
     replace: "        let seen = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^shadow_of_module_variable.rs$"],
   },
@@ -115,8 +115,8 @@ export const mutations: Mutation[] = [
     name: "shadow-catch-read-before-its-block",
     breaks: "a copy of a module's variable read in a `catch`, `level$1 + 100`, is the variable, which the `try`'s call set before it threw (ADR 0277, amended)",
     file: "src/prepare/shadows.rs",
-    find: "                read_before_code(block, alias, ran) && read_before_code(after, alias, ran)\n",
-    replace: "                let mut before = *ran;\n                read_before_code(block, alias, ran) && read_before_code(after, alias, &mut before)\n",
+    find: "                read_before_code(block, alias, ran, false) && read_before_code(after, alias, ran, false)\n",
+    replace: "                let mut before = *ran;\n                read_before_code(block, alias, ran, false) && read_before_code(after, alias, &mut before, false)\n",
     tests: ["test/corpus.test.ts", "-t", "^shadow_of_module_variable_in_try.rs$"],
   },
   {
@@ -149,8 +149,8 @@ export const mutations: Mutation[] = [
     name: "shadow-read-later-in-place",
     breaks: "a copy a closure or a handle reads, when it's called, after the variable is set, is the variable, so `read()` gives the new count (a wrong answer, ADR 0277, amended)",
     file: "src/prepare/shadows.rs",
-    find: "            || rest.is_some_and(|rest| !read_later(rest, &alias) && read_before_set(rest, &alias, &of, &mut false));\n",
-    replace: "            || rest.is_some_and(|rest| read_before_set(rest, &alias, &of, &mut false));\n",
+    find: "            rest.is_some_and(|rest| !read_later(rest, &alias) && read_before_set(rest, &alias, &of, &mut false, true))\n",
+    replace: "            rest.is_some_and(|rest| read_before_set(rest, &alias, &of, &mut false, true))\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "read after the variable is set stays a copy"],
   },
   {

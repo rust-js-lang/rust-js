@@ -7,12 +7,15 @@
 // place, and one past a way that runs code and goes on, while the other
 // ends, stays a copy. So does one read past a `break` out of a labeled
 // block that holds a set, which goes on to what follows the block, and
-// past a `catch` an unwind's set reaches.
+// past a `catch` an unwind's set reaches; and one past a way that ends
+// inside a `try`, a labeled block or a `match`'s `switch`, where what ends
+// there goes on to what follows: a `throw` past its `catch` (#515).
 use std::cell::Cell;
 use std::panic::catch_unwind;
 
 thread_local! {
     static CALL_SERVER: Cell<Option<fn(u32) -> u32>> = const { Cell::new(None) };
+    static COUNT: Cell<u32> = const { Cell::new(1) };
 }
 
 pub fn set_server_callback(callback: fn(u32) -> u32) {
@@ -100,6 +103,46 @@ fn set_then_unwind(id: u32, swap: bool) -> u32 {
     call_server(id)
 }
 
+fn bump() {
+    COUNT.set(COUNT.get() + 10);
+}
+
+fn caught(t: bool) -> u32 {
+    let count = COUNT.get();
+    let _ = catch_unwind(|| {
+        if t {
+            bump();
+            panic!("bumped");
+        }
+    });
+    count
+}
+
+fn labeled(t: bool) -> u32 {
+    let count = COUNT.get();
+    'out: {
+        if t {
+            COUNT.set(5);
+            break 'out;
+        }
+        COUNT.set(7);
+    }
+    count
+}
+
+fn matched(k: u32) -> u32 {
+    let count = COUNT.get();
+    match k {
+        0 => {
+            if count > 0 {
+                COUNT.set(9);
+            }
+        }
+        _ => COUNT.set(3),
+    }
+    count
+}
+
 fn double(n: u32) -> u32 {
     n * 2
 }
@@ -119,6 +162,9 @@ fn main() {
     println!("{}", call_past_a_reset(7, false));
     println!("{} {}", reset_or_keep(2, false), reset_or_keep(2, true));
     println!("{}", call_then_clear(4));
+    println!("{} {}", caught(true), COUNT.get());
+    println!("{} {}", labeled(true), labeled(false));
+    println!("{} {} {}", matched(0), matched(1), COUNT.get());
     println!("{}", CALL_SERVER.get().is_none());
     set_server_callback(double);
     println!("{} {}", set_then_break(1, false, true), set_then_break(1, false, false));

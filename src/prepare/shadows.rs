@@ -92,11 +92,12 @@ fn shadow(body: &[Stmt], own: &HashSet<String>) -> Option<(String, String)> {
         // whose next turn makes it anew, React's popToNextHostParent's
         // `hydrationParentFiber = hydrationParentFiber.return` (ADR 0277,
         // amended).
-        let unread_after =
-            || rest.is_some_and(|rest| !read_later(rest, &alias) && read_before_set(rest, &alias, &of, &mut false));
+        let unread_after = || {
+            rest.is_some_and(|rest| !read_later(rest, &alias) && read_before_set(rest, &alias, &of, &mut false, true))
+        };
         let kept = !in_closures.contains(&of)
             && (sets.is_empty() || !looped && sets.iter().all(|&set| set < at) || unread_after());
-        let seen = own.contains(&of) || rest.is_some_and(|rest| read_before_code(rest, &alias, &mut false));
+        let seen = own.contains(&of) || rest.is_some_and(|rest| read_before_code(rest, &alias, &mut false, true));
         (kept && seen).then_some((alias, of))
     })
 }
@@ -125,8 +126,9 @@ fn read_later(stmts: &[Stmt], alias: &str) -> bool {
 /// anything sets `of`: `set` whether something did already. A branch's way
 /// each its own; a `switch`'s cases one after another, as one falls into
 /// the next; a loop's, which goes round, only where it sets nothing or
-/// reads nothing. `of = .. alias ..` reads it first.
-fn read_before_set(stmts: &[Stmt], alias: &str, of: &str, set: &mut bool) -> bool {
+/// reads nothing. `of = .. alias ..` reads it first. `top`, whether it's
+/// the copy's list or an `if`'s of it (`after_ways`).
+fn read_before_set(stmts: &[Stmt], alias: &str, of: &str, set: &mut bool, top: bool) -> bool {
     let reads = |stmts: &[Stmt]| js::mentions_in(stmts, alias) > 0;
     let sets = |stmts: &[Stmt]| js::Writes::of(stmts).may_replace(of);
     for stmt in stmts {
@@ -136,8 +138,8 @@ fn read_before_set(stmts: &[Stmt], alias: &str, of: &str, set: &mut bool) -> boo
                 let first = !*set || !test.mentions_var(alias);
                 let mut other = *set;
                 let b = b.as_deref().unwrap_or(&[]);
-                let ok = read_before_set(a, alias, of, set) && read_before_set(b, alias, of, &mut other);
-                *set = after_ways(a, b, *set, other);
+                let ok = read_before_set(a, alias, of, set, top) && read_before_set(b, alias, of, &mut other, top);
+                *set = after_ways((a, b), (*set, other), top);
                 first && ok
             }
             StmtKind::Switch {
@@ -146,12 +148,12 @@ fn read_before_set(stmts: &[Stmt], alias: &str, of: &str, set: &mut bool) -> boo
                 default,
             } => {
                 let first = !*set || !discriminant.mentions_var(alias);
-                first && js::case_lists(cases, default).all(|body| read_before_set(body, alias, of, set))
+                first && js::case_lists(cases, default).all(|body| read_before_set(body, alias, of, set, false))
             }
             StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
-                read_before_set(a, alias, of, set) && read_before_set(b, alias, of, set)
+                read_before_set(a, alias, of, set, false) && read_before_set(b, alias, of, set, false)
             }
-            StmtKind::Labeled(_, body) => read_before_set(body, alias, of, set),
+            StmtKind::Labeled(_, body) => read_before_set(body, alias, of, set, false),
             StmtKind::Assign(target, value)
                 if matches!(&target.kind, ExprKind::Var(v) if v == of)
                     && !sets(&[StmtKind::Expr(value.clone()).at(js::Span::NONE)]) =>
@@ -176,11 +178,15 @@ fn read_before_set(stmts: &[Stmt], alias: &str, of: &str, set: &mut bool) -> boo
 
 /// What an `if` whose ways are `a` and `b` leaves for what follows it of
 /// what each way did, `in_a` and `in_b`, whether it ran code or set the
-/// variable: only the way that goes on reaches it, as one that ends, `if
-/// (callServer$1 == null) { throw new Error(..); }`, leaves the list,
-/// whatever it did (rd646, ADR 0277, amended).
-fn after_ways(a: &[Stmt], b: &[Stmt], in_a: bool, in_b: bool) -> bool {
-    let ends = |way: &[Stmt]| way.last().is_some_and(leaves);
+/// variable: where the `if` is `top`, of the copy's list or of its `if`s,
+/// only the way that goes on reaches what follows, as one that `leaves`,
+/// `if (callServer$1 == null) { throw new Error(..); }`, reaches none of
+/// it, whatever it did (rd646, ADR 0277, amended). Not inside a `try`,
+/// whose `catch` and what follows it a `throw` reaches, nor a labeled
+/// block or a `switch`, which a way leaves for what follows them in the
+/// list (#515): each way's then.
+fn after_ways((a, b): (&[Stmt], &[Stmt]), (in_a, in_b): (bool, bool), top: bool) -> bool {
+    let ends = |way: &[Stmt]| top && way.last().is_some_and(leaves);
     match (ends(a), ends(b)) {
         (true, false) => in_b,
         (false, true) => in_a,
@@ -235,8 +241,9 @@ fn after<'s>(stmts: &'s [Stmt], alias: &str) -> Option<&'s [Stmt]> {
 /// variable then what it was: `ran` whether something did already. A
 /// branch's way each its own; a `try`'s block in its order, its `catch`
 /// or `finally` after all of it; what a loop or a `switch` reads of it,
-/// only where it runs nothing.
-fn read_before_code(stmts: &[Stmt], alias: &str, ran: &mut bool) -> bool {
+/// only where it runs nothing. `top`, whether it's the copy's list or an
+/// `if`'s of it (`after_ways`).
+fn read_before_code(stmts: &[Stmt], alias: &str, ran: &mut bool, top: bool) -> bool {
     for stmt in stmts {
         let ok = match &stmt.kind {
             StmtKind::Const(_, e)
@@ -251,8 +258,8 @@ fn read_before_code(stmts: &[Stmt], alias: &str, ran: &mut bool) -> bool {
                 let first = read_first(test, alias, ran);
                 let mut other = *ran;
                 let b = b.as_deref().unwrap_or(&[]);
-                let ok = read_before_code(a, alias, ran) && read_before_code(b, alias, &mut other);
-                *ran = after_ways(a, b, *ran, other);
+                let ok = read_before_code(a, alias, ran, top) && read_before_code(b, alias, &mut other, top);
+                *ran = after_ways((a, b), (*ran, other), top);
                 first && ok
             }
             // A `try`'s `catch` or `finally` runs after any of its block,
@@ -260,7 +267,7 @@ fn read_before_code(stmts: &[Stmt], alias: &str, ran: &mut bool) -> bool {
             // block leaves it, whether anything in it ran (ADR 0277,
             // amended).
             StmtKind::Try(block, after) | StmtKind::TryCatch(block, _, after) => {
-                read_before_code(block, alias, ran) && read_before_code(after, alias, ran)
+                read_before_code(block, alias, ran, false) && read_before_code(after, alias, ran, false)
             }
             StmtKind::Let(_, None)
             | StmtKind::Break(_)
@@ -504,7 +511,7 @@ fn synced_reads(stmts: &[Stmt], alias: &str, of: &str, ran: &mut bool) -> bool {
                 *ran |= other;
                 first && ok
             }
-            _ => read_before_code(std::slice::from_ref(stmt), alias, ran),
+            _ => read_before_code(std::slice::from_ref(stmt), alias, ran, true),
         };
         if !ok {
             return false;
