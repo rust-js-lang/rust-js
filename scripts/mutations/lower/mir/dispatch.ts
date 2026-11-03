@@ -543,7 +543,7 @@ export const mutations: Mutation[] = [
       "test/corpus.test.ts",
       "test/iterator-forms.test.ts",
       "-t",
-      "^boxed_option_unwraps.rs$|^generic_accumulations with",
+      "^boxed_option_unwraps.rs$|^option_iterator_of_generic_items.rs$|^generic_accumulations with",
     ],
   },
   {

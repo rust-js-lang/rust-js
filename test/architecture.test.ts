@@ -1048,7 +1048,7 @@ test("each std item is known by what std gives it", () => {
   expect(otherwise).not.toBe("");
   const sysroot = Bun.spawnSync(["rustc", "--print", "sysroot"], { cwd: root }).stdout.toString().trim();
   const library = join(sysroot, "lib/rustlib/src/rust/library");
-  const grep = Bun.spawnSync(["grep", "-rhoE", 'rustc_diagnostic_item = "[A-Za-z_]+"', library]);
+  const grep = Bun.spawnSync(["grep", "-rhoE", "--include=*.rs", 'rustc_diagnostic_item = "[A-Za-z_]+"', library]);
   const given = new Set([...grep.stdout.toString().matchAll(/"(\w+)"/g)].map((m) => m[1]));
   expect(given.has("Vec")).toBe(true);
   const items = [...names.matchAll(/StdItem::(\w+) => (?:Symbol::intern\("(\w+)"\)|sym::(\w+))/g)];
@@ -1057,7 +1057,9 @@ test("each std item is known by what std gives it", () => {
     .filter(([, item, interned, symbol]) => !given.has(interned ?? symbol) && !otherwise.includes(`StdItem::${item}`))
     .map(([, item]) => item);
   expect(unknown).toEqual([]);
-});
+  // Its grep reads std's 77 MB of source: a second warm, past bun's 5 s
+  // cold or beside other worktrees' builds.
+}, 30_000);
 
 // An app's Rust is compiled one way, `rust-js build`, its own process
 // beside the app's own dev server or build (ADR 0412): no host's plugin,
