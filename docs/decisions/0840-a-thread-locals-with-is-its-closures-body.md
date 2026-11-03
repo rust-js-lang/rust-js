@@ -1,7 +1,7 @@
 # 0840. A thread-local's `with` is its closure's body, wherever it's called
 
 Status: Accepted; amended (in a closure's body too; one that only throws;
-at the end of a branch that ends the function; a `with` in a `with`, rd661; a flag that only the next `if` tests, #571). Extends [0581](0581-a-closure-called-as-a-statement-is-its-body.md),
+at the end of a branch that ends the function; a `with` in a `with`, rd661; a flag that only the next `if` tests, #571; a `Some` binding of the lent place, rd723). Extends [0581](0581-a-closure-called-as-a-statement-is-its-body.md),
 whose closure called as a statement in a function is its body, to what a
 module runs when it's loaded and to a closure whose value a statement
 reads first.
@@ -358,3 +358,58 @@ what a block of the body declares is held by the unit test
 `a_tested_flag_is_in_place_but_where_a_block_shadows_what_its_branch_reads`
 (`js/applied.rs`): lowering names such a block's `n` apart, `n$1`, so no
 program reaches it today.
+
+## Amendment (2026-11-04, rd723): a `Some` binding of the lent place is the place
+
+React's warnAboutUpdateOnNotYetMountedFiberInDEV, in place since #571,
+still printed a copy of the module's variable in its `Some` arm:
+
+```js
+if (didWarnStateUpdateForNotYetMountedComponent != null) {
+  const didWarnStateUpdateForNotYetMountedComponent$1 =
+    didWarnStateUpdateForNotYetMountedComponent;
+  if (didWarnStateUpdateForNotYetMountedComponent$1.has(componentName)) {
+```
+
+where upstream reads the variable itself. The arm's `Some(x)` binds into
+the place `with_borrow_mut` lends, `const x = handle.value;` in the
+closure's body, which the body in place makes `const x$1 = x;` of the
+module's variable; `prepare::shadows` (ADR 0277) then keeps it, as
+`x$1.has(..)` is a call before the next read, and any call may set a
+module's variable.
+
+**In a body in place whose parameter is a handle on a nullable
+thread-local's place (#541), a branch that tests it set, `if
+(handle.value != null)`, and begins `const x = handle.value;`, reads `x`
+as `handle.value` throughout, the place itself, and its binding is gone**
+(`applied::set_values_held`). **Not** where the rest of the branch
+mentions the handle at all, `*names = None;` after the binding's last
+read or `*count = Some(n + 1);` of a copy, nor where a closure in it reads
+`x` (`substituted` refuses one), nor where a block in it declares its own
+`x`; each keeps `const x = ..`, as before. Only that form: a branch whose
+test is more than that it's set, `Some(n) if n > limit`, keeps its copy
+too.
+
+Why it's sound: the borrow `with_borrow_mut` lends is exclusive while the
+closure runs, and its body is in place only where nothing it runs borrows
+the thread-local again (`quiet`; a reentrant borrow keeps
+`$withBorrowMut`, which throws as Rust panics). So nothing but the handle
+can write the place, and where the branch never mentions the handle, the
+place holds what `x` does throughout it: every read of `x` reads the same
+object, or the same value, as the place. Case N of ADR 0262. Approach B of
+rd723, decided for the user: one site, no new fact. The general rule, a
+by-reference binding of any place frozen while it lives, carried as a
+fact from lowering to `prepare::shadows` (approach A), waits for a second
+shape.
+
+So `if (didWarn != null) { if (didWarn.has(componentName)) { return; }
+didWarn.add(componentName); }`, upstream's. Held by
+`test/corpus/lent_place_set_read_in_place.rs` against native Rust (the
+in-place arm; arms that set the place after the binding's last read and
+from a copy, a closure reading the binding, a guarded arm and a branch
+that begins with a call, each kept), `closure_returned_early_tested`'s
+`warn`, the unit test
+`a_set_value_is_the_place_but_where_its_branch_mentions_the_handle_or_shadows_it`
+(`js/applied.rs`; lowering names a block's own `x` apart, so no program
+reaches the shadow guard), and mutations `set-value-held-*` in
+`scripts/mutations/js/applied.ts`.

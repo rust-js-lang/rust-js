@@ -492,7 +492,13 @@ where each branch is nothing or a `return`, is its body in place, each
 `return` the branch its value takes: `if (didWarn.has(componentName)) {
 return; }`
 ([0840](../decisions/0840-a-thread-locals-with-is-its-closures-body.md),
-amended, #571).
+amended, #571). In place, a `Some(did_warn)` arm's binding into what a
+nullable thread-local's `with_borrow_mut` lends is the thread-local
+itself, `if (didWarn != null) { didWarn.add(componentName); }`, where the
+arm never sets it through the handle; one that does keeps its copy,
+`const held = names;`
+([0840](../decisions/0840-a-thread-locals-with-is-its-closures-body.md),
+amended, rd723).
 A `with` in another's closure, reading what the outer one lends, is each
 one's body too, `const a = ReactSharedInternals.A;` of
 `DEFAULT.with(|d| INTERNALS.with(|internals| ..))`

@@ -10,11 +10,10 @@ const big = [500];
 
 function warn(componentName) {
   if (didWarn != null) {
-    const didWarn$1 = didWarn;
-    if (didWarn$1.has(componentName)) {
+    if (didWarn.has(componentName)) {
       return;
     }
-    didWarn$1.add(componentName);
+    didWarn.add(componentName);
   } else {
     didWarn = new Set([componentName]);
   }

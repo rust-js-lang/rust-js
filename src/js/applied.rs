@@ -567,6 +567,9 @@ fn in_place(
     let Some((param, arg)) = parameter else {
         return Some(body);
     };
+    if let ExprKind::Handle(..) = arg.kind {
+        set_values_held(&mut body, param);
+    }
     let mut read = arg.clone();
     read.each_mut(&mut |e| e.span = Span::NONE);
     if !held
@@ -579,6 +582,55 @@ fn in_place(
         through_handles(&mut body);
     }
     Some(body)
+}
+
+/// Of `handle`, the parameter a `with_borrow_mut` lends a nullable
+/// thread-local's place by (#541), a branch that tests it set, `if
+/// (handle.value != null)`, whose first statement takes what it holds,
+/// `const set = handle.value;`, a `Some(set)` arm's binding into the
+/// place: each read of `set` in the branch `handle.value`, as the place
+/// itself is read, `didWarn.has(name)`, not a copy of it, `const didWarn$1
+/// = didWarn;` (rd723). The borrow it's lent by is exclusive while the
+/// closure runs, so nothing but the handle can write the place, and where
+/// the branch never mentions the handle the place holds what `set` does
+/// throughout it. Not where it does, `*handle = None;` after the binding's
+/// last read, nor where a closure in the branch reads `set`, which
+/// `substituted` refuses (ADR 0840, amended).
+fn set_values_held(body: &mut Vec<Stmt>, handle: &str) {
+    let is_held = |e: &Expr| {
+        matches!(&e.kind, ExprKind::Member(of, key)
+            if key == crate::js::HELD && matches!(&of.kind, ExprKind::Var(v) if v == handle))
+    };
+    statement_lists(body, &mut |stmts| {
+        for stmt in stmts.iter_mut() {
+            let StmtKind::If(test, then, _) = &mut stmt.kind else {
+                continue;
+            };
+            if !null_test(test, true).is_some_and(is_held) {
+                continue;
+            }
+            let Some((
+                Stmt {
+                    kind: StmtKind::Const(set, value),
+                    ..
+                },
+                rest,
+            )) = then.split_first()
+            else {
+                continue;
+            };
+            if !is_held(value) || mentions_in(rest, handle) > 0 || declares(rest, set) {
+                continue;
+            }
+            let mut read = rest.to_vec();
+            if !substituted(&mut read, &|v| (v == set).then(|| value.clone())) {
+                continue;
+            }
+            // What's said where it was, said there still.
+            then.splice(1.., read);
+            then[0].kind = StmtKind::Comments;
+        }
+    });
 }
 
 /// Each `value` of a handle on a place in `body` that place: read, and
@@ -1222,5 +1274,39 @@ mod tests {
         // One that reads `n`, the block's: the call stays, as in place the
         // branch would read the block's `n`, not the function's.
         assert!(tested(Expr::var("n")).is_none());
+    }
+
+    #[test]
+    fn a_set_value_is_the_place_but_where_its_branch_mentions_the_handle_or_shadows_it() {
+        // `if (h.value != null) { const s = h.value; <rest> }`.
+        let held = || Expr::member(Expr::var("h"), crate::js::HELD);
+        let branch = |rest: Vec<Stmt>| {
+            let then = std::iter::once(StmtKind::Const("s".into(), held()).at(Span::NONE)).chain(rest);
+            let test = Expr::bin(Op::LooseNe, held(), Expr::null());
+            vec![StmtKind::If(test, then.collect(), None).at(Span::NONE)]
+        };
+        let add = |to: Expr| StmtKind::Expr(Expr::call(Expr::member(to, "add"), vec![Expr::int(1)])).at(Span::NONE);
+        let after = |rest: Vec<Stmt>| {
+            let mut body = branch(rest);
+            set_values_held(&mut body, "h");
+            body
+        };
+        // `s.add(1)`: `h.value.add(1)`, the binding's statement what's said.
+        let StmtKind::If(_, then, _) = &after(vec![add(Expr::var("s"))])[0].kind else {
+            unreachable!("an if")
+        };
+        assert!(matches!(then[0].kind, StmtKind::Comments));
+        assert!(then[1] == add(held()));
+        // A branch that sets the place through the handle, or whose block
+        // declares its own `s`: as it was.
+        let set = StmtKind::Assign(held(), Expr::null()).at(Span::NONE);
+        let kept = vec![add(Expr::var("s")), set];
+        assert!(after(kept.clone()) == branch(kept));
+        let block = vec![
+            StmtKind::Const("s".into(), Expr::int(2)).at(Span::NONE),
+            add(Expr::var("s")),
+        ];
+        let shadowed = vec![StmtKind::If(Expr::var("c"), block, None).at(Span::NONE)];
+        assert!(after(shadowed.clone()) == branch(shadowed));
     }
 }

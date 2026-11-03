@@ -472,4 +472,51 @@ export const mutations: Mutation[] = [
     replace: "            (then.clone(), otherwise)\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_returned_early_tested.rs$"],
   },
+  {
+    name: "set-value-held-never",
+    breaks:
+      "a `Some` arm's binding into a nullable thread-local's lent place, in place, stays a copy of the module's variable, `const didWarn$1 = didWarn;` (rd723)",
+    file: "src/js/applied.rs",
+    find: "        set_values_held(&mut body, param);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^lent_place_set_read_in_place.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "set-value-held-handle-mentioned",
+    breaks:
+      "a branch that sets the place through the handle, `*count = Some(n + 1);`, reads its binding as the place after the write, so `n > 1` reads the new count (rd723)",
+    file: "src/js/applied.rs",
+    find: " || mentions_in(rest, handle) > 0 || ",
+    replace: " || ",
+    tests: ["test/corpus.test.ts", "-t", "^lent_place_set_read_in_place.rs$"],
+  },
+  {
+    name: "set-value-held-any-test",
+    breaks:
+      "a branch whose test is more than that the place is set, `count != null && count > limit`, reads its binding as the place, beyond the one form rd723 takes",
+    file: "src/js/applied.rs",
+    find: "            if !null_test(test, true).is_some_and(is_held) {\n",
+    replace: "            if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^lent_place_set_read_in_place.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "set-value-held-any-value",
+    breaks:
+      "a branch that begins with what isn't the place, `const stamp = tick();`, reads `stamp` as its call, so each read calls `tick()` again (rd723)",
+    file: "src/js/applied.rs",
+    find: "            if !is_held(value) || ",
+    replace: "            if ",
+    tests: ["test/corpus.test.ts", "-t", "^lent_place_set_read_in_place.rs$"],
+  },
+  {
+    name: "set-value-held-closure-read",
+    breaks:
+      "a branch with a closure reading the binding, `const count = () => set.size;`, loses its binding, so the closure reads a name nothing declares (rd723)",
+    file: "src/js/applied.rs",
+    find: "            if !substituted(&mut read, &|v| (v == set).then(|| value.clone())) {\n                continue;\n            }\n",
+    replace: "            substituted(&mut read, &|v| (v == set).then(|| value.clone()));\n",
+    tests: ["test/corpus.test.ts", "-t", "^lent_place_set_read_in_place.rs$"],
+  },
 ];
