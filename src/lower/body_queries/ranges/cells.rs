@@ -146,6 +146,20 @@ pub(super) fn reads_a_cell<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId
 }
 
 impl<'a, 'tcx> Walk<'a, 'tcx> {
+    /// What's known where the scope `e` ends: what it drops there may
+    /// change what a `RefCell` holds (ADR 0881).
+    pub(super) fn scope_ended(&mut self, e: ExprId, known: &mut Option<Known>) {
+        if let Some(k) = known.as_mut()
+            && k.knows_cells()
+        {
+            let (tcx, typing_env, thir, root) = (self.tcx, self.typing_env, self.thir, self.root);
+            let drops = (self.scope_drops).get_or_insert_with(|| scope_drops(tcx, typing_env, thir, root));
+            if drops.get(&e).copied().unwrap_or(true) {
+                k.cells_changed(None);
+            }
+        }
+    }
+
     /// The slice a place is, and whether it's reached through a `RefCell`
     /// or its guard, `queue.borrow()`'s, whose change no variable's says.
     pub(super) fn slice_through(&self, mut e: ExprId) -> Option<(Slice, bool)> {

@@ -457,18 +457,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 region_scope, value, ..
             } => {
                 let value_range = self.scoped(region_scope, top(), known, |walk, known| walk.expr(value, known));
-                // What it drops where it ends may change what a `RefCell`
-                // holds (ADR 0881).
-                if let Some(k) = known.as_mut()
-                    && k.knows_cells()
-                {
-                    let root = self.root;
-                    let drops = (self.scope_drops)
-                        .get_or_insert_with(|| cells::scope_drops(self.tcx, self.typing_env, thir, root));
-                    if drops.get(&e).copied().unwrap_or(true) {
-                        k.cells_changed(None);
-                    }
-                }
+                self.scope_ended(e, known);
                 value_range
             }
             ExprKind::Use { source }
@@ -491,11 +480,7 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
             ExprKind::If {
                 cond, then, else_opt, ..
             } => {
-                self.expr(cond, known);
-                let mut yes = known.clone();
-                let mut no = known.take();
-                self.refine(cond, true, &mut yes);
-                self.refine(cond, false, &mut no);
+                let (mut yes, mut no) = self.branches(cond, known);
                 let a = self.expr(then, &mut yes);
                 let b = else_opt.and_then(|other| self.expr(other, &mut no));
                 let value = match (&yes, &no) {
@@ -626,15 +611,9 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 self.found_index_bound(pat, found, known);
                 None
             }
-            ExprKind::LogicalOp { op, lhs, rhs } => {
-                // Its right only where its left lets it run.
-                self.expr(lhs, known);
-                let mut runs = known.clone();
-                self.refine(lhs, matches!(op, LogicalOp::And), &mut runs);
-                self.expr(rhs, &mut runs);
-                if runs.is_some() {
-                    *known = either(known.take(), runs);
-                }
+            ExprKind::LogicalOp { .. } => {
+                let (yes, no) = self.branches(e, known);
+                *known = either(yes, no);
                 None
             }
             // An integer `as` another whose range it's already in is the

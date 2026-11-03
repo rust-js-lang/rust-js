@@ -8,7 +8,7 @@ whose functions are given what their calls give them, and by
 [0682](0682-a-js-strings-length-is-at-most-int32-max.md) lowers so two
 lengths add without a wrap. Replaces [0292](0292-known-bounds.md)'s
 regions, whose cases it keeps, and narrows where [0011](0011-numbers.md)'s
-wraps are written. Amended (2026-10-26): a `*const` of what a shared
+wraps are written. Amended (2026-11-03): a condition is walked as it runs, an `&&`'s right before what its left shows is told past it. Amended (2026-10-26): a `*const` of what a shared
 reference refers to changes nothing, and a `String`'s text is read.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A for each. Nothing a
@@ -353,3 +353,26 @@ before. Held by `test/corpus/table_rows_kept_by_views.rs` against native
 Rust, each of those panicking past a row's end as Rust's does, and the
 mutations `rows-kept-*` (`body_queries/ranges.ts`,
 `body_queries/ranges/tables.ts`).
+
+## Amendment: an `&&`'s right walked before what it shows (2026-11-03)
+
+A condition's `if` walked the whole condition, then told its branch what
+each part of it shows, of what was known past its end. So what an `&&`'s
+left showed was shown again past its right, which may have changed it:
+`if i < v.len() && { v.clear(); true } { v[i] }` printed `v[i]`, reading
+`undefined` where Rust panics, and so did a `RefCell`'s `i <
+queue.borrow().len() && clear(queue)`, of a call that empties the queue
+(ADR 0881). Case ([0262](0262-when-rust-and-js-disagree.md)): results
+change, so Rust's: a P0. **A condition is walked as it runs, each part
+telling the next what it shows** (`narrowing.rs`, `branches`): of `a &&
+b`, `b` is walked where `a` holds, and the branch is told what holds
+where `b` does too; where it doesn't hold, what's known where `a`
+didn't, joined with where `b` didn't. `||` is its mirror and `!` swaps
+the two. Each test, a part that's neither, is told by `refine` as
+before, and a scope around a part forgets what its drops may change.
+`refine` no longer reads an `&&` or an `||` itself. The two `&&`s and an
+`||` of the program above check their index, `$index(v, i)`; `i < v.len()
+&& v[i] > 1` still reads `v[i]`. Held by
+`test/corpus/test_changed_by_the_rest_of_its_condition.rs` against native
+Rust and the mutations `condition-left-shown-past-its-right` and
+`ranges-or-as-and` (`body_queries/ranges/narrowing.ts`).

@@ -7,6 +7,53 @@ use super::reads::pure;
 use super::*;
 
 impl<'a, 'tcx> Walk<'a, 'tcx> {
+    /// What's known where `cond` holds and where it doesn't, walking it.
+    /// Of `a && b`, `b` is walked where `a` holds, and holds where both do,
+    /// so what `b`'s walk forgets isn't shown again past it: `i < v.len()
+    /// && { v.clear(); true }` shows nothing of `i`; of `a || b` and `!a`
+    /// alike. Of a test, what `refine` says it shows.
+    pub(super) fn branches(&mut self, cond: ExprId, known: &mut Option<Known>) -> (Option<Known>, Option<Known>) {
+        let thir = self.thir;
+        let compound = |e| {
+            matches!(
+                thir[strip(thir, e)].kind,
+                ExprKind::LogicalOp { .. } | ExprKind::Unary { op: UnOp::Not, .. }
+            )
+        };
+        match thir[cond].kind {
+            ExprKind::Scope { value, .. } if compound(value) => {
+                let (mut yes, mut no) = self.branches(value, known);
+                self.scope_ended(cond, &mut yes);
+                self.scope_ended(cond, &mut no);
+                (yes, no)
+            }
+            ExprKind::Use { source } if compound(source) => self.branches(source, known),
+            ExprKind::Unary { op: UnOp::Not, arg } => {
+                let (yes, no) = self.branches(arg, known);
+                (no, yes)
+            }
+            ExprKind::LogicalOp { op, lhs, rhs } => {
+                let (yes, no) = self.branches(lhs, known);
+                let and = matches!(op, LogicalOp::And);
+                // Its right only where its left lets it run.
+                let (mut runs, skips) = if and { (yes, no) } else { (no, yes) };
+                let (yes, no) = self.branches(rhs, &mut runs);
+                match and {
+                    true => (yes, either(skips, no)),
+                    false => (either(skips, yes), no),
+                }
+            }
+            _ => {
+                self.expr(cond, known);
+                let mut yes = known.clone();
+                let mut no = known.take();
+                self.refine(cond, true, &mut yes);
+                self.refine(cond, false, &mut no);
+                (yes, no)
+            }
+        }
+    }
+
     /// What `cond` being `holds` shows, narrowing what's known: of a
     /// variable compared, `i < half`, and of a slice's length,
     /// `!xs.is_empty()`. Where it can't hold, nothing goes on.
@@ -32,10 +79,6 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
                 if let Some((test, _)) = known.as_ref().and_then(|k| k.tests.get(&id)) =>
             {
                 self.refine(*test, holds, known)
-            }
-            ExprKind::LogicalOp { op, lhs, rhs } if matches!(op, LogicalOp::And) == holds => {
-                self.refine(lhs, holds, known);
-                self.refine(rhs, holds, known);
             }
             _ if let Some((SliceLength::IsEmpty, items)) = self.asks(e) => {
                 if !holds

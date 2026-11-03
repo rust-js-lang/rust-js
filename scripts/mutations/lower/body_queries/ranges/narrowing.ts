@@ -136,9 +136,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`!c` shows what `c` does, so `!items.is_empty()` shows nothing and `items[0]` is checked",
     file: "src/lower/body_queries/ranges/narrowing.rs",
-    find: "ExprKind::Unary { op: UnOp::Not, arg } => self.refine(arg, !holds, known),",
-    replace:
-      "ExprKind::Unary { op: UnOp::Not, arg } => self.refine(arg, holds, known),",
+    find: "                let (yes, no) = self.branches(arg, known);\n                (no, yes)\n",
+    replace: "                let (yes, no) = self.branches(arg, known);\n                (yes, no)\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "integer ranges show"],
   },
   {
@@ -146,9 +145,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`a || b` holding shows both, so `items[3]` where only `!items.is_empty()` held reads `undefined`",
     file: "src/lower/body_queries/ranges/narrowing.rs",
-    find: "ExprKind::LogicalOp { op, lhs, rhs } if matches!(op, LogicalOp::And) == holds => {\n                self.refine",
-    replace:
-      "ExprKind::LogicalOp { op, lhs, rhs } if true => {\n                self.refine",
+    find: "                let and = matches!(op, LogicalOp::And);\n",
+    replace: "                let and = matches!(op, LogicalOp::And) || true;\n",
     tests: [
       "test/lowering-numbers.test.ts",
       "-t",
@@ -308,4 +306,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^filtered_not_empty.rs$"],
     snapshots: true,
   },
+  {
+    name: "condition-left-shown-past-its-right",
+    breaks:
+      "what an `&&`'s left shows is shown again past its right, which may have changed it, so `v[i]` of `i < v.len() && { v.clear(); true }` reads `undefined` where Rust panics",
+    file: "src/lower/body_queries/ranges/narrowing.rs",
+    find: "                let (yes, no) = self.branches(rhs, &mut runs);\n",
+    replace: "                let (mut yes, no) = self.branches(rhs, &mut runs);\n                self.refine(lhs, and, &mut yes);\n",
+    tests: ["test/corpus.test.ts", "-t", "^test_changed_by_the_rest_of_its_condition\\.rs$"],
+  },
+
 ];
