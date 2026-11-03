@@ -1142,8 +1142,9 @@ export function ratio(a, b) {
   upstream's `clones === null`, read whole, through a `let`, a
   `borrow()`, `as_ref()` or a `Cell`'s `get()`. That holds because each
   literal, derived `Default` and `..Default::default()` writes it `null`.
-  One of a struct JS gives, an optional one, or one of a type parameter's
-  value stays `== null`
+  One of a struct JS may give, to an exported function or to a function
+  a binding calls, even one the crate builds too (#519), an optional one,
+  or one of a type parameter's value stays `== null`
   ([ADR 1072](../../decisions/1072-a-nullable-field-only-the-crate-makes-is-tested-strictly.md),
   rd647, the user's decision).
   What's read of a nullable field is `null` or its value, so a variable

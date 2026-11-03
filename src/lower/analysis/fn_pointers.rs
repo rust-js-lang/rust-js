@@ -70,6 +70,11 @@ pub(in crate::lower) struct FnPointers<'tcx> {
     /// is taken to be, as a value given back through `Unknown` is (rd221;
     /// ADR 1022, amended).
     built: HashSet<DefId>,
+    /// The structs a value JS may give the crate's code is, or holds
+    /// through its fields: what an exported function is called with, and
+    /// what a binding calls a function it's given with (#519). It may
+    /// leave a field out, whatever the crate builds of it.
+    js_given: HashSet<DefId>,
     /// Each field of a `dyn Fn` of the crate's structs, and whether each
     /// write of it the crate makes, a literal's or an assignment's, is of
     /// a closure or a function of its own, `Box::new(move || ..)`, never
@@ -126,6 +131,9 @@ impl<'tcx> FnPointers<'tcx> {
                 });
                 for ty in sig.inputs_and_output {
                     found.given_from(recognition, ty, !private);
+                }
+                for &ty in sig.inputs() {
+                    structs_held(tcx, ty, &mut found.js_given);
                 }
             }
             // A binding's body, and its closures', is native Rust's stand-in
@@ -349,11 +357,12 @@ impl<'tcx> FnPointers<'tcx> {
     }
 
     /// Whether every value of the struct `adt` is one the crate's code
-    /// makes: it makes some (`built`), and no code that isn't the crate's
-    /// makes one (`js_may_make`). Not a struct only JS gives, which may
-    /// leave a field out (rd647).
+    /// makes: it makes some (`built`), no code that isn't the crate's makes
+    /// one (`js_may_make`), and JS gives none, to an exported function or
+    /// a function a binding calls (`js_given`, #519), which may leave a
+    /// field out (rd647).
     pub(in crate::lower) fn only_the_crate_makes(&self, adt: DefId) -> bool {
-        self.built.contains(&adt) && !self.js_may_make(adt)
+        self.built.contains(&adt) && !self.js_may_make(adt) && !self.js_given.contains(&adt)
     }
 
     /// The structs the crate's code makes a value of (`built`), which its
@@ -706,6 +715,51 @@ fn held<'tcx>(recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> Held<'tcx> {
     found
 }
 
+/// Each struct a value of `ty` is or holds: through references, `Box`,
+/// `Option`, collections and any generic argument, and each struct's
+/// fields, into `found` (#519).
+fn structs_held<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, found: &mut HashSet<DefId>) {
+    for part in ty.walk() {
+        let Some(part) = part.as_type() else { continue };
+        if let ty::Adt(adt, args) = *part.kind()
+            && adt.is_struct()
+            && found.insert(adt.did())
+        {
+            for field in adt.all_fields() {
+                structs_held(tcx, field.ty(tcx, args).skip_normalization(), found);
+            }
+        }
+    }
+}
+
+/// What a function a value of `ty` is, or holds, is called with, where
+/// it's given to a binding: a function's, a fn pointer's, a closure's,
+/// whose signature is one of its parts, and a `dyn Fn`'s arguments (#519).
+fn callback_inputs<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<Ty<'tcx>> {
+    let mut found = Vec::new();
+    for part in ty.walk() {
+        let Some(part) = part.as_type() else { continue };
+        match *part.kind() {
+            ty::FnDef(def_id, args) => {
+                let sig = tcx
+                    .fn_sig(def_id)
+                    .instantiate(tcx, args.skip_binder())
+                    .skip_normalization();
+                found.extend(sig.skip_binder().inputs().iter().copied());
+            }
+            ty::FnPtr(sig, header) => found.extend(sig.with(header).skip_binder().inputs().iter().copied()),
+            // A `dyn Fn(A)`'s, its trait's arguments.
+            ty::Dynamic(predicates, ..) => {
+                if let Some(principal) = predicates.principal() {
+                    found.extend(principal.skip_binder().args.types());
+                }
+            }
+            _ => {}
+        }
+    }
+    found
+}
+
 /// Each coercion to a fn pointer of a body, and each value that may come
 /// from outside the crate's code.
 struct Made<'a, 'b, 'tcx> {
@@ -750,6 +804,12 @@ impl<'tcx> Made<'_, '_, 'tcx> {
         }
         for &ty in inputs.iter().chain([&result]) {
             self.found.given_in(recognition, ty);
+        }
+        // What JS calls a function it's given with (#519).
+        for &ty in inputs {
+            for called_with in callback_inputs(tcx, ty) {
+                structs_held(tcx, called_with, &mut self.found.js_given);
+            }
         }
         // What a binding gives back is the program's (`#[rust_js::gives_back]`),
         // and fresh plain data JS builds is no getter's

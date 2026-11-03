@@ -89,3 +89,31 @@ crate already guarantees.
 - Mutations `strict-*` in `lower/mir/nulled.ts`, `lower/mir/dispatch.ts`
   and `lower/mir/places.ts`, and `nullable-field-default-undefined` in
   `lower/aggregates.ts`.
+
+## Amendment: a struct JS may give is never one only the crate makes (2026-11-03, #519, P0)
+
+The first form above took a struct the crate builds as its own data even
+where JS gives one too, following ADR 1022's rd221 for getters. That was
+a wrong answer. `pub fn has_nonce(options: &Options) -> bool {
+options.nonce.is_some() }` printed `options.nonce !== null`, so JS's
+`hasNonce({})` read the missing field as a `Some`. Its `.d.ts`, `nonce?:
+string | null | undefined`, lets JS leave the field out.
+
+`only_the_crate_makes` now also needs that JS gives no value of the struct
+(`FnPointers::js_given`). JS gives one in these positions:
+
+- what an exported function is called with (`library::reachable`), its
+  parameters' types;
+- what a binding calls a function it's given with: a closure's, a fn
+  item's, a fn pointer's or a `dyn Fn`'s arguments.
+
+Each struct those hold counts too, through references, `Option`,
+collections and the structs' own fields (`structs_held`). Such a struct's
+nullable fields stay `== null`. So the Consequences' first point no
+longer holds. ADR 1022's getter rule is unchanged.
+
+Held by `test/lowering-nullable-reads.test.ts`'s strictness test. It runs
+each position in Node: an exported parameter `{}`, a field of one, `{
+inner: {} }`, and a `dyn Fn` and a closure a binding calls with `{}`. Each
+struct is also built by the crate. Mutations `js-given-*` are in
+`lower/analysis/fn_pointers.ts`.

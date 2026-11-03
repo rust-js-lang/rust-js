@@ -943,7 +943,9 @@ pub fn hydrate(options: Option<&'static Options>) -> bool {
 // rd647 (B), the user's (1): a nullable field is tested `=== null` only
 // where it's `null` or a value wherever it's read, of a struct only the
 // crate makes. Of one only JS gives, which may leave the field out, it's
-// `== null`, and `{}`'s field is `None`; so is one the crate never makes.
+// `== null`, and `{}`'s field is `None`; so is one the crate builds that
+// JS may give too, to an exported function or to a function a binding
+// calls (#519, P0).
 test("a nullable field is tested === null only where only the crate makes its struct", async () => {
   const dir = fixture("nullable-field-strict");
   writeFileSync(
@@ -972,13 +974,91 @@ pub fn own(x: Option<&'static Unknown>) -> bool {
     let own = Own { x };
     own.x.is_none()
 }
+
+pub struct Options {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub nonce: Option<String>,
+}
+
+pub fn has_nonce(options: &Options) -> bool {
+    options.nonce.is_some()
+}
+
+pub fn made() -> bool {
+    has_nonce(&Options { nonce: None })
+}
+
+pub struct Reply {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub body: Option<String>,
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./given.js#call")]
+fn call(f: &dyn Fn(&Reply) -> bool) -> bool {
+    let _ = f;
+    unreachable!()
+}
+
+fn has_body(reply: &Reply) -> bool {
+    reply.body.is_some()
+}
+
+pub fn called() -> bool {
+    call(&has_body) || has_body(&Reply { body: None })
+}
+
+pub struct Second {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub body: Option<String>,
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./given.js#call")]
+fn call_closure(f: impl Fn(&Second) -> bool) -> bool {
+    let _ = f;
+    unreachable!()
+}
+
+pub struct Inner {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub value: Option<String>,
+}
+
+pub struct Outer {
+    pub inner: Inner,
+}
+
+pub fn inner_has(outer: &Outer) -> bool {
+    outer.inner.value.is_some()
+}
+
+pub fn inner_made() -> bool {
+    inner_has(&Outer { inner: Inner { value: None } })
+}
+
+pub fn closure_called() -> bool {
+    let made = Second { body: None };
+    call_closure(|second| second.body.is_some()) || made.body.is_some()
+}
 `,
   );
+  writeFileSync(join(dir, "given.js"), "export const call = (f) => f({});\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return g.x == null && g.cell == null;");
   expect(js).toContain("return own.x === null;");
+  expect(js).toContain("return options.nonce != null;");
+  expect(js).toContain("return reply.body != null;");
   const lib = await import(join(dir, "lib.js"));
+  expect([lib.hasNonce({}), lib.hasNonce({ nonce: null }), lib.hasNonce({ nonce: "n" }), lib.made()]).toEqual([
+    false,
+    false,
+    true,
+    false,
+  ]);
+  expect(lib.called()).toBe(false);
+  expect(js).toContain("call((second) => second.body != null)");
+  expect(lib.closureCalled()).toBe(false);
+  expect([lib.innerHas({ inner: {} }), lib.innerMade()]).toEqual([false, false]);
   expect([lib.given({}), lib.given({ x: null, cell: null }), lib.given({ x: 1 })]).toEqual([true, true, false]);
   expect([lib.own(undefined), lib.own(1)]).toEqual([true, false]);
 });

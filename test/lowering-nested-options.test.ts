@@ -458,7 +458,7 @@ pub fn nothing() -> Option<&'static Unknown> {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return createResponse(options.serverConsumerManifest.serverModuleMap);");
   expect(js).toContain("return manifest.serverModuleMap !== null;");
-  expect(js).toContain("return manifest.slot !== null;");
+  expect(js).toContain("return manifest.slot != null;");
   expect(js).toContain("const map = manifest.serverModuleMap;\n  const tested = map !== null;");
   expect(js).toContain("serverModuleMap: some ? undefined : null,");
   const dts = readFileSync(join(dir, "lib.d.ts"), "utf8");
@@ -468,7 +468,7 @@ pub fn nothing() -> Option<&'static Unknown> {
   expect(manifests.map(lib.present)).toEqual([true, false, true]);
   expect(manifests.map((m) => lib.given({ serverConsumerManifest: m }))).toStrictEqual([undefined, null, undefined]);
   expect(manifests.map(lib.kept)).toStrictEqual([undefined, undefined, undefined]);
-  expect([{ slot: null }].map(lib.slotPresent)).toEqual([false]);
+  expect([{ slot: undefined }, { slot: null }].map(lib.slotPresent)).toEqual([false, false]);
   expect([true, false].map(lib.boxed)).toStrictEqual([undefined, null]);
   expect([true, false].map((some) => lib.present(lib.made(some)))).toEqual([true, false]);
   expect(lib.nothing()).toBe(undefined);

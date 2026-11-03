@@ -549,4 +549,49 @@ export const mutations: Mutation[] = [
       "a field written a variable of the crate's own closure is called through its object",
     ],
   },
+  {
+    name: "js-given-unasked",
+    breaks:
+      "a nullable field of a struct the crate builds that JS gives too is tested `=== null`, `hasNonce({})`'s `undefined` a `Some` (#519)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: " && !self.js_given.contains(&adt)\n",
+    replace: "\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
+  },
+  {
+    name: "js-given-exported-unseen",
+    breaks:
+      "what an exported function is called with isn't given by JS, so its nullable field is tested `=== null` (#519)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "                    structs_held(tcx, ty, &mut found.js_given);\n",
+    replace: "",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
+  },
+  {
+    name: "js-given-callback-unseen",
+    breaks:
+      "what a binding calls a function it's given with isn't given by JS, so its nullable field is tested `=== null` (#519)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "                structs_held(tcx, called_with, &mut self.found.js_given);\n",
+    replace: "",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
+  },
+  {
+    name: "js-given-dyn-inputs-unread",
+    breaks:
+      "a `dyn Fn(&Reply)` given to a binding isn't read for what it's called with (#519)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "                    found.extend(principal.skip_binder().args.types());\n",
+    replace: "",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
+  },
+  {
+    name: "js-given-fields-unwalked",
+    breaks:
+      "a struct an exported function is given holds no struct of its own, so its field's struct is tested `=== null` (#519)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "                structs_held(tcx, field.ty(tcx, args).skip_normalization(), found);\n",
+    replace: "",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
+  },
 ];
