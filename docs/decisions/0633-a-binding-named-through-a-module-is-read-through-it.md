@@ -4,7 +4,8 @@ Status: Accepted. Amends [0622](0622-a-global-binding-a-module-names-is-its-cons
 extends [0100](0100-separate-crates.md) and [0240](0240-reexports.md). Amended by
 [0773](0773-a-held-default-is-exported-once.md): a binding the default names is
 exported as the default alone. Amended (rd651): a `use .. as` of a
-binding through a module that holds it names its import.
+binding through a module that holds it names its import. Amended (rd659): a module reads what it
+holds by its `const`.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): the program can't
 observe it: the module's `const` is the JS value the binding reads, read
@@ -226,3 +227,33 @@ function renamed, and the crate's own renamed, run in Node; mutations
 `held-library-rename-ignored` (`analysis/naming.ts`),
 `library-uses-none` and `held-renamed-through-module-a-const`
 (`bindings/held.ts`).
+
+## Amendment: a module reads what it holds by its `const` (rd659)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none: the `const` is
+the value the path reads, read once where the module loads, before
+anything of the module reads it (`js::in_load_order`).
+
+React's ReactSharedInternalsServer declares the binding it makes its
+default, `#[rust_js::name = "ReactSharedInternalsServer"] #[link_name =
+"react#*.__SERVER_INTERNALS_.."] static REACT_SHARED_INTERNALS_SERVER`,
+and checks it as the module loads, `js::on_load! { if
+REACT_SHARED_INTERNALS_SERVER.is_none() { panic!(..) } }`. It printed
+`const ReactSharedInternalsServer = React.__SERVER_INTERNALS_..;` and then
+`if (React.__SERVER_INTERNALS_.. == null)`, the path again, where upstream
+writes `if (!ReactSharedInternalsServer)`: a name alone was read through
+the module that holds it only where a `use` named it through another
+module, so a module's own read of what it holds, a static it declares or
+a `use` it makes its default, was in place.
+
+**A module reads a binding it holds by its `const`** (`named_through`, a
+name alone that no `use` names through another module that holds it): in
+its functions and its `js::on_load!`, `ReactSharedInternalsServer == null`
+and `return ReactSharedInternalsServer;`, and `assign(target, source)` in
+the module that makes `use js::object::assign;` its default. A module
+that only declares a binding, or names it itself by its path, still reads
+it in place.
+
+Held by `test/lowering-bindings.test.ts`'s "a module that holds a binding
+reads it by its const", run in Node against a stand-in `react`, and the
+mutation `held-at-home-in-place` (`bindings/held.ts`).

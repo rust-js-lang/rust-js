@@ -159,7 +159,7 @@ fn named_through<'tcx>(
 ) -> Option<HeldRead> {
     let [.., module, last] = segments else {
         let [only] = segments else { return None };
-        return tcx.hir_module_items(scope).free_items().find_map(|id| {
+        let used = tcx.hir_module_items(scope).free_items().find_map(|id| {
             let item = tcx.hir_item(id);
             match item.kind {
                 ItemKind::Use(path, rustc_hir::UseKind::Single(ident))
@@ -191,6 +191,21 @@ fn named_through<'tcx>(
                 },
                 _ => None,
             }
+        });
+        // Else one the module holds itself, its `const`, read by its name
+        // there as upstream's module reads its own: a static it declares
+        // and makes its default, `if (!ReactSharedInternalsServer)`, not
+        // the path again (rd659).
+        return used.or_else(|| {
+            let held = module_held(tcx, foreign, scope, modules);
+            let found = (held.iter())
+                .find(|h| h.binding == binding && h.ident == only.ident.name && h.through.is_none())?;
+            Some(HeldRead {
+                holder: Holder::Module(scope),
+                import: found.name.clone(),
+                name: found.name.clone(),
+                binding,
+            })
         });
     };
     match module.res {

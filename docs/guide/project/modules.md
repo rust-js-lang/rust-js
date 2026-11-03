@@ -548,7 +548,13 @@ Another module's function as the default is re-exported:
 [0633](../../decisions/0633-a-binding-named-through-a-module-is-read-through-it.md)).
 A static's `const` is named as any item is, by its `#[rust_js::name]`
 where JS's name isn't its Rust one; what its path needs is imported,
-`react#*` the module's namespace.
+`react#*` the module's namespace. The module reads it by that `const`
+too, in its functions and its `js::on_load!`, as upstream's module
+reads its own: `if REACT_SHARED_INTERNALS_SERVER.is_none() { panic!(..)
+}` of the static it declares and makes its default is `if
+(ReactSharedInternalsServer == null) { throw .. }`, not its path again
+([ADR 0633](../../decisions/0633-a-binding-named-through-a-module-is-read-through-it.md),
+amended, rd659).
 
 A module that names a binding through a module that holds it, its
 default or a `pub use`, reads it through that module, as it reads a

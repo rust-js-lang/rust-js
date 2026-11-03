@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "held-at-home-in-place",
+    breaks:
+      "a module's own read of a binding it holds is its path again, `if (React.__SERVER_INTERNALS_.. == null)`, not its `const` (rd659)",
+    file: "src/lower/bindings/held.rs",
+    find: "                .find(|h| h.binding == binding && h.ident == only.ident.name && h.through.is_none())?;\n",
+    replace: "                .find(|h| h.binding == binding && h.ident == only.ident.name && h.through.is_none() && false)?;\n",
+    tests: ["test/lowering-bindings.test.ts", "-t", "a module that holds a binding reads it by its const"],
+  },
+  {
     name: "bound-global-unexported",
     breaks:
       "a `pub use` of a global binding is its module's `const`, but not exported",
