@@ -69,8 +69,7 @@ function main() {
         }
         const k = $heapFrom([[11], [12]], (a, b) => $cmp(a[0], b[0]));
         try {
-          const drain = $iter(k.splice(0));
-          for (const item of drain) {
+          for (const item of $iter(k.splice(0))) {
             oDrop_drop(item);
           }
           console.log(`end ${k.length}`);

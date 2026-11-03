@@ -46,12 +46,11 @@ function main() {
     `${value$2 == null ? "None" : `Some((${value$2[0]}, (${value$2[1][0]}, ${value$2[1][1]})))`}`,
   );
 
-  const map = v
-    .values()
-    .drop(1)
-    .map((x) => noisy("s", x));
   for (const pair of $lazyZip(
-    map,
+    v
+      .values()
+      .drop(1)
+      .map((x) => noisy("s", x)),
     iterator_fuse(iterator_take($iter(w), 3), { next: $next, fold: $foldOf }, true),
   )) {
     console.log(`(${pair[0]}, ${pair[1]})`);

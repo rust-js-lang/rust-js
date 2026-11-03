@@ -32,12 +32,11 @@ function debugOf(options) {
 
 function main() {
   const channel = (readable, writable) => ({ readable, writable });
-  const debugChannel = channel(1);
   for (const options of [
     undefined,
     {},
     {
-      debugChannel,
+      debugChannel: channel(1),
       name: "a",
     },
     {

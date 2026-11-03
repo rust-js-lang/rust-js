@@ -47,8 +47,7 @@ function halves() {
 }
 
 function main() {
-  const value = $iter(ids(3));
-  for (const line of $lazyChain(value, halves())) {
+  for (const line of $lazyChain($iter(ids(3)), halves())) {
     console.log(`${line}`);
   }
 }

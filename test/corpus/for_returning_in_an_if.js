@@ -68,20 +68,22 @@ function walkRange(ok, path, value) {
 }
 
 function main() {
-  const value$1 = [true, [1, 2, 3], 0];
-  const value$2 = [true, [1, 60, 3], 99];
-  const value$3 = [true, [], 5];
-  const value$4 = [1];
-  for (const [ok, path, value] of [value$1, value$2, value$3, [false, value$4, 0]]) {
+  for (const [ok, path, value] of [
+    [true, [1, 2, 3], 0],
+    [true, [1, 60, 3], 99],
+    [true, [], 5],
+    [false, [1], 0],
+  ]) {
     console.log(`walk ${walk(ok, path, value)}`);
     console.log(`owned ${walkOwned(ok, path, value)}`);
   }
   console.log(`owned ${walkOwned(true, [450, 2, 3], 90)}`);
-  const value = [[0, 1, 2], 0];
-  const value$5 = [[5, 6, 7], 650];
-  const value$6 = [5, 6, 7];
-  for (const [path, value$1] of [value, value$5, [value$6, 150]]) {
-    console.log(`range ${walkRange(true, path, value$1)}`);
+  for (const [path, value] of [
+    [[0, 1, 2], 0],
+    [[5, 6, 7], 650],
+    [[5, 6, 7], 150],
+  ]) {
+    console.log(`range ${walkRange(true, path, value)}`);
   }
   const thrown = $catchUnwind(() => {
     const held = "held";

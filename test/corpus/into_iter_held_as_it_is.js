@@ -73,11 +73,14 @@ function main() {
     ).take(3),
   ).join("");
   console.log(`[${a.join(", ")}] [${b.join(", ")}] ${c}`);
-  const value = [
-    { start: 0, end: 2 },
-    { start: 5, end: 6 },
-  ];
-  for (const t of twices($iter(value), intoIterator$1, clone$1)) {
+  for (const t of twices(
+    $iter([
+      { start: 0, end: 2 },
+      { start: 5, end: 6 },
+    ]),
+    intoIterator$1,
+    clone$1,
+  )) {
     const firsts = Array.from(
       $iterator(
         t,
@@ -87,8 +90,7 @@ function main() {
     );
     console.log(`[${firsts.join(", ")}]`);
   }
-  const value$1 = [["a", "b"], ["c"]];
-  for (const t of twices($iter(value$1), intoIterator, clone)) {
+  for (const t of twices($iter([["a", "b"], ["c"]]), intoIterator, clone)) {
     const firsts = Array.from(
       $iterator(t, (iterator) => twiceIterator_next(iterator, { next: $next }, clone), true).take(
         3,

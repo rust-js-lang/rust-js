@@ -196,10 +196,11 @@ function armEnds(next, start, out) {
 }
 
 function main() {
-  const value = [7, 1, 2, 3, -2, 0, 0, 8, -20, 9];
-  const value$1 = [1, 0, 0, 6, -11, 5];
-  const value$2 = [-1, 2, 3, 4];
-  for (const queue of [value, value$1, value$2]) {
+  for (const queue of [
+    [7, 1, 2, 3, -2, 0, 0, 8, -20, 9],
+    [1, 0, 0, 6, -11, 5],
+    [-1, 2, 3, 4],
+  ]) {
     const log = [];
     replay(queue, log);
     console.log(`[${queue.join(", ")}] [${log.join(", ")}]`);

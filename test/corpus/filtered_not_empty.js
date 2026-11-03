@@ -10,8 +10,7 @@ function processed(queue, replace) {
   queue = queue != null && queue.length !== 0 ? queue : undefined;
   if (queue != null) {
     let total = replace ? queue[0] : 100;
-    const value = replace ? 1 : 0;
-    for (let i = value; i < queue.length; i++) {
+    for (let i = replace ? 1 : 0; i < queue.length; i++) {
       const part = queue[i];
       total = (total + part) | 0;
     }
@@ -25,8 +24,7 @@ function anyTest(queue, replace) {
   queue = queue != null && queue.length < 3 ? queue : undefined;
   if (queue != null) {
     let total = 0;
-    const value = replace ? 1 : 0;
-    for (const part of $slice(queue, value)) {
+    for (const part of $slice(queue, replace ? 1 : 0)) {
       total = (total + part) | 0;
     }
     return total;

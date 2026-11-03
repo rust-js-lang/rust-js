@@ -496,4 +496,14 @@ export const mutations: Mutation[] = [
       "^field_functions_called_after_arguments.rs$",
     ],
   },
+  {
+    name: "loop-start-unread",
+    breaks:
+      "a temporary MIR made of a loop's range start stays a statement, `const value = replace ? 1 : 0; for (let i = value; ..)`, not read in the loop's start (rd376)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "            in_start.then_some(Read::Start)\n",
+    replace: "            None\n",
+    tests: ["test/corpus.test.ts", "-t", "^(loop_start_read_in_place|filtered_not_empty).rs$"],
+    snapshots: true,
+  },
 ];

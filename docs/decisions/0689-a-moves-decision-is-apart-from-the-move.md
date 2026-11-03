@@ -74,3 +74,22 @@ each adding to it, a conditional of more branches but a temporary's, the
 function's result with an arm of nothing, and a `switch`'s arms; and a
 test that does something, which is evaluated once either way. The JS is
 the same, byte for byte.
+
+## Amendment: a loop's start is where a temporary is read (rd376, 2026-11-03)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. A temporary MIR made
+of a loop's range start, `&old_queue[if old_replace { 1 } else { 0 }..]`,
+stayed a statement, `const value = oldReplace ? 1 : 0; for (let i =
+value; ..)`, where upstream writes `for (let i = oldReplace ? 1 : 0; i <
+oldQueue.length; i++)`: `read_of` took a temporary's read in a value, an
+assignment or an `if`'s test, never in a loop. **A `for`'s start and a
+`for…of`'s iterable are reads too (`Read::Start`)**: a loop evaluates
+each first, once, before its first turn, as a `const`'s value is, so
+the same `moved` decides whether it may be read there, by `Why::Stable`
+or `Why::ReadFirst`, and what's before it in the loop's start passes it.
+A start that does something, `start(log, 1)`, still runs once, after
+what's before the loop.
+
+Held by the corpus's `loop_start_read_in_place`, run against native
+Rust, and `filtered_not_empty` (ADR 0881's rd376 amendment); and the
+mutation `loop-start-unread` (`lower/mir/tidy/moves.ts`).

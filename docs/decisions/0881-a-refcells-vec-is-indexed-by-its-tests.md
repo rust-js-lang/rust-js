@@ -210,12 +210,12 @@ And the start of that range, `&old_queue[if old_replace { 1 } else {
 `read_vars` not taking an `if`: it stayed `$slice`. An `if` with an
 `else` of reads, and a block of no statement, read only what their parts
 do, so their value is the join of their branches', `0..=1`, at most the
-length known, and the loop counts its indices, `for (let i = value; i <
-oldQueue.length; i++)` (ADR 1042).
+length known, and the loop counts its indices, `for (let i = oldReplace ?
+1 : 0; i < oldQueue.length; i++)` (ADR 1042).
 
-Not yet: MIR holds the start in a temporary, `const value = oldReplace ?
-1 : 0;`, which tidy's `inlined` doesn't read into a `for`'s start, where
-upstream writes `for (let i = oldReplace ? 1 : 0; ..)`.
+MIR holds the start in a temporary, which a loop's start reads in its
+place, `for (let i = oldReplace ? 1 : 0; ..)` as upstream writes it (ADR
+0689's rd376 amendment).
 
 Held by the corpus's `filtered_not_empty`, run against native Rust,
 which panics where a `filter` of another test is empty; and the mutations

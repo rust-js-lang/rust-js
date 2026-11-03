@@ -88,6 +88,9 @@ enum Read {
     Target,
     /// An `if`'s test.
     Test,
+    /// A `for`'s start, `for (let i = start; ..)`, or a `for…of`'s
+    /// iterable, which it evaluates first, once (rd376).
+    Start,
 }
 
 impl Read {
@@ -105,7 +108,8 @@ impl Read {
                 | StmtKind::Assign(_, e),
             )
             | (Read::Target, StmtKind::Assign(e, _))
-            | (Read::Test, StmtKind::If(e, ..)) => e,
+            | (Read::Test, StmtKind::If(e, ..))
+            | (Read::Start, StmtKind::For { start: e, .. } | StmtKind::ForOf { iterable: e, .. }) => e,
             _ => unreachable!("a statement `read_of` found it read in"),
         }
     }
@@ -124,7 +128,8 @@ impl Read {
                 | StmtKind::Assign(_, e),
             )
             | (Read::Target, StmtKind::Assign(e, _))
-            | (Read::Test, StmtKind::If(e, ..)) => e,
+            | (Read::Test, StmtKind::If(e, ..))
+            | (Read::Start, StmtKind::For { start: e, .. } | StmtKind::ForOf { iterable: e, .. }) => e,
             _ => unreachable!("a statement `read_of` found it read in"),
         }
     }
@@ -325,6 +330,13 @@ fn read_of(stmt: &Stmt, name: &str, stable: bool) -> Option<Read> {
             let mut in_test = false;
             test.visit_vars(&mut |v| in_test |= v == name);
             in_test.then_some(Read::Test)
+        }
+        // What a loop evaluates first, once: `for (let i = value; ..)` of
+        // `&v[if c { 1 } else { 0 }..]`, a `for…of`'s iterable (rd376).
+        StmtKind::For { start: e, .. } | StmtKind::ForOf { iterable: e, .. } => {
+            let mut in_start = false;
+            e.visit_vars(&mut |v| in_start |= v == name);
+            in_start.then_some(Read::Start)
         }
         _ => None,
     }

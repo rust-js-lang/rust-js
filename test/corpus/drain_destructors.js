@@ -12,8 +12,7 @@ function ids(v) {
 function main() {
   const v = $range(1, 9).map((value) => [value]);
   try {
-    const drain = $iter($drain(v, 6));
-    for (const item of drain) {
+    for (const item of $iter($drain(v, 6))) {
       console.log(`drop ${item[0]}`);
     }
     console.log(`after statement [${ids(v).join(", ")}]`);

@@ -140,15 +140,11 @@ function main() {
   attempt(undefined, blocked, log);
   console.log(`none: ${blocked.value == null ? "None" : `Some(${blocked.value})`}`);
   const root = fiber(3, undefined, [1]);
-  const value = fiber(4, root, []);
-  const value$1 = fiber(4, fiber(9, undefined, []), [2, 5]);
-  const value$2 = fiber(3, fiber(4, root, [0]), [1, 1]);
-  const value$3 = [5];
   for (const start of [
-    value,
-    value$1,
-    value$2,
-    fiber(8, fiber(3, undefined, value$3), []),
+    fiber(4, root, []),
+    fiber(4, fiber(9, undefined, []), [2, 5]),
+    fiber(3, fiber(4, root, [0]), [1, 1]),
+    fiber(8, fiber(3, undefined, [5]), []),
     undefined,
   ]) {
     walk(start, log);

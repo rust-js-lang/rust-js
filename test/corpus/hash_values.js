@@ -442,8 +442,7 @@ function main() {
 
   const p = { x: -1, y: 2 };
   console.log(`${digest(p, pointHash)}`);
-  const value = [4, 5];
-  for (const shape of ["Dot", { TAG: "Line", _0: 9 }, { TAG: "Poly", sides: value }]) {
+  for (const shape of ["Dot", { TAG: "Line", _0: 9 }, { TAG: "Poly", sides: [4, 5] }]) {
     console.log(`${digest(shape, shapeHash)}`);
   }
   console.log(
@@ -527,10 +526,10 @@ function main() {
 
   const hasher = new $SipHasher(1, 3);
   hasher.writeU32(7);
-  const value$1 = [1, 2];
-  hasher.write(value$1.flatMap((n) => $toBytes(n, 4, true)));
-  const value$2 = [{ x: 0, y: 0 }];
-  pointHash.hashSlice(value$2, { value: hasher }, $sipHasher);
+  const value = [1, 2];
+  hasher.write(value.flatMap((n) => $toBytes(n, 4, true)));
+  const value$1 = [{ x: 0, y: 0 }];
+  pointHash.hashSlice(value$1, { value: hasher }, $sipHasher);
   mix(hasher, 4);
   const before = hasher.clone();
   hasher.writeU8(1);

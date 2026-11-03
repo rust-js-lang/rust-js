@@ -55,14 +55,12 @@ function main() {
   );
   console.log(`[${folded.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] ${calls}`);
   calls = 0;
-  const map = iterator_map($iter(v), (x) => {
-    calls = (calls + 1) | 0;
-    return x;
-  });
-  const value = [7, 8];
   for (const p of iterator_zip(
-    map,
-    value,
+    iterator_map($iter(v), (x) => {
+      calls = (calls + 1) | 0;
+      return x;
+    }),
+    [7, 8],
     { next: $next, fold: $foldOf, getUnchecked: mapIterator___iteratorGetUnchecked },
     vecIntoIterator,
     true,
@@ -195,8 +193,8 @@ function main() {
     true,
     true,
   );
-  const value$1 = $sizeHint(z);
-  console.log(`(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`);
+  const value = $sizeHint(z);
+  console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
   n = z.reduce((a) => (a + 1) | 0, 0);
   console.log(`${n} ${calls}`);
 }

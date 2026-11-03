@@ -40,9 +40,8 @@ function main() {
   )) {
     console.log(`${x} ${y}`);
   }
-  const value = $iter(w);
   for (const p of $lazyZip(
-    value,
+    $iter(w),
     v.values().map((x) => noisy("c", x)),
   )) {
     console.log(`(${p[0]}, ${p[1]})`);

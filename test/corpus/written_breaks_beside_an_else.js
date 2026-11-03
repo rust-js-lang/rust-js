@@ -137,12 +137,7 @@ export function performWorkOnRoot(root, lanes, shouldTimeSlice) {
 }
 
 function main() {
-  const value = [0];
-  const value$1 = [1];
-  const value$2 = [5];
-  const value$3 = [3, 7, 5];
-  const value$4 = [2, 2, 5];
-  for (const statuses$1 of [value, value$1, value$2, value$3, value$4]) {
+  for (const statuses$1 of [[0], [1], [5], [3, 7, 5], [2, 2, 5]]) {
     statuses = statuses$1.toReversed();
     const fiber = { alternate: undefined };
     const alt = { alternate: undefined };

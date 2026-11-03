@@ -111,8 +111,7 @@ function main() {
         if (value$1 != null) {
           noisyDrop_drop(value$1);
         }
-        const drain = $iter($drainAll(drained));
-        for (const item of drain) {
+        for (const item of $iter($drainAll(drained))) {
           noisyDrop_drop(item[1]);
         }
         console.log("end");

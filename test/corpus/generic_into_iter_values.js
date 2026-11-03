@@ -36,8 +36,7 @@ function main() {
   const pair = both(["a", "b"], [1, 2, 3], intoIterator, intoIterator);
   console.log(`${pair.a.end - pair.a.at} ${pair.b.end - pair.b.at}`);
   const total = mk([4, 5]).reduce((a, b) => (a + b) >>> 0, 0);
-  const value = [6, 7];
-  for (const x of mk(value)) {
+  for (const x of mk([6, 7])) {
     console.log(`${x} ${total}`);
   }
   show([8, 9]);
