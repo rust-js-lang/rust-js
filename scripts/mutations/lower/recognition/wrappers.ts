@@ -458,4 +458,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^owner_handle.rs$"],
     snapshots: true,
   },
+  {
+    name: "local-key-take-unrecognized",
+    breaks:
+      "a thread-local's `take()` isn't one of its key's `Cell` methods, so a counter it takes, which it leaves `0.0`, is put out, `$displayF64(taken)` (rd707)",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "        \"take\" => Some(LocalKeyCellMethod::Take),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^whole_thread_locals.rs$"],
+    snapshots: true,
+  },
 ];

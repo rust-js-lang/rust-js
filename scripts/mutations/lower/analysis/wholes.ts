@@ -225,8 +225,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a whole thread-local's `get()` isn't known whole, `$displayF64(moduleIdx)` (rd707)",
     file: "src/lower/analysis/wholes.rs",
-    find: "                                    && wholes.fields.contains(&Field::Key(key))\n",
-    replace: "                                    && wholes.fields.contains(&Field::Key(key)) && false\n",
+    find: "                            .is_some_and(|(_, key)| wholes.fields.contains(&Field::Key(key)))\n",
+    replace: "                            .is_some_and(|(_, key)| wholes.fields.contains(&Field::Key(key)) && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^whole_thread_locals.rs$"],
     snapshots: true,
   },
@@ -235,8 +235,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a thread-local set what isn't known whole, `GIVEN.set(n)` of `1e300`, is taken for whole, its text JS's `1e+300` (rd707)",
     file: "src/lower/analysis/wholes.rs",
-    find: "            CellMethod::Writes => args.get(1).is_some_and(|value| whole_operand(tcx, &value.node, locals)),\n",
-    replace: "            CellMethod::Writes => true,\n",
+    find: "            LocalKeyCellMethod::Writes => args.get(1).is_some_and(|value| whole_operand(tcx, &value.node, locals)),\n",
+    replace: "            LocalKeyCellMethod::Writes => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^whole_thread_locals.rs$"],
   },
   {
@@ -244,8 +244,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a thread-local's `take()`, which gives what it held and leaves `0.0`, puts its counter out, `$displayF64(taken)` (rd707)",
     file: "src/lower/analysis/wholes.rs",
-    find: "        \"get\" | \"take\" => CellMethod::Get,\n",
-    replace: "        \"get\" => CellMethod::Get,\n",
+    find: "            LocalKeyCellMethod::Get | LocalKeyCellMethod::Take => true,\n",
+    replace: "            LocalKeyCellMethod::Get => true,\n            LocalKeyCellMethod::Take => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^whole_thread_locals.rs$"],
     snapshots: true,
   },

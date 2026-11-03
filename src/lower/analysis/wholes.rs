@@ -28,7 +28,9 @@ use rustc_span::def_id::{DefId, LocalDefId};
 
 use crate::lower::Body;
 use crate::lower::bindings;
-use crate::lower::recognition::{CellMethod, StdItem, cell_own_method, is_std_def, local_key_access};
+use crate::lower::recognition::{
+    CellMethod, LocalKeyCellMethod, StdItem, cell_own_method, is_std_def, local_key_cell_method,
+};
 
 /// The crate's functions whose result is always whole, and the fields of
 /// its structs and closures each write of which is (`of_crate`).
@@ -371,13 +373,13 @@ fn assigned_once<'b, 'tcx>(body: &'b mir::Body<'tcx>, counts: &[usize]) -> HashM
         .collect()
 }
 
-/// Of a call of `id` given `receiver` first, a thread-local's key's
-/// method, which it is and the key, `MODULE_IDX` of `MODULE_IDX.get()`:
-/// `get`, which reads it, or `take`, which reads it and writes `0.0`, a
-/// whole number; `set` or `replace`, which write what they're given
-/// second; or any other, a `RefCell`'s, never a `Cell<f64>`'s (rd707). A
-/// `with`, which lends the cell, is none, so its key is lent (`Mentions`).
-/// Of `body`'s `promoted` constants and its locals `assigned` once.
+/// Of a call of `id` given `receiver` first, a thread-local's key's `Cell`
+/// method, which it is (`local_key_cell_method`) and the key, `MODULE_IDX`
+/// of `MODULE_IDX.get()`: `get`, which reads it, `take`, which reads it
+/// and writes `0.0`, a whole number, or `set` or `replace`, which write
+/// what they're given second (rd707). Any other, a `with`, which lends the
+/// cell, is none, so its key is lent (`Mentions`). Of `body`'s `promoted`
+/// constants and its locals `assigned` once.
 fn key_method<'tcx>(
     tcx: TyCtxt<'tcx>,
     (promoted, assigned): (
@@ -386,13 +388,8 @@ fn key_method<'tcx>(
     ),
     id: DefId,
     receiver: &Operand<'tcx>,
-) -> Option<(CellMethod, DefId)> {
-    local_key_access(tcx, id)?;
-    let method = match tcx.item_name(id).as_str() {
-        "get" | "take" => CellMethod::Get,
-        "set" | "replace" => CellMethod::Writes,
-        _ => CellMethod::Other,
-    };
+) -> Option<(LocalKeyCellMethod, DefId)> {
+    let method = local_key_cell_method(tcx, id)?;
     let key = crate::lower::mir::referred_key(promoted, |local| assigned.get(&local).copied(), receiver)?;
     Some((method, key))
 }
@@ -490,10 +487,7 @@ pub(in crate::lower) fn whole_locals<'tcx>(
                                 .is_some_and(|field| wholes.fields.contains(&field)))
                         || (args.first())
                             .and_then(|receiver| key_method(tcx, (promoted, &assigned), def_id, &receiver.node))
-                            .is_some_and(|(method, key)| {
-                                matches!(method, CellMethod::Get | CellMethod::Writes)
-                                    && wholes.fields.contains(&Field::Key(key))
-                            })
+                            .is_some_and(|(_, key)| wholes.fields.contains(&Field::Key(key)))
                 });
                 match whole && destination.projection.is_empty() {
                     true => written.entry(destination.local).or_default().push(None),
@@ -578,9 +572,8 @@ fn unwhole_key_writes<'tcx>(
             None => *accounted.entry(key).or_default() += 1,
         }
         let whole = match method {
-            CellMethod::Get => true,
-            CellMethod::Writes => args.get(1).is_some_and(|value| whole_operand(tcx, &value.node, locals)),
-            CellMethod::New | CellMethod::Other => false,
+            LocalKeyCellMethod::Get | LocalKeyCellMethod::Take => true,
+            LocalKeyCellMethod::Writes => args.get(1).is_some_and(|value| whole_operand(tcx, &value.node, locals)),
         };
         if !whole {
             gone.push(Field::Key(key));

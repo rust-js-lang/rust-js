@@ -662,6 +662,29 @@ pub(in crate::lower) fn local_key_access(tcx: TyCtxt<'_>, id: DefId) -> Option<b
     }
 }
 
+/// Which of a thread-local's `Cell` methods `id` is, its key's own: `get`,
+/// `take`, `set` or `replace` (rd707). Of any other, `None`.
+pub(in crate::lower) fn local_key_cell_method(tcx: TyCtxt<'_>, id: DefId) -> Option<LocalKeyCellMethod> {
+    local_key_access(tcx, id)?;
+    match tcx.item_name(id).as_str() {
+        "get" => Some(LocalKeyCellMethod::Get),
+        "take" => Some(LocalKeyCellMethod::Take),
+        "set" | "replace" => Some(LocalKeyCellMethod::Writes),
+        _ => None,
+    }
+}
+
+/// A thread-local's `Cell` method, `local_key_cell_method`'s.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(in crate::lower) enum LocalKeyCellMethod {
+    /// `KEY.get()`.
+    Get,
+    /// `KEY.take()`: it gives what it held, and leaves its default.
+    Take,
+    /// `KEY.set(value)` or `KEY.replace(value)`: it writes `value`.
+    Writes,
+}
+
 /// Does `id`, a thread-local's method, set what it holds or lend its
 /// cell: `set`, `take`, `replace`, `with_borrow_mut` or `with` (ADR 0270,
 /// amended)?
