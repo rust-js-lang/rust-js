@@ -588,7 +588,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// where its arrow only passes its parameters on.
     /// `function::bind(console::time_stamp, ..)` binds `console.timeStamp`,
     /// and `function::name(&console::time_stamp)` is its name (ADR 0907,
-    /// amended). A closure the program writes stays the function it is.
+    /// amended). So is a function of rest arguments, the crate's or a
+    /// library's, `function::name(&signal_oper)`'s `signalOper`, where the
+    /// binding gives no function of it back, as `bind`'s may be called with
+    /// a slice (`rest_function_itself`, ADR 0664, amended, #540). A closure
+    /// the program writes stays the function it is.
     fn functions_themselves(
         &mut self,
         def_id: DefId,
@@ -617,16 +621,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         && super::recognition::is_function_value_trait(tcx, predicate.def_id()))
             })
         };
+        // What it gives back: one that names the parameter, `bind`'s
+        // `<(F, M) as Bound<L>>::Rest`, may be a function of it Rust calls.
+        let output = sig.instantiate_identity().skip_normalization().skip_binder().output();
         for ((arg, declared), given) in args.iter_mut().zip(declared).zip(given) {
-            let binding_fn = match *given.peel_refs().kind() {
-                ty::FnDef(f, f_args) if super::bindings::is_binding(tcx, f) => Some((f, f_args)),
-                _ => None,
+            let param = declared.peel_refs();
+            let ty::FnDef(f, f_args) = *given.peel_refs().kind() else {
+                continue;
             };
-            if let Some((f, f_args)) = binding_fn
-                && matches!(declared.peel_refs().kind(), ty::Param(_))
-                && of_any_shape(declared.peel_refs())
+            if !matches!(param.kind(), ty::Param(_)) || !of_any_shape(param) {
+                continue;
+            }
+            if super::bindings::is_binding(tcx, f) {
+                *arg = self.binding_fn_pointer(f, f_args.skip_binder(), span, span)?;
+            } else if !output.walk().any(|named| named == ty::GenericArg::from(param))
+                && let Some(itself) = self.rest_function_itself(f, f_args.skip_binder(), span)?
             {
-                let itself = self.binding_fn_pointer(f, f_args.skip_binder(), span, span)?;
                 *arg = itself;
             }
         }

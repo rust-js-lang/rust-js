@@ -419,7 +419,13 @@ export function order(prices: number[]): number;
   `total(...prices)`, and an array written out is its items,
   `total(1.5, 2)`; `&[]` is none.
 - **As a value it's the arrow of its call**, `(x) => total(...x)`, which
-  a caller through a `fn` pointer or an `impl Fn` gives the slice. A `fn`
+  a caller through a `fn` pointer or an `impl Fn` gives the slice. Where
+  JS alone reads it, `js::function`'s `name`, `length`, `call` and
+  `object`, and `js::unknown_of`, it's the function itself:
+  `function::name(&total)` is `total.name`, `"total"`, and
+  `function::call(&total, None, (1.0, 2.0))` is `total.call(undefined, 1,
+  2)`. A `function::bind` of it stays the arrow's, as Rust calls what it
+  gives with a slice. A `fn`
   JS calls with its arguments is one of rest arguments as a value
   ([below](#a-closure-js-calls-with-its-arguments)), whose closure that
   passes them all on is the function itself.

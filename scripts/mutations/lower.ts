@@ -35,14 +35,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "trait_method_as_value"],
   },
   {
-    name: "fn-item-conversion-unasked",
-    breaks: "a function given as a value whose call converts an argument, an `Option` an `IntoIterator` takes, is its name, so `map(total)` iterates the `Option`'s value and throws (#281)",
-    file: "src/lower.rs",
-    find: "                || self.converts_arguments(def_id, args, span)?\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^fn_item_converting_argument.rs$"],
-  },
-  {
     name: "load-reads-const-by-name",
     breaks: "a thread-local's value reads another module's `const` by name, `{ value: LIMIT }`, which an import cycle may load first: `Cannot access 'LIMIT' before initialization` (ADR 0722)",
     file: "src/lower.rs",
@@ -384,9 +376,18 @@ export const mutations: Mutation[] = [
     name: "rest-value-unspread",
     breaks: "a function whose last parameter is `#[rust_js::rest]`, as a value, is itself, which a call through it gives the slice whole",
     file: "src/lower.rs",
-    find: "            if self.takes_rest(def_id)\n                || matches!(\n",
-    replace: "            if false\n                || matches!(\n",
+    find: "            if self.takes_rest(def_id) || self.value_is_its_call(def_id, args, span)? {\n",
+    replace: "            if self.value_is_its_call(def_id, args, span)? {\n",
     tests: ["test/rest-parameters.test.ts", "-t", "rest slice is JS's rest parameter"],
+  },
+  {
+    name: "rest-value-itself-anywhere",
+    breaks:
+      "a function of rest arguments is itself wherever it's a value, as JS alone reads it where `js::function` does (#540): a `fn` pointer's, a box's, a field's, `map(total)`'s call give the slice whole, `total([1, 2, 3])`",
+    file: "src/lower.rs",
+    find: "            if self.takes_rest(def_id) || self.value_is_its_call(def_id, args, span)? {\n",
+    replace: "            if (false && self.takes_rest(def_id)) || self.value_is_its_call(def_id, args, span)? {\n",
+    tests: ["test/corpus.test.ts", "-t", "^rest_function_values.rs$"],
   },
   {
     name: "library-const-inlined",
@@ -395,22 +396,6 @@ export const mutations: Mutation[] = [
     find: "        if self.is_rust_fn(def_id) && ty.is_freeze(self.tcx, self.typing_env) {\n",
     replace: "        if self.krate.fns.contains_key(&def_id) && ty.is_freeze(self.tcx, self.typing_env) {\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "library's const is imported"],
-  },
-  {
-    name: "class-method-value-itself",
-    breaks: "a class's method as a value is the prototype's function itself, `Component.prototype.forceUpdate`, which a call through it gives no `this` (ADR 0761)",
-    file: "src/lower.rs",
-    find: "                            | classes::Member::Method\n",
-    replace: "",
-    tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
-  },
-  {
-    name: "object-method-value-itself",
-    breaks: "an object's method as a value is its module's function itself, `DO_NOT_USE_queryFirstNode`, which a call through it gives no `this` (ADR 0943)",
-    file: "src/lower.rs",
-    find: "                            | classes::Member::Own\n",
-    replace: "",
-    tests: ["test/classes.test.ts", "-t", "an object's methods are its literal's own"],
   },
   {
     name: "parameter-name-ignored",
@@ -437,14 +422,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-switch-symbols.test.ts", "-t", "a value some arms of a match of symbols give is given where they give it"],
   },
   {
-    name: "getter-value-unread",
-    breaks: "a class's getter as a value, `.map(QueenPosition::left_diagonal)`, is its function, not the arrow reading it (#357)",
-    file: "src/lower.rs",
-    find: "                            | classes::Member::Getter\n",
-    replace: "",
-    tests: ["test/classes.test.ts", "-t", "getter is its prototype"],
-  },
-  {
     name: "parameter-drop-read",
     breaks: "a library's generic function its consumer compiles from MIR keeps the `_` of a parameter only its drop reads, `pick(a, _b, dropB)` where its library's JS is `pick(a, b)` (ADR 0678, amended)",
     file: "src/lower.rs",
@@ -468,19 +445,6 @@ export const mutations: Mutation[] = [
     find: "    if !located(tcx, module) {\n        return name();\n",
     replace: "    if true {\n        return name();\n",
     tests: ["test/modules.test.ts", "-t", "a function called through its module is read through its namespace"],
-  },
-  {
-    name: "namespace-method-value-itself",
-    breaks:
-      "a namespace's method as a value is its module's function, given the namespace as its first argument (ADR 1037)",
-    file: "src/lower.rs",
-    find: "                            | classes::Member::Namespace\n",
-    replace: "",
-    tests: [
-      "test/namespaces.test.ts",
-      "-t",
-      "a namespace's methods are its module's functions",
-    ],
   },
   {
     name: "unbound-path-read-as-a-name",

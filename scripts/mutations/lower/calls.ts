@@ -272,4 +272,67 @@ export const mutations: Mutation[] = [
     replace: "\n",
     tests: ["test/runtime-package.test.ts", "-t", "an undefined given to JS is an argument"],
   },
+  {
+    name: "fn-item-conversion-unasked",
+    breaks: "a function given as a value whose call converts an argument, an `Option` an `IntoIterator` takes, is its name, so `map(total)` iterates the `Option`'s value and throws (#281)",
+    file: "src/lower/calls.rs",
+    find: "        ) || self.converts_arguments(def_id, args, span)?)\n",
+    replace: "        ))\n",
+    tests: ["test/corpus.test.ts", "-t", "^fn_item_converting_argument.rs$"],
+  },
+  {
+    name: "namespace-method-value-itself",
+    breaks:
+      "a namespace's method as a value is its module's function, given the namespace as its first argument (ADR 1037)",
+    file: "src/lower/calls.rs",
+    find: "            Some(Member::Constructor | Member::Method | Member::Getter | Member::Own | Member::Namespace)\n",
+    replace: "            Some(Member::Constructor | Member::Method | Member::Getter | Member::Own)\n",
+    tests: [
+      "test/namespaces.test.ts",
+      "-t",
+      "a namespace's methods are its module's functions",
+    ],
+  },
+  {
+    name: "rest-function-itself-never",
+    breaks:
+      "a function of rest arguments JS reads as a value, `function::name(&signal_oper)`, is the arrow of its call, whose `name` is `\"\"`, so alien-signals' `isSignal` is `false`, and `function::call(&total, None, (1.0, 2.0))` spreads its first argument (#540, ADR 0664, amended)",
+    file: "src/lower/calls.rs",
+    find: "        if !self.takes_rest(def_id)\n            || self.tcx.trait_of_assoc(def_id).is_some()\n",
+    replace: "        if true\n            || self.tcx.trait_of_assoc(def_id).is_some()\n",
+    tests: ["test/rest-parameters.test.ts", "-t", "a function of rest arguments JS reads as a value is the function itself"],
+  },
+  {
+    name: "rest-function-itself-unnamed",
+    breaks:
+      "a library's function of rest arguments JS reads, `function::name(&dep::total)`, is its import by name, `total$1.name` beside `import * as Dep`, where its path names it through its module, `Dep.total.name` (#540, ADR 1018)",
+    file: "src/lower/calls.rs",
+    find: "        Ok(Some(self.named_fn_ref(def_id, copy, named)))\n",
+    replace: "        Ok(Some(self.named_fn_ref(def_id, copy, span)))\n",
+    tests: ["test/rest-parameters.test.ts", "-t", "a function of rest arguments JS reads as a value is the function itself"],
+  },
+  {
+    name: "class-method-value-itself",
+    breaks: "a class's method as a value is the prototype's function itself, `Component.prototype.forceUpdate`, which a call through it gives no `this` (ADR 0761)",
+    file: "src/lower/calls.rs",
+    find: "            Some(Member::Constructor | Member::Method | Member::Getter | Member::Own | Member::Namespace)\n",
+    replace: "            Some(Member::Constructor | Member::Getter | Member::Own | Member::Namespace)\n",
+    tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
+  },
+  {
+    name: "object-method-value-itself",
+    breaks: "an object's method as a value is its module's function itself, `DO_NOT_USE_queryFirstNode`, which a call through it gives no `this` (ADR 0943)",
+    file: "src/lower/calls.rs",
+    find: "            Some(Member::Constructor | Member::Method | Member::Getter | Member::Own | Member::Namespace)\n",
+    replace: "            Some(Member::Constructor | Member::Method | Member::Getter | Member::Namespace)\n",
+    tests: ["test/classes.test.ts", "-t", "an object's methods are its literal's own"],
+  },
+  {
+    name: "getter-value-unread",
+    breaks: "a class's getter as a value, `.map(QueenPosition::left_diagonal)`, is its function, not the arrow reading it (#357)",
+    file: "src/lower/calls.rs",
+    find: "            Some(Member::Constructor | Member::Method | Member::Getter | Member::Own | Member::Namespace)\n",
+    replace: "            Some(Member::Constructor | Member::Method | Member::Own | Member::Namespace)\n",
+    tests: ["test/classes.test.ts", "-t", "getter is its prototype"],
+  },
 ];

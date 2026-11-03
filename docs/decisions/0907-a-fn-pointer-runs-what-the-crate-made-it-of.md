@@ -270,7 +270,9 @@ as TypeScript types it:
   answer of `function::name(&console::time_stamp)` before. A closure the
   program writes stays the function it is; a callback JS calls,
   `then(parseFloat)`'s, stays the arrow of what Rust gives
-  (`binding_calls.rs`'s `functions_themselves`).
+  (`binding_calls.rs`'s `functions_themselves`). So is a function of rest
+  arguments where the binding's result names no `F` (ADR 0664, amended,
+  #540).
 - **What the bound function runs**: a binding's result, from outside, so
   a call of it may run anything, as before; a `Box<dyn Fn>` is called as
   a `dyn` is.

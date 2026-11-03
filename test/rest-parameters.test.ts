@@ -149,6 +149,98 @@ test("a library's rest function is called with the slice spread", async () => {
   expect(sums([4, 5])).toEqual([3, 9, 9]);
 });
 
+// #540: a function of rest arguments given to what reads it as JS's function,
+// `js::function`'s members and `js::unknown_of`, is the function itself,
+// whose `name` is its own and which JS calls with its arguments, rest
+// gathered; not the arrow of its call, whose `name` is `""` and which would
+// spread its second argument. alien-signals' `isSignal` reads
+// `signalOper.name`. Where what JS gives back is called with a slice,
+// `function::bind`'s, the arrow stays.
+test("a function of rest arguments JS reads as a value is the function itself", async () => {
+  const dir = fixture("rest-function-itself");
+  writeFileSync(join(dir, "dep.rs"), "pub fn total(#[cfg_attr(rust_js, rust_js::rest)] xs: &[f64]) -> f64 {\n    xs.iter().sum()\n}\n");
+  run([compiler, join(dir, "dep.rs"), "-o", join(dir, "dep", "lib.js"), "--library", "--manifest", join(dir, "dep", "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(dir, "libdep.rmeta")}`]);
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+use std::rc::Rc;
+
+use js::{IntoUnknown, Kind, Rest, Unknown, function};
+
+pub struct Node {
+    pub flags: Cell<usize>,
+}
+
+fn signal_oper(this: &Rc<Node>, #[cfg_attr(rust_js, rust_js::rest)] value: &[Option<&Unknown>]) -> usize {
+    this.flags.get() + value.len()
+}
+
+pub fn signal(this: Rc<Node>) -> impl Fn(&dyn Rest<dyn IntoUnknown>) -> usize {
+    move |value: &dyn Rest<dyn IntoUnknown>| signal_oper(&this, value)
+}
+
+pub fn is_signal(r#fn: &dyn Fn(&dyn Rest<dyn IntoUnknown>) -> usize) -> bool {
+    function::name(r#fn) == format!("bound {}", function::name(&signal_oper))
+}
+
+pub fn total(#[cfg_attr(rust_js, rust_js::rest)] xs: &[f64]) -> f64 {
+    xs.iter().sum()
+}
+
+fn offset(by: f64, #[cfg_attr(rust_js, rust_js::rest)] xs: &[f64]) -> f64 {
+    by + total(xs)
+}
+
+pub fn total_name() -> String {
+    function::name(&total)
+}
+
+pub fn library_name() -> String {
+    function::name(&dep::total)
+}
+
+pub fn total_length() -> u32 {
+    function::length(&total)
+}
+
+pub fn total_called() -> Option<&'static Unknown> {
+    function::call(&total, None, (1.0, 2.0, 3.0))
+}
+
+pub fn total_value() -> &'static Unknown {
+    js::unknown_of(total)
+}
+
+pub fn offset_bound(by: f64) -> f64 {
+    let add = function::bind(offset, Some(&Kind::Null), (by,));
+    add(&[1.0, 2.0])
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
+    "--", ...js, "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir]);
+  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(out).toContain("return signalOper.bind(null, this$);");
+  expect(out).toContain("`bound ${signalOper.name}`");
+  expect(out).toContain("return total.name;");
+  expect(out).toContain("return Dep.total.name;");
+  expect(out).toContain("return total.length;");
+  expect(out).toContain("return total.call(undefined, 1, 2, 3);");
+  expect(out).toContain("return total;");
+  // What `bind` gives Rust is called with a slice: the arrow spreads it.
+  expect(out).toMatch(/\(\((\w+), (\w+)\) => offset\(\1, \.\.\.\2\)\)\.bind\(null, by\)/);
+  const lib = await import(join(dir, "lib.js"));
+  const node = { flags: 1 };
+  const signal = lib.signal(node);
+  expect(signal.name).toBe("bound signalOper");
+  expect(lib.isSignal(signal)).toBe(true);
+  expect(lib.isSignal(() => 0)).toBe(false);
+  expect([signal(), signal("a", "b")]).toEqual([1, 3]);
+  expect([lib.totalName(), lib.libraryName(), lib.totalLength()]).toEqual(["total", "total", 0]);
+  expect(lib.totalCalled()).toBe(6);
+  expect(lib.totalValue()).toBe(lib.total);
+  expect(lib.totalValue()(1, 2, 3)).toBe(6);
+  expect(lib.offsetBound(10)).toBe(13);
+});
+
 // Where it isn't JS's rest parameter, it's an error that says what to write.
 for (const [name, source, message] of [
   ["not the last parameter", "pub fn f(#[cfg_attr(rust_js, rust_js::rest)] xs: &[f64], n: f64) -> f64 { xs.len() as f64 + n }",

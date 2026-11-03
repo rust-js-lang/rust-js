@@ -948,22 +948,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Some(passed_on::passed_on(&arrow, taker, &[]).unwrap_or(arrow)));
             }
             // One that takes rest arguments, given a slice by what calls it
-            // as a value: the arrow of its call, which spreads it (ADR 0664);
-            // a class's constructor or method, `(props) => new
-            // Component(props)` (ADR 0761).
-            if self.takes_rest(def_id)
-                || matches!(
-                    classes::member(self.tcx, def_id),
-                    Some(
-                        classes::Member::Constructor
-                            | classes::Member::Method
-                            | classes::Member::Getter
-                            | classes::Member::Own
-                            | classes::Member::Namespace
-                    )
-                )
-                || self.converts_arguments(def_id, args, span)?
-            {
+            // as a value: the arrow of its call, which spreads it (ADR 0664),
+            // but where JS alone reads it (`rest_function_itself`); a class's
+            // constructor or method, `(props) => new Component(props)` (ADR
+            // 0761).
+            if self.takes_rest(def_id) || self.value_is_its_call(def_id, args, span)? {
                 return Ok(None);
             }
             // Of the lowering that takes what it's given as it's given it, as

@@ -6,7 +6,8 @@ a binding's, the calling side; beside [0428](0428-c-variadic-functions.md),
 whose C-variadic `...` is rustc's own. Amended by
 [0851](0851-a-closure-of-rest-arguments-is-jss-rest-parameter.md): a
 closure takes rest arguments as a value, `&dyn js::Rest<T>`, which its
-refusal of `#[rust_js::rest]` names.
+refusal of `#[rust_js::rest]` names. Amended below (#540): as a value JS
+alone reads, it's the function itself.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, a function's shape
 to JS: the function is given the slice it would be in Rust, and a JS
@@ -161,3 +162,56 @@ export default function formatProdErrorMessage(code, ...args) {
 ## Amendment: a trait of classes (rd283)
 
 A trait of classes' default may take rest arguments, each class's prototype's method's `...args`; an impl's own method of it is refused ([ADR 1035](1035-a-trait-of-classes-is-each-classs-prototypes.md)).
+
+## Amendment: as a value JS alone reads, the function itself (#540, 2026-11-03)
+
+alien-signals' `isSignal(fn)` is `fn.name === 'bound ' + signalOper.name`.
+Since #502 its port's `signal` returns `signalOper.bind(null, this$)` once
+`signal_oper`'s slice is `#[rust_js::rest]`, but `isSignal`'s
+`js::function::name(&signal_oper)` printed `((a, b) => signalOper(a,
+...b)).name`, `""`, the arrow of its call this ADR made every value of
+it, so `isSignal` of a signal was `false` where upstream's is `true`. The
+arrow is right where Rust calls the value with a slice, a `fn` pointer's
+or an `impl Fn`'s call. It was wrong where JS alone reads the value:
+`function::name`'s `""`, a new object each time for `function::object`,
+and `function::call(&total, None, (1.0, 2.0))`, which gave the arrow `1`
+as its slice to spread, where JS gives the function `1, 2`.
+
+**A function of rest arguments, the crate's or a library's, given to a
+binding's parameter of any shape, `F: js::AnyFunction<M>` or
+`js::AnyShape<M>`, whose result names no `F`, is the function itself**:
+`function::name(&signal_oper)` is `signalOper.name`, `function::call(&total,
+None, (1.0, 2.0, 3.0))` is `total.call(undefined, 1, 2, 3)`,
+`js::unknown_of(total)` is `total`, and a library's, written
+`&dep::total`, `Dep.total`, as its path names it (ADR 1018). That's the
+position ADR 0907 gives a binding's function as the value it is
+(`binding_calls.rs`'s `functions_themselves`); the function is
+`calls.rs`'s `rest_function_itself`, which, as `fn_item_value`, keeps the
+arrow of a class's member and of one whose call converts what it's given
+(`value_is_its_call`, one condition for both). A binding whose result
+names its `F`, `function::bind`'s `<(F, M) as Bound<L>>::Rest`, gives
+back a function Rust calls with a slice, `add(&[1.0, 2.0])`: there the
+arrow stays, `((a, b) => offset(a, ...b)).bind(null, by)`. Everywhere
+else, a `fn` pointer, an `impl Fn`, a box, a field, an iterator's
+callback, the value is the arrow as before.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change. What
+`js::function`'s members read is JS's of the function the program names,
+which the arrow isn't: its `name`, its identity and the arguments a JS
+call gives it differ, so the function itself is what preserves the
+program's meaning. Native Rust has no answer of its own for them.
+
+With it, the alien-signals port's `isSignal` is `true` of a signal, its
+four `is*` functions upstream's.
+
+Held by `test/rest-parameters.test.ts`'s "a function of rest arguments JS
+reads as a value is the function itself", run (`isSignal` of a signal
+`true`, `name`, a library's `name`, `length`, `call` and `unknown_of`'s
+function JS calls with its arguments; `bind`'s arrow kept and called with
+a slice), and the corpus's `rest_function_values` against native Rust,
+each place Rust calls the value with a slice. Mutations
+`rest-function-itself-never`, `rest-function-itself-unnamed`
+(`lower/calls.ts`), `rest-function-itself-given-back`
+(`lower/binding_calls.ts`) and `rest-value-itself-anywhere` (`lower.ts`);
+`fn-item-conversion-unasked` and `namespace-method-value-itself` move to
+`lower/calls.ts` with the condition.
