@@ -303,4 +303,22 @@ export const mutations: Mutation[] = [
     replace: "        (!name.as_str().is_empty())\n",
     tests: ["test/lowering-moves.test.ts", "-t", "a closure's capture read first is named for its variable"],
   },
+  {
+    name: "thunk-ignoring-bound",
+    breaks:
+      "Fizz's `ping: () => pingTask(request, task)` of `move |_| ping_task(&request, task)` is `pingTask.bind(null, request, task)`: a closure whose parameters JS leaves out is bound as a thunk (#502, ADR 0605, amended)",
+    file: "src/lower/mir/closures.rs",
+    find: "                let kept = thunk && (ignores || self.handed_on(made_at));\n",
+    replace: "                let kept = thunk && (false && ignores || self.handed_on(made_at));\n",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "of rest arguments, that passes on what it captured"],
+  },
+  {
+    name: "bound-borrowed-capture",
+    breaks:
+      "`panic::catch_unwind(AssertUnwindSafe(|| entangle(&r, 9, 1)))` and `let peek = || computed_oper(&node)`, closures that borrow what they pass, are `entangle.bind(null, r, 9, 1)` and `computedOper.bind(null, node)`: a borrow is its place, never what a `bind` binds (rd660, #502, ADR 0605, amended)",
+    file: "src/lower/mir/closures.rs",
+    find: "                        && by_value.get(i).copied().unwrap_or(false)\n",
+    replace: "",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "of rest arguments, that passes on what it captured"],
+  },
 ];

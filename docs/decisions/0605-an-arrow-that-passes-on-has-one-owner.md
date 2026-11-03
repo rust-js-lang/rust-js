@@ -736,7 +736,8 @@ of its own, as each arrow is.
 
 **Not a thunk handed on as a callback** (`FnCx::handed_on`, asked of a
 thunk alone): a call's argument, boxed (`Box::new(move || ..)`, given or
-returned) or lent (`&move || ..`). JS writes each in place: Fizz's and
+returned), lent (`&move || ..`) or wrapped (`AssertUnwindSafe(move ||
+..)`), a block's value too. JS writes each in place: Fizz's and
 Flight's `scheduleWork(() => performWork(request))` and `scheduleWork(()
 => finishAbort(request, abortableTasks))`, their Node entries'
 `createDrainHandler`, `return () => startFlowing(request, destination)`
@@ -754,9 +755,13 @@ run_task(..)`. **Nor a closure whose parameters JS leaves out**, `move
 writes it: it ignores what it's given, and stays the arrow it was. What a
 closure of parameters of its own is stays as above.
 
-The rd660 boundary stays: a closure that borrows what it passes is its
-place, never what it took by value, and a statement of the call is never
-bound. Upstream writes thunks both ways, and no form of the Rust tells
+The rd660 boundary stays, and is held where it leaked: a closure that
+borrows what it passes is its place, never what it took by value, and a
+statement of the call is never bound. A shared borrow of a local whose
+callee writes through its `RefCell`, `|| entangle(&root, 9, 1)`, came to
+`closures.rs` as the variable, not its place, and was bound with
+parameters of its own already; what's bound is now what rustc says the
+closure took by value (`analysis::taken_by_value`, `ByValue` or `ByUse`). Upstream writes thunks both ways, and no form of the Rust tells
 `createDrainHandler`'s returned thunk from alien-signals' but the box: the
 line is drawn where React's port and alien-signals agree with upstream
 everywhere a thunk changes, and is a choice of output, not of meaning
@@ -772,12 +777,14 @@ parameters, or of rest arguments, that passes on what it captured is the
 function bound", run (`computed.name` is `"bound computedOper"`,
 `isComputed` of it `true` through `js::function::name`; kept: one of rest
 arguments given on as one array, a statement, one that captures nothing,
-a borrow, thunks given to a call, boxed, returned boxed or lent, and one
-of `|_|`; bound: one an `Rc` is made of given to a call), the earlier
+a borrow, of a local too, thunks given to a call, boxed, returned boxed,
+lent or wrapped, and one of `|_|`; bound: one an `Rc` is made of given to a call), the earlier
 test's `thunk`, now
 `shown.bind(null, fiber)`, the corpus's `bound_thunks` against native
 Rust, and the guide's `later`. Mutations `bound-of-parameters-alone`,
 `thunk-handed-on-bound`, `thunk-made-an-rc-handed-on`,
-`thunk-call-argument-bound`, `thunk-lent-bound`, `thunk-ignoring-bound`
-(`passed_on.ts`) and `rest-given-whole-passed-on` (`js/stmt_walk.ts`);
+`thunk-call-argument-bound`, `thunk-lent-bound`, `thunk-of-a-block-bound`,
+`thunk-wrapped-bound` (`passed_on.ts`), `thunk-ignoring-bound`,
+`bound-borrowed-capture` (`mir/closures.ts`) and
+`rest-given-whole-passed-on` (`js/stmt_walk.ts`);
 `bound-thunk` goes, the condition it held gone.

@@ -43,11 +43,7 @@ function main() {
   console.log(`([${value[0].join(", ")}], [${value[1].join(", ")}])`);
 
   const d = [0];
-  const make$2 = (d) =>
-    $cloning(
-      () => consume(d),
-      () => make$2(d.slice()),
-    );
+  const make$2 = (d) => $cloning(consume.bind(null, d), () => make$2(d.slice()));
   const d$1 = make$2(d);
   const all = [$clone(d$1), $clone(d$1), d$1];
   console.log(

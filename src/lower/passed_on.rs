@@ -579,11 +579,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn handed_on(&self, span: rustc_span::Span) -> bool {
         let thir = self.frame.thir;
         // What's given, a block's value too, `Box::new({ let container =
-        // Rc::clone(&container); move || get_children(Some(&container)) })`.
+        // Rc::clone(&container); move || get_children(Some(&container)) })`,
+        // and what one wrapper holds, `AssertUnwindSafe(move || ..)`.
         let closure = |mut a: rustc_middle::thir::ExprId| loop {
             let made = &thir[super::body_queries::strip(thir, a)];
             match made.kind {
                 ExprKind::Block { block } if let Some(value) = thir[block].expr => a = value,
+                ExprKind::Adt(ref adt) if let [only] = &adt.fields[..] => a = only.expr,
                 _ => return matches!(made.kind, ExprKind::Closure(..)) && made.span == span,
             }
         };

@@ -835,20 +835,20 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-passed-on.test.ts", "-t", "of rest arguments, that passes on what it captured"],
   },
   {
-    name: "thunk-ignoring-bound",
-    breaks:
-      "Fizz's `ping: () => pingTask(request, task)` of `move |_| ping_task(&request, task)` is `pingTask.bind(null, request, task)`: a closure whose parameters JS leaves out is bound as a thunk (#502, ADR 0605, amended)",
-    file: "src/lower/mir/closures.rs",
-    find: "                let kept = thunk && (ignores || self.handed_on(made_at));\n",
-    replace: "                let kept = thunk && (false && ignores || self.handed_on(made_at));\n",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "of rest arguments, that passes on what it captured"],
-  },
-  {
     name: "thunk-of-a-block-bound",
     breaks:
       "createReactNoop's root's `getChildren() { return getChildren(container); }`, of `Box::new({ let container = ..; move || get_children(..) })`, is `getChildren: getChildren.bind(null, container)`: a thunk that's a block's value, boxed, isn't seen handed on (#502, ADR 0605, amended)",
     file: "src/lower/passed_on.rs",
     find: "                ExprKind::Block { block } if let Some(value) = thir[block].expr => a = value,\n",
+    replace: "",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "of rest arguments, that passes on what it captured"],
+  },
+  {
+    name: "thunk-wrapped-bound",
+    breaks:
+      "`guarded(AssertUnwindSafe(move || computed_oper(&this)))`, a thunk wrapped for the call it's given to, is `guarded(computedOper.bind(null, this$))` (#502, ADR 0605, amended)",
+    file: "src/lower/passed_on.rs",
+    find: "                ExprKind::Adt(ref adt) if let [only] = &adt.fields[..] => a = only.expr,\n",
     replace: "",
     tests: ["test/lowering-passed-on.test.ts", "-t", "of rest arguments, that passes on what it captured"],
   },

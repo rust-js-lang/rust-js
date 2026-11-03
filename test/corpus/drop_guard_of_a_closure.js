@@ -81,7 +81,7 @@ function computed(getter) {
     getter,
     depth: 0,
   };
-  return [node, () => oper(node)];
+  return [node, oper.bind(null, node)];
 }
 
 function run(active$1, early, fail) {

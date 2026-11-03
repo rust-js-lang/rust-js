@@ -196,6 +196,19 @@ pub(in crate::lower) fn borrowed_fixed_bindings(tcx: TyCtxt<'_>, closure: DefId)
     tcx.closure_captures(local).iter().map(fixed).collect()
 }
 
+/// Of each capture of `closure`, by its index among them, whether it takes
+/// its value, a `move` closure's or one that consumes it, not a borrow: what
+/// a `bind` may bind (`passed_on::binds`, ADR 0605, amended). None of a
+/// closure of another crate's.
+pub(in crate::lower) fn taken_by_value(tcx: TyCtxt<'_>, closure: DefId) -> Vec<bool> {
+    let Some(local) = closure.as_local().filter(|_| tcx.is_closure_like(closure)) else {
+        return Vec::new();
+    };
+    (tcx.closure_captures(local).iter())
+        .map(|captured| matches!(captured.info.capture_kind, ty::UpvarCapture::ByValue | ty::UpvarCapture::ByUse))
+        .collect()
+}
+
 /// A `dyn Fn` the crate makes that drops what it holds: where it's made,
 /// and what it holds that drops, which a refusal names (ADR 0626, amended).
 pub(super) struct DroppingFnDyn<'tcx> {

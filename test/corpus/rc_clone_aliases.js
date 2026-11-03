@@ -23,7 +23,7 @@ function make(n) {
 
 function read(n) {
   const response = make(n);
-  start(response, () => close(response));
+  start(response, close.bind(null, response));
   return response.n;
 }
 
@@ -31,7 +31,7 @@ function fetch(n, then) {
   const response = make(n);
   then(
     () => {
-      start(response, () => close(response));
+      start(response, close.bind(null, response));
     },
     report.bind(null, response),
   );
@@ -42,7 +42,7 @@ function moved(n) {
   let response = make(n);
   const closing = response;
   response = make(n + 1);
-  start(response, () => close(closing));
+  start(response, close.bind(null, closing));
   return response.n;
 }
 

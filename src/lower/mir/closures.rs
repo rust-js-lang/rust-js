@@ -149,6 +149,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // its place, above; a `&mut`, its variable; what it changes, a `let`
         // of its own.
         let mut moved = Vec::new();
+        let by_value = crate::lower::analysis::taken_by_value(self.tcx, def_id);
         for (i, value) in captured.into_iter().enumerate() {
             captures.push(match value {
                 Value::Ref(place) | Value::Place(place) => (place, true),
@@ -217,7 +218,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         });
                         self.spill(base.as_deref().unwrap_or("captured"), e, out)
                     };
-                    if let js::ExprKind::Var(name) = &e.kind {
+                    if let js::ExprKind::Var(name) = &e.kind
+                        && by_value.get(i).copied().unwrap_or(false)
+                    {
                         moved.push(name.clone());
                     }
                     (e, false)

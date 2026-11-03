@@ -676,6 +676,52 @@ pub fn borrowed(this: Rc<Node>) -> i32 {
     peek() + peek()
 }
 
+pub fn borrowed_local(flags: i32) -> i32 {
+    let node = Rc::new(Node {
+        flags: Cell::new(flags),
+    });
+    let peek = || computed_oper(&node);
+    peek() + peek()
+}
+
+fn flags_of(node: &Node) -> i32 {
+    node.flags.get()
+}
+
+pub fn borrowed_struct(flags: i32) -> i32 {
+    let node = Node {
+        flags: Cell::new(flags),
+    };
+    let peek = || flags_of(&node);
+    peek() + peek()
+}
+
+pub struct Lanes {
+    pub lanes: std::cell::RefCell<Vec<u32>>,
+}
+
+fn entangle(root: &Lanes, index: usize, lane: u32) {
+    root.lanes.borrow_mut()[index] |= lane;
+}
+
+pub fn entangled(lane: u32) -> u32 {
+    let root = Lanes {
+        lanes: std::cell::RefCell::new(vec![0; 2]),
+    };
+    let twice = || entangle(&root, 1, 2);
+    twice();
+    twice();
+    root.lanes.borrow()[1] + lane
+}
+
+fn guarded<T>(f: impl FnOnce() -> T + std::panic::UnwindSafe) -> T {
+    f()
+}
+
+pub fn wrapped(this: Rc<Node>) -> i32 {
+    guarded(std::panic::AssertUnwindSafe(move || computed_oper(&this)))
+}
+
 pub fn is_computed(r#fn: &dyn Fn() -> i32) -> bool {
     js::function::name(r#fn) == format!("bound {}", js::function::name(&computed_oper))
 }
@@ -746,6 +792,12 @@ pub fn shared(this: Rc<Node>) -> Rc<dyn Fn()> {
   expect(js).not.toContain("effectOper.bind(");
   expect(js).not.toContain("plus.bind(");
   expect(js).not.toContain("computedOper.bind(null, this$)()");
+  // A borrow is its place, never what's bound (rd660).
+  expect(js).not.toContain("computedOper.bind(null, node)");
+  expect(js).not.toContain("flagsOf.bind(");
+  expect(js).toContain("const twice = () => entangle(root, 1, 2);");
+  // Wrapped for the call it's given to, a callback still.
+  expect(js).toContain("return guarded(() => computedOper(this$));");
   // Given straight to a call, a callback JS writes in place; an `Rc`'s, a
   // function the callee keeps, is bound.
   expect(js).toContain("schedule(() => perform(this$));");
@@ -772,6 +824,9 @@ pub fn shared(this: Rc<Node>) -> Rc<dyn Fn()> {
   expect(lib.isComputed(lib.ofNothing())).toBe(false);
   expect(lib.ofNothing()()).toBe(4);
   expect(lib.borrowed(node)).toBe(-2 + -1);
+  expect(lib.borrowedLocal(5)).toBe(6 + 7);
+  expect(lib.borrowedStruct(5)).toBe(10);
+  expect(lib.entangled(4)).toBe(6);
   lib.scheduled(node);
   lib.shared(node)();
   lib.drain(node)();
