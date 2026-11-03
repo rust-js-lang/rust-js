@@ -8,7 +8,8 @@ and an or-pattern of a guard, which MIR tests by each alternative, is one
 case. Amended below: a guarded arm just before a last `_` that does
 something falls through to the `default`; no `default` holds what
 follows the `match` past a failed guard (rd184); and what follows the
-`match` past a failed guard is after the `switch` (rd184's upstream form).
+`match` past a failed guard is after the `switch` (rd184's upstream form),
+as #518's arms that continue make it, `past_the_turn` gone.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N, nothing the program
 can observe: the case runs the guard where the arm did, after its
@@ -287,3 +288,40 @@ Held by `test/lowering-comments-jumps.test.ts`'s "a program's
 fall-through comment above a block's `_` is kept, none of rust-js's
 beside it", run, and the mutation `default-fallen-to-past-its-open`
 (`to_oxc/cases.ts`).
+
+## Amendment: what follows the `match` is after the `switch` because each arm continues where it's written (#518, 2026-11-03)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The JS is the same
+for every case.
+
+Since #518 (ADR 0684, amended), each arm that ends with a `continue` is
+that case's `continue`, at its place, and `tail continues` puts what
+follows the `match` after the `if` that holds it. So the chain that
+`switches` reads no longer has a `_ => {}` holding what's written past
+the `match`. clearContainerSparingly's `switch (nodeName) { .. }
+container.removeChild(node);` and a function whose other arms leave, `n
++= 5` after the `switch`, are made the one way #518 gives them. A probe
+build that panicked at `past_the_turn` reached it in no test. With #518's
+source reverted, it reached it for guarded_arm_falls_to_tail. **The
+amendment above's `past_the_turn` and `Values::goes_on` are removed**,
+along with their mutations `past-the-turn-refused`,
+`past-the-turn-goes-on-continued`, `past-the-turn-not-continued` and
+`goes-on-unflagged`.
+
+The refusal of the amendment before it stays: a guarded arm's case whose
+guard fails past the `match`, when the `default` holds what follows the
+`match`, makes no `switch`. Otherwise the case's `break` would skip that
+code, a wrong answer. No chain reaches it today. Sixteen shapes were
+tried as one probe: guarded arms that continue, return, break, push and
+go on, or throw, in loops, labeled loops and functions. Its mutation
+`guard-failing-past-default-kept` is removed, so it is a guard with no
+mutation. `guard-failing-past-any-default` still holds `held_past`.
+`guarded_arm_falls_to_tail` stays against native Rust.
+
+The guard's peel in `guarded`, an `if` of the guard's alone inside
+joined to its test (ADR 0905), gives the same JS without it across the
+corpus, `lowering-switches` and falling guarded arms of two tests, `4 if
+a && b => continue` then `4 | 5 if a => ..`. `tails::joined_ands` joins
+the same `if`s after `switches`. Its mutation `switch-guard-inner-if-apart`
+was an equivalent mutant and is removed. The peel stays, as the end it
+gives says whether a falling arm's `if` takes the next case's `else`.

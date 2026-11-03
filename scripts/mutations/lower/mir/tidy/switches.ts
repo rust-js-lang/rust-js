@@ -44,44 +44,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-switches.test.ts", "-t", "a guarded arm of a typeof switch tested first is its case"],
   },
   {
-    name: "past-the-turn-refused",
-    breaks:
-      "a chain whose `_ => {}` holds what's written past the `match`, React DOM's clearContainerSparingly's, stays an `if` chain, not `switch (nodeName) { .. } container.removeChild(node);` (rd184, ADR 0636, amended)",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "        after_switch = past_the_turn(&mut cases, &mut falls, written.span, ends_turn)?;\n",
-    replace:
-      "        after_switch = past_the_turn(&mut cases, &mut falls, written.span, ends_turn).filter(|_| false)?;\n",
-    tests: ["test/corpus.test.ts", "-t", "^guarded_arm_falls_to_tail.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "past-the-turn-goes-on-continued",
-    breaks:
-      "a guarded case whose guard fails, which goes on to what's past the `match`, `continue`s, skipping it: a `<link>` that isn't a stylesheet kept (rd184)",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "        if !values.goes_on && !body.last().is_some_and(js::ends) {\n",
-    replace: "        if !body.last().is_some_and(js::ends) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^guarded_arm_falls_to_tail.rs$"],
-  },
-  {
-    name: "past-the-turn-not-continued",
-    breaks:
-      "a case that went on to its loop's next turn falls out of the `switch` to what's past the `match`, `<html>` removed (rd184)",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "            body.push(StmtKind::Continue(None).at(js::Span::NONE));\n        }\n    }\n    Some(after)\n",
-    replace: "        }\n    }\n    Some(after)\n",
-    tests: ["test/corpus.test.ts", "-t", "^guarded_arm_falls_to_tail.rs$"],
-  },
-  {
-    name: "goes-on-unflagged",
-    breaks:
-      "a guarded arm's `if` with no `else`, whose guard fails to the arms after it, is taken for one that goes on to the chain's end, its case `continue`s (rd184)",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "        values.goes_on = otherwise.is_none();\n",
-    replace: "        values.goes_on = false;\n",
-    tests: ["test/corpus.test.ts", "-t", "^guarded_arm_falls_to_tail.rs$"],
-  },
-  {
     name: "some-switch-default-off",
     breaks:
       "a `match` of an `Option`'s constants whose `_` does something keeps `bb22: { if (x != null) { switch (x) { .. break bb22; } } hit = false; }`, not `default: hit = false;` (#221)",
@@ -90,16 +52,6 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: someSwitch,
     snapshots: true,
-  },
-  {
-    name: "guard-failing-past-default-kept",
-    breaks:
-      "a guarded arm's case whose guard fails past the `match` `break`s past a `default` holding what follows the `match`: a `<link>` that isn't a stylesheet is never removed (rd184, a wrong answer)",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "    if fails_past && cases.last().is_some_and(|case| case.2 && held_past(&case.1)) {\n",
-    replace:
-      "    if false && fails_past && cases.last().is_some_and(|case| case.2 && held_past(&case.1)) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^guarded_arm_falls_to_tail.rs$"],
   },
   {
     name: "guard-failing-past-any-default",
@@ -438,16 +390,6 @@ export const mutations: Mutation[] = [
     find: "        .filter(|&c| (arms.iter()).any(|arm| arm.span == cases[c].3 && (arm.guard.is_none() || arm.falls)))\n",
     replace: "        .filter(|_| true)\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_guard_past_match\\.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "switch-guard-inner-if-apart",
-    breaks:
-      "a guard MIR tests in part in an `if` inside, `if (!info)`, isn't the guard's, so the arm goes on and the `match` is no `switch`: React DOM's clearContainerSparingly is `if (name === \"HTML\" || ..) { .. } else if (name !== \"SCRIPT\" && ..) { if (name === \"LINK\") { .. } .. }`",
-    file: "src/lower/mir/tidy/switches.rs",
-    find: "            && of_guard(test)\n",
-    replace: "            && false\n",
-    tests: ["test/corpus.test.ts", "-t", "^guarded_arm_falls_to_tail\\.rs$"],
     snapshots: true,
   },
   {

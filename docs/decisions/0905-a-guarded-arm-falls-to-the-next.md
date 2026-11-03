@@ -276,7 +276,8 @@ the cases Rust's arms are, its guards run in Rust's order, each once; a
 - `test/lowering-switch-fallthrough.test.ts`, "two guarded arms, one
   falling to the next, one to nothing, are one switch", run against
   upstream's JS; `test/corpus/switch_guards_apart.rs` against native Rust.
-- Mutations `switch-negated-guard-unplaced`, `switch-guard-inner-if-apart`,
+- Mutations `switch-negated-guard-unplaced`, `switch-guard-inner-if-apart` (an
+  equivalent mutant since #518, removed: ADR 0636, amended),
   `switch-failing-guard-goes-after` and `switch-case-ending-break-kept`
   (`tidy/switches.ts`), and `tail-jump-branch-left-empty`
   (`tidy/jumps/tails.ts`), of the corpus case `emptied_branch_nested`
