@@ -219,6 +219,32 @@ pub(in crate::lower::mir::tidy) fn continues_written(
     }
 }
 
+/// An arm that's only a `continue`, `1 => { // Skipped. continue; }`,
+/// which MIR's test of its pattern goes to the loop's start from, with no
+/// block of its own placed where it's written: the `continue` the `if` of
+/// the pattern does, where it's written, which a comment before it is
+/// before (#574). Of that `if` alone, which starts where the arm does, not
+/// one in what the arm does; of an arm that's a block, as `1 => continue`
+/// has nothing in it to place, and a `continue` with a place reads as one
+/// the program wrote: `if (k === 3) { continue; }` stays so, not `if (k
+/// !== 3) { .. }`, as an `if` of one is (`continued`); and is an arm's
+/// code, which `decisions` places an `else if` at, as of any other arm.
+pub(in crate::lower::mir::tidy) fn arm_continues_placed(stmts: &mut [Stmt], arms: &[(js::Span, js::Span, js::Span)]) {
+    for stmt in stmts.iter_mut() {
+        let span = stmt.span;
+        if let StmtKind::If(test, then, _) = &mut stmt.kind
+            && let Some(jump) = then.last_mut()
+            && matches!(jump.kind, StmtKind::Continue(_))
+            && jump.span.is_none()
+            && let Some(&(_, _, written)) = arms.iter().find(|&&(_, arm, written)| {
+                !arm.is_none() && (test.span.lo == arm.lo || span.lo == arm.lo) && written.hi < arm.hi
+            })
+        {
+            jump.span = written;
+        }
+    }
+}
+
 /// Where the last statement of `stmts` starts, however deep, that has a
 /// place.
 pub(super) fn latest(stmts: &[Stmt]) -> u32 {

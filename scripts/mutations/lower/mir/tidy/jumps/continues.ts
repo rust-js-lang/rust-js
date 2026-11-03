@@ -696,4 +696,34 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^arm_if_else_continues.rs$"],
     snapshots: true,
   },
+  {
+    name: "arm-only-continue-unplaced",
+    breaks:
+      "a comment before the `continue` an arm is, `1 => { // Skipped. continue; }`, prints above the `switch`, as MIR's test of the arm goes to the loop's start with no place of its own (#574)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "            jump.span = written;\n",
+    replace: "            _ = written;\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_before_an_arms_only_continue.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "arm-only-continue-of-any-if",
+    breaks:
+      "a `continue` of a loop inside an arm that ends with one, `if (x < 0) { continue; }`, is given the arm's `continue`'s place, and the comment before it moves (#574)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                !arm.is_none() && (test.span.lo == arm.lo || span.lo == arm.lo) && written.hi < arm.hi\n",
+    replace: "                !arm.is_none() && written.hi < arm.hi\n",
+    tests: ["test/corpus.test.ts", "-t", "^comment_before_an_arms_only_continue.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "arm-only-continue-of-a-bare-arm",
+    breaks:
+      "an arm that's a `continue` alone, `(2, 2) => continue`, is given its place too, and reads as a `continue` the program wrote: `} else if (..) { continue; } else {` is `} else { if (..) { continue; } .. }`, and a `catch_unwind`'s `Ok(()) => continue` is in the `try` (#574)",
+    file: "src/lower/mir/tidy/jumps/continues.rs",
+    find: "                !arm.is_none() && (test.span.lo == arm.lo || span.lo == arm.lo) && written.hi < arm.hi\n",
+    replace: "                !arm.is_none() && (test.span.lo == arm.lo || span.lo == arm.lo) && written.hi <= arm.hi\n",
+    tests: ["test/corpus.test.ts", "-t", "^(default_value_exits|tried_loop_jumps).rs$"],
+    snapshots: true,
+  },
 ];

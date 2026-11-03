@@ -1176,3 +1176,27 @@ keeps (ADR 0444, amended). A comment in an arm before only a `continue`,
 Held by corpus `match_arm_comments_kept`, and the mutations
 `unit-arm-not-apart`, `of-no-default-never`, `of-default-same-line-unread`
 and `guarded-test-span-kept`.
+
+## Amendment: a comment before an arm's only `continue` (#574)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, comments only.
+The last of #574's comments: `1 => { // Skipped. continue; }` printed
+`// Skipped.` above the `switch`. Optimized MIR has no block of the arm's:
+its test of the pattern goes to the loop's start itself, so the JS
+`continue` had no place a comment could be before. **The `continue` of the
+`if` that tests an arm that's a block ending in one, where that `if`
+starts where the arm does, is placed at the `continue` the arm writes**
+(`arm_continues_placed`, of `Written::arm_continues`, in tidy's jumps
+stage), and the comment is before it: in its `case`, or in its `if`'s
+block. Placed, it reads as a `continue` the program wrote, which keeps its
+`if (k === 3) { continue; }` as written, not `if (k !== 3) { .. }`, as
+`continued` keeps one; and it's the arm's code, where `decisions` places
+an `else if`, as of any other arm: a comment first in a later arm's block
+nests its chain, `} else { // c\n if (..) {`, of any arm (#595). An arm
+that's a `continue` alone, `(2, 2) => continue`, has nothing in it a
+comment could be before, and stays as it was, MIR's, `} else if (..) {
+continue; } else {`; so does a `continue` of a loop inside the arm.
+
+Held by corpus `comment_before_an_arms_only_continue`, and the mutations
+`arm-only-continue-unplaced`, `arm-only-continue-of-any-if` and
+`arm-only-continue-of-a-bare-arm`.

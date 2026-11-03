@@ -1112,6 +1112,11 @@ const JUMPS: &[Pass] = &[
     pass("written first", |b, h| {
         js::statement_lists(b, &mut |s| written_first(s, &h.written.switches))
     }),
+    // An arm that's only a `continue`: the `continue`, where it's
+    // written (#574).
+    pass("arm continues", |b, h| {
+        js::statement_lists(b, &mut |s| arm_continues_placed(s, &h.written.arm_continues))
+    }),
     // A `continue` of a loop around the program wrote, MIR's jump past a
     // block to it: where it wrote it (ADR 0702, amended).
     pass("continues written", |b, h| {
