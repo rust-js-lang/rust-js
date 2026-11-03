@@ -590,14 +590,18 @@ pub(super) fn handles_in_place(body: &mut Vec<Stmt>) {
     // it, a nullable field's `None` `null`, before it's the place (ADR 0772,
     // amended).
     written_as_stored(body, &|of| match &of.kind {
-        ExprKind::Handle(place, storage) if its_place(place) => Some(*storage),
+        ExprKind::Handle(place, storage) if place.reads_same() => Some(*storage),
         _ => None,
     });
+    // A handle on a property a getter may answer, a JS object's field,
+    // `this._weakResponse` of a constructor's `this` cast to it (#449), is
+    // `read_handles`' to make its place where it's used, as it's declared
+    // (#503, #569).
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Member(of, key) = &e.kind
             && key == js::HELD
             && let ExprKind::Handle(place, _) = &of.kind
-            && its_place(place)
+            && place.reads_same()
         {
             *e = Expr {
                 span: e.span,
@@ -605,16 +609,6 @@ pub(super) fn handles_in_place(body: &mut Vec<Stmt>) {
             };
         }
     });
-}
-
-/// Whether a handle on `place` made to read or write it there is the
-/// place: one that reads the same, or a property of what reads the same,
-/// which a getter or a setter may answer, called by either alike, its
-/// object read first either way: a struct's field that's a JS object's,
-/// `this._weakResponse` of a constructor's `this` cast to it, whose
-/// handle's getter and setter would read `this` as their own (#449).
-fn its_place(place: &Expr) -> bool {
-    place.reads_same() || matches!(&place.kind, ExprKind::Member(of, _) if of.reads_same())
 }
 
 /// `const h = { get value() { return o.f; }, .. }`, a `&Cell`'s handle on a

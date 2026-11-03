@@ -396,10 +396,14 @@ other accessor reading `this`. Mutations `handle-of-a-getters-object-kept` (`tid
 field's handle where it's used in an `in_place` body too, so the
 constructor's write is the place before `its_place` sees it, and
 `handle-of-a-getters-object-kept` changes no program: the corpus's JS,
-fifteen suites and five probes are the same with it. It's removed as
-equivalent; whether `its_place`'s arm for a property of what reads the
-same is still needed, or should go, is #569. The test's `this$` case is
-now a handle that stays one, `bump(either(..))`.
+fifteen suites and five probes are the same with it. So the first change
+above is `read_handles`' alone: `its_place`'s arm for a property of what
+reads the same is gone, with its function and the mutation, and a handle
+`tidy/values.rs` puts in place is one on a place that reads the same
+(#569). Were a handle on a getter's place ever left inline, the second
+change still reads `this` through `this$`, so it would be a handle, not
+a wrong answer. The test's `this$` case is now a handle that stays one,
+`bump(either(..))`.
 
 
 Amended, 2026-11-02 (#459): the rule covers a trait's default too.
